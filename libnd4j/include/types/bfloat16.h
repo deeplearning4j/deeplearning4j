@@ -60,7 +60,9 @@ struct isNumericType {
                                 std::is_same<long int, T>::value || std::is_same<long unsigned int, T>::value ||
                                 std::is_same<int8_t, T>::value || std::is_same<uint8_t, T>::value ||
                                 std::is_same<int16_t, T>::value || std::is_same<uint16_t, T>::value ||
-                                std::is_same<bool, T>::value || std::is_same<float16, T>::value;
+                                std::is_same<bool, T>::value || std::is_same<float16, T>::value ||
+                                std::is_same<signed char, T>::value || std::is_same<unsigned char, T>::value ||
+                                std::is_same<char, T>::value;
 };
 
 // Forward declaration
@@ -89,9 +91,68 @@ struct alignas(2) bfloat16 {
   // Constructor for atomic operations compatibility
   SD_INLINE SD_HOST_DEVICE bfloat16(int16_t raw_bits) : _data(static_cast<uint16_t>(raw_bits)) {}
 
-  template <typename T, typename = typename std::enable_if<isNumericType<T>::value>::type>
-  SD_INLINE SD_HOST_DEVICE explicit bfloat16(const T& rhs) : _data(0) {
-    *this = rhs;
+  // Comprehensive constructors for all numeric types
+
+  // Double constructor
+  SD_INLINE SD_HOST_DEVICE bfloat16(double value) : _data(0) {
+    *this = static_cast<float>(value);
+  }
+
+  // Float constructor
+  SD_INLINE SD_HOST_DEVICE bfloat16(float value) : _data(0) {
+    *this = value;
+  }
+
+  // Integer constructors
+  SD_INLINE SD_HOST_DEVICE bfloat16(int value) : _data(0) {
+    *this = static_cast<float>(value);
+  }
+
+  SD_INLINE SD_HOST_DEVICE bfloat16(unsigned int value) : _data(0) {
+    *this = static_cast<float>(value);
+  }
+
+  SD_INLINE SD_HOST_DEVICE bfloat16(long long value) : _data(0) {
+    *this = static_cast<float>(value);
+  }
+
+  SD_INLINE SD_HOST_DEVICE bfloat16(unsigned long long value) : _data(0) {
+    *this = static_cast<float>(value);
+  }
+
+  SD_INLINE SD_HOST_DEVICE bfloat16(long int value) : _data(0) {
+    *this = static_cast<float>(value);
+  }
+
+  SD_INLINE SD_HOST_DEVICE bfloat16(long unsigned int value) : _data(0) {
+    *this = static_cast<float>(value);
+  }
+
+  // Fixed-width integer constructors
+  SD_INLINE SD_HOST_DEVICE bfloat16(int8_t value) : _data(0) {
+    *this = static_cast<float>(value);
+  }
+
+  SD_INLINE SD_HOST_DEVICE bfloat16(uint8_t value) : _data(0) {
+    *this = static_cast<float>(value);
+  }
+
+
+
+
+
+  SD_INLINE SD_HOST_DEVICE bfloat16(char value) : _data(0) {
+    *this = static_cast<float>(value);
+  }
+
+  // Boolean constructor
+  SD_INLINE SD_HOST_DEVICE bfloat16(bool value) : _data(0) {
+    *this = value ? 1.0f : 0.0f;
+  }
+
+  // float16 constructor
+  SD_INLINE SD_HOST_DEVICE bfloat16(const float16& value) : _data(0) {
+    *this = static_cast<float>(value);
   }
 
   // Float conversion

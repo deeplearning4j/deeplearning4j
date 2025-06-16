@@ -1122,20 +1122,24 @@ DECLARE_COMPLEX_ACCUMULATION_SIMD_SAFE_OP(ASum,
                                           sd::math::sd_abs<X COMMA X>(reduction)
 )
 
-DECLARE_ACCUMULATION_SIMD_SAFE_OP(CountNonZero,
-                                  return d1 == static_cast<X>(0.0f) ? static_cast<InterType>(0.0f) : static_cast<InterType>(1.0f);,
-                                  ASUM, static_cast<X>(0),
-                                  opOutput + old,
-                                  opOutput + old,
-                                  static_cast<Z>(reduction)
+DECLARE_SIMPLE_REDUCTION_OP(
+    CountNonZero,
+    ASUM,
+    static_cast<Z>(0),
+    (d1 == static_cast<X>(0.0f) ? static_cast<InterType>(0.0f) : static_cast<InterType>(1.0f)),
+    (opOutput + old),
+    (opOutput + old),
+    static_cast<Z>(reduction)
 )
 
-DECLARE_ACCUMULATION_SIMD_SAFE_OP(CountZero,
-                                  return d1 == static_cast<X>(0) ? static_cast<InterType>(1) : static_cast<InterType>(0);,
-                                  SUM, static_cast<X>(0),
-                                  opOutput + old,
-                                  opOutput + old,
-                                  static_cast<Z>(reduction)
+DECLARE_SIMPLE_REDUCTION_OP(
+    CountZero,
+    SUM,
+    static_cast<Z>(0.0f),
+    (d1 == static_cast<X>(0) ? static_cast<InterType>(1) : static_cast<InterType>(0)),
+    (opOutput + old),
+    (opOutput + old),
+    static_cast<Z>(reduction)
 )
 
 DECLARE_MIXED_ACCUMULATION_SIMD_SAFE_OP(Any,
@@ -2143,8 +2147,14 @@ DECLARE_REDUCE_OP(Max, MAX, -sd::DataTypeUtils::infOrMax<X>(),
 DECLARE_REDUCE_OP(Min, MIN, sd::DataTypeUtils::infOrMax<X>(),
                   sd::math::sd_min<X>(old, opOutput), sd::math::sd_min<X>(opOutput, old), reduction)
 
-DECLARE_REDUCE_FLOAT_OP(Mean, SUM, static_cast<X>(0), opOutput + old, opOutput + old,
-                        static_cast<Z>(reduction / (InterType)n))
+DECLARE_ACCUMULATION_SIMD_SAFE_OP(Mean,
+                                  return static_cast<InterType>(d1);,
+                                  SUM,
+                                  static_cast<X>(0),
+                                  old + opOutput,
+                                  old + opOutput,
+                                  reduction / static_cast<InterType>(n)
+)
 
 // =============================================================================
 // INDEX REDUCE OPERATIONS
@@ -2196,7 +2206,6 @@ DECLARE_BINARY_COPY_OP(LogicalOr,
                        static_cast<Z>(d1),
                        static_cast<Z>(119)
 )
-
 template <typename X, typename Z>
 class MatchCondition {
  private:
@@ -2226,6 +2235,9 @@ class MatchCondition {
  public:
   static const bool requiresSpecialAccumulation = false;
 
+  // CRITICAL: Add the missing InterType typedef
+  using InterType = typename AggregateType<Z>::type;
+
   // execSpecial signatures - matches what reduce_long.hpp expects
   static void execSpecial(const X *x, const sd::LongType *xShapeInfo, sd::LongType *extraParams, Z *result,
                           const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, sd::LongType dimensionLength,
@@ -2238,94 +2250,181 @@ class MatchCondition {
       Z *reductionBuffer, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets) {}
 #endif
 
-  // Reduction operation methods
+  // Core reduction operation methods - these use Z* parameters
   SD_HOST_DEVICE SD_INLINE static Z startingValue(const X* input) { return static_cast<Z>(0); }
-  SD_HOST_DEVICE SD_INLINE static Z merge(Z old, Z opOutput, X* extraParams) { return static_cast<Z>(old + opOutput); }
-  SD_HOST_DEVICE SD_INLINE static Z update(Z old, Z opOutput, X* extraParams) { return static_cast<Z>(old + opOutput); }
-  SD_HOST_DEVICE SD_INLINE static Z postProcess(Z reduction, sd::LongType n, X* extraParams) { return static_cast<Z>(reduction); }
+  SD_HOST_DEVICE SD_INLINE static InterType merge(InterType old, InterType opOutput, Z* extraParams) { return old + opOutput; }
+  SD_HOST_DEVICE SD_INLINE static InterType update(InterType old, InterType opOutput, Z* extraParams) { return old + opOutput; }
+  SD_HOST_DEVICE SD_INLINE static Z postProcess(InterType reduction, sd::LongType n, Z* extraParams) { return static_cast<Z>(reduction); }
 
-  // Template overloads for sd::LongType* parameters in reduction operations
-  template<typename ParamType>
-  static SD_HOST_DEVICE SD_INLINE
-      typename std::enable_if<std::is_same_v<ParamType, sd::LongType> && !std::is_same_v<ParamType, X>, Z>::type
-      merge(Z old, Z opOutput, ParamType* extraParams) {
-    return static_cast<Z>(old + opOutput);
-  }
-
-  template<typename ParamType>
-  static SD_HOST_DEVICE SD_INLINE
-      typename std::enable_if<std::is_same_v<ParamType, sd::LongType> && !std::is_same_v<ParamType, X>, Z>::type
-      update(Z old, Z opOutput, ParamType* extraParams) {
-    return static_cast<Z>(old + opOutput);
-  }
-
-  template<typename ParamType>
-  static SD_HOST_DEVICE SD_INLINE
-      typename std::enable_if<std::is_same_v<ParamType, sd::LongType> && !std::is_same_v<ParamType, X>, Z>::type
-      postProcess(Z reduction, sd::LongType n, ParamType* extraParams) {
-    return static_cast<Z>(reduction);
-  }
-
-  // *** PRIMARY OP METHODS - NO DUPLICATES ***
-
-  // 1. Unary operation: op(value, extraParams) - for reduction operations
-  static SD_HOST_DEVICE SD_INLINE Z op(X d1, X* extraParams) {
-    if (extraParams == nullptr) return static_cast<Z>(0);
-    X compare = extraParams[0];
-    X eps = extraParams[1];
+  // Core op methods - these use Z* parameters
+  static SD_HOST_DEVICE SD_INLINE InterType op(X d1, Z* extraParams) {
+    if (extraParams == nullptr) return static_cast<InterType>(0);
+    X compare = static_cast<X>(extraParams[0]);
+    X eps = static_cast<X>(extraParams[1]);
     auto mode = static_cast<int>(extraParams[2]);
-    return op_logic(d1, compare, eps, mode);
+    return static_cast<InterType>(op_logic(d1, compare, eps, mode));
   }
 
-  // 2. Binary operation: op(value1, value2, extraParams) - for scalar/pairwise operations
-  static SD_HOST_DEVICE SD_INLINE Z op(X d1, X d2, X* extraParams) {
+  static SD_HOST_DEVICE SD_INLINE InterType op(X d1, X d2, Z* extraParams) {
     if (extraParams == nullptr) {
       // If no extraParams, use d2 as compare value, default eps=0, mode=0 (equals)
-      return op_logic(d1, d2, static_cast<X>(0), 0);
+      return static_cast<InterType>(op_logic(d1, d2, static_cast<X>(0), 0));
     }
 
     // Use d2 as comparison value, extraParams for eps and mode
     X compare = d2;
-    X eps = extraParams[0];
+    X eps = static_cast<X>(extraParams[0]);
     auto mode = static_cast<int>(extraParams[1]);
-    return op_logic(d1, compare, eps, mode);
+    return static_cast<InterType>(op_logic(d1, compare, eps, mode));
   }
 
-  // 3. Binary operation without extraParams: op(value1, value2)
-  static SD_HOST_DEVICE SD_INLINE Z op(X d1, X d2) {
+  static SD_HOST_DEVICE SD_INLINE InterType op(X d1, X d2) {
     // Default: compare d1 to d2 with eps=0 and mode=0 (equals)
-    return op_logic(d1, d2, static_cast<X>(0), 0);
+    return static_cast<InterType>(op_logic(d1, d2, static_cast<X>(0), 0));
   }
 
-  // *** TEMPLATE OVERLOADS FOR sd::LongType* PARAMETERS ***
+  // *** TEMPLATE OVERLOADS FOR DIFFERENT PARAMETER TYPES ***
 
-  // Template overload for unary operation with sd::LongType* extraParams
+  // Template overloads for X* parameters - only when X != Z
   template<typename ParamType>
   static SD_HOST_DEVICE SD_INLINE
-      typename std::enable_if<std::is_same_v<ParamType, sd::LongType> && !std::is_same_v<ParamType, X>, Z>::type
+      typename std::enable_if<std::is_same_v<ParamType, X> && !std::is_same_v<X, Z>, InterType>::type
       op(X d1, ParamType* extraParams) {
-    if (extraParams == nullptr) return static_cast<Z>(0);
+    if (extraParams == nullptr) return static_cast<InterType>(0);
+    X compare = extraParams[0];
+    X eps = extraParams[1];
+    auto mode = static_cast<int>(extraParams[2]);
+    return static_cast<InterType>(op_logic(d1, compare, eps, mode));
+  }
+
+  template<typename ParamType>
+  static SD_HOST_DEVICE SD_INLINE
+      typename std::enable_if<std::is_same_v<ParamType, X> && !std::is_same_v<ParamType, Z>, InterType>::type
+      op(X d1, X d2, ParamType* extraParams) {
+    if (extraParams == nullptr) {
+      return static_cast<InterType>(op_logic(d1, d2, static_cast<X>(0), 0));
+    }
+    X compare = d2;
+    X eps = extraParams[0];
+    auto mode = static_cast<int>(extraParams[1]);
+    return static_cast<InterType>(op_logic(d1, compare, eps, mode));
+  }
+
+  template<typename ParamType>
+  static SD_HOST_DEVICE SD_INLINE
+      typename std::enable_if<std::is_same_v<ParamType, X> && !std::is_same_v<ParamType, Z>, InterType>::type
+      merge(InterType old, InterType opOutput, ParamType* extraParams) {
+    return old + opOutput;
+  }
+
+  template<typename ParamType>
+  static SD_HOST_DEVICE SD_INLINE
+      typename std::enable_if<std::is_same_v<ParamType, X> && !std::is_same_v<ParamType, Z>, InterType>::type
+      update(InterType old, InterType opOutput, ParamType* extraParams) {
+    return old + opOutput;
+  }
+
+  template<typename ParamType>
+  static SD_HOST_DEVICE SD_INLINE
+      typename std::enable_if<std::is_same_v<ParamType, X> && !std::is_same_v<ParamType, Z>, Z>::type
+      postProcess(InterType reduction, sd::LongType n, ParamType* extraParams) {
+    return static_cast<Z>(reduction);
+  }
+
+  // Template overloads for sd::LongType* parameters
+  template<typename ParamType>
+  static SD_HOST_DEVICE SD_INLINE
+      typename std::enable_if<std::is_same_v<ParamType, sd::LongType> && !std::is_same_v<ParamType, X> && !std::is_same_v<ParamType, Z>, InterType>::type
+      op(X d1, ParamType* extraParams) {
+    if (extraParams == nullptr) return static_cast<InterType>(0);
     X compare = static_cast<X>(extraParams[0]);
     X eps = static_cast<X>(extraParams[1]);
     auto mode = static_cast<int>(extraParams[2]);
-    return op_logic(d1, compare, eps, mode);
+    return static_cast<InterType>(op_logic(d1, compare, eps, mode));
   }
 
-  // Template overload for binary operation with sd::LongType* extraParams
   template<typename ParamType>
   static SD_HOST_DEVICE SD_INLINE
-      typename std::enable_if<std::is_same_v<ParamType, sd::LongType> && !std::is_same_v<ParamType, X>, Z>::type
+      typename std::enable_if<std::is_same_v<ParamType, sd::LongType> && !std::is_same_v<ParamType, X> && !std::is_same_v<ParamType, Z>, InterType>::type
       op(X d1, X d2, ParamType* extraParams) {
     if (extraParams == nullptr) {
-      return op_logic(d1, d2, static_cast<X>(0), 0);
+      return static_cast<InterType>(op_logic(d1, d2, static_cast<X>(0), 0));
     }
-
     X compare = d2;
     X eps = static_cast<X>(extraParams[0]);
     auto mode = static_cast<int>(extraParams[1]);
-    return op_logic(d1, compare, eps, mode);
+    return static_cast<InterType>(op_logic(d1, compare, eps, mode));
+  }
+
+  template<typename ParamType>
+  static SD_HOST_DEVICE SD_INLINE
+      typename std::enable_if<std::is_same_v<ParamType, sd::LongType> && !std::is_same_v<ParamType, X> && !std::is_same_v<ParamType, Z>, InterType>::type
+      merge(InterType old, InterType opOutput, ParamType* extraParams) {
+    return old + opOutput;
+  }
+
+  template<typename ParamType>
+  static SD_HOST_DEVICE SD_INLINE
+      typename std::enable_if<std::is_same_v<ParamType, sd::LongType> && !std::is_same_v<ParamType, X> && !std::is_same_v<ParamType, Z>, InterType>::type
+      update(InterType old, InterType opOutput, ParamType* extraParams) {
+    return old + opOutput;
+  }
+
+  template<typename ParamType>
+  static SD_HOST_DEVICE SD_INLINE
+      typename std::enable_if<std::is_same_v<ParamType, sd::LongType> && !std::is_same_v<ParamType, X> && !std::is_same_v<ParamType, Z>, Z>::type
+      postProcess(InterType reduction, sd::LongType n, ParamType* extraParams) {
+    return static_cast<Z>(reduction);
+  }
+
+  // Template overloads for float* parameters (for cases like bfloat16/bfloat16 with float* extraParams)
+  template<typename ParamType>
+  static SD_HOST_DEVICE SD_INLINE
+      typename std::enable_if<std::is_floating_point_v<ParamType> && !std::is_same_v<ParamType, X> && !std::is_same_v<ParamType, Z>, InterType>::type
+      op(X d1, ParamType* extraParams) {
+    if (extraParams == nullptr) return static_cast<InterType>(0);
+    X compare = static_cast<X>(extraParams[0]);
+    X eps = static_cast<X>(extraParams[1]);
+    auto mode = static_cast<int>(extraParams[2]);
+    return static_cast<InterType>(op_logic(d1, compare, eps, mode));
+  }
+
+  template<typename ParamType>
+  static SD_HOST_DEVICE SD_INLINE
+      typename std::enable_if<std::is_floating_point_v<ParamType> && !std::is_same_v<ParamType, X> && !std::is_same_v<ParamType, Z>, InterType>::type
+      op(X d1, X d2, ParamType* extraParams) {
+    if (extraParams == nullptr) {
+      return static_cast<InterType>(op_logic(d1, d2, static_cast<X>(0), 0));
+    }
+    X compare = d2;
+    X eps = static_cast<X>(extraParams[0]);
+    auto mode = static_cast<int>(extraParams[1]);
+    return static_cast<InterType>(op_logic(d1, compare, eps, mode));
+  }
+
+  template<typename ParamType>
+  static SD_HOST_DEVICE SD_INLINE
+      typename std::enable_if<std::is_floating_point_v<ParamType> && !std::is_same_v<ParamType, X> && !std::is_same_v<ParamType, Z>, InterType>::type
+      merge(InterType old, InterType opOutput, ParamType* extraParams) {
+    return old + opOutput;
+  }
+
+  template<typename ParamType>
+  static SD_HOST_DEVICE SD_INLINE
+      typename std::enable_if<std::is_floating_point_v<ParamType> && !std::is_same_v<ParamType, X> && !std::is_same_v<ParamType, Z>, InterType>::type
+      update(InterType old, InterType opOutput, ParamType* extraParams) {
+    return old + opOutput;
+  }
+
+  template<typename ParamType>
+  static SD_HOST_DEVICE SD_INLINE
+      typename std::enable_if<std::is_floating_point_v<ParamType> && !std::is_same_v<ParamType, X> && !std::is_same_v<ParamType, Z>, Z>::type
+      postProcess(InterType reduction, sd::LongType n, ParamType* extraParams) {
+    return static_cast<Z>(reduction);
   }
 };
+
+
 // --- Specialization: std::basic_string<char32_t> (UTF-32) -> std::basic_string<char16_t> (UTF-16) ---
 template <>
 class Assign<std::basic_string<char32_t>, std::basic_string<char16_t>> {

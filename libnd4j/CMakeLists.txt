@@ -1691,174 +1691,25 @@ if(NOT DEFINED ONEDNN_PROCESSING_DONE)
     set(ONEDNN_PROCESSING_DONE FALSE CACHE INTERNAL "Flag to indicate OneDNN processing status")
 endif()
 # OneDNN configuration with robust download and retry logic
+# OneDNN configuration - Only configure when explicitly enabled
 if(HELPERS_onednn)
     message(STATUS "OneDNN helper is enabled")
     include(ExternalProject)
-    message(STATUS "Configuring OneDNN dependency using ExternalProject_Add with retry logic")
-    set(HAVE_ONEDNN TRUE)
 
+    set(HAVE_ONEDNN TRUE)
     set(ONEDNN_INSTALL_DIR "${CMAKE_BINARY_DIR}/onednn_install")
     set(ONEDNN_SOURCE_DIR "${CMAKE_BINARY_DIR}/onednn_external/src")
     set(ONEDNN_BUILD_DIR "${CMAKE_BINARY_DIR}/onednn_external/build")
+    set(ONEDNN_URL "https://github.com/uxlfoundation/oneDNN.git")
+    set(ONEDNN_TAG "v3.8.1")
 
-    # Create a custom script for robust downloading
-    set(ONEDNN_DOWNLOAD_SCRIPT "${CMAKE_BINARY_DIR}/download_onednn.cmake")
-    file(WRITE ${ONEDNN_DOWNLOAD_SCRIPT} "
-# Robust OneDNN download script with retry logic
-set(ONEDNN_URL \"https://github.com/uxlfoundation/oneDNN.git\")
-set(ONEDNN_TAG \"v3.8.1\")
-set(SOURCE_DIR \"${ONEDNN_SOURCE_DIR}\")
-
-# Function to attempt git clone with retries
-function(git_clone_with_retry url tag source_dir max_attempts)
-    set(attempt 1)
-    while(attempt LESS_EQUAL max_attempts)
-        message(STATUS \"OneDNN download attempt \${attempt}/\${max_attempts}\")
-
-        # Clean up any partial downloads
-        if(EXISTS \"\${source_dir}\")
-            file(REMOVE_RECURSE \"\${source_dir}\")
-        endif()
-
-        # Try shallow clone first (faster)
-        execute_process(
-            COMMAND git clone --depth 1 --branch \${tag} \${url} \"\${source_dir}\"
-            RESULT_VARIABLE clone_result
-            OUTPUT_VARIABLE clone_output
-            ERROR_VARIABLE clone_error
-            TIMEOUT 300
-        )
-
-        if(clone_result EQUAL 0 AND EXISTS \"\${source_dir}/CMakeLists.txt\")
-            message(STATUS \"OneDNN download successful on attempt \${attempt}\")
-            return()
-        endif()
-
-        message(WARNING \"Attempt \${attempt} failed: \${clone_error}\")
-
-        # If shallow clone failed, try full clone
-        execute_process(
-            COMMAND git clone \${url} \"\${source_dir}\"
-            WORKING_DIRECTORY \${CMAKE_BINARY_DIR}
-            RESULT_VARIABLE full_clone_result
-            OUTPUT_VARIABLE full_clone_output
-            ERROR_VARIABLE full_clone_error
-            TIMEOUT 600
-        )
-
-        if(full_clone_result EQUAL 0 AND EXISTS \"\${source_dir}/CMakeLists.txt\")
-            # Checkout the specific tag
-            execute_process(
-                COMMAND git checkout \${tag}
-                WORKING_DIRECTORY \"\${source_dir}\"
-                RESULT_VARIABLE checkout_result
-            )
-
-            if(checkout_result EQUAL 0)
-                message(STATUS \"OneDNN full clone and checkout successful on attempt \${attempt}\")
-                return()
-            endif()
-        endif()
-
-        math(EXPR attempt \"\${attempt} + 1\")
-
-        if(attempt LESS_EQUAL max_attempts)
-            message(STATUS \"Waiting 10 seconds before retry...\")
-            execute_process(COMMAND \${CMAKE_COMMAND} -E sleep 10)
-        endif()
-    endwhile()
-
-    message(FATAL_ERROR \"Failed to download OneDNN after \${max_attempts} attempts\")
-endfunction()
-
-# Attempt download with retries
-git_clone_with_retry(\${ONEDNN_URL} \${ONEDNN_TAG} \${SOURCE_DIR} 3)
-")
-
-    # Alternative: Try release tarball if git fails
-    set(ONEDNN_FALLBACK_SCRIPT "${CMAKE_BINARY_DIR}/download_onednn_fallback.cmake")
-    file(WRITE ${ONEDNN_FALLBACK_SCRIPT} "
-# Fallback to release tarball download
-set(TARBALL_URL \"https://github.com/uxlfoundation/oneDNN/archive/refs/tags/v3.8.1.tar.gz\")
-set(SOURCE_DIR \"${ONEDNN_SOURCE_DIR}\")
-set(DOWNLOAD_DIR \"${CMAKE_BINARY_DIR}/downloads\")
-
-file(MAKE_DIRECTORY \"\${DOWNLOAD_DIR}\")
-
-message(STATUS \"Attempting OneDNN tarball download as fallback\")
-
-file(DOWNLOAD
-    \${TARBALL_URL}
-    \"\${DOWNLOAD_DIR}/onednn-v3.8.1.tar.gz\"
-    SHOW_PROGRESS
-    TIMEOUT 300
-    STATUS download_status
-)
-
-list(GET download_status 0 status_code)
-if(NOT status_code EQUAL 0)
-    message(FATAL_ERROR \"Failed to download OneDNN tarball\")
-endif()
-
-# Extract tarball
-execute_process(
-    COMMAND \${CMAKE_COMMAND} -E tar xzf \"\${DOWNLOAD_DIR}/onednn-v3.8.1.tar.gz\"
-    WORKING_DIRECTORY \"\${CMAKE_BINARY_DIR}\"
-    RESULT_VARIABLE extract_result
-)
-
-if(NOT extract_result EQUAL 0)
-    message(FATAL_ERROR \"Failed to extract OneDNN tarball\")
-endif()
-
-# Move extracted directory to expected location
-file(RENAME \"\${CMAKE_BINARY_DIR}/oneDNN-3.8.1\" \"\${SOURCE_DIR}\")
-
-if(NOT EXISTS \"\${SOURCE_DIR}/CMakeLists.txt\")
-    message(FATAL_ERROR \"OneDNN source not found after extraction\")
-endif()
-
-message(STATUS \"OneDNN tarball download and extraction successful\")
-")
-
-    # Check if OneDNN is already downloaded and valid
-    set(ONEDNN_READY FALSE)
-    if(EXISTS "${ONEDNN_SOURCE_DIR}/CMakeLists.txt")
-        message(STATUS "OneDNN source already exists, checking validity...")
-        file(READ "${ONEDNN_SOURCE_DIR}/CMakeLists.txt" ONEDNN_CMAKE_CONTENT)
-        if(ONEDNN_CMAKE_CONTENT MATCHES "oneDNN")
-            set(ONEDNN_READY TRUE)
-            message(STATUS "✓ Existing OneDNN source is valid")
-        else()
-            message(STATUS "✗ Existing OneDNN source is invalid, will re-download")
-            file(REMOVE_RECURSE "${ONEDNN_SOURCE_DIR}")
-        endif()
-    endif()
-
-    if(NOT ONEDNN_READY)
-        # Custom download step
-        add_custom_target(onednn_download
-                COMMAND ${CMAKE_COMMAND} -P ${ONEDNN_DOWNLOAD_SCRIPT}
-                COMMENT "Downloading OneDNN with retry logic"
-        )
-
-        # Fallback download target
-        add_custom_target(onednn_download_fallback
-                COMMAND ${CMAKE_COMMAND} -P ${ONEDNN_FALLBACK_SCRIPT}
-                COMMENT "Downloading OneDNN via tarball (fallback)"
-        )
-    endif()
-
-    # Configure ExternalProject with DOWNLOAD_COMMAND override
+    # Configure ExternalProject for OneDNN
     ExternalProject_Add(onednn_external
             PREFIX            "${CMAKE_BINARY_DIR}/onednn_external"
+            GIT_REPOSITORY    ${ONEDNN_URL}
+            GIT_TAG           ${ONEDNN_TAG}
             SOURCE_DIR        "${ONEDNN_SOURCE_DIR}"
             BINARY_DIR        "${ONEDNN_BUILD_DIR}"
-            # Override download command to use our robust script
-            DOWNLOAD_COMMAND  ${CMAKE_COMMAND} -P ${ONEDNN_DOWNLOAD_SCRIPT}
-            # Fallback: use tarball if git fails completely
-            # DOWNLOAD_COMMAND  ${CMAKE_COMMAND} -P ${ONEDNN_FALLBACK_SCRIPT}
-            UPDATE_COMMAND    ""  # Skip updates to avoid network issues
             CMAKE_ARGS
             -DCMAKE_INSTALL_PREFIX=${ONEDNN_INSTALL_DIR}
             -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
@@ -1870,79 +1721,32 @@ message(STATUS \"OneDNN tarball download and extraction successful\")
             -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
             BUILD_COMMAND     ${CMAKE_COMMAND} --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel
             INSTALL_COMMAND   ${CMAKE_COMMAND} --build <BINARY_DIR> --target install --config ${CMAKE_BUILD_TYPE}
-            BUILD_BYPRODUCTS  "${ONEDNN_INSTALL_DIR}/include/dnnl.h"
+            BUILD_BYPRODUCTS
+            "${ONEDNN_INSTALL_DIR}/include/dnnl.h"
             "${ONEDNN_INSTALL_DIR}/lib/libdnnl.a"
-            "${ONEDNN_INSTALL_DIR}/lib/dnnl.lib"  # Windows static lib
-            # Timeout settings
+            "${ONEDNN_INSTALL_DIR}/lib/dnnl.lib"
             TIMEOUT           600
-            DOWNLOAD_NO_PROGRESS 0
-            # Retry settings
-            DOWNLOAD_NO_EXTRACT FALSE
-            # Logging
             LOG_DOWNLOAD      ON
             LOG_CONFIGURE     ON
             LOG_BUILD         ON
             LOG_INSTALL       ON
     )
 
-    # Add verification step
-    ExternalProject_Add_Step(onednn_external verify_download
-            COMMAND ${CMAKE_COMMAND} -E echo "Verifying OneDNN download..."
-            COMMAND test -f "${ONEDNN_SOURCE_DIR}/CMakeLists.txt" ||
-    (echo "ERROR: OneDNN CMakeLists.txt not found!" && exit 1)
-            DEPENDEES download
-            DEPENDERS configure
-            COMMENT "Verifying OneDNN source integrity"
-            ALWAYS 1
-    )
-
-    # Add cleanup step for failed downloads
-    ExternalProject_Add_Step(onednn_external cleanup_on_failure
-            COMMAND ${CMAKE_COMMAND} -E echo "Cleaning up failed OneDNN download..."
-            COMMAND ${CMAKE_COMMAND} -E remove_directory "${ONEDNN_SOURCE_DIR}"
-            DEPENDEES download
-            DEPENDERS configure
-            COMMENT "Cleaning up on download failure"
-            ALWAYS 0  # Only run on failure
-    )
-
+    # Create interface library for OneDNN
     add_library(onednn_interface INTERFACE)
-    target_include_directories(onednn_interface INTERFACE
-            "${ONEDNN_INSTALL_DIR}/include"
-    )
+    target_include_directories(onednn_interface INTERFACE "${ONEDNN_INSTALL_DIR}/include")
 
-    # Handle both Unix and Windows library names
+    # Handle platform-specific library names
     if(WIN32)
-        target_link_libraries(onednn_interface INTERFACE
-                "${ONEDNN_INSTALL_DIR}/lib/dnnl.lib"
-        )
+        target_link_libraries(onednn_interface INTERFACE "${ONEDNN_INSTALL_DIR}/lib/dnnl.lib")
     else()
-        target_link_libraries(onednn_interface INTERFACE
-                "${ONEDNN_INSTALL_DIR}/lib/libdnnl.a"
-        )
+        target_link_libraries(onednn_interface INTERFACE "${ONEDNN_INSTALL_DIR}/lib/libdnnl.a")
     endif()
 
     add_dependencies(onednn_interface onednn_external)
     set(ONEDNN onednn_interface)
 
-    # Add manual retry option for CI/CD
-    add_custom_target(onednn_retry_download
-            COMMAND ${CMAKE_COMMAND} -E remove_directory "${ONEDNN_SOURCE_DIR}"
-            COMMAND ${CMAKE_COMMAND} -E remove_directory "${ONEDNN_BUILD_DIR}"
-            COMMAND ${CMAKE_COMMAND} -P ${ONEDNN_DOWNLOAD_SCRIPT}
-            COMMENT "Manual OneDNN download retry"
-    )
-
-    # Add manual fallback option
-    add_custom_target(onednn_fallback_download
-            COMMAND ${CMAKE_COMMAND} -E remove_directory "${ONEDNN_SOURCE_DIR}"
-            COMMAND ${CMAKE_COMMAND} -P ${ONEDNN_FALLBACK_SCRIPT}
-            COMMENT "Manual OneDNN fallback download"
-    )
-
-    message(STATUS "OneDNN configured with robust download. Manual retry targets available:")
-    message(STATUS "  - onednn_retry_download: Retry git download")
-    message(STATUS "  - onednn_fallback_download: Use tarball fallback")
+    message(STATUS "OneDNN configured successfully")
 
 else()
     message(STATUS "OneDNN helper is disabled (HELPERS_onednn=OFF)")
@@ -1952,207 +1756,207 @@ endif()
 
 # cuDNN configuration - FIXED: Better Windows support and debugging
 if(HELPERS_cudnn)
-    message(STATUS "cuDNN helper is enabled")
-    if(NOT SD_CUDA)
-        message(FATAL_ERROR "Can't build cuDNN on non-CUDA platform")
-    endif()
+message(STATUS "cuDNN helper is enabled")
+if(NOT SD_CUDA)
+message(FATAL_ERROR "Can't build cuDNN on non-CUDA platform")
+endif()
 
-    # Add debug output to verify the option is being triggered
-    message(STATUS "HELPERS_cudnn is ON - proceeding with cuDNN detection")
-    message(STATUS "Platform: ${CMAKE_SYSTEM_NAME}")
-    message(STATUS "CUDA found: ${CUDA_FOUND}")
+# Add debug output to verify the option is being triggered
+message(STATUS "HELPERS_cudnn is ON - proceeding with cuDNN detection")
+message(STATUS "Platform: ${CMAKE_SYSTEM_NAME}")
+message(STATUS "CUDA found: ${CUDA_FOUND}")
 
-    SET(CUDNN_LIBNAME "cudnn")
+SET(CUDNN_LIBNAME "cudnn")
 
-    # Windows-specific cuDNN library names and paths
-    if(WIN32)
-        # On Windows, cuDNN might be named differently
-        SET(CUDNN_LIBNAME_WIN "cudnn64_8")  # Common naming for cuDNN 8.x
-        SET(CUDNN_LIBNAME_WIN_ALT "cudnn")  # Fallback naming
-        if(MSVC)
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
-        endif()
-        # Try to find CUDA installation directory if not set
-        if(NOT DEFINED ENV{CUDA_PATH} AND NOT DEFINED ENV{CUDA_TOOLKIT_ROOT_DIR})
-            # Common CUDA installation paths on Windows
-            set(CUDA_POSSIBLE_PATHS
-                    "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6"
-                    "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.3"
-                    "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.8"
-                    "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.7"
-                    "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.6"
-                    "C:/cuda"
-            )
-            foreach(CUDA_PATH_CANDIDATE ${CUDA_POSSIBLE_PATHS})
-                if(EXISTS "${CUDA_PATH_CANDIDATE}")
-                    set(ENV{CUDA_TOOLKIT_ROOT_DIR} "${CUDA_PATH_CANDIDATE}")
-                    message(STATUS "Auto-detected CUDA path: ${CUDA_PATH_CANDIDATE}")
-                    break()
-                endif()
-            endforeach()
-        endif()
-    endif()
+# Windows-specific cuDNN library names and paths
+if(WIN32)
+# On Windows, cuDNN might be named differently
+SET(CUDNN_LIBNAME_WIN "cudnn64_8")  # Common naming for cuDNN 8.x
+SET(CUDNN_LIBNAME_WIN_ALT "cudnn")  # Fallback naming
+if(MSVC)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
+endif()
+# Try to find CUDA installation directory if not set
+if(NOT DEFINED ENV{CUDA_PATH} AND NOT DEFINED ENV{CUDA_TOOLKIT_ROOT_DIR})
+# Common CUDA installation paths on Windows
+set(CUDA_POSSIBLE_PATHS
+"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6"
+"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.3"
+"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.8"
+"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.7"
+"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.6"
+"C:/cuda"
+)
+foreach(CUDA_PATH_CANDIDATE ${CUDA_POSSIBLE_PATHS})
+if(EXISTS "${CUDA_PATH_CANDIDATE}")
+set(ENV{CUDA_TOOLKIT_ROOT_DIR} "${CUDA_PATH_CANDIDATE}")
+message(STATUS "Auto-detected CUDA path: ${CUDA_PATH_CANDIDATE}")
+break()
+endif()
+endforeach()
+endif()
+endif()
 
-    # Set cuDNN root directory from environment variables
-    if(DEFINED ENV{CUDNN_ROOT_DIR})
-        message(STATUS "Using cuDNN root directory from environment: $ENV{CUDNN_ROOT_DIR}")
-        set(CUDNN_ROOT_DIR $ENV{CUDNN_ROOT_DIR})
-    endif()
+# Set cuDNN root directory from environment variables
+if(DEFINED ENV{CUDNN_ROOT_DIR})
+message(STATUS "Using cuDNN root directory from environment: $ENV{CUDNN_ROOT_DIR}")
+set(CUDNN_ROOT_DIR $ENV{CUDNN_ROOT_DIR})
+endif()
 
-    if(DEFINED ENV{CUDA_TOOLKIT_ROOT_DIR})
-        message(STATUS "Using CUDA root directory from environment: $ENV{CUDA_TOOLKIT_ROOT_DIR}")
-        set(CUDA_TOOLKIT_ROOT_DIR $ENV{CUDA_TOOLKIT_ROOT_DIR})
-    endif()
+if(DEFINED ENV{CUDA_TOOLKIT_ROOT_DIR})
+message(STATUS "Using CUDA root directory from environment: $ENV{CUDA_TOOLKIT_ROOT_DIR}")
+set(CUDA_TOOLKIT_ROOT_DIR $ENV{CUDA_TOOLKIT_ROOT_DIR})
+endif()
 
-    if(DEFINED ENV{CUDA_PATH})
-        message(STATUS "Using CUDA path from environment: $ENV{CUDA_PATH}")
-        set(CUDA_TOOLKIT_ROOT_DIR $ENV{CUDA_PATH})
-    endif()
+if(DEFINED ENV{CUDA_PATH})
+message(STATUS "Using CUDA path from environment: $ENV{CUDA_PATH}")
+set(CUDA_TOOLKIT_ROOT_DIR $ENV{CUDA_PATH})
+endif()
 
-    message(STATUS "cuDNN root dir: ${CUDNN_ROOT_DIR}")
-    message(STATUS "CUDA toolkit root dir: ${CUDA_TOOLKIT_ROOT_DIR}")
+message(STATUS "cuDNN root dir: ${CUDNN_ROOT_DIR}")
+message(STATUS "CUDA toolkit root dir: ${CUDA_TOOLKIT_ROOT_DIR}")
 
-    # Enhanced search paths for Windows
-    set(CUDNN_SEARCH_PATHS "")
-    if(WIN32)
-        list(APPEND CUDNN_SEARCH_PATHS
-                ${CUDNN_ROOT_DIR}
-                ${CUDA_TOOLKIT_ROOT_DIR}
-                "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA"
-                "C:/cuda"
-                "C:/cudnn"
-                "$ENV{ProgramFiles}/NVIDIA GPU Computing Toolkit/CUDA"
-        )
-    else()
-        list(APPEND CUDNN_SEARCH_PATHS
-                ${CUDNN_ROOT_DIR}
-                ${CUDA_TOOLKIT_ROOT_DIR}
-                /usr/local/cuda
-                /opt/cuda
-        )
-    endif()
-
-    # Find cuDNN include directory
-    find_path(CUDNN_INCLUDE_DIR cudnn.h
-            HINTS ${CUDNN_SEARCH_PATHS}
-            PATH_SUFFIXES
-            include
-            cuda/include
-            include/cuda
-            CUDNN/include  # Windows cuDNN standalone installation
-            DOC "cuDNN include directory"
-    )
-
-    # Find cuDNN library
-    if(WIN32)
-        # Try multiple library names on Windows
-        find_library(CUDNN_LIBRARY
-                NAMES ${CUDNN_LIBNAME_WIN} ${CUDNN_LIBNAME_WIN_ALT} ${CUDNN_LIBNAME}
-                HINTS ${CUDNN_SEARCH_PATHS}
-                PATH_SUFFIXES
-                lib
-                lib64
-                lib/x64
-                cuda/lib
-                cuda/lib64
-                cuda/lib/x64
-                CUDNN/lib/x64  # Windows cuDNN standalone installation
-                DOC "cuDNN library"
-        )
-    else()
-        find_library(CUDNN_LIBRARY ${CUDNN_LIBNAME}
-                HINTS ${CUDNN_SEARCH_PATHS}
-                PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64
-                DOC "cuDNN library"
-        )
-    endif()
-
-    # Debug output
-    message(STATUS "cuDNN include search result: ${CUDNN_INCLUDE_DIR}")
-    message(STATUS "cuDNN library search result: ${CUDNN_LIBRARY}")
-
-    # Additional debugging - list what was actually searched
-    if(NOT CUDNN_INCLUDE_DIR)
-        message(STATUS "cuDNN include search paths tried:")
-        foreach(search_path ${CUDNN_SEARCH_PATHS})
-            message(STATUS "  ${search_path}/include")
-            message(STATUS "  ${search_path}/cuda/include")
-            message(STATUS "  ${search_path}/CUDNN/include")
-        endforeach()
-    endif()
-
-    if(NOT CUDNN_LIBRARY)
-        message(STATUS "cuDNN library search paths tried:")
-        foreach(search_path ${CUDNN_SEARCH_PATHS})
-            if(WIN32)
-                message(STATUS "  ${search_path}/lib/x64")
-                message(STATUS "  ${search_path}/CUDNN/lib/x64")
-            endif()
-            message(STATUS "  ${search_path}/lib")
-            message(STATUS "  ${search_path}/lib64")
-        endforeach()
-        if(WIN32)
-            message(STATUS "cuDNN library names tried: ${CUDNN_LIBNAME_WIN}, ${CUDNN_LIBNAME_WIN_ALT}, ${CUDNN_LIBNAME}")
-        else()
-            message(STATUS "cuDNN library name tried: ${CUDNN_LIBNAME}")
-        endif()
-    endif()
-
-    # Verify cuDNN was found
-    if(CUDNN_LIBRARY AND CUDNN_INCLUDE_DIR)
-        message(STATUS "✓ Found cuDNN:")
-        message(STATUS "  Include: ${CUDNN_INCLUDE_DIR}")
-        message(STATUS "  Library: ${CUDNN_LIBRARY}")
-
-        # Verify the files actually exist
-        if(EXISTS "${CUDNN_INCLUDE_DIR}/cudnn.h")
-            message(STATUS "  ✓ cudnn.h found")
-        else()
-            message(WARNING "  ✗ cudnn.h NOT found at ${CUDNN_INCLUDE_DIR}/cudnn.h")
-        endif()
-
-        if(EXISTS "${CUDNN_LIBRARY}")
-            message(STATUS "  ✓ cuDNN library file exists")
-        else()
-            message(WARNING "  ✗ cuDNN library file NOT found at ${CUDNN_LIBRARY}")
-        endif()
-
-        include_directories(${CUDNN_INCLUDE_DIR})
-        set(HAVE_CUDNN true)
-        set(CUDNN ${CUDNN_LIBRARY})
-
-        # Add cuDNN preprocessor definition
-        add_definitions(-DHAVE_CUDNN=1)
-
-    else()
-        message(WARNING "✗ cuDNN not found. Continuing without cuDNN support.")
-        message(STATUS "To enable cuDNN, ensure:")
-        message(STATUS "  1. cuDNN is installed")
-        message(STATUS "  2. Set CUDNN_ROOT_DIR environment variable, or")
-        message(STATUS "  3. Set CUDA_TOOLKIT_ROOT_DIR environment variable, or")
-        if(WIN32)
-            message(STATUS "  4. Install cuDNN to a standard location like C:/cudnn")
-            message(STATUS "  5. Make sure cuDNN DLLs are in your PATH")
-        else()
-            message(STATUS "  4. Install cuDNN to /usr/local/cuda or /opt/cuda")
-        endif()
-        set(HAVE_CUDNN false)
-        set(CUDNN "")
-    endif()
+# Enhanced search paths for Windows
+set(CUDNN_SEARCH_PATHS "")
+if(WIN32)
+list(APPEND CUDNN_SEARCH_PATHS
+${CUDNN_ROOT_DIR}
+${CUDA_TOOLKIT_ROOT_DIR}
+"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA"
+"C:/cuda"
+"C:/cudnn"
+"$ENV{ProgramFiles}/NVIDIA GPU Computing Toolkit/CUDA"
+)
 else()
-    message(STATUS "cuDNN helper is disabled (HELPERS_cudnn=OFF)")
-    set(HAVE_CUDNN false)
-    set(CUDNN "")
+list(APPEND CUDNN_SEARCH_PATHS
+${CUDNN_ROOT_DIR}
+${CUDA_TOOLKIT_ROOT_DIR}
+/usr/local/cuda
+/opt/cuda
+)
+endif()
+
+# Find cuDNN include directory
+find_path(CUDNN_INCLUDE_DIR cudnn.h
+HINTS ${CUDNN_SEARCH_PATHS}
+PATH_SUFFIXES
+include
+cuda/include
+include/cuda
+CUDNN/include  # Windows cuDNN standalone installation
+DOC "cuDNN include directory"
+)
+
+# Find cuDNN library
+if(WIN32)
+# Try multiple library names on Windows
+find_library(CUDNN_LIBRARY
+NAMES ${CUDNN_LIBNAME_WIN} ${CUDNN_LIBNAME_WIN_ALT} ${CUDNN_LIBNAME}
+HINTS ${CUDNN_SEARCH_PATHS}
+PATH_SUFFIXES
+lib
+lib64
+lib/x64
+cuda/lib
+cuda/lib64
+cuda/lib/x64
+CUDNN/lib/x64  # Windows cuDNN standalone installation
+DOC "cuDNN library"
+)
+else()
+find_library(CUDNN_LIBRARY ${CUDNN_LIBNAME}
+HINTS ${CUDNN_SEARCH_PATHS}
+PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64
+DOC "cuDNN library"
+)
+endif()
+
+# Debug output
+message(STATUS "cuDNN include search result: ${CUDNN_INCLUDE_DIR}")
+message(STATUS "cuDNN library search result: ${CUDNN_LIBRARY}")
+
+# Additional debugging - list what was actually searched
+if(NOT CUDNN_INCLUDE_DIR)
+message(STATUS "cuDNN include search paths tried:")
+foreach(search_path ${CUDNN_SEARCH_PATHS})
+message(STATUS "  ${search_path}/include")
+message(STATUS "  ${search_path}/cuda/include")
+message(STATUS "  ${search_path}/CUDNN/include")
+endforeach()
+endif()
+
+if(NOT CUDNN_LIBRARY)
+message(STATUS "cuDNN library search paths tried:")
+foreach(search_path ${CUDNN_SEARCH_PATHS})
+if(WIN32)
+message(STATUS "  ${search_path}/lib/x64")
+message(STATUS "  ${search_path}/CUDNN/lib/x64")
+endif()
+message(STATUS "  ${search_path}/lib")
+message(STATUS "  ${search_path}/lib64")
+endforeach()
+if(WIN32)
+message(STATUS "cuDNN library names tried: ${CUDNN_LIBNAME_WIN}, ${CUDNN_LIBNAME_WIN_ALT}, ${CUDNN_LIBNAME}")
+else()
+message(STATUS "cuDNN library name tried: ${CUDNN_LIBNAME}")
+endif()
+endif()
+
+# Verify cuDNN was found
+if(CUDNN_LIBRARY AND CUDNN_INCLUDE_DIR)
+message(STATUS "✓ Found cuDNN:")
+message(STATUS "  Include: ${CUDNN_INCLUDE_DIR}")
+message(STATUS "  Library: ${CUDNN_LIBRARY}")
+
+# Verify the files actually exist
+if(EXISTS "${CUDNN_INCLUDE_DIR}/cudnn.h")
+message(STATUS "  ✓ cudnn.h found")
+else()
+message(WARNING "  ✗ cudnn.h NOT found at ${CUDNN_INCLUDE_DIR}/cudnn.h")
+endif()
+
+if(EXISTS "${CUDNN_LIBRARY}")
+message(STATUS "  ✓ cuDNN library file exists")
+else()
+message(WARNING "  ✗ cuDNN library file NOT found at ${CUDNN_LIBRARY}")
+endif()
+
+include_directories(${CUDNN_INCLUDE_DIR})
+set(HAVE_CUDNN true)
+set(CUDNN ${CUDNN_LIBRARY})
+
+# Add cuDNN preprocessor definition
+add_definitions(-DHAVE_CUDNN=1)
+
+else()
+message(WARNING "✗ cuDNN not found. Continuing without cuDNN support.")
+message(STATUS "To enable cuDNN, ensure:")
+message(STATUS "  1. cuDNN is installed")
+message(STATUS "  2. Set CUDNN_ROOT_DIR environment variable, or")
+message(STATUS "  3. Set CUDA_TOOLKIT_ROOT_DIR environment variable, or")
+if(WIN32)
+message(STATUS "  4. Install cuDNN to a standard location like C:/cudnn")
+message(STATUS "  5. Make sure cuDNN DLLs are in your PATH")
+else()
+message(STATUS "  4. Install cuDNN to /usr/local/cuda or /opt/cuda")
+endif()
+set(HAVE_CUDNN false)
+set(CUDNN "")
+endif()
+else()
+message(STATUS "cuDNN helper is disabled (HELPERS_cudnn=OFF)")
+set(HAVE_CUDNN false)
+set(CUDNN "")
 endif()
 
 # Add a summary message about cuDNN status
 if(SD_CUDA)
-    if(HAVE_CUDNN)
-        message(STATUS "CUDA BUILD: cuDNN integration ENABLED")
-    else()
-        message(STATUS "CUDA BUILD: cuDNN integration DISABLED")
-        message(STATUS "  To enable cuDNN, set -DHELPERS_cudnn=ON and ensure cuDNN is installed")
-    endif()
+if(HAVE_CUDNN)
+message(STATUS "CUDA BUILD: cuDNN integration ENABLED")
+else()
+message(STATUS "CUDA BUILD: cuDNN integration DISABLED")
+message(STATUS "  To enable cuDNN, set -DHELPERS_cudnn=ON and ensure cuDNN is installed")
+endif()
 endif()
 
 # Configuration file
@@ -2162,794 +1966,794 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # Set type combinations for CUDA generation
 set(COMBINATIONS_3
-        "0,0,0" "0,0,1" "0,0,2" "0,1,0" "0,1,1" "0,1,2" "0,2,0" "0,2,1" "0,2,2"
-        "1,0,0" "1,0,1" "1,0,2" "1,1,0" "1,1,1" "1,1,2" "1,2,0" "1,2,1" "1,2,2"
-        "2,0,0" "2,0,1" "2,0,2" "2,1,0" "2,1,1" "2,1,2" "2,2,0" "2,2,1" "2,2,2"
+"0,0,0" "0,0,1" "0,0,2" "0,1,0" "0,1,1" "0,1,2" "0,2,0" "0,2,1" "0,2,2"
+"1,0,0" "1,0,1" "1,0,2" "1,1,0" "1,1,1" "1,1,2" "1,2,0" "1,2,1" "1,2,2"
+"2,0,0" "2,0,1" "2,0,2" "2,1,0" "2,1,1" "2,1,2" "2,2,0" "2,2,1" "2,2,2"
 )
 set(COMBINATIONS_2
-        "0,0" "0,1" "1,0" "1,1" "0,2" "2,0" "1,2" "2,1" "2,2"
+"0,0" "0,1" "1,0" "1,1" "0,2" "2,0" "1,2" "2,1" "2,2"
 )
 
 # Define template locations
 set(INSTANTIATION_TEMPLATES_3
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cpu/comb_compilation_units/pairwise_instantiation_template_3.cpp.in"
+"${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cpu/comb_compilation_units/pairwise_instantiation_template_3.cpp.in"
 )
 set(INSTANTIATION_TEMPLATES_2
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cpu/comb_compilation_units/pairwise_instantiation_template_2.cpp.in"
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/impl/compilation_units/specials_double.cpp.in"
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/impl/compilation_units/specials_single.cpp.in"
+"${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cpu/comb_compilation_units/pairwise_instantiation_template_2.cpp.in"
+"${CMAKE_CURRENT_SOURCE_DIR}/include/ops/impl/compilation_units/specials_double.cpp.in"
+"${CMAKE_CURRENT_SOURCE_DIR}/include/ops/impl/compilation_units/specials_single.cpp.in"
 )
 
 # CUDA Configuration
 if(SD_CUDA)
-    message(STATUS "=== CUDA BUILD CONFIGURATION ===")
-
-    set(CMAKE_CUDA_COMPILER_LAUNCHER "" CACHE STRING "CUDA compiler launcher")
-
-    # Disable response files for CUDA compilation on Windows
-    if(WIN32)
-        message(STATUS "Configuring Windows CUDA build with proper response files...")
-
-        # DO NOT override CMAKE_CUDA_COMPILE_OBJECT - this was causing the nvcc fatal error
-        # Instead, enable response files to handle long command lines properly
-        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS ON)
-        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES ON)
-        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LIBRARIES ON)
-        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LINK_OBJECTS ON)
-
-        # Set proper response file flag for CUDA on Windows
-        set(CMAKE_CUDA_RESPONSE_FILE_LINK_FLAG "@")
-
-        # Enable response file for compilation to handle long include/define lists
-        set(CMAKE_CUDA_COMPILE_OPTIONS_USE_RESPONSE_FILE ON)
-
-        message(STATUS "Windows CUDA: Enabled response file support for long command lines")
-    endif()
-    # Verify CUDA was enabled successfully
-    if(NOT CMAKE_CUDA_COMPILER)
-        message(FATAL_ERROR "CUDA compiler not found after enabling CUDA language")
-    endif()
-
-    message(STATUS "CUDA Compiler: ${CMAKE_CUDA_COMPILER}")
-    message(STATUS "CUDA Include Dirs: ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}")
-    message(STATUS "Host CXX Compiler: ${CMAKE_CXX_COMPILER_ID}")
-
-    # Include CUDA directories
-    if(CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES)
-        include_directories(${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-    endif()
-
-    # Basic CUDA flags
-    set(CMAKE_CUDA_FLAGS_DEBUG "-g")
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -maxrregcount=128")
-
-    # Optional CUDA flags
-    if("${SD_PTXAS}" STREQUAL "ON")
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --ptxas-options=-v")
-    endif()
-
-    if(SD_KEEP_NVCC_OUTPUT)
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --keep")
-    endif()
-
-    # Host compiler specific flags
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        if(SD_GCC_FUNCTRACE STREQUAL "ON")
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -Wno-return-type -Wno-unknown-pragmas -Wno-unused-variable -Wno-unused-parameter -Wreturn-type -W -ggdb3 -fPIC -DSD_GCC_FUNCTRACE=1 -Bsymbolic -lbfd -rdynamic -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls -finstrument-functions -O0")
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC --device-debug -lineinfo -G")
-            add_compile_definitions(SD_GCC_FUNCTRACE)
-        else()
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC")
-        endif()
-    endif()
-
-    # Windows-specific CUDA compiler flags
-    if(WIN32 AND MSVC)
-        # Ensure CUDA uses MSVC as host compiler
-        set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
-
-        # Add MSVC flags properly for NVCC
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/nologo,/EHsc,/std:c++17")
-
-        # Set runtime library to match global MSVC_RT_LIB setting
-        if(MSVC_RT_LIB STREQUAL "MultiThreadedDLL")
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/MD")
-        else()
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/MT")
-        endif()
-    endif()
-
-    # Find CUDA libraries on Windows
-    if(WIN32)
-        # Use CUDA_TOOLKIT_ROOT_DIR or detect automatically
-        if(NOT DEFINED CUDA_TOOLKIT_ROOT_DIR)
-            if(DEFINED ENV{CUDA_PATH})
-                set(CUDA_TOOLKIT_ROOT_DIR $ENV{CUDA_PATH})
-            else()
-                # Try common installation paths
-                set(CUDA_SEARCH_PATHS
-                        "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6"
-                        "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.3"
-                        "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.0"
-                        "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.8"
-                )
-                foreach(path ${CUDA_SEARCH_PATHS})
-                    if(EXISTS "${path}")
-                        set(CUDA_TOOLKIT_ROOT_DIR "${path}")
-                        break()
-                    endif()
-                endforeach()
-            endif()
-        endif()
-
-        if(CUDA_TOOLKIT_ROOT_DIR)
-            message(STATUS "Using CUDA Toolkit: ${CUDA_TOOLKIT_ROOT_DIR}")
-
-            # Find libraries with proper architecture suffix
-            find_library(CUDA_cublas_LIBRARY
-                    NAMES cublas
-                    PATHS "${CUDA_TOOLKIT_ROOT_DIR}/lib/x64" "${CUDA_TOOLKIT_ROOT_DIR}/lib"
-                    NO_DEFAULT_PATH
-            )
-
-            find_library(CUDA_cusolver_LIBRARY
-                    NAMES cusolver
-                    PATHS "${CUDA_TOOLKIT_ROOT_DIR}/lib/x64" "${CUDA_TOOLKIT_ROOT_DIR}/lib"
-                    NO_DEFAULT_PATH
-            )
-
-            # Verify libraries were found
-            if(NOT CUDA_cublas_LIBRARY)
-                message(FATAL_ERROR "CUDA cuBLAS library not found. Check CUDA installation.")
-            endif()
-
-            if(NOT CUDA_cusolver_LIBRARY)
-                message(FATAL_ERROR "CUDA cuSOLVER library not found. Check CUDA installation.")
-            endif()
-
-            message(STATUS "Found CUDA cuBLAS: ${CUDA_cublas_LIBRARY}")
-            message(STATUS "Found CUDA cuSOLVER: ${CUDA_cusolver_LIBRARY}")
-        endif()
-    endif()
-
-    # Jetson Nano specific settings
-    if("${SD_ARCH}" MATCHES "armv8-a" AND UNIX)
-        message(STATUS "Applying Jetson Nano specific settings")
-        if(NOT DEFINED CUDA_cublas_LIBRARY OR "${CUDA_cublas_LIBRARY}" MATCHES ".*NOTFOUND.*")
-            message(STATUS "Setting cuBLAS library manually for Jetson")
-            set(CUDA_cublas_LIBRARY "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcublas.so" CACHE STRING "CUDA CUBLAS LIB" FORCE)
-        endif()
-
-        if(NOT DEFINED CUDA_cusolver_LIBRARY OR CUDA_cusolver_LIBRARY MATCHES ".*NOTFOUND.*")
-            message(STATUS "Setting cuSOLVER library manually for Jetson")
-            set(CUDA_cusolver_LIBRARY "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcusolver.so" CACHE STRING "CUDA CUSOLVER LIB" FORCE)
-        endif()
-
-        message(STATUS "Jetson cuBLAS: ${CUDA_cublas_LIBRARY}")
-        message(STATUS "Jetson cuSOLVER: ${CUDA_cusolver_LIBRARY}")
-    endif()
-
-    # Debug CUDA architecture issue
-    # Debug CUDA architecture issue
-    if(NOT DEFINED COMPUTE)
-        set(COMPUTE "auto")
-    endif()
-
-    # Clear any problematic CMAKE_CUDA_ARCHITECTURES settings
-    unset(CMAKE_CUDA_ARCHITECTURES)
-    unset(CMAKE_CUDA_ARCHITECTURES CACHE)
-    set(CMAKE_CUDA_ARCHITECTURES OFF)
-
-    # Build CUDA flags from scratch
-    set(CMAKE_CUDA_FLAGS "")
-    
-    # Windows-specific CUDA configuration
-    if(WIN32 AND MSVC)
-        message(STATUS "Configuring CUDA for Windows MSVC...")
-        
-        # Set host compiler explicitly
-        set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
-        
-        # Build Windows-compatible flags
-        set(CMAKE_CUDA_FLAGS "-maxrregcount=128")
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/nologo")
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/EHsc")
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/std:c++17")
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/D__NVCC_ALLOW_UNSUPPORTED_COMPILER__")
-        
-        # Runtime library
-        if(MSVC_RT_LIB STREQUAL "MultiThreadedDLL")
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/MD")
-        else()
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/MT")
-        endif()
-    else()
-        # Linux/Unix flags
-        set(CMAKE_CUDA_FLAGS "--allow-unsupported-compiler -Xcompiler -D__NVCC_ALLOW_UNSUPPORTED_COMPILER__")
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -maxrregcount=128")
-        
-        if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-            if(SD_GCC_FUNCTRACE STREQUAL "ON")
-                set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC --device-debug -lineinfo -G")
-            else()
-                set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC")
-            endif()
-        endif()
-    endif()
-
-    # Optional flags
-    if("${SD_PTXAS}" STREQUAL "ON")
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --ptxas-options=-v")
-    endif()
-
-    if(SD_KEEP_NVCC_OUTPUT)
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --keep")
-    endif()
-
-    # Now add our manual architecture flags
-    # Now add our manual architecture flags - FIXED VERSION
-    string(TOLOWER "${COMPUTE}" COMPUTE_CMP)
-    if(COMPUTE_CMP STREQUAL "all")
-        set(CUDA_ARCH_FLAGS "-gencode arch=compute_75,code=sm_75 -gencode arch=compute_80,code=sm_80 -gencode arch=compute_86,code=sm_86 -gencode arch=compute_89,code=sm_89")
-        message(STATUS "Building for all CUDA architectures")
-    elseif(COMPUTE_CMP STREQUAL "auto")
-        set(CUDA_ARCH_FLAGS "-gencode arch=compute_86,code=sm_86")
-        message(STATUS "Auto-detecting CUDA architectures")
-    else()
-        # FIXED CUDA architecture parsing
-        string(REPLACE "," ";" ARCH_LIST "${COMPUTE}")
-        set(CUDA_ARCH_FLAGS "")
-        foreach(ARCH ${ARCH_LIST})
-            # Remove dots from architecture numbers (8.6 -> 86)
-            string(REPLACE "." "" ARCH_CLEAN "${ARCH}")
-            # Ensure we have a valid 2-digit architecture number
-            if(ARCH_CLEAN MATCHES "^[0-9][0-9]$")
-                # FIXED: Ensure proper gencode format with both arch and code
-                set(CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS} -gencode arch=compute_${ARCH_CLEAN},code=sm_${ARCH_CLEAN}")
-            else()
-                message(WARNING "Invalid CUDA architecture: ${ARCH} (cleaned: ${ARCH_CLEAN}). Skipping.")
-            endif()
-        endforeach()
-        # Remove leading space
-        string(STRIP "${CUDA_ARCH_FLAGS}" CUDA_ARCH_FLAGS)
-        message(STATUS "Using user-specified CUDA architectures: ${COMPUTE}")
-    endif()
-
-    # Validate CUDA_ARCH_FLAGS is not empty and properly formatted
-    if(NOT CUDA_ARCH_FLAGS OR CUDA_ARCH_FLAGS STREQUAL "")
-        message(WARNING "No valid CUDA architecture flags generated. Using default compute_86.")
-        set(CUDA_ARCH_FLAGS "-gencode arch=compute_86,code=sm_86")
-    endif()
-
-    # Validate the flags contain proper gencode format
-    if(NOT CUDA_ARCH_FLAGS MATCHES "gencode.*arch=compute_[0-9]+,code=sm_[0-9]+")
-        message(FATAL_ERROR "Generated CUDA architecture flags are malformed: ${CUDA_ARCH_FLAGS}")
-    endif()
-
-    # Add architecture flags
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${CUDA_ARCH_FLAGS}")
-
-    # Add other required flags
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -w --cudart=shared --expt-extended-lambda -Xfatbin -compress-all")
-
-    # Add CUDA version
-    if(CMAKE_CUDA_COMPILER_VERSION)
-        string(REGEX MATCH "^([0-9]+)" CUDA_VERSION_MAJOR "${CMAKE_CUDA_COMPILER_VERSION}")
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR}")
-    endif()
-
-    # Clean up
-    string(REGEX REPLACE "  +" " " CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
-    string(STRIP "${CMAKE_CUDA_FLAGS}" CMAKE_CUDA_FLAGS)
-
-    # Set separable compilation
-    set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
-
-    # Debug final state
-    message(STATUS "=== CUDA DEBUG RESULTS ===")
-    message(STATUS "Final CMAKE_CUDA_FLAGS: '${CMAKE_CUDA_FLAGS}'")
-    message(STATUS "Final CMAKE_CUDA_ARCHITECTURES: '${CMAKE_CUDA_ARCHITECTURES}'")
-    get_property(FINAL_CUDA_ARCHS GLOBAL PROPERTY CUDA_ARCHITECTURES)
-    message(STATUS "Final Global CUDA_ARCHITECTURES: '${FINAL_CUDA_ARCHS}'")
-    message(STATUS "CUDA_ARCH_FLAGS: '${CUDA_ARCH_FLAGS}'")
-    message(STATUS "=========================")
-
-
-    # Verify NVCC is accessible on Windows
-    if(WIN32 AND CUDA_TOOLKIT_ROOT_DIR)
-        find_program(NVCC_EXECUTABLE nvcc PATHS "${CUDA_TOOLKIT_ROOT_DIR}/bin" NO_DEFAULT_PATH)
-        if(NOT NVCC_EXECUTABLE)
-            message(FATAL_ERROR "nvcc.exe not found in ${CUDA_TOOLKIT_ROOT_DIR}/bin")
-        endif()
-        message(STATUS "Found NVCC: ${NVCC_EXECUTABLE}")
-    endif()
-
-    add_compile_definitions(SD_CUDA=true)
-    set(DEFAULT_ENGINE "samediff::ENGINE_CUDA")
-
-    # Collect all CUDA source files
-    message(STATUS "Collecting CUDA source files...")
-
-    file(GLOB_RECURSE PERF_SOURCES
-            ./include/performance/*.cpp
-            ./include/performance/*.h
-    )
-
-    file(GLOB_RECURSE EXCEPTIONS_SOURCES
-            ./include/exceptions/*.cpp
-            ./include/exceptions/*.h
-    )
-
-    file(GLOB_RECURSE EXEC_SOURCES
-            ./include/execution/impl/*.cpp
-            ./include/execution/cuda/*.cu
-            ./include/execution/cuda/*.h
-            ./include/execution/*.cu
-            ./include/execution/*.h
-    )
-
-    file(GLOB_RECURSE TYPES_SOURCES
-            ./include/types/*.cpp
-            ./include/types/*.h
-    )
-
-    file(GLOB_RECURSE ARRAY_SOURCES
-            ./include/array/cuda/*.cu
-            ./include/array/impl/*.cpp
-            ./include/array/*.h
-    )
-
-    file(GLOB_RECURSE MEMORY_SOURCES
-            ./include/memory/impl/*.cpp
-            ./include/memory/cuda/*.cu
-            ./include/memory/*.h
-    )
-
-    file(GLOB_RECURSE GRAPH_SOURCES
-            ./include/graph/*.cpp
-            ./include/graph/*.cu
-            ./include/graph/*.h
-    )
-
-    file(GLOB_RECURSE CUSTOMOPS_SOURCES
-            ./include/ops/declarable/generic/*.cpp
-    )
-
-    file(GLOB_RECURSE CUSTOMOPS_HELPERS_SOURCES
-            ./include/ops/declarable/helpers/cuda/*.cu
-            ./include/ops/declarable/helpers/impl/*.cpp
-    )
-
-    file(GLOB_RECURSE OPS_SOURCES
-            ./include/ops/impl/*.cpp
-            ./include/ops/declarable/impl/*.cpp
-            ./include/ops/*.h
-    )
-
-    file(GLOB_RECURSE HELPERS_SOURCES
-            ./include/build_info.cpp
-            ./include/ConstMessages.cpp
-            ./include/helpers/*.cpp
-            ./include/helpers/cuda/*.cu
-            ./include/helpers/*.h
-    )
-
-    # Exclude CPU-specific helpers from CUDA build
-    file(GLOB CPU_HELPERS_TO_EXCLUDE ./include/helpers/cpu/*.cpp)
-    list(REMOVE_ITEM HELPERS_SOURCES ${CPU_HELPERS_TO_EXCLUDE})
-
-    file(GLOB_RECURSE INDEXING_SOURCES
-            ./include/indexing/*.cpp
-            ./include/indexing/*.h
-    )
-
-    file(GLOB_RECURSE LOOPS_SOURCES
-            ./include/loops/impl/*.cpp
-            ./include/loops/*.h
-    )
-
-    file(GLOB_RECURSE LEGACY_SOURCES
-            ./include/legacy/impl/*.cpp
-            ./include/legacy/*.cu
-            ./include/legacy/*.h
-    )
-
-    file(GLOB_RECURSE LOOPS_SOURCES_CUDA
-            ./include/loops/*.cu
-            ./include/loops/cuda/**/*.cu
-    )
-
-    # Process CUDA compilation units (templates)
-    file(GLOB_RECURSE COMPILATION_UNITS ./include/loops/cuda/compilation_units/*.cu.in)
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
-
-    message(STATUS "Processing ${COMPILATION_UNITS} CUDA compilation units...")
-    foreach(FL_ITEM ${COMPILATION_UNITS})
-        genCompilation(${FL_ITEM})
-    endforeach()
-
-    file(GLOB_RECURSE VALIDATION_SOURCES ./include/array/DataTypeValidation.cpp)
-
-    # Combine all sources
-    set(ALL_SOURCES
-            ${VALIDATION_SOURCES}
-            ${PERF_SOURCES}
-            ${EXCEPTIONS_SOURCES}
-            ${EXEC_SOURCES}
-            ${TYPES_SOURCES}
-            ${ARRAY_SOURCES}
-            ${MEMORY_SOURCES}
-            ${GRAPH_SOURCES}
-            ${CUSTOMOPS_SOURCES}
-            ${CUSTOMOPS_HELPERS_SOURCES}
-            ${OPS_SOURCES}
-            ${HELPERS_SOURCES}
-            ${INDEXING_SOURCES}
-            ${LOOPS_SOURCES}
-            ${LEGACY_SOURCES}
-            ${LOOPS_SOURCES_CUDA}
-            ${CUSTOMOPS_GENERIC_SOURCES}
-    )
-
-    # Add cuDNN sources if available
-    if(HAVE_CUDNN)
-        message(STATUS "Including cuDNN platform sources")
-        file(GLOB_RECURSE CUSTOMOPS_CUDNN_SOURCES ./include/ops/declarable/platform/cudnn/*.cu)
-        list(APPEND ALL_SOURCES ${CUSTOMOPS_CUDNN_SOURCES})
-    endif()
-
-    # Remove duplicates and count sources
-    list(REMOVE_DUPLICATES ALL_SOURCES)
-    list(LENGTH ALL_SOURCES TOTAL_SOURCE_COUNT)
-
-    # Count CUDA sources specifically
-    set(CUDA_SOURCE_COUNT 0)
-    foreach(src ${ALL_SOURCES})
-        if(src MATCHES "\\.cu$")
-            math(EXPR CUDA_SOURCE_COUNT "${CUDA_SOURCE_COUNT} + 1")
-        endif()
-    endforeach()
-
-    message(STATUS "Total sources: ${TOTAL_SOURCE_COUNT}")
-    message(STATUS "CUDA sources (.cu): ${CUDA_SOURCE_COUNT}")
-
-    if(CUDA_SOURCE_COUNT EQUAL 0)
-        message(WARNING "No CUDA source files (.cu) found! This may indicate a problem with source collection.")
-    endif()
-
-    # Create object library
-    set(OBJECT_LIB_NAME "${SD_LIBRARY_NAME}_object")
-    add_library(${OBJECT_LIB_NAME} OBJECT ${ALL_SOURCES})
-
-    # Add dependencies
-    add_dependencies(${OBJECT_LIB_NAME} flatbuffers_interface)
-
-    if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
-        add_dependencies(${OBJECT_LIB_NAME} generate_flatbuffers_headers)
-    endif()
-
-    # Set target properties
-    target_include_directories(${OBJECT_LIB_NAME} PUBLIC ${EXTERNAL_INCLUDE_DIRS})
-    set_property(TARGET ${OBJECT_LIB_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
-
-    # Create shared library
-    add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:${OBJECT_LIB_NAME}>)
-    set_target_properties(${SD_LIBRARY_NAME} PROPERTIES OUTPUT_NAME ${SD_LIBRARY_NAME})
-    set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
-
-    # Find and link CUDA libraries
-    find_package(CUDAToolkit REQUIRED)
-
-    target_link_libraries(${SD_LIBRARY_NAME} PUBLIC
-            CUDA::cudart
-            CUDA::cublas
-            CUDA::cusolver
-            ${CUDNN}
-            flatbuffers_interface
-    )
-
-    # Fallback for older CMake versions or missing CUDAToolkit
-    if(CUDA_cublas_LIBRARY)
-        target_link_libraries(${SD_LIBRARY_NAME} PUBLIC ${CUDA_cublas_LIBRARY})
-    endif()
-    if(CUDA_cusolver_LIBRARY)
-        target_link_libraries(${SD_LIBRARY_NAME} PUBLIC ${CUDA_cusolver_LIBRARY})
-    endif()
-
-    install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
-
-    message(STATUS "=== CUDA BUILD CONFIGURATION COMPLETE ===")
+message(STATUS "=== CUDA BUILD CONFIGURATION ===")
+
+set(CMAKE_CUDA_COMPILER_LAUNCHER "" CACHE STRING "CUDA compiler launcher")
+
+# Disable response files for CUDA compilation on Windows
+if(WIN32)
+message(STATUS "Configuring Windows CUDA build with proper response files...")
+
+# DO NOT override CMAKE_CUDA_COMPILE_OBJECT - this was causing the nvcc fatal error
+# Instead, enable response files to handle long command lines properly
+set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS ON)
+set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES ON)
+set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LIBRARIES ON)
+set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LINK_OBJECTS ON)
+
+# Set proper response file flag for CUDA on Windows
+set(CMAKE_CUDA_RESPONSE_FILE_LINK_FLAG "@")
+
+# Enable response file for compilation to handle long include/define lists
+set(CMAKE_CUDA_COMPILE_OPTIONS_USE_RESPONSE_FILE ON)
+
+message(STATUS "Windows CUDA: Enabled response file support for long command lines")
+endif()
+# Verify CUDA was enabled successfully
+if(NOT CMAKE_CUDA_COMPILER)
+message(FATAL_ERROR "CUDA compiler not found after enabling CUDA language")
+endif()
+
+message(STATUS "CUDA Compiler: ${CMAKE_CUDA_COMPILER}")
+message(STATUS "CUDA Include Dirs: ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}")
+message(STATUS "Host CXX Compiler: ${CMAKE_CXX_COMPILER_ID}")
+
+# Include CUDA directories
+if(CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES)
+include_directories(${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+endif()
+
+# Basic CUDA flags
+set(CMAKE_CUDA_FLAGS_DEBUG "-g")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -maxrregcount=128")
+
+# Optional CUDA flags
+if("${SD_PTXAS}" STREQUAL "ON")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --ptxas-options=-v")
+endif()
+
+if(SD_KEEP_NVCC_OUTPUT)
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --keep")
+endif()
+
+# Host compiler specific flags
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+if(SD_GCC_FUNCTRACE STREQUAL "ON")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -Wno-return-type -Wno-unknown-pragmas -Wno-unused-variable -Wno-unused-parameter -Wreturn-type -W -ggdb3 -fPIC -DSD_GCC_FUNCTRACE=1 -Bsymbolic -lbfd -rdynamic -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls -finstrument-functions -O0")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC --device-debug -lineinfo -G")
+add_compile_definitions(SD_GCC_FUNCTRACE)
+else()
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC")
+endif()
+endif()
+
+# Windows-specific CUDA compiler flags
+if(WIN32 AND MSVC)
+# Ensure CUDA uses MSVC as host compiler
+set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
+
+# Add MSVC flags properly for NVCC
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/nologo,/EHsc,/std:c++17")
+
+# Set runtime library to match global MSVC_RT_LIB setting
+if(MSVC_RT_LIB STREQUAL "MultiThreadedDLL")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/MD")
+else()
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/MT")
+endif()
+endif()
+
+# Find CUDA libraries on Windows
+if(WIN32)
+# Use CUDA_TOOLKIT_ROOT_DIR or detect automatically
+if(NOT DEFINED CUDA_TOOLKIT_ROOT_DIR)
+if(DEFINED ENV{CUDA_PATH})
+set(CUDA_TOOLKIT_ROOT_DIR $ENV{CUDA_PATH})
+else()
+# Try common installation paths
+set(CUDA_SEARCH_PATHS
+"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6"
+"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.3"
+"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.0"
+"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.8"
+)
+foreach(path ${CUDA_SEARCH_PATHS})
+if(EXISTS "${path}")
+set(CUDA_TOOLKIT_ROOT_DIR "${path}")
+break()
+endif()
+endforeach()
+endif()
+endif()
+
+if(CUDA_TOOLKIT_ROOT_DIR)
+message(STATUS "Using CUDA Toolkit: ${CUDA_TOOLKIT_ROOT_DIR}")
+
+# Find libraries with proper architecture suffix
+find_library(CUDA_cublas_LIBRARY
+NAMES cublas
+PATHS "${CUDA_TOOLKIT_ROOT_DIR}/lib/x64" "${CUDA_TOOLKIT_ROOT_DIR}/lib"
+NO_DEFAULT_PATH
+)
+
+find_library(CUDA_cusolver_LIBRARY
+NAMES cusolver
+PATHS "${CUDA_TOOLKIT_ROOT_DIR}/lib/x64" "${CUDA_TOOLKIT_ROOT_DIR}/lib"
+NO_DEFAULT_PATH
+)
+
+# Verify libraries were found
+if(NOT CUDA_cublas_LIBRARY)
+message(FATAL_ERROR "CUDA cuBLAS library not found. Check CUDA installation.")
+endif()
+
+if(NOT CUDA_cusolver_LIBRARY)
+message(FATAL_ERROR "CUDA cuSOLVER library not found. Check CUDA installation.")
+endif()
+
+message(STATUS "Found CUDA cuBLAS: ${CUDA_cublas_LIBRARY}")
+message(STATUS "Found CUDA cuSOLVER: ${CUDA_cusolver_LIBRARY}")
+endif()
+endif()
+
+# Jetson Nano specific settings
+if("${SD_ARCH}" MATCHES "armv8-a" AND UNIX)
+message(STATUS "Applying Jetson Nano specific settings")
+if(NOT DEFINED CUDA_cublas_LIBRARY OR "${CUDA_cublas_LIBRARY}" MATCHES ".*NOTFOUND.*")
+message(STATUS "Setting cuBLAS library manually for Jetson")
+set(CUDA_cublas_LIBRARY "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcublas.so" CACHE STRING "CUDA CUBLAS LIB" FORCE)
+endif()
+
+if(NOT DEFINED CUDA_cusolver_LIBRARY OR CUDA_cusolver_LIBRARY MATCHES ".*NOTFOUND.*")
+message(STATUS "Setting cuSOLVER library manually for Jetson")
+set(CUDA_cusolver_LIBRARY "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcusolver.so" CACHE STRING "CUDA CUSOLVER LIB" FORCE)
+endif()
+
+message(STATUS "Jetson cuBLAS: ${CUDA_cublas_LIBRARY}")
+message(STATUS "Jetson cuSOLVER: ${CUDA_cusolver_LIBRARY}")
+endif()
+
+# Debug CUDA architecture issue
+# Debug CUDA architecture issue
+if(NOT DEFINED COMPUTE)
+set(COMPUTE "auto")
+endif()
+
+# Clear any problematic CMAKE_CUDA_ARCHITECTURES settings
+unset(CMAKE_CUDA_ARCHITECTURES)
+unset(CMAKE_CUDA_ARCHITECTURES CACHE)
+set(CMAKE_CUDA_ARCHITECTURES OFF)
+
+# Build CUDA flags from scratch
+set(CMAKE_CUDA_FLAGS "")
+
+# Windows-specific CUDA configuration
+if(WIN32 AND MSVC)
+message(STATUS "Configuring CUDA for Windows MSVC...")
+
+# Set host compiler explicitly
+set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
+
+# Build Windows-compatible flags
+set(CMAKE_CUDA_FLAGS "-maxrregcount=128")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/nologo")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/EHsc")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/std:c++17")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/D__NVCC_ALLOW_UNSUPPORTED_COMPILER__")
+
+# Runtime library
+if(MSVC_RT_LIB STREQUAL "MultiThreadedDLL")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/MD")
+else()
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/MT")
+endif()
+else()
+# Linux/Unix flags
+set(CMAKE_CUDA_FLAGS "--allow-unsupported-compiler -Xcompiler -D__NVCC_ALLOW_UNSUPPORTED_COMPILER__")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -maxrregcount=128")
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+if(SD_GCC_FUNCTRACE STREQUAL "ON")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC --device-debug -lineinfo -G")
+else()
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC")
+endif()
+endif()
+endif()
+
+# Optional flags
+if("${SD_PTXAS}" STREQUAL "ON")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --ptxas-options=-v")
+endif()
+
+if(SD_KEEP_NVCC_OUTPUT)
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --keep")
+endif()
+
+# Now add our manual architecture flags
+# Now add our manual architecture flags - FIXED VERSION
+string(TOLOWER "${COMPUTE}" COMPUTE_CMP)
+if(COMPUTE_CMP STREQUAL "all")
+set(CUDA_ARCH_FLAGS "-gencode arch=compute_75,code=sm_75 -gencode arch=compute_80,code=sm_80 -gencode arch=compute_86,code=sm_86 -gencode arch=compute_89,code=sm_89")
+message(STATUS "Building for all CUDA architectures")
+elseif(COMPUTE_CMP STREQUAL "auto")
+set(CUDA_ARCH_FLAGS "-gencode arch=compute_86,code=sm_86")
+message(STATUS "Auto-detecting CUDA architectures")
+else()
+# FIXED CUDA architecture parsing
+string(REPLACE "," ";" ARCH_LIST "${COMPUTE}")
+set(CUDA_ARCH_FLAGS "")
+foreach(ARCH ${ARCH_LIST})
+# Remove dots from architecture numbers (8.6 -> 86)
+string(REPLACE "." "" ARCH_CLEAN "${ARCH}")
+# Ensure we have a valid 2-digit architecture number
+if(ARCH_CLEAN MATCHES "^[0-9][0-9]$")
+# FIXED: Ensure proper gencode format with both arch and code
+set(CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS} -gencode arch=compute_${ARCH_CLEAN},code=sm_${ARCH_CLEAN}")
+else()
+message(WARNING "Invalid CUDA architecture: ${ARCH} (cleaned: ${ARCH_CLEAN}). Skipping.")
+endif()
+endforeach()
+# Remove leading space
+string(STRIP "${CUDA_ARCH_FLAGS}" CUDA_ARCH_FLAGS)
+message(STATUS "Using user-specified CUDA architectures: ${COMPUTE}")
+endif()
+
+# Validate CUDA_ARCH_FLAGS is not empty and properly formatted
+if(NOT CUDA_ARCH_FLAGS OR CUDA_ARCH_FLAGS STREQUAL "")
+message(WARNING "No valid CUDA architecture flags generated. Using default compute_86.")
+set(CUDA_ARCH_FLAGS "-gencode arch=compute_86,code=sm_86")
+endif()
+
+# Validate the flags contain proper gencode format
+if(NOT CUDA_ARCH_FLAGS MATCHES "gencode.*arch=compute_[0-9]+,code=sm_[0-9]+")
+message(FATAL_ERROR "Generated CUDA architecture flags are malformed: ${CUDA_ARCH_FLAGS}")
+endif()
+
+# Add architecture flags
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${CUDA_ARCH_FLAGS}")
+
+# Add other required flags
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -w --cudart=shared --expt-extended-lambda -Xfatbin -compress-all")
+
+# Add CUDA version
+if(CMAKE_CUDA_COMPILER_VERSION)
+string(REGEX MATCH "^([0-9]+)" CUDA_VERSION_MAJOR "${CMAKE_CUDA_COMPILER_VERSION}")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR}")
+endif()
+
+# Clean up
+string(REGEX REPLACE "  +" " " CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
+string(STRIP "${CMAKE_CUDA_FLAGS}" CMAKE_CUDA_FLAGS)
+
+# Set separable compilation
+set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
+
+# Debug final state
+message(STATUS "=== CUDA DEBUG RESULTS ===")
+message(STATUS "Final CMAKE_CUDA_FLAGS: '${CMAKE_CUDA_FLAGS}'")
+message(STATUS "Final CMAKE_CUDA_ARCHITECTURES: '${CMAKE_CUDA_ARCHITECTURES}'")
+get_property(FINAL_CUDA_ARCHS GLOBAL PROPERTY CUDA_ARCHITECTURES)
+message(STATUS "Final Global CUDA_ARCHITECTURES: '${FINAL_CUDA_ARCHS}'")
+message(STATUS "CUDA_ARCH_FLAGS: '${CUDA_ARCH_FLAGS}'")
+message(STATUS "=========================")
+
+
+# Verify NVCC is accessible on Windows
+if(WIN32 AND CUDA_TOOLKIT_ROOT_DIR)
+find_program(NVCC_EXECUTABLE nvcc PATHS "${CUDA_TOOLKIT_ROOT_DIR}/bin" NO_DEFAULT_PATH)
+if(NOT NVCC_EXECUTABLE)
+message(FATAL_ERROR "nvcc.exe not found in ${CUDA_TOOLKIT_ROOT_DIR}/bin")
+endif()
+message(STATUS "Found NVCC: ${NVCC_EXECUTABLE}")
+endif()
+
+add_compile_definitions(SD_CUDA=true)
+set(DEFAULT_ENGINE "samediff::ENGINE_CUDA")
+
+# Collect all CUDA source files
+message(STATUS "Collecting CUDA source files...")
+
+file(GLOB_RECURSE PERF_SOURCES
+./include/performance/*.cpp
+./include/performance/*.h
+)
+
+file(GLOB_RECURSE EXCEPTIONS_SOURCES
+./include/exceptions/*.cpp
+./include/exceptions/*.h
+)
+
+file(GLOB_RECURSE EXEC_SOURCES
+./include/execution/impl/*.cpp
+./include/execution/cuda/*.cu
+./include/execution/cuda/*.h
+./include/execution/*.cu
+./include/execution/*.h
+)
+
+file(GLOB_RECURSE TYPES_SOURCES
+./include/types/*.cpp
+./include/types/*.h
+)
+
+file(GLOB_RECURSE ARRAY_SOURCES
+./include/array/cuda/*.cu
+./include/array/impl/*.cpp
+./include/array/*.h
+)
+
+file(GLOB_RECURSE MEMORY_SOURCES
+./include/memory/impl/*.cpp
+./include/memory/cuda/*.cu
+./include/memory/*.h
+)
+
+file(GLOB_RECURSE GRAPH_SOURCES
+./include/graph/*.cpp
+./include/graph/*.cu
+./include/graph/*.h
+)
+
+file(GLOB_RECURSE CUSTOMOPS_SOURCES
+./include/ops/declarable/generic/*.cpp
+)
+
+file(GLOB_RECURSE CUSTOMOPS_HELPERS_SOURCES
+./include/ops/declarable/helpers/cuda/*.cu
+./include/ops/declarable/helpers/impl/*.cpp
+)
+
+file(GLOB_RECURSE OPS_SOURCES
+./include/ops/impl/*.cpp
+./include/ops/declarable/impl/*.cpp
+./include/ops/*.h
+)
+
+file(GLOB_RECURSE HELPERS_SOURCES
+./include/build_info.cpp
+./include/ConstMessages.cpp
+./include/helpers/*.cpp
+./include/helpers/cuda/*.cu
+./include/helpers/*.h
+)
+
+# Exclude CPU-specific helpers from CUDA build
+file(GLOB CPU_HELPERS_TO_EXCLUDE ./include/helpers/cpu/*.cpp)
+list(REMOVE_ITEM HELPERS_SOURCES ${CPU_HELPERS_TO_EXCLUDE})
+
+file(GLOB_RECURSE INDEXING_SOURCES
+./include/indexing/*.cpp
+./include/indexing/*.h
+)
+
+file(GLOB_RECURSE LOOPS_SOURCES
+./include/loops/impl/*.cpp
+./include/loops/*.h
+)
+
+file(GLOB_RECURSE LEGACY_SOURCES
+./include/legacy/impl/*.cpp
+./include/legacy/*.cu
+./include/legacy/*.h
+)
+
+file(GLOB_RECURSE LOOPS_SOURCES_CUDA
+./include/loops/*.cu
+./include/loops/cuda/**/*.cu
+)
+
+# Process CUDA compilation units (templates)
+file(GLOB_RECURSE COMPILATION_UNITS ./include/loops/cuda/compilation_units/*.cu.in)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
+
+message(STATUS "Processing ${COMPILATION_UNITS} CUDA compilation units...")
+foreach(FL_ITEM ${COMPILATION_UNITS})
+genCompilation(${FL_ITEM})
+endforeach()
+
+file(GLOB_RECURSE VALIDATION_SOURCES ./include/array/DataTypeValidation.cpp)
+
+# Combine all sources
+set(ALL_SOURCES
+${VALIDATION_SOURCES}
+${PERF_SOURCES}
+${EXCEPTIONS_SOURCES}
+${EXEC_SOURCES}
+${TYPES_SOURCES}
+${ARRAY_SOURCES}
+${MEMORY_SOURCES}
+${GRAPH_SOURCES}
+${CUSTOMOPS_SOURCES}
+${CUSTOMOPS_HELPERS_SOURCES}
+${OPS_SOURCES}
+${HELPERS_SOURCES}
+${INDEXING_SOURCES}
+${LOOPS_SOURCES}
+${LEGACY_SOURCES}
+${LOOPS_SOURCES_CUDA}
+${CUSTOMOPS_GENERIC_SOURCES}
+)
+
+# Add cuDNN sources if available
+if(HAVE_CUDNN)
+message(STATUS "Including cuDNN platform sources")
+file(GLOB_RECURSE CUSTOMOPS_CUDNN_SOURCES ./include/ops/declarable/platform/cudnn/*.cu)
+list(APPEND ALL_SOURCES ${CUSTOMOPS_CUDNN_SOURCES})
+endif()
+
+# Remove duplicates and count sources
+list(REMOVE_DUPLICATES ALL_SOURCES)
+list(LENGTH ALL_SOURCES TOTAL_SOURCE_COUNT)
+
+# Count CUDA sources specifically
+set(CUDA_SOURCE_COUNT 0)
+foreach(src ${ALL_SOURCES})
+if(src MATCHES "\\.cu$")
+math(EXPR CUDA_SOURCE_COUNT "${CUDA_SOURCE_COUNT} + 1")
+endif()
+endforeach()
+
+message(STATUS "Total sources: ${TOTAL_SOURCE_COUNT}")
+message(STATUS "CUDA sources (.cu): ${CUDA_SOURCE_COUNT}")
+
+if(CUDA_SOURCE_COUNT EQUAL 0)
+message(WARNING "No CUDA source files (.cu) found! This may indicate a problem with source collection.")
+endif()
+
+# Create object library
+set(OBJECT_LIB_NAME "${SD_LIBRARY_NAME}_object")
+add_library(${OBJECT_LIB_NAME} OBJECT ${ALL_SOURCES})
+
+# Add dependencies
+add_dependencies(${OBJECT_LIB_NAME} flatbuffers_interface)
+
+if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
+add_dependencies(${OBJECT_LIB_NAME} generate_flatbuffers_headers)
+endif()
+
+# Set target properties
+target_include_directories(${OBJECT_LIB_NAME} PUBLIC ${EXTERNAL_INCLUDE_DIRS})
+set_property(TARGET ${OBJECT_LIB_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+
+# Create shared library
+add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:${OBJECT_LIB_NAME}>)
+set_target_properties(${SD_LIBRARY_NAME} PROPERTIES OUTPUT_NAME ${SD_LIBRARY_NAME})
+set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+
+# Find and link CUDA libraries
+find_package(CUDAToolkit REQUIRED)
+
+target_link_libraries(${SD_LIBRARY_NAME} PUBLIC
+CUDA::cudart
+CUDA::cublas
+CUDA::cusolver
+${CUDNN}
+flatbuffers_interface
+)
+
+# Fallback for older CMake versions or missing CUDAToolkit
+if(CUDA_cublas_LIBRARY)
+target_link_libraries(${SD_LIBRARY_NAME} PUBLIC ${CUDA_cublas_LIBRARY})
+endif()
+if(CUDA_cusolver_LIBRARY)
+target_link_libraries(${SD_LIBRARY_NAME} PUBLIC ${CUDA_cusolver_LIBRARY})
+endif()
+
+install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
+
+message(STATUS "=== CUDA BUILD CONFIGURATION COMPLETE ===")
 
 else() # Start of CPU Build Section
-    set(DEFAULT_ENGINE "samediff::ENGINE_CPU")
+set(DEFAULT_ENGINE "samediff::ENGINE_CPU")
 
-    message("CPU BLAS")
-    add_definitions(-D__CPUBLAS__=true)
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
-    set(CUSTOMOPS_GENERIC_SOURCES "")
+message("CPU BLAS")
+add_definitions(-D__CPUBLAS__=true)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
+set(CUSTOMOPS_GENERIC_SOURCES "")
 
-    file(GLOB_RECURSE COMPILATION_UNITS
-            ./include/ops/declarable/helpers/cpu/compilation_units/*.cpp.in
-            ./include/loops/cpu/compilation_units/*.cpp.in
-            ./include/helpers/cpu/loops/*.cpp.in)
+file(GLOB_RECURSE COMPILATION_UNITS
+./include/ops/declarable/helpers/cpu/compilation_units/*.cpp.in
+./include/loops/cpu/compilation_units/*.cpp.in
+./include/helpers/cpu/loops/*.cpp.in)
 
-    foreach(FL_ITEM ${COMPILATION_UNITS})
-        genCompilation(${FL_ITEM})
-    endforeach()
+foreach(FL_ITEM ${COMPILATION_UNITS})
+genCompilation(${FL_ITEM})
+endforeach()
 
-    file(GLOB_RECURSE PERF_SOURCES ./include/performance/*.cpp ./include/performance/*.h)
-    file(GLOB_RECURSE EXCEPTIONS_SOURCES ./include/exceptions/*.cpp ./include/exceptions/*.h)
-    file(GLOB_RECURSE EXEC_SOURCES ./include/execution/*.cpp ./include/execution/*.h)
-    file(GLOB_RECURSE TYPES_SOURCES ./include/types/*.cpp ./include/types/*.h)
-    file(GLOB_RECURSE ARRAY_SOURCES ./include/array/*.cpp ./include/array/*.h)
-    file(GLOB_RECURSE MEMORY_SOURCES ./include/memory/*.cpp ./include/memory/*.h)
-    file(GLOB_RECURSE GRAPH_SOURCES ./include/graph/*.cpp ./include/graph/*.h)
-    file(GLOB_RECURSE CUSTOMOPS_SOURCES ./include/ops/declarable/generic/*.cpp)
-    file(GLOB_RECURSE CUSTOMOPS_HELPERS_IMPL_SOURCES ./include/ops/declarable/helpers/impl/*.cpp)
-    file(GLOB_RECURSE CUSTOMOPS_HELPERS_CPU_SOURCES ./include/ops/declarable/helpers/cpu/*.cpp)
-    file(GLOB_RECURSE OPS_SOURCES ./include/ops/impl/*.cpp ./include/ops/declarable/impl/*.cpp ./include/ops/*.h)
-    file(GLOB_RECURSE INDEXING_SOURCES ./include/indexing/*.cpp ./include/indexing/*.h)
-    file(GLOB_RECURSE HELPERS_SOURCES ./include/build_info.cpp ./include/ConstMessages.cpp ./include/helpers/*.cpp  ./include/helpers/cpu/*.cpp ./include/helpers/*.h)
-    file(GLOB_RECURSE LEGACY_SOURCES ./include/legacy/impl/*.cpp ./include/legacy/cpu/*.cpp ./include/legacy/*.h)
-    file(GLOB_RECURSE LOOPS_SOURCES ./include/loops/*.cpp ./include/loops/*.h)
+file(GLOB_RECURSE PERF_SOURCES ./include/performance/*.cpp ./include/performance/*.h)
+file(GLOB_RECURSE EXCEPTIONS_SOURCES ./include/exceptions/*.cpp ./include/exceptions/*.h)
+file(GLOB_RECURSE EXEC_SOURCES ./include/execution/*.cpp ./include/execution/*.h)
+file(GLOB_RECURSE TYPES_SOURCES ./include/types/*.cpp ./include/types/*.h)
+file(GLOB_RECURSE ARRAY_SOURCES ./include/array/*.cpp ./include/array/*.h)
+file(GLOB_RECURSE MEMORY_SOURCES ./include/memory/*.cpp ./include/memory/*.h)
+file(GLOB_RECURSE GRAPH_SOURCES ./include/graph/*.cpp ./include/graph/*.h)
+file(GLOB_RECURSE CUSTOMOPS_SOURCES ./include/ops/declarable/generic/*.cpp)
+file(GLOB_RECURSE CUSTOMOPS_HELPERS_IMPL_SOURCES ./include/ops/declarable/helpers/impl/*.cpp)
+file(GLOB_RECURSE CUSTOMOPS_HELPERS_CPU_SOURCES ./include/ops/declarable/helpers/cpu/*.cpp)
+file(GLOB_RECURSE OPS_SOURCES ./include/ops/impl/*.cpp ./include/ops/declarable/impl/*.cpp ./include/ops/*.h)
+file(GLOB_RECURSE INDEXING_SOURCES ./include/indexing/*.cpp ./include/indexing/*.h)
+file(GLOB_RECURSE HELPERS_SOURCES ./include/build_info.cpp ./include/ConstMessages.cpp ./include/helpers/*.cpp  ./include/helpers/cpu/*.cpp ./include/helpers/*.h)
+file(GLOB_RECURSE LEGACY_SOURCES ./include/legacy/impl/*.cpp ./include/legacy/cpu/*.cpp ./include/legacy/*.h)
+file(GLOB_RECURSE LOOPS_SOURCES ./include/loops/*.cpp ./include/loops/*.h)
 
-    set(ALL_SOURCES "")
+set(ALL_SOURCES "")
 
-    # OneDNN sources - FIXED: Only include when helper is enabled
-    set(CUSTOMOPS_ONEDNN_SOURCES "")
-    if(HAVE_ONEDNN)
-        message(STATUS "Including OneDNN platform sources")
-        file(GLOB_RECURSE CUSTOMOPS_ONEDNN_SOURCES_TMP ./include/ops/declarable/platform/mkldnn/*.cpp ./include/ops/declarable/platform/mkldnn/mkldnnUtils.h)
-        set(CUSTOMOPS_ONEDNN_SOURCES ${CUSTOMOPS_ONEDNN_SOURCES_TMP})
-        list(APPEND ALL_SOURCES ${CUSTOMOPS_ONEDNN_SOURCES})
-    else()
-        message(STATUS "Skipping OneDNN platform sources (OneDNN helper disabled)")
-    endif()
+# OneDNN sources - FIXED: Only include when helper is enabled
+set(CUSTOMOPS_ONEDNN_SOURCES "")
+if(HAVE_ONEDNN)
+message(STATUS "Including OneDNN platform sources")
+file(GLOB_RECURSE CUSTOMOPS_ONEDNN_SOURCES_TMP ./include/ops/declarable/platform/mkldnn/*.cpp ./include/ops/declarable/platform/mkldnn/mkldnnUtils.h)
+set(CUSTOMOPS_ONEDNN_SOURCES ${CUSTOMOPS_ONEDNN_SOURCES_TMP})
+list(APPEND ALL_SOURCES ${CUSTOMOPS_ONEDNN_SOURCES})
+else()
+message(STATUS "Skipping OneDNN platform sources (OneDNN helper disabled)")
+endif()
 
-    # ARM Compute sources - FIXED: Only include when helper is enabled
-    set(CUSTOMOPS_ARMCOMPUTE_SOURCES "")
-    if(HAVE_ARMCOMPUTE)
-        message(STATUS "Including ARM Compute platform sources")
-        file(GLOB_RECURSE CUSTOMOPS_ARMCOMPUTE_SOURCES_TMP ./include/ops/declarable/platform/armcompute/*.cpp ./include/ops/declarable/platform/armcompute/*.h)
-        set(CUSTOMOPS_ARMCOMPUTE_SOURCES ${CUSTOMOPS_ARMCOMPUTE_SOURCES_TMP})
-        list(APPEND ALL_SOURCES ${CUSTOMOPS_ARMCOMPUTE_SOURCES})
-    else()
-        message(STATUS "Skipping ARM Compute platform sources (ARM Compute helper disabled)")
-    endif()
+# ARM Compute sources - FIXED: Only include when helper is enabled
+set(CUSTOMOPS_ARMCOMPUTE_SOURCES "")
+if(HAVE_ARMCOMPUTE)
+message(STATUS "Including ARM Compute platform sources")
+file(GLOB_RECURSE CUSTOMOPS_ARMCOMPUTE_SOURCES_TMP ./include/ops/declarable/platform/armcompute/*.cpp ./include/ops/declarable/platform/armcompute/*.h)
+set(CUSTOMOPS_ARMCOMPUTE_SOURCES ${CUSTOMOPS_ARMCOMPUTE_SOURCES_TMP})
+list(APPEND ALL_SOURCES ${CUSTOMOPS_ARMCOMPUTE_SOURCES})
+else()
+message(STATUS "Skipping ARM Compute platform sources (ARM Compute helper disabled)")
+endif()
 
-    if (SD_X86_BUILD)
-        set_source_files_properties(./include/helpers/impl/OpTracker.cpp PROPERTIES COMPILE_FLAGS "-march=x86-64 -mtune=generic")
-    endif()
+if (SD_X86_BUILD)
+set_source_files_properties(./include/helpers/impl/OpTracker.cpp PROPERTIES COMPILE_FLAGS "-march=x86-64 -mtune=generic")
+endif()
 
-    set(STATIC_SOURCES_TO_CHECK
-            ${PERF_SOURCES} ${EXCEPTIONS_SOURCES} ${EXEC_SOURCES} ${TYPES_SOURCES} ${ARRAY_SOURCES}
-            ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${CUSTOMOPS_HELPERS_IMPL_SOURCES}
-            ${CUSTOMOPS_HELPERS_CPU_SOURCES} ${OPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}
-            ${LEGACY_SOURCES} ${LOOPS_SOURCES} ${CUSTOMOPS_ONEDNN_SOURCES} ${CUSTOMOPS_ARMCOMPUTE_SOURCES}
-    )
+set(STATIC_SOURCES_TO_CHECK
+${PERF_SOURCES} ${EXCEPTIONS_SOURCES} ${EXEC_SOURCES} ${TYPES_SOURCES} ${ARRAY_SOURCES}
+${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${CUSTOMOPS_HELPERS_IMPL_SOURCES}
+${CUSTOMOPS_HELPERS_CPU_SOURCES} ${OPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}
+${LEGACY_SOURCES} ${LOOPS_SOURCES} ${CUSTOMOPS_ONEDNN_SOURCES} ${CUSTOMOPS_ARMCOMPUTE_SOURCES}
+)
 
-    if(NOT SD_ALL_OPS)
-        message("Not all SD OPS INCLUDED - Filtering sources")
-        set(FILTERED_STATIC_SOURCES "")
-        foreach(SRC_FILE ${STATIC_SOURCES_TO_CHECK})
-            set(temp_list "${SRC_FILE}")
-            removeFileIfExcluded(FILE_ITEM "${SRC_FILE}" LIST_ITEM "temp_list")
-            if(temp_list)
-                list(APPEND FILTERED_STATIC_SOURCES "${SRC_FILE}")
-            else()
-                message("Excluding file due to op restrictions: ${SRC_FILE}")
-            endif()
-        endforeach()
-        list(REMOVE_ITEM ALL_SOURCES ${STATIC_SOURCES_TO_CHECK})
-        list(APPEND ALL_SOURCES ${FILTERED_STATIC_SOURCES})
-    else()
-        list(APPEND ALL_SOURCES
-                ${PERF_SOURCES} ${EXCEPTIONS_SOURCES} ${EXEC_SOURCES} ${TYPES_SOURCES} ${ARRAY_SOURCES}
-                ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${CUSTOMOPS_HELPERS_IMPL_SOURCES}
-                ${CUSTOMOPS_HELPERS_CPU_SOURCES} ${OPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}
-                ${LEGACY_SOURCES} ${LOOPS_SOURCES}
-        )
-        list(REMOVE_DUPLICATES ALL_SOURCES)
-    endif()
+if(NOT SD_ALL_OPS)
+message("Not all SD OPS INCLUDED - Filtering sources")
+set(FILTERED_STATIC_SOURCES "")
+foreach(SRC_FILE ${STATIC_SOURCES_TO_CHECK})
+set(temp_list "${SRC_FILE}")
+removeFileIfExcluded(FILE_ITEM "${SRC_FILE}" LIST_ITEM "temp_list")
+if(temp_list)
+list(APPEND FILTERED_STATIC_SOURCES "${SRC_FILE}")
+else()
+message("Excluding file due to op restrictions: ${SRC_FILE}")
+endif()
+endforeach()
+list(REMOVE_ITEM ALL_SOURCES ${STATIC_SOURCES_TO_CHECK})
+list(APPEND ALL_SOURCES ${FILTERED_STATIC_SOURCES})
+else()
+list(APPEND ALL_SOURCES
+${PERF_SOURCES} ${EXCEPTIONS_SOURCES} ${EXEC_SOURCES} ${TYPES_SOURCES} ${ARRAY_SOURCES}
+${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${CUSTOMOPS_HELPERS_IMPL_SOURCES}
+${CUSTOMOPS_HELPERS_CPU_SOURCES} ${OPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}
+${LEGACY_SOURCES} ${LOOPS_SOURCES}
+)
+list(REMOVE_DUPLICATES ALL_SOURCES)
+endif()
 
-    list(APPEND ALL_SOURCES ${CUSTOMOPS_GENERIC_SOURCES})
+list(APPEND ALL_SOURCES ${CUSTOMOPS_GENERIC_SOURCES})
 
-    set(PARTITION_SOURCES "")
-    set(CPU_INST_DIR "${CMAKE_BINARY_DIR}/cpu_instantiations")
-    file(MAKE_DIRECTORY "${CPU_INST_DIR}")
-    set(GENERATED_PARTITION_SOURCES_TEMP "")
+set(PARTITION_SOURCES "")
+set(CPU_INST_DIR "${CMAKE_BINARY_DIR}/cpu_instantiations")
+file(MAKE_DIRECTORY "${CPU_INST_DIR}")
+set(GENERATED_PARTITION_SOURCES_TEMP "")
 
-    foreach(TEMPLATE_FILE ${INSTANTIATION_TEMPLATES_3})
-        foreach(COMBINATION ${COMBINATIONS_3})
-            set(CUSTOMOPS_GENERIC_SOURCES "")
-            genPartitionCombination(${TEMPLATE_FILE} 3 ${COMBINATION} "${CPU_INST_DIR}")
-            list(APPEND GENERATED_PARTITION_SOURCES_TEMP ${CUSTOMOPS_GENERIC_SOURCES})
-        endforeach()
-    endforeach()
+foreach(TEMPLATE_FILE ${INSTANTIATION_TEMPLATES_3})
+foreach(COMBINATION ${COMBINATIONS_3})
+set(CUSTOMOPS_GENERIC_SOURCES "")
+genPartitionCombination(${TEMPLATE_FILE} 3 ${COMBINATION} "${CPU_INST_DIR}")
+list(APPEND GENERATED_PARTITION_SOURCES_TEMP ${CUSTOMOPS_GENERIC_SOURCES})
+endforeach()
+endforeach()
 
-    foreach(TEMPLATE_FILE ${INSTANTIATION_TEMPLATES_2})
-        foreach(COMBINATION ${COMBINATIONS_2})
-            set(CUSTOMOPS_GENERIC_SOURCES "")
-            genPartitionCombination(${TEMPLATE_FILE} 2 ${COMBINATION} "${CPU_INST_DIR}")
-            list(APPEND GENERATED_PARTITION_SOURCES_TEMP ${CUSTOMOPS_GENERIC_SOURCES})
-        endforeach()
-    endforeach()
-    set(PARTITION_SOURCES ${GENERATED_PARTITION_SOURCES_TEMP})
+foreach(TEMPLATE_FILE ${INSTANTIATION_TEMPLATES_2})
+foreach(COMBINATION ${COMBINATIONS_2})
+set(CUSTOMOPS_GENERIC_SOURCES "")
+genPartitionCombination(${TEMPLATE_FILE} 2 ${COMBINATION} "${CPU_INST_DIR}")
+list(APPEND GENERATED_PARTITION_SOURCES_TEMP ${CUSTOMOPS_GENERIC_SOURCES})
+endforeach()
+endforeach()
+set(PARTITION_SOURCES ${GENERATED_PARTITION_SOURCES_TEMP})
 
-    list(APPEND ALL_SOURCES ${PARTITION_SOURCES})
-    list(REMOVE_DUPLICATES ALL_SOURCES)
+list(APPEND ALL_SOURCES ${PARTITION_SOURCES})
+list(REMOVE_DUPLICATES ALL_SOURCES)
 
-    set(OBJECT_LIB_NAME "${SD_LIBRARY_NAME}_object")
-    add_library(${OBJECT_LIB_NAME} OBJECT ${ALL_SOURCES})
+set(OBJECT_LIB_NAME "${SD_LIBRARY_NAME}_object")
+add_library(${OBJECT_LIB_NAME} OBJECT ${ALL_SOURCES})
 
-    # FIXED: Use flatbuffers_interface instead of flatbuffers_external
-    add_dependencies(${OBJECT_LIB_NAME} flatbuffers_interface)
+# FIXED: Use flatbuffers_interface instead of flatbuffers_external
+add_dependencies(${OBJECT_LIB_NAME} flatbuffers_interface)
 
-    if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
-        add_dependencies(${OBJECT_LIB_NAME} generate_flatbuffers_headers)
-    endif()
+if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
+add_dependencies(${OBJECT_LIB_NAME} generate_flatbuffers_headers)
+endif()
 
-    target_include_directories(${OBJECT_LIB_NAME} PUBLIC ${EXTERNAL_INCLUDE_DIRS})
-    set_property(TARGET ${OBJECT_LIB_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+target_include_directories(${OBJECT_LIB_NAME} PUBLIC ${EXTERNAL_INCLUDE_DIRS})
+set_property(TARGET ${OBJECT_LIB_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
 
-    add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:${OBJECT_LIB_NAME}>)
-    set_target_properties(${SD_LIBRARY_NAME} PROPERTIES OUTPUT_NAME ${SD_LIBRARY_NAME})
-    set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:${OBJECT_LIB_NAME}>)
+set_target_properties(${SD_LIBRARY_NAME} PROPERTIES OUTPUT_NAME ${SD_LIBRARY_NAME})
+set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
 
-    if(ANDROID)
-        cmake_host_system_information(RESULT _logical_cores QUERY NUMBER_OF_LOGICAL_CORES)
-        if(_logical_cores LESS 4)
-            set_target_properties(${SD_LIBRARY_NAME} PROPERTIES JOB_POOL_COMPILE one_jobs)
-        endif()
-    endif()
+if(ANDROID)
+cmake_host_system_information(RESULT _logical_cores QUERY NUMBER_OF_LOGICAL_CORES)
+if(_logical_cores LESS 4)
+set_target_properties(${SD_LIBRARY_NAME} PROPERTIES JOB_POOL_COMPILE one_jobs)
+endif()
+endif()
 
-    target_link_libraries(${SD_LIBRARY_NAME} PUBLIC
-            ${ONEDNN}
-            ${ARMCOMPUTE_LIBRARIES}
-            ${OPENBLAS_LIBRARIES}
-            ${BLAS_LIBRARIES}
-            flatbuffers_interface
-    )
+target_link_libraries(${SD_LIBRARY_NAME} PUBLIC
+${ONEDNN}
+${ARMCOMPUTE_LIBRARIES}
+${OPENBLAS_LIBRARIES}
+${BLAS_LIBRARIES}
+flatbuffers_interface
+)
 
-    install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
+install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
 
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
-        message(FATAL_ERROR "You need at least GCC 4.9")
-    endif()
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
+message(FATAL_ERROR "You need at least GCC 4.9")
+endif()
 
-    # OpenMP for GCC
-    # OpenMP Configuration
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        find_package(OpenMP)
-        if(OpenMP_CXX_FOUND)
-            message(STATUS "OpenMP found, linking OpenMP::OpenMP_CXX")
-            target_link_libraries(${OBJECT_LIB_NAME} PUBLIC OpenMP::OpenMP_CXX)
-            target_link_libraries(${SD_LIBRARY_NAME} PUBLIC OpenMP::OpenMP_CXX)
-        else()
-            message(WARNING "OpenMP not found, falling back to manual configuration")
-            target_compile_options(${OBJECT_LIB_NAME} INTERFACE "-fopenmp")
-            target_compile_options(${OBJECT_LIB_NAME} PRIVATE "-fopenmp")
-            target_link_libraries(${SD_LIBRARY_NAME} PUBLIC "-fopenmp")
-        endif()
-    endif()
+# OpenMP for GCC
+# OpenMP Configuration
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+find_package(OpenMP)
+if(OpenMP_CXX_FOUND)
+message(STATUS "OpenMP found, linking OpenMP::OpenMP_CXX")
+target_link_libraries(${OBJECT_LIB_NAME} PUBLIC OpenMP::OpenMP_CXX)
+target_link_libraries(${SD_LIBRARY_NAME} PUBLIC OpenMP::OpenMP_CXX)
+else()
+message(WARNING "OpenMP not found, falling back to manual configuration")
+target_compile_options(${OBJECT_LIB_NAME} INTERFACE "-fopenmp")
+target_compile_options(${OBJECT_LIB_NAME} PRIVATE "-fopenmp")
+target_link_libraries(${SD_LIBRARY_NAME} PUBLIC "-fopenmp")
+endif()
+endif()
 endif() # End of CPU Build Section
 
 # Add tests if enabled
 if(SD_BUILD_TESTS)
-    include(CTest)
-    set(SD_ALL_OPS true)
-    enable_testing()
-    add_subdirectory(tests_cpu)
+include(CTest)
+set(SD_ALL_OPS true)
+enable_testing()
+add_subdirectory(tests_cpu)
 endif()
 
 # Preprocessing Configuration
 if(SD_PREPROCESS STREQUAL "ON")
-    message("Preprocessing enabled: ${CMAKE_BINARY_DIR}")
-    include_directories(${CMAKE_BINARY_DIR}/.././include)
+message("Preprocessing enabled: ${CMAKE_BINARY_DIR}")
+include_directories(${CMAKE_BINARY_DIR}/.././include)
 
-    get_target_property(FINAL_ALL_SOURCES ${OBJECT_LIB_NAME} SOURCES)
-    list(REMOVE_DUPLICATES FINAL_ALL_SOURCES)
+get_target_property(FINAL_ALL_SOURCES ${OBJECT_LIB_NAME} SOURCES)
+list(REMOVE_DUPLICATES FINAL_ALL_SOURCES)
 
-    set(PREPROCESSED_DIR "${CMAKE_SOURCE_DIR}/preprocessed")
-    file(MAKE_DIRECTORY ${PREPROCESSED_DIR})
+set(PREPROCESSED_DIR "${CMAKE_SOURCE_DIR}/preprocessed")
+file(MAKE_DIRECTORY ${PREPROCESSED_DIR})
 
-    set(PREPROCESSED_FILES)
-    set(PROCESSED_SOURCES "")
+set(PREPROCESSED_FILES)
+set(PROCESSED_SOURCES "")
 
-    foreach(src IN LISTS FINAL_ALL_SOURCES)
-        if(NOT EXISTS ${src} OR NOT src MATCHES "\\.(c|cpp|cxx|cc|cu)$")
-            continue()
-        endif()
+foreach(src IN LISTS FINAL_ALL_SOURCES)
+if(NOT EXISTS ${src} OR NOT src MATCHES "\\.(c|cpp|cxx|cc|cu)$")
+continue()
+endif()
 
-        if(NOT src IN_LIST PROCESSED_SOURCES)
-            get_filename_component(src_name ${src} NAME_WE)
-            get_filename_component(src_path ${src} PATH)
+if(NOT src IN_LIST PROCESSED_SOURCES)
+get_filename_component(src_name ${src} NAME_WE)
+get_filename_component(src_path ${src} PATH)
 
-            file(RELATIVE_PATH rel_path ${CMAKE_SOURCE_DIR} ${src_path})
-            string(REPLACE "/" "_" src_dir_ "${rel_path}")
+file(RELATIVE_PATH rel_path ${CMAKE_SOURCE_DIR} ${src_path})
+string(REPLACE "/" "_" src_dir_ "${rel_path}")
 
-            if(IS_ABSOLUTE ${src} AND NOT src MATCHES "^${CMAKE_SOURCE_DIR}")
-                file(RELATIVE_PATH rel_path_build ${CMAKE_BINARY_DIR} ${src_path})
-                string(REPLACE "/" "_" src_dir_build_ "${rel_path_build}")
-                set(src_dir_ "build_${src_dir_build_}")
-            endif()
+if(IS_ABSOLUTE ${src} AND NOT src MATCHES "^${CMAKE_SOURCE_DIR}")
+file(RELATIVE_PATH rel_path_build ${CMAKE_BINARY_DIR} ${src_path})
+string(REPLACE "/" "_" src_dir_build_ "${rel_path_build}")
+set(src_dir_ "build_${src_dir_build_}")
+endif()
 
-            set(preprocessed_file "${PREPROCESSED_DIR}/${src_dir_}_${src_name}.i")
-            message(STATUS "Processing ${src} to ${preprocessed_file}")
+set(preprocessed_file "${PREPROCESSED_DIR}/${src_dir_}_${src_name}.i")
+message(STATUS "Processing ${src} to ${preprocessed_file}")
 
-            if(NOT EXISTS "${preprocessed_file}")
-                set(compiler "")
-                set(lang_flags "")
-                set(includes_list "")
-                get_target_property(includes_list ${OBJECT_LIB_NAME} INCLUDE_DIRECTORIES)
-                get_target_property(compile_defs ${OBJECT_LIB_NAME} COMPILE_DEFINITIONS)
-                get_target_property(compile_opts ${OBJECT_LIB_NAME} COMPILE_OPTIONS)
+if(NOT EXISTS "${preprocessed_file}")
+set(compiler "")
+set(lang_flags "")
+set(includes_list "")
+get_target_property(includes_list ${OBJECT_LIB_NAME} INCLUDE_DIRECTORIES)
+get_target_property(compile_defs ${OBJECT_LIB_NAME} COMPILE_DEFINITIONS)
+get_target_property(compile_opts ${OBJECT_LIB_NAME} COMPILE_OPTIONS)
 
-                set(include_flags "")
-                foreach(dir IN LISTS includes_list)
-                    string(APPEND include_flags " -I\"${dir}\"")
-                endforeach()
+set(include_flags "")
+foreach(dir IN LISTS includes_list)
+string(APPEND include_flags " -I\"${dir}\"")
+endforeach()
 
-                set(defs_flags "")
-                foreach(def IN LISTS compile_defs)
-                    string(APPEND defs_flags " -D${def}")
-                endforeach()
+set(defs_flags "")
+foreach(def IN LISTS compile_defs)
+string(APPEND defs_flags " -D${def}")
+endforeach()
 
-                if(src MATCHES "\\.cu$")
-                    set(language "CUDA")
-                    set(compiler "${CMAKE_CUDA_COMPILER}")
-                elseif(src MATCHES "\\.c$")
-                    set(language "C")
-                    set(compiler "${CMAKE_C_COMPILER}")
-                    set(lang_flags "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE}}")
-                elseif(src MATCHES "\\.cpp$|\\.cxx$|\\.cc$")
-                    set(language "CXX")
-                    set(compiler "${CMAKE_CXX_COMPILER}")
-                    set(lang_flags "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}}")
-                else()
-                    message(WARNING "Skipping preprocessing for unknown file type: ${src}")
-                    continue()
-                endif()
+if(src MATCHES "\\.cu$")
+set(language "CUDA")
+set(compiler "${CMAKE_CUDA_COMPILER}")
+elseif(src MATCHES "\\.c$")
+set(language "C")
+set(compiler "${CMAKE_C_COMPILER}")
+set(lang_flags "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE}}")
+elseif(src MATCHES "\\.cpp$|\\.cxx$|\\.cc$")
+set(language "CXX")
+set(compiler "${CMAKE_CXX_COMPILER}")
+set(lang_flags "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}}")
+else()
+message(WARNING "Skipping preprocessing for unknown file type: ${src}")
+continue()
+endif()
 
-                string(REGEX REPLACE "-O[0-9]" "" lang_flags "${lang_flags}")
-                string(REGEX REPLACE "-g" "" lang_flags "${lang_flags}")
-                string(REGEX REPLACE "-flto" "" lang_flags "${lang_flags}")
+string(REGEX REPLACE "-O[0-9]" "" lang_flags "${lang_flags}")
+string(REGEX REPLACE "-g" "" lang_flags "${lang_flags}")
+string(REGEX REPLACE "-flto" "" lang_flags "${lang_flags}")
 
-                message("COMMAND ${compiler} -E ${lang_flags} ${defs_flags} ${include_flags} ${src} -o ${preprocessed_file}")
-                execute_process(
-                        COMMAND ${CMAKE_COMMAND} -E time "${compiler}" -E ${lang_flags} ${defs_flags} ${include_flags} "${src}" -o "${preprocessed_file}"
-                        RESULT_VARIABLE result
-                        OUTPUT_VARIABLE stdout_output
-                        ERROR_VARIABLE stderr_output
-                        OUTPUT_STRIP_TRAILING_WHITESPACE
-                        ERROR_STRIP_TRAILING_WHITESPACE
-                )
+message("COMMAND ${compiler} -E ${lang_flags} ${defs_flags} ${include_flags} ${src} -o ${preprocessed_file}")
+execute_process(
+COMMAND ${CMAKE_COMMAND} -E time "${compiler}" -E ${lang_flags} ${defs_flags} ${include_flags} "${src}" -o "${preprocessed_file}"
+RESULT_VARIABLE result
+OUTPUT_VARIABLE stdout_output
+ERROR_VARIABLE stderr_output
+OUTPUT_STRIP_TRAILING_WHITESPACE
+ERROR_STRIP_TRAILING_WHITESPACE
+)
 
-                set(output_log_file "${preprocessed_file}.log")
-                file(WRITE ${output_log_file} "Command:\n${compiler} -E ${lang_flags} ${defs_flags} ${include_flags} ${src} -o ${preprocessed_file}\n\n")
-                file(APPEND ${output_log_file} "Result: ${result}\n\n")
-                file(APPEND ${output_log_file} "Standard Output:\n${stdout_output}\n\n")
-                file(APPEND ${output_log_file} "Standard Error:\n${stderr_output}\n")
+set(output_log_file "${preprocessed_file}.log")
+file(WRITE ${output_log_file} "Command:\n${compiler} -E ${lang_flags} ${defs_flags} ${include_flags} ${src} -o ${preprocessed_file}\n\n")
+file(APPEND ${output_log_file} "Result: ${result}\n\n")
+file(APPEND ${output_log_file} "Standard Output:\n${stdout_output}\n\n")
+file(APPEND ${output_log_file} "Standard Error:\n${stderr_output}\n")
 
-                if(result)
-                    message(WARNING "Preprocessing failed for ${src}. See log: ${output_log_file}")
-                else()
-                    list(APPEND PREPROCESSED_FILES ${preprocessed_file})
-                endif()
-            else()
-                message(STATUS "Preprocessed file already exists, skipping: ${preprocessed_file}")
-                list(APPEND PREPROCESSED_FILES ${preprocessed_file})
-            endif()
+if(result)
+message(WARNING "Preprocessing failed for ${src}. See log: ${output_log_file}")
+else()
+list(APPEND PREPROCESSED_FILES ${preprocessed_file})
+endif()
+else()
+message(STATUS "Preprocessed file already exists, skipping: ${preprocessed_file}")
+list(APPEND PREPROCESSED_FILES ${preprocessed_file})
+endif()
 
-            list(APPEND PROCESSED_SOURCES ${src})
-        endif()
-    endforeach()
+list(APPEND PROCESSED_SOURCES ${src})
+endif()
+endforeach()
 
-    set_directory_properties(PROPERTIES CLEAN_NO_CUSTOM 1)
+set_directory_properties(PROPERTIES CLEAN_NO_CUSTOM 1)
 
-    if(PREPROCESSED_FILES)
-        add_custom_target(preprocess_sources ALL DEPENDS ${PREPROCESSED_FILES})
-    else()
-        add_custom_target(preprocess_sources ALL)
-    endif()
+if(PREPROCESSED_FILES)
+add_custom_target(preprocess_sources ALL DEPENDS ${PREPROCESSED_FILES})
+else()
+add_custom_target(preprocess_sources ALL)
+endif()
 endif()

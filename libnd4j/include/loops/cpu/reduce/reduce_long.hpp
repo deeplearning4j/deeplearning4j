@@ -39,34 +39,44 @@ void SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, const sd::Long
                                                   void *vz, const sd::LongType *zShapeInfo) {
   auto x = reinterpret_cast<const X *>(vx);
   auto z = reinterpret_cast<Z *>(vz);
-  auto extraParams = reinterpret_cast<X *>(vextraParams);
+
+  Z* compatibleExtraParams = nullptr;
+  Z convertedParams[8];
+
+  if (vextraParams != nullptr) {
+    auto originalParams = reinterpret_cast<sd::LongType*>(vextraParams);
+    for (int i = 0; i < 8; ++i) {
+      convertedParams[i] = static_cast<Z>(originalParams[i]);
+    }
+    compatibleExtraParams = convertedParams;
+  }
 
   const sd::LongType length = shape::length(xShapeInfo);
 
   if (shape::isEmptyConst(xShapeInfo)) {
-    z[0] = OpType::startingValue(x);
+    z[0] = static_cast<Z>(OpType::startingValue(x));
     return;
   }
 
   if (sd::ArrayOptions::arrayType(xShapeInfo) == sd::ArrayType::EMPTY) {
     if (sd::ArrayOptions::arrayType(zShapeInfo) == sd::ArrayType::EMPTY) return;
-    const auto startingVal = OpType::startingValue(x);
+    const auto startingVal = static_cast<Z>(OpType::startingValue(x));
 
     for (sd::LongType i = 0; i < length; i++) z[i] = startingVal;
     return;
   }
 
-  sd::LongType xShapeInfoCast[SD_MAX_RANK];
   int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
-  Z intermediate[64];
+  typename OpType::InterType intermediate[64];
 
   PRAGMA_OMP_SIMD
-  for (auto e = 0; e < maxThreads; e++) intermediate[e] = OpType::startingValue(x);
+  for (auto e = 0; e < maxThreads; e++) {
+    intermediate[e] = static_cast<typename OpType::InterType>(OpType::startingValue(x));
+  }
 
   sd::LongType xRank = shape::rank(xShapeInfo);
   sd::LongType* xShape = shape::shapeOf(xShapeInfo);
   sd::LongType* xStride = shape::stride(xShapeInfo);
-
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto i = start; i < stop; i++) {
@@ -76,32 +86,42 @@ void SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, const sd::Long
       COORDS2INDEX(xRank, xStride, coords, indexOffset);
       intermediate[thread_id] = OpType::update(
           intermediate[thread_id],
-          OpType::op(x[indexOffset], extraParams),
-          extraParams);
+          OpType::op(x[indexOffset], compatibleExtraParams),
+          compatibleExtraParams);
     }
   };
   maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
 
   for (int e = 1; e < maxThreads; e++)
-    intermediate[0] = OpType::update(intermediate[0], intermediate[e], extraParams);
+    intermediate[0] = OpType::update(intermediate[0], intermediate[e], compatibleExtraParams);
 
-  z[0] = OpType::postProcess(intermediate[0], length, extraParams);
+  z[0] = OpType::postProcess(intermediate[0], length, compatibleExtraParams);
 }
 
 template <typename X, typename Z>
 template <typename OpType>
 Z SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams) {
   auto x = reinterpret_cast<const X *>(vx);
-  auto extraParams = reinterpret_cast<X *>(vextraParams);
+
+  // CRITICAL FIX: Convert sd::LongType* to Z* for OpType compatibility
+  Z* compatibleExtraParams = nullptr;
+  Z convertedParams[8];
+
+  if (vextraParams != nullptr) {
+    auto originalParams = reinterpret_cast<sd::LongType*>(vextraParams);
+    for (int i = 0; i < 8; ++i) {
+      convertedParams[i] = static_cast<Z>(originalParams[i]);
+    }
+    compatibleExtraParams = convertedParams;
+  }
 
   const sd::LongType length = shape::length(xShapeInfo);
   auto xEws = shape::elementWiseStride(xShapeInfo);
 
   if (xEws >= 1) {
-    return execScalar<OpType>(x, xEws, length, extraParams);
+    return execScalar<OpType>(x, xEws, length, compatibleExtraParams);
   } else {
-    auto startingValue = OpType::startingValue(x);
-    sd::LongType xShapeInfoCast[SD_MAX_RANK];
+    auto startingValue = static_cast<typename OpType::InterType>(OpType::startingValue(x));
 
     sd::LongType xRank = shape::rank(xShapeInfo);
     sd::LongType* xShape = shape::shapeOf(xShapeInfo);
@@ -112,9 +132,9 @@ Z SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, const sd::LongTyp
       INDEX2COORDS(i, xRank, xShape, coords);
       sd::LongType indexOffset;
       COORDS2INDEX(xRank, xStride, coords, indexOffset);
-      startingValue = OpType::update(startingValue, OpType::op(x[indexOffset], extraParams), extraParams);
+      startingValue = OpType::update(startingValue, OpType::op(x[indexOffset], compatibleExtraParams), compatibleExtraParams);
     }
-    return OpType::postProcess(startingValue, length, extraParams);
+    return OpType::postProcess(startingValue, length, compatibleExtraParams);
   }
 }
 
@@ -143,30 +163,43 @@ template <typename OpType>
 Z SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, sd::LongType xEws, sd::LongType length,
                                                void *vextraParams) {
   auto x = reinterpret_cast<const X *>(vx);
-  auto extraParams = reinterpret_cast<X *>(vextraParams);
+
+  Z* compatibleExtraParams = nullptr;
+  Z convertedParams[8];
+
+  if (vextraParams != nullptr) {
+    auto originalParams = reinterpret_cast<sd::LongType*>(vextraParams);
+    for (int i = 0; i < 8; ++i) {
+      convertedParams[i] = static_cast<Z>(originalParams[i]);
+    }
+    compatibleExtraParams = convertedParams;
+  }
+
   int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
-  Z intermediate[64];
+  typename OpType::InterType intermediate[64];
 
   PRAGMA_OMP_SIMD
-  for (auto e = 0; e < maxThreads; e++) intermediate[e] = OpType::startingValue(x);
+  for (auto e = 0; e < maxThreads; e++) {
+    intermediate[e] = static_cast<typename OpType::InterType>(OpType::startingValue(x));
+  }
 
   auto func = PRAGMA_THREADS_FOR {
     if (xEws == 1) {
       for (auto i = start; i < stop; i++)
-        intermediate[thread_id] = OpType::update(intermediate[thread_id], OpType::op(x[i], extraParams), extraParams);
+        intermediate[thread_id] = OpType::update(intermediate[thread_id], OpType::op(x[i], compatibleExtraParams), compatibleExtraParams);
     } else {
       for (auto i = start; i < stop; i++)
         intermediate[thread_id] =
-            OpType::update(intermediate[thread_id], OpType::op(x[i * xEws], extraParams), extraParams);
+            OpType::update(intermediate[thread_id], OpType::op(x[i * xEws], compatibleExtraParams), compatibleExtraParams);
     }
   };
 
   maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
 
   for (int e = 1; e < maxThreads; e++)
-    intermediate[0] = OpType::update(intermediate[0], intermediate[e], extraParams);
+    intermediate[0] = OpType::update(intermediate[0], intermediate[e], compatibleExtraParams);
 
-  return OpType::postProcess(intermediate[0], length, extraParams);
+  return OpType::postProcess(intermediate[0], length, compatibleExtraParams);
 }
 
 template <typename X, typename Z>
@@ -182,7 +215,7 @@ void SD_HOST ReduceLongFunction<X, Z>::exec(sd::memory::Workspace *workspace, co
   const int zRank = shape::rank(zShapeInfo);
 
   if (sd::ArrayOptions::arrayType(xShapeInfo) == sd::ArrayType::EMPTY) {
-    const auto startingVal = OpType::startingValue(x);
+    const auto startingVal = static_cast<Z>(OpType::startingValue(x));
     const auto zLen = shape::length(zShapeInfo);
 
     for (sd::LongType i = 0; i < zLen; i++) z[i] = startingVal;
@@ -190,16 +223,7 @@ void SD_HOST ReduceLongFunction<X, Z>::exec(sd::memory::Workspace *workspace, co
   }
 
   if (shape::length(zShapeInfo) == 1) {
-    // Convert sd::LongType* to X* for the scalar operation
-    X convertedExtraParams[3];  // Most ops need at most 3 extra params
-    if (extraParams != nullptr) {
-      // Convert the first few long parameters to X type
-      // This handles common cases where we need type conversion
-      for (int i = 0; i < 3; i++) {
-        convertedExtraParams[i] = static_cast<X>(extraParams[i]);
-      }
-    }
-    z[0] = execScalar<OpType>(x, xShapeInfo, extraParams != nullptr ? convertedExtraParams : nullptr);
+    z[0] = execScalar<OpType>(x, xShapeInfo, extraParams);
     return;
   }
 
@@ -209,30 +233,18 @@ void SD_HOST ReduceLongFunction<X, Z>::exec(sd::memory::Workspace *workspace, co
     return;
   }
 
-  // *** KEY FIX: Use the type system to properly convert parameters ***
-  // The ReductionLongLoops expects X* extraParams, but we have sd::LongType*
-  // We need to handle the type conversion properly using templates
+  Z* compatibleExtraParams = nullptr;
+  Z convertedParams[8];
 
-  if constexpr (std::is_same_v<X, sd::LongType>) {
-    // If X is already sd::LongType, we can pass extraParams directly
-    sd::ReductionLongLoops<X, Z>::template innerloopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams);
-  } else {
-    // For other types, we need to convert sd::LongType* to X*
-    X convertedExtraParams[3] = {static_cast<X>(0), static_cast<X>(0), static_cast<X>(0)};  // Initialize with zeros
-    X* convertedExtraParamsPtr = nullptr;
-
-    if (extraParams != nullptr) {
-      // Convert the first few long parameters to X type
-      // Most operations need at most 3 extra parameters
-      for (int i = 0; i < 3; i++) {
-        convertedExtraParams[i] = static_cast<X>(extraParams[i]);
-      }
-      convertedExtraParamsPtr = convertedExtraParams;
+  if (extraParams != nullptr) {
+    for (int i = 0; i < 8; ++i) {
+      convertedParams[i] = static_cast<Z>(extraParams[i]);
     }
-
-    // Call ReductionLongLoops with proper X* type
-    sd::ReductionLongLoops<X, Z>::template innerloopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, convertedExtraParamsPtr);
+    compatibleExtraParams = convertedParams;
   }
+
+  // Call ReductionLongLoops with proper Z* type - pass extraParams as X* since that's what ReductionLongLoops expects
+  sd::ReductionLongLoops<X, Z>::template innerloopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, reinterpret_cast<X*>(extraParams));
 }
 
 template <typename X, typename Y>

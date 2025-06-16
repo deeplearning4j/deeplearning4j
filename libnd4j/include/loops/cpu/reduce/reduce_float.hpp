@@ -81,31 +81,33 @@ void SD_HOST ReduceFloatFunction<X, Z>::execScalar(const void *vx, const sd::Lon
   auto x = reinterpret_cast<const X *>(vx);
   auto z = reinterpret_cast<Z *>(vz);
 
-  // FIXED: Type-safe parameter handling for float16 and all other types
-  using CompatibleParamType = typename SafeTypeUtils::CompatibleParamType<X, Z>::type;
-  CompatibleParamType *compatibleExtraParams = nullptr;
-  CompatibleParamType convertedParams[8];
-  SafeTypeUtils::initializeArray(convertedParams, 8);
+  // Convert to Z* for consistency with macro expectations
+  Z *extraParams = nullptr;
+  Z convertedParams[8];
 
   if (vextraParams != nullptr) {
-    if constexpr (std::is_same_v<X, CompatibleParamType>) {
-      compatibleExtraParams = reinterpret_cast<CompatibleParamType*>(vextraParams);
+    if constexpr (std::is_same_v<Z, X>) {
+      extraParams = reinterpret_cast<Z*>(vextraParams);
     } else {
-      SafeTypeUtils::convertParams(reinterpret_cast<X*>(vextraParams), convertedParams, 8);
-      compatibleExtraParams = convertedParams;
+      // Convert parameters to Z type
+      auto originalParams = reinterpret_cast<X*>(vextraParams);
+      for (int i = 0; i < 8; ++i) {
+        convertedParams[i] = static_cast<Z>(originalParams[i]);
+      }
+      extraParams = convertedParams;
     }
   }
 
   const auto length = shape::length(xShapeInfo);
 
   if (shape::isEmptyConst(xShapeInfo)) {
-    z[0] = SafeTypeUtils::safeCast<X, Z>(OpType::startingValue(x));
+    z[0] = static_cast<Z>(OpType::startingValue(x));
     return;
   }
 
   if (sd::ArrayOptions::arrayType(xShapeInfo) == sd::ArrayType::EMPTY) {
     if (sd::ArrayOptions::arrayType(zShapeInfo) == sd::ArrayType::EMPTY) return;
-    const auto startingVal = SafeTypeUtils::safeCast<X, Z>(OpType::startingValue(x));
+    const auto startingVal = static_cast<Z>(OpType::startingValue(x));
 
     for (sd::LongType i = 0; i < length; i++) {
       z[i] = startingVal;
@@ -113,9 +115,9 @@ void SD_HOST ReduceFloatFunction<X, Z>::execScalar(const void *vx, const sd::Lon
     return;
   }
 
-  auto startingValue = SafeTypeUtils::safeCast<X, Z>(OpType::startingValue(x));
+  auto startingValue = static_cast<typename OpType::InterType>(OpType::startingValue(x));
   int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
-  Z intermediate[64];
+  typename OpType::InterType intermediate[64];
 
   PRAGMA_OMP_SIMD
   for (auto e = 0; e < maxThreads; e++) {
@@ -133,41 +135,42 @@ void SD_HOST ReduceFloatFunction<X, Z>::execScalar(const void *vx, const sd::Lon
         INDEX2COORDS(i, xRank, xShape, coords);
         sd::LongType indexOffset;
         COORDS2INDEX(xRank, xStride, coords, indexOffset);
-                
-        // FIXED: Type-safe operation result handling
-        auto opResult = OpType::op(static_cast<X>(x[indexOffset]), reinterpret_cast<X*>(compatibleExtraParams));
+
+        auto opResult = OpType::op(x[indexOffset], extraParams);
         intermediate[thread_id] = OpType::update(
-            static_cast<Z>(intermediate[thread_id]),
+            intermediate[thread_id],
             opResult,
-            reinterpret_cast<X*>(compatibleExtraParams)
+            extraParams
         );
       }
     };
     maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
+
     PRAGMA_OMP_SIMD
     for (int e = 1; e < maxThreads; e++) {
-      intermediate[0] = static_cast<Z>(OpType::update(static_cast<X>(intermediate[0]), static_cast<Z>(intermediate[e]), reinterpret_cast<Z*>(compatibleExtraParams)));
+      intermediate[0] = OpType::merge(intermediate[0], intermediate[e], extraParams);
     }
 
-    z[0] = OpType::postProcess(static_cast<X>(intermediate[0]), length, reinterpret_cast<X*>(compatibleExtraParams));
+    z[0] = OpType::postProcess(intermediate[0], length, extraParams);
   } else {
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
-        auto opResult = OpType::op(static_cast<X>(x[i]), reinterpret_cast<X*>(compatibleExtraParams));
+        auto opResult = OpType::op(x[i], extraParams);
         intermediate[thread_id] = OpType::update(
             intermediate[thread_id],
-            SafeTypeUtils::safeCast<decltype(opResult), Z>(opResult),
-            compatibleExtraParams
+            opResult,
+            extraParams
         );
       }
     };
     maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
+
     PRAGMA_OMP_SIMD
     for (int e = 1; e < maxThreads; e++) {
-      intermediate[0] = OpType::update(static_cast<Z>(intermediate[0]), static_cast<Z>(intermediate[e]), reinterpret_cast<Z*>(compatibleExtraParams));
+      intermediate[0] = OpType::merge(intermediate[0], intermediate[e], extraParams);
     }
 
-    z[0] = OpType::postProcess(static_cast<Z>(intermediate[0]), length, reinterpret_cast<Z*>(compatibleExtraParams));
+    z[0] = OpType::postProcess(intermediate[0], length, extraParams);
   }
 }
 
@@ -176,23 +179,25 @@ template <typename OpType>
 Z SD_HOST ReduceFloatFunction<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams) {
   auto x = reinterpret_cast<const X *>(vx);
 
-  // FIXED: Type-safe parameter conversion
-  using CompatibleParamType = typename SafeTypeUtils::CompatibleParamType<X, Z>::type;
-  CompatibleParamType *compatibleExtraParams = nullptr;
-  CompatibleParamType convertedParams[8];
-  SafeTypeUtils::initializeArray(convertedParams, 8);
+  // Convert to Z* for compatibility with OpType::op
+  Z *extraParams = nullptr;
+  Z convertedParams[8];
 
   if (vextraParams != nullptr) {
-    if constexpr (std::is_same_v<X, CompatibleParamType>) {
-      compatibleExtraParams = reinterpret_cast<CompatibleParamType*>(vextraParams);
+    if constexpr (std::is_same_v<Z, X>) {
+      extraParams = reinterpret_cast<Z*>(vextraParams);
     } else {
-      SafeTypeUtils::convertParams(reinterpret_cast<X*>(vextraParams), convertedParams, 8);
-      compatibleExtraParams = convertedParams;
+      // Convert the parameters to Z type
+      auto originalParams = reinterpret_cast<X*>(vextraParams);
+      for (int i = 0; i < 8; ++i) {
+        convertedParams[i] = static_cast<Z>(originalParams[i]);
+      }
+      extraParams = convertedParams;
     }
   }
 
   const sd::LongType length = shape::length(xShapeInfo);
-  auto startingValue = SafeTypeUtils::safeCast<X, Z>(OpType::startingValue(x));
+  auto startingValue = static_cast<typename OpType::InterType>(OpType::startingValue(x));
 
   sd::LongType xRank = shape::rank(xShapeInfo);
   sd::LongType *xShape = shape::shapeOf(xShapeInfo);
@@ -204,17 +209,12 @@ Z SD_HOST ReduceFloatFunction<X, Z>::execScalar(const void *vx, const sd::LongTy
     sd::LongType offset;
     COORDS2INDEX(xRank, xStride, coords, offset);
 
-    auto opResult = OpType::op(static_cast<X>(x[offset]), reinterpret_cast<X*>(compatibleExtraParams));
-    startingValue = OpType::update(
-        startingValue,
-        SafeTypeUtils::safeCast<decltype(opResult), Z>(opResult),
-        compatibleExtraParams
-    );
+    auto opResult = OpType::op(x[offset], extraParams);
+    startingValue = OpType::update(startingValue, opResult, extraParams);
   }
 
-  return OpType::postProcess(static_cast<Z>(startingValue), static_cast<Z>(length), reinterpret_cast<Z*>(compatibleExtraParams));
+  return OpType::postProcess(startingValue, length, extraParams);
 }
-
 template <typename X, typename Z>
 template <typename OpType>
 void SD_HOST ReduceFloatFunction<X, Z>::exec(sd::memory::Workspace *workspace, const void *vx,
@@ -289,9 +289,6 @@ void SD_HOST ReduceFloatFunction<X, Z>::exec(sd::memory::Workspace *workspace, c
 #endif
 }
 
-// =============================================================================
-// REMAINING FUNCTION IMPLEMENTATIONS (UNCHANGED)
-// =============================================================================
 
 template <typename X, typename Y>
 Y ReduceFloatFunction<X, Y>::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo,
@@ -378,8 +375,6 @@ void ReduceFloatFunction<X, Y>::exec(int opNum, sd::memory::Workspace *workspace
                                      const sd::LongType *zShapeInfo, const long long int *dims) {
   DISPATCH_BY_OPNUM_TT(exec, PARAMS(workspace, vx, xShapeInfo, vextraParams, vz, zShapeInfo, dims), REDUCE_FLOAT_OPS);
 }
-
-BUILD_DOUBLE_TEMPLATE(template class SD_LIB_HIDDEN ReduceFloatFunction, , SD_COMMON_TYPES_2 , SD_FLOAT_TYPES);
 
 
 }  // namespace reduce

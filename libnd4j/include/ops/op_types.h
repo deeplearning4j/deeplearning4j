@@ -301,19 +301,11 @@ struct AggregateType<bfloat16> {
                          const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, sd::LongType dimensionLength, \
                          const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {} \
  \
- static void execSpecial(const X_TYPE *x, const sd::LongType *xShapeInfo, Z_TYPE *extraParams, Z_TYPE *result, \
-                         const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, sd::LongType dimensionLength, \
-                         const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {} \
- \
- template<typename U = X_TYPE, typename V = Z_TYPE> \
- static typename std::enable_if<!std::is_same_v<U, V>, void>::type execSpecial( \
-     const X_TYPE *x, const sd::LongType *xShapeInfo, X_TYPE *extraParams, Z_TYPE *result, \
+ template<typename ParamType> \
+ static typename std::enable_if<!std::is_same_v<ParamType, void>, void>::type execSpecial( \
+     const X_TYPE *x, const sd::LongType *xShapeInfo, ParamType *extraParams, Z_TYPE *result, \
      const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, sd::LongType dimensionLength, \
-     const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {} \
- \
- static void execSpecial(const X_TYPE *x, const sd::LongType *xShapeInfo, sd::LongType *extraParams, Z_TYPE *result, \
-                         const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, sd::LongType dimensionLength, \
-                         const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {}
+     const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {}
 
 // Simplified macro definitions using the DECLARE_* macros above
 #define no_op_exec_special_any DECLARE_NO_SPECIAL_EXECUTION(X, Z)
