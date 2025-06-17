@@ -49,7 +49,7 @@ namespace broadcast {
 template <typename X, typename Y, typename Z>
 class Broadcast {
  public:
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
 
   template <typename OpType>
   static SD_DEVICE void transformCuda(const void *x, const sd::LongType *xShapeInfo, const void *y,

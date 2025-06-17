@@ -55,7 +55,7 @@ TEST_F(NativeOpsTests, CreateContextTests_2) {
 
 TEST_F(NativeOpsTests, PointerTests_1) {
   auto x = NDArrayFactory::create<float>('c', {5}, {1, 2, 3, 4, 5});
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   printf("Unsupported for cuda now.\n");
 #else
   ::tryPointer(nullptr, x.buffer(), 4);
@@ -64,7 +64,7 @@ TEST_F(NativeOpsTests, PointerTests_1) {
 }
 
 TEST_F(NativeOpsTests, ThresholdTests_1) {
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   printf("Unsupported for cuda now.\n");
 #else
   ::setElementThreshold(4);
@@ -73,7 +73,7 @@ TEST_F(NativeOpsTests, ThresholdTests_1) {
 }
 
 TEST_F(NativeOpsTests, ThresholdTests_2) {
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   printf("Unsupported for cuda now.\n");
 #else
   ::setTADThreshold(4);
@@ -85,7 +85,7 @@ TEST_F(NativeOpsTests, ExecIndexReduce_1) {
   auto x = NDArrayFactory::create<float>('c', {5}, {1, 2, 3, 4, 5});
   auto exp = NDArrayFactory::create<LongType>(120);
   x.linspace(1.0);
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   printf("Unsupported for cuda now.\n");
 #else
   OpaqueDataBuffer xBuf(x.dataBuffer());
@@ -101,7 +101,7 @@ TEST_F(NativeOpsTests, ExecIndexReduce_2) {
   auto x = NDArrayFactory::create<float>('c', {5, 5});
   auto exp = NDArrayFactory::create<LongType>(120);
   x.linspace(1.0);
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   printf("Unsupported for cuda now.\n");
 #else
   NDArray dimension = NDArrayFactory::create<int>({});
@@ -122,7 +122,7 @@ TEST_F(NativeOpsTests, ExecBroadcast_1) {
   auto exp = NDArrayFactory::create<float>('c', {5, 5});
   x.linspace(1.0);
   y.linspace(2, 2);
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   printf("Unsupported for cuda now.\n");
 #else
 
@@ -148,7 +148,7 @@ TEST_F(NativeOpsTests, ExecBroadcast_2) {
   auto exp = NDArrayFactory::create<bool>('c', {5, 5});
   x.linspace(1.0);
   y.linspace(2, 2);
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   printf("Unsupported for cuda now.\n");
 #else
 
@@ -173,7 +173,7 @@ TEST_F(NativeOpsTests, ExecPairwise_1) {
   auto exp = NDArrayFactory::create<float>('c', {5, 5});
   x.linspace(1.0);
   y.assign(2.);
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   printf("Unsupported for cuda now.\n");
 #else
   OpaqueDataBuffer xBuf(x.dataBuffer());
@@ -193,7 +193,7 @@ TEST_F(NativeOpsTests, ExecPairwise_2) {
   x.assign(true);
   y.assign(false);
   y.r<bool>(5) = true;
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   printf("Unsupported for cuda now.\n");
 #else
   OpaqueDataBuffer xBuf(x.dataBuffer());
@@ -211,7 +211,7 @@ TEST_F(NativeOpsTests, ReduceTest_1) {
   auto exp = NDArrayFactory::create<float>(120.);
   x.linspace(1.0);
 
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   printf("Unsupported for cuda now.\n");
 #else
   auto dimension = NDArrayFactory::create<int>('c', {1}, {1});
@@ -228,7 +228,7 @@ TEST_F(NativeOpsTests, ReduceTest_2) {
   auto exp = NDArrayFactory::create<float>(120.);
   x.linspace(1.0);
 
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   printf("Unsupported for cuda now.\n");
 #else
   OpaqueDataBuffer xBuf(x.dataBuffer());
@@ -244,7 +244,7 @@ TEST_F(NativeOpsTests, ReduceTest_3) {
   auto exp = NDArrayFactory::create<bool>(false);
   x.linspace(1.0);
 
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   printf("Unsupported for cuda now.\n");
 #else
   OpaqueDataBuffer xBuf(x.dataBuffer());
@@ -260,7 +260,7 @@ TEST_F(NativeOpsTests, ReduceTest_4) {
   auto exp = NDArrayFactory::create<LongType>(120LL);
   x.linspace(1.0);
 
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   printf("Unsupported for cuda now.\n");
 #else
   OpaqueDataBuffer xBuf(x.dataBuffer());
@@ -277,7 +277,7 @@ TEST_F(NativeOpsTests, ReduceTest_5) {
   auto exp = NDArrayFactory::create<LongType>(120LL);
   x.linspace(1.0);
 
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   printf("Unsupported for cuda now.\n");
 #else
   auto dimension = NDArrayFactory::create<int>({0, 1});
@@ -298,7 +298,7 @@ TEST_F(NativeOpsTests, ReduceTest_6) {
   auto exp = NDArrayFactory::create<LongType>({1, 2, 3, 4, 6});
   x.linspace(1.0);
 
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   printf("Unsupported for cuda now.\n");
 #else
   auto dimension = NDArrayFactory::create<int>('c', {1}, {1});
@@ -330,7 +330,7 @@ TEST_F(NativeOpsTests, ReduceTest_7) {
 
   auto dimension = NDArrayFactory::create<int>('c', {2}, {0, 1});
   Pointer extra[6];
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   x.syncToHost();
   extra[1] = x.getContext()->getCudaStream();
   extra[0] = extra[2] = extra[3] = extra[4] = extra[5] = nullptr;
@@ -354,7 +354,7 @@ TEST_F(NativeOpsTests, ReduceTest_8) {
 
   auto dimension = NDArrayFactory::create<int>('c', {2}, {0, 1});
   Pointer extra[6];
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   extra[1] = x.getContext()->getCudaStream();
   extra[0] = extra[2] = extra[3] = extra[4] = extra[5] = nullptr;
   x.syncToHost();
@@ -379,7 +379,7 @@ TEST_F(NativeOpsTests, ReduceTest_9) {
 
   auto dimension = NDArrayFactory::create<int>('c', {2}, {0, 1});
   Pointer extra[6];
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   extra[1] = x.getContext()->getCudaStream();
   extra[0] = extra[2] = extra[3] = extra[4] = extra[5] = nullptr;
   x.syncToHost();
@@ -406,7 +406,7 @@ TEST_F(NativeOpsTests, Reduce3Test_1) {
 
   auto dimension = NDArrayFactory::create<int>('c', {2}, {0, 1});
   Pointer extra[6];
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   extra[1] = x.getContext()->getCudaStream();
   extra[0] = extra[2] = extra[3] = extra[4] = extra[5] = nullptr;
   x.syncToHost();
@@ -434,7 +434,7 @@ TEST_F(NativeOpsTests, Reduce3Test_2) {
 
   auto dimension = NDArrayFactory::create<int>('c', {2}, {0, 1});
   Pointer extra[6];
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   extra[1] = x.getContext()->getCudaStream();
   extra[0] = extra[2] = extra[3] = extra[4] = extra[5] = nullptr;
   x.syncToHost();
@@ -462,7 +462,7 @@ TEST_F(NativeOpsTests, Reduce3Test_3) {
 
   auto dimension = NDArrayFactory::create<LongType>('c', {2}, {0, 1});
   Pointer extra[6];
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   extra[1] = x.getContext()->getCudaStream();
   extra[0] = extra[2] = extra[3] = extra[4] = extra[5] = nullptr;
   x.syncToHost();
@@ -493,7 +493,7 @@ TEST_F(NativeOpsTests, Reduce3Test_4) {
 
   auto dimension = NDArrayFactory::create<LongType>('c', {2}, {0, 1});
   Pointer extra[6];
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   extra[1] = x.getContext()->getCudaStream();
   extra[0] = extra[2] = extra[3] = extra[4] = extra[5] = nullptr;
   x.syncToHost();
@@ -532,7 +532,7 @@ TEST_F(NativeOpsTests, ScalarTest_1) {
   auto z = NDArrayFactory::create<float>('c', {5, 5});
 
   Pointer extra[6];
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   extra[1] = x.getContext()->getCudaStream();
   extra[0] = extra[2] = extra[3] = extra[4] = extra[5] = nullptr;
   x.syncToHost();
@@ -561,7 +561,7 @@ TEST_F(NativeOpsTests, ScalarTest_2) {
   auto z = NDArrayFactory::create<bool>('c', {5, 5});
 
   Pointer extra[6];
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   extra[1] = x.getContext()->getCudaStream();
   extra[0] = extra[2] = extra[3] = extra[4] = extra[5] = nullptr;
   x.syncToHost();
@@ -592,7 +592,7 @@ TEST_F(NativeOpsTests, SummaryStatsScalarTest_1) {
   auto z = NDArrayFactory::create<float>(0.21587136f);
 
   Pointer extra[6];
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   extra[1] = x.getContext()->getCudaStream();
   extra[0] = extra[2] = extra[3] = extra[4] = extra[5] = nullptr;
   x.syncToHost();
@@ -615,7 +615,7 @@ TEST_F(NativeOpsTests, SummaryStatsScalarTest_2) {
   auto z = NDArrayFactory::create<double>(0.21587136);
 
   Pointer extra[6];
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   extra[1] = x.getContext()->getCudaStream();
   extra[0] = extra[2] = extra[3] = extra[4] = extra[5] = nullptr;
   x.syncToHost();
@@ -637,7 +637,7 @@ TEST_F(NativeOpsTests, SummaryStatsScalarTest_3) {
   auto z = NDArrayFactory::create<double>(0.21587136);
 
   Pointer extra[6];
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   extra[1] = x.getContext()->getCudaStream();
   extra[0] = extra[2] = extra[3] = extra[4] = extra[5] = nullptr;
   x.syncToHost();
@@ -662,7 +662,7 @@ TEST_F(NativeOpsTests, TransformTest_1) {
   auto z = NDArrayFactory::create<double>('c', {5, 5});
 
   Pointer extra[6];
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   extra[1] = x.getContext()->getCudaStream();
   extra[0] = extra[2] = extra[3] = extra[4] = extra[5] = nullptr;
   x.syncToHost();
@@ -688,7 +688,7 @@ TEST_F(NativeOpsTests, TransformTest_2) {
   auto z = NDArrayFactory::create<float>('c', {5, 5});
 
   Pointer extra[6];
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   extra[1] = x.getContext()->getCudaStream();
   extra[0] = extra[2] = extra[3] = extra[4] = extra[5] = nullptr;
   x.syncToHost();
@@ -712,7 +712,7 @@ TEST_F(NativeOpsTests, TransformTest_3) {
   auto z = NDArrayFactory::create<bool>('c', {5, 5});
 
   Pointer extra[6];
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   extra[1] = x.getContext()->getCudaStream();
   extra[0] = extra[2] = extra[3] = extra[4] = extra[5] = nullptr;
   x.syncToHost();
@@ -743,7 +743,7 @@ TEST_F(NativeOpsTests, TransformTest_4) {
        1., 1.,       1.0,       1.0,       0.540302,  0.540302, -0.416147, -0.416147, -0.416147, 0.540302, 1., 1.});
 
   Pointer extra[6];
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   extra[1] = x.getContext()->getCudaStream();
   extra[0] = extra[2] = extra[3] = extra[4] = extra[5] = nullptr;
   x.syncToHost();
@@ -765,7 +765,7 @@ TEST_F(NativeOpsTests, ScalarTadTest_1) {
   auto z = NDArrayFactory::create<float>('c', {5, 5});
 
   Pointer extra[6];
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   extra[1] = x.getContext()->getCudaStream();
   extra[0] = extra[2] = extra[3] = extra[4] = extra[5] = nullptr;
   x.syncToHost();
@@ -801,7 +801,7 @@ TEST_F(NativeOpsTests, ScalarTadTest_2) {
   auto z = NDArrayFactory::create<bool>('c', {5, 5});
 
   Pointer extra[6];
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   extra[1] = x.getContext()->getCudaStream();
   extra[0] = extra[2] = extra[3] = extra[4] = extra[5] = nullptr;
   x.syncToHost();
@@ -840,7 +840,7 @@ TEST_F(NativeOpsTests, ConcatTest_2) {
   auto z = NDArrayFactory::create<float>('c', {10, 5});
 
   Pointer extra[6];
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   extra[1] = x.getContext()->getCudaStream();
   extra[0] = extra[2] = extra[3] = extra[4] = extra[5] = nullptr;
   x.syncToHost();
@@ -894,7 +894,7 @@ TEST_F(NativeOpsTests, MemTest_1) {
   auto x = NDArrayFactory::create<double>({10, 20, 30, 40, 50});
   auto y = NDArrayFactory::create<double>({20, 20, 20, 20, 20});
 
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   return;
 #endif
   ASSERT_TRUE(0 == ::memcpyAsync(x.buffer(), y.buffer(), x.lengthOf() * sizeof(double), 0, nullptr));
@@ -917,7 +917,7 @@ TEST_F(NativeOpsTests, PullRowsTest_1) {
 
   Pointer nativeStart[2];
 
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   nativeStart[1] = (x.getContext()->getCudaStream());
 #endif
   OpaqueDataBuffer xBuf(x.dataBuffer());
@@ -947,7 +947,7 @@ TEST_F(NativeOpsTests, AccumulateTest_1) {
   auto y = NDArrayFactory::create<float>('c', {5, 5});
   auto exp = NDArrayFactory::create<float>('c', {5, 5});
   auto z = NDArrayFactory::create<float>('c', {5, 5});
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   return;
 #endif
   x.linspace(1);
@@ -970,7 +970,7 @@ TEST_F(NativeOpsTests, ShuffleTest_1) {
   auto y = NDArrayFactory::create<float>('c', {5, 5});
   auto exp = NDArrayFactory::create<float>('c', {5, 5});
   auto z = NDArrayFactory::create<float>('c', {5, 5});
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   return;
 #endif
   x.linspace(1);
@@ -998,7 +998,7 @@ TEST_F(NativeOpsTests, ConvertTypesTest_1) {
   auto exp = NDArrayFactory::create<double>('c', {5, 5});
   auto z = NDArrayFactory::create<double>('c', {5, 5});
 
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   return;
 #endif
   x.linspace(2, 2);
@@ -1011,7 +1011,7 @@ TEST_F(NativeOpsTests, ConvertTypesTest_1) {
 TEST_F(NativeOpsTests, RandomTest_1) {
   auto z = NDArrayFactory::create<double>('c', {100});
   Pointer extra[] = {nullptr, nullptr};
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   return;
   extra[1] = z.getContext()->getCudaStream();
 #endif
@@ -1026,7 +1026,7 @@ TEST_F(NativeOpsTests, RandomTest_2) {
   auto x = NDArrayFactory::create<double>('c', {100});
   auto z = NDArrayFactory::create<double>('c', {100});
   Pointer extra[] = {nullptr, nullptr};
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   return;
   extra[1] = z.getContext()->getCudaStream();
 #endif
@@ -1045,7 +1045,7 @@ TEST_F(NativeOpsTests, RandomTest_3) {
   auto y = NDArrayFactory::create<double>('c', {100});
   auto z = NDArrayFactory::create<double>('c', {100});
   Pointer extra[] = {nullptr, nullptr};
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   return;
   extra[1] = z.getContext()->getCudaStream();
 #endif
@@ -1062,7 +1062,7 @@ TEST_F(NativeOpsTests, RandomTest_3) {
 }
 
 TEST_F(NativeOpsTests, RandomTest_4) {
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   return;
 #endif
   RandomGenerator *rng = (RandomGenerator *)initRandom(nullptr, 1023, 0, nullptr);
@@ -1072,7 +1072,7 @@ TEST_F(NativeOpsTests, RandomTest_4) {
 }
 
 TEST_F(NativeOpsTests, SortTest_1) {
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   return;
 #endif
   auto sortedVals =
@@ -1091,7 +1091,7 @@ TEST_F(NativeOpsTests, SortTests_2) {
   auto ek = NDArrayFactory::create<LongType>('c', {10}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
   auto ev = NDArrayFactory::create<double>('c', {10}, {0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5});
   Pointer extras[2];
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   extras[1] = LaunchContext::defaultContext()->getCudaStream();
 #endif
 
@@ -1111,7 +1111,7 @@ TEST_F(NativeOpsTests, SortTest_3) {
   auto ek = NDArrayFactory::create<LongType>('c', {10}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
   auto ev = NDArrayFactory::create<double>('c', {10}, {0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5});
 
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   Pointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
 #else
   sd::Pointer extras[2];
@@ -1127,7 +1127,7 @@ TEST_F(NativeOpsTests, SortTest_3) {
 }
 
 TEST_F(NativeOpsTests, SortTest_4) {
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   return;
 #endif
   auto sortedVals =
@@ -1156,7 +1156,7 @@ TEST_F(NativeOpsTests, SortTests_5) {
                                                           0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5});
 
   Pointer extras[2];
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   extras[1] = LaunchContext::defaultContext()->getCudaStream();
 #endif
 
@@ -1184,7 +1184,7 @@ TEST_F(NativeOpsTests, SortTests_6) {
                                                           0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5});
 
   Pointer extras[2];
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   extras[1] = LaunchContext::defaultContext()->getCudaStream();
 #endif
 
@@ -1261,7 +1261,7 @@ TEST_F(NativeOpsTests, CalculateOutputShapeTests_1) {
   std::vector<LongType> iArgs({2, 2, 1, 1, 0, 0, 1, 1, 1});
 
   Pointer ptrs[] = {(Pointer)input.shapeInfo(), (Pointer)weights.shapeInfo()};
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   return;
 #endif
 
@@ -1294,7 +1294,7 @@ TEST_F(NativeOpsTests, CalculateOutputShapeTests_2) {
 
   Pointer shapePtrs[] = {(Pointer)input.shapeInfo(), (Pointer)weights.shapeInfo()};
   Pointer dataPtrs[] = {(Pointer)input.buffer(), (Pointer)weights.buffer()};
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   return;
 #endif
 

@@ -3954,7 +3954,7 @@ TEST_F(DeclarableOpsTests2, lstmCell_test12) {
   ASSERT_TRUE(expCt.equalsTo(ct));
 }
 
-#if !defined(__CUDABLAS__) || defined(HAVE_CUDNN)
+#if !defined(SD_CUDA) || defined(HAVE_CUDNN)
 TEST_F(DeclarableOpsTests2, ctc_loss_test1) {
   constexpr int FRAME_LEN = 6;
   constexpr int CLASS_LEN = 5;

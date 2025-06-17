@@ -22,7 +22,7 @@
 //  @author raver119@gmail.com
 //
 
-#ifndef __CUDABLAS__
+#ifndef SD_CUDA
 #include <array/PrimaryPointerDeallocator.h>
 #include <execution/AffinityManager.h>
 #include <helpers/ConstantHelper.h>

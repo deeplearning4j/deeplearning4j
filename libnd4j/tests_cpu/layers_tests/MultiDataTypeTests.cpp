@@ -1310,7 +1310,7 @@ TEST_F(MultiDataTypeTests, ndarray_applyScalar_test2) {
   ASSERT_EQ(x4, exp2);
 }
 
-#ifndef __CUDABLAS__
+#ifndef SD_CUDA
 //////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, ndarray_applyLambda_test1) {
   NDArray x1('c', {2, 2}, {0, 1, 2, 3}, sd::DataType::DOUBLE);

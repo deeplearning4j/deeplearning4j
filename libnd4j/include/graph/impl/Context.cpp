@@ -549,7 +549,7 @@ void Context::setBArguments(bool *arguments, int numberOfArguments) {
 }
 
 void Context::setCudaContext(Pointer cudaStream, Pointer reductionPointer, Pointer allocationPointer) {
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   _context = new LaunchContext(cudaStream, reductionPointer, allocationPointer);
 
   // FIXME: either pass handle from outside, or make sure outside we use the same handle

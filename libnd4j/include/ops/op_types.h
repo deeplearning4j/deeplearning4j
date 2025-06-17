@@ -249,7 +249,7 @@ struct AggregateType<bfloat16> {
      X_TYPE *extraParams, sd::LongType *allocationPointer, Z_TYPE *reductionPointer, \
      const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets) {} \
  template<typename U = X_TYPE, typename V = Z_TYPE> \
- static typename std::enable_if<!std::is_same_v<U, V>, void>::type execSpecialCuda( \
+ static SD_DEVICE SD_INLINE typename std::enable_if<!std::is_same_v<U, V>, void>::type execSpecialCuda( \
      const X_TYPE *dx, const sd::LongType *xShapeBuffer, Z_TYPE *result, const sd::LongType *resultShapeBuffer, \
      Z_TYPE *extraParams, sd::LongType *allocationPointer, Z_TYPE *reductionPointer, \
      const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets) {}
@@ -259,16 +259,21 @@ struct AggregateType<bfloat16> {
      const X_TYPE *dx, const sd::LongType *xShapeInfo, void *extraParams, Z_TYPE *result, \
      const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, \
      Z_TYPE *reductionBuffer, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets) {} \
- static SD_INLINE SD_DEVICE void execSpecialCuda( \
+ template<typename U = X_TYPE, typename V = Z_TYPE> \
+ static SD_INLINE SD_DEVICE typename std::enable_if<!std::is_same_v<U, sd::LongType> || !std::is_same_v<V, sd::LongType>, void>::type \
+ execSpecialCuda( \
      const X_TYPE *dx, const sd::LongType *xShapeInfo, Z_TYPE *extraParams, Z_TYPE *result, \
      const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, \
      Z_TYPE *reductionBuffer, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets) {} \
  template<typename U = X_TYPE, typename V = Z_TYPE> \
- static typename std::enable_if<!std::is_same_v<U, V>, void>::type execSpecialCuda( \
+ static SD_INLINE SD_DEVICE typename std::enable_if<!std::is_same_v<U, V> && !std::is_same_v<U, sd::LongType>, void>::type \
+ execSpecialCuda( \
      const X_TYPE *dx, const sd::LongType *xShapeInfo, X_TYPE *extraParams, Z_TYPE *result, \
      const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, \
      Z_TYPE *reductionBuffer, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets) {} \
- static SD_INLINE SD_DEVICE void execSpecialCuda( \
+ template<typename U = X_TYPE, typename V = Z_TYPE> \
+ static SD_INLINE SD_DEVICE typename std::enable_if<!std::is_same_v<U, V> && !std::is_same_v<U, sd::LongType> && !std::is_same_v<V, sd::LongType>, void>::type \
+ execSpecialCuda( \
      const X_TYPE *dx, const sd::LongType *xShapeInfo, sd::LongType *extraParams, Z_TYPE *result, \
      const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, \
      Z_TYPE *reductionBuffer, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets) {}

@@ -99,7 +99,7 @@ void DataBuffer::printBufferDebug(const char* msg, sd::LongType offset, sd::Long
     sd_printf("Device buffer: nullptr\n", 0);
   }
 
-#if defined(__CUDABLAS__)
+#if defined(SD_CUDA)
   // Print sync state counters
   sd_printf("Sync state: _counter=%lld, _writePrimary=%lld, _writeSpecial=%lld, _readPrimary=%lld, _readSpecial=%lld\n",
             (long long)_counter.load(), (long long)_writePrimary.load(), (long long)_writeSpecial.load(),

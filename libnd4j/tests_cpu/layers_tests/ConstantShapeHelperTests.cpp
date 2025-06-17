@@ -124,7 +124,7 @@ TEST_F(ConstantShapeHelperTests, basic_test_3) {
 
   ASSERT_TRUE(array->shapeInfo() != nullptr);
 
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   ASSERT_TRUE(array->specialShapeInfo() != nullptr);
 #endif
 
@@ -138,7 +138,7 @@ TEST_F(ConstantShapeHelperTests, basic_test_4) {
 
   ASSERT_TRUE(dup->shapeInfo() != nullptr);
 
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   ASSERT_TRUE(dup->specialShapeInfo() != nullptr);
   PointersManager manager(LaunchContext ::defaultContext(), "test");
 #endif

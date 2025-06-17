@@ -73,7 +73,7 @@ LongType *ConstantShapeBuffer::special()  {
 }
 
 LongType *ConstantShapeBuffer::platform()  {
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   return special();
 #else
   return primary();

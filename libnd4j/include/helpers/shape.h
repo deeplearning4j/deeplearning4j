@@ -748,22 +748,6 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE void fill(T *buffer, T value, sd::LongTyp
   for (int e = 0; e < length; e++) buffer[e] = value;
 }
 
-
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType subArrayIndex(sd::LongType maxIdx, const sd::LongType *maxShapeInfo,
-                                                                  const sd::LongType *minShapeInfo) {
-  sd::LongType maxIdxs[SD_MAX_RANK];
-  INDEX2COORDS(maxIdx, shape::rank(maxShapeInfo), shape::shapeOf(maxShapeInfo), maxIdxs);
-
-  sd::LongType minIdxs[SD_MAX_RANK];
-  shape::maxIndToMinInd(maxIdxs, minIdxs, maxShapeInfo, minShapeInfo, nullptr, -1);
-
-  sd::LongType minIdx;
-  COORDS2INDEX(shape::rank(minShapeInfo), shape::stride(minShapeInfo), minIdxs, minIdx);
-
-  return minIdx;
-}
-
-
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool strideDescendingCAscendingF( sd::LongType *shapeBuffer) {
   sd::LongType rank = shape::rank(shapeBuffer);
   sd::LongType *strides = shape::stride(const_cast<sd::LongType *>(shapeBuffer));

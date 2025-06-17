@@ -5819,7 +5819,7 @@ void NDArray::setShapeInfo(sd::LongType *shapeInfo) {
       THROW_EXCEPTION("New strides are not reflected in the created descriptor");
     }
 
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
     _shapeInfoD = shapeBuffer->special();
 #endif
 
@@ -5847,7 +5847,7 @@ void NDArray::setShapeInfo(ShapeDescriptor *descriptor) {
   if(ArrayOptions::dataType(_shapeInfo) != descriptor->dataType()) {
     THROW_EXCEPTION("New data type is not reflected in the created descriptor");
   }
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   _shapeInfoD = shapeBuffer->special();
 #endif
 
@@ -5862,7 +5862,7 @@ void NDArray::setShapeInfo(ShapeDescriptor *descriptor) {
 void NDArray::setShapeInfo(const ConstantShapeBuffer *shapeBuffer) {
   _shapeInfoBuffer = const_cast<ConstantShapeBuffer *>(shapeBuffer);
   _shapeInfo = _shapeInfoBuffer->primary();
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   _shapeInfoD = _shapeInfoBuffer->special();
 #endif
 

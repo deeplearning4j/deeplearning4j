@@ -2590,7 +2590,7 @@
   else                                                                                               \
     shape::shapeBufferFortran(shape::rank(SRC), sd::ArrayOptions::dataType(SRC), shape::shapeOf(SRC), TGT);
 
-#if defined(__CUDABLAS__)
+#if defined(SD_CUDA)
 
 #if defined(_RELEASE)
 
@@ -2877,7 +2877,7 @@ using portable_function = std::function<Signature>;
 #define PARAMETRIC_XZ() [&](Parameters & p, ResultSet & x, ResultSet & z)
 #define PARAMETRIC_D() [&](Parameters & p) -> Context*
 
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
 #define checkCudaErrors(ERR)                                        \
   if (ERR != 0) {                                                   \
     THROW_EXCEPTION("CUDA stream synchronization failed"); \

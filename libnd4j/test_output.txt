@@ -3632,7 +3632,7 @@ if(SD_CUDA)
 
 
 
-    add_definitions(-D__CUDABLAS__=true)
+    add_definitions(-DSD_CUDA=true)
 
 
 

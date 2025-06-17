@@ -26,7 +26,7 @@
 
 #include <stdexcept>
 
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
 #include <cuda.h>
 #include <cuda_runtime.h>
 #endif
@@ -50,7 +50,7 @@ ExtraArguments::ExtraArguments() {
 
 ExtraArguments::~ExtraArguments() {
   for (auto p : _pointers) {
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
     cudaFree(p);
 #else  // CPU branch
     delete reinterpret_cast<int8_t *>(p);
@@ -62,7 +62,7 @@ template <typename T>
 void ExtraArguments::convertAndCopy(Pointer pointer, LongType offset) {
   auto length = this->length();
   auto target = reinterpret_cast<T *>(pointer);
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   target = new T[length];
 #endif
 
@@ -76,7 +76,7 @@ void ExtraArguments::convertAndCopy(Pointer pointer, LongType offset) {
     }
   }
 
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   cudaMemcpy(pointer, target, length * DataTypeUtils::sizeOf(DataTypeUtils::fromT<T>()), cudaMemcpyHostToDevice);
   delete[] target;
 #endif
@@ -85,7 +85,7 @@ BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void ExtraArguments::convertAndCopy
                       (sd::Pointer pointer, sd::LongType offset), SD_COMMON_TYPES);
 
 void *ExtraArguments::allocate(size_t length, size_t elementSize) {
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   Pointer ptr;
   auto res = cudaMalloc(reinterpret_cast<void **>(&ptr), length * elementSize);
   if (res != 0) THROW_EXCEPTION("Can't allocate CUDA memory");

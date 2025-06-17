@@ -2001,6 +2001,31 @@ set(INSTANTIATION_TEMPLATES_2
 "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/impl/compilation_units/specials_single.cpp.in"
 )
 
+include(CheckLanguage)
+check_language(CUDA)
+
+if(CMAKE_CUDA_COMPILER)
+    enable_language(CUDA)
+    message(STATUS "CUDA language enabled successfully")
+else()
+    # Try to find nvcc manually
+    find_program(NVCC_EXECUTABLE nvcc)
+    if(NVCC_EXECUTABLE)
+        set(CMAKE_CUDA_COMPILER ${NVCC_EXECUTABLE})
+        enable_language(CUDA)
+        message(STATUS "CUDA compiler found and language enabled: ${CMAKE_CUDA_COMPILER}")
+    else()
+        message(FATAL_ERROR "CUDA compiler not found. Please ensure:\n"
+                "  1. CUDA toolkit is installed\n"
+                "  2. nvcc is in your PATH\n"
+                "  3. Or set CMAKE_CUDA_COMPILER explicitly\n"
+                "  4. Or set CUDA_TOOLKIT_ROOT_DIR environment variable")
+    endif()
+endif()
+
+# Continue with rest of CUDA configuration...
+set(CMAKE_CUDA_COMPILER_LAUNCHER "" CACHE STRING "CUDA compiler launcher")
+
 # CUDA Configuration
 if(SD_CUDA)
 message(STATUS "=== CUDA BUILD CONFIGURATION ===")
