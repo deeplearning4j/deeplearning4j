@@ -37,7 +37,7 @@
 namespace sd {
 
 template <typename X, typename Z, typename E>
-class SD_LIB_HIDDEN ReductionLoops {
+class  ReductionLoops {
  protected:
  public:
   template <typename OpType>
@@ -68,7 +68,7 @@ class SD_LIB_HIDDEN ReductionBoolLoops : public ReductionLoops<X, Z, X> {
 };
 
 template <typename X, typename Z>
-class SD_LIB_HIDDEN ReductionLongLoops : public ReductionLoops<X, Z, X> {
+class  ReductionLongLoops : public ReductionLoops<X, Z, X> {
  public:
   static void wrapper(int opNum, memory::Workspace* workspace, const X* x, const LongType* xShapeInfo, Z* z,
                       const LongType* zShapeInfo, const LongType* dims, X* extraParams);
@@ -79,7 +79,7 @@ class SD_LIB_HIDDEN ReductionLongLoops : public ReductionLoops<X, Z, X> {
 };
 
 template <typename X>
-class SD_LIB_HIDDEN ReductionSameLoops : public ReductionLoops<X, X, X> {
+class  ReductionSameLoops : public ReductionLoops<X, X, X> {
  public:
   static void wrapper(int opNum, memory::Workspace* workspace, const X* x, const LongType* xShapeInfo, X* z,
                       const LongType* zShapeInfo, const LongType* dims, X* extraParams);
@@ -90,7 +90,7 @@ class SD_LIB_HIDDEN ReductionSameLoops : public ReductionLoops<X, X, X> {
 };
 
 template <typename X, typename Z>
-class SD_LIB_HIDDEN IndexReductionLoops {
+class  IndexReductionLoops {
  public:
   static void wrapIndexReduce(int opNum, const void* x, const LongType* xShapeInfo, void* z,
                               const LongType* zShapeInfo, const LongType* tadShapeInfo,
@@ -110,7 +110,7 @@ class SD_LIB_HIDDEN TransformLoops {
 };
 
 template <typename X, typename Z>
-class SD_LIB_HIDDEN Reduction3Loops {
+class  Reduction3Loops {
  public:
   template <typename OpType>
   static SD_INLINE void loopReduce3(const X* x, const LongType* xShapeInfo, const X* y,

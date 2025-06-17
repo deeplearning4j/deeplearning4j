@@ -66,7 +66,7 @@ class Broadcast {
   static SD_HOST void intermediateBroadcast(dim3 launchDims, cudaStream_t *stream, const void *x,
                                             const sd::LongType *xShapeInfo, const void *y,
                                             const sd::LongType *yShapeInfo, void *result,
-                                            const sd::LongType *resultShapeInfo, long long int *dimension,
+                                            const sd::LongType *resultShapeInfo, sd::LongType *dimension,
                                             sd::LongType dimensionLength,
                                             const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets,
                                             const sd::LongType *tadOnlyShapeInfoZ, const sd::LongType *tadOffsetsZ);

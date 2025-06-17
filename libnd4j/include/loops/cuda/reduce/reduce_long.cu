@@ -60,7 +60,7 @@ SD_DEVICE void reduceScalarGeneric(
     void* extraParams,
     void* z,
     const sd::LongType* zShapeInfo,
-    long long int* dimension,
+    sd::LongType* dimension,
     long long int dimensionLength,
     void* reductionBuffer,
     const sd::LongType* tadOnlyShapeInfo) {

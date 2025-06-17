@@ -1123,7 +1123,7 @@ SD_DEVICE SD_INLINE float __int_as_float(int val) {
 }
 
 SD_DEVICE SD_INLINE long long int __double_as_longlong(double val) {
-  return *reinterpret_cast<long long int*>(&val);
+  return *reinterpret_cast<sd::LongType*>(&val);
 }
 
 SD_DEVICE SD_INLINE double __longlong_as_double(long long int val) {
@@ -1185,7 +1185,7 @@ SD_DEVICE SD_INLINE unsigned int __sync_val_compare_and_swap_custom(unsigned int
   return __sync_val_compare_and_swap_custom<unsigned int>(address, compare, val);
 }
 
-SD_DEVICE SD_INLINE unsigned long long __sync_val_compare_and_swap_custom(unsigned long long* address, unsigned long long compare, unsigned long long val) {
+SD_DEVICE SD_INLINE unsigned long long __sync_val_compare_and_swap_custom(unsigned sd::LongType address, unsigned long long compare, unsigned long long val) {
   return __sync_val_compare_and_swap_custom<unsigned long long>(address, compare, val);
 }
 
@@ -1206,7 +1206,7 @@ SD_DEVICE SD_INLINE unsigned int atomicCAS(unsigned int* address, unsigned int c
   return __sync_val_compare_and_swap_custom(address, compare, val);
 }
 
-SD_DEVICE SD_INLINE unsigned long long int atomicCAS(unsigned long long int* address,
+SD_DEVICE SD_INLINE unsigned long long int atomicCAS(unsigned sd::LongType* address,
                                                      unsigned long long int compare,
                                                      unsigned long long int val) {
   return __sync_val_compare_and_swap_custom(address, compare, val);
@@ -1268,7 +1268,7 @@ SD_DEVICE SD_INLINE unsigned int atomicMin(unsigned int* address, unsigned int v
   return old;
 }
 
-SD_DEVICE SD_INLINE unsigned long long int atomicMin(unsigned long long int* address, unsigned long long int val) {
+SD_DEVICE SD_INLINE unsigned long long int atomicMin(unsigned sd::LongType* address, unsigned long long int val) {
   unsigned long long int old = *address, assumed;
   do {
     assumed = old;
@@ -1338,7 +1338,7 @@ inline SD_DEVICE float sd_atomicCAS<float>(float* address, float compare, float 
 
 template <>
 inline SD_DEVICE uint64_t sd_atomicCAS<uint64_t>(uint64_t* address, uint64_t compare, uint64_t val) {
-  unsigned long long int* address_as_ull = reinterpret_cast<unsigned long long int*>(address);
+  unsigned sd::LongType* address_as_ull = reinterpret_cast<unsigned sd::LongType*>(address);
   return atomicCAS(address_as_ull, static_cast<unsigned long long int>(compare), static_cast<unsigned long long int>(val));
 }
 
@@ -1384,7 +1384,7 @@ inline SD_DEVICE int16_t sd_atomicCAS<int16_t>(int16_t* address, int16_t compare
 
 template <>
 inline SD_DEVICE sd::LongType sd_atomicCAS<sd::LongType>(sd::LongType* address, sd::LongType compare, sd::LongType val) {
-  unsigned long long int* address_as_ull = reinterpret_cast<unsigned long long int*>(address);
+  unsigned sd::LongType* address_as_ull = reinterpret_cast<unsigned sd::LongType*>(address);
   unsigned long long int compare_as_ull = static_cast<unsigned long long int>(compare);
   unsigned long long int val_as_ull = static_cast<unsigned long long int>(val);
 
@@ -1396,7 +1396,7 @@ inline SD_DEVICE sd::LongType sd_atomicCAS<sd::LongType>(sd::LongType* address, 
 
 template <>
 inline SD_DEVICE double sd_atomicCAS<double>(double* address, double compare, double val) {
-  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+  unsigned sd::LongType* address_as_ull = (unsigned sd::LongType*)address;
   unsigned long long int compare_as_ull = __double_as_longlong(compare);
   unsigned long long int val_as_ull = __double_as_longlong(val);
 
@@ -1524,7 +1524,7 @@ inline SD_DEVICE float sd_atomicMin<float>(float* address, float val) {
 }
 template <>
 inline SD_DEVICE double sd_atomicMin<double>(double* address, double val) {
-  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+  unsigned sd::LongType* address_as_ull = (unsigned sd::LongType*)address;
   unsigned long long int old = __double_as_longlong(val), assumed;
   do {
     assumed = old;
@@ -1536,9 +1536,9 @@ inline SD_DEVICE double sd_atomicMin<double>(double* address, double val) {
 template <>
 inline SD_DEVICE uint64_t sd_atomicMin<uint64_t>(uint64_t* address, uint64_t val) {
 #if __CUDA_ARCH__ >= 350
-  return atomicMin((unsigned long long*)address, (unsigned long long)val);
+  return atomicMin((unsigned sd::LongType)address, (unsigned long long)val);
 #else
-  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+  unsigned sd::LongType* address_as_ull = (unsigned sd::LongType*)address;
   unsigned long long int old = __double_as_longlong(val), assumed;
   do {
     assumed = old;
@@ -1550,9 +1550,9 @@ inline SD_DEVICE uint64_t sd_atomicMin<uint64_t>(uint64_t* address, uint64_t val
 template <>
 inline SD_DEVICE sd::LongType sd_atomicMin<sd::LongType>(sd::LongType* address, sd::LongType val) {
 #if __CUDA_ARCH__ >= 350
-  return atomicMin((unsigned long long*)address, (unsigned long long)val);
+  return atomicMin((unsigned sd::LongType)address, (unsigned long long)val);
 #else
-  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+  unsigned sd::LongType* address_as_ull = (unsigned sd::LongType*)address;
   unsigned long long int old = (unsigned long long)val, assumed;
   do {
     assumed = old;
@@ -1614,7 +1614,7 @@ SD_DEVICE SD_INLINE  unsigned long sd_atomicMax<unsigned long>(unsigned long* ad
 
 template <>
 SD_DEVICE SD_INLINE  double sd_atomicMax<double>(double* address, double val) {
-  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+  unsigned sd::LongType* address_as_ull = (unsigned sd::LongType*)address;
   unsigned long long int old = __double_as_longlong(val), assumed;
   do {
     assumed = old;
@@ -1741,7 +1741,7 @@ inline SD_DEVICE int8_t sd_atomicMax<int8_t>(int8_t* address, int8_t val) {
 // AtomicMax signatures
 SD_DEVICE SD_INLINE int atomicMax(int* address, int val);
 SD_DEVICE SD_INLINE unsigned int atomicMax(unsigned int* address, unsigned int val);
-SD_DEVICE SD_INLINE unsigned long long int atomicMax(unsigned long long int* address, unsigned long long int val);
+SD_DEVICE SD_INLINE unsigned long long int atomicMax(unsigned sd::LongType* address, unsigned long long int val);
 
 // Custom atomicMax for 16-bit types
 SD_DEVICE SD_INLINE uint16_t atomicMax(uint16_t* address, uint16_t val) {
@@ -1852,7 +1852,7 @@ SD_INLINE SD_DEVICE bfloat16 sd_atomicMax<bfloat16>(bfloat16* address, bfloat16 
 }
 template <>
 inline SD_DEVICE sd::LongType sd_atomicMax<sd::LongType>(sd::LongType* address, sd::LongType val) {
-  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+  unsigned sd::LongType* address_as_ull = (unsigned sd::LongType*)address;
 
   unsigned long long int old = *address_as_ull, assumed;
   do {
@@ -1864,7 +1864,7 @@ inline SD_DEVICE sd::LongType sd_atomicMax<sd::LongType>(sd::LongType* address, 
 
 template <>
 inline SD_DEVICE double sd_atomicAdd<double>(double* address, double val) {
-  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+  unsigned sd::LongType* address_as_ull = (unsigned sd::LongType*)address;
   unsigned long long int old = *address_as_ull, assumed;
   do {
     assumed = old;
@@ -1875,7 +1875,7 @@ inline SD_DEVICE double sd_atomicAdd<double>(double* address, double val) {
 
 template <>
 inline SD_DEVICE sd::LongType sd_atomicAdd<sd::LongType>(sd::LongType* address, sd::LongType val) {
-  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+  unsigned sd::LongType* address_as_ull = (unsigned sd::LongType*)address;
 
   unsigned long long int old = *address_as_ull, assumed;
   do {
@@ -1887,7 +1887,7 @@ inline SD_DEVICE sd::LongType sd_atomicAdd<sd::LongType>(sd::LongType* address, 
 
 template <>
 inline SD_DEVICE long sd_atomicAdd<long>(long* address, long val) {
-  unsigned long long* address_as_ull = (unsigned long long int*)address;
+  unsigned sd::LongType address_as_ull = (unsigned sd::LongType*)address;
 
   //    return atomicAdd(address, val);
   unsigned long int old = *address_as_ull, assumed;
@@ -1910,7 +1910,7 @@ SD_DEVICE SD_INLINE uint32_t atomicAdd(uint32_t* address, uint32_t val) {
 
 // Custom atomicAdd for uint64_t
 SD_DEVICE SD_INLINE uint64_t atomicAdd(uint64_t* address, uint64_t val) {
-  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+  unsigned sd::LongType* address_as_ull = (unsigned sd::LongType*)address;
   unsigned long long int old = *address_as_ull, assumed;
   do {
     assumed = old;
@@ -2123,7 +2123,7 @@ inline SD_DEVICE double sd_atomicSub<double>(double* address, double val) {
 
 template <>
 inline SD_DEVICE double sd_atomicMul<double>(double* address, double val) {
-  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+  unsigned sd::LongType* address_as_ull = (unsigned sd::LongType*)address;
   unsigned long long int old = *address_as_ull, assumed;
   do {
     assumed = old;
@@ -2337,7 +2337,7 @@ inline SD_DEVICE unsigned int sd_atomicMul<unsigned int>(unsigned int* address, 
 
 template <>
 inline SD_DEVICE int64_t sd_atomicMul<int64_t>(int64_t* address, int64_t val) {
-  unsigned long long int* res_address = (unsigned long long int*)address;
+  unsigned sd::LongType* res_address = (unsigned sd::LongType*)address;
   unsigned long long int old = *res_address, assumed;
   do {
     assumed = old;
@@ -2348,7 +2348,7 @@ inline SD_DEVICE int64_t sd_atomicMul<int64_t>(int64_t* address, int64_t val) {
 
 template <>
 inline SD_DEVICE uint64_t sd_atomicMul<uint64_t>(uint64_t* address, uint64_t val) {
-  unsigned long long int* res_address = (unsigned long long int*)address;
+  unsigned sd::LongType* res_address = (unsigned sd::LongType*)address;
   unsigned long long int old = *res_address, assumed;
   do {
     assumed = old;
@@ -2360,7 +2360,7 @@ inline SD_DEVICE uint64_t sd_atomicMul<uint64_t>(uint64_t* address, uint64_t val
 #if !defined(_WIN32) && !defined(_WIN64)
 template <>
 inline SD_DEVICE sd::LongType sd_atomicMul<sd::LongType>(sd::LongType* address, sd::LongType val) {
-  unsigned long long int* res_address = (unsigned long long*)address;
+  unsigned sd::LongType* res_address = (unsigned sd::LongType)address;
   unsigned long long int old = *res_address, assumed;
   do {
     assumed = old;

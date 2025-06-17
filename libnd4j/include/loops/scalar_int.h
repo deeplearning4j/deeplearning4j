@@ -66,7 +66,7 @@ class ScalarIntTransform {
 
   template <typename OpType>
   SD_DEVICE static void transformCuda(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
-                                      const sd::LongType *zShapeInfo, const void *vscalars, long long int *dimension,
+                                      const sd::LongType *zShapeInfo, const void *vscalars, sd::LongType *dimension,
                                       sd::LongType dimensionLength, const sd::LongType *tadShapeInfo,
                                       const sd::LongType *tadOffsets, const sd::LongType *tadShapeInfoZ,
                                       const sd::LongType *tadOffsetsZ);
@@ -100,7 +100,7 @@ class ScalarIntTransform {
 #else
   template <typename OpType>
   static void transform(const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *z,
-                        const sd::LongType *zShapeInfo, const void *scalars, long long int *dimension,
+                        const sd::LongType *zShapeInfo, const void *scalars, sd::LongType *dimension,
                         sd::LongType dimensionLength,
                         const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets,
                         const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ, const sd::LongType start,

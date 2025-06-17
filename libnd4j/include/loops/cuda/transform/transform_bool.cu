@@ -67,7 +67,7 @@ SD_HOST void TransformBool<X, Y>::executeTransformShaped(
    void* z,
    const sd::LongType* zShape,
    long long int zRank,
-   long long int* allocationPointer,
+   sd::LongType* allocationPointer,
    void* reductionPointer,
    const sd::LongType* tadShapeInfo,
    const sd::LongType* tadOffsets)

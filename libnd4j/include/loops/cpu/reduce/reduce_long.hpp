@@ -233,15 +233,6 @@ void SD_HOST ReduceLongFunction<X, Z>::exec(sd::memory::Workspace *workspace, co
     return;
   }
 
-  Z* compatibleExtraParams = nullptr;
-  Z convertedParams[8];
-
-  if (extraParams != nullptr) {
-    for (int i = 0; i < 8; ++i) {
-      convertedParams[i] = static_cast<Z>(extraParams[i]);
-    }
-    compatibleExtraParams = convertedParams;
-  }
 
   // Call ReductionLongLoops with proper Z* type - pass extraParams as X* since that's what ReductionLongLoops expects
   sd::ReductionLongLoops<X, Z>::template innerloopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, reinterpret_cast<X*>(extraParams));

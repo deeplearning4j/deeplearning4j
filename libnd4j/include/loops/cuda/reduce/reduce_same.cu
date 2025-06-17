@@ -60,7 +60,7 @@ SD_KERNEL void simpleScalar(
     void* extraParams,
     void* z,
     const sd::LongType* zShapeInfo,
-    long long int* dimension,
+    sd::LongType* dimension,
     long long int dimensionLength,
     void* reductionBuffer,
     const sd::LongType* tadOnlyShapeInfo) {
@@ -411,7 +411,7 @@ SD_HOST void ReduceSameFunction<X>::intermediateScalar(
     void* z,
     const sd::LongType* zShapeInfo,
     const sd::LongType* hZShapeInfo,
-    long long int* dimension,
+    sd::LongType* dimension,
     sd::LongType dimensionLength,
     void* reductionBuffer,
     const sd::LongType* tadOnlyShapeInfo) {

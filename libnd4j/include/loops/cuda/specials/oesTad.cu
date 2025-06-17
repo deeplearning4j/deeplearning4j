@@ -24,7 +24,7 @@
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 SD_KERNEL void execOesTadKernelKey(void *vx, sd::LongType const *xShapeInfo, void *vy, sd::LongType const *yShapeInfo,
-                                   long long int *dimension, long long int dimensionLength, sd::LongType const *tadShapeInfo,
+                                   sd::LongType *dimension, long long int dimensionLength, sd::LongType const *tadShapeInfo,
                                    sd::LongType const *tadOffsets, bool descending) {
   auto x = static_cast<X *>(vx);
   auto y = static_cast<Y *>(vy);

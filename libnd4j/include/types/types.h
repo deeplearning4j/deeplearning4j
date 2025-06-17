@@ -32,6 +32,7 @@
 #include <types/uint16.h>
 #include <types/uint8.h>
 #include <types/utf8string.h>
+#include <types/types_impl.h>
 /**
  * @brief type related Macrosses to help with template instantiations.
  *

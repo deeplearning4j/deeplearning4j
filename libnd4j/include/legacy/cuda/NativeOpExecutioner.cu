@@ -1264,7 +1264,7 @@ void NativeOpExecutioner::execScalarInt(sd::LaunchContext *lc, int opNum, const 
                                         const void *dX, const sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
                                         const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
                                         const void *hScalars, const sd::LongType *hScalarShapeInfo, const void *dScalars,
-                                        const sd::LongType *dScalarShapeInfo, long long int *dimension, sd::LongType dimensionLength,
+                                        const sd::LongType *dScalarShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength,
                                         const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets,
                                         const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ) {
   auto stream = lc->getCudaStream();
@@ -1514,7 +1514,7 @@ void NativeOpExecutioner::execReduce3TAD(sd::LaunchContext* lc, int opNum, const
                                          const void* dX, const sd::LongType* dXShapeInfo, void* extraParamsVals,
                                          const void* hY, const sd::LongType* hYShapeInfo, const void* dY,
                                          const sd::LongType* dYShapeInfo, void* hZ, const sd::LongType* hZShapeInfo, void* dZ,
-                                         const sd::LongType* dZShapeInfo, long long int* dimension,
+                                         const sd::LongType* dZShapeInfo, sd::LongType* dimension,
                                          long long int dimensionLength, const sd::LongType* tadShapeInfo,
                                          const sd::LongType* tadOffsets, const sd::LongType* yTadShapeInfo,
                                          const sd::LongType* yTadOffsets) {

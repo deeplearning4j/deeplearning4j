@@ -32,7 +32,7 @@ using namespace simdOps;
 template <typename X, typename OpType>
 SD_KERNEL void transformSameSimple(const void *x, const sd::LongType *xShapeInfo, long long int xRank, void *params, void *z,
                                   const sd::LongType *zShapeInfo, long long int zRank,
-                                  long long int *allocationPointer,
+                                  sd::LongType *allocationPointer,
                                   void *reductionPointer, const sd::LongType *tadShapeInfo,
                                   const sd::LongType *tadOffsets) {
  functions::transform::TransformSame<X>::template transformCuda<OpType>(

@@ -46,7 +46,7 @@ class TransformBool {
 
   template <typename OpType>
   static SD_DEVICE void transformCuda(const void *dy, const sd::LongType *shapeInfo, void *params, void *result,
-                                      const sd::LongType *resultShapeInfo, long long int *allocationPointer,
+                                      const sd::LongType *resultShapeInfo, sd::LongType *allocationPointer,
                                       void *reductionPointer, const sd::LongType *tadShapeInfo,
                                       const sd::LongType *tadOffsets);
 
@@ -54,14 +54,14 @@ class TransformBool {
   static SD_HOST void intermediateShaped(dim3 launchDims, cudaStream_t *stream, const void *x,
                                          const sd::LongType *xShape, long long int xRank, void *extraParams, void *z,
                                          const sd::LongType *zShape, long long int zRank,
-                                         long long int *allocationPointer,
+                                         sd::LongType *allocationPointer,
                                          void *reductionPointer, const sd::LongType *tadShapeInfo,
                                          const sd::LongType *tadOffsets);
 
   static SD_HOST void executeTransformShaped(dim3 launchDims, cudaStream_t *stream, const int opNum, const void *x,
                                              const sd::LongType *xShape, long long int xRank, void *extraParams, void *z,
                                              const sd::LongType *zShape, long long int zRank,
-                                             long long int *allocationPointer,
+                                             sd::LongType *allocationPointer,
                                              void *reductionPointer, const sd::LongType *tadShapeInfo,
                                              const sd::LongType *tadOffsets);
 

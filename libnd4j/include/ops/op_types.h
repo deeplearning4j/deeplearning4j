@@ -277,22 +277,6 @@ struct AggregateType<bfloat16> {
 #define DECLARE_NO_SPECIAL_ACCUMULATION_CUDA(X_TYPE, Z_TYPE)
 #endif
 
-#define DECLARE_NO_SPECIAL_ACCUMULATION(X_TYPE, Z_TYPE) \
- static const bool requiresSpecialAccumulation = false; \
- static void execSpecial(const X_TYPE *x, const sd::LongType *xShapeInfo, void *extraParams, Z_TYPE *result, \
-                         const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, sd::LongType dimensionLength, \
-                         const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {} \
- static void execSpecial(const X_TYPE *x, const sd::LongType *xShapeInfo, Z_TYPE *extraParams, Z_TYPE *result, \
-                         const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, sd::LongType dimensionLength, \
-                         const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {} \
- template<typename U = X_TYPE, typename V = Z_TYPE> \
- static typename std::enable_if<!std::is_same_v<U, V>, void>::type execSpecial( \
-     const X_TYPE *x, const sd::LongType *xShapeInfo, X_TYPE *extraParams, Z_TYPE *result, \
-     const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, sd::LongType dimensionLength, \
-     const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {} \
- static void execSpecial(const X_TYPE *x, const sd::LongType *xShapeInfo, sd::LongType *extraParams, Z_TYPE *result, \
-                         const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, sd::LongType dimensionLength, \
-                         const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {}
 
 #define DECLARE_NO_SPECIAL_ACCUMULATION(X_TYPE, Z_TYPE) \
  static const bool requiresSpecialAccumulation = false; \

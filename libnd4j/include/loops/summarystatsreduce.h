@@ -260,7 +260,7 @@ class SummaryStatsReduce {
                          void *extraParams, void *vz,  sd::LongType *resultShapeInfoBuffer);
 
   static void exec(int opNum, bool biasCorrected,  void *x,  sd::LongType *xShapeInfo, void *extraParams,
-                   void *vz,  sd::LongType *resultShapeInfoBuffer, long long int *dimension,
+                   void *vz,  sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension,
                    long long int dimensionLength);
 
   template <typename OpType>
