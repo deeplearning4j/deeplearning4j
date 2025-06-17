@@ -359,6 +359,5 @@ SD_HOST void SummaryStatsReduce<X, Z>::execSummaryStatsReduce(
 }
 
 BUILD_DOUBLE_TEMPLATE(template class SummaryStatsReduce, , SD_COMMON_TYPES, SD_FLOAT_TYPES);
-
 }
 }

@@ -614,9 +614,18 @@ else()
     endforeach()
 endif()
 
-# Enhanced Compile Definitions for Types
+# Enhanced Compile Definitions for Types - FIXED TO PREVENT ACCIDENTAL SELECTIVE MODE
 list(LENGTH SD_TYPES_LIST SD_TYPES_LIST_COUNT)
-if(SD_TYPES_LIST_COUNT GREATER 0)
+
+# Only enable selective types if explicitly requested by user
+set(USER_REQUESTED_SELECTIVE FALSE)
+if(DEFINED SD_TYPES_LIST_EXPLICIT OR
+   (SD_DEBUG_TYPE_PROFILE AND NOT SD_DEBUG_TYPE_PROFILE STREQUAL "") OR
+   SD_STRICT_TYPE_VALIDATION)
+    set(USER_REQUESTED_SELECTIVE TRUE)
+endif()
+
+if(SD_TYPES_LIST_COUNT GREATER 0 AND USER_REQUESTED_SELECTIVE)
     add_compile_definitions(SD_SELECTIVE_TYPES)
     string(APPEND DEFINITIONS_CONTENT "#define SD_SELECTIVE_TYPES\n")
 
@@ -638,9 +647,13 @@ if(SD_TYPES_LIST_COUNT GREATER 0)
     print_status_colored("SUCCESS" "Building with ${TYPE_COUNT} data types: ${TYPE_DISPLAY_STRING}")
 
 else()
-    # Building with all types
+    # Building with all types - ensure SD_SELECTIVE_TYPES is NOT defined
     print_status_colored("INFO" "=== BUILDING WITH ALL TYPES ===")
-    message(STATUS "No selective types specified - building with all supported data types")
+    if(SD_TYPES_LIST_COUNT GREATER 0 AND NOT USER_REQUESTED_SELECTIVE)
+        print_status_colored("INFO" "SD_TYPES_LIST was populated internally but selective types not requested")
+        print_status_colored("INFO" "Building with ALL types (ignoring internal type list)")
+    endif()
+    message(STATUS "Building with all supported data types (SD_SELECTIVE_TYPES disabled)")
     message(STATUS "This will include all type instantiations and may result in larger binaries")
 endif()
 
@@ -2001,34 +2014,36 @@ set(INSTANTIATION_TEMPLATES_2
 "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/impl/compilation_units/specials_single.cpp.in"
 )
 
-include(CheckLanguage)
-check_language(CUDA)
-
-if(CMAKE_CUDA_COMPILER)
-    enable_language(CUDA)
-    message(STATUS "CUDA language enabled successfully")
-else()
-    # Try to find nvcc manually
-    find_program(NVCC_EXECUTABLE nvcc)
-    if(NVCC_EXECUTABLE)
-        set(CMAKE_CUDA_COMPILER ${NVCC_EXECUTABLE})
-        enable_language(CUDA)
-        message(STATUS "CUDA compiler found and language enabled: ${CMAKE_CUDA_COMPILER}")
-    else()
-        message(FATAL_ERROR "CUDA compiler not found. Please ensure:\n"
-                "  1. CUDA toolkit is installed\n"
-                "  2. nvcc is in your PATH\n"
-                "  3. Or set CMAKE_CUDA_COMPILER explicitly\n"
-                "  4. Or set CUDA_TOOLKIT_ROOT_DIR environment variable")
-    endif()
-endif()
-
-# Continue with rest of CUDA configuration...
-set(CMAKE_CUDA_COMPILER_LAUNCHER "" CACHE STRING "CUDA compiler launcher")
 
 # CUDA Configuration
 if(SD_CUDA)
-message(STATUS "=== CUDA BUILD CONFIGURATION ===")
+
+    include(CheckLanguage)
+    check_language(CUDA)
+
+    if(CMAKE_CUDA_COMPILER)
+        enable_language(CUDA)
+        message(STATUS "CUDA language enabled successfully")
+    else()
+        # Try to find nvcc manually
+        find_program(NVCC_EXECUTABLE nvcc)
+        if(NVCC_EXECUTABLE)
+            set(CMAKE_CUDA_COMPILER ${NVCC_EXECUTABLE})
+            enable_language(CUDA)
+            message(STATUS "CUDA compiler found and language enabled: ${CMAKE_CUDA_COMPILER}")
+        else()
+            message(FATAL_ERROR "CUDA compiler not found. Please ensure:\n"
+                    "  1. CUDA toolkit is installed\n"
+                    "  2. nvcc is in your PATH\n"
+                    "  3. Or set CMAKE_CUDA_COMPILER explicitly\n"
+                    "  4. Or set CUDA_TOOLKIT_ROOT_DIR environment variable")
+        endif()
+    endif()
+
+    # Continue with rest of CUDA configuration...
+    set(CMAKE_CUDA_COMPILER_LAUNCHER "" CACHE STRING "CUDA compiler launcher")
+
+    message(STATUS "=== CUDA BUILD CONFIGURATION ===")
 
 set(CMAKE_CUDA_COMPILER_LAUNCHER "" CACHE STRING "CUDA compiler launcher")
 
