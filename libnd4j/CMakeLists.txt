@@ -2037,14 +2037,18 @@ set(CMAKE_CUDA_COMPILER_LAUNCHER "" CACHE STRING "CUDA compiler launcher")
 
 # Disable response files for CUDA compilation on Windows
 if(WIN32)
-message(STATUS "Configuring Windows CUDA build with proper response files...")
+message(STATUS "Configuring Windows CUDA build - fixing nvcc command line issues...")
 
-# Enable response files but don't override CMAKE_CUDA_COMPILE_OBJECT
-set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS ON)
-set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES ON)
-set(CMAKE_CUDA_RESPONSE_FILE_LINK_FLAG "@")
+# Disable response files and fix NVCC command generation
+set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS OFF)
+set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES OFF)
 
-message(STATUS "Windows CUDA: Enabled response file support for long command lines")
+# Override the problematic CUDA compile command to fix -Xcompiler issues
+set(CMAKE_CUDA_COMPILE_OBJECT
+    "<CMAKE_CUDA_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -x cu -rdc=true -c <SOURCE> -o <OBJECT>"
+)
+
+message(STATUS "Windows CUDA: Fixed nvcc command line generation")
 endif()
 # Verify CUDA was enabled successfully
 if(NOT CMAKE_CUDA_COMPILER)
