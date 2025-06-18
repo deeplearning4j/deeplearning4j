@@ -1114,6 +1114,7 @@ if [ -z "$PACKAGING" ]; then
     PACKAGING="none"
 fi
 
+export CMAKE_COMMAND="$CMAKE_COMMAND -DSD_SANITIZE=$SANITIZE -DSD_SANITIZERS=$SANITIZERS"
 
 if [ "$CHIP_EXTENSION" == "avx512" ] || [ "$ARCH" == "avx512" ]; then
     CHIP_EXTENSION="avx512"
