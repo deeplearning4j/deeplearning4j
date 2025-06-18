@@ -344,16 +344,6 @@ jobs:
           
           echo "Maven build completed successfully"
 
-      - name: Upload build artifacts
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: android-arm64-build-logs-${{ matrix.helper }}
-          path: |
-            **/target/surefire-reports/
-            **/hs_err_pid*.log
-            libnd4j/blasbuild/**/CMakeFiles/CMakeOutput.log
-            libnd4j/blasbuild/**/CMakeFiles/CMakeError.log
 
       - name: Cleanup swap and temporary files
         if: always()
