@@ -89,7 +89,7 @@
         <libnd4j.datatypes></libnd4j.datatypes>
         <libnd4j.sanitize>OFF</libnd4j.sanitize>
         <libnd4j.ptxas>OFF</libnd4j.ptxas>
-        <libnd4j.sanitizers>address,</libnd4j.sanitizers>
+        <libnd4j.sanitizers>address</libnd4j.sanitizers>
         <libnd4j.arch></libnd4j.arch>
         <openblas.artifactId></openblas.artifactId>
         <openblas.classifier></openblas.classifier>
