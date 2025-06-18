@@ -395,10 +395,11 @@ jobs:
           
           # Base Maven command
           BASE_COMMAND="mvn ${{ matrix.mvn_ext }} \
-            -Dlibnd4j.generate.flatc=ON \
+            -Dlibnd4j.generate.flatc=ON --no-transfer-progress \
             -Posx-aarch64-protoc \
             -pl ${MODULES} \
             -Pcpu \
+             --no-transfer-progress \
             -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} \
             -Dhttp.keepAlive=false \
             -Dmaven.wagon.http.pool=false \
