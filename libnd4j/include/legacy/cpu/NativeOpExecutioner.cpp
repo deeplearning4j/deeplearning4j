@@ -560,7 +560,7 @@ void NativeOpExecutioner::execReduceFloatScalar(sd::LaunchContext *lc, int opNum
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceFloatFunction,
-                        ::execScalar(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo), SD_COMMON_TYPES,
+                        ::execScalar(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo), SD_NUMERIC_TYPES,
                         SD_FLOAT_TYPES);
 }
 

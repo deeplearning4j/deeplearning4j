@@ -1,3 +1,5 @@
+name: Build Android ARM64
+
 on:
   workflow_dispatch:
     inputs:
@@ -44,12 +46,17 @@ on:
       runsOn:
         description: 'System to run on'
         required: false
-        default: ubuntu-22.04-arm
+        default: ubuntu-22.04
 
       debug_enabled:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
         required: false
         default: false
+
+      androidApiLevel:
+        description: 'Android API level to target'
+        required: false
+        default: 21
 
 jobs:
   android-arm64:
@@ -66,7 +73,9 @@ jobs:
           - server_id: ${{ github.event.inputs.serverId }}
           - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
           - build_threads: ${{ github.event.inputs.buildThreads }}
+          - android_api_level: ${{ github.event.inputs.androidApiLevel }}
     runs-on: ${{ github.event.inputs.runsOn }}
+    
     steps:
       - name: Clean workspace
         uses: AutoModality/action-clean@v1
@@ -77,7 +86,7 @@ jobs:
           access_token: ${{ github.token }}
 
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Free Disk Space
         uses: jlumbroso/free-disk-space@main
@@ -136,12 +145,12 @@ jobs:
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
           cache: 'maven'
 
-      - name: Cache ARM64 Android NDK
+      - name: Cache Android NDK
         uses: actions/cache@v4
-        id: cache-arm64-ndk
+        id: cache-android-ndk
         with:
           path: ${{ github.workspace }}/android-ndk-r27b
-          key: android-ndk-r27b-aarch64-${{ runner.os }}-v1
+          key: android-ndk-r27b-${{ runner.os }}-${{ runner.arch }}-v2
 
       - name: Setup Android NDK
         id: setup-ndk
@@ -150,11 +159,58 @@ jobs:
           NDK_VERSION="r27b"
           NDK_DIR="${GITHUB_WORKSPACE}/android-ndk-${NDK_VERSION}"
           
-          if [ ! -d "${NDK_DIR}" ]; then
-            echo "Downloading ARM64 Android NDK ${NDK_VERSION}..."
-            wget -q "https://github.com/lzhiyong/termux-ndk/releases/download/android-ndk/android-ndk-r27b-aarch64.zip" -O ndk.zip
+          echo "Setting up Android NDK ${NDK_VERSION}..."
+          echo "Runner OS: ${{ runner.os }}"
+          echo "Runner Arch: ${{ runner.arch }}"
+          echo "Target NDK directory: ${NDK_DIR}"
+          
+          if [ ! -d "${NDK_DIR}" ] || [ ! -f "${NDK_DIR}/ndk-build" ]; then
+            echo "NDK not found in cache or incomplete, downloading..."
+          
+            # Determine the correct NDK download URL based on runner architecture
+            if [ "${{ runner.arch }}" = "ARM64" ] || [ "${{ runner.arch }}" = "arm64" ]; then
+              # For ARM64 runners (like GitHub's ARM64 runners)
+              NDK_URL="https://github.com/lzhiyong/termux-ndk/releases/download/android-ndk/android-ndk-r27b-aarch64.zip"
+              echo "Using ARM64 NDK for ARM64 runner"
+            else
+              # For x86_64 runners
+              NDK_URL="https://dl.google.com/android/repository/android-ndk-r27b-linux.zip"
+              echo "Using x86_64 NDK for x86_64 runner"
+            fi
+          
+            echo "Downloading from: ${NDK_URL}"
+          
+            # Download with retry logic
+            MAX_RETRIES=3
+            RETRY_COUNT=0
+          
+            while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+              if wget -q --show-progress --progress=bar:force:noscroll "${NDK_URL}" -O ndk.zip; then
+                echo "Download successful"
+                break
+              else
+                RETRY_COUNT=$((RETRY_COUNT + 1))
+                echo "Download failed, retry ${RETRY_COUNT}/${MAX_RETRIES}"
+                if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+                  echo "ERROR: Failed to download NDK after ${MAX_RETRIES} attempts"
+                  exit 1
+                fi
+                sleep 5
+              fi
+            done
+          
+            # Extract NDK
+            echo "Extracting NDK..."
             unzip -q ndk.zip -d "${GITHUB_WORKSPACE}"
             rm ndk.zip
+          
+            # Verify extraction
+            if [ ! -f "${NDK_DIR}/ndk-build" ]; then
+              echo "ERROR: NDK extraction failed or incomplete"
+              ls -la "${GITHUB_WORKSPACE}/"
+              exit 1
+            fi
+          
             echo "NDK downloaded and extracted successfully"
           else
             echo "Using cached NDK at ${NDK_DIR}"
@@ -165,21 +221,92 @@ jobs:
           echo "ANDROID_NDK_ROOT=${NDK_DIR}" >> $GITHUB_ENV
           echo "ANDROID_NDK=${NDK_DIR}" >> $GITHUB_ENV
           echo "ANDROID_NDK_HOME=${NDK_DIR}" >> $GITHUB_ENV
+          echo "ANDROID_VERSION=${{ matrix.android_api_level }}" >> $GITHUB_ENV
           
-          # Verify NDK installation
+          # Verify NDK structure and create compatibility directories
+          echo "Verifying NDK structure..."
+          
+          # Check for modern NDK structure
+          TOOLCHAIN_DIR="${NDK_DIR}/toolchains/llvm/prebuilt"
+          if [ -d "${TOOLCHAIN_DIR}" ]; then
+            echo "✓ Found modern NDK structure with unified toolchain"
+          
+            # Detect the correct prebuilt directory
+            if [ -d "${TOOLCHAIN_DIR}/linux-x86_64" ]; then
+              PREBUILT_DIR="${TOOLCHAIN_DIR}/linux-x86_64"
+            elif [ -d "${TOOLCHAIN_DIR}/linux-aarch64" ]; then
+              PREBUILT_DIR="${TOOLCHAIN_DIR}/linux-aarch64"
+            else
+              echo "ERROR: Could not find prebuilt toolchain directory"
+              ls -la "${TOOLCHAIN_DIR}/"
+              exit 1
+            fi
+          
+            echo "✓ Using prebuilt toolchain: ${PREBUILT_DIR}"
+          
+            # Verify sysroot exists
+            SYSROOT="${PREBUILT_DIR}/sysroot"
+            if [ ! -d "${SYSROOT}" ]; then
+              echo "ERROR: Sysroot not found at ${SYSROOT}"
+              exit 1
+            fi
+          
+            echo "✓ Sysroot verified: ${SYSROOT}"
+          
+            # Create legacy platform structure for CMake compatibility
+            LEGACY_PLATFORM_DIR="${NDK_DIR}/platforms/android-${{ matrix.android_api_level }}/arch-arm64"
+            if [ ! -d "${LEGACY_PLATFORM_DIR}" ]; then
+              echo "Creating legacy platform directory for CMake compatibility..."
+              mkdir -p "${LEGACY_PLATFORM_DIR}"
+          
+              # Create symbolic links to sysroot contents
+              if [ -d "${SYSROOT}/usr" ]; then
+                ln -sf "${SYSROOT}/usr" "${LEGACY_PLATFORM_DIR}/usr"
+                echo "✓ Created symbolic link to sysroot/usr"
+              fi
+            fi
+          
+            # Verify compilers exist
+            API_LEVEL="${{ matrix.android_api_level }}"
+            CLANG_PATH="${PREBUILT_DIR}/bin/aarch64-linux-android${API_LEVEL}-clang"
+            CLANGXX_PATH="${PREBUILT_DIR}/bin/aarch64-linux-android${API_LEVEL}-clang++"
+          
+            if [ -f "${CLANG_PATH}" ] && [ -f "${CLANGXX_PATH}" ]; then
+              echo "✓ Found API-specific compilers"
+            elif [ -f "${PREBUILT_DIR}/bin/clang" ] && [ -f "${PREBUILT_DIR}/bin/clang++" ]; then
+              echo "✓ Found generic clang compilers"
+            else
+              echo "ERROR: No suitable compilers found"
+              ls -la "${PREBUILT_DIR}/bin/"
+              exit 1
+            fi
+          
+          else
+            echo "ERROR: Modern NDK toolchain structure not found"
+            echo "Expected: ${TOOLCHAIN_DIR}"
+            ls -la "${NDK_DIR}/"
+            exit 1
+          fi
+          
+          # Final verification
           if [ -f "${NDK_DIR}/ndk-build" ]; then
-            echo "NDK verification successful"
-            echo "NDK version: $(cat ${NDK_DIR}/source.properties | grep Pkg.Revision)"
+            echo "✓ NDK verification successful"
+            echo "NDK version: $(cat ${NDK_DIR}/source.properties 2>/dev/null | grep Pkg.Revision || echo 'Version info not available')"
+            echo "NDK path: ${NDK_DIR}"
           else
             echo "ERROR: NDK installation verification failed"
             exit 1
           fi
+          
+          # Set additional environment variables for the build
+          echo "ANDROID_NATIVE_API_LEVEL=${{ matrix.android_api_level }}" >> $GITHUB_ENV
 
       - name: Setup OpenBLAS
         shell: bash
         run: |
           echo "Setting up OpenBLAS for Android ARM64..."
-          OPENBLAS_JAR="openblas-0.3.19-1.5.7-android-arm64.jar"
+          OPENBLAS_VERSION="0.3.28-1.5.11"
+          OPENBLAS_JAR="openblas-${OPENBLAS_VERSION}-android-arm64.jar"
           OPENBLAS_HOME="${GITHUB_WORKSPACE}/openblas_home"
           OPENBLAS_DIR="${OPENBLAS_HOME}/lib/arm64-v8a"
           
@@ -187,20 +314,40 @@ jobs:
           cd "${OPENBLAS_HOME}"
           
           echo "Downloading ${OPENBLAS_JAR}..."
-          wget -q "https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/${OPENBLAS_JAR}"
+          # Use the version from the error log
+          MAVEN_URL="https://repo1.maven.org/maven2/org/bytedeco/openblas/${OPENBLAS_VERSION}/${OPENBLAS_JAR}"
+          
+          if wget -q "${MAVEN_URL}"; then
+            echo "✓ Downloaded OpenBLAS successfully"
+          else
+            echo "ERROR: Failed to download OpenBLAS from ${MAVEN_URL}"
+            exit 1
+          fi
+          
           unzip -q "${OPENBLAS_JAR}"
           
-          # Create symlink for library consistency
-          if [ -f "${OPENBLAS_DIR}/libopenblas.so" ] && [ ! -f "${OPENBLAS_DIR}/libopenblas.so.0" ]; then
-            ln -s "${OPENBLAS_DIR}/libopenblas.so" "${OPENBLAS_DIR}/libopenblas.so.0"
+          # Verify the library files exist
+          if [ -d "${OPENBLAS_DIR}" ]; then
+            echo "✓ OpenBLAS library directory found: ${OPENBLAS_DIR}"
+            ls -la "${OPENBLAS_DIR}/"
+          
+            # Create symlink for library consistency if needed
+            if [ -f "${OPENBLAS_DIR}/libopenblas.so" ] && [ ! -f "${OPENBLAS_DIR}/libopenblas.so.0" ]; then
+              ln -s "${OPENBLAS_DIR}/libopenblas.so" "${OPENBLAS_DIR}/libopenblas.so.0"
+              echo "✓ Created libopenblas.so.0 symlink"
+            fi
+          else
+            echo "ERROR: OpenBLAS library directory not found"
+            echo "Contents of ${OPENBLAS_HOME}:"
+            find "${OPENBLAS_HOME}" -type f -name "*.so*" || true
+            exit 1
           fi
           
           # Set environment variables
           echo "OPENBLAS_PATH=${OPENBLAS_DIR}" >> "$GITHUB_ENV"
           echo "OPENBLAS_HOME=${OPENBLAS_HOME}" >> "$GITHUB_ENV"
           
-          echo "OpenBLAS setup complete at: ${OPENBLAS_DIR}"
-          ls -la "${OPENBLAS_DIR}/"
+          echo "✓ OpenBLAS setup complete"
 
       - name: Setup ARM Compute Library
         if: matrix.helper == 'armcompute'
@@ -210,21 +357,40 @@ jobs:
           ARMCOMPUTE_VERSION="v25.04"
           ARMCOMPUTE_HOME="${GITHUB_WORKSPACE}/armcompute_home"
           ARMCOMPUTE_PACKAGE="arm_compute-${ARMCOMPUTE_VERSION}-android-aarch64-cpu-bin"
+          ARMCOMPUTE_URL="https://github.com/ARM-software/ComputeLibrary/releases/download/${ARMCOMPUTE_VERSION}/${ARMCOMPUTE_PACKAGE}.tar.gz"
           
           mkdir -p "${ARMCOMPUTE_HOME}"
           cd "${ARMCOMPUTE_HOME}"
           
           echo "Downloading ARM Compute Library ${ARMCOMPUTE_VERSION}..."
-          wget -q "https://github.com/ARM-software/ComputeLibrary/releases/download/${ARMCOMPUTE_VERSION}/${ARMCOMPUTE_PACKAGE}.tar.gz"
+          echo "URL: ${ARMCOMPUTE_URL}"
+          
+          if wget -q --show-progress "${ARMCOMPUTE_URL}"; then
+            echo "✓ Downloaded ARM Compute Library successfully"
+          else
+            echo "ERROR: Failed to download ARM Compute Library"
+            exit 1
+          fi
+          
           tar -xzf "${ARMCOMPUTE_PACKAGE}.tar.gz"
           
-          # Set environment variables
+          # Verify extraction
           ARMCOMPUTE_ROOT="${ARMCOMPUTE_HOME}/${ARMCOMPUTE_PACKAGE}"
+          if [ -d "${ARMCOMPUTE_ROOT}" ]; then
+            echo "✓ ARM Compute Library extracted successfully"
+            echo "Contents:"
+            ls -la "${ARMCOMPUTE_ROOT}/"
+          else
+            echo "ERROR: ARM Compute Library extraction failed"
+            ls -la "${ARMCOMPUTE_HOME}/"
+            exit 1
+          fi
+          
+          # Set environment variables
           echo "ARMCOMPUTE_ROOT=${ARMCOMPUTE_ROOT}" >> "$GITHUB_ENV"
           echo "ARMCOMPUTE_HOME=${ARMCOMPUTE_HOME}" >> "$GITHUB_ENV"
           
-          echo "ARM Compute Library setup complete at: ${ARMCOMPUTE_ROOT}"
-          ls -la "${ARMCOMPUTE_ROOT}/"
+          echo "✓ ARM Compute Library setup complete"
 
       - name: Configure Maven command
         shell: bash
@@ -238,12 +404,13 @@ jobs:
           if [ "${{ github.event.inputs.libnd4jUrl }}" != '' ]; then
              MODULES=':nd4j-native,:nd4j-native-preset'
              echo "Using pre-built libnd4j from: ${{ github.event.inputs.libnd4jUrl }}"
+             echo "LIBND4J_HOME=${{ github.event.inputs.libnd4jUrl }}" >> "$GITHUB_ENV"
           else
              MODULES=':nd4j-native,:nd4j-native-preset,:libnd4j'
              echo "Building libnd4j from source"
           fi
           
-          # Base Maven command
+          # Base Maven command with improved Android-specific settings
           BASE_COMMAND="mvn ${{ matrix.mvn_ext }} \
             -Dlibnd4j.generate.flatc=ON \
             -Posx-aarch64-protoc \
@@ -257,7 +424,7 @@ jobs:
             -DskipTestResourceEnforcement=true \
             -Dmaven.javadoc.failOnError=false \
             -Djavacpp.platform=${LIBND4J_CLASSIFIER} \
-            -Pcpu \
+            -Djavacpp.platform.android=true \
             --also-make \
             --batch-mode \
             deploy \
@@ -281,8 +448,7 @@ jobs:
           echo "LIBND4J_CLASSIFIER=${LIBND4J_CLASSIFIER}" >> $GITHUB_ENV
           echo "MAVEN_COMMAND=${FINAL_COMMAND}" >> $GITHUB_ENV
           
-          echo "Maven command configured:"
-          echo "${FINAL_COMMAND}"
+          echo "Maven command configured successfully"
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
@@ -306,6 +472,7 @@ jobs:
           PROTO_EXEC: /opt/protobuf/bin/protoc
         run: |
           echo "Starting Maven build for Android ARM64..."
+          echo "============================================"
           
           # Setup PATH
           export PATH="/opt/protobuf/bin:/opt/cmake/bin:$PATH"
@@ -313,22 +480,69 @@ jobs:
           # Setup LD_LIBRARY_PATH
           export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${OPENBLAS_PATH}"
           
-          # Print environment info
-          echo "Build environment:"
+          # Verify Android environment
+          echo "Android Environment Verification:"
+          echo "  ANDROID_NDK_ROOT: ${ANDROID_NDK_ROOT}"
+          echo "  ANDROID_VERSION: ${ANDROID_VERSION}"
+          echo "  ANDROID_NATIVE_API_LEVEL: ${ANDROID_NATIVE_API_LEVEL}"
+          
+          # Verify NDK
+          if [ -f "${ANDROID_NDK_ROOT}/ndk-build" ]; then
+            echo "  ✓ NDK verified: ${ANDROID_NDK_ROOT}"
+          else
+            echo "  ✗ NDK verification failed"
+            exit 1
+          fi
+          
+          # Verify OpenBLAS
+          if [ -d "${OPENBLAS_PATH}" ]; then
+            echo "  ✓ OpenBLAS verified: ${OPENBLAS_PATH}"
+            echo "    OpenBLAS libraries:"
+            ls -la "${OPENBLAS_PATH}/"*.so* 2>/dev/null || echo "    No .so files found"
+          else
+            echo "  ✗ OpenBLAS verification failed"
+            exit 1
+          fi
+          
+          # Verify ARM Compute if enabled
+          if [ "${{ matrix.helper }}" == "armcompute" ]; then
+            if [ -d "${ARMCOMPUTE_ROOT}" ]; then
+              echo "  ✓ ARM Compute verified: ${ARMCOMPUTE_ROOT}"
+            else
+              echo "  ✗ ARM Compute verification failed"
+              exit 1
+            fi
+          fi
+          
+          # Print build environment info
+          echo ""
+          echo "Build Environment:"
           echo "  Java version: $(java -version 2>&1 | head -1)"
           echo "  Maven version: $(mvn -version | head -1)"
-          echo "  Android NDK: ${ANDROID_NDK_ROOT}"
-          echo "  OpenBLAS: ${OPENBLAS_PATH}"
-          if [ "${{ matrix.helper }}" == "armcompute" ]; then
-            echo "  ARM Compute: ${ARMCOMPUTE_ROOT}"
-          fi
           echo "  Build threads: ${{ github.event.inputs.buildThreads }}"
+          echo "  Helper: ${{ matrix.helper }}"
+          echo "  API Level: ${{ matrix.android_api_level }}"
           echo ""
           
+          # Verify toolchain file exists
+          TOOLCHAIN_FILE="${GITHUB_WORKSPACE}/cmake/android-arm64.cmake"
+          if [ ! -f "${TOOLCHAIN_FILE}" ]; then
+            echo "ERROR: Android toolchain file not found: ${TOOLCHAIN_FILE}"
+            echo "Available cmake files:"
+            ls -la "${GITHUB_WORKSPACE}/cmake/" || echo "cmake directory not found"
+            exit 1
+          else
+            echo "  ✓ Toolchain file found: ${TOOLCHAIN_FILE}"
+          fi
+          
           # Execute Maven build
-          echo "Executing Maven command:"
-          echo "${MAVEN_COMMAND}"
           echo ""
+          echo "Executing Maven build..."
+          echo "Command: ${MAVEN_COMMAND}"
+          echo "============================================"
+          
+          # Set error handling
+          set -e
           
           if [ "${PERFORM_RELEASE}" == "1" ]; then
               echo "Performing release build..."
@@ -342,25 +556,27 @@ jobs:
               eval "${MAVEN_COMMAND}"
           fi
           
-          echo "Maven build completed successfully"
+          echo ""
+          echo "✓ Maven build completed successfully"
 
-
-      - name: Cleanup swap and temporary files
+      - name: Cleanup resources
         if: always()
         shell: bash
         run: |
-          echo "Cleaning up temporary files..."
+          echo "Cleaning up resources..."
           
           # Remove swap file
           sudo swapoff /swapfile 2>/dev/null || true
           sudo rm -f /swapfile 2>/dev/null || true
+          echo "✓ Swap file removed"
           
-          # Clean up NDK if not cached
-          if [ "${{ steps.cache-arm64-ndk.outputs.cache-hit }}" != 'true' ]; then
-            echo "NDK was downloaded fresh, keeping for cache"
-          fi
-          
-          # Clean up temporary build files
+          # Clean up temporary build files (but keep NDK cache)
           rm -rf /tmp/maven-* 2>/dev/null || true
+          echo "✓ Temporary files cleaned"
           
-          echo "Cleanup completed"
+          # Show disk usage
+          echo "Final disk usage:"
+          df -h
+          
+          echo "✓ Cleanup completed"
+

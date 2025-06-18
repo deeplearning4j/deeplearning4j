@@ -2040,18 +2040,10 @@ set(CMAKE_CUDA_COMPILER_LAUNCHER "" CACHE STRING "CUDA compiler launcher")
 if(WIN32)
 message(STATUS "Configuring Windows CUDA build with proper response files...")
 
-# DO NOT override CMAKE_CUDA_COMPILE_OBJECT - this was causing the nvcc fatal error
-# Instead, enable response files to handle long command lines properly
+# Enable response files but don't override CMAKE_CUDA_COMPILE_OBJECT
 set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS ON)
 set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES ON)
-set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LIBRARIES ON)
-set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LINK_OBJECTS ON)
-
-# Set proper response file flag for CUDA on Windows
 set(CMAKE_CUDA_RESPONSE_FILE_LINK_FLAG "@")
-
-# Enable response file for compilation to handle long include/define lists
-set(CMAKE_CUDA_COMPILE_OPTIONS_USE_RESPONSE_FILE ON)
 
 message(STATUS "Windows CUDA: Enabled response file support for long command lines")
 endif()
@@ -2098,8 +2090,8 @@ if(WIN32 AND MSVC)
 # Ensure CUDA uses MSVC as host compiler
 set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
 
-# Add MSVC flags properly for NVCC
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/nologo,/EHsc,/std:c++17")
+# Add MSVC flags properly for NVCC - SIMPLIFIED
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/nologo -Xcompiler=/EHsc -Xcompiler=/std:c++17")
 
 # Set runtime library to match global MSVC_RT_LIB setting
 if(MSVC_RT_LIB STREQUAL "MultiThreadedDLL")
@@ -2246,15 +2238,16 @@ elseif(COMPUTE_CMP STREQUAL "auto")
 set(CUDA_ARCH_FLAGS "-gencode arch=compute_86,code=sm_86")
 message(STATUS "Auto-detecting CUDA architectures")
 else()
-# FIXED CUDA architecture parsing
-string(REPLACE "," ";" ARCH_LIST "${COMPUTE}")
+# Split on spaces first, then handle dots and commas
+string(REPLACE " " ";" ARCH_LIST "${COMPUTE}")
+string(REPLACE "," ";" ARCH_LIST "${ARCH_LIST}")
 set(CUDA_ARCH_FLAGS "")
 foreach(ARCH ${ARCH_LIST})
 # Remove dots from architecture numbers (8.6 -> 86)
 string(REPLACE "." "" ARCH_CLEAN "${ARCH}")
+string(STRIP "${ARCH_CLEAN}" ARCH_CLEAN)
 # Ensure we have a valid 2-digit architecture number
 if(ARCH_CLEAN MATCHES "^[0-9][0-9]$")
-# FIXED: Ensure proper gencode format with both arch and code
 set(CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS} -gencode arch=compute_${ARCH_CLEAN},code=sm_${ARCH_CLEAN}")
 else()
 message(WARNING "Invalid CUDA architecture: ${ARCH} (cleaned: ${ARCH_CLEAN}). Skipping.")
