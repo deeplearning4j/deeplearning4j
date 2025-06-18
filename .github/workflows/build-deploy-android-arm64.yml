@@ -172,7 +172,7 @@ jobs:
           if [ ! -d "${EXPECTED_DIR}" ]; then
             echo "Creating compatibility directory structure..."
             mkdir -p "${EXPECTED_DIR}"
-            # Link to the unified sysroot - detect correct architecture
+            # Link to the unified sysroot
             SYSROOT="${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64/sysroot"
             if [ ! -d "${SYSROOT}" ]; then
               SYSROOT="${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
@@ -187,7 +187,7 @@ jobs:
             fi
           fi
           
-          # Verify the correct prebuilt directory exists
+          # Verify the correct prebuilt directory exists and set compiler paths
           PREBUILT_DIR="${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64"
           if [ ! -d "${PREBUILT_DIR}" ]; then
             PREBUILT_DIR="${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64"
@@ -199,9 +199,27 @@ jobs:
           fi
           echo "Using prebuilt directory: ${PREBUILT_DIR}"
           
-          # Check for compilers
-          echo "Available compilers:"
-          ls -la "${PREBUILT_DIR}/bin/" | grep -E "(clang|aarch64)" || true
+          # Force correct compiler paths to prevent CMake override
+          CLANG_C="${PREBUILT_DIR}/bin/aarch64-linux-android21-clang"
+          CLANG_CXX="${PREBUILT_DIR}/bin/aarch64-linux-android21-clang++"
+          
+          if [ ! -f "${CLANG_C}" ]; then
+            CLANG_C="${PREBUILT_DIR}/bin/clang"
+            CLANG_CXX="${PREBUILT_DIR}/bin/clang++"
+          fi
+          
+          if [ ! -f "${CLANG_C}" ]; then
+            echo "ERROR: No suitable C compiler found"
+            ls -la "${PREBUILT_DIR}/bin/"
+            exit 1
+          fi
+          
+          # Set compiler environment variables to override CMake detection
+          echo "CC=${CLANG_C}" >> $GITHUB_ENV
+          echo "CXX=${CLANG_CXX}" >> $GITHUB_ENV
+          
+          echo "Forced CC: ${CLANG_C}"
+          echo "Forced CXX: ${CLANG_CXX}"
           
           # Verify NDK installation
           if [ -f "${NDK_DIR}/ndk-build" ]; then
@@ -356,6 +374,8 @@ jobs:
           echo "  Maven version: $(mvn -version | head -1)"
           echo "  Android NDK: ${ANDROID_NDK_ROOT}"
           echo "  OpenBLAS: ${OPENBLAS_PATH}"
+          echo "  CC: ${CC}"
+          echo "  CXX: ${CXX}"
           if [ "${{ matrix.helper }}" == "armcompute" ]; then
             echo "  ARM Compute: ${ARMCOMPUTE_ROOT}"
           fi
