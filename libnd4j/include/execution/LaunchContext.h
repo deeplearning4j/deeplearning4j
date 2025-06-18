@@ -23,7 +23,7 @@
 #ifndef LIBND4J_CUDACONTEXT_H
 #define LIBND4J_CUDACONTEXT_H
 
-#ifdef SD_CUDA
+#ifdef __CUDA_CC__
 #include <cuda.h>
 #include <cuda_device_runtime_api.h>
 #include <cuda_runtime.h>
