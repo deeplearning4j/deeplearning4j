@@ -172,15 +172,36 @@ jobs:
           if [ ! -d "${EXPECTED_DIR}" ]; then
             echo "Creating compatibility directory structure..."
             mkdir -p "${EXPECTED_DIR}"
-            # Link to the unified sysroot
+            # Link to the unified sysroot - detect correct architecture
             SYSROOT="${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64/sysroot"
             if [ ! -d "${SYSROOT}" ]; then
               SYSROOT="${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
             fi
             if [ -d "${SYSROOT}" ]; then
               ln -sf "${SYSROOT}/usr" "${EXPECTED_DIR}/usr"
+              echo "Created symlink from ${SYSROOT}/usr to ${EXPECTED_DIR}/usr"
+            else
+              echo "ERROR: Could not find sysroot in NDK"
+              ls -la "${NDK_DIR}/toolchains/llvm/prebuilt/"
+              exit 1
             fi
           fi
+          
+          # Verify the correct prebuilt directory exists
+          PREBUILT_DIR="${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64"
+          if [ ! -d "${PREBUILT_DIR}" ]; then
+            PREBUILT_DIR="${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64"
+            if [ ! -d "${PREBUILT_DIR}" ]; then
+              echo "ERROR: No prebuilt toolchain directory found"
+              ls -la "${NDK_DIR}/toolchains/llvm/prebuilt/"
+              exit 1
+            fi
+          fi
+          echo "Using prebuilt directory: ${PREBUILT_DIR}"
+          
+          # Check for compilers
+          echo "Available compilers:"
+          ls -la "${PREBUILT_DIR}/bin/" | grep -E "(clang|aarch64)" || true
           
           # Verify NDK installation
           if [ -f "${NDK_DIR}/ndk-build" ]; then

@@ -73,24 +73,47 @@ endif()
 set(CMAKE_C_COMPILER "${NDK_TOOLCHAIN_PATH}/bin/aarch64-linux-android${ANDROID_NATIVE_API_LEVEL}-clang")
 set(CMAKE_CXX_COMPILER "${NDK_TOOLCHAIN_PATH}/bin/aarch64-linux-android${ANDROID_NATIVE_API_LEVEL}-clang++")
 
-# Fallback to generic clang if API-specific compilers don't exist
+# Debug: Show what we're looking for
+message(STATUS "Looking for C compiler: ${CMAKE_C_COMPILER}")
+message(STATUS "Looking for C++ compiler: ${CMAKE_CXX_COMPILER}")
+
+# Verify compilers exist, if not try fallback
 if(NOT EXISTS "${CMAKE_C_COMPILER}")
+   message(STATUS "API-specific compiler not found, trying generic clang...")
    set(CMAKE_C_COMPILER "${NDK_TOOLCHAIN_PATH}/bin/clang")
    set(CMAKE_CXX_COMPILER "${NDK_TOOLCHAIN_PATH}/bin/clang++")
+
+   message(STATUS "Fallback C compiler: ${CMAKE_C_COMPILER}")
+   message(STATUS "Fallback C++ compiler: ${CMAKE_CXX_COMPILER}")
 
    # Add target and API level flags
    set(ANDROID_TARGET_FLAGS "-target aarch64-linux-android${ANDROID_NATIVE_API_LEVEL}")
    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ANDROID_TARGET_FLAGS}")
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ANDROID_TARGET_FLAGS}")
+
+   # Verify fallback compilers exist
+   if(NOT EXISTS "${CMAKE_C_COMPILER}")
+      message(FATAL_ERROR "C compiler does not exist: ${CMAKE_C_COMPILER}")
+   endif()
+   if(NOT EXISTS "${CMAKE_CXX_COMPILER}")
+      message(FATAL_ERROR "C++ compiler does not exist: ${CMAKE_CXX_COMPILER}")
+   endif()
+else()
+   message(STATUS "Found API-specific compilers")
 endif()
 
-# Verify compilers exist
-if(NOT EXISTS "${CMAKE_C_COMPILER}")
-   message(FATAL_ERROR "C compiler does not exist: ${CMAKE_C_COMPILER}")
-endif()
-if(NOT EXISTS "${CMAKE_CXX_COMPILER}")
-   message(FATAL_ERROR "C++ compiler does not exist: ${CMAKE_CXX_COMPILER}")
-endif()
+# Final verification and debug output
+message(STATUS "Final C compiler: ${CMAKE_C_COMPILER}")
+message(STATUS "Final C++ compiler: ${CMAKE_CXX_COMPILER}")
+
+# List available compilers for debugging
+execute_process(
+        COMMAND ls -la "${NDK_TOOLCHAIN_PATH}/bin/"
+        OUTPUT_VARIABLE COMPILER_LIST
+        ERROR_QUIET
+)
+message(STATUS "Available compilers in ${NDK_TOOLCHAIN_PATH}/bin/:")
+message(STATUS "${COMPILER_LIST}")
 
 # Set the find root path
 set(CMAKE_FIND_ROOT_PATH "${CMAKE_SYSROOT}")
@@ -136,3 +159,15 @@ if(NOT EXISTS "${LEGACY_PLATFORM_DIR}")
       )
    endif()
 endif()
+
+# Force the correct compiler paths to prevent CMake from overriding them
+set(CMAKE_C_COMPILER "${CMAKE_C_COMPILER}" CACHE FILEPATH "C compiler" FORCE)
+set(CMAKE_CXX_COMPILER "${CMAKE_CXX_COMPILER}" CACHE FILEPATH "C++ compiler" FORCE)
+
+# Set additional CMake variables to lock in our choices
+set(CMAKE_ANDROID_NDK_TOOLCHAIN_VERSION "clang")
+set(CMAKE_ANDROID_NDK_TOOLCHAIN_HOST_TAG "${NDK_HOST_TAG}")
+
+# Prevent CMake from trying to detect compilers again
+set(CMAKE_C_COMPILER_WORKS TRUE)
+set(CMAKE_CXX_COMPILER_WORKS TRUE)
