@@ -23,7 +23,9 @@
 #ifndef LIBND4J_CUDACONTEXT_H
 #define LIBND4J_CUDACONTEXT_H
 
-#ifdef __CUDACC__
+
+#ifndef __JAVACPP_HACK__
+#ifdef SD_CUDA
 #include <cuda.h>
 #include <cuda_device_runtime_api.h>
 #include <cuda_runtime.h>
@@ -129,5 +131,5 @@ class SD_LIB_EXPORT LaunchContext {
 };
 
 }  // namespace sd
-
+#endif
 #endif  // LIBND4J_CUDACONTEXT_H
