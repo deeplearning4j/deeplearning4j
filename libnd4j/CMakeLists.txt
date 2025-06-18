@@ -53,23 +53,22 @@ set(SD_DEBUG_CUSTOM_TYPES "" CACHE STRING "Custom types for debug profile")
 
 # ===== DISABLE PLT COMPLETELY =====
 # Disable Procedure Linkage Table to prevent memory issues
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-plt")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-plt")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,now")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,now")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR ANDROID)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-plt -fno-semantic-interposition")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-plt -fno-semantic-interposition")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,now -Wl,-z,nodelete")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,now -Wl,-z,nodelete")
 endif()
 
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-plt")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-plt")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,now")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,now")
+# Android-specific PLT fixes
+if(SD_ANDROID_BUILD)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-plt-optimize -static-libgcc -static-libstdc++")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-plt-optimize -static-libgcc -static-libstdc++")
 endif()
 
 # For CUDA builds, disable PLT in host compiler flags
 if(SD_CUDA AND CMAKE_CUDA_COMPILER)
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -fno-plt")
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -fno-plt -Xcompiler -fno-semantic-interposition")
 endif()
 
 # Set default validation mode based on build configuration
