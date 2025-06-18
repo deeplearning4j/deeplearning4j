@@ -136,99 +136,103 @@ jobs:
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
           cache: 'maven'
 
-      - name: Cache ARM64 Android NDK
-        uses: actions/cache@v4
-        id: cache-arm64-ndk
-        with:
-          path: ${{ github.workspace }}/android-ndk-r27b
-          key: android-ndk-r27b-aarch64-${{ runner.os }}-v1
-
       - name: Setup Android NDK
         id: setup-ndk
         shell: bash
         run: |
-          NDK_VERSION="r27b"
-          NDK_DIR="${GITHUB_WORKSPACE}/android-ndk-${NDK_VERSION}"
-          
-          if [ ! -d "${NDK_DIR}" ]; then
-            echo "Downloading ARM64 Android NDK ${NDK_VERSION}..."
-            wget -q "https://github.com/lzhiyong/termux-ndk/releases/download/android-ndk/android-ndk-r27b-aarch64.zip" -O ndk.zip
-            unzip -q ndk.zip -d "${GITHUB_WORKSPACE}"
-            rm ndk.zip
-            echo "NDK downloaded and extracted successfully"
-          else
-            echo "Using cached NDK at ${NDK_DIR}"
-          fi
-          
-          # Set NDK environment variables
-          echo "ndk-path=${NDK_DIR}" >> $GITHUB_OUTPUT
-          echo "ANDROID_NDK_ROOT=${NDK_DIR}" >> $GITHUB_ENV
-          echo "ANDROID_NDK=${NDK_DIR}" >> $GITHUB_ENV
-          echo "ANDROID_NDK_HOME=${NDK_DIR}" >> $GITHUB_ENV
-          echo "ANDROID_VERSION=21" >> $GITHUB_ENV
-          
-          # Create the expected directory structure for older CMake compatibility
-          EXPECTED_DIR="${NDK_DIR}/platforms/android-21/arch-arm64"
-          if [ ! -d "${EXPECTED_DIR}" ]; then
-            echo "Creating compatibility directory structure..."
-            mkdir -p "${EXPECTED_DIR}"
-            # Link to the unified sysroot
-            SYSROOT="${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64/sysroot"
-            if [ ! -d "${SYSROOT}" ]; then
-              SYSROOT="${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
-            fi
-            if [ -d "${SYSROOT}" ]; then
-              ln -sf "${SYSROOT}/usr" "${EXPECTED_DIR}/usr"
-              echo "Created symlink from ${SYSROOT}/usr to ${EXPECTED_DIR}/usr"
+            NDK_VERSION="r27b"
+            NDK_DIR="${GITHUB_WORKSPACE}/android-ndk-${NDK_VERSION}"
+            
+            if [ ! -d "${NDK_DIR}" ]; then
+              echo "Downloading ARM64 Android NDK ${NDK_VERSION}..."
+              wget -q "https://github.com/lzhiyong/termux-ndk/releases/download/android-ndk/android-ndk-r27b-aarch64.zip" -O ndk.zip
+              unzip -q ndk.zip -d "${GITHUB_WORKSPACE}"
+              rm ndk.zip
+              echo "NDK downloaded and extracted successfully"
             else
-              echo "ERROR: Could not find sysroot in NDK"
-              ls -la "${NDK_DIR}/toolchains/llvm/prebuilt/"
-              exit 1
+              echo "Using cached NDK at ${NDK_DIR}"
             fi
-          fi
-          
-          # Verify the correct prebuilt directory exists and set compiler paths
-          PREBUILT_DIR="${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64"
-          if [ ! -d "${PREBUILT_DIR}" ]; then
-            PREBUILT_DIR="${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64"
-            if [ ! -d "${PREBUILT_DIR}" ]; then
+            
+            # Set NDK environment variables
+            echo "ndk-path=${NDK_DIR}" >> $GITHUB_OUTPUT
+            echo "ANDROID_NDK_ROOT=${NDK_DIR}" >> $GITHUB_ENV
+            echo "ANDROID_NDK=${NDK_DIR}" >> $GITHUB_ENV
+            echo "ANDROID_NDK_HOME=${NDK_DIR}" >> $GITHUB_ENV
+            echo "ANDROID_VERSION=21" >> $GITHUB_ENV
+            
+            # Detect the correct prebuilt directory
+            PREBUILT_DIR=""
+            if [ -d "${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64" ]; then
+              PREBUILT_DIR="${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64"
+              echo "Using native aarch64 prebuilt directory"
+            elif [ -d "${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64" ]; then
+              PREBUILT_DIR="${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64"
+              echo "Using x86_64 prebuilt directory"
+            else
               echo "ERROR: No prebuilt toolchain directory found"
               ls -la "${NDK_DIR}/toolchains/llvm/prebuilt/"
               exit 1
             fi
-          fi
-          echo "Using prebuilt directory: ${PREBUILT_DIR}"
-          
-          # Force correct compiler paths to prevent CMake override
-          CLANG_C="${PREBUILT_DIR}/bin/aarch64-linux-android21-clang"
-          CLANG_CXX="${PREBUILT_DIR}/bin/aarch64-linux-android21-clang++"
-          
-          if [ ! -f "${CLANG_C}" ]; then
-            CLANG_C="${PREBUILT_DIR}/bin/clang"
-            CLANG_CXX="${PREBUILT_DIR}/bin/clang++"
-          fi
-          
-          if [ ! -f "${CLANG_C}" ]; then
-            echo "ERROR: No suitable C compiler found"
-            ls -la "${PREBUILT_DIR}/bin/"
-            exit 1
-          fi
-          
-          # Set compiler environment variables to override CMake detection
-          echo "CC=${CLANG_C}" >> $GITHUB_ENV
-          echo "CXX=${CLANG_CXX}" >> $GITHUB_ENV
-          
-          echo "Forced CC: ${CLANG_C}"
-          echo "Forced CXX: ${CLANG_CXX}"
-          
-          # Verify NDK installation
-          if [ -f "${NDK_DIR}/ndk-build" ]; then
-            echo "NDK verification successful"
-            echo "NDK version: $(cat ${NDK_DIR}/source.properties | grep Pkg.Revision)"
-          else
-            echo "ERROR: NDK installation verification failed"
-            exit 1
-          fi
+            
+            echo "Using prebuilt directory: ${PREBUILT_DIR}"
+            
+            # Create the expected directory structure for older CMake compatibility
+            EXPECTED_DIR="${NDK_DIR}/platforms/android-21/arch-arm64"
+            if [ ! -d "${EXPECTED_DIR}" ]; then
+              echo "Creating compatibility directory structure..."
+              mkdir -p "${EXPECTED_DIR}"
+              # Link to the unified sysroot
+              SYSROOT="${PREBUILT_DIR}/sysroot"
+              if [ -d "${SYSROOT}" ]; then
+                ln -sf "${SYSROOT}/usr" "${EXPECTED_DIR}/usr"
+                echo "Created symlink from ${SYSROOT}/usr to ${EXPECTED_DIR}/usr"
+              else
+                echo "ERROR: Could not find sysroot in NDK"
+                exit 1
+              fi
+            fi
+            
+            # Set compiler paths - try specific target first, then generic
+            CLANG_C="${PREBUILT_DIR}/bin/aarch64-linux-android21-clang"
+            CLANG_CXX="${PREBUILT_DIR}/bin/aarch64-linux-android21-clang++"
+            
+            if [ ! -f "${CLANG_C}" ]; then
+              CLANG_C="${PREBUILT_DIR}/bin/clang"
+              CLANG_CXX="${PREBUILT_DIR}/bin/clang++"
+            fi
+            
+            if [ ! -f "${CLANG_C}" ]; then
+              echo "ERROR: No suitable C compiler found"
+              ls -la "${PREBUILT_DIR}/bin/"
+              exit 1
+            fi
+            
+            # Export compiler environment variables for CMake
+            echo "CC=${CLANG_C}" >> $GITHUB_ENV
+            echo "CXX=${CLANG_CXX}" >> $GITHUB_ENV
+            echo "CMAKE_C_COMPILER=${CLANG_C}" >> $GITHUB_ENV
+            echo "CMAKE_CXX_COMPILER=${CLANG_CXX}" >> $GITHUB_ENV
+            
+            # Also set the CMake toolchain variables
+            echo "CMAKE_ANDROID_NDK=${NDK_DIR}" >> $GITHUB_ENV
+            echo "CMAKE_SYSTEM_NAME=Android" >> $GITHUB_ENV
+            echo "CMAKE_SYSTEM_VERSION=21" >> $GITHUB_ENV
+            echo "CMAKE_ANDROID_ARCH_ABI=arm64-v8a" >> $GITHUB_ENV
+            
+            echo "Compiler configuration:"
+            echo "  CC: ${CLANG_C}"
+            echo "  CXX: ${CLANG_CXX}"
+            echo "  NDK: ${NDK_DIR}"
+            echo "  Prebuilt: ${PREBUILT_DIR}"
+            
+            # Verify NDK installation
+            if [ -f "${NDK_DIR}/ndk-build" ]; then
+              echo "NDK verification successful"
+              echo "NDK version: $(cat ${NDK_DIR}/source.properties | grep Pkg.Revision)"
+            else
+              echo "ERROR: NDK installation verification failed"
+              exit 1
+            fi
 
       - name: Setup OpenBLAS
         shell: bash
