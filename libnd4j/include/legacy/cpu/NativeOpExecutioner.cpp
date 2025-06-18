@@ -498,7 +498,7 @@ void NativeOpExecutioner::execReduceFloat(sd::LaunchContext *lc, int opNum, cons
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::reduce::ReduceFloatFunction,
       ::exec(opNum, lc ? lc->getWorkspace() : nullptr, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension),
-      SD_COMMON_TYPES, SD_FLOAT_TYPES);
+      SD_NUMERIC_TYPES, SD_FLOAT_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
