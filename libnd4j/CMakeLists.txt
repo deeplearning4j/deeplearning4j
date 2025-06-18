@@ -1094,7 +1094,6 @@ endif()
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections")
 endif()
 
 # MSVC-specific optimizations
@@ -1249,17 +1248,7 @@ if(SD_ANDROID_BUILD AND ANDROID_ABI MATCHES "x86_64")
 
         # Apply linker flags only to shared/executable targets
         get_target_property(target_type ${target_name} TYPE)
-        if(target_type STREQUAL "SHARED_LIBRARY" OR target_type STREQUAL "EXECUTABLE")
-            target_link_options(${target_name} PRIVATE
-                    -Wl,--gc-sections
-                    -Wl,-z,max-page-size=16384
-                    -Wl,--hash-style=gnu
-                    -Wl,-z,separate-code
-                    -Wl,-z,separate-loadable-segments
-                    -Wl,-z,text
-                    -Wl,-z,now
-            )
-        endif()
+
 
         message(STATUS "Applied verified Android x86_64 optimizations to target: ${target_name}")
     endfunction()
