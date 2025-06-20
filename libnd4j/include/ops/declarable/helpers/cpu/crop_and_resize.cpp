@@ -56,12 +56,15 @@ namespace helpers {
 //
 
 void cropAndResizeFunctor(sd::LaunchContext *context, NDArray *images, NDArray *boxes,
-                          NDArray *indices, NDArray *cropSize, int method, double extrapolationVal,
+                           NDArray *indices, NDArray *cropSize, int method, double extrapolationVal,
                           NDArray *crops) {
   BUILD_TRIPLE_SELECTOR(images->dataType(), boxes->dataType(), indices->dataType(), cropAndResizeFunctor_,
-                        (images, boxes, indices, cropSize, method, extrapolationVal, crops), SD_NUMERIC_TYPES,
+                        ( images, boxes, indices, cropSize, method, extrapolationVal, crops), SD_NUMERIC_TYPES,
                         SD_FLOAT_TYPES, SD_INTEGER_TYPES);
 }
+
+
+
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

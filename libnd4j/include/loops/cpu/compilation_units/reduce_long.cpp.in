@@ -23,7 +23,7 @@
 //
 #include <loops/cpu/reduce/reduce_long.hpp>
 #cmakedefine SD_COMMON_TYPES_GEN
-#if  defined(SD_COMMON_TYPES_GEN) && defined(SD_COMMON_TYPES_@FL_TYPE_INDEX@) && COUNT_NARG(SD_LONG_TYPES) > 0
+#if defined(SD_COMMON_TYPES_GEN) && defined(SD_COMMON_TYPES_@FL_TYPE_INDEX@)
 namespace functions {
     namespace reduce {
         BUILD_DOUBLE_TEMPLATE(template class ReduceLongFunction, , SD_COMMON_TYPES_@FL_TYPE_INDEX@ , SD_LONG_TYPES);

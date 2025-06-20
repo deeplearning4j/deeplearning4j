@@ -23,7 +23,7 @@
 //
 #include <loops/cpu/reduce/reduce_same.hpp>
 #cmakedefine SD_COMMON_TYPES_GEN
-#if  defined(SD_COMMON_TYPES_GEN) && defined(SD_COMMON_TYPES_@FL_TYPE_INDEX@)
+#if defined(SD_COMMON_TYPES_GEN) && defined(SD_COMMON_TYPES_@FL_TYPE_INDEX@)
 namespace functions {
     namespace reduce {
         BUILD_SINGLE_TEMPLATE(template class ReduceSameFunction, , SD_COMMON_TYPES_@FL_TYPE_INDEX@ );

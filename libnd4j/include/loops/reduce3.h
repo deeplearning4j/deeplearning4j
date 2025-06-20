@@ -45,7 +45,7 @@ namespace reduce3 {
  * 2 arrays
  */
 template <typename X, typename Y>
-class SD_LIB_HIDDEN Reduce3 {
+class  Reduce3 {
  public:
 #ifdef __CUDACC__
   virtual SD_DEVICE inline Y opAtomic(X d1, X d2, Y *extraParamsRef) = 0;

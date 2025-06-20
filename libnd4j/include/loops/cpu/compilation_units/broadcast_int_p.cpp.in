@@ -19,12 +19,12 @@
 //
 // Created by raver119 on 23/09/18.
 //
-#include <loops/cpu/broadcasting_int.hpp>
+#include <loops/cpu/broadcasting.hpp>
 #cmakedefine SD_INTEGER_TYPES_GEN
 #if defined(SD_INTEGER_TYPES_GEN) && defined(SD_INTEGER_TYPES_@FL_TYPE_INDEX@)
 namespace functions {
     namespace broadcast {
-        BUILD_SINGLE_TEMPLATE(template class SD_LIB_HIDDEN BroadcastInt, , SD_INTEGER_TYPES_@FL_TYPE_INDEX@);
+        BUILD_PAIRWISE_TEMPLATE(template class SD_LIB_HIDDEN Broadcast, , SD_INTEGER_TYPES_@FL_TYPE_INDEX@);
     }
 }
 #endif

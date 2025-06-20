@@ -23,7 +23,7 @@
 //
 #include <loops/cpu/reduce3.hpp>
 #cmakedefine SD_COMMON_TYPES_GEN
-#if  defined(SD_COMMON_TYPES_GEN) && defined(SD_COMMON_TYPES_@FL_TYPE_INDEX@) && defined(SD_FLOAT_TYPES_3)
+#if defined(SD_COMMON_TYPES_GEN) && defined(SD_COMMON_TYPES_@FL_TYPE_INDEX@) && defined(SD_FLOAT_TYPES_3)
 namespace functions {
     namespace reduce3 {
         BUILD_DOUBLE_TEMPLATE(template class SD_LIB_HIDDEN Reduce3, , SD_COMMON_TYPES_@FL_TYPE_INDEX@, SD_FLOAT_TYPES_3);

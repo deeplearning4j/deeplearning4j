@@ -740,7 +740,7 @@ void NativeOpExecutioner::execReduce3TAD(sd::LaunchContext *lc, int opNum, const
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3,
                           ::exec(opNum, hX, hXShapeInfo, extraParamsVals, hY, hYShapeInfo, hZ, hZShapeInfo, dimension,
                                  dimensionLength, tadShapeInfo, tadOffsets, start, stop),
-                          SD_COMMON_TYPES, SD_FLOAT_TYPES);
+                          SD_NUMERIC_TYPES, SD_FLOAT_TYPES);
   };
 
   samediff::Threads::parallel_tad(func, 0, tadPack->numberOfTads());

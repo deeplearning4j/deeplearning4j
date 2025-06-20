@@ -22,7 +22,7 @@
 // @author raver119@gmail.com
 //
 #include <loops/cpu/reduce3.hpp>
-#cmakedefine  SD_COMMON_TYPES_GEN
+#cmakedefine SD_COMMON_TYPES_GEN
 #if defined(SD_COMMON_TYPES_GEN) && defined(SD_COMMON_TYPES_@FL_TYPE_INDEX@) && defined(SD_FLOAT_TYPES_0)
 namespace functions {
     namespace reduce3 {

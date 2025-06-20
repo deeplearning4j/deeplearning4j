@@ -3,27 +3,16 @@
 
 #define LIBND4J_CONFIG_H
 
-#cmakedefine HAVE_ONEDNN
-
-
+#cmakedefine01 HAVE_ONEDNN
+#cmakedefine01 HAVE_ARMCOMPUTE
+#cmakedefine01 HAVE_CUDNN
+#cmakedefine01 HAVE_OPENBLAS
+#cmakedefine01 HAVE_FLATBUFFERS
 
 #cmakedefine SD_LIBRARY_NAME "@SD_LIBRARY_NAME@"
-
-
-#cmakedefine HAVE_ARMCOMPUTE
-
 #cmakedefine ONEDNN_PATH "@ONEDNN_PATH@"
-
-#cmakedefine HAVE_OPENBLAS
-
 #cmakedefine OPENBLAS_PATH "@OPENBLAS_PATH@"
-
-#cmakedefine HAVE_FLATBUFFERS
-
 #cmakedefine FLATBUFFERS_PATH "@FLATBUFFERS_PATH@"
-
-#cmakedefine HAVE_CUDNN
-
 #cmakedefine DEFAULT_ENGINE @DEFAULT_ENGINE@
 
 #endif

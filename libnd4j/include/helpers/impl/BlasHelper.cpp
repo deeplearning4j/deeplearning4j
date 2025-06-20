@@ -59,7 +59,7 @@ template <>
 bool BlasHelper::hasGEMV<float>() {
   if (Environment::getInstance().blasFallback()) return false;
 
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
+#if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
   return true;
 #else
   return _hasSgemv;
@@ -70,7 +70,7 @@ template <>
 bool BlasHelper::hasGEMV<double>() {
   if (Environment::getInstance().blasFallback()) return false;
 
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
+#if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
   return true;
 #else
   return _hasDgemv;
@@ -121,7 +121,7 @@ bool BlasHelper::hasGEMV(const DataType dtype) {
   if (dtype == FLOAT32) {
     if (Environment::getInstance().blasFallback()) return false;
 
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
+#if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
     return true;
 #else
     return _hasSgemv;
@@ -130,7 +130,7 @@ bool BlasHelper::hasGEMV(const DataType dtype) {
   if (dtype == DOUBLE) {
     if (Environment::getInstance().blasFallback()) return false;
 
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
+#if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
     return true;
 #else
     return _hasDgemv;
@@ -143,7 +143,7 @@ template <>
 bool BlasHelper::hasGEMM<float>() {
   if (Environment::getInstance().blasFallback()) return false;
 
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
+#if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
   return true;
 #else
   return _hasSgemm;
@@ -154,7 +154,7 @@ template <>
 bool BlasHelper::hasGEMM<double>() {
   if (Environment::getInstance().blasFallback()) return false;
 
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
+#if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
   return true;
 #else
   return _hasDgemm;
@@ -205,7 +205,7 @@ bool BlasHelper::hasGEMM(const DataType dtype) {
   if (dtype == FLOAT32) {
     if (Environment::getInstance().blasFallback()) return false;
 
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
+#if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
     return true;
 #else
     return _hasSgemm;
@@ -214,7 +214,7 @@ bool BlasHelper::hasGEMM(const DataType dtype) {
   if (dtype == DOUBLE) {
     if (Environment::getInstance().blasFallback()) return false;
 
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
+#if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
     return true;
 #else
     return _hasDgemm;
@@ -278,14 +278,14 @@ bool BlasHelper::hasBatchedGEMM<bool>() {
 }
 
 CblasSgemv BlasHelper::sgemv() {
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
+#if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
   return (CblasSgemv)&cblas_sgemv;
 #else
   return this->cblasSgemv;
 #endif
 }
 CblasDgemv BlasHelper::dgemv() {
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
+#if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
   return (CblasDgemv)&cblas_dgemv;
 #else
   return this->cblasDgemv;
@@ -293,7 +293,7 @@ CblasDgemv BlasHelper::dgemv() {
 }
 
 CblasSgemm BlasHelper::sgemm() {
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
+#if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
   return (CblasSgemm)&cblas_sgemm;
 #else
   return this->cblasSgemm;
@@ -301,7 +301,7 @@ CblasSgemm BlasHelper::sgemm() {
 }
 
 CblasDgemm BlasHelper::dgemm() {
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
+#if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
   return (CblasDgemm)&cblas_dgemm;
 #else
   return this->cblasDgemm;

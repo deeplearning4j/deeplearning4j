@@ -23,7 +23,7 @@
 //
 #include <loops/cpu/reduce/reduce_bool.hpp>
 #cmakedefine SD_COMMON_TYPES_GEN
-#if  defined(SD_COMMON_TYPES_GEN) && defined(SD_COMMON_TYPES_@FL_TYPE_INDEX@)
+#if defined(SD_COMMON_TYPES_GEN) && defined(SD_COMMON_TYPES_@FL_TYPE_INDEX@)
 namespace functions {
     namespace reduce {
         BUILD_DOUBLE_TEMPLATE(template class ReduceBoolFunction, , SD_COMMON_TYPES_@FL_TYPE_INDEX@ , SD_BOOL_TYPES);
