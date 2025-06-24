@@ -41,6 +41,7 @@ set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Hack to disable flatc build" FOR
 
 # --- Type System and Template Options ---
 option(SD_ENABLE_SEMANTIC_FILTERING "Enable semantic filtering to reduce template combinations" ON)
+option(SD_ENABLE_SELECTIVE_RENDERING "Enable selective rendering system" ON)
 set(SD_TYPE_PROFILE "ESSENTIAL" CACHE STRING "Type profile for semantic filtering (MINIMAL, ESSENTIAL, QUANTIZATION, etc.)")
 set(SD_MAX_TEMPLATE_COMBINATIONS "10000" CACHE STRING "Maximum template combinations to generate (safety limit)")
 

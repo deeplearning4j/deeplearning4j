@@ -24,7 +24,7 @@
 #if defined(SD_COMMON_TYPES_GEN) && defined(SD_COMMON_TYPES_@FL_TYPE_INDEX@)
 namespace functions {
     namespace broadcast {
-        BUILD_TRIPLE_TEMPLATE(template class SD_LIB_HIDDEN Broadcast, , SD_COMMON_TYPES_@FL_TYPE_INDEX@,  SD_COMMON_TYPES_@FL_TYPE_INDEX@, SD_BOOL_TYPES);
+    BUILD_TRIPLE_TEMPLATE(template class SD_LIB_HIDDEN Broadcast, , SD_COMMON_TYPES_@FL_TYPE_INDEX@,  SD_COMMON_TYPES_@FL_TYPE_INDEX@, SD_BOOL_TYPES);
     }
 }
 #endif

@@ -76,7 +76,7 @@ endif()
 
 # Process template files with semantic filtering
 message(STATUS "Processing template files with semantic filtering...")
-process_template_files()
+#process_template_files()
 
 # Process pairwise templates with enhanced semantic filtering
 message(STATUS "Processing pairwise templates with enhanced semantic filtering...")

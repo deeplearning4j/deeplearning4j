@@ -229,4 +229,19 @@ struct ErrorResult {
 #endif
 
 
+#ifndef __JAVACPP_HACK__
+
+#if defined(SD_GCC_FUNCTRACE) && !defined(OP_BOILER_PLATE_THROW_EXCEPTIONS)
+#define OP_BOILER_PLATE_THROW_EXCEPTIONS
+#include <exceptions/backward.hpp>
+using namespace backward;
+void throwException(const char* exceptionMessage);
+#else
+void throwException(const char* exceptionMessage);
+
+#endif
+#define THROW_EXCEPTION(exceptionMessage) throwException(exceptionMessage);
+#endif
+
+
 #endif

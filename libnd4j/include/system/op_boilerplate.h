@@ -2709,19 +2709,6 @@ SD_INLINE void internal_release_host(WW workspace, TT_PTR var) {
 }
 
 
-#ifndef __JAVACPP_HACK__
-
-#if defined(SD_GCC_FUNCTRACE) && !defined(OP_BOILER_PLATE_THROW_EXCEPTIONS)
-#define OP_BOILER_PLATE_THROW_EXCEPTIONS
-#include <exceptions/backward.hpp>
-using namespace backward;
-void throwException(const char* exceptionMessage);
-#else
-void throwException(const char* exceptionMessage);
-
-#endif
-#define THROW_EXCEPTION(exceptionMessage) throwException(exceptionMessage);
-#endif
 
 
 #define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT) VARIABLE = internal_alloc_host<TT>(WORKSPACE, static_cast<sd::LongType>(LENGTH));

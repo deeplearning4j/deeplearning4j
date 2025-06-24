@@ -115,6 +115,23 @@ class SD_LIB_EXPORT DataTypeUtils {
         std::is_same<std::u32string, T>::value;
   };
 
+
+  /**
+ * Check if a single data type is enabled for compilation in selective rendering
+   */
+  SD_INLINE SD_HOST_DEVICE static bool isCompiledDataType(DataType dataType);
+
+  /**
+ * Check if a pair of data types is enabled for compilation in selective rendering
+   */
+  SD_INLINE SD_HOST_DEVICE static bool isCompiledTypePair(DataType type1, DataType type2);
+
+  /**
+ * Check if a triple of data types is enabled for compilation in selective rendering
+   */
+  SD_INLINE SD_HOST_DEVICE static bool isCompiledTypeTriple(DataType type1, DataType type2, DataType type3);
+
+
   template <typename T>
   struct scalarTypesForExecution {
     static bool const value = std::is_same<double, T>::value || std::is_same<float, T>::value ||
@@ -514,6 +531,8 @@ SD_INLINE bool DataTypeUtils::castShapeInfo(const LongType *originalShapeInfo, T
 
   return true;
 }
+
+
 
 ///////////////////////////////////////////////////////////////////
 // returns the difference between 1.0 and the next representable value of the given floating-point type

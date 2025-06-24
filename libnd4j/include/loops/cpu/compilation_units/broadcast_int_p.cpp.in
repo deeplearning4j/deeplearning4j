@@ -24,7 +24,7 @@
 #if defined(SD_INTEGER_TYPES_GEN) && defined(SD_INTEGER_TYPES_@FL_TYPE_INDEX@)
 namespace functions {
     namespace broadcast {
-        BUILD_PAIRWISE_TEMPLATE(template class SD_LIB_HIDDEN Broadcast, , SD_INTEGER_TYPES_@FL_TYPE_INDEX@);
+    BUILD_TRIPLE_TEMPLATE(template class SD_LIB_HIDDEN Broadcast, ,SD_INTEGER_TYPES_@FL_TYPE_INDEX@, SD_INTEGER_TYPES, SD_INTEGER_TYPES_@FL_TYPE_INDEX@);
     }
 }
 #endif

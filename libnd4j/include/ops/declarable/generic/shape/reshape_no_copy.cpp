@@ -2,10 +2,9 @@
 // Created by agibsonccc on 8/30/24.
 //
 
-#include <ops/declarable/CustomOperations.h>
-#include <helpers/shape.h>
-#include <helpers/ShapeUtils.h>
 #include <helpers/reshapeNoCopy.h>
+#include <helpers/shape.h>
+#include <ops/declarable/headers/shape.h>
 namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(reshape_no_copy, -2, 1, false, 0, -2) {

@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
+// Verify override is active
+
 #include <array/TadPack.h>
 #include <exceptions/datatype_exception.h>
 #include <helpers/ConstantTadHelper.h>
@@ -52,6 +54,7 @@
 
 #endif
 
+
 ////////////////////////////////////////////////////////////////////////
 /**
  *
@@ -70,7 +73,6 @@ void NativeOpExecutioner::execIndexReduceScalar(sd::LaunchContext *lc, int opNum
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
   auto hz = reinterpret_cast<sd::LongType *>(hZ);
-
   BUILD_DOUBLE_SELECTOR(xType, zType, hz[0] = functions::indexreduce::IndexReduce,
                         ::execScalar(opNum, hX, hXShapeInfo, extraParams), SD_COMMON_TYPES, SD_INDEXING_TYPES);
 }
@@ -500,7 +502,7 @@ void NativeOpExecutioner::execReduceFloat(sd::LaunchContext *lc, int opNum, cons
       ::exec(opNum, lc ? lc->getWorkspace() : nullptr, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension),
       SD_NUMERIC_TYPES, SD_FLOAT_TYPES);
 }
-
+#include <system/selective_rendering.h>
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execReduceSame(sd::LaunchContext *lc, int opNum, const void *hX,
                                          const sd::LongType *hXShapeInfo, const void *dX,
@@ -508,10 +510,14 @@ void NativeOpExecutioner::execReduceSame(sd::LaunchContext *lc, int opNum, const
                                          const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
                                          sd::LongType *dimension, sd::LongType dimensionLength) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
-  BUILD_SINGLE_SELECTOR(
-      xType, functions::reduce::ReduceSameFunction,
-      ::exec(opNum, lc ? lc->getWorkspace() : nullptr, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension),
-      SD_COMMON_TYPES);
+#if SD_IS_SINGLE_TYPE_COMPILED(xType)
+    BUILD_SINGLE_SELECTOR(
+        xType, functions::reduce::ReduceSameFunction,
+        ::exec(opNum, lc ? lc->getWorkspace() : nullptr, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension),
+        SD_NUMERIC_TYPES);
+#endif
+
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -522,10 +528,12 @@ void NativeOpExecutioner::execReduceBool(sd::LaunchContext *lc, int opNum, const
                                          sd::LongType *dimension, sd::LongType dimensionLength) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
+#if  SD_IS_PAIR_TYPE_COMPILED(xType,zType)
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::reduce::ReduceBoolFunction,
       ::exec(opNum, lc ? lc->getWorkspace() : nullptr, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension),
       SD_COMMON_TYPES, SD_BOOL_TYPES);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -536,10 +544,12 @@ void NativeOpExecutioner::execReduceLong(sd::LaunchContext *lc, int opNum, const
                                          sd::LongType *dimension, sd::LongType dimensionLength) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
+#if  SD_IS_PAIR_TYPE_COMPILED(xType,zType)
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::reduce::ReduceLongFunction,
       ::exec(opNum, lc ? lc->getWorkspace() : nullptr, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension),
       SD_COMMON_TYPES, SD_LONG_TYPES);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -571,8 +581,10 @@ void NativeOpExecutioner::execReduceSameScalar(sd::LaunchContext *lc, int opNum,
                                                const sd::LongType *hZShapeInfo, void *dZ,
                                                const sd::LongType *dZShapeInfo) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
+#if SD_IS_SINGLE_TYPE_COMPILED(xType)
   BUILD_SINGLE_SELECTOR(xType, functions::reduce::ReduceSameFunction,
-                        ::execScalar(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo), SD_COMMON_TYPES);
+                        ::execScalar(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo), SD_NUMERIC_TYPES);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -583,9 +595,11 @@ void NativeOpExecutioner::execReduceBoolScalar(sd::LaunchContext *lc, int opNum,
                                                const sd::LongType *dZShapeInfo) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
+#if  SD_IS_PAIR_TYPE_COMPILED(xType,zType)
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceBoolFunction,
                         ::execScalar(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo), SD_COMMON_TYPES,
                         SD_BOOL_TYPES);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -596,9 +610,11 @@ void NativeOpExecutioner::execReduceLongScalar(sd::LaunchContext *lc, int opNum,
                                                const sd::LongType *dZShapeInfo) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
+#if  SD_IS_PAIR_TYPE_COMPILED(xType,zType)
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction,
                         ::execScalar(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo), SD_COMMON_TYPES,
                         SD_LONG_TYPES);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -623,9 +639,11 @@ void NativeOpExecutioner::execReduce3Scalar(sd::LaunchContext *lc, int opNum, co
                                             void *dZ, const sd::LongType *dZShapeInfo) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
+#if  SD_IS_PAIR_TYPE_COMPILED(xType,zType)
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3,
                         ::execScalar(opNum, hX, hXShapeInfo, extraParamsVals, hY, hYShapeInfo, hZ, hZShapeInfo),
                         SD_COMMON_TYPES, SD_FLOAT_TYPES);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////

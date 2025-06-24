@@ -12,6 +12,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CUDA_STANDARD 17)
 include(CheckCXXCompilerFlag)
 
+
 function(setup_build_configuration)
     # This command takes the template file 'config.h.in' and creates 'config.h'
     # in the binary directory, substituting any @VAR@ or #cmakedefine variables.
@@ -34,6 +35,31 @@ if(WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSD_WINDOWS_BUILD=true")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSD_WINDOWS_BUILD=true")
 endif()
+
+# ===== POSITION INDEPENDENT CODE (PIC) CONFIGURATION =====
+# Essential for shared library builds - FIXES THE COMPILATION ERROR
+message(STATUS "🔧 Configuring Position Independent Code (PIC)...")
+
+# Set global PIC property
+set(CMAKE_POSITION_INDEPENDENT_CODE ON CACHE BOOL "Global PIC setting" FORCE)
+
+# Explicitly add -fPIC for all compilers that support it
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+    message(STATUS "✅ Added -fPIC flags for ${CMAKE_CXX_COMPILER_ID}")
+    
+    # Also set the compile options globally
+    add_compile_options(-fPIC)
+endif()
+
+# For CUDA builds
+if(SD_CUDA AND CMAKE_CUDA_COMPILER)
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -fPIC")
+    message(STATUS "✅ Added -fPIC to CUDA host compiler flags")
+endif()
+
+message(STATUS "✅ Position Independent Code configuration complete")
 
 # Helper function for colored status messages
 function(print_status_colored type message)

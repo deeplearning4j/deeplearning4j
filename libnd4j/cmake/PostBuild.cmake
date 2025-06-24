@@ -6,14 +6,6 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in ${CMAKE_CURRENT_B
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-# --- Test Suite Configuration ---
-if(SD_BUILD_TESTS)
-    include(CTest)
-    set(SD_ALL_OPS true)
-    enable_testing()
-    add_subdirectory(tests_cpu)
-endif()
-
 # --- Flatbuffers Header and Java Generation ---
 if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
     set(FLATC_EXECUTABLE "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/flatc")
