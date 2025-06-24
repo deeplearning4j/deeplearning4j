@@ -7,7 +7,6 @@
 # This design eliminates all inter-file dependency and scoping issues.
 # ============================================================================
 
-cmake_minimum_required(VERSION 3.20)
 
 # ============================================================================
 # SECTION 1: INTERNAL HELPER AND ANALYSIS FUNCTIONS
