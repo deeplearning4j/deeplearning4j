@@ -557,6 +557,11 @@
             <artifactId>h2</artifactId>
             <version>2.2.224</version>
         </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-tensorflow</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
     </dependencies>
     <profiles>

@@ -67,6 +67,7 @@
 #include <legacy/NativeOpExecutioner.h>
 using namespace sd;
 
+#include <system/selective_rendering.h>
 
 
 //these are mainly for cuda
@@ -818,9 +819,10 @@ void sortByKey(Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray y,bool des
   try {
     auto xType = x->dataType();
     auto yType = y->dataType();
-
+#if SD_IS_PAIR_TYPE_COMPILED(xType,yType)
     BUILD_DOUBLE_SELECTOR(xType, yType, DoubleMethods, ::sortByKey(x, y, descending),
                           SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
+#endif
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -831,9 +833,10 @@ void sortByValue(Pointer *extraPointers, OpaqueNDArray x,OpaqueNDArray y, bool d
   try {
     auto xType = x->dataType();
     auto yType = y->dataType();
-
+#if SD_IS_PAIR_TYPE_COMPILED(xType,yType)
     BUILD_DOUBLE_SELECTOR(xType, yType, DoubleMethods, ::sortByValue(x, y, descending),
                           SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
+#endif
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -846,8 +849,10 @@ void sortTadByKey(Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray y,
     auto xType = x->dataType();
     auto yType = y->dataType();
     auto dimensionLength = dimension->lengthOf();
+#if SD_IS_PAIR_TYPE_COMPILED(xType,yType)
     BUILD_DOUBLE_SELECTOR(xType, yType, DoubleMethods, ::sortTadByValue(x, y, dimension, descending), SD_NUMERIC_TYPES,
                           SD_NUMERIC_TYPES);
+#endif
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -859,8 +864,10 @@ void sortTadByValue(Pointer *extraPointers, OpaqueNDArray x,
     auto xType = x->dataType();
     auto yType = y->dataType();
     auto dimensionLength = dimension->lengthOf();
+#if SD_IS_PAIR_TYPE_COMPILED(xType,yType)
     BUILD_DOUBLE_SELECTOR(xType, yType, DoubleMethods, ::sortTadByValue(x, y, dimension, descending), SD_NUMERIC_TYPES,
                           SD_NUMERIC_TYPES);
+#endif
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
