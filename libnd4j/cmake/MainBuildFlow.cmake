@@ -33,6 +33,18 @@ else()
 endif()
 
 
+# Create the directory for generated files if it doesn't exist
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/generated")
+
+# Write Definitions to include_ops.h file
+set(INCLUDE_OPS_FILE "${CMAKE_CURRENT_SOURCE_DIR}/include/generated/include_ops.h")
+message("Generating include_ops.h at: ${INCLUDE_OPS_FILE}")
+file(WRITE "${INCLUDE_OPS_FILE}" "#ifndef SD_DEFINITIONS_GEN_H_\n#define SD_DEFINITIONS_GEN_H_\n${DEFINITIONS_CONTENT}\n#endif\n")
+
+# Add the generated directory to include paths
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include/generated")
+
+
 if(NOT HAVE_ONEDNN)
     add_compile_definitions(HAVE_ONEDNN=0)
     message(STATUS "🚫 Globally disabled HAVE_ONEDNN")
