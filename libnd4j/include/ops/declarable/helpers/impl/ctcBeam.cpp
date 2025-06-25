@@ -191,8 +191,6 @@ class SequenceContainer {
     // add in the holder
     new_node->next = nullptr;
     new_node->prev = current_;
-    /*std::cout << "add " << (long long)new_node << std::endl;
-    print_seq1(new_node);*/
     if (current_) current_->next = new_node;
 
     current_ = new_node;

@@ -38,6 +38,7 @@ list(REMOVE_DUPLICATES ALL_SOURCES)
 
 # --- Generate CPU Template Instantiations ---
 file(GLOB_RECURSE COMPILATION_UNITS
+        ./include/ops/impl/compilation_units/*.cpp.in
         ./include/ops/declarable/helpers/cpu/compilation_units/*.cpp.in
         ./include/loops/cpu/compilation_units/*.cpp.in
         ./include/helpers/cpu/loops/*.cpp.in)

@@ -808,6 +808,7 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext *lc, int opNum, const voi
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
+#if SD_IS_TRIPLE_TYPE_COMPILED(xType,xType,xType)
   auto func = PRAGMA_THREADS_FOR {
     BUILD_SINGLE_SELECTOR_THRICE(
         xType, functions::scalar::ScalarTransform,
@@ -821,7 +822,7 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext *lc, int opNum, const voi
       ? 1
       : sd::math::sd_max<int>(
           1, sd::math::sd_min<int>(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
-
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -835,7 +836,7 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext *lc, int opNum, void cons
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-
+#if SD_IS_TRIPLE_TYPE_COMPILED(xType,yType,zType)
   auto func = PRAGMA_THREADS_FOR {
     BUILD_SINGLE_SELECTOR_THRICE(
         xType, functions::scalar::ScalarTransform,
@@ -848,6 +849,7 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext *lc, int opNum, void cons
   samediff::Threads::parallel_tad(func, 0, yLen, 1,
                                   sd::math::sd_min<int>(yLen, sd::Environment::getInstance().maxMasterThreads()));
 
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -865,6 +867,7 @@ void NativeOpExecutioner::execScalarBool(sd::LaunchContext *lc, int opNum, const
   if (zType != sd::DataType::BOOL)
     throw sd::datatype_exception::build("NativeOpExecutioner::execScalarBool", sd::DataType::BOOL, zType);
 
+#if SD_IS_PAIR_TYPE_COMPILED(xType,zType)
   auto func = PRAGMA_THREADS_FOR {
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::scalar::ScalarBoolTransform,
                           ::transform(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, hScalar, extraParams, start, stop),
@@ -878,6 +881,7 @@ void NativeOpExecutioner::execScalarBool(sd::LaunchContext *lc, int opNum, const
       ? 1
       : sd::math::sd_max<int>(
           1, sd::math::sd_min<int>(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -903,6 +907,8 @@ void NativeOpExecutioner::execScalarBool(
     errorMessage += sd::DataTypeUtils::asString(zType);
     THROW_EXCEPTION(errorMessage.c_str());
   }
+
+#if SD_IS_PAIR_TYPE_COMPILED(xTpe,zType)
   auto func = PRAGMA_THREADS_FOR {
     BUILD_DOUBLE_SELECTOR(
         xType, zType, functions::scalar::ScalarBoolTransform,
@@ -914,6 +920,7 @@ void NativeOpExecutioner::execScalarBool(
   auto yLen = shape::length(hScalarShapeInfo);
   samediff::Threads::parallel_tad(func, 0, yLen, 1,
                                   sd::math::sd_min<int>(yLen, sd::Environment::getInstance().maxMasterThreads()));
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -941,7 +948,7 @@ void NativeOpExecutioner::execScalarInt(sd::LaunchContext *lc, int opNum, const 
 
   }
 
-
+#if SD_IS_SINGLE_TYPE_COMPILED(xType)
   auto func = PRAGMA_THREADS_FOR {
     BUILD_SINGLE_SELECTOR(xType, functions::scalar::ScalarIntTransform,
                           ::transform(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, hScalar, extraParams, start, stop),
@@ -955,6 +962,7 @@ void NativeOpExecutioner::execScalarInt(sd::LaunchContext *lc, int opNum, const 
       ? 1
       : sd::math::sd_max<int>(
           1, sd::math::sd_min<int>(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1013,10 +1021,11 @@ void NativeOpExecutioner::execSummaryStats(sd::LaunchContext *lc, int opNum, con
                                            bool biasCorrected) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-
+#if SD_IS_PAIR_TYPE_COMPILED(xType,zTYpe)
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::summarystats::SummaryStatsReduce,
                         ::exec(opNum, biasCorrected, const_cast<void *>(hX), hXShapeInfo, extraParams, hZ, hZShapeInfo, nullptr, 1),
                         SD_COMMON_TYPES, SD_FLOAT_TYPES);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1036,10 +1045,11 @@ void NativeOpExecutioner::execSummaryStatsScalar(sd::LaunchContext *lc, int opNu
                                                  sd::LongType *dZShapeInfo, bool biasCorrected) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-
+#if SD_IS_PAIR_TYPE_COMPILED(xType,zType)
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::summarystats::SummaryStatsReduce,
                         ::execScalar(opNum, biasCorrected, const_cast<void *>(hX), hXShapeInfo, extraParams, hZ, hZShapeInfo),
                         SD_COMMON_TYPES, SD_FLOAT_TYPES);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1062,11 +1072,12 @@ void NativeOpExecutioner::execSummaryStats(sd::LaunchContext *lc, int opNum, con
                                            sd::LongType *tadOffsets, bool biasCorrected) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-
+#if SD_IS_PAIR_TYPE_COMPILED(xType,zType)
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::summarystats::SummaryStatsReduce,
       ::exec(opNum, biasCorrected, const_cast<void *>(hX), hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension, dimensionLength),
       SD_COMMON_TYPES, SD_FLOAT_TYPES);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1086,7 +1097,7 @@ void NativeOpExecutioner::execTransformFloat(sd::LaunchContext *lc, int opNum, c
                                              void *dZ, const sd::LongType *dZShapeInfo, void *extraParams) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-
+#if SD_IS_PAIR_TYPE_COMPILED(xType,zType)
   auto func = PRAGMA_THREADS_DO {
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat,
                           ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads),
@@ -1096,6 +1107,7 @@ void NativeOpExecutioner::execTransformFloat(sd::LaunchContext *lc, int opNum, c
   samediff::Threads::parallel_do(
       func, sd::math::sd_max<int>(1, sd::math::sd_min<int>(shape::length(hZShapeInfo) / 1024,
                                                            sd::Environment::getInstance().maxMasterThreads())));
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1105,17 +1117,17 @@ void NativeOpExecutioner::execTransformBool(sd::LaunchContext *lc, int opNum, co
                                             void *dZ, const sd::LongType *dZShapeInfo, void *extraParams) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
+#if SD_IS_PAIR_TYPE_COMPILED(xType,zType)
 
   auto func = PRAGMA_THREADS_DO {
-#if SD_IS_PAIR_TYPE_COMPILED(xType,zType)
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformBool,
                           ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads),
                           SD_COMMON_TYPES_ALL, SD_BOOL_TYPES);
-#endif
   };
 
   samediff::Threads::parallel_do(
       func, sd::math::sd_max<int>(1, sd::math::sd_min<int>(shape::length(hZShapeInfo) / 1024,
+#endif
                                                            sd::Environment::getInstance().maxMasterThreads())));
 }
 

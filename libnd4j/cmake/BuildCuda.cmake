@@ -78,7 +78,9 @@ endif()
 list(REMOVE_DUPLICATES ALL_SOURCES)
 
 # --- Generate CUDA Template Instantiations ---
-file(GLOB_RECURSE COMPILATION_UNITS ./include/loops/cuda/compilation_units/*.cu.in)
+file(GLOB_RECURSE COMPILATION_UNITS ./include/loops/cuda/compilation_units/*.cu.in
+        ./include/ops/impl/compilation_units/*.cpp.in
+)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
 foreach(FL_ITEM ${COMPILATION_UNITS})
     genCompilation(${FL_ITEM})
