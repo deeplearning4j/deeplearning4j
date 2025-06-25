@@ -37,6 +37,7 @@ limitations under the License.
 //
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/crop_and_resize.h>
+#include <system/selective_rendering.h>
 #if NOT_EXCLUDED(OP_crop_and_resize)
 namespace sd {
 namespace ops {
@@ -58,9 +59,11 @@ namespace helpers {
 void cropAndResizeFunctor(sd::LaunchContext *context, NDArray *images, NDArray *boxes,
                            NDArray *indices, NDArray *cropSize, int method, double extrapolationVal,
                           NDArray *crops) {
+#if SD_IS_TRIPLE_TYPE_COMPILED(images->dataType(),boxes->dataType(),indices->dataType())
   BUILD_TRIPLE_SELECTOR(images->dataType(), boxes->dataType(), indices->dataType(), cropAndResizeFunctor_,
                         ( images, boxes, indices, cropSize, method, extrapolationVal, crops), SD_NUMERIC_TYPES,
                         SD_FLOAT_TYPES, SD_INTEGER_TYPES);
+#endif
 }
 
 

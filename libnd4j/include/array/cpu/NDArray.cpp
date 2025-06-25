@@ -39,7 +39,7 @@
 #include <memory>
 #include <sstream>
 #include <stdexcept>
-
+#include <system/selective_rendering.h>
 namespace sd {
 
 
@@ -404,8 +404,10 @@ void NDArray::tile(const std::vector<LongType>& reps, NDArray& target) {
     COORDS2INDEX(shape::rank(shapeInfo()), shape::stride(shapeInfo()), sourceCoords, sourceOffset);
 
     // Copy the value
+#if SD_IS_PAIR_TYPE_COMPILED(target.dataType(),dataType())
     BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign,
                           (target.buffer(), xOffset, buffer(), sourceOffset), SD_COMMON_TYPES, SD_COMMON_TYPES);
+#endif
   }
 }
 
@@ -425,15 +427,19 @@ void NDArray::tile(NDArray& target)  {
   if (target.ordering() == 'c' && ews >= 1) {
     for (sd::LongType i = 0; i < targetLen; ++i) {
       auto yOffset = shape::subArrayOffset(i, target.shapeInfo(), shapeInfo());
+#if SD_IS_PAIR_TYPE_COMPILED(target.dataType(),dataType())
       BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign,
                             (target.buffer(), i * ews, buffer(), yOffset), SD_COMMON_TYPES, SD_COMMON_TYPES);
+#endif
     }
   } else {
     for (sd::LongType i = 0; i < targetLen; ++i) {
       auto xOffset = target.getOffset(i);
       auto yOffset = shape::subArrayOffset(i, target.shapeInfo(), shapeInfo());
+#if SD_IS_PAIR_TYPE_COMPILED(target.dataType(),dataType())
       BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign,
                             (target.buffer(), xOffset, buffer(), yOffset), SD_COMMON_TYPES, SD_COMMON_TYPES);
+#endif
     }
   }
 }
@@ -510,9 +516,10 @@ void NDArray::repeat(const int axis, const std::vector<LongType>& repeats, NDArr
     THROW_EXCEPTION(
         "NDArray::repeat(const int axis, const std::vector<int>& repeats, NDArray& target) method: wrong shape of "
         "target array!");
-
+#if SD_IS_PAIR_TYPE_COMPILED(dataType(),target.dataType())
   BUILD_DOUBLE_SELECTOR(dataType(), target.dataType(), repeat_, (*this, target, repeats, axis), SD_COMMON_TYPES,
                         SD_COMMON_TYPES);
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////

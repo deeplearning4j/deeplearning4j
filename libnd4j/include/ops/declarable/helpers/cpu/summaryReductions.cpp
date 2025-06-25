@@ -21,7 +21,7 @@
 #include <ops/declarable/helpers/reductions.h>
 
 #include <vector>
-
+#include <system/selective_rendering.h>
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -34,13 +34,17 @@ template <typename X, typename Z>
 void standardDeviation_(NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions, bool biasCorrected);
 //////////////////////////////////////////////////////////////////////////
 void variance(NDArray& input, NDArray& output, const std::vector<LongType>& dimensions, bool biasCorrected) {
+#if SD_IS_PAIR_TYPE_COMPILED(input->dataType(),output.dataType())
   BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), variance_, (input, output, dimensions, biasCorrected),
                         SD_COMMON_TYPES, SD_FLOAT_TYPES);
+#endif
 }
 
 void standardDeviation(NDArray& input, NDArray& output, const std::vector<LongType>& dimensions, bool biasCorrected) {
+#if SD_IS_PAIR_TYPE_COMPILED(input.dataType(),output.dataType())
   BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), standardDeviation_,
                         (input, output, dimensions, biasCorrected), SD_COMMON_TYPES, SD_FLOAT_TYPES);
+#endif
 }
 
 }  // namespace helpers

@@ -25,7 +25,7 @@
 #include <algorithm>
 #include <numeric>
 #include <queue>
-
+#include <system/selective_rendering.h>
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -45,7 +45,6 @@ static void nonMaxSuppressionV2_(NDArray* boxes, NDArray* scales, int maxSize, d
   std::sort(indices.begin(), indices.end(),
             [scales](int i, int j) { return i >= 0 && j >= 0 ? scales->e<T>(i) > scales->e<T>(j) : (i > j); });
 
-  //        std::vector<int> selected(output->lengthOf());
   std::vector<int> selectedIndices(output->lengthOf(), 0);
   auto needToSuppressWithThreshold = [](NDArray& boxes, int previousIndex, int nextIndex, T threshold) -> bool {
     if (previousIndex < 0 || nextIndex < 0) return true;
@@ -232,19 +231,23 @@ static sd::LongType nonMaxSuppressionGeneric_(sd::LaunchContext* context, NDArra
 
 sd::LongType nonMaxSuppressionGeneric(sd::LaunchContext* context, NDArray* boxes, NDArray* scores, int maxSize,
                                       double overlapThreshold, double scoreThreshold, NDArray* output) {
+# if SD_IS_PAIR_TYPE_COMPILED(boxes->dataType(),output == nullptr ? DataType::INT32 : output->dataType())
   BUILD_DOUBLE_SELECTOR(boxes->dataType(), output == nullptr ? DataType::INT32 : output->dataType(),
                         return nonMaxSuppressionGeneric_,
                         (context, boxes, scores, maxSize, overlapThreshold, scoreThreshold, output, similiratyOverlaps),
                         SD_FLOAT_TYPES, SD_INTEGER_TYPES);
+#endif
   return 0;
 }
 
 sd::LongType nonMaxSuppressionV3(sd::LaunchContext* context, NDArray* boxes, NDArray* scores, int maxSize,
                                  double overlapThreshold, double scoreThreshold, NDArray* output) {
+# if SD_IS_PAIR_TYPE_COMPILED(boxes->dataType(),output == nullptr ? DataType::INT32 : output->dataType())
   BUILD_DOUBLE_SELECTOR(boxes->dataType(), output == nullptr ? DataType::INT32 : output->dataType(),
                         return nonMaxSuppressionGeneric_,
                         (context, boxes, scores, maxSize, overlapThreshold, scoreThreshold, output, similarityV3),
                         SD_FLOAT_TYPES, SD_INTEGER_TYPES);
+#endif
   return 0;
 }
 

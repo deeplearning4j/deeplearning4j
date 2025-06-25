@@ -28,7 +28,7 @@
 
 #include <ops/declarable/helpers/segment.h>
 #include <ops/declarable/helpers/segment_common.h>
-
+#include <system/selective_rendering.h>
 
 #include "helpers/DebugHelper.h"
 namespace sd {
@@ -44,8 +44,10 @@ static bool segmentIndicesValidate_(NDArray* indices, NDArray& aexpected, NDArra
 }
 
 bool segmentIndicesValidate(LaunchContext* context, NDArray* indices, NDArray& expected, NDArray& output) {
+#if SD_IS_PAIR_TYPE_COMPILED(output.dataType(),indices->dataType())
   BUILD_DOUBLE_SELECTOR(output.dataType(), indices->dataType(), return segmentIndicesValidate_,
                         (indices, expected, output), SD_NUMERIC_TYPES, SD_INDEXING_TYPES);
+#endif
 }
 
 // -------------------------------------------------------------------------------------------------------------- //

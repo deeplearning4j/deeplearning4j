@@ -20,6 +20,7 @@
 // @author raver119@gmail.com
 //
 #include <ops/declarable/helpers/histogram.h>
+#include <system/selective_rendering.h>
 #if NOT_EXCLUDED(OP_histogram)
 namespace sd {
 namespace ops {
@@ -63,11 +64,12 @@ void histogramHelper(sd::LaunchContext *context, NDArray &input, NDArray &output
   sd::LongType numBins = output.lengthOf();
   double min_val = input.reduceNumber(reduce::SameOps::Min).e<double>(0);
   double max_val = input.reduceNumber(reduce::SameOps::Max).e<double>(0);
-
+#if SD_IS_PAIR_TYPE_COMPILED(input.DataType(),output.dataType())
   BUILD_DOUBLE_SELECTOR(
       input.dataType(), output.dataType(), histogram_,
       (input.buffer(), input.shapeInfo(), output.buffer(), output.shapeInfo(), numBins, min_val, max_val),
       SD_COMMON_TYPES, SD_INDEXING_TYPES);
+#endif
 }
 }  // namespace helpers
 }  // namespace ops

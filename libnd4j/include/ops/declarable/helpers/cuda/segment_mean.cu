@@ -30,7 +30,7 @@
 #include <ops/declarable/helpers/segment_common.h>
 
 #include "helpers/DebugHelper.h"
-
+#include <system/selective_rendering.h>
 
 namespace sd {
 namespace ops {
@@ -298,8 +298,10 @@ static void segmentMeanFunctor_(LaunchContext* context, NDArray* input, NDArray*
 // -------------------------------------------------------------------------------------------------------------- //
 void segmentMeanFunctor(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
  NDArray::prepareSpecialUse({output}, {input, indices});
- BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), segmentMeanFunctor_, (context, input, indices, output),
+#if SD_IS_PAIR_TYPE_COMPILED(output->dataType(),indices->dataType())
+ UILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), segmentMeanFunctor_, (context, input, indices, output),
                        SD_NUMERIC_TYPES, SD_INDEXING_TYPES);
+#endif
  NDArray::registerSpecialUse({output}, {input, indices});
 }
 
@@ -350,8 +352,10 @@ static void unsortedSegmentMeanFunctor_(LaunchContext* context, NDArray* input, 
 void unsortedSegmentMeanFunctor(LaunchContext* context, NDArray* input, NDArray* indices, LongType numOfClasses,
                                NDArray* output) {
  NDArray::prepareSpecialUse({output}, {input, indices});
+#if SD_IS_PAIR_TYPE_COMPILED(input->dataType(),indices->dataType())
  BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), unsortedSegmentMeanFunctor_,
                        (context, input, indices, numOfClasses, output), SD_NUMERIC_TYPES, SD_INDEXING_TYPES);
+#endif
  NDArray::registerSpecialUse({output}, {input, indices});
 }
 
@@ -548,8 +552,10 @@ Status segmentMeanFunctorBP_(LaunchContext* context, NDArray* input, NDArray* in
 Status segmentMeanFunctorBP(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                            NDArray* output) {
  NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
+#if SD_IS_PAIR_TYPE_COMPILED(output->dataType(),indices->dataType())
  BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return segmentMeanFunctorBP_,
                        (context, input, indices, gradOut, output), SD_FLOAT_TYPES, SD_INDEXING_TYPES);
+#endif
  NDArray::registerSpecialUse({output}, {input, indices, gradOut});
 }
 // -------------------------------------------------------------------------------------------------------------- //
@@ -614,8 +620,10 @@ static Status unsortedSegmentMeanFunctorBP_(LaunchContext* context, NDArray* inp
 Status unsortedSegmentMeanFunctorBP(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                                    LongType numOfClasses, NDArray* output) {
  NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
+#if SD_IS_PAIR_TYPE_COMPILED(output->dataType(),indices->dataType())
  BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentMeanFunctorBP_,
                        (context, input, indices, gradOut, numOfClasses, output), SD_FLOAT_TYPES, SD_INDEXING_TYPES);
+#endif
  NDArray::registerSpecialUse({output}, {input, indices, gradOut});
 }
 

@@ -24,7 +24,7 @@
 #include <helpers/ShapeUtils.h>
 
 #include <ops/declarable/helpers/nth_element.h>
-
+#include <system/selective_rendering.h>
 #include "ops/specials.h"
 #if NOT_EXCLUDED(OP_nth_element)
 namespace sd {
@@ -59,7 +59,10 @@ void nthElementFunctor_(NDArray* input, sd::LongType n, NDArray* output, bool re
 
 void nthElementFunctor(sd::LaunchContext* launchContext, NDArray* input, sd::LongType n, NDArray* output,
                        bool reverse) {
+
+#if SD_IS_SINGLE_TYPE_COMPILED(input->dataType())
   BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (input, n, output, reverse), SD_NUMERIC_TYPES);
+#endif
 }
 BUILD_SINGLE_TEMPLATE(template void nthElementFunctor_,
                       (NDArray * input, sd::LongType n, NDArray* output, bool reverse), SD_NUMERIC_TYPES);

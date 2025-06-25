@@ -47,7 +47,7 @@
 #include <memory>
 #include <sstream>
 #include <stdexcept>
-
+#include <system/selective_rendering.h>
 #include "execution/cuda/LaunchDims.h"
 
 
@@ -597,11 +597,13 @@ void NDArray::repeat(const int axis, const std::vector<LongType>& repeats, NDArr
   const LongType* reps = reinterpret_cast<LongType*>(manager.replicatePointer(repeats.data(), repeats.size() * sizeof(LongType)));
 
   prepareSpecialUse({&target}, {this});
+#if SD_IS_PAIR_TYPE_COMPILED(dataType(),target.dataType())
   BUILD_DOUBLE_SELECTOR(
       dataType(), target.dataType(), repeatCudaLauncher,
       (launchDims.y, launchDims.x, launchDims.z, getContext()->getCudaStream(), specialBuffer(), specialShapeInfo(),
           target.specialBuffer(), target.specialShapeInfo(), reps, repeats.size(), axis),
       SD_COMMON_TYPES, SD_COMMON_TYPES);
+#endif
   prepareSpecialUse({&target}, {this});
 
   manager.synchronize();

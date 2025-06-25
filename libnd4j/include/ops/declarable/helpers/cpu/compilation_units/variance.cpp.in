@@ -29,7 +29,9 @@
 namespace sd {
     namespace ops {
         namespace helpers {
+#if SD_IS_PAIR_TYPE_COMPILED(input.dataType(),output.dataType())
             BUILD_DOUBLE_TEMPLATE(template SD_LIB_HIDDEN void variance_, (NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions, bool biasCorrected), SD_COMMON_TYPES_@FL_TYPE_INDEX@, SD_FLOAT_TYPES);
+#endif
         }
     }
 }

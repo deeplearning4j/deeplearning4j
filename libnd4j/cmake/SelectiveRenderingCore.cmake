@@ -411,7 +411,6 @@ function(_internal_generate_override_content active_indices combinations_2 combi
     string(APPEND header_content "        } \\\\\n")
     string(APPEND header_content "    }\n\n")
 
-    # Generate BUILD_DOUBLE_SELECTOR - This is the critical fix
     string(APPEND header_content "// ===================================================================\n")
     string(APPEND header_content "// BUILD_DOUBLE_SELECTOR - Fixed Version\n")
     string(APPEND header_content "// ===================================================================\n")

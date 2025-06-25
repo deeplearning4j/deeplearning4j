@@ -33,7 +33,7 @@
 #include <memory>
 #include <stdexcept>
 #include <type_traits>
-
+#include <system/selective_rendering.h>
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -594,8 +594,10 @@ static void addBias_(NDArray& input, NDArray& bias, NDArray& output, const bool 
 }
 //////////////////////////////////////////////////////////////////////////
 void addBias(sd::graph::Context& block, NDArray& input, NDArray& bias, NDArray& output, const bool isNCHW) {
+#if SD_IS_PAIR_TYPE_COMPILED(input.dataType(),bias.dataType())
   BUILD_DOUBLE_SELECTOR(input.dataType(), bias.dataType(), addBias_, (input, bias, output, isNCHW), SD_FLOAT_TYPES,
                         SD_FLOAT_TYPES);
+#endif
 }
 
 BUILD_DOUBLE_TEMPLATE(template void addBias_,

@@ -21,12 +21,15 @@
 #cmakedefine SD_COMMON_TYPES_GEN 
 #include <ops/declarable/helpers/cpu/indexReductions.hpp>
 #include <system/op_boilerplate.h>
+#include <system/selective_rendering.h>
 #if NOT_EXCLUDED(OP_argamin)
 #if defined(SD_COMMON_TYPES_GEN) && defined(SD_COMMON_TYPES_@FL_TYPE_INDEX@)
 namespace sd {
     namespace ops {
         namespace helpers {
+#if SD_IS_PAIR_TYPE_COMPILED(input.dataType(),output.dataType())
             BUILD_DOUBLE_TEMPLATE(template SD_LIB_HIDDEN void argAbsMin_, (NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions), SD_COMMON_TYPES_@FL_TYPE_INDEX@, SD_INDEXING_TYPES);
+#endif
         }
     }
 }

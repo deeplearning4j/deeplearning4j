@@ -28,7 +28,7 @@
 
 #include <ops/declarable/helpers/segment.h>
 #include <ops/declarable/helpers/segment_common.h>
-
+#include <system/selective_rendering.h>
 
 #include "helpers/DebugHelper.h"
 namespace sd {
@@ -601,8 +601,10 @@ Status segmentMaxFunctorBP_(LaunchContext* context, NDArray* input, NDArray* ind
 Status segmentMaxFunctorBP(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                           NDArray* output) {
  NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
+#if SD_IS_PAIR_TYPE_COMPILED(output->dataType(),indices->dataType())
  BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return segmentMaxFunctorBP_,
                        (context, input, indices, gradOut, output), SD_FLOAT_TYPES, SD_INDEXING_TYPES);
+#endif
  NDArray::registerSpecialUse({output}, {input, indices, gradOut});
 }
 
@@ -664,8 +666,10 @@ static Status unsortedSegmentMaxFunctorBP_(LaunchContext* context, NDArray* inpu
 Status unsortedSegmentMaxFunctorBP(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                                   LongType numOfClasses, NDArray* output) {
  NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
+#if SD_IS_PAIR_TYPE_COMPILED(output->dataType())
  BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentMaxFunctorBP_,
                        (context, input, indices, gradOut, numOfClasses, output), SD_FLOAT_TYPES, SD_INDEXING_TYPES);
+#endif
  NDArray::registerSpecialUse({output}, {input, indices, gradOut});
 }
 }  // namespace helpers

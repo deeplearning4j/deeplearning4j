@@ -25,7 +25,7 @@
 
 #include "execution/cuda/LaunchDims.h"
 #include "helpers/DebugHelper.h"
-
+#include <system/selective_rendering.h>
 
 namespace sd {
 namespace ops {
@@ -188,6 +188,7 @@ Status inTopKFunctor(LaunchContext* context, NDArray* predictions, NDArray* targ
   const auto yType = targets->dataType();
 
   NDArray::prepareSpecialUse({output}, {predictions, targets});
+#if SD_IS_PAIR_TYPE_COMPILED(xType,yType)
   BUILD_DOUBLE_SELECTOR(
       xType, yType, inTopKCudaLauncher,
       (topkDims2.y,topkDims2.x, topkDims2.z, context->getCudaStream(), predictions->specialBuffer(),
@@ -195,6 +196,7 @@ Status inTopKFunctor(LaunchContext* context, NDArray* predictions, NDArray* targ
           output->specialShapeInfo(), packX->specialShapeInfo(), packX->specialOffsets(), k),
       SD_FLOAT_TYPES, SD_INDEXING_TYPES);
   NDArray::registerSpecialUse({output}, {predictions, targets});
+#endif
 
   manager.synchronize();
 

@@ -33,7 +33,7 @@
 #include <limits>
 #include <numeric>
 #include <vector>
-
+#include <system/selective_rendering.h>
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -639,10 +639,12 @@ void beamSearch_(NDArray& logit, NDArray& sequence_length, NDArray& result_seque
 void beamSearch(NDArray& logit, NDArray& sequence_length, NDArray& result_sequences, NDArray& result_probs,
                 NDArray& result_sequences_length, int blank_index, int beam_width, int nbest_len,
                 bool normalize_logits = true) {
+#if SD_IS_PAIR_TYPE_COMPILED(logit.dataType(),result_sequences.dataType())
   BUILD_DOUBLE_SELECTOR(logit.dataType(), result_sequences.dataType(), beamSearch_,
                         (logit, sequence_length, result_sequences, result_probs, result_sequences_length, blank_index,
                             beam_width, nbest_len, normalize_logits),
                         SD_FLOAT_TYPES, SD_INDEXING_TYPES);
+#endif
 }
 
 BUILD_DOUBLE_TEMPLATE(template void beamSearch_,

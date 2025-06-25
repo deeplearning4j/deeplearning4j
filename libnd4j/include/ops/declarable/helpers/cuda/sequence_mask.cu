@@ -87,8 +87,10 @@ static void sequenceMask_(LaunchContext* context, NDArray* input, NDArray* outpu
 }
 
 void sequenceMask(LaunchContext* context, NDArray* input, NDArray* output, int maxIndex) {
+#if SD_IS_PAIR_TYPE_COMPILED(input->dataType(),output->dataType())
  BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), sequenceMask_, (context, input, output, maxIndex),
                        SD_INTEGER_TYPES, SD_COMMON_TYPES_EXTENDED);
+#endif
 }
 
 BUILD_DOUBLE_TEMPLATE(template void sequenceMask_,

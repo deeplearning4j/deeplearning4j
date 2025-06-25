@@ -40,7 +40,7 @@ limitations under the License.
 #include <ops/declarable/helpers/image_resize.h>
 
 #include "execution/cuda/LaunchDims.h"
-
+#include <system/selective_rendering.h>
 
 namespace sd {
 namespace ops {
@@ -1091,9 +1091,11 @@ void cropAndResizeFunctor_(LaunchContext* context, NDArray * images, NDArray * b
 void cropAndResizeFunctor(LaunchContext* context, NDArray * images, NDArray * boxes,
                           NDArray * indices, NDArray * cropSize, int method, double extrapolationVal,
                           NDArray* crops) {
+#if SD_IS_TRIPLE_TYPE_COMPILED(images->dataType(),boxes->dataType(),indices->dataType())
   BUILD_TRIPLE_SELECTOR(images->dataType(), boxes->dataType(), indices->dataType(), cropAndResizeFunctor_,
                         (context, images, boxes, indices, cropSize, method, extrapolationVal, crops), SD_NUMERIC_TYPES,
                         SD_FLOAT_TYPES, SD_INTEGER_TYPES);
+#endif
 
 }
 BUILD_TRIPLE_TEMPLATE(template void cropAndResizeFunctor_,

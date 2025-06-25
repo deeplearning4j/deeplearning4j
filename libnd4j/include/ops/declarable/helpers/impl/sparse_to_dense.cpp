@@ -28,7 +28,7 @@
 #include <helpers/ShapeUtils.h>
 #include <helpers/StringUtils.h>
 #include <ops/declarable/helpers/sparse_to_dense.h>
-
+#include <system/selective_rendering.h>
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -117,11 +117,12 @@ void compat_sparse_to_dense(NDArray& values, NDArray& indices, NDArray* def, NDA
     }
     NDArray::preparePrimaryUse({&output}, {&values, &indices});
     // write out values
+#if SD_IS_PAIR_TYPE_COMPILED(values.dataType(),indices.dataType())
     BUILD_DOUBLE_SELECTOR(
         values.dataType(), indices.dataType(), fill_,
         (values.buffer(), indices.buffer(), output.buffer(), output.shapeInfo(), rank, values.lengthOf()),
         SD_COMMON_TYPES, SD_INDEXING_TYPES);
-
+#endif
     NDArray::registerPrimaryUse({&output}, {&values, &indices});
   }
 }

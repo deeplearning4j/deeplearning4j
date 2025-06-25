@@ -21,7 +21,7 @@
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/PointersManager.h>
 #include <helpers/ShapeUtils.h>
-
+#include <system/selective_rendering.h>
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -91,27 +91,31 @@ SD_LIB_HIDDEN void assign(sd::LaunchContext* context, sd::NDArray* target, sd::N
                           && shape::haveSameShapeAndStrides(source->shapeInfo(), target->shapeInfo());
 
   if (canUseLinearCopy) {
+#if SD_IS_PAIR_TYPE_COMPILED(xType,zType)
     auto func = PRAGMA_THREADS_FOR {
       BUILD_DOUBLE_SELECTOR(xType, zType, fastLinearCopy_,
                             (source->dataBuffer()->primary(), target->dataBuffer()->primary(), length, start, stop, source->offset(), target->offset()),
                             SD_COMMON_TYPES, SD_COMMON_TYPES);
     };
-
     const int numThreads = sd::math::sd_max<int>(1, sd::math::sd_min<int>(length / 1024,
                                                                           sd::Environment::getInstance().maxMasterThreads()));
 
     samediff::Threads::parallel_for(func, 0, length, 1, numThreads);
+#endif
+
   } else {
+#if SD_IS_PAIR_TYPE_COMPILED(xType,zType)
     auto func = PRAGMA_THREADS_FOR {
       BUILD_DOUBLE_SELECTOR(xType, zType, assign_,
                             (source->dataBuffer()->primary(), source->shapeInfo(), target->dataBuffer()->primary(), target->shapeInfo(), start, stop, source->offset(), target->offset()),
                             SD_COMMON_TYPES, SD_COMMON_TYPES);
     };
-
     const int numThreads = sd::math::sd_max<int>(1, sd::math::sd_min<int>(length / 1024,
                                                                           sd::Environment::getInstance().maxMasterThreads()));
 
     samediff::Threads::parallel_for(func, 0, length, 1, numThreads);
+#endif
+
   }
 }
 
