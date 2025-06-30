@@ -1,3 +1,5 @@
+// pairwise_instantiation_template_3.cpp.in
+
 /*
  *  ******************************************************************************
  *  *
@@ -20,17 +22,14 @@
 
 //
 // Created by agibsonccc on 11/22/24.
-// Standardized template using partitioned type system
 //
 
 #include <loops/pairwise_instantiations.h>
 #include <types/type_promote.h>
 #include <loops/cpu/pairwise.hpp>
-
-// Standardized generation using partitioned types
-// This template generates instantiations for type promotion operations
-
 // Note: Instantiations are generated to prevent compiler memory issues
+
+
 
 ITERATE_COMBINATIONS(
     SD_COMMON_TYPES_PART_@COMB1@,

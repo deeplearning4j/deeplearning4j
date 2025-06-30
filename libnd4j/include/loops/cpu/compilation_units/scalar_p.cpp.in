@@ -18,24 +18,13 @@
 
 //
 // Created by raver on 9/28/2018.
-// Standardized template using partitioned type system
 //
-
 #include <loops/cpu/scalar.hpp>
-#include <loops/pairwise_instantiations.h>
-
-// Standardized generation using partitioned types
-// This template generates instantiations for scalar transform operations
-
+#cmakedefine SD_PAIRWISE_TYPES_GEN
+#if defined(SD_PAIRWISE_TYPES_GEN) && defined(SD_PAIRWISE_TYPES_@FL_TYPE_INDEX@)
 namespace functions {
     namespace scalar {
-        // Use the standardized combination system for pairwise template instantiation
-        ITERATE_COMBINATIONS(
-            SD_COMMON_TYPES_PART_@COMB1@,
-            SD_COMMON_TYPES_PART_@COMB2@,
-            BUILD_PAIRWISE_TEMPLATE,
-            ScalarTransform,
-            ;
-        )
+        BUILD_PAIRWISE_TEMPLATE(template class SD_LIB_HIDDEN ScalarTransform, , SD_PAIRWISE_TYPES_@FL_TYPE_INDEX@);
     }
 }
+#endif

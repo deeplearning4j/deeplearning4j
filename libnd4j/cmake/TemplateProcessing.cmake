@@ -93,26 +93,8 @@ function(genCompilation FL_ITEM generated_sources_var)
     # Local list to accumulate generated files for this template
     set(local_generated_sources ${${generated_sources_var}})
 
-    # CRITICAL FIX: Skip templates that use broken SD_PAIRWISE_TYPES_X macro system
-    if(FILE_ITEM_WE MATCHES "pairwise_p")
-        message(STATUS "SKIPPING: ${FILE_ITEM_WE} - uses broken SD_PAIRWISE_TYPES_X macro system")
-        set(${generated_sources_var} ${local_generated_sources} PARENT_SCOPE)
-        return()
-    endif()
 
-    # CRITICAL FIX: Skip scalar_p templates that also use broken SD_PAIRWISE_TYPES_X macro system
-    if(FILE_ITEM_WE MATCHES "scalar_p")
-        message(STATUS "SKIPPING: ${FILE_ITEM_WE} - uses broken SD_PAIRWISE_TYPES_X macro system")
-        set(${generated_sources_var} ${local_generated_sources} PARENT_SCOPE)
-        return()
-    endif()
 
-    # CRITICAL FIX: Skip broadcast_*_p templates that also use broken SD_PAIRWISE_TYPES_X macro system
-    if(FILE_ITEM_WE MATCHES "broadcast.*_p")
-        message(STATUS "SKIPPING: ${FILE_ITEM_WE} - uses broken SD_PAIRWISE_TYPES_X macro system")
-        set(${generated_sources_var} ${local_generated_sources} PARENT_SCOPE)
-        return()
-    endif()
 
     if(RANGE_STOP GREATER -1)
         message(STATUS "DEBUG: ${FILE_ITEM_WE} - Generating files for range 0 to ${RANGE_STOP}")
@@ -330,9 +312,7 @@ else()
         endif()
     endforeach()
 
-    # REMOVED: OLD PAIRWISE TEMPLATE GENERATION - this was causing the compilation error
-    # The pairwise_instantiation_template_2.cpp.in uses the broken SD_PAIRWISE_TYPES_X system
-    message(STATUS "ℹ️ Skipping old pairwise template system - using new combination approach")
+
 endif()
 
 # CRITICAL: Set the global cache variable so it's available in MainBuildFlow
@@ -369,19 +349,19 @@ message(STATUS "   Variable contains ${total_count} generated source files")
 function(setup_template_processing)
     # The templates were already generated above during include processing
     # This function now makes sure the variable is available in the calling scope
-    
+
     message(STATUS "setup_template_processing() called - propagating template sources")
-    
+
     # Get the current cached value
     get_property(cached_sources CACHE CUSTOMOPS_GENERIC_SOURCES PROPERTY VALUE)
-    
+
     if(cached_sources)
         list(LENGTH cached_sources cached_count)
         message(STATUS "Propagating ${cached_count} template-generated sources to parent scope")
-        
+
         # Set in parent scope so collect_all_sources_with_selective_rendering can access it
         set(CUSTOMOPS_GENERIC_SOURCES ${cached_sources} PARENT_SCOPE)
-        
+
         # Also set as global variable for broader access
         set(CUSTOMOPS_GENERIC_SOURCES ${cached_sources} CACHE INTERNAL "Template-generated source files" FORCE)
     else()

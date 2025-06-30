@@ -1,18 +1,327 @@
 # ============================================================================
-# SelectiveRenderingCore.cmake (v18 - Final, Complete, Self-Contained)
+# SelectiveRenderingCore.cmake (v19 - With Semantic Filtering)
 #
+# Enhanced version that implements proper semantic filtering to reduce
+# template instantiation combinations from 125 to ~30-40 meaningful ones.
 # This file contains ALL logic for the selective rendering system.
-# It defines a single public function, SETUP_AND_GENERATE_ALL_RENDERING_FILES(),
-# which handles discovery, combination, and header generation internally.
-# This design eliminates all inter-file dependency and scoping issues.
 # ============================================================================
 
+# ============================================================================
+# SECTION 1: SEMANTIC FILTERING LOGIC
+# ============================================================================
+function(_internal_srcore_is_type_numeric type_name output_var)
+    set(numeric_types "DOUBLE;FLOAT32;INT32;INT64;FLOAT16;BFLOAT16")
+    list(FIND numeric_types "${type_name}" found_index)
+    if(found_index GREATER_EQUAL 0)
+        set(${output_var} TRUE PARENT_SCOPE)
+    else()
+        set(${output_var} FALSE PARENT_SCOPE)
+    endif()
+endfunction()
+
+function(_internal_srcore_is_type_floating type_name output_var)
+    set(floating_types "DOUBLE;FLOAT32;FLOAT16;BFLOAT16")
+    list(FIND floating_types "${type_name}" found_index)
+    if(found_index GREATER_EQUAL 0)
+        set(${output_var} TRUE PARENT_SCOPE)
+    else()
+        set(${output_var} FALSE PARENT_SCOPE)
+    endif()
+endfunction()
+
+function(_internal_srcore_is_type_integer type_name output_var)
+    set(integer_types "INT32;INT64;BOOL")
+    list(FIND integer_types "${type_name}" found_index)
+    if(found_index GREATER_EQUAL 0)
+        set(${output_var} TRUE PARENT_SCOPE)
+    else()
+        set(${output_var} FALSE PARENT_SCOPE)
+    endif()
+endfunction()
+
+function(_internal_srcore_get_type_priority type_name output_var)
+    # Higher numbers = higher precision/priority
+    if(type_name STREQUAL "DOUBLE")
+        set(${output_var} 8 PARENT_SCOPE)
+    elseif(type_name STREQUAL "FLOAT32")
+        set(${output_var} 6 PARENT_SCOPE)
+    elseif(type_name STREQUAL "FLOAT16")
+        set(${output_var} 4 PARENT_SCOPE)
+    elseif(type_name STREQUAL "BFLOAT16")
+        set(${output_var} 4 PARENT_SCOPE)
+    elseif(type_name STREQUAL "INT64")
+        set(${output_var} 7 PARENT_SCOPE)
+    elseif(type_name STREQUAL "INT32")
+        set(${output_var} 5 PARENT_SCOPE)
+    elseif(type_name STREQUAL "BOOL")
+        set(${output_var} 1 PARENT_SCOPE)
+    else()
+        set(${output_var} 0 PARENT_SCOPE)
+    endif()
+endfunction()
+
+function(_internal_srcore_is_valid_pair type1 type2 output_var)
+    # Get type properties
+    _internal_srcore_is_type_numeric("${type1}" is_numeric_1)
+    _internal_srcore_is_type_numeric("${type2}" is_numeric_2)
+    _internal_srcore_is_type_floating("${type1}" is_float_1)
+    _internal_srcore_is_type_floating("${type2}" is_float_2)
+    _internal_srcore_is_type_integer("${type1}" is_int_1)
+    _internal_srcore_is_type_integer("${type2}" is_int_2)
+
+    # Rule 1: Identical types are always valid
+    if(type1 STREQUAL type2)
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 2: Both must be numeric for mixed pairs
+    if(NOT is_numeric_1 OR NOT is_numeric_2)
+        set(${output_var} FALSE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 3: Bool can pair with any numeric type (for broadcasting)
+    if(type1 STREQUAL "BOOL" OR type2 STREQUAL "BOOL")
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 4: Floating types can pair with each other
+    if(is_float_1 AND is_float_2)
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 5: Integer types can pair with each other
+    if(is_int_1 AND is_int_2)
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 6: Integer-to-Float promotion patterns
+    if((is_int_1 AND is_float_2) OR (is_float_1 AND is_int_2))
+        # Allow common promotion patterns
+        if((type1 STREQUAL "INT32" AND type2 STREQUAL "FLOAT32") OR
+        (type1 STREQUAL "FLOAT32" AND type2 STREQUAL "INT32") OR
+        (type1 STREQUAL "INT64" AND type2 STREQUAL "DOUBLE") OR
+        (type1 STREQUAL "DOUBLE" AND type2 STREQUAL "INT64"))
+            set(${output_var} TRUE PARENT_SCOPE)
+            return()
+        endif()
+    endif()
+
+    # Default: invalid combination
+    set(${output_var} FALSE PARENT_SCOPE)
+endfunction()
+
+function(_internal_srcore_is_valid_triple type1 type2 type3 output_var)
+    # Get type properties
+    _internal_srcore_is_type_numeric("${type1}" is_numeric_1)
+    _internal_srcore_is_type_numeric("${type2}" is_numeric_2)
+    _internal_srcore_is_type_numeric("${type3}" is_numeric_3)
+    _internal_srcore_is_type_floating("${type1}" is_float_1)
+    _internal_srcore_is_type_floating("${type2}" is_float_2)
+    _internal_srcore_is_type_floating("${type3}" is_float_3)
+    _internal_srcore_get_type_priority("${type1}" priority_1)
+    _internal_srcore_get_type_priority("${type2}" priority_2)
+    _internal_srcore_get_type_priority("${type3}" priority_3)
+
+    # Rule 1: All three types must be numeric
+    if(NOT is_numeric_1 OR NOT is_numeric_2 OR NOT is_numeric_3)
+        set(${output_var} FALSE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 2: Identical types are always valid (T, T, T)
+    if(type1 STREQUAL type2 AND type2 STREQUAL type3)
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 3: Output type should be highest precision among inputs
+    # For (A, B, C), C should be >= max(A, B) in precision
+    # Rule 3: Output type should be highest precision among inputs
+    # For (A, B, C), C should be >= max(A, B) in precision
+    if(priority_1 GREATER priority_2)
+        set(max_input_priority ${priority_1})
+    else()
+        set(max_input_priority ${priority_2})
+    endif()
+
+    if(priority_3 LESS max_input_priority)
+        # Exception: Allow bool output for comparison operations
+        if(NOT type3 STREQUAL "BOOL")
+            set(${output_var} FALSE PARENT_SCOPE)
+            return()
+        endif()
+    endif()
+
+    # Rule 4: Common operation patterns
+    # Pattern A: (T, T, U) - Same input types, different output
+    if(type1 STREQUAL type2)
+        # Allow same-type inputs with promoted output
+        if(priority_3 GREATER_EQUAL priority_1 OR type3 STREQUAL "BOOL")
+            set(${output_var} TRUE PARENT_SCOPE)
+            return()
+        endif()
+    endif()
+
+    # Pattern B: (T, U, T) - Mixed inputs, output matches first input
+    if(type1 STREQUAL type3)
+        _internal_srcore_is_valid_pair("${type1}" "${type2}" pair_valid)
+        if(pair_valid)
+            set(${output_var} TRUE PARENT_SCOPE)
+            return()
+        endif()
+    endif()
+
+    # Pattern C: (T, U, U) - Mixed inputs, output matches second input
+    if(type2 STREQUAL type3)
+        _internal_srcore_is_valid_pair("${type1}" "${type2}" pair_valid)
+        if(pair_valid)
+            set(${output_var} TRUE PARENT_SCOPE)
+            return()
+        endif()
+    endif()
+
+    # Pattern D: Broadcasting with bool
+    if(type1 STREQUAL "BOOL" OR type2 STREQUAL "BOOL")
+        # Bool can broadcast with any numeric type
+        _internal_srcore_is_valid_pair("${type2}" "${type3}" pair_valid_23)
+        _internal_srcore_is_valid_pair("${type1}" "${type3}" pair_valid_13)
+        if(pair_valid_23 OR pair_valid_13)
+            set(${output_var} TRUE PARENT_SCOPE)
+            return()
+        endif()
+    endif()
+
+    # Pattern E: Type promotion chains (int -> float -> double)
+    if(is_float_3)
+        # Allow promotion to floating point output
+        if((type1 STREQUAL "INT32" OR type1 STREQUAL "INT64") AND
+        (type2 STREQUAL "INT32" OR type2 STREQUAL "INT64" OR is_float_2))
+            set(${output_var} TRUE PARENT_SCOPE)
+            return()
+        endif()
+    endif()
+
+    # Rule 5: Specific beneficial combinations for ML/scientific computing
+    # Common ML patterns: mixed precision training
+    if((type1 STREQUAL "FLOAT16" AND type2 STREQUAL "FLOAT32" AND type3 STREQUAL "FLOAT32") OR
+    (type1 STREQUAL "BFLOAT16" AND type2 STREQUAL "FLOAT32" AND type3 STREQUAL "FLOAT32") OR
+    (type1 STREQUAL "FLOAT32" AND type2 STREQUAL "FLOAT16" AND type3 STREQUAL "FLOAT32") OR
+    (type1 STREQUAL "FLOAT32" AND type2 STREQUAL "BFLOAT16" AND type3 STREQUAL "FLOAT32"))
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Comparison operations: (T, T, bool)
+    if(type3 STREQUAL "BOOL" AND type1 STREQUAL type2)
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Index operations: (T, INT32/INT64, T)
+    if((type2 STREQUAL "INT32" OR type2 STREQUAL "INT64") AND type1 STREQUAL type3)
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Default: invalid combination
+    set(${output_var} FALSE PARENT_SCOPE)
+endfunction()
 
 # ============================================================================
-# SECTION 1: INTERNAL HELPER AND ANALYSIS FUNCTIONS
-# These are helper functions used only by the main orchestrator function.
+# SECTION 2: ENHANCED COMBINATION GENERATION WITH FILTERING
 # ============================================================================
+function(_internal_srcore_generate_combinations active_indices type_names profile result_2_var result_3_var)
+    list(LENGTH active_indices type_count)
+    if(type_count EQUAL 0)
+        message(FATAL_ERROR "No active types provided for combination generation")
+    endif()
+    set(combinations_2 "")
+    set(combinations_3 "")
+    set(filtered_count_2 0)
+    set(filtered_count_3 0)
+    set(total_possible_2 0)
+    set(total_possible_3 0)
 
+    math(EXPR max_index "${type_count} - 1")
+    message(STATUS "🔍 Generating filtered combinations for ${type_count} types...")
+    # Generate 2-type combinations with filtering
+    foreach(i RANGE ${max_index})
+        list(GET type_names ${i} type_name_i)
+        foreach(j RANGE ${max_index})
+            list(GET type_names ${j} type_name_j)
+            math(EXPR total_possible_2 "${total_possible_2} + 1")
+
+            _internal_srcore_is_valid_pair("${type_name_i}" "${type_name_j}" is_valid)
+            if(is_valid)
+                list(APPEND combinations_2 "${i},${j}")
+                math(EXPR filtered_count_2 "${filtered_count_2} + 1")
+            endif()
+        endforeach()
+    endforeach()
+    # Generate 3-type combinations with filtering
+    foreach(i RANGE ${max_index})
+        list(GET type_names ${i} type_name_i)
+        foreach(j RANGE ${max_index})
+            list(GET type_names ${j} type_name_j)
+            foreach(k RANGE ${max_index})
+                list(GET type_names ${k} type_name_k)
+                math(EXPR total_possible_3 "${total_possible_3} + 1")
+
+                _internal_srcore_is_valid_triple("${type_name_i}" "${type_name_j}" "${type_name_k}" is_valid)
+                if(is_valid)
+                    list(APPEND combinations_3 "${i},${j},${k}")
+                    math(EXPR filtered_count_3 "${filtered_count_3} + 1")
+                endif()
+            endforeach()
+        endforeach()
+    endforeach()
+    # Calculate savings
+    math(EXPR savings_2 "${total_possible_2} - ${filtered_count_2}")
+    math(EXPR savings_3 "${total_possible_3} - ${filtered_count_3}")
+    if(total_possible_2 GREATER 0)
+        math(EXPR percent_saved_2 "100 * ${savings_2} / ${total_possible_2}")
+    else()
+        set(percent_saved_2 0)
+    endif()
+    if(total_possible_3 GREATER 0)
+        math(EXPR percent_saved_3 "100 * ${savings_3} / ${total_possible_3}")
+    else()
+        set(percent_saved_3 0)
+    endif()
+    message(STATUS "✅ Semantic Filtering Results:")
+    message(STATUS "   2-type: ${filtered_count_2}/${total_possible_2} combinations (${percent_saved_2}% filtered)")
+    message(STATUS "   3-type: ${filtered_count_3}/${total_possible_3} combinations (${percent_saved_3}% filtered)")
+    # Optional: Show sample filtered combinations for verification
+    if(SRCORE_ENABLE_DIAGNOSTICS)
+        message(STATUS "🔍 Sample valid 3-type combinations:")
+        set(sample_count 0)
+        foreach(combo ${combinations_3})
+            if(sample_count GREATER_EQUAL 5)
+                break()
+            endif()
+            string(REPLACE "," ";" combo_parts "${combo}")
+            list(GET combo_parts 0 i)
+            list(GET combo_parts 1 j)
+            list(GET combo_parts 2 k)
+            list(GET type_names ${i} name_i)
+            list(GET type_names ${j} name_j)
+            list(GET type_names ${k} name_k)
+            message(STATUS "     (${name_i}, ${name_j}, ${name_k})")
+            math(EXPR sample_count "${sample_count} + 1")
+        endforeach()
+    endif()
+    set(${result_2_var} "${combinations_2}" PARENT_SCOPE)
+    set(${result_3_var} "${combinations_3}" PARENT_SCOPE)
+endfunction()
+
+# ============================================================================
+# SECTION 3: ORIGINAL HELPER FUNCTIONS (Updated)
+# ============================================================================
 function(_internal_srcore_debug_message message)
     if(DEFINED SRCORE_ENABLE_DIAGNOSTICS AND SRCORE_ENABLE_DIAGNOSTICS)
         message(STATUS "🔧 SelectiveRenderingCore: ${message}")
@@ -41,7 +350,6 @@ endfunction()
 
 function(_internal_srcore_discover_types result_indices_var result_names_var result_enums_var result_cpp_types_var)
     message(STATUS "🔍 DEBUG: Starting type discovery...")
-
     # Look for types.h in multiple possible locations
     set(possible_headers
             "${CMAKE_CURRENT_SOURCE_DIR}/include/types/types.h"
@@ -50,7 +358,6 @@ function(_internal_srcore_discover_types result_indices_var result_names_var res
             "${CMAKE_CURRENT_SOURCE_DIR}/../include/types/types.h"
             "${CMAKE_SOURCE_DIR}/libnd4j/include/types/types.h"
             "${CMAKE_SOURCE_DIR}/include/types/types.h")
-
     set(types_header "")
     foreach(header_path ${possible_headers})
         if(EXISTS "${header_path}")
@@ -59,27 +366,21 @@ function(_internal_srcore_discover_types result_indices_var result_names_var res
             break()
         endif()
     endforeach()
-
     if(NOT types_header)
         message(FATAL_ERROR "❌ SelectiveRenderingCore: Could not find types.h in any expected location")
     endif()
-
     file(READ "${types_header}" types_content)
-
     set(simple_types "BOOL;DOUBLE;FLOAT32;INT32;INT64")
     set(discovered_types "")
     set(discovered_indices "")
     set(discovered_enums "")
     set(discovered_cpp_types "")
     set(type_index 0)
-
     foreach(type_key ${simple_types})
         string(REGEX MATCH "#define[ \t]+TTYPE_${type_key}[ \t]*,[ \t]*\\(([^)]+)\\)" type_match "${types_content}")
-
         if(type_match)
             list(APPEND discovered_types "${type_key}")
             list(APPEND discovered_indices ${type_index})
-
             string(REGEX MATCH "\\(([^)]+)\\)" tuple_match "${type_match}")
             string(SUBSTRING "${tuple_match}" 1 -1 type_tuple)
             string(REGEX REPLACE "^([^,]+),[ \t]*(.+)$" "\\1;\\2" tuple_parts "${type_tuple}")
@@ -88,22 +389,21 @@ function(_internal_srcore_discover_types result_indices_var result_names_var res
             string(STRIP "${enum_part}" enum_part)
             string(STRIP "${cpp_part}" cpp_part)
             string(REGEX REPLACE "\\)$" "" cpp_part "${cpp_part}")
-
             list(APPEND discovered_enums "${enum_part}")
             list(APPEND discovered_cpp_types "${cpp_part}")
-
             message(STATUS "✅ Type ${type_index}: ${type_key} -> enum: ${enum_part}, cpp: ${cpp_part}")
             math(EXPR type_index "${type_index} + 1")
         endif()
     endforeach()
-
     set(${result_indices_var} "${discovered_indices}" PARENT_SCOPE)
     set(${result_names_var} "${discovered_types}" PARENT_SCOPE)
     set(${result_enums_var} "${discovered_enums}" PARENT_SCOPE)
     set(${result_cpp_types_var} "${discovered_cpp_types}" PARENT_SCOPE)
 endfunction()
 
-
+# ============================================================================
+# SECTION 4: ORIGINAL PUBLIC FUNCTIONS
+# ============================================================================
 function(srcore_discover_active_types result_var result_enums_var result_cpp_types_var)
     _internal_srcore_discover_types(active_indices active_names discovered_enums discovered_cpp_types)
     set(SRCORE_ACTIVE_TYPES "${active_names}" PARENT_SCOPE)
@@ -122,6 +422,10 @@ function(srcore_generate_combinations active_indices profile result_2_var result
     set(${result_2_var} "${combinations_2}" PARENT_SCOPE)
     set(${result_3_var} "${combinations_3}" PARENT_SCOPE)
 endfunction()
+
+# ============================================================================
+# SECTION 5: REMAINING ORIGINAL FUNCTIONS
+# ============================================================================
 
 function(srcore_generate_headers active_indices combinations_2 combinations_3 output_dir type_enums type_cpp_types)
     _internal_srcore_generate_validity_header("${active_indices}" "${type_enums}" "${type_cpp_types}" "${combinations_2}" "${combinations_3}" "${output_dir}")
@@ -161,32 +465,6 @@ function(srcore_auto_setup)
         message(STATUS "Auto-setup: Running selective rendering setup")
         setup_selective_rendering_unified_safe()
     endif()
-endfunction()
-
-function(_internal_srcore_generate_combinations active_indices type_names profile result_2_var result_3_var)
-    list(LENGTH active_indices type_count)
-    if(type_count EQUAL 0)
-        message(FATAL_ERROR "No active types provided for combination generation")
-    endif()
-
-    set(combinations_2 "")
-    set(combinations_3 "")
-    math(EXPR max_index "${type_count} - 1")
-
-    foreach(i RANGE ${max_index})
-        list(GET type_names ${i} type_name_i)
-        foreach(j RANGE ${max_index})
-            list(GET type_names ${j} type_name_j)
-            list(APPEND combinations_2 "${i},${j}")
-            # In a real scenario, you might have semantic filtering for 3-type combos here
-            foreach(k RANGE ${max_index})
-                list(APPEND combinations_3 "${i},${j},${k}")
-            endforeach()
-        endforeach()
-    endforeach()
-
-    set(${result_2_var} "${combinations_2}" PARENT_SCOPE)
-    set(${result_3_var} "${combinations_3}" PARENT_SCOPE)
 endfunction()
 
 function(_internal_srcore_generate_validity_header active_indices type_enums type_cpp_types combinations_2 combinations_3 output_dir)
@@ -615,7 +893,7 @@ function(_internal_generate_override_content active_indices combinations_2 combi
     set(${output_var} "${header_content}" PARENT_SCOPE)
 endfunction()
 # ==========================================================================================
-# SECTION 3: THE SINGLE PUBLIC ORCHESTRATOR FUNCTION
+# SECTION 6: THE SINGLE PUBLIC ORCHESTRATOR FUNCTION
 # ==========================================================================================
 function(SETUP_AND_GENERATE_ALL_RENDERING_FILES)
     message(STATUS "Executing unified selective rendering setup and generation...")

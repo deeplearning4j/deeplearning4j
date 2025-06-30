@@ -20,24 +20,13 @@
 
 //
 // @author raver119@gmail.com
-// Standardized template using partitioned type system
 //
-
 #include <loops/cpu/reduce3.hpp>
-#include <loops/pairwise_instantiations.h>
-
-// Standardized generation using partitioned types
-// This template generates instantiations for 3-way reduction operations (float types 2)
-
+#cmakedefine SD_COMMON_TYPES_GEN
+#if defined(SD_COMMON_TYPES_GEN) && defined(SD_COMMON_TYPES_@FL_TYPE_INDEX@) && defined(SD_FLOAT_TYPES_2)
 namespace functions {
     namespace reduce3 {
-        // Use the standardized combination system for double template instantiation
-        ITERATE_COMBINATIONS(
-            SD_COMMON_TYPES_PART_@COMB1@,
-            SD_FLOAT_TYPES_PART_2,
-            BUILD_DOUBLE_TEMPLATE,
-            Reduce3,
-            ;
-        )
+        BUILD_DOUBLE_TEMPLATE(template class SD_LIB_HIDDEN Reduce3, , SD_COMMON_TYPES_@FL_TYPE_INDEX@, SD_FLOAT_TYPES_2);
     }
 }
+#endif

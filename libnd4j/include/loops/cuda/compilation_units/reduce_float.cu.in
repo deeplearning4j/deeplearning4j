@@ -18,24 +18,13 @@
 
 //
 // @author raver119@gmail.com
-// Standardized template using partitioned type system
 //
-
 #include <loops/cuda/reduce/reduce_float.chpp>
-#include <loops/pairwise_instantiations.h>
-
-// Standardized generation using partitioned types
-// This template generates instantiations for CUDA floating-point reduction operations
-
+#cmakedefine SD_FLOAT_TYPES_GEN
+#if defined(SD_FLOAT_TYPES_GEN) && defined(SD_FLOAT_TYPES_@FL_TYPE_INDEX@)
 namespace functions {
     namespace reduce {
-        // Use the standardized combination system for double template instantiation
-        ITERATE_COMBINATIONS(
-            SD_COMMON_TYPES,
-            SD_FLOAT_TYPES_PART_@COMB1@,
-            BUILD_DOUBLE_TEMPLATE,
-            ReduceFloatFunction,
-            ;
-        )
+        BUILD_DOUBLE_TEMPLATE(template class SD_LIB_HIDDEN ReduceFloatFunction, , SD_COMMON_TYPES, SD_FLOAT_TYPES_@FL_TYPE_INDEX@);
     }
 }
+#endif

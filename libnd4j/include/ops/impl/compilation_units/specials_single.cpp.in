@@ -20,24 +20,21 @@
 
 //
 // @author raver119@gmail.com
-// Standardized template using partitioned type system
+// @date Dec 26, 2024 // Adjusted date format/value to match example style
 //
 
-#include <ops/impl/specials_single.hpp>
-#include <system/type_boilerplate.h>
-#include <loops/pairwise_instantiations.h>
-
-// Standardized generation using partitioned types
-// This template generates instantiations for single-precision special operations
+#include <ops/impl/specials_single.hpp> // Original include
+#include <system/type_boilerplate.h> // For type lists like SD_NUMERIC_TYPES_PART_X
+#include <loops/pairwise_instantiations.h> // For ITERATE_COMBINATIONS macro
+// Note: Instantiations are generated to prevent compiler memory issues
 
 namespace sd {
 
-    // Use the standardized combination system for single type instantiation
-    #define SPECIAL_METHODS_DECL(T) template class SpecialMethods<GET_SECOND(T)>;
-    
-    ITERATE_LIST(
-        SD_COMMON_TYPES_PART_@COMB1@,
-        SPECIAL_METHODS_DECL
-    )
+#define SPECIAL_METHODS_DECL(T) template  class SpecialMethods<GET_SECOND(T)>;
+ITERATE_LIST(
+    SD_COMMON_TYPES_PART_@COMB1@,
+    SPECIAL_METHODS_DECL
 
-}
+)
+
+} // namespace sd

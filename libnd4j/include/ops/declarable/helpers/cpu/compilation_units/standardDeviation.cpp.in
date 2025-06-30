@@ -15,34 +15,21 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
-
 //
 // @author AbdelRauf
-// Standardized template using partitioned type system
 //
-
 #include <system/op_boilerplate.h>
-#include <ops/declarable/helpers/cpu/summaryReductions.hpp>
-#include <loops/pairwise_instantiations.h>
-
 #if NOT_EXCLUDED(OP_standard_deviation)
-
-// Standardized generation using partitioned types
-// This template generates instantiations for standard deviation operations
-
+//inform Cmake that each of LIBND4J_TYPE will be generated and used in separate cpp files.
+#cmakedefine SD_COMMON_TYPES_GEN 
+#include <ops/declarable/helpers/cpu/summaryReductions.hpp>
+#if defined(SD_COMMON_TYPES_GEN) && defined(SD_COMMON_TYPES_@FL_TYPE_INDEX@)
 namespace sd {
     namespace ops {
         namespace helpers {
-            // Use the standardized combination system for double template instantiation
-            ITERATE_COMBINATIONS(
-                SD_COMMON_TYPES_PART_@COMB1@,
-                SD_FLOAT_TYPES,
-                BUILD_DOUBLE_TEMPLATE,
-                standardDeviation_,
-                (NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions, bool biasCorrected);
-            )
+            BUILD_DOUBLE_TEMPLATE(template SD_LIB_HIDDEN void standardDeviation_, (NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions, bool biasCorrected), SD_COMMON_TYPES_@FL_TYPE_INDEX@, SD_FLOAT_TYPES);
         }
     }
 }
-
+#endif
 #endif

@@ -20,22 +20,16 @@
 
 //
 // Created by agibsonccc on 12/26/24.
-// Standardized template using partitioned type system
 //
 
 #include <helpers/cpu/loops/IndexReductionLoops.hpp>
 #include <system/type_boilerplate.h>
-#include <loops/pairwise_instantiations.h>
-
-// Standardized generation using partitioned types
-// This template generates instantiations for index reduction loops
-
 // Note: Instantiations are generated to prevent compiler memory issues
 
 ITERATE_COMBINATIONS(
     SD_COMMON_TYPES_PART_@COMB1@,
     SD_COMMON_TYPES_PART_@COMB2@,
-    template class,
-    sd::IndexReductionLoops,
+    template class sd::IndexReductionLoops,
+    IndexReductionLoops,
     ;
 )

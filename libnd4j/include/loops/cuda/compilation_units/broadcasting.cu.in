@@ -18,24 +18,13 @@
 
 //
 // @author raver119@gmail.com
-// Standardized template using partitioned type system
 //
-
 #include <loops/cuda/broadcasting.chpp>
-#include <loops/pairwise_instantiations.h>
-
-// Standardized generation using partitioned types
-// This template generates instantiations for CUDA broadcasting operations
-
+#cmakedefine SD_PAIRWISE_TYPES_GEN
+#if defined(SD_PAIRWISE_TYPES_GEN) && defined(SD_PAIRWISE_TYPES_@FL_TYPE_INDEX@)
 namespace functions {
     namespace broadcast {
-        // Use the standardized combination system for pairwise template instantiation
-        ITERATE_LIST(
-            SD_COMMON_TYPES_PART_@COMB1@,
-            BUILD_PAIRWISE_TEMPLATE,
-            extern template class,
-            Broadcast,
-            ;
-        )
+        BUILD_PAIRWISE_TEMPLATE(extern template class SD_LIB_HIDDEN Broadcast, , SD_PAIRWISE_TYPES_@FL_TYPE_INDEX@);
     }
 }
+#endif

@@ -18,23 +18,13 @@
 
 //
 // Created by raver119 on 23/09/18.
-// Standardized template using partitioned type system
 //
-
 #include <loops/cpu/pairwise.hpp>
-#include <loops/pairwise_instantiations.h>
-
-// Standardized generation using partitioned types
-// This template generates instantiations for pairwise transform operations
-
+#cmakedefine SD_PAIRWISE_TYPES_GEN
+#if defined(SD_PAIRWISE_TYPES_GEN) && defined(SD_PAIRWISE_TYPES_@FL_TYPE_INDEX@)
 namespace functions {
     namespace pairwise_transforms {
-        // Use the standardized combination system for single template instantiation
-        ITERATE_LIST(
-            SD_COMMON_TYPES_PART_@COMB1@,
-            template class,
-            PairWiseTransform,
-            ;
-        )
+        template class SD_LIB_HIDDEN PairWiseTransform<SD_PAIRWISE_TYPES_@FL_TYPE_INDEX@>;
     }
 }
+#endif

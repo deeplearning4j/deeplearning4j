@@ -717,8 +717,7 @@ if(DEFINED SRCORE_COMBINATIONS_2 AND DEFINED SRCORE_COMBINATIONS_3)
     message(STATUS "   Total Combinations: ${total_combinations} (2-type: ${perf_combo_2}, 3-type: ${perf_combo_3})")
 endif()
 
-include(TypeRegistryGenerator)
-dump_type_macros_to_disk()
+
 # ============================================================================
 # COMPATIBILITY AND MIGRATION NOTICES
 # ============================================================================
@@ -808,6 +807,9 @@ endif()
 if(COMMAND verify_wrapper_compatibility)
     verify_wrapper_compatibility()
 endif()
+include(TypeRegistryGenerator)
+dump_type_macros_to_disk()
+
 
 message(STATUS "🚀 Build orchestration complete - System ready for compilation")
 message(STATUS "")

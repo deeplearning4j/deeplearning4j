@@ -7,7 +7,8 @@
 * * https://www.apache.org/licenses/LICENSE-2.0.
 * *
 * * See the NOTICE file distributed with this work for additional
-* * information regarding copyright ownership.
+* * information regarding copyrig
+ * ht ownership.
 * * Unless required by applicable law or agreed to in writing, software
 * * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 * * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -20,34 +21,33 @@
 
 //
 // @author raver119@gmail.com
-// Standardized template using partitioned type system
+// @date Dec 26, 2024 // Adjusted date format/value to match example style
 //
 
-#include <ops/impl/specials_double.hpp>
-#include <system/type_boilerplate.h>
-#include <loops/pairwise_instantiations.h>
-
-// Standardized generation using partitioned types
-// This template generates instantiations for double-precision special operations
+#include <ops/impl/specials_double.hpp> // Original include
+#include <system/type_boilerplate.h> // For type lists like SD_NUMERIC_TYPES_PART_X
+#include <loops/pairwise_instantiations.h> // For ITERATE_COMBINATIONS macro
+// Note: Instantiations are generated to prevent compiler memory issues
 
 namespace sd {
 
-    // Use the standardized combination system for class instantiation
-    ITERATE_COMBINATIONS(
-        SD_COMMON_TYPES_PART_@COMB1@,
-        SD_COMMON_TYPES_PART_@COMB2@,
-        INSTANT_PROCESS_CLASSCOMBINATION,
-        sd::DoubleMethods,
-        ()
-    )
 
-    // Use the standardized combination system for function instantiation
-    ITERATE_COMBINATIONS(
-        SD_COMMON_TYPES_PART_@COMB1@,
-        SD_COMMON_TYPES_PART_@COMB2@,
-        INSTANT_PROCESS_COMBINATION,
-        sd::SpecialTypeConverter::convertGeneric,
-        (sd::Pointer * extras, void *dx, sd::LongType N, void *dz);
-    )
+ITERATE_COMBINATIONS(
+    SD_COMMON_TYPES_PART_@COMB1@,
+    SD_COMMON_TYPES_PART_@COMB2@,
+    INSTANT_PROCESS_CLASSCOMBINATION,
+     sd::DoubleMethods,
+    ()
+)
 
-}
+
+ITERATE_COMBINATIONS(
+    SD_COMMON_TYPES_PART_@COMB1@,
+    SD_COMMON_TYPES_PART_@COMB2@,
+    INSTANT_PROCESS_COMBINATION,
+    sd::SpecialTypeConverter::convertGeneric,
+    (sd::Pointer * extras, void *dx, sd::LongType N, void *dz);
+)
+
+
+} // namespace sd
