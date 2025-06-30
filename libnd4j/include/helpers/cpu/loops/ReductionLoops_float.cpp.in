@@ -18,14 +18,22 @@
 
 //
 // @author raver119@gmail.com
+// Standardized template using partitioned type system
 //
+
 #include <helpers/cpu/loops/ReductionLoops_float.hpp>
-#cmakedefine SD_FLOAT_TYPES_GEN
-#if defined(SD_FLOAT_TYPES_GEN) && defined(SD_FLOAT_TYPES_@FL_TYPE_INDEX@)
+#include <loops/pairwise_instantiations.h>
+
+// Standardized generation using partitioned types
+// This template generates instantiations for floating-point reduction operations
+
 namespace sd {
-  
-    BUILD_DOUBLE_TEMPLATE(template class SD_LIB_HIDDEN ReductionFloatLoops, , SD_COMMON_TYPES, SD_FLOAT_TYPES_@FL_TYPE_INDEX@);
+    // Use the standardized combination system for double template instantiation
+    ITERATE_COMBINATIONS(
+        SD_COMMON_TYPES_PART_@COMB1@,
+        SD_FLOAT_TYPES_PART_@COMB2@,
+        BUILD_DOUBLE_TEMPLATE,
+        ReductionFloatLoops,
+        ;
+    )
 }
-#endif
-
-

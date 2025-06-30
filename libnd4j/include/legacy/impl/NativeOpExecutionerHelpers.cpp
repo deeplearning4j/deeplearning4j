@@ -38,3 +38,4 @@ void NativeOpExecutioner::execSort(sd::NDArray *x, bool descending) {
       SD_NUMERIC_TYPES);
 #endif
 }
+

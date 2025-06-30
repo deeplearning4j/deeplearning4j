@@ -223,7 +223,9 @@ static void segmentSumFunctor_(LaunchContext* context, NDArray* input, NDArray* 
 void segmentSumFunctor(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
  NDArray::prepareSpecialUse({output}, {input, indices});
  output->nullify();
-#if SD_IS_PAIR_TYPE_COMPILED(input->dataType(),indices->dataType())
+ auto indicesDType = indices->dataType();
+ auto outputDType = input->dataType();
+#if SD_IS_PAIR_TYPE_COMPILED(outputDType,indicesDType)
  BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), segmentSumFunctor_, (context, input, indices, output),
                        SD_NUMERIC_TYPES, SD_INDEXING_TYPES);
 #endif
@@ -277,7 +279,9 @@ void unsortedSegmentSumFunctor(LaunchContext* context, NDArray* input, NDArray* 
                               NDArray* output) {
  NDArray::prepareSpecialUse({output}, {input, indices});
  output->nullify();
-#if SD_IS_PAIR_TYPE_COMPILED(input->dataType(),indices->dataType())
+ auto indicesDType = indices->dataType();
+ auto outputDType = input ->dataType();
+#if SD_IS_PAIR_TYPE_COMPILED(outputDType,indicesDType)
  BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), unsortedSegmentSumFunctor_,
                        (context, input, indices, numOfClasses, output), SD_NUMERIC_TYPES, SD_INDEXING_TYPES);
 #endif
@@ -446,7 +450,9 @@ Status segmentSumFunctorBP_(LaunchContext* context, NDArray* input, NDArray* ind
 Status segmentSumFunctorBP(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                           NDArray* output) {
  NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
-#if SD_IS_PAIR_TYPE_COMPILED(output->dataType(),indices->dataType())
+ auto indicesDType = indices->dataType();
+ auto outputDType = output->dataType();
+#if SD_IS_PAIR_TYPE_COMPILED(indicesDType,outputDType)
  BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return segmentSumFunctorBP_,
                        (context, input, indices, gradOut, output), SD_FLOAT_TYPES, SD_INDEXING_TYPES);
 #endif
@@ -495,7 +501,9 @@ static Status unsortedSegmentSumFunctorBP_(LaunchContext* context, NDArray* inpu
 Status unsortedSegmentSumFunctorBP(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                                   LongType numOfClasses, NDArray* output) {
  NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
-#if SD_IS_PAIR_TYPE_COMPILED(output->dataType(),indices->dataType())
+ auto indicesDType = indices->dataType();
+ auto outputDType = output->dataType();
+#if SD_IS_PAIR_TYPE_COMPILED(outputDType,indicesDType)
  BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentSumFunctorBP_,
                        (context, input, indices, gradOut, numOfClasses, output), SD_FLOAT_TYPES, SD_INDEXING_TYPES);
 #endif

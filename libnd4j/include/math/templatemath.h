@@ -83,7 +83,6 @@ SD_HOST_DEVICE SD_INLINE Z FUNC_NAME(T val1, U val2) {                  \
    return static_cast<Z>(result);                                      \
 }
 
-#define COMMA_MATH ,
 #define SD_PROMOTE_FUNC3(FUNC_NAME, BODY)                                \
 template<typename T, typename U = T, typename V = T, typename Z = T>     \
 SD_HOST_DEVICE SD_INLINE Z FUNC_NAME(T val1, U val2, V eps) {            \

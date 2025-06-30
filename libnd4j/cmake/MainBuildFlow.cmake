@@ -6,7 +6,7 @@
 # FUNCTION DEFINITIONS (unchanged for backwards compatibility)
 # =============================================================================
 include(Dependencies)
-
+include(TemplateProcessing)
 # Display helper configuration from Options.cmake
 message(STATUS "🔧 Helper Configuration:")
 message(STATUS "  HELPERS_onednn: ${HELPERS_onednn}")
@@ -62,7 +62,6 @@ endif()
 
 
 
-# UPDATED: Gathers all .cpp and .cu source files for the build
 function(collect_all_sources_with_selective_rendering out_source_list)
     set(ALL_SOURCES_LIST "")
 
@@ -81,6 +80,11 @@ function(collect_all_sources_with_selective_rendering out_source_list)
     )
 
     if(SD_CUDA)
+        message(STATUS "DEBUG: Before setup_template_processing() - CUSTOMOPS_GENERIC_SOURCES count: ${CMAKE_MATCH_COUNT}")
+        setup_template_processing()
+        list(LENGTH CUSTOMOPS_GENERIC_SOURCES template_count)
+        message(STATUS "DEBUG: After setup_template_processing() - CUSTOMOPS_GENERIC_SOURCES count: ${template_count}")
+
         # CUDA-specific sources
         file(GLOB_RECURSE EXEC_SOURCES ./include/execution/impl/*.cpp ./include/execution/cuda/*.cu ./include/execution/*.cu)
         file(GLOB_RECURSE ARRAY_SOURCES ./include/array/cuda/*.cu ./include/array/impl/*.cpp)
@@ -93,15 +97,40 @@ function(collect_all_sources_with_selective_rendering out_source_list)
         file(GLOB_RECURSE LEGACY_SOURCES ./include/legacy/impl/*.cpp ./include/legacy/*.cu)
         file(GLOB_RECURSE LOOPS_SOURCES_CUDA ./include/loops/*.cu ./include/loops/cuda/**/*.cu)
         file(GLOB_RECURSE VALIDATION_SOURCES ./include/array/DataTypeValidation.cpp)
+
+        message(STATUS "DEBUG: Adding CUSTOMOPS_GENERIC_SOURCES to CUDA build")
+        if(CUSTOMOPS_GENERIC_SOURCES)
+            message(STATUS "DEBUG: CUSTOMOPS_GENERIC_SOURCES contains ${template_count} files:")
+            set(debug_count 0)
+            foreach(template_file ${CUSTOMOPS_GENERIC_SOURCES})
+                if(debug_count LESS 3)
+                    message(STATUS "DEBUG:   Template file: ${template_file}")
+                    math(EXPR debug_count "${debug_count} + 1")
+                endif()
+            endforeach()
+            if(template_count GREATER 3)
+                math(EXPR remaining_count "${template_count} - 3")
+                message(STATUS "DEBUG:   ... and ${remaining_count} more template files")
+            endif()
+        else()
+            message(STATUS "DEBUG: CUSTOMOPS_GENERIC_SOURCES is EMPTY!")
+        endif()
+
         list(APPEND ALL_SOURCES_LIST
                 ${EXEC_SOURCES} ${ARRAY_SOURCES} ${MEMORY_SOURCES} ${CUSTOMOPS_HELPERS_SOURCES}
                 ${HELPERS_SOURCES} ${LOOPS_SOURCES} ${LEGACY_SOURCES} ${LOOPS_SOURCES_CUDA} ${VALIDATION_SOURCES}
+                ${CUSTOMOPS_GENERIC_SOURCES}
         )
         if(HAVE_CUDNN)
             file(GLOB_RECURSE CUSTOMOPS_CUDNN_SOURCES ./include/ops/declarable/platform/cudnn/*.cu)
             list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_CUDNN_SOURCES})
         endif()
     else()
+        message(STATUS "DEBUG: Before setup_template_processing() - CUSTOMOPS_GENERIC_SOURCES count: ${CMAKE_MATCH_COUNT}")
+        setup_template_processing()
+        list(LENGTH CUSTOMOPS_GENERIC_SOURCES template_count)
+        message(STATUS "DEBUG: After setup_template_processing() - CUSTOMOPS_GENERIC_SOURCES count: ${template_count}")
+
         # CPU-specific sources
         file(GLOB_RECURSE EXEC_SOURCES ./include/execution/*.cpp)
         file(GLOB_RECURSE ARRAY_SOURCES ./include/array/*.cpp)
@@ -111,9 +140,29 @@ function(collect_all_sources_with_selective_rendering out_source_list)
         file(GLOB_RECURSE HELPERS_SOURCES ./include/build_info.cpp ./include/ConstMessages.cpp ./include/helpers/*.cpp  ./include/helpers/cpu/*.cpp)
         file(GLOB_RECURSE LEGACY_SOURCES ./include/legacy/impl/*.cpp ./include/legacy/cpu/*.cpp)
         file(GLOB_RECURSE LOOPS_SOURCES ./include/loops/*.cpp)
+
+        message(STATUS "DEBUG: Adding CUSTOMOPS_GENERIC_SOURCES to CPU build")
+        if(CUSTOMOPS_GENERIC_SOURCES)
+            message(STATUS "DEBUG: CUSTOMOPS_GENERIC_SOURCES contains ${template_count} files:")
+            set(debug_count 0)
+            foreach(template_file ${CUSTOMOPS_GENERIC_SOURCES})
+                if(debug_count LESS 3)
+                    message(STATUS "DEBUG:   Template file: ${template_file}")
+                    math(EXPR debug_count "${debug_count} + 1")
+                endif()
+            endforeach()
+            if(template_count GREATER 3)
+                math(EXPR remaining_count "${template_count} - 3")
+                message(STATUS "DEBUG:   ... and ${remaining_count} more template files")
+            endif()
+        else()
+            message(STATUS "DEBUG: CUSTOMOPS_GENERIC_SOURCES is EMPTY!")
+        endif()
+
         list(APPEND ALL_SOURCES_LIST
                 ${EXEC_SOURCES} ${ARRAY_SOURCES} ${MEMORY_SOURCES} ${CUSTOMOPS_HELPERS_IMPL_SOURCES}
                 ${CUSTOMOPS_HELPERS_CPU_SOURCES} ${HELPERS_SOURCES} ${LEGACY_SOURCES} ${LOOPS_SOURCES}
+                ${CUSTOMOPS_GENERIC_SOURCES}
         )
         if(HAVE_ONEDNN)
             file(GLOB_RECURSE CUSTOMOPS_ONEDNN_SOURCES ./include/ops/declarable/platform/mkldnn/*.cpp)
@@ -133,6 +182,32 @@ function(collect_all_sources_with_selective_rendering out_source_list)
     # Add custom ops generic sources and remove duplicates
     list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_GENERIC_SOURCES})
     list(REMOVE_DUPLICATES ALL_SOURCES_LIST)
+
+    list(LENGTH ALL_SOURCES_LIST final_source_count)
+    message(STATUS "DEBUG: Final ALL_SOURCES_LIST count: ${final_source_count}")
+
+    # Write all sources to debug file
+    set(DEBUG_LOG_FILE "${CMAKE_BINARY_DIR}/sources_debug_log.txt")
+    file(WRITE "${DEBUG_LOG_FILE}" "=== ALL SOURCES BEING COMPILED ===\n")
+    file(APPEND "${DEBUG_LOG_FILE}" "Total source files: ${final_source_count}\n\n")
+
+    file(APPEND "${DEBUG_LOG_FILE}" "=== TEMPLATE GENERATED SOURCES ===\n")
+    if(CUSTOMOPS_GENERIC_SOURCES)
+        foreach(template_file ${CUSTOMOPS_GENERIC_SOURCES})
+            file(APPEND "${DEBUG_LOG_FILE}" "TEMPLATE: ${template_file}\n")
+        endforeach()
+    else()
+        file(APPEND "${DEBUG_LOG_FILE}" "NO TEMPLATE SOURCES FOUND!\n")
+    endif()
+    file(APPEND "${DEBUG_LOG_FILE}" "\n")
+
+    file(APPEND "${DEBUG_LOG_FILE}" "=== ALL SOURCES (COMPLETE LIST) ===\n")
+    foreach(source_file ${ALL_SOURCES_LIST})
+        file(APPEND "${DEBUG_LOG_FILE}" "${source_file}\n")
+    endforeach()
+
+    message(STATUS "DEBUG: Complete source list written to: ${DEBUG_LOG_FILE}")
+
     set(ALL_SOURCES ${ALL_SOURCES_LIST} CACHE INTERNAL "All source files for build")
     set(${out_source_list} ${ALL_SOURCES_LIST} PARENT_SCOPE)
 endfunction()
@@ -642,8 +717,8 @@ if(DEFINED SRCORE_COMBINATIONS_2 AND DEFINED SRCORE_COMBINATIONS_3)
     message(STATUS "   Total Combinations: ${total_combinations} (2-type: ${perf_combo_2}, 3-type: ${perf_combo_3})")
 endif()
 
-message(STATUS "")
-
+include(TypeRegistryGenerator)
+dump_type_macros_to_disk()
 # ============================================================================
 # COMPATIBILITY AND MIGRATION NOTICES
 # ============================================================================

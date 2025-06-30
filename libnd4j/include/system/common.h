@@ -23,6 +23,7 @@
 
 #define STRINGIZE2(x) #x
 #define STRINGIZE(x) STRINGIZE2(x)
+#define COMMA ,
 
 #if defined(_MSC_VER)
 
@@ -173,32 +174,32 @@ using Unsigned = unsigned int;
 
 
 enum class Status : int {
- OK = 0,
- BAD_INPUT = 1,
- BAD_SHAPE = 2,
- BAD_RANK = 3,
- BAD_PARAMS = 4,
- BAD_OUTPUT = 5,
- BAD_RNG = 6,
- BAD_EPSILON = 7,
- BAD_GRADIENTS = 8,
- BAD_BIAS = 9,
- VALIDATION = 20,
- BAD_GRAPH = 30,
- BAD_LENGTH = 31,
- BAD_DIMENSIONS = 32,
- BAD_ORDER = 33,
- BAD_ARGUMENTS = 34,
- DOUBLE_WRITE = 40,
- DOUBLE_READ = 45,
- KERNEL_FAILURE = 50,
- EQ_TRUE = 100,
- EQ_FALSE = 101,
- MAYBE = 119
+  OK = 0,
+  BAD_INPUT = 1,
+  BAD_SHAPE = 2,
+  BAD_RANK = 3,
+  BAD_PARAMS = 4,
+  BAD_OUTPUT = 5,
+  BAD_RNG = 6,
+  BAD_EPSILON = 7,
+  BAD_GRADIENTS = 8,
+  BAD_BIAS = 9,
+  VALIDATION = 20,
+  BAD_GRAPH = 30,
+  BAD_LENGTH = 31,
+  BAD_DIMENSIONS = 32,
+  BAD_ORDER = 33,
+  BAD_ARGUMENTS = 34,
+  DOUBLE_WRITE = 40,
+  DOUBLE_READ = 45,
+  KERNEL_FAILURE = 50,
+  EQ_TRUE = 100,
+  EQ_FALSE = 101,
+  MAYBE = 119
 };
 struct ErrorResult {
- sd::Status status;
- std::string message;
+  sd::Status status;
+  std::string message;
 };
 
 }  // namespace sd
@@ -242,6 +243,56 @@ void throwException(const char* exceptionMessage);
 #endif
 #define THROW_EXCEPTION(exceptionMessage) throwException(exceptionMessage);
 #endif
+
+#define CONCAT2(A, B) A##B
+#define CONCAT3_IMPL(a, b, c) a##b##c
+#define CONCAT3(a, b, c) CONCAT3_IMPL(a, b, c)
+
+
+#define MIX2(A, B) A##_##B
+#define MIX3(A, B, C) A##_##B##_##C
+#define MIX4(A, B, C, D) A##_##B##_##C##_##D
+
+#define EMPTY()
+#define DEFER(id) id EMPTY()
+
+#define CONCAT_IMPL(a, b) a##b
+#define CONCAT(a, b) CONCAT_IMPL(a, b)
+#define CONCAT4(a, b, c, d) a##b##c##d
+#define CONCAT5_IMPL(a, b, c, d, e) a##b##c##d##e
+#define CONCAT5(a, b, c, d, e) CONCAT5_IMPL(a, b, c, d, e)
+#define CONCAT6_IMPL(a, b, c, d, e, f) a##b##c##d##e##f
+#define CONCAT6(a, b, c, d, e, f) CONCAT6_IMPL(a, b, c, d, e, f)
+#define CONCAT7_IMPL(a, b, c, d, e, f, g) a##b##c##d##e##f##g
+#define CONCAT7(a, b, c, d, e, f, g) CONCAT7_IMPL(a, b, c, d, e, f, g)
+#define CONCAT8_IMPL(a, b, c, d, e, f, g, h) a##b##c##d##e##f##g##h
+#define CONCAT8(a, b, c, d, e, f, g, h) CONCAT8_IMPL(a, b, c, d, e, f, g, h)
+
+#define UNDERSCORE _
+#define COMMA_MATH ,
+
+#define EXPAND(...) __VA_ARGS__
+#define EXPAND2(...) __VA_ARGS__
+#define EXPAND3(...) __VA_ARGS__
+#define EXTRACT(...) EXTRACT __VA_ARGS__
+#define NOTHING_EXTRACT
+#define PASTE(x, ...) x##__VA_ARGS__
+#define PASTE2(x, ...) x##__VA_ARGS__
+#define PASTE3(x, ...) x##__VA_ARGS__
+#define EVALUATING_PASTE(x, ...) PASTE(x, __VA_ARGS__)
+#define EVALUATING_PASTE2(x, ...) PASTE2(x, __VA_ARGS__)
+#define EVALUATING_PASTE3(x, ...) PASTE3(x, __VA_ARGS__)
+#define UNPAREN(x) EVALUATING_PASTE(NOTHING_, EXTRACT x)
+#define UNPAREN2(x) EVALUATING_PASTE2(NOTHING_, EXTRACT x)
+#define UNPAREN3(x) EVALUATING_PASTE3(NOTHING_, EXTRACT x)
+#define EVAL(...) EVAL0(__VA_ARGS__)
+#define EVALX(x) x
+#define EVAL0(...) EVAL1(EVAL1(EVAL1(__VA_ARGS__)))
+#define EVAL1(...) EVAL2(EVAL2(EVAL2(__VA_ARGS__)))
+#define EVAL2(...) EVAL3(EVAL3(EVAL3(__VA_ARGS__)))
+#define EVAL3(...) EVAL4(EVAL4(EVAL4(__VA_ARGS__)))
+#define EVAL4(...) EVAL5(EVAL5(EVAL5(__VA_ARGS__)))
+#define EVAL5(...) __VA_ARGS__
 
 
 #endif

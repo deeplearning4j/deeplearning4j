@@ -20,13 +20,24 @@
 
 //
 // @author raver119@gmail.com
+// Standardized template using partitioned type system
 //
+
 #include <loops/cpu/indexreduce.hpp>
-#cmakedefine SD_COMMON_TYPES_GEN
-#if defined(SD_COMMON_TYPES_GEN) && defined(SD_COMMON_TYPES_@FL_TYPE_INDEX@) && defined(SD_INDEXING_TYPES_1)
+#include <loops/pairwise_instantiations.h>
+
+// Standardized generation using partitioned types
+// This template generates instantiations for index reduction operations (indexing types 1)
+
 namespace functions {
     namespace indexreduce {
-        BUILD_DOUBLE_TEMPLATE(template class SD_LIB_HIDDEN IndexReduce, , SD_COMMON_TYPES_@FL_TYPE_INDEX@, SD_INDEXING_TYPES_1);
+        // Use the standardized combination system for double template instantiation
+        ITERATE_COMBINATIONS(
+            SD_COMMON_TYPES_PART_@COMB1@,
+            SD_INDEXING_TYPES_1,
+            BUILD_DOUBLE_TEMPLATE,
+            IndexReduce,
+            ;
+        )
     }
 }
-#endif

@@ -99,7 +99,9 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
 
 ////////////////////////////////////////////////////////////////////////
 void gatherND(sd::LaunchContext* context, NDArray& input, NDArray& indices, NDArray& output) {
-#if SD_IS_PAIR_TYPE_COMPILED(input.dataType(),indices.dataType())
+  auto inputDType = input.dataType();
+  auto indicesDType = indices.dataType();
+#if SD_IS_PAIR_TYPE_COMPILED(inputDType,indicesDType)
   BUILD_DOUBLE_SELECTOR(input.dataType(), indices.dataType(), gatherND_, (input, indices, output), SD_COMMON_TYPES,
                         SD_INDEXING_TYPES);
 #endif

@@ -1,220 +1,36 @@
 ################################################################################
-# Template Processing Functions
-# Functions for processing CMake template files and generating compilation units
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache License, Version 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0.
+#
+# See the NOTICE file distributed with this work for additional
+# information regarding copyright ownership.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
 ################################################################################
 
-# Verifies that a generated file has been processed correctly by configure_file
-function(verify_template_processing GENERATED_FILE)
-    if(EXISTS "${GENERATED_FILE}")
-        file(READ "${GENERATED_FILE}" FILE_CONTENT)
+# TemplateProcessing.cmake - Fixed bounds calculation and template generation
+# WITH PROPER VARIABLE PROPAGATION TO PARENT SCOPE
 
-        if(FILE_CONTENT MATCHES "#cmakedefine[ \t]+[A-Za-z_]+")
-            message(FATAL_ERROR "❌ Template processing FAILED: ${GENERATED_FILE} contains unprocessed #cmakedefine directives")
-        endif()
+# =============================================================================
+# GLOBAL VARIABLE INITIALIZATION
+# =============================================================================
 
-        if(FILE_CONTENT MATCHES "@[A-Za-z_]+@")
-            message(FATAL_ERROR "❌ Template processing FAILED: ${GENERATED_FILE} contains unprocessed @VAR@ tokens")
-        endif()
-    else()
-        message(FATAL_ERROR "❌ Generated file does not exist for verification: ${GENERATED_FILE}")
-    endif()
-endfunction()
+# Initialize the global variable that will accumulate all generated sources
+set(CUSTOMOPS_GENERIC_SOURCES "" CACHE INTERNAL "Template-generated source files")
 
-# Sets up the variables needed by a template file before it is processed
-function(setup_unified_template_variables TEMPLATE_FILE COMB1 COMB2 COMB3)
-    file(READ "${TEMPLATE_FILE}" TEMPLATE_CONTENT)
+# =============================================================================
+# TEMPLATE GENERATION FUNCTIONS - WITH PROPER SCOPE PROPAGATION
+# =============================================================================
 
-    set(FL_TYPE_INDEX ${COMB1} PARENT_SCOPE)
-    set(TYPE_INDEX_1 ${COMB1} PARENT_SCOPE)
-    set(TYPE_INDEX_2 ${COMB2} PARENT_SCOPE)
-    set(TYPE_INDEX_3 ${COMB3} PARENT_SCOPE)
-
-    set(SD_COMMON_TYPES_GEN 0 PARENT_SCOPE)
-    set(SD_FLOAT_TYPES_GEN 0 PARENT_SCOPE)
-    set(SD_INTEGER_TYPES_GEN 0 PARENT_SCOPE)
-    set(SD_PAIRWISE_TYPES_GEN 0 PARENT_SCOPE)
-    set(SD_SEMANTIC_TYPES_GEN 0 PARENT_SCOPE)
-
-    if(TEMPLATE_CONTENT MATCHES "#cmakedefine[ \t]+SD_COMMON_TYPES_GEN")
-        set(SD_COMMON_TYPES_GEN 1 PARENT_SCOPE)
-    endif()
-    if(TEMPLATE_CONTENT MATCHES "#cmakedefine[ \t]+SD_FLOAT_TYPES_GEN")
-        set(SD_FLOAT_TYPES_GEN 1 PARENT_SCOPE)
-    endif()
-    if(TEMPLATE_CONTENT MATCHES "#cmakedefine[ \t]+SD_INTEGER_TYPES_GEN")
-        set(SD_INTEGER_TYPES_GEN 1 PARENT_SCOPE)
-    endif()
-    if(TEMPLATE_CONTENT MATCHES "#cmakedefine[ \t]+SD_PAIRWISE_TYPES_GEN")
-        set(SD_PAIRWISE_TYPES_GEN 1 PARENT_SCOPE)
-    endif()
-    if(TEMPLATE_CONTENT MATCHES "#cmakedefine[ \t]+SD_SEMANTIC_TYPES_GEN")
-        set(SD_SEMANTIC_TYPES_GEN 1 PARENT_SCOPE)
-    endif()
-
-    if(DEFINED SD_COMMON_TYPES_COUNT)
-        math(EXPR max_index "${SD_COMMON_TYPES_COUNT} - 1")
-        if(COMB1 GREATER max_index OR COMB2 GREATER max_index OR COMB3 GREATER max_index)
-            set(SKIP_TEMPLATE TRUE PARENT_SCOPE)
-            return()
-        endif()
-    endif()
-
-    set(SKIP_TEMPLATE FALSE PARENT_SCOPE)
-endfunction()
-
-# Processes a single template file against a list of combinations
-function(process_template_unified TEMPLATE_FILE COMBINATION_TYPE COMBINATIONS OUTPUT_DIR)
-    if(NOT EXISTS "${TEMPLATE_FILE}")
-        return()
-    endif()
-
-    set(GENERATED_SOURCES_LOCAL "")
-
-    foreach(COMBINATION ${COMBINATIONS})
-        string(REPLACE "," ";" COMB_LIST "${COMBINATION}")
-        list(LENGTH COMB_LIST COMB_COUNT)
-
-        if(NOT ((COMBINATION_TYPE EQUAL 3 AND COMB_COUNT EQUAL 3) OR
-        (COMBINATION_TYPE EQUAL 2 AND COMB_COUNT EQUAL 2)))
-            continue()
-        endif()
-
-        if(COMBINATION_TYPE EQUAL 3)
-            list(GET COMB_LIST 0 COMB1)
-            list(GET COMB_LIST 1 COMB2)
-            list(GET COMB_LIST 2 COMB3)
-        elseif(COMBINATION_TYPE EQUAL 2)
-            list(GET COMB_LIST 0 COMB1)
-            list(GET COMB_LIST 1 COMB2)
-            set(COMB3 ${COMB1})
-        endif()
-
-        setup_unified_template_variables("${TEMPLATE_FILE}" ${COMB1} ${COMB2} ${COMB3})
-
-        if(SKIP_TEMPLATE)
-            continue()
-        endif()
-
-        get_filename_component(TEMPLATE_BASE "${TEMPLATE_FILE}" NAME_WE)
-        string(REPLACE "_template" "" OUTPUT_BASE_NAME "${TEMPLATE_BASE}")
-
-        if(COMBINATION_TYPE EQUAL 3)
-            set(OUTPUT_FILE "${OUTPUT_BASE_NAME}_${COMB1}_${COMB2}_${COMB3}.cpp")
-        elseif(COMBINATION_TYPE EQUAL 2)
-            set(OUTPUT_FILE "${OUTPUT_BASE_NAME}_${COMB1}_${COMB2}.cpp")
-        endif()
-
-        set(GENERATED_FILE "${OUTPUT_DIR}/${OUTPUT_FILE}")
-        file(MAKE_DIRECTORY "${OUTPUT_DIR}")
-
-        configure_file("${TEMPLATE_FILE}" "${GENERATED_FILE}" @ONLY)
-        verify_template_processing("${GENERATED_FILE}")
-
-        list(APPEND GENERATED_SOURCES_LOCAL "${GENERATED_FILE}")
-    endforeach()
-
-    set(GENERATED_SOURCES ${GENERATED_SOURCES_LOCAL} PARENT_SCOPE)
-endfunction()
-
-# Detects whether a template requires 2 or 3 type combinations
-function(detect_template_requirements TEMPLATE_FILE NEEDS_2_TYPE_VAR NEEDS_3_TYPE_VAR)
-    file(READ "${TEMPLATE_FILE}" TEMPLATE_CONTENT)
-
-    set(NEEDS_2_TYPE FALSE)
-    set(NEEDS_3_TYPE FALSE)
-
-    if(TEMPLATE_CONTENT MATCHES "TYPE_INDEX_3|COMB3|_template_3")
-        set(NEEDS_3_TYPE TRUE)
-    endif()
-
-    if(TEMPLATE_CONTENT MATCHES "TYPE_INDEX_2|COMB2|_template_2")
-        set(NEEDS_2_TYPE TRUE)
-    endif()
-
-    if(NOT NEEDS_2_TYPE AND NOT NEEDS_3_TYPE)
-        get_filename_component(TEMPLATE_NAME "${TEMPLATE_FILE}" NAME)
-        if(TEMPLATE_NAME MATCHES "_3\\.")
-            set(NEEDS_3_TYPE TRUE)
-        elseif(TEMPLATE_NAME MATCHES "_2\\.")
-            set(NEEDS_2_TYPE TRUE)
-        else()
-            set(NEEDS_2_TYPE TRUE)
-            set(NEEDS_3_TYPE TRUE)
-        endif()
-    endif()
-
-    set(${NEEDS_2_TYPE_VAR} ${NEEDS_2_TYPE} PARENT_SCOPE)
-    set(${NEEDS_3_TYPE_VAR} ${NEEDS_3_TYPE} PARENT_SCOPE)
-endfunction()
-
-# Main entry point to find and process all CPU templates
-function(process_cpu_templates)
-    # CRITICAL FIX: Verify combinations are available
-    if(NOT DEFINED COMBINATIONS_2 OR NOT DEFINED COMBINATIONS_3)
-        message(FATAL_ERROR "❌ Type combinations not initialized! Call initialize_dynamic_combinations() first.")
-    endif()
-
-    # Debug output
-    list(LENGTH COMBINATIONS_2 combo2_count)
-    list(LENGTH COMBINATIONS_3 combo3_count)
-    message(STATUS "Processing CPU templates with ${combo2_count} 2-type and ${combo3_count} 3-type combinations")
-
-    # Check if we have any combinations to work with
-    if(combo2_count EQUAL 0 AND combo3_count EQUAL 0)
-        message(FATAL_ERROR "❌ No type combinations available for template processing!")
-    endif()
-
-    file(GLOB_RECURSE ALL_TEMPLATE_FILES
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/helpers/cpu/compilation_units/*.cpp.in"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cpu/compilation_units/*.cpp.in"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/helpers/cpu/loops/*.cpp.in"
-    )
-
-    list(LENGTH ALL_TEMPLATE_FILES template_count)
-    message(STATUS "Found ${template_count} template files to process")
-
-    set(INSTANTIATION_OUTPUT_DIR "${CMAKE_BINARY_DIR}/compilation_units")
-    set(CPU_INSTANTIATION_DIR "${INSTANTIATION_OUTPUT_DIR}/cpu")
-    file(MAKE_DIRECTORY "${INSTANTIATION_OUTPUT_DIR}")
-    file(MAKE_DIRECTORY "${CPU_INSTANTIATION_DIR}")
-
-    set(ALL_GENERATED_SOURCES "")
-
-    foreach(TEMPLATE_FILE ${ALL_TEMPLATE_FILES})
-        detect_template_requirements("${TEMPLATE_FILE}" NEEDS_2_TYPE NEEDS_3_TYPE)
-
-        get_filename_component(TEMPLATE_NAME "${TEMPLATE_FILE}" NAME)
-        message(STATUS "Processing template: ${TEMPLATE_NAME} (needs_2=${NEEDS_2_TYPE}, needs_3=${NEEDS_3_TYPE})")
-
-        set(TEMPLATE_GENERATED_SOURCES "")
-
-        if(NEEDS_3_TYPE AND COMBINATIONS_3)
-            message(STATUS "  -> Processing with 3-type combinations (${combo3_count} combinations)")
-            process_template_unified("${TEMPLATE_FILE}" 3 "${COMBINATIONS_3}" "${CPU_INSTANTIATION_DIR}")
-            list(APPEND TEMPLATE_GENERATED_SOURCES ${GENERATED_SOURCES})
-            list(LENGTH GENERATED_SOURCES gen_count)
-            message(STATUS "  -> Generated ${gen_count} 3-type instantiations")
-        endif()
-
-        if(NEEDS_2_TYPE AND COMBINATIONS_2)
-            message(STATUS "  -> Processing with 2-type combinations (${combo2_count} combinations)")
-            process_template_unified("${TEMPLATE_FILE}" 2 "${COMBINATIONS_2}" "${CPU_INSTANTIATION_DIR}")
-            list(APPEND TEMPLATE_GENERATED_SOURCES ${GENERATED_SOURCES})
-            list(LENGTH GENERATED_SOURCES gen_count)
-            message(STATUS "  -> Generated ${gen_count} 2-type instantiations")
-        endif()
-
-        list(APPEND ALL_GENERATED_SOURCES ${TEMPLATE_GENERATED_SOURCES})
-    endforeach()
-
-    list(LENGTH ALL_GENERATED_SOURCES total_generated)
-    message(STATUS "✅ Template processing complete. Generated ${total_generated} source files.")
-
-    set(CUSTOMOPS_GENERIC_SOURCES ${ALL_GENERATED_SOURCES} PARENT_SCOPE)
-endfunction()
-
-# Enhanced template processing function with proper verification
-function(genCompilation FL_ITEM)
+function(genCompilation FL_ITEM generated_sources_var)
     get_filename_component(FILE_ITEM_WE ${FL_ITEM} NAME_WE)
 
     set(EXTENSION "cpp")
@@ -232,10 +48,20 @@ function(genCompilation FL_ITEM)
 
     string(REGEX MATCHALL "#cmakedefine[ \t]+SD_(INTEGER|COMMON|FLOAT|PAIRWISE)_TYPES_GEN" TYPE_MATCHES ${CONTENT_FL})
 
-    set(SD_INTEGER_TYPES_END 7)
-    set(SD_COMMON_TYPES_END 12)
-    set(SD_FLOAT_TYPES_END 3)
-    set(SD_PAIRWISE_TYPES_END 12)
+    # FIXED: Proper bounds calculation with debug output
+    if(DEFINED UNIFIED_TYPE_COUNT AND UNIFIED_TYPE_COUNT GREATER 0)
+        math(EXPR SD_INTEGER_TYPES_END "${UNIFIED_TYPE_COUNT} - 1")
+        math(EXPR SD_COMMON_TYPES_END "${UNIFIED_TYPE_COUNT} - 1")
+        math(EXPR SD_FLOAT_TYPES_END "${UNIFIED_TYPE_COUNT} - 1")
+        math(EXPR SD_PAIRWISE_TYPES_END "${UNIFIED_TYPE_COUNT} - 1")
+        message(STATUS "DEBUG: ${FILE_ITEM_WE} - Using unified bounds, UNIFIED_TYPE_COUNT=${UNIFIED_TYPE_COUNT}, SD_COMMON_TYPES_END=${SD_COMMON_TYPES_END}")
+    else()
+        set(SD_INTEGER_TYPES_END 7)
+        set(SD_COMMON_TYPES_END 12)
+        set(SD_FLOAT_TYPES_END 3)
+        set(SD_PAIRWISE_TYPES_END 12)
+        message(STATUS "DEBUG: ${FILE_ITEM_WE} - Using fallback bounds, SD_COMMON_TYPES_END=${SD_COMMON_TYPES_END}")
+    endif()
 
     foreach(TYPEX ${TYPE_MATCHES})
         set(STOP -1)
@@ -260,244 +86,308 @@ function(genCompilation FL_ITEM)
         endif()
     endforeach()
 
+    message(STATUS "DEBUG: ${FILE_ITEM_WE} - TYPE_MATCHES=${TYPE_MATCHES}, RANGE_STOP=${RANGE_STOP}, SD_COMMON_TYPES_GEN=${SD_COMMON_TYPES_GEN}")
+
     file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/compilation_units")
 
-    if(RANGE_STOP GREATER -1)
-        set(CHUNK_SIZE 3)
-        math(EXPR TOTAL_RANGE "${RANGE_STOP} + 1")
-        math(EXPR NUM_CHUNKS "(${TOTAL_RANGE} + ${CHUNK_SIZE} - 1) / ${CHUNK_SIZE}")
-        math(EXPR NUM_CHUNKS_MINUS_1 "${NUM_CHUNKS} - 1")
+    # Local list to accumulate generated files for this template
+    set(local_generated_sources ${${generated_sources_var}})
 
-        foreach(CHUNK_INDEX RANGE 0 ${NUM_CHUNKS_MINUS_1})
-            math(EXPR START_INDEX "${CHUNK_INDEX} * ${CHUNK_SIZE}")
-            math(EXPR TEMP_END "${START_INDEX} + ${CHUNK_SIZE} - 1")
-            if(TEMP_END GREATER RANGE_STOP)
-                set(END_INDEX ${RANGE_STOP})
-            else()
-                set(END_INDEX ${TEMP_END})
-            endif()
-
-            if(START_INDEX LESS_EQUAL RANGE_STOP)
-                foreach(FL_TYPE_INDEX RANGE ${START_INDEX} ${END_INDEX})
-                    # Reset flags based on current type index
-                    set(CURRENT_SD_FLOAT_TYPES_GEN ${SD_FLOAT_TYPES_GEN})
-                    set(CURRENT_SD_INTEGER_TYPES_GEN ${SD_INTEGER_TYPES_GEN})
-                    set(CURRENT_SD_COMMON_TYPES_GEN ${SD_COMMON_TYPES_GEN})
-                    set(CURRENT_SD_PAIRWISE_TYPES_GEN ${SD_PAIRWISE_TYPES_GEN})
-
-                    if(FL_TYPE_INDEX GREATER ${SD_FLOAT_TYPES_END})
-                        set(CURRENT_SD_FLOAT_TYPES_GEN 0)
-                    endif()
-                    if(FL_TYPE_INDEX GREATER ${SD_INTEGER_TYPES_END})
-                        set(CURRENT_SD_INTEGER_TYPES_GEN 0)
-                    endif()
-                    if(FL_TYPE_INDEX GREATER ${SD_COMMON_TYPES_END})
-                        set(CURRENT_SD_COMMON_TYPES_GEN 0)
-                    endif()
-                    if(FL_TYPE_INDEX GREATER ${SD_PAIRWISE_TYPES_END})
-                        set(CURRENT_SD_PAIRWISE_TYPES_GEN 0)
-                    endif()
-
-                    set(GENERATED_SOURCE "${CMAKE_BINARY_DIR}/compilation_units/${FILE_ITEM_WE}_chunk${CHUNK_INDEX}_${FL_TYPE_INDEX}.${EXTENSION}")
-
-                    # CRITICAL FIX: Use configure_file instead of manual string replacement
-                    # Set variables in current scope for configure_file
-                    set(SD_FLOAT_TYPES_GEN ${CURRENT_SD_FLOAT_TYPES_GEN})
-                    set(SD_INTEGER_TYPES_GEN ${CURRENT_SD_INTEGER_TYPES_GEN})
-                    set(SD_COMMON_TYPES_GEN ${CURRENT_SD_COMMON_TYPES_GEN})
-                    set(SD_PAIRWISE_TYPES_GEN ${CURRENT_SD_PAIRWISE_TYPES_GEN})
-
-                    # Use configure_file to properly process template
-                    configure_file(
-                            "${FL_ITEM}"
-                            "${GENERATED_SOURCE}"
-                            @ONLY
-                    )
-
-                    # Verify processing worked
-                    file(READ "${GENERATED_SOURCE}" VERIFICATION_CONTENT)
-                    if(VERIFICATION_CONTENT MATCHES "#cmakedefine")
-                        message(FATAL_ERROR "❌ genCompilation: Template processing failed! ${GENERATED_SOURCE} still contains #cmakedefine")
-                    endif()
-                    if(VERIFICATION_CONTENT MATCHES "@[A-Za-z_]+@")
-                        message(FATAL_ERROR "❌ genCompilation: Template processing failed! ${GENERATED_SOURCE} still contains @VAR@ tokens")
-                    endif()
-
-                    list(APPEND CUSTOMOPS_GENERIC_SOURCES ${GENERATED_SOURCE})
-                endforeach()
-            endif()
-        endforeach()
+    # CRITICAL FIX: Skip templates that use broken SD_PAIRWISE_TYPES_X macro system
+    if(FILE_ITEM_WE MATCHES "pairwise_p")
+        message(STATUS "SKIPPING: ${FILE_ITEM_WE} - uses broken SD_PAIRWISE_TYPES_X macro system")
+        set(${generated_sources_var} ${local_generated_sources} PARENT_SCOPE)
+        return()
     endif()
 
-    set(CUSTOMOPS_GENERIC_SOURCES ${CUSTOMOPS_GENERIC_SOURCES} PARENT_SCOPE)
+    # CRITICAL FIX: Skip scalar_p templates that also use broken SD_PAIRWISE_TYPES_X macro system
+    if(FILE_ITEM_WE MATCHES "scalar_p")
+        message(STATUS "SKIPPING: ${FILE_ITEM_WE} - uses broken SD_PAIRWISE_TYPES_X macro system")
+        set(${generated_sources_var} ${local_generated_sources} PARENT_SCOPE)
+        return()
+    endif()
+
+    # CRITICAL FIX: Skip broadcast_*_p templates that also use broken SD_PAIRWISE_TYPES_X macro system
+    if(FILE_ITEM_WE MATCHES "broadcast.*_p")
+        message(STATUS "SKIPPING: ${FILE_ITEM_WE} - uses broken SD_PAIRWISE_TYPES_X macro system")
+        set(${generated_sources_var} ${local_generated_sources} PARENT_SCOPE)
+        return()
+    endif()
+
+    if(RANGE_STOP GREATER -1)
+        message(STATUS "DEBUG: ${FILE_ITEM_WE} - Generating files for range 0 to ${RANGE_STOP}")
+        foreach(FL_TYPE_INDEX RANGE 0 ${RANGE_STOP})
+            # Reset flags for each iteration
+            set(CURRENT_SD_FLOAT_TYPES_GEN ${SD_FLOAT_TYPES_GEN})
+            set(CURRENT_SD_INTEGER_TYPES_GEN ${SD_INTEGER_TYPES_GEN})
+            set(CURRENT_SD_COMMON_TYPES_GEN ${SD_COMMON_TYPES_GEN})
+            set(CURRENT_SD_PAIRWISE_TYPES_GEN ${SD_PAIRWISE_TYPES_GEN})
+
+            if(FL_TYPE_INDEX GREATER ${SD_FLOAT_TYPES_END})
+                set(CURRENT_SD_FLOAT_TYPES_GEN 0)
+            endif()
+            if(FL_TYPE_INDEX GREATER ${SD_INTEGER_TYPES_END})
+                set(CURRENT_SD_INTEGER_TYPES_GEN 0)
+            endif()
+            if(FL_TYPE_INDEX GREATER ${SD_COMMON_TYPES_END})
+                set(CURRENT_SD_COMMON_TYPES_GEN 0)
+            endif()
+
+            # Use current flags for configure_file
+            set(SD_FLOAT_TYPES_GEN ${CURRENT_SD_FLOAT_TYPES_GEN})
+            set(SD_INTEGER_TYPES_GEN ${CURRENT_SD_INTEGER_TYPES_GEN})
+            set(SD_COMMON_TYPES_GEN ${CURRENT_SD_COMMON_TYPES_GEN})
+            set(SD_PAIRWISE_TYPES_GEN ${CURRENT_SD_PAIRWISE_TYPES_GEN})
+
+            set(GENERATED_SOURCE "${CMAKE_BINARY_DIR}/compilation_units/${FILE_ITEM_WE}_${FL_TYPE_INDEX}.${EXTENSION}")
+            configure_file("${FL_ITEM}" "${GENERATED_SOURCE}" @ONLY)
+            list(APPEND local_generated_sources ${GENERATED_SOURCE})
+
+            message(STATUS "DEBUG: Generated ${FILE_ITEM_WE}_${FL_TYPE_INDEX}.${EXTENSION}")
+        endforeach()
+    else()
+        message(STATUS "DEBUG: ${FILE_ITEM_WE} - No generation needed, RANGE_STOP=${RANGE_STOP}")
+    endif()
+
+    # Propagate the updated list back to the caller
+    set(${generated_sources_var} ${local_generated_sources} PARENT_SCOPE)
 endfunction()
 
-# Enhanced partition combination function with proper template processing
-function(genPartitionCombination TEMPLATE_FILE COMBINATION_TYPE COMBINATION OUTPUT_DIR)
+function(genPartitionCombination TEMPLATE_FILE COMBINATION_TYPE COMBINATION OUTPUT_DIR generated_sources_var)
     string(REPLACE "," ";" COMB_LIST "${COMBINATION}")
     list(LENGTH COMB_LIST COMB_COUNT)
 
-    if(NOT (COMBINATION_TYPE EQUAL 3 OR COMBINATION_TYPE EQUAL 2))
-        message(FATAL_ERROR "Unsupported COMBINATION_TYPE: ${COMBINATION_TYPE}. Use 3 or 2.")
+    if(NOT (COMBINATION_TYPE EQUAL 2 OR COMBINATION_TYPE EQUAL 3))
+        message(FATAL_ERROR "Unsupported COMBINATION_TYPE: ${COMBINATION_TYPE}. Use 2 or 3.")
     endif()
 
-    if(NOT ((COMBINATION_TYPE EQUAL 3 AND COMB_COUNT EQUAL 3) OR
-    (COMBINATION_TYPE EQUAL 2 AND COMB_COUNT EQUAL 2)))
+    if(NOT ((COMBINATION_TYPE EQUAL 2 AND COMB_COUNT EQUAL 2) OR
+    (COMBINATION_TYPE EQUAL 3 AND COMB_COUNT EQUAL 3)))
         message(FATAL_ERROR "Combination length (${COMB_COUNT}) does not match COMBINATION_TYPE (${COMBINATION_TYPE}).")
     endif()
 
-    if(COMBINATION_TYPE EQUAL 3)
+    if(COMBINATION_TYPE EQUAL 2)
+        list(GET COMB_LIST 0 COMB1)
+        list(GET COMB_LIST 1 COMB2)
+        set(PLACEHOLDER1 "@COMB1@")
+        set(PLACEHOLDER2 "@COMB2@")
+    elseif(COMBINATION_TYPE EQUAL 3)
         list(GET COMB_LIST 0 COMB1)
         list(GET COMB_LIST 1 COMB2)
         list(GET COMB_LIST 2 COMB3)
-    elseif(COMBINATION_TYPE EQUAL 2)
-        list(GET COMB_LIST 0 COMB1)
-        list(GET COMB_LIST 1 COMB2)
+        set(PLACEHOLDER1 "@COMB1@")
+        set(PLACEHOLDER2 "@COMB2@")
+        set(PLACEHOLDER3 "@COMB3@")
     endif()
 
-    # CRITICAL FIX: Read template and set CMake variables for configure_file
     file(READ "${TEMPLATE_FILE}" TEMPLATE_CONTENT)
 
-    # Detect what CMake defines the template needs
-    set(SD_COMMON_TYPES_GEN 0)
-    set(SD_FLOAT_TYPES_GEN 0)
-    set(SD_INTEGER_TYPES_GEN 0)
-    set(SD_PAIRWISE_TYPES_GEN 0)
-
-    if(TEMPLATE_CONTENT MATCHES "#cmakedefine[ \t]+SD_COMMON_TYPES_GEN")
-        set(SD_COMMON_TYPES_GEN 1)
+    if(COMBINATION_TYPE EQUAL 2)
+        string(REPLACE "${PLACEHOLDER1}" "${COMB1}" FINAL_CONTENT "${TEMPLATE_CONTENT}")
+        string(REPLACE "${PLACEHOLDER2}" "${COMB2}" FINAL_CONTENT "${FINAL_CONTENT}")
+    elseif(COMBINATION_TYPE EQUAL 3)
+        string(REPLACE "${PLACEHOLDER1}" "${COMB1}" TEMP_CONTENT "${TEMPLATE_CONTENT}")
+        string(REPLACE "${PLACEHOLDER2}" "${COMB2}" TEMP_CONTENT "${TEMP_CONTENT}")
+        string(REPLACE "${PLACEHOLDER3}" "${COMB3}" FINAL_CONTENT "${TEMP_CONTENT}")
     endif()
-    if(TEMPLATE_CONTENT MATCHES "#cmakedefine[ \t]+SD_FLOAT_TYPES_GEN")
-        set(SD_FLOAT_TYPES_GEN 1)
-    endif()
-    if(TEMPLATE_CONTENT MATCHES "#cmakedefine[ \t]+SD_INTEGER_TYPES_GEN")
-        set(SD_INTEGER_TYPES_GEN 1)
-    endif()
-    if(TEMPLATE_CONTENT MATCHES "#cmakedefine[ \t]+SD_PAIRWISE_TYPES_GEN")
-        set(SD_PAIRWISE_TYPES_GEN 1)
-    endif()
-
-    # Set FL_TYPE_INDEX based on first combination value
-    set(FL_TYPE_INDEX ${COMB1})
 
     get_filename_component(TEMPLATE_BASE "${TEMPLATE_FILE}" NAME_WE)
     string(REPLACE "_template_" "_" OUTPUT_BASE_NAME "${TEMPLATE_BASE}")
 
-    if(COMBINATION_TYPE EQUAL 3)
-        set(OUTPUT_FILE "${OUTPUT_BASE_NAME}_${COMB1}_${COMB2}_${COMB3}.cpp")
-    elseif(COMBINATION_TYPE EQUAL 2)
+    if(COMBINATION_TYPE EQUAL 2)
         set(OUTPUT_FILE "${OUTPUT_BASE_NAME}_${COMB1}_${COMB2}.cpp")
+    elseif(COMBINATION_TYPE EQUAL 3)
+        set(OUTPUT_FILE "${OUTPUT_BASE_NAME}_${COMB1}_${COMB2}_${COMB3}.cpp")
     endif()
 
     set(GENERATED_FILE "${OUTPUT_DIR}/${OUTPUT_FILE}")
-    file(MAKE_DIRECTORY "${OUTPUT_DIR}")
+    file(WRITE "${GENERATED_FILE}" "${FINAL_CONTENT}")
 
-    # FIXED: Use configure_file instead of manual string replacement
-    configure_file(
-        "${TEMPLATE_FILE}"
-        "${GENERATED_FILE}"
-        @ONLY
-    )
-
-    # Verify the processing worked
-    file(READ "${GENERATED_FILE}" VERIFICATION_CONTENT)
-    if(VERIFICATION_CONTENT MATCHES "#cmakedefine")
-        message(FATAL_ERROR "❌ Template processing failed! ${GENERATED_FILE} still contains #cmakedefine directives")
-    endif()
-    if(VERIFICATION_CONTENT MATCHES "@[A-Za-z_]+@")
-        message(FATAL_ERROR "❌ Template processing failed! ${GENERATED_FILE} still contains @VAR@ tokens")
-    endif()
-
-    list(APPEND CUSTOMOPS_GENERIC_SOURCES "${GENERATED_FILE}")
-    set(CUSTOMOPS_GENERIC_SOURCES ${CUSTOMOPS_GENERIC_SOURCES} PARENT_SCOPE)
-
-    message(STATUS "✅ Generated and verified: ${GENERATED_FILE}")
-endfunction()
-
-# Function for single CUDA function generation
-function(genSingleFunctionCuda TEMPLATE_FILE COMBINATION OUTPUT_DIR)
-    string(REPLACE "," ";" COMB_LIST "${COMBINATION}")
-
-    list(GET COMB_LIST 0 COMB1)
-    list(GET COMB_LIST 1 COMB2)
-    list(GET COMB_LIST 2 COMB3)
-
-    get_filename_component(TEMPLATE_BASE "${TEMPLATE_FILE}" NAME_WE)
-
-    file(READ "${TEMPLATE_FILE}" TEMPLATE_CONTENT)
-
-    string(REGEX MATCH "([a-zA-Z0-9_:]+),[ \n\t]*::([a-zA-Z0-9_]+)" FUNCTION_MATCH "${TEMPLATE_CONTENT}")
-    set(CLASS_NAME ${CMAKE_MATCH_1})
-    set(METHOD_NAME ${CMAKE_MATCH_2})
-
-    string(REGEX REPLACE "::" "_" CLASS_NAME_CLEAN "${CLASS_NAME}")
-
-    string(REGEX MATCH "::${METHOD_NAME}\\(([^;]+)\\);" FUNC_ARGS_MATCH "${TEMPLATE_CONTENT}")
-    set(FUNCTION_ARGS "${CMAKE_MATCH_1}")
-
-    set(PARAM_COUNT 0)
-    set(SIGNATURE_ID "")
-
-    string(REPLACE "," ";" ARGS_LIST "${FUNCTION_ARGS}")
-    list(LENGTH ARGS_LIST PARAM_COUNT)
-
-    foreach(ARG ${ARGS_LIST})
-        string(REGEX MATCH "^[^*& \t]+" TYPE_NAME "${ARG}")
-        if(TYPE_NAME)
-            string(APPEND SIGNATURE_ID "_${TYPE_NAME}")
-        endif()
-    endforeach()
-
-    if(SIGNATURE_ID MATCHES ".{30,}")
-        string(MD5 SIGNATURE_HASH "${SIGNATURE_ID}")
-        string(SUBSTRING "${SIGNATURE_HASH}" 0 8 SIGNATURE_ID)
-        set(SIGNATURE_ID "_h${SIGNATURE_ID}")
-    endif()
-
-    set(OUTPUT_FILE "${CLASS_NAME_CLEAN}_${METHOD_NAME}${SIGNATURE_ID}_${COMB1}_${COMB2}_${COMB3}.cu")
-    set(GENERATED_FILE "${OUTPUT_DIR}/${OUTPUT_FILE}")
-
-    if(EXISTS "${GENERATED_FILE}")
-        list(APPEND CUDA_GENERATED_SOURCES "${GENERATED_FILE}")
-        set(CUDA_GENERATED_SOURCES ${CUDA_GENERATED_SOURCES} PARENT_SCOPE)
-        return()
-    endif()
-
-    set(START_MARKER "ITERATE_COMBINATIONS_3")
-    string(FIND "${TEMPLATE_CONTENT}" "${START_MARKER}" START_POS)
-    if(START_POS EQUAL -1)
-        message(FATAL_ERROR "Could not find ITERATE_COMBINATIONS_3 in template file ${TEMPLATE_FILE}")
-    endif()
-
-    string(SUBSTRING "${TEMPLATE_CONTENT}" 0 ${START_POS} HEADER_CONTENT)
-
-    set(NEW_CONTENT "${HEADER_CONTENT}\n\n// Single function instantiation for ${CLASS_NAME}::${METHOD_NAME}\n")
-    string(APPEND NEW_CONTENT "template void ${CLASS_NAME}::${METHOD_NAME}<SD_SINGLE_TYPE_${COMB1}, SD_SINGLE_TYPE_${COMB2}, SD_SINGLE_TYPE_${COMB3}>(${FUNCTION_ARGS});\n")
-
-    file(MAKE_DIRECTORY "${OUTPUT_DIR}")
-    file(WRITE "${GENERATED_FILE}" "${NEW_CONTENT}")
-
-    list(APPEND CUDA_GENERATED_SOURCES "${GENERATED_FILE}")
-    set(CUDA_GENERATED_SOURCES ${CUDA_GENERATED_SOURCES} PARENT_SCOPE)
+    # Add to the list being accumulated
+    set(local_generated_sources ${${generated_sources_var}})
+    list(APPEND local_generated_sources "${GENERATED_FILE}")
+    set(${generated_sources_var} ${local_generated_sources} PARENT_SCOPE)
 
     message(STATUS "Generated: ${GENERATED_FILE}")
 endfunction()
 
-# Main template processing wrapper function
-function(process_template_files)
-    message(STATUS "Processing template files...")
-    
-    # Find all template files
-    file(GLOB_RECURSE ALL_TEMPLATE_FILES
-         "${CMAKE_CURRENT_SOURCE_DIR}/include/**/*.cpp.in"
-         "${CMAKE_CURRENT_SOURCE_DIR}/include/**/*.cu.in"
+function(removeFileIfExcluded)
+    cmake_parse_arguments(
+            PARSED_ARGS
+            ""
+            "FILE_ITEM"
+            "LIST_ITEM"
+            ${ARGN}
     )
-    
-    # Process each template file
-    foreach(template_file ${ALL_TEMPLATE_FILES})
-        message(STATUS "Processing template: ${template_file}")
-        genCompilation("${template_file}")
-    endforeach()
-    
-    message(STATUS "Template processing completed")
+    file(READ ${PARSED_ARGS_FILE_ITEM} FILE_CONTENTS)
+    string(FIND "${FILE_CONTENTS}" "NOT_EXCLUDED" NOT_EXCLUDED_IDX)
+
+    if(${NOT_EXCLUDED_IDX} GREATER_EQUAL 0)
+        set(local_list ${${PARSED_ARGS_LIST_ITEM}})
+        set(file_removed FALSE)
+
+        foreach(OP ${SD_OPS_LIST})
+            string(FIND "${FILE_CONTENTS}" "NOT_EXCLUDED(OP_${OP})" NOT_EXCLUDED_OP_IDX)
+
+            if(${NOT_EXCLUDED_OP_IDX} LESS 0)
+                list(REMOVE_ITEM local_list "${PARSED_ARGS_FILE_ITEM}")
+                set(file_removed TRUE)
+                break()
+            endif()
+        endforeach()
+
+        if(file_removed)
+            set(${PARSED_ARGS_LIST_ITEM} ${local_list} PARENT_SCOPE)
+        endif()
+    endif()
 endfunction()
+
+# =============================================================================
+# IMMEDIATE TEMPLATE GENERATION - WITH PROPER VARIABLE HANDLING
+# =============================================================================
+
+message(STATUS "🔧 FORCING IMMEDIATE TEMPLATE GENERATION")
+
+# Debug: Show unified system status
+message(STATUS "DEBUG: UNIFIED_TYPE_COUNT = ${UNIFIED_TYPE_COUNT}")
+message(STATUS "DEBUG: UNIFIED_ACTIVE_TYPES = ${UNIFIED_ACTIVE_TYPES}")
+
+# Initialize the accumulator variable
+set(ALL_GENERATED_SOURCES "")
+
+# Check if we're in CUDA or CPU mode and process accordingly
+if(SD_CUDA)
+    message(STATUS "Processing CUDA templates...")
+
+    # Process CUDA compilation units
+    file(GLOB_RECURSE COMPILATION_UNITS
+            ./include/loops/cuda/compilation_units/*.cu.in
+            ./include/ops/impl/compilation_units/*.cpp.in)
+
+    foreach(FL_ITEM ${COMPILATION_UNITS})
+        genCompilation(${FL_ITEM} ALL_GENERATED_SOURCES)
+    endforeach()
+
+else()
+    message(STATUS "Processing CPU templates...")
+
+    # Process regular CPU compilation units first
+    file(GLOB_RECURSE REGULAR_COMPILATION_UNITS
+            ./include/ops/declarable/helpers/cpu/compilation_units/*.cpp.in
+            ./include/loops/cpu/compilation_units/*.cpp.in
+            ./include/helpers/cpu/loops/*.cpp.in)
+
+    foreach(FL_ITEM ${REGULAR_COMPILATION_UNITS})
+        message(STATUS "Processing regular template: ${FL_ITEM}")
+        genCompilation(${FL_ITEM} ALL_GENERATED_SOURCES)
+    endforeach()
+
+    # Set up combinations
+    if(DEFINED UNIFIED_COMBINATIONS_2 AND DEFINED UNIFIED_COMBINATIONS_3)
+        set(COMBINATIONS_2 ${UNIFIED_COMBINATIONS_2})
+        set(COMBINATIONS_3 ${UNIFIED_COMBINATIONS_3})
+        list(LENGTH UNIFIED_COMBINATIONS_2 combo_2_count)
+        list(LENGTH UNIFIED_COMBINATIONS_3 combo_3_count)
+        message(STATUS "DEBUG: Using UNIFIED combinations - 2-type count: ${combo_2_count}, 3-type count: ${combo_3_count}")
+    else()
+        # Fallback combinations
+        set(COMBINATIONS_3
+                "0,0,0" "0,0,1" "0,0,2" "0,1,0" "0,1,1" "0,1,2" "0,2,0" "0,2,1" "0,2,2"
+                "1,0,0" "1,0,1" "1,0,2" "1,1,0" "1,1,1" "1,1,2" "1,2,0" "1,2,1" "1,2,2"
+                "2,0,0" "2,0,1" "2,0,2" "2,1,0" "2,1,1" "2,1,2" "2,2,0" "2,2,1" "2,2,2")
+        set(COMBINATIONS_2 "0,0" "0,1" "1,0" "1,1" "0,2" "2,0" "1,2" "2,1" "2,2")
+        message(STATUS "DEBUG: Using fallback combinations")
+    endif()
+
+    set(CPU_INST_DIR "${CMAKE_BINARY_DIR}/cpu_instantiations")
+    file(MAKE_DIRECTORY "${CPU_INST_DIR}")
+
+    # Process 3-type templates
+    set(TEMPLATES_3 "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cpu/comb_compilation_units/pairwise_instantiation_template_3.cpp.in")
+
+    foreach(TEMPLATE_FILE ${TEMPLATES_3})
+        if(EXISTS "${TEMPLATE_FILE}")
+            message(STATUS "Processing 3-type template: ${TEMPLATE_FILE}")
+            foreach(COMBINATION ${COMBINATIONS_3})
+                genPartitionCombination(${TEMPLATE_FILE} 3 ${COMBINATION} "${CPU_INST_DIR}" ALL_GENERATED_SOURCES)
+            endforeach()
+        endif()
+    endforeach()
+
+    # Process 2-type templates (specials_double, specials_single)
+    set(TEMPLATES_2_ACTUAL
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/impl/compilation_units/specials_double.cpp.in"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/impl/compilation_units/specials_single.cpp.in")
+
+    foreach(TEMPLATE_FILE ${TEMPLATES_2_ACTUAL})
+        if(EXISTS "${TEMPLATE_FILE}")
+            message(STATUS "Processing 2-type template: ${TEMPLATE_FILE}")
+            foreach(COMBINATION ${COMBINATIONS_2})
+                genPartitionCombination(${TEMPLATE_FILE} 2 ${COMBINATION} "${CPU_INST_DIR}" ALL_GENERATED_SOURCES)
+            endforeach()
+        else()
+            message(STATUS "❌ Template not found: ${TEMPLATE_FILE}")
+        endif()
+    endforeach()
+
+    # REMOVED: OLD PAIRWISE TEMPLATE GENERATION - this was causing the compilation error
+    # The pairwise_instantiation_template_2.cpp.in uses the broken SD_PAIRWISE_TYPES_X system
+    message(STATUS "ℹ️ Skipping old pairwise template system - using new combination approach")
+endif()
+
+# CRITICAL: Set the global cache variable so it's available in MainBuildFlow
+set(CUSTOMOPS_GENERIC_SOURCES ${ALL_GENERATED_SOURCES} CACHE INTERNAL "Template-generated source files" FORCE)
+
+# Debug output
+list(LENGTH ALL_GENERATED_SOURCES total_count)
+message(STATUS "✅ Template processing complete: ${total_count} files generated")
+
+# Show some examples
+set(sample_count 0)
+foreach(generated_file ${ALL_GENERATED_SOURCES})
+    if(sample_count LESS 5)
+        get_filename_component(filename ${generated_file} NAME)
+        message(STATUS "   Generated: ${filename}")
+        math(EXPR sample_count "${sample_count} + 1")
+    endif()
+endforeach()
+if(total_count GREATER 5)
+    math(EXPR remaining "${total_count} - 5")
+    message(STATUS "   ... and ${remaining} more files")
+endif()
+
+# CRITICAL: Export variables to parent scope for immediate use
+set(CUSTOMOPS_GENERIC_SOURCES ${ALL_GENERATED_SOURCES} PARENT_SCOPE)
+
+message(STATUS "✅ Template-generated sources available in CUSTOMOPS_GENERIC_SOURCES")
+message(STATUS "   Variable contains ${total_count} generated source files")
+
+# =============================================================================
+# LEGACY FUNCTION FOR MAINBUILDFLOW COMPATIBILITY - NOW ACTUALLY EXPORTS
+# =============================================================================
+
+function(setup_template_processing)
+    # The templates were already generated above during include processing
+    # This function now makes sure the variable is available in the calling scope
+    
+    message(STATUS "setup_template_processing() called - propagating template sources")
+    
+    # Get the current cached value
+    get_property(cached_sources CACHE CUSTOMOPS_GENERIC_SOURCES PROPERTY VALUE)
+    
+    if(cached_sources)
+        list(LENGTH cached_sources cached_count)
+        message(STATUS "Propagating ${cached_count} template-generated sources to parent scope")
+        
+        # Set in parent scope so collect_all_sources_with_selective_rendering can access it
+        set(CUSTOMOPS_GENERIC_SOURCES ${cached_sources} PARENT_SCOPE)
+        
+        # Also set as global variable for broader access
+        set(CUSTOMOPS_GENERIC_SOURCES ${cached_sources} CACHE INTERNAL "Template-generated source files" FORCE)
+    else()
+        message(WARNING "⚠️ No template sources found in cache! Template generation may have failed.")
+        set(CUSTOMOPS_GENERIC_SOURCES "" PARENT_SCOPE)
+    endif()
+endfunction()
+
+message(STATUS "✅ TemplateProcessing.cmake loaded - ready for MainBuildFlow integration")

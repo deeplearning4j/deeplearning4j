@@ -44,7 +44,9 @@ static bool segmentIndicesValidate_(NDArray* indices, NDArray& aexpected, NDArra
 }
 
 bool segmentIndicesValidate(LaunchContext* context, NDArray* indices, NDArray& expected, NDArray& output) {
-#if SD_IS_PAIR_TYPE_COMPILED(output.dataType(),indices->dataType())
+  auto indicesDType = indices->dataType();
+  auto outputDType = output.dataType();
+#if SD_IS_PAIR_TYPE_COMPILED(outputDType,indicesDType)
   BUILD_DOUBLE_SELECTOR(output.dataType(), indices->dataType(), return segmentIndicesValidate_,
                         (indices, expected, output), SD_NUMERIC_TYPES, SD_INDEXING_TYPES);
 #endif

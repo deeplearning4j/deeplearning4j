@@ -20,11 +20,15 @@
 
 //
 // Created by agibsonccc on 3/10/25.
+// Standardized template using partitioned type system
 //
 
 #include <loops/cuda/scalar.chpp>
 #include <system/type_boilerplate.h>
 #include <loops/pairwise_instantiations_single.h>
+
+// Standardized generation using partitioned types
+// This template generates instantiations for CUDA scalar shaped operations
 
 /*
  * Function instantiation for ScalarTransform::executeCudaShaped
@@ -47,5 +51,5 @@ ITERATE_COMBINATIONS_3(
         const sd::LongType *zShapeInfo,
         const sd::LongType *hzShapeInfo,
         const void *vscalar,
-        void *vextraParams);
-);
+        void *vextraParams)
+)

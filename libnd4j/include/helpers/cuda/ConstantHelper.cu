@@ -159,7 +159,8 @@ ConstantDataBuffer *ConstantHelper::constantBuffer(const ConstantDescriptor &des
           (nullptr, const_cast<double *>(descriptor.floatValues().data()), descriptor.length(), cbuff->pointer()),
           (sd::DataType::DOUBLE, double), SD_COMMON_TYPES);
     } else if (descriptor.isInteger()) {
-#if SD_IS_PAIR_TYPE_COMPILED(sd::DataType::INT64,dataType)
+      auto int64DType = sd::DataType::INT64;
+#if SD_IS_PAIR_TYPE_COMPILED(int64DType,dataType)
       BUILD_DOUBLE_SELECTOR(sd::DataType::INT64, dataType, sd::SpecialTypeConverter::convertGeneric,
                             (nullptr, const_cast<sd::LongType *>(descriptor.integerValues().data()),
                                 descriptor.length(), cbuff->pointer()),

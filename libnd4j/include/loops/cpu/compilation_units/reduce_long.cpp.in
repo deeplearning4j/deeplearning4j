@@ -20,14 +20,24 @@
 
 //
 // @author raver119@gmail.com
+// Standardized template using partitioned type system
 //
+
 #include <loops/cpu/reduce/reduce_long.hpp>
-#cmakedefine SD_COMMON_TYPES_GEN
-#if defined(SD_COMMON_TYPES_GEN) && defined(SD_COMMON_TYPES_@FL_TYPE_INDEX@)
+#include <loops/pairwise_instantiations.h>
+
+// Standardized generation using partitioned types
+// This template generates instantiations for long-type reduction operations
+
 namespace functions {
     namespace reduce {
-        BUILD_DOUBLE_TEMPLATE(template class ReduceLongFunction, , SD_COMMON_TYPES_@FL_TYPE_INDEX@ , SD_LONG_TYPES);
+        // Use the standardized combination system for double template instantiation
+        ITERATE_COMBINATIONS(
+            SD_COMMON_TYPES_PART_@COMB1@,
+            SD_LONG_TYPES,
+            BUILD_DOUBLE_TEMPLATE,
+            ReduceLongFunction,
+            ;
+        )
     }
 }
-#endif
-

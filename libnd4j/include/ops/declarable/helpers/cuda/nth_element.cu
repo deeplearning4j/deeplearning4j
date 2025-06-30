@@ -119,7 +119,9 @@ void nthElementFunctor_(LaunchContext* context, NDArray* input, LongType n, NDAr
   NDArray::registerSpecialUse({output}, {input});
 }
 void nthElementFunctor(LaunchContext* context, NDArray* input, LongType n, NDArray* output, bool reverse) {
-#if SD_IS_SINGLE_TYPE_COMPILED(input->dataType())
+  auto inputDType = input->dataType();
+
+#if SD_IS_SINGLE_TYPE_COMPILED(inputDType)
   BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (context, input, n, output, reverse), SD_COMMON_TYPES);
   #endif
 }

@@ -1032,7 +1032,6 @@ DECLARE_UNARY_SIMD_SAFE_OP(RationalTanhDerivative,
 DECLARE_UNARY_SIMD_SAFE_OP(ScaledTanh,
                            return params[0] * sd::math::sd_tanh<X COMMA X>(params[1] * d1);
 )
-#define COMMA ,
 
 // RectifiedTanh operation
 DECLARE_UNARY_SIMD_SAFE_OP(RectifiedTanh,

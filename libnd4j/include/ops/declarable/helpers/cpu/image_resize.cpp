@@ -258,7 +258,9 @@ sd::Status resizeNeighborFunctor_(NDArray * images, int const width, int const h
 sd::Status resizeBilinearFunctor(sd::LaunchContext* context, NDArray * images, int const width, int const height,
                                  bool const alignCorners, bool const halfPixelCenter, NDArray* output) {
 
-#if SD_IS_PAIR_TYPE_COMPILED(images->dataType(),output->dataType())
+  auto imagesDtype = images->dataType();
+  auto outputDType = output->dataType();
+#if SD_IS_PAIR_TYPE_COMPILED(imagesDtype,outputDType)
   BUILD_DOUBLE_SELECTOR(images->dataType(), output->dataType(), return resizeBilinearFunctor_,
                         (images, width, height, alignCorners, halfPixelCenter, output), SD_NUMERIC_TYPES,
                         SD_FLOAT_TYPES);
@@ -766,7 +768,9 @@ static sd::Status resizeKernel(IKernelFunc<float>* transformationKernel, NDArray
 static sd::Status resizeBilinear(sd::LaunchContext* context, NDArray * image, int const width, int const height,
                                  bool const antialias, NDArray* output) {
   auto kernel = std::unique_ptr<IKernelFunc<float>>(new TriangleKernelFunc());
-#if SD_IS_PAIR_TYPE_COMPILED(image->dataType(),output->dataType())
+  auto imageDType = image->dataType();
+  auto outputDtype = output->dataType();
+#if SD_IS_PAIR_TYPE_COMPILED(imageDType,outputDtype)
   BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
                         (kernel.get(), image, (sd::LongType)width, (sd::LongType)height, antialias, output),
                         SD_NUMERIC_TYPES, SKIP_FIRST_COMMA(TTYPE_FLOAT32));
@@ -786,7 +790,9 @@ static sd::Status resizeBicubicAntialias(sd::LaunchContext* context, NDArray * i
                                          int const height, bool const antialias, double coefficient, NDArray* output) {
   // coorMode is HALF_PIXEL exlude_outside is True
   auto kernel = std::unique_ptr<IKernelFunc<float>>(new KeysCubicKernelFunc<float>(coefficient));
-#if SD_IS_PAIR_TYPE_COMPILED(image->dataType(),output->dataType())
+  auto imageDType = image->dataType();
+  auto outputDtype = output->dataType();
+#if SD_IS_PAIR_TYPE_COMPILED(imageDType,outputDType)
   BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
                         (kernel.get(), image, (sd::LongType)width, (sd::LongType)height, antialias, output),
                         SD_NUMERIC_TYPES, SKIP_FIRST_COMMA(TTYPE_FLOAT32));
@@ -803,7 +809,9 @@ static sd::Status resizeArea(sd::LaunchContext* context, NDArray * image, int co
 static sd::Status resizeLanczos3(sd::LaunchContext* context, NDArray * image, int const width, int const height,
                                  bool const antialias, NDArray* output) {
   auto kernel = std::unique_ptr<IKernelFunc<float>>(new LanczosKernelFunc(3.f));
-#if SD_IS_PAIR_TYPE_COMPILED(images->dataType(),output->dataType())
+  auto imageDType = image->dataType();
+  auto outputDtype = output->dataType();
+#if SD_IS_PAIR_TYPE_COMPILED(imageDType,outputDtype)
   BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
                         (kernel.get(), image, (sd::LongType)width, (sd::LongType)height, antialias, output),
                         SD_NUMERIC_TYPES, SKIP_FIRST_COMMA(TTYPE_FLOAT32));
@@ -814,7 +822,9 @@ static sd::Status resizeLanczos3(sd::LaunchContext* context, NDArray * image, in
 static sd::Status resizeLanczos5(sd::LaunchContext* context, NDArray * image, int const width, int const height,
                                  bool const antialias, NDArray* output) {
   auto kernel = std::unique_ptr<IKernelFunc<float>>(new LanczosKernelFunc(5.f));
-#if SD_IS_PAIR_TYPE_COMPILED(images->dataType(),output->dataType())
+  auto imageDType = image->dataType();
+  auto outputDtype = output->dataType();
+#if SD_IS_PAIR_TYPE_COMPILED(imageDType,outputDtype)
   BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
                         (kernel.get(), image, (sd::LongType)width, (sd::LongType)height, antialias, output),
                         SD_NUMERIC_TYPES, SKIP_FIRST_COMMA(TTYPE_FLOAT32));
@@ -825,7 +835,9 @@ static sd::Status resizeLanczos5(sd::LaunchContext* context, NDArray * image, in
 static sd::Status resizeGaussian(sd::LaunchContext* context, NDArray * image, int const width, int const height,
                                  bool const antialias, NDArray* output) {
   auto kernel = std::unique_ptr<IKernelFunc<float>>(new GaussianKernelFunc());
-#if SD_IS_PAIR_TYPE_COMPILED(images->dataType(),output->dataType())
+  auto imageDType = image->dataType();
+  auto outputDtype = output->dataType();
+#if SD_IS_PAIR_TYPE_COMPILED(imageDType,outputDtype)
   BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
                         (kernel.get(), image, (sd::LongType)width, (sd::LongType)height, antialias, output),
                         SD_NUMERIC_TYPES, SKIP_FIRST_COMMA(TTYPE_FLOAT32));
@@ -836,7 +848,9 @@ static sd::Status resizeGaussian(sd::LaunchContext* context, NDArray * image, in
 static sd::Status resizeMitchellcubic(sd::LaunchContext* context, NDArray * image, int const width,
                                       int const height, bool const antialias, NDArray* output) {
   auto kernel = std::unique_ptr<IKernelFunc<float>>(new MitchellCubicKernelFunc());
-#if SD_IS_PAIR_TYPE_COMPILED(images->dataType(),output->dataType())
+  auto imageDType = image->dataType();
+  auto outputDtype = output->dataType();
+#if SD_IS_PAIR_TYPE_COMPILED(imageDType,outputDtype)
   BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
                         (kernel.get(), image, (sd::LongType)width, (sd::LongType)height, antialias, output),
                         SD_NUMERIC_TYPES, SKIP_FIRST_COMMA(TTYPE_FLOAT32));

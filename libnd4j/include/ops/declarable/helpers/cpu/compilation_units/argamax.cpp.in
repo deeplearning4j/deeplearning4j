@@ -15,25 +15,34 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
+
 //
 // @author AbdelRauf
+// Standardized template using partitioned type system
 //
+
 #include <ops/declarable/helpers/cpu/indexReductions.hpp>
 #include <system/op_boilerplate.h>
+#include <loops/pairwise_instantiations.h>
+
 #if NOT_EXCLUDED(OP_argamax)
 
+// Standardized generation using partitioned types
+// This template generates instantiations for argAbsMax operations
 
-#cmakedefine SD_COMMON_TYPES_GEN 
-
-#if defined(SD_COMMON_TYPES_GEN) && defined(SD_COMMON_TYPES_@FL_TYPE_INDEX@)
 namespace sd {
     namespace ops {
         namespace helpers {
-#if SD_IS_PAIR_TYPE_COMPILED(input.dataType(),output.dataType())
-            BUILD_DOUBLE_TEMPLATE(template SD_LIB_HIDDEN void argAbsMax_, (NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions), SD_COMMON_TYPES_@FL_TYPE_INDEX@, SD_INDEXING_TYPES);
-#endif
+            // Use the standardized combination system for double template instantiation
+            ITERATE_COMBINATIONS(
+                SD_COMMON_TYPES_PART_@COMB1@,
+                SD_INDEXING_TYPES,
+                BUILD_DOUBLE_TEMPLATE,
+                argAbsMax_,
+                (NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions);
+            )
         }
     }
 }
-#endif
+
 #endif

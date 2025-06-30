@@ -134,18 +134,12 @@
 
 #define LAUNCH(A, B, C, D) <<<A, B, C, D>>>
 
-#define CONCAT2(A, B) A##B
-#define CONCAT3(A, B, C) A##B##C
+
 
 #define ARGMIX3(A, B, C) A##B##_##C
 #define ARGMIX4(A, B, C, D) A##B##_##C##_##D
 
-#define MIX2(A, B) A##_##B
-#define MIX3(A, B, C) A##_##B##_##C
-#define MIX4(A, B, C, D) A##_##B##_##C##_##D
 
-#define EMPTY()
-#define DEFER(id) id EMPTY()
 #define OBSTRUCT(...) __VA_ARGS__ DEFER(EMPTY)()
 
 #define _EXPAND_OP_CALL(FN, SIG, NUM, TYPE) \

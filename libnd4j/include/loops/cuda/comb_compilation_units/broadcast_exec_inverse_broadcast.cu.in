@@ -20,11 +20,15 @@
 
 //
 // Created by agibsonccc on 3/10/25.
+// Standardized template using partitioned type system
 //
 
 #include <loops/cuda/broadcasting.chpp>
 #include <system/type_boilerplate.h>
 #include <loops/pairwise_instantiations_single.h>
+
+// Standardized generation using partitioned types
+// This template generates instantiations for CUDA inverse broadcast operations
 
 /*
  * Function instantiation for Broadcast::execInverseBroadcast
@@ -51,5 +55,5 @@ ITERATE_COMBINATIONS_3(
         sd::LongType const* tadOnlyShapeInfo,
         sd::LongType const* tadOffsets,
         sd::LongType const* tadOnlyShapeInfoZ,
-        sd::LongType const* tadOffsetsZ);
-);
+        sd::LongType const* tadOffsetsZ)
+)

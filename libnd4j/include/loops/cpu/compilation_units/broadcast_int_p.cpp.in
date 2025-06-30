@@ -18,13 +18,25 @@
 
 //
 // Created by raver119 on 23/09/18.
+// Standardized template using partitioned type system
 //
+
 #include <loops/cpu/broadcasting.hpp>
-#cmakedefine SD_INTEGER_TYPES_GEN
-#if defined(SD_INTEGER_TYPES_GEN) && defined(SD_INTEGER_TYPES_@FL_TYPE_INDEX@)
+#include <loops/pairwise_instantiations.h>
+
+// Standardized generation using partitioned types
+// This template generates instantiations for integer broadcasting operations
+
 namespace functions {
     namespace broadcast {
-    BUILD_TRIPLE_TEMPLATE(template class SD_LIB_HIDDEN Broadcast, ,SD_INTEGER_TYPES_@FL_TYPE_INDEX@, SD_INTEGER_TYPES, SD_INTEGER_TYPES_@FL_TYPE_INDEX@);
+        // Use the standardized combination system for triple template instantiation
+        ITERATE_COMBINATIONS_3(
+            SD_INTEGER_TYPES_PART_@COMB1@,
+            SD_INTEGER_TYPES,
+            SD_INTEGER_TYPES_PART_@COMB2@,
+            BUILD_TRIPLE_TEMPLATE,
+            Broadcast,
+            ;
+        )
     }
 }
-#endif

@@ -18,13 +18,24 @@
 
 //
 // @author raver119@gmail.com
+// Standardized template using partitioned type system
 //
+
 #include <loops/cuda/pairwise.chpp>
-#cmakedefine SD_PAIRWISE_TYPES_GEN
-#if defined(SD_PAIRWISE_TYPES_GEN) && defined(SD_PAIRWISE_TYPES_@FL_TYPE_INDEX@)
+#include <loops/pairwise_instantiations.h>
+
+// Standardized generation using partitioned types
+// This template generates instantiations for CUDA pairwise operations
+
 namespace functions {
     namespace pairwise_transforms {
-        BUILD_PAIRWISE_TEMPLATE(extern template class SD_LIB_HIDDEN PairWiseTransform, , SD_PAIRWISE_TYPES_@FL_TYPE_INDEX@);
+        // Use the standardized combination system for pairwise template instantiation
+        ITERATE_LIST(
+            SD_COMMON_TYPES_PART_@COMB1@,
+            BUILD_PAIRWISE_TEMPLATE,
+            extern template class,
+            PairWiseTransform,
+            ;
+        )
     }
 }
-#endif

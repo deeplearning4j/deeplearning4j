@@ -190,7 +190,9 @@ static void unsortedSegmentSqrtNFunctor_(LaunchContext* context, NDArray* input,
 // -------------------------------------------------------------------------------------------------------------- //
 void unsortedSegmentSqrtNFunctor(LaunchContext* context, NDArray* input, NDArray* indices, LongType numOfClasses, NDArray* output) {
  NDArray::prepareSpecialUse({output}, {input, indices});
-#if SD_IS_PAIR_TYPE_COMPILED(input->dataType(),indices->dataType())
+ auto indicesDType = indices->dataType();
+ auto outputDType = input->dataType();
+#if SD_IS_PAIR_TYPE_COMPILED(outputDType,indicesDType)
  BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), unsortedSegmentSqrtNFunctor_,
                        (context, input, indices, numOfClasses, output), SD_FLOAT_TYPES, SD_INDEXING_TYPES);
 #endif
@@ -393,7 +395,9 @@ static Status unsortedSegmentSqrtNFunctorBP_(LaunchContext* context, NDArray* in
 Status unsortedSegmentSqrtNFunctorBP(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                                     LongType numOfClasses, NDArray* output) {
  NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
-#if SD_IS_PAIR_TYPE_COMPILED(output->dataType(),indices->dataType())
+ auto indicesDType = indices->dataType();
+ auto outputDType = output->dataType();
+#if SD_IS_PAIR_TYPE_COMPILED(outputDType,indicesDType)
  BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentSqrtNFunctorBP_,
                        (context, input, indices, gradOut, numOfClasses, output), SD_FLOAT_TYPES, SD_INDEXING_TYPES);
 #endif

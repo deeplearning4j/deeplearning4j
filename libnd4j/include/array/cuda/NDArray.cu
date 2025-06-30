@@ -595,9 +595,10 @@ void NDArray::repeat(const int axis, const std::vector<LongType>& repeats, NDArr
   PointersManager manager(getContext(), "NDArray::repeat(const int axis, const std::vector<int>& repeats)");
 
   const LongType* reps = reinterpret_cast<LongType*>(manager.replicatePointer(repeats.data(), repeats.size() * sizeof(LongType)));
-
+  auto targetDataType = target.dataType();
+  auto selfDType = dataType();
   prepareSpecialUse({&target}, {this});
-#if SD_IS_PAIR_TYPE_COMPILED(dataType(),target.dataType())
+#if SD_IS_PAIR_TYPE_COMPILED(selfDType,targetDataType)
   BUILD_DOUBLE_SELECTOR(
       dataType(), target.dataType(), repeatCudaLauncher,
       (launchDims.y, launchDims.x, launchDims.z, getContext()->getCudaStream(), specialBuffer(), specialShapeInfo(),

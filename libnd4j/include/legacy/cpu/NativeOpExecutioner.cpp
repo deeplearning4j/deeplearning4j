@@ -529,7 +529,7 @@ void NativeOpExecutioner::execReduceSame(sd::LaunchContext *lc, int opNum, const
                                          sd::LongType *dimension, sd::LongType dimensionLength) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
 #if SD_IS_SINGLE_TYPE_COMPILED(xType)
-    BUILD_SINGLE_SELECTOR(
+  BUILD_SINGLE_SELECTOR(
         xType, functions::reduce::ReduceSameFunction,
         ::exec(opNum, lc ? lc->getWorkspace() : nullptr, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension),
         SD_NUMERIC_TYPES);
@@ -1127,8 +1127,9 @@ void NativeOpExecutioner::execTransformBool(sd::LaunchContext *lc, int opNum, co
 
   samediff::Threads::parallel_do(
       func, sd::math::sd_max<int>(1, sd::math::sd_min<int>(shape::length(hZShapeInfo) / 1024,
-#endif
                                                            sd::Environment::getInstance().maxMasterThreads())));
+#endif
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1159,8 +1160,8 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, con
         func, sd::math::sd_max<int>(1, sd::math::sd_min<int>(shape::length(hZShapeInfo) / 1024,
                                                              sd::Environment::getInstance().maxMasterThreads())));
   } else {
+#if SD_IS_PAIR_TYPE_COMPILED(xType,zType)
     auto func = PRAGMA_THREADS_DO {
-#if SD_IS_PAIR_TYPE_COMPILED
       BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny,
                             ::exec(opNum,
                                    hX,
@@ -1170,13 +1171,14 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, con
                                    thread_id,
                                    numThreads),
                             SD_COMMON_TYPES, SD_COMMON_TYPES);
-#endif
     };
 
     samediff::Threads::parallel_do(
         func, sd::math::sd_max<sd::LongType,sd::LongType,sd::LongType>(1,
-                                                                       sd::math::sd_min<sd::LongType,sd::LongType,sd::LongType>(shape::length(hZShapeInfo) / 1024,
-                                                                                                                                sd::Environment::getInstance().maxMasterThreads())));
+                                                                         sd::math::sd_min<sd::LongType,sd::LongType,sd::LongType>(shape::length(hZShapeInfo) / 1024,
+                                                                                                                                    sd::Environment::getInstance().maxMasterThreads())));
+#endif
+
   }
 
 

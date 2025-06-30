@@ -94,7 +94,9 @@ static void _hamming(LaunchContext *context, NDArray &x, NDArray &y, NDArray &z)
 }
 
 void hamming(LaunchContext *context, NDArray &x, NDArray &y, NDArray &output) {
-#if SD_IS_PAIR_TYPE_COMPILED(x.dataType(),output.DataType())
+  auto xDType = x.dataType();
+  auto outputDType = output.dataType();
+#if SD_IS_PAIR_TYPE_COMPILED(xDType,outputDType)
   BUILD_DOUBLE_SELECTOR(x.dataType(), output.dataType(), _hamming, (context, x, y, output), SD_INTEGER_TYPES, SD_INDEXING_TYPES);
 #endif
 }

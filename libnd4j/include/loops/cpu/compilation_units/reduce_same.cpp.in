@@ -20,14 +20,23 @@
 
 //
 // @author raver119@gmail.com
+// Standardized template using partitioned type system
 //
+
 #include <loops/cpu/reduce/reduce_same.hpp>
-#cmakedefine SD_COMMON_TYPES_GEN
-#if defined(SD_COMMON_TYPES_GEN) && defined(SD_COMMON_TYPES_@FL_TYPE_INDEX@)
+#include <loops/pairwise_instantiations.h>
+
+// Standardized generation using partitioned types
+// This template generates instantiations for same-type reduction operations
+
 namespace functions {
     namespace reduce {
-        BUILD_SINGLE_TEMPLATE(template class ReduceSameFunction, , SD_COMMON_TYPES_@FL_TYPE_INDEX@ );
+        // Use the standardized combination system for single template instantiation
+        ITERATE_LIST(
+            SD_COMMON_TYPES_PART_@COMB1@,
+            BUILD_SINGLE_TEMPLATE,
+            ReduceSameFunction,
+            ;
+        )
     }
 }
-#endif
-

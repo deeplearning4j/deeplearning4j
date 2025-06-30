@@ -60,7 +60,8 @@ void nthElementFunctor_(NDArray* input, sd::LongType n, NDArray* output, bool re
 void nthElementFunctor(sd::LaunchContext* launchContext, NDArray* input, sd::LongType n, NDArray* output,
                        bool reverse) {
 
-#if SD_IS_SINGLE_TYPE_COMPILED(input->dataType())
+  auto inputDType = input->dataType();
+#if SD_IS_SINGLE_TYPE_COMPILED(inputDType)
   BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (input, n, output, reverse), SD_NUMERIC_TYPES);
 #endif
 }

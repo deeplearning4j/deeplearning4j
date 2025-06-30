@@ -20,11 +20,15 @@
 
 //
 // Created by agibsonccc on 3/10/25.
+// Standardized template using partitioned type system
 //
 
 #include <loops/cuda/scalar.chpp>
 #include <system/type_boilerplate.h>
 #include <loops/pairwise_instantiations_single.h>
+
+// Standardized generation using partitioned types
+// This template generates instantiations for CUDA scalar operations along dimension
 
 /*
  * Function instantiation for ScalarTransform::executeCudaAlongDimension
@@ -51,5 +55,5 @@ ITERATE_COMBINATIONS_3(
         const sd::LongType *tadShapeInfo,
         const sd::LongType *tadOffsets,
         const sd::LongType *tadShapeInfoZ,
-        const sd::LongType *tadOffsetsZ);
-);
+        const sd::LongType *tadOffsetsZ)
+)

@@ -483,18 +483,7 @@ function(concatenate_and_process_compilation_units target_count)
     set(CONCATENATED_SOURCES ${CONCATENATED_SOURCES} PARENT_SCOPE)
 endfunction()
 
-# Initialize dynamic combinations (placeholder - should be defined elsewhere)
-function(initialize_dynamic_combinations)
-    # This function should be implemented in your main build system
-    # Setting up basic combinations as fallback
-    if(NOT DEFINED COMBINATIONS_2)
-        set(COMBINATIONS_2 "0,0;0,1;1,1;2,2" PARENT_SCOPE)
-    endif()
-    if(NOT DEFINED COMBINATIONS_3)
-        set(COMBINATIONS_3 "0,0,0;0,1,1;1,1,1;2,2,2" PARENT_SCOPE)
-    endif()
-    message(STATUS "Initialized fallback combinations")
-endfunction()
+
 
 # Main entry point
 function(create_4gb_safe_concatenated_units)

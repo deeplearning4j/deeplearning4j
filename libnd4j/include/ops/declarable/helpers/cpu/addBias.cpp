@@ -594,7 +594,9 @@ static void addBias_(NDArray& input, NDArray& bias, NDArray& output, const bool 
 }
 //////////////////////////////////////////////////////////////////////////
 void addBias(sd::graph::Context& block, NDArray& input, NDArray& bias, NDArray& output, const bool isNCHW) {
-#if SD_IS_PAIR_TYPE_COMPILED(input.dataType(),bias.dataType())
+auto inputDType = input.dataType();
+auto biasDType = bias.dataType();
+#if SD_IS_PAIR_TYPE_COMPILED(inputDType,biasDType)
   BUILD_DOUBLE_SELECTOR(input.dataType(), bias.dataType(), addBias_, (input, bias, output, isNCHW), SD_FLOAT_TYPES,
                         SD_FLOAT_TYPES);
 #endif

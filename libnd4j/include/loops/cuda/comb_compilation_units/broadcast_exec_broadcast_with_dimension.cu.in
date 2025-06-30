@@ -20,11 +20,15 @@
 
 //
 // Created by agibsonccc on 3/10/25.
+// Standardized template using partitioned type system
 //
 
 #include <loops/cuda/broadcasting.chpp>
 #include <system/type_boilerplate.h>
 #include <loops/pairwise_instantiations_single.h>
+
+// Standardized generation using partitioned types
+// This template generates instantiations for CUDA broadcast operations with dimension
 
 /*
  * Function instantiation for Broadcast::execBroadcast with dimension
@@ -51,8 +55,8 @@ ITERATE_COMBINATIONS_3(
         sd::LongType const* tadOnlyShapeInfo,
         sd::LongType const* tadOffsets,
         sd::LongType const* tadOnlyShapeInfoZ,
-        sd::LongType const* tadOffsetsZ);
-);
+        sd::LongType const* tadOffsetsZ)
+)
 
 ITERATE_COMBINATIONS_3(
     SD_SINGLE_TYPE_@COMB1@,
@@ -69,6 +73,5 @@ ITERATE_COMBINATIONS_3(
         void const* y,
         sd::LongType const* yShapeInfo,
         void* z,
-        sd::LongType const* zShapeInfo);
-);
-
+        sd::LongType const* zShapeInfo)
+)

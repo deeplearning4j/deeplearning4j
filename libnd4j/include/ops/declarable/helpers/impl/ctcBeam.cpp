@@ -637,7 +637,9 @@ void beamSearch_(NDArray& logit, NDArray& sequence_length, NDArray& result_seque
 void beamSearch(NDArray& logit, NDArray& sequence_length, NDArray& result_sequences, NDArray& result_probs,
                 NDArray& result_sequences_length, int blank_index, int beam_width, int nbest_len,
                 bool normalize_logits = true) {
-#if SD_IS_PAIR_TYPE_COMPILED(logit.dataType(),result_sequences.dataType())
+  auto logitDType = logit.dataType();
+  auto resSeqDType = result_sequences.dataType();
+#if SD_IS_PAIR_TYPE_COMPILED(logitDtype,resSeqDType)
   BUILD_DOUBLE_SELECTOR(logit.dataType(), result_sequences.dataType(), beamSearch_,
                         (logit, sequence_length, result_sequences, result_probs, result_sequences_length, blank_index,
                             beam_width, nbest_len, normalize_logits),

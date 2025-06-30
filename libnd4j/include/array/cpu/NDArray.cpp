@@ -403,8 +403,10 @@ void NDArray::tile(const std::vector<LongType>& reps, NDArray& target) {
     LongType sourceOffset;
     COORDS2INDEX(shape::rank(shapeInfo()), shape::stride(shapeInfo()), sourceCoords, sourceOffset);
 
+    auto targetDataType = target.dataType();
+    auto selfDType = dataType();
     // Copy the value
-#if SD_IS_PAIR_TYPE_COMPILED(target.dataType(),dataType())
+#if SD_IS_PAIR_TYPE_COMPILED(targetDataType,selfDType)
     BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign,
                           (target.buffer(), xOffset, buffer(), sourceOffset), SD_COMMON_TYPES, SD_COMMON_TYPES);
 #endif
@@ -427,7 +429,9 @@ void NDArray::tile(NDArray& target)  {
   if (target.ordering() == 'c' && ews >= 1) {
     for (sd::LongType i = 0; i < targetLen; ++i) {
       auto yOffset = shape::subArrayOffset(i, target.shapeInfo(), shapeInfo());
-#if SD_IS_PAIR_TYPE_COMPILED(target.dataType(),dataType())
+      auto targetDataType = target.dataType();
+      auto selfDType = dataType();
+#if SD_IS_PAIR_TYPE_COMPILED(targetDataType,selfDType)
       BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign,
                             (target.buffer(), i * ews, buffer(), yOffset), SD_COMMON_TYPES, SD_COMMON_TYPES);
 #endif
@@ -436,7 +440,9 @@ void NDArray::tile(NDArray& target)  {
     for (sd::LongType i = 0; i < targetLen; ++i) {
       auto xOffset = target.getOffset(i);
       auto yOffset = shape::subArrayOffset(i, target.shapeInfo(), shapeInfo());
-#if SD_IS_PAIR_TYPE_COMPILED(target.dataType(),dataType())
+      auto targetDataType = target.dataType();
+      auto selfDType = dataType();
+#if SD_IS_PAIR_TYPE_COMPILED(targetDataType,selfDType)
       BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign,
                             (target.buffer(), xOffset, buffer(), yOffset), SD_COMMON_TYPES, SD_COMMON_TYPES);
 #endif
@@ -516,7 +522,9 @@ void NDArray::repeat(const int axis, const std::vector<LongType>& repeats, NDArr
     THROW_EXCEPTION(
         "NDArray::repeat(const int axis, const std::vector<int>& repeats, NDArray& target) method: wrong shape of "
         "target array!");
-#if SD_IS_PAIR_TYPE_COMPILED(dataType(),target.dataType())
+  auto targetDataType = target.dataType();
+  auto selfDType = dataType();
+#if SD_IS_PAIR_TYPE_COMPILED(selfDType,targetDataType)
   BUILD_DOUBLE_SELECTOR(dataType(), target.dataType(), repeat_, (*this, target, repeats, axis), SD_COMMON_TYPES,
                         SD_COMMON_TYPES);
 #endif

@@ -39,77 +39,80 @@ function(_internal_srcore_normalize_type input_type output_var)
     set(${output_var} "${normalized}" PARENT_SCOPE)
 endfunction()
 
-function(_internal_srcore_discover_types result_indices_var result_names_var)
-    _internal_srcore_debug_message("Starting unified type discovery...")
-    set(possible_headers "${CMAKE_CURRENT_SOURCE_DIR}/include/types/types.h" "${CMAKE_CURRENT_SOURCE_DIR}/include/system/types.h" "${CMAKE_CURRENT_SOURCE_DIR}/include/types.h")
+function(_internal_srcore_discover_types result_indices_var result_names_var result_enums_var result_cpp_types_var)
+    message(STATUS "🔍 DEBUG: Starting type discovery...")
+
+    # Look for types.h in multiple possible locations
+    set(possible_headers
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/types/types.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/system/types.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/types.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../include/types/types.h"
+            "${CMAKE_SOURCE_DIR}/libnd4j/include/types/types.h"
+            "${CMAKE_SOURCE_DIR}/include/types/types.h")
+
     set(types_header "")
     foreach(header_path ${possible_headers})
         if(EXISTS "${header_path}")
             set(types_header "${header_path}")
+            message(STATUS "Found types.h at: ${header_path}")
             break()
         endif()
     endforeach()
+
     if(NOT types_header)
         message(FATAL_ERROR "❌ SelectiveRenderingCore: Could not find types.h in any expected location")
     endif()
 
     file(READ "${types_header}" types_content)
-    set(base_type_names "BFLOAT16" "BOOL" "DOUBLE" "FLOAT32" "HALF" "INT16" "INT32" "INT64" "INT8" "UINT16" "UINT32" "UINT64" "UINT8" "UTF16" "UTF32" "UTF8" "BFLOAT" "FLOAT" "LONG" "UNSIGNEDLONG" "INT")
+
+    set(simple_types "BOOL;DOUBLE;FLOAT32;INT32;INT64")
     set(discovered_types "")
-    foreach(type_name ${base_type_names})
-        string(REGEX MATCH "#define[ \t]+TTYPE_${type_name}[ \t]*,?[ \t]*\\(([^)]+)\\)" type_match "${types_content}")
+    set(discovered_indices "")
+    set(discovered_enums "")
+    set(discovered_cpp_types "")
+    set(type_index 0)
+
+    foreach(type_key ${simple_types})
+        string(REGEX MATCH "#define[ \t]+TTYPE_${type_key}[ \t]*,[ \t]*\\(([^)]+)\\)" type_match "${types_content}")
+
         if(type_match)
-            _internal_srcore_normalize_type("${type_name}" normalized_name)
-            list(APPEND discovered_types "${normalized_name}")
+            list(APPEND discovered_types "${type_key}")
+            list(APPEND discovered_indices ${type_index})
+
             string(REGEX MATCH "\\(([^)]+)\\)" tuple_match "${type_match}")
-            if(tuple_match)
-                string(SUBSTRING "${tuple_match}" 1 -1 type_tuple)
-                # Set a temporary variable for this scope
-                set(TEMP_TUPLE_${normalized_name} "(${type_tuple})")
-            endif()
+            string(SUBSTRING "${tuple_match}" 1 -1 type_tuple)
+            string(REGEX REPLACE "^([^,]+),[ \t]*(.+)$" "\\1;\\2" tuple_parts "${type_tuple}")
+            list(GET tuple_parts 0 enum_part)
+            list(GET tuple_parts 1 cpp_part)
+            string(STRIP "${enum_part}" enum_part)
+            string(STRIP "${cpp_part}" cpp_part)
+            string(REGEX REPLACE "\\)$" "" cpp_part "${cpp_part}")
+
+            list(APPEND discovered_enums "${enum_part}")
+            list(APPEND discovered_cpp_types "${cpp_part}")
+
+            message(STATUS "✅ Type ${type_index}: ${type_key} -> enum: ${enum_part}, cpp: ${cpp_part}")
+            math(EXPR type_index "${type_index} + 1")
         endif()
     endforeach()
-    list(REMOVE_DUPLICATES discovered_types)
 
-    set(active_type_indices "")
-    set(active_type_names "")
-    set(type_index 0)
-    foreach(type_name_normalized IN LISTS discovered_types)
-        list(APPEND active_type_indices ${type_index})
-        list(APPEND active_type_names ${type_name_normalized})
-
-        set(type_tuple "${TEMP_TUPLE_${type_name_normalized}}")
-        string(REGEX REPLACE "^\\s*\\(([^,]+),.*" "\\1" enum_part "${type_tuple}")
-        string(REGEX REPLACE ".*,\\s*([^\\)]+)\\s*\\)" "\\1" type_part "${type_tuple}")
-        string(STRIP "${enum_part}" enum_part)
-        string(STRIP "${type_part}" type_part)
-
-        # FIX: Ensure variables are set in PARENT_SCOPE with proper debug
-        message(STATUS "Setting SRCORE_TYPE_ENUM_${type_index} = ${enum_part}")
-        message(STATUS "Setting SRCORE_TYPE_CPP_${type_index} = ${type_part}")
-        set(SRCORE_TYPE_ENUM_${type_index} "${enum_part}" PARENT_SCOPE)
-        set(SRCORE_TYPE_CPP_${type_index} "${type_part}" PARENT_SCOPE)
-
-        math(EXPR type_index "${type_index} + 1")
-    endforeach()
-
-    set(${result_indices_var} "${active_type_indices}" PARENT_SCOPE)
-    set(${result_names_var} "${active_type_names}" PARENT_SCOPE)
+    set(${result_indices_var} "${discovered_indices}" PARENT_SCOPE)
+    set(${result_names_var} "${discovered_types}" PARENT_SCOPE)
+    set(${result_enums_var} "${discovered_enums}" PARENT_SCOPE)
+    set(${result_cpp_types_var} "${discovered_cpp_types}" PARENT_SCOPE)
 endfunction()
 
-function(srcore_discover_active_types result_var)
-    _internal_srcore_discover_types(active_indices active_names)
+
+function(srcore_discover_active_types result_var result_enums_var result_cpp_types_var)
+    _internal_srcore_discover_types(active_indices active_names discovered_enums discovered_cpp_types)
     set(SRCORE_ACTIVE_TYPES "${active_names}" PARENT_SCOPE)
-    set(SRCORE_ACTIVE_TYPE_COUNT 0 PARENT_SCOPE)
     list(LENGTH active_indices type_count)
     set(SRCORE_ACTIVE_TYPE_COUNT ${type_count} PARENT_SCOPE)
 
-    # Set the type mappings for later use
-    foreach(index IN LISTS active_indices)
-        set(SRCORE_TYPE_NAME_${index} "${SRCORE_TYPE_CPP_${index}}" PARENT_SCOPE)
-    endforeach()
-
     set(${result_var} "${active_indices}" PARENT_SCOPE)
+    set(${result_enums_var} "${discovered_enums}" PARENT_SCOPE)
+    set(${result_cpp_types_var} "${discovered_cpp_types}" PARENT_SCOPE)
 endfunction()
 
 function(srcore_generate_combinations active_indices profile result_2_var result_3_var)
@@ -120,8 +123,8 @@ function(srcore_generate_combinations active_indices profile result_2_var result
     set(${result_3_var} "${combinations_3}" PARENT_SCOPE)
 endfunction()
 
-function(srcore_generate_headers active_indices combinations_2 combinations_3 output_dir)
-    _internal_srcore_generate_validity_header("${active_indices}" "${combinations_2}" "${combinations_3}" "${output_dir}")
+function(srcore_generate_headers active_indices combinations_2 combinations_3 output_dir type_enums type_cpp_types)
+    _internal_srcore_generate_validity_header("${active_indices}" "${type_enums}" "${type_cpp_types}" "${combinations_2}" "${combinations_3}" "${output_dir}")
     _internal_generate_override_content("${active_indices}" "${combinations_2}" "${combinations_3}" FINAL_HEADER_CONTENT)
 endfunction()
 
@@ -186,179 +189,225 @@ function(_internal_srcore_generate_combinations active_indices type_names profil
     set(${result_3_var} "${combinations_3}" PARENT_SCOPE)
 endfunction()
 
-function(_internal_srcore_generate_validity_header active_indices combinations_2 combinations_3 output_dir)
+function(_internal_srcore_generate_validity_header active_indices type_enums type_cpp_types combinations_2 combinations_3 output_dir)
     file(MAKE_DIRECTORY "${output_dir}/system")
     set(header_file "${output_dir}/system/selective_rendering.h")
 
-    # Helper sub-function to sanitize a C++ type into a macro-safe name
-    function(sanitize_type_for_macro type_string output_var)
-        string(REGEX REPLACE "::" "_" sanitized "${type_string}")
-        string(REGEX REPLACE "[^a-zA-Z0-9_]" "" sanitized "${sanitized}")
-        set(${output_var} "${sanitized}" PARENT_SCOPE)
+    # Function to convert C++ types to simple macro names
+    function(cpp_type_to_macro_name cpp_type output_var)
+        set(macro_name "${cpp_type}")
+        if(macro_name STREQUAL "bool")
+            set(macro_name "BOOL")
+        elseif(macro_name STREQUAL "float")
+            set(macro_name "FLOAT32")
+        elseif(macro_name STREQUAL "double")
+            set(macro_name "DOUBLE")
+        elseif(macro_name STREQUAL "int32_t")
+            set(macro_name "INT32")
+        elseif(macro_name STREQUAL "sd::LongType")
+            set(macro_name "INT64")
+        elseif(macro_name STREQUAL "uint64_t")
+            set(macro_name "UINT64")
+        elseif(macro_name STREQUAL "float16")
+            set(macro_name "HALF")
+        elseif(macro_name STREQUAL "bfloat16")
+            set(macro_name "BFLOAT16")
+        endif()
+        set(${output_var} "${macro_name}" PARENT_SCOPE)
     endfunction()
 
-    # EMERGENCY FIX: Define known DataType enum values as fallback
-    # This ensures we always have valid comparisons even if discovery fails
-    set(FALLBACK_ENUM_MAP_float "sd::DataType::FLOAT32")
-    set(FALLBACK_ENUM_MAP_double "sd::DataType::DOUBLE")
-    set(FALLBACK_ENUM_MAP_float16 "sd::DataType::HALF")
-    set(FALLBACK_ENUM_MAP_bfloat16 "sd::DataType::BFLOAT16")
-    set(FALLBACK_ENUM_MAP_int32_t "sd::DataType::INT32")
-    set(FALLBACK_ENUM_MAP_int64_t "sd::DataType::INT64")
-    set(FALLBACK_ENUM_MAP_uint64_t "sd::DataType::UINT64")
-    set(FALLBACK_ENUM_MAP_bool "sd::DataType::BOOL")
-    set(FALLBACK_ENUM_MAP_int8_t "sd::DataType::INT8")
-    set(FALLBACK_ENUM_MAP_uint8_t "sd::DataType::UINT8")
-    set(FALLBACK_ENUM_MAP_int16_t "sd::DataType::INT16")
-    set(FALLBACK_ENUM_MAP_uint16_t "sd::DataType::UINT16")
-    set(FALLBACK_ENUM_MAP_uint32_t "sd::DataType::UINT32")
+    # Function to convert enum values to integer constants
+    function(enum_to_int_value enum_value output_var)
+        string(REGEX REPLACE ".*::" "" datatype_name "${enum_value}")
+        if(datatype_name STREQUAL "BOOL")
+            set(int_value "1")
+        elseif(datatype_name STREQUAL "FLOAT32")
+            set(int_value "5")
+        elseif(datatype_name STREQUAL "DOUBLE")
+            set(int_value "6")
+        elseif(datatype_name STREQUAL "INT32")
+            set(int_value "9")
+        elseif(datatype_name STREQUAL "INT64")
+            set(int_value "10")
+        elseif(datatype_name STREQUAL "UINT64")
+            set(int_value "14")
+        elseif(datatype_name STREQUAL "HALF")
+            set(int_value "3")
+        elseif(datatype_name STREQUAL "BFLOAT16")
+            set(int_value "17")
+        else()
+            set(int_value "255")  # UNKNOWN
+        endif()
+        set(${output_var} "${int_value}" PARENT_SCOPE)
+    endfunction()
 
     set(header_content "/* AUTOMATICALLY GENERATED by SelectiveRenderingCore.cmake */\n")
-    string(APPEND header_content "#ifndef SD_SELECTIVE_RENDERING_H\n#define SD_SELECTIVE_RENDERING_H\n")
+    string(APPEND header_content "#ifndef SD_SELECTIVE_RENDERING_H\n")
+    string(APPEND header_content "#define SD_SELECTIVE_RENDERING_H\n")
     string(APPEND header_content "#define SD_TYPE_VALID_CHECK_AVAILABLE 1\n\n")
 
-    # =========================================================================
-    # SECTION 1: Generate individual type validity flags
-    # =========================================================================
-    string(APPEND header_content "// Single Type Validity\n")
-    foreach(index IN LISTS active_indices)
-        set(cpp_type "${SRCORE_TYPE_CPP_${index}}")
-        if(NOT cpp_type)
-            message(WARNING "No CPP type found for index ${index}, skipping")
-            continue()
+    # Define the COLON macro for namespace resolution
+    string(APPEND header_content "// Macro to handle namespace resolution in preprocessor\n")
+    string(APPEND header_content "#define COLON ::\n\n")
+
+    # Generate individual type combination checks for triples
+    string(APPEND header_content "// Define individual type combination checks that work with #if\n")
+    foreach(combo IN LISTS combinations_3)
+        string(REPLACE "," ";" parts "${combo}")
+        list(GET parts 0 i)
+        list(GET parts 1 j)
+        list(GET parts 2 k)
+
+        list(LENGTH type_cpp_types num_types)
+        if(i LESS ${num_types} AND j LESS ${num_types} AND k LESS ${num_types})
+            list(GET type_cpp_types ${i} cpp_i)
+            list(GET type_cpp_types ${j} cpp_j)
+            list(GET type_cpp_types ${k} cpp_k)
+            cpp_type_to_macro_name("${cpp_i}" macro_i)
+            cpp_type_to_macro_name("${cpp_j}" macro_j)
+            cpp_type_to_macro_name("${cpp_k}" macro_k)
+            string(APPEND header_content "#define SD_TRIPLE_${macro_i}_${macro_j}_${macro_k} 1\n")
         endif()
-        sanitize_type_for_macro("${cpp_type}" safe_name)
-        string(APPEND header_content "#define SD_TYPE_${safe_name}_VALID 1\n")
     endforeach()
 
-    # =========================================================================
-    # SECTION 2: Generate pairwise type validity flags
-    # =========================================================================
+    # Generate individual pair combination checks
+    string(APPEND header_content "\n// Define individual pair combination checks that work with #if\n")
+    foreach(combo IN LISTS combinations_2)
+        string(REPLACE "," ";" parts "${combo}")
+        list(GET parts 0 i)
+        list(GET parts 1 j)
+
+        list(LENGTH type_cpp_types num_types)
+        if(i LESS ${num_types} AND j LESS ${num_types})
+            list(GET type_cpp_types ${i} cpp_i)
+            list(GET type_cpp_types ${j} cpp_j)
+            cpp_type_to_macro_name("${cpp_i}" macro_i)
+            cpp_type_to_macro_name("${cpp_j}" macro_j)
+            string(APPEND header_content "#define SD_PAIR_${macro_i}_${macro_j} 1\n")
+        endif()
+    endforeach()
+
+    string(APPEND header_content "// UTF8 combinations are NOT defined, so they default to 0\n\n")
+
+    # Add the compile-time checking helper macros
+    string(APPEND header_content "// Helper macro to check if a specific triple is compiled\n")
+    string(APPEND header_content "#define SD_IS_TRIPLE_COMPILED(T1, T2, T3) SD_TRIPLE_ ## T1 ## _ ## T2 ## _ ## T3\n\n")
+
+    string(APPEND header_content "// Helper macro to check if a specific pair is compiled\n")
+    string(APPEND header_content "#define SD_IS_PAIR_COMPILED(T1, T2) SD_PAIR_ ## T1 ## _ ## T2\n\n")
+
+    # Generate the runtime checking macro for triples using integer comparisons
+    string(APPEND header_content "// The main runtime checking macro for triples (for actual use)\n")
+    string(APPEND header_content "#define SD_IS_TRIPLE_TYPE_COMPILED(TYPE1_ENUM, TYPE2_ENUM, TYPE3_ENUM) \\\n")
+    string(APPEND header_content "    (")
+
+    set(first_triple TRUE)
+    list(LENGTH type_cpp_types num_types)
+    foreach(combo IN LISTS combinations_3)
+        string(REPLACE "," ";" parts "${combo}")
+        list(GET parts 0 i)
+        list(GET parts 1 j)
+        list(GET parts 2 k)
+
+        if(i LESS ${num_types} AND j LESS ${num_types} AND k LESS ${num_types})
+            list(GET type_enums ${i} enum_i)
+            list(GET type_enums ${j} enum_j)
+            list(GET type_enums ${k} enum_k)
+            enum_to_int_value("${enum_i}" int_i)
+            enum_to_int_value("${enum_j}" int_j)
+            enum_to_int_value("${enum_k}" int_k)
+
+            if(NOT first_triple)
+                string(APPEND header_content " || \\\n     ")
+            else()
+                set(first_triple FALSE)
+            endif()
+            string(APPEND header_content "((TYPE1_ENUM) == ${int_i} && (TYPE2_ENUM) == ${int_j} && (TYPE3_ENUM) == ${int_k})")
+        endif()
+    endforeach()
+    string(APPEND header_content ")\n\n")
+
+    # Generate single type validity flags
+    string(APPEND header_content "// Single Type Validity\n")
+    foreach(i RANGE 0 ${num_types})
+        if(i LESS ${num_types})
+            list(GET type_cpp_types ${i} cpp_type)
+            cpp_type_to_macro_name("${cpp_type}" macro_name)
+            string(APPEND header_content "#define SD_TYPE_${macro_name}_VALID 1\n")
+        endif()
+    endforeach()
+
+    # Generate pairwise type validity flags
     string(APPEND header_content "\n// Pairwise Type Validity\n")
     foreach(combo IN LISTS combinations_2)
         string(REPLACE "," ";" parts "${combo}")
         list(GET parts 0 i)
         list(GET parts 1 j)
-        set(cpp_i "${SRCORE_TYPE_CPP_${i}}")
-        set(cpp_j "${SRCORE_TYPE_CPP_${j}}")
-        if(NOT cpp_i OR NOT cpp_j)
-            continue()
+
+        if(i LESS ${num_types} AND j LESS ${num_types})
+            list(GET type_cpp_types ${i} cpp_i)
+            list(GET type_cpp_types ${j} cpp_j)
+            cpp_type_to_macro_name("${cpp_i}" macro_i)
+            cpp_type_to_macro_name("${cpp_j}" macro_j)
+            string(APPEND header_content "#define SD_TYPE_PAIR_${macro_i}_${macro_j}_VALID 1\n")
         endif()
-        sanitize_type_for_macro("${cpp_i}" safe_i)
-        sanitize_type_for_macro("${cpp_j}" safe_j)
-        string(APPEND header_content "#define SD_TYPE_PAIR_${safe_i}_${safe_j}_VALID 1\n")
     endforeach()
 
-    # =========================================================================
-    # SECTION 3: Generate triple type validity flags
-    # =========================================================================
-    string(APPEND header_content "\n// Triple Type Validity\n")
-    foreach(combo IN LISTS combinations_3)
-        string(REPLACE "," ";" parts "${combo}")
-        list(GET parts 0 i)
-        list(GET parts 1 j)
-        list(GET parts 2 k)
-        set(cpp_i "${SRCORE_TYPE_CPP_${i}}")
-        set(cpp_j "${SRCORE_TYPE_CPP_${j}}")
-        set(cpp_k "${SRCORE_TYPE_CPP_${k}}")
-        if(NOT cpp_i OR NOT cpp_j OR NOT cpp_k)
-            continue()
-        endif()
-        sanitize_type_for_macro("${cpp_i}" safe_i)
-        sanitize_type_for_macro("${cpp_j}" safe_j)
-        sanitize_type_for_macro("${cpp_k}" safe_k)
-        string(APPEND header_content "#define SD_TYPE_TRIPLE_${safe_i}_${safe_j}_${safe_k}_VALID 1\n")
-    endforeach()
-
-    # =========================================================================
-    # SECTION 4: Generate helper macros for DataTypeUtils - FIXED WITH FALLBACK
-    # =========================================================================
+    # Generate helper macros using integer values
     string(APPEND header_content "\n// Helper Macros for Dynamic Type Checking\n")
 
-    # Function to get enum value with fallback
-    function(get_enum_value_safe index cpp_type output_var)
-        set(enum_value "${SRCORE_TYPE_ENUM_${index}}")
-        if(NOT enum_value AND DEFINED FALLBACK_ENUM_MAP_${cpp_type})
-            set(enum_value "${FALLBACK_ENUM_MAP_${cpp_type}}")
-            message(STATUS "Using fallback enum for ${cpp_type}: ${enum_value}")
-        endif()
-        if(NOT enum_value)
-            message(WARNING "No enum value found for index ${index}, type ${cpp_type}")
-            set(enum_value "sd::DataType::INHERIT") # Safe fallback
-        endif()
-        set(${output_var} "${enum_value}" PARENT_SCOPE)
-    endfunction()
-
-    # Single type checker macro - FIXED WITH SAFE ENUM LOOKUP
+    # Single type macro
     string(APPEND header_content "#define SD_IS_SINGLE_TYPE_COMPILED(TYPE_ENUM) \\\n")
-    string(APPEND header_content "    (false")  # Start with false to handle empty case
-    foreach(index IN LISTS active_indices)
-        set(cpp_type "${SRCORE_TYPE_CPP_${index}}")
-        if(NOT cpp_type)
-            continue()
+    string(APPEND header_content "    (")
+
+    set(first_single TRUE)
+    foreach(i RANGE 0 ${num_types})
+        if(i LESS ${num_types})
+            list(GET type_enums ${i} enum_value)
+            enum_to_int_value("${enum_value}" int_value)
+
+            if(NOT first_single)
+                string(APPEND header_content " || \\\n     ")
+            else()
+                set(first_single FALSE)
+            endif()
+            string(APPEND header_content "((TYPE_ENUM) == ${int_value})")
         endif()
-
-        get_enum_value_safe(${index} "${cpp_type}" enum_value)
-        sanitize_type_for_macro("${cpp_type}" safe_name)
-
-        string(APPEND header_content " || \\\n     ")
-        string(APPEND header_content "((TYPE_ENUM) == ${enum_value} && defined(SD_TYPE_${safe_name}_VALID))")
     endforeach()
     string(APPEND header_content ")\n\n")
 
-    # Pair type checker macro - FIXED WITH SAFE ENUM LOOKUP
+    # Pair type macro
     string(APPEND header_content "#define SD_IS_PAIR_TYPE_COMPILED(TYPE1_ENUM, TYPE2_ENUM) \\\n")
-    string(APPEND header_content "    (false")  # Start with false to handle empty case
+    string(APPEND header_content "    (")
+
+    set(first_pair TRUE)
     foreach(combo IN LISTS combinations_2)
         string(REPLACE "," ";" parts "${combo}")
         list(GET parts 0 i)
         list(GET parts 1 j)
 
-        set(cpp_i "${SRCORE_TYPE_CPP_${i}}")
-        set(cpp_j "${SRCORE_TYPE_CPP_${j}}")
-        if(NOT cpp_i OR NOT cpp_j)
-            continue()
+        if(i LESS ${num_types} AND j LESS ${num_types})
+            list(GET type_enums ${i} enum_i)
+            list(GET type_enums ${j} enum_j)
+            enum_to_int_value("${enum_i}" int_i)
+            enum_to_int_value("${enum_j}" int_j)
+
+            if(NOT first_pair)
+                string(APPEND header_content " || \\\n     ")
+            else()
+                set(first_pair FALSE)
+            endif()
+            string(APPEND header_content "((TYPE1_ENUM) == ${int_i} && (TYPE2_ENUM) == ${int_j})")
         endif()
-
-        get_enum_value_safe(${i} "${cpp_i}" enum_i)
-        get_enum_value_safe(${j} "${cpp_j}" enum_j)
-        sanitize_type_for_macro("${cpp_i}" safe_i)
-        sanitize_type_for_macro("${cpp_j}" safe_j)
-
-        string(APPEND header_content " || \\\n     ")
-        string(APPEND header_content "((TYPE1_ENUM) == ${enum_i} && (TYPE2_ENUM) == ${enum_j} && defined(SD_TYPE_PAIR_${safe_i}_${safe_j}_VALID))")
     endforeach()
     string(APPEND header_content ")\n\n")
 
-    # Triple type checker macro - FIXED WITH SAFE ENUM LOOKUP
-    string(APPEND header_content "#define SD_IS_TRIPLE_TYPE_COMPILED(TYPE1_ENUM, TYPE2_ENUM, TYPE3_ENUM) \\\n")
-    string(APPEND header_content "    (false")  # Start with false to handle empty case
-    foreach(combo IN LISTS combinations_3)
-        string(REPLACE "," ";" parts "${combo}")
-        list(GET parts 0 i)
-        list(GET parts 1 j)
-        list(GET parts 2 k)
-
-        set(cpp_i "${SRCORE_TYPE_CPP_${i}}")
-        set(cpp_j "${SRCORE_TYPE_CPP_${j}}")
-        set(cpp_k "${SRCORE_TYPE_CPP_${k}}")
-        if(NOT cpp_i OR NOT cpp_j OR NOT cpp_k)
-            continue()
-        endif()
-
-        get_enum_value_safe(${i} "${cpp_i}" enum_i)
-        get_enum_value_safe(${j} "${cpp_j}" enum_j)
-        get_enum_value_safe(${k} "${cpp_k}" enum_k)
-        sanitize_type_for_macro("${cpp_i}" safe_i)
-        sanitize_type_for_macro("${cpp_j}" safe_j)
-        sanitize_type_for_macro("${cpp_k}" safe_k)
-
-        string(APPEND header_content " || \\\n     ")
-        string(APPEND header_content "((TYPE1_ENUM) == ${enum_i} && (TYPE2_ENUM) == ${enum_j} && (TYPE3_ENUM) == ${enum_k} && defined(SD_TYPE_TRIPLE_${safe_i}_${safe_j}_${safe_k}_VALID))")
-    endforeach()
-    string(APPEND header_content ")\n\n")
     string(APPEND header_content "#endif // SD_SELECTIVE_RENDERING_H\n")
     file(WRITE "${header_file}" "${header_content}")
+
+    list(LENGTH combinations_3 total_triple_combinations)
+    list(LENGTH combinations_2 total_pair_combinations)
+    message(STATUS "✅ Generated selective_rendering.h with ${num_types} types, ${total_pair_combinations} pair combinations, ${total_triple_combinations} triple combinations")
 endfunction()
 
 function(_internal_prepare_double_map active_indices combinations_2)
@@ -391,7 +440,25 @@ function(_internal_generate_override_content active_indices combinations_2 combi
     string(APPEND header_content "#define THROW_EXCEPTION(msg) throw std::runtime_error(msg)\n")
     string(APPEND header_content "#endif\n\n")
 
-    # Generate BUILD_SINGLE_SELECTOR
+    # Add simple validity check macros - FIXED VERSION
+    string(APPEND header_content "// Simple validity check macros\n")
+    string(APPEND header_content "#ifndef SD_IF_VALID\n")
+    string(APPEND header_content "#define SD_IF_VALID(condition, code) code\n")
+    string(APPEND header_content "#endif\n\n")
+
+    string(APPEND header_content "#ifndef SD_IS_SINGLE_TYPE_VALID\n")
+    string(APPEND header_content "#define SD_IS_SINGLE_TYPE_VALID(type) 1\n")
+    string(APPEND header_content "#endif\n\n")
+
+    string(APPEND header_content "#ifndef SD_IS_TYPE_PAIR_VALID\n")
+    string(APPEND header_content "#define SD_IS_TYPE_PAIR_VALID(type1, type2) 1\n")
+    string(APPEND header_content "#endif\n\n")
+
+    string(APPEND header_content "#ifndef SD_IS_TYPE_TRIPLE_VALID\n")
+    string(APPEND header_content "#define SD_IS_TYPE_TRIPLE_VALID(type1, type2, type3) 1\n")
+    string(APPEND header_content "#endif\n\n")
+
+    # Generate BUILD_SINGLE_SELECTOR - FIXED VERSION
     string(APPEND header_content "// ===================================================================\n")
     string(APPEND header_content "// BUILD_SINGLE_SELECTOR - Fixed Version\n")
     string(APPEND header_content "// ===================================================================\n")
@@ -399,10 +466,11 @@ function(_internal_generate_override_content active_indices combinations_2 combi
     string(APPEND header_content "#define BUILD_SINGLE_SELECTOR(XTYPE, NAME, SIGNATURE, ...) \\\\\n")
     string(APPEND header_content "    switch (XTYPE) { \\\\\n")
 
+    list(LENGTH active_indices num_types)
     foreach(index IN LISTS active_indices)
-        string(APPEND header_content "        SD_IF_VALID(SD_IS_SINGLE_TYPE_VALID(${SRCORE_TYPE_CPP_${index}}), \\\\\n")
-        string(APPEND header_content "            case ${SRCORE_TYPE_ENUM_${index}}: { NAME<${SRCORE_TYPE_CPP_${index}}> SIGNATURE; break; } \\\\\n")
-        string(APPEND header_content "        ) \\\\\n")
+        if(DEFINED SRCORE_TYPE_CPP_${index} AND DEFINED SRCORE_TYPE_ENUM_${index})
+            string(APPEND header_content "        case ${SRCORE_TYPE_ENUM_${index}}: { NAME<${SRCORE_TYPE_CPP_${index}}> SIGNATURE; break; } \\\\\n")
+        endif()
     endforeach()
 
     string(APPEND header_content "        default: { \\\\\n")
@@ -411,6 +479,7 @@ function(_internal_generate_override_content active_indices combinations_2 combi
     string(APPEND header_content "        } \\\\\n")
     string(APPEND header_content "    }\n\n")
 
+    # Generate BUILD_DOUBLE_SELECTOR - FIXED VERSION
     string(APPEND header_content "// ===================================================================\n")
     string(APPEND header_content "// BUILD_DOUBLE_SELECTOR - Fixed Version\n")
     string(APPEND header_content "// ===================================================================\n")
@@ -419,30 +488,32 @@ function(_internal_generate_override_content active_indices combinations_2 combi
     string(APPEND header_content "    switch (XTYPE) { \\\\\n")
 
     foreach(index_x IN LISTS active_indices)
-        string(APPEND header_content "        case ${SRCORE_TYPE_ENUM_${index_x}}: { \\\\\n")
-        string(APPEND header_content "            switch (YTYPE) { \\\\\n")
+        if(DEFINED SRCORE_TYPE_ENUM_${index_x})
+            string(APPEND header_content "        case ${SRCORE_TYPE_ENUM_${index_x}}: { \\\\\n")
+            string(APPEND header_content "            switch (YTYPE) { \\\\\n")
 
-        # Generate valid Y-type cases for this X-type
-        foreach(combo IN LISTS combinations_2)
-            string(REPLACE "," ";" combo_parts "${combo}")
-            list(GET combo_parts 0 combo_x)
-            list(GET combo_parts 1 combo_y)
+            # Generate valid Y-type cases for this X-type
+            foreach(combo IN LISTS combinations_2)
+                string(REPLACE "," ";" combo_parts "${combo}")
+                list(GET combo_parts 0 combo_x)
+                list(GET combo_parts 1 combo_y)
 
-            # Only generate cases where X matches current index_x
-            if(combo_x EQUAL index_x)
-                string(APPEND header_content "                SD_IF_VALID(SD_IS_TYPE_PAIR_VALID(${SRCORE_TYPE_CPP_${combo_x}}, ${SRCORE_TYPE_CPP_${combo_y}}), \\\\\n")
-                string(APPEND header_content "                    case ${SRCORE_TYPE_ENUM_${combo_y}}: { NAME<${SRCORE_TYPE_CPP_${combo_x}}, ${SRCORE_TYPE_CPP_${combo_y}}> SIGNATURE; break; } \\\\\n")
-                string(APPEND header_content "                ) \\\\\n")
-            endif()
-        endforeach()
+                # Only generate cases where X matches current index_x
+                if(combo_x EQUAL index_x)
+                    if(DEFINED SRCORE_TYPE_CPP_${combo_x} AND DEFINED SRCORE_TYPE_CPP_${combo_y} AND DEFINED SRCORE_TYPE_ENUM_${combo_y})
+                        string(APPEND header_content "                case ${SRCORE_TYPE_ENUM_${combo_y}}: { NAME<${SRCORE_TYPE_CPP_${combo_x}}, ${SRCORE_TYPE_CPP_${combo_y}}> SIGNATURE; break; } \\\\\n")
+                    endif()
+                endif()
+            endforeach()
 
-        string(APPEND header_content "                default: { \\\\\n")
-        string(APPEND header_content "                    auto e = sd::DataTypeValidation::getDataTypeErrorMessage(YTYPE, #NAME \"_DOUBLE_Y\"); \\\\\n")
-        string(APPEND header_content "                    THROW_EXCEPTION(e.c_str()); \\\\\n")
-        string(APPEND header_content "                } \\\\\n")
-        string(APPEND header_content "            } \\\\\n")
-        string(APPEND header_content "            break; \\\\\n")
-        string(APPEND header_content "        } \\\\\n")
+            string(APPEND header_content "                default: { \\\\\n")
+            string(APPEND header_content "                    auto e = sd::DataTypeValidation::getDataTypeErrorMessage(YTYPE, #NAME \"_DOUBLE_Y\"); \\\\\n")
+            string(APPEND header_content "                    THROW_EXCEPTION(e.c_str()); \\\\\n")
+            string(APPEND header_content "                } \\\\\n")
+            string(APPEND header_content "            } \\\\\n")
+            string(APPEND header_content "            break; \\\\\n")
+            string(APPEND header_content "        } \\\\\n")
+        endif()
     endforeach()
 
     string(APPEND header_content "        default: { \\\\\n")
@@ -451,7 +522,7 @@ function(_internal_generate_override_content active_indices combinations_2 combi
     string(APPEND header_content "        } \\\\\n")
     string(APPEND header_content "    }\n\n")
 
-    # Generate BUILD_TRIPLE_SELECTOR
+    # Generate BUILD_TRIPLE_SELECTOR - FIXED VERSION
     string(APPEND header_content "// ===================================================================\n")
     string(APPEND header_content "// BUILD_TRIPLE_SELECTOR - Fixed Version\n")
     string(APPEND header_content "// ===================================================================\n")
@@ -460,57 +531,63 @@ function(_internal_generate_override_content active_indices combinations_2 combi
     string(APPEND header_content "    switch (XTYPE) { \\\\\n")
 
     foreach(index_x IN LISTS active_indices)
-        string(APPEND header_content "        case ${SRCORE_TYPE_ENUM_${index_x}}: { \\\\\n")
-        string(APPEND header_content "            switch (YTYPE) { \\\\\n")
+        if(DEFINED SRCORE_TYPE_ENUM_${index_x})
+            string(APPEND header_content "        case ${SRCORE_TYPE_ENUM_${index_x}}: { \\\\\n")
+            string(APPEND header_content "            switch (YTYPE) { \\\\\n")
 
-        # Group 3-type combinations by X,Y pairs for this X
-        foreach(combo IN LISTS combinations_3)
-            string(REPLACE "," ";" combo_parts "${combo}")
-            list(GET combo_parts 0 combo_x)
-            list(GET combo_parts 1 combo_y)
-            list(GET combo_parts 2 combo_z)
+            # Group 3-type combinations by X,Y pairs for this X
+            set(handled_xy_pairs "")
+            foreach(combo IN LISTS combinations_3)
+                string(REPLACE "," ";" combo_parts "${combo}")
+                list(GET combo_parts 0 combo_x)
+                list(GET combo_parts 1 combo_y)
+                list(GET combo_parts 2 combo_z)
 
-            if(combo_x EQUAL index_x)
-                # Check if we've already handled this X,Y pair
-                set(xy_pair "${combo_x},${combo_y}")
-                if(NOT DEFINED HANDLED_XY_${xy_pair})
-                    set(HANDLED_XY_${xy_pair} TRUE)
+                if(combo_x EQUAL index_x)
+                    # Check if we've already handled this X,Y pair
+                    set(xy_pair "${combo_x},${combo_y}")
+                    list(FIND handled_xy_pairs "${xy_pair}" found_idx)
+                    if(found_idx EQUAL -1)
+                        list(APPEND handled_xy_pairs "${xy_pair}")
 
-                    string(APPEND header_content "                case ${SRCORE_TYPE_ENUM_${combo_y}}: { \\\\\n")
-                    string(APPEND header_content "                    switch (ZTYPE) { \\\\\n")
+                        if(DEFINED SRCORE_TYPE_ENUM_${combo_y})
+                            string(APPEND header_content "                case ${SRCORE_TYPE_ENUM_${combo_y}}: { \\\\\n")
+                            string(APPEND header_content "                    switch (ZTYPE) { \\\\\n")
 
-                    # Generate all Z cases for this X,Y pair
-                    foreach(z_combo IN LISTS combinations_3)
-                        string(REPLACE "," ";" z_parts "${z_combo}")
-                        list(GET z_parts 0 z_x)
-                        list(GET z_parts 1 z_y)
-                        list(GET z_parts 2 z_z)
+                            # Generate all Z cases for this X,Y pair
+                            foreach(z_combo IN LISTS combinations_3)
+                                string(REPLACE "," ";" z_parts "${z_combo}")
+                                list(GET z_parts 0 z_x)
+                                list(GET z_parts 1 z_y)
+                                list(GET z_parts 2 z_z)
 
-                        if(z_x EQUAL combo_x AND z_y EQUAL combo_y)
-                            string(APPEND header_content "                        SD_IF_VALID(SD_IS_TYPE_TRIPLE_VALID(${SRCORE_TYPE_CPP_${z_x}}, ${SRCORE_TYPE_CPP_${z_y}}, ${SRCORE_TYPE_CPP_${z_z}}), \\\\\n")
-                            string(APPEND header_content "                            case ${SRCORE_TYPE_ENUM_${z_z}}: { NAME<${SRCORE_TYPE_CPP_${z_x}}, ${SRCORE_TYPE_CPP_${z_y}}, ${SRCORE_TYPE_CPP_${z_z}}> SIGNATURE; break; } \\\\\n")
-                            string(APPEND header_content "                        ) \\\\\n")
+                                if(z_x EQUAL combo_x AND z_y EQUAL combo_y)
+                                    if(DEFINED SRCORE_TYPE_CPP_${z_x} AND DEFINED SRCORE_TYPE_CPP_${z_y} AND DEFINED SRCORE_TYPE_CPP_${z_z} AND DEFINED SRCORE_TYPE_ENUM_${z_z})
+                                        string(APPEND header_content "                        case ${SRCORE_TYPE_ENUM_${z_z}}: { NAME<${SRCORE_TYPE_CPP_${z_x}}, ${SRCORE_TYPE_CPP_${z_y}}, ${SRCORE_TYPE_CPP_${z_z}}> SIGNATURE; break; } \\\\\n")
+                                    endif()
+                                endif()
+                            endforeach()
+
+                            string(APPEND header_content "                        default: { \\\\\n")
+                            string(APPEND header_content "                            auto e = sd::DataTypeValidation::getDataTypeErrorMessage(ZTYPE, #NAME \"_TRIPLE_Z\"); \\\\\n")
+                            string(APPEND header_content "                            THROW_EXCEPTION(e.c_str()); \\\\\n")
+                            string(APPEND header_content "                        } \\\\\n")
+                            string(APPEND header_content "                    } \\\\\n")
+                            string(APPEND header_content "                    break; \\\\\n")
+                            string(APPEND header_content "                } \\\\\n")
                         endif()
-                    endforeach()
-
-                    string(APPEND header_content "                        default: { \\\\\n")
-                    string(APPEND header_content "                            auto e = sd::DataTypeValidation::getDataTypeErrorMessage(ZTYPE, #NAME \"_TRIPLE_Z\"); \\\\\n")
-                    string(APPEND header_content "                            THROW_EXCEPTION(e.c_str()); \\\\\n")
-                    string(APPEND header_content "                        } \\\\\n")
-                    string(APPEND header_content "                    } \\\\\n")
-                    string(APPEND header_content "                    break; \\\\\n")
-                    string(APPEND header_content "                } \\\\\n")
+                    endif()
                 endif()
-            endif()
-        endforeach()
+            endforeach()
 
-        string(APPEND header_content "                default: { \\\\\n")
-        string(APPEND header_content "                    auto e = sd::DataTypeValidation::getDataTypeErrorMessage(YTYPE, #NAME \"_TRIPLE_Y\"); \\\\\n")
-        string(APPEND header_content "                    THROW_EXCEPTION(e.c_str()); \\\\\n")
-        string(APPEND header_content "                } \\\\\n")
-        string(APPEND header_content "            } \\\\\n")
-        string(APPEND header_content "            break; \\\\\n")
-        string(APPEND header_content "        } \\\\\n")
+            string(APPEND header_content "                default: { \\\\\n")
+            string(APPEND header_content "                    auto e = sd::DataTypeValidation::getDataTypeErrorMessage(YTYPE, #NAME \"_TRIPLE_Y\"); \\\\\n")
+            string(APPEND header_content "                    THROW_EXCEPTION(e.c_str()); \\\\\n")
+            string(APPEND header_content "                } \\\\\n")
+            string(APPEND header_content "            } \\\\\n")
+            string(APPEND header_content "            break; \\\\\n")
+            string(APPEND header_content "        } \\\\\n")
+        endif()
     endforeach()
 
     string(APPEND header_content "        default: { \\\\\n")
@@ -519,27 +596,21 @@ function(_internal_generate_override_content active_indices combinations_2 combi
     string(APPEND header_content "        } \\\\\n")
     string(APPEND header_content "    }\n\n")
 
-    # Add selector macro overrides
+    # Add selector macro overrides - FIXED VERSION
     string(APPEND header_content "// ===================================================================\n")
     string(APPEND header_content "// Selector Macro Overrides\n")
     string(APPEND header_content "// ===================================================================\n")
     string(APPEND header_content "#undef _SELECTOR_SINGLE\n")
     string(APPEND header_content "#define _SELECTOR_SINGLE(A, B, C, D) \\\\\n")
-    string(APPEND header_content "    SD_IF_VALID(SD_IS_SINGLE_TYPE_VALID(D), \\\\\n")
-    string(APPEND header_content "        case C: { A<D> B; break; } \\\\\n")
-    string(APPEND header_content "    )\n\n")
+    string(APPEND header_content "    case C: { A<D> B; break; }\n\n")
 
     string(APPEND header_content "#undef _SELECTOR_DOUBLE_2\n")
     string(APPEND header_content "#define _SELECTOR_DOUBLE_2(NAME, SIGNATURE, TYPE_A, ENUM, TYPE_B) \\\\\n")
-    string(APPEND header_content "    SD_IF_VALID(SD_IS_TYPE_PAIR_VALID(TYPE_A, TYPE_B), \\\\\n")
-    string(APPEND header_content "        case ENUM: { NAME<TYPE_A, TYPE_B> SIGNATURE; break; } \\\\\n")
-    string(APPEND header_content "    )\n\n")
+    string(APPEND header_content "    case ENUM: { NAME<TYPE_A, TYPE_B> SIGNATURE; break; }\n\n")
 
     string(APPEND header_content "#undef _SELECTOR_TRIPLE_3\n")
     string(APPEND header_content "#define _SELECTOR_TRIPLE_3(NAME, SIGNATURE, TYPE_X, TYPE_Y, ENUM_Z, TYPE_Z) \\\\\n")
-    string(APPEND header_content "    SD_IF_VALID(SD_IS_TYPE_TRIPLE_VALID(TYPE_X, TYPE_Y, TYPE_Z), \\\\\n")
-    string(APPEND header_content "        case ENUM_Z: { NAME<TYPE_X, TYPE_Y, TYPE_Z> SIGNATURE; break; } \\\\\n")
-    string(APPEND header_content "    )\n\n")
+    string(APPEND header_content "    case ENUM_Z: { NAME<TYPE_X, TYPE_Y, TYPE_Z> SIGNATURE; break; }\n\n")
 
     set(${output_var} "${header_content}" PARENT_SCOPE)
 endfunction()
@@ -577,13 +648,11 @@ endfunction()
 # Add this entire function to your SelectiveRenderingCore.cmake file.
 
 function(setup_selective_rendering_unified)
-    # Parse optional arguments
     set(options "")
     set(one_value_args TYPE_PROFILE OUTPUT_DIR)
     set(multi_value_args "")
     cmake_parse_arguments(SRCORE "${options}" "${one_value_args}" "${multi_value_args}" ${ARGN})
 
-    # Set defaults
     if(NOT SRCORE_TYPE_PROFILE)
         set(SRCORE_TYPE_PROFILE "${SD_TYPE_PROFILE}")
     endif()
@@ -591,21 +660,8 @@ function(setup_selective_rendering_unified)
         set(SRCORE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/include")
     endif()
 
-    srcore_debug_message("=== UNIFIED SELECTIVE RENDERING SETUP ===")
-    srcore_debug_message("Type profile: ${SRCORE_TYPE_PROFILE}")
-    srcore_debug_message("Output directory: ${SRCORE_OUTPUT_DIR}")
-
-    if(SRCORE_ENABLE_CACHING AND DEFINED SRCORE_CACHE_VALID AND SRCORE_CACHE_VALID)
-        srcore_debug_message("Using cached results")
-        set(UNIFIED_COMBINATIONS_2 "${SRCORE_COMBINATIONS_2}" PARENT_SCOPE)
-        set(UNIFIED_COMBINATIONS_3 "${SRCORE_COMBINATIONS_3}" PARENT_SCOPE)
-        set(UNIFIED_ACTIVE_TYPES "${SRCORE_ACTIVE_TYPES}" PARENT_SCOPE)
-        set(UNIFIED_TYPE_COUNT "${SRCORE_ACTIVE_TYPE_COUNT}" PARENT_SCOPE)
-        return()
-    endif()
-
-    # Phase 1: Discover active types
-    srcore_discover_active_types(active_types_indices)
+    # Phase 1: Discover active types - NOW WITH ALL DATA
+    srcore_discover_active_types(active_types_indices discovered_enums discovered_cpp_types)
     list(LENGTH active_types_indices type_count)
 
     if(type_count EQUAL 0)
@@ -615,41 +671,20 @@ function(setup_selective_rendering_unified)
     # Phase 2: Generate combinations
     srcore_generate_combinations("${active_types_indices}" "${SRCORE_TYPE_PROFILE}" combinations_2 combinations_3)
 
-    # Phase 3: Generate headers
-    srcore_generate_headers("${active_types_indices}" "${combinations_2}" "${combinations_3}" "${SRCORE_OUTPUT_DIR}")
+    # Phase 3: Generate headers - NOW WITH TYPE DATA
+    srcore_generate_headers("${active_types_indices}" "${combinations_2}" "${combinations_3}" "${SRCORE_OUTPUT_DIR}" "${discovered_enums}" "${discovered_cpp_types}")
 
-    # Phase 4: Validate results (if enabled)
-    if(SRCORE_VALIDATE_RESULTS)
-        srcore_validate_output("${active_types_indices}" "${combinations_2}" "${combinations_3}")
-    endif()
-
-    # Phase 5: Set output variables and cache them for global visibility
-    message(STATUS "Caching selective rendering results globally...")
-
-    # Set to PARENT_SCOPE for immediate callers
+    # Phase 4: Set output variables
     set(UNIFIED_COMBINATIONS_2 "${combinations_2}" PARENT_SCOPE)
     set(UNIFIED_COMBINATIONS_3 "${combinations_3}" PARENT_SCOPE)
     set(UNIFIED_ACTIVE_TYPES "${SRCORE_ACTIVE_TYPES}" PARENT_SCOPE)
-    set(UNIFIED_ACTIVE_TYPES_INDICES "${active_types_indices}" PARENT_SCOPE)
     set(UNIFIED_TYPE_COUNT ${type_count} PARENT_SCOPE)
 
-    # ALSO set to CACHE to guarantee visibility across all included files.
     set(UNIFIED_COMBINATIONS_2 "${combinations_2}" CACHE INTERNAL "Unified 2-type combinations")
     set(UNIFIED_COMBINATIONS_3 "${combinations_3}" CACHE INTERNAL "Unified 3-type combinations")
     set(UNIFIED_ACTIVE_TYPES "${SRCORE_ACTIVE_TYPES}" CACHE INTERNAL "Active types for build")
-    set(UNIFIED_ACTIVE_TYPES_INDICES "${active_types_indices}" CACHE INTERNAL "Indices of active types")
     set(UNIFIED_TYPE_COUNT ${type_count} CACHE INTERNAL "Unified active type count")
-
-    foreach(index IN LISTS active_types_indices)
-        set(SRCORE_TYPE_ENUM_${index} "${SRCORE_TYPE_ENUM_${index}}" CACHE INTERNAL "Enum for index ${index}")
-        set(SRCORE_TYPE_CPP_${index} "${SRCORE_TYPE_CPP_${index}}" CACHE INTERNAL "C++ type for index ${index}")
-    endforeach()
-
-    if(SRCORE_ENABLE_CACHING)
-        set(SRCORE_CACHE_VALID TRUE CACHE INTERNAL "Cache validity flag")
-    endif()
 endfunction()
-
 
 function(setup_selective_rendering_unified_safe)
     # Try normal setup first

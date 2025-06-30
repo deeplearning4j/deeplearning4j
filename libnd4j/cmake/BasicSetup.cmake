@@ -11,8 +11,7 @@ set(CMAKE_VERBOSE_MAKEFILE OFF)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CUDA_STANDARD 17)
 include(CheckCXXCompilerFlag)
-
-
+include(DuplicateInstantiationDetection)
 function(setup_build_configuration)
     # This command takes the template file 'config.h.in' and creates 'config.h'
     # in the binary directory, substituting any @VAR@ or #cmakedefine variables.
