@@ -17,14 +17,26 @@
  ******************************************************************************/
 
 //
-// @author raver119@gmail.com
+// Created by agibsonccc on 12/30/24.
 //
-#include <loops/cuda/pairwise.chpp>
-#cmakedefine SD_PAIRWISE_TYPES_GEN
-#if defined(SD_PAIRWISE_TYPES_GEN) && defined(SD_PAIRWISE_TYPES_@FL_TYPE_INDEX@)
-namespace functions {
-    namespace pairwise_transforms {
-        BUILD_PAIRWISE_TEMPLATE(extern template class SD_LIB_HIDDEN PairWiseTransform, , SD_PAIRWISE_TYPES_@FL_TYPE_INDEX@);
-    }
-}
-#endif
+
+#include <loops/pairwise_instantiations.h>
+#include <types/type_promote.h>
+#include <loops/cpu/scalar.hpp>
+
+/*
+ *
+ * Function Instantiation:
+ * ScalarTransform::transform instantiated for types in @COMB1@, @COMB2@, @COMB3@
+ */
+
+ITERATE_COMBINATIONS_3(
+    SD_COMMON_TYPES_PART_@COMB1@,
+    SD_COMMON_TYPES_PART_@COMB2@,
+    SD_COMMON_TYPES_PART_@COMB3@,
+    INSTANT_PROCESS_COMBINATION_3,
+    functions::scalar::ScalarTransform,
+    ::transform(int opNum, const void *x, const sd::LongType *xShapeInfo, void *result,
+                const sd::LongType *resultShapeInfo, const void *scalar, void *extraParams, sd::LongType start,
+                sd::LongType stop)
+)

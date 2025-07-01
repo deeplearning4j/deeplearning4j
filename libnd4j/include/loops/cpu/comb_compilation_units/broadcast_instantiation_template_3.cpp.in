@@ -17,14 +17,25 @@
  ******************************************************************************/
 
 //
-// Created by raver119 on 23/09/18.
+// Created by agibsonccc on 12/30/24.
 //
+
+#include <loops/pairwise_instantiations.h>
+#include <types/type_promote.h>
 #include <loops/cpu/broadcasting.hpp>
-#cmakedefine SD_PAIRWISE_TYPES_GEN
-#if defined(SD_PAIRWISE_TYPES_GEN) && defined(SD_PAIRWISE_TYPES_@FL_TYPE_INDEX@)
-namespace functions {
-    namespace broadcast {
-      BUILD_TRIPLE_TEMPLATE(template class SD_LIB_HIDDEN Broadcast, , SD_COMMON_TYPES_@FL_TYPE_INDEX@,  SD_COMMON_TYPES_@FL_TYPE_INDEX@, SD_BOOL_TYPES);
-    }
-}
-#endif
+
+/*
+ *
+ * Function Instantiation:
+ * Broadcast::exec instantiated for types in @COMB1@, @COMB2@, @COMB3@
+ */
+
+ITERATE_COMBINATIONS_3(
+    SD_COMMON_TYPES_PART_@COMB1@,
+    SD_COMMON_TYPES_PART_@COMB2@,
+    SD_COMMON_TYPES_PART_@COMB3@,
+    INSTANT_PROCESS_COMBINATION_3,
+    functions::broadcast::Broadcast,
+    ::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
+           const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo)
+)
