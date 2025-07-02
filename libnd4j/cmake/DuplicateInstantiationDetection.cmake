@@ -1,10 +1,10 @@
 # GCC flags for C++ template duplicate instantiation issues
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.15)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     # For C++ template duplicate instantiation errors
+   if(!SD_CUDA)
     add_compile_options(-fpermissive)
-
     # Alternative: Use external template instantiation model
     # add_compile_options(-fno-implicit-templates)
 
@@ -18,6 +18,8 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 
     message(STATUS "Added -fpermissive: Allows duplicate template instantiations")
     message(STATUS "Added template-related flags for C++ duplicate handling")
+endif()
+
 endif()
 
 # The real fix is usually in the code:

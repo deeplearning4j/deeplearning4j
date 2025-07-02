@@ -1,7 +1,7 @@
 #ifndef LIBND4J_CONFIG_H
-#include <execution/Engine.h>
-
 #define LIBND4J_CONFIG_H
+
+#include <execution/Engine.h>
 
 #cmakedefine01 HAVE_ONEDNN
 #cmakedefine01 HAVE_ARMCOMPUTE

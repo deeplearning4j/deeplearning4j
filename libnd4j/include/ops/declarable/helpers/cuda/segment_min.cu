@@ -284,7 +284,7 @@ void segmentMinFunctor(LaunchContext* context, NDArray* input, NDArray* indices,
  NDArray::prepareSpecialUse({output}, {input, indices});
  output->nullify();
  auto indicesDType = indices->dataType();
- auto outputDType = output.dataType();
+ auto outputDType = output->dataType();
 #if SD_IS_PAIR_TYPE_COMPILED(indicesDType,outputDType)
  BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), segmentMinFunctor_, (context, input, indices, output),
                        SD_NUMERIC_TYPES, SD_INDEXING_TYPES);
@@ -344,7 +344,7 @@ void unsortedSegmentMinFunctor(LaunchContext* context, NDArray* input, NDArray* 
  NDArray::prepareSpecialUse({output}, {input, indices});
  output->nullify();
  auto indicesDType = indices->dataType();
- auto outputDType = output.dataType();
+ auto outputDType = output->dataType();
 #if SD_IS_PAIR_TYPE_COMPILED(indicesDType,outputDType)
  BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), unsortedSegmentMinFunctor_,
                        (context, input, indices, numOfClasses, output), SD_NUMERIC_TYPES, SD_INDEXING_TYPES);
@@ -553,7 +553,7 @@ Status segmentMinFunctorBP(LaunchContext* context, NDArray* input, NDArray* indi
                           NDArray* output) {
  NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
  auto indicesDType = indices->dataType();
- auto outputDType = output.dataType();
+ auto outputDType = output->dataType();
 #if SD_IS_PAIR_TYPE_COMPILED(outputDType,indicesDType)
  BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return segmentMinFunctorBP_,
                        (context, input, indices, gradOut, output), SD_FLOAT_TYPES, SD_INDEXING_TYPES);
@@ -616,7 +616,7 @@ Status unsortedSegmentMinFunctorBP(LaunchContext* context, NDArray* input, NDArr
                                   LongType numOfClasses, NDArray* output) {
  NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
  auto indicesDType = indices->dataType();
- auto outputDType = output.dataType();
+ auto outputDType = output->dataType();
 #if SD_IS_PAIR_TYPE_COMPILED(outputDType,indicesDType)
  BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentMinFunctorBP_,
                        (context, input, indices, gradOut, numOfClasses, output), SD_FLOAT_TYPES, SD_INDEXING_TYPES);

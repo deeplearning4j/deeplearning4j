@@ -39,7 +39,6 @@
 #include <loops/transform_same.h>
 #include <memory/MemoryRegistrator.h>
 #include <memory/Workspace.h>
-#include <ops/gemm.h>
 #include <ops/ops.h>
 #include <ops/specials_cuda.h>
 

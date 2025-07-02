@@ -1551,34 +1551,34 @@ DECLARE_SIMPLE_BINARY_TEMPLATE_OP(CyclicShiftRight, sd::math::sd_rotr<X>(d1 COMM
 template <typename X, typename Y, typename Z>
 class Mod {
  private:
-  static SD_INLINE Z op_logic(X d1, Y d2) {
+  static SD_HOST_DEVICE SD_INLINE Z op_logic(X d1, Y d2) {
     auto dx = static_cast<X>(d2);
     auto f = sd::math::sd_floor<X, X>(d1 / dx);
     auto r = f * dx;
     return static_cast<Z>(d1 - r);
   }
-  static SD_INLINE Z op_logic(X d1, Y d2, Z *params) { return op_logic(d1, d2); }
-  static SD_INLINE Z op_logic(X d1, Y *params) { return op_logic(d1, params[0]); }
-  static Z op_simd(X d1, Y d2) { return op_logic(d1, d2); }
-  static Z op_simd(X d1, Y d2, Z *params) { return op_logic(d1, d2, params); }
-  static Z op_simd(X d1, Y *params) { return op_logic(d1, params); }
+  static SD_HOST_DEVICE SD_INLINE Z op_logic(X d1, Y d2, Z *params) { return op_logic(d1, d2); }
+  static SD_HOST_DEVICE SD_INLINE Z op_logic(X d1, Y *params) { return op_logic(d1, params[0]); }
+  static SD_HOST_DEVICE Z op_simd(X d1, Y d2) { return op_logic(d1, d2); }
+  static SD_HOST_DEVICE Z op_simd(X d1, Y d2, Z *params) { return op_logic(d1, d2, params); }
+  static SD_HOST_DEVICE Z op_simd(X d1, Y *params) { return op_logic(d1, params); }
 
  public:
-  static Z op(X d1, Y d2) {
+  static SD_HOST_DEVICE Z op(X d1, Y d2) {
     if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||
                   simdOps::is_simd_unsupported_argument_type<X>::value ||
                   simdOps::is_simd_unsupported_argument_type<Y>::value)
       return op_logic(d1, d2);
     else return op_simd(d1, d2);
   }
-  static Z op(X d1, Y d2, Z *params) {
+  static SD_HOST_DEVICE Z op(X d1, Y d2, Z *params) {
     if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||
                   simdOps::is_simd_unsupported_argument_type<X>::value ||
                   simdOps::is_simd_unsupported_argument_type<Y>::value)
       return op_logic(d1, d2, params);
     else return op_simd(d1, d2, params);
   }
-  static Z op(X d1, Y *params) {
+  static SD_HOST_DEVICE Z op(X d1, Y *params) {
     if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||
                   simdOps::is_simd_unsupported_argument_type<X>::value ||
                   simdOps::is_simd_unsupported_argument_type<Y>::value)

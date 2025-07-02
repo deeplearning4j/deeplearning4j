@@ -602,7 +602,7 @@ Status segmentMaxFunctorBP(LaunchContext* context, NDArray* input, NDArray* indi
                           NDArray* output) {
  NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
  auto indicesDType = indices->dataType();
- auto outputDType = output.dataType();
+ auto outputDType = output->dataType();
 #if SD_IS_PAIR_TYPE_COMPILED(outputDType,indicesDType)
  BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return segmentMaxFunctorBP_,
                        (context, input, indices, gradOut, output), SD_FLOAT_TYPES, SD_INDEXING_TYPES);
@@ -669,7 +669,7 @@ Status unsortedSegmentMaxFunctorBP(LaunchContext* context, NDArray* input, NDArr
                                   LongType numOfClasses, NDArray* output) {
  NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
  auto indicesDType = indices->dataType();
- auto outputDType = output.dataType();
+ auto outputDType = output->dataType();
 #if SD_IS_PAIR_TYPE_COMPILED(outputDType,indicesDType)
  BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentMaxFunctorBP_,
                        (context, input, indices, gradOut, numOfClasses, output), SD_FLOAT_TYPES, SD_INDEXING_TYPES);

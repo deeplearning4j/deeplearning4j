@@ -511,13 +511,14 @@ void NativeOpExecutioner::execInverseBroadcast(sd::LaunchContext* lc, int opNum,
   }
 
   dim3 launchDims = getLaunchDims("broadcast");
-#if SD_IS
+#if SD_IS_TRIPLE_TYPE_COMPILED(xType,yType,zType)
 
   BUILD_SINGLE_SELECTOR_THRICE(
       xType, functions::broadcast::Broadcast,
       ::execInverseBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension,
                              dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ),
       SD_COMMON_TYPES);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -544,10 +545,12 @@ void NativeOpExecutioner::execReduceSame(sd::LaunchContext* lc, int opNum, void 
   auto numBlocks = shape::length(hZShapeInfo);
   dim3 launchDims = getReduceDims(numBlocks);
 
+#if SD_IS_PAIR_TYPE_COMPILED(xType,zType)
   BUILD_SINGLE_SELECTOR(xType, functions::reduce::ReduceSameFunction,
                         ::execReduce(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams,
                                      reductionPointer, dZ, dZShapeInfo, hZShapeInfo, dimension),
                         SD_COMMON_TYPES);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////

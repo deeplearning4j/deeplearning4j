@@ -23,29 +23,8 @@ if(WIN32)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSD_WINDOWS_BUILD=true")
 endif()
 
-# Ensure SD_CPU is TRUE if neither SD_CUDA nor SD_CPU is set
-if(NOT SD_CUDA)
-    if(NOT SD_CPU)
-        set(SD_CUDA FALSE)
-        set(SD_CPU TRUE)
-    endif()
-endif()
-
-# Set SD_LIBRARY_NAME Based on Build Type
-if(NOT DEFINED SD_LIBRARY_NAME)
-    if(SD_CUDA)
-        set(SD_LIBRARY_NAME nd4jcuda)
-    else()
-        set(SD_LIBRARY_NAME nd4jcpu)
-    endif()
-endif()
-
-# Set default engine
-if(SD_CUDA)
-    set(DEFAULT_ENGINE "samediff::ENGINE_CUDA")
-else()
-    set(DEFAULT_ENGINE "samediff::ENGINE_CPU")
-endif()
+# NOTE: SD_CPU/SD_CUDA logic, SD_LIBRARY_NAME, and DEFAULT_ENGINE 
+# are now handled in the main CMakeLists.txt before this file is included
 
 # Set optimization level based on GCC_FUNCTRACE
 if(SD_GCC_FUNCTRACE)

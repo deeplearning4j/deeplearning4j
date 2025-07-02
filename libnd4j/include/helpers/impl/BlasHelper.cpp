@@ -37,7 +37,7 @@ void BlasHelper::initializeFunctions(Pointer *functions) {
 
   _hasSgemmBatch = functions[4] != nullptr;
   _hasDgemmBatch = functions[5] != nullptr;
-
+#if !defined(SD_CUDA)
   this->cblasSgemv = (CblasSgemv)functions[0];
   this->cblasDgemv = (CblasDgemv)functions[1];
   this->cblasSgemm = (CblasSgemm)functions[2];
@@ -48,6 +48,7 @@ void BlasHelper::initializeFunctions(Pointer *functions) {
   this->lapackeDgesvd = (LapackeDgesvd)functions[7];
   this->lapackeSgesdd = (LapackeSgesdd)functions[8];
   this->lapackeDgesdd = (LapackeDgesdd)functions[9];
+#endif
 }
 
 void BlasHelper::initializeDeviceFunctions(Pointer *functions) {
@@ -276,7 +277,7 @@ template <>
 bool BlasHelper::hasBatchedGEMM<bool>() {
   return false;
 }
-
+#if !defined(SD_CUDA)
 CblasSgemv BlasHelper::sgemv() {
 #if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
   return (CblasSgemv)&cblas_sgemv;
@@ -319,7 +320,7 @@ LapackeDgesvd BlasHelper::dgesvd() { return this->lapackeDgesvd; }
 LapackeSgesdd BlasHelper::sgesdd() { return this->lapackeSgesdd; }
 
 LapackeDgesdd BlasHelper::dgesdd() { return this->lapackeDgesdd; }
-
+#endif
 // destructor
 BlasHelper::~BlasHelper() noexcept {}
 }  // namespace sd

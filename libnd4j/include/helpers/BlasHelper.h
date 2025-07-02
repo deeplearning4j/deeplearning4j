@@ -26,8 +26,9 @@
 // work around conflict with OpenBLAS
 struct bfloat16;
 #define BFLOAT16 BFLOAT16
-
+#if !defined(SD_CUDA)
 #include <cblas.h>
+#endif
 #include <helpers/logger.h>
 #include <types/float16.h>
 
@@ -75,6 +76,7 @@ typedef enum {
   CUDA_C_32U = 13  /* complex as a pair of unsigned int numbers */
 } cublasDataType_t;
 
+#if !defined(SD_CUDA)
 typedef void (*CblasSgemv)(CBLAS_ORDER Layout, CBLAS_TRANSPOSE TransA, int M, int N, float alpha, float *A, int lda,
                            float *X, int incX, float beta, float *Y, int incY);
 
@@ -96,7 +98,7 @@ typedef void (*CblasDgemmBatch)(CBLAS_ORDER Layout, CBLAS_TRANSPOSE *TransA_Arra
                                 int *M_Array, int *N_Array, int *K_Array, double *alpha_Array, double **A_Array,
                                 int *lda_Array, double **B_Array, int *ldb_Array, double *beta_Array, double **C_Array,
                                 int *ldc_Array, int group_count, int *group_size);
-
+#endif
 #ifdef LAPACK_ROW_MAJOR
 #undef LAPACK_ROW_MAJOR
 #endif
@@ -117,6 +119,7 @@ typedef int (*LapackeSgesdd)(LAPACK_LAYOUT matrix_layout, char jobz, int m, int 
 typedef int (*LapackeDgesdd)(LAPACK_LAYOUT matrix_layout, char jobz, int m, int n, double *a, int lda, double *s,
                              double *u, int ldu, double *vt, int ldvt);
 
+#if defined(SD_CUDA)
 typedef cublasStatus_t(CUBLASWINAPI *CublasSgemv)(cublasHandle_t handle, cublasOperation_t trans, int m, int n,
                                                   float *alpha, /* host or device pointer */
                                                   float *A, int lda, float *x, int incx,
@@ -214,7 +217,7 @@ typedef cusolverStatus_t(CUSOLVERAPI *CusolverDnDgesvd)(cusolverDnHandle_t handl
                                                         int m, int n, double *A, int lda, double *S, double *U, int ldu,
                                                         double *VT, int ldvt, double *work, int lwork, double *rwork,
                                                         int *info);
-
+#endif
 enum BlasFunctions {
   GEMV = 0,
   GEMM = 1,
@@ -233,7 +236,7 @@ class BlasHelper {
   bool _hasDgemv = false;
   bool _hasDgemm = false;
   bool _hasDgemmBatch = false;
-
+#if !defined(SD_CUDA)
   CblasSgemv cblasSgemv;
   CblasDgemv cblasDgemv;
   CblasSgemm cblasSgemm;
@@ -244,7 +247,9 @@ class BlasHelper {
   LapackeDgesvd lapackeDgesvd;
   LapackeSgesdd lapackeSgesdd;
   LapackeDgesdd lapackeDgesdd;
+#endif
 
+#if defined(SD_CUDA)
   CublasSgemv cublasSgemv;
   CublasDgemv cublasDgemv;
   CublasHgemm cublasHgemm;
@@ -258,6 +263,7 @@ class BlasHelper {
   CusolverDnDgesvdBufferSize cusolverDnDgesvdBufferSize;
   CusolverDnSgesvd cusolverDnSgesvd;
   CusolverDnDgesvd cusolverDnDgesvd;
+#endif
 
  public:
   static BlasHelper &getInstance();
@@ -276,7 +282,7 @@ class BlasHelper {
 
   template <typename T>
   bool hasBatchedGEMM();
-
+#if !defined(SD_CUDA)
   CblasSgemv sgemv();
   CblasDgemv dgemv();
 
@@ -291,7 +297,7 @@ class BlasHelper {
 
   LapackeSgesdd sgesdd();
   LapackeDgesdd dgesdd();
-
+#endif
   // destructor
   ~BlasHelper() noexcept;
 };
