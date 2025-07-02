@@ -480,17 +480,31 @@ function(process_cuda_comb_templates output_dir generated_sources_var)
         return()
     endif()
 
+    if(NOT DEFINED UNIFIED_COMBINATIONS_2 OR NOT DEFINED UNIFIED_COMBINATIONS_3)
+        message(FATAL_ERROR "❌ CUDA processing requires selective rendering combinations!")
+    endif()
+
     set(local_generated_sources ${${generated_sources_var}})
     list(LENGTH CUDA_COMB_TEMPLATES template_count)
     message(STATUS "📋 Found ${template_count} CUDA combination templates")
 
     # USE SELECTIVE RENDERING COMBINATIONS
+    # USE SELECTIVE RENDERING COMBINATIONS - EXACT CPU MIMIC
     if(DEFINED UNIFIED_COMBINATIONS_2 AND DEFINED UNIFIED_COMBINATIONS_3)
+        message(STATUS "✅ Using selective rendering combinations for CUDA (CPU parity)")
         set(COMBINATIONS_1 "")
         set(COMBINATIONS_2 ${UNIFIED_COMBINATIONS_2})
         set(COMBINATIONS_3 ${UNIFIED_COMBINATIONS_3})
 
+        # Verify combinations are actually filtered
+        list(LENGTH UNIFIED_COMBINATIONS_2 actual_2_count)
+        list(LENGTH UNIFIED_COMBINATIONS_3 actual_3_count)
+        if(actual_2_count EQUAL 25 OR actual_3_count EQUAL 125)
+            message(WARNING "⚠️ Combinations appear unfiltered - selective rendering may have failed")
+        endif()
+
         # Generate 1-type combinations from 2-type combinations
+        # Generate 1-type combinations from 2-type combinations (CPU parity)
         foreach(combination ${COMBINATIONS_2})
             string(REPLACE "," ";" combo_parts "${combination}")
             list(GET combo_parts 0 comb1)
@@ -500,15 +514,19 @@ function(process_cuda_comb_templates output_dir generated_sources_var)
             endif()
         endforeach()
 
+        # Verify 1-type derivation worked
+        list(LENGTH COMBINATIONS_1 derived_1_count)
+        if(derived_1_count EQUAL 0)
+            message(FATAL_ERROR "❌ Failed to derive 1-type combinations from 2-type")
+        endif()
+
+
         list(LENGTH COMBINATIONS_1 combo_1_count)
         list(LENGTH COMBINATIONS_2 combo_2_count)
         list(LENGTH COMBINATIONS_3 combo_3_count)
         message(STATUS "🎯 Using selective CUDA combinations: 1-type=${combo_1_count}, 2-type=${combo_2_count}, 3-type=${combo_3_count}")
     else()
-        message(WARNING "⚠️ Selective rendering not available for CUDA, using fallback combinations")
-        set(COMBINATIONS_1 "0" "1" "2")
-        set(COMBINATIONS_2 "0,0" "0,1" "1,0" "1,1" "2,2")
-        set(COMBINATIONS_3 "0,0,0" "0,0,1" "0,1,0" "0,1,1" "1,0,0" "1,0,1" "1,1,0" "1,1,1" "0,0,2" "1,1,2" "2,2,2")
+        message(FATAL_ERROR "❌ Selective rendering REQUIRED for CUDA template parity - cannot proceed with fallback")
     endif()
 
     foreach(TEMPLATE_FILE ${CUDA_COMB_TEMPLATES})
@@ -557,8 +575,18 @@ function(execute_template_generation)
         # NEW: Process CUDA combination templates (new parity system)
         set(CUDA_INST_DIR "${CMAKE_BINARY_DIR}/cuda_instantiations")
         file(MAKE_DIRECTORY "${CUDA_INST_DIR}")
-        process_cuda_comb_templates("${CUDA_INST_DIR}" ALL_GENERATED_SOURCES)
 
+        # CRITICAL: Verify selective rendering is available before CUDA processing
+        if(NOT DEFINED UNIFIED_COMBINATIONS_2 OR NOT DEFINED UNIFIED_COMBINATIONS_3)
+            message(FATAL_ERROR "❌ CUDA template processing requires selective rendering combinations!")
+        endif()
+
+        # Log the filtering being applied
+        list(LENGTH UNIFIED_COMBINATIONS_2 cuda_2_count)
+        list(LENGTH UNIFIED_COMBINATIONS_3 cuda_3_count)
+        message(STATUS "🎯 CUDA using selective combinations: 2-type=${cuda_2_count}, 3-type=${cuda_3_count}")
+
+        process_cuda_comb_templates("${CUDA_INST_DIR}" ALL_GENERATED_SOURCES)
     else()
         message(STATUS "🖥️  Processing CPU templates with selective rendering...")
 

@@ -757,7 +757,6 @@ function(_internal_generate_override_content active_indices combinations_2 combi
     string(APPEND header_content "        } \\\\\n")
     string(APPEND header_content "    }\n\n")
 
-    # Generate BUILD_DOUBLE_SELECTOR - FIXED VERSION
     string(APPEND header_content "// ===================================================================\n")
     string(APPEND header_content "// BUILD_DOUBLE_SELECTOR - Fixed Version\n")
     string(APPEND header_content "// ===================================================================\n")
@@ -800,7 +799,6 @@ function(_internal_generate_override_content active_indices combinations_2 combi
     string(APPEND header_content "        } \\\\\n")
     string(APPEND header_content "    }\n\n")
 
-    # Generate BUILD_TRIPLE_SELECTOR - FIXED VERSION
     string(APPEND header_content "// ===================================================================\n")
     string(APPEND header_content "// BUILD_TRIPLE_SELECTOR - Fixed Version\n")
     string(APPEND header_content "// ===================================================================\n")

@@ -240,7 +240,7 @@ function(create_and_link_library)
                 "${CMAKE_BINARY_DIR}/cuda_instantiations")
     endif()
 
-    if(SD_CUDA STREQUAL "ON")
+    if(SD_CUDA)
         configure_cuda_linking(${MAIN_LIB_NAME})
     else()
         configure_cpu_linking(${MAIN_LIB_NAME})
@@ -445,8 +445,7 @@ if(template_file_count GREATER 0)
         message(STATUS "✅ CPU template generation verified: ${template_file_count} files")
         print_status_colored("SUCCESS" "Enhanced CPU template system operational")
     endif()
-else()
-    print_status_colored("WARNING" "No template files generated - this may indicate a configuration issue")
+
 endif()
 
 # Final verification of directory structure
