@@ -240,7 +240,7 @@ function(create_and_link_library)
                 "${CMAKE_BINARY_DIR}/cuda_instantiations")
     endif()
 
-    if(SD_CUDA)
+    if(SD_CUDA STREQUAL "ON")
         configure_cuda_linking(${MAIN_LIB_NAME})
     else()
         configure_cpu_linking(${MAIN_LIB_NAME})
