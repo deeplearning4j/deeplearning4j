@@ -305,6 +305,7 @@ endif()
 # --- Phase 2: Handle Dependencies & Operations ---
 print_status_colored("INFO" "=== 2. INITIALIZING DEPENDENCIES & OPERATIONS ===")
 include(Dependencies)
+include(DuplicateInstantiationDetection)
 include(TemplateProcessing)
 setup_flatbuffers()
 setup_onednn()

@@ -30,7 +30,6 @@
 
 #include <loops/random.h>
 
-#include <ops/gemm.h>
 #include <ops/ops.h>
 
 #include <array/NDArray.hXX>
