@@ -3,6 +3,7 @@
 #
 # This enhanced version includes support for CUDA template processing
 # to achieve complete parity between CPU and CUDA template systems.
+# UPDATED with modern cuDNN integration
 # =============================================================================
 
 # =============================================================================
@@ -257,21 +258,16 @@ function(configure_cpu_linking main_target_name)
     install(TARGETS ${main_target_name} DESTINATION .)
 endfunction()
 
+# UPDATED: Modern CUDA linking with improved cuDNN detection
+# This function is kept for backward compatibility, but the real implementation
+# is now in CudaConfiguration.cmake's configure_cuda_linking function
 function(configure_cuda_linking main_target_name)
-    find_package(CUDAToolkit REQUIRED)
-    target_link_libraries(${main_target_name} PUBLIC
-            CUDA::cudart
-            CUDA::cublas
-            CUDA::cusolver
-            CUDA::curand
-            flatbuffers_interface)
-
-    if(HAVE_CUDNN AND CUDNN_LIBRARIES)
-        target_link_libraries(${main_target_name} PUBLIC ${CUDNN_LIBRARIES})
-    endif()
-
-    install(TARGETS ${main_target_name} DESTINATION .)
+    # Call the modern implementation from CudaConfiguration.cmake
+    # which handles cuDNN detection and linking properly
+    include(CudaConfiguration)
+    configure_cuda_linking(${main_target_name})
 endfunction()
+
 # --- Enhanced library creation function ---
 function(create_and_link_library)
     set(OBJECT_LIB_NAME "${SD_LIBRARY_NAME}_object")
@@ -290,6 +286,15 @@ function(create_and_link_library)
             # that is being compiled.
             get_target_property(CUDA_INCLUDE_DIRS CUDA::toolkit INTERFACE_INCLUDE_DIRECTORIES)
             target_include_directories(${OBJECT_LIB_NAME} PUBLIC ${CUDA_INCLUDE_DIRS})
+
+            # UPDATED: Add cuDNN include directories if available
+            if(HAVE_CUDNN AND CUDNN_INCLUDE_DIR)
+                target_include_directories(${OBJECT_LIB_NAME} PUBLIC ${CUDNN_INCLUDE_DIR})
+                target_compile_definitions(${OBJECT_LIB_NAME} PUBLIC HAVE_CUDNN=1)
+                message(STATUS "🔧 Added cuDNN includes to object library: ${CUDNN_INCLUDE_DIR}")
+            else()
+                target_compile_definitions(${OBJECT_LIB_NAME} PUBLIC HAVE_CUDNN=0)
+            endif()
 
             message(STATUS "🚀 CUDA object library configured with enhanced template support")
         endif()
@@ -441,7 +446,25 @@ include(CompilerFlags)
 setup_flatbuffers()
 setup_onednn()
 setup_armcompute()
-setup_cudnn()
+
+# UPDATED: Modern cuDNN setup
+if(SD_CUDA)
+    include(CudaConfiguration)
+    setup_modern_cudnn()  # Use the modern cuDNN detection
+    message(STATUS "🔧 Modern cuDNN configuration: HAVE_CUDNN=${HAVE_CUDNN}")
+    if(HAVE_CUDNN)
+        message(STATUS "✅ cuDNN found and configured")
+        if(DEFINED CUDNN_VERSION_STRING)
+            message(STATUS "   cuDNN version: ${CUDNN_VERSION_STRING}")
+        endif()
+    else()
+        message(STATUS "ℹ️  Building without cuDNN support")
+    endif()
+else()
+    # For CPU builds, set HAVE_CUDNN to false
+    set(HAVE_CUDNN FALSE)
+endif()
+
 setup_blas()
 message(STATUS "Dependencies initialization complete.")
 
@@ -510,6 +533,14 @@ if(DEFINED SD_GENERATE_TYPE_REPORT AND SD_GENERATE_TYPE_REPORT)
     if(SD_CUDA)
         string(APPEND doc_content "**Build Mode**: CUDA with enhanced template system\n")
         string(APPEND doc_content "**Template Parity**: Full parity achieved between CPU and CUDA template systems\n\n")
+        if(HAVE_CUDNN)
+            string(APPEND doc_content "**cuDNN Support**: Enabled\n")
+            if(DEFINED CUDNN_VERSION_STRING)
+                string(APPEND doc_content "**cuDNN Version**: ${CUDNN_VERSION_STRING}\n")
+            endif()
+        else()
+            string(APPEND doc_content "**cuDNN Support**: Disabled\n")
+        endif()
     else()
         string(APPEND doc_content "**Build Mode**: CPU with enhanced template system\n\n")
     endif()
@@ -526,6 +557,10 @@ message(STATUS "   Platform: ${CMAKE_SYSTEM_NAME}")
 if(SD_CUDA)
     message(STATUS "   CUDA: Enabled with enhanced template parity")
     message(STATUS "   Template System: CUDA templates achieve full CPU parity")
+    message(STATUS "   cuDNN: ${HAVE_CUDNN}")
+    if(HAVE_CUDNN AND DEFINED CUDNN_VERSION_STRING)
+        message(STATUS "   cuDNN Version: ${CUDNN_VERSION_STRING}")
+    endif()
 else()
     message(STATUS "   CUDA: Disabled")
     message(STATUS "   Template System: Enhanced CPU templates")
