@@ -148,6 +148,10 @@
                             <pattern>com.google</pattern>
                             <shadedPattern>org.nd4j.shade</shadedPattern>
                         </relocation>
+                        <relocation>
+                            <pattern>javax.annotation</pattern>
+                            <shadedPattern>org.nd4j.shade</shadedPattern>
+                        </relocation>
                     </relocations>
                 </configuration>
             </plugin>
