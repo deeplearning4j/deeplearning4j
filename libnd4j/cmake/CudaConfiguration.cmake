@@ -7,115 +7,185 @@
 # Modern cuDNN detection using updated FindCUDNN.cmake practices
 function(setup_modern_cudnn)
     set(HAVE_CUDNN FALSE PARENT_SCOPE)
-
+    
     if(NOT (HELPERS_cudnn AND SD_CUDA))
         message(STATUS "🔍 cuDNN: Skipped (HELPERS_cudnn=${HELPERS_cudnn}, SD_CUDA=${SD_CUDA})")
         return()
     endif()
 
     message(STATUS "🔍 Searching for cuDNN...")
-
-    # Method 1: Try modern CMake's FindCUDNN (CMake 3.17+)
-    find_package(CUDAToolkit REQUIRED) # Ensure CUDA toolkit is found first
-
-    # Set cuDNN search hints from CUDA toolkit path
-    if(CUDAToolkit_ROOT)
-        set(CUDNN_ROOT_DIR "${CUDAToolkit_ROOT}" CACHE PATH "cuDNN root directory")
-    endif()
-
-    # Try to find cuDNN using modern methods
-    find_package(CUDNN QUIET)
-
-    if(CUDNN_FOUND AND TARGET CUDNN::cudnn)
-        message(STATUS "✅ Found cuDNN using modern CMake target: CUDNN::cudnn")
-        set(HAVE_CUDNN TRUE PARENT_SCOPE)
-        set(CUDNN_VERSION_STRING "${CUDNN_VERSION}" PARENT_SCOPE)
-        return()
-    endif()
-
-    # Method 2: Manual detection if modern FindCUDNN failed
-    message(STATUS "🔍 Attempting manual cuDNN detection...")
-
-    # Search for cuDNN headers
+    
+    # Find the CUDA toolkit first to get the proper paths
+    find_package(CUDAToolkit REQUIRED)
+    
+    # Enhanced search paths for CI environments and common installations
+    set(CUDNN_SEARCH_PATHS
+        # Environment variables
+        $ENV{CUDNN_ROOT_DIR}
+        $ENV{CUDNN_ROOT}
+        $ENV{CUDA_PATH}
+        $ENV{CUDA_HOME}
+        
+        # CMake variables
+        ${CUDNN_ROOT_DIR}
+        ${CUDAToolkit_ROOT}
+        
+        # CI-specific paths (GitHub Actions, etc.)
+        /usr/local/cuda-12.6
+        /usr/local/cuda-12.5
+        /usr/local/cuda-12.4
+        /usr/local/cuda-12.3
+        /usr/local/cuda-12.2
+        /usr/local/cuda-12.1
+        /usr/local/cuda-12.0
+        /usr/local/cuda-11.8
+        /usr/local/cuda-11.7
+        /usr/local/cuda-11.6
+        /usr/local/cuda-11.5
+        /usr/local/cuda-11.4
+        /usr/local/cuda-11.3
+        /usr/local/cuda-11.2
+        /usr/local/cuda-11.1
+        /usr/local/cuda-11.0
+        /usr/local/cuda
+        
+        # Package manager paths
+        /usr/include/cudnn
+        /usr/local/include/cudnn
+        /opt/cuda
+        /opt/cudnn
+        
+        # System paths
+        /usr
+        /usr/local
+    )
+    
+    message(STATUS "🔍 Searching for cuDNN headers...")
+    
+    # Search for cuDNN headers with comprehensive path coverage
     find_path(CUDNN_INCLUDE_DIR
-            NAMES cudnn.h
-            HINTS
-            ${CUDNN_ROOT_DIR}
-            ${CUDAToolkit_ROOT}
-            $ENV{CUDNN_ROOT}
-            $ENV{CUDA_HOME}
-            /usr/local/cuda
-            /opt/cuda
-            PATH_SUFFIXES
+        NAMES cudnn.h
+        HINTS ${CUDNN_SEARCH_PATHS}
+        PATHS ${CUDNN_SEARCH_PATHS}
+        PATH_SUFFIXES
             include
             targets/x86_64-linux/include
             targets/aarch64-linux/include
-            DOC "cuDNN include directory"
+            include/cudnn
+            cudnn/include
+            x86_64-linux/include
+            aarch64-linux/include
+        NO_DEFAULT_PATH
     )
-
+    
+    # If not found, try system paths
+    if(NOT CUDNN_INCLUDE_DIR)
+        find_path(CUDNN_INCLUDE_DIR
+            NAMES cudnn.h
+            PATHS /usr/include /usr/local/include /opt/include
+            PATH_SUFFIXES cudnn
+        )
+    endif()
+    
+    message(STATUS "🔍 Searching for cuDNN libraries...")
+    
     # Search for cuDNN libraries
     find_library(CUDNN_LIBRARY
-            NAMES cudnn libcudnn
-            HINTS
-            ${CUDNN_ROOT_DIR}
-            ${CUDAToolkit_ROOT}
-            $ENV{CUDNN_ROOT}
-            $ENV{CUDA_HOME}
-            /usr/local/cuda
-            /opt/cuda
-            PATH_SUFFIXES
+        NAMES cudnn libcudnn cudnn8 libcudnn8
+        HINTS ${CUDNN_SEARCH_PATHS}
+        PATHS ${CUDNN_SEARCH_PATHS}
+        PATH_SUFFIXES
             lib64
             lib
             lib/x64
             targets/x86_64-linux/lib
             targets/aarch64-linux/lib
-            DOC "cuDNN library"
+            lib64/cudnn
+            lib/cudnn
+            cudnn/lib64
+            cudnn/lib
+            x86_64-linux/lib
+            aarch64-linux/lib
+        NO_DEFAULT_PATH
     )
-
+    
+    # If not found, try system paths
+    if(NOT CUDNN_LIBRARY)
+        find_library(CUDNN_LIBRARY
+            NAMES cudnn libcudnn cudnn8 libcudnn8
+            PATHS /usr/lib64 /usr/lib /usr/local/lib64 /usr/local/lib /opt/lib64 /opt/lib
+            PATH_SUFFIXES cudnn
+        )
+    endif()
+    
+    message(STATUS "🔍 cuDNN search results:")
+    message(STATUS "   CUDNN_INCLUDE_DIR: ${CUDNN_INCLUDE_DIR}")
+    message(STATUS "   CUDNN_LIBRARY: ${CUDNN_LIBRARY}")
+    
+    # Check if we found both header and library
     if(CUDNN_INCLUDE_DIR AND CUDNN_LIBRARY)
+        message(STATUS "✅ cuDNN found!")
+        
         # Extract version information from cudnn.h
         if(EXISTS "${CUDNN_INCLUDE_DIR}/cudnn.h")
             file(READ "${CUDNN_INCLUDE_DIR}/cudnn.h" CUDNN_HEADER_CONTENTS)
-
+            
+            # Try different version detection methods
             string(REGEX MATCH "define CUDNN_MAJOR[ \t]+([0-9]+)" CUDNN_VERSION_MAJOR_MATCH "${CUDNN_HEADER_CONTENTS}")
             string(REGEX MATCH "define CUDNN_MINOR[ \t]+([0-9]+)" CUDNN_VERSION_MINOR_MATCH "${CUDNN_HEADER_CONTENTS}")
             string(REGEX MATCH "define CUDNN_PATCHLEVEL[ \t]+([0-9]+)" CUDNN_VERSION_PATCH_MATCH "${CUDNN_HEADER_CONTENTS}")
-
+            
             if(CUDNN_VERSION_MAJOR_MATCH)
                 string(REGEX REPLACE "define CUDNN_MAJOR[ \t]+([0-9]+)" "\\1" CUDNN_VERSION_MAJOR "${CUDNN_VERSION_MAJOR_MATCH}")
                 string(REGEX REPLACE "define CUDNN_MINOR[ \t]+([0-9]+)" "\\1" CUDNN_VERSION_MINOR "${CUDNN_VERSION_MINOR_MATCH}")
                 string(REGEX REPLACE "define CUDNN_PATCHLEVEL[ \t]+([0-9]+)" "\\1" CUDNN_VERSION_PATCH "${CUDNN_VERSION_PATCH_MATCH}")
-
+                
                 set(CUDNN_VERSION_STRING "${CUDNN_VERSION_MAJOR}.${CUDNN_VERSION_MINOR}.${CUDNN_VERSION_PATCH}")
             else()
-                set(CUDNN_VERSION_STRING "Unknown")
+                # Try alternative version detection
+                string(REGEX MATCH "#define CUDNN_MAJOR ([0-9]+)" CUDNN_VERSION_MAJOR_MATCH2 "${CUDNN_HEADER_CONTENTS}")
+                if(CUDNN_VERSION_MAJOR_MATCH2)
+                    string(REGEX REPLACE "#define CUDNN_MAJOR ([0-9]+)" "\\1" CUDNN_VERSION_MAJOR "${CUDNN_VERSION_MAJOR_MATCH2}")
+                    string(REGEX MATCH "#define CUDNN_MINOR ([0-9]+)" CUDNN_VERSION_MINOR_MATCH2 "${CUDNN_HEADER_CONTENTS}")
+                    string(REGEX MATCH "#define CUDNN_PATCHLEVEL ([0-9]+)" CUDNN_VERSION_PATCH_MATCH2 "${CUDNN_HEADER_CONTENTS}")
+                    string(REGEX REPLACE "#define CUDNN_MINOR ([0-9]+)" "\\1" CUDNN_VERSION_MINOR "${CUDNN_VERSION_MINOR_MATCH2}")
+                    string(REGEX REPLACE "#define CUDNN_PATCHLEVEL ([0-9]+)" "\\1" CUDNN_VERSION_PATCH "${CUDNN_VERSION_PATCH_MATCH2}")
+                    set(CUDNN_VERSION_STRING "${CUDNN_VERSION_MAJOR}.${CUDNN_VERSION_MINOR}.${CUDNN_VERSION_PATCH}")
+                else()
+                    set(CUDNN_VERSION_STRING "Unknown")
+                endif()
             endif()
+        else()
+            message(WARNING "⚠️  cuDNN header found but cannot read version")
+            set(CUDNN_VERSION_STRING "Unknown")
         endif()
 
         # Create imported target if it doesn't exist
         if(NOT TARGET CUDNN::cudnn)
             add_library(CUDNN::cudnn UNKNOWN IMPORTED)
             set_target_properties(CUDNN::cudnn PROPERTIES
-                    IMPORTED_LOCATION "${CUDNN_LIBRARY}"
-                    INTERFACE_INCLUDE_DIRECTORIES "${CUDNN_INCLUDE_DIR}"
+                IMPORTED_LOCATION "${CUDNN_LIBRARY}"
+                INTERFACE_INCLUDE_DIRECTORIES "${CUDNN_INCLUDE_DIR}"
             )
         endif()
 
-        message(STATUS "✅ Found cuDNN manually:")
+        message(STATUS "✅ cuDNN configuration:")
         message(STATUS "   Include: ${CUDNN_INCLUDE_DIR}")
         message(STATUS "   Library: ${CUDNN_LIBRARY}")
         message(STATUS "   Version: ${CUDNN_VERSION_STRING}")
-
+        
+        # Set all the variables that might be needed
         set(HAVE_CUDNN TRUE PARENT_SCOPE)
         set(CUDNN_FOUND TRUE PARENT_SCOPE)
         set(CUDNN_INCLUDE_DIR "${CUDNN_INCLUDE_DIR}" PARENT_SCOPE)
         set(CUDNN_LIBRARIES "${CUDNN_LIBRARY}" PARENT_SCOPE)
+        set(CUDNN_LIBRARY "${CUDNN_LIBRARY}" PARENT_SCOPE)
         set(CUDNN_VERSION_STRING "${CUDNN_VERSION_STRING}" PARENT_SCOPE)
-
+        
         return()
     endif()
 
-    # Method 3: Try pkg-config as last resort
+    # Try package manager detection as fallback
     find_package(PkgConfig QUIET)
     if(PkgConfig_FOUND)
         pkg_check_modules(PC_CUDNN QUIET cudnn)
@@ -129,16 +199,40 @@ function(setup_modern_cudnn)
         endif()
     endif()
 
-    message(STATUS "❌ cuDNN not found. Searched in:")
-    message(STATUS "   CUDNN_ROOT_DIR: ${CUDNN_ROOT_DIR}")
-    message(STATUS "   CUDAToolkit_ROOT: ${CUDAToolkit_ROOT}")
-    message(STATUS "   CUDA_HOME: $ENV{CUDA_HOME}")
-    message(STATUS "   Standard system paths")
+    # Final attempt: check if cuDNN is embedded in CUDA installation
+    if(CUDAToolkit_FOUND AND CUDAToolkit_INCLUDE_DIRS)
+        foreach(cuda_include_dir ${CUDAToolkit_INCLUDE_DIRS})
+            if(EXISTS "${cuda_include_dir}/cudnn.h")
+                message(STATUS "✅ Found cuDNN embedded in CUDA installation")
+                set(HAVE_CUDNN TRUE PARENT_SCOPE)
+                set(CUDNN_INCLUDE_DIR "${cuda_include_dir}" PARENT_SCOPE)
+                set(CUDNN_LIBRARIES "" PARENT_SCOPE)  # May be linked with CUDA
+                set(CUDNN_VERSION_STRING "Embedded" PARENT_SCOPE)
+                return()
+            endif()
+        endforeach()
+    endif()
+
+    message(STATUS "❌ cuDNN not found. Searched extensively in:")
+    message(STATUS "   Environment variables: CUDNN_ROOT_DIR, CUDNN_ROOT, CUDA_PATH, CUDA_HOME")
+    message(STATUS "   CUDA installation: ${CUDAToolkit_ROOT}")
+    message(STATUS "   System paths: /usr, /usr/local, /opt")
+    message(STATUS "   Package manager: pkg-config")
     message(STATUS "")
     message(STATUS "💡 To fix this issue:")
     message(STATUS "   1. Install cuDNN development libraries")
     message(STATUS "   2. Set CUDNN_ROOT_DIR to your cuDNN installation")
-    message(STATUS "   3. Or disable cuDNN with -DHELPERS_cudnn=OFF")
+    message(STATUS "   3. Ensure cuDNN headers are in CUDA_PATH/include")
+    message(STATUS "   4. Or disable cuDNN with -DHELPERS_cudnn=OFF")
+    
+    # Debug information
+    message(STATUS "")
+    message(STATUS "🔍 Debug information:")
+    message(STATUS "   CUDAToolkit_ROOT: ${CUDAToolkit_ROOT}")
+    message(STATUS "   CUDAToolkit_INCLUDE_DIRS: ${CUDAToolkit_INCLUDE_DIRS}")
+    message(STATUS "   ENV CUDNN_ROOT_DIR: $ENV{CUDNN_ROOT_DIR}")
+    message(STATUS "   ENV CUDA_PATH: $ENV{CUDA_PATH}")
+    message(STATUS "   ENV CUDA_HOME: $ENV{CUDA_HOME}")
 endfunction()
 
 function(configure_cuda_linking main_target_name)
@@ -163,12 +257,17 @@ function(configure_cuda_linking main_target_name)
         target_link_libraries(${main_target_name} PUBLIC ${CUDNN_LIBRARIES})
         target_include_directories(${main_target_name} PUBLIC ${CUDNN_INCLUDE_DIR})
         target_compile_definitions(${main_target_name} PUBLIC HAVE_CUDNN=1)
+    elseif(HAVE_CUDNN AND CUDNN_INCLUDE_DIR)
+        message(STATUS "✅ Linking with cuDNN include-only (embedded in CUDA)")
+        target_include_directories(${main_target_name} PUBLIC ${CUDNN_INCLUDE_DIR})
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_CUDNN=1)
     else()
         message(STATUS "ℹ️  Building without cuDNN support")
         target_compile_definitions(${main_target_name} PUBLIC HAVE_CUDNN=0)
     endif()
 
     target_link_libraries(${main_target_name} PUBLIC flatbuffers_interface)
+    install(TARGETS ${main_target_name} DESTINATION .)
 endfunction()
 
 
@@ -421,7 +520,7 @@ endfunction()
 # Legacy function for backward compatibility - now calls modern version
 function(setup_cudnn)
     setup_modern_cudnn()
-
+    
     # Set legacy variables for backward compatibility
     set(HAVE_CUDNN ${HAVE_CUDNN} PARENT_SCOPE)
     if(HAVE_CUDNN)

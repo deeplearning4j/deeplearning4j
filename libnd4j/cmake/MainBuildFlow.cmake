@@ -258,13 +258,39 @@ function(configure_cpu_linking main_target_name)
 endfunction()
 
 # UPDATED: Modern CUDA linking with improved cuDNN detection
-# This function is kept for backward compatibility, but the real implementation
-# is now in CudaConfiguration.cmake's configure_cuda_linking function
 function(configure_cuda_linking main_target_name)
-    # Call the modern implementation from CudaConfiguration.cmake
-    # which handles cuDNN detection and linking properly
-    include(CudaConfiguration)
-    configure_cuda_linking(${main_target_name})
+    # Find the CUDAToolkit to define the CUDA::toolkit target
+    find_package(CUDAToolkit REQUIRED)
+
+    # Setup modern cuDNN detection
+    setup_modern_cudnn()
+
+    # Modern CMake uses imported targets which handle all necessary dependencies.
+    # Linking against CUDA::toolkit automatically adds include directories,
+    # runtime libraries, and all other required flags.
+    target_link_libraries(${main_target_name} PUBLIC CUDA::toolkit)
+
+    # If cuDNN was found, link against its imported target
+    if(HAVE_CUDNN AND TARGET CUDNN::cudnn)
+        message(STATUS "✅ Linking with modern CUDNN::cudnn target")
+        target_link_libraries(${main_target_name} PUBLIC CUDNN::cudnn)
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_CUDNN=1)
+    elseif(HAVE_CUDNN AND CUDNN_LIBRARIES)
+        message(STATUS "✅ Linking with cuDNN libraries: ${CUDNN_LIBRARIES}")
+        target_link_libraries(${main_target_name} PUBLIC ${CUDNN_LIBRARIES})
+        target_include_directories(${main_target_name} PUBLIC ${CUDNN_INCLUDE_DIR})
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_CUDNN=1)
+    elseif(HAVE_CUDNN AND CUDNN_INCLUDE_DIR)
+        message(STATUS "✅ Linking with cuDNN include-only (embedded in CUDA)")
+        target_include_directories(${main_target_name} PUBLIC ${CUDNN_INCLUDE_DIR})
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_CUDNN=1)
+    else()
+        message(STATUS "ℹ️  Building without cuDNN support")
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_CUDNN=0)
+    endif()
+
+    target_link_libraries(${main_target_name} PUBLIC flatbuffers_interface)
+    install(TARGETS ${main_target_name} DESTINATION .)
 endfunction()
 
 # --- Enhanced library creation function ---
