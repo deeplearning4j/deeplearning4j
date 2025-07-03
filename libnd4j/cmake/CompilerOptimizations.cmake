@@ -1,14 +1,5 @@
 # CompilerOptimizations.cmake - Compiler flags and optimization settings
 
-# ===== DISABLE PLT COMPLETELY =====
-# Disable Procedure Linkage Table to prevent memory issues
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-plt")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-plt")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,now")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,now")
-endif()
-
 
 # For CUDA builds, disable PLT in host compiler flags
 if(SD_CUDA AND CMAKE_CUDA_COMPILER)
