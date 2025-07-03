@@ -80,4 +80,3 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     endif()
 endif()
 
-install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)

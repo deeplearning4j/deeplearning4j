@@ -255,7 +255,6 @@ function(configure_cpu_linking main_target_name)
             target_link_libraries(${main_target_name} PUBLIC "-fopenmp")
         endif()
     endif()
-    install(TARGETS ${main_target_name} DESTINATION .)
 endfunction()
 
 # UPDATED: Modern CUDA linking with improved cuDNN detection
