@@ -33,17 +33,7 @@ function(apply_android_x86_64_plt_fixes target_name)
 
     # Apply linker flags only to shared/executable targets
     get_target_property(target_type ${target_name} TYPE)
-    if(target_type STREQUAL "SHARED_LIBRARY" OR target_type STREQUAL "EXECUTABLE")
-        target_link_options(${target_name} PRIVATE
-                -Wl,--gc-sections
-                -Wl,-z,max-page-size=16384
-                -Wl,--hash-style=gnu
-                -Wl,-z,separate-code
-                -Wl,-z,separate-loadable-segments
-                -Wl,-z,text
-                -Wl,-z,now
-        )
-    endif()
+
 
     message(STATUS "Applied verified Android x86_64 optimizations to target: ${target_name}")
 endfunction()
@@ -111,14 +101,6 @@ endfunction()
 
 # Function to configure section splitting for better linker handling
 function(configure_section_splitting)
-    # Section splitting for better linker handling - FIXED: Only apply to GCC/Clang
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections" PARENT_SCOPE)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections" PARENT_SCOPE)
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections" PARENT_SCOPE)
-        message(STATUS "Applied section splitting for GCC/Clang")
-    endif()
-
     # MSVC-specific optimizations
     if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         # MSVC equivalent optimizations
