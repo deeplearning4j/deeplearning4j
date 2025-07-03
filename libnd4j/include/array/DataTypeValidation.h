@@ -78,13 +78,7 @@ namespace sd {
          */
         static bool isCompiledDataType(DataType dataType);
         
-        /**
-         * Get a descriptive error message for data type issues
-         * @param dataType The problematic data type
-         * @param context Context string (function name, etc.)
-         * @return Detailed error message with suggestions
-         */
-        static std::string getDataTypeErrorMessage(DataType dataType, const char* context);
+
         
         /**
          * Get a descriptive error message for numeric data type ID

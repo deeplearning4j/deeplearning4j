@@ -1843,7 +1843,7 @@ void NDArray::assign(T &value, bool allowParallelism) {
 }
 
 #define ASSIGN_SCALAR(T) template SD_LIB_EXPORT void NDArray::assign( GET_SECOND(T) &value, bool allowParallelism);
-ITERATE_LIST((SD_COMMON_TYPES),ASSIGN_SCALAR)
+ITERATE_LIST((SD_COMMON_TYPES_ALL),ASSIGN_SCALAR)
 
 //////////////////////////////////////////////////////////////////////////
 NDArray *NDArray::detach() {
@@ -5112,8 +5112,7 @@ void NDArray::p(const sd::LongType i, const sd::LongType j, const T value) {
 }
 
 #define INSTANTIATE_P_I_J(T) template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const GET_SECOND(T) value);
-ITERATE_LIST((SD_NUMERIC_TYPES),INSTANTIATE_P_I_J);
-template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const bool value);
+ITERATE_LIST((SD_COMMON_TYPES_ALL),INSTANTIATE_P_I_J);
 
 //////////////////////////////////////////////////////////////////////////
 // This method sets value in 3D matrix to position i,j,k
@@ -5153,10 +5152,7 @@ void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k
 }
 
 #define INSTANTIATE_P_I_J_K_L(T) template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType l, const GET_SECOND(T) value);
-ITERATE_LIST((SD_NUMERIC_TYPES),INSTANTIATE_P_I_J_K_L);
-
-template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k,
-                                       const sd::LongType l, const bool value);
+ITERATE_LIST((SD_COMMON_TYPES_ALL),INSTANTIATE_P_I_J_K_L);
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::p(const sd::LongType i, NDArray *scalar) {
@@ -5250,8 +5246,7 @@ NDArray::p(const sd::LongType i, const T value) {  // Note: value not NDArray re
 }
 
 #define INSTANTIATE_P_SINGLE(T) template SD_LIB_EXPORT void NDArray::p(const sd::LongType i,const GET_SECOND(T) value);
-ITERATE_LIST((SD_NUMERIC_TYPES),INSTANTIATE_P_SINGLE);
-template SD_LIB_EXPORT void NDArray::p(const sd::LongType i,const bool value);
+ITERATE_LIST((SD_COMMON_TYPES_ALL),INSTANTIATE_P_SINGLE);
 
 template<typename T>
 typename std::enable_if<DataTypeUtils::stringTypesForNDarray<T>::value, void>::type

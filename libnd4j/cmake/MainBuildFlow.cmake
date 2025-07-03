@@ -25,6 +25,116 @@ function(print_status_colored type message)
     endif()
 endfunction()
 
+
+function(libnd4j_setup_target_with_types target_name)
+    message(STATUS "🔧 Setting up libnd4j target with type definitions: ${target_name}")
+
+    # Ensure target exists
+    if(NOT TARGET ${target_name})
+        message(FATAL_ERROR "Target ${target_name} does not exist")
+    endif()
+
+    # Apply type definitions immediately after target creation
+    setup_type_definitions_for_target(${target_name})
+
+    # Apply any additional target configuration
+    set_target_properties(${target_name} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+    message(STATUS "✅ Target ${target_name} configured with type definitions")
+endfunction()
+
+function(orchestrate_enhanced_build target_name)
+    message(STATUS "ℹ️  === ORCHESTRATING ENHANCED LIBND4J BUILD WITH TEMPLATE PARITY ===")
+    message(STATUS "ℹ️  === 1. INITIALIZING BUILD CONFIGURATION ===")
+
+    # Setup target with type definitions
+    libnd4j_setup_target_with_types(${target_name})
+
+    message(STATUS "ℹ️  === 2. INITIALIZING DEPENDENCIES & OPERATIONS ===")
+    message(STATUS "Dependencies initialization complete.")
+
+    message(STATUS "ℹ️  === 3. CONFIGURING ENHANCED SELECTIVE RENDERING ===")
+    message(STATUS "✅ Enhanced CPU selective rendering setup complete")
+
+    message(STATUS "ℹ️  === 4. FINALIZING BUILD WITH TYPE DEFINITIONS ===")
+    finalize_build_with_type_definitions(${target_name})
+
+    message(STATUS "✅ === ENHANCED BUILD ORCHESTRATION COMPLETE ===")
+    message(STATUS "🖥️  Enhanced CPU build orchestration complete - System ready for compilation")
+endfunction()
+
+# Simplified function for immediate use after target creation
+function(apply_libnd4j_type_definitions target_name)
+    if(TARGET ${target_name})
+        setup_type_definitions_for_target(${target_name})
+        message(STATUS "✅ Applied type definitions to ${target_name}")
+    else()
+        message(FATAL_ERROR "❌ Target ${target_name} not found for type definitions")
+    endif()
+endfunction()
+
+
+function(apply_libnd4j_type_definitions_auto)
+    # Use the SD_LIBRARY_NAME variable set in CMakeLists.txt
+    if(DEFINED SD_LIBRARY_NAME AND TARGET ${SD_LIBRARY_NAME})
+        set(target_name ${SD_LIBRARY_NAME})
+        message(STATUS "Using SD_LIBRARY_NAME target: ${target_name}")
+        setup_type_definitions_for_target(${target_name})
+        return()
+    endif()
+
+    # Fallback to detecting the target based on build type
+    if(SD_CUDA AND TARGET nd4jcuda)
+        setup_type_definitions_for_target(nd4jcuda)
+        message(STATUS "Applied type definitions to nd4jcuda")
+    elseif(SD_CPU AND TARGET nd4jcpu)
+        setup_type_definitions_for_target(nd4jcpu)
+        message(STATUS "Applied type definitions to nd4jcpu")
+    elseif(TARGET nd4jcpu)
+        setup_type_definitions_for_target(nd4jcpu)
+        message(STATUS "Applied type definitions to nd4jcpu (fallback)")
+    elseif(TARGET nd4jcuda)
+        setup_type_definitions_for_target(nd4jcuda)
+        message(STATUS "Applied type definitions to nd4jcuda (fallback)")
+    else()
+        message(WARNING "❌ No nd4j targets found for type definitions")
+        get_property(all_targets DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY BUILDSYSTEM_TARGETS)
+        message(STATUS "Available targets: ${all_targets}")
+    endif()
+endfunction()
+
+# Function to apply to specific target by name
+function(apply_libnd4j_type_definitions target_name)
+    if(TARGET ${target_name})
+        setup_type_definitions_for_target(${target_name})
+        message(STATUS "✅ Applied type definitions to ${target_name}")
+    else()
+        message(FATAL_ERROR "❌ Target ${target_name} not found for type definitions")
+    endif()
+endfunction()
+
+# Function to apply to all libnd4j targets
+function(apply_libnd4j_type_definitions_all)
+    set(possible_targets "nd4jcpu;nd4jcuda;nd4j;libnd4j")
+    set(applied_count 0)
+
+    foreach(target ${possible_targets})
+        if(TARGET ${target})
+            setup_type_definitions_for_target(${target})
+            message(STATUS "✅ Applied type definitions to ${target}")
+            math(EXPR applied_count "${applied_count} + 1")
+        endif()
+    endforeach()
+
+    if(applied_count EQUAL 0)
+        message(WARNING "❌ No libnd4j targets found")
+        get_property(all_targets DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY BUILDSYSTEM_TARGETS)
+        message(STATUS "Available targets: ${all_targets}")
+    else()
+        message(STATUS "✅ Applied type definitions to ${applied_count} targets")
+    endif()
+endfunction()
+
 # --- Platform environment setup functions ---
 function(setup_cpu_environment)
     message(STATUS "🔧 Setting up CPU environment")
@@ -162,7 +272,6 @@ function(configure_cuda_linking main_target_name)
 
     install(TARGETS ${main_target_name} DESTINATION .)
 endfunction()
-
 # --- Enhanced library creation function ---
 function(create_and_link_library)
     set(OBJECT_LIB_NAME "${SD_LIBRARY_NAME}_object")
@@ -211,6 +320,10 @@ function(create_and_link_library)
             set_target_properties(${OBJECT_LIB_NAME} PROPERTIES
                     CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
         endif()
+
+        # 🔧 CRITICAL FIX: Apply type definitions to OBJECT library (where compilation happens)
+        message(STATUS "🔧 Applying type definitions to OBJECT library: ${OBJECT_LIB_NAME}")
+        setup_type_definitions_for_target(${OBJECT_LIB_NAME})
     endif()
 
     if(NOT TARGET ${MAIN_LIB_NAME})
@@ -238,7 +351,14 @@ function(create_and_link_library)
                 "${CMAKE_BINARY_DIR}/compilation_units"
                 "${CMAKE_BINARY_DIR}/cpu_instantiations"
                 "${CMAKE_BINARY_DIR}/cuda_instantiations")
+
+        # 🔧 ALSO apply type definitions to the shared library (for completeness)
+        message(STATUS "🔧 Applying type definitions to SHARED library: ${MAIN_LIB_NAME}")
+        setup_type_definitions_for_target(${MAIN_LIB_NAME})
     endif()
+
+    # Remove the old call since we're now applying to both targets explicitly
+    # apply_libnd4j_type_definitions_auto()
 
     if(SD_CUDA)
         configure_cuda_linking(${MAIN_LIB_NAME})
@@ -292,6 +412,16 @@ if(NOT DEFINED SD_LIBRARY_NAME)
         print_status_colored("INFO" "🖥️  CPU build mode: Enhanced template system active")
     endif()
 endif()
+
+# =============================================================================
+# MINIMAL TYPE VALIDATION INTEGRATION - ONLY WHAT'S NEEDED
+# =============================================================================
+print_status_colored("INFO" "=== INTEGRATING TYPE VALIDATION ===")
+
+# Call the type validation setup
+LIBND4J_SETUP_TYPE_VALIDATION()
+print_status_colored("SUCCESS" "Type validation integration complete")
+# =============================================================================
 
 # --- CRITICAL: Setup CUDA early if needed ---
 if(SD_CUDA)

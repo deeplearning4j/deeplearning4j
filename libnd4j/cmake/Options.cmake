@@ -23,7 +23,8 @@ set(HELPERS_cudnn OFF CACHE BOOL "Force disable cuDNN helper" FORCE)
 set(HAVE_ARMCOMPUTE OFF CACHE BOOL "ARM Compute Library availability" FORCE)
 set(HAVE_ONEDNN OFF CACHE BOOL "OneDNN availability" FORCE)
 set(HAVE_CUDNN OFF CACHE BOOL "cuDNN availability" FORCE)
-
+set(GENERATED_TYPE_COMBINATIONS "" CACHE INTERNAL "Generated type combinations")
+set(PROCESSED_TEMPLATE_FILES "" CACHE INTERNAL "Processed template files")
 # --- Debug and Trace Options ---
 option(SD_GCC_FUNCTRACE "Use call traces" OFF)
 option(PRINT_INDICES "Print indices" OFF)

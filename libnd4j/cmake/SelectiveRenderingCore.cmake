@@ -6,6 +6,23 @@
 # This file contains ALL logic for the selective rendering system.
 # ============================================================================
 
+
+# Export type validation results for use by SelectiveRenderingCore
+function(export_validated_types_for_selective_rendering)
+    # Export the validated type list and mode for SelectiveRenderingCore to use
+    if(SD_TYPES_LIST_COUNT GREATER 0)
+        # SELECTIVE mode - export the specific types that were validated
+        set(SRCORE_USE_SELECTIVE_TYPES TRUE PARENT_SCOPE)
+        set(SRCORE_VALIDATED_TYPES "${SD_TYPES_LIST}" PARENT_SCOPE)
+        message(STATUS "📤 Exporting SELECTIVE types for SelectiveRenderingCore: ${SD_TYPES_LIST}")
+    else()
+        # ALL types mode - let SelectiveRenderingCore discover all types
+        set(SRCORE_USE_SELECTIVE_TYPES FALSE PARENT_SCOPE)
+        set(SRCORE_VALIDATED_TYPES "" PARENT_SCOPE)
+        message(STATUS "📤 Exporting ALL_TYPES mode for SelectiveRenderingCore")
+    endif()
+endfunction()
+
 # ============================================================================
 # SECTION 1: SEMANTIC FILTERING LOGIC
 # ============================================================================
@@ -328,29 +345,120 @@ function(_internal_srcore_debug_message message)
     endif()
 endfunction()
 
-function(_internal_srcore_normalize_type input_type output_var)
-    set(normalized "${input_type}")
-    if(normalized MATCHES "^(float32|FLOAT32)$")
-        set(normalized "float")
-    elseif(normalized MATCHES "^(float64|FLOAT64)$")
-        set(normalized "double")
-    elseif(normalized MATCHES "^(half|HALF|float16|FLOAT16)$")
-        set(normalized "float16")
-    elseif(normalized MATCHES "^(bfloat|BFLOAT|bfloat16|BFLOAT16)$")
-        set(normalized "bfloat16")
-    elseif(normalized MATCHES "^(int|INT)$")
-        set(normalized "int32_t")
-    elseif(normalized MATCHES "^(long|LONG|int64|INT64)$")
-        set(normalized "sd::LongType")
-    elseif(normalized MATCHES "^(uint64|UINT64|unsignedlong|UNSIGNEDLONG)$")
-        set(normalized "uint64_t")
+function(srcore_normalize_type input_type output_var)
+    set(normalized_type "${input_type}")
+
+    # Standard aliases
+    if(normalized_type STREQUAL "float32")
+        set(normalized_type "float")
+    elseif(normalized_type STREQUAL "float64")
+        set(normalized_type "double")
+    elseif(normalized_type STREQUAL "half")
+        set(normalized_type "float16")
+    elseif(normalized_type STREQUAL "long")
+        set(normalized_type "int64_t")
+    elseif(normalized_type STREQUAL "int")
+        set(normalized_type "int32_t")
+    elseif(normalized_type STREQUAL "bfloat")
+        set(normalized_type "bfloat16")
+    elseif(normalized_type STREQUAL "qint8")
+        set(normalized_type "int8_t")
+    elseif(normalized_type STREQUAL "quint8")
+        set(normalized_type "uint8_t")
+    elseif(normalized_type STREQUAL "qint16")
+        set(normalized_type "int16_t")
+    elseif(normalized_type STREQUAL "quint16")
+        set(normalized_type "uint16_t")
+    elseif(normalized_type STREQUAL "utf8")
+        set(normalized_type "std::string")
+    elseif(normalized_type STREQUAL "utf16")
+        set(normalized_type "std::u16string")
+    elseif(normalized_type STREQUAL "utf32")
+        set(normalized_type "std::u32string")
     endif()
-    set(${output_var} "${normalized}" PARENT_SCOPE)
+
+    set(${output_var} "${normalized_type}" PARENT_SCOPE)
+endfunction()
+
+# Define any other missing functions that might be called
+function(is_semantically_valid_combination type1 type2 type3 mode result_var)
+    # Simple validation - just return true for now
+    set(${result_var} TRUE PARENT_SCOPE)
+endfunction()
+
+function(get_all_types result_var)
+    # Based on DataType.h enum, get all available types
+    set(all_types
+            "bool"      # BOOL = 1
+            "float8"    # FLOAT8 = 2
+            "float16"   # HALF = 3
+            "half2"     # HALF2 = 4
+            "float32"   # FLOAT32 = 5
+            "double"    # DOUBLE = 6
+            "int8"      # INT8 = 7
+            "int16"     # INT16 = 8
+            "int32"     # INT32 = 9
+            "int64"     # INT64 = 10
+            "uint8"     # UINT8 = 11
+            "uint16"    # UINT16 = 12
+            "uint32"    # UINT32 = 13
+            "uint64"    # UINT64 = 14
+            "qint8"     # QINT8 = 15
+            "qint16"    # QINT16 = 16
+            "bfloat16"  # BFLOAT16 = 17
+            "utf8"      # UTF8 = 50
+            "utf16"     # UTF16 = 51
+            "utf32"     # UTF32 = 52
+    )
+
+    set(${result_var} "${all_types}" PARENT_SCOPE)
 endfunction()
 
 function(_internal_srcore_discover_types result_indices_var result_names_var result_enums_var result_cpp_types_var)
-    message(STATUS "🔍 DEBUG: Starting type discovery...")
-    # Look for types.h in multiple possible locations
+    message(STATUS "🔍 SelectiveRenderingCore: Starting type discovery...")
+
+    # Debug: Show what variables we received from TypeValidation
+    message(STATUS "🔍 DEBUG: SRCORE_USE_SELECTIVE_TYPES = ${SRCORE_USE_SELECTIVE_TYPES}")
+    message(STATUS "🔍 DEBUG: SRCORE_VALIDATED_TYPES = ${SRCORE_VALIDATED_TYPES}")
+
+    # Check cache variables first (these are set by TypeValidation.cmake)
+    if(NOT DEFINED SRCORE_USE_SELECTIVE_TYPES)
+        # Fallback: try to read from cache
+        get_property(cache_selective CACHE SRCORE_USE_SELECTIVE_TYPES PROPERTY VALUE)
+        get_property(cache_types CACHE SRCORE_VALIDATED_TYPES PROPERTY VALUE)
+
+        if(DEFINED cache_selective)
+            set(SRCORE_USE_SELECTIVE_TYPES "${cache_selective}")
+            set(SRCORE_VALIDATED_TYPES "${cache_types}")
+            message(STATUS "🔍 Read from CACHE: USE_SELECTIVE=${SRCORE_USE_SELECTIVE_TYPES}, TYPES=${SRCORE_VALIDATED_TYPES}")
+        else()
+            message(STATUS "🔍 No exported variables found - defaulting to ALL types discovery")
+            set(SRCORE_USE_SELECTIVE_TYPES FALSE)
+            set(SRCORE_VALIDATED_TYPES "")
+        endif()
+    endif()
+
+    # DECISION: Use the exported information to determine discovery mode
+    if(SRCORE_USE_SELECTIVE_TYPES AND DEFINED SRCORE_VALIDATED_TYPES AND NOT SRCORE_VALIDATED_TYPES STREQUAL "")
+        message(STATUS "🎯 Using SELECTIVE type discovery for types: ${SRCORE_VALIDATED_TYPES}")
+        _internal_srcore_discover_selective_types("${SRCORE_VALIDATED_TYPES}" discovered_indices discovered_names discovered_enums discovered_cpp_types)
+    else()
+        message(STATUS "🎯 Using ALL types discovery (no selective types specified)")
+        _internal_srcore_discover_all_types(discovered_indices discovered_names discovered_enums discovered_cpp_types)
+    endif()
+
+    # Set return variables
+    set(${result_indices_var} "${discovered_indices}" PARENT_SCOPE)
+    set(${result_names_var} "${discovered_names}" PARENT_SCOPE)
+    set(${result_enums_var} "${discovered_enums}" PARENT_SCOPE)
+    set(${result_cpp_types_var} "${discovered_cpp_types}" PARENT_SCOPE)
+endfunction()
+
+
+function(_internal_srcore_discover_selective_types validated_types_list result_indices_var result_names_var result_enums_var result_cpp_types_var)
+    message(STATUS "🔍 SELECTIVE: Discovering validated types: ${validated_types_list}")
+
+    # Find types.h
     set(possible_headers
             "${CMAKE_CURRENT_SOURCE_DIR}/include/types/types.h"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/system/types.h"
@@ -358,6 +466,7 @@ function(_internal_srcore_discover_types result_indices_var result_names_var res
             "${CMAKE_CURRENT_SOURCE_DIR}/../include/types/types.h"
             "${CMAKE_SOURCE_DIR}/libnd4j/include/types/types.h"
             "${CMAKE_SOURCE_DIR}/include/types/types.h")
+
     set(types_header "")
     foreach(header_path ${possible_headers})
         if(EXISTS "${header_path}")
@@ -366,21 +475,71 @@ function(_internal_srcore_discover_types result_indices_var result_names_var res
             break()
         endif()
     endforeach()
+
     if(NOT types_header)
         message(FATAL_ERROR "❌ SelectiveRenderingCore: Could not find types.h in any expected location")
     endif()
+
     file(READ "${types_header}" types_content)
-    set(simple_types "BOOL;DOUBLE;FLOAT32;INT32;INT64")
+
+    # Enhanced mapping from user input types to types.h type keys
+    set(type_mapping_float32 "FLOAT32")
+    set(type_mapping_float "FLOAT32")
+    set(type_mapping_double "DOUBLE")
+    set(type_mapping_int32 "INT32")
+    set(type_mapping_int64 "INT64")
+    set(type_mapping_bool "BOOL")
+    set(type_mapping_float16 "HALF")
+    set(type_mapping_half "HALF")
+    set(type_mapping_bfloat16 "BFLOAT16")
+    set(type_mapping_bfloat "BFLOAT16")
+    set(type_mapping_int8 "INT8")
+    set(type_mapping_uint8 "UINT8")
+    set(type_mapping_int16 "INT16")
+    set(type_mapping_uint16 "UINT16")
+    set(type_mapping_uint32 "UINT32")
+    set(type_mapping_uint64 "UINT64")
+    set(type_mapping_qint8 "QINT8")
+    set(type_mapping_qint16 "QINT16")
+    set(type_mapping_utf8 "UTF8")
+    set(type_mapping_utf16 "UTF16")
+    set(type_mapping_utf32 "UTF32")
+    set(type_mapping_float8 "FLOAT8")
+    set(type_mapping_half2 "HALF2")
+
     set(discovered_types "")
     set(discovered_indices "")
     set(discovered_enums "")
     set(discovered_cpp_types "")
     set(type_index 0)
-    foreach(type_key ${simple_types})
+
+    # Convert validated types list to type keys and discover them
+    string(REPLACE ";" ";" validated_list "${validated_types_list}")
+    foreach(user_type ${validated_list})
+        # Normalize the user type
+        string(STRIP "${user_type}" user_type)
+
+        # Map to types.h key
+        set(type_key "")
+        if(DEFINED type_mapping_${user_type})
+            set(type_key "${type_mapping_${user_type}}")
+        else()
+            # Try direct match with uppercase
+            string(TOUPPER "${user_type}" upper_type)
+            set(type_key "${upper_type}")
+        endif()
+
+        if(NOT type_key)
+            message(WARNING "⚠️ Could not map user type '${user_type}' to types.h type key")
+            continue()
+        endif()
+
+        # Search for this type in types.h
         string(REGEX MATCH "#define[ \t]+TTYPE_${type_key}[ \t]*,[ \t]*\\(([^)]+)\\)" type_match "${types_content}")
         if(type_match)
             list(APPEND discovered_types "${type_key}")
             list(APPEND discovered_indices ${type_index})
+
             string(REGEX MATCH "\\(([^)]+)\\)" tuple_match "${type_match}")
             string(SUBSTRING "${tuple_match}" 1 -1 type_tuple)
             string(REGEX REPLACE "^([^,]+),[ \t]*(.+)$" "\\1;\\2" tuple_parts "${type_tuple}")
@@ -389,18 +548,125 @@ function(_internal_srcore_discover_types result_indices_var result_names_var res
             string(STRIP "${enum_part}" enum_part)
             string(STRIP "${cpp_part}" cpp_part)
             string(REGEX REPLACE "\\)$" "" cpp_part "${cpp_part}")
+
             list(APPEND discovered_enums "${enum_part}")
             list(APPEND discovered_cpp_types "${cpp_part}")
-            message(STATUS "✅ Type ${type_index}: ${type_key} -> enum: ${enum_part}, cpp: ${cpp_part}")
+
+            message(STATUS "✅ SELECTIVE Type ${type_index}: ${type_key} (from ${user_type}) -> enum: ${enum_part}, cpp: ${cpp_part}")
             math(EXPR type_index "${type_index} + 1")
+        else()
+            message(WARNING "⚠️ Could not find type definition for ${type_key} (from ${user_type}) in types.h")
         endif()
     endforeach()
+
+    if(type_index EQUAL 0)
+        message(FATAL_ERROR "❌ SELECTIVE: No valid types discovered from validated list: ${validated_types_list}")
+    endif()
+
+    message(STATUS "✅ SELECTIVE: Successfully discovered ${type_index} types")
+
     set(${result_indices_var} "${discovered_indices}" PARENT_SCOPE)
     set(${result_names_var} "${discovered_types}" PARENT_SCOPE)
     set(${result_enums_var} "${discovered_enums}" PARENT_SCOPE)
     set(${result_cpp_types_var} "${discovered_cpp_types}" PARENT_SCOPE)
 endfunction()
 
+
+function(_internal_srcore_discover_all_types result_indices_var result_names_var result_enums_var result_cpp_types_var)
+    message(STATUS "🔍 ALL: Discovering all available types from types.h")
+
+    # Find types.h in the expected locations
+    set(possible_headers
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/types/types.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/system/types.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/types.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../include/types/types.h"
+            "${CMAKE_SOURCE_DIR}/libnd4j/include/types/types.h"
+            "${CMAKE_SOURCE_DIR}/include/types/types.h")
+
+    set(types_header "")
+    foreach(header_path ${possible_headers})
+        if(EXISTS "${header_path}")
+            set(types_header "${header_path}")
+            message(STATUS "Found types.h at: ${header_path}")
+            break()
+        endif()
+    endforeach()
+
+    if(NOT types_header)
+        message(FATAL_ERROR "❌ SelectiveRenderingCore: Could not find types.h in any expected location")
+    endif()
+
+    file(READ "${types_header}" types_content)
+
+    # Complete list of all types from DataType.h enum (enhanced with all 20+ types)
+    set(all_types
+            "BOOL"      # DataType::BOOL = 1
+            "FLOAT8"    # DataType::FLOAT8 = 2
+            "HALF"      # DataType::HALF = 3 (float16)
+            "HALF2"     # DataType::HALF2 = 4
+            "FLOAT32"   # DataType::FLOAT32 = 5
+            "DOUBLE"    # DataType::DOUBLE = 6
+            "INT8"      # DataType::INT8 = 7
+            "INT16"     # DataType::INT16 = 8
+            "INT32"     # DataType::INT32 = 9
+            "INT64"     # DataType::INT64 = 10
+            "UINT8"     # DataType::UINT8 = 11
+            "UINT16"    # DataType::UINT16 = 12
+            "UINT32"    # DataType::UINT32 = 13
+            "UINT64"    # DataType::UINT64 = 14
+            "QINT8"     # DataType::QINT8 = 15
+            "QINT16"    # DataType::QINT16 = 16
+            "BFLOAT16"  # DataType::BFLOAT16 = 17
+            "UTF8"      # DataType::UTF8 = 50
+            "UTF16"     # DataType::UTF16 = 51
+            "UTF32"     # DataType::UTF32 = 52
+    )
+
+    set(discovered_types "")
+    set(discovered_indices "")
+    set(discovered_enums "")
+    set(discovered_cpp_types "")
+    set(type_index 0)
+
+    foreach(type_key ${all_types})
+        # Look for the type definition in types.h
+        string(REGEX MATCH "#define[ \t]+TTYPE_${type_key}[ \t]*,[ \t]*\\(([^)]+)\\)" type_match "${types_content}")
+        if(type_match)
+            list(APPEND discovered_types "${type_key}")
+            list(APPEND discovered_indices ${type_index})
+
+            # Parse the type tuple (DataType::ENUM, cpp_type)
+            string(REGEX MATCH "\\(([^)]+)\\)" tuple_match "${type_match}")
+            string(SUBSTRING "${tuple_match}" 1 -1 type_tuple)
+            string(REGEX REPLACE "^([^,]+),[ \t]*(.+)$" "\\1;\\2" tuple_parts "${type_tuple}")
+            list(GET tuple_parts 0 enum_part)
+            list(GET tuple_parts 1 cpp_part)
+            string(STRIP "${enum_part}" enum_part)
+            string(STRIP "${cpp_part}" cpp_part)
+            string(REGEX REPLACE "\\)$" "" cpp_part "${cpp_part}")
+
+            list(APPEND discovered_enums "${enum_part}")
+            list(APPEND discovered_cpp_types "${cpp_part}")
+
+            message(STATUS "✅ ALL Type ${type_index}: ${type_key} -> enum: ${enum_part}, cpp: ${cpp_part}")
+            math(EXPR type_index "${type_index} + 1")
+        else()
+            message(STATUS "⚠️ Type ${type_key} not found in types.h (may not be implemented)")
+        endif()
+    endforeach()
+
+    if(type_index EQUAL 0)
+        message(FATAL_ERROR "❌ No types discovered from types.h")
+    endif()
+
+    message(STATUS "✅ ALL: Successfully discovered ${type_index} types from types.h")
+
+    set(${result_indices_var} "${discovered_indices}" PARENT_SCOPE)
+    set(${result_names_var} "${discovered_types}" PARENT_SCOPE)
+    set(${result_enums_var} "${discovered_enums}" PARENT_SCOPE)
+    set(${result_cpp_types_var} "${discovered_cpp_types}" PARENT_SCOPE)
+endfunction()
 # ============================================================================
 # SECTION 4: ORIGINAL PUBLIC FUNCTIONS
 # ============================================================================

@@ -55,10 +55,10 @@ SD_LIB_EXPORT const char *getDetailedTypeConfig();
 std::string generateMissingTypeError(const std::string& missingType, const std::string& context = "");
 
 // Generate error message for operations with missing types
+// Generate error message for operations with missing types
 std::string generateTypeMismatchError(const std::string& operation,
                                       const std::vector<std::string>& requiredTypes,
                                       const std::string& context = "");
-
 // Get detailed type configuration for debugging
 std::string getDetailedTypeConfiguration();
 

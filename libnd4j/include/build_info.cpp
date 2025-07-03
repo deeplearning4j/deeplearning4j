@@ -52,72 +52,95 @@ std::string typeToScriptFormat(const std::string& typeName) {
   std::string lower = toLowerCase(typeName);
 
   // Convert runtime type names to build script format
-  if (lower == "int64") return "int64";
-  if (lower == "int32") return "int32";
-  if (lower == "int16") return "int16";
-  if (lower == "int8") return "int8";
-  if (lower == "uint64") return "uint64";
-  if (lower == "uint32") return "uint32";
-  if (lower == "uint16") return "uint16";
-  if (lower == "uint8") return "uint8";
-  if (lower == "float32") return "float32";
-  if (lower == "double") return "double";
-  if (lower == "float16") return "float16";
-  if (lower == "bfloat16") return "bfloat16";
+  if (lower == "int64" || lower == "int64_t" || lower == "long") return "int64";
+  if (lower == "int32" || lower == "int32_t" || lower == "int") return "int32";
+  if (lower == "int16" || lower == "int16_t") return "int16";
+  if (lower == "int8" || lower == "int8_t") return "int8";
+  if (lower == "uint64" || lower == "uint64_t" || lower == "unsignedlong") return "uint64";
+  if (lower == "uint32" || lower == "uint32_t") return "uint32";
+  if (lower == "uint16" || lower == "uint16_t") return "uint16";
+  if (lower == "uint8" || lower == "uint8_t") return "uint8";
+  if (lower == "float32" || lower == "float") return "float32";
+  if (lower == "double" || lower == "float64") return "double";
+  if (lower == "float16" || lower == "half") return "float16";
+  if (lower == "bfloat16" || lower == "bfloat") return "bfloat16";
   if (lower == "bool") return "bool";
+
+  // String types
+  if (lower == "std::string" || lower == "utf8") return "utf8";
+  if (lower == "std::u16string" || lower == "utf16") return "utf16";
+  if (lower == "std::u32string" || lower == "utf32") return "utf32";
 
   // Fallback - return as-is
   return lower;
 }
-
-// Build type information at compile time
+// Build type information at compile time - FIXED VERSION
 std::vector<std::string> buildSupportedTypes() {
   std::vector<std::string> types;
 
+  // Boolean type
 #if defined(HAS_BOOL)
   types.push_back("bool");
 #endif
-#if defined(HAS_INT8)
+
+  // Integer types - check both normalized and alias forms
+#if defined(HAS_INT8_T) || defined(HAS_INT8)
   types.push_back("int8");
 #endif
-#if defined(HAS_UINT8)
+#if defined(HAS_UINT8_T) || defined(HAS_UINT8)
   types.push_back("uint8");
 #endif
-#if defined(HAS_INT16)
+#if defined(HAS_INT16_T) || defined(HAS_INT16)
   types.push_back("int16");
 #endif
-#if defined(HAS_UINT16)
+#if defined(HAS_UINT16_T) || defined(HAS_UINT16)
   types.push_back("uint16");
 #endif
-#if defined(HAS_INT32)
+#if defined(HAS_INT32_T) || defined(HAS_INT32) || defined(HAS_INT)
   types.push_back("int32");
 #endif
-#if defined(HAS_UINT32)
+#if defined(HAS_UINT32_T) || defined(HAS_UINT32)
   types.push_back("uint32");
 #endif
-#if defined(HAS_INT64)
+#if defined(HAS_INT64_T) || defined(HAS_INT64) || defined(HAS_LONG)
   types.push_back("int64");
 #endif
-#if defined(HAS_UINT64)
+#if defined(HAS_UINT64_T) || defined(HAS_UINT64) || defined(HAS_UNSIGNEDLONG)
   types.push_back("uint64");
 #endif
-#if defined(HAS_FLOAT16)
-  types.push_back("float16");
-#endif
-#if defined(HAS_BFLOAT16)
-  types.push_back("bfloat16");
-#endif
-#if defined(HAS_FLOAT32)
+
+  // Floating point types - check both normalized and alias forms
+#if defined(HAS_FLOAT) || defined(HAS_FLOAT32)
   types.push_back("float32");
 #endif
-#if defined(HAS_DOUBLE)
+#if defined(HAS_DOUBLE) || defined(HAS_FLOAT64)
   types.push_back("double");
+#endif
+#if defined(HAS_FLOAT16) || defined(HAS_HALF)
+  types.push_back("float16");
+#endif
+#if defined(HAS_BFLOAT16) || defined(HAS_BFLOAT)
+  types.push_back("bfloat16");
+#endif
+
+  // String types - check if string operations are enabled
+#if defined(SD_ENABLE_STRING_OPERATIONS)
+#if defined(HAS_STD_STRING)
+  types.push_back("utf8");
+#endif
+#if defined(HAS_STD_U16STRING)
+  types.push_back("utf16");
+#endif
+#if defined(HAS_STD_U32STRING)
+  types.push_back("utf32");
+#endif
 #endif
 
   // Sort types for consistent output
   std::sort(types.begin(), types.end());
   return types;
 }
+
 
 // Static storage for type information - initialized once
 static std::vector<std::string> supportedTypes = buildSupportedTypes();
@@ -194,6 +217,33 @@ void initializeTypeInfo() {
 
   typesInitialized = true;
 }
+std::string typeToCMakeFormat(const std::string& typeName) {
+  std::string lower = toLowerCase(typeName);
+
+  // Convert script type names to CMake format (what CMake uses internally)
+  if (lower == "int64" || lower == "long") return "int64_t";
+  if (lower == "int32" || lower == "int") return "int32_t";
+  if (lower == "int16") return "int16_t";
+  if (lower == "int8") return "int8_t";
+  if (lower == "uint64" || lower == "unsignedlong") return "uint64_t";
+  if (lower == "uint32") return "uint32_t";
+  if (lower == "uint16") return "uint16_t";
+  if (lower == "uint8") return "uint8_t";
+  if (lower == "float32") return "float";
+  if (lower == "float64") return "double";
+  if (lower == "float16" || lower == "half") return "float16";
+  if (lower == "bfloat16" || lower == "bfloat") return "bfloat16";
+  if (lower == "bool") return "bool";
+
+  // String types
+  if (lower == "utf8") return "std::string";
+  if (lower == "utf16") return "std::u16string";
+  if (lower == "utf32") return "std::u32string";
+
+  // Fallback
+  return lower;
+}
+
 
 // CRITICAL FIX: Generate proper error message for missing types
 std::string generateMissingTypeError(const std::string& missingType, const std::string& context) {
@@ -202,7 +252,7 @@ std::string generateMissingTypeError(const std::string& missingType, const std::
   std::ostringstream message;
 
   // Header with clear error indication
-  message << "❌ ERROR: Data type " << missingType << " is not available in this build\n";
+  message << "❌ ERROR: Data type '" << missingType << "' is not available in this build\n";
 
   if (!context.empty()) {
     message << "Context: " << context << "\n";
@@ -210,9 +260,9 @@ std::string generateMissingTypeError(const std::string& missingType, const std::
 
   message << "Build configuration: ";
 #if defined(SD_SELECTIVE_TYPES)
-  message << "Selective types enabled\n";
+  message << "Selective types enabled (only specified types available)\n";
 #else
-  message << "All types enabled\n";
+  message << "All types enabled (this should not happen)\n";
 #endif
 
   // Show available types in this build
@@ -223,11 +273,12 @@ std::string generateMissingTypeError(const std::string& missingType, const std::
   }
   message << "\n\n";
 
-  // FIXED: Provide correct rebuild instructions
-  message << "To enable this type, rebuild with:\n";
+  // FIXED: Provide correct rebuild instructions based on current build mode
+  message << "To enable this type, rebuild with:\n\n";
 
-  // Build script format
+  // Build script format - include current types + missing type
   std::string scriptType = typeToScriptFormat(missingType);
+  message << "Build Script:\n";
   message << "  ./buildnativeoperations.sh --datatypes \"";
 
   // Include current types + missing type
@@ -237,29 +288,43 @@ std::string generateMissingTypeError(const std::string& missingType, const std::
   message << scriptType << "\"\n\n";
 
   // Maven format
-  message << "Or with Maven:\n";
+  message << "Maven:\n";
   message << "  mvn compile -Dlibnd4j.datatypes=\"";
   for (size_t i = 0; i < supportedTypes.size(); ++i) {
     message << supportedTypes[i] << ";";
   }
   message << scriptType << "\"\n\n";
 
-  // CMake format
-  message << "Or with CMake:\n";
+  // CMake format - use normalized CMake type names
+  message << "CMake:\n";
   message << "  cmake -DSD_TYPES_LIST=\"";
   for (size_t i = 0; i < supportedTypes.size(); ++i) {
-    message << supportedTypes[i] << ";";
+    message << typeToCMakeFormat(supportedTypes[i]) << ";";
   }
-  message << scriptType << "\" ..\n\n";
+  message << typeToCMakeFormat(scriptType) << "\" ..\n\n";
 
   // Suggest type profiles for common cases
   message << "Or use a predefined type profile:\n";
   message << "  ./buildnativeoperations.sh --debug-type-profile ESSENTIAL\n";
-  message << "  ./buildnativeoperations.sh --debug-type-profile MINIMAL_INDEXING\n\n";
+  message << "  ./buildnativeoperations.sh --debug-type-profile MINIMAL_INDEXING\n";
+  message << "  ./buildnativeoperations.sh --debug-type-profile QUANTIZATION\n";
+  message << "  ./buildnativeoperations.sh --debug-type-profile MIXED_PRECISION\n\n";
+
+  // Show current mode help
+#if defined(SD_SELECTIVE_TYPES)
+  message << "Current mode: SELECTIVE TYPES\n";
+  message << "This build was configured with specific data types only.\n";
+  message << "To include all types, build without --datatypes parameter.\n\n";
+#else
+  message << "Current mode: ALL TYPES\n";
+  message << "This should not happen - all types should be available.\n";
+  message << "This may indicate a build system bug.\n\n";
+#endif
 
   // Additional help
-  message << "To see all available types:\n";
+  message << "To see all available types and profiles:\n";
   message << "  ./buildnativeoperations.sh --show-types\n";
+  message << "  ./buildnativeoperations.sh --help\n";
 
   return message.str();
 }
@@ -417,7 +482,6 @@ std::string getDetailedTypeConfiguration() {
 
   return info.str();
 }
-
 // Type information API implementation
 const char *getSupportedTypes() {
   initializeTypeInfo();
@@ -473,6 +537,7 @@ const char *getMissingTypeError(const char* missingType, const char* context) {
   return errorMessage.c_str();
 }
 
+// NEW: Get detailed type configuration (for debugging)
 // NEW: Get detailed type configuration (for debugging)
 const char *getDetailedTypeConfig() {
   static std::string detailedConfig;

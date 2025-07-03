@@ -82,73 +82,87 @@ namespace sd {
         typeNames_[DataType::UTF32] = "UTF32";
         typeNames_[DataType::UNKNOWN] = "UNKNOWN";
     }
-    
     void DataTypeValidation::populateCompiledTypes() {
         // Auto-register types based on compile-time flags
-        // This mirrors the logic from types.h
-        
+        // This mirrors the logic from the CMake type system
+
+        // Boolean type
 #if defined(HAS_BOOL)
         registerCompiledType(DataType::BOOL, "BOOL");
 #endif
 
-#if defined(HAS_FLOAT32)
+        // Floating point types - check both CMake-generated and alias defines
+#if defined(HAS_FLOAT) || defined(HAS_FLOAT32)
         registerCompiledType(DataType::FLOAT32, "FLOAT32");
 #endif
 
-#if defined(HAS_DOUBLE)
+#if defined(HAS_DOUBLE) || defined(HAS_FLOAT64)
         registerCompiledType(DataType::DOUBLE, "DOUBLE");
 #endif
 
-#if defined(HAS_FLOAT16)
+#if defined(HAS_FLOAT16) || defined(HAS_HALF)
         registerCompiledType(DataType::HALF, "HALF");
 #endif
 
-#if defined(HAS_BFLOAT16)
+#if defined(HAS_BFLOAT16) || defined(HAS_BFLOAT)
         registerCompiledType(DataType::BFLOAT16, "BFLOAT16");
 #endif
 
-#if defined(HAS_INT8)
+        // Integer types - check both normalized (_T) and alias forms
+#if defined(HAS_INT8_T) || defined(HAS_INT8)
         registerCompiledType(DataType::INT8, "INT8");
 #endif
 
-#if defined(HAS_INT16)
+#if defined(HAS_INT16_T) || defined(HAS_INT16)
         registerCompiledType(DataType::INT16, "INT16");
 #endif
 
-#if defined(HAS_INT32)
+#if defined(HAS_INT32_T) || defined(HAS_INT32) || defined(HAS_INT)
         registerCompiledType(DataType::INT32, "INT32");
 #endif
 
-#if defined(HAS_INT64) || defined(HAS_LONG)
+#if defined(HAS_INT64_T) || defined(HAS_INT64) || defined(HAS_LONG)
         registerCompiledType(DataType::INT64, "INT64");
 #endif
 
-#if defined(HAS_UINT8)
+        // Unsigned integer types
+#if defined(HAS_UINT8_T) || defined(HAS_UINT8)
         registerCompiledType(DataType::UINT8, "UINT8");
 #endif
 
-#if defined(HAS_UINT16)
+#if defined(HAS_UINT16_T) || defined(HAS_UINT16)
         registerCompiledType(DataType::UINT16, "UINT16");
 #endif
 
-#if defined(HAS_UINT32)
+#if defined(HAS_UINT32_T) || defined(HAS_UINT32)
         registerCompiledType(DataType::UINT32, "UINT32");
 #endif
 
-#if defined(HAS_UNSIGNEDLONG)
+#if defined(HAS_UINT64_T) || defined(HAS_UINT64) || defined(HAS_UNSIGNEDLONG)
         registerCompiledType(DataType::UINT64, "UINT64");
 #endif
 
-#if defined(HAS_UTF8)
+        // String types - only if string operations are enabled
+#if defined(SD_ENABLE_STRING_OPERATIONS)
+#if defined(HAS_STD_STRING) || defined(HAS_UTF8)
         registerCompiledType(DataType::UTF8, "UTF8");
 #endif
 
-#if defined(HAS_UTF16)
+#if defined(HAS_STD_U16STRING) || defined(HAS_UTF16)
         registerCompiledType(DataType::UTF16, "UTF16");
 #endif
 
-#if defined(HAS_UTF32)
+#if defined(HAS_STD_U32STRING) || defined(HAS_UTF32)
         registerCompiledType(DataType::UTF32, "UTF32");
+#endif
+#endif
+
+        // Debug: Log what types were registered (only in debug builds)
+#if defined(SD_GCC_FUNCTRACE)
+        sd_printf("DataTypeValidation: Registered %zu compiled types\n", compiledTypes_.size());
+        for (const auto& type : compiledTypes_) {
+            sd_printf("  - %s\n", getDataTypeName(type));
+        }
 #endif
     }
     
@@ -166,78 +180,7 @@ namespace sd {
         initializeIfNeeded();
         return enumMapping_.find(dataTypeId) != enumMapping_.end();
     }
-    
-    bool DataTypeValidation::isCompiledDataType(DataType dataType) {
-        initializeIfNeeded();
-        return compiledTypes_.find(dataType) != compiledTypes_.end();
-    }
-    
-    std::string DataTypeValidation::getDataTypeErrorMessage(DataType dataType, const char* context) {
-        return getDataTypeErrorMessage(static_cast<int>(dataType), context);
-    }
-    
-    std::string DataTypeValidation::getDataTypeErrorMessage(int dataTypeId, const char* context) {
-        initializeIfNeeded();
-        
-        std::ostringstream oss;
-        
-        if (!isValidDataType(dataTypeId)) {
-            oss << "Invalid data type ID: " << dataTypeId << " (not a valid enum value)";
-        } else {
-            DataType dt = enumMapping_[dataTypeId];
-            const char* typeName = getDataTypeName(dt);
-            
-            if (!isCompiledDataType(dt)) {
-                oss << "Data type " << typeName << " (ID: " << dataTypeId 
-                    << ") is not available in this build";
-            } else {
-                oss << "Unexpected error with data type " << typeName 
-                    << " (ID: " << dataTypeId << ") - type is valid and compiled";
-            }
-        }
-        
-        if (context) {
-            oss << "\nContext: " << context;
-        }
-        
-        // Add build configuration info
-#if defined(SD_SELECTIVE_TYPES)
-        oss << "\nBuild configuration: Selective types enabled";
-        
-        // List the define flags that would enable missing types
-        if (isValidDataType(dataTypeId)) {
-            DataType dt = enumMapping_[dataTypeId];
-            if (!isCompiledDataType(dt)) {
-                const char* typeName = getDataTypeName(dt);
-                oss << "\nTo enable this type, rebuild with: -DHAS_" << typeName;
-            }
-        }
-#else
-        oss << "\nBuild configuration: All types enabled (SD_SELECTIVE_TYPES not defined)";
-#endif
-        
-        // Add available types
-        auto availableTypes = getAvailableDataTypes();
-        if (!availableTypes.empty()) {
-            oss << "\nAvailable types in this build (" << availableTypes.size() << "): ";
-            for (size_t i = 0; i < availableTypes.size(); ++i) {
-                if (i > 0) oss << ", ";
-                oss << getDataTypeName(availableTypes[i]);
-            }
-        } else {
-            oss << "\nWARNING: No data types are available in this build!";
-        }
-        
-        // Add suggestions
-        if (!isValidDataType(dataTypeId)) {
-            oss << "\nSuggestion: Check NDArray creation and data type initialization";
-        } else if (!availableTypes.empty()) {
-            oss << "\nSuggestion: Use one of the available types or rebuild with the required type enabled";
-        }
-        
-        return oss.str();
-    }
-    
+
     std::vector<DataType> DataTypeValidation::getAvailableDataTypes() {
         initializeIfNeeded();
         std::vector<DataType> result;
@@ -246,6 +189,121 @@ namespace sd {
             result.push_back(type);
         }
         return result;
+    }
+    
+    bool DataTypeValidation::isCompiledDataType(DataType dataType) {
+        initializeIfNeeded();
+        return compiledTypes_.find(dataType) != compiledTypes_.end();
+    }
+    
+    std::string DataTypeValidation::getDataTypeErrorMessage(int dataTypeId, const char* context) {
+        initializeIfNeeded();
+
+        std::ostringstream oss;
+
+        if (!isValidDataType(dataTypeId)) {
+            oss << "Invalid data type ID: " << dataTypeId << " (not a valid enum value)";
+        } else {
+            DataType dt = enumMapping_[dataTypeId];
+            const char* typeName = getDataTypeName(dt);
+
+            if (!isCompiledDataType(dt)) {
+              oss << "Data type " << typeName << " (ID: " << dataTypeId
+                  << ") is not available in this build";
+            } else {
+              oss << "Unexpected error with data type " << typeName
+                  << " (ID: " << dataTypeId << ") - type is valid and compiled";
+            }
+        }
+
+        if (context) {
+            oss << "\nContext: " << context;
+        }
+
+        // Add build configuration info with better diagnosis
+#if defined(SD_SELECTIVE_TYPES)
+        oss << "\nBuild configuration: Selective types enabled";
+
+        // List the define flags that would enable missing types
+        if (isValidDataType(dataTypeId)) {
+            DataType dt = enumMapping_[dataTypeId];
+            if (!isCompiledDataType(dt)) {
+              const char* typeName = getDataTypeName(dt);
+              oss << "\nTo enable this type, rebuild with the type included in SD_TYPES_LIST";
+              oss << "\nExample: cmake -DSD_TYPES_LIST=\"float32;int32;int64;" << typeName << "\" ..";
+            }
+        }
+#else
+        oss << "\nBuild configuration: All types enabled (SD_SELECTIVE_TYPES not defined)";
+        oss << "\nThis error suggests a build system configuration issue.";
+#endif
+
+        // Add available types
+        auto availableTypes = getAvailableDataTypes();
+        if (!availableTypes.empty()) {
+            oss << "\nAvailable types in this build (" << availableTypes.size() << "): ";
+            for (size_t i = 0; i < availableTypes.size(); ++i) {
+              if (i > 0) oss << ", ";
+              oss << getDataTypeName(availableTypes[i]);
+            }
+        } else {
+            oss << "\nCRITICAL: No data types are available in this build!";
+            oss << "\nThis indicates a serious build configuration problem.";
+
+            // Debug information to help diagnose the issue
+            oss << "\nDiagnostic information:";
+            oss << "\n  Total possible types: " << typeNames_.size();
+            oss << "\n  Compiled types: " << compiledTypes_.size();
+
+            // Show which defines are actually set
+            oss << "\n  Active defines:";
+#if defined(HAS_BOOL)
+            oss << " HAS_BOOL";
+#endif
+#if defined(HAS_FLOAT)
+            oss << " HAS_FLOAT";
+#endif
+#if defined(HAS_FLOAT32)
+            oss << " HAS_FLOAT32";
+#endif
+#if defined(HAS_DOUBLE)
+            oss << " HAS_DOUBLE";
+#endif
+#if defined(HAS_INT32_T)
+            oss << " HAS_INT32_T";
+#endif
+#if defined(HAS_INT32)
+            oss << " HAS_INT32";
+#endif
+#if defined(HAS_INT)
+            oss << " HAS_INT";
+#endif
+#if defined(HAS_INT64_T)
+            oss << " HAS_INT64_T";
+#endif
+#if defined(HAS_LONG)
+            oss << " HAS_LONG";
+#endif
+#if defined(SD_SELECTIVE_TYPES)
+            oss << " SD_SELECTIVE_TYPES";
+#endif
+
+            if (compiledTypes_.empty()) {
+              oss << "\n  No type defines matched - check CMake type generation";
+            }
+        }
+
+        // Add suggestions based on the situation
+        if (!isValidDataType(dataTypeId)) {
+            oss << "\nSuggestion: Check NDArray creation and data type initialization";
+        } else if (availableTypes.empty()) {
+            oss << "\nSuggestion: Check CMake build configuration and type define generation";
+            oss << "\nVerify that setup_type_definitions() was called in CMake";
+        } else {
+            oss << "\nSuggestion: Use one of the available types or rebuild with the required type enabled";
+        }
+
+        return oss.str();
     }
     
     const char* DataTypeValidation::getDataTypeName(DataType dataType) {
@@ -257,27 +315,67 @@ namespace sd {
     std::string DataTypeValidation::getBuildInfo() {
         initializeIfNeeded();
         std::ostringstream oss;
-        
+
+        oss << "=== DATA TYPE VALIDATION BUILD INFO ===\n";
+
 #if defined(SD_SELECTIVE_TYPES)
         oss << "Build type: Selective types (SD_SELECTIVE_TYPES defined)\n";
 #else
         oss << "Build type: All types (SD_SELECTIVE_TYPES not defined)\n";
 #endif
-        
+
         oss << "Total possible types: " << typeNames_.size() << "\n";
         oss << "Compiled types: " << compiledTypes_.size() << "\n";
-        
+
         if (!compiledTypes_.empty()) {
             oss << "Available types: ";
             auto types = getAvailableDataTypes();
             for (size_t i = 0; i < types.size(); ++i) {
-                if (i > 0) oss << ", ";
-                oss << getDataTypeName(types[i]);
+              if (i > 0) oss << ", ";
+              oss << getDataTypeName(types[i]);
             }
+            oss << "\n";
         } else {
-            oss << "WARNING: No types compiled!";
+            oss << "CRITICAL: No types compiled!\n";
+            oss << "This indicates a build configuration error.\n";
+
+            // Show active defines for debugging
+            oss << "Active defines:";
+#if defined(HAS_BOOL)
+            oss << " HAS_BOOL";
+#endif
+#if defined(HAS_FLOAT)
+            oss << " HAS_FLOAT";
+#endif
+#if defined(HAS_FLOAT32)
+            oss << " HAS_FLOAT32";
+#endif
+#if defined(HAS_DOUBLE)
+            oss << " HAS_DOUBLE";
+#endif
+#if defined(HAS_INT32_T)
+            oss << " HAS_INT32_T";
+#endif
+#if defined(HAS_INT32)
+            oss << " HAS_INT32";
+#endif
+#if defined(HAS_INT)
+            oss << " HAS_INT";
+#endif
+#if defined(HAS_INT64_T)
+            oss << " HAS_INT64_T";
+#endif
+#if defined(HAS_LONG)
+            oss << " HAS_LONG";
+#endif
+
+            if (compiledTypes_.empty()) {
+              oss << "\nNo defines matched - check CMake setup_type_definitions()";
+            }
         }
-        
+
+        oss << "==========================================\n";
+
         return oss.str();
     }
     
