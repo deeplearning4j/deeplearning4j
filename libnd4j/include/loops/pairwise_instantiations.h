@@ -49,6 +49,10 @@
 // Helper macro to get the count of types
 #define COUNT_SD_COMMON_TYPES COUNT_NARG(SD_COMMON_TYPES)
 #define COUNT_SD_NUMERIC_TYPES COUNT_NARG(SD_NUMERIC_TYPES)
+#define COUNT_SD_FLOAT_TYPES COUNT_NARG(SD_FLOAT_TYPES)
+#define COUNT_SD_INTEGER_TYPES COUNT_NARG(SD_INTEGER_TYPES)
+#define COUNT_SD_BOOL_TYPES COUNT_NARG(SD_BOOL_TYPES)
+#define COUNT_SD_LONG_TYPES COUNT_NARG(SD_LONG_TYPES)
 
 // Safe partitioning for SD_COMMON_TYPES
 // These will always work regardless of how many types are actually defined
@@ -194,6 +198,135 @@
 // Fallback: reuse Part 0 when we don't have enough types
 #define SD_NUMERIC_TYPES_PART_2 SD_NUMERIC_TYPES_PART_0
 #endif
+
+// Safe partitioning for SD_FLOAT_TYPES
+#if COUNT_SD_FLOAT_TYPES >= 3
+#define SD_FLOAT_TYPES_PART_0 (\
+    GET_ELEMENT(0, SD_FLOAT_TYPES), \
+    GET_ELEMENT(1, SD_FLOAT_TYPES), \
+    GET_ELEMENT(2, SD_FLOAT_TYPES))
+#elif COUNT_SD_FLOAT_TYPES == 2
+#define SD_FLOAT_TYPES_PART_0 (\
+    GET_ELEMENT(0, SD_FLOAT_TYPES), \
+    GET_ELEMENT(1, SD_FLOAT_TYPES))
+#elif COUNT_SD_FLOAT_TYPES == 1
+#define SD_FLOAT_TYPES_PART_0 (GET_ELEMENT(0, SD_FLOAT_TYPES))
+#else
+#define SD_FLOAT_TYPES_PART_0 ((sd::DataType::FLOAT32, float))
+#endif
+
+#if COUNT_SD_FLOAT_TYPES >= 4
+#define SD_FLOAT_TYPES_PART_1 (GET_ELEMENT(3, SD_FLOAT_TYPES))
+#else
+#define SD_FLOAT_TYPES_PART_1 SD_FLOAT_TYPES_PART_0
+#endif
+
+#define SD_FLOAT_TYPES_PART_2 SD_FLOAT_TYPES_PART_0
+#define SD_FLOAT_TYPES_PART_3 SD_FLOAT_TYPES_PART_0
+
+// Safe partitioning for SD_INTEGER_TYPES
+#if COUNT_SD_INTEGER_TYPES >= 5
+#define SD_INTEGER_TYPES_PART_0 (\
+    GET_ELEMENT(0, SD_INTEGER_TYPES), \
+    GET_ELEMENT(1, SD_INTEGER_TYPES), \
+    GET_ELEMENT(2, SD_INTEGER_TYPES), \
+    GET_ELEMENT(3, SD_INTEGER_TYPES), \
+    GET_ELEMENT(4, SD_INTEGER_TYPES))
+#elif COUNT_SD_INTEGER_TYPES == 4
+#define SD_INTEGER_TYPES_PART_0 (\
+    GET_ELEMENT(0, SD_INTEGER_TYPES), \
+    GET_ELEMENT(1, SD_INTEGER_TYPES), \
+    GET_ELEMENT(2, SD_INTEGER_TYPES), \
+    GET_ELEMENT(3, SD_INTEGER_TYPES))
+#elif COUNT_SD_INTEGER_TYPES == 3
+#define SD_INTEGER_TYPES_PART_0 (\
+    GET_ELEMENT(0, SD_INTEGER_TYPES), \
+    GET_ELEMENT(1, SD_INTEGER_TYPES), \
+    GET_ELEMENT(2, SD_INTEGER_TYPES))
+#elif COUNT_SD_INTEGER_TYPES == 2
+#define SD_INTEGER_TYPES_PART_0 (\
+    GET_ELEMENT(0, SD_INTEGER_TYPES), \
+    GET_ELEMENT(1, SD_INTEGER_TYPES))
+#elif COUNT_SD_INTEGER_TYPES == 1
+#define SD_INTEGER_TYPES_PART_0 (GET_ELEMENT(0, SD_INTEGER_TYPES))
+#else
+#define SD_INTEGER_TYPES_PART_0 ((sd::DataType::INT32, int32_t))
+#endif
+
+#if COUNT_SD_INTEGER_TYPES >= 9
+#define SD_INTEGER_TYPES_PART_1 (\
+    GET_ELEMENT(5, SD_INTEGER_TYPES), \
+    GET_ELEMENT(6, SD_INTEGER_TYPES), \
+    GET_ELEMENT(7, SD_INTEGER_TYPES), \
+    GET_ELEMENT(8, SD_INTEGER_TYPES))
+#elif COUNT_SD_INTEGER_TYPES >= 6
+#define SD_INTEGER_TYPES_PART_1 (\
+    GET_ELEMENT(5, SD_INTEGER_TYPES))
+#else
+#define SD_INTEGER_TYPES_PART_1 SD_INTEGER_TYPES_PART_0
+#endif
+
+#define SD_INTEGER_TYPES_PART_2 SD_INTEGER_TYPES_PART_0
+
+// Safe partitioning for SD_BOOL_TYPES (typically just bool)
+#define SD_BOOL_TYPES_PART_0 (SD_BOOL_TYPES)
+#define SD_BOOL_TYPES_PART_1 (SD_BOOL_TYPES)
+#define SD_BOOL_TYPES_PART_2 (SD_BOOL_TYPES)
+
+// Safe partitioning for SD_LONG_TYPES
+#if COUNT_SD_LONG_TYPES >= 2
+#define SD_LONG_TYPES_PART_0 (\
+    GET_ELEMENT(0, SD_LONG_TYPES), \
+    GET_ELEMENT(1, SD_LONG_TYPES))
+#elif COUNT_SD_LONG_TYPES == 1
+#define SD_LONG_TYPES_PART_0 (GET_ELEMENT(0, SD_LONG_TYPES))
+#else
+#define SD_LONG_TYPES_PART_0 ((sd::DataType::INT64, sd::LongType))
+#endif
+
+#define SD_LONG_TYPES_PART_1 SD_LONG_TYPES_PART_0
+#define SD_LONG_TYPES_PART_2 SD_LONG_TYPES_PART_0
+
+// ============================================================================
+// ITERATION MACROS FOR COMBINATIONS
+// ============================================================================
+
+// Extract the type from a (DataType::ENUM, Type) tuple
+#define GET_SECOND_ARG(enum_val, type) type
+
+// Macro to iterate through a single type list
+#define ITERATE_LIST(types, callback) \
+    EVAL(FOR_EACH_DS(callback, instantiate, ;, types))
+
+// Macro to iterate through combinations of two type lists
+#define ITERATE_COMBINATIONS(types1, types2, callback, name, suffix) \
+    EVAL(FOR_EACH_DT(callback, name, suffix, types1, types2))
+
+// Macro to iterate through combinations of three type lists 
+#define ITERATE_COMBINATIONS_3(types1, types2, types3, callback, name, suffix) \
+    EVAL(FOR_EACH_TT1(callback, name, suffix, types1, types2, types3))
+
+// Single type iteration
+#define ITERATE_COMBINATIONS_1(types, callback, name, suffix) \
+    EVAL(FOR_EACH_DS(callback, name, suffix, types))
+
+// Callback macros for instantiation
+#define INSTANT_PROCESS_COMBINATION_1(name, suffix, tuple) \
+    template name<GET_SECOND_ARG tuple>suffix
+    
+#define INSTANT_PROCESS_COMBINATION_2(name, suffix, tuple1, tuple2) \
+    template name<GET_SECOND_ARG tuple1, GET_SECOND_ARG tuple2>suffix
+
+#define INSTANT_PROCESS_COMBINATION_3(name, suffix, tuple1, tuple2, tuple3) \
+    template name<GET_SECOND_ARG tuple1, GET_SECOND_ARG tuple2, GET_SECOND_ARG tuple3>suffix
+
+// Special callback for promotion
+#define CALLBACK_INSTANTIATE_PROMOTE(tuple1, tuple2, name, suffix, end) \
+    template void functions::pairwise_transforms::PairWiseTransform<GET_SECOND_ARG tuple1, GET_SECOND_ARG tuple2, \
+        typename TypePromotion<GET_SECOND_ARG tuple1, GET_SECOND_ARG tuple2>::type>::exec( \
+        int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, \
+        const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo, \
+        void *extraParams, sd::LongType start, sd::LongType stop)end
 
 #define PRINT_NUMERIC_TYPES_PARTS \
     PRINT SD_NUMERIC_TYPES_PART_2

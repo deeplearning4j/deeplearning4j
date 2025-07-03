@@ -740,6 +740,8 @@ function(_internal_srcore_generate_validity_header active_indices type_enums typ
     # Function to convert C++ types to simple macro names
     function(cpp_type_to_macro_name cpp_type output_var)
         set(macro_name "${cpp_type}")
+
+        # Handle basic types
         if(macro_name STREQUAL "bool")
             set(macro_name "BOOL")
         elseif(macro_name STREQUAL "float")
@@ -752,11 +754,42 @@ function(_internal_srcore_generate_validity_header active_indices type_enums typ
             set(macro_name "INT64")
         elseif(macro_name STREQUAL "uint64_t")
             set(macro_name "UINT64")
+        elseif(macro_name STREQUAL "int8_t")
+            set(macro_name "int8_t")
+        elseif(macro_name STREQUAL "int16_t")
+            set(macro_name "int16_t")
+        elseif(macro_name STREQUAL "uint8_t")
+            set(macro_name "uint8_t")
+        elseif(macro_name STREQUAL "uint16_t")
+            set(macro_name "uint16_t")
+        elseif(macro_name STREQUAL "uint32_t")
+            set(macro_name "uint32_t")
         elseif(macro_name STREQUAL "float16")
             set(macro_name "HALF")
         elseif(macro_name STREQUAL "bfloat16")
             set(macro_name "BFLOAT16")
+
+            # CRITICAL FIX: Handle std:: namespace types properly
+        elseif(macro_name STREQUAL "std::string")
+            set(macro_name "std_string")
+        elseif(macro_name STREQUAL "std::u16string")
+            set(macro_name "std_u16string")
+        elseif(macro_name STREQUAL "std::u32string")
+            set(macro_name "std_u32string")
+        elseif(macro_name STREQUAL "std::wstring")
+            set(macro_name "std_wstring")
+
+            # Fallback: Handle any other std:: types that might appear
+        elseif(macro_name MATCHES "^std::")
+            # Replace :: with _ to make it preprocessor-safe
+            string(REPLACE "::" "_" macro_name "${macro_name}")
+
+            # Handle any other namespace types
+        elseif(macro_name MATCHES "::")
+            # Replace all :: with _ to make any namespace safe for preprocessor
+            string(REPLACE "::" "_" macro_name "${macro_name}")
         endif()
+
         set(${output_var} "${macro_name}" PARENT_SCOPE)
     endfunction()
 
