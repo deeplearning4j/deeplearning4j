@@ -39,29 +39,38 @@ namespace sd {
 #ifndef __JAVACPP_HACK__
 
 class SD_LIB_EXPORT TadTrieNode {
-private:
- std::vector<std::unique_ptr<TadTrieNode>> _children;
- LongType _value;
- int _level;
- bool _isDimension;
- TadPack* _tadPack;  // Accessed atomically
- int _shapeRank;     // Store the rank of the original shape for verification
- size_t _nodeHash;   // Additional hash for quick comparison
- LongType* _originalStrides; // Store the original strides signature (optional)
- int _stridesLength;  // Length of the strides array
+ private:
+  std::vector<std::unique_ptr<TadTrieNode>> _children;
+  LongType _value;
+  int _level;
+  bool _isDimension;
+  TadPack* _tadPack;  // Accessed atomically
+  int _shapeRank;     // Store the rank of the original shape for verification
+  size_t _nodeHash;   // Additional hash for quick comparison
+  LongType* _originalStrides; // Store the original strides signature (optional)
+  int _stridesLength;  // Length of the strides array
 
-public:
- TadTrieNode(LongType value = 0, int level = 0, bool isDimension = true, int shapeRank = 0)
-     : _value(value), _level(level), _isDimension(isDimension), _tadPack(nullptr),
-       _shapeRank(shapeRank), _nodeHash(0), _originalStrides(nullptr), _stridesLength(0) {}
+ public:
+  TadTrieNode(LongType value = 0, int level = 0, bool isDimension = true, int shapeRank = 0)
+      : _value(value), _level(level), _isDimension(isDimension), _tadPack(nullptr),
+        _shapeRank(shapeRank), _nodeHash(0), _originalStrides(nullptr), _stridesLength(0) {}
 
- ~TadTrieNode() {
-   // Clean up original strides if allocated
-   if (_originalStrides != nullptr) {
-     delete[] _originalStrides;
-     _originalStrides = nullptr;
-   }
- }
+  // Delete copy operations to prevent issues with unique_ptr
+  TadTrieNode(const TadTrieNode&) = delete;
+  TadTrieNode& operator=(const TadTrieNode&) = delete;
+
+  // Enable move operations
+  TadTrieNode(TadTrieNode&&) = default;
+  TadTrieNode& operator=(TadTrieNode&&) = default;
+
+  ~TadTrieNode() {
+    // Clean up original strides if allocated
+    if (_originalStrides != nullptr) {
+      delete[] _originalStrides;
+      _originalStrides = nullptr;
+    }
+  }
+
 
  // Improved child finding with hash-based optimization
  TadTrieNode* findOrCreateChild(LongType value, int level, bool isDimension, int shapeRank = 0) {
@@ -161,48 +170,8 @@ public:
 
  TadPack* pack() const { return _tadPack; }
 
- bool operator==(const TadTrieNode& rhs) const {
-   if (_value != rhs._value ||
-       _level != rhs._level ||
-       _isDimension != rhs._isDimension ||
-       _shapeRank != rhs._shapeRank) {
-     return false;
-   }
-
-   // Compare strides if available
-   if (_stridesLength > 0 && rhs._stridesLength > 0) {
-     if (_stridesLength != rhs._stridesLength) {
-       return false;
-     }
-
-     for (int i = 0; i < _stridesLength; i++) {
-       if (_originalStrides[i] != rhs._originalStrides[i]) {
-         return false;
-       }
-     }
-   }
-
-   // Compare TadPacks if both exist
-   if (_tadPack && rhs._tadPack) {
-     return *_tadPack == *rhs._tadPack;
-   }
-
-   // Compare children by content, not by pointer comparison
-   if (_children.size() != rhs._children.size()) {
-     return false;
-   }
-
-   for (size_t i = 0; i < _children.size(); i++) {
-     if (!_children[i] || !rhs._children[i]) {
-       return _children[i] == rhs._children[i]; // Both should be null
-     }
-     if (!(*_children[i] == *rhs._children[i])) {
-       return false;
-     }
-   }
-
-   return true;
- }
+ // Removed operator== to avoid unique_ptr copy issues
+ // If equality comparison is needed, implement it without comparing _children vector directly
 
 };
 
