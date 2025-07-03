@@ -1502,50 +1502,6 @@ FILE* instrumentFile = nullptr;
 #endif
 
 
-//we need to tell -finstrument-functions not to include the logger otherwise it will recursively
-// stack overflow and segfault.
-__attribute__((no_instrument_function)) SD_LIB_EXPORT  void writeLog(bool enter,void *this_fn,void *call_site) {
-  if(instrumentFile == nullptr) {
-    return;
-  }
-  Dl_info info;
-  if (dladdr(this_fn, &info)) {
-    int status;
-    const char *funcName;
-    char* demangled = abi::__cxa_demangle(info.dli_sname, nullptr, 0, &status);
-    if (status == 0) {
-      funcName = demangled  != nullptr ? demangled : "null_demangled";
-    } else {
-      funcName = info.dli_sname ? info.dli_sname : "null_dli_sname";
-    }
-
-    printf(" %s %s (%s)\n",enter ? "enter" : "exit", funcName, info.dli_fname);
-    fprintf( instrumentFile," %s %s (%s)\n",enter ? "enter" : "exit", funcName, info.dli_fname);
-    if (demangled != nullptr) {
-      delete demangled;
-      demangled = nullptr;
-    }
-  } else {
-    printf("%s %s\n", enter ? "enter" : "exit","unknown");
-    fprintf(instrumentFile, "%s %s\n", enter ? "enter" : "exit","unknown");
-    fflush(instrumentFile);
-  }
-}
-//we need to tell -finstrument-functions not to include the logger otherwise it will recursively
-// stack overflow and segfault.
-__attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_enter(void *this_fn,
-                                                                                    void *call_site) {
-  writeLog(true,this_fn, call_site);
-}
-
-
-//we need to tell -finstrument-functions not to include the logger otherwise it will recursively
-// stack overflow and segfault.
-__attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_exit  (void *this_fn,
-                                                                                     void *call_site) {
-  writeLog(false,this_fn, call_site);
-
-}
 
 
 

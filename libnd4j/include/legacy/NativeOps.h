@@ -69,15 +69,7 @@ typedef sd::TadPack OpaqueTadPack;
 
 typedef sd::ConstantDataBuffer* OpaqueConstantDataBuffer;
 typedef sd::ConstantShapeBuffer* OpaqueConstantShapeBuffer;
-extern "C" {
 
-
-
-//this is to ensure symbol is loaded and exported from this library instead when using LD_PRELOAD.
-__attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_enter (void *this_fn,void *call_site);
-__attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_exit  (void *this_fn,void *call_site);
-
-}
 
 
 
