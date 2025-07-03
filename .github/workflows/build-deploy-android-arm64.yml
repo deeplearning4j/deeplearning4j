@@ -141,225 +141,227 @@ jobs:
         id: cache-arm64-ndk
         with:
           path: ${{ github.workspace }}/android-ndk-r27b
-          key: android-ndk-r27b-aarch64-${{ runner.os }}-v2
+          key: android-ndk-r27b-aarch64-${{ runner.os }}-v3
 
       - name: Setup Android NDK
         id: setup-ndk
         shell: bash
         run: |
-            NDK_VERSION="r27b"
-            NDK_DIR="${GITHUB_WORKSPACE}/android-ndk-${NDK_VERSION}"
-            
-            # Install required dependencies for ARM64 NDK
-            echo "Installing ARM64 NDK dependencies..."
-            sudo apt-get update -qq
-            sudo apt-get install -y libc6-dev libstdc++6 libgcc-s1 zlib1g-dev
-            
-            if [ ! -d "${NDK_DIR}" ]; then
-              echo "Downloading ARM64 Android NDK ${NDK_VERSION}..."
-              wget -q "https://github.com/lzhiyong/termux-ndk/releases/download/android-ndk/android-ndk-r27b-aarch64.zip" -O ndk.zip
-              unzip -q ndk.zip -d "${GITHUB_WORKSPACE}"
-              rm ndk.zip
-              echo "NDK downloaded and extracted successfully"
-            else
-              echo "Using cached NDK at ${NDK_DIR}"
-            fi
-            
-            # Set NDK environment variables
-            echo "ndk-path=${NDK_DIR}" >> $GITHUB_OUTPUT
-            echo "ANDROID_NDK_ROOT=${NDK_DIR}" >> $GITHUB_ENV
-            echo "ANDROID_NDK=${NDK_DIR}" >> $GITHUB_ENV
-            echo "ANDROID_NDK_HOME=${NDK_DIR}" >> $GITHUB_ENV
-            echo "ANDROID_VERSION=21" >> $GITHUB_ENV
-            
-            # Use ARM64 native prebuilt directory
-            PREBUILT_DIR="${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64"
-            
-            if [ ! -d "${PREBUILT_DIR}" ]; then
-              echo "ERROR: ARM64 prebuilt directory not found: ${PREBUILT_DIR}"
-              echo "Available directories:"
-              ls -la "${NDK_DIR}/toolchains/llvm/prebuilt/" 2>/dev/null || true
-              exit 1
-            fi
-            
-            echo "Using ARM64 native prebuilt directory: ${PREBUILT_DIR}"
-            
-            # Look for the actual clang binary (avoid broken pipe with find)
-            echo "=== Searching for clang binaries ==="
-            CLANG_BINARIES=$(find "${PREBUILT_DIR}/bin/" -name "*clang*" -type f 2>/dev/null | grep -v "++" | head -5)
-            echo "Found clang binaries:"
-            echo "${CLANG_BINARIES}"
-            
-            # Check the wrapper script content
-            CLANG_WRAPPER="${PREBUILT_DIR}/bin/aarch64-linux-android21-clang"
-            if [ -f "${CLANG_WRAPPER}" ]; then
-              echo "=== Clang wrapper script contents ==="
-              cat "${CLANG_WRAPPER}" 2>/dev/null || echo "Could not read wrapper script"
-              echo ""
-            fi
-            
-            # Find the actual clang binary
-            CLANG_C=""
-            CLANG_CXX=""
-            
-            # Try to find clang binary directly
-            if [ -f "${PREBUILT_DIR}/bin/clang" ]; then
-              CLANG_C="${PREBUILT_DIR}/bin/clang"
-              CLANG_CXX="${PREBUILT_DIR}/bin/clang++"
-              echo "Found direct clang binaries"
-            elif [ -f "${PREBUILT_DIR}/bin/clang-18" ]; then
-              CLANG_C="${PREBUILT_DIR}/bin/clang-18"
-              CLANG_CXX="${PREBUILT_DIR}/bin/clang++-18"
-              echo "Found versioned clang binaries (clang-18)"
-            elif [ -f "${PREBUILT_DIR}/bin/clang-17" ]; then
-              CLANG_C="${PREBUILT_DIR}/bin/clang-17"
-              CLANG_CXX="${PREBUILT_DIR}/bin/clang++-17"
-              echo "Found versioned clang binaries (clang-17)"
-            else
-              # Use find to locate any clang binary
-              CLANG_BINARY=$(find "${PREBUILT_DIR}/bin/" -name "clang*" -type f -executable 2>/dev/null | grep -v "++" | head -1)
-              if [ -n "${CLANG_BINARY}" ]; then
-                CLANG_C="${CLANG_BINARY}"
-                # Try to find corresponding C++ compiler
-                CLANG_CXX="${CLANG_BINARY}++"
-                if [ ! -f "${CLANG_CXX}" ]; then
-                  CLANG_CXX=$(find "${PREBUILT_DIR}/bin/" -name "clang++*" -type f -executable 2>/dev/null | head -1)
-                fi
-                echo "Found clang binary: ${CLANG_BINARY}"
+          NDK_VERSION="r27b"
+          NDK_DIR="${GITHUB_WORKSPACE}/android-ndk-${NDK_VERSION}"
+          
+          # Install required dependencies for ARM64 NDK
+          echo "Installing ARM64 NDK dependencies..."
+          sudo apt-get update -qq
+          sudo apt-get install -y libc6-dev libstdc++6 libgcc-s1 zlib1g-dev
+          
+          if [ ! -d "${NDK_DIR}" ]; then
+            echo "Downloading ARM64 Android NDK ${NDK_VERSION}..."
+            wget -q "https://github.com/lzhiyong/termux-ndk/releases/download/android-ndk/android-ndk-r27b-aarch64.zip" -O ndk.zip
+            unzip -q ndk.zip -d "${GITHUB_WORKSPACE}"
+            rm ndk.zip
+            echo "NDK downloaded and extracted successfully"
+          else
+            echo "Using cached NDK at ${NDK_DIR}"
+          fi
+          
+          # Set NDK environment variables
+          echo "ndk-path=${NDK_DIR}" >> $GITHUB_OUTPUT
+          echo "ANDROID_NDK_ROOT=${NDK_DIR}" >> $GITHUB_ENV
+          echo "ANDROID_NDK=${NDK_DIR}" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=${NDK_DIR}" >> $GITHUB_ENV
+          echo "ANDROID_VERSION=21" >> $GITHUB_ENV
+          
+          # Use ARM64 native prebuilt directory
+          PREBUILT_DIR="${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64"
+          
+          if [ ! -d "${PREBUILT_DIR}" ]; then
+            echo "ERROR: ARM64 prebuilt directory not found: ${PREBUILT_DIR}"
+            echo "Available directories:"
+            ls -la "${NDK_DIR}/toolchains/llvm/prebuilt/" 2>/dev/null || true
+            exit 1
+          fi
+          
+          echo "Using ARM64 native prebuilt directory: ${PREBUILT_DIR}"
+          
+          # Debug: Show what's actually available
+          echo "=== Debugging NDK structure ==="
+          echo "Contents of prebuilt bin directory:"
+          ls -la "${PREBUILT_DIR}/bin/" | head -20
+          echo ""
+          echo "All clang-related files:"
+          find "${PREBUILT_DIR}/bin/" -name "*clang*" -type f 2>/dev/null || true
+          echo ""
+          
+          # Find the actual clang binary - prioritize target-specific ones
+          CLANG_C=""
+          CLANG_CXX=""
+          
+          # Look for target-specific clang binaries first (most likely to exist in Termux NDK)
+          if [ -f "${PREBUILT_DIR}/bin/aarch64-linux-android21-clang" ]; then
+            CLANG_C="${PREBUILT_DIR}/bin/aarch64-linux-android21-clang"
+            CLANG_CXX="${PREBUILT_DIR}/bin/aarch64-linux-android21-clang++"
+            echo "Found target-specific clang binaries (android21)"
+          elif [ -f "${PREBUILT_DIR}/bin/aarch64-linux-android34-clang" ]; then
+            CLANG_C="${PREBUILT_DIR}/bin/aarch64-linux-android34-clang"
+            CLANG_CXX="${PREBUILT_DIR}/bin/aarch64-linux-android34-clang++"
+            echo "Found target-specific clang binaries (android34)"
+          elif [ -f "${PREBUILT_DIR}/bin/clang" ]; then
+            CLANG_C="${PREBUILT_DIR}/bin/clang"
+            CLANG_CXX="${PREBUILT_DIR}/bin/clang++"
+            echo "Found direct clang binaries"
+          elif [ -f "${PREBUILT_DIR}/bin/clang-18" ]; then
+            CLANG_C="${PREBUILT_DIR}/bin/clang-18"
+            CLANG_CXX="${PREBUILT_DIR}/bin/clang++-18"
+            echo "Found versioned clang binaries (clang-18)"
+          elif [ -f "${PREBUILT_DIR}/bin/clang-17" ]; then
+            CLANG_C="${PREBUILT_DIR}/bin/clang-17"
+            CLANG_CXX="${PREBUILT_DIR}/bin/clang++-17"
+            echo "Found versioned clang binaries (clang-17)"
+          else
+            # Use find to locate any clang binary as fallback
+            CLANG_BINARY=$(find "${PREBUILT_DIR}/bin/" -name "*clang*" -type f -executable 2>/dev/null | grep -v "++" | head -1)
+            if [ -n "${CLANG_BINARY}" ]; then
+              CLANG_C="${CLANG_BINARY}"
+              # Try to find corresponding C++ compiler
+              CLANG_CXX="${CLANG_BINARY}++"
+              if [ ! -f "${CLANG_CXX}" ]; then
+                CLANG_CXX=$(find "${PREBUILT_DIR}/bin/" -name "*clang++*" -type f -executable 2>/dev/null | head -1)
               fi
+              echo "Found clang binary: ${CLANG_BINARY}"
             fi
-            
-            if [ -z "${CLANG_C}" ] || [ ! -f "${CLANG_C}" ]; then
-              echo "ERROR: No working clang binary found"
-              echo "Available files in bin directory:"
-              ls "${PREBUILT_DIR}/bin/" 2>/dev/null | head -10 || true
-              exit 1
-            fi
-            
-            # Test the actual clang binary
-            echo "=== Testing clang binary directly ==="
-            echo "Testing: ${CLANG_C}"
-            if "${CLANG_C}" --version >/dev/null 2>&1; then
-              echo "✓ Direct clang binary working"
-              CLANG_VERSION=$("${CLANG_C}" --version 2>/dev/null | head -1 || echo "Unknown version")
-              echo "Version: ${CLANG_VERSION}"
+          fi
+          
+          if [ -z "${CLANG_C}" ] || [ ! -f "${CLANG_C}" ]; then
+            echo "ERROR: No working clang binary found"
+            echo "Available files in bin directory:"
+            ls -la "${PREBUILT_DIR}/bin/" | grep clang || true
+            exit 1
+          fi
+          
+          # Test the actual clang binary
+          echo "=== Testing clang binary directly ==="
+          echo "Testing: ${CLANG_C}"
+          if "${CLANG_C}" --version >/dev/null 2>&1; then
+            echo "✓ Direct clang binary working"
+            CLANG_VERSION=$("${CLANG_C}" --version 2>/dev/null | head -1 || echo "Unknown version")
+            echo "Version: ${CLANG_VERSION}"
+          else
+            echo "✗ Direct clang binary failed:"
+            "${CLANG_C}" --version 2>&1 || true
+            echo "Checking binary file info:"
+            file "${CLANG_C}" 2>/dev/null || true
+            echo "Checking dependencies:"
+            ldd "${CLANG_C}" 2>&1 || true
+            exit 1
+          fi
+          
+          # Test C++ compiler if found
+          if [ -f "${CLANG_CXX}" ]; then
+            echo "Testing C++ compiler: ${CLANG_CXX}"
+            if "${CLANG_CXX}" --version >/dev/null 2>&1; then
+              echo "✓ C++ compiler working"
             else
-              echo "✗ Direct clang binary failed:"
-              "${CLANG_C}" --version 2>&1 || true
-              echo "Checking dependencies:"
-              ldd "${CLANG_C}" 2>&1 || true
-              exit 1
-            fi
-            
-            # Test C++ compiler if found
-            if [ -f "${CLANG_CXX}" ]; then
-              echo "Testing C++ compiler: ${CLANG_CXX}"
-              if "${CLANG_CXX}" --version >/dev/null 2>&1; then
-                echo "✓ C++ compiler working"
-              else
-                echo "✗ C++ compiler failed, will use C compiler for both"
-                CLANG_CXX="${CLANG_C}"
-              fi
-            else
-              echo "C++ compiler not found, using C compiler for both"
+              echo "✗ C++ compiler failed, will use C compiler for both"
               CLANG_CXX="${CLANG_C}"
             fi
-            
-            # Create our own wrapper scripts with proper Android targeting
-            echo "=== Creating Android-specific wrapper scripts ==="
-            WRAPPER_DIR="${PREBUILT_DIR}/bin"
-            WRAPPER_C="${WRAPPER_DIR}/android-clang-wrapper"
-            WRAPPER_CXX="${WRAPPER_DIR}/android-clang++-wrapper"
-            
-            # Create C wrapper with proper Android flags
-            cat > "${WRAPPER_C}" << 'EOF'
-            #!/bin/bash
-            SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-            PREBUILT_DIR="$(dirname "${SCRIPT_DIR}")"
-            CLANG_BINARY="CLANG_PATH_PLACEHOLDER"
-            exec "${CLANG_BINARY}" \
-              -target aarch64-linux-android21 \
-              --sysroot="${PREBUILT_DIR}/sysroot" \
-              -D__ANDROID_API__=21 \
-              "$@"
-            EOF
-            
-            # Create C++ wrapper with proper Android flags
-            cat > "${WRAPPER_CXX}" << 'EOF'
-            #!/bin/bash
-            SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-            PREBUILT_DIR="$(dirname "${SCRIPT_DIR}")"
-            CLANG_BINARY="CLANGXX_PATH_PLACEHOLDER"
-            exec "${CLANG_BINARY}" \
-              -target aarch64-linux-android21 \
-              --sysroot="${PREBUILT_DIR}/sysroot" \
-              -D__ANDROID_API__=21 \
-              "$@"
-            EOF
-            
-            # Replace placeholders with actual paths
-            sed -i "s|CLANG_PATH_PLACEHOLDER|${CLANG_C}|g" "${WRAPPER_C}"
-            sed -i "s|CLANGXX_PATH_PLACEHOLDER|${CLANG_CXX}|g" "${WRAPPER_CXX}"
-            
-            chmod +x "${WRAPPER_C}" "${WRAPPER_CXX}"
-            
-            # Test our wrapper scripts
-            echo "=== Testing wrapper scripts ==="
-            if "${WRAPPER_C}" --version >/dev/null 2>&1; then
-              echo "✓ C wrapper working"
-              USE_C_COMPILER="${WRAPPER_C}"
-            else
-              echo "✗ C wrapper failed, using direct binary"
-              USE_C_COMPILER="${CLANG_C}"
+          else
+            echo "C++ compiler not found, using C compiler for both"
+            CLANG_CXX="${CLANG_C}"
+          fi
+          
+          # Create our own wrapper scripts with proper Android targeting
+          echo "=== Creating Android-specific wrapper scripts ==="
+          WRAPPER_DIR="${PREBUILT_DIR}/bin"
+          WRAPPER_C="${WRAPPER_DIR}/android-clang-wrapper"
+          WRAPPER_CXX="${WRAPPER_DIR}/android-clang++-wrapper"
+          
+          # Create C wrapper with proper Android flags
+          cat > "${WRAPPER_C}" << EOF
+          #!/bin/bash
+          SCRIPT_DIR="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
+          PREBUILT_DIR="\$(dirname "\${SCRIPT_DIR}")"
+          CLANG_BINARY="${CLANG_C}"
+          exec "\${CLANG_BINARY}" \\
+            -target aarch64-linux-android21 \\
+            --sysroot="\${PREBUILT_DIR}/sysroot" \\
+            -D__ANDROID_API__=21 \\
+            "\$@"
+          EOF
+          
+          # Create C++ wrapper with proper Android flags
+          cat > "${WRAPPER_CXX}" << EOF
+          #!/bin/bash
+          SCRIPT_DIR="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
+          PREBUILT_DIR="\$(dirname "\${SCRIPT_DIR}")"
+          CLANG_BINARY="${CLANG_CXX}"
+          exec "\${CLANG_BINARY}" \\
+            -target aarch64-linux-android21 \\
+            --sysroot="\${PREBUILT_DIR}/sysroot" \\
+            -D__ANDROID_API__=21 \\
+            "\$@"
+          EOF
+          
+          chmod +x "${WRAPPER_C}" "${WRAPPER_CXX}"
+          
+          # Test our wrapper scripts
+          echo "=== Testing wrapper scripts ==="
+          if "${WRAPPER_C}" --version >/dev/null 2>&1; then
+            echo "✓ C wrapper working"
+            USE_C_COMPILER="${WRAPPER_C}"
+          else
+            echo "✗ C wrapper failed, using direct binary"
+            USE_C_COMPILER="${CLANG_C}"
+          fi
+          
+          if "${WRAPPER_CXX}" --version >/dev/null 2>&1; then
+            echo "✓ C++ wrapper working"
+            USE_CXX_COMPILER="${WRAPPER_CXX}"
+          else
+            echo "✗ C++ wrapper failed, using direct binary or C compiler"
+            USE_CXX_COMPILER="${CLANG_CXX}"
+          fi
+          
+          # Create compatibility directory structure
+          EXPECTED_DIR="${NDK_DIR}/platforms/android-21/arch-arm64"
+          if [ ! -d "${EXPECTED_DIR}" ]; then
+            echo "Creating compatibility directory structure..."
+            mkdir -p "${EXPECTED_DIR}"
+            SYSROOT="${PREBUILT_DIR}/sysroot"
+            if [ -d "${SYSROOT}" ]; then
+              ln -sf "${SYSROOT}/usr" "${EXPECTED_DIR}/usr"
+              echo "Created symlink from ${SYSROOT}/usr to ${EXPECTED_DIR}/usr"
             fi
-            
-            if "${WRAPPER_CXX}" --version >/dev/null 2>&1; then
-              echo "✓ C++ wrapper working"
-              USE_CXX_COMPILER="${WRAPPER_CXX}"
-            else
-              echo "✗ C++ wrapper failed, using direct binary or C compiler"
-              USE_CXX_COMPILER="${CLANG_CXX}"
-            fi
-            
-            # Create compatibility directory structure
-            EXPECTED_DIR="${NDK_DIR}/platforms/android-21/arch-arm64"
-            if [ ! -d "${EXPECTED_DIR}" ]; then
-              echo "Creating compatibility directory structure..."
-              mkdir -p "${EXPECTED_DIR}"
-              SYSROOT="${PREBUILT_DIR}/sysroot"
-              if [ -d "${SYSROOT}" ]; then
-                ln -sf "${SYSROOT}/usr" "${EXPECTED_DIR}/usr"
-                echo "Created symlink from ${SYSROOT}/usr to ${EXPECTED_DIR}/usr"
-              fi
-            fi
-            
-            # Export environment variables
-            echo "CC=${USE_C_COMPILER}" >> $GITHUB_ENV
-            echo "CXX=${USE_CXX_COMPILER}" >> $GITHUB_ENV
-            echo "CMAKE_TOOLCHAIN_FILE=${NDK_DIR}/build/cmake/android.toolchain.cmake" >> $GITHUB_ENV
-            echo "ANDROID_ABI=arm64-v8a" >> $GITHUB_ENV
-            echo "ANDROID_PLATFORM=android-21" >> $GITHUB_ENV
-            echo "ANDROID_NDK=${NDK_DIR}" >> $GITHUB_ENV
-            echo "CMAKE_C_COMPILER=${USE_C_COMPILER}" >> $GITHUB_ENV
-            echo "CMAKE_CXX_COMPILER=${USE_CXX_COMPILER}" >> $GITHUB_ENV
-            
-            echo "=== ARM64 native NDK setup complete ==="
-            echo "  CC: ${USE_C_COMPILER}"
-            echo "  CXX: ${USE_CXX_COMPILER}"
-            echo "  NDK: ${NDK_DIR}"
-            echo "  Prebuilt: ${PREBUILT_DIR}"
-            echo "  Running natively on: $(uname -m)"
-            echo "  Clang version: ${CLANG_VERSION}"
-            
-            # Final verification
-            echo "=== Final verification ==="
-            echo "Testing final compilers..."
-            if "${USE_C_COMPILER}" --version >/dev/null 2>&1 && "${USE_CXX_COMPILER}" --version >/dev/null 2>&1; then
-              echo "✓ All compilers working correctly"
-            else
-              echo "✗ Final compiler verification failed"
-              exit 1
-            fi
+          fi
+          
+          # Export environment variables
+          echo "CC=${USE_C_COMPILER}" >> $GITHUB_ENV
+          echo "CXX=${USE_CXX_COMPILER}" >> $GITHUB_ENV
+          echo "CMAKE_TOOLCHAIN_FILE=${NDK_DIR}/build/cmake/android.toolchain.cmake" >> $GITHUB_ENV
+          echo "ANDROID_ABI=arm64-v8a" >> $GITHUB_ENV
+          echo "ANDROID_PLATFORM=android-21" >> $GITHUB_ENV
+          echo "ANDROID_NDK=${NDK_DIR}" >> $GITHUB_ENV
+          echo "CMAKE_C_COMPILER=${USE_C_COMPILER}" >> $GITHUB_ENV
+          echo "CMAKE_CXX_COMPILER=${USE_CXX_COMPILER}" >> $GITHUB_ENV
+          
+          echo "=== ARM64 native NDK setup complete ==="
+          echo "  CC: ${USE_C_COMPILER}"
+          echo "  CXX: ${USE_CXX_COMPILER}"
+          echo "  NDK: ${NDK_DIR}"
+          echo "  Prebuilt: ${PREBUILT_DIR}"
+          echo "  Running natively on: $(uname -m)"
+          echo "  Clang version: ${CLANG_VERSION}"
+          
+          # Final verification
+          echo "=== Final verification ==="
+          echo "Testing final compilers..."
+          if "${USE_C_COMPILER}" --version >/dev/null 2>&1 && "${USE_CXX_COMPILER}" --version >/dev/null 2>&1; then
+            echo "✓ All compilers working correctly"
+          else
+            echo "✗ Final compiler verification failed"
+            exit 1
+          fi
+
       - name: Setup OpenBLAS
         shell: bash
         run: |
@@ -441,11 +443,11 @@ jobs:
           
           # Base Maven command
           BASE_COMMAND="mvn ${{ matrix.mvn_ext }} \
-            -Dlibnd4j.generate.flatc=ON --no-transfer-progress \
+            -Dlibnd4j.generate.flatc=ON \
+            --no-transfer-progress \
             -Posx-aarch64-protoc \
             -pl ${MODULES} \
             -Pcpu \
-             --no-transfer-progress \
             -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} \
             -Dhttp.keepAlive=false \
             -Dmaven.wagon.http.pool=false \
@@ -455,7 +457,6 @@ jobs:
             -Dmaven.javadoc.failOnError=false \
             -Djavacpp.platform=${LIBND4J_CLASSIFIER} \
             -Dlibnd4j.cmake=\"${CMAKE_ARGS}\" \
-            -Pcpu \
             --also-make \
             --batch-mode \
             deploy \
