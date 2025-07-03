@@ -462,7 +462,7 @@ SD_DEVICE void BroadcastInt<X>::transformCuda(
 }
 
 
-#define INSTANTIATE_TEMPLATE(X) \
+#define INSTANTIATE_BROADCAST_INT_TEMPLATE(X) \
 template <> void BroadcastInt<GET_SECOND(X)>::execInverseBroadcast( \
     dim3 launchDims,\
     cudaStream_t* stream,\
@@ -480,7 +480,7 @@ template <> void BroadcastInt<GET_SECOND(X)>::execInverseBroadcast( \
     sd::LongType const* tadOnlyShapeInfoZ,\
     sd::LongType const* tadOffsetsZ);\
 
-ITERATE_LIST((SD_NUMERIC_TYPES), INSTANTIATE_TEMPLATE)
+ITERATE_LIST((SD_NUMERIC_TYPES), INSTANTIATE_BROADCAST_INT_TEMPLATE)
 
 //////////////////////////////////////////////////////////////////////////////
 // Instantiate templates for common integer types
