@@ -392,16 +392,6 @@ jobs:
             export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
             cmake ${cmake_args} ../..
 
-            echo "Building libnd4j with make -j${LIBND4J_BUILD_THREADS}"
-            make -j${LIBND4J_BUILD_THREADS} VERBOSE=1
-
-            echo "Installing libnd4j..."
-            make install
-            cd ${GITHUB_WORKSPACE}
-          else
-             echo "Skipping native libnd4j build as libnd4jUrl is provided."
-          fi
-
           if [ "$PERFORM_RELEASE" == 1 ] || [ "$PERFORM_RELEASE" == "true" ]; then
               echo "Executing release script..."
               bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
