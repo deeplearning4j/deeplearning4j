@@ -90,18 +90,6 @@ jobs:
           docker-images: true
           swap-storage: true
 
-      - name: Configure swap space
-        shell: bash
-        run: |
-          echo "Setting up 4GB swap file..."
-          sudo fallocate -l 4G /swapfile
-          sudo chmod 600 /swapfile
-          sudo mkswap /swapfile
-          sudo swapon /swapfile
-          sudo sysctl vm.swappiness=20
-          echo "Swap configuration complete:"
-          free -h
-
       - name: Cache protobuf install
         uses: actions/cache@v4
         id: cache-protobuf-arm
@@ -184,14 +172,7 @@ jobs:
           
           echo "Using ARM64 native prebuilt directory: ${PREBUILT_DIR}"
           
-          # Debug: Show what's actually available
-          echo "=== Debugging NDK structure ==="
-          echo "Contents of prebuilt bin directory:"
-          ls -la "${PREBUILT_DIR}/bin/" | head -20
-          echo ""
-          echo "All clang-related files:"
-          find "${PREBUILT_DIR}/bin/" -name "*clang*" -type f 2>/dev/null || true
-          echo ""
+    
           
           # Find the actual clang binary - prioritize target-specific ones
           CLANG_C=""

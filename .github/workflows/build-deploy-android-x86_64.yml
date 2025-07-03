@@ -263,14 +263,6 @@ jobs:
           wget --quiet ${OPENBLAS_URL}
           echo "Unzipping ${OPENBLAS_JAR}..."
           unzip -q ${OPENBLAS_JAR}
-          if [ -f "${OPENBLAS_PATH}/libopenblas.so.0" ]; then
-             echo "Creating symlink for libopenblas.so in ${OPENBLAS_PATH}"
-             ln -sf libopenblas.so.0 ${OPENBLAS_PATH}/libopenblas.so
-          else
-             echo "Warning: ${OPENBLAS_PATH}/libopenblas.so.0 not found after unzip."
-             echo "Listing contents of ${OPENBLAS_PATH}:"
-             ls -l "${OPENBLAS_PATH}" || echo "Path ${OPENBLAS_PATH} not found."
-          fi
           echo "OpenBLAS setup complete. OPENBLAS_PATH=${OPENBLAS_PATH}"
 
       - name: Debug Info
