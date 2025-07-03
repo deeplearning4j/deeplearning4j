@@ -364,34 +364,6 @@ jobs:
           # Show memory status before build
           echo "=== Memory status before build ==="
           free -h
-
-          if [ "${{ github.event.inputs.libnd4jUrl }}" == '' ]; then
-            echo "Building libnd4j natively as no URL was provided..."
-            cd "${GITHUB_WORKSPACE}/libnd4j"
-            mkdir -p blasbuild/android-x86_64
-            cd blasbuild/android-x86_64
-
-            cmake_args="-DSD_ANDROID_BUILD=true \
-                        -DANDROID_NDK=${ANDROID_NDK} \
-                        -DANDROID_PLATFORM=android-${ANDROID_VERSION} \
-                        -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK}/build/cmake/android.toolchain.cmake \
-                        -DANDROID_ABI=x86_64"
-
-            if [ -n "${OPENBLAS_PATH}" ]; then
-               cmake_args="${cmake_args} -DOPENBLAS_PATH=${OPENBLAS_PATH}"
-            else
-               echo "Warning: OPENBLAS_PATH is not set for CMake. Will attempt to find system BLAS."
-            fi
-
-            if [ "${HELPER}" == "onednn" ]; then
-              cmake_args="${cmake_args} -DHELPERS_onednn=true"
-              echo "Enabled oneDNN helper via CMake flag (-DHELPERS_onednn=true)."
-            fi
-
-            echo "Configuring libnd4j with CMake args: ${cmake_args}"
-            export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
-            cmake ${cmake_args} ../..
-
           if [ "$PERFORM_RELEASE" == 1 ] || [ "$PERFORM_RELEASE" == "true" ]; then
               echo "Executing release script..."
               bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
