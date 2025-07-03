@@ -161,7 +161,7 @@ public:
 
  TadPack* pack() const { return _tadPack; }
 
- bool operator==(const TadTrieNode& rhs)  {
+ bool operator==(const TadTrieNode& rhs) const {
    if (_value != rhs._value ||
        _level != rhs._level ||
        _isDimension != rhs._isDimension ||
@@ -187,8 +187,21 @@ public:
      return *_tadPack == *rhs._tadPack;
    }
 
-   // Compare children recursively if needed
-   return _children == rhs._children;
+   // Compare children by content, not by pointer comparison
+   if (_children.size() != rhs._children.size()) {
+     return false;
+   }
+
+   for (size_t i = 0; i < _children.size(); i++) {
+     if (!_children[i] || !rhs._children[i]) {
+       return _children[i] == rhs._children[i]; // Both should be null
+     }
+     if (!(*_children[i] == *rhs._children[i])) {
+       return false;
+     }
+   }
+
+   return true;
  }
 
 };
