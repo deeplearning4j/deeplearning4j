@@ -290,7 +290,6 @@ function(configure_cuda_linking main_target_name)
     endif()
 
     target_link_libraries(${main_target_name} PUBLIC flatbuffers_interface)
-    install(TARGETS ${main_target_name} DESTINATION .)
 endfunction()
 
 # --- Enhanced library creation function ---
