@@ -59,17 +59,6 @@ function(configure_large_template_linker)
 
     string(FIND "${LD_HELP_OUTPUT}" "--plt-align" PLT_ALIGN_SUPPORTED)
 
-    if(PLT_ALIGN_SUPPORTED GREATER -1)
-        # Use GNU LD with PLT-specific optimizations if supported
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--plt-align=32 -Wl,--hash-style=both -Wl,-z,max-page-size=0x200000" PARENT_SCOPE)
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--plt-align=32 -Wl,--hash-style=both -Wl,-z,max-page-size=0x200000" PARENT_SCOPE)
-        message(STATUS "✓ Using GNU LD with PLT overflow prevention")
-    else()
-        # Fall back to basic optimizations for older linkers
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--hash-style=both -Wl,-z,max-page-size=0x200000" PARENT_SCOPE)
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--hash-style=both -Wl,-z,max-page-size=0x200000" PARENT_SCOPE)
-        message(STATUS "✓ Using GNU LD with basic optimizations (--plt-align not supported)")
-    endif()
 
     message(STATUS "Applied PLT overflow prevention for large template library")
 endfunction()
@@ -155,22 +144,6 @@ endfunction()
 
 # Function to disable PLT completely for memory issues
 function(configure_plt_disable)
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-plt" PARENT_SCOPE)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-plt" PARENT_SCOPE)
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,now" PARENT_SCOPE)
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,now" PARENT_SCOPE)
-        message(STATUS "Disabled PLT for GCC")
-    endif()
-
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-plt" PARENT_SCOPE)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-plt" PARENT_SCOPE)
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,now" PARENT_SCOPE)
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,now" PARENT_SCOPE)
-        message(STATUS "Disabled PLT for Clang")
-    endif()
-
     # For CUDA builds, disable PLT in host compiler flags
     if(SD_CUDA AND CMAKE_CUDA_COMPILER)
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -fno-plt" PARENT_SCOPE)

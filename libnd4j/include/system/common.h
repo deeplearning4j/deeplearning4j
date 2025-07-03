@@ -61,6 +61,14 @@
 #endif
 #endif
 
+// Cross-platform compiler attributes
+#if defined(__GNUC__)
+#define SD_NO_INSTRUMENT __attribute__((no_instrument_function))
+#elif defined(_MSC_VER)
+#define SD_NO_INSTRUMENT __declspec(noinline)
+#else
+#define SD_NO_INSTRUMENT
+#endif
 
 #ifdef __clang__
 #include <unordered_map>
