@@ -8,9 +8,14 @@ function(setup_blas)
     if(SD_CUDA)
         return()
     endif()
-        include_directories(${OPENBLAS_PATH}/include/)
-        link_directories(${OPENBLAS_PATH}/lib/)
-        set(OPENBLAS_LIBRARIES openblas PARENT_SCOPE)
+    include_directories(${OPENBLAS_PATH}/include/)
+    #android
+    include_directories(${OPENBLAS_PATH}/lib/x86_64/include/)
+    link_directories(${OPENBLAS_PATH}/lib/)
+    #android
+    include_directories(${OPENBLAS_PATH}/lib/x86_64/lib/)
+    include_directories(${OPENBLAS_PATH}/lib/x86_64/)
+    set(OPENBLAS_LIBRARIES openblas PARENT_SCOPE)
 endfunction()
 
 
