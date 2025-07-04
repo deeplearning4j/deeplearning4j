@@ -323,7 +323,6 @@ function(create_and_link_library)
             message(STATUS "🚀 CUDA object library configured with enhanced template support")
         endif()
 
-        # CRITICAL: Set include directories on the object library so it can find project headers
         target_include_directories(${OBJECT_LIB_NAME} PUBLIC
                 "${CMAKE_CURRENT_BINARY_DIR}/include"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include"
@@ -343,14 +342,24 @@ function(create_and_link_library)
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/generated"
                 "${CMAKE_BINARY_DIR}/compilation_units"
                 "${CMAKE_BINARY_DIR}/cpu_instantiations"
-                "${CMAKE_BINARY_DIR}/cuda_instantiations")
+        )
+
+        if(SD_CUDA)
+            target_include_directories(${OBJECT_LIB_NAME} PUBLIC
+                    "${CMAKE_BINARY_DIR}/cuda_instantiations"
+            )
+        else()
+            target_include_directories(${OBJECT_LIB_NAME} PUBLIC
+                    "${OPENBLAS_PATH}/include"
+                    "${CMAKE_BINARY_DIR}/cpu_instantiations"
+            )
+        endif ()
 
         if(SD_CUDA AND DEFINED CMAKE_CUDA_ARCHITECTURES AND CMAKE_CUDA_ARCHITECTURES)
             set_target_properties(${OBJECT_LIB_NAME} PROPERTIES
                     CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
         endif()
 
-        # 🔧 CRITICAL FIX: Apply type definitions to OBJECT library (where compilation happens)
         message(STATUS "🔧 Applying type definitions to OBJECT library: ${OBJECT_LIB_NAME}")
         setup_type_definitions_for_target(${OBJECT_LIB_NAME})
     endif()
@@ -361,6 +370,7 @@ function(create_and_link_library)
 
         # No CUDA includes needed here, they are handled by the linking function
         target_include_directories(${MAIN_LIB_NAME} PUBLIC
+                "${OPENBLAS_PATH}/include"
                 "${CMAKE_CURRENT_BINARY_DIR}/include"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/array"
@@ -380,6 +390,17 @@ function(create_and_link_library)
                 "${CMAKE_BINARY_DIR}/compilation_units"
                 "${CMAKE_BINARY_DIR}/cpu_instantiations"
                 "${CMAKE_BINARY_DIR}/cuda_instantiations")
+
+        if(SD_CUDA)
+            target_include_directories(${MAIN_LIB_NAME} PUBLIC
+                    "${CMAKE_BINARY_DIR}/cuda_instantiations"
+            )
+        else()
+            target_include_directories(${MAIN_LIB_NAME} PUBLIC
+                    "${OPENBLAS_PATH}/include"
+                    "${CMAKE_BINARY_DIR}/cpu_instantiations"
+            )
+        endif ()
 
         # 🔧 ALSO apply type definitions to the shared library (for completeness)
         message(STATUS "🔧 Applying type definitions to SHARED library: ${MAIN_LIB_NAME}")

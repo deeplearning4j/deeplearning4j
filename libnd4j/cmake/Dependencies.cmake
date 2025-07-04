@@ -9,12 +9,8 @@ function(setup_blas)
         return()
     endif()
     include_directories(${OPENBLAS_PATH}/include/)
-    #android
-    include_directories(${OPENBLAS_PATH}/lib/x86_64/include/)
     link_directories(${OPENBLAS_PATH}/lib/)
-    #android
-    include_directories(${OPENBLAS_PATH}/lib/x86_64/lib/)
-    include_directories(${OPENBLAS_PATH}/lib/x86_64/)
+
     set(OPENBLAS_LIBRARIES openblas PARENT_SCOPE)
 endfunction()
 
