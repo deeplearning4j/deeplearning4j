@@ -33,11 +33,6 @@ set(CMAKE_FIND_ROOT_PATH ${CMAKE_SYSROOT})
 #    Setting CMAKE_<LANG>_FLAGS directly ensures they are used by CMake's
 #    initial compiler check, preventing the "compiler is not able to compile
 #    a simple test program" error.
-set(ANDROID_COMPILE_FLAGS
-        "--target=aarch64-linux-android21"
-        "--sysroot=${CMAKE_SYSROOT}"
-)
-
-set(CMAKE_C_FLAGS "${ANDROID_COMPILE_FLAGS}" CACHE STRING "C compiler flags")
-set(CMAKE_CXX_FLAGS "${ANDROID_COMPILE_FLAGS}" CACHE STRING "C++ compiler flags")
-set(CMAKE_ASM_FLAGS "${ANDROID_COMPILE_FLAGS}" CACHE STRING "Assembler flags")
+set(CMAKE_C_FLAGS "--target=aarch64-linux-android21 --sysroot=${CMAKE_SYSROOT}" CACHE STRING "C compiler flags")
+set(CMAKE_CXX_FLAGS "--target=aarch64-linux-android21 --sysroot=${CMAKE_SYSROOT}" CACHE STRING "C++ compiler flags")
+set(CMAKE_ASM_FLAGS "--target=aarch64-linux-android21 --sysroot=${CMAKE_SYSROOT}" CACHE STRING "Assembler flags")
