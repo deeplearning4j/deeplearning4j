@@ -1260,18 +1260,21 @@ if [ "$CHIP" == "cuda" ] && [ -n "$CHIP_VERSION" ]; then
     esac
 fi
 
-[[ -z ${OPENBLAS_PATH:-} ]] && OPENBLAS_PATH=""
-OPENBLAS_PATH="${OPENBLAS_PATH//\\//}"
+# Normalize OPENBLAS_PATH if it points to lib subdirectory
+if [[ "$OPENBLAS_PATH" =~ lib/[^/]+$ ]]; then
+    OPENBLAS_PATH=$(dirname $(dirname "$OPENBLAS_PATH"))
+    echo "Normalized OPENBLAS_PATH to: $OPENBLAS_PATH"
+fi
 
-if [[ -n "${BUILD_PATH:-}" ]]; then
-    PREVIFS="$IFS"
-    IFS="$BUILD_PATH_SEPARATOR"
-    for P in $BUILD_PATH; do
-        if [[ -f "$P/include/openblas_config.h" ]]; then
-            OPENBLAS_PATH="$P"
-        fi
-    done
-    IFS="$PREVIFS"
+# Check for OpenBLAS headers
+if [[ ! -f "$OPENBLAS_PATH/include/openblas_config.h" ]]; then
+    echo "Could not find OpenBLAS, please make sure to run the build with Maven or set the OPENBLAS_PATH variable"
+    echo "Looked for: $OPENBLAS_PATH/include/openblas_config.h"
+    if [[ -n "$OPENBLAS_PATH" ]]; then
+        echo "Contents of $OPENBLAS_PATH:"
+        ls -la "$OPENBLAS_PATH" 2>/dev/null || echo "Directory does not exist"
+    fi
+    OPENBLAS_PATH=""
 fi
 
 if [[ ! -f "$OPENBLAS_PATH/include/openblas_config.h" ]]; then

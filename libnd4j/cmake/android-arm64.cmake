@@ -2,7 +2,7 @@
 # Designed to work with non-standard ARM64-hosted NDK (Termux NDK)
 
 # Set target system
-set(CMAKE_SYSTEM_NAME Linux)
+set(CMAKE_SYSTEM_NAME Android)
 set(CMAKE_SYSTEM_PROCESSOR aarch64)
 
 # Get NDK root from environment
@@ -15,48 +15,92 @@ endif()
 set(TOOLCHAIN_DIR "${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt/linux-aarch64")
 set(CMAKE_SYSROOT "${TOOLCHAIN_DIR}/sysroot")
 
-# Debug: Print environment variables
+# Debug output
+message(STATUS "=== Android ARM64 Toolchain Debug ===")
 message(STATUS "ANDROID_NDK_ROOT: ${ANDROID_NDK_ROOT}")
 message(STATUS "TOOLCHAIN_DIR: ${TOOLCHAIN_DIR}")
-message(STATUS "Environment CMAKE_C_COMPILER: $ENV{CMAKE_C_COMPILER}")
-message(STATUS "Environment CMAKE_CXX_COMPILER: $ENV{CMAKE_CXX_COMPILER}")
+message(STATUS "CMAKE_SYSROOT: ${CMAKE_SYSROOT}")
+message(STATUS "Environment CMAKE_C_COMPILER: '$ENV{CMAKE_C_COMPILER}'")
+message(STATUS "Environment CMAKE_CXX_COMPILER: '$ENV{CMAKE_CXX_COMPILER}'")
 
-# Set C compiler - prioritize environment variables, then look for wrapper scripts
+# Check if toolchain directory exists
+if(NOT EXISTS ${TOOLCHAIN_DIR})
+   message(FATAL_ERROR "Toolchain directory does not exist: ${TOOLCHAIN_DIR}")
+endif()
+
+# Find working C compiler
+set(CMAKE_C_COMPILER "")
 if(DEFINED ENV{CMAKE_C_COMPILER} AND NOT "$ENV{CMAKE_C_COMPILER}" STREQUAL "")
-   set(CMAKE_C_COMPILER $ENV{CMAKE_C_COMPILER})
-   message(STATUS "Using C compiler from environment: ${CMAKE_C_COMPILER}")
-else()
-   # Look for the wrapper scripts that the workflow creates
-   set(WRAPPER_C "${TOOLCHAIN_DIR}/bin/android-clang-wrapper")
-   set(DIRECT_C "${TOOLCHAIN_DIR}/bin/clang")
-
-   if(EXISTS ${WRAPPER_C})
-      set(CMAKE_C_COMPILER ${WRAPPER_C})
-      message(STATUS "Using wrapper C compiler: ${CMAKE_C_COMPILER}")
-      elif(EXISTS ${DIRECT_C})
-      set(CMAKE_C_COMPILER ${DIRECT_C})
-      message(STATUS "Using direct clang binary: ${CMAKE_C_COMPILER}")
+   if(EXISTS "$ENV{CMAKE_C_COMPILER}")
+      set(CMAKE_C_COMPILER $ENV{CMAKE_C_COMPILER})
+      message(STATUS "Using C compiler from environment: ${CMAKE_C_COMPILER}")
    else()
-      message(FATAL_ERROR "Could not find any working C compiler at ${TOOLCHAIN_DIR}/bin/")
+      message(STATUS "Environment C compiler does not exist: $ENV{CMAKE_C_COMPILER}")
    endif()
 endif()
 
-# Set C++ compiler - look for wrapper scripts, then use C compiler
-if(DEFINED ENV{CMAKE_CXX_COMPILER} AND NOT "$ENV{CMAKE_CXX_COMPILER}" STREQUAL "")
-   set(CMAKE_CXX_COMPILER $ENV{CMAKE_CXX_COMPILER})
-   message(STATUS "Using C++ compiler from environment: ${CMAKE_CXX_COMPILER}")
-else()
-   # Look for the wrapper scripts that the workflow creates
-   set(WRAPPER_CXX "${TOOLCHAIN_DIR}/bin/android-clang++-wrapper")
+# If no compiler from environment, search for available ones
+if(CMAKE_C_COMPILER STREQUAL "")
+   # List of possible C compiler locations in order of preference
+   set(C_COMPILER_CANDIDATES
+           "${TOOLCHAIN_DIR}/bin/android-clang-wrapper"
+           "${TOOLCHAIN_DIR}/bin/aarch64-linux-android21-clang"
+           "${TOOLCHAIN_DIR}/bin/clang"
+           "${TOOLCHAIN_DIR}/bin/clang-18"
+   )
 
-   if(EXISTS ${WRAPPER_CXX})
-      set(CMAKE_CXX_COMPILER ${WRAPPER_CXX})
-      message(STATUS "Using wrapper C++ compiler: ${CMAKE_CXX_COMPILER}")
+   foreach(CANDIDATE ${C_COMPILER_CANDIDATES})
+      if(EXISTS ${CANDIDATE})
+         set(CMAKE_C_COMPILER ${CANDIDATE})
+         message(STATUS "Found C compiler: ${CMAKE_C_COMPILER}")
+         break()
+      endif()
+   endforeach()
+endif()
+
+# Verify we found a C compiler
+if(CMAKE_C_COMPILER STREQUAL "")
+   message(STATUS "Listing contents of ${TOOLCHAIN_DIR}/bin/:")
+   file(GLOB BIN_CONTENTS "${TOOLCHAIN_DIR}/bin/*")
+   foreach(ITEM ${BIN_CONTENTS})
+      message(STATUS "  ${ITEM}")
+   endforeach()
+   message(FATAL_ERROR "Could not find any working C compiler")
+endif()
+
+# Find working C++ compiler
+set(CMAKE_CXX_COMPILER "")
+if(DEFINED ENV{CMAKE_CXX_COMPILER} AND NOT "$ENV{CMAKE_CXX_COMPILER}" STREQUAL "")
+   if(EXISTS "$ENV{CMAKE_CXX_COMPILER}")
+      set(CMAKE_CXX_COMPILER $ENV{CMAKE_CXX_COMPILER})
+      message(STATUS "Using C++ compiler from environment: ${CMAKE_CXX_COMPILER}")
    else()
-      # Fall back to using the C compiler for C++
-      set(CMAKE_CXX_COMPILER "${CMAKE_C_COMPILER}")
-      message(STATUS "Using C compiler for C++ (no wrapper found): ${CMAKE_CXX_COMPILER}")
+      message(STATUS "Environment C++ compiler does not exist: $ENV{CMAKE_CXX_COMPILER}")
    endif()
+endif()
+
+# If no C++ compiler from environment, search for available ones or use C compiler
+if(CMAKE_CXX_COMPILER STREQUAL "")
+   # List of possible C++ compiler locations in order of preference
+   set(CXX_COMPILER_CANDIDATES
+           "${TOOLCHAIN_DIR}/bin/android-clang++-wrapper"
+           "${TOOLCHAIN_DIR}/bin/aarch64-linux-android21-clang++"
+           "${TOOLCHAIN_DIR}/bin/clang++"
+           "${CMAKE_C_COMPILER}"
+   )
+
+   foreach(CANDIDATE ${CXX_COMPILER_CANDIDATES})
+      if(EXISTS ${CANDIDATE})
+         set(CMAKE_CXX_COMPILER ${CANDIDATE})
+         message(STATUS "Found C++ compiler: ${CMAKE_CXX_COMPILER}")
+         break()
+      endif()
+   endforeach()
+endif()
+
+# Verify we found a C++ compiler
+if(CMAKE_CXX_COMPILER STREQUAL "")
+   message(FATAL_ERROR "Could not find any working C++ compiler")
 endif()
 
 # Set ASM compiler
@@ -73,9 +117,15 @@ set(CMAKE_C_FLAGS "--target=aarch64-linux-android21 --sysroot=${CMAKE_SYSROOT}" 
 set(CMAKE_CXX_FLAGS "--target=aarch64-linux-android21 --sysroot=${CMAKE_SYSROOT} -stdlib=libc++" CACHE STRING "C++ compiler flags")
 set(CMAKE_ASM_FLAGS "--target=aarch64-linux-android21 --sysroot=${CMAKE_SYSROOT}" CACHE STRING "Assembler flags")
 
-# Debug: Print final compiler selections
-message(STATUS "Final C compiler: ${CMAKE_C_COMPILER}")
-message(STATUS "Final C++ compiler: ${CMAKE_CXX_COMPILER}")
-message(STATUS "Final ASM compiler: ${CMAKE_ASM_COMPILER}")
-message(STATUS "C flags: ${CMAKE_C_FLAGS}")
-message(STATUS "CXX flags: ${CMAKE_CXX_FLAGS}")
+# Set Android-specific variables
+set(ANDROID_ABI "arm64-v8a")
+set(ANDROID_PLATFORM "android-21")
+
+# Final debug output
+message(STATUS "=== Final Compiler Configuration ===")
+message(STATUS "CMAKE_C_COMPILER: ${CMAKE_C_COMPILER}")
+message(STATUS "CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
+message(STATUS "CMAKE_ASM_COMPILER: ${CMAKE_ASM_COMPILER}")
+message(STATUS "CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
+message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
+message(STATUS "=======================================")
