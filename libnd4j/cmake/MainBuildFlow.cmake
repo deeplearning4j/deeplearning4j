@@ -289,6 +289,7 @@ function(configure_cuda_linking main_target_name)
         target_compile_definitions(${main_target_name} PUBLIC HAVE_CUDNN=0)
     endif()
 
+    target_include_directories("${main_target_name}" PUBLIC "${CUDA_INCLUDE_DIRS}")
     target_link_libraries(${main_target_name} PUBLIC flatbuffers_interface)
 endfunction()
 
