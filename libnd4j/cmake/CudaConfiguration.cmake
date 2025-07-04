@@ -1,8 +1,94 @@
 ################################################################################
 # CUDA Configuration Functions
 # Functions for CUDA-specific build configuration and optimization
-# UPDATED VERSION - Modern cuDNN detection and integration
+# UPDATED VERSION - Fixed CUDA path discovery and include directory setup
 ################################################################################
+
+# Enhanced CUDA toolkit detection with proper include path setup
+function(setup_cuda_toolkit_paths)
+    message(STATUS "🔍 Setting up CUDA toolkit paths...")
+
+    # Find CUDA toolkit first
+    find_package(CUDAToolkit REQUIRED)
+
+    if(NOT CUDAToolkit_FOUND)
+        message(FATAL_ERROR "CUDA toolkit not found. Please install CUDA toolkit or set CUDA_PATH environment variable.")
+    endif()
+
+    # Get CUDA include directories
+    get_target_property(CUDA_INCLUDE_DIRS CUDA::toolkit INTERFACE_INCLUDE_DIRECTORIES)
+
+    # If the above doesn't work, try alternative methods
+    if(NOT CUDA_INCLUDE_DIRS)
+        set(CUDA_INCLUDE_DIRS "${CUDAToolkit_INCLUDE_DIRS}")
+    endif()
+
+    # Still not found? Try environment variables and common paths
+    if(NOT CUDA_INCLUDE_DIRS)
+        set(CUDA_SEARCH_PATHS
+                $ENV{CUDA_PATH}
+                $ENV{CUDA_HOME}
+                $ENV{CUDA_ROOT}
+                ${CUDAToolkit_ROOT}
+        )
+
+        if(WIN32)
+            list(APPEND CUDA_SEARCH_PATHS
+                    "$ENV{ProgramFiles}/NVIDIA GPU Computing Toolkit/CUDA/v12.6"
+                    "$ENV{ProgramFiles}/NVIDIA GPU Computing Toolkit/CUDA/v12.5"
+                    "$ENV{ProgramFiles}/NVIDIA GPU Computing Toolkit/CUDA/v12.4"
+                    "$ENV{ProgramFiles}/NVIDIA GPU Computing Toolkit/CUDA/v12.3"
+                    "$ENV{ProgramFiles}/NVIDIA GPU Computing Toolkit/CUDA/v12.2"
+                    "$ENV{ProgramFiles}/NVIDIA GPU Computing Toolkit/CUDA/v12.1"
+                    "$ENV{ProgramFiles}/NVIDIA GPU Computing Toolkit/CUDA/v12.0"
+                    "$ENV{ProgramFiles}/NVIDIA GPU Computing Toolkit/CUDA/v11.8"
+                    "C:/tools/cuda"
+            )
+        else()
+            list(APPEND CUDA_SEARCH_PATHS
+                    /usr/local/cuda
+                    /opt/cuda
+                    /usr/cuda
+            )
+        endif()
+
+        foreach(search_path ${CUDA_SEARCH_PATHS})
+            if(EXISTS "${search_path}/include/cuda.h")
+                set(CUDA_INCLUDE_DIRS "${search_path}/include")
+                message(STATUS "✅ Found CUDA include directory: ${CUDA_INCLUDE_DIRS}")
+                break()
+            endif()
+        endforeach()
+    endif()
+
+    # Verify we found CUDA headers
+    if(NOT CUDA_INCLUDE_DIRS)
+        message(FATAL_ERROR "❌ CUDA include directories not found. Please ensure CUDA toolkit is properly installed.")
+    endif()
+
+    # Verify cuda.h exists
+    set(CUDA_H_FOUND FALSE)
+    foreach(include_dir ${CUDA_INCLUDE_DIRS})
+        if(EXISTS "${include_dir}/cuda.h")
+            set(CUDA_H_FOUND TRUE)
+            message(STATUS "✅ Found cuda.h in: ${include_dir}")
+            break()
+        endif()
+    endforeach()
+
+    if(NOT CUDA_H_FOUND)
+        message(FATAL_ERROR "❌ cuda.h not found in CUDA include directories: ${CUDA_INCLUDE_DIRS}")
+    endif()
+
+    # Set variables for parent scope
+    set(CUDA_INCLUDE_DIRS "${CUDA_INCLUDE_DIRS}" PARENT_SCOPE)
+    set(CUDA_TOOLKIT_ROOT_DIR "${CUDAToolkit_ROOT}" PARENT_SCOPE)
+
+    message(STATUS "✅ CUDA toolkit paths configured:")
+    message(STATUS "   Root: ${CUDAToolkit_ROOT}")
+    message(STATUS "   Include: ${CUDA_INCLUDE_DIRS}")
+    message(STATUS "   Version: ${CUDAToolkit_VERSION}")
+endfunction()
 
 # Modern cuDNN detection using updated FindCUDNN.cmake practices
 function(setup_modern_cudnn)
@@ -268,11 +354,21 @@ function(setup_modern_cudnn)
 endfunction()
 
 function(configure_cuda_linking main_target_name)
+    # Setup CUDA toolkit paths first
+    setup_cuda_toolkit_paths()
+
     # Find the CUDAToolkit to define the CUDA::toolkit target
     find_package(CUDAToolkit REQUIRED)
 
     # Setup modern cuDNN detection
     setup_modern_cudnn()
+
+    # CRITICAL: Explicitly add CUDA include directories to the target
+    # This ensures cuda.h and other CUDA headers are found
+    if(CUDA_INCLUDE_DIRS)
+        target_include_directories(${main_target_name} PUBLIC ${CUDA_INCLUDE_DIRS})
+        message(STATUS "✅ Added CUDA include directories to ${main_target_name}: ${CUDA_INCLUDE_DIRS}")
+    endif()
 
     # Modern CMake uses imported targets which handle all necessary dependencies.
     # Linking against CUDA::toolkit automatically adds include directories,
@@ -370,8 +466,6 @@ function(setup_cuda_language)
         endif()
     endif()
 
-
-
     include(CheckLanguage)
     check_language(CUDA)
 
@@ -430,8 +524,6 @@ function(configure_cuda_architecture_flags COMPUTE)
         endif()
     endif()
 endfunction()
-
-
 
 function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
     set(LOCAL_CUDA_FLAGS "")
@@ -504,12 +596,31 @@ function(debug_cuda_configuration)
     message(STATUS "CMAKE_CUDA_FLAGS: ${CMAKE_CUDA_FLAGS}")
     message(STATUS "CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES: ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}")
     message(STATUS "CMAKE_CUDA_COMPILE_OBJECT: ${CMAKE_CUDA_COMPILE_OBJECT}")
+    message(STATUS "CUDA_INCLUDE_DIRS: ${CUDA_INCLUDE_DIRS}")
+    message(STATUS "CUDAToolkit_ROOT: ${CUDAToolkit_ROOT}")
+    message(STATUS "CUDAToolkit_INCLUDE_DIRS: ${CUDAToolkit_INCLUDE_DIRS}")
     if(HAVE_CUDNN)
         message(STATUS "CUDNN_INCLUDE_DIR: ${CUDNN_INCLUDE_DIR}")
         message(STATUS "CUDNN_LIBRARIES: ${CUDNN_LIBRARIES}")
         message(STATUS "CUDNN_VERSION: ${CUDNN_VERSION_STRING}")
     endif()
     message(STATUS "=== End CUDA Debug Info ===")
+endfunction()
+
+# Enhanced CUDA include directory setup for global configuration
+function(setup_cuda_include_directories)
+    setup_cuda_toolkit_paths()
+
+    # Set global include directories that will be inherited by all targets
+    if(CUDA_INCLUDE_DIRS)
+        include_directories(${CUDA_INCLUDE_DIRS})
+        message(STATUS "✅ Added global CUDA include directories: ${CUDA_INCLUDE_DIRS}")
+    endif()
+
+    # Also set the CMAKE variable for compatibility
+    if(CUDAToolkit_INCLUDE_DIRS)
+        set(CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES ${CUDAToolkit_INCLUDE_DIRS} PARENT_SCOPE)
+    endif()
 endfunction()
 
 # MAIN CUDA SETUP FUNCTION
@@ -525,6 +636,8 @@ function(setup_cuda_build)
         endif()
     endif()
 
+    # Setup CUDA toolkit paths and include directories early
+    setup_cuda_include_directories()
 
     if(NOT DEFINED COMPUTE)
         set(COMPUTE "auto")
@@ -539,7 +652,8 @@ function(setup_cuda_build)
     endif()
 
     message(STATUS "CUDA Compiler: ${CMAKE_CUDA_COMPILER}")
-    message(STATUS "CUDA Include Dirs: ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}")
+    message(STATUS "CUDA Include Dirs: ${CUDA_INCLUDE_DIRS}")
+    message(STATUS "CUDAToolkit Include Dirs: ${CUDAToolkit_INCLUDE_DIRS}")
     message(STATUS "Host CXX Compiler: ${CMAKE_CXX_COMPILER_ID}")
 
     configure_windows_cuda_build()
@@ -548,12 +662,36 @@ function(setup_cuda_build)
     # CRITICAL: Set CMAKE_CUDA_FLAGS to parent scope so it propagates
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}" PARENT_SCOPE)
 
+    # Also set the toolkit include directories for global access
+    set(CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES "${CUDA_INCLUDE_DIRS}" PARENT_SCOPE)
+
     debug_cuda_configuration()
 
     add_compile_definitions(SD_CUDA=true)
     set(DEFAULT_ENGINE "samediff::ENGINE_CUDA" PARENT_SCOPE)
 
     message(STATUS "=== CUDA BUILD CONFIGURATION COMPLETE ===")
+endfunction()
+
+# Enhanced function to ensure CUDA paths are available at configure time
+function(ensure_cuda_paths_available)
+    if(NOT SD_CUDA)
+        return()
+    endif()
+
+    message(STATUS "🔍 Ensuring CUDA paths are available...")
+
+    # Find CUDA early
+    find_package(CUDAToolkit REQUIRED)
+
+    # Set up paths immediately
+    setup_cuda_toolkit_paths()
+
+    # Export to parent scope for immediate use
+    set(CUDA_INCLUDE_DIRS "${CUDA_INCLUDE_DIRS}" PARENT_SCOPE)
+    set(CUDA_TOOLKIT_ROOT_DIR "${CUDAToolkit_ROOT}" PARENT_SCOPE)
+
+    message(STATUS "✅ CUDA paths configured and available")
 endfunction()
 
 # Legacy function for backward compatibility - now calls modern version
