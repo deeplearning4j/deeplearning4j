@@ -1,85 +1,70 @@
-# android-arm64.cmake - Manual Toolchain for non-standard ARM64-hosted NDK
-#
-# This version bypasses the NDK's broken wrapper scripts by calling the main
-# clang/clang++ binaries directly and setting the --target flag manually.
+# android-arm64.cmake - CMake toolchain for Android ARM64 cross-compilation
+# Designed to work with non-standard ARM64-hosted NDK (Termux NDK)
 
-# 1. Set the target system processor.
+# Set target system
 set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_PROCESSOR aarch64)
 
-# 2. Point to the NDK root from the environment variable.
+# Get NDK root from environment
 set(ANDROID_NDK_ROOT $ENV{ANDROID_NDK_ROOT})
 if(NOT ANDROID_NDK_ROOT)
    message(FATAL_ERROR "ANDROID_NDK_ROOT environment variable is not set.")
 endif()
 
-# 3. Manually define the paths to the toolchain directory and the system root.
-#    This assumes a 'linux-aarch64' host toolchain, common for ARM64 Linux systems.
+# Set paths
 set(TOOLCHAIN_DIR "${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt/linux-aarch64")
 set(CMAKE_SYSROOT "${TOOLCHAIN_DIR}/sysroot")
 
-# 4. Use the compilers from environment variables set by the workflow,
-#    or find the actual working binaries (avoid broken wrapper scripts).
-if(DEFINED ENV{CMAKE_C_COMPILER})
+# Debug: Print environment variables
+message(STATUS "ANDROID_NDK_ROOT: ${ANDROID_NDK_ROOT}")
+message(STATUS "TOOLCHAIN_DIR: ${TOOLCHAIN_DIR}")
+message(STATUS "Environment CMAKE_C_COMPILER: $ENV{CMAKE_C_COMPILER}")
+message(STATUS "Environment CMAKE_CXX_COMPILER: $ENV{CMAKE_CXX_COMPILER}")
+
+# Set compilers - prioritize environment variables from workflow
+if(DEFINED ENV{CMAKE_C_COMPILER} AND NOT "$ENV{CMAKE_C_COMPILER}" STREQUAL "")
    set(CMAKE_C_COMPILER $ENV{CMAKE_C_COMPILER})
    message(STATUS "Using C compiler from environment: ${CMAKE_C_COMPILER}")
 else()
-   # Prioritize direct binaries over wrapper scripts that might be broken
-   set(CLANG_CANDIDATES
-           "${TOOLCHAIN_DIR}/bin/clang"
-           "${TOOLCHAIN_DIR}/bin/clang-18"
-           "${TOOLCHAIN_DIR}/bin/aarch64-linux-android21-clang"
-   )
-
-   foreach(CANDIDATE ${CLANG_CANDIDATES})
-      if(EXISTS ${CANDIDATE})
-         set(CMAKE_C_COMPILER ${CANDIDATE})
-         message(STATUS "Found C compiler: ${CMAKE_C_COMPILER}")
-         break()
-      endif()
-   endforeach()
-
-   if(NOT CMAKE_C_COMPILER)
-      message(FATAL_ERROR "Could not find clang compiler in ${TOOLCHAIN_DIR}/bin/")
+   # Fall back to direct clang binary (avoid wrapper scripts)
+   if(EXISTS "${TOOLCHAIN_DIR}/bin/clang")
+      set(CMAKE_C_COMPILER "${TOOLCHAIN_DIR}/bin/clang")
+      message(STATUS "Using direct clang binary: ${CMAKE_C_COMPILER}")
+   else()
+      message(FATAL_ERROR "Could not find clang compiler")
    endif()
 endif()
 
-if(DEFINED ENV{CMAKE_CXX_COMPILER})
+if(DEFINED ENV{CMAKE_CXX_COMPILER} AND NOT "$ENV{CMAKE_CXX_COMPILER}" STREQUAL "")
    set(CMAKE_CXX_COMPILER $ENV{CMAKE_CXX_COMPILER})
    message(STATUS "Using C++ compiler from environment: ${CMAKE_CXX_COMPILER}")
 else()
-   # Prioritize direct binaries, then try using C compiler for C++ if clang++ doesn't exist
-   set(CLANGXX_CANDIDATES
-           "${TOOLCHAIN_DIR}/bin/clang++"
-           "${CMAKE_C_COMPILER}"
-           "${TOOLCHAIN_DIR}/bin/aarch64-linux-android21-clang++"
-   )
-
-   foreach(CANDIDATE ${CLANGXX_CANDIDATES})
-      if(EXISTS ${CANDIDATE})
-         set(CMAKE_CXX_COMPILER ${CANDIDATE})
-         message(STATUS "Found C++ compiler: ${CMAKE_CXX_COMPILER}")
-         break()
-      endif()
-   endforeach()
-
-   if(NOT CMAKE_CXX_COMPILER)
-      message(FATAL_ERROR "Could not find clang++ compiler in ${TOOLCHAIN_DIR}/bin/")
+   # Try clang++ first, then fall back to clang for C++
+   if(EXISTS "${TOOLCHAIN_DIR}/bin/clang++")
+      set(CMAKE_CXX_COMPILER "${TOOLCHAIN_DIR}/bin/clang++")
+      message(STATUS "Using direct clang++ binary: ${CMAKE_CXX_COMPILER}")
+   else()
+      set(CMAKE_CXX_COMPILER "${CMAKE_C_COMPILER}")
+      message(STATUS "Using C compiler for C++: ${CMAKE_CXX_COMPILER}")
    endif()
 endif()
 
 set(CMAKE_ASM_COMPILER ${CMAKE_C_COMPILER})
 
-# 5. Configure how CMake finds libraries and headers within the defined sysroot.
+# Set cross-compilation behavior
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 set(CMAKE_FIND_ROOT_PATH ${CMAKE_SYSROOT})
 
-# 6. Manually set the flags the broken script was supposed to add.
-#    Setting CMAKE_<LANG>_FLAGS directly ensures they are used by CMake's
-#    initial compiler check, preventing the "compiler is not able to compile
-#    a simple test program" error.
+# Set Android-specific compiler flags
 set(CMAKE_C_FLAGS "--target=aarch64-linux-android21 --sysroot=${CMAKE_SYSROOT}" CACHE STRING "C compiler flags")
 set(CMAKE_CXX_FLAGS "--target=aarch64-linux-android21 --sysroot=${CMAKE_SYSROOT}" CACHE STRING "C++ compiler flags")
 set(CMAKE_ASM_FLAGS "--target=aarch64-linux-android21 --sysroot=${CMAKE_SYSROOT}" CACHE STRING "Assembler flags")
+
+# Debug: Print final compiler selections
+message(STATUS "Final C compiler: ${CMAKE_C_COMPILER}")
+message(STATUS "Final C++ compiler: ${CMAKE_CXX_COMPILER}")
+message(STATUS "Final ASM compiler: ${CMAKE_ASM_COMPILER}")
+message(STATUS "C flags: ${CMAKE_C_FLAGS}")
+message(STATUS "CXX flags: ${CMAKE_CXX_FLAGS}")
