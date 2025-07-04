@@ -36,7 +36,6 @@ set(CMAKE_FIND_ROOT_PATH ${CMAKE_SYSROOT})
 set(ANDROID_COMPILE_FLAGS
         "--target=aarch64-linux-android21"
         "--sysroot=${CMAKE_SYSROOT}"
-        -fPIC
 )
 
 set(CMAKE_C_FLAGS "${ANDROID_COMPILE_FLAGS}" CACHE STRING "C compiler flags")
