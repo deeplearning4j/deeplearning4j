@@ -264,6 +264,7 @@ jobs:
           echo "Unzipping ${OPENBLAS_JAR}..."
           unzip -q ${OPENBLAS_JAR}
           echo "OpenBLAS setup complete. OPENBLAS_PATH=${OPENBLAS_PATH}"
+          echo "OPENBLAS_PATH=${OPENBLAS_PATH}" >> $GITHUB_ENV
 
       - name: Debug Info
         shell: bash
