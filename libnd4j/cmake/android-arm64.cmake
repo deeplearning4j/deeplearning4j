@@ -21,19 +21,43 @@ message(STATUS "TOOLCHAIN_DIR: ${TOOLCHAIN_DIR}")
 message(STATUS "Environment CMAKE_C_COMPILER: $ENV{CMAKE_C_COMPILER}")
 message(STATUS "Environment CMAKE_CXX_COMPILER: $ENV{CMAKE_CXX_COMPILER}")
 
-# Set C compiler - prioritize environment variables from workflow
+# Set C compiler - prioritize environment variables, then look for wrapper scripts
 if(DEFINED ENV{CMAKE_C_COMPILER} AND NOT "$ENV{CMAKE_C_COMPILER}" STREQUAL "")
    set(CMAKE_C_COMPILER $ENV{CMAKE_C_COMPILER})
    message(STATUS "Using C compiler from environment: ${CMAKE_C_COMPILER}")
 else()
-   # Fall back to direct clang binary
-   set(CMAKE_C_COMPILER "${TOOLCHAIN_DIR}/bin/clang")
-   message(STATUS "Using direct clang binary: ${CMAKE_C_COMPILER}")
+   # Look for the wrapper scripts that the workflow creates
+   set(WRAPPER_C "${TOOLCHAIN_DIR}/bin/android-clang-wrapper")
+   set(DIRECT_C "${TOOLCHAIN_DIR}/bin/clang")
+
+   if(EXISTS ${WRAPPER_C})
+      set(CMAKE_C_COMPILER ${WRAPPER_C})
+      message(STATUS "Using wrapper C compiler: ${CMAKE_C_COMPILER}")
+      elif(EXISTS ${DIRECT_C})
+      set(CMAKE_C_COMPILER ${DIRECT_C})
+      message(STATUS "Using direct clang binary: ${CMAKE_C_COMPILER}")
+   else()
+      message(FATAL_ERROR "Could not find any working C compiler at ${TOOLCHAIN_DIR}/bin/")
+   endif()
 endif()
 
-# Set C++ compiler - ALWAYS use clang for C++ since clang++ doesn't exist in Termux NDK
-set(CMAKE_CXX_COMPILER "${CMAKE_C_COMPILER}")
-message(STATUS "Using C compiler for C++ (clang++ not available in Termux NDK): ${CMAKE_CXX_COMPILER}")
+# Set C++ compiler - look for wrapper scripts, then use C compiler
+if(DEFINED ENV{CMAKE_CXX_COMPILER} AND NOT "$ENV{CMAKE_CXX_COMPILER}" STREQUAL "")
+   set(CMAKE_CXX_COMPILER $ENV{CMAKE_CXX_COMPILER})
+   message(STATUS "Using C++ compiler from environment: ${CMAKE_CXX_COMPILER}")
+else()
+   # Look for the wrapper scripts that the workflow creates
+   set(WRAPPER_CXX "${TOOLCHAIN_DIR}/bin/android-clang++-wrapper")
+
+   if(EXISTS ${WRAPPER_CXX})
+      set(CMAKE_CXX_COMPILER ${WRAPPER_CXX})
+      message(STATUS "Using wrapper C++ compiler: ${CMAKE_CXX_COMPILER}")
+   else()
+      # Fall back to using the C compiler for C++
+      set(CMAKE_CXX_COMPILER "${CMAKE_C_COMPILER}")
+      message(STATUS "Using C compiler for C++ (no wrapper found): ${CMAKE_CXX_COMPILER}")
+   endif()
+endif()
 
 # Set ASM compiler
 set(CMAKE_ASM_COMPILER ${CMAKE_C_COMPILER})
