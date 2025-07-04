@@ -431,6 +431,8 @@ function(configure_cuda_architecture_flags COMPUTE)
     endif()
 endfunction()
 
+
+
 function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
     set(LOCAL_CUDA_FLAGS "")
 
@@ -442,6 +444,10 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/EHsc")
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/std:c++17")
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/D__NVCC_ALLOW_UNSUPPORTED_COMPILER__")
+
+        # FIX: Manually add /FS to prevent a CMake bug that incorrectly combines
+        # the automatic /Fd and /FS flags with a comma, causing nvcc to fail.
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/FS")
 
         if(MSVC_RT_LIB STREQUAL "MultiThreadedDLL")
             set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/MD")
@@ -487,6 +493,7 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
 
     message(STATUS "Final CMAKE_CUDA_FLAGS: ${LOCAL_CUDA_FLAGS}")
 endfunction()
+
 
 # Debug configuration function - was missing
 function(debug_cuda_configuration)
