@@ -36,17 +36,19 @@ else()
 endif()
 
 if(DEFINED ENV{CMAKE_CXX_COMPILER} AND NOT "$ENV{CMAKE_CXX_COMPILER}" STREQUAL "")
-   set(CMAKE_CXX_COMPILER $ENV{CMAKE_CXX_COMPILER})
-   message(STATUS "Using C++ compiler from environment: ${CMAKE_CXX_COMPILER}")
-else()
-   # Try clang++ first, then fall back to clang for C++
-   if(EXISTS "${TOOLCHAIN_DIR}/bin/clang++")
-      set(CMAKE_CXX_COMPILER "${TOOLCHAIN_DIR}/bin/clang++")
-      message(STATUS "Using direct clang++ binary: ${CMAKE_CXX_COMPILER}")
+   # Check if the environment variable points to an existing binary
+   if(EXISTS "$ENV{CMAKE_CXX_COMPILER}")
+      set(CMAKE_CXX_COMPILER $ENV{CMAKE_CXX_COMPILER})
+      message(STATUS "Using C++ compiler from environment: ${CMAKE_CXX_COMPILER}")
    else()
+      message(STATUS "Environment C++ compiler does not exist: $ENV{CMAKE_CXX_COMPILER}")
+      message(STATUS "Using C compiler for C++ instead: ${CMAKE_C_COMPILER}")
       set(CMAKE_CXX_COMPILER "${CMAKE_C_COMPILER}")
-      message(STATUS "Using C compiler for C++: ${CMAKE_CXX_COMPILER}")
    endif()
+else()
+   # Since clang++ doesn't exist in Termux NDK, use clang for C++
+   set(CMAKE_CXX_COMPILER "${CMAKE_C_COMPILER}")
+   message(STATUS "Using C compiler for C++ (no environment variable): ${CMAKE_CXX_COMPILER}")
 endif()
 
 set(CMAKE_ASM_COMPILER ${CMAKE_C_COMPILER})
@@ -59,7 +61,7 @@ set(CMAKE_FIND_ROOT_PATH ${CMAKE_SYSROOT})
 
 # Set Android-specific compiler flags
 set(CMAKE_C_FLAGS "--target=aarch64-linux-android21 --sysroot=${CMAKE_SYSROOT}" CACHE STRING "C compiler flags")
-set(CMAKE_CXX_FLAGS "--target=aarch64-linux-android21 --sysroot=${CMAKE_SYSROOT}" CACHE STRING "C++ compiler flags")
+set(CMAKE_CXX_FLAGS "--target=aarch64-linux-android21 --sysroot=${CMAKE_SYSROOT} -stdlib=libc++" CACHE STRING "C++ compiler flags")
 set(CMAKE_ASM_FLAGS "--target=aarch64-linux-android21 --sysroot=${CMAKE_SYSROOT}" CACHE STRING "Assembler flags")
 
 # Debug: Print final compiler selections
