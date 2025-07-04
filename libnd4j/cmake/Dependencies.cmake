@@ -200,33 +200,3 @@ function(setup_cudnn)
     endif()
 endfunction()
 
-# =============================================================================
-# BLAS (For CPU builds)
-# =============================================================================
-function(setup_blas)
-    if(SD_CUDA)
-        return()
-    endif()
-
-    # CRITICAL FIX: Only add OneDNN flags if OneDNN is actually enabled
-    if(HAVE_ONEDNN)
-        add_definitions(-DDNNL_ENABLE_CONCURRENT_EXEC=true)
-    endif()
-
-    if("${OPENBLAS_PATH}" STREQUAL "")
-        if(NOT APPLE)
-            set(BLA_VENDOR "OpenBLAS")
-        endif()
-        find_package(BLAS REQUIRED)
-        if(BLAS_FOUND)
-            message("Found external BLAS implementation: ${BLAS_LIBRARIES} ")
-            add_definitions(-D__EXTERNAL_BLAS__=true)
-            set(BLAS_LIBRARIES ${BLAS_LIBRARIES} PARENT_SCOPE)
-        endif()
-    else()
-        set(HAVE_OPENBLAS 1 PARENT_SCOPE)
-        include_directories(${OPENBLAS_PATH}/include/)
-        link_directories(${OPENBLAS_PATH} ${OPENBLAS_PATH}/lib/)
-        set(OPENBLAS_LIBRARIES openblas PARENT_SCOPE)
-    endif()
-endfunction()
