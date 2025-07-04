@@ -19,16 +19,16 @@ set(TOOLCHAIN_DIR "${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt/linux-aarch64")
 set(CMAKE_SYSROOT "${TOOLCHAIN_DIR}/sysroot")
 
 # 4. Use the compilers from environment variables set by the workflow,
-#    or find the actual working binaries.
+#    or find the actual working binaries (avoid broken wrapper scripts).
 if(DEFINED ENV{CMAKE_C_COMPILER})
    set(CMAKE_C_COMPILER $ENV{CMAKE_C_COMPILER})
    message(STATUS "Using C compiler from environment: ${CMAKE_C_COMPILER}")
 else()
-   # Try to find the actual clang binary that exists
+   # Prioritize direct binaries over wrapper scripts that might be broken
    set(CLANG_CANDIDATES
-           "${TOOLCHAIN_DIR}/bin/aarch64-linux-android21-clang"
            "${TOOLCHAIN_DIR}/bin/clang"
            "${TOOLCHAIN_DIR}/bin/clang-18"
+           "${TOOLCHAIN_DIR}/bin/aarch64-linux-android21-clang"
    )
 
    foreach(CANDIDATE ${CLANG_CANDIDATES})
@@ -48,12 +48,11 @@ if(DEFINED ENV{CMAKE_CXX_COMPILER})
    set(CMAKE_CXX_COMPILER $ENV{CMAKE_CXX_COMPILER})
    message(STATUS "Using C++ compiler from environment: ${CMAKE_CXX_COMPILER}")
 else()
-   # Try to find the actual clang++ binary that exists
+   # Prioritize direct binaries, then try using C compiler for C++ if clang++ doesn't exist
    set(CLANGXX_CANDIDATES
-           "${TOOLCHAIN_DIR}/bin/aarch64-linux-android21-clang++"
            "${TOOLCHAIN_DIR}/bin/clang++"
-           "${CMAKE_C_COMPILER}++"
            "${CMAKE_C_COMPILER}"
+           "${TOOLCHAIN_DIR}/bin/aarch64-linux-android21-clang++"
    )
 
    foreach(CANDIDATE ${CLANGXX_CANDIDATES})

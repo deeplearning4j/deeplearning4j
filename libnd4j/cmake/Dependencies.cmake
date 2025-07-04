@@ -11,6 +11,7 @@ function(setup_blas)
     include_directories(${OPENBLAS_PATH}/include/)
     link_directories(${OPENBLAS_PATH}/lib/)
     add_compile_definitions(HAVE_OPENBLAS=1)
+    set(HAVE_OPENBLAS 1 PARENT_SCOPE)
     set(OPENBLAS_LIBRARIES openblas PARENT_SCOPE)
 endfunction()
 
