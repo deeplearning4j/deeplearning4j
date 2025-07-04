@@ -19,17 +19,54 @@ set(TOOLCHAIN_DIR "${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt/linux-aarch64")
 set(CMAKE_SYSROOT "${TOOLCHAIN_DIR}/sysroot")
 
 # 4. Use the compilers from environment variables set by the workflow,
-#    falling back to standard paths if not set.
+#    or find the actual working binaries.
 if(DEFINED ENV{CMAKE_C_COMPILER})
    set(CMAKE_C_COMPILER $ENV{CMAKE_C_COMPILER})
+   message(STATUS "Using C compiler from environment: ${CMAKE_C_COMPILER}")
 else()
-   set(CMAKE_C_COMPILER "${TOOLCHAIN_DIR}/bin/clang")
+   # Try to find the actual clang binary that exists
+   set(CLANG_CANDIDATES
+           "${TOOLCHAIN_DIR}/bin/aarch64-linux-android21-clang"
+           "${TOOLCHAIN_DIR}/bin/clang"
+           "${TOOLCHAIN_DIR}/bin/clang-18"
+   )
+
+   foreach(CANDIDATE ${CLANG_CANDIDATES})
+      if(EXISTS ${CANDIDATE})
+         set(CMAKE_C_COMPILER ${CANDIDATE})
+         message(STATUS "Found C compiler: ${CMAKE_C_COMPILER}")
+         break()
+      endif()
+   endforeach()
+
+   if(NOT CMAKE_C_COMPILER)
+      message(FATAL_ERROR "Could not find clang compiler in ${TOOLCHAIN_DIR}/bin/")
+   endif()
 endif()
 
 if(DEFINED ENV{CMAKE_CXX_COMPILER})
    set(CMAKE_CXX_COMPILER $ENV{CMAKE_CXX_COMPILER})
+   message(STATUS "Using C++ compiler from environment: ${CMAKE_CXX_COMPILER}")
 else()
-   set(CMAKE_CXX_COMPILER "${TOOLCHAIN_DIR}/bin/clang++")
+   # Try to find the actual clang++ binary that exists
+   set(CLANGXX_CANDIDATES
+           "${TOOLCHAIN_DIR}/bin/aarch64-linux-android21-clang++"
+           "${TOOLCHAIN_DIR}/bin/clang++"
+           "${CMAKE_C_COMPILER}++"
+           "${CMAKE_C_COMPILER}"
+   )
+
+   foreach(CANDIDATE ${CLANGXX_CANDIDATES})
+      if(EXISTS ${CANDIDATE})
+         set(CMAKE_CXX_COMPILER ${CANDIDATE})
+         message(STATUS "Found C++ compiler: ${CMAKE_CXX_COMPILER}")
+         break()
+      endif()
+   endforeach()
+
+   if(NOT CMAKE_CXX_COMPILER)
+      message(FATAL_ERROR "Could not find clang++ compiler in ${TOOLCHAIN_DIR}/bin/")
+   endif()
 endif()
 
 set(CMAKE_ASM_COMPILER ${CMAKE_C_COMPILER})
