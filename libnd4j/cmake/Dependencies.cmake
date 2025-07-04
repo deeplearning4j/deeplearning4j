@@ -10,7 +10,7 @@ function(setup_blas)
     endif()
     include_directories(${OPENBLAS_PATH}/include/)
     link_directories(${OPENBLAS_PATH}/lib/)
-    add_compile_definitions(-DHAVE_OPENBLAS=1)
+    add_compile_definitions(HAVE_OPENBLAS)
     set(OPENBLAS_LIBRARIES openblas PARENT_SCOPE)
 endfunction()
 
