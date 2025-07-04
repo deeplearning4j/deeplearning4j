@@ -24,7 +24,7 @@
 #define NATIVEOPERATIONS_CBLAS_H
 
 #ifndef __STANDALONE_BUILD__
-#include "config.h"
+#include <config.h>
 #endif
 
 #ifdef __MKL_CBLAS_H__
@@ -35,7 +35,7 @@
 #ifdef HAVE_OPENBLAS
 // include CBLAS from OpenBLAS
 #ifdef __GNUC__
-#include "cblas.h"
+#include <cblas.h>
 #else
 #include <cblas.h>
 #endif
