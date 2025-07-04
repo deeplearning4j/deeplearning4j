@@ -18,9 +18,20 @@ endif()
 set(TOOLCHAIN_DIR "${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt/linux-aarch64")
 set(CMAKE_SYSROOT "${TOOLCHAIN_DIR}/sysroot")
 
-# 4. Explicitly set the C/C++ compilers to the *main binaries*, not the broken scripts.
-set(CMAKE_C_COMPILER "${TOOLCHAIN_DIR}/bin/clang")
-set(CMAKE_CXX_COMPILER "${TOOLCHAIN_DIR}/bin/clang++")
+# 4. Use the compilers from environment variables set by the workflow,
+#    falling back to standard paths if not set.
+if(DEFINED ENV{CMAKE_C_COMPILER})
+   set(CMAKE_C_COMPILER $ENV{CMAKE_C_COMPILER})
+else()
+   set(CMAKE_C_COMPILER "${TOOLCHAIN_DIR}/bin/clang")
+endif()
+
+if(DEFINED ENV{CMAKE_CXX_COMPILER})
+   set(CMAKE_CXX_COMPILER $ENV{CMAKE_CXX_COMPILER})
+else()
+   set(CMAKE_CXX_COMPILER "${TOOLCHAIN_DIR}/bin/clang++")
+endif()
+
 set(CMAKE_ASM_COMPILER ${CMAKE_C_COMPILER})
 
 # 5. Configure how CMake finds libraries and headers within the defined sysroot.
