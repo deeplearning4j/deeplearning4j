@@ -35,7 +35,7 @@
 #ifdef HAVE_OPENBLAS
 // include CBLAS from OpenBLAS
 #ifdef __GNUC__
-#include <cblas.h>
+#include "cblas.h"
 #else
 #include <cblas.h>
 #endif

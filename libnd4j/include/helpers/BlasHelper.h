@@ -27,7 +27,7 @@
 struct bfloat16;
 #define BFLOAT16 BFLOAT16
 #if !defined(SD_CUDA)
-#include <cblas.h>
+#include <blas/cblas.h>
 #endif
 #include <helpers/logger.h>
 #include <types/float16.h>

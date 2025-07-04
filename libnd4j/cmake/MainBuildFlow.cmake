@@ -371,6 +371,7 @@ function(create_and_link_library)
         # No CUDA includes needed here, they are handled by the linking function
         target_include_directories(${MAIN_LIB_NAME} PUBLIC
                 "${OPENBLAS_PATH}/include"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/blas"
                 "${CMAKE_CURRENT_BINARY_DIR}/include"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/array"
