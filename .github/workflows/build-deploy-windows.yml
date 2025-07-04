@@ -247,19 +247,30 @@ jobs:
         
 
 
-
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: mingw64
+          update: true
+          install: base-devel  git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch   mingw-w64-x86_64-make --noconfirm mingw-w64-x86_64-gnupg mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc  mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL mingw-w64-x86_64-ragel
       - name: Setup windows path
         shell: powershell
         run: echo "C:\msys64\mingw64\bin;C:\msys64\usr\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - name: Setup libnd4j home if a download url is specified
         shell: powershell
         run: |
-            mkdir "%GITHUB_WORKSPACE%/openblas_home"
-            cd "%GITHUB_WORKSPACE%/openblas_home"
-            wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/openblas-0.3.28-1.5.11-windows-x86_64.jar
-            unzip openblas-0.3.28-1.5.11-windows-x86_64.jar
-            cd ..
-            echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/windows-x86_64/" | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
+              rm "C:/msys64/usr/bin/curl.exe" "C:/msys64/mingw32/bin/curl.exe" "C:/msys64/mingw64/bin/curl.exe"
+              rm "C:/WINDOWS/system32/bash.EXE" "C:/msys64/usr/bin/link.exe" "C:/msys64/usr/bin/timeout.exe" "C:/msys64/usr/bin/python.exe" "C:/msys64/usr/bin/python3.exe"
+              rm "C:/ProgramData/chocolatey/bin/gfortran.exe" "C:/msys64/mingw32/bin/gfortran.exe" "C:/msys64/mingw32/bin/python.exe" "C:/msys64/mingw32/bin/python3.exe"
+              rm "C:/Strawberry/c/bin/gfortran.exe" "C:/msys64/mingw64/bin/gfortran.exe" "C:/msys64/mingw64/bin/python.exe" "C:/msys64/mingw64/bin/python3.exe"
+              rm "C:/msys64/mingw32/bin/clang-cl.exe" "C:/msys64/mingw64/bin/clang-cl.exe" "C:/msys64/mingw32/bin/cmake.exe" "C:/msys64/mingw64/bin/cmake.exe"
+              rm "C:/Strawberry/c/lib/libz.a" "C:/Strawberry/c/lib/libzlib.a" "C:/Strawberry/c/lib/libzdll.a" "C:/Strawberry/c/bin/cmake.exe"
+              
+              mkdir "%GITHUB_WORKSPACE%/openblas_home"
+              cd "%GITHUB_WORKSPACE%/openblas_home"
+              wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/openblas-0.3.28-1.5.11-windows-x86_64.jar
+              unzip openblas-0.3.28-1.5.11-windows-x86_64.jar
+              cd ..
+              echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/windows-x86_64/" | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
         if: ${{ matrix.libnd4j_file_download != '' }}
       - name: Run windows cpu build
         shell: cmd
