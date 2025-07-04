@@ -7,7 +7,7 @@
 #
 # See the NOTICE file distributed with this work for additional
 # information regarding copyright ownership.
-
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -16,23 +16,29 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 ################################################################################
-# CMake toolchain to build for Android 5.0 or newer. Sample usage:
 
+# CMake toolchain for modern Android x86_64 builds
+
+# 1. Activate CMake's native Android support. This is the main switch.
 set(CMAKE_SYSTEM_NAME Android)
+
+# 2. Specify the target architecture.
 set(CMAKE_ANDROID_ARCH_ABI x86_64)
+
+# 3. Specify the target Android API level.
+#    This is the modern variable for what was CMAKE_SYSTEM_VERSION.
+#    An explicit check for the environment variable is good practice.
+if(DEFINED ENV{ANDROID_VERSION})
+   set(CMAKE_ANDROID_API "$ENV{ANDROID_VERSION}")
+else()
+   # Default to a common API level if the environment variable is not set.
+   set(CMAKE_ANDROID_API 21)
+endif()
+
+# 4. Point CMake to your NDK installation.
+#    CMake will automatically find the necessary toolchain files from here.
 set(CMAKE_ANDROID_NDK "$ENV{ANDROID_NDK}")
-set(CMAKE_ANDROID_STL_TYPE c++_static)
-set(CMAKE_SYSTEM_VERSION  "$ENV{ANDROID_VERSION}")
-set(CMAKE_ANDROID_NDK_TOOLCHAIN_VERSION clang)
 
-set(ANDROID TRUE)
-if (WIN32)
-   set(CMAKE_C_COMPILER   "$ENV{ANDROID_CC}.exe")
-   set(CMAKE_CXX_COMPILER "$ENV{ANDROID_CC}++.exe")
-   else()
-   set(CMAKE_C_COMPILER   "$ENV{ANDROID_CC}")
-   set(CMAKE_CXX_COMPILER "$ENV{ANDROID_CC}++")
-endif (WIN32)
+# 5. Select the C++ standard library.
+set(CMAKE_ANDROID_STL_TYPE c++_shared)
 
-
-add_definitions(-D__ANDROID_API__=$ENV{ANDROID_VERSION} -DANDROID -fPIC -ffunction-sections -funwind-tables -fstack-protector-strong -target x86_64-none-linux-android)
