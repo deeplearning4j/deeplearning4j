@@ -21,36 +21,21 @@ message(STATUS "TOOLCHAIN_DIR: ${TOOLCHAIN_DIR}")
 message(STATUS "Environment CMAKE_C_COMPILER: $ENV{CMAKE_C_COMPILER}")
 message(STATUS "Environment CMAKE_CXX_COMPILER: $ENV{CMAKE_CXX_COMPILER}")
 
-# Set compilers - prioritize environment variables from workflow
+# Set C compiler - prioritize environment variables from workflow
 if(DEFINED ENV{CMAKE_C_COMPILER} AND NOT "$ENV{CMAKE_C_COMPILER}" STREQUAL "")
    set(CMAKE_C_COMPILER $ENV{CMAKE_C_COMPILER})
    message(STATUS "Using C compiler from environment: ${CMAKE_C_COMPILER}")
 else()
-   # Fall back to direct clang binary (avoid wrapper scripts)
-   if(EXISTS "${TOOLCHAIN_DIR}/bin/clang")
-      set(CMAKE_C_COMPILER "${TOOLCHAIN_DIR}/bin/clang")
-      message(STATUS "Using direct clang binary: ${CMAKE_C_COMPILER}")
-   else()
-      message(FATAL_ERROR "Could not find clang compiler")
-   endif()
+   # Fall back to direct clang binary
+   set(CMAKE_C_COMPILER "${TOOLCHAIN_DIR}/bin/clang")
+   message(STATUS "Using direct clang binary: ${CMAKE_C_COMPILER}")
 endif()
 
-if(DEFINED ENV{CMAKE_CXX_COMPILER} AND NOT "$ENV{CMAKE_CXX_COMPILER}" STREQUAL "")
-   # Check if the environment variable points to an existing binary
-   if(EXISTS "$ENV{CMAKE_CXX_COMPILER}")
-      set(CMAKE_CXX_COMPILER $ENV{CMAKE_CXX_COMPILER})
-      message(STATUS "Using C++ compiler from environment: ${CMAKE_CXX_COMPILER}")
-   else()
-      message(STATUS "Environment C++ compiler does not exist: $ENV{CMAKE_CXX_COMPILER}")
-      message(STATUS "Using C compiler for C++ instead: ${CMAKE_C_COMPILER}")
-      set(CMAKE_CXX_COMPILER "${CMAKE_C_COMPILER}")
-   endif()
-else()
-   # Since clang++ doesn't exist in Termux NDK, use clang for C++
-   set(CMAKE_CXX_COMPILER "${CMAKE_C_COMPILER}")
-   message(STATUS "Using C compiler for C++ (no environment variable): ${CMAKE_CXX_COMPILER}")
-endif()
+# Set C++ compiler - ALWAYS use clang for C++ since clang++ doesn't exist in Termux NDK
+set(CMAKE_CXX_COMPILER "${CMAKE_C_COMPILER}")
+message(STATUS "Using C compiler for C++ (clang++ not available in Termux NDK): ${CMAKE_CXX_COMPILER}")
 
+# Set ASM compiler
 set(CMAKE_ASM_COMPILER ${CMAKE_C_COMPILER})
 
 # Set cross-compilation behavior
