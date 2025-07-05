@@ -355,6 +355,12 @@
                                 <linkPath>${libnd4j.outputPath}</linkPath>
                                 <linkPath>${env.OPENBLAS_PATH}/lib</linkPath>
                                 <linkPath>${env.OPENBLAS_PATH}/</linkPath>
+
+                                <!-- Android NDK library paths -->
+                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/21</linkPath>
+                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android</linkPath>
+                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/17/lib/linux</linkPath>
+
                             </linkPaths>
                             <resourcePath>${libnd4jhome}/blasbuild/cpu/blas</resourcePath>
                             <buildResources>
@@ -513,6 +519,12 @@
                                 <linkPath>${libnd4j.outputPath}</linkPath>
                                 <linkPath>${env.OPENBLAS_PATH}/lib</linkPath>
                                 <linkPath>${env.OPENBLAS_PATH}/</linkPath>
+
+                                <!-- Android NDK library paths -->
+                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/21</linkPath>
+                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android</linkPath>
+                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/17/lib/linux</linkPath>
+
                             </linkPaths>
                             <resourcePath>${libnd4jhome}/blasbuild/cpu/blas</resourcePath>
                             <buildResources>
