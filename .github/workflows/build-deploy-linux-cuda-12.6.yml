@@ -123,7 +123,56 @@ jobs:
           large-packages: true
           docker-images: true
           swap-storage: true
+
+      - name: Configure swap space
+        shell: bash
+        run: |
+          echo "=== Initial system status ==="
+          free -h
+          df -h
+          echo "Available disk space on root:"
+          df -h /
           
+          # Check if swap is already enabled
+          if swapon --show | grep -q "/"; then
+            echo "Swap already configured:"
+            swapon --show
+          else
+            echo "Configuring swap space..."
+          
+            # Use input parameter for swap size, default to 12GB like Android workflow
+            SWAP_SIZE="${{ matrix.swap_size }}G"
+            echo "Creating ${SWAP_SIZE} swap file..."
+          
+            # Create swap file
+            sudo fallocate -l ${SWAP_SIZE} /swapfile || {
+              echo "fallocate failed, trying dd..."
+              sudo dd if=/dev/zero of=/swapfile bs=1G count=${{ matrix.swap_size }} status=progress
+            }
+          
+            # Set up swap
+            sudo chmod 600 /swapfile
+            sudo mkswap /swapfile
+            sudo swapon /swapfile
+          
+            # Verify swap is active
+            echo "=== Swap configuration completed ==="
+            free -h
+            swapon --show
+          fi
+          
+          # Tune swappiness for build workloads - using Android workflow settings
+          # Lower values (10-20) prefer RAM, higher values (60+) use swap more aggressively
+          echo "Current swappiness: $(cat /proc/sys/vm/swappiness)"
+          sudo sysctl vm.swappiness=80
+          echo "Adjusted swappiness: $(cat /proc/sys/vm/swappiness)"
+          sudo sysctl vm.overcommit_memory=2        # Allow overcommit
+          sudo sysctl vm.overcommit_ratio=80
+          
+          # Show final memory status
+          echo "=== Final memory status ==="
+          free -h
+
       - uses: actions/checkout@v2
       - name: Set mvn build command based on matrix
         shell: bash
