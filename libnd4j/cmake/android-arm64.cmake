@@ -3,7 +3,10 @@
 
 # Set target system
 set(CMAKE_SYSTEM_NAME Android)
+set(CMAKE_SYSTEM_VERSION 21)
 set(CMAKE_SYSTEM_PROCESSOR aarch64)
+set(CMAKE_ANDROID_ARCH_ABI arm64-v8a)
+set(CMAKE_ANDROID_NDK ${ANDROID_NDK_ROOT})
 
 # Get NDK root from environment
 set(ANDROID_NDK_ROOT $ENV{ANDROID_NDK_ROOT})
@@ -117,10 +120,6 @@ set(CMAKE_C_FLAGS "--target=aarch64-linux-android21 --sysroot=${CMAKE_SYSROOT}" 
 set(CMAKE_CXX_FLAGS "--target=aarch64-linux-android21 --sysroot=${CMAKE_SYSROOT} -stdlib=libc++" CACHE STRING "C++ compiler flags")
 set(CMAKE_ASM_FLAGS "--target=aarch64-linux-android21 --sysroot=${CMAKE_SYSROOT}" CACHE STRING "Assembler flags")
 
-# Set Android-specific variables
-set(ANDROID_ABI "arm64-v8a")
-set(ANDROID_PLATFORM "android-21")
-
 # Final debug output
 message(STATUS "=== Final Compiler Configuration ===")
 message(STATUS "CMAKE_C_COMPILER: ${CMAKE_C_COMPILER}")
@@ -128,4 +127,6 @@ message(STATUS "CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
 message(STATUS "CMAKE_ASM_COMPILER: ${CMAKE_ASM_COMPILER}")
 message(STATUS "CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
 message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
+message(STATUS "CMAKE_SYSTEM_VERSION: ${CMAKE_SYSTEM_VERSION}")
+message(STATUS "CMAKE_ANDROID_ARCH_ABI: ${CMAKE_ANDROID_ARCH_ABI}")
 message(STATUS "=======================================")

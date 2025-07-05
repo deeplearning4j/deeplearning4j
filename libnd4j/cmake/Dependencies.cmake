@@ -8,11 +8,59 @@ function(setup_blas)
     if(SD_CUDA)
         return()
     endif()
+
+    # CRITICAL FIX: OPENBLAS_PATH is passed from the shell script via -DOPENBLAS_PATH=...
+    # but we need to ensure it's accessible and valid
+
+    if(NOT OPENBLAS_PATH)
+        message(STATUS "❌ OPENBLAS_PATH not set")
+        return()
+    endif()
+
+    # Handle Android path normalization at CMake level (in case shell script normalization didn't work)
+    if(ANDROID OR SD_ANDROID_BUILD)
+        if(OPENBLAS_PATH MATCHES "lib/[^/]+$")
+            get_filename_component(OPENBLAS_PATH "${OPENBLAS_PATH}/../.." ABSOLUTE)
+            message(STATUS "🔧 CMake normalized OPENBLAS_PATH: ${OPENBLAS_PATH}")
+        endif()
+    endif()
+
+    # Verify the path exists and has the required headers
+    if(NOT EXISTS "${OPENBLAS_PATH}/include")
+        message(STATUS "❌ OpenBLAS include directory not found: ${OPENBLAS_PATH}/include")
+        return()
+    endif()
+
+    if(NOT EXISTS "${OPENBLAS_PATH}/include/cblas.h")
+        message(STATUS "❌ OpenBLAS cblas.h not found: ${OPENBLAS_PATH}/include/cblas.h")
+        return()
+    endif()
+
+    # Set up OpenBLAS
+    message(STATUS "✅ Setting up OpenBLAS:")
+    message(STATUS "   Path: ${OPENBLAS_PATH}")
+    message(STATUS "   Include: ${OPENBLAS_PATH}/include")
+    message(STATUS "   Library: ${OPENBLAS_PATH}/lib")
+
+    # Use global include_directories for compatibility
     include_directories(${OPENBLAS_PATH}/include/)
-    link_directories(${OPENBLAS_PATH}/lib/)
+
+    # Set up library directories
+    if(EXISTS "${OPENBLAS_PATH}/lib")
+        link_directories(${OPENBLAS_PATH}/lib/)
+    endif()
+
+    # CRITICAL: Set the compile definition that enables OpenBLAS headers
     add_compile_definitions(HAVE_OPENBLAS=1)
+
+    # Set parent scope variables
     set(HAVE_OPENBLAS 1 PARENT_SCOPE)
     set(OPENBLAS_LIBRARIES openblas PARENT_SCOPE)
+
+    # CRITICAL: Make OPENBLAS_PATH available to parent scope for target include directories
+    set(OPENBLAS_PATH "${OPENBLAS_PATH}" PARENT_SCOPE)
+
+    message(STATUS "✅ OpenBLAS setup complete")
 endfunction()
 
 
