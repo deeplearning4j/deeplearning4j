@@ -22,6 +22,51 @@
 # Set the system and processor
 set(CMAKE_SYSTEM_NAME Android)
 
+# Add this to your CMakeLists.txt file BEFORE the project() call
+# This fixes the Android NDK host detection issue
+
+if(ANDROID)
+   # Force the correct NDK host tag based on the actual host system
+   if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+      if(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "aarch64")
+         set(ANDROID_HOST_TAG "linux-aarch64")
+      else()
+         set(ANDROID_HOST_TAG "linux-x86_64")
+      endif()
+   elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
+      set(ANDROID_HOST_TAG "darwin-x86_64")
+   elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+      set(ANDROID_HOST_TAG "windows-x86_64")
+   endif()
+
+   # Set the correct toolchain paths
+   set(ANDROID_TOOLCHAIN_ROOT "${ANDROID_NDK}/toolchains/llvm/prebuilt/${ANDROID_HOST_TAG}")
+
+   # Override the compiler paths to use the correct host architecture
+   set(CMAKE_C_COMPILER "${ANDROID_TOOLCHAIN_ROOT}/bin/${ANDROID_LLVM_TRIPLE}${ANDROID_NATIVE_API_LEVEL}-clang" CACHE FILEPATH "C compiler")
+   set(CMAKE_CXX_COMPILER "${ANDROID_TOOLCHAIN_ROOT}/bin/${ANDROID_LLVM_TRIPLE}${ANDROID_NATIVE_API_LEVEL}-clang++" CACHE FILEPATH "C++ compiler")
+
+   # Also set the generic clang paths as fallback
+   if(NOT EXISTS "${CMAKE_C_COMPILER}")
+      set(CMAKE_C_COMPILER "${ANDROID_TOOLCHAIN_ROOT}/bin/clang" CACHE FILEPATH "C compiler" FORCE)
+   endif()
+   if(NOT EXISTS "${CMAKE_CXX_COMPILER}")
+      set(CMAKE_CXX_COMPILER "${ANDROID_TOOLCHAIN_ROOT}/bin/clang++" CACHE FILEPATH "C++ compiler" FORCE)
+   endif()
+
+   message(STATUS "Android NDK Host Tag: ${ANDROID_HOST_TAG}")
+   message(STATUS "Android Toolchain Root: ${ANDROID_TOOLCHAIN_ROOT}")
+   message(STATUS "Android C Compiler: ${CMAKE_C_COMPILER}")
+   message(STATUS "Android C++ Compiler: ${CMAKE_CXX_COMPILER}")
+endif()
+
+# Alternative simpler fix: Force the correct host tag
+if(ANDROID AND CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+   # Most GitHub Actions runners are x86_64, not aarch64
+   set(ANDROID_HOST_TAG "linux-x86_64" CACHE STRING "Android host tag" FORCE)
+   message(STATUS "Forced Android host tag to: ${ANDROID_HOST_TAG}")
+endif()
+
 # Flexible API level - can be overridden via command line or environment
 if(NOT DEFINED ANDROID_NATIVE_API_LEVEL AND DEFINED ENV{ANDROID_VERSION})
    set(ANDROID_NATIVE_API_LEVEL $ENV{ANDROID_VERSION})
