@@ -167,7 +167,10 @@ jobs:
           echo "Adjusted swappiness: $(cat /proc/sys/vm/swappiness)"
           sudo sysctl vm.overcommit_memory=2        # Allow overcommit
           sudo sysctl vm.overcommit_ratio=80
-          
+          sudo sysctl vm.vfs_cache_pressure=50
+          sudo sysctl vm.dirty_ratio=10
+          sudo sysctl vm.dirty_background_ratio=5
+          sudo sysctl kernel.shmmax=68719476736
           # Show final memory status
           echo "=== Final memory status ==="
           free -h
