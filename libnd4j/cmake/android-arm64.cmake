@@ -5,7 +5,6 @@ set(CMAKE_ANDROID_STL_TYPE c++_static)
 set(CMAKE_SYSTEM_VERSION 21)
 set(CMAKE_ANDROID_NDK_TOOLCHAIN_VERSION clang)
 
-set(ANDROID TRUE)
 set(CMAKE_C_COMPILER   "$ENV{ANDROID_NDK}/toolchains/llvm/prebuilt/linux-aarch64/bin/aarch64-linux-android21-clang")
 set(CMAKE_CXX_COMPILER "$ENV{ANDROID_NDK}/toolchains/llvm/prebuilt/linux-aarch64/bin/aarch64-linux-android21-clang++")
 
