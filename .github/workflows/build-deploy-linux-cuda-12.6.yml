@@ -141,7 +141,7 @@ jobs:
             echo "Configuring swap space..."
           
             # Use input parameter for swap size, default to 12GB like Android workflow
-            SWAP_SIZE="${{ matrix.swap_size }}G"
+            SWAP_SIZE="12G"
             echo "Creating ${SWAP_SIZE} swap file..."
           
             # Create swap file
