@@ -147,6 +147,12 @@ jobs:
           echo "${NDK_DIR}" >> $GITHUB_PATH
           echo "ANDROID_NDK_ROOT=${NDK_DIR}" >> $GITHUB_ENV
           echo "ANDROID_NDK=${NDK_DIR}" >> $GITHUB_ENV
+          mkdir -p $ANDROID_NDK/platforms/android-21/arch-arm64/usr/lib
+          mkdir -p $ANDROID_NDK/platforms/android-21/arch-arm64/usr/include
+
+          # Copy the sysroot files from your ARM64 NDK
+          cp -r $ANDROID_NDK/toolchains/llvm/prebuilt/linux-aarch64/sysroot/usr/lib/aarch64-linux-android/21/* $ANDROID_NDK/platforms/android-21/arch-arm64/usr/lib/ 2>/dev/null || true
+          cp -r $ANDROID_NDK/toolchains/llvm/prebuilt/linux-aarch64/sysroot/usr/include/* $ANDROID_NDK/platforms/android-21/arch-arm64/usr/include/ 2>/dev/null || true
       - name: Set mvn build command based on matrix
         shell: bash
         run: |
