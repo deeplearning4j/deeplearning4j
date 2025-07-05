@@ -208,7 +208,6 @@ jobs:
           OPENBLAS_VERSION="0.3.28-1.5.11"
           OPENBLAS_JAR="openblas-${OPENBLAS_VERSION}-${LIBND4J_CLASSIFIER}.jar"
           OPENBLAS_INSTALL_DIR="${GITHUB_WORKSPACE}/openblas_home"
-          OPENBLAS_LIB_DIR="${OPENBLAS_INSTALL_DIR}/lib/x86_64"
 
           NDK_VERSION_ENV="r26d"
 
@@ -216,7 +215,6 @@ jobs:
           echo "OPENBLAS_VERSION=${OPENBLAS_VERSION}" >> $GITHUB_ENV
           echo "OPENBLAS_JAR=${OPENBLAS_JAR}" >> $GITHUB_ENV
           echo "OPENBLAS_INSTALL_DIR=${OPENBLAS_INSTALL_DIR}" >> $GITHUB_ENV
-          echo "OPENBLAS_PATH=${OPENBLAS_LIB_DIR}" >> $GITHUB_ENV
           echo "CURRENT_TARGET=android-x86_64" >> $GITHUB_ENV
           echo "NDK_VERSION=${NDK_VERSION_ENV}" >> $GITHUB_ENV
           echo "ANDROID_VERSION=21" >> $GITHUB_ENV
@@ -251,20 +249,182 @@ jobs:
         shell: bash
         env:
           OPENBLAS_INSTALL_DIR: ${{ env.OPENBLAS_INSTALL_DIR }}
-          OPENBLAS_PATH: ${{ env.OPENBLAS_PATH }}
           OPENBLAS_JAR: ${{ env.OPENBLAS_JAR }}
           OPENBLAS_VERSION: ${{ env.OPENBLAS_VERSION }}
+          LIBND4J_CLASSIFIER: ${{ env.LIBND4J_CLASSIFIER }}
         run: |
-          echo "Setting up OpenBLAS ${OPENBLAS_VERSION} for android-x86_64..."
+          echo "=== Setting up OpenBLAS ${OPENBLAS_VERSION} for ${LIBND4J_CLASSIFIER} ==="
+          
+          # Create and navigate to install directory
           mkdir -p "${OPENBLAS_INSTALL_DIR}"
           cd "${OPENBLAS_INSTALL_DIR}"
+          
+          # Download OpenBLAS JAR
           OPENBLAS_URL="https://repo1.maven.org/maven2/org/bytedeco/openblas/${OPENBLAS_VERSION}/${OPENBLAS_JAR}"
           echo "Downloading ${OPENBLAS_JAR} from ${OPENBLAS_URL}..."
-          wget --quiet ${OPENBLAS_URL}
-          echo "Unzipping ${OPENBLAS_JAR}..."
-          unzip -q ${OPENBLAS_JAR}
-          echo "OpenBLAS setup complete. OPENBLAS_PATH=${OPENBLAS_PATH}"
-          echo "OPENBLAS_PATH=${OPENBLAS_PATH}" >> $GITHUB_ENV
+          wget --quiet ${OPENBLAS_URL} || {
+            echo "❌ Failed to download OpenBLAS JAR"
+            exit 1
+          }
+          
+          # Extract JAR
+          echo "Extracting ${OPENBLAS_JAR}..."
+          unzip -q ${OPENBLAS_JAR} || {
+            echo "❌ Failed to extract OpenBLAS JAR"
+            exit 1
+          }
+          
+          echo "=== OpenBLAS JAR extraction completed ==="
+          
+          # Debug: Show extracted structure
+          echo "=== OpenBLAS JAR structure analysis ==="
+          echo "Root contents:"
+          ls -la | head -20
+          echo
+          
+          # Look for the platform-specific directory structure
+          echo "Searching for OpenBLAS platform directories..."
+          find . -type d -name "*android*" -o -name "*x86*" | head -10
+          echo
+          
+          # Look for headers and libraries
+          echo "Searching for OpenBLAS headers..."
+          find . -name "*.h" -type f | grep -E "(openblas|cblas)" | head -10
+          echo
+          
+          echo "Searching for OpenBLAS libraries..."
+          find . -name "*.so" -o -name "*.a" | head -10
+          echo
+          
+          # Find the correct OpenBLAS path
+          OPENBLAS_PLATFORM_DIR=""
+          
+          # Try to find android-x86_64 specific directory
+          PLATFORM_DIRS=(
+            "org/bytedeco/openblas/android-x86_64"
+            "org/bytedeco/openblas/linux-x86_64"
+            "android-x86_64"
+            "linux-x86_64"
+          )
+          
+          for dir in "${PLATFORM_DIRS[@]}"; do
+            if [[ -d "$dir" ]]; then
+              OPENBLAS_PLATFORM_DIR="$dir"
+              echo "Found platform directory: $OPENBLAS_PLATFORM_DIR"
+              break
+            fi
+          done
+          
+          if [[ -z "$OPENBLAS_PLATFORM_DIR" ]]; then
+            echo "❌ Could not find platform-specific OpenBLAS directory"
+            echo "Available directories:"
+            find . -type d -maxdepth 3 | head -20
+            exit 1
+          fi
+          
+          # Check for headers in platform directory
+          OPENBLAS_FINAL_PATH=""
+          if [[ -d "$OPENBLAS_PLATFORM_DIR/include" ]]; then
+            OPENBLAS_FINAL_PATH="$(realpath "$OPENBLAS_PLATFORM_DIR")"
+            echo "✅ Found include directory at: $OPENBLAS_PLATFORM_DIR/include"
+          elif [[ -d "$OPENBLAS_PLATFORM_DIR" ]]; then
+            # Look for headers in subdirectories
+            INCLUDE_DIR=$(find "$OPENBLAS_PLATFORM_DIR" -name "include" -type d | head -1)
+            if [[ -n "$INCLUDE_DIR" ]]; then
+              OPENBLAS_FINAL_PATH="$(realpath "$(dirname "$INCLUDE_DIR")")"
+              echo "✅ Found include directory at: $INCLUDE_DIR"
+            else
+              echo "❌ No include directory found in $OPENBLAS_PLATFORM_DIR"
+              echo "Contents of $OPENBLAS_PLATFORM_DIR:"
+              ls -la "$OPENBLAS_PLATFORM_DIR"
+              exit 1
+            fi
+          else
+            echo "❌ Platform directory not accessible: $OPENBLAS_PLATFORM_DIR"
+            exit 1
+          fi
+          
+          # Verify headers exist
+          echo "=== Verifying OpenBLAS headers ==="
+          OPENBLAS_INCLUDE_DIR="$OPENBLAS_FINAL_PATH/include"
+          
+          if [[ -f "$OPENBLAS_INCLUDE_DIR/openblas_config.h" ]]; then
+            echo "✅ Found openblas_config.h"
+          else
+            echo "❌ openblas_config.h not found at $OPENBLAS_INCLUDE_DIR"
+          fi
+          
+          if [[ -f "$OPENBLAS_INCLUDE_DIR/cblas.h" ]]; then
+            echo "✅ Found cblas.h"
+          else
+            echo "❌ cblas.h not found at $OPENBLAS_INCLUDE_DIR"
+          fi
+          
+          # List all header files
+          echo "=== Available header files ==="
+          find "$OPENBLAS_INCLUDE_DIR" -name "*.h" | head -20
+          echo
+          
+          # Verify libraries exist
+          echo "=== Verifying OpenBLAS libraries ==="
+          OPENBLAS_LIB_DIR="$OPENBLAS_FINAL_PATH/lib"
+          if [[ -d "$OPENBLAS_LIB_DIR" ]]; then
+            echo "✅ Found lib directory"
+            ls -la "$OPENBLAS_LIB_DIR" | head -10
+          else
+            echo "❌ lib directory not found at $OPENBLAS_LIB_DIR"
+            # Look for libraries elsewhere
+            find "$OPENBLAS_FINAL_PATH" -name "*.so" -o -name "*.a" | head -10
+          fi
+          
+          # Set final environment variables
+          echo "=== Setting final environment variables ==="
+          echo "OPENBLAS_PATH=${OPENBLAS_FINAL_PATH}" >> $GITHUB_ENV
+          echo "OPENBLAS_INCLUDE_PATH=${OPENBLAS_INCLUDE_DIR}" >> $GITHUB_ENV
+          echo "OPENBLAS_LIB_PATH=${OPENBLAS_LIB_DIR}" >> $GITHUB_ENV
+          
+          echo "=== OpenBLAS setup completed ==="
+          echo "Final OpenBLAS path: ${OPENBLAS_FINAL_PATH}"
+          echo "Include path: ${OPENBLAS_INCLUDE_DIR}"
+          echo "Library path: ${OPENBLAS_LIB_DIR}"
+
+      - name: OpenBLAS Configuration Verification
+        shell: bash
+        run: |
+          echo "=== OpenBLAS Configuration Verification ==="
+          echo "OPENBLAS_PATH: ${OPENBLAS_PATH}"
+          echo "OPENBLAS_INCLUDE_PATH: ${OPENBLAS_INCLUDE_PATH}"
+          echo "OPENBLAS_LIB_PATH: ${OPENBLAS_LIB_PATH}"
+          echo
+          
+          # Test that paths are accessible
+          if [[ -d "$OPENBLAS_PATH" ]]; then
+            echo "✅ OPENBLAS_PATH is accessible"
+          else
+            echo "❌ OPENBLAS_PATH is not accessible: $OPENBLAS_PATH"
+            exit 1
+          fi
+          
+          if [[ -d "$OPENBLAS_INCLUDE_PATH" ]]; then
+            echo "✅ OPENBLAS_INCLUDE_PATH is accessible"
+          else
+            echo "❌ OPENBLAS_INCLUDE_PATH is not accessible: $OPENBLAS_INCLUDE_PATH"
+            exit 1
+          fi
+          
+          # Test header file accessibility
+          if [[ -f "$OPENBLAS_INCLUDE_PATH/cblas.h" ]]; then
+            echo "✅ cblas.h is accessible"
+            echo "First few lines of cblas.h:"
+            head -5 "$OPENBLAS_INCLUDE_PATH/cblas.h"
+          else
+            echo "❌ cblas.h is not accessible"
+            echo "Contents of include directory:"
+            ls -la "$OPENBLAS_INCLUDE_PATH"
+            exit 1
+          fi
+          
+          echo "=== Verification completed successfully ==="
 
       - name: Debug Info
         shell: bash
@@ -282,16 +442,17 @@ jobs:
           echo "debug_enabled: ${{ github.event.inputs.debug_enabled }}"
           echo "--- Matrix Values ---"
           echo "Helper: ${{ matrix.helper }}"
-          echo "swap size 4GB"
           echo "--- Environment Variables ---"
           echo "LIBND4J_CLASSIFIER: $LIBND4J_CLASSIFIER"
           echo "OPENBLAS_VERSION: $OPENBLAS_VERSION"
           echo "OPENBLAS_JAR: $OPENBLAS_JAR"
           echo "OPENBLAS_INSTALL_DIR: $OPENBLAS_INSTALL_DIR"
-          echo "OPENBLAS_PATH (set): $OPENBLAS_PATH"
+          echo "OPENBLAS_PATH: $OPENBLAS_PATH"
+          echo "OPENBLAS_INCLUDE_PATH: $OPENBLAS_INCLUDE_PATH"
+          echo "OPENBLAS_LIB_PATH: $OPENBLAS_LIB_PATH"
           echo "CURRENT_TARGET: $CURRENT_TARGET"
-          echo "NDK_VERSION (set): $NDK_VERSION"
-          echo "ANDROID_VERSION (set): $ANDROID_VERSION"
+          echo "NDK_VERSION: $NDK_VERSION"
+          echo "ANDROID_VERSION: $ANDROID_VERSION"
           echo "NDK Path (from step): ${{ steps.setup-ndk.outputs.ndk-path }}"
           echo "COMMAND: $COMMAND"
           echo "--- System Info ---"
@@ -299,9 +460,6 @@ jobs:
           mvn --version
           cmake --version
           protoc --version
-          echo "--- Dependency Paths ---"
-          echo "OpenBLAS Lib Dir Contents:"
-          ls -l $OPENBLAS_PATH || echo "Path $OPENBLAS_PATH not found or empty."
 
       - name: Monitor memory during build
         shell: bash
@@ -337,7 +495,7 @@ jobs:
           ANDROID_VERSION: ${{ env.ANDROID_VERSION }}
           NDK_VERSION: ${{ env.NDK_VERSION }}
           PROTO_EXEC: /opt/protobuf/bin/protoc
-          LD_LIBRARY_PATH: $LD_LIBRARY_PATH:${{ env.OPENBLAS_PATH }}
+          LD_LIBRARY_PATH: $LD_LIBRARY_PATH:${{ env.OPENBLAS_LIB_PATH }}
           DEBIAN_FRONTEND: noninteractive
           DEPLOY: 1
           BUILD_USING_MAVEN: 1
@@ -348,21 +506,38 @@ jobs:
           RLIMIT_AS: 6442450944  # 6GB virtual memory limit
           RLIMIT_DATA: 4294967296  # 4GB data segment limit
         run: |
-          echo "--- Environment for Build Step ---"
-          echo "NDK Path used: ${ANDROID_NDK}"
-          echo "OpenBLAS Path used: ${OPENBLAS_PATH}"
+          echo "=== Build Environment Summary ==="
+          echo "NDK Path: ${ANDROID_NDK}"
+          echo "OpenBLAS Path: ${OPENBLAS_PATH}"
+          echo "OpenBLAS Include Path: ${OPENBLAS_INCLUDE_PATH}"
+          echo "OpenBLAS Lib Path: ${OPENBLAS_LIB_PATH}"
           echo "LD_LIBRARY_PATH: ${LD_LIBRARY_PATH}"
-          echo "----------------------------------"
+          echo "Build Threads: ${LIBND4J_BUILD_THREADS}"
+          echo "Helper: ${HELPER}"
+          echo "================================="
           
           # Show memory status before build
           echo "=== Memory status before build ==="
           free -h
+          
+          # Pre-build verification
+          echo "=== Pre-build OpenBLAS verification ==="
+          if [[ -f "$OPENBLAS_PATH/include/cblas.h" ]]; then
+            echo "✅ cblas.h found and accessible"
+          else
+            echo "❌ cblas.h not found at $OPENBLAS_PATH/include/cblas.h"
+            echo "Attempting to locate cblas.h..."
+            find "$OPENBLAS_PATH" -name "cblas.h" 2>/dev/null | head -5
+            exit 1
+          fi
+          
+          # Execute build
           if [ "$PERFORM_RELEASE" == 1 ] || [ "$PERFORM_RELEASE" == "true" ]; then
-              echo "Executing release script..."
+              echo "=== Executing release build ==="
               bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
           else
-              echo "Running build and deploying to snapshots..."
-              echo "Executing command: ${COMMAND}"
+              echo "=== Executing snapshot build ==="
+              echo "Command: ${COMMAND}"
               eval "${COMMAND}"
           fi
 
@@ -397,3 +572,16 @@ jobs:
           sudo swapoff /swapfile 2>/dev/null || true
           sudo rm -f /swapfile 2>/dev/null || true
           echo "Swap cleanup completed"
+
+      - name: Upload build artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs-${{ matrix.helper }}-${{ github.run_id }}
+          path: |
+            memory_monitor.log
+            **/cmake_install.log
+            **/build.log
+            **/CMakeFiles/CMakeError.log
+            **/CMakeFiles/CMakeOutput.log
+          retention-days: 3
