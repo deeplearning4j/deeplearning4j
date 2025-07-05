@@ -276,117 +276,53 @@ jobs:
           
           echo "=== OpenBLAS JAR extraction completed ==="
           
-          # Debug: Show extracted structure
-          echo "=== OpenBLAS JAR structure analysis ==="
-          echo "Root contents:"
-          ls -la | head -20
-          echo
+          # FIXED: Use the actual JAR structure lib/x86_64/
+          # The JAR contains: lib/x86_64/include/ and lib/x86_64/lib/
+          OPENBLAS_PLATFORM_PATH="lib/x86_64"
           
-          # Look for the platform-specific directory structure
-          echo "Searching for OpenBLAS platform directories..."
-          find . -type d -name "*android*" -o -name "*x86*" | head -10
-          echo
+          if [[ -d "$OPENBLAS_PLATFORM_PATH" ]]; then
+            echo "✅ Found OpenBLAS platform directory: $OPENBLAS_PLATFORM_PATH"
           
-          # Look for headers and libraries
-          echo "Searching for OpenBLAS headers..."
-          find . -name "*.h" -type f | grep -E "(openblas|cblas)" | head -10
-          echo
-          
-          echo "Searching for OpenBLAS libraries..."
-          find . -name "*.so" -o -name "*.a" | head -10
-          echo
-          
-          # Find the correct OpenBLAS path
-          OPENBLAS_PLATFORM_DIR=""
-          
-          # Try to find android-x86_64 specific directory
-          PLATFORM_DIRS=(
-            "org/bytedeco/openblas/android-x86_64"
-            "org/bytedeco/openblas/linux-x86_64"
-            "android-x86_64"
-            "linux-x86_64"
-          )
-          
-          for dir in "${PLATFORM_DIRS[@]}"; do
-            if [[ -d "$dir" ]]; then
-              OPENBLAS_PLATFORM_DIR="$dir"
-              echo "Found platform directory: $OPENBLAS_PLATFORM_DIR"
-              break
+            # Verify the expected structure
+            if [[ -d "$OPENBLAS_PLATFORM_PATH/include" && -f "$OPENBLAS_PLATFORM_PATH/include/cblas.h" ]]; then
+              echo "✅ Found headers at: $OPENBLAS_PLATFORM_PATH/include/"
+            else
+              echo "❌ Headers not found at expected location: $OPENBLAS_PLATFORM_PATH/include/"
+              exit 1
             fi
-          done
           
-          if [[ -z "$OPENBLAS_PLATFORM_DIR" ]]; then
-            echo "❌ Could not find platform-specific OpenBLAS directory"
+            if [[ -d "$OPENBLAS_PLATFORM_PATH/lib" ]] || [[ -f "$OPENBLAS_PLATFORM_PATH/libopenblas.so" ]]; then
+              echo "✅ Found libraries in: $OPENBLAS_PLATFORM_PATH/"
+            else
+              echo "❌ Libraries not found in: $OPENBLAS_PLATFORM_PATH/"
+              exit 1
+            fi
+          
+            # Set the correct path - this should be the full path to lib/x86_64
+            OPENBLAS_FINAL_PATH="$(realpath "$OPENBLAS_PLATFORM_PATH")"
+          
+          else
+            echo "❌ Could not find OpenBLAS platform directory: $OPENBLAS_PLATFORM_PATH"
             echo "Available directories:"
             find . -type d -maxdepth 3 | head -20
             exit 1
           fi
           
-          # Check for headers in platform directory
-          OPENBLAS_FINAL_PATH=""
-          if [[ -d "$OPENBLAS_PLATFORM_DIR/include" ]]; then
-            OPENBLAS_FINAL_PATH="$(realpath "$OPENBLAS_PLATFORM_DIR")"
-            echo "✅ Found include directory at: $OPENBLAS_PLATFORM_DIR/include"
-          elif [[ -d "$OPENBLAS_PLATFORM_DIR" ]]; then
-            # Look for headers in subdirectories
-            INCLUDE_DIR=$(find "$OPENBLAS_PLATFORM_DIR" -name "include" -type d | head -1)
-            if [[ -n "$INCLUDE_DIR" ]]; then
-              OPENBLAS_FINAL_PATH="$(realpath "$(dirname "$INCLUDE_DIR")")"
-              echo "✅ Found include directory at: $INCLUDE_DIR"
-            else
-              echo "❌ No include directory found in $OPENBLAS_PLATFORM_DIR"
-              echo "Contents of $OPENBLAS_PLATFORM_DIR:"
-              ls -la "$OPENBLAS_PLATFORM_DIR"
-              exit 1
-            fi
-          else
-            echo "❌ Platform directory not accessible: $OPENBLAS_PLATFORM_DIR"
-            exit 1
-          fi
-          
-          # Verify headers exist
-          echo "=== Verifying OpenBLAS headers ==="
-          OPENBLAS_INCLUDE_DIR="$OPENBLAS_FINAL_PATH/include"
-          
-          if [[ -f "$OPENBLAS_INCLUDE_DIR/openblas_config.h" ]]; then
-            echo "✅ Found openblas_config.h"
-          else
-            echo "❌ openblas_config.h not found at $OPENBLAS_INCLUDE_DIR"
-          fi
-          
-          if [[ -f "$OPENBLAS_INCLUDE_DIR/cblas.h" ]]; then
-            echo "✅ Found cblas.h"
-          else
-            echo "❌ cblas.h not found at $OPENBLAS_INCLUDE_DIR"
-          fi
-          
-          # List all header files
-          echo "=== Available header files ==="
-          find "$OPENBLAS_INCLUDE_DIR" -name "*.h" | head -20
-          echo
-          
-          # Verify libraries exist
-          echo "=== Verifying OpenBLAS libraries ==="
-          OPENBLAS_LIB_DIR="$OPENBLAS_FINAL_PATH/lib"
-          if [[ -d "$OPENBLAS_LIB_DIR" ]]; then
-            echo "✅ Found lib directory"
-            ls -la "$OPENBLAS_LIB_DIR" | head -10
-          else
-            echo "❌ lib directory not found at $OPENBLAS_LIB_DIR"
-            # Look for libraries elsewhere
-            find "$OPENBLAS_FINAL_PATH" -name "*.so" -o -name "*.a" | head -10
-          fi
-          
-          # Set final environment variables
+          # Set final environment variables - this is the key fix
           echo "=== Setting final environment variables ==="
           echo "OPENBLAS_PATH=${OPENBLAS_FINAL_PATH}" >> $GITHUB_ENV
-          echo "OPENBLAS_INCLUDE_PATH=${OPENBLAS_INCLUDE_DIR}" >> $GITHUB_ENV
-          echo "OPENBLAS_LIB_PATH=${OPENBLAS_LIB_DIR}" >> $GITHUB_ENV
+          echo "OPENBLAS_INCLUDE_PATH=${OPENBLAS_FINAL_PATH}/include" >> $GITHUB_ENV
+          echo "OPENBLAS_LIB_PATH=${OPENBLAS_FINAL_PATH}/lib" >> $GITHUB_ENV
           
           echo "=== OpenBLAS setup completed ==="
           echo "Final OpenBLAS path: ${OPENBLAS_FINAL_PATH}"
-          echo "Include path: ${OPENBLAS_INCLUDE_DIR}"
-          echo "Library path: ${OPENBLAS_LIB_DIR}"
+          echo "Include path: ${OPENBLAS_FINAL_PATH}/include"
+          echo "Library path: ${OPENBLAS_FINAL_PATH}/lib"
+          
+          # Verify the final setup
+          echo "=== Final verification ==="
+          ls -la "${OPENBLAS_FINAL_PATH}/include/" | head -10
+          ls -la "${OPENBLAS_FINAL_PATH}/" | grep -E "\.(so|a)$" | head -5
 
       - name: OpenBLAS Configuration Verification
         shell: bash
@@ -421,6 +357,13 @@ jobs:
             echo "❌ cblas.h is not accessible"
             echo "Contents of include directory:"
             ls -la "$OPENBLAS_INCLUDE_PATH"
+            exit 1
+          fi
+          
+          if [[ -f "$OPENBLAS_INCLUDE_PATH/openblas_config.h" ]]; then
+            echo "✅ openblas_config.h is accessible"
+          else
+            echo "❌ openblas_config.h is not accessible"
             exit 1
           fi
           

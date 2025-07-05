@@ -1,108 +1,108 @@
-# Diagnostic toolchain to find what actually exists in the NDK
+# Android ARM64 toolchain with binary execution testing
 set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_PROCESSOR aarch64)
 
 # Set NDK paths
 set(ANDROID_NDK_ROOT $ENV{ANDROID_NDK_ROOT})
-message(STATUS "=== NDK DIAGNOSTIC ===")
-message(STATUS "ANDROID_NDK_ROOT: ${ANDROID_NDK_ROOT}")
-
-if(NOT ANDROID_NDK_ROOT)
-   message(FATAL_ERROR "ANDROID_NDK_ROOT not set")
-endif()
-
-# Check if basic paths exist
 set(TOOLCHAIN_DIR "${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt/linux-aarch64")
-message(STATUS "Expected toolchain dir: ${TOOLCHAIN_DIR}")
+set(CMAKE_SYSROOT "${TOOLCHAIN_DIR}/sysroot")
 
-if(EXISTS ${TOOLCHAIN_DIR})
-   message(STATUS "✓ Toolchain directory exists")
+message(STATUS "=== BINARY EXECUTION TESTING ===")
 
-   # List contents of bin directory
-   set(BIN_DIR "${TOOLCHAIN_DIR}/bin")
-   if(EXISTS ${BIN_DIR})
-      message(STATUS "✓ Bin directory exists: ${BIN_DIR}")
-      file(GLOB BIN_FILES "${BIN_DIR}/*")
-      message(STATUS "=== BIN DIRECTORY CONTENTS ===")
-      foreach(FILE ${BIN_FILES})
-         get_filename_component(FILENAME ${FILE} NAME)
-         if(IS_DIRECTORY ${FILE})
-            message(STATUS "  [DIR]  ${FILENAME}")
-         else()
-            # Check if executable
-            execute_process(
-                    COMMAND test -x ${FILE}
-                    RESULT_VARIABLE IS_EXECUTABLE
-                    OUTPUT_QUIET ERROR_QUIET
-            )
-            if(IS_EXECUTABLE EQUAL 0)
-               message(STATUS "  [EXEC] ${FILENAME}")
-            else()
-               message(STATUS "  [FILE] ${FILENAME}")
-            endif()
-         endif()
-      endforeach()
-   else()
-      message(STATUS "✗ Bin directory does not exist")
-   endif()
-
-   # Check sysroot
-   set(SYSROOT_DIR "${TOOLCHAIN_DIR}/sysroot")
-   if(EXISTS ${SYSROOT_DIR})
-      message(STATUS "✓ Sysroot exists: ${SYSROOT_DIR}")
-   else()
-      message(STATUS "✗ Sysroot does not exist")
-   endif()
-
-else()
-   message(STATUS "✗ Toolchain directory does not exist")
-
-   # Try alternative paths
-   message(STATUS "=== SEARCHING FOR ALTERNATIVE PATHS ===")
-
-   # Check different host architectures
-   set(ALT_PATHS
-           "${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64"
-           "${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt/darwin-x86_64"
-           "${ANDROID_NDK_ROOT}/bin"
-           "${ANDROID_NDK_ROOT}/toolchain/bin"
-   )
-
-   foreach(ALT_PATH ${ALT_PATHS})
-      if(EXISTS ${ALT_PATH})
-         message(STATUS "✓ Found alternative: ${ALT_PATH}")
-         if(EXISTS "${ALT_PATH}/bin")
-            file(GLOB ALT_FILES "${ALT_PATH}/bin/*clang*")
-            foreach(FILE ${ALT_FILES})
-               get_filename_component(FILENAME ${FILE} NAME)
-               message(STATUS "    ${FILENAME}")
-            endforeach()
-         endif()
-      else()
-         message(STATUS "✗ Not found: ${ALT_PATH}")
-      endif()
-   endforeach()
-endif()
-
-# Try to find ANY clang binary anywhere in the NDK
-message(STATUS "=== SEARCHING FOR ANY CLANG BINARY ===")
-execute_process(
-        COMMAND find ${ANDROID_NDK_ROOT} -name "*clang*" -type f -executable
-        OUTPUT_VARIABLE FOUND_CLANG_FILES
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-        ERROR_QUIET
+# Test each binary candidate thoroughly
+set(TEST_BINARIES
+        "${TOOLCHAIN_DIR}/bin/clang"
+        "${TOOLCHAIN_DIR}/bin/clang++"
+        "${TOOLCHAIN_DIR}/bin/aarch64-linux-android21-clang"
+        "${TOOLCHAIN_DIR}/bin/aarch64-linux-android21-clang++"
 )
 
-if(FOUND_CLANG_FILES)
-   string(REPLACE "\n" ";" CLANG_LIST ${FOUND_CLANG_FILES})
-   foreach(CLANG_FILE ${CLANG_LIST})
-      message(STATUS "Found clang: ${CLANG_FILE}")
-   endforeach()
-else()
-   message(STATUS "No clang binaries found anywhere in NDK")
+foreach(BINARY ${TEST_BINARIES})
+   if(EXISTS ${BINARY})
+      get_filename_component(BINARY_NAME ${BINARY} NAME)
+      message(STATUS "Testing ${BINARY_NAME}...")
+
+      # Test 1: Check file type
+      execute_process(
+              COMMAND file ${BINARY}
+              OUTPUT_VARIABLE FILE_TYPE
+              OUTPUT_STRIP_TRAILING_WHITESPACE
+              ERROR_QUIET
+      )
+      message(STATUS "  File type: ${FILE_TYPE}")
+
+      # Test 2: Check dependencies
+      execute_process(
+              COMMAND ldd ${BINARY}
+              OUTPUT_VARIABLE LDD_OUTPUT
+              OUTPUT_STRIP_TRAILING_WHITESPACE
+              ERROR_VARIABLE LDD_ERROR
+              RESULT_VARIABLE LDD_RESULT
+      )
+      if(LDD_RESULT EQUAL 0)
+         message(STATUS "  Dependencies: ${LDD_OUTPUT}")
+      else()
+         message(STATUS "  Dependencies error: ${LDD_ERROR}")
+      endif()
+
+      # Test 3: Try to execute with --version
+      execute_process(
+              COMMAND ${BINARY} --version
+              OUTPUT_VARIABLE VERSION_OUTPUT
+              ERROR_VARIABLE VERSION_ERROR
+              RESULT_VARIABLE VERSION_RESULT
+              TIMEOUT 10
+      )
+
+      if(VERSION_RESULT EQUAL 0)
+         string(SUBSTRING "${VERSION_OUTPUT}" 0 100 VERSION_BRIEF)
+         message(STATUS "  ✓ WORKS: ${VERSION_BRIEF}")
+         if(NOT CMAKE_C_COMPILER AND BINARY_NAME MATCHES "clang$")
+            set(CMAKE_C_COMPILER ${BINARY})
+            message(STATUS "  Selected as C compiler")
+         endif()
+         if(NOT CMAKE_CXX_COMPILER AND BINARY_NAME MATCHES "clang\\+\\+$")
+            set(CMAKE_CXX_COMPILER ${BINARY})
+            message(STATUS "  Selected as C++ compiler")
+         endif()
+      else()
+         message(STATUS "  ✗ FAILED (exit code ${VERSION_RESULT}): ${VERSION_ERROR}")
+      endif()
+
+      message(STATUS "  ---")
+   endif()
+endforeach()
+
+# If no C++ compiler found, use C compiler
+if(NOT CMAKE_CXX_COMPILER AND CMAKE_C_COMPILER)
+   set(CMAKE_CXX_COMPILER ${CMAKE_C_COMPILER})
+   message(STATUS "Using C compiler for C++: ${CMAKE_CXX_COMPILER}")
 endif()
 
-message(STATUS "=== END DIAGNOSTIC ===")
+# Verify we have working compilers
+if(NOT CMAKE_C_COMPILER)
+   message(FATAL_ERROR "No working C compiler found")
+endif()
 
-# Fail the configuration so we can see the output
-message(FATAL_ERROR "Diagnostic complete - check output above")
+if(NOT CMAKE_CXX_COMPILER)
+   message(FATAL_ERROR "No working C++ compiler found")
+endif()
+
+set(CMAKE_ASM_COMPILER ${CMAKE_C_COMPILER})
+
+# Set compiler flags
+set(CMAKE_C_FLAGS "--target=aarch64-linux-android21 --sysroot=${CMAKE_SYSROOT}")
+set(CMAKE_CXX_FLAGS "--target=aarch64-linux-android21 --sysroot=${CMAKE_SYSROOT} -stdlib=libc++")
+set(CMAKE_ASM_FLAGS "--target=aarch64-linux-android21 --sysroot=${CMAKE_SYSROOT}")
+
+# Cross-compilation settings
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH ${CMAKE_SYSROOT})
+
+message(STATUS "=== FINAL SELECTION ===")
+message(STATUS "C compiler: ${CMAKE_C_COMPILER}")
+message(STATUS "C++ compiler: ${CMAKE_CXX_COMPILER}")
+message(STATUS "ASM compiler: ${CMAKE_ASM_COMPILER}")
+message(STATUS "========================")
