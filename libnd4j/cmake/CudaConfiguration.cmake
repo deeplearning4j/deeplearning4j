@@ -2,6 +2,7 @@
 # CUDA Configuration Functions
 # Functions for CUDA-specific build configuration and optimization
 # UPDATED VERSION - Fixed CUDA path discovery and include directory setup
+# CRITICAL FIX: Removed /FS flag to prevent nvcc compilation errors
 ################################################################################
 
 # Enhanced CUDA toolkit detection with proper include path setup
@@ -398,7 +399,6 @@ function(configure_cuda_linking main_target_name)
     install(TARGETS ${main_target_name} DESTINATION .)
 endfunction()
 
-
 function(setup_cuda_architectures_early)
     if(NOT SD_CUDA)
         return()
@@ -423,7 +423,6 @@ function(setup_cuda_architectures_early)
     endif()
 
     message(STATUS "🔧 Early CUDA: Configuring architectures before project() call")
-
 
     if(DEFINED COMPUTE)
         string(TOLOWER "${COMPUTE}" COMPUTE_CMP)
@@ -482,19 +481,28 @@ function(setup_cuda_language)
     message(STATUS "CUDA language enabled successfully with compiler: ${CMAKE_CUDA_COMPILER}")
 endfunction()
 
+# CRITICAL FIX: Updated Windows CUDA build configuration
 function(configure_windows_cuda_build)
     if(NOT WIN32)
         return()
     endif()
 
     message(STATUS "Configuring Windows CUDA build with proper response files...")
+
+    # Enable response file support for long command lines
     set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS ON PARENT_SCOPE)
     set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES ON PARENT_SCOPE)
     set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LIBRARIES ON PARENT_SCOPE)
     set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LINK_OBJECTS ON PARENT_SCOPE)
     set(CMAKE_CUDA_RESPONSE_FILE_LINK_FLAG "@" PARENT_SCOPE)
     set(CMAKE_CUDA_COMPILE_OPTIONS_USE_RESPONSE_FILE ON PARENT_SCOPE)
-    message(STATUS "Windows CUDA: Enabled response file support for long command lines")
+
+    # CRITICAL: Prevent CMake from adding problematic /FS flag combinations
+    # This is the main fix for the "A single input file is required" error
+    set(CMAKE_CUDA_COMPILE_OPTIONS_PDB "" PARENT_SCOPE)
+    set(CMAKE_CUDA_COMPILE_PDB_OUTPUT_DIRECTORY "" PARENT_SCOPE)
+
+    message(STATUS "Windows CUDA: Enabled response file support and disabled problematic PDB flags")
 endfunction()
 
 function(configure_cuda_architecture_flags COMPUTE)
@@ -525,6 +533,7 @@ function(configure_cuda_architecture_flags COMPUTE)
     endif()
 endfunction()
 
+# CRITICAL FIX: Updated CUDA compiler flags function
 function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
     set(LOCAL_CUDA_FLAGS "")
 
@@ -537,15 +546,18 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/std:c++17")
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/D__NVCC_ALLOW_UNSUPPORTED_COMPILER__")
 
-        # FIX: Manually add /FS to prevent a CMake bug that incorrectly combines
-        # the automatic /Fd and /FS flags with a comma, causing nvcc to fail.
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/FS")
+        # CRITICAL FIX: DO NOT add /FS flag - this causes the "single input file" error
+        # The /FS flag conflicts with CMake's automatic /Fd flag generation
+        # Let CMake handle PDB file generation automatically
+        # set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/FS")  # REMOVED
 
         if(MSVC_RT_LIB STREQUAL "MultiThreadedDLL")
             set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/MD")
         else()
             set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/MT")
         endif()
+
+        message(STATUS "CUDA Windows flags configured WITHOUT /FS to prevent nvcc errors")
     else()
         set(LOCAL_CUDA_FLAGS "--allow-unsupported-compiler -Xcompiler -D__NVCC_ALLOW_UNSUPPORTED_COMPILER__")
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -maxrregcount=128")
@@ -586,8 +598,7 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
     message(STATUS "Final CMAKE_CUDA_FLAGS: ${LOCAL_CUDA_FLAGS}")
 endfunction()
 
-
-# Debug configuration function - was missing
+# Debug configuration function
 function(debug_cuda_configuration)
     message(STATUS "=== CUDA Configuration Debug Info ===")
     message(STATUS "CMAKE_CUDA_COMPILER: ${CMAKE_CUDA_COMPILER}")
@@ -703,5 +714,24 @@ function(setup_cudnn)
     if(HAVE_CUDNN)
         set(CUDNN_INCLUDE_DIR ${CUDNN_INCLUDE_DIR} PARENT_SCOPE)
         set(CUDNN ${CUDNN_LIBRARIES} PARENT_SCOPE)
+    endif()
+endfunction()
+
+# Additional helper function to clean up any remaining problematic flags
+function(fix_cuda_compile_flags_post_setup)
+    if(WIN32 AND MSVC)
+        # Clean up any remaining problematic flag combinations that might have been added
+        string(REPLACE "-Xcompiler=/FS" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
+        string(REPLACE "-Xcompiler=-FS" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
+        string(REPLACE "/FS" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
+        string(REPLACE "-Xcompiler=/Fd" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
+
+        # Clean up multiple spaces and commas
+        string(REGEX REPLACE "  +" " " CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
+        string(REGEX REPLACE ",-" " -" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
+        string(STRIP "${CMAKE_CUDA_FLAGS}" CMAKE_CUDA_FLAGS)
+
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}" PARENT_SCOPE)
+        message(STATUS "🔧 Cleaned problematic CUDA flags: ${CMAKE_CUDA_FLAGS}")
     endif()
 endfunction()
