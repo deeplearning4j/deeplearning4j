@@ -2,6 +2,93 @@
 # Manages all third-party dependencies. Logic is encapsulated in functions.
 
 include(ExternalProject)
+function(setup_android_arm_openblas)
+    set(is_android_or_arm FALSE)
+
+    if(ANDROID OR SD_ANDROID_BUILD OR SD_ARM_BUILD OR CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|AARCH64|arm64|ARM64")
+        set(is_android_or_arm TRUE)
+    endif()
+
+    if(NOT is_android_or_arm)
+        return()
+    endif()
+
+    message(STATUS "🔧 Setting up OpenBLAS for Android/ARM platform")
+
+    # Handle path normalization for Android/ARM
+    if(OPENBLAS_PATH MATCHES "lib/[^/]+$")
+        get_filename_component(OPENBLAS_PATH "${OPENBLAS_PATH}/../.." ABSOLUTE)
+        message(STATUS "🔧 Normalized OPENBLAS_PATH: ${OPENBLAS_PATH}")
+    endif()
+
+    # Platform-specific OpenBLAS library name handling
+    if(EXISTS "${OPENBLAS_PATH}/lib")
+        # Define search patterns based on platform
+        set(LIB_SEARCH_PATTERNS
+                "${OPENBLAS_PATH}/lib/libopenblas.so"
+                "${OPENBLAS_PATH}/lib/libopenblas.a"
+        )
+
+        # Add platform-specific patterns
+        if(ANDROID OR SD_ANDROID_BUILD)
+            if(CMAKE_ANDROID_ARCH_ABI STREQUAL "x86_64")
+                list(APPEND LIB_SEARCH_PATTERNS
+                        "${OPENBLAS_PATH}/lib/android-x86_64/libopenblas.so"
+                        "${OPENBLAS_PATH}/lib/android-x86_64/libopenblas.a"
+                )
+            elseif(CMAKE_ANDROID_ARCH_ABI STREQUAL "arm64-v8a")
+                list(APPEND LIB_SEARCH_PATTERNS
+                        "${OPENBLAS_PATH}/lib/android-arm64/libopenblas.so"
+                        "${OPENBLAS_PATH}/lib/android-arm64/libopenblas.a"
+                        "${OPENBLAS_PATH}/lib/android-aarch64/libopenblas.so"
+                        "${OPENBLAS_PATH}/lib/android-aarch64/libopenblas.a"
+                )
+            endif()
+        elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|AARCH64|arm64|ARM64")
+            list(APPEND LIB_SEARCH_PATTERNS
+                    "${OPENBLAS_PATH}/lib/linux-arm64/libopenblas.so"
+                    "${OPENBLAS_PATH}/lib/linux-arm64/libopenblas.a"
+                    "${OPENBLAS_PATH}/lib/linux-aarch64/libopenblas.so"
+                    "${OPENBLAS_PATH}/lib/linux-aarch64/libopenblas.a"
+            )
+        endif()
+
+        # Search for libraries
+        set(FOUND_OPENBLAS_LIBS "")
+        foreach(pattern ${LIB_SEARCH_PATTERNS})
+            file(GLOB matched_libs ${pattern})
+            if(matched_libs)
+                list(APPEND FOUND_OPENBLAS_LIBS ${matched_libs})
+            endif()
+        endforeach()
+
+        if(FOUND_OPENBLAS_LIBS)
+            message(STATUS "✅ Found OpenBLAS libraries: ${FOUND_OPENBLAS_LIBS}")
+        else()
+            message(WARNING "⚠️  No OpenBLAS libraries found in ${OPENBLAS_PATH}/lib")
+        endif()
+    endif()
+
+    # Set platform-specific compiler flags for OpenBLAS
+    if(ANDROID OR SD_ANDROID_BUILD)
+        if(CMAKE_ANDROID_ARCH_ABI STREQUAL "x86_64")
+            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=x86-64" PARENT_SCOPE)
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=x86-64" PARENT_SCOPE)
+        elseif(CMAKE_ANDROID_ARCH_ABI STREQUAL "arm64-v8a")
+            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=armv8-a" PARENT_SCOPE)
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv8-a" PARENT_SCOPE)
+        endif()
+    elseif(SD_ARM_BUILD OR CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|AARCH64|arm64|ARM64")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=armv8-a -mtune=cortex-a72" PARENT_SCOPE)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv8-a -mtune=cortex-a72" PARENT_SCOPE)
+    endif()
+
+    # Set additional ARM-specific optimizations
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|AARCH64|arm64|ARM64" OR CMAKE_ANDROID_ARCH_ABI STREQUAL "arm64-v8a")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mfix-cortex-a53-835769 -mfix-cortex-a53-843419" PARENT_SCOPE)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfix-cortex-a53-835769 -mfix-cortex-a53-843419" PARENT_SCOPE)
+    endif()
+endfunction()
 
 
 function(setup_blas)
@@ -15,12 +102,8 @@ function(setup_blas)
     endif()
 
     # Handle Android path normalization at CMake level (in case shell script normalization didn't work)
-    if(ANDROID OR SD_ANDROID_BUILD)
-        if(OPENBLAS_PATH MATCHES "lib/[^/]+$")
-            get_filename_component(OPENBLAS_PATH "${OPENBLAS_PATH}/../.." ABSOLUTE)
-            message(STATUS "🔧 CMake normalized OPENBLAS_PATH: ${OPENBLAS_PATH}")
-        endif()
-    endif()
+    setup_android_arm_openblas()
+
 
     # Verify the path exists and has the required headers
     if(NOT EXISTS "${OPENBLAS_PATH}/include")

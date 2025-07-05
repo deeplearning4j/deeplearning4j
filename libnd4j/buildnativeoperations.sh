@@ -42,17 +42,53 @@ else
   OPENBLAS_PATH=""
 fi
 
-# Auto-detect JavaCPP OpenBLAS path
+# Fixed auto-detection for Android and ARM platforms
 if [[ -z "$OPENBLAS_PATH" ]]; then
     JAVACPP_CACHE="$HOME/.javacpp/cache"
     if [[ -d "$JAVACPP_CACHE" ]]; then
-        OPENBLAS_JAR=$(find "$JAVACPP_CACHE" -name "openblas-*-linux-x86_64.jar" | head -1)
-        if [[ -n "$OPENBLAS_JAR" && -f "$OPENBLAS_JAR/org/bytedeco/openblas/linux-x86_64/include/cblas.h" ]]; then
-            export OPENBLAS_PATH="$OPENBLAS_JAR/org/bytedeco/openblas/linux-x86_64"
-            echo "✅ Auto-detected OPENBLAS_PATH: $OPENBLAS_PATH"
+        # Determine platform-specific JAR patterns based on OS variable
+        case "$OS" in
+            android-x86_64)
+                JAR_PATTERNS=("openblas-*-android-x86_64.jar" "openblas-*-linux-x86_64.jar")
+                OPENBLAS_SUBPATHS=("android-x86_64" "linux-x86_64")
+                ;;
+            android-arm64)
+                JAR_PATTERNS=("openblas-*-android-arm64.jar" "openblas-*-linux-arm64.jar" "openblas-*-android-aarch64.jar" "openblas-*-linux-aarch64.jar")
+                OPENBLAS_SUBPATHS=("android-arm64" "linux-arm64" "android-aarch64" "linux-aarch64")
+                ;;
+            linux-arm64)
+                JAR_PATTERNS=("openblas-*-linux-arm64.jar" "openblas-*-linux-aarch64.jar")
+                OPENBLAS_SUBPATHS=("linux-arm64" "linux-aarch64")
+                ;;
+            *)
+                JAR_PATTERNS=("openblas-*-linux-x86_64.jar")
+                OPENBLAS_SUBPATHS=("linux-x86_64")
+                ;;
+        esac
+
+        # Try each pattern until we find a working JAR
+        for pattern in "${JAR_PATTERNS[@]}"; do
+            OPENBLAS_JAR=$(find "$JAVACPP_CACHE" -name "$pattern" | head -1)
+            if [[ -n "$OPENBLAS_JAR" ]]; then
+                # Try each subpath until we find cblas.h
+                for subpath in "${OPENBLAS_SUBPATHS[@]}"; do
+                    if [[ -f "$OPENBLAS_JAR/org/bytedeco/openblas/$subpath/include/cblas.h" ]]; then
+                        export OPENBLAS_PATH="$OPENBLAS_JAR/org/bytedeco/openblas/$subpath"
+                        echo "✅ Auto-detected OPENBLAS_PATH for $OS: $OPENBLAS_PATH"
+                        break 2
+                    fi
+                done
+            fi
+        done
+
+        if [[ -z "$OPENBLAS_PATH" ]]; then
+            echo "⚠️  Could not auto-detect OpenBLAS for $OS platform"
         fi
     fi
 fi
+
+
+
 # =============================================================================
 # TYPE VALIDATION SYSTEM
 # =============================================================================

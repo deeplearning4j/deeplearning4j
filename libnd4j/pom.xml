@@ -328,6 +328,134 @@
                 </libnd4j.classifier>
             </properties>
         </profile>
+
+        <!-- Add these profiles to pom.xml for each platform -->
+
+        <!-- Android ARM64 profile -->
+        <profile>
+            <id>android-arm64-openblas</id>
+            <activation>
+                <property>
+                    <name>javacpp.platform</name>
+                    <value>android-arm64</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <configuration>
+                            <buildResources>
+                                <buildResource>/${javacpp.platform.library.path}/</buildResource>
+                                <buildResource>/org/bytedeco/openblas/android-arm64/</buildResource>
+                                <buildResource>/org/bytedeco/openblas/android-aarch64/</buildResource>
+                                <buildResource>/org/bytedeco/openblas/linux-arm64/</buildResource>
+                                <buildResource>/org/bytedeco/openblas/linux-aarch64/</buildResource>
+                            </buildResources>
+                            <includeResources>
+                                <includeResource>/${javacpp.platform.library.path}/include/</includeResource>
+                                <includeResource>/org/bytedeco/openblas/android-arm64/include/</includeResource>
+                                <includeResource>/org/bytedeco/openblas/android-aarch64/include/</includeResource>
+                                <includeResource>/org/bytedeco/openblas/linux-arm64/include/</includeResource>
+                                <includeResource>/org/bytedeco/openblas/linux-aarch64/include/</includeResource>
+                            </includeResources>
+                            <linkResources>
+                                <linkResource>/${javacpp.platform.library.path}/</linkResource>
+                                <linkResource>/${javacpp.platform.library.path}/lib/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/android-arm64/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/android-arm64/lib/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/android-aarch64/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/android-aarch64/lib/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/linux-arm64/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/linux-arm64/lib/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/linux-aarch64/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/linux-aarch64/lib/</linkResource>
+                            </linkResources>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Linux ARM64 profile -->
+        <profile>
+            <id>linux-arm64-openblas</id>
+            <activation>
+                <property>
+                    <name>javacpp.platform</name>
+                    <value>linux-arm64</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <configuration>
+                            <buildResources>
+                                <buildResource>/${javacpp.platform.library.path}/</buildResource>
+                                <buildResource>/org/bytedeco/openblas/linux-arm64/</buildResource>
+                                <buildResource>/org/bytedeco/openblas/linux-aarch64/</buildResource>
+                            </buildResources>
+                            <includeResources>
+                                <includeResource>/${javacpp.platform.library.path}/include/</includeResource>
+                                <includeResource>/org/bytedeco/openblas/linux-arm64/include/</includeResource>
+                                <includeResource>/org/bytedeco/openblas/linux-aarch64/include/</includeResource>
+                            </includeResources>
+                            <linkResources>
+                                <linkResource>/${javacpp.platform.library.path}/</linkResource>
+                                <linkResource>/${javacpp.platform.library.path}/lib/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/linux-arm64/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/linux-arm64/lib/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/linux-aarch64/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/linux-aarch64/lib/</linkResource>
+                            </linkResources>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Updated Android x86_64 profile -->
+        <profile>
+            <id>android-x86_64-openblas</id>
+            <activation>
+                <property>
+                    <name>javacpp.platform</name>
+                    <value>android-x86_64</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <configuration>
+                            <buildResources>
+                                <buildResource>/${javacpp.platform.library.path}/</buildResource>
+                                <buildResource>/org/bytedeco/openblas/android-x86_64/</buildResource>
+                                <buildResource>/org/bytedeco/openblas/linux-x86_64/</buildResource>
+                            </buildResources>
+                            <includeResources>
+                                <includeResource>/${javacpp.platform.library.path}/include/</includeResource>
+                                <includeResource>/org/bytedeco/openblas/android-x86_64/include/</includeResource>
+                                <includeResource>/org/bytedeco/openblas/linux-x86_64/include/</includeResource>
+                            </includeResources>
+                            <linkResources>
+                                <linkResource>/${javacpp.platform.library.path}/</linkResource>
+                                <linkResource>/${javacpp.platform.library.path}/lib/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/android-x86_64/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/android-x86_64/lib/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/linux-x86_64/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/linux-x86_64/lib/</linkResource>
+                            </linkResources>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
         <profile>
             <id>extension</id>
             <activation>
