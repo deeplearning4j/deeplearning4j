@@ -100,47 +100,6 @@ function(configure_section_splitting)
     endif()
 endfunction()
 
-# Enhanced Android x86_64 memory optimization
-function(configure_android_x86_64_memory_optimization)
-    if(NOT (ANDROID_ABI MATCHES "x86_64" AND NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC"))
-        return()
-    endif()
-    
-    message(STATUS "Applying enhanced Android x86_64 memory optimizations")
-
-    # Aggressive memory model
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -mcmodel=large" PARENT_SCOPE)
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -mcmodel=large" PARENT_SCOPE)
-
-    # Disable memory-intensive optimizations
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-merge-all-constants" PARENT_SCOPE)
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-merge-all-constants" PARENT_SCOPE)
-
-    # Template instantiation limits
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -ftemplate-depth=256" PARENT_SCOPE)
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -ftemplate-depth=128" PARENT_SCOPE)
-
-    # Constexpr limits to prevent excessive compile-time computation
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fconstexpr-steps=500000" PARENT_SCOPE)
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fconstexpr-steps=250000" PARENT_SCOPE)
-
-    # Memory-conscious debug info
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g1 -gz=none" PARENT_SCOPE)
-
-    # Enhanced LLD flags for large binaries
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-keep-memory" PARENT_SCOPE)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--threads=1" PARENT_SCOPE)
-
-    # Use thin LTO instead of full LTO if enabled
-    if(SD_USE_LTO)
-        string(REPLACE "-flto" "-flto=thin" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
-        string(REPLACE "-flto" "-flto=thin" CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}" PARENT_SCOPE)
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}" PARENT_SCOPE)
-    endif()
-    
-    message(STATUS "Enhanced Android x86_64 memory optimizations applied")
-endfunction()
 
 # Function to disable PLT completely for memory issues
 function(configure_plt_disable)
@@ -320,10 +279,7 @@ function(setup_platform_optimizations)
     
     # Configure large template linker
     configure_large_template_linker()
-    
-    # Configure Android-specific optimizations
-    configure_android_x86_64_memory_optimization()
-    
+
     # Configure architecture tuning
     configure_architecture_tuning()
     
