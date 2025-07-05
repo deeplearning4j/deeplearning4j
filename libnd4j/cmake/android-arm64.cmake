@@ -60,12 +60,7 @@ if(ANDROID)
    message(STATUS "Android C++ Compiler: ${CMAKE_CXX_COMPILER}")
 endif()
 
-# Alternative simpler fix: Force the correct host tag
-if(ANDROID AND CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
-   # Most GitHub Actions runners are x86_64, not aarch64
-   set(ANDROID_HOST_TAG "linux-x86_64" CACHE STRING "Android host tag" FORCE)
-   message(STATUS "Forced Android host tag to: ${ANDROID_HOST_TAG}")
-endif()
+
 
 # Flexible API level - can be overridden via command line or environment
 if(NOT DEFINED ANDROID_NATIVE_API_LEVEL AND DEFINED ENV{ANDROID_VERSION})
