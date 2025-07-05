@@ -37,6 +37,18 @@ else
 fi
 
 
+
+# Auto-detect JavaCPP OpenBLAS path
+if [[ -z "$OPENBLAS_PATH" ]]; then
+    JAVACPP_CACHE="$HOME/.javacpp/cache"
+    if [[ -d "$JAVACPP_CACHE" ]]; then
+        OPENBLAS_JAR=$(find "$JAVACPP_CACHE" -name "openblas-*-linux-x86_64.jar" | head -1)
+        if [[ -n "$OPENBLAS_JAR" && -f "$OPENBLAS_JAR/org/bytedeco/openblas/linux-x86_64/include/cblas.h" ]]; then
+            export OPENBLAS_PATH="$OPENBLAS_JAR/org/bytedeco/openblas/linux-x86_64"
+            echo "✅ Auto-detected OPENBLAS_PATH: $OPENBLAS_PATH"
+        fi
+    fi
+fi
 # =============================================================================
 # TYPE VALIDATION SYSTEM
 # =============================================================================
@@ -1298,6 +1310,7 @@ echo DATATYPES           = "${DATATYPES_ARG}"
 echo MINIFIER            = "${MINIFIER_ARG}"
 echo TESTS               = "${TESTS_ARG}"
 echo NAME                = "${NAME_ARG}"
+echo OPENBLAS_PATH       = "$OPENBLAS_PATH"
 echo CHECK_VECTORIZATION = "$CHECK_VECTORIZATION"
 echo HELPERS             = "$HELPERS"
 echo OP_OUTPUT_FILE      = "$OP_OUTPUT_FILE"
