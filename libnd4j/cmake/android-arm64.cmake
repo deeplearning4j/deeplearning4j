@@ -50,27 +50,14 @@ if(NOT DEFINED CMAKE_ANDROID_NDK)
 endif()
 
 set(ANDROID TRUE)
-if (WIN32)
-   set(CMAKE_C_COMPILER   "$ENV{ANDROID_CC}.exe")
-   set(CMAKE_CXX_COMPILER "$ENV{ANDROID_CC}++.exe")
-   # Verify NDK exists
-   if(NOT EXISTS "${CMAKE_ANDROID_NDK}")
-      message(FATAL_ERROR "Android NDK directory does not exist: ${CMAKE_ANDROID_NDK}")
-   endif()
 
-   # Use unified headers (available since NDK r14)
-   set(CMAKE_ANDROID_STL_TYPE c++_shared)
-
-   # Detect host platform for prebuilt tools
-   if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
-      if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "x86_64|amd64")
-         set(NDK_HOST_TAG "linux-x86_64")
-      elseif(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
-         set(NDK_HOST_TAG "linux-aarch64")
-      else()
-         set(CMAKE_C_COMPILER   "$ENV{ANDROID_CC}")
-         set(CMAKE_CXX_COMPILER "$ENV{ANDROID_CC}++")
-      endif (WIN32)
+# Detect host platform for prebuilt tools
+if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+   if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "x86_64|amd64")
+      set(NDK_HOST_TAG "linux-x86_64")
+   elseif(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
+      set(NDK_HOST_TAG "linux-aarch64")
+   else()
       set(NDK_HOST_TAG "linux-x86_64")  # fallback
    endif()
 elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
@@ -81,7 +68,24 @@ else()
    set(NDK_HOST_TAG "linux-x86_64")  # fallback
 endif()
 
+# Set compiler paths based on platform
+if(WIN32)
+   set(CMAKE_C_COMPILER   "$ENV{ANDROID_CC}.exe")
+   set(CMAKE_CXX_COMPILER "$ENV{ANDROID_CC}++.exe")
+else()
+   set(CMAKE_C_COMPILER   "$ENV{ANDROID_CC}")
+   set(CMAKE_CXX_COMPILER "$ENV{ANDROID_CC}++")
+endif()
+
 message(STATUS "Detected NDK host tag: ${NDK_HOST_TAG}")
+
+# Verify NDK exists
+if(NOT EXISTS "${CMAKE_ANDROID_NDK}")
+   message(FATAL_ERROR "Android NDK directory does not exist: ${CMAKE_ANDROID_NDK}")
+endif()
+
+# Use unified headers (available since NDK r14)
+set(CMAKE_ANDROID_STL_TYPE c++_shared)
 
 # Set toolchain paths with flexibility for different NDK structures
 set(NDK_TOOLCHAIN_PATH "${CMAKE_ANDROID_NDK}/toolchains/llvm/prebuilt/${NDK_HOST_TAG}")
