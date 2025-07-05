@@ -223,7 +223,6 @@ void SD_HOST ReduceFloatFunction<X, Z>::exec(sd::memory::Workspace *workspace, c
   const X *x = reinterpret_cast<const X *>(vx);
   Z *z = reinterpret_cast<Z *>(vz);
 
-  // CRITICAL FIX: Type-safe parameter handling for all numeric types
   using CompatibleParamType = typename SafeTypeUtils::CompatibleParamType<X, Z>::type;
   CompatibleParamType *compatibleExtraParams = nullptr;
   CompatibleParamType convertedParams[8];

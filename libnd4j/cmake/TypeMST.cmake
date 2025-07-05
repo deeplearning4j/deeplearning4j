@@ -22,7 +22,6 @@ function(generate_mst_combinations)
     list(APPEND _COMBINATIONS "8,8,8")  # UINT8
     list(APPEND _COMBINATIONS "9,9,9")  # UINT16
 
-    # Add critical mixed-type combinations
     list(APPEND _COMBINATIONS "1,4,1")  # float32, int32, float32
     list(APPEND _COMBINATIONS "4,1,1")  # int32, float32, float32
     list(APPEND _COMBINATIONS "2,4,2")  # double, int32, double

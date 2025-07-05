@@ -912,7 +912,6 @@ function(validate_and_process_types)
             message(STATUS "🎯 Auto-generated Types: ${resolved_types}")
         endif()
 
-        # CRITICAL FIX: Set in both current scope AND parent scope
         set(FINAL_TYPES_LIST "${resolved_types}")
         set(SD_TYPES_LIST "${resolved_types}" PARENT_SCOPE)
         validate_type_list("${resolved_types}" "${validation_mode}")
@@ -936,7 +935,6 @@ function(validate_and_process_types)
         message(STATUS "🎯 All available data types will be included")
         message(STATUS "🎯 SD_SELECTIVE_TYPES will NOT be defined")
 
-        # CRITICAL: Export for SelectiveRenderingCore IMMEDIATELY
         set(SRCORE_USE_SELECTIVE_TYPES FALSE CACHE INTERNAL "Use selective type discovery")
         set(SRCORE_VALIDATED_TYPES "" CACHE INTERNAL "Validated types for selective rendering")
         message(STATUS "🎯 Exported ALL_TYPES mode for SelectiveRenderingCore")
@@ -954,7 +952,6 @@ function(validate_and_process_types)
             set(SD_TYPES_LIST_COUNT 0 PARENT_SCOPE)
         endif()
 
-        # CRITICAL: Export SELECTIVE mode with the actual types IMMEDIATELY
         set(SRCORE_USE_SELECTIVE_TYPES TRUE CACHE INTERNAL "Use selective type discovery")
         set(SRCORE_VALIDATED_TYPES "${FINAL_TYPES_LIST}" CACHE INTERNAL "Validated types for selective rendering")
         message(STATUS "🎯 Exported SELECTIVE types for SelectiveRenderingCore: ${FINAL_TYPES_LIST}")
@@ -1263,7 +1260,6 @@ macro(LIBND4J_SETUP_TYPE_VALIDATION)
         set(SD_TYPES_LIST_COUNT 0)
     endif()
 
-    # CRITICAL: Export variables for SelectiveRenderingCore at CACHE level
     if(SD_TYPES_LIST_COUNT GREATER 0)
         set(SRCORE_USE_SELECTIVE_TYPES TRUE CACHE INTERNAL "Use selective type discovery")
         set(SRCORE_VALIDATED_TYPES "${SD_TYPES_LIST}" CACHE INTERNAL "Validated types for selective rendering")

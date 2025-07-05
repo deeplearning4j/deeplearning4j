@@ -71,10 +71,7 @@ include(Dependencies)
 include(CompilerOptimizations)
 include(PlatformOptimizations)
 
-# =============================================================================
-# 3. CRITICAL FIX: SETUP TYPE VALIDATION AND DEFINITIONS
-# This MUST happen early, before any compilation targets are created
-# =============================================================================
+
 
 # Call the type validation setup macro - THIS WAS MISSING!
 LIBND4J_SETUP_TYPE_VALIDATION()

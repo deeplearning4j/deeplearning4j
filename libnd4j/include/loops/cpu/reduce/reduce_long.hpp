@@ -103,7 +103,6 @@ template <typename OpType>
 Z SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams) {
   auto x = reinterpret_cast<const X *>(vx);
 
-  // CRITICAL FIX: Convert sd::LongType* to Z* for OpType compatibility
   Z* compatibleExtraParams = nullptr;
   Z convertedParams[8];
 

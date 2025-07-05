@@ -2234,7 +2234,6 @@ class MatchCondition {
  public:
   static const bool requiresSpecialAccumulation = false;
 
-  // CRITICAL: Add the missing InterType typedef
   using InterType = typename AggregateType<Z>::type;
 
   // execSpecial signatures - matches what reduce_long.hpp expects

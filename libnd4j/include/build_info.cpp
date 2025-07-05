@@ -245,7 +245,6 @@ std::string typeToCMakeFormat(const std::string& typeName) {
 }
 
 
-// CRITICAL FIX: Generate proper error message for missing types
 std::string generateMissingTypeError(const std::string& missingType, const std::string& context) {
   initializeTypeInfo(); // Ensure type info is initialized
 
@@ -329,7 +328,6 @@ std::string generateMissingTypeError(const std::string& missingType, const std::
   return message.str();
 }
 
-// NEW: Generate type mismatch error for operations
 std::string generateTypeMismatchError(const std::string& operation,
                                       const std::vector<std::string>& requiredTypes,
                                       const std::string& context) {
@@ -399,7 +397,6 @@ std::string generateTypeMismatchError(const std::string& operation,
   return message.str();
 }
 
-// NEW: Get detailed type configuration info for debugging
 std::string getDetailedTypeConfiguration() {
   initializeTypeInfo();
 
@@ -529,7 +526,6 @@ const char *getBinaryTypeInfo() {
   return binaryTypeInfoString.c_str();
 }
 
-// NEW: Get missing type error message (for runtime use)
 const char *getMissingTypeError(const char* missingType, const char* context) {
   static std::string errorMessage;
   std::string contextStr = context ? std::string(context) : std::string("");
@@ -537,8 +533,7 @@ const char *getMissingTypeError(const char* missingType, const char* context) {
   return errorMessage.c_str();
 }
 
-// NEW: Get detailed type configuration (for debugging)
-// NEW: Get detailed type configuration (for debugging)
+
 const char *getDetailedTypeConfig() {
   static std::string detailedConfig;
   detailedConfig = getDetailedTypeConfiguration();

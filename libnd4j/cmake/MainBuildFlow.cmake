@@ -475,7 +475,6 @@ LIBND4J_SETUP_TYPE_VALIDATION()
 print_status_colored("SUCCESS" "Type validation integration complete")
 # =============================================================================
 
-# --- CRITICAL: Setup CUDA early if needed ---
 if(SD_CUDA)
     print_status_colored("INFO" "=== CUDA EARLY INITIALIZATION WITH TEMPLATE SUPPORT ===")
     include(CudaConfiguration)

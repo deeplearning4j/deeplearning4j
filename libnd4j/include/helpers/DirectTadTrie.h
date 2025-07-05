@@ -223,7 +223,6 @@ public:
      hash = hash * 31 + static_cast<size_t>(dimensions[i]) * (i + 1);
    }
 
-   // Add rank - critical for distinguishing different dimension arrays
    int rank = shape::rank(originalShape);
    hash = hash * 13 + rank * 19;
 

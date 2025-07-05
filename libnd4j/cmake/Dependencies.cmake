@@ -9,9 +9,6 @@ function(setup_blas)
         return()
     endif()
 
-    # CRITICAL FIX: OPENBLAS_PATH is passed from the shell script via -DOPENBLAS_PATH=...
-    # but we need to ensure it's accessible and valid
-
     if(NOT OPENBLAS_PATH)
         message(STATUS "❌ OPENBLAS_PATH not set")
         return()
@@ -50,14 +47,12 @@ function(setup_blas)
         link_directories(${OPENBLAS_PATH}/lib/)
     endif()
 
-    # CRITICAL: Set the compile definition that enables OpenBLAS headers
     add_compile_definitions(HAVE_OPENBLAS=1)
 
     # Set parent scope variables
     set(HAVE_OPENBLAS 1 PARENT_SCOPE)
     set(OPENBLAS_LIBRARIES openblas PARENT_SCOPE)
 
-    # CRITICAL: Make OPENBLAS_PATH available to parent scope for target include directories
     set(OPENBLAS_PATH "${OPENBLAS_PATH}" PARENT_SCOPE)
 
     message(STATUS "✅ OpenBLAS setup complete")

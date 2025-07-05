@@ -572,11 +572,9 @@ function(execute_template_generation)
             genCompilation(${FL_ITEM} ALL_GENERATED_SOURCES)
         endforeach()
 
-        # NEW: Process CUDA combination templates (new parity system)
         set(CUDA_INST_DIR "${CMAKE_BINARY_DIR}/cuda_instantiations")
         file(MAKE_DIRECTORY "${CUDA_INST_DIR}")
 
-        # CRITICAL: Verify selective rendering is available before CUDA processing
         if(NOT DEFINED UNIFIED_COMBINATIONS_2 OR NOT DEFINED UNIFIED_COMBINATIONS_3)
             message(FATAL_ERROR "❌ CUDA template processing requires selective rendering combinations!")
         endif()

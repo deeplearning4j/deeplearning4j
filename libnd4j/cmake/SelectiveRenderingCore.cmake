@@ -769,7 +769,6 @@ function(_internal_srcore_generate_validity_header active_indices type_enums typ
         elseif(macro_name STREQUAL "bfloat16")
             set(macro_name "BFLOAT16")
 
-            # CRITICAL FIX: Handle std:: namespace types properly
         elseif(macro_name STREQUAL "std::string")
             set(macro_name "std_string")
         elseif(macro_name STREQUAL "std::u16string")
@@ -1267,7 +1266,6 @@ function(setup_selective_rendering_unified_safe)
         # Full setup for normal builds
         setup_selective_rendering_unified(${ARGN})
 
-        # CRITICAL FIX: Propagate variables from nested function to parent scope
         if(DEFINED UNIFIED_COMBINATIONS_3)
             set(UNIFIED_COMBINATIONS_3 "${UNIFIED_COMBINATIONS_3}" PARENT_SCOPE)
         endif()
@@ -1290,7 +1288,6 @@ function(setup_selective_rendering_unified_safe)
         srcore_debug_message("Cross-compilation detected, using simplified setup")
         setup_selective_rendering_unified(${ARGN})
 
-        # CRITICAL FIX: Propagate variables here too
         if(DEFINED UNIFIED_COMBINATIONS_3)
             set(UNIFIED_COMBINATIONS_3 "${UNIFIED_COMBINATIONS_3}" PARENT_SCOPE)
         endif()
@@ -1312,7 +1309,6 @@ function(setup_selective_rendering_unified_safe)
         message(WARNING "⚠️ Unified setup failed, falling back to emergency mode")
         srcore_emergency_fallback()
 
-        # CRITICAL FIX: Propagate emergency fallback variables to parent scope
         if(DEFINED UNIFIED_COMBINATIONS_3)
             set(UNIFIED_COMBINATIONS_3 "${UNIFIED_COMBINATIONS_3}" PARENT_SCOPE)
         endif()

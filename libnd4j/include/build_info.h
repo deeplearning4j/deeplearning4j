@@ -40,7 +40,6 @@ SD_LIB_EXPORT bool hasSelectiveTypes();
 SD_LIB_EXPORT const char *getTypeSelectionMode();
 SD_LIB_EXPORT const char *getBinaryTypeInfo();
 
-// NEW: Enhanced error message functions
 SD_LIB_EXPORT const char *getMissingTypeError(const char* missingType, const char* context);
 SD_LIB_EXPORT const char *getDetailedTypeConfig();
 

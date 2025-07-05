@@ -379,8 +379,7 @@ function(configure_cuda_linking main_target_name)
     # Setup modern cuDNN detection
     setup_modern_cudnn()
 
-    # CRITICAL: Explicitly add CUDA include directories to the target
-    # This ensures cuda.h and other CUDA headers are found
+
     if(CUDA_INCLUDE_DIRS)
         target_include_directories(${main_target_name} PUBLIC ${CUDA_INCLUDE_DIRS})
         message(STATUS "✅ Added CUDA include directories to ${main_target_name}: ${CUDA_INCLUDE_DIRS}")
@@ -548,7 +547,6 @@ function(configure_cuda_architecture_flags COMPUTE)
     endif()
 endfunction()
 
-# CRITICAL FIX: Updated CUDA compiler flags function
 function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
     set(LOCAL_CUDA_FLAGS "")
 
@@ -559,12 +557,6 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/nologo")
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/EHsc")
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/std:c++17")
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/D__NVCC_ALLOW_UNSUPPORTED_COMPILER__")
-
-        # CRITICAL FIX: DO NOT add /FS flag - this causes the "single input file" error
-        # The /FS flag conflicts with CMake's automatic /Fd flag generation
-        # Let CMake handle PDB file generation automatically
-        # set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/FS")  # REMOVED
 
         if(MSVC_RT_LIB STREQUAL "MultiThreadedDLL")
             set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/MD")
@@ -572,9 +564,7 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
             set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/MT")
         endif()
 
-        message(STATUS "CUDA Windows flags configured WITHOUT /FS to prevent nvcc errors")
     else()
-        set(LOCAL_CUDA_FLAGS "--allow-unsupported-compiler -Xcompiler -D__NVCC_ALLOW_UNSUPPORTED_COMPILER__")
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -maxrregcount=128")
 
         if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -685,7 +675,6 @@ function(setup_cuda_build)
     configure_windows_cuda_build()
     build_cuda_compiler_flags("${CUDA_ARCH_FLAGS}")
 
-    # CRITICAL: Set CMAKE_CUDA_FLAGS to parent scope so it propagates
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}" PARENT_SCOPE)
 
     # Also set the toolkit include directories for global access
@@ -729,24 +718,5 @@ function(setup_cudnn)
     if(HAVE_CUDNN)
         set(CUDNN_INCLUDE_DIR ${CUDNN_INCLUDE_DIR} PARENT_SCOPE)
         set(CUDNN ${CUDNN_LIBRARIES} PARENT_SCOPE)
-    endif()
-endfunction()
-
-# Additional helper function to clean up any remaining problematic flags
-function(fix_cuda_compile_flags_post_setup)
-    if(WIN32 AND MSVC)
-        # Clean up any remaining problematic flag combinations that might have been added
-        string(REPLACE "-Xcompiler=/FS" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
-        string(REPLACE "-Xcompiler=-FS" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
-        string(REPLACE "/FS" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
-        string(REPLACE "-Xcompiler=/Fd" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
-
-        # Clean up multiple spaces and commas
-        string(REGEX REPLACE "  +" " " CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
-        string(REGEX REPLACE ",-" " -" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
-        string(STRIP "${CMAKE_CUDA_FLAGS}" CMAKE_CUDA_FLAGS)
-
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}" PARENT_SCOPE)
-        message(STATUS "🔧 Cleaned problematic CUDA flags: ${CMAKE_CUDA_FLAGS}")
     endif()
 endfunction()

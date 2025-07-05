@@ -130,7 +130,6 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
 
   auto seqLen = maxTimeStep;
   if (seqLen == nullptr) {
-    //        seqLen = new NDArray(x->ordering(), {x->sizeAt(1)}, x->dataType(), block.launchContext());      // [bS]
     std::vector<sd::LongType> seqShape = {x->sizeAt(1)};
     seqLen = new NDArray(x->ordering(),seqShape, INT64, block.launchContext());  // [bS]
     *seqLen = x->sizeAt(0);  // set each element of seqLen to be equal to time

@@ -213,7 +213,6 @@ static void reduceExec31(const X* x, const LongType* xShapeInfo, Z* z, const Lon
 
   const LongType tadLen = static_cast<LongType>(xAxis1 * xAxis2);
 
-  // CRITICAL FIX: Convert E* to Z* for OpType compatibility
   Z* compatibleExtraParams = nullptr;
   Z convertedParams[8];
 
@@ -291,7 +290,6 @@ SD_LIB_HIDDEN void reduceExec32(const X* x, const LongType* xShapeInfo, Z* z, co
   const LongType xAxis2 = shape::sizeAt(xShapeInfo, dims[2]);
   const LongType xStrd2 = shape::strideAt(xShapeInfo, dims[2]);
 
-  // CRITICAL FIX: Convert E* to Z* for OpType compatibility
   Z* compatibleExtraParams = nullptr;
   Z convertedParams[8];
 
@@ -366,7 +364,6 @@ SD_LIB_HIDDEN void reduceExec41(const X* x,
 
   const LongType tadLen = static_cast<LongType>(xAxis1 * xAxis2 * xAxis3);
 
-  // CRITICAL FIX: Convert E* to Z* for OpType compatibility
   Z* compatibleExtraParams = nullptr;
   Z convertedParams[8];
 
@@ -462,7 +459,6 @@ SD_LIB_HIDDEN void reduceExec42(const X* x, const LongType* xShapeInfo, Z* z, co
 
   LongType xRank = shape::rank(xShapeInfo);
 
-  // CRITICAL FIX: Convert E* to Z* for OpType compatibility
   Z* compatibleExtraParams = nullptr;
   Z convertedParams[8];
 
@@ -545,7 +541,6 @@ SD_LIB_HIDDEN void reduceExec43(const X* x, const LongType* xShapeInfo, Z* z, co
   const LongType xStrd3 = shape::strideAt(xShapeInfo, dims[3]);
   LongType xRank = shape::rank(xShapeInfo);
 
-  // CRITICAL FIX: Convert E* to Z* for OpType compatibility
   Z* compatibleExtraParams = nullptr;
   Z convertedParams[8];
 
@@ -621,7 +616,6 @@ SD_LIB_HIDDEN void reduceExec51(const X* x, const LongType* xShapeInfo, Z* z, co
 
   LongType xRank = shape::rank(xShapeInfo);
 
-  // CRITICAL FIX: Convert E* to Z* for OpType compatibility
   Z* compatibleExtraParams = nullptr;
   Z convertedParams[8];
 
@@ -734,7 +728,6 @@ SD_LIB_HIDDEN void reduceExec52(const X* x, const LongType* xShapeInfo, Z* z, co
 
   LongType xRank = shape::rank(xShapeInfo);
 
-  // CRITICAL FIX: Convert E* to Z* for OpType compatibility
   Z* compatibleExtraParams = nullptr;
   Z convertedParams[8];
 
@@ -835,7 +828,6 @@ SD_LIB_HIDDEN void reduceExec53(const X* x, const LongType* xShapeInfo, Z* z, co
 
   LongType xRank = shape::rank(xShapeInfo);
 
-  // CRITICAL FIX: Convert E* to Z* for OpType compatibility
   Z* compatibleExtraParams = nullptr;
   Z convertedParams[8];
 
@@ -922,7 +914,6 @@ SD_LIB_HIDDEN void reduceExec54(const X* x, const LongType* xShapeInfo, Z* z, co
 
   LongType xRank = shape::rank(xShapeInfo);
 
-  // CRITICAL FIX: Convert E* to Z* for OpType compatibility
   Z* compatibleExtraParams = nullptr;
   Z convertedParams[8];
 
@@ -1007,7 +998,6 @@ SD_LIB_HIDDEN void reduceDefault(memory::Workspace* workspace, const X* x, const
 
   LongType xRank = shape::rank(xShapeInfo);
 
-  // CRITICAL FIX: Convert E* to Z* for OpType compatibility
   Z* compatibleExtraParams = nullptr;
   Z convertedParams[8];
 

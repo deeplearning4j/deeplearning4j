@@ -555,7 +555,6 @@ do
     value="${2:-}"
 
     case $key in
-        # CRITICAL: Type-related arguments
         -dt|--datatypes)
             DATATYPES="$value"
             print_colored "green" "✓ Detected datatypes argument: $value"
@@ -745,7 +744,6 @@ done
 
 print_colored "blue" "\n🔍 PROCESSING TYPE CONFIGURATION"
 
-# CRITICAL FIX: Remember the user's explicit datatypes setting
 USER_EXPLICIT_DATATYPES="$DATATYPES"
 
 # Handle debug builds with auto-reduction
