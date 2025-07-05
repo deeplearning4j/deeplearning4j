@@ -36,19 +36,7 @@ else
     echo "⚠️  Using bash $BASH_VERSION - falling back to compatibility mode"
 fi
 
-OPENBLAS_PATH=""
 
-# Auto-detect JavaCPP OpenBLAS path
-if [[ -z "$OPENBLAS_PATH" ]]; then
-    JAVACPP_CACHE="$HOME/.javacpp/cache"
-    if [[ -d "$JAVACPP_CACHE" ]]; then
-        OPENBLAS_JAR=$(find "$JAVACPP_CACHE" -name "openblas-*-linux-x86_64.jar" | head -1)
-        if [[ -n "$OPENBLAS_JAR" && -f "$OPENBLAS_JAR/org/bytedeco/openblas/linux-x86_64/include/cblas.h" ]]; then
-            export OPENBLAS_PATH="$OPENBLAS_JAR/org/bytedeco/openblas/linux-x86_64"
-            echo "✅ Auto-detected OPENBLAS_PATH: $OPENBLAS_PATH"
-        fi
-    fi
-fi
 # =============================================================================
 # TYPE VALIDATION SYSTEM
 # =============================================================================
