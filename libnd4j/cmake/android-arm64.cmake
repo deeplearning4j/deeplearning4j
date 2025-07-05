@@ -1,52 +1,108 @@
-# Android ARM64 toolchain that skips all compiler testing
+# Diagnostic toolchain to find what actually exists in the NDK
 set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_PROCESSOR aarch64)
 
 # Set NDK paths
 set(ANDROID_NDK_ROOT $ENV{ANDROID_NDK_ROOT})
+message(STATUS "=== NDK DIAGNOSTIC ===")
+message(STATUS "ANDROID_NDK_ROOT: ${ANDROID_NDK_ROOT}")
+
+if(NOT ANDROID_NDK_ROOT)
+   message(FATAL_ERROR "ANDROID_NDK_ROOT not set")
+endif()
+
+# Check if basic paths exist
 set(TOOLCHAIN_DIR "${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt/linux-aarch64")
-set(CMAKE_SYSROOT "${TOOLCHAIN_DIR}/sysroot")
+message(STATUS "Expected toolchain dir: ${TOOLCHAIN_DIR}")
 
-# Set compilers - use clang for both C and C++
-set(CMAKE_C_COMPILER "${TOOLCHAIN_DIR}/bin/clang")
-set(CMAKE_CXX_COMPILER "${TOOLCHAIN_DIR}/bin/clang")
-set(CMAKE_ASM_COMPILER "${TOOLCHAIN_DIR}/bin/clang")
+if(EXISTS ${TOOLCHAIN_DIR})
+   message(STATUS "✓ Toolchain directory exists")
 
-# CRITICAL: Skip all compiler testing
-set(CMAKE_C_COMPILER_WORKS TRUE)
-set(CMAKE_CXX_COMPILER_WORKS TRUE)
-set(CMAKE_ASM_COMPILER_WORKS TRUE)
+   # List contents of bin directory
+   set(BIN_DIR "${TOOLCHAIN_DIR}/bin")
+   if(EXISTS ${BIN_DIR})
+      message(STATUS "✓ Bin directory exists: ${BIN_DIR}")
+      file(GLOB BIN_FILES "${BIN_DIR}/*")
+      message(STATUS "=== BIN DIRECTORY CONTENTS ===")
+      foreach(FILE ${BIN_FILES})
+         get_filename_component(FILENAME ${FILE} NAME)
+         if(IS_DIRECTORY ${FILE})
+            message(STATUS "  [DIR]  ${FILENAME}")
+         else()
+            # Check if executable
+            execute_process(
+                    COMMAND test -x ${FILE}
+                    RESULT_VARIABLE IS_EXECUTABLE
+                    OUTPUT_QUIET ERROR_QUIET
+            )
+            if(IS_EXECUTABLE EQUAL 0)
+               message(STATUS "  [EXEC] ${FILENAME}")
+            else()
+               message(STATUS "  [FILE] ${FILENAME}")
+            endif()
+         endif()
+      endforeach()
+   else()
+      message(STATUS "✗ Bin directory does not exist")
+   endif()
 
-# Skip compiler ID detection
-set(CMAKE_C_COMPILER_ID "Clang")
-set(CMAKE_CXX_COMPILER_ID "Clang")
-set(CMAKE_ASM_COMPILER_ID "Clang")
+   # Check sysroot
+   set(SYSROOT_DIR "${TOOLCHAIN_DIR}/sysroot")
+   if(EXISTS ${SYSROOT_DIR})
+      message(STATUS "✓ Sysroot exists: ${SYSROOT_DIR}")
+   else()
+      message(STATUS "✗ Sysroot does not exist")
+   endif()
 
-# Skip ABI detection
-set(CMAKE_C_ABI_COMPILED TRUE)
-set(CMAKE_CXX_ABI_COMPILED TRUE)
+else()
+   message(STATUS "✗ Toolchain directory does not exist")
 
-# Skip feature detection
-set(CMAKE_C_COMPILER_FORCED TRUE)
-set(CMAKE_CXX_COMPILER_FORCED TRUE)
-set(CMAKE_ASM_COMPILER_FORCED TRUE)
+   # Try alternative paths
+   message(STATUS "=== SEARCHING FOR ALTERNATIVE PATHS ===")
 
-# Set compiler flags
-set(CMAKE_C_FLAGS "--target=aarch64-linux-android21 --sysroot=${CMAKE_SYSROOT}")
-set(CMAKE_CXX_FLAGS "--target=aarch64-linux-android21 --sysroot=${CMAKE_SYSROOT} -stdlib=libc++")
-set(CMAKE_ASM_FLAGS "--target=aarch64-linux-android21 --sysroot=${CMAKE_SYSROOT}")
+   # Check different host architectures
+   set(ALT_PATHS
+           "${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64"
+           "${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt/darwin-x86_64"
+           "${ANDROID_NDK_ROOT}/bin"
+           "${ANDROID_NDK_ROOT}/toolchain/bin"
+   )
 
-# Cross-compilation settings
-set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-set(CMAKE_FIND_ROOT_PATH ${CMAKE_SYSROOT})
+   foreach(ALT_PATH ${ALT_PATHS})
+      if(EXISTS ${ALT_PATH})
+         message(STATUS "✓ Found alternative: ${ALT_PATH}")
+         if(EXISTS "${ALT_PATH}/bin")
+            file(GLOB ALT_FILES "${ALT_PATH}/bin/*clang*")
+            foreach(FILE ${ALT_FILES})
+               get_filename_component(FILENAME ${FILE} NAME)
+               message(STATUS "    ${FILENAME}")
+            endforeach()
+         endif()
+      else()
+         message(STATUS "✗ Not found: ${ALT_PATH}")
+      endif()
+   endforeach()
+endif()
 
-# Set basic compiler info to avoid detection
-set(CMAKE_C_COMPILER_VERSION "18.0.0")
-set(CMAKE_CXX_COMPILER_VERSION "18.0.0")
+# Try to find ANY clang binary anywhere in the NDK
+message(STATUS "=== SEARCHING FOR ANY CLANG BINARY ===")
+execute_process(
+        COMMAND find ${ANDROID_NDK_ROOT} -name "*clang*" -type f -executable
+        OUTPUT_VARIABLE FOUND_CLANG_FILES
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+)
 
-message(STATUS "Skipping all compiler tests - assuming compilers work")
-message(STATUS "C compiler: ${CMAKE_C_COMPILER}")
-message(STATUS "C++ compiler: ${CMAKE_CXX_COMPILER}")
-message(STATUS "ASM compiler: ${CMAKE_ASM_COMPILER}")
+if(FOUND_CLANG_FILES)
+   string(REPLACE "\n" ";" CLANG_LIST ${FOUND_CLANG_FILES})
+   foreach(CLANG_FILE ${CLANG_LIST})
+      message(STATUS "Found clang: ${CLANG_FILE}")
+   endforeach()
+else()
+   message(STATUS "No clang binaries found anywhere in NDK")
+endif()
+
+message(STATUS "=== END DIAGNOSTIC ===")
+
+# Fail the configuration so we can see the output
+message(FATAL_ERROR "Diagnostic complete - check output above")

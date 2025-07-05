@@ -1260,132 +1260,45 @@ if [ "$CHIP" == "cuda" ] && [ -n "$CHIP_VERSION" ]; then
     esac
 fi
 
-# =============================================================================
-# FIXED OpenBLAS PATH NORMALIZATION LOGIC
-# =============================================================================
+# Replace any backslash with a slash
+OPENBLAS_PATH="${OPENBLAS_PATH//\\//}"
 
-# Function to find OpenBLAS headers in extracted JAR structure
-find_openblas_headers() {
-    local base_path="$1"
+# FIXED: Handle Android OpenBLAS JAR structure correctly
+# The JAR extracts to: openblas_home/lib/x86_64/include/ and openblas_home/lib/x86_64/lib/
+# So OPENBLAS_PATH should point to openblas_home/lib/x86_64 (NOT the parent)
 
-    # Common locations for OpenBLAS headers in JavaCPP JARs
-    local search_paths=(
-        "$base_path/include"
-        "$base_path/../include"
-        "$base_path/../../include"
-        "$base_path/org/bytedeco/openblas/linux-x86_64/include"
-        "$base_path/../org/bytedeco/openblas/linux-x86_64/include"
-        "$base_path/../../org/bytedeco/openblas/linux-x86_64/include"
-        "$base_path/org/bytedeco/openblas/android-x86_64/include"
-        "$base_path/../org/bytedeco/openblas/android-x86_64/include"
-        "$base_path/../../org/bytedeco/openblas/android-x86_64/include"
-    )
-
-    for search_path in "${search_paths[@]}"; do
-        if [[ -f "$search_path/openblas_config.h" || -f "$search_path/cblas.h" ]]; then
-            echo "$search_path"
-            return 0
-        fi
-    done
-
-    return 1
-}
-
-# Function to find OpenBLAS root directory from any subdirectory
-find_openblas_root() {
-    local current_path="$1"
-
-    # Try to find the root by looking for typical JavaCPP structure
-    local temp_path="$current_path"
-    for i in {1..5}; do  # Search up to 5 levels up
-        if [[ -d "$temp_path/org/bytedeco/openblas" ]]; then
-            echo "$temp_path"
-            return 0
-        fi
-        temp_path="$(dirname "$temp_path")"
-        if [[ "$temp_path" == "/" ]]; then
-            break
-        fi
-    done
-
-    # If no JavaCPP structure found, try simple normalization
-    if [[ "$current_path" =~ lib/[^/]+$ ]]; then
-        echo "$(dirname $(dirname "$current_path"))"
-        return 0
-    fi
-
-    echo "$current_path"
-    return 0
-}
-
-# REPLACE THE EXISTING OPENBLAS PATH NORMALIZATION SECTION WITH:
-
-print_colored "cyan" "🔍 Configuring OpenBLAS path..."
-
-# Store original path for debugging
-ORIGINAL_OPENBLAS_PATH="$OPENBLAS_PATH"
-
+# Check for OpenBLAS headers with correct path structure
 if [[ -n "$OPENBLAS_PATH" ]]; then
-    print_colored "blue" "Original OPENBLAS_PATH: $OPENBLAS_PATH"
+    if [[ -f "$OPENBLAS_PATH/include/openblas_config.h" ]]; then
+        echo "✅ Found OpenBLAS at: $OPENBLAS_PATH"
+        echo "   Headers: $OPENBLAS_PATH/include/"
+        echo "   Libraries: $OPENBLAS_PATH/lib/"
 
-    # Try to find OpenBLAS headers from the given path
-    OPENBLAS_INCLUDE_PATH=$(find_openblas_headers "$OPENBLAS_PATH")
-
-    if [[ -n "$OPENBLAS_INCLUDE_PATH" ]]; then
-        # Found headers, set OPENBLAS_PATH to the directory containing include/
-        OPENBLAS_PATH="$(dirname "$OPENBLAS_INCLUDE_PATH")"
-        print_colored "green" "✓ Found OpenBLAS headers at: $OPENBLAS_INCLUDE_PATH"
-        print_colored "green" "✓ Set OPENBLAS_PATH to: $OPENBLAS_PATH"
-    else
-        # Headers not found, try to find root and search from there
-        print_colored "yellow" "⚠️  OpenBLAS headers not found at expected location"
-
-        OPENBLAS_ROOT=$(find_openblas_root "$OPENBLAS_PATH")
-        print_colored "blue" "Trying OpenBLAS root: $OPENBLAS_ROOT"
-
-        OPENBLAS_INCLUDE_PATH=$(find_openblas_headers "$OPENBLAS_ROOT")
-
-        if [[ -n "$OPENBLAS_INCLUDE_PATH" ]]; then
-            OPENBLAS_PATH="$(dirname "$OPENBLAS_INCLUDE_PATH")"
-            print_colored "green" "✓ Found OpenBLAS headers at: $OPENBLAS_INCLUDE_PATH"
-            print_colored "green" "✓ Set OPENBLAS_PATH to: $OPENBLAS_PATH"
+        # Verify cblas.h exists
+        if [[ -f "$OPENBLAS_PATH/include/cblas.h" ]]; then
+            echo "   ✅ cblas.h found"
         else
-            print_colored "red" "❌ Could not find OpenBLAS headers"
-            print_colored "yellow" "Searched in and around: $ORIGINAL_OPENBLAS_PATH"
-
-            # List contents for debugging
-            if [[ -d "$ORIGINAL_OPENBLAS_PATH" ]]; then
-                print_colored "blue" "Contents of $ORIGINAL_OPENBLAS_PATH:"
-                ls -la "$ORIGINAL_OPENBLAS_PATH" 2>/dev/null || echo "Could not list directory"
-            fi
-
-            # Try to find any OpenBLAS-related files
-            print_colored "blue" "Searching for OpenBLAS files..."
-            find "$(dirname "$ORIGINAL_OPENBLAS_PATH")" -name "*openblas*" -o -name "*cblas*" 2>/dev/null | head -10
-
-            OPENBLAS_PATH=""
+            echo "   ⚠️  cblas.h not found (may cause compilation issues)"
         fi
-    fi
-else
-    print_colored "yellow" "⚠️  No OPENBLAS_PATH specified"
-fi
-
-# Final validation
-if [[ -n "$OPENBLAS_PATH" ]]; then
-    if [[ -f "$OPENBLAS_PATH/include/openblas_config.h" || -f "$OPENBLAS_PATH/include/cblas.h" ]]; then
-        print_colored "green" "✅ OpenBLAS configuration validated"
-        print_colored "cyan" "Final OPENBLAS_PATH: $OPENBLAS_PATH"
     else
-        print_colored "red" "❌ OpenBLAS validation failed"
-        print_colored "red" "Expected headers not found at: $OPENBLAS_PATH/include/"
+        echo "❌ Could not find OpenBLAS at: $OPENBLAS_PATH"
+        echo "   Looking for: $OPENBLAS_PATH/include/openblas_config.h"
+
+        # Debug: Show what's actually in the directory
+        if [[ -d "$OPENBLAS_PATH" ]]; then
+            echo "   Contents of $OPENBLAS_PATH:"
+            ls -la "$OPENBLAS_PATH" 2>/dev/null || echo "   (cannot list directory)"
+        else
+            echo "   Directory does not exist: $OPENBLAS_PATH"
+        fi
+
+        echo "   Please make sure to run the build with Maven or set the OPENBLAS_PATH variable correctly"
         OPENBLAS_PATH=""
     fi
 else
-    print_colored "yellow" "⚠️  Building without OpenBLAS (will use system BLAS if available)"
+    echo "⚠️  OPENBLAS_PATH not set"
+    echo "   Please make sure to run the build with Maven or set the OPENBLAS_PATH variable"
 fi
-
-# Replace any backslash with a slash (Windows compatibility)
-OPENBLAS_PATH="${OPENBLAS_PATH//\\//}"
 
 
 mkbuilddir() {

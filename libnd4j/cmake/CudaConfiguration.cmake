@@ -481,7 +481,6 @@ function(setup_cuda_language)
     message(STATUS "CUDA language enabled successfully with compiler: ${CMAKE_CUDA_COMPILER}")
 endfunction()
 
-# CRITICAL FIX: Updated Windows CUDA build configuration
 function(configure_windows_cuda_build)
     if(NOT WIN32)
         return()
@@ -497,12 +496,13 @@ function(configure_windows_cuda_build)
     set(CMAKE_CUDA_RESPONSE_FILE_LINK_FLAG "@" PARENT_SCOPE)
     set(CMAKE_CUDA_COMPILE_OPTIONS_USE_RESPONSE_FILE ON PARENT_SCOPE)
 
-    # CRITICAL: Prevent CMake from adding problematic /FS flag combinations
-    # This is the main fix for the "A single input file is required" error
-    set(CMAKE_CUDA_COMPILE_OPTIONS_PDB "" PARENT_SCOPE)
-    set(CMAKE_CUDA_COMPILE_PDB_OUTPUT_DIRECTORY "" PARENT_SCOPE)
+    # SIMPLE FIX: Just disable the automatic /FS flag that's causing the conflict
+    set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreaded "/MT" PARENT_SCOPE)
+    set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL "/MD" PARENT_SCOPE)
+    set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebug "/MTd" PARENT_SCOPE)
+    set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebugDLL "/MDd" PARENT_SCOPE)
 
-    message(STATUS "Windows CUDA: Enabled response file support and disabled problematic PDB flags")
+    message(STATUS "Windows CUDA: Configured with clean runtime flags (no /FS)")
 endfunction()
 
 function(configure_cuda_architecture_flags COMPUTE)
