@@ -114,7 +114,6 @@ include(cmake/MainBuildFlow.cmake)
 if(SD_CUDA)
     # Include CUDA configuration early for architecture setup
     include(cmake/CudaConfiguration.cmake)
-    setup_cuda_architectures_early()
     setup_cuda_build()
 else()
     setup_cpu_environment()
