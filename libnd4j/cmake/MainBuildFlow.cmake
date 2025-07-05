@@ -513,6 +513,9 @@ else()
 endif()
 
 setup_blas()
+setup_blas()
+message(STATUS "🔍 DEBUG: After setup_blas() - OPENBLAS_PATH='${OPENBLAS_PATH}', HAVE_OPENBLAS='${HAVE_OPENBLAS}'")
+message(STATUS "Dependencies initialization complete.")
 message(STATUS "Dependencies initialization complete.")
 
 message(STATUS "🔧 Helper Configuration: ONEDNN=${HAVE_ONEDNN}, ARMCOMPUTE=${HAVE_ARMCOMPUTE}, CUDNN=${HAVE_CUDNN}")
