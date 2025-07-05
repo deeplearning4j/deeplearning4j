@@ -36,7 +36,11 @@ else
     echo "⚠️  Using bash $BASH_VERSION - falling back to compatibility mode"
 fi
 
-
+if [ -v OPENBLAS_PATH ]; then
+  echo "OPENBLAS_PATH is set."
+else
+  OPENBLAS_PATH=""
+fi
 
 # Auto-detect JavaCPP OpenBLAS path
 if [[ -z "$OPENBLAS_PATH" ]]; then
