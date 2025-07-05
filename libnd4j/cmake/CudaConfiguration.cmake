@@ -2,8 +2,23 @@
 # CUDA Configuration Functions
 # Functions for CUDA-specific build configuration and optimization
 # UPDATED VERSION - Fixed CUDA path discovery and include directory setup
-# CRITICAL FIX: Removed /FS flag to prevent nvcc compilation errors
 ################################################################################
+
+if(WIN32 AND MSVC)
+    # Disable the /FS flag that's causing nvcc to fail
+    string(REPLACE "/FS" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    string(REPLACE "/FS" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+    string(REPLACE "/FS" "" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
+    string(REPLACE "/FS" "" CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
+    string(REPLACE "/FS" "" CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL}")
+
+    # Also disable for CUDA if it exists
+    if(DEFINED CMAKE_CUDA_FLAGS)
+        string(REPLACE "/FS" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
+    endif()
+
+    message(STATUS "Disabled /FS flag to prevent nvcc compilation errors")
+endif()
 
 # Enhanced CUDA toolkit detection with proper include path setup
 function(setup_cuda_toolkit_paths)
