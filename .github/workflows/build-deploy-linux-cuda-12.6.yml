@@ -146,8 +146,7 @@ jobs:
           
             # Create swap file
             sudo fallocate -l ${SWAP_SIZE} /swapfile || {
-              echo "fallocate failed, trying dd..."
-              sudo dd if=/dev/zero of=/swapfile bs=1G count=${{ matrix.swap_size }} status=progress
+              sudo dd if=/dev/zero of=/swapfile bs=1G count=12g status=progress
             }
           
             # Set up swap
