@@ -1,29 +1,12 @@
-################################################################################
-#
-#
-# This program and the accompanying materials are made available under the
-# terms of the Apache License, Version 2.0 which is available at
-# https://www.apache.org/licenses/LICENSE-2.0.
-#
-# See the NOTICE file distributed with this work for additional
-# information regarding copyright ownership.
-
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
-#
-# SPDX-License-Identifier: Apache-2.0
-################################################################################
-# CMake toolchain to build for Android 5.0 or newer. Sample usage:
-
 set(CMAKE_SYSTEM_NAME Android)
 set(CMAKE_ANDROID_ARCH_ABI arm64-v8a)
 set(CMAKE_ANDROID_NDK "$ENV{ANDROID_NDK}")
 set(CMAKE_ANDROID_STL_TYPE c++_static)
-set(CMAKE_SYSTEM_VERSION  "$ENV{ANDROID_VERSION}")
+set(CMAKE_SYSTEM_VERSION 21)  # Use numeric value instead of env var
 set(CMAKE_ANDROID_NDK_TOOLCHAIN_VERSION clang)
+
+# For newer NDKs, you might need to specify this explicitly
+set(CMAKE_ANDROID_API 21)
 
 set(ANDROID TRUE)
 if (WIN32)
@@ -34,5 +17,4 @@ else()
    set(CMAKE_CXX_COMPILER "$ENV{ANDROID_CC}++")
 endif (WIN32)
 
-
-add_definitions(-D__ANDROID_API__=$ENV{ANDROID_VERSION} -DANDROID -fPIC -ffunction-sections -funwind-tables -fstack-protector-strong -target x86_64-none-linux-android)
+add_definitions(-D__ANDROID_API__=21 -DANDROID -fPIC -ffunction-sections -funwind-tables -fstack-protector-strong -target aarch64-none-linux-android)
