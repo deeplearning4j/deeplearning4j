@@ -244,10 +244,6 @@ function(setup_cuda_build)
             set(_CMAKE_CUDA_WHOLE_FLAG "-Wl,--whole-archive" CACHE INTERNAL "CUDA whole archive flag")
         endif()
     endif()
-
-    # Setup CUDA toolkit paths and include directories early
-    setup_cuda_include_directories()
-
     if(NOT DEFINED COMPUTE)
         set(COMPUTE "auto")
     endif()
