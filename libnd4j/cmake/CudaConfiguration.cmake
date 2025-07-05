@@ -2,33 +2,8 @@
 ################################################################################
 # CUDA Configuration Functions - FIXED VERSION
 # Functions for CUDA-specific build configuration and optimization
-# FIXED: Proper /FS flag handling for CUDA compilation
 ################################################################################
 
-if(WIN32 AND MSVC)
-    # More comprehensive /FS flag removal - also handle CUDA-specific flags
-    string(REPLACE "/FS" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    string(REPLACE "/FS" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
-    string(REPLACE "/FS" "" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
-    string(REPLACE "/FS" "" CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
-    string(REPLACE "/FS" "" CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL}")
-
-    # Also disable for CUDA if it exists
-    if(DEFINED CMAKE_CUDA_FLAGS)
-        string(REPLACE "/FS" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
-    endif()
-
-    # CRITICAL FIX: Disable automatic /FS injection by CMake for CUDA
-    set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreaded "/MT")
-    set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL "/MD")
-    set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebug "/MTd")
-    set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebugDLL "/MDd")
-
-    # Prevent CMake from adding /FS automatically for CUDA compilation
-    set(CMAKE_CUDA_COMPILE_OBJECT_DEPENDS "")
-
-    message(STATUS "Disabled /FS flag to prevent nvcc compilation errors")
-endif()
 
 # Enhanced CUDA toolkit detection with proper include path setup
 function(setup_cuda_toolkit_paths)
@@ -212,25 +187,6 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
     message(STATUS "Final CMAKE_CUDA_FLAGS: ${LOCAL_CUDA_FLAGS}")
 endfunction()
 
-# Enhanced function to clean up CUDA compilation command
-function(fix_cuda_compilation_command)
-    if(WIN32 AND MSVC)
-        # Get the current CUDA compile object command
-        get_property(CUDA_COMPILE_OBJECT GLOBAL PROPERTY RULE_LAUNCH_COMPILE)
-
-        # Override with a clean version that excludes problematic flags
-        set(CMAKE_CUDA_COMPILE_OBJECT
-                "<CMAKE_CUDA_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -x cu -c <SOURCE> -o <OBJECT>"
-                PARENT_SCOPE)
-
-        # Also set a custom compile command that filters out /FS
-        set(CMAKE_CUDA_CREATE_PREPROCESSED_SOURCE
-                "<CMAKE_CUDA_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -E <SOURCE> > <PREPROCESSED_SOURCE>"
-                PARENT_SCOPE)
-
-        message(STATUS "✅ Fixed CUDA compilation command to exclude /FS flag")
-    endif()
-endfunction()
 
 # MAIN CUDA SETUP FUNCTION - UPDATED
 function(setup_cuda_build)
@@ -264,8 +220,6 @@ function(setup_cuda_build)
     # CRITICAL: Configure Windows CUDA build BEFORE setting flags
     configure_windows_cuda_build()
 
-    # CRITICAL: Fix the compilation command
-    fix_cuda_compilation_command()
 
     build_cuda_compiler_flags("${CUDA_ARCH_FLAGS}")
 
@@ -294,7 +248,6 @@ function(finalize_cuda_configuration)
             set(CMAKE_CUDA_FLAGS_${config} "${CMAKE_CUDA_FLAGS_${config}}" PARENT_SCOPE)
         endforeach()
 
-        message(STATUS "✅ Finalized CUDA configuration - all /FS flags removed")
     endif()
 endfunction()
 
