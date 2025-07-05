@@ -1260,45 +1260,6 @@ if [ "$CHIP" == "cuda" ] && [ -n "$CHIP_VERSION" ]; then
     esac
 fi
 
-# Replace any backslash with a slash
-OPENBLAS_PATH="${OPENBLAS_PATH//\\//}"
-
-# FIXED: Handle Android OpenBLAS JAR structure correctly
-# The JAR extracts to: openblas_home/lib/x86_64/include/ and openblas_home/lib/x86_64/lib/
-# So OPENBLAS_PATH should point to openblas_home/lib/x86_64 (NOT the parent)
-
-# Check for OpenBLAS headers with correct path structure
-if [[ -n "$OPENBLAS_PATH" ]]; then
-    if [[ -f "$OPENBLAS_PATH/include/openblas_config.h" ]]; then
-        echo "✅ Found OpenBLAS at: $OPENBLAS_PATH"
-        echo "   Headers: $OPENBLAS_PATH/include/"
-        echo "   Libraries: $OPENBLAS_PATH/lib/"
-
-        # Verify cblas.h exists
-        if [[ -f "$OPENBLAS_PATH/include/cblas.h" ]]; then
-            echo "   ✅ cblas.h found"
-        else
-            echo "   ⚠️  cblas.h not found (may cause compilation issues)"
-        fi
-    else
-        echo "❌ Could not find OpenBLAS at: $OPENBLAS_PATH"
-        echo "   Looking for: $OPENBLAS_PATH/include/openblas_config.h"
-
-        # Debug: Show what's actually in the directory
-        if [[ -d "$OPENBLAS_PATH" ]]; then
-            echo "   Contents of $OPENBLAS_PATH:"
-            ls -la "$OPENBLAS_PATH" 2>/dev/null || echo "   (cannot list directory)"
-        else
-            echo "   Directory does not exist: $OPENBLAS_PATH"
-        fi
-
-        echo "   Please make sure to run the build with Maven or set the OPENBLAS_PATH variable correctly"
-        OPENBLAS_PATH=""
-    fi
-else
-    echo "⚠️  OPENBLAS_PATH not set"
-    echo "   Please make sure to run the build with Maven or set the OPENBLAS_PATH variable"
-fi
 
 
 mkbuilddir() {
