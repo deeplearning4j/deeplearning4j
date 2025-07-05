@@ -50,6 +50,9 @@
         <platform.compiler.flag.debug>-g</platform.compiler.flag.debug>
         <platform.functrace.libs.unix>-ldl -lunwind -lbfd -ldw</platform.functrace.libs.unix>
         <libnd4j.outputPath>${project.build.directory}/../../../../../libnd4j/blasbuild/cpu</libnd4j.outputPath>
+        <!-- NDK specific: https://github.com/android/ndk/issues/1690-->
+        <javacpp.compiler.crtoption>${javacpp.compiler.crtoption}</javacpp.compiler.crtoption>
+
     </properties>
 
 
@@ -557,7 +560,8 @@
                                 <compilerOption>${platform.compiler.flag.debug}</compilerOption>
 
                                 <compilerOption>-finstrument-functions</compilerOption>
-
+                                <!-- NDK specific: https://github.com/android/ndk/issues/1690-->
+                                <compilerOption>${javacpp.compiler.crtoption}</compilerOption>
                             </compilerOptions>
                         </configuration>
                         <executions>
@@ -625,7 +629,8 @@
                     <groupId>org.bytedeco</groupId>
                     <artifactId>openblas</artifactId>
                     <version>${openblas.version}-${javacpp-presets.version}</version>
-                    <classifier>linux-x86_64</classifier> <optional>true</optional>
+                    <classifier>linux-x86_64</classifier>
+                    <optional>true</optional>
                 </dependency>
             </dependencies>
         </profile>
@@ -680,6 +685,7 @@
             </activation>
             <properties>
                 <javacpp.build.output.path>${project.build.directory}/classes/lib/arm64-v8a</javacpp.build.output.path>
+                <javacpp.compiler.crtoption>-nostdlib</javacpp.compiler.crtoption>
             </properties>
         </profile>
         <profile>
@@ -704,6 +710,7 @@
             </activation>
             <properties>
                 <javacpp.build.output.path>${project.build.directory}/classes/lib/x86_64</javacpp.build.output.path>
+                <javacpp.compiler.crtoption>-nostdlib</javacpp.compiler.crtoption>
             </properties>
         </profile>
 
