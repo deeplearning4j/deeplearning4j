@@ -713,7 +713,45 @@
             <properties>
                 <javacpp.build.output.path>${project.build.directory}/classes/lib/x86_64</javacpp.build.output.path>
                 <javacpp.compiler.crtoption>-nostartfiles</javacpp.compiler.crtoption>
+                <!-- Add sysroot configuration for android-x86_64 -->
+                <javacpp.platform.sysroot>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</javacpp.platform.sysroot>
             </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <version>${javacpp.version}</version>
+                        <configuration>
+                            <properties>${javacpp.platform.properties}</properties>
+                            <propertyKeysAndValues>
+                                <property>
+                                    <name>platform.root</name>
+                                    <value>${javacpp.platform.root}</value>
+                                </property>
+                                <property>
+                                    <name>platform.compiler</name>
+                                    <value>${javacpp.platform.compiler}</value>
+                                </property>
+                                <property>
+                                    <name>platform.sysroot</name>
+                                    <value>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</value>
+                                </property>
+                                <property>
+                                    <name>platform.extension</name>
+                                    <value>${javacpp.platform.extension}</value>
+                                </property>
+                            </propertyKeysAndValues>
+                            <compilerOptions>
+                                <compilerOption>${compiler.flag.cpp.standard}</compilerOption>
+                                <compilerOption>${platform.linker.flag.no.undefined}</compilerOption>
+                                <compilerOption>--sysroot=${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</compilerOption>
+                                <compilerOption>-B${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/17/lib/linux</compilerOption>
+                            </compilerOptions>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
 
         <profile>
