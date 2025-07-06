@@ -685,7 +685,7 @@
             </activation>
             <properties>
                 <javacpp.build.output.path>${project.build.directory}/classes/lib/arm64-v8a</javacpp.build.output.path>
-                <javacpp.compiler.crtoption>-nostdlib</javacpp.compiler.crtoption>
+                <javacpp.compiler.crtoption>-nostartfiles</javacpp.compiler.crtoption>
             </properties>
         </profile>
         <profile>
@@ -710,7 +710,7 @@
             </activation>
             <properties>
                 <javacpp.build.output.path>${project.build.directory}/classes/lib/x86_64</javacpp.build.output.path>
-                <javacpp.compiler.crtoption>-nostdlib</javacpp.compiler.crtoption>
+                <javacpp.compiler.crtoption>-nostartfiles</javacpp.compiler.crtoption>
             </properties>
         </profile>
 
