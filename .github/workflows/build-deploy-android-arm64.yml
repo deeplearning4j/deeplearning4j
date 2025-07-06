@@ -153,6 +153,33 @@ jobs:
           # Copy the sysroot files from your ARM64 NDK
           cp -r $NDK_DIR/toolchains/llvm/prebuilt/linux-aarch64/sysroot/usr/lib/aarch64-linux-android/21/* $ANDROID_NDK/platforms/android-21/arch-arm64/usr/lib/ 2>/dev/null || true
           cp -r $NDK_DIR/toolchains/llvm/prebuilt/linux-aarch64/sysroot/usr/include/* $ANDROID_NDK/platforms/android-21/arch-arm64/usr/include/ 2>/dev/null || true
+
+          # Fix missing clang and clang++ binaries by creating symbolic links
+          TOOLCHAIN_BIN="${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64/bin"
+          
+          # Find the actual clang binaries (they might be in a different location)
+          if [ -f "/usr/bin/clang" ] && [ -f "/usr/bin/clang++" ]; then
+            echo "Creating symbolic links to system clang binaries..."
+            ln -sf /usr/bin/clang "${TOOLCHAIN_BIN}/clang"
+            ln -sf /usr/bin/clang++ "${TOOLCHAIN_BIN}/clang++"
+          elif [ -f "${TOOLCHAIN_BIN}/clang-18" ] && [ -f "${TOOLCHAIN_BIN}/clang++-18" ]; then
+            echo "Creating symbolic links to versioned clang binaries..."
+            ln -sf "${TOOLCHAIN_BIN}/clang-18" "${TOOLCHAIN_BIN}/clang"
+            ln -sf "${TOOLCHAIN_BIN}/clang++-18" "${TOOLCHAIN_BIN}/clang++"
+          elif [ -f "${TOOLCHAIN_BIN}/clang-17" ] && [ -f "${TOOLCHAIN_BIN}/clang++-17" ]; then
+            echo "Creating symbolic links to versioned clang binaries..."
+            ln -sf "${TOOLCHAIN_BIN}/clang-17" "${TOOLCHAIN_BIN}/clang"
+            ln -sf "${TOOLCHAIN_BIN}/clang++-17" "${TOOLCHAIN_BIN}/clang++"
+          else
+            echo "Warning: Could not find clang binaries to link"
+            echo "Available binaries in ${TOOLCHAIN_BIN}:"
+            ls -la "${TOOLCHAIN_BIN}/" | grep -E "(clang|gcc)" || echo "No clang/gcc binaries found"
+          fi
+          
+          # Verify the links were created
+          echo "Verifying clang binaries:"
+          ls -la "${TOOLCHAIN_BIN}/clang" "${TOOLCHAIN_BIN}/clang++" 2>/dev/null || echo "clang binaries not found"
+
       - name: Set mvn build command based on matrix
         shell: bash
         run: |
