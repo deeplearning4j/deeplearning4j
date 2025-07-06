@@ -533,7 +533,6 @@ function(configure_cuda_architecture_flags COMPUTE)
     endif()
 endfunction()
 
-# CRITICAL FIX: Updated CUDA compiler flags function
 function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
     set(LOCAL_CUDA_FLAGS "")
 
@@ -550,7 +549,7 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
             if(SD_GCC_FUNCTRACE STREQUAL "ON")
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fPIC --device-debug -lineinfo -G")
             else()
-                set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fPIC")
+                set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fPIC -Xcompiler=-fpermissive")
             endif()
         endif()
     endif()
@@ -654,7 +653,6 @@ function(setup_cuda_build)
     configure_windows_cuda_build()
     build_cuda_compiler_flags("${CUDA_ARCH_FLAGS}")
 
-    # CRITICAL: Set CMAKE_CUDA_FLAGS to parent scope so it propagates
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}" PARENT_SCOPE)
 
     # Also set the toolkit include directories for global access
