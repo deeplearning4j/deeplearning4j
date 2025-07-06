@@ -1,10 +1,6 @@
 # CompilerOptimizations.cmake - Compiler flags and optimization settings
 
 
-# For CUDA builds, disable PLT in host compiler flags
-if(SD_CUDA AND CMAKE_CUDA_COMPILER)
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -fno-plt")
-endif()
 
 # Link Time Optimization
 if(SD_USE_LTO)

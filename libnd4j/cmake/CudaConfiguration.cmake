@@ -541,21 +541,12 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
         message(STATUS "Configuring CUDA for Windows MSVC...")
         set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER} PARENT_SCOPE)
         set(LOCAL_CUDA_FLAGS "-maxrregcount=128")
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/nologo")
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/EHsc")
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/std:c++17")
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/D__NVCC_ALLOW_UNSUPPORTED_COMPILER__")
 
         # CRITICAL FIX: DO NOT add /FS flag - this causes the "single input file" error
         # The /FS flag conflicts with CMake's automatic /Fd flag generation
         # Let CMake handle PDB file generation automatically
         # set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/FS")  # REMOVED
 
-        if(MSVC_RT_LIB STREQUAL "MultiThreadedDLL")
-            set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/MD")
-        else()
-            set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/MT")
-        endif()
 
         message(STATUS "CUDA Windows flags configured WITHOUT /FS to prevent nvcc errors")
     else()
@@ -719,19 +710,5 @@ endfunction()
 
 # Additional helper function to clean up any remaining problematic flags
 function(fix_cuda_compile_flags_post_setup)
-    if(WIN32 AND MSVC)
-        # Clean up any remaining problematic flag combinations that might have been added
-        string(REPLACE "-Xcompiler=/FS" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
-        string(REPLACE "-Xcompiler=-FS" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
-        string(REPLACE "/FS" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
-        string(REPLACE "-Xcompiler=/Fd" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
 
-        # Clean up multiple spaces and commas
-        string(REGEX REPLACE "  +" " " CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
-        string(REGEX REPLACE ",-" " -" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
-        string(STRIP "${CMAKE_CUDA_FLAGS}" CMAKE_CUDA_FLAGS)
-
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}" PARENT_SCOPE)
-        message(STATUS "🔧 Cleaned problematic CUDA flags: ${CMAKE_CUDA_FLAGS}")
-    endif()
 endfunction()

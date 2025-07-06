@@ -6,9 +6,6 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-plt")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-plt")
 endif()
-if(SD_CUDA AND CMAKE_CUDA_COMPILER)
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -fno-plt")
-endif()
 
 # --- Link Time Optimization (LTO) ---
 if(SD_USE_LTO)
