@@ -198,19 +198,41 @@ jobs:
           echo "clang++ link result: $(ls -la clang++ 2>/dev/null || echo 'FAILED')"
           cd - > /dev/null
           
-          # Final verification
+          # Final verification and fix any remaining issues
           echo "Final verification of symbolic links:"
           ls -la "${TOOLCHAIN_BIN}/clang" "${TOOLCHAIN_BIN}/clang++" 2>/dev/null || echo "Links missing"
           
-          # Test the binaries
+          # Force recreate links if they're wrong
+          if [ "$(readlink "${TOOLCHAIN_BIN}/clang++")" = "clang" ]; then
+            echo "Fixing incorrect clang++ -> clang link..."
+            cd "${TOOLCHAIN_BIN}"
+            rm -f clang++
+            ln -s clang-18 clang++
+            echo "Fixed: $(ls -la clang++)"
+            cd - > /dev/null
+          fi
+          
+          # Test the binaries with Android flags  
           echo "Testing clang binary:"
-          "${TOOLCHAIN_BIN}/clang" --version 2>/dev/null && echo "clang works" || echo "clang failed"
+          if "${TOOLCHAIN_BIN}/clang" --target=aarch64-linux-android21 --version 2>/dev/null | head -1; then
+            echo "clang works"
+          else
+            echo "clang failed"
+          fi
           
           echo "Testing clang++ binary:"
-          "${TOOLCHAIN_BIN}/clang++" --version 2>/dev/null && echo "clang++ works" || echo "clang++ failed"
+          if "${TOOLCHAIN_BIN}/clang++" --target=aarch64-linux-android21 --version 2>/dev/null | head -1; then
+            echo "clang++ works" 
+          else
+            echo "clang++ failed"
+          fi
           
           echo "Testing wrapper script:"
-          "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang++" --version 2>/dev/null && echo "wrapper works" || echo "wrapper failed"
+          if "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang++" --version 2>/dev/null | head -1; then
+            echo "wrapper works"
+          else
+            echo "wrapper failed"
+          fi
 
       - name: Set mvn build command based on matrix
         shell: bash
