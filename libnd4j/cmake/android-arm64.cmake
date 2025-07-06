@@ -34,27 +34,11 @@ endif()
 # Use unified headers (available since NDK r14)
 set(CMAKE_ANDROID_STL_TYPE c++_shared)
 
-# Detect host platform for prebuilt tools
-if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
-   if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "x86_64|amd64")
-      set(NDK_HOST_TAG "linux-x86_64")
-   elseif(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
-      set(NDK_HOST_TAG "linux-aarch64")
-   else()
-      set(NDK_HOST_TAG "linux-x86_64")  # fallback
-   endif()
-elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
-   set(NDK_HOST_TAG "darwin-x86_64")
-elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
-   set(NDK_HOST_TAG "windows-x86_64")
-else()
-   set(NDK_HOST_TAG "linux-x86_64")  # fallback
-endif()
 
 message(STATUS "Detected NDK host tag: ${NDK_HOST_TAG}")
 
 # Set toolchain paths with flexibility for different NDK structures
-set(NDK_TOOLCHAIN_PATH "${CMAKE_ANDROID_NDK}/toolchains/llvm/prebuilt/${NDK_HOST_TAG}")
+set(NDK_TOOLCHAIN_PATH "${CMAKE_ANDROID_NDK}/toolchains/llvm/prebuilt/linux-aarch64")
 
 # Check if the toolchain path exists
 if(NOT EXISTS "${NDK_TOOLCHAIN_PATH}")
