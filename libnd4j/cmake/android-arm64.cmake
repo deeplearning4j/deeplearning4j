@@ -10,6 +10,8 @@ elseif(NOT DEFINED ANDROID_NATIVE_API_LEVEL)
    set(ANDROID_NATIVE_API_LEVEL 21)  # Default API level
 endif()
 
+
+
 set(CMAKE_SYSTEM_VERSION ${ANDROID_NATIVE_API_LEVEL})
 set(CMAKE_ANDROID_ARCH_ABI arm64-v8a)
 
@@ -33,7 +35,7 @@ endif()
 
 # Use unified headers (available since NDK r14)
 set(CMAKE_ANDROID_STL_TYPE c++_shared)
-
+set(CMAKE_CXX_COMPILER ${CMAKE_ANDROID_NDK}/toolchains/llvm/prebuilt/linux-aarch64/bin/clang++)
 
 message(STATUS "Detected NDK host tag: ${NDK_HOST_TAG}")
 
