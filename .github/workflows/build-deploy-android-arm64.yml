@@ -164,36 +164,41 @@ jobs:
           echo "Checking existing clang binaries:"
           ls -la "${TOOLCHAIN_BIN}"/clang* 2>/dev/null || echo "No clang* files found"
           
-          # Check what the wrapper script is trying to call
           echo "Examining aarch64-linux-android21-clang++ wrapper:"
           head -10 "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang++" 2>/dev/null || echo "Wrapper not found"
           
           # Remove any existing broken links
+          echo "Removing any existing clang/clang++ links..."
           rm -f "${TOOLCHAIN_BIN}/clang" "${TOOLCHAIN_BIN}/clang++"
           
-          # Create proper symbolic links to versioned binaries
+          # Check for clang++-18 specifically
+          echo "Checking for clang++-18 binary:"
+          ls -la "${TOOLCHAIN_BIN}/clang++-18" 2>/dev/null || echo "clang++-18 not found"
+          
+          # Create symbolic links with explicit commands and error checking
           if [ -f "${TOOLCHAIN_BIN}/clang-18" ]; then
-            echo "Linking clang to clang-18"
-            ln -s clang-18 "${TOOLCHAIN_BIN}/clang"
+            echo "Creating clang symbolic link..."
+            cd "${TOOLCHAIN_BIN}"
+            ln -s clang-18 clang
+            echo "clang link created: $(ls -la clang 2>/dev/null || echo 'FAILED')"
+            cd - > /dev/null
+          else
+            echo "ERROR: clang-18 not found"
           fi
           
           if [ -f "${TOOLCHAIN_BIN}/clang++-18" ]; then
-            echo "Linking clang++ to clang++-18"  
-            ln -s clang++-18 "${TOOLCHAIN_BIN}/clang++"
+            echo "Creating clang++ symbolic link..."
+            cd "${TOOLCHAIN_BIN}"
+            ln -s clang++-18 clang++
+            echo "clang++ link created: $(ls -la clang++ 2>/dev/null || echo 'FAILED')"
+            cd - > /dev/null
+          else
+            echo "ERROR: clang++-18 not found"
+            echo "Available clang binaries:"
+            ls -la "${TOOLCHAIN_BIN}"/clang* 2>/dev/null || echo "None found"
           fi
           
-          # Also try creating absolute path links if relative didn't work
-          if [ ! -f "${TOOLCHAIN_BIN}/clang" ] && [ -f "${TOOLCHAIN_BIN}/clang-18" ]; then
-            echo "Creating absolute path link for clang"
-            ln -s "${TOOLCHAIN_BIN}/clang-18" "${TOOLCHAIN_BIN}/clang"
-          fi
-          
-          if [ ! -f "${TOOLCHAIN_BIN}/clang++" ] && [ -f "${TOOLCHAIN_BIN}/clang++-18" ]; then
-            echo "Creating absolute path link for clang++"
-            ln -s "${TOOLCHAIN_BIN}/clang++-18" "${TOOLCHAIN_BIN}/clang++"
-          fi
-          
-          # Verify the correct links were created
+          # Final verification of clang symbolic links
           echo "Final verification of clang symbolic links:"
           ls -la "${TOOLCHAIN_BIN}/clang" "${TOOLCHAIN_BIN}/clang++" 2>/dev/null || echo "Warning: clang binaries not found"
           
