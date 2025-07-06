@@ -712,7 +712,8 @@
             </activation>
             <properties>
                 <javacpp.build.output.path>${project.build.directory}/classes/lib/x86_64</javacpp.build.output.path>
-                <javacpp.compiler.crtoption>-nostartfiles</javacpp.compiler.crtoption>
+                <!-- Remove -nostartfiles since we need the CRT objects -->
+                <javacpp.compiler.crtoption></javacpp.compiler.crtoption>
                 <!-- Add sysroot configuration for android-x86_64 -->
                 <javacpp.platform.sysroot>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</javacpp.platform.sysroot>
             </properties>
@@ -742,18 +743,30 @@
                                     <value>${javacpp.platform.extension}</value>
                                 </property>
                             </propertyKeysAndValues>
+                            <linkPaths>
+                                <!-- Add specific CRT object paths for android-x86_64 -->
+                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/17/lib/linux/x86_64</linkPath>
+                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/17/lib/linux</linkPath>
+                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/21</linkPath>
+                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android</linkPath>
+                            </linkPaths>
                             <compilerOptions>
                                 <compilerOption>${compiler.flag.cpp.standard}</compilerOption>
                                 <compilerOption>${platform.linker.flag.no.undefined}</compilerOption>
+                                <!-- Add explicit sysroot to compiler options -->
                                 <compilerOption>--sysroot=${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</compilerOption>
+                                <!-- Add multiple -B flags for different possible CRT locations -->
                                 <compilerOption>-B${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/17/lib/linux</compilerOption>
+                                <compilerOption>-B${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/17/lib/linux/x86_64</compilerOption>
+                                <compilerOption>-B${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/21</compilerOption>
+                                <!-- Explicitly tell linker where to find CRT objects -->
+                                <compilerOption>-Wl,--dynamic-linker=/system/bin/linker64</compilerOption>
                             </compilerOptions>
                         </configuration>
                     </plugin>
                 </plugins>
             </build>
         </profile>
-
         <profile>
             <id>avx2</id>
             <activation>

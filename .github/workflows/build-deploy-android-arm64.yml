@@ -160,10 +160,11 @@ jobs:
 
           # Create missing clang++ symbolic link
           TOOLCHAIN_BIN="${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64/bin"
-          
-          # Remove any existing broken links and create the correct one
           rm -f "${TOOLCHAIN_BIN}/clang++"
           ln -s clang-18 "${TOOLCHAIN_BIN}/clang++"
+          
+          echo "Created clang++ symlink:"
+          ls -la "${TOOLCHAIN_BIN}/clang++"
 
       - name: Set mvn build command based on matrix
         shell: bash
