@@ -542,15 +542,8 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
         set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER} PARENT_SCOPE)
         set(LOCAL_CUDA_FLAGS "-maxrregcount=128")
 
-        # CRITICAL FIX: DO NOT add /FS flag - this causes the "single input file" error
-        # The /FS flag conflicts with CMake's automatic /Fd flag generation
-        # Let CMake handle PDB file generation automatically
-        # set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/FS")  # REMOVED
-
-
         message(STATUS "CUDA Windows flags configured WITHOUT /FS to prevent nvcc errors")
     else()
-        set(LOCAL_CUDA_FLAGS "--allow-unsupported-compiler -Xcompiler -D__NVCC_ALLOW_UNSUPPORTED_COMPILER__")
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -maxrregcount=128")
 
         if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
