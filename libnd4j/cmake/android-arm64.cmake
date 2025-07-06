@@ -10,8 +10,6 @@ elseif(NOT DEFINED ANDROID_NATIVE_API_LEVEL)
    set(ANDROID_NATIVE_API_LEVEL 21)  # Default API level
 endif()
 
-
-
 set(CMAKE_SYSTEM_VERSION ${ANDROID_NATIVE_API_LEVEL})
 set(CMAKE_ANDROID_ARCH_ABI arm64-v8a)
 
@@ -35,9 +33,6 @@ endif()
 
 # Use unified headers (available since NDK r14)
 set(CMAKE_ANDROID_STL_TYPE c++_shared)
-set(CMAKE_CXX_COMPILER ${CMAKE_ANDROID_NDK}/toolchains/llvm/prebuilt/linux-aarch64/bin/clang++)
-
-message(STATUS "Detected NDK host tag: ${NDK_HOST_TAG}")
 
 # Set toolchain paths with flexibility for different NDK structures
 set(NDK_TOOLCHAIN_PATH "${CMAKE_ANDROID_NDK}/toolchains/llvm/prebuilt/linux-aarch64")
@@ -55,9 +50,34 @@ if(NOT EXISTS "${CMAKE_SYSROOT}")
    message(FATAL_ERROR "NDK sysroot does not exist: ${CMAKE_SYSROOT}")
 endif()
 
+# Ensure clang++ symlink exists and points to the actual binary
+set(CLANG_BIN_DIR "${NDK_TOOLCHAIN_PATH}/bin")
+if(NOT EXISTS "${CLANG_BIN_DIR}/clang++")
+   # Find the actual clang binary
+   if(EXISTS "${CLANG_BIN_DIR}/clang-18")
+      execute_process(
+              COMMAND ${CMAKE_COMMAND} -E create_symlink clang-18 "${CLANG_BIN_DIR}/clang++"
+              RESULT_VARIABLE SYMLINK_RESULT
+      )
+      if(SYMLINK_RESULT EQUAL 0)
+         message(STATUS "Created clang++ -> clang-18 symlink")
+      endif()
+   elseif(EXISTS "${CLANG_BIN_DIR}/clang")
+      execute_process(
+              COMMAND ${CMAKE_COMMAND} -E create_symlink clang "${CLANG_BIN_DIR}/clang++"
+              RESULT_VARIABLE SYMLINK_RESULT
+      )
+      if(SYMLINK_RESULT EQUAL 0)
+         message(STATUS "Created clang++ -> clang symlink")
+      endif()
+   else()
+      message(WARNING "Could not find clang binary to link clang++ to")
+   endif()
+endif()
+
 # Set compilers with API level flexibility
-set(CMAKE_C_COMPILER "${NDK_TOOLCHAIN_PATH}/bin/aarch64-linux-android${ANDROID_NATIVE_API_LEVEL}-clang")
-set(CMAKE_CXX_COMPILER "${NDK_TOOLCHAIN_PATH}/bin/aarch64-linux-android${ANDROID_NATIVE_API_LEVEL}-clang++")
+set(CMAKE_C_COMPILER "${CLANG_BIN_DIR}/aarch64-linux-android${ANDROID_NATIVE_API_LEVEL}-clang")
+set(CMAKE_CXX_COMPILER "${CLANG_BIN_DIR}/aarch64-linux-android${ANDROID_NATIVE_API_LEVEL}-clang++")
 
 # Debug: Show what we're looking for
 message(STATUS "Looking for C compiler: ${CMAKE_C_COMPILER}")
@@ -66,8 +86,8 @@ message(STATUS "Looking for C++ compiler: ${CMAKE_CXX_COMPILER}")
 # Verify compilers exist, if not try fallback
 if(NOT EXISTS "${CMAKE_C_COMPILER}")
    message(STATUS "API-specific compiler not found, trying generic clang...")
-   set(CMAKE_C_COMPILER "${NDK_TOOLCHAIN_PATH}/bin/clang")
-   set(CMAKE_CXX_COMPILER "${NDK_TOOLCHAIN_PATH}/bin/clang++")
+   set(CMAKE_C_COMPILER "${CLANG_BIN_DIR}/clang")
+   set(CMAKE_CXX_COMPILER "${CLANG_BIN_DIR}/clang++")
 
    message(STATUS "Fallback C compiler: ${CMAKE_C_COMPILER}")
    message(STATUS "Fallback C++ compiler: ${CMAKE_CXX_COMPILER}")
@@ -86,6 +106,33 @@ if(NOT EXISTS "${CMAKE_C_COMPILER}")
    endif()
 else()
    message(STATUS "Found API-specific compilers")
+
+   # Verify the wrapper scripts can actually execute
+   execute_process(
+           COMMAND "${CMAKE_CXX_COMPILER}" --version
+           RESULT_VARIABLE COMPILER_TEST_RESULT
+           OUTPUT_VARIABLE COMPILER_TEST_OUTPUT
+           ERROR_VARIABLE COMPILER_TEST_ERROR
+           TIMEOUT 10
+   )
+
+   if(NOT COMPILER_TEST_RESULT EQUAL 0)
+      message(STATUS "API-specific compiler test failed, falling back to generic clang...")
+      message(STATUS "Error: ${COMPILER_TEST_ERROR}")
+
+      # Fallback to generic clang with target flags
+      set(CMAKE_C_COMPILER "${CLANG_BIN_DIR}/clang")
+      set(CMAKE_CXX_COMPILER "${CLANG_BIN_DIR}/clang++")
+
+      # Add target and API level flags
+      set(ANDROID_TARGET_FLAGS "-target aarch64-linux-android${ANDROID_NATIVE_API_LEVEL}")
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ANDROID_TARGET_FLAGS}")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ANDROID_TARGET_FLAGS}")
+
+      message(STATUS "Using fallback compilers with target flags")
+   else()
+      message(STATUS "API-specific compilers are working correctly")
+   endif()
 endif()
 
 # Final verification and debug output
@@ -94,11 +141,11 @@ message(STATUS "Final C++ compiler: ${CMAKE_CXX_COMPILER}")
 
 # List available compilers for debugging
 execute_process(
-        COMMAND ls -la "${NDK_TOOLCHAIN_PATH}/bin/"
+        COMMAND ls -la "${CLANG_BIN_DIR}/"
         OUTPUT_VARIABLE COMPILER_LIST
         ERROR_QUIET
 )
-message(STATUS "Available compilers in ${NDK_TOOLCHAIN_PATH}/bin/:")
+message(STATUS "Available compilers in ${CLANG_BIN_DIR}/:")
 message(STATUS "${COMPILER_LIST}")
 
 # Set the find root path

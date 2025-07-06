@@ -129,7 +129,7 @@ jobs:
         id: cache-arm64-ndk
         with:
           path: ${{ github.workspace }}/android-ndk-r27b
-          key: android-ndk-r27b-aarch64-${{ runner.os }}-v3
+          key: android-ndk-r27b-aarch64-${{ runner.os }}-v4
 
       - name: Setup ARM64 Android NDK
         id: setup-ndk
@@ -150,47 +150,46 @@ jobs:
           echo "ANDROID_NDK_ROOT=${NDK_DIR}" >> $GITHUB_ENV
           echo "ANDROID_NDK=${NDK_DIR}" >> $GITHUB_ENV
           
-          # Create platform directories
+          # Create platform directories for compatibility
           mkdir -p $NDK_DIR/platforms/android-21/arch-arm64/usr/lib
           mkdir -p $NDK_DIR/platforms/android-21/arch-arm64/usr/include
 
           # Copy the sysroot files from ARM64 NDK
-          cp -r $NDK_DIR/toolchains/llvm/prebuilt/linux-aarch64/sysroot/usr/lib/aarch64-linux-android/21/* $ANDROID_NDK/platforms/android-21/arch-arm64/usr/lib/ 2>/dev/null || true
-          cp -r $NDK_DIR/toolchains/llvm/prebuilt/linux-aarch64/sysroot/usr/include/* $ANDROID_NDK/platforms/android-21/arch-arm64/usr/include/ 2>/dev/null || true
+          cp -r $NDK_DIR/toolchains/llvm/prebuilt/linux-aarch64/sysroot/usr/lib/aarch64-linux-android/21/* $NDK_DIR/platforms/android-21/arch-arm64/usr/lib/ 2>/dev/null || true
+          cp -r $NDK_DIR/toolchains/llvm/prebuilt/linux-aarch64/sysroot/usr/include/* $NDK_DIR/platforms/android-21/arch-arm64/usr/include/ 2>/dev/null || true
 
-          # Create missing clang++ symbolic link
+          # Set up the toolchain binary directory
           TOOLCHAIN_BIN="${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64/bin"
-          rm -f "${TOOLCHAIN_BIN}/clang++"
-          ln -s clang-18 "${TOOLCHAIN_BIN}/clang++"
           
-          echo "Created clang++ symlink:"
-          ls -la "${TOOLCHAIN_BIN}/clang++"
-
-      - name: Set mvn build command based on matrix
-        shell: bash
-        run: |
-          LIBND4J_CLASSIFIER="android-arm64"
-          echo "LIBND4J_CLASSIFIER=${LIBND4J_CLASSIFIER}" >> $GITHUB_ENV
-          echo "OPENBLAS_JAR=openblas-0.3.19-1.5.7-android-arm64.jar" >> $GITHUB_ENV
-          echo "OPENBLAS_DIR=${GITHUB_WORKSPACE}/openblas_home/lib/arm64-v8a" >> $GITHUB_ENV
-          echo "ARMCOMPUTE_TARGET=arm64-v8a" >> $GITHUB_ENV
+          echo "Setting up clang/clang++ symlinks..."
           
-          if [ "${{ github.event.inputs.libnd4jUrl }}" != '' ]; then
-             modules=':nd4j-native,:nd4j-native-preset'
+          # Remove any existing problematic symlinks
+          rm -f "${TOOLCHAIN_BIN}/clang++" "${TOOLCHAIN_BIN}/clang"
+          
+          # Create proper symlinks to the actual clang binary
+          if [ -f "${TOOLCHAIN_BIN}/clang-18" ]; then
+            ln -sf clang-18 "${TOOLCHAIN_BIN}/clang"
+            ln -sf clang-18 "${TOOLCHAIN_BIN}/clang++"
+            echo "Created clang and clang++ symlinks to clang-18"
           else
-             modules=':nd4j-native,:nd4j-native-preset,:libnd4j'
+            echo "ERROR: clang-18 not found in ${TOOLCHAIN_BIN}"
+            ls -la "${TOOLCHAIN_BIN}/" | grep clang
+            exit 1
           fi
           
-          command="mvn ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON -Posx-aarch64-protoc -pl $modules  -Pcpu -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Possrh -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=${LIBND4J_CLASSIFIER} -Pcpu --also-make --batch-mode deploy -DskipTests"
+          # Verify symlinks
+          echo "Verifying symlinks:"
+          ls -la "${TOOLCHAIN_BIN}/clang" "${TOOLCHAIN_BIN}/clang++"
           
-          if [ "${{ matrix.helper }}" != '' ]; then
-             mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.classifier=${LIBND4J_CLASSIFIER}-${{ matrix.helper }}"
-          else
-             mvn_ext=""
-          fi
+          # Test that the compilers work
+          echo "Testing compilers:"
+          "${TOOLCHAIN_BIN}/clang" --version | head -1
+          "${TOOLCHAIN_BIN}/clang++" --version | head -1
           
-          command="${command} ${mvn_ext}"
-          echo "COMMAND=${command}" >> $GITHUB_ENV
+          # Test wrapper scripts
+          echo "Testing wrapper scripts:"
+          "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang" --version | head -1 || echo "WARNING: API-specific clang wrapper failed"
+          "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang++" --version | head -1 || echo "WARNING: API-specific clang++ wrapper failed"
 
       - name: Setup OpenBLAS
         shell: bash
@@ -250,6 +249,7 @@ jobs:
           
           # Base configuration
           LIBND4J_CLASSIFIER="android-arm64"
+          CMAKE_TOOLCHAIN_FILE="${GITHUB_WORKSPACE}/cmake/android-arm64.cmake"
           
           # Determine modules to build
           if [ "${{ github.event.inputs.libnd4jUrl }}" != '' ]; then
@@ -260,13 +260,12 @@ jobs:
              echo "Building libnd4j from source"
           fi
           
-          # Critical: Add CMake arguments for Android cross-compilation
+          # Android/ARM64 specific CMake arguments
           CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE} \
-            -DANDROID_ABI=${ANDROID_ABI} \
-            -DANDROID_PLATFORM=${ANDROID_PLATFORM} \
+            -DSD_ANDROID_BUILD=true \
+            -DANDROID_ABI=arm64-v8a \
+            -DANDROID_PLATFORM=android-21 \
             -DANDROID_NDK=${ANDROID_NDK} \
-            -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} \
-            -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} \
             -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
             -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
             -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY"
@@ -308,6 +307,7 @@ jobs:
           
           # Set environment variables
           echo "LIBND4J_CLASSIFIER=${LIBND4J_CLASSIFIER}" >> $GITHUB_ENV
+          echo "CMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}" >> $GITHUB_ENV
           echo "MAVEN_COMMAND=${FINAL_COMMAND}" >> $GITHUB_ENV
           
           echo "Maven command configured:"
@@ -321,6 +321,46 @@ jobs:
         if: ${{ github.event.inputs.debug_enabled == 'true' }}
         with:
           limit-access-to-actor: true
+
+      - name: Debug NDK and compilers
+        shell: bash
+        run: |
+          echo "=== NDK and Compiler Debug Information ==="
+          
+          TOOLCHAIN_BIN="${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-aarch64/bin"
+          
+          echo "NDK Path: ${ANDROID_NDK}"
+          echo "Toolchain bin directory: ${TOOLCHAIN_BIN}"
+          echo ""
+          
+          echo "Checking symlinks:"
+          ls -la "${TOOLCHAIN_BIN}/clang" "${TOOLCHAIN_BIN}/clang++" 2>/dev/null || echo "Symlinks not found"
+          echo ""
+          
+          echo "Testing compilers:"
+          echo "clang version:"
+          "${TOOLCHAIN_BIN}/clang" --version 2>&1 | head -1 || echo "clang failed"
+          echo "clang++ version:"
+          "${TOOLCHAIN_BIN}/clang++" --version 2>&1 | head -1 || echo "clang++ failed"
+          echo ""
+          
+          echo "Testing wrapper scripts:"
+          echo "aarch64-linux-android21-clang:"
+          "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang" --version 2>&1 | head -1 || echo "API-specific clang wrapper failed"
+          echo "aarch64-linux-android21-clang++:"
+          "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang++" --version 2>&1 | head -1 || echo "API-specific clang++ wrapper failed"
+          echo ""
+          
+          echo "Environment variables:"
+          echo "ANDROID_NDK: ${ANDROID_NDK}"
+          echo "ANDROID_NDK_ROOT: ${ANDROID_NDK_ROOT}"
+          echo "PATH includes NDK: $(echo $PATH | grep -o android-ndk || echo 'No')"
+          echo ""
+          
+          echo "CMake toolchain file exists: $(test -f "${CMAKE_TOOLCHAIN_FILE}" && echo 'Yes' || echo 'No')"
+          if [ -f "${CMAKE_TOOLCHAIN_FILE}" ]; then
+            echo "Toolchain file path: ${CMAKE_TOOLCHAIN_FILE}"
+          fi
 
       - name: Build with Maven
         shell: bash
@@ -346,21 +386,42 @@ jobs:
           export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${OPENBLAS_PATH}"
           
           # Print environment info
-          echo "Build environment:"
+          echo "=== Build Environment ==="
           echo "  Java version: $(java -version 2>&1 | head -1)"
           echo "  Maven version: $(mvn -version | head -1)"
+          echo "  CMake version: $(cmake --version | head -1)"
+          echo "  Protoc version: $(protoc --version)"
           echo "  Android NDK: ${ANDROID_NDK_ROOT}"
+          echo "  CMake toolchain: ${CMAKE_TOOLCHAIN_FILE}"
           echo "  OpenBLAS: ${OPENBLAS_PATH}"
-          echo "  CC: ${CC}"
-          echo "  CXX: ${CXX}"
           if [ "${{ matrix.helper }}" == "armcompute" ]; then
             echo "  ARM Compute: ${ARMCOMPUTE_ROOT}"
           fi
           echo "  Build threads: ${{ github.event.inputs.buildThreads }}"
+          echo "  Platform classifier: ${LIBND4J_CLASSIFIER}"
+          echo ""
+          
+          # Final compiler verification
+          echo "=== Final Compiler Verification ==="
+          TOOLCHAIN_BIN="${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-aarch64/bin"
+          
+          echo "Testing final compiler setup:"
+          "${TOOLCHAIN_BIN}/clang++" --version || {
+            echo "ERROR: clang++ is not working!"
+            echo "Attempting to recreate symlink..."
+            rm -f "${TOOLCHAIN_BIN}/clang++"
+            ln -sf clang-18 "${TOOLCHAIN_BIN}/clang++"
+            echo "Retesting..."
+            "${TOOLCHAIN_BIN}/clang++" --version || {
+              echo "FATAL: Cannot get clang++ working"
+              exit 1
+            }
+          }
           echo ""
           
           # Execute Maven build
-          echo "Executing Maven command:"
+          echo "=== Executing Maven Build ==="
+          echo "Maven command:"
           echo "${MAVEN_COMMAND}"
           echo ""
           
