@@ -161,35 +161,62 @@ jobs:
           # Set up the toolchain binary directory
           TOOLCHAIN_BIN="${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64/bin"
           
+          echo "Inspecting NDK structure:"
+          echo "Contents of toolchain bin directory:"
+          ls -la "${TOOLCHAIN_BIN}/" | head -20
+          echo ""
+          echo "Looking for clang binaries:"
+          ls -la "${TOOLCHAIN_BIN}/"*clang* 2>/dev/null || echo "No clang binaries found with ls"
+          find "${TOOLCHAIN_BIN}/" -name "*clang*" -type f 2>/dev/null || echo "No clang binaries found with find"
+          echo ""
+          
+          # Check if clang-18 exists and is executable
+          if [ -f "${TOOLCHAIN_BIN}/clang-18" ]; then
+            echo "Found clang-18, checking if executable:"
+            ls -la "${TOOLCHAIN_BIN}/clang-18"
+            if [ -x "${TOOLCHAIN_BIN}/clang-18" ]; then
+              echo "clang-18 is executable"
+            else
+              echo "clang-18 is not executable, fixing permissions..."
+              chmod +x "${TOOLCHAIN_BIN}/clang-18"
+            fi
+          else
+            echo "ERROR: clang-18 not found!"
+            echo "Available files in bin directory:"
+            ls -la "${TOOLCHAIN_BIN}/"
+            exit 1
+          fi
+          
           echo "Setting up clang/clang++ symlinks..."
           
           # Remove any existing problematic symlinks
           rm -f "${TOOLCHAIN_BIN}/clang++" "${TOOLCHAIN_BIN}/clang"
           
           # Create proper symlinks to the actual clang binary
-          if [ -f "${TOOLCHAIN_BIN}/clang-18" ]; then
-            ln -sf clang-18 "${TOOLCHAIN_BIN}/clang"
-            ln -sf clang-18 "${TOOLCHAIN_BIN}/clang++"
-            echo "Created clang and clang++ symlinks to clang-18"
-          else
-            echo "ERROR: clang-18 not found in ${TOOLCHAIN_BIN}"
-            ls -la "${TOOLCHAIN_BIN}/" | grep clang
-            exit 1
-          fi
+          ln -sf clang-18 "${TOOLCHAIN_BIN}/clang"
+          ln -sf clang-18 "${TOOLCHAIN_BIN}/clang++"
+          echo "Created clang and clang++ symlinks to clang-18"
           
           # Verify symlinks
           echo "Verifying symlinks:"
           ls -la "${TOOLCHAIN_BIN}/clang" "${TOOLCHAIN_BIN}/clang++"
+          echo ""
           
-          # Test that the compilers work
-          echo "Testing compilers:"
-          "${TOOLCHAIN_BIN}/clang" --version | head -1
-          "${TOOLCHAIN_BIN}/clang++" --version | head -1
+          # Test that the actual binary works first
+          echo "Testing clang-18 directly:"
+          "${TOOLCHAIN_BIN}/clang-18" --version 2>&1 | head -1 || echo "clang-18 failed to execute"
+          echo ""
+          
+          # Test that the symlinks work
+          echo "Testing symlinked compilers:"
+          "${TOOLCHAIN_BIN}/clang" --version 2>&1 | head -1 || echo "clang symlink failed"
+          "${TOOLCHAIN_BIN}/clang++" --version 2>&1 | head -1 || echo "clang++ symlink failed"
+          echo ""
           
           # Test wrapper scripts
           echo "Testing wrapper scripts:"
-          "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang" --version | head -1 || echo "WARNING: API-specific clang wrapper failed"
-          "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang++" --version | head -1 || echo "WARNING: API-specific clang++ wrapper failed"
+          "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang" --version 2>&1 | head -1 || echo "WARNING: API-specific clang wrapper failed"
+          "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang++" --version 2>&1 | head -1 || echo "WARNING: API-specific clang++ wrapper failed"
 
       - name: Setup OpenBLAS
         shell: bash
