@@ -161,55 +161,56 @@ jobs:
           # Fix clang/clang++ symbolic links
           TOOLCHAIN_BIN="${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64/bin"
           
-          echo "Checking existing clang binaries:"
+          echo "Checking ALL clang binaries in NDK:"
           ls -la "${TOOLCHAIN_BIN}"/clang* 2>/dev/null || echo "No clang* files found"
           
-          echo "Examining aarch64-linux-android21-clang++ wrapper:"
-          head -10 "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang++" 2>/dev/null || echo "Wrapper not found"
+          echo "Examining aarch64-linux-android21-clang++ wrapper content:"
+          cat "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang++" 2>/dev/null || echo "Wrapper not found"
           
           # Remove any existing broken links
           echo "Removing any existing clang/clang++ links..."
           rm -f "${TOOLCHAIN_BIN}/clang" "${TOOLCHAIN_BIN}/clang++"
           
-          # Check for clang++-18 specifically
-          echo "Checking for clang++-18 binary:"
-          ls -la "${TOOLCHAIN_BIN}/clang++-18" 2>/dev/null || echo "clang++-18 not found"
+          # Find what clang++ variants exist
+          echo "Searching for ANY clang++ binaries:"
+          find "${TOOLCHAIN_BIN}" -name "*clang++*" -type f 2>/dev/null || echo "No clang++ binaries found"
           
-          # Create symbolic links with explicit commands and error checking
+          # Create clang symbolic link
           if [ -f "${TOOLCHAIN_BIN}/clang-18" ]; then
             echo "Creating clang symbolic link..."
             cd "${TOOLCHAIN_BIN}"
             ln -s clang-18 clang
             echo "clang link created: $(ls -la clang 2>/dev/null || echo 'FAILED')"
             cd - > /dev/null
-          else
-            echo "ERROR: clang-18 not found"
           fi
           
-          if [ -f "${TOOLCHAIN_BIN}/clang++-18" ]; then
-            echo "Creating clang++ symbolic link..."
-            cd "${TOOLCHAIN_BIN}"
+          # Create clang++ symbolic link - try multiple approaches
+          cd "${TOOLCHAIN_BIN}"
+          if [ -f "clang++-18" ]; then
+            echo "Found clang++-18, creating link..."
             ln -s clang++-18 clang++
-            echo "clang++ link created: $(ls -la clang++ 2>/dev/null || echo 'FAILED')"
-            cd - > /dev/null
+          elif [ -f "clang-18" ]; then
+            echo "No clang++-18 found, linking clang++ to clang-18 (clang can handle C++)..."
+            ln -s clang-18 clang++
           else
-            echo "ERROR: clang++-18 not found"
-            echo "Available clang binaries:"
-            ls -la "${TOOLCHAIN_BIN}"/clang* 2>/dev/null || echo "None found"
+            echo "ERROR: No suitable clang++ binary found"
           fi
+          echo "clang++ link result: $(ls -la clang++ 2>/dev/null || echo 'FAILED')"
+          cd - > /dev/null
           
-          # Final verification of clang symbolic links
-          echo "Final verification of clang symbolic links:"
-          ls -la "${TOOLCHAIN_BIN}/clang" "${TOOLCHAIN_BIN}/clang++" 2>/dev/null || echo "Warning: clang binaries not found"
+          # Final verification
+          echo "Final verification of symbolic links:"
+          ls -la "${TOOLCHAIN_BIN}/clang" "${TOOLCHAIN_BIN}/clang++" 2>/dev/null || echo "Links missing"
           
-          # Test that the binaries work
-          echo "Testing clang binaries:"
+          # Test the binaries
+          echo "Testing clang binary:"
           "${TOOLCHAIN_BIN}/clang" --version 2>/dev/null && echo "clang works" || echo "clang failed"
+          
+          echo "Testing clang++ binary:"
           "${TOOLCHAIN_BIN}/clang++" --version 2>/dev/null && echo "clang++ works" || echo "clang++ failed"
           
-          # Test the wrapper scripts
-          echo "Testing wrapper scripts:"
-          "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang++" --version 2>/dev/null && echo "wrapper clang++ works" || echo "wrapper clang++ failed"
+          echo "Testing wrapper script:"
+          "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang++" --version 2>/dev/null && echo "wrapper works" || echo "wrapper failed"
 
       - name: Set mvn build command based on matrix
         shell: bash
