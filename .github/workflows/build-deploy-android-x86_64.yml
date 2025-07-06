@@ -276,8 +276,7 @@ jobs:
           
           echo "=== OpenBLAS JAR extraction completed ==="
           
-          # FIXED: Use the actual JAR structure lib/x86_64/
-          # The JAR contains: lib/x86_64/include/ and lib/x86_64/lib/
+          # The JAR contains: lib/x86_64/include/ and lib/x86_64/
           OPENBLAS_PLATFORM_PATH="lib/x86_64"
           
           if [[ -d "$OPENBLAS_PLATFORM_PATH" ]]; then
@@ -312,12 +311,12 @@ jobs:
           echo "=== Setting final environment variables ==="
           echo "OPENBLAS_PATH=${OPENBLAS_FINAL_PATH}" >> $GITHUB_ENV
           echo "OPENBLAS_INCLUDE_PATH=${OPENBLAS_FINAL_PATH}/include" >> $GITHUB_ENV
-          echo "OPENBLAS_LIB_PATH=${OPENBLAS_FINAL_PATH}/lib" >> $GITHUB_ENV
+          echo "OPENBLAS_LIB_PATH=${OPENBLAS_FINAL_PATH}/" >> $GITHUB_ENV
           
           echo "=== OpenBLAS setup completed ==="
           echo "Final OpenBLAS path: ${OPENBLAS_FINAL_PATH}"
           echo "Include path: ${OPENBLAS_FINAL_PATH}/include"
-          echo "Library path: ${OPENBLAS_FINAL_PATH}/lib"
+          echo "Library path: ${OPENBLAS_FINAL_PATH}/"
           
           # Verify the final setup
           echo "=== Final verification ==="

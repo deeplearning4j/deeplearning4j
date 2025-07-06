@@ -120,14 +120,14 @@ function(setup_blas)
     message(STATUS "✅ Setting up OpenBLAS:")
     message(STATUS "   Path: ${OPENBLAS_PATH}")
     message(STATUS "   Include: ${OPENBLAS_PATH}/include")
-    message(STATUS "   Library: ${OPENBLAS_PATH}/lib")
+    message(STATUS "   Library: ${OPENBLAS_PATH}/")
 
     # Use global include_directories for compatibility
     include_directories(${OPENBLAS_PATH}/include/)
 
     # Set up library directories
     if(EXISTS "${OPENBLAS_PATH}/lib")
-        link_directories(${OPENBLAS_PATH}/lib/)
+        link_directories(${OPENBLAS_PATH}/)
     endif()
 
     add_compile_definitions(HAVE_OPENBLAS=1)
