@@ -1,7 +1,7 @@
 # android-arm64.cmake - Flexible toolchain for NDK r27b+ and cross-platform builds
 
 # Set the system and processor
-set(CMAKE_SYSTEM_NAME Android)
+set(CMAKE_SYSTEM_NAME Linux)
 
 # Flexible API level - can be overridden via command line or environment
 if(NOT DEFINED ANDROID_NATIVE_API_LEVEL AND DEFINED ENV{ANDROID_VERSION})
