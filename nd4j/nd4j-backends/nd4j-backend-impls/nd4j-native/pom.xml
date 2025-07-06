@@ -363,7 +363,8 @@
                                 <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/21</linkPath>
                                 <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android</linkPath>
                                 <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/17/lib/linux</linkPath>
-
+                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib</linkPath>
+                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib</linkPath>
                             </linkPaths>
                             <resourcePath>${libnd4jhome}/blasbuild/cpu/blas</resourcePath>
                             <buildResources>
@@ -527,7 +528,8 @@
                                 <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/21</linkPath>
                                 <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android</linkPath>
                                 <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/17/lib/linux</linkPath>
-
+                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib</linkPath>
+                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib</linkPath>
                             </linkPaths>
                             <resourcePath>${libnd4jhome}/blasbuild/cpu/blas</resourcePath>
                             <buildResources>
