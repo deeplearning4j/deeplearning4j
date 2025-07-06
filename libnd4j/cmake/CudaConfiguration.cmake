@@ -1,8 +1,6 @@
 ################################################################################
 # CUDA Configuration Functions
 # Functions for CUDA-specific build configuration and optimization
-# UPDATED VERSION - Fixed CUDA path discovery and include directory setup
-# CRITICAL FIX: Removed /FS flag to prevent nvcc compilation errors
 ################################################################################
 
 # Enhanced CUDA toolkit detection with proper include path setup
@@ -488,21 +486,20 @@ function(configure_windows_cuda_build)
 
     message(STATUS "Configuring Windows CUDA build with proper response files...")
 
-    # Enable response file support for long command lines
-    set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS ON PARENT_SCOPE)
-    set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES ON PARENT_SCOPE)
-    set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LIBRARIES ON PARENT_SCOPE)
-    set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LINK_OBJECTS ON PARENT_SCOPE)
-    set(CMAKE_CUDA_RESPONSE_FILE_LINK_FLAG "@" PARENT_SCOPE)
-    set(CMAKE_CUDA_COMPILE_OPTIONS_USE_RESPONSE_FILE ON PARENT_SCOPE)
+    # Disable response file support to prevent /FS flag issues
+    set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS OFF PARENT_SCOPE)
+    set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES OFF PARENT_SCOPE)
+    set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LIBRARIES OFF PARENT_SCOPE)
+    set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LINK_OBJECTS OFF PARENT_SCOPE)
+    set(CMAKE_CUDA_COMPILE_OPTIONS_USE_RESPONSE_FILE OFF PARENT_SCOPE)
 
-    # SIMPLE FIX: Just disable the automatic /FS flag that's causing the conflict
-    set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreaded "/MT" PARENT_SCOPE)
-    set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL "/MD" PARENT_SCOPE)
-    set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebug "/MTd" PARENT_SCOPE)
-    set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebugDLL "/MDd" PARENT_SCOPE)
+    # Clean MSVC runtime library settings without /FS
+    set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreaded "" PARENT_SCOPE)
+    set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL "" PARENT_SCOPE)
+    set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebug "" PARENT_SCOPE)
+    set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebugDLL "" PARENT_SCOPE)
 
-    message(STATUS "Windows CUDA: Configured with clean runtime flags (no /FS)")
+    message(STATUS "Windows CUDA: Disabled response files and cleaned runtime flags")
 endfunction()
 
 function(configure_cuda_architecture_flags COMPUTE)
@@ -541,7 +538,10 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
         set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER} PARENT_SCOPE)
         set(LOCAL_CUDA_FLAGS "-maxrregcount=128")
 
-        message(STATUS "CUDA Windows flags configured WITHOUT /FS to prevent nvcc errors")
+        # Clean Windows-specific flags without /FS
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/bigobj,/EHsc")
+
+        message(STATUS "CUDA Windows flags configured without problematic /FS flags")
     else()
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -maxrregcount=128")
 
@@ -570,6 +570,15 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
     if(CMAKE_CUDA_COMPILER_VERSION)
         string(REGEX MATCH "^([0-9]+)" CUDA_VERSION_MAJOR "${CMAKE_CUDA_COMPILER_VERSION}")
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR}")
+    endif()
+
+    # Clean up any empty or problematic flags
+    if(WIN32)
+        string(REGEX REPLACE "-Xcompiler=," "-Xcompiler=" LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}")
+        string(REGEX REPLACE "-Xcompiler=$" "" LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}")
+        string(REGEX REPLACE "/FS[ ]*" "" LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}")
+        string(REGEX REPLACE "-Xcompiler=-Fd[^,]*," "-Xcompiler=" LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}")
+        string(REGEX REPLACE "-Xcompiler=-Fd[^,]*$" "" LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}")
     endif()
 
     string(REGEX REPLACE "  +" " " LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}")
@@ -697,9 +706,4 @@ function(setup_cudnn)
         set(CUDNN_INCLUDE_DIR ${CUDNN_INCLUDE_DIR} PARENT_SCOPE)
         set(CUDNN ${CUDNN_LIBRARIES} PARENT_SCOPE)
     endif()
-endfunction()
-
-# Additional helper function to clean up any remaining problematic flags
-function(fix_cuda_compile_flags_post_setup)
-
 endfunction()
