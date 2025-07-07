@@ -1,22 +1,30 @@
-# =============================================================================
-# libnd4j Main CMakeLists.txt with CUDA /FS flag fix
-# =============================================================================
-
 cmake_minimum_required(VERSION 3.15)
 
-# CRITICAL: Apply CUDA fixes BEFORE project() call
 if(WIN32 AND SD_CUDA)
-    # Disable automatic /FS flag generation for MSVC
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
+    if(POLICY CMP0116)
+        cmake_policy(SET CMP0116 OLD)
+    endif()
 
-    # Prevent CMAKE from adding /FS automatically
-    set(CMAKE_CXX_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreaded "")
-    set(CMAKE_CXX_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL "")
-    set(CMAKE_CXX_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebug "")
-    set(CMAKE_CXX_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebugDLL "")
+    set(CMAKE_NINJA_FORCE_RESPONSE_FILE OFF CACHE BOOL "" FORCE)
+    set(CMAKE_C_USE_RESPONSE_FILE_FOR_OBJECTS OFF CACHE BOOL "" FORCE)
+    set(CMAKE_CXX_USE_RESPONSE_FILE_FOR_OBJECTS OFF CACHE BOOL "" FORCE)
+    set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS OFF CACHE BOOL "" FORCE)
+    set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES OFF CACHE BOOL "" FORCE)
+    set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LIBRARIES OFF CACHE BOOL "" FORCE)
+    set(CMAKE_CUDA_COMPILE_OPTIONS_USE_RESPONSE_FILE OFF CACHE BOOL "" FORCE)
+    set(CMAKE_CUDA_RESPONSE_FILE_LINK_FLAG "" CACHE STRING "" FORCE)
 
-    # Disable response files that can cause /FS conflicts
-    set(CMAKE_NINJA_FORCE_RESPONSE_FILE OFF)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL" CACHE STRING "" FORCE)
+
+    set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreaded "" CACHE STRING "" FORCE)
+    set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL "" CACHE STRING "" FORCE)
+    set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebug "" CACHE STRING "" FORCE)
+    set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebugDLL "" CACHE STRING "" FORCE)
+
+    set(CMAKE_CXX_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreaded "" CACHE STRING "" FORCE)
+    set(CMAKE_CXX_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL "" CACHE STRING "" FORCE)
+    set(CMAKE_CXX_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebug "" CACHE STRING "" FORCE)
+    set(CMAKE_CXX_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebugDLL "" CACHE STRING "" FORCE)
 endif()
 
 if(SD_CUDA)
@@ -34,28 +42,31 @@ if(WIN32)
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
     set(CMAKE_VERBOSE_MAKEFILE OFF)
 
-    # Apply additional CUDA fixes after project() but before any targets
     if(SD_CUDA)
-        # Disable CUDA response files
-        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS OFF)
-        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES OFF)
-        set(CMAKE_CUDA_COMPILE_OPTIONS_USE_RESPONSE_FILE OFF)
+        set(CMAKE_CUDA_COMPILE_OBJECT
+                "<CMAKE_CUDA_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -x cu -c <SOURCE> -o <OBJECT> -Xcompiler=/bigobj -Xcompiler=/EHsc -Xcompiler=/MD"
+                CACHE STRING "" FORCE)
 
-        # Clean CUDA runtime library options
-        set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreaded "")
-        set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL "")
-        set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebug "")
-        set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebugDLL "")
+        set(CMAKE_CUDA_COMPILE_OBJECT_RDC
+                "<CMAKE_CUDA_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -x cu -rdc=true -c <SOURCE> -o <OBJECT> -Xcompiler=/bigobj -Xcompiler=/EHsc -Xcompiler=/MD"
+                CACHE STRING "" FORCE)
 
-        message(STATUS "Applied Windows CUDA /FS flag fixes")
+        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS OFF CACHE BOOL "" FORCE)
+        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES OFF CACHE BOOL "" FORCE)
+        set(CMAKE_CUDA_COMPILE_OPTIONS_USE_RESPONSE_FILE OFF CACHE BOOL "" FORCE)
+
+        string(REGEX REPLACE "/FS" "" CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT}")
+        string(REGEX REPLACE "/FS" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+        string(REGEX REPLACE "/Fd[^ ]*" "" CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT}")
+        string(REGEX REPLACE "/Fd[^ ]*" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+
+        string(REGEX REPLACE "/FS" "" CMAKE_CUDA_FLAGS_INIT "${CMAKE_CUDA_FLAGS_INIT}")
+        string(REGEX REPLACE "/FS" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
+        string(REGEX REPLACE "/Fd[^ ]*" "" CMAKE_CUDA_FLAGS_INIT "${CMAKE_CUDA_FLAGS_INIT}")
+        string(REGEX REPLACE "/Fd[^ ]*" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
     endif()
 endif()
 
-# =============================================================================
-# 1. EARLY SETUP - Set DEFAULT_ENGINE before anything else
-# =============================================================================
-
-# Ensure SD_CPU is TRUE if neither SD_CUDA nor SD_CPU is set
 if(NOT SD_CUDA)
     if(NOT SD_CPU)
         set(SD_CUDA FALSE)
@@ -63,7 +74,6 @@ if(NOT SD_CUDA)
     endif()
 endif()
 
-# Set DEFAULT_ENGINE early - this MUST happen before config.h generation
 if(SD_CUDA)
     set(DEFAULT_ENGINE "samediff::ENGINE_CUDA")
     add_compile_definitions(DEFAULT_ENGINE=samediff::ENGINE_CUDA)
@@ -72,7 +82,6 @@ else()
     add_compile_definitions(DEFAULT_ENGINE=samediff::ENGINE_CPU)
 endif()
 
-# Set library name
 if(NOT DEFINED SD_LIBRARY_NAME)
     if(SD_CUDA)
         set(SD_LIBRARY_NAME nd4jcuda)
@@ -81,17 +90,10 @@ if(NOT DEFINED SD_LIBRARY_NAME)
     endif()
 endif()
 
-# =============================================================================
-# 2. INCLUDE ALL MODULAR DEFINITION FILES
-# =============================================================================
-
-# Utility and Option modules first
 include(PrintingUtilities)
 include(Options)
 include(PlatformDetection)
 include(TypeSystem)
-
-# Core function definition modules
 include(TypeCombinationEngine)
 include(TypeValidation)
 include(TypeProfiles)
@@ -101,10 +103,8 @@ include(Dependencies)
 include(CompilerOptimizations)
 include(PlatformOptimizations)
 
-# Call the type validation setup macro
 LIBND4J_SETUP_TYPE_VALIDATION()
 
-# Debug: Show what types were configured
 message(STATUS "=== TYPE SETUP VERIFICATION ===")
 if(DEFINED SD_TYPES_LIST AND SD_TYPES_LIST)
     message(STATUS "SD_TYPES_LIST: ${SD_TYPES_LIST}")
@@ -118,68 +118,45 @@ if(DEFINED SD_TYPES_LIST_COUNT)
     message(STATUS "SD_TYPES_LIST_COUNT: ${SD_TYPES_LIST_COUNT}")
 endif()
 
-# Show some key compile definitions that should be set
 get_directory_property(COMPILE_DEFS COMPILE_DEFINITIONS)
 message(STATUS "Some compile definitions: ${COMPILE_DEFS}")
 message(STATUS "==============================")
 
-# =============================================================================
-# 4. EARLY CUDA SETUP (if needed)
-# =============================================================================
-
-# =============================================================================
-# 5. EXECUTE THE BUILD
-# =============================================================================
 include(cmake/MainBuildFlow.cmake)
 
 if(SD_CUDA)
-    # Include CUDA configuration early for architecture setup
     include(cmake/CudaConfiguration.cmake)
     setup_cuda_build()
 else()
     setup_cpu_environment()
 endif()
 
-# =============================================================================
-# 6. ADDITIONAL CUDA TARGET FIXES
-# =============================================================================
 if(WIN32 AND SD_CUDA)
-    # Apply fixes to any CUDA targets that were created
     function(apply_cuda_target_fixes)
-        # Get all targets in the current directory
         get_property(all_targets DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)
-
         foreach(target ${all_targets})
             if(TARGET ${target})
                 get_target_property(target_type ${target} TYPE)
                 if(target_type STREQUAL "OBJECT_LIBRARY" OR target_type STREQUAL "SHARED_LIBRARY")
-                    # Remove /FS from compile options
                     get_target_property(compile_options ${target} COMPILE_OPTIONS)
                     if(compile_options)
                         list(FILTER compile_options EXCLUDE REGEX "/FS")
+                        list(FILTER compile_options EXCLUDE REGEX "/Fd")
                         set_target_properties(${target} PROPERTIES COMPILE_OPTIONS "${compile_options}")
                     endif()
-
-                    # Set CUDA-specific properties
+                    set_property(TARGET ${target} PROPERTY CUDA_FLAGS "")
                     set_target_properties(${target} PROPERTIES
                             CUDA_RESOLVE_DEVICE_SYMBOLS ON
                             CUDA_SEPARABLE_COMPILATION ON
+                            MSVC_RUNTIME_LIBRARY "MultiThreadedDLL"
                     )
-
-                    message(STATUS "Applied CUDA fixes to target: ${target}")
                 endif()
             endif()
         endforeach()
     endfunction()
-
-    # Apply the fixes
     apply_cuda_target_fixes()
 endif()
 
-# =============================================================================
-# 7. OPTIONAL POST-BUILD AND ANALYSIS TARGETS
-# =============================================================================
-# Development and analysis targets
 if(NOT TARGET analyze_types)
     add_custom_target(analyze_types
             COMMAND ${CMAKE_COMMAND} -E echo "Analyzing type usage..."
@@ -188,7 +165,6 @@ if(NOT TARGET analyze_types)
     )
 endif()
 
-# Add a target to verify type configuration
 add_custom_target(verify_types
         COMMAND ${CMAKE_COMMAND} -E echo "Verifying type configuration..."
         COMMAND ${CMAKE_COMMAND} -E echo "Check build logs above for type setup verification"
