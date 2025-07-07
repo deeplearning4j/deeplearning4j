@@ -44,11 +44,11 @@ if(WIN32)
 
     if(SD_CUDA)
         set(CMAKE_CUDA_COMPILE_OBJECT
-                "<CMAKE_CUDA_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -x cu -c <SOURCE> -o <OBJECT> -Xcompiler=/bigobj -Xcompiler=/EHsc -Xcompiler=/MD"
+                "<CMAKE_CUDA_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -x cu -c <SOURCE> -o <OBJECT>"
                 CACHE STRING "" FORCE)
 
         set(CMAKE_CUDA_COMPILE_OBJECT_RDC
-                "<CMAKE_CUDA_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -x cu -rdc=true -c <SOURCE> -o <OBJECT> -Xcompiler=/bigobj -Xcompiler=/EHsc -Xcompiler=/MD"
+                "<CMAKE_CUDA_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -x cu -rdc=true -c <SOURCE> -o <OBJECT>"
                 CACHE STRING "" FORCE)
 
         set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS OFF CACHE BOOL "" FORCE)
