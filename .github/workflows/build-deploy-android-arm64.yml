@@ -5,38 +5,47 @@ on:
         description: 'Build threads for libnd4j. Used to control memory usage of builds.'
         required: true
         default: 2
+
       deployToReleaseStaging:
         description: 'Whether to deploy to release staging or not.'
         required: false
         default: 0
+
       releaseVersion:
         description: 'Release version target'
         required: false
         default: 1.0.0-M3
+
       snapshotVersion:
         description: 'Snapshot version target'
         required: false
         default: 1.0.0-SNAPSHOT
+
       releaseRepoId:
         description: 'Release repository id'
         required: false
-        default: ''
+        default:
+
       serverId:
         description: 'Server id to publish to'
         required: false
-        default: 'central'
+        default: central
+
       mvnFlags:
         description: "Extra maven flags (must escape input yourself if used)"
         required: false
-        default: ''
+        default:
+
       libnd4jUrl:
         description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
         required: false
-        default: ''
+        default:
+
       runsOn:
         description: 'System to run on'
         required: false
         default: ubuntu-22.04-arm
+
       debug_enabled:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
         required: false
@@ -89,8 +98,8 @@ jobs:
           key: ${{ runner.os }}-protobuf-arm-v1
 
       - name: Install protobuf
-        if: steps.cache-protobuf-arm.outputs.cache-hit != 'true'
         uses: ./.github/actions/install-protobuf-linux
+        if: steps.cache-protobuf-arm.outputs.cache-hit != 'true'
 
       - name: Cache CMake install
         uses: actions/cache@v4
@@ -100,8 +109,8 @@ jobs:
           key: ${{ runner.os }}-cmake-v1
 
       - name: Install CMake
-        if: steps.cache-cmake.outputs.cache-hit != 'true'
         uses: ./.github/actions/install-cmake-linux
+        if: steps.cache-cmake.outputs.cache-hit != 'true'
 
       - name: Set up Java for publishing
         uses: actions/setup-java@v4
@@ -115,85 +124,183 @@ jobs:
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
           cache: 'maven'
 
-      - name: Cache Patched Android NDK
+      - name: Cache ARM64 Android NDK
         uses: actions/cache@v4
         id: cache-arm64-ndk
         with:
-          path: ${{ github.workspace }}/android-ndk-r25c
-          key: patched-ndk-r25c-aarch64-${{ runner.os }}-v6
+          path: ${{ github.workspace }}/android-ndk-r27b
+          key: android-ndk-r27b-aarch64-${{ runner.os }}-v4
 
       - name: Setup ARM64 Android NDK
         id: setup-ndk
         shell: bash
         run: |
-          NDK_VERSION="r25c"
-          NDK_DIR_NAME="android-ndk-${NDK_VERSION}"
-          NDK_PATH="${GITHUB_WORKSPACE}/${NDK_DIR_NAME}"
-
-          if [ ! -d "${NDK_PATH}" ]; then
-            echo "--- NDK cache not found. Building from source as per README. ---"
-            LLVM_TOOLCHAIN_DIR="${GITHUB_WORKSPACE}/llvm-toolchain"
-            AARCH64_NDK_DIR="${GITHUB_WORKSPACE}/aarch64ndk"
-            mkdir -p "${LLVM_TOOLCHAIN_DIR}"
-            mkdir -p "${AARCH64_NDK_DIR}"
-
-            echo "Step 0: Preparing build dependencies..."
-            sudo apt-get update -y
-            sudo apt-get install -y clang bison llvm llvm-dev python3 lld ninja-build cmake crossbuild-essential-arm64 git wget unzip repo
-
-            echo "Step 1: Downloading NDK and toolchain source code..."
-            cd "${LLVM_TOOLCHAIN_DIR}"
-            repo init -u https://android.googlesource.com/platform/manifest -b llvm-toolchain --depth=1
-            repo sync -c --no-clone-bundle --no-tags -j8
-
-            cd "${AARCH64_NDK_DIR}"
-            git clone https://github.com/SnowNF/ndk-aarch64-linux.git
-
-            NDK_ZIP_FILE="android-ndk-${NDK_VERSION}-linux.zip"
-            NDK_URL="https://dl.google.com/android/repository/${NDK_ZIP_FILE}"
-            echo "Downloading official NDK for patching..."
-            wget -q "${NDK_URL}"
-            unzip -q "${NDK_ZIP_FILE}" -d "${GITHUB_WORKSPACE}"
-            rm "${NDK_ZIP_FILE}"
-
-            echo "Step 2: Replacing toolchain source code..."
-            cd "${LLVM_TOOLCHAIN_DIR}/toolchain/llvm_android"
-            mv patches ../patches_backup
-            rm -rf *
-            cp -rf "${AARCH64_NDK_DIR}/ndk-aarch64-linux/"* .
-            mv ../patches_backup patches
-
-            echo "Step 3: Building the toolchain..."
-            cd "${LLVM_TOOLCHAIN_DIR}"
-            python3 toolchain/llvm_android/build.py --no-build windows --skip-tests --single-stage --no-musl
-
-            echo "Step 4: Replacing binaries in downloaded NDK..."
-            cp -fr ${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/clang* ${NDK_PATH}/toolchains/llvm/prebuilt/linux-x86_64/bin/
-            cp -fr ${LLVM_TOOLCHAIN_DIR}/out/stage2/lib/llvm-* ${NDK_PATH}/toolchains/llvm/prebuilt/linux-x86_64/lib/
-            cp -fr ${LLVM_TOOLCHAIN_DIR}/out/stage2/lib/lld* ${NDK_PATH}/toolchains/llvm/prebuilt/linux-x86_64/bin/
-            cp -fr ${LLVM_TOOLCHAIN_DIR}/out/stage2/lib/clang ${NDK_PATH}/toolchains/llvm/prebuilt/linux-x86_64/lib/
-            # Assuming make, yasm, ytasm are not needed for this build as per original workflow
+          NDK_VERSION="r27b"
+          NDK_DIR="${GITHUB_WORKSPACE}/android-ndk-${NDK_VERSION}"
+          
+          if [ ! -d "${NDK_DIR}" ]; then
+            echo "Downloading ARM64 Android NDK ${NDK_VERSION}..."
+            NDK_URL="https://github.com/lzhiyong/termux-ndk/releases/download/android-ndk/android-ndk-r27b-aarch64.zip"
+          
+            # Download with retries and better error handling
+            for attempt in 1 2 3; do
+              echo "Download attempt ${attempt}/3..."
+              if wget -q --timeout=30 --tries=3 "${NDK_URL}" -O ndk.zip; then
+                echo "Download successful"
+                break
+              else
+                echo "Download attempt ${attempt} failed"
+                if [ ${attempt} -eq 3 ]; then
+                  echo "ERROR: Failed to download NDK after 3 attempts"
+                  exit 1
+                fi
+                sleep 10
+              fi
+            done
+          
+            # Verify download
+            if [ ! -f "ndk.zip" ] || [ ! -s "ndk.zip" ]; then
+              echo "ERROR: Downloaded NDK file is missing or empty"
+              exit 1
+            fi
+          
+            echo "Extracting NDK..."
+            if ! unzip -q ndk.zip -d "${GITHUB_WORKSPACE}"; then
+              echo "ERROR: Failed to extract NDK"
+              exit 1
+            fi
+            rm ndk.zip
+          
+            # Verify extraction
+            if [ ! -d "${NDK_DIR}" ]; then
+              echo "ERROR: NDK directory not found after extraction"
+              ls -la "${GITHUB_WORKSPACE}/" | grep -i ndk || echo "No NDK directories found"
+              exit 1
+            fi
           else
-            echo "--- Using cached patched NDK at ${NDK_PATH} ---"
+            echo "Using cached NDK at ${NDK_DIR}"
           fi
-
-          if [ ! -d "${NDK_PATH}" ]; then
-            echo "ERROR: Patched NDK directory not found after setup."
+          
+          # Set environment variables
+          echo "ndk-path=${NDK_DIR}" >> $GITHUB_OUTPUT
+          echo "${NDK_DIR}" >> $GITHUB_PATH
+          echo "ANDROID_NDK_ROOT=${NDK_DIR}" >> $GITHUB_ENV
+          echo "ANDROID_NDK=${NDK_DIR}" >> $GITHUB_ENV
+          
+          # Verify NDK structure
+          TOOLCHAIN_BIN="${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64/bin"
+          if [ ! -d "${TOOLCHAIN_BIN}" ]; then
+            echo "ERROR: Toolchain bin directory not found at ${TOOLCHAIN_BIN}"
+            echo "Available directories in NDK:"
+            find "${NDK_DIR}" -type d -name "bin" 2>/dev/null || echo "No bin directories found"
             exit 1
           fi
+          
+          # Create platform directories for compatibility
+          mkdir -p "${NDK_DIR}/platforms/android-21/arch-arm64/usr/lib"
+          mkdir -p "${NDK_DIR}/platforms/android-21/arch-arm64/usr/include"
 
-          echo "ndk-path=${NDK_PATH}" >> $GITHUB_OUTPUT
-          echo "${NDK_PATH}" >> $GITHUB_PATH
-          echo "ANDROID_NDK_ROOT=${NDK_PATH}" >> $GITHUB_ENV
-          echo "ANDROID_NDK=${NDK_PATH}" >> $GITHUB_ENV
-          echo "NDK setup completed successfully."
+          # Copy the sysroot files from ARM64 NDK (suppress errors for missing files)
+          SYSROOT_LIB="${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64/sysroot/usr/lib/aarch64-linux-android/21"
+          SYSROOT_INCLUDE="${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64/sysroot/usr/include"
+          
+          if [ -d "${SYSROOT_LIB}" ]; then
+            cp -r "${SYSROOT_LIB}/"* "${NDK_DIR}/platforms/android-21/arch-arm64/usr/lib/" 2>/dev/null || true
+          fi
+          
+          if [ -d "${SYSROOT_INCLUDE}" ]; then
+            cp -r "${SYSROOT_INCLUDE}/"* "${NDK_DIR}/platforms/android-21/arch-arm64/usr/include/" 2>/dev/null || true
+          fi
+          
+          echo "Installing system clang and cross-compilation tools..."
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            clang-15 \
+            llvm-15 \
+            gcc-aarch64-linux-gnu \
+            g++-aarch64-linux-gnu \
+            libc6-dev-arm64-cross
+          
+          echo "Setting up working clang toolchain..."
+          
+          # The NDK's clang-18 doesn't work on Linux, so replace it with system clang
+          CLANG_BINARY="${TOOLCHAIN_BIN}/clang-18"
+          CLANGPP_BINARY="${TOOLCHAIN_BIN}/clang++"
+          CLANG_SYMLINK="${TOOLCHAIN_BIN}/clang"
+          
+          # Backup original binaries if they exist
+          [ -f "${CLANG_BINARY}" ] && mv "${CLANG_BINARY}" "${CLANG_BINARY}.android-original"
+          
+          # Remove broken symlinks
+          rm -f "${CLANG_SYMLINK}" "${CLANGPP_BINARY}"
+          
+          # Create working clang-18 wrapper
+          cat > "${CLANG_BINARY}" << 'EOF'
+          #!/bin/bash
+          # Working clang wrapper for Android cross-compilation using system clang
+          SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+          NDK_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "${SCRIPT_DIR}")")")")"
+          SYSROOT="${NDK_ROOT}/toolchains/llvm/prebuilt/linux-aarch64/sysroot"
+          
+          # Use system clang with Android target
+          exec /usr/bin/clang-15 \
+            --target=aarch64-linux-android21 \
+            --sysroot="${SYSROOT}" \
+            -B"${SCRIPT_DIR}" \
+            "$@"
+          EOF
+          
+          chmod +x "${CLANG_BINARY}"
+          
+          # Create symlinks
+          ln -sf clang-18 "${CLANG_SYMLINK}"
+          ln -sf clang-18 "${CLANGPP_BINARY}"
+          
+          # Test the new setup
+          echo "Testing clang setup:"
+          if "${CLANG_BINARY}" --version >/dev/null 2>&1; then
+            echo "SUCCESS: clang-18 wrapper works!"
+            "${CLANG_BINARY}" --version 2>&1 | head -1
+          else
+            echo "ERROR: clang-18 wrapper failed"
+            exit 1
+          fi
+          
+          if "${CLANG_SYMLINK}" --version >/dev/null 2>&1; then
+            echo "SUCCESS: clang symlink works!"
+          else
+            echo "ERROR: clang symlink failed"
+            exit 1
+          fi
+          
+          if "${CLANGPP_BINARY}" --version >/dev/null 2>&1; then
+            echo "SUCCESS: clang++ symlink works!"
+          else
+            echo "ERROR: clang++ symlink failed"
+            exit 1
+          fi
+          
+          # Test wrapper scripts (these should work since they're shell scripts)
+          echo "Testing wrapper scripts:"
+          if "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang" --version >/dev/null 2>&1; then
+            echo "API-specific clang wrapper works"
+          else
+            echo "WARNING: API-specific clang wrapper failed (non-fatal)"
+          fi
+          
+          if "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang++" --version >/dev/null 2>&1; then
+            echo "API-specific clang++ wrapper works"
+          else
+            echo "WARNING: API-specific clang++ wrapper failed (non-fatal)"
+          fi
+          
+          echo "NDK setup completed successfully"
 
       - name: Setup OpenBLAS
         shell: bash
         run: |
           echo "Setting up OpenBLAS for Android ARM64..."
-          OPENBLAS_VERSION="0.3.28-1.5.11"
-          OPENBLAS_JAR="openblas-${OPENBLAS_VERSION}-android-arm64.jar"
+          OPENBLAS_JAR="openblas-0.3.19-1.5.7-android-arm64.jar"
           OPENBLAS_HOME="${GITHUB_WORKSPACE}/openblas_home"
           OPENBLAS_DIR="${OPENBLAS_HOME}/lib/arm64-v8a"
           
@@ -201,13 +308,15 @@ jobs:
           cd "${OPENBLAS_HOME}"
           
           echo "Downloading ${OPENBLAS_JAR}..."
-          wget -q "https://repo1.maven.org/maven2/org/bytedeco/openblas/${OPENBLAS_VERSION}/${OPENBLAS_JAR}"
+          wget -q "https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/${OPENBLAS_JAR}"
           unzip -q "${OPENBLAS_JAR}"
           
+          # Create symlink for library consistency
           if [ -f "${OPENBLAS_DIR}/libopenblas.so" ] && [ ! -f "${OPENBLAS_DIR}/libopenblas.so.0" ]; then
             ln -s "${OPENBLAS_DIR}/libopenblas.so" "${OPENBLAS_DIR}/libopenblas.so.0"
           fi
           
+          # Set environment variables
           echo "OPENBLAS_PATH=${OPENBLAS_DIR}" >> "$GITHUB_ENV"
           echo "OPENBLAS_HOME=${OPENBLAS_HOME}" >> "$GITHUB_ENV"
           
@@ -230,6 +339,7 @@ jobs:
           wget -q "https://github.com/ARM-software/ComputeLibrary/releases/download/${ARMCOMPUTE_VERSION}/${ARMCOMPUTE_PACKAGE}.tar.gz"
           tar -xzf "${ARMCOMPUTE_PACKAGE}.tar.gz"
           
+          # Set environment variables
           ARMCOMPUTE_ROOT="${ARMCOMPUTE_HOME}/${ARMCOMPUTE_PACKAGE}"
           echo "ARMCOMPUTE_ROOT=${ARMCOMPUTE_ROOT}" >> "$GITHUB_ENV"
           echo "ARMCOMPUTE_HOME=${ARMCOMPUTE_HOME}" >> "$GITHUB_ENV"
@@ -242,9 +352,11 @@ jobs:
         run: |
           echo "Configuring Maven build command..."
           
+          # Base configuration
           LIBND4J_CLASSIFIER="android-arm64"
           CMAKE_TOOLCHAIN_FILE="${GITHUB_WORKSPACE}/cmake/android-arm64.cmake"
           
+          # Determine modules to build
           if [ "${{ github.event.inputs.libnd4jUrl }}" != '' ]; then
              MODULES=':nd4j-native,:nd4j-native-preset'
              echo "Using pre-built libnd4j from: ${{ github.event.inputs.libnd4jUrl }}"
@@ -253,6 +365,7 @@ jobs:
              echo "Building libnd4j from source"
           fi
           
+          # Android/ARM64 specific CMake arguments
           CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE} \
             -DSD_ANDROID_BUILD=true \
             -DANDROID_ABI=arm64-v8a \
@@ -262,6 +375,7 @@ jobs:
             -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
             -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY"
           
+          # Base Maven command
           BASE_COMMAND="mvn ${{ matrix.mvn_ext }} \
             -Dlibnd4j.generate.flatc=ON \
             --no-transfer-progress \
@@ -282,6 +396,7 @@ jobs:
             deploy \
             -DskipTests"
           
+          # Add helper-specific extensions
           if [ "${{ matrix.helper }}" == "armcompute" ]; then
              HELPER_FLAGS="-Dlibnd4j.helper=${{ matrix.helper }} \
                -Djavacpp.platform.extension=-${{ matrix.helper }} \
@@ -292,8 +407,10 @@ jobs:
              echo "Building without helper libraries"
           fi
           
+          # Combine command
           FINAL_COMMAND="${BASE_COMMAND} ${HELPER_FLAGS}"
           
+          # Set environment variables
           echo "LIBND4J_CLASSIFIER=${LIBND4J_CLASSIFIER}" >> $GITHUB_ENV
           echo "CMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}" >> $GITHUB_ENV
           echo "MAVEN_COMMAND=${FINAL_COMMAND}" >> $GITHUB_ENV
@@ -309,6 +426,46 @@ jobs:
         if: ${{ github.event.inputs.debug_enabled == 'true' }}
         with:
           limit-access-to-actor: true
+
+      - name: Debug NDK and compilers
+        shell: bash
+        run: |
+          echo "=== NDK and Compiler Debug Information ==="
+          
+          TOOLCHAIN_BIN="${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-aarch64/bin"
+          
+          echo "NDK Path: ${ANDROID_NDK}"
+          echo "Toolchain bin directory: ${TOOLCHAIN_BIN}"
+          echo ""
+          
+          echo "Checking symlinks:"
+          ls -la "${TOOLCHAIN_BIN}/clang" "${TOOLCHAIN_BIN}/clang++" 2>/dev/null || echo "Symlinks not found"
+          echo ""
+          
+          echo "Testing compilers:"
+          echo "clang version:"
+          "${TOOLCHAIN_BIN}/clang" --version 2>&1 | head -1 || echo "clang failed"
+          echo "clang++ version:"
+          "${TOOLCHAIN_BIN}/clang++" --version 2>&1 | head -1 || echo "clang++ failed"
+          echo ""
+          
+          echo "Testing wrapper scripts:"
+          echo "aarch64-linux-android21-clang:"
+          "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang" --version 2>&1 | head -1 || echo "API-specific clang wrapper failed"
+          echo "aarch64-linux-android21-clang++:"
+          "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang++" --version 2>&1 | head -1 || echo "API-specific clang++ wrapper failed"
+          echo ""
+          
+          echo "Environment variables:"
+          echo "ANDROID_NDK: ${ANDROID_NDK}"
+          echo "ANDROID_NDK_ROOT: ${ANDROID_NDK_ROOT}"
+          echo "PATH includes NDK: $(echo $PATH | grep -o android-ndk || echo 'No')"
+          echo ""
+          
+          echo "CMake toolchain file exists: $(test -f "${CMAKE_TOOLCHAIN_FILE}" && echo 'Yes' || echo 'No')"
+          if [ -f "${CMAKE_TOOLCHAIN_FILE}" ]; then
+            echo "Toolchain file path: ${CMAKE_TOOLCHAIN_FILE}"
+          fi
 
       - name: Build with Maven
         shell: bash
@@ -327,9 +484,13 @@ jobs:
         run: |
           echo "Starting Maven build for Android ARM64..."
           
+          # Setup PATH
           export PATH="/opt/protobuf/bin:/opt/cmake/bin:$PATH"
+          
+          # Setup LD_LIBRARY_PATH
           export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${OPENBLAS_PATH}"
           
+          # Print environment info
           echo "=== Build Environment ==="
           echo "  Java version: $(java -version 2>&1 | head -1)"
           echo "  Maven version: $(mvn -version | head -1)"
@@ -345,6 +506,25 @@ jobs:
           echo "  Platform classifier: ${LIBND4J_CLASSIFIER}"
           echo ""
           
+          # Final compiler verification
+          echo "=== Final Compiler Verification ==="
+          TOOLCHAIN_BIN="${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-aarch64/bin"
+          
+          echo "Testing final compiler setup:"
+          "${TOOLCHAIN_BIN}/clang++" --version || {
+            echo "ERROR: clang++ is not working!"
+            echo "Attempting to recreate symlink..."
+            rm -f "${TOOLCHAIN_BIN}/clang++"
+            ln -sf clang-18 "${TOOLCHAIN_BIN}/clang++"
+            echo "Retesting..."
+            "${TOOLCHAIN_BIN}/clang++" --version || {
+              echo "FATAL: Cannot get clang++ working"
+              exit 1
+            }
+          }
+          echo ""
+          
+          # Execute Maven build
           echo "=== Executing Maven Build ==="
           echo "Maven command:"
           echo "${MAVEN_COMMAND}"
@@ -370,13 +550,16 @@ jobs:
         run: |
           echo "Cleaning up temporary files..."
           
+          # Remove swap file
           sudo swapoff /swapfile 2>/dev/null || true
           sudo rm -f /swapfile 2>/dev/null || true
           
+          # Clean up NDK if not cached
           if [ "${{ steps.cache-arm64-ndk.outputs.cache-hit }}" != 'true' ]; then
-            echo "NDK was downloaded and patched fresh, keeping for cache"
+            echo "NDK was downloaded fresh, keeping for cache"
           fi
           
+          # Clean up temporary build files
           rm -rf /tmp/maven-* 2>/dev/null || true
           
           echo "Cleanup completed"
