@@ -5,47 +5,38 @@ on:
         description: 'Build threads for libnd4j. Used to control memory usage of builds.'
         required: true
         default: 2
-
       deployToReleaseStaging:
         description: 'Whether to deploy to release staging or not.'
         required: false
         default: 0
-
       releaseVersion:
         description: 'Release version target'
         required: false
         default: 1.0.0-M3
-
       snapshotVersion:
         description: 'Snapshot version target'
         required: false
         default: 1.0.0-SNAPSHOT
-
       releaseRepoId:
         description: 'Release repository id'
         required: false
-        default:
-
+        default: ''
       serverId:
         description: 'Server id to publish to'
         required: false
-        default: central
-
+        default: 'central'
       mvnFlags:
         description: "Extra maven flags (must escape input yourself if used)"
         required: false
-        default:
-
+        default: ''
       libnd4jUrl:
         description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
         required: false
-        default:
-
+        default: ''
       runsOn:
         description: 'System to run on'
         required: false
         default: ubuntu-22.04-arm
-
       debug_enabled:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
         required: false
@@ -98,8 +89,8 @@ jobs:
           key: ${{ runner.os }}-protobuf-arm-v1
 
       - name: Install protobuf
-        uses: ./.github/actions/install-protobuf-linux
         if: steps.cache-protobuf-arm.outputs.cache-hit != 'true'
+        uses: ./.github/actions/install-protobuf-linux
 
       - name: Cache CMake install
         uses: actions/cache@v4
@@ -109,8 +100,8 @@ jobs:
           key: ${{ runner.os }}-cmake-v1
 
       - name: Install CMake
-        uses: ./.github/actions/install-cmake-linux
         if: steps.cache-cmake.outputs.cache-hit != 'true'
+        uses: ./.github/actions/install-cmake-linux
 
       - name: Set up Java for publishing
         uses: actions/setup-java@v4
@@ -138,29 +129,52 @@ jobs:
           NDK_VERSION="r25c"
           NDK_DIR_NAME="android-ndk-${NDK_VERSION}"
           NDK_PATH="${GITHUB_WORKSPACE}/${NDK_DIR_NAME}"
-          NDK_ZIP_FILE="android-ndk-${NDK_VERSION}-linux.zip"
-          NDK_URL="https://dl.google.com/android/repository/${NDK_ZIP_FILE}"
 
           if [ ! -d "${NDK_PATH}" ]; then
-            echo "Installing dependencies for NDK patching..."
-            sudo apt-get update -y
-            sudo apt-get install -y patchelf zlib1g-dev git wget unzip python3
+            echo "--- NDK cache not found. Building from source as per README. ---"
+            LLVM_TOOLCHAIN_DIR="${GITHUB_WORKSPACE}/llvm-toolchain"
+            AARCH64_NDK_DIR="${GITHUB_WORKSPACE}/aarch64ndk"
+            mkdir -p "${LLVM_TOOLCHAIN_DIR}"
+            mkdir -p "${AARCH64_NDK_DIR}"
 
-            echo "Cloning NDK patcher repository..."
-            git clone https://github.com/snownf/ndk-aarch64-linux.git patcher_repo
-          
-            echo "Downloading official NDK..."
+            echo "Step 0: Preparing build dependencies..."
+            sudo apt-get update -y
+            sudo apt-get install -y clang bison llvm llvm-dev python3 lld ninja-build cmake crossbuild-essential-arm64 git wget unzip repo
+
+            echo "Step 1: Downloading NDK and toolchain source code..."
+            cd "${LLVM_TOOLCHAIN_DIR}"
+            repo init -u https://android.googlesource.com/platform/manifest -b llvm-toolchain --depth=1
+            repo sync -c --no-clone-bundle --no-tags -j8
+
+            cd "${AARCH64_NDK_DIR}"
+            git clone https://github.com/SnowNF/ndk-aarch64-linux.git
+
+            NDK_ZIP_FILE="android-ndk-${NDK_VERSION}-linux.zip"
+            NDK_URL="https://dl.google.com/android/repository/${NDK_ZIP_FILE}"
+            echo "Downloading official NDK for patching..."
             wget -q "${NDK_URL}"
-            unzip -q "${NDK_ZIP_FILE}"
+            unzip -q "${NDK_ZIP_FILE}" -d "${GITHUB_WORKSPACE}"
             rm "${NDK_ZIP_FILE}"
 
-            echo "Applying patches using patch-elf.py..."
-            python3 patcher_repo/patch-elf.py --dir "${NDK_PATH}/toolchains/llvm/prebuilt/linux-x86_64/bin"
+            echo "Step 2: Replacing toolchain source code..."
+            cd "${LLVM_TOOLCHAIN_DIR}/toolchain/llvm_android"
+            mv patches ../patches_backup
+            rm -rf *
+            cp -rf "${AARCH64_NDK_DIR}/ndk-aarch64-linux/"* .
+            mv ../patches_backup patches
 
-            echo "Cleaning up patcher repository..."
-            rm -rf patcher_repo
+            echo "Step 3: Building the toolchain..."
+            cd "${LLVM_TOOLCHAIN_DIR}"
+            python3 toolchain/llvm_android/build.py --no-build windows --skip-tests --single-stage --no-musl
+
+            echo "Step 4: Replacing binaries in downloaded NDK..."
+            cp -fr ${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/clang* ${NDK_PATH}/toolchains/llvm/prebuilt/linux-x86_64/bin/
+            cp -fr ${LLVM_TOOLCHAIN_DIR}/out/stage2/lib/llvm-* ${NDK_PATH}/toolchains/llvm/prebuilt/linux-x86_64/lib/
+            cp -fr ${LLVM_TOOLCHAIN_DIR}/out/stage2/lib/lld* ${NDK_PATH}/toolchains/llvm/prebuilt/linux-x86_64/bin/
+            cp -fr ${LLVM_TOOLCHAIN_DIR}/out/stage2/lib/clang ${NDK_PATH}/toolchains/llvm/prebuilt/linux-x86_64/lib/
+            # Assuming make, yasm, ytasm are not needed for this build as per original workflow
           else
-            echo "Using cached patched NDK at ${NDK_PATH}"
+            echo "--- Using cached patched NDK at ${NDK_PATH} ---"
           fi
 
           if [ ! -d "${NDK_PATH}" ]; then
