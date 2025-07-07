@@ -124,41 +124,42 @@ jobs:
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
           cache: 'maven'
 
-      - name: Cache ARM64 Android NDK
+      - name: Cache Patched Android NDK
         uses: actions/cache@v4
         id: cache-arm64-ndk
         with:
           path: ${{ github.workspace }}/android-ndk-r25c
-          key: android-ndk-r25c-aarch64-${{ runner.os }}-v1
+          key: patched-ndk-r25c-aarch64-${{ runner.os }}-v1
 
-      - name: Setup ARM64 Android NDK
+      - name: Setup ARM64 Android NDK via Patcher
         id: setup-ndk
         shell: bash
         run: |
           NDK_VERSION="r25c"
           NDK_DIR="${GITHUB_WORKSPACE}/android-ndk-${NDK_VERSION}"
-          NDK_ZIP="android-ndk-r25c-aarch64.zip"
-          NDK_URL="https://github.com/snownf/ndk-aarch64-linux/releases/download/android-ndk-r25c/${NDK_ZIP}"
 
           if [ ! -d "${NDK_DIR}" ]; then
-            echo "Downloading ARM64 Android NDK ${NDK_VERSION} from snownf/ndk-aarch64-linux..."
-            # Retry download up to 3 times
-            for attempt in 1 2 3; do
-              echo "Download attempt ${attempt}..."
-              wget -v --timeout=30 --tries=3 "${NDK_URL}" -O "${NDK_ZIP}" && break
-              echo "Download failed. Retrying in 15 seconds..."
-              sleep 15
-            done
+            echo "Cloning NDK patcher repository..."
+            git clone https://github.com/snownf/ndk-aarch64-linux.git
+            cd ndk-aarch64-linux
 
-            if [ ! -f "${NDK_ZIP}" ]; then
-                echo "ERROR: NDK download failed after multiple attempts."
-                exit 1
-            fi
+            echo "Running patcher script to download and patch NDK ${NDK_VERSION}..."
+            # The script will download the official NDK and patch it.
+            ./patch.sh
 
-            unzip -q "${NDK_ZIP}" -d "${GITHUB_WORKSPACE}"
-            rm "${NDK_ZIP}"
+            echo "Moving patched NDK to workspace..."
+            # Move the patched NDK to the expected directory for caching and subsequent steps
+            mv android-ndk-${NDK_VERSION} "${GITHUB_WORKSPACE}/"
+            cd ..
+            rm -rf ndk-aarch64-linux
           else
-            echo "Using cached NDK at ${NDK_DIR}"
+            echo "Using cached patched NDK at ${NDK_DIR}"
+          fi
+
+          # Verify the NDK directory exists
+          if [ ! -d "${NDK_DIR}" ]; then
+            echo "ERROR: Patched NDK directory not found after setup."
+            exit 1
           fi
 
           # Set environment variables
@@ -172,7 +173,8 @@ jobs:
         shell: bash
         run: |
           echo "Setting up OpenBLAS for Android ARM64..."
-          OPENBLAS_JAR="openblas-0.3.19-1.5.7-android-arm64.jar"
+          OPENBLAS_VERSION="0.3.28-1.5.11"
+          OPENBLAS_JAR="openblas-${OPENBLAS_VERSION}-android-arm64.jar"
           OPENBLAS_HOME="${GITHUB_WORKSPACE}/openblas_home"
           OPENBLAS_DIR="${OPENBLAS_HOME}/lib/arm64-v8a"
           
@@ -180,7 +182,7 @@ jobs:
           cd "${OPENBLAS_HOME}"
           
           echo "Downloading ${OPENBLAS_JAR}..."
-          wget -q "https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/${OPENBLAS_JAR}"
+          wget -q "https://repo1.maven.org/maven2/org/bytedeco/openblas/${OPENBLAS_VERSION}/${OPENBLAS_JAR}"
           unzip -q "${OPENBLAS_JAR}"
           
           # Create symlink for library consistency
