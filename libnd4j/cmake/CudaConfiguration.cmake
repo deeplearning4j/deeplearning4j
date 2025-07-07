@@ -369,6 +369,15 @@ function(configure_cuda_linking main_target_name)
         message(STATUS "✅ Added CUDA include directories to ${main_target_name}: ${CUDA_INCLUDE_DIRS}")
     endif()
 
+    # Apply GNU-specific CUDA compiler flags for duplicate instantiation handling
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        message(STATUS "🔧 Applying GNU-specific CUDA flags for duplicate instantiation handling")
+        target_compile_options(${main_target_name} PRIVATE
+                $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-fno-implicit-templates>
+                $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wno-duplicate-decl-specifier>
+        )
+    endif()
+
     # Modern CMake uses imported targets which handle all necessary dependencies.
     # Linking against CUDA::toolkit automatically adds include directories,
     # runtime libraries, and all other required flags.
@@ -550,6 +559,8 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fPIC --device-debug -lineinfo -G")
             else()
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fPIC -Xcompiler=-fpermissive")
+                # Add flags to handle duplicate instantiations for GNU compiler
+                set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fno-implicit-templates -Xcompiler=-Wno-duplicate-decl-specifier")
             endif()
         endif()
     endif()
