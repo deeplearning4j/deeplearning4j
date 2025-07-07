@@ -254,57 +254,93 @@ jobs:
           ls -la "${TOOLCHAIN_BIN}/clang" "${TOOLCHAIN_BIN}/clang++" 2>/dev/null || echo "Failed to verify symlinks"
           echo ""
           
-          # === DIAGNOSTIC SECTION ===
-          echo "=== Debugging clang-18 execution failure ==="
+          # === FIX THE ANDROID NDK CLANG ISSUE ===
+          echo "=== Fixing Android NDK clang for Linux execution ==="
           
-          echo "1. Check if file exists and permissions:"
-          ls -la "${CLANG_BINARY}"
-          echo ""
+          # The issue: clang-18 expects Android's linker (/system/bin/linker64) but we're on Linux
+          # Solution: Install Android bionic libc compatibility or patch the interpreter
           
-          echo "2. Check file type:"
-          file "${CLANG_BINARY}"
-          echo ""
+          echo "Installing bionic compatibility libraries..."
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            libc6-dev \
+            libc6-dev-arm64-cross \
+            gcc-aarch64-linux-gnu \
+            binutils-aarch64-linux-gnu \
+            patchelf
           
-          echo "3. Check what libraries it needs:"
-          ldd "${CLANG_BINARY}" 2>&1 | head -20
-          echo ""
+          echo "Patching clang-18 interpreter to use Linux linker..."
           
-          echo "4. Check system libraries available:"
-          ls -la /lib/aarch64-linux-gnu/ | grep -E "(libc|libm|libdl|libpthread)" | head -10
-          echo ""
+          # Create a backup
+          cp "${CLANG_BINARY}" "${CLANG_BINARY}.backup"
           
-          echo "5. Try strace to see what fails:"
-          timeout 5s strace -e trace=openat,execve "${CLANG_BINARY}" --version 2>&1 | head -20 || echo "strace timeout or failed"
-          echo ""
+          # Use patchelf to change the interpreter from Android to Linux
+          echo "Using patchelf to fix interpreter..."
+          if patchelf --set-interpreter /lib/ld-linux-aarch64.so.1 "${CLANG_BINARY}"; then
+            echo "patchelf succeeded"
+          else
+            echo "patchelf failed, trying manual approach..."
+          fi
           
-          echo "6. Check interpreter:"
-          readelf -l "${CLANG_BINARY}" | grep interpreter || echo "No interpreter found"
-          echo ""
-          
-          echo "7. Try running with verbose error:"
-          "${CLANG_BINARY}" --version 2>&1 || echo "Exit code: $?"
-          echo ""
-          
-          # Test that the actual binary works first
-          echo "Testing clang-18 directly:"
+          # Test if the patched binary works
+          echo "Testing patched clang-18:"
           if "${CLANG_BINARY}" --version >/dev/null 2>&1; then
-            echo "clang-18 works correctly"
+            echo "SUCCESS: Patched clang-18 works!"
             "${CLANG_BINARY}" --version 2>&1 | head -1
           else
-            echo "ERROR: clang-18 failed to execute"
-            echo "=== ADDITIONAL DIAGNOSTICS ==="
-            echo "System info:"
-            uname -a
-            echo ""
-            echo "Available system interpreters:"
-            ls -la /lib64/ld-linux-aarch64.so.* 2>/dev/null || echo "No ld-linux-aarch64 found"
-            ls -la /lib/ld-linux-aarch64.so.* 2>/dev/null || echo "No ld-linux-aarch64 found in /lib"
-            echo ""
-            echo "Trying with explicit interpreter:"
-            /lib/ld-linux-aarch64.so.1 "${CLANG_BINARY}" --version 2>&1 | head -5 || echo "Explicit interpreter failed"
-            exit 1
+            echo "Patching failed, trying alternative approach..."
+          
+            # Restore backup
+            cp "${CLANG_BINARY}.backup" "${CLANG_BINARY}"
+          
+            # Alternative: Create a wrapper script
+            echo "Creating wrapper script for clang-18..."
+          
+            mv "${CLANG_BINARY}" "${CLANG_BINARY}.android"
+          
+            cat > "${CLANG_BINARY}" << 'EOF'
+          #!/bin/bash
+          # Wrapper script to run Android clang on Linux
+          # Set up Android-compatible environment
+          export LD_LIBRARY_PATH="/usr/aarch64-linux-gnu/lib:${LD_LIBRARY_PATH}"
+          export ANDROID_ROOT="/system"
+          export ANDROID_DATA="/data"
+
+          # Try to run with Linux interpreter
+          exec /lib/ld-linux-aarch64.so.1 "${0}.android" "$@"
+          EOF
+          
+            chmod +x "${CLANG_BINARY}"
+          
+            echo "Testing wrapper script:"
+            if "${CLANG_BINARY}" --version >/dev/null 2>&1; then
+              echo "SUCCESS: Wrapper script works!"
+              "${CLANG_BINARY}" --version 2>&1 | head -1
+            else
+              echo "Wrapper script failed too. Trying final fallback..."
+          
+              # Final fallback: Install android-tools-adb which includes some android libs
+              sudo apt-get install -y android-tools-adb
+          
+              # Create minimal Android environment
+              sudo mkdir -p /system/bin /system/lib64 /data
+              sudo ln -sf /lib/ld-linux-aarch64.so.1 /system/bin/linker64 2>/dev/null || true
+          
+              # Restore original binary and test
+              cp "${CLANG_BINARY}.android" "${CLANG_BINARY}"
+          
+              if "${CLANG_BINARY}" --version >/dev/null 2>&1; then
+                echo "SUCCESS: Android environment simulation works!"
+                "${CLANG_BINARY}" --version 2>&1 | head -1
+              else
+                echo "FATAL: All approaches failed"
+                echo "Final diagnostics:"
+                file "${CLANG_BINARY}"
+                ldd "${CLANG_BINARY}" 2>&1 | head -10
+                exit 1
+              fi
+            fi
           fi
-          echo ""
           
           # Test that the symlinks work
           echo "Testing symlinked compilers:"
