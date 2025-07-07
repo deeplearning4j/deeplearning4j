@@ -370,7 +370,8 @@ function(configure_cuda_linking main_target_name)
     endif()
 
     # Apply GNU-specific CUDA compiler flags for duplicate instantiation handling
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    # ONLY for non-Windows builds
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT WIN32)
         message(STATUS "🔧 Applying GNU-specific CUDA flags for duplicate instantiation handling")
         target_compile_options(${main_target_name} PRIVATE
                 $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-fno-implicit-templates>
@@ -493,22 +494,31 @@ function(configure_windows_cuda_build)
         return()
     endif()
 
-    message(STATUS "Configuring Windows CUDA build with proper response files...")
+    message(STATUS "Configuring Windows CUDA build with clean flags...")
 
-    # Disable response file support to prevent /FS flag issues
+    # Completely disable response files to prevent command line issues
     set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS OFF PARENT_SCOPE)
     set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES OFF PARENT_SCOPE)
     set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LIBRARIES OFF PARENT_SCOPE)
     set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LINK_OBJECTS OFF PARENT_SCOPE)
-    set(CMAKE_CUDA_COMPILE_OPTIONS_USE_RESPONSE_FILE OFF PARENT_SCOPE)
 
-    # Clean MSVC runtime library settings without /FS
+    # Remove problematic dependency generation that causes NVCC failures
+    set(CMAKE_CUDA_DEPFILE_FORMAT "" PARENT_SCOPE)
+    set(CMAKE_CUDA_DEPENDS_USE_COMPILER OFF PARENT_SCOPE)
+
+    # Override the compile command to remove problematic flags
+    set(CMAKE_CUDA_COMPILE_OBJECT "<CMAKE_CUDA_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -o <OBJECT> -c <SOURCE>" PARENT_SCOPE)
+
+    # Clean MSVC runtime library settings
     set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreaded "" PARENT_SCOPE)
     set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL "" PARENT_SCOPE)
     set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebug "" PARENT_SCOPE)
     set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebugDLL "" PARENT_SCOPE)
 
-    message(STATUS "Windows CUDA: Disabled response files and cleaned runtime flags")
+    # Force clean CXX flags to prevent contamination
+    set(CMAKE_CXX_FLAGS "" PARENT_SCOPE)
+
+    message(STATUS "Windows CUDA: Cleaned all problematic flags and disabled response files")
 endfunction()
 
 function(configure_cuda_architecture_flags COMPUTE)
@@ -547,10 +557,13 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
         set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER} PARENT_SCOPE)
         set(LOCAL_CUDA_FLAGS "-maxrregcount=128")
 
-        # Clean Windows-specific flags with correct nvcc syntax
+        # Only Windows/MSVC specific flags - NO GCC-style flags whatsoever
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/bigobj -Xcompiler=/EHsc")
 
-        message(STATUS "CUDA Windows flags configured without problematic /FS flags")
+        # Force clean host compiler flags
+        set(CMAKE_CXX_FLAGS "" PARENT_SCOPE)
+
+        message(STATUS "CUDA Windows flags configured - completely clean of GCC flags")
     else()
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -maxrregcount=128")
 
@@ -583,13 +596,19 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR}")
     endif()
 
-    # Clean up any empty or problematic flags
+    # Clean up any problematic flags for Windows
     if(WIN32)
+        # Remove any GCC-style flags that might have been added
+        string(REGEX REPLACE "-MD[^a-zA-Z]" "" LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}")
+        string(REGEX REPLACE "-MT[^a-zA-Z]" "" LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}")
+        string(REGEX REPLACE "-MF[^a-zA-Z]" "" LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}")
+        string(REGEX REPLACE "-x cu" "" LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}")
+        string(REGEX REPLACE "-fpermissive" "" LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}")
+        string(REGEX REPLACE "-Wno-error" "" LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}")
+        string(REGEX REPLACE "/FS[ ]*" "" LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}")
+        string(REGEX REPLACE "-Xcompiler=-Fd[^,]*,?" "" LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}")
         string(REGEX REPLACE "-Xcompiler=," "-Xcompiler=" LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}")
         string(REGEX REPLACE "-Xcompiler=$" "" LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}")
-        string(REGEX REPLACE "/FS[ ]*" "" LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}")
-        string(REGEX REPLACE "-Xcompiler=-Fd[^,]*," "-Xcompiler=" LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}")
-        string(REGEX REPLACE "-Xcompiler=-Fd[^,]*$" "" LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}")
     endif()
 
     string(REGEX REPLACE "  +" " " LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}")
