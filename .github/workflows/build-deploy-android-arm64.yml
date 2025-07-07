@@ -137,18 +137,30 @@ jobs:
         run: |
           NDK_VERSION="r25c"
           NDK_DIR="${GITHUB_WORKSPACE}/android-ndk-${NDK_VERSION}"
-          
+          NDK_ZIP="android-ndk-r25c-aarch64.zip"
+          NDK_URL="https://github.com/snownf/ndk-aarch64-linux/releases/download/android-ndk-r25c/${NDK_ZIP}"
+
           if [ ! -d "${NDK_DIR}" ]; then
             echo "Downloading ARM64 Android NDK ${NDK_VERSION} from snownf/ndk-aarch64-linux..."
-            NDK_URL="https://github.com/snownf/ndk-aarch64-linux/releases/download/android-ndk-r25c/android-ndk-r25c-aarch64.zip"
-          
-            wget -q "${NDK_URL}" -O ndk.zip
-            unzip -q ndk.zip -d "${GITHUB_WORKSPACE}"
-            rm ndk.zip
+            # Retry download up to 3 times
+            for attempt in 1 2 3; do
+              echo "Download attempt ${attempt}..."
+              wget -v --timeout=30 --tries=3 "${NDK_URL}" -O "${NDK_ZIP}" && break
+              echo "Download failed. Retrying in 15 seconds..."
+              sleep 15
+            done
+
+            if [ ! -f "${NDK_ZIP}" ]; then
+                echo "ERROR: NDK download failed after multiple attempts."
+                exit 1
+            fi
+
+            unzip -q "${NDK_ZIP}" -d "${GITHUB_WORKSPACE}"
+            rm "${NDK_ZIP}"
           else
             echo "Using cached NDK at ${NDK_DIR}"
           fi
-          
+
           # Set environment variables
           echo "ndk-path=${NDK_DIR}" >> $GITHUB_OUTPUT
           echo "${NDK_DIR}" >> $GITHUB_PATH
