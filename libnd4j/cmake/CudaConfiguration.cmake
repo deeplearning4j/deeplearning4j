@@ -538,8 +538,8 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
         set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER} PARENT_SCOPE)
         set(LOCAL_CUDA_FLAGS "-maxrregcount=128")
 
-        # Clean Windows-specific flags without /FS
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/bigobj,/EHsc")
+        # Clean Windows-specific flags with correct nvcc syntax
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/bigobj -Xcompiler=/EHsc")
 
         message(STATUS "CUDA Windows flags configured without problematic /FS flags")
     else()

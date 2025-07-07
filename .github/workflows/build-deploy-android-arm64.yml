@@ -140,50 +140,99 @@ jobs:
           
           if [ ! -d "${NDK_DIR}" ]; then
             echo "Downloading ARM64 Android NDK ${NDK_VERSION}..."
-            wget -q "https://github.com/lzhiyong/termux-ndk/releases/download/android-ndk/android-ndk-r27b-aarch64.zip" -O ndk.zip
-            unzip -q ndk.zip -d "${GITHUB_WORKSPACE}"
+            NDK_URL="https://github.com/lzhiyong/termux-ndk/releases/download/android-ndk/android-ndk-r27b-aarch64.zip"
+          
+            # Download with retries and better error handling
+            for attempt in 1 2 3; do
+              echo "Download attempt ${attempt}/3..."
+              if wget -q --timeout=30 --tries=3 "${NDK_URL}" -O ndk.zip; then
+                echo "Download successful"
+                break
+              else
+                echo "Download attempt ${attempt} failed"
+                if [ ${attempt} -eq 3 ]; then
+                  echo "ERROR: Failed to download NDK after 3 attempts"
+                  exit 1
+                fi
+                sleep 10
+              fi
+            done
+          
+            # Verify download
+            if [ ! -f "ndk.zip" ] || [ ! -s "ndk.zip" ]; then
+              echo "ERROR: Downloaded NDK file is missing or empty"
+              exit 1
+            fi
+          
+            echo "Extracting NDK..."
+            if ! unzip -q ndk.zip -d "${GITHUB_WORKSPACE}"; then
+              echo "ERROR: Failed to extract NDK"
+              exit 1
+            fi
             rm ndk.zip
+          
+            # Verify extraction
+            if [ ! -d "${NDK_DIR}" ]; then
+              echo "ERROR: NDK directory not found after extraction"
+              ls -la "${GITHUB_WORKSPACE}/" | grep -i ndk || echo "No NDK directories found"
+              exit 1
+            fi
+          else
+            echo "Using cached NDK at ${NDK_DIR}"
           fi
           
+          # Set environment variables
           echo "ndk-path=${NDK_DIR}" >> $GITHUB_OUTPUT
           echo "${NDK_DIR}" >> $GITHUB_PATH
           echo "ANDROID_NDK_ROOT=${NDK_DIR}" >> $GITHUB_ENV
           echo "ANDROID_NDK=${NDK_DIR}" >> $GITHUB_ENV
           
-          # Create platform directories for compatibility
-          mkdir -p $NDK_DIR/platforms/android-21/arch-arm64/usr/lib
-          mkdir -p $NDK_DIR/platforms/android-21/arch-arm64/usr/include
-
-          # Copy the sysroot files from ARM64 NDK
-          cp -r $NDK_DIR/toolchains/llvm/prebuilt/linux-aarch64/sysroot/usr/lib/aarch64-linux-android/21/* $NDK_DIR/platforms/android-21/arch-arm64/usr/lib/ 2>/dev/null || true
-          cp -r $NDK_DIR/toolchains/llvm/prebuilt/linux-aarch64/sysroot/usr/include/* $NDK_DIR/platforms/android-21/arch-arm64/usr/include/ 2>/dev/null || true
-
-          # Set up the toolchain binary directory
+          # Verify NDK structure
           TOOLCHAIN_BIN="${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64/bin"
+          if [ ! -d "${TOOLCHAIN_BIN}" ]; then
+            echo "ERROR: Toolchain bin directory not found at ${TOOLCHAIN_BIN}"
+            echo "Available directories in NDK:"
+            find "${NDK_DIR}" -type d -name "bin" 2>/dev/null || echo "No bin directories found"
+            exit 1
+          fi
+          
+          # Create platform directories for compatibility
+          mkdir -p "${NDK_DIR}/platforms/android-21/arch-arm64/usr/lib"
+          mkdir -p "${NDK_DIR}/platforms/android-21/arch-arm64/usr/include"
+
+          # Copy the sysroot files from ARM64 NDK (suppress errors for missing files)
+          SYSROOT_LIB="${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64/sysroot/usr/lib/aarch64-linux-android/21"
+          SYSROOT_INCLUDE="${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64/sysroot/usr/include"
+          
+          if [ -d "${SYSROOT_LIB}" ]; then
+            cp -r "${SYSROOT_LIB}/"* "${NDK_DIR}/platforms/android-21/arch-arm64/usr/lib/" 2>/dev/null || true
+          fi
+          
+          if [ -d "${SYSROOT_INCLUDE}" ]; then
+            cp -r "${SYSROOT_INCLUDE}/"* "${NDK_DIR}/platforms/android-21/arch-arm64/usr/include/" 2>/dev/null || true
+          fi
           
           echo "Inspecting NDK structure:"
-          echo "Contents of toolchain bin directory:"
-          ls -la "${TOOLCHAIN_BIN}/" | head -20
+          echo "Contents of toolchain bin directory (first 15 files):"
+          ls -la "${TOOLCHAIN_BIN}/" 2>/dev/null | head -15 || echo "Failed to list toolchain bin directory"
           echo ""
+          
           echo "Looking for clang binaries:"
-          ls -la "${TOOLCHAIN_BIN}/"*clang* 2>/dev/null || echo "No clang binaries found with ls"
-          find "${TOOLCHAIN_BIN}/" -name "*clang*" -type f 2>/dev/null || echo "No clang binaries found with find"
+          find "${TOOLCHAIN_BIN}/" -name "*clang*" -type f 2>/dev/null | head -5 || echo "No clang binaries found"
           echo ""
           
           # Check if clang-18 exists and is executable
-          if [ -f "${TOOLCHAIN_BIN}/clang-18" ]; then
-            echo "Found clang-18, checking if executable:"
-            ls -la "${TOOLCHAIN_BIN}/clang-18"
-            if [ -x "${TOOLCHAIN_BIN}/clang-18" ]; then
-              echo "clang-18 is executable"
-            else
+          CLANG_BINARY="${TOOLCHAIN_BIN}/clang-18"
+          if [ -f "${CLANG_BINARY}" ]; then
+            echo "Found clang-18 at ${CLANG_BINARY}"
+            if [ ! -x "${CLANG_BINARY}" ]; then
               echo "clang-18 is not executable, fixing permissions..."
-              chmod +x "${TOOLCHAIN_BIN}/clang-18"
+              chmod +x "${CLANG_BINARY}"
             fi
           else
-            echo "ERROR: clang-18 not found!"
-            echo "Available files in bin directory:"
-            ls -la "${TOOLCHAIN_BIN}/"
+            echo "ERROR: clang-18 not found at ${CLANG_BINARY}"
+            echo "Available clang binaries:"
+            find "${TOOLCHAIN_BIN}/" -name "*clang*" -type f 2>/dev/null || echo "No clang binaries found"
             exit 1
           fi
           
@@ -193,30 +242,61 @@ jobs:
           rm -f "${TOOLCHAIN_BIN}/clang++" "${TOOLCHAIN_BIN}/clang"
           
           # Create proper symlinks to the actual clang binary
-          ln -sf clang-18 "${TOOLCHAIN_BIN}/clang"
-          ln -sf clang-18 "${TOOLCHAIN_BIN}/clang++"
-          echo "Created clang and clang++ symlinks to clang-18"
+          if ln -sf clang-18 "${TOOLCHAIN_BIN}/clang" && ln -sf clang-18 "${TOOLCHAIN_BIN}/clang++"; then
+            echo "Successfully created clang and clang++ symlinks to clang-18"
+          else
+            echo "ERROR: Failed to create symlinks"
+            exit 1
+          fi
           
           # Verify symlinks
           echo "Verifying symlinks:"
-          ls -la "${TOOLCHAIN_BIN}/clang" "${TOOLCHAIN_BIN}/clang++"
+          ls -la "${TOOLCHAIN_BIN}/clang" "${TOOLCHAIN_BIN}/clang++" 2>/dev/null || echo "Failed to verify symlinks"
           echo ""
           
           # Test that the actual binary works first
           echo "Testing clang-18 directly:"
-          "${TOOLCHAIN_BIN}/clang-18" --version 2>&1 | head -1 || echo "clang-18 failed to execute"
+          if "${CLANG_BINARY}" --version >/dev/null 2>&1; then
+            echo "clang-18 works correctly"
+            "${CLANG_BINARY}" --version 2>&1 | head -1
+          else
+            echo "ERROR: clang-18 failed to execute"
+            exit 1
+          fi
           echo ""
           
           # Test that the symlinks work
           echo "Testing symlinked compilers:"
-          "${TOOLCHAIN_BIN}/clang" --version 2>&1 | head -1 || echo "clang symlink failed"
-          "${TOOLCHAIN_BIN}/clang++" --version 2>&1 | head -1 || echo "clang++ symlink failed"
+          if "${TOOLCHAIN_BIN}/clang" --version >/dev/null 2>&1; then
+            echo "clang symlink works correctly"
+          else
+            echo "ERROR: clang symlink failed"
+            exit 1
+          fi
+          
+          if "${TOOLCHAIN_BIN}/clang++" --version >/dev/null 2>&1; then
+            echo "clang++ symlink works correctly"
+          else
+            echo "ERROR: clang++ symlink failed"
+            exit 1
+          fi
           echo ""
           
-          # Test wrapper scripts
+          # Test wrapper scripts (non-fatal)
           echo "Testing wrapper scripts:"
-          "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang" --version 2>&1 | head -1 || echo "WARNING: API-specific clang wrapper failed"
-          "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang++" --version 2>&1 | head -1 || echo "WARNING: API-specific clang++ wrapper failed"
+          if "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang" --version >/dev/null 2>&1; then
+            echo "API-specific clang wrapper works"
+          else
+            echo "WARNING: API-specific clang wrapper failed (non-fatal)"
+          fi
+          
+          if "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang++" --version >/dev/null 2>&1; then
+            echo "API-specific clang++ wrapper works"
+          else
+            echo "WARNING: API-specific clang++ wrapper failed (non-fatal)"
+          fi
+          
+          echo "NDK setup completed successfully"
 
       - name: Setup OpenBLAS
         shell: bash

@@ -8,13 +8,13 @@ cmake_minimum_required(VERSION 3.15)
 if(WIN32 AND SD_CUDA)
     # Disable automatic /FS flag generation for MSVC
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
-    
+
     # Prevent CMAKE from adding /FS automatically
     set(CMAKE_CXX_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreaded "")
     set(CMAKE_CXX_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL "")
     set(CMAKE_CXX_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebug "")
     set(CMAKE_CXX_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebugDLL "")
-    
+
     # Disable response files that can cause /FS conflicts
     set(CMAKE_NINJA_FORCE_RESPONSE_FILE OFF)
 endif()
@@ -33,24 +33,20 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 if(WIN32)
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
     set(CMAKE_VERBOSE_MAKEFILE OFF)
-    
+
     # Apply additional CUDA fixes after project() but before any targets
     if(SD_CUDA)
-        # Override CUDA compile object rule to exclude /FS
-        set(CMAKE_CUDA_COMPILE_OBJECT
-            "<CMAKE_CUDA_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -x cu -c <SOURCE> -o <OBJECT> -Xcompiler=/bigobj,/EHsc")
-        
         # Disable CUDA response files
         set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS OFF)
         set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES OFF)
         set(CMAKE_CUDA_COMPILE_OPTIONS_USE_RESPONSE_FILE OFF)
-        
+
         # Clean CUDA runtime library options
         set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreaded "")
         set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL "")
         set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebug "")
         set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebugDLL "")
-        
+
         message(STATUS "Applied Windows CUDA /FS flag fixes")
     endif()
 endif()
@@ -87,8 +83,6 @@ endif()
 
 # =============================================================================
 # 2. INCLUDE ALL MODULAR DEFINITION FILES
-# This makes all functions available in the global scope.
-# The order is based on your README.
 # =============================================================================
 
 # Utility and Option modules first
@@ -136,9 +130,6 @@ message(STATUS "==============================")
 # =============================================================================
 # 5. EXECUTE THE BUILD
 # =============================================================================
-# By including this file last, we execute the entire build process in the
-# top-level scope, perfectly replicating the flow of the original monolithic file
-# and avoiding all variable scoping issues.
 include(cmake/MainBuildFlow.cmake)
 
 if(SD_CUDA)
@@ -157,7 +148,7 @@ if(WIN32 AND SD_CUDA)
     function(apply_cuda_target_fixes)
         # Get all targets in the current directory
         get_property(all_targets DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)
-        
+
         foreach(target ${all_targets})
             if(TARGET ${target})
                 get_target_property(target_type ${target} TYPE)
@@ -168,19 +159,19 @@ if(WIN32 AND SD_CUDA)
                         list(FILTER compile_options EXCLUDE REGEX "/FS")
                         set_target_properties(${target} PROPERTIES COMPILE_OPTIONS "${compile_options}")
                     endif()
-                    
+
                     # Set CUDA-specific properties
                     set_target_properties(${target} PROPERTIES
-                        CUDA_RESOLVE_DEVICE_SYMBOLS ON
-                        CUDA_SEPARABLE_COMPILATION ON
+                            CUDA_RESOLVE_DEVICE_SYMBOLS ON
+                            CUDA_SEPARABLE_COMPILATION ON
                     )
-                    
+
                     message(STATUS "Applied CUDA fixes to target: ${target}")
                 endif()
             endif()
         endforeach()
     endfunction()
-    
+
     # Apply the fixes
     apply_cuda_target_fixes()
 endif()
