@@ -254,6 +254,37 @@ jobs:
           ls -la "${TOOLCHAIN_BIN}/clang" "${TOOLCHAIN_BIN}/clang++" 2>/dev/null || echo "Failed to verify symlinks"
           echo ""
           
+          # === DIAGNOSTIC SECTION ===
+          echo "=== Debugging clang-18 execution failure ==="
+          
+          echo "1. Check if file exists and permissions:"
+          ls -la "${CLANG_BINARY}"
+          echo ""
+          
+          echo "2. Check file type:"
+          file "${CLANG_BINARY}"
+          echo ""
+          
+          echo "3. Check what libraries it needs:"
+          ldd "${CLANG_BINARY}" 2>&1 | head -20
+          echo ""
+          
+          echo "4. Check system libraries available:"
+          ls -la /lib/aarch64-linux-gnu/ | grep -E "(libc|libm|libdl|libpthread)" | head -10
+          echo ""
+          
+          echo "5. Try strace to see what fails:"
+          timeout 5s strace -e trace=openat,execve "${CLANG_BINARY}" --version 2>&1 | head -20 || echo "strace timeout or failed"
+          echo ""
+          
+          echo "6. Check interpreter:"
+          readelf -l "${CLANG_BINARY}" | grep interpreter || echo "No interpreter found"
+          echo ""
+          
+          echo "7. Try running with verbose error:"
+          "${CLANG_BINARY}" --version 2>&1 || echo "Exit code: $?"
+          echo ""
+          
           # Test that the actual binary works first
           echo "Testing clang-18 directly:"
           if "${CLANG_BINARY}" --version >/dev/null 2>&1; then
@@ -261,6 +292,16 @@ jobs:
             "${CLANG_BINARY}" --version 2>&1 | head -1
           else
             echo "ERROR: clang-18 failed to execute"
+            echo "=== ADDITIONAL DIAGNOSTICS ==="
+            echo "System info:"
+            uname -a
+            echo ""
+            echo "Available system interpreters:"
+            ls -la /lib64/ld-linux-aarch64.so.* 2>/dev/null || echo "No ld-linux-aarch64 found"
+            ls -la /lib/ld-linux-aarch64.so.* 2>/dev/null || echo "No ld-linux-aarch64 found in /lib"
+            echo ""
+            echo "Trying with explicit interpreter:"
+            /lib/ld-linux-aarch64.so.1 "${CLANG_BINARY}" --version 2>&1 | head -5 || echo "Explicit interpreter failed"
             exit 1
           fi
           echo ""
