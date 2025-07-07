@@ -128,55 +128,23 @@ jobs:
         uses: actions/cache@v4
         id: cache-arm64-ndk
         with:
-          path: ${{ github.workspace }}/android-ndk-r27b
-          key: android-ndk-r27b-aarch64-${{ runner.os }}-v4
+          path: ${{ github.workspace }}/android-ndk-r25c
+          key: android-ndk-r25c-aarch64-${{ runner.os }}-v1
 
       - name: Setup ARM64 Android NDK
         id: setup-ndk
         shell: bash
         run: |
-          NDK_VERSION="r27b"
+          NDK_VERSION="r25c"
           NDK_DIR="${GITHUB_WORKSPACE}/android-ndk-${NDK_VERSION}"
           
           if [ ! -d "${NDK_DIR}" ]; then
-            echo "Downloading ARM64 Android NDK ${NDK_VERSION}..."
-            NDK_URL="https://github.com/lzhiyong/termux-ndk/releases/download/android-ndk/android-ndk-r27b-aarch64.zip"
+            echo "Downloading ARM64 Android NDK ${NDK_VERSION} from snownf/ndk-aarch64-linux..."
+            NDK_URL="https://github.com/snownf/ndk-aarch64-linux/releases/download/android-ndk-r25c/android-ndk-r25c-aarch64.zip"
           
-            # Download with retries and better error handling
-            for attempt in 1 2 3; do
-              echo "Download attempt ${attempt}/3..."
-              if wget -q --timeout=30 --tries=3 "${NDK_URL}" -O ndk.zip; then
-                echo "Download successful"
-                break
-              else
-                echo "Download attempt ${attempt} failed"
-                if [ ${attempt} -eq 3 ]; then
-                  echo "ERROR: Failed to download NDK after 3 attempts"
-                  exit 1
-                fi
-                sleep 10
-              fi
-            done
-          
-            # Verify download
-            if [ ! -f "ndk.zip" ] || [ ! -s "ndk.zip" ]; then
-              echo "ERROR: Downloaded NDK file is missing or empty"
-              exit 1
-            fi
-          
-            echo "Extracting NDK..."
-            if ! unzip -q ndk.zip -d "${GITHUB_WORKSPACE}"; then
-              echo "ERROR: Failed to extract NDK"
-              exit 1
-            fi
+            wget -q "${NDK_URL}" -O ndk.zip
+            unzip -q ndk.zip -d "${GITHUB_WORKSPACE}"
             rm ndk.zip
-          
-            # Verify extraction
-            if [ ! -d "${NDK_DIR}" ]; then
-              echo "ERROR: NDK directory not found after extraction"
-              ls -la "${GITHUB_WORKSPACE}/" | grep -i ndk || echo "No NDK directories found"
-              exit 1
-            fi
           else
             echo "Using cached NDK at ${NDK_DIR}"
           fi
@@ -186,193 +154,6 @@ jobs:
           echo "${NDK_DIR}" >> $GITHUB_PATH
           echo "ANDROID_NDK_ROOT=${NDK_DIR}" >> $GITHUB_ENV
           echo "ANDROID_NDK=${NDK_DIR}" >> $GITHUB_ENV
-          
-          # Verify NDK structure
-          TOOLCHAIN_BIN="${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64/bin"
-          if [ ! -d "${TOOLCHAIN_BIN}" ]; then
-            echo "ERROR: Toolchain bin directory not found at ${TOOLCHAIN_BIN}"
-            echo "Available directories in NDK:"
-            find "${NDK_DIR}" -type d -name "bin" 2>/dev/null || echo "No bin directories found"
-            exit 1
-          fi
-          
-          # Create platform directories for compatibility
-          mkdir -p "${NDK_DIR}/platforms/android-21/arch-arm64/usr/lib"
-          mkdir -p "${NDK_DIR}/platforms/android-21/arch-arm64/usr/include"
-
-          # Copy the sysroot files from ARM64 NDK (suppress errors for missing files)
-          SYSROOT_LIB="${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64/sysroot/usr/lib/aarch64-linux-android/21"
-          SYSROOT_INCLUDE="${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64/sysroot/usr/include"
-          
-          if [ -d "${SYSROOT_LIB}" ]; then
-            cp -r "${SYSROOT_LIB}/"* "${NDK_DIR}/platforms/android-21/arch-arm64/usr/lib/" 2>/dev/null || true
-          fi
-          
-          if [ -d "${SYSROOT_INCLUDE}" ]; then
-            cp -r "${SYSROOT_INCLUDE}/"* "${NDK_DIR}/platforms/android-21/arch-arm64/usr/include/" 2>/dev/null || true
-          fi
-          
-          echo "Inspecting NDK structure:"
-          echo "Contents of toolchain bin directory (first 15 files):"
-          ls -la "${TOOLCHAIN_BIN}/" 2>/dev/null | head -15 || echo "Failed to list toolchain bin directory"
-          echo ""
-          
-          echo "Looking for clang binaries:"
-          find "${TOOLCHAIN_BIN}/" -name "*clang*" -type f 2>/dev/null | head -5 || echo "No clang binaries found"
-          echo ""
-          
-          # Check if clang-18 exists and is executable
-          CLANG_BINARY="${TOOLCHAIN_BIN}/clang-18"
-          if [ -f "${CLANG_BINARY}" ]; then
-            echo "Found clang-18 at ${CLANG_BINARY}"
-            if [ ! -x "${CLANG_BINARY}" ]; then
-              echo "clang-18 is not executable, fixing permissions..."
-              chmod +x "${CLANG_BINARY}"
-            fi
-          else
-            echo "ERROR: clang-18 not found at ${CLANG_BINARY}"
-            echo "Available clang binaries:"
-            find "${TOOLCHAIN_BIN}/" -name "*clang*" -type f 2>/dev/null || echo "No clang binaries found"
-            exit 1
-          fi
-          
-          echo "Setting up clang/clang++ symlinks..."
-          
-          # Remove any existing problematic symlinks
-          rm -f "${TOOLCHAIN_BIN}/clang++" "${TOOLCHAIN_BIN}/clang"
-          
-          # Create proper symlinks to the actual clang binary
-          if ln -sf clang-18 "${TOOLCHAIN_BIN}/clang" && ln -sf clang-18 "${TOOLCHAIN_BIN}/clang++"; then
-            echo "Successfully created clang and clang++ symlinks to clang-18"
-          else
-            echo "ERROR: Failed to create symlinks"
-            exit 1
-          fi
-          
-          # Verify symlinks
-          echo "Verifying symlinks:"
-          ls -la "${TOOLCHAIN_BIN}/clang" "${TOOLCHAIN_BIN}/clang++" 2>/dev/null || echo "Failed to verify symlinks"
-          echo ""
-          
-          # === FIX THE ANDROID NDK CLANG ISSUE ===
-          echo "=== Fixing Android NDK clang for Linux execution ==="
-          
-          # The issue: clang-18 expects Android's linker (/system/bin/linker64) but we're on Linux
-          # Solution: Install Android bionic libc compatibility or patch the interpreter
-          
-          echo "Installing bionic compatibility libraries..."
-          sudo apt-get update -qq
-          sudo apt-get install -y \
-            libc6-dev \
-            libc6-dev-arm64-cross \
-            gcc-aarch64-linux-gnu \
-            binutils-aarch64-linux-gnu \
-            patchelf
-          
-          echo "Patching clang-18 interpreter to use Linux linker..."
-          
-          # Create a backup
-          cp "${CLANG_BINARY}" "${CLANG_BINARY}.backup"
-          
-          # Use patchelf to change the interpreter from Android to Linux
-          echo "Using patchelf to fix interpreter..."
-          if patchelf --set-interpreter /lib/ld-linux-aarch64.so.1 "${CLANG_BINARY}"; then
-            echo "patchelf succeeded"
-          else
-            echo "patchelf failed, trying manual approach..."
-          fi
-          
-          # Test if the patched binary works
-          echo "Testing patched clang-18:"
-          if "${CLANG_BINARY}" --version >/dev/null 2>&1; then
-            echo "SUCCESS: Patched clang-18 works!"
-            "${CLANG_BINARY}" --version 2>&1 | head -1
-          else
-            echo "Patching failed, trying alternative approach..."
-          
-            # Restore backup
-            cp "${CLANG_BINARY}.backup" "${CLANG_BINARY}"
-          
-            # Alternative: Create a wrapper script
-            echo "Creating wrapper script for clang-18..."
-          
-            mv "${CLANG_BINARY}" "${CLANG_BINARY}.android"
-          
-            cat > "${CLANG_BINARY}" << 'EOF'
-          #!/bin/bash
-          # Wrapper script to run Android clang on Linux
-          # Set up Android-compatible environment
-          export LD_LIBRARY_PATH="/usr/aarch64-linux-gnu/lib:${LD_LIBRARY_PATH}"
-          export ANDROID_ROOT="/system"
-          export ANDROID_DATA="/data"
-
-          # Try to run with Linux interpreter
-          exec /lib/ld-linux-aarch64.so.1 "${0}.android" "$@"
-          EOF
-          
-            chmod +x "${CLANG_BINARY}"
-          
-            echo "Testing wrapper script:"
-            if "${CLANG_BINARY}" --version >/dev/null 2>&1; then
-              echo "SUCCESS: Wrapper script works!"
-              "${CLANG_BINARY}" --version 2>&1 | head -1
-            else
-              echo "Wrapper script failed too. Trying final fallback..."
-          
-              # Final fallback: Install android-tools-adb which includes some android libs
-              sudo apt-get install -y android-tools-adb
-          
-              # Create minimal Android environment
-              sudo mkdir -p /system/bin /system/lib64 /data
-              sudo ln -sf /lib/ld-linux-aarch64.so.1 /system/bin/linker64 2>/dev/null || true
-          
-              # Restore original binary and test
-              cp "${CLANG_BINARY}.android" "${CLANG_BINARY}"
-          
-              if "${CLANG_BINARY}" --version >/dev/null 2>&1; then
-                echo "SUCCESS: Android environment simulation works!"
-                "${CLANG_BINARY}" --version 2>&1 | head -1
-              else
-                echo "FATAL: All approaches failed"
-                echo "Final diagnostics:"
-                file "${CLANG_BINARY}"
-                ldd "${CLANG_BINARY}" 2>&1 | head -10
-                exit 1
-              fi
-            fi
-          fi
-          
-          # Test that the symlinks work
-          echo "Testing symlinked compilers:"
-          if "${TOOLCHAIN_BIN}/clang" --version >/dev/null 2>&1; then
-            echo "clang symlink works correctly"
-          else
-            echo "ERROR: clang symlink failed"
-            exit 1
-          fi
-          
-          if "${TOOLCHAIN_BIN}/clang++" --version >/dev/null 2>&1; then
-            echo "clang++ symlink works correctly"
-          else
-            echo "ERROR: clang++ symlink failed"
-            exit 1
-          fi
-          echo ""
-          
-          # Test wrapper scripts (non-fatal)
-          echo "Testing wrapper scripts:"
-          if "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang" --version >/dev/null 2>&1; then
-            echo "API-specific clang wrapper works"
-          else
-            echo "WARNING: API-specific clang wrapper failed (non-fatal)"
-          fi
-          
-          if "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang++" --version >/dev/null 2>&1; then
-            echo "API-specific clang++ wrapper works"
-          else
-            echo "WARNING: API-specific clang++ wrapper failed (non-fatal)"
-          fi
-          
           echo "NDK setup completed successfully"
 
       - name: Setup OpenBLAS
@@ -506,46 +287,6 @@ jobs:
         with:
           limit-access-to-actor: true
 
-      - name: Debug NDK and compilers
-        shell: bash
-        run: |
-          echo "=== NDK and Compiler Debug Information ==="
-          
-          TOOLCHAIN_BIN="${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-aarch64/bin"
-          
-          echo "NDK Path: ${ANDROID_NDK}"
-          echo "Toolchain bin directory: ${TOOLCHAIN_BIN}"
-          echo ""
-          
-          echo "Checking symlinks:"
-          ls -la "${TOOLCHAIN_BIN}/clang" "${TOOLCHAIN_BIN}/clang++" 2>/dev/null || echo "Symlinks not found"
-          echo ""
-          
-          echo "Testing compilers:"
-          echo "clang version:"
-          "${TOOLCHAIN_BIN}/clang" --version 2>&1 | head -1 || echo "clang failed"
-          echo "clang++ version:"
-          "${TOOLCHAIN_BIN}/clang++" --version 2>&1 | head -1 || echo "clang++ failed"
-          echo ""
-          
-          echo "Testing wrapper scripts:"
-          echo "aarch64-linux-android21-clang:"
-          "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang" --version 2>&1 | head -1 || echo "API-specific clang wrapper failed"
-          echo "aarch64-linux-android21-clang++:"
-          "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang++" --version 2>&1 | head -1 || echo "API-specific clang++ wrapper failed"
-          echo ""
-          
-          echo "Environment variables:"
-          echo "ANDROID_NDK: ${ANDROID_NDK}"
-          echo "ANDROID_NDK_ROOT: ${ANDROID_NDK_ROOT}"
-          echo "PATH includes NDK: $(echo $PATH | grep -o android-ndk || echo 'No')"
-          echo ""
-          
-          echo "CMake toolchain file exists: $(test -f "${CMAKE_TOOLCHAIN_FILE}" && echo 'Yes' || echo 'No')"
-          if [ -f "${CMAKE_TOOLCHAIN_FILE}" ]; then
-            echo "Toolchain file path: ${CMAKE_TOOLCHAIN_FILE}"
-          fi
-
       - name: Build with Maven
         shell: bash
         env:
@@ -583,24 +324,6 @@ jobs:
           fi
           echo "  Build threads: ${{ github.event.inputs.buildThreads }}"
           echo "  Platform classifier: ${LIBND4J_CLASSIFIER}"
-          echo ""
-          
-          # Final compiler verification
-          echo "=== Final Compiler Verification ==="
-          TOOLCHAIN_BIN="${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-aarch64/bin"
-          
-          echo "Testing final compiler setup:"
-          "${TOOLCHAIN_BIN}/clang++" --version || {
-            echo "ERROR: clang++ is not working!"
-            echo "Attempting to recreate symlink..."
-            rm -f "${TOOLCHAIN_BIN}/clang++"
-            ln -sf clang-18 "${TOOLCHAIN_BIN}/clang++"
-            echo "Retesting..."
-            "${TOOLCHAIN_BIN}/clang++" --version || {
-              echo "FATAL: Cannot get clang++ working"
-              exit 1
-            }
-          }
           echo ""
           
           # Execute Maven build
