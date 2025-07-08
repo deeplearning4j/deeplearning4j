@@ -89,7 +89,7 @@ SD_HOST void IndexReduce<X,Z>::executeIndexReduceScalar(
          extraParams,
          result,
          zShapeInfo,
-         0,    // we pass 0 for zRank to match original logic
+         0,
          nullptr,
          0,
          1,
@@ -147,14 +147,12 @@ SD_HOST void IndexReduce<X,Z>::executeIndexReduce(
 template <typename T>
 struct SharedIndexValue {
  SD_DEVICE T* getPointer() {
-   // We'll never instantiate an un-specialized type
    extern SD_DEVICE void error(void);
    error();
    return nullptr;
  }
 };
 
-// We create specializations for float/double etc
 template <>
 struct SharedIndexValue<float> {
  SD_DEVICE IndexValue<float>* getPointer() {
@@ -248,122 +246,134 @@ SD_DEVICE void IndexReduce<X,Z>::transform(
  auto dx = reinterpret_cast<const X*>(vdx);
  auto z  = reinterpret_cast<Z*>(vz);
  auto extraParams    = static_cast<X*>(vextraParams);
- auto reductionBuff  = static_cast<unsigned int*>(vreductionBuffer);
- auto xOrder         = shape::order(xShapeInfo);
- sd::LongType tid    = blockIdx.x * blockDim.x + threadIdx.x;
+ auto reductionBuffer = static_cast<unsigned int*>(vreductionBuffer);
+ auto order         = shape::order(xShapeInfo);
+ sd::LongType tid    = static_cast<sd::LongType>(blockIdx.x * blockDim.x + threadIdx.x);
+ __shared__ volatile bool resultScalar;
 
- // We'll place partial sums in shared memory
  __shared__ IndexValue<X> sPartials[SD_CUDA_BLOCK_SIZE];
 
- // Initialize starting value for this thread
  sPartials[threadIdx.x] = OpType::startingIndexValue(dx);
 
- // We'll load length into shared memory
- __shared__ sd::LongType xLength;
- __shared__ sd::LongType zLen;
- __shared__ bool resultScalar;
+ __shared__ volatile sd::LongType xLength;
+ __shared__ volatile sd::LongType zLen;
 
- // Initialize shared variables from thread 0
- if (threadIdx.x == 0) {
-   xLength     = shape::length(xShapeInfo);
-   if (zShapeInfo != nullptr) {
-     zLen      = shape::length(zShapeInfo);
-   } else {
-     zLen      = 1;
-   }
-   resultScalar = (zLen == 1);
- }
- __syncthreads();
-
- // Local reduction variable for this thread
  IndexValue<X> reduction = OpType::startingIndexValue(dx);
-
  sd::LongType threadIdxX = static_cast<sd::LongType>(threadIdx.x);
  sd::LongType blockDimX = static_cast<sd::LongType>(blockDim.x);
  sd::LongType blockIdxX = static_cast<sd::LongType>(blockIdx.x);
  sd::LongType gridDimX = static_cast<sd::LongType>(gridDim.x);
 
- // Handle different reduction scenarios
+ if (threadIdxX == 0) {
+   if (zShapeInfo != nullptr)
+     zLen = shape::length(zShapeInfo);
+   else
+     zLen = 1;
+
+   if (zLen == 1)
+     resultScalar = true;
+   else
+     resultScalar = false;
+
+   xLength = shape::length(xShapeInfo);
+ }
+ __syncthreads();
+
  if (!resultScalar) {
-   // TAD (Tensor Along Dimension) based reduction
    __shared__ sd::LongType tadLength;
+   __shared__ sd::LongType tadEWS;
    __shared__ sd::LongType numTads;
 
    if (threadIdx.x == 0) {
      tadLength = shape::length(tadOnlyShapeInfo);
+     tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
      numTads = shape::length(xShapeInfo) / tadLength;
    }
    __syncthreads();
 
-   // Process each TAD
-   for (sd::LongType r = blockIdxX; r < numTads; r += gridDimX) {
-     auto tadOffsetForBlock = tadOffsets[r];
-     sPartials[threadIdxX] = OpType::startingIndexValue(dx);
+   if (dimensionLength > 1 || tadEWS < 1) {
+     for (sd::LongType r = blockIdxX; r < numTads; r += gridDimX) {
+       auto tadOffsetForBlock = tadOffsets[r];
+       sPartials[threadIdxX] = OpType::startingIndexValue(dx);
 
-     // Reduce within this TAD using index-to-coordinate conversion
-     for (sd::LongType i = threadIdxX; i < tadLength; i += blockDimX) {
-       auto xOffset = tadOffsetForBlock + shape::getIndexOffset(i, tadOnlyShapeInfo);
-       IndexValue<X> comp{dx[xOffset], i};
-       sPartials[threadIdxX] = OpType::update(sPartials[threadIdxX], comp, extraParams);
+       for (sd::LongType i = threadIdxX; i < tadLength; i += blockDimX) {
+         sd::LongType coords[SD_MAX_RANK];
+         INDEX2COORDS(i, shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), coords);
+         auto tadOffset = COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), shape::stride(tadOnlyShapeInfo), coords);
+         auto xOffset = tadOffsetForBlock + tadOffset;
+         IndexValue<X> comp{dx[xOffset], i};
+         sPartials[threadIdxX] = OpType::update(sPartials[threadIdxX], comp, extraParams);
+       }
+
+       __syncthreads();
+       aggregatePartials<OpType>(sPartials, threadIdxX, sd::math::sd_min<sd::LongType,sd::LongType>(blockDimX, tadLength), extraParams);
+
+       __syncthreads();
+       if (threadIdxX == 0) {
+         z[r] = static_cast<Z>(sPartials[threadIdxX].index);
+       }
+       __syncthreads();
      }
+   } else {
+     for (sd::LongType i = blockIdxX; i < numTads; i += gridDimX) {
+       sd::LongType tadOffsetForBlock = tadOffsets[i];
 
-     __syncthreads();
-     aggregatePartials<OpType>(sPartials, threadIdxX,
-                               sd::math::sd_min<sd::LongType,sd::LongType>(blockDimX, tadLength),
-                               extraParams);
+       sPartials[threadIdxX] = OpType::startingIndexValue(dx);
 
-     __syncthreads();
-     if (threadIdxX == 0) {
-       z[r] = static_cast<Z>(sPartials[threadIdxX].index);
+       for (sd::LongType x = threadIdxX; x < tadLength; x += blockDimX) {
+         sd::LongType coords[SD_MAX_RANK];
+         INDEX2COORDS(x, shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), coords);
+         auto tadOffset = COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), shape::stride(tadOnlyShapeInfo), coords);
+         IndexValue<X> comp{dx[tadOffsetForBlock + tadOffset], x};
+         sPartials[threadIdxX] = OpType::update(sPartials[threadIdxX], comp, extraParams);
+       }
+
+       __syncthreads();
+       aggregatePartials<OpType>(sPartials, threadIdxX, sd::math::sd_min<sd::LongType,sd::LongType>(blockDim.x, tadLength), extraParams);
+
+       __syncthreads();
+       if (threadIdxX == 0) {
+         z[i] = static_cast<Z>(sPartials[threadIdxX].index);
+       }
+       __syncthreads();
      }
-     __syncthreads();
    }
  } else {
-   // Scalar reduction - process entire array
    auto n = shape::length(xShapeInfo);
 
-   // Always use coordinate-based indexing (no element-wise stride optimization)
    for (sd::LongType i = tid; i < n; i += (gridDimX * blockDimX)) {
-     // Use shape::getIndexOffset for proper index-to-coordinate conversion
-     auto xOffset = shape::getIndexOffset(i, xShapeInfo);
+     sd::LongType coords[SD_MAX_RANK];
+     INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
+     auto xOffset = COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), shape::stride(xShapeInfo), coords);
      IndexValue<X> comp{dx[xOffset], i};
      reduction = OpType::update(reduction, comp, extraParams);
    }
 
-   // Store thread's partial result
    sPartials[threadIdxX] = reduction;
    __syncthreads();
+   aggregatePartials<OpType>(sPartials, threadIdxX, sd::math::sd_min<sd::LongType,sd::LongType>(blockDim.x, n), extraParams);
 
-   // Aggregate partial results within block
-   aggregatePartials<OpType>(sPartials, threadIdxX,
-                             sd::math::sd_min<sd::LongType,sd::LongType>(blockDimX, n),
-                             extraParams);
-
-   // Handle multi-block reductions
    if (gridDimX > 1) {
      __shared__ bool amLast;
-     unsigned int* unsignedSharedMemory = reductionBuff;
-
-     // Store block result
-     if (threadIdx.x == 0) {
-       reductionBuff[blockIdx.x] = sPartials[threadIdx.x].index;
-     }
+     unsigned int *unsignedSharedMemory = (unsigned int *)reductionBuffer;
+     tid = threadIdx.x;
+     if (threadIdx.x == 0)
+       reductionBuffer[blockIdx.x] = sPartials[threadIdx.x].index;
 
      __threadfence();
      __syncthreads();
 
-     // Check if this is the last block to finish
      if (threadIdx.x == 0) {
        unsigned int ticket = atomicInc(&unsignedSharedMemory[16384], gridDim.x);
        amLast = (ticket == gridDim.x - 1);
      }
+
      __syncthreads();
 
-     // Final reduction across blocks
      if (amLast) {
        sPartials[threadIdx.x] = OpType::startingIndexValue(dx);
        for (sd::LongType i = threadIdx.x; i < gridDim.x; i += blockDim.x) {
-         IndexValue<X> comp{static_cast<X>(0), reductionBuff[i]};
+         IndexValue<X> comp{static_cast<X>(0), reductionBuffer[i]};
          sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], comp, extraParams);
        }
        __syncthreads();
@@ -375,13 +385,14 @@ SD_DEVICE void IndexReduce<X,Z>::transform(
        }
      }
    } else {
-     // Single block - store result directly
      if (threadIdx.x == 0) {
        z[0] = static_cast<Z>(sPartials[threadIdx.x].index);
      }
    }
  }
 }
+
+BUILD_DOUBLE_TEMPLATE(template class IndexReduce, , SD_COMMON_TYPES, SD_INDEXING_TYPES);
 
 }  // namespace indexreduce
 }  // namespace functions
