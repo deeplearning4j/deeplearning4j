@@ -124,14 +124,14 @@ jobs:
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
           cache: 'maven'
 
-      - name: Cache ARM64 Android NDK
+      - name: Cache Android NDK
         uses: actions/cache@v4
-        id: cache-arm64-ndk
+        id: cache-android-ndk
         with:
           path: ${{ github.workspace }}/android-ndk-r27b
-          key: android-ndk-r27b-aarch64-${{ runner.os }}-v6
+          key: android-ndk-r27b-google-patched-v1
 
-      - name: Setup ARM64 Android NDK
+      - name: Setup Google Android NDK with Patches
         id: setup-ndk
         shell: bash
         run: |
@@ -139,13 +139,13 @@ jobs:
           NDK_DIR="${GITHUB_WORKSPACE}/android-ndk-${NDK_VERSION}"
           
           if [ ! -d "${NDK_DIR}" ]; then
-            echo "Downloading ARM64 Android NDK ${NDK_VERSION}..."
-            NDK_URL="https://github.com/lzhiyong/termux-ndk/releases/download/android-ndk/android-ndk-r27b-aarch64.zip"
+            echo "Downloading official Google Android NDK ${NDK_VERSION}..."
+            NDK_URL="https://dl.google.com/android/repository/android-ndk-r27b-linux.zip"
           
             # Download with retries and better error handling
             for attempt in 1 2 3; do
               echo "Download attempt ${attempt}/3..."
-              if wget -q --timeout=30 --tries=3 "${NDK_URL}" -O ndk.zip; then
+              if wget -q --timeout=60 --tries=3 "${NDK_URL}" -O ndk.zip; then
                 echo "Download successful"
                 break
               else
@@ -187,68 +187,31 @@ jobs:
           echo "ANDROID_NDK_ROOT=${NDK_DIR}" >> $GITHUB_ENV
           echo "ANDROID_NDK=${NDK_DIR}" >> $GITHUB_ENV
           
-          # Verify NDK structure and find correct toolchain path
-          echo "Analyzing NDK structure..."
-          find "${NDK_DIR}" -name "clang*" -type f | head -10
+          # Find correct toolchain path - Google NDK has x86_64 prebuilt tools
+          TOOLCHAIN_BIN="${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          SYSROOT="${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
           
-          # Try different possible toolchain paths - prefer x86_64 over aarch64 as it's more reliable
-          POSSIBLE_TOOLCHAIN_PATHS=(
-            "${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64/bin"
-            "${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64/bin"
-            "${NDK_DIR}/toolchains/llvm/prebuilt/darwin-x86_64/bin"
-          )
-          
-          TOOLCHAIN_BIN=""
-          for path in "${POSSIBLE_TOOLCHAIN_PATHS[@]}"; do
-            if [ -d "${path}" ]; then
-              TOOLCHAIN_BIN="${path}"
-              echo "Found toolchain at: ${TOOLCHAIN_BIN}"
-              break
-            fi
-          done
-          
-          if [ -z "${TOOLCHAIN_BIN}" ]; then
-            echo "ERROR: No suitable toolchain bin directory found"
+          if [ ! -d "${TOOLCHAIN_BIN}" ]; then
+            echo "ERROR: Toolchain bin directory not found at ${TOOLCHAIN_BIN}"
             echo "Available toolchain directories:"
             find "${NDK_DIR}" -path "*/toolchains/llvm/prebuilt/*/bin" -type d || echo "None found"
             exit 1
           fi
           
+          echo "Found toolchain at: ${TOOLCHAIN_BIN}"
+          echo "Found sysroot at: ${SYSROOT}"
+          
           # Create platform directories for compatibility
           mkdir -p "${NDK_DIR}/platforms/android-21/arch-arm64/usr/lib"
           mkdir -p "${NDK_DIR}/platforms/android-21/arch-arm64/usr/include"
 
-          # Copy the sysroot files from NDK (suppress errors for missing files)
-          SYSROOT_BASE="${NDK_DIR}/toolchains/llvm/prebuilt"
-          SYSROOT_PATH=""
-          
-          # Find the correct sysroot path - prefer the same prebuilt directory as toolchain
-          TOOLCHAIN_PREBUILT_DIR=$(dirname "${TOOLCHAIN_BIN}")
-          if [ -d "${TOOLCHAIN_PREBUILT_DIR}/sysroot" ]; then
-            SYSROOT_PATH="${TOOLCHAIN_PREBUILT_DIR}/sysroot"
-            echo "Found matching sysroot at: ${SYSROOT_PATH}"
-          else
-            # Fallback to searching all prebuilt directories
-            for prebuilt_dir in "${SYSROOT_BASE}"/*/; do
-              if [ -d "${prebuilt_dir}sysroot" ]; then
-                SYSROOT_PATH="${prebuilt_dir}sysroot"
-                echo "Found fallback sysroot at: ${SYSROOT_PATH}"
-                break
-              fi
-            done
+          # Copy sysroot files for compatibility
+          if [ -d "${SYSROOT}/usr/lib/aarch64-linux-android/21" ]; then
+            cp -r "${SYSROOT}/usr/lib/aarch64-linux-android/21/"* "${NDK_DIR}/platforms/android-21/arch-arm64/usr/lib/" 2>/dev/null || true
           fi
           
-          if [ -n "${SYSROOT_PATH}" ]; then
-            SYSROOT_LIB="${SYSROOT_PATH}/usr/lib/aarch64-linux-android/21"
-            SYSROOT_INCLUDE="${SYSROOT_PATH}/usr/include"
-          
-            if [ -d "${SYSROOT_LIB}" ]; then
-              cp -r "${SYSROOT_LIB}/"* "${NDK_DIR}/platforms/android-21/arch-arm64/usr/lib/" 2>/dev/null || true
-            fi
-          
-            if [ -d "${SYSROOT_INCLUDE}" ]; then
-              cp -r "${SYSROOT_INCLUDE}/"* "${NDK_DIR}/platforms/android-21/arch-arm64/usr/include/" 2>/dev/null || true
-            fi
+          if [ -d "${SYSROOT}/usr/include" ]; then
+            cp -r "${SYSROOT}/usr/include/"* "${NDK_DIR}/platforms/android-21/arch-arm64/usr/include/" 2>/dev/null || true
           fi
           
           echo "Installing system clang and cross-compilation tools..."
@@ -258,17 +221,19 @@ jobs:
             llvm-15 \
             gcc-aarch64-linux-gnu \
             g++-aarch64-linux-gnu \
-            libc6-dev-arm64-cross
+            libc6-dev-arm64-cross \
+            qemu-user-static \
+            binfmt-support
           
-          echo "Setting up working clang toolchain..."
+          echo "Setting up working clang toolchain for ARM64 host..."
           
-          # The NDK's clang-18 doesn't work on Linux, so replace it with system clang
+          # The Google NDK x86_64 binaries need to be patched to work on ARM64
           CLANG_BINARY="${TOOLCHAIN_BIN}/clang-18"
           CLANGPP_BINARY="${TOOLCHAIN_BIN}/clang++"
           CLANG_SYMLINK="${TOOLCHAIN_BIN}/clang"
           
           # Backup original binaries if they exist
-          [ -f "${CLANG_BINARY}" ] && mv "${CLANG_BINARY}" "${CLANG_BINARY}.android-original"
+          [ -f "${CLANG_BINARY}" ] && mv "${CLANG_BINARY}" "${CLANG_BINARY}.google-original"
           
           # Remove broken symlinks
           rm -f "${CLANG_SYMLINK}" "${CLANGPP_BINARY}"
@@ -278,35 +243,20 @@ jobs:
           chmod +x "${TOOLCHAIN_BIN}/lld" 2>/dev/null || true
           chmod +x "${TOOLCHAIN_BIN}/ld.lld" 2>/dev/null || true
           
-          # Create working clang-18 wrapper
+          # Create working clang-18 wrapper using system clang
           cat > "${CLANG_BINARY}" << 'EOF'
           #!/bin/bash
           # Working clang wrapper for Android cross-compilation using system clang
           SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
           NDK_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "${SCRIPT_DIR}")")")")"
+          SYSROOT="${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
           
-          # Find the sysroot dynamically - prefer same prebuilt directory
-          PREBUILT_DIR="$(dirname "${SCRIPT_DIR}")"
-          SYSROOT=""
-          
-          if [ -d "${PREBUILT_DIR}/sysroot" ]; then
-            SYSROOT="${PREBUILT_DIR}/sysroot"
-          else
-            # Fallback to searching all prebuilt directories
-            for prebuilt_dir in "${NDK_ROOT}/toolchains/llvm/prebuilt"/*; do
-              if [ -d "${prebuilt_dir}/sysroot" ]; then
-                SYSROOT="${prebuilt_dir}/sysroot"
-                break
-              fi
-            done
-          fi
-          
-          if [ -z "${SYSROOT}" ]; then
-            echo "ERROR: Cannot find sysroot in NDK"
+          if [ ! -d "${SYSROOT}" ]; then
+            echo "ERROR: Cannot find sysroot at ${SYSROOT}"
             exit 1
           fi
 
-          # Use the lld linker from the same directory as this script (absolute path)
+          # Use the lld linker from the same directory as this script
           LLD_PATH="${SCRIPT_DIR}/lld"
 
           # Filter out any existing -fuse-ld arguments and force our own
@@ -317,7 +267,7 @@ jobs:
             fi
           done
 
-          # Use system clang with Android target and force our linker
+          # Use system clang with Android target and NDK linker
           exec /usr/bin/clang-15 \
             --target=aarch64-linux-android21 \
             --sysroot="${SYSROOT}" \
@@ -327,10 +277,9 @@ jobs:
           
           chmod +x "${CLANG_BINARY}"
           
-          # Also fix the API-specific wrapper scripts to use our working clang
-          echo "Fixing API-specific wrapper scripts..."
+          # Patch the API-specific wrapper scripts
+          echo "Patching API-specific wrapper scripts..."
           
-          # Backup and replace the aarch64-linux-android21-clang script
           ANDROID_CLANG="${TOOLCHAIN_BIN}/aarch64-linux-android21-clang"
           ANDROID_CLANGPP="${TOOLCHAIN_BIN}/aarch64-linux-android21-clang++"
           
@@ -339,32 +288,17 @@ jobs:
           
             cat > "${ANDROID_CLANG}" << 'EOF'
           #!/bin/bash
-          # Fixed Android clang wrapper using system clang
+          # Patched Android clang wrapper using system clang
           SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
           NDK_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "${SCRIPT_DIR}")")")")"
+          SYSROOT="${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
           
-          # Find the sysroot dynamically - prefer same prebuilt directory
-          PREBUILT_DIR="$(dirname "${SCRIPT_DIR}")"
-          SYSROOT=""
-          
-          if [ -d "${PREBUILT_DIR}/sysroot" ]; then
-            SYSROOT="${PREBUILT_DIR}/sysroot"
-          else
-            # Fallback to searching all prebuilt directories
-            for prebuilt_dir in "${NDK_ROOT}/toolchains/llvm/prebuilt"/*; do
-              if [ -d "${prebuilt_dir}/sysroot" ]; then
-                SYSROOT="${prebuilt_dir}/sysroot"
-                break
-              fi
-            done
-          fi
-          
-          if [ -z "${SYSROOT}" ]; then
-            echo "ERROR: Cannot find sysroot in NDK"
+          if [ ! -d "${SYSROOT}" ]; then
+            echo "ERROR: Cannot find sysroot at ${SYSROOT}"
             exit 1
           fi
 
-          # Use the lld linker from the same directory as this script (absolute path)
+          # Use the lld linker from the same directory
           LLD_PATH="${SCRIPT_DIR}/lld"
 
           exec /usr/bin/clang-15 \
@@ -381,32 +315,17 @@ jobs:
           
             cat > "${ANDROID_CLANGPP}" << 'EOF'
           #!/bin/bash
-          # Fixed Android clang++ wrapper using system clang
+          # Patched Android clang++ wrapper using system clang
           SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
           NDK_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "${SCRIPT_DIR}")")")")"
+          SYSROOT="${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
           
-          # Find the sysroot dynamically - prefer same prebuilt directory
-          PREBUILT_DIR="$(dirname "${SCRIPT_DIR}")"
-          SYSROOT=""
-          
-          if [ -d "${PREBUILT_DIR}/sysroot" ]; then
-            SYSROOT="${PREBUILT_DIR}/sysroot"
-          else
-            # Fallback to searching all prebuilt directories
-            for prebuilt_dir in "${NDK_ROOT}/toolchains/llvm/prebuilt"/*; do
-              if [ -d "${prebuilt_dir}/sysroot" ]; then
-                SYSROOT="${prebuilt_dir}/sysroot"
-                break
-              fi
-            done
-          fi
-          
-          if [ -z "${SYSROOT}" ]; then
-            echo "ERROR: Cannot find sysroot in NDK"
+          if [ ! -d "${SYSROOT}" ]; then
+            echo "ERROR: Cannot find sysroot at ${SYSROOT}"
             exit 1
           fi
 
-          # Use the lld linker from the same directory as this script (absolute path)
+          # Use the lld linker from the same directory
           LLD_PATH="${SCRIPT_DIR}/lld"
 
           exec /usr/bin/clang-15 \
@@ -422,14 +341,13 @@ jobs:
           ln -sf clang-18 "${CLANG_SYMLINK}"
           ln -sf clang-18 "${CLANGPP_BINARY}"
           
-          # Test the new setup
-          echo "Testing clang setup:"
+          # Test the patched setup
+          echo "Testing patched clang setup:"
           if "${CLANG_BINARY}" --version >/dev/null 2>&1; then
             echo "SUCCESS: clang-18 wrapper works!"
             "${CLANG_BINARY}" --version 2>&1 | head -1
           else
             echo "ERROR: clang-18 wrapper failed"
-            echo "Testing wrapper script directly:"
             "${CLANG_BINARY}" --version
             exit 1
           fi
@@ -448,19 +366,19 @@ jobs:
             exit 1
           fi
           
-          # Test the fixed API-specific wrappers
-          echo "Testing fixed API-specific wrapper scripts:"
+          # Test the patched API-specific wrappers
+          echo "Testing patched API-specific wrapper scripts:"
           if "${ANDROID_CLANG}" --version >/dev/null 2>&1; then
-            echo "SUCCESS: Fixed aarch64-linux-android21-clang works!"
+            echo "SUCCESS: Patched aarch64-linux-android21-clang works!"
           else
-            echo "ERROR: Fixed aarch64-linux-android21-clang failed"
+            echo "ERROR: Patched aarch64-linux-android21-clang failed"
             exit 1
           fi
           
           if "${ANDROID_CLANGPP}" --version >/dev/null 2>&1; then
-            echo "SUCCESS: Fixed aarch64-linux-android21-clang++ works!"
+            echo "SUCCESS: Patched aarch64-linux-android21-clang++ works!"
           else
-            echo "ERROR: Fixed aarch64-linux-android21-clang++ failed"
+            echo "ERROR: Patched aarch64-linux-android21-clang++ failed"
             exit 1
           fi
           
@@ -468,19 +386,7 @@ jobs:
           echo "Creating CMake toolchain file..."
           mkdir -p "${GITHUB_WORKSPACE}/cmake"
           
-          # Find the actual sysroot path for the toolchain file
-          ACTUAL_SYSROOT=""
-          if [ -d "${TOOLCHAIN_PREBUILT_DIR}/sysroot" ]; then
-            ACTUAL_SYSROOT="${TOOLCHAIN_PREBUILT_DIR}/sysroot"
-          else
-            for prebuilt_dir in "${NDK_DIR}/toolchains/llvm/prebuilt"/*; do
-              if [ -d "${prebuilt_dir}/sysroot" ]; then
-                ACTUAL_SYSROOT="${prebuilt_dir}/sysroot"
-                break
-              fi
-            done
-          fi
-          
+          # CRITICAL: Use the x86_64 toolchain consistently - don't mix paths!
           cat > "${GITHUB_WORKSPACE}/cmake/android-arm64.cmake" << EOF
           # CMake toolchain file for Android ARM64 cross-compilation
           set(CMAKE_SYSTEM_NAME Android)
@@ -489,10 +395,10 @@ jobs:
           set(CMAKE_ANDROID_NDK ${NDK_DIR})
           set(CMAKE_ANDROID_STL_TYPE c++_shared)
           
-          # Set the sysroot
-          set(CMAKE_SYSROOT ${ACTUAL_SYSROOT})
+          # IMPORTANT: Use x86_64 sysroot consistently with x86_64 toolchain
+          set(CMAKE_SYSROOT ${SYSROOT})
           
-          # Set compilers
+          # IMPORTANT: Use x86_64 toolchain paths - these are the patched ones
           set(CMAKE_C_COMPILER ${TOOLCHAIN_BIN}/aarch64-linux-android21-clang)
           set(CMAKE_CXX_COMPILER ${TOOLCHAIN_BIN}/aarch64-linux-android21-clang++)
           
@@ -505,12 +411,34 @@ jobs:
           # Additional flags
           set(CMAKE_C_FLAGS_INIT "-fPIC")
           set(CMAKE_CXX_FLAGS_INIT "-fPIC")
+          
+          # Force the linker to use the correct path
+          set(CMAKE_EXE_LINKER_FLAGS_INIT "-fuse-ld=${TOOLCHAIN_BIN}/lld")
+          set(CMAKE_SHARED_LINKER_FLAGS_INIT "-fuse-ld=${TOOLCHAIN_BIN}/lld")
           EOF
           
           echo "CMake toolchain file created at: ${GITHUB_WORKSPACE}/cmake/android-arm64.cmake"
+          echo "Using toolchain: ${TOOLCHAIN_BIN}"
+          echo "Using sysroot: ${SYSROOT}"
+          
+          # IMPORTANT: Verify that the toolchain file has correct paths
+          echo "Verifying CMake toolchain file contents:"
+          cat "${GITHUB_WORKSPACE}/cmake/android-arm64.cmake"
+          
+          # Double-check that we're using x86_64 paths
+          if [[ "${TOOLCHAIN_BIN}" != *"linux-x86_64"* ]]; then
+            echo "ERROR: TOOLCHAIN_BIN should contain linux-x86_64 but got: ${TOOLCHAIN_BIN}"
+            exit 1
+          fi
+          
+          if [[ "${SYSROOT}" != *"linux-x86_64"* ]]; then
+            echo "ERROR: SYSROOT should contain linux-x86_64 but got: ${SYSROOT}"
+            exit 1
+          fi
           
           # Store toolchain bin path for later use
           echo "ANDROID_TOOLCHAIN_BIN=${TOOLCHAIN_BIN}" >> $GITHUB_ENV
+          echo "ANDROID_SYSROOT=${SYSROOT}" >> $GITHUB_ENV
           
           echo "NDK setup completed successfully"
 
@@ -660,31 +588,21 @@ jobs:
           
           echo "NDK Path: ${ANDROID_NDK}"
           echo "Toolchain bin directory: ${TOOLCHAIN_BIN}"
-          echo ""
-          
-          echo "Checking symlinks:"
-          ls -la "${TOOLCHAIN_BIN}/clang" "${TOOLCHAIN_BIN}/clang++" 2>/dev/null || echo "Symlinks not found"
+          echo "Sysroot: ${ANDROID_SYSROOT}"
           echo ""
           
           echo "Testing compilers:"
-          echo "clang version:"
-          "${TOOLCHAIN_BIN}/clang" --version 2>&1 | head -1 || echo "clang failed"
-          echo "clang++ version:"
-          "${TOOLCHAIN_BIN}/clang++" --version 2>&1 | head -1 || echo "clang++ failed"
-          echo ""
-          
-          echo "Testing wrapper scripts:"
           echo "aarch64-linux-android21-clang:"
-          "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang" --version 2>&1 | head -1 || echo "API-specific clang wrapper failed"
+          "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang" --version 2>&1 | head -1 || echo "clang failed"
           echo "aarch64-linux-android21-clang++:"
-          "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang++" --version 2>&1 | head -1 || echo "API-specific clang++ wrapper failed"
+          "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang++" --version 2>&1 | head -1 || echo "clang++ failed"
           echo ""
           
           echo "Environment variables:"
           echo "ANDROID_NDK: ${ANDROID_NDK}"
           echo "ANDROID_NDK_ROOT: ${ANDROID_NDK_ROOT}"
           echo "ANDROID_TOOLCHAIN_BIN: ${ANDROID_TOOLCHAIN_BIN}"
-          echo "PATH includes NDK: $(echo $PATH | grep -o android-ndk || echo 'No')"
+          echo "ANDROID_SYSROOT: ${ANDROID_SYSROOT}"
           echo ""
           
           echo "CMake toolchain file exists: $(test -f "${CMAKE_TOOLCHAIN_FILE}" && echo 'Yes' || echo 'No')"
@@ -693,6 +611,18 @@ jobs:
             echo "Toolchain file contents:"
             cat "${CMAKE_TOOLCHAIN_FILE}"
           fi
+          
+          # Test simple compilation
+          echo ""
+          echo "Testing simple compilation:"
+          echo 'int main() { return 0; }' > test.c
+          if "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang" --sysroot="${ANDROID_SYSROOT}" -o test test.c; then
+            echo "SUCCESS: Simple C compilation works"
+            file test
+          else
+            echo "ERROR: Simple C compilation failed"
+          fi
+          rm -f test test.c
 
       - name: Build with Maven
         shell: bash
@@ -782,7 +712,7 @@ jobs:
           sudo rm -f /swapfile 2>/dev/null || true
           
           # Clean up NDK if not cached
-          if [ "${{ steps.cache-arm64-ndk.outputs.cache-hit }}" != 'true' ]; then
+          if [ "${{ steps.cache-android-ndk.outputs.cache-hit }}" != 'true' ]; then
             echo "NDK was downloaded fresh, keeping for cache"
           fi
           
