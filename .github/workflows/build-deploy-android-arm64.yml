@@ -234,6 +234,11 @@ jobs:
           # Remove broken symlinks
           rm -f "${CLANG_SYMLINK}" "${CLANGPP_BINARY}"
           
+          # Fix permissions on NDK linker
+          echo "Fixing NDK linker permissions..."
+          chmod +x "${TOOLCHAIN_BIN}/lld" 2>/dev/null || true
+          chmod +x "${TOOLCHAIN_BIN}/ld.lld" 2>/dev/null || true
+          
           # Create working clang-18 wrapper
           cat > "${CLANG_BINARY}" << 'EOF'
           #!/bin/bash
@@ -242,12 +247,18 @@ jobs:
           NDK_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "${SCRIPT_DIR}")")")")"
           SYSROOT="${NDK_ROOT}/toolchains/llvm/prebuilt/linux-aarch64/sysroot"
 
-          # Use system clang with Android target and proper linker
+          # Ensure the NDK's lld linker is executable and use full path
+          LLD_PATH="${SCRIPT_DIR}/lld"
+          if [ ! -x "${LLD_PATH}" ]; then
+            chmod +x "${LLD_PATH}" 2>/dev/null || true
+          fi
+
+          # Use system clang with Android target and explicit linker path
           exec /usr/bin/clang-15 \
             --target=aarch64-linux-android21 \
             --sysroot="${SYSROOT}" \
             -B"${SCRIPT_DIR}" \
-            -fuse-ld=lld \
+            -fuse-ld="${LLD_PATH}" \
             "$@"
           EOF
           
@@ -270,11 +281,17 @@ jobs:
           NDK_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "${SCRIPT_DIR}")")")")"
           SYSROOT="${NDK_ROOT}/toolchains/llvm/prebuilt/linux-aarch64/sysroot"
 
+          # Ensure the NDK's lld linker is executable and use full path
+          LLD_PATH="${SCRIPT_DIR}/lld"
+          if [ ! -x "${LLD_PATH}" ]; then
+            chmod +x "${LLD_PATH}" 2>/dev/null || true
+          fi
+
           exec /usr/bin/clang-15 \
             --target=aarch64-linux-android21 \
             --sysroot="${SYSROOT}" \
             -B"${SCRIPT_DIR}" \
-            -fuse-ld=lld \
+            -fuse-ld="${LLD_PATH}" \
             "$@"
           EOF
             chmod +x "${ANDROID_CLANG}"
@@ -290,11 +307,17 @@ jobs:
           NDK_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "${SCRIPT_DIR}")")")")"
           SYSROOT="${NDK_ROOT}/toolchains/llvm/prebuilt/linux-aarch64/sysroot"
 
+          # Ensure the NDK's lld linker is executable and use full path
+          LLD_PATH="${SCRIPT_DIR}/lld"
+          if [ ! -x "${LLD_PATH}" ]; then
+            chmod +x "${LLD_PATH}" 2>/dev/null || true
+          fi
+
           exec /usr/bin/clang-15 \
             --target=aarch64-linux-android21 \
             --sysroot="${SYSROOT}" \
             -B"${SCRIPT_DIR}" \
-            -fuse-ld=lld \
+            -fuse-ld="${LLD_PATH}" \
             "$@"
           EOF
             chmod +x "${ANDROID_CLANGPP}"
