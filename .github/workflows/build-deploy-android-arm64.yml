@@ -124,279 +124,159 @@ jobs:
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
           cache: 'maven'
 
-      - name: Cache Android NDK
+      - name: Cache Patched Android NDK
         uses: actions/cache@v4
-        id: cache-android-ndk
+        id: cache-patched-ndk
         with:
           path: ${{ github.workspace }}/android-ndk-r27b
-          key: android-ndk-r27b-google-patched-v1
+          key: android-ndk-r27b-aarch64-patched-v1
 
-      - name: Setup Google Android NDK with Patches
+      - name: Cache LLVM Toolchain Build
+        uses: actions/cache@v4
+        id: cache-llvm-toolchain
+        with:
+          path: ${{ github.workspace }}/llvm-toolchain
+          key: llvm-toolchain-aarch64-v1
+
+      - name: Setup and Patch Android NDK for ARM64 Linux
         id: setup-ndk
         shell: bash
         run: |
           NDK_VERSION="r27b"
           NDK_DIR="${GITHUB_WORKSPACE}/android-ndk-${NDK_VERSION}"
+          LLVM_TOOLCHAIN_DIR="${GITHUB_WORKSPACE}/llvm-toolchain"
+          PATCHER_DIR="${GITHUB_WORKSPACE}/patcher_repo"
+          
+          # Install required packages for building LLVM toolchain
+          echo "Installing build dependencies..."
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            clang \
+            bison \
+            llvm \
+            llvm-dev \
+            python3 \
+            lld \
+            ninja-build \
+            cmake \
+            crossbuild-essential-arm64 \
+            repo \
+            git \
+            wget \
+            unzip
           
           if [ ! -d "${NDK_DIR}" ]; then
+            echo "Setting up patched NDK for ARM64 Linux..."
+          
+            # Step 0: Prepare directories
+            mkdir -p "${LLVM_TOOLCHAIN_DIR}"
+            mkdir -p "${PATCHER_DIR}"
+          
+            # Download official Google NDK first
             echo "Downloading official Google Android NDK ${NDK_VERSION}..."
             NDK_URL="https://dl.google.com/android/repository/android-ndk-r27b-linux.zip"
-          
-            # Download with retries and better error handling
-            for attempt in 1 2 3; do
-              echo "Download attempt ${attempt}/3..."
-              if wget -q --timeout=60 --tries=3 "${NDK_URL}" -O ndk.zip; then
-                echo "Download successful"
-                break
-              else
-                echo "Download attempt ${attempt} failed"
-                if [ ${attempt} -eq 3 ]; then
-                  echo "ERROR: Failed to download NDK after 3 attempts"
-                  exit 1
-                fi
-                sleep 10
-              fi
-            done
-          
-            # Verify download
-            if [ ! -f "ndk.zip" ] || [ ! -s "ndk.zip" ]; then
-              echo "ERROR: Downloaded NDK file is missing or empty"
-              exit 1
-            fi
-          
-            echo "Extracting NDK..."
-            if ! unzip -q ndk.zip -d "${GITHUB_WORKSPACE}"; then
-              echo "ERROR: Failed to extract NDK"
-              exit 1
-            fi
+            wget -q --timeout=60 --tries=3 "${NDK_URL}" -O ndk.zip
+            unzip -q ndk.zip -d "${GITHUB_WORKSPACE}"
             rm ndk.zip
           
-            # Verify extraction
             if [ ! -d "${NDK_DIR}" ]; then
               echo "ERROR: NDK directory not found after extraction"
-              ls -la "${GITHUB_WORKSPACE}/" | grep -i ndk || echo "No NDK directories found"
               exit 1
             fi
+          
+            # Check if we have cached LLVM toolchain
+            if [ ! -f "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/clang" ]; then
+              echo "Building LLVM toolchain for ARM64..."
+          
+              # Step 1: Download LLVM toolchain source code
+              cd "${LLVM_TOOLCHAIN_DIR}"
+              echo "Downloading LLVM toolchain source (this may take a while)..."
+              repo init -u https://android.googlesource.com/platform/manifest -b llvm-toolchain
+              repo sync -c -j$(nproc)
+          
+              # Clone the patcher repository
+              cd "${PATCHER_DIR}"
+              git clone https://github.com/snownf/ndk-aarch64-linux.git .
+          
+              # Step 2: Replace source code
+              cd "${LLVM_TOOLCHAIN_DIR}/toolchain/llvm_android"
+              mv patches ../patches_backup  # backup patches
+              rm -rf *
+              cp -rf "${PATCHER_DIR}/"* .  # replace with patcher code
+              mv ../patches_backup patches  # restore patches
+          
+              # Step 3: Build the toolchain
+              echo "Building LLVM toolchain (this will take a long time)..."
+              cd "${LLVM_TOOLCHAIN_DIR}"
+              python3 toolchain/llvm_android/build.py --no-build windows --skip-tests --single-stage --no-musl
+          
+              if [ ! -f "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/clang" ]; then
+                echo "ERROR: LLVM toolchain build failed - clang binary not found"
+                exit 1
+              fi
+          
+              echo "LLVM toolchain build completed successfully"
+            else
+              echo "Using cached LLVM toolchain"
+          
+              # Still need to clone patcher repo for reference
+              cd "${PATCHER_DIR}"
+              git clone https://github.com/snownf/ndk-aarch64-linux.git .
+            fi
+          
+            # Step 4: Replace NDK binary files with ARM64-compatible ones
+            echo "Patching NDK with ARM64-compatible binaries..."
+          
+            # Copy the built ARM64 binaries to replace x86_64 ones
+            # Note: We copy to linux-x86_64 directory to maintain compatibility with build scripts
+            NDK_BIN_DIR="${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64/bin"
+            NDK_LIB_DIR="${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64/lib"
+          
+            # Copy clang binaries
+            cp -f "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/clang"* "${NDK_BIN_DIR}/"
+          
+            # Copy LLVM tools
+            cp -f "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/llvm-"* "${NDK_BIN_DIR}/" 2>/dev/null || true
+          
+            # Copy LLD linker
+            cp -f "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/lld"* "${NDK_BIN_DIR}/" 2>/dev/null || true
+          
+            # Copy clang library directory
+            if [ -d "${LLVM_TOOLCHAIN_DIR}/out/stage2/lib/clang" ]; then
+              rm -rf "${NDK_LIB_DIR}/clang"
+              cp -rf "${LLVM_TOOLCHAIN_DIR}/out/stage2/lib/clang" "${NDK_LIB_DIR}/"
+            fi
+          
+            # Copy additional required tools
+            cp -f /usr/bin/make "${NDK_DIR}/prebuilt/linux-x86_64/bin/" 2>/dev/null || true
+            cp -f /usr/bin/yasm "${NDK_DIR}/prebuilt/linux-x86_64/bin/" 2>/dev/null || true
+          
+            # Make sure all binaries are executable
+            chmod +x "${NDK_BIN_DIR}/"*
+          
+            echo "NDK patching completed successfully"
           else
-            echo "Using cached NDK at ${NDK_DIR}"
+            echo "Using cached patched NDK"
           fi
           
           # Set environment variables
-          echo "ndk-path=${NDK_DIR}" >> $GITHUB_OUTPUT
-          echo "${NDK_DIR}" >> $GITHUB_PATH
           echo "ANDROID_NDK_ROOT=${NDK_DIR}" >> $GITHUB_ENV
           echo "ANDROID_NDK=${NDK_DIR}" >> $GITHUB_ENV
           
-          # Find correct toolchain path - Google NDK has x86_64 prebuilt tools
+          # Use the patched x86_64 directory (which now contains ARM64 binaries)
           TOOLCHAIN_BIN="${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64/bin"
           SYSROOT="${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
           
-          if [ ! -d "${TOOLCHAIN_BIN}" ]; then
-            echo "ERROR: Toolchain bin directory not found at ${TOOLCHAIN_BIN}"
-            echo "Available toolchain directories:"
-            find "${NDK_DIR}" -path "*/toolchains/llvm/prebuilt/*/bin" -type d || echo "None found"
-            exit 1
-          fi
+          echo "ANDROID_TOOLCHAIN_BIN=${TOOLCHAIN_BIN}" >> $GITHUB_ENV
+          echo "ANDROID_SYSROOT=${SYSROOT}" >> $GITHUB_ENV
           
-          echo "Found toolchain at: ${TOOLCHAIN_BIN}"
-          echo "Found sysroot at: ${SYSROOT}"
-          
-          # Create platform directories for compatibility
-          mkdir -p "${NDK_DIR}/platforms/android-21/arch-arm64/usr/lib"
-          mkdir -p "${NDK_DIR}/platforms/android-21/arch-arm64/usr/include"
-
-          # Copy sysroot files for compatibility
-          if [ -d "${SYSROOT}/usr/lib/aarch64-linux-android/21" ]; then
-            cp -r "${SYSROOT}/usr/lib/aarch64-linux-android/21/"* "${NDK_DIR}/platforms/android-21/arch-arm64/usr/lib/" 2>/dev/null || true
-          fi
-          
-          if [ -d "${SYSROOT}/usr/include" ]; then
-            cp -r "${SYSROOT}/usr/include/"* "${NDK_DIR}/platforms/android-21/arch-arm64/usr/include/" 2>/dev/null || true
-          fi
-          
-          echo "Installing system clang and cross-compilation tools..."
-          sudo apt-get update -qq
-          sudo apt-get install -y \
-            clang-15 \
-            llvm-15 \
-            gcc-aarch64-linux-gnu \
-            g++-aarch64-linux-gnu \
-            libc6-dev-arm64-cross \
-            qemu-user-static \
-            binfmt-support
-          
-          echo "Setting up working clang toolchain for ARM64 host..."
-          
-          # The Google NDK x86_64 binaries need to be patched to work on ARM64
-          CLANG_BINARY="${TOOLCHAIN_BIN}/clang-18"
-          CLANGPP_BINARY="${TOOLCHAIN_BIN}/clang++"
-          CLANG_SYMLINK="${TOOLCHAIN_BIN}/clang"
-          
-          # Backup original binaries if they exist
-          [ -f "${CLANG_BINARY}" ] && mv "${CLANG_BINARY}" "${CLANG_BINARY}.google-original"
-          
-          # Remove broken symlinks
-          rm -f "${CLANG_SYMLINK}" "${CLANGPP_BINARY}"
-          
-          # Fix permissions on NDK linker
-          echo "Fixing NDK linker permissions..."
-          chmod +x "${TOOLCHAIN_BIN}/lld" 2>/dev/null || true
-          chmod +x "${TOOLCHAIN_BIN}/ld.lld" 2>/dev/null || true
-          
-          # Create working clang-18 wrapper using system clang
-          cat > "${CLANG_BINARY}" << 'EOF'
-          #!/bin/bash
-          # Working clang wrapper for Android cross-compilation using system clang
-          SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
-          # SCRIPT_DIR is: .../android-ndk-r27b/toolchains/llvm/prebuilt/linux-x86_64/bin
-          # We need to go up 5 levels to get to android-ndk-r27b
-          NDK_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "${SCRIPT_DIR}")")")")")"
-          SYSROOT="${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
-          
-          if [ ! -d "${SYSROOT}" ]; then
-            echo "ERROR: Cannot find sysroot at ${SYSROOT}"
-            echo "SCRIPT_DIR: ${SCRIPT_DIR}"
-            echo "NDK_ROOT: ${NDK_ROOT}"
-            echo "Expected path structure:"
-            echo "  SCRIPT_DIR/../../../../.. should be NDK_ROOT"
-            exit 1
-          fi
-
-          # Use the lld linker from the same directory as this script
-          LLD_PATH="${SCRIPT_DIR}/lld"
-
-          # Filter out any existing -fuse-ld arguments and force our own
-          ARGS=()
-          for arg in "$@"; do
-            if [[ "$arg" != -fuse-ld=* ]]; then
-              ARGS+=("$arg")
-            fi
-          done
-
-          # Use system clang with Android target and NDK linker
-          exec /usr/bin/clang-15 \
-            --target=aarch64-linux-android21 \
-            --sysroot="${SYSROOT}" \
-            -fuse-ld="${LLD_PATH}" \
-            "${ARGS[@]}"
-          EOF
-          
-          chmod +x "${CLANG_BINARY}"
-          
-          # Patch the API-specific wrapper scripts
-          echo "Patching API-specific wrapper scripts..."
-          
-          ANDROID_CLANG="${TOOLCHAIN_BIN}/aarch64-linux-android21-clang"
-          ANDROID_CLANGPP="${TOOLCHAIN_BIN}/aarch64-linux-android21-clang++"
-          
-          if [ -f "${ANDROID_CLANG}" ]; then
-            cp "${ANDROID_CLANG}" "${ANDROID_CLANG}.original"
-          
-            cat > "${ANDROID_CLANG}" << 'EOF'
-          #!/bin/bash
-          # Patched Android clang wrapper using system clang
-          SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
-          # SCRIPT_DIR is: .../android-ndk-r27b/toolchains/llvm/prebuilt/linux-x86_64/bin
-          # We need to go up 5 levels to get to android-ndk-r27b
-          NDK_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "${SCRIPT_DIR}")")")")")"
-          SYSROOT="${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
-          
-          if [ ! -d "${SYSROOT}" ]; then
-            echo "ERROR: Cannot find sysroot at ${SYSROOT}"
-            echo "SCRIPT_DIR: ${SCRIPT_DIR}"
-            echo "NDK_ROOT: ${NDK_ROOT}"
-            echo "Expected path structure:"
-            echo "  SCRIPT_DIR/../../../../.. should be NDK_ROOT"
-            exit 1
-          fi
-
-          # Use the lld linker from the same directory
-          LLD_PATH="${SCRIPT_DIR}/lld"
-
-          exec /usr/bin/clang-15 \
-            --target=aarch64-linux-android21 \
-            --sysroot="${SYSROOT}" \
-            -fuse-ld="${LLD_PATH}" \
-            "$@"
-          EOF
-            chmod +x "${ANDROID_CLANG}"
-          fi
-          
-          if [ -f "${ANDROID_CLANGPP}" ]; then
-            cp "${ANDROID_CLANGPP}" "${ANDROID_CLANGPP}.original"
-          
-            cat > "${ANDROID_CLANGPP}" << 'EOF'
-          #!/bin/bash
-          # Patched Android clang++ wrapper using system clang
-          SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
-          # SCRIPT_DIR is: .../android-ndk-r27b/toolchains/llvm/prebuilt/linux-x86_64/bin
-          # We need to go up 5 levels to get to android-ndk-r27b
-          NDK_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "${SCRIPT_DIR}")")")")")"
-          SYSROOT="${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
-          
-          if [ ! -d "${SYSROOT}" ]; then
-            echo "ERROR: Cannot find sysroot at ${SYSROOT}"
-            echo "SCRIPT_DIR: ${SCRIPT_DIR}"
-            echo "NDK_ROOT: ${NDK_ROOT}"
-            echo "Expected path structure:"
-            echo "  SCRIPT_DIR/../../../../.. should be NDK_ROOT"
-            exit 1
-          fi
-
-          # Use the lld linker from the same directory
-          LLD_PATH="${SCRIPT_DIR}/lld"
-
-          exec /usr/bin/clang-15 \
-            --target=aarch64-linux-android21 \
-            --sysroot="${SYSROOT}" \
-            -fuse-ld="${LLD_PATH}" \
-            "$@"
-          EOF
-            chmod +x "${ANDROID_CLANGPP}"
-          fi
-          
-          # Create symlinks
-          ln -sf clang-18 "${CLANG_SYMLINK}"
-          ln -sf clang-18 "${CLANGPP_BINARY}"
-          
-          # Test the patched setup
-          echo "Testing patched clang setup:"
-          if "${CLANG_BINARY}" --version >/dev/null 2>&1; then
-            echo "SUCCESS: clang-18 wrapper works!"
-            "${CLANG_BINARY}" --version 2>&1 | head -1
+          # Test the patched toolchain
+          echo "Testing patched Android toolchain..."
+          if "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang" --version >/dev/null 2>&1; then
+            echo "SUCCESS: Patched toolchain works!"
+            "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang" --version | head -1
           else
-            echo "ERROR: clang-18 wrapper failed"
-            "${CLANG_BINARY}" --version
-            exit 1
-          fi
-          
-          if "${CLANG_SYMLINK}" --version >/dev/null 2>&1; then
-            echo "SUCCESS: clang symlink works!"
-          else
-            echo "ERROR: clang symlink failed"
-            exit 1
-          fi
-          
-          if "${CLANGPP_BINARY}" --version >/dev/null 2>&1; then
-            echo "SUCCESS: clang++ symlink works!"
-          else
-            echo "ERROR: clang++ symlink failed"
-            exit 1
-          fi
-          
-          # Test the patched API-specific wrappers
-          echo "Testing patched API-specific wrapper scripts:"
-          if "${ANDROID_CLANG}" --version >/dev/null 2>&1; then
-            echo "SUCCESS: Patched aarch64-linux-android21-clang works!"
-          else
-            echo "ERROR: Patched aarch64-linux-android21-clang failed"
-            exit 1
-          fi
-          
-          if "${ANDROID_CLANGPP}" --version >/dev/null 2>&1; then
-            echo "SUCCESS: Patched aarch64-linux-android21-clang++ works!"
-          else
-            echo "ERROR: Patched aarch64-linux-android21-clang++ failed"
+            echo "ERROR: Patched toolchain test failed"
             exit 1
           fi
           
@@ -404,7 +284,6 @@ jobs:
           echo "Creating CMake toolchain file..."
           mkdir -p "${GITHUB_WORKSPACE}/cmake"
           
-          # CRITICAL: Use the x86_64 toolchain consistently - don't mix paths!
           cat > "${GITHUB_WORKSPACE}/cmake/android-arm64.cmake" << EOF
           # CMake toolchain file for Android ARM64 cross-compilation
           set(CMAKE_SYSTEM_NAME Android)
@@ -413,10 +292,8 @@ jobs:
           set(CMAKE_ANDROID_NDK ${NDK_DIR})
           set(CMAKE_ANDROID_STL_TYPE c++_shared)
           
-          # IMPORTANT: Use x86_64 sysroot consistently with x86_64 toolchain
+          # Use the patched toolchain (ARM64 binaries in x86_64 directory)
           set(CMAKE_SYSROOT ${SYSROOT})
-          
-          # IMPORTANT: Use x86_64 toolchain paths - these are the patched ones
           set(CMAKE_C_COMPILER ${TOOLCHAIN_BIN}/aarch64-linux-android21-clang)
           set(CMAKE_CXX_COMPILER ${TOOLCHAIN_BIN}/aarch64-linux-android21-clang++)
           
@@ -430,35 +307,13 @@ jobs:
           set(CMAKE_C_FLAGS_INIT "-fPIC")
           set(CMAKE_CXX_FLAGS_INIT "-fPIC")
           
-          # Force the linker to use the correct path
-          set(CMAKE_EXE_LINKER_FLAGS_INIT "-fuse-ld=${TOOLCHAIN_BIN}/lld")
-          set(CMAKE_SHARED_LINKER_FLAGS_INIT "-fuse-ld=${TOOLCHAIN_BIN}/lld")
+          # Set make program
+          set(CMAKE_MAKE_PROGRAM /usr/bin/make)
           EOF
           
-          echo "CMake toolchain file created at: ${GITHUB_WORKSPACE}/cmake/android-arm64.cmake"
+          echo "NDK setup completed successfully"
           echo "Using toolchain: ${TOOLCHAIN_BIN}"
           echo "Using sysroot: ${SYSROOT}"
-          
-          # IMPORTANT: Verify that the toolchain file has correct paths
-          echo "Verifying CMake toolchain file contents:"
-          cat "${GITHUB_WORKSPACE}/cmake/android-arm64.cmake"
-          
-          # Double-check that we're using x86_64 paths
-          if [[ "${TOOLCHAIN_BIN}" != *"linux-x86_64"* ]]; then
-            echo "ERROR: TOOLCHAIN_BIN should contain linux-x86_64 but got: ${TOOLCHAIN_BIN}"
-            exit 1
-          fi
-          
-          if [[ "${SYSROOT}" != *"linux-x86_64"* ]]; then
-            echo "ERROR: SYSROOT should contain linux-x86_64 but got: ${SYSROOT}"
-            exit 1
-          fi
-          
-          # Store toolchain bin path for later use
-          echo "ANDROID_TOOLCHAIN_BIN=${TOOLCHAIN_BIN}" >> $GITHUB_ENV
-          echo "ANDROID_SYSROOT=${SYSROOT}" >> $GITHUB_ENV
-          
-          echo "NDK setup completed successfully"
 
       - name: Setup OpenBLAS
         shell: bash
@@ -616,11 +471,8 @@ jobs:
           "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang++" --version 2>&1 | head -1 || echo "clang++ failed"
           echo ""
           
-          echo "Environment variables:"
-          echo "ANDROID_NDK: ${ANDROID_NDK}"
-          echo "ANDROID_NDK_ROOT: ${ANDROID_NDK_ROOT}"
-          echo "ANDROID_TOOLCHAIN_BIN: ${ANDROID_TOOLCHAIN_BIN}"
-          echo "ANDROID_SYSROOT: ${ANDROID_SYSROOT}"
+          echo "File type of clang binary:"
+          file "${TOOLCHAIN_BIN}/clang"
           echo ""
           
           echo "CMake toolchain file exists: $(test -f "${CMAKE_TOOLCHAIN_FILE}" && echo 'Yes' || echo 'No')"
@@ -681,24 +533,6 @@ jobs:
           echo "  Platform classifier: ${LIBND4J_CLASSIFIER}"
           echo ""
           
-          # Final compiler verification
-          echo "=== Final Compiler Verification ==="
-          TOOLCHAIN_BIN="${ANDROID_TOOLCHAIN_BIN}"
-          
-          echo "Testing final compiler setup:"
-          "${TOOLCHAIN_BIN}/clang++" --version || {
-            echo "ERROR: clang++ is not working!"
-            echo "Attempting to recreate symlink..."
-            rm -f "${TOOLCHAIN_BIN}/clang++"
-            ln -sf clang-18 "${TOOLCHAIN_BIN}/clang++"
-            echo "Retesting..."
-            "${TOOLCHAIN_BIN}/clang++" --version || {
-              echo "FATAL: Cannot get clang++ working"
-              exit 1
-            }
-          }
-          echo ""
-          
           # Execute Maven build
           echo "=== Executing Maven Build ==="
           echo "Maven command:"
@@ -728,11 +562,6 @@ jobs:
           # Remove swap file
           sudo swapoff /swapfile 2>/dev/null || true
           sudo rm -f /swapfile 2>/dev/null || true
-          
-          # Clean up NDK if not cached
-          if [ "${{ steps.cache-android-ndk.outputs.cache-hit }}" != 'true' ]; then
-            echo "NDK was downloaded fresh, keeping for cache"
-          fi
           
           # Clean up temporary build files
           rm -rf /tmp/maven-* 2>/dev/null || true
