@@ -1437,50 +1437,50 @@ class Assign<std::basic_string<char>, std::basic_string<char>> {
 template <typename X, typename Y, typename Z>
 class LogPoissonLossFull {
  private:
-  static SD_INLINE Z op_logic(X z, Y c) {
+  static SD_HOST_DEVICE SD_INLINE Z op_logic(X z, Y c) {
     auto zz = static_cast<Z>(z);
     auto zc = static_cast<Z>(c);
     return (sd::math::sd_exp<Y, Z>(c) - zz * zc +
             (zz * sd::math::sd_log<X, Z>(z) - zz +
              static_cast<Z>(0.5f) * sd::math::sd_log<Z, Z>(static_cast<Z>(SD_DOUBLE_PI_X) * zz)));
   }
-  static SD_INLINE Z op_logic(X z, Y c, Z *params) { return op_logic(z, c); }
-  static SD_INLINE Z op_logic(X z) {
+  static SD_HOST_DEVICE SD_INLINE Z op_logic(X z, Y c, Z *params) { return op_logic(z, c); }
+  static SD_HOST_DEVICE SD_INLINE Z op_logic(X z) {
     auto zz = static_cast<Z>(z);
     return (zz * sd::math::sd_log<Y, Z>(z) - zz +
             static_cast<Z>(0.5f) * sd::math::sd_log<Z, Z>(static_cast<Z>(SD_DOUBLE_PI_X) * zz));
   }
-  static SD_INLINE X op_logic(X z, Y *params) {
+  static SD_HOST_DEVICE SD_INLINE X op_logic(X z, Y *params) {
     return (sd::math::sd_exp<X, X>(params[0]) - z * params[0] +
             (z * sd::math::sd_log<X, Z>(z) - z + static_cast<X>(0.5f) * sd::math::sd_log<X, Z>(SD_DOUBLE_PI_X * z)));
   }
-  static Z op_simd(X z, Y c) { return op_logic(z, c); }
-  static Z op_simd(X z, Y c, Z *params) { return op_logic(z, c, params); }
-  static Z op_simd(X z) { return op_logic(z); }
-  static X op_simd(X z, Y *params) { return op_logic(z, params); }
+  static SD_HOST_DEVICE Z op_simd(X z, Y c) { return op_logic(z, c); }
+  static SD_HOST_DEVICE Z op_simd(X z, Y c, Z *params) { return op_logic(z, c, params); }
+  static SD_HOST_DEVICE Z op_simd(X z) { return op_logic(z); }
+  static SD_HOST_DEVICE X op_simd(X z, Y *params) { return op_logic(z, params); }
 
  public:
-  static Z op(X z, Y c) {
+  static SD_HOST_DEVICE Z op(X z, Y c) {
     if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||
                   simdOps::is_simd_unsupported_argument_type<X>::value ||
                   simdOps::is_simd_unsupported_argument_type<Y>::value)
       return op_logic(z, c);
     else return op_simd(z, c);
   }
-  static Z op(X z, Y c, Z *params) {
+  static SD_HOST_DEVICE Z op(X z, Y c, Z *params) {
     if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||
                   simdOps::is_simd_unsupported_argument_type<X>::value ||
                   simdOps::is_simd_unsupported_argument_type<Y>::value)
       return op_logic(z, c, params);
     else return op_simd(z, c, params);
   }
-  static Z op(X z) {
+  static SD_HOST_DEVICE Z op(X z) {
     if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||
                   simdOps::is_simd_unsupported_argument_type<X>::value)
       return op_logic(z);
     else return op_simd(z);
   }
-  static X op(X z, Y *params) {
+  static SD_HOST_DEVICE X op(X z, Y *params) {
     if constexpr (simdOps::is_simd_unsupported_return_type<X>::value ||
                   simdOps::is_simd_unsupported_argument_type<X>::value ||
                   simdOps::is_simd_unsupported_argument_type<Y>::value)
@@ -1494,7 +1494,7 @@ class LogPoissonLossFull {
 template <typename X>
 class Celu {
  private:
-  static SD_INLINE X op_logic(X d1, X *params) {
+  static SD_HOST_DEVICE SD_INLINE X op_logic(X d1, X *params) {
     X alpha = params[0];
     return sd::math::sd_max<X>(static_cast<X>(0), d1) +
            sd::math::sd_min<X>(static_cast<X>(0), alpha * (sd::math::sd_exp<X, X>(d1/alpha) - static_cast<X>(1)));
@@ -1503,7 +1503,7 @@ class Celu {
 
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda;
-  static X op(X d1, X *params) {
+  static SD_HOST_DEVICE X op(X d1, X *params) {
     if constexpr (simdOps::is_simd_unsupported_return_type<X>::value)
       return op_logic(d1, params);
     else
