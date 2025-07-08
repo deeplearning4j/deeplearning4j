@@ -3272,7 +3272,10 @@ public class SameDiff extends SDBaseOps {
      * @return The created variable
      */
     public SDVariable constant(String name, @NonNull INDArray constant) {
-        Preconditions.checkState(!variables.containsKey(name), "Variable with name \"%s\" already exists", name);
+       if(variables.containsKey(name)) {
+           return variables.get(name).getVariable();
+       }
+
         if (name == null || name.length() < 1)
             name = getNewVarName();
         if(constant.isView()) {
