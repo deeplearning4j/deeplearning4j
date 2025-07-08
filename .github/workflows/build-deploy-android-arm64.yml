@@ -129,7 +129,7 @@ jobs:
         id: cache-arm64-ndk
         with:
           path: ${{ github.workspace }}/android-ndk-r27b
-          key: android-ndk-r27b-aarch64-${{ runner.os }}-v5
+          key: android-ndk-r27b-aarch64-${{ runner.os }}-v6
 
       - name: Setup ARM64 Android NDK
         id: setup-ndk
@@ -191,10 +191,10 @@ jobs:
           echo "Analyzing NDK structure..."
           find "${NDK_DIR}" -name "clang*" -type f | head -10
           
-          # Try different possible toolchain paths for ARM64 host
+          # Try different possible toolchain paths - prefer x86_64 over aarch64 as it's more reliable
           POSSIBLE_TOOLCHAIN_PATHS=(
-            "${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64/bin"
             "${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64/bin"
+            "${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64/bin"
             "${NDK_DIR}/toolchains/llvm/prebuilt/darwin-x86_64/bin"
           )
           
@@ -218,18 +218,25 @@ jobs:
           mkdir -p "${NDK_DIR}/platforms/android-21/arch-arm64/usr/lib"
           mkdir -p "${NDK_DIR}/platforms/android-21/arch-arm64/usr/include"
 
-          # Copy the sysroot files from ARM64 NDK (suppress errors for missing files)
+          # Copy the sysroot files from NDK (suppress errors for missing files)
           SYSROOT_BASE="${NDK_DIR}/toolchains/llvm/prebuilt"
           SYSROOT_PATH=""
           
-          # Find the correct sysroot path
-          for prebuilt_dir in "${SYSROOT_BASE}"/*/; do
-            if [ -d "${prebuilt_dir}sysroot" ]; then
-              SYSROOT_PATH="${prebuilt_dir}sysroot"
-              echo "Found sysroot at: ${SYSROOT_PATH}"
-              break
-            fi
-          done
+          # Find the correct sysroot path - prefer the same prebuilt directory as toolchain
+          TOOLCHAIN_PREBUILT_DIR=$(dirname "${TOOLCHAIN_BIN}")
+          if [ -d "${TOOLCHAIN_PREBUILT_DIR}/sysroot" ]; then
+            SYSROOT_PATH="${TOOLCHAIN_PREBUILT_DIR}/sysroot"
+            echo "Found matching sysroot at: ${SYSROOT_PATH}"
+          else
+            # Fallback to searching all prebuilt directories
+            for prebuilt_dir in "${SYSROOT_BASE}"/*/; do
+              if [ -d "${prebuilt_dir}sysroot" ]; then
+                SYSROOT_PATH="${prebuilt_dir}sysroot"
+                echo "Found fallback sysroot at: ${SYSROOT_PATH}"
+                break
+              fi
+            done
+          fi
           
           if [ -n "${SYSROOT_PATH}" ]; then
             SYSROOT_LIB="${SYSROOT_PATH}/usr/lib/aarch64-linux-android/21"
@@ -278,14 +285,21 @@ jobs:
           SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
           NDK_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "${SCRIPT_DIR}")")")")"
           
-          # Find the sysroot dynamically
+          # Find the sysroot dynamically - prefer same prebuilt directory
+          PREBUILT_DIR="$(dirname "${SCRIPT_DIR}")"
           SYSROOT=""
-          for prebuilt_dir in "${NDK_ROOT}/toolchains/llvm/prebuilt"/*; do
-            if [ -d "${prebuilt_dir}/sysroot" ]; then
-              SYSROOT="${prebuilt_dir}/sysroot"
-              break
-            fi
-          done
+          
+          if [ -d "${PREBUILT_DIR}/sysroot" ]; then
+            SYSROOT="${PREBUILT_DIR}/sysroot"
+          else
+            # Fallback to searching all prebuilt directories
+            for prebuilt_dir in "${NDK_ROOT}/toolchains/llvm/prebuilt"/*; do
+              if [ -d "${prebuilt_dir}/sysroot" ]; then
+                SYSROOT="${prebuilt_dir}/sysroot"
+                break
+              fi
+            done
+          fi
           
           if [ -z "${SYSROOT}" ]; then
             echo "ERROR: Cannot find sysroot in NDK"
@@ -329,14 +343,21 @@ jobs:
           SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
           NDK_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "${SCRIPT_DIR}")")")")"
           
-          # Find the sysroot dynamically
+          # Find the sysroot dynamically - prefer same prebuilt directory
+          PREBUILT_DIR="$(dirname "${SCRIPT_DIR}")"
           SYSROOT=""
-          for prebuilt_dir in "${NDK_ROOT}/toolchains/llvm/prebuilt"/*; do
-            if [ -d "${prebuilt_dir}/sysroot" ]; then
-              SYSROOT="${prebuilt_dir}/sysroot"
-              break
-            fi
-          done
+          
+          if [ -d "${PREBUILT_DIR}/sysroot" ]; then
+            SYSROOT="${PREBUILT_DIR}/sysroot"
+          else
+            # Fallback to searching all prebuilt directories
+            for prebuilt_dir in "${NDK_ROOT}/toolchains/llvm/prebuilt"/*; do
+              if [ -d "${prebuilt_dir}/sysroot" ]; then
+                SYSROOT="${prebuilt_dir}/sysroot"
+                break
+              fi
+            done
+          fi
           
           if [ -z "${SYSROOT}" ]; then
             echo "ERROR: Cannot find sysroot in NDK"
@@ -364,14 +385,21 @@ jobs:
           SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
           NDK_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "${SCRIPT_DIR}")")")")"
           
-          # Find the sysroot dynamically
+          # Find the sysroot dynamically - prefer same prebuilt directory
+          PREBUILT_DIR="$(dirname "${SCRIPT_DIR}")"
           SYSROOT=""
-          for prebuilt_dir in "${NDK_ROOT}/toolchains/llvm/prebuilt"/*; do
-            if [ -d "${prebuilt_dir}/sysroot" ]; then
-              SYSROOT="${prebuilt_dir}/sysroot"
-              break
-            fi
-          done
+          
+          if [ -d "${PREBUILT_DIR}/sysroot" ]; then
+            SYSROOT="${PREBUILT_DIR}/sysroot"
+          else
+            # Fallback to searching all prebuilt directories
+            for prebuilt_dir in "${NDK_ROOT}/toolchains/llvm/prebuilt"/*; do
+              if [ -d "${prebuilt_dir}/sysroot" ]; then
+                SYSROOT="${prebuilt_dir}/sysroot"
+                break
+              fi
+            done
+          fi
           
           if [ -z "${SYSROOT}" ]; then
             echo "ERROR: Cannot find sysroot in NDK"
@@ -401,6 +429,8 @@ jobs:
             "${CLANG_BINARY}" --version 2>&1 | head -1
           else
             echo "ERROR: clang-18 wrapper failed"
+            echo "Testing wrapper script directly:"
+            "${CLANG_BINARY}" --version
             exit 1
           fi
           
@@ -440,12 +470,16 @@ jobs:
           
           # Find the actual sysroot path for the toolchain file
           ACTUAL_SYSROOT=""
-          for prebuilt_dir in "${NDK_DIR}/toolchains/llvm/prebuilt"/*; do
-            if [ -d "${prebuilt_dir}/sysroot" ]; then
-              ACTUAL_SYSROOT="${prebuilt_dir}/sysroot"
-              break
-            fi
-          done
+          if [ -d "${TOOLCHAIN_PREBUILT_DIR}/sysroot" ]; then
+            ACTUAL_SYSROOT="${TOOLCHAIN_PREBUILT_DIR}/sysroot"
+          else
+            for prebuilt_dir in "${NDK_DIR}/toolchains/llvm/prebuilt"/*; do
+              if [ -d "${prebuilt_dir}/sysroot" ]; then
+                ACTUAL_SYSROOT="${prebuilt_dir}/sysroot"
+                break
+              fi
+            done
+          fi
           
           cat > "${GITHUB_WORKSPACE}/cmake/android-arm64.cmake" << EOF
           # CMake toolchain file for Android ARM64 cross-compilation
