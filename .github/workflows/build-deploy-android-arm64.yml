@@ -248,14 +248,17 @@ jobs:
           #!/bin/bash
           # Working clang wrapper for Android cross-compilation using system clang
           SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
-          # FIXED: Correct NDK_ROOT calculation
-          NDK_ROOT="$(dirname "$(dirname "$(dirname "${SCRIPT_DIR}")")")"
+          # SCRIPT_DIR is: .../android-ndk-r27b/toolchains/llvm/prebuilt/linux-x86_64/bin
+          # We need to go up 5 levels to get to android-ndk-r27b
+          NDK_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "${SCRIPT_DIR}")")")")")"
           SYSROOT="${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
           
           if [ ! -d "${SYSROOT}" ]; then
             echo "ERROR: Cannot find sysroot at ${SYSROOT}"
             echo "SCRIPT_DIR: ${SCRIPT_DIR}"
             echo "NDK_ROOT: ${NDK_ROOT}"
+            echo "Expected path structure:"
+            echo "  SCRIPT_DIR/../../../../.. should be NDK_ROOT"
             exit 1
           fi
 
@@ -293,14 +296,17 @@ jobs:
           #!/bin/bash
           # Patched Android clang wrapper using system clang
           SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
-          # FIXED: Correct NDK_ROOT calculation  
-          NDK_ROOT="$(dirname "$(dirname "$(dirname "${SCRIPT_DIR}")")")"
+          # SCRIPT_DIR is: .../android-ndk-r27b/toolchains/llvm/prebuilt/linux-x86_64/bin
+          # We need to go up 5 levels to get to android-ndk-r27b
+          NDK_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "${SCRIPT_DIR}")")")")")"
           SYSROOT="${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
           
           if [ ! -d "${SYSROOT}" ]; then
             echo "ERROR: Cannot find sysroot at ${SYSROOT}"
             echo "SCRIPT_DIR: ${SCRIPT_DIR}"
             echo "NDK_ROOT: ${NDK_ROOT}"
+            echo "Expected path structure:"
+            echo "  SCRIPT_DIR/../../../../.. should be NDK_ROOT"
             exit 1
           fi
 
@@ -323,14 +329,17 @@ jobs:
           #!/bin/bash
           # Patched Android clang++ wrapper using system clang
           SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
-          # FIXED: Correct NDK_ROOT calculation
-          NDK_ROOT="$(dirname "$(dirname "$(dirname "${SCRIPT_DIR}")")")"
+          # SCRIPT_DIR is: .../android-ndk-r27b/toolchains/llvm/prebuilt/linux-x86_64/bin
+          # We need to go up 5 levels to get to android-ndk-r27b
+          NDK_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "${SCRIPT_DIR}")")")")")"
           SYSROOT="${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
           
           if [ ! -d "${SYSROOT}" ]; then
             echo "ERROR: Cannot find sysroot at ${SYSROOT}"
             echo "SCRIPT_DIR: ${SCRIPT_DIR}"
             echo "NDK_ROOT: ${NDK_ROOT}"
+            echo "Expected path structure:"
+            echo "  SCRIPT_DIR/../../../../.. should be NDK_ROOT"
             exit 1
           fi
 
