@@ -233,7 +233,7 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
          sd::LongType coords[SD_MAX_RANK];
          sd::LongType xOffset;
          INDEX2COORDS(i, shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), coords);
-         COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), shape::stride(tadOnlyShapeInfo), coords, xOffset);
+         COORDS2INDEX(shape::rank(tadOnlyShapeInfo),  shape::stride(tadOnlyShapeInfo), coords, xOffset);
          xOffset += tadOffsetForBlock;
          IndexValue<X> comp{dx[xOffset], i};
          sPartials[threadIdxX] = OpType::update(sPartials[threadIdxX], comp, extraParams);
@@ -258,7 +258,7 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
          sd::LongType coords[SD_MAX_RANK];
          sd::LongType xOffset;
          INDEX2COORDS(x, shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), coords);
-         COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), shape::stride(tadOnlyShapeInfo), coords, xOffset);
+         COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::stride(tadOnlyShapeInfo), coords, xOffset);
          IndexValue<X> comp{dx[tadOffsetForBlock + xOffset], x};
          sPartials[threadIdxX] = OpType::update(sPartials[threadIdxX], comp, extraParams);
        }
@@ -280,7 +280,7 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
      sd::LongType coords[SD_MAX_RANK];
      sd::LongType xOffset;
      INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
-     COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
+     COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
      IndexValue<X> comp{dx[xOffset], i};
      reduction = OpType::update(reduction, comp, extraParams);
    }
