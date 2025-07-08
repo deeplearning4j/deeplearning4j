@@ -2070,14 +2070,14 @@ class BinaryRelativeError {
 
  public:
   no_op_exec_special no_op_exec_special_cuda
-  static Z op(X d1, Y d2, Z *params) {
+  static  SD_HOST_DEVICE Z op(X d1, Y d2, Z *params) {
     if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||
                   simdOps::is_simd_unsupported_argument_type<X>::value ||
                   simdOps::is_simd_unsupported_argument_type<Y>::value)
       return op_logic(d1, d2, params);
     else return op_simd(d1, d2, params);
   }
-  static Z op(X d1) {
+  static SD_HOST_DEVICE Z op(X d1) {
     if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||
                   simdOps::is_simd_unsupported_argument_type<X>::value)
       return op_logic(d1);
