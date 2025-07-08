@@ -558,7 +558,12 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
         set(LOCAL_CUDA_FLAGS "-maxrregcount=128")
 
         # Only Windows/MSVC specific flags - NO GCC-style flags whatsoever
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/bigobj -Xcompiler=/EHsc")
+        set(LOCAL_CUDA_FLAGS "-maxrregcount=128")
+        # Windows/MSVC flags: bigobj, EHsc, *and* disable the new preprocessor
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}
+        -Xcompiler=/bigobj
+        -Xcompiler=/EHsc
+        -Xcompiler=/Zc:preprocessor-")
 
         # Force clean host compiler flags
         set(CMAKE_CXX_FLAGS "" PARENT_SCOPE)
