@@ -51,6 +51,11 @@ on:
         required: false
         default: false
 
+      skipLLVMBuild:
+        description: 'Skip LLVM toolchain build (use for testing)'
+        required: false
+        default: false
+
 jobs:
   android-arm64:
     strategy:
@@ -67,6 +72,7 @@ jobs:
           - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
           - build_threads: ${{ github.event.inputs.buildThreads }}
     runs-on: ${{ github.event.inputs.runsOn }}
+    timeout-minutes: 600  # 10 hour timeout for LLVM build
     steps:
       - name: Clean workspace
         uses: AutoModality/action-clean@v1
@@ -129,19 +135,37 @@ jobs:
         id: cache-patched-ndk
         with:
           path: ${{ github.workspace }}/android-ndk-r27b
-          key: android-ndk-r27b-aarch64-patched-v1
+          key: android-ndk-r27b-aarch64-patched-v2
 
-      - name: Cache LLVM Toolchain Build
+      - name: Cache LLVM Toolchain Source
         uses: actions/cache@v4
-        id: cache-llvm-toolchain
+        id: cache-llvm-source
         with:
           path: ${{ github.workspace }}/llvm-toolchain
-          key: llvm-toolchain-aarch64-v1
+          key: llvm-toolchain-source-${{ github.run_id }}
+          restore-keys: |
+            llvm-toolchain-source-
+
+      - name: Cache LLVM Build Output
+        uses: actions/cache@v4
+        id: cache-llvm-build
+        with:
+          path: ${{ github.workspace }}/llvm-toolchain/out
+          key: llvm-toolchain-build-aarch64-v1
+
+      - name: Cache Patcher Repository
+        uses: actions/cache@v4
+        id: cache-patcher
+        with:
+          path: ${{ github.workspace }}/patcher_repo
+          key: patcher-repo-v1
 
       - name: Setup and Patch Android NDK for ARM64 Linux
         id: setup-ndk
         shell: bash
         run: |
+          set -e  # Exit on any error
+          
           NDK_VERSION="r27b"
           NDK_DIR="${GITHUB_WORKSPACE}/android-ndk-${NDK_VERSION}"
           LLVM_TOOLCHAIN_DIR="${GITHUB_WORKSPACE}/llvm-toolchain"
@@ -163,98 +187,154 @@ jobs:
             repo \
             git \
             wget \
-            unzip
+            unzip \
+            curl
           
-          if [ ! -d "${NDK_DIR}" ]; then
+          if [ ! -d "${NDK_DIR}" ] || [ ! -f "${NDK_DIR}/.patched" ]; then
             echo "Setting up patched NDK for ARM64 Linux..."
           
-            # Step 0: Prepare directories
-            mkdir -p "${LLVM_TOOLCHAIN_DIR}"
-            mkdir -p "${PATCHER_DIR}"
-          
             # Download official Google NDK first
-            echo "Downloading official Google Android NDK ${NDK_VERSION}..."
-            NDK_URL="https://dl.google.com/android/repository/android-ndk-r27b-linux.zip"
-            wget -q --timeout=60 --tries=3 "${NDK_URL}" -O ndk.zip
-            unzip -q ndk.zip -d "${GITHUB_WORKSPACE}"
-            rm ndk.zip
-          
             if [ ! -d "${NDK_DIR}" ]; then
-              echo "ERROR: NDK directory not found after extraction"
-              exit 1
-            fi
+              echo "Downloading official Google Android NDK ${NDK_VERSION}..."
+              NDK_URL="https://dl.google.com/android/repository/android-ndk-r27b-linux.zip"
+              wget -q --timeout=60 --tries=3 "${NDK_URL}" -O ndk.zip
+              unzip -q ndk.zip -d "${GITHUB_WORKSPACE}"
+              rm ndk.zip
           
-            # Check if we have cached LLVM toolchain
-            if [ ! -f "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/clang" ]; then
-              echo "Building LLVM toolchain for ARM64..."
-          
-              # Step 1: Download LLVM toolchain source code
-              cd "${LLVM_TOOLCHAIN_DIR}"
-              echo "Downloading LLVM toolchain source (this may take a while)..."
-              repo init -u https://android.googlesource.com/platform/manifest -b llvm-toolchain
-              repo sync -c -j$(nproc)
-          
-              # Clone the patcher repository
-              cd "${PATCHER_DIR}"
-              git clone https://github.com/snownf/ndk-aarch64-linux.git .
-          
-              # Step 2: Replace source code
-              cd "${LLVM_TOOLCHAIN_DIR}/toolchain/llvm_android"
-              mv patches ../patches_backup  # backup patches
-              rm -rf *
-              cp -rf "${PATCHER_DIR}/"* .  # replace with patcher code
-              mv ../patches_backup patches  # restore patches
-          
-              # Step 3: Build the toolchain
-              echo "Building LLVM toolchain (this will take a long time)..."
-              cd "${LLVM_TOOLCHAIN_DIR}"
-              python3 toolchain/llvm_android/build.py --no-build windows --skip-tests --single-stage --no-musl
-          
-              if [ ! -f "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/clang" ]; then
-                echo "ERROR: LLVM toolchain build failed - clang binary not found"
+              if [ ! -d "${NDK_DIR}" ]; then
+                echo "ERROR: NDK directory not found after extraction"
                 exit 1
               fi
+            fi
           
-              echo "LLVM toolchain build completed successfully"
+            # Clone patcher repository if not cached
+            if [ ! -d "${PATCHER_DIR}/.git" ]; then
+              echo "Cloning patcher repository..."
+              rm -rf "${PATCHER_DIR}"
+              git clone --depth 1 https://github.com/snownf/ndk-aarch64-linux.git "${PATCHER_DIR}"
+            fi
+          
+            # Skip LLVM build if requested (for testing)
+            if [ "${{ github.event.inputs.skipLLVMBuild }}" == "true" ]; then
+              echo "Skipping LLVM build as requested"
+              echo "Using system clang as fallback..."
+          
+              # Create minimal patched toolchain using system clang
+              TOOLCHAIN_BIN="${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          
+              # Backup original clang and create wrapper
+              [ -f "${TOOLCHAIN_BIN}/clang" ] && mv "${TOOLCHAIN_BIN}/clang" "${TOOLCHAIN_BIN}/clang.original"
+          
+              cat > "${TOOLCHAIN_BIN}/clang" << 'EOF'
+          #!/bin/bash
+          exec /usr/bin/clang "$@"
+          EOF
+              chmod +x "${TOOLCHAIN_BIN}/clang"
+          
+              # Mark as patched
+              touch "${NDK_DIR}/.patched"
+          
             else
-              echo "Using cached LLVM toolchain"
+              # Check if we have cached LLVM build
+              if [ ! -f "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/clang" ]; then
+                echo "Building LLVM toolchain for ARM64..."
+                echo "WARNING: This will take 2-4 hours on first run."
           
-              # Still need to clone patcher repo for reference
-              cd "${PATCHER_DIR}"
-              git clone https://github.com/snownf/ndk-aarch64-linux.git .
+                # Prepare directories
+                mkdir -p "${LLVM_TOOLCHAIN_DIR}"
+          
+                # Step 1: Download LLVM toolchain source code if not cached
+                if [ ! -f "${LLVM_TOOLCHAIN_DIR}/.repo/manifest.xml" ]; then
+                  echo "Downloading LLVM toolchain source (30-60 minutes)..."
+                  cd "${LLVM_TOOLCHAIN_DIR}"
+          
+                  # Initialize with timeout
+                  timeout 1800 repo init -u https://android.googlesource.com/platform/manifest -b llvm-toolchain || {
+                    echo "ERROR: repo init failed or timed out"
+                    exit 1
+                  }
+          
+                  # Sync with aggressive settings for CI
+                  echo "Syncing LLVM source code..."
+                  timeout 10800 repo sync -c -j8 --fail-fast --force-sync || {
+                    echo "ERROR: repo sync failed or timed out"
+                    exit 1
+                  }
+                else
+                  echo "Using cached LLVM source code"
+                fi
+          
+                # Step 2: Apply patches
+                echo "Applying ARM64 patches to LLVM build system..."
+                cd "${LLVM_TOOLCHAIN_DIR}/toolchain/llvm_android"
+          
+                # Backup and replace
+                [ -d patches ] && mv patches ../patches_backup
+                rm -rf *
+                cp -rf "${PATCHER_DIR}/"* .
+                [ -d ../patches_backup ] && mv ../patches_backup patches
+          
+                # Step 3: Build the toolchain
+                echo "Building LLVM toolchain (2-4 hours)..."
+                cd "${LLVM_TOOLCHAIN_DIR}"
+          
+                # Build with reasonable parallelism for CI
+                python3 toolchain/llvm_android/build.py \
+                  --no-build windows \
+                  --skip-tests \
+                  --single-stage \
+                  --no-musl \
+                  -j$(nproc)
+          
+                if [ ! -f "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/clang" ]; then
+                  echo "ERROR: LLVM toolchain build failed - clang binary not found"
+                  # List what we do have
+                  find "${LLVM_TOOLCHAIN_DIR}/out" -name "clang*" -type f 2>/dev/null || echo "No clang binaries found"
+                  exit 1
+                fi
+          
+                echo "LLVM toolchain build completed successfully"
+              else
+                echo "Using cached LLVM toolchain build"
+              fi
+          
+              # Step 4: Replace NDK binary files with ARM64-compatible ones
+              echo "Patching NDK with ARM64-compatible binaries..."
+          
+              NDK_BIN_DIR="${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64/bin"
+              NDK_LIB_DIR="${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64/lib"
+          
+              # Backup original binaries
+              [ -f "${NDK_BIN_DIR}/clang" ] && mv "${NDK_BIN_DIR}/clang" "${NDK_BIN_DIR}/clang.original"
+          
+              # Copy ARM64 LLVM binaries
+              echo "Copying clang binaries..."
+              cp -f "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/clang"* "${NDK_BIN_DIR}/" 2>/dev/null || true
+          
+              echo "Copying LLVM tools..."
+              cp -f "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/llvm-"* "${NDK_BIN_DIR}/" 2>/dev/null || true
+          
+              echo "Copying linker..."
+              cp -f "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/lld"* "${NDK_BIN_DIR}/" 2>/dev/null || true
+          
+              echo "Copying clang library..."
+              if [ -d "${LLVM_TOOLCHAIN_DIR}/out/stage2/lib/clang" ]; then
+                rm -rf "${NDK_LIB_DIR}/clang"
+                cp -rf "${LLVM_TOOLCHAIN_DIR}/out/stage2/lib/clang" "${NDK_LIB_DIR}/"
+              fi
+          
+              # Copy system tools
+              cp -f /usr/bin/make "${NDK_DIR}/prebuilt/linux-x86_64/bin/" 2>/dev/null || true
+              cp -f /usr/bin/yasm "${NDK_DIR}/prebuilt/linux-x86_64/bin/" 2>/dev/null || true
+          
+              # Fix permissions
+              chmod +x "${NDK_BIN_DIR}/"*
+          
+              echo "NDK patching completed successfully"
             fi
           
-            # Step 4: Replace NDK binary files with ARM64-compatible ones
-            echo "Patching NDK with ARM64-compatible binaries..."
-          
-            # Copy the built ARM64 binaries to replace x86_64 ones
-            # Note: We copy to linux-x86_64 directory to maintain compatibility with build scripts
-            NDK_BIN_DIR="${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64/bin"
-            NDK_LIB_DIR="${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64/lib"
-          
-            # Copy clang binaries
-            cp -f "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/clang"* "${NDK_BIN_DIR}/"
-          
-            # Copy LLVM tools
-            cp -f "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/llvm-"* "${NDK_BIN_DIR}/" 2>/dev/null || true
-          
-            # Copy LLD linker
-            cp -f "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/lld"* "${NDK_BIN_DIR}/" 2>/dev/null || true
-          
-            # Copy clang library directory
-            if [ -d "${LLVM_TOOLCHAIN_DIR}/out/stage2/lib/clang" ]; then
-              rm -rf "${NDK_LIB_DIR}/clang"
-              cp -rf "${LLVM_TOOLCHAIN_DIR}/out/stage2/lib/clang" "${NDK_LIB_DIR}/"
-            fi
-          
-            # Copy additional required tools
-            cp -f /usr/bin/make "${NDK_DIR}/prebuilt/linux-x86_64/bin/" 2>/dev/null || true
-            cp -f /usr/bin/yasm "${NDK_DIR}/prebuilt/linux-x86_64/bin/" 2>/dev/null || true
-          
-            # Make sure all binaries are executable
-            chmod +x "${NDK_BIN_DIR}/"*
-          
-            echo "NDK patching completed successfully"
+            # Mark as patched
+            touch "${NDK_DIR}/.patched"
           else
             echo "Using cached patched NDK"
           fi
@@ -263,7 +343,7 @@ jobs:
           echo "ANDROID_NDK_ROOT=${NDK_DIR}" >> $GITHUB_ENV
           echo "ANDROID_NDK=${NDK_DIR}" >> $GITHUB_ENV
           
-          # Use the patched x86_64 directory (which now contains ARM64 binaries)
+          # Use the patched toolchain
           TOOLCHAIN_BIN="${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64/bin"
           SYSROOT="${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
           
@@ -275,8 +355,11 @@ jobs:
           if "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang" --version >/dev/null 2>&1; then
             echo "SUCCESS: Patched toolchain works!"
             "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang" --version | head -1
+            echo "Binary type: $(file "${TOOLCHAIN_BIN}/clang")"
           else
             echo "ERROR: Patched toolchain test failed"
+            echo "Available clang binaries:"
+            ls -la "${TOOLCHAIN_BIN}"/clang* 2>/dev/null || echo "None found"
             exit 1
           fi
           
@@ -292,7 +375,7 @@ jobs:
           set(CMAKE_ANDROID_NDK ${NDK_DIR})
           set(CMAKE_ANDROID_STL_TYPE c++_shared)
           
-          # Use the patched toolchain (ARM64 binaries in x86_64 directory)
+          # Use the patched toolchain
           set(CMAKE_SYSROOT ${SYSROOT})
           set(CMAKE_C_COMPILER ${TOOLCHAIN_BIN}/aarch64-linux-android21-clang)
           set(CMAKE_CXX_COMPILER ${TOOLCHAIN_BIN}/aarch64-linux-android21-clang++)
@@ -340,7 +423,6 @@ jobs:
           echo "OPENBLAS_HOME=${OPENBLAS_HOME}" >> "$GITHUB_ENV"
           
           echo "OpenBLAS setup complete at: ${OPENBLAS_DIR}"
-          ls -la "${OPENBLAS_DIR}/"
 
       - name: Setup ARM Compute Library
         if: matrix.helper == 'armcompute'
@@ -364,7 +446,6 @@ jobs:
           echo "ARMCOMPUTE_HOME=${ARMCOMPUTE_HOME}" >> "$GITHUB_ENV"
           
           echo "ARM Compute Library setup complete at: ${ARMCOMPUTE_ROOT}"
-          ls -la "${ARMCOMPUTE_ROOT}/"
 
       - name: Configure Maven command
         shell: bash
@@ -439,12 +520,6 @@ jobs:
           echo "LIBND4J_CLASSIFIER=${LIBND4J_CLASSIFIER}" >> $GITHUB_ENV
           echo "CMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}" >> $GITHUB_ENV
           echo "MAVEN_COMMAND=${FINAL_COMMAND}" >> $GITHUB_ENV
-          
-          echo "Maven command configured:"
-          echo "${FINAL_COMMAND}"
-          echo ""
-          echo "CMake arguments:"
-          echo "${CMAKE_ARGS}"
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
@@ -467,23 +542,17 @@ jobs:
           echo "Testing compilers:"
           echo "aarch64-linux-android21-clang:"
           "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang" --version 2>&1 | head -1 || echo "clang failed"
-          echo "aarch64-linux-android21-clang++:"
-          "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang++" --version 2>&1 | head -1 || echo "clang++ failed"
           echo ""
           
           echo "File type of clang binary:"
           file "${TOOLCHAIN_BIN}/clang"
           echo ""
           
-          echo "CMake toolchain file exists: $(test -f "${CMAKE_TOOLCHAIN_FILE}" && echo 'Yes' || echo 'No')"
-          if [ -f "${CMAKE_TOOLCHAIN_FILE}" ]; then
-            echo "Toolchain file path: ${CMAKE_TOOLCHAIN_FILE}"
-            echo "Toolchain file contents:"
-            cat "${CMAKE_TOOLCHAIN_FILE}"
-          fi
+          echo "CMake toolchain file:"
+          cat "${CMAKE_TOOLCHAIN_FILE}"
+          echo ""
           
           # Test simple compilation
-          echo ""
           echo "Testing simple compilation:"
           echo 'int main() { return 0; }' > test.c
           if "${TOOLCHAIN_BIN}/aarch64-linux-android21-clang" --sysroot="${ANDROID_SYSROOT}" -o test test.c; then
@@ -535,9 +604,6 @@ jobs:
           
           # Execute Maven build
           echo "=== Executing Maven Build ==="
-          echo "Maven command:"
-          echo "${MAVEN_COMMAND}"
-          echo ""
           
           if [ "${PERFORM_RELEASE}" == "1" ]; then
               echo "Performing release build..."
