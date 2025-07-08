@@ -247,14 +247,13 @@ jobs:
           NDK_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "${SCRIPT_DIR}")")")")"
           SYSROOT="${NDK_ROOT}/toolchains/llvm/prebuilt/linux-aarch64/sysroot"
 
-          # Use the lld linker from the same directory as this script
+          # Use the lld linker from the same directory as this script (absolute path)
           LLD_PATH="${SCRIPT_DIR}/lld"
 
-          # Use system clang with Android target and explicit linker path
+          # Use system clang with Android target and explicit absolute linker path
           exec /usr/bin/clang-15 \
             --target=aarch64-linux-android21 \
             --sysroot="${SYSROOT}" \
-            -B"${SCRIPT_DIR}" \
             -fuse-ld="${LLD_PATH}" \
             "$@"
           EOF
@@ -278,13 +277,12 @@ jobs:
           NDK_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "${SCRIPT_DIR}")")")")"
           SYSROOT="${NDK_ROOT}/toolchains/llvm/prebuilt/linux-aarch64/sysroot"
 
-          # Use the lld linker from the same directory as this script
+          # Use the lld linker from the same directory as this script (absolute path)
           LLD_PATH="${SCRIPT_DIR}/lld"
 
           exec /usr/bin/clang-15 \
             --target=aarch64-linux-android21 \
             --sysroot="${SYSROOT}" \
-            -B"${SCRIPT_DIR}" \
             -fuse-ld="${LLD_PATH}" \
             "$@"
           EOF
@@ -301,13 +299,12 @@ jobs:
           NDK_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "${SCRIPT_DIR}")")")")"
           SYSROOT="${NDK_ROOT}/toolchains/llvm/prebuilt/linux-aarch64/sysroot"
 
-          # Use the lld linker from the same directory as this script
+          # Use the lld linker from the same directory as this script (absolute path)
           LLD_PATH="${SCRIPT_DIR}/lld"
 
           exec /usr/bin/clang-15 \
             --target=aarch64-linux-android21 \
             --sysroot="${SYSROOT}" \
-            -B"${SCRIPT_DIR}" \
             -fuse-ld="${LLD_PATH}" \
             "$@"
           EOF
