@@ -18,152 +18,105 @@
 ******************************************************************************/
 
 //
-//  @author raver119@gmail.com
+// Created by raver on 4/9/2018.
 //
 #include <helpers/DebugHelper.h>
 #include <system/Environment.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
-#include <array/ArrayOptions.hXX> // note: keep this. It's required for proper linker work
+//note: keep this. It's required for proper linker work
+#include <array/ArrayOptions.hXX>
 
 #include "../indexreduce.h"
 #include "../legacy_ops.h"
 
+
 using namespace simdOps;
 
-////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
-static SD_KERNEL void simpleIndexReduceGeneric(
-   const int op,
-   void const* dx,
-   sd::LongType const* xShapeInfo,
-   sd::LongType xRank,
-   void* extraParams,
-   void* result,
-   sd::LongType const* zShapeInfo,
-   sd::LongType zRank,
-   sd::LongType* dimension,
-   sd::LongType dimensionLength,
-   int postProcessOrNot,
-   sd::LongType* allocationBuffer,
-   void* reductionBuffer,
-   sd::LongType const* tadOnlyShapeInfo,
-   sd::LongType const* tadOffsets) {
-
- functions::indexreduce::IndexReduce<X,Z>::transform(
-     op, dx, xShapeInfo, extraParams, result, zShapeInfo,
-     dimension, dimensionLength, postProcessOrNot,
-     allocationBuffer, reductionBuffer,
-     tadOnlyShapeInfo, tadOffsets);
+static SD_KERNEL void simpleIndexReduceGeneric(const int op, void const *dx, sd::LongType const *xShapeInfo,
+                                              sd::LongType xRank,
+                                              void *extraParams, void *result, sd::LongType const *zShapeInfo, sd::LongType zRank,
+                                              sd::LongType *dimension, sd::LongType dimensionLength, int postProcessOrNot, sd::LongType *allocationBuffer, void *reductionBuffer,
+                                              sd::LongType const *tadOnlyShapeInfo, sd::LongType const *tadOffsets) {
+ functions::indexreduce::IndexReduce<X, Z>::transform(op, dx, xShapeInfo, extraParams, result, zShapeInfo, dimension,
+                                                      dimensionLength, postProcessOrNot, allocationBuffer,
+                                                      reductionBuffer, tadOnlyShapeInfo, tadOffsets);
 }
 
 namespace functions {
 namespace indexreduce {
 
 template <typename X, typename Z>
-SD_HOST void IndexReduce<X,Z>::executeIndexReduceScalar(
-   dim3 launchDims,
-   cudaStream_t* stream,
-   const int opNum,
-   void const* dx,
-   sd::LongType const* xShapeInfo,
+SD_HOST void IndexReduce<X, Z>::executeIndexReduceScalar(
+   dim3 launchDims, cudaStream_t *stream, const int opNum, void const *dx, sd::LongType const *xShapeInfo,
    sd::LongType xRank,
-   void* extraParams,
-   void* result,
-   sd::LongType const* zShapeInfo,
-   sd::LongType zRank,
-   sd::LongType* dimension,
-   sd::LongType dimensionLength,
-   int postProcessOrNot,
-   sd::LongType* allocationBuffer,
-   void* reductionBuffer,
-   sd::LongType const* tadOnlyShapeInfo,
-   sd::LongType const* tadOffsets) {
+   void *extraParams, void *result, sd::LongType const *zShapeInfo, sd::LongType zRank,
+   sd::LongType *dimension, sd::LongType dimensionLength,
+   int postProcessOrNot,sd::LongType *allocationBuffer, void *reductionBuffer, sd::LongType const *tadOnlyShapeInfo,
+   sd::LongType const *tadOffsets) {
+ simpleIndexReduceGeneric<X, Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
+     opNum, dx, xShapeInfo, xRank, extraParams, result, zShapeInfo, 0, nullptr, 0, 1, allocationBuffer,
+     reductionBuffer, tadOnlyShapeInfo, tadOffsets);
+ sd::DebugHelper::checkErrorCode(stream, "executeIndexReduceScalar(...) failed");
 
- simpleIndexReduceGeneric<X,Z>
-     <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
-         opNum,
-         dx,
-         xShapeInfo,
-         xRank,
-         extraParams,
-         result,
-         zShapeInfo,
-         0,
-         nullptr,
-         0,
-         1,
-         allocationBuffer,
-         reductionBuffer,
-         tadOnlyShapeInfo,
-         tadOffsets);
-
- sd::DebugHelper::checkErrorCode(
-     stream, "executeIndexReduceScalar(...) failed");
 }
 
 template <typename X, typename Z>
-SD_HOST void IndexReduce<X,Z>::executeIndexReduce(
-   dim3 launchDims,
-   cudaStream_t* stream,
-   const int opNum,
-   void const* dx,
-   sd::LongType const* xShapeInfo,
-   sd::LongType xRank,
-   void* extraParams,
-   void* result,
-   sd::LongType const* zShapeInfo,
-   sd::LongType zRank,
-   sd::LongType* dimension,
-   sd::LongType dimensionLength,
-   int postProcessOrNot,
-   sd::LongType* allocationBuffer,
-   void* reductionBuffer,
-   sd::LongType const* tadOnlyShapeInfo,
-   sd::LongType const* tadOffsets) {
-
- simpleIndexReduceGeneric<X,Z>
-     <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
-         opNum,
-         dx,
-         xShapeInfo,
-         xRank,
-         extraParams,
-         result,
-         zShapeInfo,
-         zRank,
-         dimension,
-         dimensionLength,
-         postProcessOrNot,
-         allocationBuffer,
-         reductionBuffer,
-         tadOnlyShapeInfo,
-         tadOffsets);
-
+SD_HOST void IndexReduce<X, Z>::executeIndexReduce(dim3 launchDims,
+                                                  cudaStream_t *stream,
+                                                  const int opNum,
+                                                  void const *dx,
+                                                  sd::LongType const *xShapeInfo,
+                                                  sd::LongType xRank,
+                                                  void *extraParams,
+                                                  void *result,
+                                                  sd::LongType const *zShapeInfo,
+                                                  sd::LongType zRank,
+                                                  sd::LongType *dimension,
+                                                  sd::LongType dimensionLength,
+                                                  int postProcessOrNot,
+                                                  sd::LongType *allocationBuffer,
+                                                  void *reductionBuffer,
+                                                  sd::LongType const *tadOnlyShapeInfo,
+                                                  sd::LongType const *tadOffsets) {
+ simpleIndexReduceGeneric<X, Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
+     opNum, dx, xShapeInfo, xRank, extraParams, result, zShapeInfo, zRank, dimension, dimensionLength, postProcessOrNot,
+     allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
  sd::DebugHelper::checkErrorCode(stream, "executeIndexReduce(...) failed");
+
 }
 
-// This is the un-specialized struct placeholder
+// This is the un-specialized struct.  Note that we prevent instantiation of this
+// struct by putting an undefined symbol in the function body so it won't compile.
 template <typename T>
 struct SharedIndexValue {
- SD_DEVICE T* getPointer() {
+ // Ensure that we won't compile any un-specialized types
+ SD_DEVICE T *getPointer() {
    extern SD_DEVICE void error(void);
    error();
-   return nullptr;
+   return 0;
  }
 };
 
+// Following are the specializations for the following types.
+// int, sd::Unsigned, char, uchar, short, ushort, long long, ulong long, bool, float, and double
+// One could also specialize it for user-defined types.
+
 template <>
 struct SharedIndexValue<float> {
- SD_DEVICE IndexValue<float>* getPointer() {
+ SD_DEVICE IndexValue<float> *getPointer() {
    extern __shared__ IndexValue<float> s_int2[];
    return s_int2;
  }
 };
+// Following are the specializations for the following types.
+// int, sd::Unsigned, char, uchar, short, ushort, long long, ulong long, bool, float, and double
+// One could also specialize it for user-defined types.
 
 template <>
 struct SharedIndexValue<double> {
- SD_DEVICE IndexValue<double>* getPointer() {
+ SD_DEVICE IndexValue<double> *getPointer() {
    extern __shared__ IndexValue<double> s_int6[];
    return s_int6;
  }
@@ -171,19 +124,19 @@ struct SharedIndexValue<double> {
 
 template <typename X, typename Z>
 template <typename OpType>
-SD_DEVICE void IndexReduce<X,Z>::aggregatePartials(
-   IndexValue<X>* sPartials,
-   sd::LongType tid,
-   sd::LongType numElements,
-   void* vextraParams) {
-
- auto extraParams = static_cast<X*>(vextraParams);
-
+SD_DEVICE void IndexReduce<X, Z>::aggregatePartials(IndexValue<X> *sPartials, sd::LongType tid,
+                                                   sd::LongType numElements, void *vextraParams) {
+ // start the shared memory loop on the next power of 2 less
+ // than the block size.  If block size is not a power of 2,
+ // accumulate the intermediate sums in the remainder range.
+ auto extraParams = static_cast<X *>(vextraParams);
  sd::LongType floorPow2 = static_cast<sd::LongType>(blockDim.x);
+
  if (floorPow2 & (floorPow2 - 1)) {
    while (floorPow2 & (floorPow2 - 1)) {
-     floorPow2 &= (floorPow2 - 1);
+     floorPow2 &= floorPow2 - 1;
    }
+
    if (tid >= floorPow2) {
      IndexValue<X> prev = sPartials[tid - floorPow2];
      IndexValue<X> curr = sPartials[tid];
@@ -192,10 +145,10 @@ SD_DEVICE void IndexReduce<X,Z>::aggregatePartials(
    __syncthreads();
  }
 
- for (sd::LongType active = floorPow2 >> 1; active; active >>= 1) {
-   if (tid < active && tid + active < numElements) {
+ for (sd::LongType activeThreads = floorPow2 >> 1; activeThreads; activeThreads >>= 1) {
+   if (tid < activeThreads && tid + activeThreads < numElements) {
      IndexValue<X> curr = sPartials[tid];
-     IndexValue<X> next = sPartials[tid + active];
+     IndexValue<X> next = sPartials[tid + activeThreads];
      sPartials[tid] = OpType::update(curr, next, extraParams);
    }
    __syncthreads();
@@ -203,52 +156,31 @@ SD_DEVICE void IndexReduce<X,Z>::aggregatePartials(
 }
 
 template <typename X, typename Y>
-SD_DEVICE void IndexReduce<X,Y>::transform(
-   int opNum,
-   void const* x,
-   sd::LongType const* xShapeInfo,
-   void* extraParams,
-   void* result,
-   sd::LongType const* zShapeInfo,
-   sd::LongType* dimension,
-   sd::LongType dimensionLength,
-   int postProcessOrNot,
-   sd::LongType* allocationBuffer,
-   void* reductionBuffer,
-   sd::LongType const* tadShapeInfo,
-   sd::LongType const* tadOffsets) {
-
- DISPATCH_BY_OPNUM_TT(
-     transform,
-     PARAMS(x, xShapeInfo, extraParams, result, zShapeInfo,
-            dimension, dimensionLength, postProcessOrNot,
-            allocationBuffer, reductionBuffer,
-            tadShapeInfo, tadOffsets),
-     INDEX_REDUCE_OPS);
+SD_DEVICE void IndexReduce<X, Y>::transform(int opNum, void const *x, sd::LongType const *xShapeInfo,
+                                           void *extraParams, void *result, sd::LongType const *zShapeInfo, sd::LongType *dimension,
+                                           sd::LongType dimensionLength, int postProcessOrNot,
+                                           sd::LongType *allocationBuffer, void *reductionBuffer,
+                                           sd::LongType const *tadShapeInfo, sd::LongType const *tadOffset) {
+ DISPATCH_BY_OPNUM_TT(transform,
+                      PARAMS(x, xShapeInfo, extraParams, result, zShapeInfo, dimension, dimensionLength,
+                             postProcessOrNot, allocationBuffer, reductionBuffer, tadShapeInfo, tadOffset),
+                      INDEX_REDUCE_OPS);
 }
 
 template <typename X, typename Z>
 template <typename OpType>
-SD_DEVICE void IndexReduce<X,Z>::transform(
-   void const* vdx,
-   sd::LongType const* xShapeInfo,
-   void* vextraParams,
-   void* vz,
-   sd::LongType const* zShapeInfo,
-   sd::LongType* dimension,
-   sd::LongType dimensionLength,
-   int postProcessOrNot,
-   sd::LongType* allocationBuffer,
-   void* vreductionBuffer,
-   sd::LongType const* tadOnlyShapeInfo,
-   sd::LongType const* tadOffsets) {
-
- auto dx = reinterpret_cast<const X*>(vdx);
- auto z  = reinterpret_cast<Z*>(vz);
- auto extraParams    = static_cast<X*>(vextraParams);
- auto reductionBuffer = static_cast<unsigned int*>(vreductionBuffer);
- auto order         = shape::order(xShapeInfo);
- sd::LongType tid    = static_cast<sd::LongType>(blockIdx.x * blockDim.x + threadIdx.x);
+SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const *xShapeInfo, void *vextraParams,
+                                           void *vz, sd::LongType const *zShapeInfo, sd::LongType *dimension,
+                                           sd::LongType dimensionLength, int postProcessOrNot,
+                                           sd::LongType *allocationBuffer,
+                                           void *vreductionBuffer, sd::LongType const *tadOnlyShapeInfo,
+                                           sd::LongType const *tadOffsets) {
+ auto dx = reinterpret_cast<X const *>(vdx);
+ auto z = reinterpret_cast<Z *>(vz);
+ auto extraParams = static_cast<X *>(vextraParams);
+ auto reductionBuffer = static_cast<unsigned int *>(vreductionBuffer);
+ auto order = shape::order(xShapeInfo);
+ sd::LongType tid = static_cast<sd::LongType>(blockIdx.x * blockDim.x + threadIdx.x);
  __shared__ volatile bool resultScalar;
 
  __shared__ IndexValue<X> sPartials[SD_CUDA_BLOCK_SIZE];
@@ -256,6 +188,7 @@ SD_DEVICE void IndexReduce<X,Z>::transform(
  sPartials[threadIdx.x] = OpType::startingIndexValue(dx);
 
  __shared__ volatile sd::LongType xLength;
+
  __shared__ volatile sd::LongType zLen;
 
  IndexValue<X> reduction = OpType::startingIndexValue(dx);
@@ -298,15 +231,16 @@ SD_DEVICE void IndexReduce<X,Z>::transform(
 
        for (sd::LongType i = threadIdxX; i < tadLength; i += blockDimX) {
          sd::LongType coords[SD_MAX_RANK];
+         sd::LongType xOffset;
          INDEX2COORDS(i, shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), coords);
-         auto tadOffset = COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), shape::stride(tadOnlyShapeInfo), coords);
-         auto xOffset = tadOffsetForBlock + tadOffset;
+         COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), shape::stride(tadOnlyShapeInfo), coords, xOffset);
+         xOffset += tadOffsetForBlock;
          IndexValue<X> comp{dx[xOffset], i};
          sPartials[threadIdxX] = OpType::update(sPartials[threadIdxX], comp, extraParams);
        }
 
        __syncthreads();
-       aggregatePartials<OpType>(sPartials, threadIdxX, sd::math::sd_min<sd::LongType,sd::LongType>(blockDimX, tadLength), extraParams);
+       aggregatePartials<OpType>(sPartials,threadIdxX, sd::math::sd_min<sd::LongType,sd::LongType>(blockDimX, tadLength), extraParams);
 
        __syncthreads();
        if (threadIdxX == 0) {
@@ -322,9 +256,10 @@ SD_DEVICE void IndexReduce<X,Z>::transform(
 
        for (sd::LongType x = threadIdxX; x < tadLength; x += blockDimX) {
          sd::LongType coords[SD_MAX_RANK];
+         sd::LongType xOffset;
          INDEX2COORDS(x, shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), coords);
-         auto tadOffset = COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), shape::stride(tadOnlyShapeInfo), coords);
-         IndexValue<X> comp{dx[tadOffsetForBlock + tadOffset], x};
+         COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), shape::stride(tadOnlyShapeInfo), coords, xOffset);
+         IndexValue<X> comp{dx[tadOffsetForBlock + xOffset], x};
          sPartials[threadIdxX] = OpType::update(sPartials[threadIdxX], comp, extraParams);
        }
 
@@ -343,8 +278,9 @@ SD_DEVICE void IndexReduce<X,Z>::transform(
 
    for (sd::LongType i = tid; i < n; i += (gridDimX * blockDimX)) {
      sd::LongType coords[SD_MAX_RANK];
+     sd::LongType xOffset;
      INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
-     auto xOffset = COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), shape::stride(xShapeInfo), coords);
+     COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
      IndexValue<X> comp{dx[xOffset], i};
      reduction = OpType::update(reduction, comp, extraParams);
    }
@@ -352,7 +288,6 @@ SD_DEVICE void IndexReduce<X,Z>::transform(
    sPartials[threadIdxX] = reduction;
    __syncthreads();
    aggregatePartials<OpType>(sPartials, threadIdxX, sd::math::sd_min<sd::LongType,sd::LongType>(blockDim.x, n), extraParams);
-
    if (gridDimX > 1) {
      __shared__ bool amLast;
      unsigned int *unsignedSharedMemory = (unsigned int *)reductionBuffer;
@@ -388,11 +323,10 @@ SD_DEVICE void IndexReduce<X,Z>::transform(
      if (threadIdx.x == 0) {
        z[0] = static_cast<Z>(sPartials[threadIdx.x].index);
      }
+
    }
  }
 }
-
-BUILD_DOUBLE_TEMPLATE(template class IndexReduce, , SD_COMMON_TYPES, SD_INDEXING_TYPES);
 
 }  // namespace indexreduce
 }  // namespace functions
