@@ -129,7 +129,7 @@ jobs:
         id: cache-arm64-ndk
         with:
           path: ${{ github.workspace }}/android-ndk-r27b
-          key: android-ndk-r27b-aarch64-${{ runner.os }}-v4
+          key: android-ndk-r27b-aarch64-${{ runner.os }}-v5
 
       - name: Setup ARM64 Android NDK
         id: setup-ndk
@@ -187,12 +187,30 @@ jobs:
           echo "ANDROID_NDK_ROOT=${NDK_DIR}" >> $GITHUB_ENV
           echo "ANDROID_NDK=${NDK_DIR}" >> $GITHUB_ENV
           
-          # Verify NDK structure
-          TOOLCHAIN_BIN="${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64/bin"
-          if [ ! -d "${TOOLCHAIN_BIN}" ]; then
-            echo "ERROR: Toolchain bin directory not found at ${TOOLCHAIN_BIN}"
-            echo "Available directories in NDK:"
-            find "${NDK_DIR}" -type d -name "bin" 2>/dev/null || echo "No bin directories found"
+          # Verify NDK structure and find correct toolchain path
+          echo "Analyzing NDK structure..."
+          find "${NDK_DIR}" -name "clang*" -type f | head -10
+          
+          # Try different possible toolchain paths for ARM64 host
+          POSSIBLE_TOOLCHAIN_PATHS=(
+            "${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64/bin"
+            "${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64/bin"
+            "${NDK_DIR}/toolchains/llvm/prebuilt/darwin-x86_64/bin"
+          )
+          
+          TOOLCHAIN_BIN=""
+          for path in "${POSSIBLE_TOOLCHAIN_PATHS[@]}"; do
+            if [ -d "${path}" ]; then
+              TOOLCHAIN_BIN="${path}"
+              echo "Found toolchain at: ${TOOLCHAIN_BIN}"
+              break
+            fi
+          done
+          
+          if [ -z "${TOOLCHAIN_BIN}" ]; then
+            echo "ERROR: No suitable toolchain bin directory found"
+            echo "Available toolchain directories:"
+            find "${NDK_DIR}" -path "*/toolchains/llvm/prebuilt/*/bin" -type d || echo "None found"
             exit 1
           fi
           
@@ -201,15 +219,29 @@ jobs:
           mkdir -p "${NDK_DIR}/platforms/android-21/arch-arm64/usr/include"
 
           # Copy the sysroot files from ARM64 NDK (suppress errors for missing files)
-          SYSROOT_LIB="${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64/sysroot/usr/lib/aarch64-linux-android/21"
-          SYSROOT_INCLUDE="${NDK_DIR}/toolchains/llvm/prebuilt/linux-aarch64/sysroot/usr/include"
+          SYSROOT_BASE="${NDK_DIR}/toolchains/llvm/prebuilt"
+          SYSROOT_PATH=""
           
-          if [ -d "${SYSROOT_LIB}" ]; then
-            cp -r "${SYSROOT_LIB}/"* "${NDK_DIR}/platforms/android-21/arch-arm64/usr/lib/" 2>/dev/null || true
-          fi
+          # Find the correct sysroot path
+          for prebuilt_dir in "${SYSROOT_BASE}"/*/; do
+            if [ -d "${prebuilt_dir}sysroot" ]; then
+              SYSROOT_PATH="${prebuilt_dir}sysroot"
+              echo "Found sysroot at: ${SYSROOT_PATH}"
+              break
+            fi
+          done
           
-          if [ -d "${SYSROOT_INCLUDE}" ]; then
-            cp -r "${SYSROOT_INCLUDE}/"* "${NDK_DIR}/platforms/android-21/arch-arm64/usr/include/" 2>/dev/null || true
+          if [ -n "${SYSROOT_PATH}" ]; then
+            SYSROOT_LIB="${SYSROOT_PATH}/usr/lib/aarch64-linux-android/21"
+            SYSROOT_INCLUDE="${SYSROOT_PATH}/usr/include"
+          
+            if [ -d "${SYSROOT_LIB}" ]; then
+              cp -r "${SYSROOT_LIB}/"* "${NDK_DIR}/platforms/android-21/arch-arm64/usr/lib/" 2>/dev/null || true
+            fi
+          
+            if [ -d "${SYSROOT_INCLUDE}" ]; then
+              cp -r "${SYSROOT_INCLUDE}/"* "${NDK_DIR}/platforms/android-21/arch-arm64/usr/include/" 2>/dev/null || true
+            fi
           fi
           
           echo "Installing system clang and cross-compilation tools..."
@@ -245,7 +277,20 @@ jobs:
           # Working clang wrapper for Android cross-compilation using system clang
           SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
           NDK_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "${SCRIPT_DIR}")")")")"
-          SYSROOT="${NDK_ROOT}/toolchains/llvm/prebuilt/linux-aarch64/sysroot"
+          
+          # Find the sysroot dynamically
+          SYSROOT=""
+          for prebuilt_dir in "${NDK_ROOT}/toolchains/llvm/prebuilt"/*; do
+            if [ -d "${prebuilt_dir}/sysroot" ]; then
+              SYSROOT="${prebuilt_dir}/sysroot"
+              break
+            fi
+          done
+          
+          if [ -z "${SYSROOT}" ]; then
+            echo "ERROR: Cannot find sysroot in NDK"
+            exit 1
+          fi
 
           # Use the lld linker from the same directory as this script (absolute path)
           LLD_PATH="${SCRIPT_DIR}/lld"
@@ -283,7 +328,20 @@ jobs:
           # Fixed Android clang wrapper using system clang
           SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
           NDK_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "${SCRIPT_DIR}")")")")"
-          SYSROOT="${NDK_ROOT}/toolchains/llvm/prebuilt/linux-aarch64/sysroot"
+          
+          # Find the sysroot dynamically
+          SYSROOT=""
+          for prebuilt_dir in "${NDK_ROOT}/toolchains/llvm/prebuilt"/*; do
+            if [ -d "${prebuilt_dir}/sysroot" ]; then
+              SYSROOT="${prebuilt_dir}/sysroot"
+              break
+            fi
+          done
+          
+          if [ -z "${SYSROOT}" ]; then
+            echo "ERROR: Cannot find sysroot in NDK"
+            exit 1
+          fi
 
           # Use the lld linker from the same directory as this script (absolute path)
           LLD_PATH="${SCRIPT_DIR}/lld"
@@ -305,7 +363,20 @@ jobs:
           # Fixed Android clang++ wrapper using system clang
           SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
           NDK_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "${SCRIPT_DIR}")")")")"
-          SYSROOT="${NDK_ROOT}/toolchains/llvm/prebuilt/linux-aarch64/sysroot"
+          
+          # Find the sysroot dynamically
+          SYSROOT=""
+          for prebuilt_dir in "${NDK_ROOT}/toolchains/llvm/prebuilt"/*; do
+            if [ -d "${prebuilt_dir}/sysroot" ]; then
+              SYSROOT="${prebuilt_dir}/sysroot"
+              break
+            fi
+          done
+          
+          if [ -z "${SYSROOT}" ]; then
+            echo "ERROR: Cannot find sysroot in NDK"
+            exit 1
+          fi
 
           # Use the lld linker from the same directory as this script (absolute path)
           LLD_PATH="${SCRIPT_DIR}/lld"
@@ -362,6 +433,50 @@ jobs:
             echo "ERROR: Fixed aarch64-linux-android21-clang++ failed"
             exit 1
           fi
+          
+          # Create CMake toolchain file
+          echo "Creating CMake toolchain file..."
+          mkdir -p "${GITHUB_WORKSPACE}/cmake"
+          
+          # Find the actual sysroot path for the toolchain file
+          ACTUAL_SYSROOT=""
+          for prebuilt_dir in "${NDK_DIR}/toolchains/llvm/prebuilt"/*; do
+            if [ -d "${prebuilt_dir}/sysroot" ]; then
+              ACTUAL_SYSROOT="${prebuilt_dir}/sysroot"
+              break
+            fi
+          done
+          
+          cat > "${GITHUB_WORKSPACE}/cmake/android-arm64.cmake" << EOF
+          # CMake toolchain file for Android ARM64 cross-compilation
+          set(CMAKE_SYSTEM_NAME Android)
+          set(CMAKE_SYSTEM_VERSION 21)
+          set(CMAKE_ANDROID_ARCH_ABI arm64-v8a)
+          set(CMAKE_ANDROID_NDK ${NDK_DIR})
+          set(CMAKE_ANDROID_STL_TYPE c++_shared)
+          
+          # Set the sysroot
+          set(CMAKE_SYSROOT ${ACTUAL_SYSROOT})
+          
+          # Set compilers
+          set(CMAKE_C_COMPILER ${TOOLCHAIN_BIN}/aarch64-linux-android21-clang)
+          set(CMAKE_CXX_COMPILER ${TOOLCHAIN_BIN}/aarch64-linux-android21-clang++)
+          
+          # Set find root path modes
+          set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+          set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+          set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+          set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+          
+          # Additional flags
+          set(CMAKE_C_FLAGS_INIT "-fPIC")
+          set(CMAKE_CXX_FLAGS_INIT "-fPIC")
+          EOF
+          
+          echo "CMake toolchain file created at: ${GITHUB_WORKSPACE}/cmake/android-arm64.cmake"
+          
+          # Store toolchain bin path for later use
+          echo "ANDROID_TOOLCHAIN_BIN=${TOOLCHAIN_BIN}" >> $GITHUB_ENV
           
           echo "NDK setup completed successfully"
 
@@ -424,6 +539,12 @@ jobs:
           # Base configuration
           LIBND4J_CLASSIFIER="android-arm64"
           CMAKE_TOOLCHAIN_FILE="${GITHUB_WORKSPACE}/cmake/android-arm64.cmake"
+          
+          # Verify toolchain file exists
+          if [ ! -f "${CMAKE_TOOLCHAIN_FILE}" ]; then
+            echo "ERROR: CMake toolchain file not found at ${CMAKE_TOOLCHAIN_FILE}"
+            exit 1
+          fi
           
           # Determine modules to build
           if [ "${{ github.event.inputs.libnd4jUrl }}" != '' ]; then
@@ -501,7 +622,7 @@ jobs:
         run: |
           echo "=== NDK and Compiler Debug Information ==="
           
-          TOOLCHAIN_BIN="${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-aarch64/bin"
+          TOOLCHAIN_BIN="${ANDROID_TOOLCHAIN_BIN}"
           
           echo "NDK Path: ${ANDROID_NDK}"
           echo "Toolchain bin directory: ${TOOLCHAIN_BIN}"
@@ -528,12 +649,15 @@ jobs:
           echo "Environment variables:"
           echo "ANDROID_NDK: ${ANDROID_NDK}"
           echo "ANDROID_NDK_ROOT: ${ANDROID_NDK_ROOT}"
+          echo "ANDROID_TOOLCHAIN_BIN: ${ANDROID_TOOLCHAIN_BIN}"
           echo "PATH includes NDK: $(echo $PATH | grep -o android-ndk || echo 'No')"
           echo ""
           
           echo "CMake toolchain file exists: $(test -f "${CMAKE_TOOLCHAIN_FILE}" && echo 'Yes' || echo 'No')"
           if [ -f "${CMAKE_TOOLCHAIN_FILE}" ]; then
             echo "Toolchain file path: ${CMAKE_TOOLCHAIN_FILE}"
+            echo "Toolchain file contents:"
+            cat "${CMAKE_TOOLCHAIN_FILE}"
           fi
 
       - name: Build with Maven
@@ -577,7 +701,7 @@ jobs:
           
           # Final compiler verification
           echo "=== Final Compiler Verification ==="
-          TOOLCHAIN_BIN="${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-aarch64/bin"
+          TOOLCHAIN_BIN="${ANDROID_TOOLCHAIN_BIN}"
           
           echo "Testing final compiler setup:"
           "${TOOLCHAIN_BIN}/clang++" --version || {
