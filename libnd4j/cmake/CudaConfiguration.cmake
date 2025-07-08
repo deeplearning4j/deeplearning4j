@@ -506,9 +506,6 @@ function(configure_windows_cuda_build)
     set(CMAKE_CUDA_DEPFILE_FORMAT "" PARENT_SCOPE)
     set(CMAKE_CUDA_DEPENDS_USE_COMPILER OFF PARENT_SCOPE)
 
-    # Override the compile command to remove problematic flags
-    set(CMAKE_CUDA_COMPILE_OBJECT "<CMAKE_CUDA_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -o <OBJECT> -c <SOURCE>" PARENT_SCOPE)
-
     # Clean MSVC runtime library settings
     set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreaded "" PARENT_SCOPE)
     set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL "" PARENT_SCOPE)
