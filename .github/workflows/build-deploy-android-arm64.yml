@@ -250,12 +250,20 @@ jobs:
           # Use the lld linker from the same directory as this script (absolute path)
           LLD_PATH="${SCRIPT_DIR}/lld"
 
-          # Use system clang with Android target and explicit absolute linker path
+          # Filter out any existing -fuse-ld arguments and force our own
+          ARGS=()
+          for arg in "$@"; do
+            if [[ "$arg" != -fuse-ld=* ]]; then
+              ARGS+=("$arg")
+            fi
+          done
+
+          # Use system clang with Android target and force our linker
           exec /usr/bin/clang-15 \
             --target=aarch64-linux-android21 \
             --sysroot="${SYSROOT}" \
             -fuse-ld="${LLD_PATH}" \
-            "$@"
+            "${ARGS[@]}"
           EOF
           
           chmod +x "${CLANG_BINARY}"
