@@ -31,7 +31,7 @@
  */
 
 ITERATE_COMBINATIONS_1(
-    SD_FLOAT_TYPES_PART_@COMB1@,
+    SD_COMMON_TYPES_@COMB1@,
     INSTANT_PROCESS_COMBINATION_1,
     functions::random::RandomFunction,
     ::executeCudaSingle(
@@ -45,7 +45,7 @@ ITERATE_COMBINATIONS_1(
 );
 
 ITERATE_COMBINATIONS_1(
-    SD_FLOAT_TYPES_PART_@COMB1@,
+    SD_COMMON_TYPES_@COMB1@,
     INSTANT_PROCESS_COMBINATION_1,
     functions::random::RandomFunction,
     ::executeCudaDouble(
@@ -61,7 +61,7 @@ ITERATE_COMBINATIONS_1(
 );
 
 ITERATE_COMBINATIONS_1(
-    SD_FLOAT_TYPES_PART_@COMB1@,
+    SD_COMMON_TYPES_@COMB1@,
     INSTANT_PROCESS_COMBINATION_1,
     functions::random::RandomFunction,
     ::executeCudaTriple(
