@@ -162,7 +162,7 @@ jobs:
           export AARCH64_NDK_PATCH_DIR="${GITHUB_WORKSPACE}/ndk-aarch64-patches"
           export NDK_VERSION="r27c"
           export NDK_HOME="${GITHUB_WORKSPACE}/android-ndk-${NDK_VERSION}"
-          
+          export JAVA_HOME=/opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/11.0.27-6/arm64
           echo "Building Native Android NDK for linux-arm64"
           
           # Install system dependencies
