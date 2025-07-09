@@ -165,7 +165,7 @@ jobs:
           
           echo "Building Native Android NDK for linux-arm64"
           
-          # Install system dependencies including Python packages needed for LLVM build
+          # Install system dependencies
           sudo apt-get update -qq
           sudo apt-get install -y \
             clang \
@@ -174,6 +174,8 @@ jobs:
             llvm-dev \
             python3 \
             python3-pip \
+            python3-dev \
+            python3-setuptools \
             lld \
             ninja-build \
             cmake \
@@ -184,12 +186,15 @@ jobs:
             curl \
             repo
           
-          # Install Python dependencies required by AOSP LLVM toolchain
-          echo "Installing Python dependencies for AOSP LLVM toolchain..."
-          pip3 install --user \
+          # Install Python dependencies required by AOSP LLVM toolchain using pip
+          echo "Installing Python dependencies with pip..."
+          python3 -m pip install --upgrade pip
+          python3 -m pip install \
             dataclasses \
             typing_extensions \
-            absl-py
+            absl-py \
+            protobuf \
+            six
           
           # Install repo tool if not available
           if ! command -v repo &> /dev/null; then
@@ -217,31 +222,42 @@ jobs:
             git clone --depth 1 https://github.com/SnowNF/ndk-aarch64-linux.git "${AARCH64_NDK_PATCH_DIR}"
           fi
           
-          # Check AOSP compatibility BEFORE applying patches
-          echo "Checking AOSP compatibility with SnowNF patches..."
+          # Try to fix Python path issues
+          echo "Setting up Python environment for AOSP build..."
           cd "${LLVM_TOOLCHAIN_DIR}"
+          export PYTHONPATH="${LLVM_TOOLCHAIN_DIR}/external/toolchain-utils:${PYTHONPATH}"
           
-          AOSP_COMPATIBLE=false
-          
-          # Test the actual Python import that's failing
-          echo "Testing Python import that causes the failure..."
+          # Check if llvm_tools module can be imported
+          echo "Testing Python environment..."
           cd external/toolchain-utils
-          if python3 -c "import sys; sys.path.append('.'); from llvm_tools import failure_modes" 2>/dev/null; then
-            echo "Python import test passed - SnowNF patches should work"
-            AOSP_COMPATIBLE=true
+          if python3 -c "import sys; sys.path.insert(0, '.'); from llvm_tools import failure_modes; print('Python environment OK')" 2>/dev/null; then
+            echo "Python environment is working"
+            PYTHON_OK=true
           else
-            echo "Python import test failed - SnowNF patches will not work"
-            echo "This is the same error that causes the build to fail"
-            AOSP_COMPATIBLE=false
+            echo "Python environment has issues, attempting to fix..."
+          
+            # Try to install missing dependencies
+            if [ -f "requirements.txt" ]; then
+              python3 -m pip install -r requirements.txt
+            fi
+          
+            # Try again
+            if python3 -c "import sys; sys.path.insert(0, '.'); from llvm_tools import failure_modes; print('Python environment fixed')" 2>/dev/null; then
+              echo "Python environment fixed"
+              PYTHON_OK=true
+            else
+              echo "Python environment still broken, will use fallback"
+              PYTHON_OK=false
+            fi
           fi
           
           cd "${LLVM_TOOLCHAIN_DIR}"
           
-          # Build LLVM toolchain with appropriate method
+          # Build LLVM toolchain
           if [ ! -f "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/clang" ] && [ "${{ github.event.inputs.skipLLVMBuild }}" != "true" ]; then
           
-            if [ "$AOSP_COMPATIBLE" = "true" ]; then
-              echo "Applying SnowNF patches and building..."
+            if [ "$PYTHON_OK" = "true" ]; then
+              echo "Attempting to apply SnowNF patches and build..."
               cd "${LLVM_TOOLCHAIN_DIR}/toolchain/llvm_android"
           
               # Backup original files
@@ -261,6 +277,8 @@ jobs:
               cd "${LLVM_TOOLCHAIN_DIR}"
               echo "Building LLVM with SnowNF patches..."
           
+              export PYTHONPATH="${LLVM_TOOLCHAIN_DIR}/external/toolchain-utils:${PYTHONPATH}"
+          
               if python3 toolchain/llvm_android/build.py \
                 --no-build windows \
                 --skip-tests \
@@ -269,20 +287,19 @@ jobs:
                 echo "SnowNF build succeeded"
               else
                 echo "SnowNF build failed, checking for partial success..."
-                # Check for clang binary even if build "failed"
                 CLANG_FOUND=$(find "${LLVM_TOOLCHAIN_DIR}" -name "clang" -type f -executable 2>/dev/null | head -1)
                 if [ -n "$CLANG_FOUND" ]; then
                   echo "Found clang binary despite build failure: $CLANG_FOUND"
                   echo "This is expected behavior per the technical report"
                 else
                   echo "SnowNF approach failed completely"
-                  AOSP_COMPATIBLE=false
+                  PYTHON_OK=false
                 fi
               fi
             fi
           
             # Fallback: Try vanilla AOSP build without patches
-            if [ "$AOSP_COMPATIBLE" = "false" ] && [ ! -f "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/clang" ]; then
+            if [ "$PYTHON_OK" = "false" ] && [ ! -f "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/clang" ]; then
               echo "Using fallback: vanilla AOSP build without patches..."
           
               # Reset to clean AOSP state
@@ -293,6 +310,8 @@ jobs:
               cd "${LLVM_TOOLCHAIN_DIR}"
               echo "Attempting vanilla AOSP LLVM build..."
           
+              export PYTHONPATH="${LLVM_TOOLCHAIN_DIR}/external/toolchain-utils:${PYTHONPATH}"
+          
               if python3 toolchain/llvm_android/build.py \
                 --no-build windows \
                 --skip-tests \
@@ -300,7 +319,7 @@ jobs:
                 --no-musl; then
                 echo "Vanilla AOSP build succeeded"
               else
-                echo "Vanilla AOSP build failed, using system clang fallback"
+                echo "Both patched and vanilla AOSP builds failed, using system clang fallback"
           
                 # Final fallback: system clang
                 mkdir -p "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin"
@@ -650,7 +669,7 @@ jobs:
         shell: bash
         run: |
           echo "=== Performance Analysis Summary ==="
-          echo "Build Method: Native ARM64 LLVM Compilation with fallbacks"
+          echo "Build Method: Native ARM64 LLVM Compilation with proper Python dependencies"
           echo "Performance: Near-native ARM64 speed (no emulation overhead)"
           echo "Expected improvement: 10-40x faster than emulation approaches"
           echo "Best for: CI/CD environments, ARM cloud infrastructure"
@@ -668,4 +687,5 @@ jobs:
           fi
           
           rm -f test_android.cpp test_android_binary native_test.c native_test 2>/dev/null || true
-          echo "Cleanup completed"
+          echo "Cleanup completed"null || true
+            find "${GITHUB_WORKSPACE}/llvm-toolchain" -name "*.tmp" -delete 2>/dev/
