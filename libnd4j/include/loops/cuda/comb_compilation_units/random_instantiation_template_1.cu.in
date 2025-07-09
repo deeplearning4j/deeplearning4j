@@ -30,50 +30,44 @@
  * Note: Using @COMB1@ for single type (1-type combinations)
  */
 
-ITERATE_COMBINATIONS_1(
-    SD_COMMON_TYPES_@COMB1@,
-    INSTANT_PROCESS_COMBINATION_1,
-    functions::random::RandomFunction,
-    ::executeCudaSingle(
-        dim3& launchDims,
-        cudaStream_t* stream,
-        int opNum,
-        sd::Pointer stateHost,
-        void* vz,
-        sd::LongType const* zShapeBuffer,
+#define LIST_CALLBACK_EXECUTE_CUDA_SINGLE(INPUT) \
+    template void functions::random::RandomFunction<GET_SECOND(INPUT)>::executeCudaSingle( \
+        dim3& launchDims, \
+        cudaStream_t* stream, \
+        int opNum, \
+        sd::Pointer stateHost, \
+        void* vz, \
+        sd::LongType const* zShapeBuffer, \
         void* vextraArguments);
-);
 
-ITERATE_COMBINATIONS_1(
-    SD_COMMON_TYPES_@COMB1@,
-    INSTANT_PROCESS_COMBINATION_1,
-    functions::random::RandomFunction,
-    ::executeCudaDouble(
-        dim3& launchDims,
-        cudaStream_t* stream,
-        int opNum,
-        sd::Pointer stateHost,
-        void const* vx,
-        sd::LongType const* xShapeBuffer,
-        void* vz,
-        sd::LongType const* zShapeBuffer,
-        void* vextraArguments);
-);
+ITERATE_LIST((SD_COMMON_TYPES_PART_@COMB1@), LIST_CALLBACK_EXECUTE_CUDA_SINGLE)
 
-ITERATE_COMBINATIONS_1(
-    SD_COMMON_TYPES_@COMB1@,
-    INSTANT_PROCESS_COMBINATION_1,
-    functions::random::RandomFunction,
-    ::executeCudaTriple(
-        dim3& launchDims,
-        cudaStream_t* stream,
-        int opNum,
-        sd::Pointer stateHost,
-        void const* vx,
-        sd::LongType const* xShapeBuffer,
-        void const* vy,
-        sd::LongType const* yShapeBuffer,
-        void* vz,
-        sd::LongType const* zShapeBuffer,
+#define LIST_CALLBACK_EXECUTE_CUDA_DOUBLE(INPUT) \
+    template void functions::random::RandomFunction<GET_SECOND(INPUT)>::executeCudaDouble( \
+        dim3& launchDims, \
+        cudaStream_t* stream, \
+        int opNum, \
+        sd::Pointer stateHost, \
+        void const* vx, \
+        sd::LongType const* xShapeBuffer, \
+        void* vz, \
+        sd::LongType const* zShapeBuffer, \
         void* vextraArguments);
-);
+
+ITERATE_LIST((SD_COMMON_TYPES_PART_@COMB1@), LIST_CALLBACK_EXECUTE_CUDA_DOUBLE)
+
+#define LIST_CALLBACK_EXECUTE_CUDA_TRIPLE(INPUT) \
+    template void functions::random::RandomFunction<GET_SECOND(INPUT)>::executeCudaTriple( \
+        dim3& launchDims, \
+        cudaStream_t* stream, \
+        int opNum, \
+        sd::Pointer stateHost, \
+        void const* vx, \
+        sd::LongType const* xShapeBuffer, \
+        void const* vy, \
+        sd::LongType const* yShapeBuffer, \
+        void* vz, \
+        sd::LongType const* zShapeBuffer, \
+        void* vextraArguments);
+
+ITERATE_LIST((SD_COMMON_TYPES_PART_@COMB1@), LIST_CALLBACK_EXECUTE_CUDA_TRIPLE)

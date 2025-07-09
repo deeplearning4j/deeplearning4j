@@ -29,23 +29,38 @@
  * RandomFunction instantiated for float types in @COMB1@
  */
 
-ITERATE_COMBINATIONS_1(
-    SD_FLOAT_TYPES_PART_@COMB1@,
-    INSTANT_PROCESS_COMBINATION_1,
-    functions::random::RandomFunction,
-    ::execTransform(int opNum, sd::Pointer state, const void *x, const sd::LongType *xShapeInfo, void *z, const sd::LongType *zShapeInfo, void *extraArguments)
-)
+#define LIST_CALLBACK_EXEC_TRANSFORM_1(INPUT) \
+    template void functions::random::RandomFunction<GET_SECOND(INPUT)>::execTransform( \
+        int opNum, \
+        sd::Pointer state, \
+        const void *x, \
+        const sd::LongType *xShapeInfo, \
+        void *z, \
+        const sd::LongType *zShapeInfo, \
+        void *extraArguments);
 
-ITERATE_COMBINATIONS_1(
-    SD_FLOAT_TYPES_PART_@COMB1@,
-    INSTANT_PROCESS_COMBINATION_1,
-    functions::random::RandomFunction,
-    ::execTransform(int opNum, sd::Pointer state, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo, void *extraArguments)
-)
+ITERATE_LIST((SD_FLOAT_TYPES_PART_@COMB1@), LIST_CALLBACK_EXEC_TRANSFORM_1)
 
-ITERATE_COMBINATIONS_1(
-    SD_FLOAT_TYPES_PART_@COMB1@,
-    INSTANT_PROCESS_COMBINATION_1,
-    functions::random::RandomFunction,
-    ::execTransform(int opNum, sd::Pointer state, void *z, const sd::LongType *zShapeInfo, void *extraArguments)
-)
+#define LIST_CALLBACK_EXEC_TRANSFORM_2(INPUT) \
+    template void functions::random::RandomFunction<GET_SECOND(INPUT)>::execTransform( \
+        int opNum, \
+        sd::Pointer state, \
+        const void *x, \
+        const sd::LongType *xShapeInfo, \
+        const void *y, \
+        const sd::LongType *yShapeInfo, \
+        void *z, \
+        const sd::LongType *zShapeInfo, \
+        void *extraArguments);
+
+ITERATE_LIST((SD_FLOAT_TYPES_PART_@COMB1@), LIST_CALLBACK_EXEC_TRANSFORM_2)
+
+#define LIST_CALLBACK_EXEC_TRANSFORM_3(INPUT) \
+    template void functions::random::RandomFunction<GET_SECOND(INPUT)>::execTransform( \
+        int opNum, \
+        sd::Pointer state, \
+        void *z, \
+        const sd::LongType *zShapeInfo, \
+        void *extraArguments);
+
+ITERATE_LIST((SD_FLOAT_TYPES_PART_@COMB1@), LIST_CALLBACK_EXEC_TRANSFORM_3)

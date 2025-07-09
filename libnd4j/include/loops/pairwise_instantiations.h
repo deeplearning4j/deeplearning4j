@@ -287,29 +287,6 @@
 #define SD_LONG_TYPES_PART_1 SD_LONG_TYPES_PART_0
 #define SD_LONG_TYPES_PART_2 SD_LONG_TYPES_PART_0
 
-// ============================================================================
-// ITERATION MACROS FOR COMBINATIONS
-// ============================================================================
-
-// Extract the type from a (DataType::ENUM, Type) tuple
-#define GET_SECOND_ARG(enum_val, type) type
-
-// Macro to iterate through a single type list
-#define ITERATE_LIST(types, callback) \
-    EVAL(FOR_EACH_DS(callback, instantiate, ;, types))
-
-// Macro to iterate through combinations of two type lists
-#define ITERATE_COMBINATIONS(types1, types2, callback, name, suffix) \
-    EVAL(FOR_EACH_DT(callback, name, suffix, types1, types2))
-
-// Macro to iterate through combinations of three type lists 
-#define ITERATE_COMBINATIONS_3(types1, types2, types3, callback, name, suffix) \
-    EVAL(FOR_EACH_TT1(callback, name, suffix, types1, types2, types3))
-
-// Single type iteration
-#define ITERATE_COMBINATIONS_1(types, callback, name, suffix) \
-    EVAL(FOR_EACH_DS(callback, name, suffix, types))
-
 // Callback macros for instantiation
 #define INSTANT_PROCESS_COMBINATION_1(name, suffix, tuple) \
     template name<GET_SECOND_ARG tuple>suffix

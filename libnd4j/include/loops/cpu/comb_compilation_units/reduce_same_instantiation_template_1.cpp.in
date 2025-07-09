@@ -29,23 +29,35 @@
  * ReduceSameFunction instantiated for common types in @COMB1@
  */
 
-ITERATE_COMBINATIONS_1(
-    SD_COMMON_TYPES_PART_@COMB1@,
-    INSTANT_PROCESS_COMBINATION_1,
-    functions::reduce::ReduceSameFunction,
-    ::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams)
-)
+#define LIST_CALLBACK_EXEC_SCALAR_1(INPUT) \
+    template void* functions::reduce::ReduceSameFunction<GET_SECOND(INPUT)>::execScalar( \
+        const int opNum, \
+        const void *x, \
+        const sd::LongType *xShapeInfo, \
+        void *extraParams);
 
-ITERATE_COMBINATIONS_1(
-    SD_COMMON_TYPES_PART_@COMB1@,
-    INSTANT_PROCESS_COMBINATION_1,
-    functions::reduce::ReduceSameFunction,
-    ::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *z, const sd::LongType *zShapeInfo)
-)
+ITERATE_LIST((SD_COMMON_TYPES_PART_@COMB1@), LIST_CALLBACK_EXEC_SCALAR_1)
 
-ITERATE_COMBINATIONS_1(
-    SD_COMMON_TYPES_PART_@COMB1@,
-    INSTANT_PROCESS_COMBINATION_1,
-    functions::reduce::ReduceSameFunction,
-    ::exec(int opNum, sd::memory::Workspace *workspace, const void *vx, const sd::LongType *xShapeInfo, void *vextraParams, void *vz, const sd::LongType *zShapeInfo, const sd::LongType *dims)
-)
+#define LIST_CALLBACK_EXEC_SCALAR_2(INPUT) \
+    template void functions::reduce::ReduceSameFunction<GET_SECOND(INPUT)>::execScalar( \
+        const int opNum, \
+        const void *x, \
+        const sd::LongType *xShapeInfo, \
+        void *extraParams, \
+        void *z, \
+        const sd::LongType *zShapeInfo);
+
+ITERATE_LIST((SD_COMMON_TYPES_PART_@COMB1@), LIST_CALLBACK_EXEC_SCALAR_2)
+
+#define LIST_CALLBACK_EXEC(INPUT) \
+    template void functions::reduce::ReduceSameFunction<GET_SECOND(INPUT)>::exec( \
+        int opNum, \
+        sd::memory::Workspace *workspace, \
+        const void *vx, \
+        const sd::LongType *xShapeInfo, \
+        void *vextraParams, \
+        void *vz, \
+        const sd::LongType *zShapeInfo, \
+        const sd::LongType *dims);
+
+ITERATE_LIST((SD_COMMON_TYPES_PART_@COMB1@), LIST_CALLBACK_EXEC)

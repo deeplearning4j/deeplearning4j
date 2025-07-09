@@ -30,42 +30,38 @@
  * Note: Using @COMB1@ for single type (1-type combinations)
  */
 
-ITERATE_COMBINATIONS_1(
-    SD_COMMON_TYPES_PART_@COMB1@,
-    INSTANT_PROCESS_COMBINATION_1,
-    functions::reduce::ReduceSameFunction,
-    ::execReduce(
-        dim3 launchDims,
-        cudaStream_t* stream,
-        const int opNum,
-        const void* x,
-        const sd::LongType* dXShapeInfo,
-        const sd::LongType* hXShapeInfo,
-        void* extraParams,
-        void* vreductionBuffer,
-        void* z,
-        const sd::LongType* dZShapeInfo,
-        const sd::LongType* hZShapeInfo,
+#define LIST_CALLBACK_EXEC_REDUCE(INPUT) \
+    template void functions::reduce::ReduceSameFunction<GET_SECOND(INPUT)>::execReduce( \
+        dim3 launchDims, \
+        cudaStream_t* stream, \
+        const int opNum, \
+        const void* x, \
+        const sd::LongType* dXShapeInfo, \
+        const sd::LongType* hXShapeInfo, \
+        void* extraParams, \
+        void* vreductionBuffer, \
+        void* z, \
+        const sd::LongType* dZShapeInfo, \
+        const sd::LongType* hZShapeInfo, \
         const sd::LongType* dims);
-);
 
-ITERATE_COMBINATIONS_1(
-    SD_COMMON_TYPES_PART_@COMB1@,
-    INSTANT_PROCESS_COMBINATION_1,
-    functions::reduce::ReduceSameFunction,
-    ::execReduceScalar(
-        dim3 launchDims,
-        cudaStream_t* stream,
-        int opNum,
-        const void* x,
-        const sd::LongType* xShapeInfo,
-        const sd::LongType* hXShapeInfo,
-        void* extraParams,
-        void* z,
-        const sd::LongType* zShapeInfo,
-        const sd::LongType* hZShapeInfo,
-        sd::LongType* dimension,
-        sd::LongType dimensionLength,
-        void* reductionBuffer,
+ITERATE_LIST((SD_COMMON_TYPES_PART_@COMB1@), LIST_CALLBACK_EXEC_REDUCE)
+
+#define LIST_CALLBACK_EXEC_REDUCE_SCALAR(INPUT) \
+    template void functions::reduce::ReduceSameFunction<GET_SECOND(INPUT)>::execReduceScalar( \
+        dim3 launchDims, \
+        cudaStream_t* stream, \
+        int opNum, \
+        const void* x, \
+        const sd::LongType* xShapeInfo, \
+        const sd::LongType* hXShapeInfo, \
+        void* extraParams, \
+        void* z, \
+        const sd::LongType* zShapeInfo, \
+        const sd::LongType* hZShapeInfo, \
+        sd::LongType* dimension, \
+        sd::LongType dimensionLength, \
+        void* reductionBuffer, \
         const sd::LongType* tadOnlyShapeInfo);
-);
+
+ITERATE_LIST((SD_COMMON_TYPES_PART_@COMB1@), LIST_CALLBACK_EXEC_REDUCE_SCALAR)
