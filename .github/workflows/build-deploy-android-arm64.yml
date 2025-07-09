@@ -79,7 +79,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Free Disk Space
+      - name: Free Disk Space (Initial)
         uses: jlumbroso/free-disk-space@main
         with:
           tool-cache: false
@@ -129,7 +129,7 @@ jobs:
         id: cache-llvm-source
         with:
           path: ${{ github.workspace }}/llvm-toolchain
-          key: llvm-toolchain-aosp-source-v2
+          key: llvm-toolchain-aosp-source-v3
 
       - name: Cache SnowNF Patches
         uses: actions/cache@v4
@@ -143,7 +143,7 @@ jobs:
         id: cache-llvm-binaries
         with:
           path: ${{ github.workspace }}/llvm-toolchain/out/stage2
-          key: llvm-aarch64-binaries-v4
+          key: llvm-aarch64-binaries-v5
 
       - name: Cache Official Android NDK
         uses: actions/cache@v4
@@ -204,6 +204,10 @@ jobs:
             export PATH="$HOME/.local/bin:$PATH"
           fi
           
+          # Check initial disk space
+          echo "Initial disk space:"
+          df -h
+          
           # Download AOSP LLVM toolchain source
           if [ ! -f "${LLVM_TOOLCHAIN_DIR}/.repo/manifest.xml" ]; then
             echo "Downloading AOSP LLVM toolchain source..."
@@ -212,6 +216,9 @@ jobs:
           
             timeout 1800 repo init -u https://android.googlesource.com/platform/manifest -b llvm-toolchain --depth=1
             timeout 7200 repo sync -c -j4 --fail-fast --force-sync --no-clone-bundle
+          
+            echo "Disk space after AOSP download:"
+            df -h
           else
             echo "Using cached AOSP LLVM toolchain source"
           fi
@@ -256,68 +263,42 @@ jobs:
           # Build LLVM toolchain
           if [ ! -f "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/clang" ] && [ "${{ github.event.inputs.skipLLVMBuild }}" != "true" ]; then
           
-            if [ "$PYTHON_OK" = "true" ]; then
-              echo "Attempting to apply SnowNF patches and build..."
-              cd "${LLVM_TOOLCHAIN_DIR}/toolchain/llvm_android"
+            # Check disk space before building
+            echo "Checking disk space before LLVM build..."
+            df -h
           
-              # Backup original files
-              if [ -d "patches" ]; then
-                mv patches ../patches_backup
-              fi
-          
-              # Apply SnowNF patches
-              rm -rf ./*
-              cp -rf "${AARCH64_NDK_PATCH_DIR}/"* .
-          
-              # Restore patches if they existed
-              if [ -d "../patches_backup" ]; then
-                mv ../patches_backup patches
-              fi
-          
-              cd "${LLVM_TOOLCHAIN_DIR}"
-              echo "Building LLVM with SnowNF patches..."
-          
-              export PYTHONPATH="${LLVM_TOOLCHAIN_DIR}/external/toolchain-utils:${PYTHONPATH}"
-          
-              if python3 toolchain/llvm_android/build.py \
-                --no-build windows \
-                --skip-tests \
-                --single-stage \
-                --no-musl; then
-                echo "SnowNF build succeeded"
-              else
-                echo "SnowNF build failed, checking for partial success..."
-                CLANG_FOUND=$(find "${LLVM_TOOLCHAIN_DIR}" -name "clang" -type f -executable 2>/dev/null | head -1)
-                if [ -n "$CLANG_FOUND" ]; then
-                  echo "Found clang binary despite build failure: $CLANG_FOUND"
-                  echo "This is expected behavior per the technical report"
-                else
-                  echo "SnowNF approach failed completely"
-                  PYTHON_OK=false
-                fi
-              fi
+            # Clean up any existing build artifacts to free space
+            if [ -d "${LLVM_TOOLCHAIN_DIR}/out" ]; then
+              echo "Cleaning existing build artifacts..."
+              rm -rf "${LLVM_TOOLCHAIN_DIR}/out"
             fi
           
-            # Fallback: Try vanilla AOSP build without patches
-            if [ "$PYTHON_OK" = "false" ] && [ ! -f "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/clang" ]; then
-              echo "Using fallback: vanilla AOSP build without patches..."
+            # Skip SnowNF patches due to StopIteration error and go straight to fallback
+            echo "Skipping SnowNF patches due to known compatibility issues..."
+            echo "Using fallback: vanilla AOSP build without patches..."
           
-              # Reset to clean AOSP state
-              cd "${LLVM_TOOLCHAIN_DIR}/toolchain/llvm_android"
-              git checkout . 2>/dev/null || true
-              git clean -fd 2>/dev/null || true
+            # Reset to clean AOSP state
+            cd "${LLVM_TOOLCHAIN_DIR}/toolchain/llvm_android"
+            git checkout . 2>/dev/null || true
+            git clean -fd 2>/dev/null || true
           
-              cd "${LLVM_TOOLCHAIN_DIR}"
-              echo "Attempting vanilla AOSP LLVM build..."
+            cd "${LLVM_TOOLCHAIN_DIR}"
+            echo "Attempting vanilla AOSP LLVM build..."
           
-              export PYTHONPATH="${LLVM_TOOLCHAIN_DIR}/external/toolchain-utils:${PYTHONPATH}"
+            export PYTHONPATH="${LLVM_TOOLCHAIN_DIR}/external/toolchain-utils:${PYTHONPATH}"
           
-              if python3 toolchain/llvm_android/build.py \
-                --no-build windows \
-                --skip-tests \
-                --single-stage \
-                --no-musl; then
-                echo "Vanilla AOSP build succeeded"
+            if python3 toolchain/llvm_android/build.py \
+              --no-build windows \
+              --skip-tests \
+              --single-stage \
+              --no-musl; then
+              echo "Vanilla AOSP build succeeded"
+            else
+              echo "Vanilla AOSP build failed, checking for partial success..."
+              CLANG_FOUND=$(find "${LLVM_TOOLCHAIN_DIR}" -name "clang" -type f -executable 2>/dev/null | head -1)
+              if [ -n "$CLANG_FOUND" ]; then
+                echo "Found clang binary despite build failure: $CLANG_FOUND"
+                echo "This is expected behavior per the technical report"
               else
                 echo "Both patched and vanilla AOSP builds failed, using system clang fallback"
           
@@ -341,13 +322,55 @@ jobs:
             echo "Using cached LLVM binaries"
           fi
           
+          # Check disk space before downloading NDK
+          echo "Checking disk space before NDK download..."
+          df -h
+          
+          # Free up space before NDK download
+          echo "Cleaning up to free space for NDK download..."
+          
+          # Clean AOSP build intermediates but keep final binaries
+          if [ -d "${LLVM_TOOLCHAIN_DIR}/out" ]; then
+            find "${LLVM_TOOLCHAIN_DIR}/out" -name "*.o" -delete 2>/dev/null || true
+            find "${LLVM_TOOLCHAIN_DIR}/out" -name "*.a" -delete 2>/dev/null || true
+            find "${LLVM_TOOLCHAIN_DIR}/out" -name "*.tmp" -delete 2>/dev/null || true
+          fi
+          
+          # Clean package caches
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+          
+          # Clean pip cache
+          python3 -m pip cache purge
+          
+          echo "Disk space after cleanup:"
+          df -h
+          
           # Download official NDK
           if [ ! -d "${NDK_HOME}" ]; then
             echo "Downloading official Android NDK ${NDK_VERSION}..."
             cd "${GITHUB_WORKSPACE}"
-            wget -q "https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip"
-            unzip -q "android-ndk-${NDK_VERSION}-linux.zip"
+          
+            # Download with progress and better error handling
+            if ! wget --progress=dot:giga "https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip"; then
+              echo "ERROR: Failed to download NDK"
+              echo "Final disk space:"
+              df -h
+              exit 1
+            fi
+          
+            echo "Extracting NDK..."
+            if ! unzip -q "android-ndk-${NDK_VERSION}-linux.zip"; then
+              echo "ERROR: Failed to extract NDK"
+              echo "Final disk space:"
+              df -h
+              exit 1
+            fi
+          
             rm "android-ndk-${NDK_VERSION}-linux.zip"
+          
+            echo "Disk space after NDK download:"
+            df -h
           fi
           
           # Create hybrid NDK
@@ -426,6 +449,19 @@ jobs:
           echo "ANDROID_SYSROOT=${NDK_PREBUILT_DIR}/sysroot" >> $GITHUB_ENV
           
           echo "Native Android NDK setup complete"
+          echo "Final disk space:"
+          df -h
+
+      - name: Free Disk Space (Before Build)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: false
+          dotnet: false
+          haskell: false
+          large-packages: false
+          docker-images: false
+          swap-storage: false
 
       - name: Setup OpenBLAS
         shell: bash
@@ -661,31 +697,4 @@ jobs:
           
           if [ -d "libnd4j" ]; then
             echo "Checking libnd4j build artifacts..."
-            find libnd4j -name "*.so" -o -name "*.a" | grep -E "(arm64|aarch64|android)" | head -10
-          fi
-
-      - name: Performance Summary
-        if: always()
-        shell: bash
-        run: |
-          echo "=== Performance Analysis Summary ==="
-          echo "Build Method: Native ARM64 LLVM Compilation with proper Python dependencies"
-          echo "Performance: Near-native ARM64 speed (no emulation overhead)"
-          echo "Expected improvement: 10-40x faster than emulation approaches"
-          echo "Best for: CI/CD environments, ARM cloud infrastructure"
-
-      - name: Cleanup Build Artifacts
-        if: always()
-        shell: bash
-        run: |
-          echo "Cleaning up temporary files..."
-          rm -rf /tmp/maven-* 2>/dev/null || true
-          
-          if [ -d "${GITHUB_WORKSPACE}/llvm-toolchain" ]; then
-            find "${GITHUB_WORKSPACE}/llvm-toolchain" -name "*.o" -delete 2>/dev/null || true
-            find "${GITHUB_WORKSPACE}/llvm-toolchain" -name "*.tmp" -delete 2>/dev/null || true
-          fi
-          
-          rm -f test_android.cpp test_android_binary native_test.c native_test 2>/dev/null || true
-          echo "Cleanup completed"null || true
-            find "${GITHUB_WORKSPACE}/llvm-toolchain" -name "*.tmp" -delete 2>/dev/
+            find libnd4j -name "*.so" -o -name "*.a"
