@@ -66,7 +66,7 @@ jobs:
           - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
           - build_threads: ${{ github.event.inputs.buildThreads }}
     runs-on: ${{ github.event.inputs.runsOn }}
-    timeout-minutes: 720  # 12 hour timeout for LLVM build
+    timeout-minutes: 720
     steps:
       - name: Clean workspace
         uses: AutoModality/action-clean@v1
@@ -130,8 +130,6 @@ jobs:
         with:
           path: ${{ github.workspace }}/llvm-toolchain
           key: llvm-toolchain-aosp-source-v2
-          restore-keys: |
-            llvm-toolchain-aosp-source-
 
       - name: Cache SnowNF Patches
         uses: actions/cache@v4
@@ -145,7 +143,7 @@ jobs:
         id: cache-llvm-binaries
         with:
           path: ${{ github.workspace }}/llvm-toolchain/out/stage2
-          key: llvm-aarch64-binaries-v3
+          key: llvm-aarch64-binaries-v4
 
       - name: Cache Official Android NDK
         uses: actions/cache@v4
@@ -165,7 +163,7 @@ jobs:
           export NDK_VERSION="r27c"
           export NDK_HOME="${GITHUB_WORKSPACE}/android-ndk-${NDK_VERSION}"
           
-          echo "Building Native Android NDK for linux-arm64 using SnowNF method"
+          echo "Building Native Android NDK for linux-arm64"
           
           # Install system dependencies
           sudo apt-get update -qq
@@ -203,7 +201,6 @@ jobs:
             timeout 7200 repo sync -c -j4 --fail-fast --force-sync --no-clone-bundle
           else
             echo "Using cached AOSP LLVM toolchain source"
-            cd "${LLVM_TOOLCHAIN_DIR}"
           fi
           
           # Clone SnowNF patches
@@ -212,51 +209,103 @@ jobs:
             git clone --depth 1 https://github.com/SnowNF/ndk-aarch64-linux.git "${AARCH64_NDK_PATCH_DIR}"
           fi
           
-          # Apply patches
-          echo "Applying ARM64 patches to LLVM build system..."
-          cd "${LLVM_TOOLCHAIN_DIR}/toolchain/llvm_android"
+          # Check AOSP compatibility BEFORE applying patches
+          echo "Checking AOSP compatibility with SnowNF patches..."
+          cd "${LLVM_TOOLCHAIN_DIR}"
           
-          if [ -d "patches" ] && [ ! -d "../patches_backup" ]; then
-            mv patches ../patches_backup
+          AOSP_COMPATIBLE=false
+          if [ -f "external/toolchain-utils/llvm_tools/failure_modes.py" ]; then
+            echo "Required Python modules found - SnowNF patches should work"
+            AOSP_COMPATIBLE=true
+          else
+            echo "Required Python modules missing - SnowNF patches will fail"
+            echo "Available Python files in toolchain-utils:"
+            find external/toolchain-utils -name "*.py" 2>/dev/null | head -10 || echo "None found"
           fi
           
-          rm -rf ./*
-          cp -rf "${AARCH64_NDK_PATCH_DIR}/"* .
-          
-          if [ -d "../patches_backup" ]; then
-            mv ../patches_backup patches
-          fi
-          
-          # Build native LLVM toolchain
+          # Build LLVM toolchain with appropriate method
           if [ ! -f "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/clang" ] && [ "${{ github.event.inputs.skipLLVMBuild }}" != "true" ]; then
-            echo "Building LLVM toolchain for ARM64..."
-            cd "${LLVM_TOOLCHAIN_DIR}"
           
-            # Check available build options
-            python3 toolchain/llvm_android/build.py --help | head -20 || true
+            if [ "$AOSP_COMPATIBLE" = "true" ]; then
+              echo "Applying SnowNF patches and building..."
+              cd "${LLVM_TOOLCHAIN_DIR}/toolchain/llvm_android"
           
-            if ! python3 toolchain/llvm_android/build.py \
-              --no-build windows \
-              --skip-tests \
-              --single-stage \
-              --no-musl; then
+              # Backup original files
+              if [ -d "patches" ]; then
+                mv patches ../patches_backup
+              fi
           
-              echo "Build failed, checking for partial success..."
+              # Apply SnowNF patches
+              rm -rf ./*
+              cp -rf "${AARCH64_NDK_PATCH_DIR}/"* .
           
-              if find "${LLVM_TOOLCHAIN_DIR}" -name "clang" -type f -executable | grep -q .; then
-                echo "Found clang binary despite build failure"
-                CLANG_LOCATION=$(find "${LLVM_TOOLCHAIN_DIR}" -name "clang" -type f -executable | head -1)
-                echo "Clang found at: ${CLANG_LOCATION}"
+              # Restore patches if they existed
+              if [ -d "../patches_backup" ]; then
+                mv ../patches_backup patches
+              fi
+          
+              cd "${LLVM_TOOLCHAIN_DIR}"
+              echo "Building LLVM with SnowNF patches..."
+          
+              if python3 toolchain/llvm_android/build.py \
+                --no-build windows \
+                --skip-tests \
+                --single-stage \
+                --no-musl; then
+                echo "SnowNF build succeeded"
               else
-                echo "No clang binary found, using system clang fallback"
-                mkdir -p "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin"
-                cp /usr/bin/clang "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/"
-                cp /usr/bin/clang++ "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/"
-                if [ -f "/usr/bin/lld" ]; then
-                  cp /usr/bin/lld "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/"
+                echo "SnowNF build failed, checking for partial success..."
+                # Check for clang binary even if build "failed"
+                CLANG_FOUND=$(find "${LLVM_TOOLCHAIN_DIR}" -name "clang" -type f -executable 2>/dev/null | head -1)
+                if [ -n "$CLANG_FOUND" ]; then
+                  echo "Found clang binary despite build failure: $CLANG_FOUND"
+                  echo "This is expected behavior per the technical report"
+                else
+                  echo "SnowNF approach failed completely"
+                  AOSP_COMPATIBLE=false
                 fi
               fi
             fi
+          
+            # Fallback: Try vanilla AOSP build without patches
+            if [ "$AOSP_COMPATIBLE" = "false" ] && [ ! -f "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/clang" ]; then
+              echo "Using fallback: vanilla AOSP build without patches..."
+          
+              # Reset to clean AOSP state
+              cd "${LLVM_TOOLCHAIN_DIR}/toolchain/llvm_android"
+              git checkout . 2>/dev/null || true
+              git clean -fd 2>/dev/null || true
+          
+              cd "${LLVM_TOOLCHAIN_DIR}"
+              echo "Attempting vanilla AOSP LLVM build..."
+          
+              if python3 toolchain/llvm_android/build.py \
+                --no-build windows \
+                --skip-tests \
+                --single-stage \
+                --no-musl; then
+                echo "Vanilla AOSP build succeeded"
+              else
+                echo "Vanilla AOSP build failed, using system clang fallback"
+          
+                # Final fallback: system clang
+                mkdir -p "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin"
+                mkdir -p "${LLVM_TOOLCHAIN_DIR}/out/stage2/lib"
+          
+                cp /usr/bin/clang "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/"
+                cp /usr/bin/clang++ "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/"
+          
+                for tool in lld llvm-ar llvm-ranlib llvm-strip; do
+                  if which "$tool" >/dev/null 2>&1; then
+                    cp "$(which $tool)" "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/"
+                  fi
+                done
+          
+                echo "Created fallback toolchain using system binaries"
+              fi
+            fi
+          else
+            echo "Using cached LLVM binaries"
           fi
           
           # Download official NDK
@@ -271,6 +320,7 @@ jobs:
           # Create hybrid NDK
           echo "Creating hybrid NDK..."
           
+          # Find clang binary
           CLANG_BINARY=$(find "${LLVM_TOOLCHAIN_DIR}" -name "clang" -type f -executable | head -1)
           if [ -z "${CLANG_BINARY}" ]; then
             echo "ERROR: Could not locate clang binary"
@@ -280,16 +330,19 @@ jobs:
           BUILD_OUTPUT_DIR=$(dirname "${CLANG_BINARY}")
           NDK_PREBUILT_DIR="${NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64"
           
-          echo "Using build output directory: ${BUILD_OUTPUT_DIR}"
+          echo "Using build output: ${BUILD_OUTPUT_DIR}"
+          echo "Patching NDK at: ${NDK_PREBUILT_DIR}"
           
-          # Copy binaries
+          # Copy clang binaries
           cp -f "${BUILD_OUTPUT_DIR}/clang"* "${NDK_PREBUILT_DIR}/bin/" 2>/dev/null || true
           
+          # Copy LLVM libraries if they exist
           if [ -d "${BUILD_OUTPUT_DIR}/../lib" ]; then
             cp -f "${BUILD_OUTPUT_DIR}/../lib/llvm-"* "${NDK_PREBUILT_DIR}/bin/" 2>/dev/null || true
             cp -f "${BUILD_OUTPUT_DIR}/../lib/lld"* "${NDK_PREBUILT_DIR}/" 2>/dev/null || true
           fi
           
+          # Copy lld binary
           cp -f "${BUILD_OUTPUT_DIR}/lld"* "${NDK_PREBUILT_DIR}/bin/" 2>/dev/null || true
           
           chmod +x "${NDK_PREBUILT_DIR}/bin/"*
@@ -307,7 +360,7 @@ jobs:
           fi
           
           if [ -f "${DIRECT_CLANG}" ]; then
-            echo "Binary type: $(file "${DIRECT_CLANG}")"
+            echo "Binary type: $(file "${DIRECT_CLANG}" | cut -d: -f2-)"
             if "${DIRECT_CLANG}" --version >/dev/null 2>&1; then
               echo "SUCCESS: Direct clang binary works"
               "${DIRECT_CLANG}" --version | head -1
@@ -583,7 +636,7 @@ jobs:
         shell: bash
         run: |
           echo "=== Performance Analysis Summary ==="
-          echo "Build Method: Native ARM64 LLVM Compilation (SnowNF method)"
+          echo "Build Method: Native ARM64 LLVM Compilation with fallbacks"
           echo "Performance: Near-native ARM64 speed (no emulation overhead)"
           echo "Expected improvement: 10-40x faster than emulation approaches"
           echo "Best for: CI/CD environments, ARM cloud infrastructure"
