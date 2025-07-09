@@ -162,7 +162,6 @@ jobs:
           export AARCH64_NDK_PATCH_DIR="${GITHUB_WORKSPACE}/ndk-aarch64-patches"
           export NDK_VERSION="r27c"
           export NDK_HOME="${GITHUB_WORKSPACE}/android-ndk-${NDK_VERSION}"
-          export JAVA_HOME=/opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/11.0.27-6/arm64
           echo "Building Native Android NDK for linux-arm64"
           
           # Install system dependencies
@@ -448,7 +447,7 @@ jobs:
           mkdir -p "${OPENBLAS_HOME}"
           cd "${OPENBLAS_HOME}"
           
-          wget -q "https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/${OPENBLAS_JAR}"
+          wget -q "https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/${OPENBLAS_JAR}"
           unzip -q "${OPENBLAS_JAR}"
           
           if [ -f "${OPENBLAS_DIR}/libopenblas.so" ] && [ ! -f "${OPENBLAS_DIR}/libopenblas.so.0" ]; then
@@ -609,6 +608,7 @@ jobs:
           MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
           MAVEN_OPTS: -Xmx3g
+          JAVA_HOME:  /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/11.0.27-6/arm64
           PROTO_EXEC: /opt/protobuf/bin/protoc
         run: |
           echo "Starting Maven build with native ARM64 Android NDK..."
