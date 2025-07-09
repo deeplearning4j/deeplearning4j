@@ -162,6 +162,7 @@ jobs:
           export AARCH64_NDK_PATCH_DIR="${GITHUB_WORKSPACE}/ndk-aarch64-patches"
           export NDK_VERSION="r27c"
           export NDK_HOME="${GITHUB_WORKSPACE}/android-ndk-${NDK_VERSION}"
+          
           echo "Building Native Android NDK for linux-arm64"
           
           # Install system dependencies
@@ -349,12 +350,41 @@ jobs:
           # Create hybrid NDK
           echo "Creating hybrid NDK..."
           
-          # Find clang binary
-          CLANG_BINARY=$(find "${LLVM_TOOLCHAIN_DIR}" -name "clang" -type f -executable | head -1)
+          # Find the actual ARM64 clang binary (not symlinks)
+          echo "Searching for ARM64 clang binaries..."
+          find "${LLVM_TOOLCHAIN_DIR}" -name "clang" -type f -executable | while read -r binary; do
+            echo "Found clang at: $binary"
+            echo "Binary type: $(file "$binary")"
+          done
+          
+          # Look for the actual ARM64 binary in the AOSP build output
+          CLANG_BINARY=""
+          if [ -f "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/clang" ]; then
+            CLANG_BINARY="${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/clang"
+            echo "Using stage2 clang: $CLANG_BINARY"
+          else
+            # Search for any ARM64 clang binary
+            for candidate in $(find "${LLVM_TOOLCHAIN_DIR}" -name "clang" -type f -executable); do
+              if file "$candidate" | grep -q "aarch64\|ARM aarch64"; then
+                CLANG_BINARY="$candidate"
+                echo "Found ARM64 clang: $CLANG_BINARY"
+                break
+              fi
+            done
+          fi
+          
           if [ -z "${CLANG_BINARY}" ]; then
-            echo "ERROR: Could not locate clang binary"
+            echo "No ARM64 clang found, using any available clang as fallback"
+            CLANG_BINARY=$(find "${LLVM_TOOLCHAIN_DIR}" -name "clang" -type f -executable | head -1)
+          fi
+          
+          if [ -z "${CLANG_BINARY}" ]; then
+            echo "ERROR: Could not locate any clang binary"
             exit 1
           fi
+          
+          echo "Selected clang binary: $CLANG_BINARY"
+          echo "Binary details: $(file "$CLANG_BINARY")"
           
           BUILD_OUTPUT_DIR=$(dirname "${CLANG_BINARY}")
           NDK_PREBUILT_DIR="${NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64"
@@ -362,17 +392,34 @@ jobs:
           echo "Using build output: ${BUILD_OUTPUT_DIR}"
           echo "Patching NDK at: ${NDK_PREBUILT_DIR}"
           
-          # Copy clang binaries
-          cp -f "${BUILD_OUTPUT_DIR}/clang"* "${NDK_PREBUILT_DIR}/bin/" 2>/dev/null || true
+          # Copy the actual clang binary (not just symlinks)
+          echo "Copying clang binary..."
+          cp -f "${CLANG_BINARY}" "${NDK_PREBUILT_DIR}/bin/clang"
+          
+          # Copy clang++ if it exists, otherwise create a symlink
+          if [ -f "${BUILD_OUTPUT_DIR}/clang++" ]; then
+            cp -f "${BUILD_OUTPUT_DIR}/clang++" "${NDK_PREBUILT_DIR}/bin/clang++"
+          else
+            ln -sf clang "${NDK_PREBUILT_DIR}/bin/clang++"
+          fi
+          
+          # Copy other LLVM tools if they exist
+          for tool in llvm-ar llvm-ranlib llvm-strip llvm-objcopy llvm-objdump; do
+            if [ -f "${BUILD_OUTPUT_DIR}/${tool}" ]; then
+              cp -f "${BUILD_OUTPUT_DIR}/${tool}" "${NDK_PREBUILT_DIR}/bin/"
+            fi
+          done
+          
+          # Copy lld linker if it exists
+          if [ -f "${BUILD_OUTPUT_DIR}/lld" ]; then
+            cp -f "${BUILD_OUTPUT_DIR}/lld" "${NDK_PREBUILT_DIR}/bin/"
+          fi
           
           # Copy LLVM libraries if they exist
           if [ -d "${BUILD_OUTPUT_DIR}/../lib" ]; then
             cp -f "${BUILD_OUTPUT_DIR}/../lib/llvm-"* "${NDK_PREBUILT_DIR}/bin/" 2>/dev/null || true
             cp -f "${BUILD_OUTPUT_DIR}/../lib/lld"* "${NDK_PREBUILT_DIR}/" 2>/dev/null || true
           fi
-          
-          # Copy lld binary
-          cp -f "${BUILD_OUTPUT_DIR}/lld"* "${NDK_PREBUILT_DIR}/bin/" 2>/dev/null || true
           
           chmod +x "${NDK_PREBUILT_DIR}/bin/"*
           
@@ -440,14 +487,14 @@ jobs:
         shell: bash
         run: |
           echo "Setting up OpenBLAS for Android ARM64..."
-          OPENBLAS_JAR="openblas-0.3.28-1.5.11-android-arm64.jar"
+          OPENBLAS_JAR="openblas-0.3.19-1.5.7-android-arm64.jar"
           OPENBLAS_HOME="${GITHUB_WORKSPACE}/openblas_home"
           OPENBLAS_DIR="${OPENBLAS_HOME}/lib/arm64-v8a"
           
           mkdir -p "${OPENBLAS_HOME}"
           cd "${OPENBLAS_HOME}"
           
-          wget -q "https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/${OPENBLAS_JAR}"
+          wget -q "https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/${OPENBLAS_JAR}"
           unzip -q "${OPENBLAS_JAR}"
           
           if [ -f "${OPENBLAS_DIR}/libopenblas.so" ] && [ ! -f "${OPENBLAS_DIR}/libopenblas.so.0" ]; then
@@ -608,7 +655,6 @@ jobs:
           MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
           MAVEN_OPTS: -Xmx3g
-          JAVA_HOME:  /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/11.0.27-6/arm64
           PROTO_EXEC: /opt/protobuf/bin/protoc
         run: |
           echo "Starting Maven build with native ARM64 Android NDK..."
@@ -617,6 +663,7 @@ jobs:
           export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${OPENBLAS_PATH}"
           
           echo "=== Build Environment ==="
+          which java
           echo "Java: $(java -version 2>&1 | head -1)"
           echo "Maven: $(mvn -version | head -1)"
           echo "CMake: $(cmake --version | head -1)"
