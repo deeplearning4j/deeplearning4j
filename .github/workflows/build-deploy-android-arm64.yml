@@ -664,6 +664,8 @@ jobs:
           
           echo "=== Build Environment ==="
           which java
+          export JAVA_HOME="${JAVA_HOME_11_X64:-$JAVA_HOME_11_arm64}" 
+          echo "JAVA_HOME SET TO ${JAVA_HOME}"
           echo "Java: $(java -version 2>&1 | head -1)"
           echo "Maven: $(mvn -version | head -1)"
           echo "CMake: $(cmake --version | head -1)"
