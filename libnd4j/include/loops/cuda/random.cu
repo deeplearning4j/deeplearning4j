@@ -484,6 +484,8 @@ SD_HOST void RandomFunction<double>::executeCudaTriple(dim3& launchDims, cudaStr
  sd::DebugHelper::checkErrorCode(stream, "RandomFunction executeCudaSingle(...) failed");
 }
 
-BUILD_SINGLE_TEMPLATE(template class RandomFunction, , SD_FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template class RandomFunction, , SD_COMMON_TYPES);
+
+
 }  // namespace random
 }  // namespace functions
