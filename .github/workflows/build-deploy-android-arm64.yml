@@ -51,6 +51,11 @@ on:
         required: false
         default: false
 
+      debug_enabled:
+        description: 'Enable debug session'
+        required: false
+        default: 'false'
+
 jobs:
   android-arm64:
     strategy:
@@ -111,6 +116,18 @@ jobs:
       - name: Install CMake
         uses: ./.github/actions/install-cmake-linux
         if: steps.cache-cmake.outputs.cache-hit != 'true'
+
+      - name: Install build dependencies
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            ninja-build \
+            build-essential \
+            crossbuild-essential-arm64 \
+            clang \
+            lld \
+            llvm-dev
 
       - name: Set up Java for publishing
         uses: actions/setup-java@v4
@@ -347,7 +364,7 @@ jobs:
             df -h
           fi
           
-          # Create hybrid NDK
+          # Create hybrid NDK - Use linux-x86_64 (standard) instead of linux-aarch64
           echo "Creating hybrid NDK..."
           
           # Find the actual ARM64 clang binary (not symlinks)
@@ -387,10 +404,19 @@ jobs:
           echo "Binary details: $(file "$CLANG_BINARY")"
           
           BUILD_OUTPUT_DIR=$(dirname "${CLANG_BINARY}")
+          # Use standard linux-x86_64 prebuilt directory
           NDK_PREBUILT_DIR="${NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64"
           
           echo "Using build output: ${BUILD_OUTPUT_DIR}"
           echo "Patching NDK at: ${NDK_PREBUILT_DIR}"
+          
+          # Verify NDK prebuilt directory exists
+          if [ ! -d "${NDK_PREBUILT_DIR}" ]; then
+            echo "ERROR: NDK prebuilt directory not found: ${NDK_PREBUILT_DIR}"
+            echo "Available prebuilt directories:"
+            find "${NDK_HOME}/toolchains/llvm/prebuilt" -type d 2>/dev/null || echo "None found"
+            exit 1
+          fi
           
           # Copy the actual clang binary (not just symlinks)
           echo "Copying clang binary..."
@@ -462,7 +488,7 @@ jobs:
             rm -f test_android.cpp test_android_binary
           fi
           
-          # Set environment variables
+          # Set environment variables - Use standard linux-x86_64
           echo "ANDROID_NDK_ROOT=${NDK_HOME}" >> $GITHUB_ENV
           echo "ANDROID_NDK=${NDK_HOME}" >> $GITHUB_ENV
           echo "ANDROID_TOOLCHAIN_BIN=${NDK_PREBUILT_DIR}/bin" >> $GITHUB_ENV
@@ -536,21 +562,33 @@ jobs:
           set(CMAKE_ANDROID_NDK ${ANDROID_NDK})
           set(CMAKE_ANDROID_STL_TYPE c++_shared)
           
-          set(CMAKE_ANDROID_NDK_TOOLCHAIN_VERSION clang)
-          set(CMAKE_SYSROOT ${ANDROID_SYSROOT})
+          # Use the correct prebuilt directory (standard linux-x86_64)
+          set(ANDROID_TOOLCHAIN_NAME llvm)
+          set(ANDROID_TOOLCHAIN_ROOT ${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64)
           
-          set(CMAKE_C_COMPILER ${ANDROID_TOOLCHAIN_BIN}/aarch64-linux-android21-clang)
-          set(CMAKE_CXX_COMPILER ${ANDROID_TOOLCHAIN_BIN}/aarch64-linux-android21-clang++)
+          set(CMAKE_SYSROOT \${ANDROID_TOOLCHAIN_ROOT}/sysroot)
+          
+          # Set compilers with full paths
+          set(CMAKE_C_COMPILER \${ANDROID_TOOLCHAIN_ROOT}/bin/aarch64-linux-android21-clang)
+          set(CMAKE_CXX_COMPILER \${ANDROID_TOOLCHAIN_ROOT}/bin/aarch64-linux-android21-clang++)
+          
+          # Set other tools
+          set(CMAKE_AR \${ANDROID_TOOLCHAIN_ROOT}/bin/llvm-ar CACHE FILEPATH "ar")
+          set(CMAKE_RANLIB \${ANDROID_TOOLCHAIN_ROOT}/bin/llvm-ranlib CACHE FILEPATH "ranlib")
+          set(CMAKE_STRIP \${ANDROID_TOOLCHAIN_ROOT}/bin/llvm-strip CACHE FILEPATH "strip")
+          
+          # Set make program explicitly
+          find_program(CMAKE_MAKE_PROGRAM ninja REQUIRED)
           
           set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
           set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
           set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
           set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
           
-          set(CMAKE_C_FLAGS_INIT "-fPIC -O2")
-          set(CMAKE_CXX_FLAGS_INIT "-fPIC -O2")
-          
-          set(CMAKE_MAKE_PROGRAM /usr/bin/ninja)
+          # Enhanced compiler flags
+          set(CMAKE_C_FLAGS_INIT "-fPIC -O2 -DANDROID -D__ANDROID_API__=21")
+          set(CMAKE_CXX_FLAGS_INIT "-fPIC -O2 -DANDROID -D__ANDROID_API__=21 -std=c++14")
+          set(CMAKE_EXE_LINKER_FLAGS_INIT "-Wl,--fix-cortex-a8")
           EOF
           
           echo "CMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}" >> $GITHUB_ENV
@@ -566,12 +604,15 @@ jobs:
              MODULES=':nd4j-native,:nd4j-native-preset,:libnd4j'
           fi
           
+          # Updated CMake arguments with correct paths and Ninja generator
           CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE} \
+            -G Ninja \
             -DSD_ANDROID_BUILD=true \
             -DANDROID_ABI=arm64-v8a \
             -DANDROID_PLATFORM=android-21 \
             -DANDROID_NDK=${ANDROID_NDK} \
             -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_MAKE_PROGRAM=/usr/bin/ninja \
             -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
             -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
             -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
@@ -621,17 +662,30 @@ jobs:
           echo "CMake toolchain: ${CMAKE_TOOLCHAIN_FILE}"
           echo ""
           
+          echo "Verifying NDK structure:"
+          ls -la "${ANDROID_NDK}/toolchains/llvm/prebuilt/" || echo "Prebuilt directory not found"
+          echo ""
+          
           echo "Testing compilers:"
           if [ -f "${ANDROID_TOOLCHAIN_BIN}/aarch64-linux-android21-clang" ]; then
             "${ANDROID_TOOLCHAIN_BIN}/aarch64-linux-android21-clang" --version 2>&1 | head -1 || echo "Wrapper failed"
+          else
+            echo "Compiler wrapper not found: ${ANDROID_TOOLCHAIN_BIN}/aarch64-linux-android21-clang"
           fi
           
           if [ -f "${ANDROID_TOOLCHAIN_BIN}/clang" ]; then
             echo "Binary type: $(file "${ANDROID_TOOLCHAIN_BIN}/clang" | cut -d: -f2-)"
             "${ANDROID_TOOLCHAIN_BIN}/clang" --version 2>&1 | head -1 || echo "Direct clang failed"
+          else
+            echo "Direct clang not found: ${ANDROID_TOOLCHAIN_BIN}/clang"
           fi
           
           echo ""
+          echo "CMake and Ninja verification:"
+          which cmake && cmake --version | head -1
+          which ninja && ninja --version
+          echo ""
+          
           echo "Quick test:"
           echo 'int main() { return 42; }' > native_test.c
           if "${ANDROID_TOOLCHAIN_BIN}/aarch64-linux-android21-clang" -o native_test native_test.c 2>/dev/null; then
@@ -659,7 +713,7 @@ jobs:
         run: |
           echo "Starting Maven build with native ARM64 Android NDK..."
           
-          export PATH="/opt/protobuf/bin:/opt/cmake/bin:${ANDROID_TOOLCHAIN_BIN}:$PATH"
+          export PATH="/opt/protobuf/bin:/opt/cmake/bin:${ANDROID_TOOLCHAIN_BIN}:/usr/bin:$PATH"
           export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${OPENBLAS_PATH}"
           
           echo "=== Build Environment ==="
@@ -669,6 +723,7 @@ jobs:
           echo "Java: $(java -version 2>&1 | head -1)"
           echo "Maven: $(mvn -version | head -1)"
           echo "CMake: $(cmake --version | head -1)"
+          echo "Ninja: $(ninja --version)"
           echo "Protoc: $(protoc --version)"
           echo "Host arch: $(uname -m)"
           echo "NDK: ${ANDROID_NDK_ROOT}"
@@ -680,11 +735,30 @@ jobs:
           echo "Platform: ${LIBND4J_CLASSIFIER}"
           echo ""
           
+          # Final verification of toolchain
           if "${ANDROID_TOOLCHAIN_BIN}/aarch64-linux-android21-clang" --version >/dev/null 2>&1; then
             echo "✓ Native ARM64 Android toolchain verified"
           else
             echo "✗ WARNING: Android toolchain verification failed"
+            echo "Available compilers in ${ANDROID_TOOLCHAIN_BIN}:"
+            ls -la "${ANDROID_TOOLCHAIN_BIN}/" | grep clang || echo "No clang found"
           fi
+          
+          # Verify CMake can find the toolchain
+          echo ""
+          echo "=== CMake Toolchain Test ==="
+          mkdir -p /tmp/cmake_test
+          cd /tmp/cmake_test
+          echo 'project(test)' > CMakeLists.txt
+          if cmake -DCMAKE_TOOLCHAIN_FILE="${CMAKE_TOOLCHAIN_FILE}" . 2>&1; then
+            echo "✓ CMake toolchain configuration successful"
+          else
+            echo "✗ CMake toolchain configuration failed"
+            echo "Checking toolchain file content:"
+            head -20 "${CMAKE_TOOLCHAIN_FILE}"
+          fi
+          cd "${GITHUB_WORKSPACE}"
+          rm -rf /tmp/cmake_test
           
           echo ""
           echo "=== Executing Maven Build ==="
@@ -722,6 +796,10 @@ jobs:
             echo "Checking libnd4j build artifacts..."
             find libnd4j -name "*.so" -o -name "*.a" | grep -E "(arm64|aarch64|android)" | head -10
           fi
+          
+          echo ""
+          echo "Searching for Android ARM64 specific artifacts:"
+          find . -name "*android*arm64*" -o -name "*arm64*android*" 2>/dev/null | head -10
 
       - name: Performance Summary
         if: always()
@@ -729,6 +807,8 @@ jobs:
         run: |
           echo "=== Performance Analysis Summary ==="
           echo "Build Method: Vanilla AOSP LLVM build (SnowNF patches skipped due to compatibility)"
+          echo "NDK Structure: Fixed to use standard linux-x86_64 prebuilt directory"
+          echo "Build System: Ninja generator with proper CMake toolchain configuration"
           echo "Performance: Good ARM64 performance (native compilation without emulation)"
           echo "Expected improvement: 5-20x faster than emulation approaches"
           echo "Best for: CI/CD environments, ARM cloud infrastructure"
@@ -740,6 +820,7 @@ jobs:
         run: |
           echo "Cleaning up temporary files..."
           rm -rf /tmp/maven-* 2>/dev/null || true
+          rm -rf /tmp/cmake_test 2>/dev/null || true
           
           if [ -d "${GITHUB_WORKSPACE}/llvm-toolchain" ]; then
             find "${GITHUB_WORKSPACE}/llvm-toolchain" -name "*.o" -delete 2>/dev/null || true
