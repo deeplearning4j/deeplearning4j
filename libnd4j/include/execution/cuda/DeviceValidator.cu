@@ -1,4 +1,17 @@
 #include "DeviceValidator.h"
+#include <array>
+#include <sstream>
+#include <memory>
+#include <cstdio>
+
+#ifdef _WIN32
+#include <io.h>
+#include <process.h>
+#define popen _popen
+#define pclose _pclose
+#else
+#include <unistd.h>
+#endif
 
 ValidationResult::ValidationResult()
     : isComputeCapabilitySufficient(true),
@@ -14,8 +27,6 @@ ValidationResult::ValidationResult()
       isLocalMemoryUsageWithinLimit(true),
       isConcurrentKernelsSupported(true),
       isL2CacheSizeSufficient(true) {}
-
-
 
 DeviceValidator* DeviceValidator::instance = nullptr;
 std::mutex DeviceValidator::mtx;
@@ -41,8 +52,6 @@ DeviceValidator::~DeviceValidator() {
   functionMap.clear();
 }
 
-
-
 std::vector<std::string> DeviceValidator::parsePTXFile(const std::string& filePath) {
   std::ifstream file(filePath);
   std::string line;
@@ -60,7 +69,12 @@ std::vector<std::string> DeviceValidator::parsePTXFile(const std::string& filePa
 }
 
 std::vector<std::string> DeviceValidator::parseCUBINFile(const std::string& filePath) {
+#ifdef _WIN32
+  std::string command = "cuobjdump -sass \"" + filePath + "\" | findstr /R \"FUNC\"";
+#else
   std::string command = "cuobjdump -sass " + filePath + " | grep -oP '(?<=FUNC ).*(?=\\()'";
+#endif
+
   std::array<char, 128> buffer;
   std::string result;
   std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(command.c_str(), "r"), pclose);
@@ -70,12 +84,29 @@ std::vector<std::string> DeviceValidator::parseCUBINFile(const std::string& file
   while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
     result += buffer.data();
   }
+
+#ifdef _WIN32
+  // On Windows, we need to parse the output differently since we can't use grep -oP
+  std::stringstream ss(result);
+  std::string line;
+  std::vector<std::string> functionNames;
+  std::regex funcPattern("FUNC\\s+([a-zA-Z_][a-zA-Z0-9_]*)");
+
+  while (std::getline(ss, line)) {
+    std::smatch match;
+    if (std::regex_search(line, match, funcPattern) && match.size() > 1) {
+      functionNames.push_back(match.str(1));
+    }
+  }
+#else
   std::stringstream ss(result);
   std::string functionName;
   std::vector<std::string> functionNames;
   while (std::getline(ss, functionName, '\n')) {
     functionNames.push_back(functionName);
   }
+#endif
+
   return functionNames;
 }
 
@@ -168,7 +199,6 @@ void DeviceValidator::setKernelMaxThreadsPerBlockOptIn(const std::string& functi
 void DeviceValidator::setKernelReservedSharedSizeBytes(const std::string& functionName, int value) {
   setKernelAttribute(functionName, CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES, value);
 }
-
 
 void DeviceValidator::setAllKernelsAttribute(CUfunction_attribute attribute, int value) {
   for (auto& pair : functionMap) {
@@ -407,7 +437,6 @@ void DeviceValidator::printMaxKernelAttributes() {
   std::cout << "Concurrent managed access: " << (prop.concurrentManagedAccess ? "Yes" : "No") << std::endl;
 }
 
-
 void DeviceValidator::printKernelAttributes(const char* name) {
   auto it = functionMap.find(name);
   if (it == functionMap.end()) {
@@ -445,7 +474,6 @@ void DeviceValidator::printKernelAttributes(const char* name) {
   }
   // Note: There are no device properties to compare with binaryVersion, cacheModeCA, maxDynamicSharedSizeBytes, and preferredSharedMemoryCarveout.
 }
-
 
 std::map<std::string, ValidationResult> DeviceValidator::collectResourceProblems() {
   std::map<std::string, ValidationResult> problematicFunctions;
