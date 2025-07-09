@@ -165,7 +165,7 @@ jobs:
           
           echo "Building Native Android NDK for linux-arm64"
           
-          # Install system dependencies
+          # Install system dependencies including Python packages needed for LLVM build
           sudo apt-get update -qq
           sudo apt-get install -y \
             clang \
@@ -173,6 +173,7 @@ jobs:
             llvm \
             llvm-dev \
             python3 \
+            python3-pip \
             lld \
             ninja-build \
             cmake \
@@ -182,6 +183,13 @@ jobs:
             unzip \
             curl \
             repo
+          
+          # Install Python dependencies required by AOSP LLVM toolchain
+          echo "Installing Python dependencies for AOSP LLVM toolchain..."
+          pip3 install --user \
+            dataclasses \
+            typing_extensions \
+            absl-py
           
           # Install repo tool if not available
           if ! command -v repo &> /dev/null; then
@@ -214,14 +222,20 @@ jobs:
           cd "${LLVM_TOOLCHAIN_DIR}"
           
           AOSP_COMPATIBLE=false
-          if [ -f "external/toolchain-utils/llvm_tools/failure_modes.py" ]; then
-            echo "Required Python modules found - SnowNF patches should work"
+          
+          # Test the actual Python import that's failing
+          echo "Testing Python import that causes the failure..."
+          cd external/toolchain-utils
+          if python3 -c "import sys; sys.path.append('.'); from llvm_tools import failure_modes" 2>/dev/null; then
+            echo "Python import test passed - SnowNF patches should work"
             AOSP_COMPATIBLE=true
           else
-            echo "Required Python modules missing - SnowNF patches will fail"
-            echo "Available Python files in toolchain-utils:"
-            find external/toolchain-utils -name "*.py" 2>/dev/null | head -10 || echo "None found"
+            echo "Python import test failed - SnowNF patches will not work"
+            echo "This is the same error that causes the build to fail"
+            AOSP_COMPATIBLE=false
           fi
+          
+          cd "${LLVM_TOOLCHAIN_DIR}"
           
           # Build LLVM toolchain with appropriate method
           if [ ! -f "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/clang" ] && [ "${{ github.event.inputs.skipLLVMBuild }}" != "true" ]; then
