@@ -46,11 +46,6 @@ on:
         required: false
         default: ubuntu-22.04-arm
 
-      skipLLVMBuild:
-        description: 'Skip LLVM build and use cached version (for testing)'
-        required: false
-        default: false
-
       debug_enabled:
         description: 'Enable debug session'
         required: false
