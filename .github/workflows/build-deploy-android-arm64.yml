@@ -122,8 +122,7 @@ jobs:
             crossbuild-essential-arm64 \
             clang \
             lld \
-            llvm-dev \
-            llvm-tools
+            llvm-dev
 
       - name: Set up Java for publishing
         uses: actions/setup-java@v4
@@ -173,10 +172,13 @@ jobs:
             cp /usr/bin/clang "${NDK_PREBUILT_DIR}/bin/clang"
             cp /usr/bin/clang++ "${NDK_PREBUILT_DIR}/bin/clang++"
           
-            # Replace LLVM tools
+            # Replace LLVM tools that exist
             for tool in lld llvm-ar llvm-ranlib llvm-strip llvm-objcopy llvm-objdump; do
               if which "$tool" >/dev/null 2>&1; then
+                echo "Replacing $tool with system version"
                 cp "/usr/bin/$tool" "${NDK_PREBUILT_DIR}/bin/"
+              else
+                echo "System $tool not found, keeping NDK version"
               fi
             done
           
