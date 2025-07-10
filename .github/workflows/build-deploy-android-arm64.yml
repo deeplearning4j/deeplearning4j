@@ -266,7 +266,7 @@ jobs:
              MODULES=':nd4j-native,:nd4j-native-preset,:libnd4j'
           fi
           
-          CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=cmake/android-arm64.cmake \
+          CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/libnd4j/cmake/android-arm64.cmake \
             -G Ninja \
             -DSD_ANDROID_BUILD=true \
             -DANDROID_ABI=arm64-v8a \

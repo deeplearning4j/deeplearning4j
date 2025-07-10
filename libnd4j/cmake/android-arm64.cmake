@@ -35,7 +35,7 @@ endif()
 set(CMAKE_ANDROID_STL_TYPE c++_shared)
 
 # Set toolchain paths with flexibility for different NDK structures
-set(NDK_TOOLCHAIN_PATH "${CMAKE_ANDROID_NDK}/toolchains/llvm/prebuilt/linux-aarch64")
+set(NDK_TOOLCHAIN_PATH "${CMAKE_ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64")
 
 # Check if the toolchain path exists
 if(NOT EXISTS "${NDK_TOOLCHAIN_PATH}")

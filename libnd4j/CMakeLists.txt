@@ -3,17 +3,16 @@ cmake_minimum_required(VERSION 3.15)
 if(WIN32 AND SD_CUDA)
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
     set(CMAKE_VERBOSE_MAKEFILE OFF)
-
+    target_compile_definitions(${SD_LIBRARY_NAME} PRIVATE _HAS_CXX17=1)
+    target_compile_features(${SD_LIBRARY_NAME} PRIVATE cxx_std_17)
     # Disable response files and dependencies
     set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS OFF CACHE BOOL "" FORCE)
     set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES OFF CACHE BOOL "" FORCE)
     set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LIBRARIES OFF CACHE BOOL "" FORCE)
     set(CMAKE_CUDA_DEPFILE_FORMAT "" CACHE STRING "" FORCE)
     set(CMAKE_CUDA_DEPENDS_USE_COMPILER OFF CACHE BOOL "" FORCE)
-
-    # Force traditional preprocessor and permissive mode
     set(CMAKE_CUDA_COMPILE_OBJECT
-            "<CMAKE_CUDA_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -o <OBJECT> -c <SOURCE> --compiler-options \"/bigobj /EHsc /MD /Zc:preprocessor- /permissive- /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH\""
+            "<CMAKE_CUDA_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -o <OBJECT> -c <SOURCE> --compiler-options \"/bigobj /EHsc /MD /std:c++17 /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH\""
             CACHE STRING "" FORCE)
 endif()
 
