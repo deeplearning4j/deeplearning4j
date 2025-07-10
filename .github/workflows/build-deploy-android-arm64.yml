@@ -4,47 +4,47 @@ on:
       buildThreads:
         description: 'Build threads for libnd4j. Used to control memory usage of builds.'
         required: true
-        default: 2
+        default: '2'
 
       deployToReleaseStaging:
         description: 'Whether to deploy to release staging or not.'
         required: false
-        default: 0
+        default: '0'
 
       releaseVersion:
         description: 'Release version target'
         required: false
-        default: 1.0.0-M3
+        default: '1.0.0-M3'
 
       snapshotVersion:
         description: 'Snapshot version target'
         required: false
-        default: 1.0.0-SNAPSHOT
+        default: '1.0.0-SNAPSHOT'
 
       releaseRepoId:
         description: 'Release repository id'
         required: false
-        default:
+        default: ''
 
       serverId:
         description: 'Server id to publish to'
         required: false
-        default: central
+        default: 'central'
 
       mvnFlags:
         description: "Extra maven flags (must escape input yourself if used)"
         required: false
-        default:
+        default: ''
 
       libnd4jUrl:
-        description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
+        description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set.'
         required: false
-        default:
+        default: ''
 
       runsOn:
         description: 'System to run on'
         required: false
-        default: ubuntu-22.04-arm
+        default: 'ubuntu-22.04-arm'
 
       debug_enabled:
         description: 'Enable debug session'
@@ -141,106 +141,23 @@ jobs:
         id: cache-ndk
         with:
           path: ${{ github.workspace }}/android-ndk-r27c
-          key: android-ndk-r27c-hybrid-v3
+          key: android-ndk-r27c-v1
 
-      - name: Download and Setup Hybrid Android NDK
+      - name: Download and Setup Android NDK
         shell: bash
         run: |
           NDK_HOME="${GITHUB_WORKSPACE}/android-ndk-r27c"
-          
           if [ ! -d "${NDK_HOME}" ]; then
-            echo "Downloading official Android NDK r27c..."
+            echo "Downloading Android NDK r27c..."
             cd "${GITHUB_WORKSPACE}"
             wget --progress=dot:giga "https://dl.google.com/android/repository/android-ndk-r27c-linux.zip"
             unzip -q "android-ndk-r27c-linux.zip"
             rm "android-ndk-r27c-linux.zip"
-          fi
-          
-          NDK_PREBUILT_DIR="${NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64"
-          
-          if [ ! -f "${NDK_PREBUILT_DIR}/bin/clang.hybrid_created" ]; then
-            echo "Creating hybrid NDK with proper Android runtime libraries..."
-          
-            # Backup original binaries
-            if [ ! -d "${NDK_PREBUILT_DIR}/bin.original" ]; then
-              cp -r "${NDK_PREBUILT_DIR}/bin" "${NDK_PREBUILT_DIR}/bin.original"
-            fi
-          
-            # Replace clang binaries with system versions
-            cp /usr/bin/clang "${NDK_PREBUILT_DIR}/bin/clang"
-            cp /usr/bin/clang++ "${NDK_PREBUILT_DIR}/bin/clang++"
-          
-            # Replace LLVM tools
-            for tool in lld llvm-ar llvm-ranlib llvm-strip llvm-objcopy llvm-objdump; do
-              if which "$tool" >/dev/null 2>&1; then
-                cp "/usr/bin/$tool" "${NDK_PREBUILT_DIR}/bin/"
-              fi
-            done
-          
-            # The key fix: Ensure Android runtime libraries are accessible
-            # Copy libgcc and other runtime libraries that clang expects
-            GCC_CROSS_LIB="/usr/lib/gcc-cross/aarch64-linux-gnu"
-            if [ -d "$GCC_CROSS_LIB" ]; then
-              echo "Setting up Android runtime libraries from cross-compiler..."
-          
-              # Find the GCC version directory
-              GCC_VERSION_DIR=$(find "$GCC_CROSS_LIB" -maxdepth 1 -type d -name "[0-9]*" | head -1)
-              if [ -n "$GCC_VERSION_DIR" ]; then
-                echo "Found GCC cross-compiler libs at: $GCC_VERSION_DIR"
-          
-                # Create a lib directory in the NDK for runtime libraries
-                mkdir -p "${NDK_PREBUILT_DIR}/lib/gcc/aarch64-linux-android"
-                cp -r "$GCC_VERSION_DIR" "${NDK_PREBUILT_DIR}/lib/gcc/aarch64-linux-android/"
-          
-                # Also ensure libgcc is available where the linker expects it
-                if [ -f "$GCC_VERSION_DIR/libgcc.a" ]; then
-                  cp "$GCC_VERSION_DIR/libgcc.a" "${NDK_PREBUILT_DIR}/lib64/"
-                fi
-              fi
-            fi
-          
-            # Update wrapper scripts to use proper library paths
-            for wrapper in aarch64-linux-android21-clang aarch64-linux-android21-clang++; do
-              if [ -f "${NDK_PREBUILT_DIR}/bin/${wrapper}" ]; then
-                # Backup original wrapper
-                cp "${NDK_PREBUILT_DIR}/bin/${wrapper}" "${NDK_PREBUILT_DIR}/bin/${wrapper}.original"
-          
-                # Create new wrapper that adds the runtime library paths
-                cat > "${NDK_PREBUILT_DIR}/bin/${wrapper}" << 'EOF'
-          #!/bin/bash
-          SCRIPT_DIR="$(dirname "$0")"
-          
-          # Determine if this is clang or clang++
-          if [[ "$0" == *"clang++" ]]; then
-            COMPILER="${SCRIPT_DIR}/clang++"
           else
-            COMPILER="${SCRIPT_DIR}/clang"
+            echo "Using cached NDK."
           fi
-          
-          # Add runtime library search paths
-          exec "${COMPILER}" \
-            --target=aarch64-linux-android21 \
-            --sysroot="${SCRIPT_DIR}/../sysroot" \
-            -B"${SCRIPT_DIR}" \
-            -L"${SCRIPT_DIR}/../lib64" \
-            -L"${SCRIPT_DIR}/../lib/gcc/aarch64-linux-android" \
-            --rtlib=compiler-rt \
-            "$@"
-          EOF
-                chmod +x "${NDK_PREBUILT_DIR}/bin/${wrapper}"
-              fi
-            done
-          
-            touch "${NDK_PREBUILT_DIR}/bin/clang.hybrid_created"
-            echo "Hybrid NDK created with Android runtime libraries"
-          else
-            echo "Using cached hybrid NDK"
-          fi
-          
           echo "ANDROID_NDK_ROOT=${NDK_HOME}" >> $GITHUB_ENV
           echo "ANDROID_NDK=${NDK_HOME}" >> $GITHUB_ENV
-          echo "ANDROID_TOOLCHAIN_BIN=${NDK_PREBUILT_DIR}/bin" >> $GITHUB_ENV
-          echo "ANDROID_SYSROOT=${NDK_PREBUILT_DIR}/sysroot" >> $GITHUB_ENV
 
       - name: Free Disk Space (Before Build)
         uses: jlumbroso/free-disk-space@main
@@ -293,7 +210,7 @@ jobs:
           echo "ARMCOMPUTE_ROOT=${ARMCOMPUTE_ROOT}" >> "$GITHUB_ENV"
           echo "ARMCOMPUTE_HOME=${ARMCOMPUTE_HOME}" >> "$GITHUB_ENV"
 
-      - name: Build with Maven (Hybrid NDK)
+      - name: Build with Maven (Hybrid Toolchain with Resource Dir)
         shell: bash
         env:
           MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
@@ -308,9 +225,15 @@ jobs:
           MAVEN_OPTS: -Xmx3g
           PROTO_EXEC: /opt/protobuf/bin/protoc
         run: |
-          export PATH="/opt/protobuf/bin:/opt/cmake/bin:${ANDROID_TOOLCHAIN_BIN}:/usr/bin:$PATH"
+          export PATH="/opt/protobuf/bin:/opt/cmake/bin:/usr/bin:$PATH"
           export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${OPENBLAS_PATH}"
-          export JAVA_HOME="${JAVA_HOME_11_X64:-$JAVA_HOME_11_arm64}" 
+          export JAVA_HOME="${JAVA_HOME_11_X64:-$JAVA_HOME_11_arm64}"
+          
+          # Dynamically find the NDK's clang resource directory
+          NDK_CLANG_LIB_DIR="${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib/clang"
+          NDK_CLANG_VERSION_DIR=$(ls "$NDK_CLANG_LIB_DIR" | head -n 1)
+          RESOURCE_DIR="${NDK_CLANG_LIB_DIR}/${NDK_CLANG_VERSION_DIR}"
+          echo "✅ Found NDK resource directory: ${RESOURCE_DIR}"
           
           LIBND4J_CLASSIFIER="android-arm64"
           
@@ -320,12 +243,17 @@ jobs:
              MODULES=':nd4j-native,:nd4j-native-preset,:libnd4j'
           fi
           
+          # Configure CMake to use system clang with the correct NDK resource path and runtime library
           CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/libnd4j/cmake/android-arm64.cmake \
             -G Ninja \
             -DSD_ANDROID_BUILD=true \
             -DANDROID_ABI=arm64-v8a \
             -DANDROID_PLATFORM=android-21 \
             -DANDROID_NDK=${ANDROID_NDK} \
+            -DCMAKE_C_COMPILER=/usr/bin/clang \
+            -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
+            -DCMAKE_C_FLAGS='-resource-dir=${RESOURCE_DIR} --rtlib=compiler-rt' \
+            -DCMAKE_CXX_FLAGS='-resource-dir=${RESOURCE_DIR} --rtlib=compiler-rt' \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_MAKE_PROGRAM=/usr/bin/ninja \
             -DBLAS_LIBRARIES=${OPENBLAS_PATH}/libopenblas.so \
@@ -381,12 +309,14 @@ jobs:
         if: always()
         shell: bash
         run: |
+          echo "--- Verifying nd4j-native artifacts ---"
           if [ -d "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/target" ]; then
-            find nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/target -name "*.jar" -o -name "*.so" | head -10
+            find nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/target -name "*.jar" -o -name "*.so"
           fi
           
+          echo "--- Verifying libnd4j artifacts ---"
           if [ -d "libnd4j" ]; then
-            find libnd4j -name "*.so" -o -name "*.a" | grep -E "(arm64|aarch64|android)" | head -10
+            find libnd4j -name "*.so" -o -name "*.a" | grep -E "(arm64|aarch64|android)"
           fi
 
       - name: Cleanup Build Artifacts
