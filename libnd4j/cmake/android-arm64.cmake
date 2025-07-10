@@ -50,103 +50,22 @@ if(NOT EXISTS "${CMAKE_SYSROOT}")
    message(FATAL_ERROR "NDK sysroot does not exist: ${CMAKE_SYSROOT}")
 endif()
 
-# Ensure clang++ symlink exists and points to the actual binary
-set(CLANG_BIN_DIR "${NDK_TOOLCHAIN_PATH}/bin")
-if(NOT EXISTS "${CLANG_BIN_DIR}/clang++")
-   # Find the actual clang binary
-   if(EXISTS "${CLANG_BIN_DIR}/clang-18")
-      execute_process(
-              COMMAND ${CMAKE_COMMAND} -E create_symlink clang-18 "${CLANG_BIN_DIR}/clang++"
-              RESULT_VARIABLE SYMLINK_RESULT
-      )
-      if(SYMLINK_RESULT EQUAL 0)
-         message(STATUS "Created clang++ -> clang-18 symlink")
-      endif()
-   elseif(EXISTS "${CLANG_BIN_DIR}/clang")
-      execute_process(
-              COMMAND ${CMAKE_COMMAND} -E create_symlink clang "${CLANG_BIN_DIR}/clang++"
-              RESULT_VARIABLE SYMLINK_RESULT
-      )
-      if(SYMLINK_RESULT EQUAL 0)
-         message(STATUS "Created clang++ -> clang symlink")
-      endif()
-   else()
-      message(WARNING "Could not find clang binary to link clang++ to")
-   endif()
-endif()
+# Use system compilers instead of NDK compilers to avoid GLIBC issues
+set(CMAKE_C_COMPILER "/usr/bin/clang")
+set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
 
-# Set compilers with API level flexibility
-set(CMAKE_C_COMPILER "${CLANG_BIN_DIR}/aarch64-linux-android${ANDROID_NATIVE_API_LEVEL}-clang")
-set(CMAKE_CXX_COMPILER "${CLANG_BIN_DIR}/aarch64-linux-android${ANDROID_NATIVE_API_LEVEL}-clang++")
+# Set target and API level flags for cross compilation with NDK sysroot and libc
+set(ANDROID_TARGET_FLAGS "-target aarch64-linux-android${ANDROID_NATIVE_API_LEVEL} --sysroot=${CMAKE_SYSROOT}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ANDROID_TARGET_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ANDROID_TARGET_FLAGS}")
 
-# Debug: Show what we're looking for
-message(STATUS "Looking for C compiler: ${CMAKE_C_COMPILER}")
-message(STATUS "Looking for C++ compiler: ${CMAKE_CXX_COMPILER}")
+# Ensure we use NDK's libc and not system libc
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --sysroot=${CMAKE_SYSROOT}")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --sysroot=${CMAKE_SYSROOT}")
 
-# Verify compilers exist, if not try fallback
-if(NOT EXISTS "${CMAKE_C_COMPILER}")
-   message(STATUS "API-specific compiler not found, trying generic clang...")
-   set(CMAKE_C_COMPILER "${CLANG_BIN_DIR}/clang")
-   set(CMAKE_CXX_COMPILER "${CLANG_BIN_DIR}/clang++")
-
-   message(STATUS "Fallback C compiler: ${CMAKE_C_COMPILER}")
-   message(STATUS "Fallback C++ compiler: ${CMAKE_CXX_COMPILER}")
-
-   # Add target and API level flags
-   set(ANDROID_TARGET_FLAGS "-target aarch64-linux-android${ANDROID_NATIVE_API_LEVEL}")
-   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ANDROID_TARGET_FLAGS}")
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ANDROID_TARGET_FLAGS}")
-
-   # Verify fallback compilers exist
-   if(NOT EXISTS "${CMAKE_C_COMPILER}")
-      message(FATAL_ERROR "C compiler does not exist: ${CMAKE_C_COMPILER}")
-   endif()
-   if(NOT EXISTS "${CMAKE_CXX_COMPILER}")
-      message(FATAL_ERROR "C++ compiler does not exist: ${CMAKE_CXX_COMPILER}")
-   endif()
-else()
-   message(STATUS "Found API-specific compilers")
-
-   # Verify the wrapper scripts can actually execute
-   execute_process(
-           COMMAND "${CMAKE_CXX_COMPILER}" --version
-           RESULT_VARIABLE COMPILER_TEST_RESULT
-           OUTPUT_VARIABLE COMPILER_TEST_OUTPUT
-           ERROR_VARIABLE COMPILER_TEST_ERROR
-           TIMEOUT 10
-   )
-
-   if(NOT COMPILER_TEST_RESULT EQUAL 0)
-      message(STATUS "API-specific compiler test failed, falling back to generic clang...")
-      message(STATUS "Error: ${COMPILER_TEST_ERROR}")
-
-      # Fallback to generic clang with target flags
-      set(CMAKE_C_COMPILER "${CLANG_BIN_DIR}/clang")
-      set(CMAKE_CXX_COMPILER "${CLANG_BIN_DIR}/clang++")
-
-      # Add target and API level flags
-      set(ANDROID_TARGET_FLAGS "-target aarch64-linux-android${ANDROID_NATIVE_API_LEVEL}")
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ANDROID_TARGET_FLAGS}")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ANDROID_TARGET_FLAGS}")
-
-      message(STATUS "Using fallback compilers with target flags")
-   else()
-      message(STATUS "API-specific compilers are working correctly")
-   endif()
-endif()
-
-# Final verification and debug output
+message(STATUS "Using system compilers with Android target flags and NDK sysroot")
 message(STATUS "Final C compiler: ${CMAKE_C_COMPILER}")
 message(STATUS "Final C++ compiler: ${CMAKE_CXX_COMPILER}")
-
-# List available compilers for debugging
-execute_process(
-        COMMAND ls -la "${CLANG_BIN_DIR}/"
-        OUTPUT_VARIABLE COMPILER_LIST
-        ERROR_QUIET
-)
-message(STATUS "Available compilers in ${CLANG_BIN_DIR}/:")
-message(STATUS "${COMPILER_LIST}")
 
 # Set the find root path
 set(CMAKE_FIND_ROOT_PATH "${CMAKE_SYSROOT}")
