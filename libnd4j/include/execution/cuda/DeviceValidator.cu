@@ -13,6 +13,8 @@
 #include <unistd.h>
 #endif
 
+#include <filesystem>
+
 ValidationResult::ValidationResult()
     : isComputeCapabilitySufficient(true),
       isManagedMemorySupported(true),
