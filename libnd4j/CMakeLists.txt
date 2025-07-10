@@ -3,8 +3,7 @@ cmake_minimum_required(VERSION 3.15)
 if(WIN32 AND SD_CUDA)
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
     set(CMAKE_VERBOSE_MAKEFILE OFF)
-    target_compile_definitions(${SD_LIBRARY_NAME} PRIVATE _HAS_CXX17=1)
-    target_compile_features(${SD_LIBRARY_NAME} PRIVATE cxx_std_17)
+
     # Disable response files and dependencies
     set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS OFF CACHE BOOL "" FORCE)
     set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES OFF CACHE BOOL "" FORCE)
