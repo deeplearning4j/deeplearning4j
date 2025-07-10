@@ -112,7 +112,7 @@ jobs:
         uses: ./.github/actions/install-cmake-linux
         if: steps.cache-cmake.outputs.cache-hit != 'true'
 
-      - name: Install build dependencies
+      - name: Install system dependencies
         shell: bash
         run: |
           sudo apt-get update -qq
@@ -122,7 +122,8 @@ jobs:
             crossbuild-essential-arm64 \
             clang \
             lld \
-            llvm-dev
+            llvm-dev \
+            llvm-tools
 
       - name: Set up Java for publishing
         uses: actions/setup-java@v4
@@ -136,362 +137,106 @@ jobs:
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
           cache: 'maven'
 
-      - name: Cache AOSP LLVM Toolchain Source
-        uses: actions/cache@v4
-        id: cache-llvm-source
-        with:
-          path: ${{ github.workspace }}/llvm-toolchain
-          key: llvm-toolchain-aosp-source-v3
-
-      - name: Cache SnowNF Patches
-        uses: actions/cache@v4
-        id: cache-patches
-        with:
-          path: ${{ github.workspace }}/ndk-aarch64-patches
-          key: snowNF-patches-v1
-
-      - name: Cache Native LLVM Binaries
-        uses: actions/cache@v4
-        id: cache-llvm-binaries
-        with:
-          path: ${{ github.workspace }}/llvm-toolchain/out/stage2
-          key: llvm-aarch64-binaries-v5
-
       - name: Cache Official Android NDK
         uses: actions/cache@v4
-        id: cache-official-ndk
+        id: cache-ndk
         with:
           path: ${{ github.workspace }}/android-ndk-r27c
-          key: official-android-ndk-r27c-v1
+          key: android-ndk-r27c-hybrid-v1
 
-      - name: Build Native Android NDK for ARM64
-        id: build-native-ndk
+      - name: Download and Setup Hybrid Android NDK
         shell: bash
         run: |
-          set -e
+          NDK_HOME="${GITHUB_WORKSPACE}/android-ndk-r27c"
           
-          export LLVM_TOOLCHAIN_DIR="${GITHUB_WORKSPACE}/llvm-toolchain"
-          export AARCH64_NDK_PATCH_DIR="${GITHUB_WORKSPACE}/ndk-aarch64-patches"
-          export NDK_VERSION="r27c"
-          export NDK_HOME="${GITHUB_WORKSPACE}/android-ndk-${NDK_VERSION}"
-          
-          echo "Building Native Android NDK for linux-arm64"
-          
-          # Install system dependencies
-          sudo apt-get update -qq
-          sudo apt-get install -y \
-            clang \
-            bison \
-            llvm \
-            llvm-dev \
-            python3 \
-            python3-pip \
-            python3-dev \
-            python3-setuptools \
-            lld \
-            ninja-build \
-            cmake \
-            crossbuild-essential-arm64 \
-            git \
-            wget \
-            unzip \
-            curl \
-            repo
-          
-          # Install Python dependencies required by AOSP LLVM toolchain using pip
-          echo "Installing Python dependencies with pip..."
-          python3 -m pip install --upgrade pip
-          python3 -m pip install \
-            dataclasses \
-            typing_extensions \
-            absl-py \
-            protobuf \
-            six
-          
-          # Install repo tool if not available
-          if ! command -v repo &> /dev/null; then
-            mkdir -p ~/.local/bin
-            curl https://storage.googleapis.com/git-repo-downloads/repo > ~/.local/bin/repo
-            chmod a+x ~/.local/bin/repo
-            export PATH="$HOME/.local/bin:$PATH"
-          fi
-          
-          # Check initial disk space
-          echo "Initial disk space:"
-          df -h
-          
-          # Download AOSP LLVM toolchain source
-          if [ ! -f "${LLVM_TOOLCHAIN_DIR}/.repo/manifest.xml" ]; then
-            echo "Downloading AOSP LLVM toolchain source..."
-            mkdir -p "${LLVM_TOOLCHAIN_DIR}"
-            cd "${LLVM_TOOLCHAIN_DIR}"
-          
-            timeout 1800 repo init -u https://android.googlesource.com/platform/manifest -b llvm-toolchain --depth=1
-            timeout 7200 repo sync -c -j4 --fail-fast --force-sync --no-clone-bundle
-          
-            echo "Disk space after AOSP download:"
-            df -h
-          else
-            echo "Using cached AOSP LLVM toolchain source"
-          fi
-          
-          # Clone SnowNF patches
-          if [ ! -d "${AARCH64_NDK_PATCH_DIR}/.git" ]; then
-            echo "Cloning SnowNF patches..."
-            git clone --depth 1 https://github.com/SnowNF/ndk-aarch64-linux.git "${AARCH64_NDK_PATCH_DIR}"
-          fi
-          
-          # Try to fix Python path issues
-          echo "Setting up Python environment for AOSP build..."
-          cd "${LLVM_TOOLCHAIN_DIR}"
-          export PYTHONPATH="${LLVM_TOOLCHAIN_DIR}/external/toolchain-utils:${PYTHONPATH}"
-          
-          # Build LLVM toolchain
-          if [ ! -f "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/clang" ] && [ "${{ github.event.inputs.skipLLVMBuild }}" != "true" ]; then
-          
-            # Check disk space before building
-            echo "Checking disk space before LLVM build..."
-            df -h
-          
-            # Clean up any existing build artifacts to free space
-            if [ -d "${LLVM_TOOLCHAIN_DIR}/out" ]; then
-              echo "Cleaning existing build artifacts..."
-              rm -rf "${LLVM_TOOLCHAIN_DIR}/out"
-            fi
-          
-            # Skip SnowNF patches due to StopIteration error and go straight to fallback
-            echo "Skipping SnowNF patches due to known compatibility issues..."
-            echo "Using fallback: vanilla AOSP build without patches..."
-          
-            # Reset to clean AOSP state
-            cd "${LLVM_TOOLCHAIN_DIR}/toolchain/llvm_android"
-            git checkout . 2>/dev/null || true
-            git clean -fd 2>/dev/null || true
-          
-            cd "${LLVM_TOOLCHAIN_DIR}"
-            echo "Attempting vanilla AOSP LLVM build..."
-          
-            export PYTHONPATH="${LLVM_TOOLCHAIN_DIR}/external/toolchain-utils:${PYTHONPATH}"
-          
-            if python3 toolchain/llvm_android/build.py \
-              --no-build windows \
-              --skip-tests \
-              --single-stage \
-              --no-musl; then
-              echo "Vanilla AOSP build succeeded"
-            else
-              echo "Vanilla AOSP build failed, checking for partial success..."
-              CLANG_FOUND=$(find "${LLVM_TOOLCHAIN_DIR}" -name "clang" -type f -executable 2>/dev/null | head -1)
-              if [ -n "$CLANG_FOUND" ]; then
-                echo "Found clang binary despite build failure: $CLANG_FOUND"
-                echo "This is expected behavior per the technical report"
-              else
-                echo "Both patched and vanilla AOSP builds failed, using system clang fallback"
-          
-                # Final fallback: system clang
-                mkdir -p "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin"
-                mkdir -p "${LLVM_TOOLCHAIN_DIR}/out/stage2/lib"
-          
-                cp /usr/bin/clang "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/"
-                cp /usr/bin/clang++ "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/"
-          
-                for tool in lld llvm-ar llvm-ranlib llvm-strip; do
-                  if which "$tool" >/dev/null 2>&1; then
-                    cp "$(which $tool)" "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/"
-                  fi
-                done
-          
-                echo "Created fallback toolchain using system binaries"
-              fi
-            fi
-          else
-            echo "Using cached LLVM binaries"
-          fi
-          
-          # Check disk space before downloading NDK
-          echo "Checking disk space before NDK download..."
-          df -h
-          
-          # Free up space before NDK download
-          echo "Cleaning up to free space for NDK download..."
-          
-          # Clean AOSP build intermediates but keep final binaries
-          if [ -d "${LLVM_TOOLCHAIN_DIR}/out" ]; then
-            find "${LLVM_TOOLCHAIN_DIR}/out" -name "*.o" -delete 2>/dev/null || true
-            find "${LLVM_TOOLCHAIN_DIR}/out" -name "*.a" -delete 2>/dev/null || true
-            find "${LLVM_TOOLCHAIN_DIR}/out" -name "*.tmp" -delete 2>/dev/null || true
-          fi
-          
-          # Clean package caches
-          sudo apt-get clean
-          sudo rm -rf /var/lib/apt/lists/*
-          
-          # Clean pip cache
-          python3 -m pip cache purge
-          
-          echo "Disk space after cleanup:"
-          df -h
-          
-          # Download official NDK
+          # Download official NDK if not cached
           if [ ! -d "${NDK_HOME}" ]; then
-            echo "Downloading official Android NDK ${NDK_VERSION}..."
+            echo "Downloading official Android NDK r27c..."
             cd "${GITHUB_WORKSPACE}"
-          
-            # Download with progress and better error handling
-            if ! wget --progress=dot:giga "https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip"; then
-              echo "ERROR: Failed to download NDK"
-              echo "Final disk space:"
-              df -h
-              exit 1
-            fi
-          
-            echo "Extracting NDK..."
-            if ! unzip -q "android-ndk-${NDK_VERSION}-linux.zip"; then
-              echo "ERROR: Failed to extract NDK"
-              echo "Final disk space:"
-              df -h
-              exit 1
-            fi
-          
-            rm "android-ndk-${NDK_VERSION}-linux.zip"
-          
-            echo "Disk space after NDK download:"
-            df -h
+            wget --progress=dot:giga "https://dl.google.com/android/repository/android-ndk-r27c-linux.zip"
+            unzip -q "android-ndk-r27c-linux.zip"
+            rm "android-ndk-r27c-linux.zip"
           fi
           
-          # Create hybrid NDK - Use linux-x86_64 (standard) instead of linux-aarch64
-          echo "Creating hybrid NDK..."
-          
-          # Find the actual ARM64 clang binary (not symlinks)
-          echo "Searching for ARM64 clang binaries..."
-          find "${LLVM_TOOLCHAIN_DIR}" -name "clang" -type f -executable | while read -r binary; do
-            echo "Found clang at: $binary"
-            echo "Binary type: $(file "$binary")"
-          done
-          
-          # Look for the actual ARM64 binary in the AOSP build output
-          CLANG_BINARY=""
-          if [ -f "${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/clang" ]; then
-            CLANG_BINARY="${LLVM_TOOLCHAIN_DIR}/out/stage2/bin/clang"
-            echo "Using stage2 clang: $CLANG_BINARY"
-          else
-            # Search for any ARM64 clang binary
-            for candidate in $(find "${LLVM_TOOLCHAIN_DIR}" -name "clang" -type f -executable); do
-              if file "$candidate" | grep -q "aarch64\|ARM aarch64"; then
-                CLANG_BINARY="$candidate"
-                echo "Found ARM64 clang: $CLANG_BINARY"
-                break
-              fi
-            done
-          fi
-          
-          if [ -z "${CLANG_BINARY}" ]; then
-            echo "No ARM64 clang found, using any available clang as fallback"
-            CLANG_BINARY=$(find "${LLVM_TOOLCHAIN_DIR}" -name "clang" -type f -executable | head -1)
-          fi
-          
-          if [ -z "${CLANG_BINARY}" ]; then
-            echo "ERROR: Could not locate any clang binary"
-            exit 1
-          fi
-          
-          echo "Selected clang binary: $CLANG_BINARY"
-          echo "Binary details: $(file "$CLANG_BINARY")"
-          
-          BUILD_OUTPUT_DIR=$(dirname "${CLANG_BINARY}")
-          # Use standard linux-x86_64 prebuilt directory
           NDK_PREBUILT_DIR="${NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64"
           
-          echo "Using build output: ${BUILD_OUTPUT_DIR}"
-          echo "Patching NDK at: ${NDK_PREBUILT_DIR}"
+          # Create hybrid NDK by replacing x86_64 binaries with native ARM64 versions
+          if [ ! -f "${NDK_PREBUILT_DIR}/bin/clang.hybrid_created" ]; then
+            echo "Creating hybrid NDK with native ARM64 toolchain..."
           
-          # Verify NDK prebuilt directory exists
-          if [ ! -d "${NDK_PREBUILT_DIR}" ]; then
-            echo "ERROR: NDK prebuilt directory not found: ${NDK_PREBUILT_DIR}"
-            echo "Available prebuilt directories:"
-            find "${NDK_HOME}/toolchains/llvm/prebuilt" -type d 2>/dev/null || echo "None found"
-            exit 1
-          fi
+            # Backup original binaries
+            if [ ! -d "${NDK_PREBUILT_DIR}/bin.original" ]; then
+              cp -r "${NDK_PREBUILT_DIR}/bin" "${NDK_PREBUILT_DIR}/bin.original"
+            fi
           
-          # Copy the actual clang binary (not just symlinks)
-          echo "Copying clang binary..."
-          cp -f "${CLANG_BINARY}" "${NDK_PREBUILT_DIR}/bin/clang"
+            # Replace core binaries with system versions (native ARM64)
+            cp /usr/bin/clang "${NDK_PREBUILT_DIR}/bin/clang"
+            cp /usr/bin/clang++ "${NDK_PREBUILT_DIR}/bin/clang++"
           
-          # Copy clang++ if it exists, otherwise create a symlink
-          if [ -f "${BUILD_OUTPUT_DIR}/clang++" ]; then
-            cp -f "${BUILD_OUTPUT_DIR}/clang++" "${NDK_PREBUILT_DIR}/bin/clang++"
+            # Replace LLVM tools
+            for tool in lld llvm-ar llvm-ranlib llvm-strip llvm-objcopy llvm-objdump; do
+              if which "$tool" >/dev/null 2>&1; then
+                cp "/usr/bin/$tool" "${NDK_PREBUILT_DIR}/bin/"
+              fi
+            done
+          
+            # Create wrapper scripts for Android cross-compilation
+            cat > "${NDK_PREBUILT_DIR}/bin/aarch64-linux-android21-clang" << 'EOF'
+          #!/bin/bash
+          exec "$(dirname "$0")/clang" --target=aarch64-linux-android21 --sysroot="$(dirname "$0")/../sysroot" "$@"
+          EOF
+          
+            cat > "${NDK_PREBUILT_DIR}/bin/aarch64-linux-android21-clang++" << 'EOF'
+          #!/bin/bash
+          exec "$(dirname "$0")/clang++" --target=aarch64-linux-android21 --sysroot="$(dirname "$0")/../sysroot" "$@"
+          EOF
+          
+            chmod +x "${NDK_PREBUILT_DIR}/bin/aarch64-linux-android21-clang"
+            chmod +x "${NDK_PREBUILT_DIR}/bin/aarch64-linux-android21-clang++"
+          
+            # Mark as hybrid created
+            touch "${NDK_PREBUILT_DIR}/bin/clang.hybrid_created"
+          
+            echo "Hybrid NDK created successfully"
           else
-            ln -sf clang "${NDK_PREBUILT_DIR}/bin/clang++"
+            echo "Using cached hybrid NDK"
           fi
           
-          # Copy other LLVM tools if they exist
-          for tool in llvm-ar llvm-ranlib llvm-strip llvm-objcopy llvm-objdump; do
-            if [ -f "${BUILD_OUTPUT_DIR}/${tool}" ]; then
-              cp -f "${BUILD_OUTPUT_DIR}/${tool}" "${NDK_PREBUILT_DIR}/bin/"
-            fi
-          done
+          # Set environment variables
+          echo "ANDROID_NDK_ROOT=${NDK_HOME}" >> $GITHUB_ENV
+          echo "ANDROID_NDK=${NDK_HOME}" >> $GITHUB_ENV
+          echo "ANDROID_TOOLCHAIN_BIN=${NDK_PREBUILT_DIR}/bin" >> $GITHUB_ENV
+          echo "ANDROID_SYSROOT=${NDK_PREBUILT_DIR}/sysroot" >> $GITHUB_ENV
+
+      - name: Test Hybrid NDK
+        shell: bash
+        run: |
+          echo "=== Testing Hybrid NDK ==="
           
-          # Copy lld linker if it exists
-          if [ -f "${BUILD_OUTPUT_DIR}/lld" ]; then
-            cp -f "${BUILD_OUTPUT_DIR}/lld" "${NDK_PREBUILT_DIR}/bin/"
-          fi
+          # Test basic functionality
+          echo "Testing clang version:"
+          "${ANDROID_TOOLCHAIN_BIN}/clang" --version | head -1
           
-          # Copy LLVM libraries if they exist
-          if [ -d "${BUILD_OUTPUT_DIR}/../lib" ]; then
-            cp -f "${BUILD_OUTPUT_DIR}/../lib/llvm-"* "${NDK_PREBUILT_DIR}/bin/" 2>/dev/null || true
-            cp -f "${BUILD_OUTPUT_DIR}/../lib/lld"* "${NDK_PREBUILT_DIR}/" 2>/dev/null || true
-          fi
-          
-          chmod +x "${NDK_PREBUILT_DIR}/bin/"*
-          
-          # Verification
-          echo "Verifying hybrid NDK..."
-          ANDROID_CLANG="${NDK_PREBUILT_DIR}/bin/aarch64-linux-android21-clang++"
-          DIRECT_CLANG="${NDK_PREBUILT_DIR}/bin/clang"
-          
-          if [ -f "${ANDROID_CLANG}" ]; then
-            if "${ANDROID_CLANG}" --version >/dev/null 2>&1; then
-              echo "SUCCESS: Android clang wrapper works"
-              "${ANDROID_CLANG}" --version | head -1
-            fi
-          fi
-          
-          if [ -f "${DIRECT_CLANG}" ]; then
-            echo "Binary type: $(file "${DIRECT_CLANG}" | cut -d: -f2-)"
-            if "${DIRECT_CLANG}" --version >/dev/null 2>&1; then
-              echo "SUCCESS: Direct clang binary works"
-              "${DIRECT_CLANG}" --version | head -1
-            fi
-          fi
-          
-          # Test compilation
-          echo "Testing compilation..."
+          echo ""
+          echo "Testing Android cross-compilation:"
           cat > test_android.cpp << 'EOF'
           #include <iostream>
           int main() {
-              std::cout << "Hello from native aarch64 NDK!" << std::endl;
+              std::cout << "Hello from hybrid NDK!" << std::endl;
               return 0;
           }
           EOF
           
-          if "${ANDROID_CLANG}" test_android.cpp -o test_android_binary 2>/dev/null; then
-            echo "SUCCESS: Compilation test passed"
-            file test_android_binary
-            rm -f test_android.cpp test_android_binary
+          if "${ANDROID_TOOLCHAIN_BIN}/aarch64-linux-android21-clang++" \
+             -o test_android test_android.cpp 2>/dev/null; then
+            echo "✓ Android cross-compilation successful"
+            file test_android
           else
-            echo "WARNING: Test compilation failed"
-            rm -f test_android.cpp test_android_binary
+            echo "✗ Android cross-compilation failed"
+            exit 1
           fi
           
-          # Set environment variables - Use the actual prebuilt directory
-          echo "ANDROID_NDK_ROOT=${NDK_HOME}" >> $GITHUB_ENV
-          echo "ANDROID_NDK=${NDK_HOME}" >> $GITHUB_ENV
-          echo "ANDROID_TOOLCHAIN_BIN=${ACTUAL_PREBUILT_DIR}/bin" >> $GITHUB_ENV
-          echo "ANDROID_SYSROOT=${ACTUAL_PREBUILT_DIR}/sysroot" >> $GITHUB_ENV
-          
-          echo "Native Android NDK setup complete"
-          echo "Final disk space:"
-          df -h
+          rm -f test_android.cpp test_android
 
       - name: Free Disk Space (Before Build)
         uses: jlumbroso/free-disk-space@main
@@ -544,126 +289,6 @@ jobs:
           echo "ARMCOMPUTE_ROOT=${ARMCOMPUTE_ROOT}" >> "$GITHUB_ENV"
           echo "ARMCOMPUTE_HOME=${ARMCOMPUTE_HOME}" >> "$GITHUB_ENV"
 
-      - name: Debug NDK Structure and Fix Paths
-        shell: bash
-        run: |
-          echo "=== Debugging NDK Structure ==="
-          echo "NDK_HOME: ${ANDROID_NDK}"
-          
-          echo "Available prebuilt directories:"
-          find "${ANDROID_NDK}/toolchains/llvm/prebuilt" -type d -maxdepth 1 2>/dev/null || echo "Prebuilt directory not found"
-          
-          echo ""
-          echo "Looking for actual prebuilt directory..."
-          ACTUAL_PREBUILT_DIR=""
-          for dir in linux-x86_64 linux-x86 darwin-x86_64; do
-            if [ -d "${ANDROID_NDK}/toolchains/llvm/prebuilt/${dir}" ]; then
-              ACTUAL_PREBUILT_DIR="${ANDROID_NDK}/toolchains/llvm/prebuilt/${dir}"
-              echo "Found prebuilt directory: ${ACTUAL_PREBUILT_DIR}"
-              break
-            fi
-          done
-          
-          if [ -z "${ACTUAL_PREBUILT_DIR}" ]; then
-            echo "ERROR: No prebuilt directory found"
-            exit 1
-          fi
-          
-          echo "ACTUAL_PREBUILT_DIR=${ACTUAL_PREBUILT_DIR}" >> $GITHUB_ENV
-          
-          echo ""
-          echo "Checking compiler existence:"
-          echo "Direct clang: $(ls -la "${ACTUAL_PREBUILT_DIR}/bin/clang" 2>/dev/null || echo 'NOT FOUND')"
-          echo "Android wrapper: $(ls -la "${ACTUAL_PREBUILT_DIR}/bin/aarch64-linux-android21-clang" 2>/dev/null || echo 'NOT FOUND')"
-          
-          echo ""
-          echo "Available binaries in bin directory:"
-          ls -la "${ACTUAL_PREBUILT_DIR}/bin/" | grep clang || echo "No clang binaries found"
-
-      - name: Create CMake Android Toolchain
-        shell: bash
-        run: |
-          mkdir -p "${GITHUB_WORKSPACE}/cmake"
-          CMAKE_TOOLCHAIN_FILE="${GITHUB_WORKSPACE}/cmake/android-arm64-native.cmake"
-          
-          # Use the actual prebuilt directory we found
-          cat > "${CMAKE_TOOLCHAIN_FILE}" << EOF
-          set(CMAKE_SYSTEM_NAME Android)
-          set(CMAKE_SYSTEM_VERSION 21)
-          set(CMAKE_ANDROID_ARCH_ABI arm64-v8a)
-          set(CMAKE_ANDROID_NDK ${ANDROID_NDK})
-          set(CMAKE_ANDROID_STL_TYPE c++_shared)
-          
-          # Use the actual prebuilt directory we found
-          set(ANDROID_TOOLCHAIN_NAME llvm)
-          set(ANDROID_TOOLCHAIN_ROOT ${ACTUAL_PREBUILT_DIR})
-          
-          set(CMAKE_SYSROOT \${ANDROID_TOOLCHAIN_ROOT}/sysroot)
-          
-          # Set compilers with full paths - check if wrappers exist, fallback to direct clang
-          if(EXISTS "\${ANDROID_TOOLCHAIN_ROOT}/bin/aarch64-linux-android21-clang")
-            set(CMAKE_C_COMPILER \${ANDROID_TOOLCHAIN_ROOT}/bin/aarch64-linux-android21-clang)
-          else()
-            set(CMAKE_C_COMPILER \${ANDROID_TOOLCHAIN_ROOT}/bin/clang)
-            set(CMAKE_C_FLAGS_INIT "\${CMAKE_C_FLAGS_INIT} --target=aarch64-linux-android21")
-          endif()
-          
-          if(EXISTS "\${ANDROID_TOOLCHAIN_ROOT}/bin/aarch64-linux-android21-clang++")
-            set(CMAKE_CXX_COMPILER \${ANDROID_TOOLCHAIN_ROOT}/bin/aarch64-linux-android21-clang++)
-          else()
-            set(CMAKE_CXX_COMPILER \${ANDROID_TOOLCHAIN_ROOT}/bin/clang++)
-            set(CMAKE_CXX_FLAGS_INIT "\${CMAKE_CXX_FLAGS_INIT} --target=aarch64-linux-android21")
-          endif()
-          
-          # Set other tools
-          set(CMAKE_AR \${ANDROID_TOOLCHAIN_ROOT}/bin/llvm-ar CACHE FILEPATH "ar")
-          set(CMAKE_RANLIB \${ANDROID_TOOLCHAIN_ROOT}/bin/llvm-ranlib CACHE FILEPATH "ranlib")
-          set(CMAKE_STRIP \${ANDROID_TOOLCHAIN_ROOT}/bin/llvm-strip CACHE FILEPATH "strip")
-          
-          # Set make program explicitly
-          find_program(CMAKE_MAKE_PROGRAM ninja REQUIRED)
-          
-          set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-          set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-          set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-          set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
-          
-          # Enhanced compiler flags
-          set(CMAKE_C_FLAGS_INIT "-fPIC -O2 -DANDROID -D__ANDROID_API__=21 \${CMAKE_C_FLAGS_INIT}")
-          set(CMAKE_CXX_FLAGS_INIT "-fPIC -O2 -DANDROID -D__ANDROID_API__=21 -std=c++14 \${CMAKE_CXX_FLAGS_INIT}")
-          set(CMAKE_EXE_LINKER_FLAGS_INIT "-Wl,--fix-cortex-a8")
-          EOF
-          
-          echo "CMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}" >> $GITHUB_ENV
-
-      - name: Fix libnd4j CMake Toolchain
-        shell: bash
-        run: |
-          echo "Fixing libnd4j's internal CMake toolchain file..."
-          LIBND4J_CMAKE_TOOLCHAIN="libnd4j/cmake/android-arm64.cmake"
-          
-          if [ -f "${LIBND4J_CMAKE_TOOLCHAIN}" ]; then
-            echo "Found existing libnd4j toolchain file, backing up and updating..."
-            cp "${LIBND4J_CMAKE_TOOLCHAIN}" "${LIBND4J_CMAKE_TOOLCHAIN}.backup"
-          
-            # Extract the actual directory name from ACTUAL_PREBUILT_DIR
-            PREBUILT_DIR_NAME=$(basename "${ACTUAL_PREBUILT_DIR}")
-            echo "Using prebuilt directory: ${PREBUILT_DIR_NAME}"
-          
-            # Replace linux-aarch64 with the actual directory name
-            sed -i "s/linux-aarch64/${PREBUILT_DIR_NAME}/g" "${LIBND4J_CMAKE_TOOLCHAIN}"
-          
-            # Also ensure it uses Ninja
-            if ! grep -q "CMAKE_MAKE_PROGRAM" "${LIBND4J_CMAKE_TOOLCHAIN}"; then
-              echo 'find_program(CMAKE_MAKE_PROGRAM ninja REQUIRED)' >> "${LIBND4J_CMAKE_TOOLCHAIN}"
-            fi
-          
-            echo "Updated libnd4j toolchain file:"
-            grep -n "${PREBUILT_DIR_NAME}\|CMAKE_MAKE_PROGRAM" "${LIBND4J_CMAKE_TOOLCHAIN}" || echo "No matches found"
-          else
-            echo "libnd4j toolchain file not found, will use our custom one"
-          fi
-
       - name: Configure Maven Build Command
         shell: bash
         run: |
@@ -675,8 +300,7 @@ jobs:
              MODULES=':nd4j-native,:nd4j-native-preset,:libnd4j'
           fi
           
-          # Use our custom toolchain file path that overrides the default
-          CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE} \
+          CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=cmake/android-arm64.cmake \
             -G Ninja \
             -DSD_ANDROID_BUILD=true \
             -DANDROID_ABI=arm64-v8a \
@@ -684,9 +308,6 @@ jobs:
             -DANDROID_NDK=${ANDROID_NDK} \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_MAKE_PROGRAM=/usr/bin/ninja \
-            -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
-            -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
-            -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
             -DBLAS_LIBRARIES=${OPENBLAS_PATH}/libopenblas.so \
             -DLAPACK_LIBRARIES=${OPENBLAS_PATH}/libopenblas.so"
           
@@ -705,8 +326,6 @@ jobs:
             -Dmaven.javadoc.failOnError=false \
             -Djavacpp.platform=${LIBND4J_CLASSIFIER} \
             -Dlibnd4j.cmake=\"${CMAKE_ARGS}\" \
-            -Dlibnd4j.platform.compiler.cpp.flags=\"-DANDROID -D__ANDROID_API__=21\" \
-            -Dlibnd4j.platform.linker.flags=\"-Wl,--fix-cortex-a8\" \
             --also-make \
             --batch-mode \
             deploy \
@@ -725,51 +344,61 @@ jobs:
           echo "LIBND4J_CLASSIFIER=${LIBND4J_CLASSIFIER}" >> $GITHUB_ENV
           echo "MAVEN_COMMAND=${FINAL_COMMAND}" >> $GITHUB_ENV
 
-      - name: Debug Native NDK Setup
+      - name: Debug Hybrid NDK Setup
         shell: bash
         run: |
-          echo "=== Native ARM64 Android NDK Debug ==="
+          echo "=== Hybrid NDK Setup Debug Information ==="
           echo "NDK: ${ANDROID_NDK}"
-          echo "Toolchain: ${ANDROID_TOOLCHAIN_BIN}"
+          echo "Toolchain bin: ${ANDROID_TOOLCHAIN_BIN}"
           echo "Sysroot: ${ANDROID_SYSROOT}"
-          echo "CMake toolchain: ${CMAKE_TOOLCHAIN_FILE}"
+          echo "CMake toolchain: cmake/android-arm64.cmake"
           echo ""
           
-          echo "Verifying NDK structure:"
-          ls -la "${ANDROID_NDK}/toolchains/llvm/prebuilt/" || echo "Prebuilt directory not found"
+          echo "Hybrid NDK verification:"
+          echo "Original vs current clang:"
+          if [ -f "${ANDROID_TOOLCHAIN_BIN}/../bin.original/clang" ]; then
+            echo "Original: $(file "${ANDROID_TOOLCHAIN_BIN}/../bin.original/clang")"
+          fi
+          echo "Current:  $(file "${ANDROID_TOOLCHAIN_BIN}/clang")"
           echo ""
           
-          echo "Testing compilers:"
-          if [ -f "${ANDROID_TOOLCHAIN_BIN}/aarch64-linux-android21-clang" ]; then
-            "${ANDROID_TOOLCHAIN_BIN}/aarch64-linux-android21-clang" --version 2>&1 | head -1 || echo "Wrapper failed"
+          echo "Compiler functionality test:"
+          if "${ANDROID_TOOLCHAIN_BIN}/clang" --version >/dev/null 2>&1; then
+            echo "✓ Clang runs successfully"
+            "${ANDROID_TOOLCHAIN_BIN}/clang" --version | head -1
           else
-            echo "Compiler wrapper not found: ${ANDROID_TOOLCHAIN_BIN}/aarch64-linux-android21-clang"
+            echo "✗ Clang execution failed"
           fi
           
-          if [ -f "${ANDROID_TOOLCHAIN_BIN}/clang" ]; then
-            echo "Binary type: $(file "${ANDROID_TOOLCHAIN_BIN}/clang" | cut -d: -f2-)"
-            "${ANDROID_TOOLCHAIN_BIN}/clang" --version 2>&1 | head -1 || echo "Direct clang failed"
+          echo ""
+          echo "Android cross-compilation test:"
+          echo 'int main() { return 42; }' > quick_test.c
+          if "${ANDROID_TOOLCHAIN_BIN}/clang" \
+             --target=aarch64-linux-android21 \
+             --sysroot="${ANDROID_SYSROOT}" \
+             -o quick_test quick_test.c 2>/dev/null; then
+            echo "✓ Android cross-compilation works"
+            file quick_test
           else
-            echo "Direct clang not found: ${ANDROID_TOOLCHAIN_BIN}/clang"
+            echo "✗ Android cross-compilation failed"
           fi
+          rm -f quick_test.c quick_test
           
           echo ""
-          echo "CMake and Ninja verification:"
-          which cmake && cmake --version | head -1
-          which ninja && ninja --version
-          echo ""
+          echo "Available LLVM tools in hybrid NDK:"
+          ls -la "${ANDROID_TOOLCHAIN_BIN}/" | grep -E "(clang|llvm|lld)" || echo "No LLVM tools found"
           
-          echo "Quick test:"
-          echo 'int main() { return 42; }' > native_test.c
-          if "${ANDROID_TOOLCHAIN_BIN}/aarch64-linux-android21-clang" -o native_test native_test.c 2>/dev/null; then
-            echo "SUCCESS: Native compilation works"
-            file native_test
-          else
-            echo "WARNING: Test compilation failed"
-          fi
-          rm -f native_test.c native_test
+          echo ""
+          echo "NDK wrapper scripts status:"
+          for wrapper in aarch64-linux-android21-clang aarch64-linux-android21-clang++; do
+            if [ -f "${ANDROID_TOOLCHAIN_BIN}/${wrapper}" ]; then
+              echo "✓ ${wrapper} exists"
+            else
+              echo "✗ ${wrapper} missing"
+            fi
+          done
 
-      - name: Build with Maven (Native ARM64)
+      - name: Build with Maven (Hybrid NDK)
         shell: bash
         env:
           MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
@@ -784,7 +413,7 @@ jobs:
           MAVEN_OPTS: -Xmx3g
           PROTO_EXEC: /opt/protobuf/bin/protoc
         run: |
-          echo "Starting Maven build with native ARM64 Android NDK..."
+          echo "Starting Maven build with hybrid ARM64 Android NDK..."
           
           export PATH="/opt/protobuf/bin:/opt/cmake/bin:${ANDROID_TOOLCHAIN_BIN}:/usr/bin:$PATH"
           export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${OPENBLAS_PATH}"
@@ -808,30 +437,15 @@ jobs:
           echo "Platform: ${LIBND4J_CLASSIFIER}"
           echo ""
           
-          # Final verification of toolchain
-          if "${ANDROID_TOOLCHAIN_BIN}/aarch64-linux-android21-clang" --version >/dev/null 2>&1; then
-            echo "✓ Native ARM64 Android toolchain verified"
+          # Final verification of hybrid toolchain
+          if "${ANDROID_TOOLCHAIN_BIN}/clang" --version >/dev/null 2>&1; then
+            echo "✓ Hybrid ARM64 Android toolchain verified"
+            echo "Clang version: $("${ANDROID_TOOLCHAIN_BIN}/clang" --version | head -1)"
           else
-            echo "✗ WARNING: Android toolchain verification failed"
+            echo "✗ WARNING: Hybrid toolchain verification failed"
             echo "Available compilers in ${ANDROID_TOOLCHAIN_BIN}:"
             ls -la "${ANDROID_TOOLCHAIN_BIN}/" | grep clang || echo "No clang found"
           fi
-          
-          # Verify CMake can find the toolchain
-          echo ""
-          echo "=== CMake Toolchain Test ==="
-          mkdir -p /tmp/cmake_test
-          cd /tmp/cmake_test
-          echo 'project(test)' > CMakeLists.txt
-          if cmake -DCMAKE_TOOLCHAIN_FILE="${CMAKE_TOOLCHAIN_FILE}" . 2>&1; then
-            echo "✓ CMake toolchain configuration successful"
-          else
-            echo "✗ CMake toolchain configuration failed"
-            echo "Checking toolchain file content:"
-            head -20 "${CMAKE_TOOLCHAIN_FILE}"
-          fi
-          cd "${GITHUB_WORKSPACE}"
-          rm -rf /tmp/cmake_test
           
           echo ""
           echo "=== Executing Maven Build ==="
@@ -874,31 +488,11 @@ jobs:
           echo "Searching for Android ARM64 specific artifacts:"
           find . -name "*android*arm64*" -o -name "*arm64*android*" 2>/dev/null | head -10
 
-      - name: Performance Summary
-        if: always()
-        shell: bash
-        run: |
-          echo "=== Performance Analysis Summary ==="
-          echo "Build Method: Vanilla AOSP LLVM build (SnowNF patches skipped due to compatibility)"
-          echo "NDK Structure: Fixed to use standard linux-x86_64 prebuilt directory"
-          echo "Build System: Ninja generator with proper CMake toolchain configuration"
-          echo "Performance: Good ARM64 performance (native compilation without emulation)"
-          echo "Expected improvement: 5-20x faster than emulation approaches"
-          echo "Best for: CI/CD environments, ARM cloud infrastructure"
-          echo "Note: SnowNF patches skipped due to StopIteration errors in current AOSP"
-
       - name: Cleanup Build Artifacts
         if: always()
         shell: bash
         run: |
           echo "Cleaning up temporary files..."
           rm -rf /tmp/maven-* 2>/dev/null || true
-          rm -rf /tmp/cmake_test 2>/dev/null || true
           
-          if [ -d "${GITHUB_WORKSPACE}/llvm-toolchain" ]; then
-            find "${GITHUB_WORKSPACE}/llvm-toolchain" -name "*.o" -delete 2>/dev/null || true
-            find "${GITHUB_WORKSPACE}/llvm-toolchain" -name "*.tmp" -delete 2>/dev/null || true
-          fi
-          
-          rm -f test_android.cpp test_android_binary native_test.c native_test 2>/dev/null || true
           echo "Cleanup completed"
