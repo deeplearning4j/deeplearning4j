@@ -46,6 +46,10 @@ on:
         required: false
         default: ubuntu-22.04-arm
 
+      skipLLVMBuild:
+        description: 'Skip LLVM build and use cached version (for testing)'
+        required: false
+        default: false
 
       debug_enabled:
         description: 'Enable debug session'
@@ -484,11 +488,11 @@ jobs:
             rm -f test_android.cpp test_android_binary
           fi
           
-          # Set environment variables - Use standard linux-x86_64
+          # Set environment variables - Use the actual prebuilt directory
           echo "ANDROID_NDK_ROOT=${NDK_HOME}" >> $GITHUB_ENV
           echo "ANDROID_NDK=${NDK_HOME}" >> $GITHUB_ENV
-          echo "ANDROID_TOOLCHAIN_BIN=${NDK_PREBUILT_DIR}/bin" >> $GITHUB_ENV
-          echo "ANDROID_SYSROOT=${NDK_PREBUILT_DIR}/sysroot" >> $GITHUB_ENV
+          echo "ANDROID_TOOLCHAIN_BIN=${ACTUAL_PREBUILT_DIR}/bin" >> $GITHUB_ENV
+          echo "ANDROID_SYSROOT=${ACTUAL_PREBUILT_DIR}/sysroot" >> $GITHUB_ENV
           
           echo "Native Android NDK setup complete"
           echo "Final disk space:"
@@ -545,12 +549,49 @@ jobs:
           echo "ARMCOMPUTE_ROOT=${ARMCOMPUTE_ROOT}" >> "$GITHUB_ENV"
           echo "ARMCOMPUTE_HOME=${ARMCOMPUTE_HOME}" >> "$GITHUB_ENV"
 
+      - name: Debug NDK Structure and Fix Paths
+        shell: bash
+        run: |
+          echo "=== Debugging NDK Structure ==="
+          echo "NDK_HOME: ${ANDROID_NDK}"
+          
+          echo "Available prebuilt directories:"
+          find "${ANDROID_NDK}/toolchains/llvm/prebuilt" -type d -maxdepth 1 2>/dev/null || echo "Prebuilt directory not found"
+          
+          echo ""
+          echo "Looking for actual prebuilt directory..."
+          ACTUAL_PREBUILT_DIR=""
+          for dir in linux-x86_64 linux-x86 darwin-x86_64; do
+            if [ -d "${ANDROID_NDK}/toolchains/llvm/prebuilt/${dir}" ]; then
+              ACTUAL_PREBUILT_DIR="${ANDROID_NDK}/toolchains/llvm/prebuilt/${dir}"
+              echo "Found prebuilt directory: ${ACTUAL_PREBUILT_DIR}"
+              break
+            fi
+          done
+          
+          if [ -z "${ACTUAL_PREBUILT_DIR}" ]; then
+            echo "ERROR: No prebuilt directory found"
+            exit 1
+          fi
+          
+          echo "ACTUAL_PREBUILT_DIR=${ACTUAL_PREBUILT_DIR}" >> $GITHUB_ENV
+          
+          echo ""
+          echo "Checking compiler existence:"
+          echo "Direct clang: $(ls -la "${ACTUAL_PREBUILT_DIR}/bin/clang" 2>/dev/null || echo 'NOT FOUND')"
+          echo "Android wrapper: $(ls -la "${ACTUAL_PREBUILT_DIR}/bin/aarch64-linux-android21-clang" 2>/dev/null || echo 'NOT FOUND')"
+          
+          echo ""
+          echo "Available binaries in bin directory:"
+          ls -la "${ACTUAL_PREBUILT_DIR}/bin/" | grep clang || echo "No clang binaries found"
+
       - name: Create CMake Android Toolchain
         shell: bash
         run: |
           mkdir -p "${GITHUB_WORKSPACE}/cmake"
           CMAKE_TOOLCHAIN_FILE="${GITHUB_WORKSPACE}/cmake/android-arm64-native.cmake"
           
+          # Use the actual prebuilt directory we found
           cat > "${CMAKE_TOOLCHAIN_FILE}" << EOF
           set(CMAKE_SYSTEM_NAME Android)
           set(CMAKE_SYSTEM_VERSION 21)
@@ -558,15 +599,26 @@ jobs:
           set(CMAKE_ANDROID_NDK ${ANDROID_NDK})
           set(CMAKE_ANDROID_STL_TYPE c++_shared)
           
-          # Use the correct prebuilt directory (standard linux-x86_64)
+          # Use the actual prebuilt directory we found
           set(ANDROID_TOOLCHAIN_NAME llvm)
-          set(ANDROID_TOOLCHAIN_ROOT ${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64)
+          set(ANDROID_TOOLCHAIN_ROOT ${ACTUAL_PREBUILT_DIR})
           
           set(CMAKE_SYSROOT \${ANDROID_TOOLCHAIN_ROOT}/sysroot)
           
-          # Set compilers with full paths
-          set(CMAKE_C_COMPILER \${ANDROID_TOOLCHAIN_ROOT}/bin/aarch64-linux-android21-clang)
-          set(CMAKE_CXX_COMPILER \${ANDROID_TOOLCHAIN_ROOT}/bin/aarch64-linux-android21-clang++)
+          # Set compilers with full paths - check if wrappers exist, fallback to direct clang
+          if(EXISTS "\${ANDROID_TOOLCHAIN_ROOT}/bin/aarch64-linux-android21-clang")
+            set(CMAKE_C_COMPILER \${ANDROID_TOOLCHAIN_ROOT}/bin/aarch64-linux-android21-clang)
+          else()
+            set(CMAKE_C_COMPILER \${ANDROID_TOOLCHAIN_ROOT}/bin/clang)
+            set(CMAKE_C_FLAGS_INIT "\${CMAKE_C_FLAGS_INIT} --target=aarch64-linux-android21")
+          endif()
+          
+          if(EXISTS "\${ANDROID_TOOLCHAIN_ROOT}/bin/aarch64-linux-android21-clang++")
+            set(CMAKE_CXX_COMPILER \${ANDROID_TOOLCHAIN_ROOT}/bin/aarch64-linux-android21-clang++)
+          else()
+            set(CMAKE_CXX_COMPILER \${ANDROID_TOOLCHAIN_ROOT}/bin/clang++)
+            set(CMAKE_CXX_FLAGS_INIT "\${CMAKE_CXX_FLAGS_INIT} --target=aarch64-linux-android21")
+          endif()
           
           # Set other tools
           set(CMAKE_AR \${ANDROID_TOOLCHAIN_ROOT}/bin/llvm-ar CACHE FILEPATH "ar")
@@ -582,8 +634,8 @@ jobs:
           set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
           
           # Enhanced compiler flags
-          set(CMAKE_C_FLAGS_INIT "-fPIC -O2 -DANDROID -D__ANDROID_API__=21")
-          set(CMAKE_CXX_FLAGS_INIT "-fPIC -O2 -DANDROID -D__ANDROID_API__=21 -std=c++14")
+          set(CMAKE_C_FLAGS_INIT "-fPIC -O2 -DANDROID -D__ANDROID_API__=21 \${CMAKE_C_FLAGS_INIT}")
+          set(CMAKE_CXX_FLAGS_INIT "-fPIC -O2 -DANDROID -D__ANDROID_API__=21 -std=c++14 \${CMAKE_CXX_FLAGS_INIT}")
           set(CMAKE_EXE_LINKER_FLAGS_INIT "-Wl,--fix-cortex-a8")
           EOF
           
@@ -599,8 +651,12 @@ jobs:
             echo "Found existing libnd4j toolchain file, backing up and updating..."
             cp "${LIBND4J_CMAKE_TOOLCHAIN}" "${LIBND4J_CMAKE_TOOLCHAIN}.backup"
           
-            # Replace linux-aarch64 with linux-x86_64 in the existing file
-            sed -i 's/linux-aarch64/linux-x86_64/g' "${LIBND4J_CMAKE_TOOLCHAIN}"
+            # Extract the actual directory name from ACTUAL_PREBUILT_DIR
+            PREBUILT_DIR_NAME=$(basename "${ACTUAL_PREBUILT_DIR}")
+            echo "Using prebuilt directory: ${PREBUILT_DIR_NAME}"
+          
+            # Replace linux-aarch64 with the actual directory name
+            sed -i "s/linux-aarch64/${PREBUILT_DIR_NAME}/g" "${LIBND4J_CMAKE_TOOLCHAIN}"
           
             # Also ensure it uses Ninja
             if ! grep -q "CMAKE_MAKE_PROGRAM" "${LIBND4J_CMAKE_TOOLCHAIN}"; then
@@ -608,7 +664,7 @@ jobs:
             fi
           
             echo "Updated libnd4j toolchain file:"
-            grep -n "linux-x86_64\|CMAKE_MAKE_PROGRAM" "${LIBND4J_CMAKE_TOOLCHAIN}" || echo "No matches found"
+            grep -n "${PREBUILT_DIR_NAME}\|CMAKE_MAKE_PROGRAM" "${LIBND4J_CMAKE_TOOLCHAIN}" || echo "No matches found"
           else
             echo "libnd4j toolchain file not found, will use our custom one"
           fi
