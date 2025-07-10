@@ -59,9 +59,34 @@ set(ANDROID_TARGET_FLAGS "-target aarch64-linux-android${ANDROID_NATIVE_API_LEVE
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ANDROID_TARGET_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ANDROID_TARGET_FLAGS}")
 
-# Ensure we use NDK's libc and not system libc
+# Set up NDK library paths for linking
+set(NDK_LIB_PATH "${NDK_TOOLCHAIN_PATH}/lib/gcc/aarch64-linux-android/4.9.x")
+set(NDK_LIB64_PATH "${NDK_TOOLCHAIN_PATH}/aarch64-linux-android/lib64")
+set(NDK_SYSROOT_LIB_PATH "${CMAKE_SYSROOT}/usr/lib/aarch64-linux-android/${ANDROID_NATIVE_API_LEVEL}")
+
+# Ensure we use NDK's libc and runtime libraries
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --sysroot=${CMAKE_SYSROOT}")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --sysroot=${CMAKE_SYSROOT}")
+
+# Add NDK library search paths
+if(EXISTS "${NDK_LIB_PATH}")
+   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L${NDK_LIB_PATH}")
+   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -L${NDK_LIB_PATH}")
+endif()
+
+if(EXISTS "${NDK_LIB64_PATH}")
+   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L${NDK_LIB64_PATH}")
+   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -L${NDK_LIB64_PATH}")
+endif()
+
+if(EXISTS "${NDK_SYSROOT_LIB_PATH}")
+   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L${NDK_SYSROOT_LIB_PATH}")
+   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -L${NDK_SYSROOT_LIB_PATH}")
+endif()
+
+# Use lld linker from NDK
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=${NDK_TOOLCHAIN_PATH}/bin/ld.lld")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=${NDK_TOOLCHAIN_PATH}/bin/ld.lld")
 
 message(STATUS "Using system compilers with Android target flags and NDK sysroot")
 message(STATUS "Final C compiler: ${CMAKE_C_COMPILER}")
