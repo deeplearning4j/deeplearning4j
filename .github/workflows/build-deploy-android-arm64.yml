@@ -119,7 +119,6 @@ jobs:
           sudo apt-get install -y \
             ninja-build \
             build-essential \
-            crossbuild-essential-arm64 \
             clang \
             lld \
             llvm-dev
@@ -148,7 +147,6 @@ jobs:
         run: |
           NDK_HOME="${GITHUB_WORKSPACE}/android-ndk-r27c"
           
-          # Download official NDK if not cached
           if [ ! -d "${NDK_HOME}" ]; then
             echo "Downloading official Android NDK r27c..."
             cd "${GITHUB_WORKSPACE}"
@@ -159,86 +157,36 @@ jobs:
           
           NDK_PREBUILT_DIR="${NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64"
           
-          # Create hybrid NDK by replacing x86_64 binaries with native ARM64 versions
           if [ ! -f "${NDK_PREBUILT_DIR}/bin/clang.hybrid_created" ]; then
-            echo "Creating hybrid NDK with native ARM64 toolchain..."
+            echo "Creating hybrid NDK - keeping original wrapper scripts but replacing clang binaries..."
           
             # Backup original binaries
             if [ ! -d "${NDK_PREBUILT_DIR}/bin.original" ]; then
               cp -r "${NDK_PREBUILT_DIR}/bin" "${NDK_PREBUILT_DIR}/bin.original"
             fi
           
-            # Replace core binaries with system versions (native ARM64)
+            # Replace only the underlying clang binaries that the wrapper scripts call
+            # Keep all the original NDK wrapper scripts (aarch64-linux-android21-clang, etc.)
             cp /usr/bin/clang "${NDK_PREBUILT_DIR}/bin/clang"
             cp /usr/bin/clang++ "${NDK_PREBUILT_DIR}/bin/clang++"
           
-            # Replace LLVM tools that exist
+            # Replace LLVM tools if available
             for tool in lld llvm-ar llvm-ranlib llvm-strip llvm-objcopy llvm-objdump; do
               if which "$tool" >/dev/null 2>&1; then
-                echo "Replacing $tool with system version"
                 cp "/usr/bin/$tool" "${NDK_PREBUILT_DIR}/bin/"
-              else
-                echo "System $tool not found, keeping NDK version"
               fi
             done
           
-            # Create wrapper scripts for Android cross-compilation
-            cat > "${NDK_PREBUILT_DIR}/bin/aarch64-linux-android21-clang" << 'EOF'
-          #!/bin/bash
-          exec "$(dirname "$0")/clang" --target=aarch64-linux-android21 --sysroot="$(dirname "$0")/../sysroot" "$@"
-          EOF
-          
-            cat > "${NDK_PREBUILT_DIR}/bin/aarch64-linux-android21-clang++" << 'EOF'
-          #!/bin/bash
-          exec "$(dirname "$0")/clang++" --target=aarch64-linux-android21 --sysroot="$(dirname "$0")/../sysroot" "$@"
-          EOF
-          
-            chmod +x "${NDK_PREBUILT_DIR}/bin/aarch64-linux-android21-clang"
-            chmod +x "${NDK_PREBUILT_DIR}/bin/aarch64-linux-android21-clang++"
-          
-            # Mark as hybrid created
             touch "${NDK_PREBUILT_DIR}/bin/clang.hybrid_created"
-          
-            echo "Hybrid NDK created successfully"
+            echo "Hybrid NDK created - original wrapper scripts now call native ARM64 clang"
           else
             echo "Using cached hybrid NDK"
           fi
           
-          # Set environment variables
           echo "ANDROID_NDK_ROOT=${NDK_HOME}" >> $GITHUB_ENV
           echo "ANDROID_NDK=${NDK_HOME}" >> $GITHUB_ENV
           echo "ANDROID_TOOLCHAIN_BIN=${NDK_PREBUILT_DIR}/bin" >> $GITHUB_ENV
           echo "ANDROID_SYSROOT=${NDK_PREBUILT_DIR}/sysroot" >> $GITHUB_ENV
-
-      - name: Test Hybrid NDK
-        shell: bash
-        run: |
-          echo "=== Testing Hybrid NDK ==="
-          
-          # Test basic functionality
-          echo "Testing clang version:"
-          "${ANDROID_TOOLCHAIN_BIN}/clang" --version | head -1
-          
-          echo ""
-          echo "Testing Android cross-compilation:"
-          cat > test_android.cpp << 'EOF'
-          #include <iostream>
-          int main() {
-              std::cout << "Hello from hybrid NDK!" << std::endl;
-              return 0;
-          }
-          EOF
-          
-          if "${ANDROID_TOOLCHAIN_BIN}/aarch64-linux-android21-clang++" \
-             -o test_android test_android.cpp 2>/dev/null; then
-            echo "✓ Android cross-compilation successful"
-            file test_android
-          else
-            echo "✗ Android cross-compilation failed"
-            exit 1
-          fi
-          
-          rm -f test_android.cpp test_android
 
       - name: Free Disk Space (Before Build)
         uses: jlumbroso/free-disk-space@main
@@ -291,9 +239,25 @@ jobs:
           echo "ARMCOMPUTE_ROOT=${ARMCOMPUTE_ROOT}" >> "$GITHUB_ENV"
           echo "ARMCOMPUTE_HOME=${ARMCOMPUTE_HOME}" >> "$GITHUB_ENV"
 
-      - name: Configure Maven Build Command
+      - name: Build with Maven (Hybrid NDK)
         shell: bash
+        env:
+          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PERFORM_RELEASE: ${{ github.event.inputs.deployToReleaseStaging }}
+          RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
+          SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
+          RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
+          MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
+          MAVEN_OPTS: -Xmx3g
+          PROTO_EXEC: /opt/protobuf/bin/protoc
         run: |
+          export PATH="/opt/protobuf/bin:/opt/cmake/bin:${ANDROID_TOOLCHAIN_BIN}:/usr/bin:$PATH"
+          export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${OPENBLAS_PATH}"
+          export JAVA_HOME="${JAVA_HOME_11_X64:-$JAVA_HOME_11_arm64}" 
+          
           LIBND4J_CLASSIFIER="android-arm64"
           
           if [ "${{ github.event.inputs.libnd4jUrl }}" != '' ]; then
@@ -341,116 +305,7 @@ jobs:
              HELPER_FLAGS=""
           fi
           
-          FINAL_COMMAND="${BASE_COMMAND} ${HELPER_FLAGS}"
-          
-          echo "LIBND4J_CLASSIFIER=${LIBND4J_CLASSIFIER}" >> $GITHUB_ENV
-          echo "MAVEN_COMMAND=${FINAL_COMMAND}" >> $GITHUB_ENV
-
-      - name: Debug Hybrid NDK Setup
-        shell: bash
-        run: |
-          echo "=== Hybrid NDK Setup Debug Information ==="
-          echo "NDK: ${ANDROID_NDK}"
-          echo "Toolchain bin: ${ANDROID_TOOLCHAIN_BIN}"
-          echo "Sysroot: ${ANDROID_SYSROOT}"
-          echo "CMake toolchain: cmake/android-arm64.cmake"
-          echo ""
-          
-          echo "Hybrid NDK verification:"
-          echo "Original vs current clang:"
-          if [ -f "${ANDROID_TOOLCHAIN_BIN}/../bin.original/clang" ]; then
-            echo "Original: $(file "${ANDROID_TOOLCHAIN_BIN}/../bin.original/clang")"
-          fi
-          echo "Current:  $(file "${ANDROID_TOOLCHAIN_BIN}/clang")"
-          echo ""
-          
-          echo "Compiler functionality test:"
-          if "${ANDROID_TOOLCHAIN_BIN}/clang" --version >/dev/null 2>&1; then
-            echo "✓ Clang runs successfully"
-            "${ANDROID_TOOLCHAIN_BIN}/clang" --version | head -1
-          else
-            echo "✗ Clang execution failed"
-          fi
-          
-          echo ""
-          echo "Android cross-compilation test:"
-          echo 'int main() { return 42; }' > quick_test.c
-          if "${ANDROID_TOOLCHAIN_BIN}/clang" \
-             --target=aarch64-linux-android21 \
-             --sysroot="${ANDROID_SYSROOT}" \
-             -o quick_test quick_test.c 2>/dev/null; then
-            echo "✓ Android cross-compilation works"
-            file quick_test
-          else
-            echo "✗ Android cross-compilation failed"
-          fi
-          rm -f quick_test.c quick_test
-          
-          echo ""
-          echo "Available LLVM tools in hybrid NDK:"
-          ls -la "${ANDROID_TOOLCHAIN_BIN}/" | grep -E "(clang|llvm|lld)" || echo "No LLVM tools found"
-          
-          echo ""
-          echo "NDK wrapper scripts status:"
-          for wrapper in aarch64-linux-android21-clang aarch64-linux-android21-clang++; do
-            if [ -f "${ANDROID_TOOLCHAIN_BIN}/${wrapper}" ]; then
-              echo "✓ ${wrapper} exists"
-            else
-              echo "✗ ${wrapper} missing"
-            fi
-          done
-
-      - name: Build with Maven (Hybrid NDK)
-        shell: bash
-        env:
-          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PERFORM_RELEASE: ${{ github.event.inputs.deployToReleaseStaging }}
-          RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
-          SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
-          RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
-          MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
-          MAVEN_OPTS: -Xmx3g
-          PROTO_EXEC: /opt/protobuf/bin/protoc
-        run: |
-          echo "Starting Maven build with hybrid ARM64 Android NDK..."
-          
-          export PATH="/opt/protobuf/bin:/opt/cmake/bin:${ANDROID_TOOLCHAIN_BIN}:/usr/bin:$PATH"
-          export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${OPENBLAS_PATH}"
-          
-          echo "=== Build Environment ==="
-          which java
-          export JAVA_HOME="${JAVA_HOME_11_X64:-$JAVA_HOME_11_arm64}" 
-          echo "JAVA_HOME SET TO ${JAVA_HOME}"
-          echo "Java: $(java -version 2>&1 | head -1)"
-          echo "Maven: $(mvn -version | head -1)"
-          echo "CMake: $(cmake --version | head -1)"
-          echo "Ninja: $(ninja --version)"
-          echo "Protoc: $(protoc --version)"
-          echo "Host arch: $(uname -m)"
-          echo "NDK: ${ANDROID_NDK_ROOT}"
-          echo "OpenBLAS: ${OPENBLAS_PATH}"
-          if [ "${{ matrix.helper }}" == "armcompute" ]; then
-            echo "ARM Compute: ${ARMCOMPUTE_ROOT}"
-          fi
-          echo "Build threads: ${{ github.event.inputs.buildThreads }}"
-          echo "Platform: ${LIBND4J_CLASSIFIER}"
-          echo ""
-          
-          # Final verification of hybrid toolchain
-          if "${ANDROID_TOOLCHAIN_BIN}/clang" --version >/dev/null 2>&1; then
-            echo "✓ Hybrid ARM64 Android toolchain verified"
-            echo "Clang version: $("${ANDROID_TOOLCHAIN_BIN}/clang" --version | head -1)"
-          else
-            echo "✗ WARNING: Hybrid toolchain verification failed"
-            echo "Available compilers in ${ANDROID_TOOLCHAIN_BIN}:"
-            ls -la "${ANDROID_TOOLCHAIN_BIN}/" | grep clang || echo "No clang found"
-          fi
-          
-          echo ""
-          echo "=== Executing Maven Build ==="
+          MAVEN_COMMAND="${BASE_COMMAND} ${HELPER_FLAGS}"
           
           if [ "${PERFORM_RELEASE}" == "1" ]; then
               bash "${GITHUB_WORKSPACE}/release-specified-component.sh" \
@@ -461,8 +316,6 @@ jobs:
           else
               eval "${MAVEN_COMMAND}"
           fi
-          
-          echo "Maven build completed successfully"
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
@@ -474,27 +327,16 @@ jobs:
         if: always()
         shell: bash
         run: |
-          echo "=== Build Artifact Verification ==="
-          
           if [ -d "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/target" ]; then
-            echo "Found nd4j-native target directory"
             find nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/target -name "*.jar" -o -name "*.so" | head -10
           fi
           
           if [ -d "libnd4j" ]; then
-            echo "Checking libnd4j build artifacts..."
             find libnd4j -name "*.so" -o -name "*.a" | grep -E "(arm64|aarch64|android)" | head -10
           fi
-          
-          echo ""
-          echo "Searching for Android ARM64 specific artifacts:"
-          find . -name "*android*arm64*" -o -name "*arm64*android*" 2>/dev/null | head -10
 
       - name: Cleanup Build Artifacts
         if: always()
         shell: bash
         run: |
-          echo "Cleaning up temporary files..."
           rm -rf /tmp/maven-* 2>/dev/null || true
-          
-          echo "Cleanup completed"
