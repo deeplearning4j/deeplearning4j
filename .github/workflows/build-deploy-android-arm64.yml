@@ -166,7 +166,7 @@ jobs:
             fi
           
             # Replace only the underlying clang binaries that the wrapper scripts call
-            # Keep all the original NDK wrapper scripts (aarch64-linux-android21-clang, etc.)
+            # Keep ALL original NDK wrapper scripts - they know how to find Android libraries
             cp /usr/bin/clang "${NDK_PREBUILT_DIR}/bin/clang"
             cp /usr/bin/clang++ "${NDK_PREBUILT_DIR}/bin/clang++"
           
@@ -177,8 +177,41 @@ jobs:
               fi
             done
           
+            # Don't modify the wrapper scripts - they contain NDK-specific logic for finding libraries
+            # The original 201-byte wrapper scripts know how to set up Android library paths correctlyNDK_PREBUILT_DIR}/bin/${wrapper}" "${NDK_PREBUILT_DIR}/bin/${wrapper}.original"
+          
+                # Create new wrapper that adds proper library paths
+                cat > "${NDK_PREBUILT_DIR}/bin/${wrapper}" << 'EOF'
+          #!/bin/bash
+          # Hybrid NDK wrapper for aarch64-linux-android21-clang
+          SCRIPT_DIR="$(dirname "$0")"
+          NDK_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "$SCRIPT_DIR")")")")"
+          
+          # Add Android runtime library paths
+          ANDROID_LIBS="${SCRIPT_DIR}/../lib64"
+          GCC_LIBS="${SCRIPT_DIR}/../lib/gcc/aarch64-linux-android/4.9.x"
+          
+          # Determine if this is clang or clang++
+          if [[ "$0" == *"clang++" ]]; then
+            COMPILER="${SCRIPT_DIR}/clang++"
+          else
+            COMPILER="${SCRIPT_DIR}/clang"
+          fi
+          
+          exec "${COMPILER}" \
+            --target=aarch64-linux-android21 \
+            --sysroot="${SCRIPT_DIR}/../sysroot" \
+            -B"${SCRIPT_DIR}" \
+            -L"${ANDROID_LIBS}" \
+            $([ -d "${GCC_LIBS}" ] && echo "-L${GCC_LIBS}") \
+            "$@"
+          EOF
+                chmod +x "${NDK_PREBUILT_DIR}/bin/${wrapper}"
+              fi
+            done
+          
             touch "${NDK_PREBUILT_DIR}/bin/clang.hybrid_created"
-            echo "Hybrid NDK created - original wrapper scripts now call native ARM64 clang"
+            echo "Hybrid NDK created - fixed wrapper scripts for system clang"
           else
             echo "Using cached hybrid NDK"
           fi
