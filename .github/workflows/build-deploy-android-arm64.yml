@@ -46,7 +46,15 @@ on:
         required: false
         default: ubuntu-22.04-arm
 
+      skipLLVMBuild:
+        description: 'Skip LLVM build and use cached version (for testing)'
+        required: false
+        default: false
 
+      debug_enabled:
+        description: 'Enable debug session'
+        required: false
+        default: 'false'
 
 jobs:
   android-arm64:
@@ -585,6 +593,30 @@ jobs:
           
           echo "CMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}" >> $GITHUB_ENV
 
+      - name: Fix libnd4j CMake Toolchain
+        shell: bash
+        run: |
+          echo "Fixing libnd4j's internal CMake toolchain file..."
+          LIBND4J_CMAKE_TOOLCHAIN="libnd4j/cmake/android-arm64.cmake"
+          
+          if [ -f "${LIBND4J_CMAKE_TOOLCHAIN}" ]; then
+            echo "Found existing libnd4j toolchain file, backing up and updating..."
+            cp "${LIBND4J_CMAKE_TOOLCHAIN}" "${LIBND4J_CMAKE_TOOLCHAIN}.backup"
+          
+            # Replace linux-aarch64 with linux-x86_64 in the existing file
+            sed -i 's/linux-aarch64/linux-x86_64/g' "${LIBND4J_CMAKE_TOOLCHAIN}"
+          
+            # Also ensure it uses Ninja
+            if ! grep -q "CMAKE_MAKE_PROGRAM" "${LIBND4J_CMAKE_TOOLCHAIN}"; then
+              echo 'find_program(CMAKE_MAKE_PROGRAM ninja REQUIRED)' >> "${LIBND4J_CMAKE_TOOLCHAIN}"
+            fi
+          
+            echo "Updated libnd4j toolchain file:"
+            grep -n "linux-x86_64\|CMAKE_MAKE_PROGRAM" "${LIBND4J_CMAKE_TOOLCHAIN}" || echo "No matches found"
+          else
+            echo "libnd4j toolchain file not found, will use our custom one"
+          fi
+
       - name: Configure Maven Build Command
         shell: bash
         run: |
@@ -596,7 +628,7 @@ jobs:
              MODULES=':nd4j-native,:nd4j-native-preset,:libnd4j'
           fi
           
-          # Updated CMake arguments with correct paths and Ninja generator
+          # Use our custom toolchain file path that overrides the default
           CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE} \
             -G Ninja \
             -DSD_ANDROID_BUILD=true \
@@ -626,6 +658,8 @@ jobs:
             -Dmaven.javadoc.failOnError=false \
             -Djavacpp.platform=${LIBND4J_CLASSIFIER} \
             -Dlibnd4j.cmake=\"${CMAKE_ARGS}\" \
+            -Dlibnd4j.platform.compiler.cpp.flags=\"-DANDROID -D__ANDROID_API__=21\" \
+            -Dlibnd4j.platform.linker.flags=\"-Wl,--fix-cortex-a8\" \
             --also-make \
             --batch-mode \
             deploy \
