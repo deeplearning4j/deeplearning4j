@@ -149,15 +149,10 @@ jobs:
             wget --progress=dot:giga "https://github.com/SnowNF/ndk-aarch64-linux/releases/download/0.0.1/android-ndk-r25c-aarch64-linux.tgz"
             tar -xzf "android-ndk-r25c-aarch64-linux.tgz"
           
-            # Check what directory was actually extracted
-            echo "Contents after extraction:"
-            ls -la
-          
-            # Handle the actual extracted directory name
-            EXTRACTED_DIR=$(find . -maxdepth 1 -name "*ndk*" -type d | head -1)
-            if [ -n "$EXTRACTED_DIR" ] && [ "$EXTRACTED_DIR" != "./android-ndk-r25c" ]; then
-              echo "Moving $EXTRACTED_DIR to android-ndk-r25c"
-              mv "$EXTRACTED_DIR" "android-ndk-r25c"
+            # The NDK is extracted as directory "25.2.9519653", rename it
+            if [ -d "25.2.9519653" ]; then
+              echo "Renaming 25.2.9519653 to android-ndk-r25c"
+              mv "25.2.9519653" "android-ndk-r25c"
             fi
           
             rm "android-ndk-r25c-aarch64-linux.tgz"
