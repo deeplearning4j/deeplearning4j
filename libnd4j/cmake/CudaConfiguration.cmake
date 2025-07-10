@@ -554,8 +554,18 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
         set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER} PARENT_SCOPE)
         set(LOCAL_CUDA_FLAGS "-maxrregcount=128")
 
-        # Only Windows/MSVC specific flags - NO GCC-style flags whatsoever
-        set(LOCAL_CUDA_FLAGS "-maxrregcount=128")
+
+
+        # IMPORTANT: Disable the new preprocessor which can cause C++17 issues
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/Zc:preprocessor-")
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH")
+
+        # Explicitly enable C++17 for the host compiler
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/std:c++17")
+
+
+
+
         # Windows/MSVC flags: bigobj, EHsc, *and* disable the new preprocessor
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}
         -Xcompiler=/bigobj
