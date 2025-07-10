@@ -118,7 +118,11 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y \
             ninja-build \
-            build-essential
+            build-essential \
+            clang \
+            lld \
+            llvm-dev \
+            gcc-aarch64-linux-gnu
 
       - name: Set up Java for publishing
         uses: actions/setup-java@v4
@@ -215,7 +219,7 @@ jobs:
           echo "ARMCOMPUTE_ROOT=${ARMCOMPUTE_ROOT}" >> "$GITHUB_ENV"
           echo "ARMCOMPUTE_HOME=${ARMCOMPUTE_HOME}" >> "$GITHUB_ENV"
 
-      - name: Build with Maven (Using ARM64 NDK)
+      - name: Build with Maven (System Clang with ARM64 NDK)
         shell: bash
         env:
           MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
@@ -230,7 +234,7 @@ jobs:
           MAVEN_OPTS: -Xmx3g
           PROTO_EXEC: /opt/protobuf/bin/protoc
         run: |
-          export PATH="/opt/protobuf/bin:/opt/cmake/bin:$PATH"
+          export PATH="/opt/protobuf/bin:/opt/cmake/bin:/usr/bin:$PATH"
           export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${OPENBLAS_PATH}"
           export JAVA_HOME="${JAVA_HOME_11_X64:-$JAVA_HOME_11_arm64}"
           
@@ -244,13 +248,17 @@ jobs:
              MODULES=':nd4j-native,:nd4j-native-preset,:libnd4j'
           fi
           
-          # Configure CMake to use the ARM64 NDK toolchain
+          # Configure CMake to use system clang with NDK sysroot and libraries
           CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/libnd4j/cmake/android-arm64.cmake \
             -G Ninja \
             -DSD_ANDROID_BUILD=true \
             -DANDROID_ABI=arm64-v8a \
             -DANDROID_PLATFORM=android-21 \
             -DANDROID_NDK=${ANDROID_NDK} \
+            -DCMAKE_C_COMPILER=/usr/bin/clang \
+            -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
+            -DCMAKE_C_FLAGS='--target=aarch64-linux-android21 --sysroot=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot' \
+            -DCMAKE_CXX_FLAGS='--target=aarch64-linux-android21 --sysroot=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot' \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_MAKE_PROGRAM=/usr/bin/ninja \
             -DBLAS_LIBRARIES=${OPENBLAS_PATH}/libopenblas.so \
