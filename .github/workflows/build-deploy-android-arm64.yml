@@ -249,6 +249,7 @@ jobs:
           fi
           
           # Configure CMake to use system clang with NDK sysroot and libraries
+          # Force compiler override to prevent toolchain file from using NDK compilers
           CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/libnd4j/cmake/android-arm64.cmake \
             -G Ninja \
             -DSD_ANDROID_BUILD=true \
@@ -257,6 +258,8 @@ jobs:
             -DANDROID_NDK=${ANDROID_NDK} \
             -DCMAKE_C_COMPILER=/usr/bin/clang \
             -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
+            -DCMAKE_C_COMPILER_FORCED=TRUE \
+            -DCMAKE_CXX_COMPILER_FORCED=TRUE \
             -DCMAKE_C_FLAGS='--target=aarch64-linux-android21 --sysroot=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot' \
             -DCMAKE_CXX_FLAGS='--target=aarch64-linux-android21 --sysroot=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot' \
             -DCMAKE_BUILD_TYPE=Release \
