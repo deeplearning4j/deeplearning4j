@@ -121,7 +121,8 @@ jobs:
             build-essential \
             clang \
             lld \
-            llvm-dev
+            llvm-dev \
+            gcc-aarch64-linux-gnu
 
       - name: Set up Java for publishing
         uses: actions/setup-java@v4
@@ -140,7 +141,7 @@ jobs:
         id: cache-ndk
         with:
           path: ${{ github.workspace }}/android-ndk-r27c
-          key: android-ndk-r27c-hybrid-v2
+          key: android-ndk-r27c-hybrid-v3
 
       - name: Download and Setup Hybrid Android NDK
         shell: bash
@@ -158,30 +159,80 @@ jobs:
           NDK_PREBUILT_DIR="${NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64"
           
           if [ ! -f "${NDK_PREBUILT_DIR}/bin/clang.hybrid_created" ]; then
-            echo "Creating hybrid NDK - keeping original wrapper scripts but replacing clang binaries..."
+            echo "Creating hybrid NDK with proper Android runtime libraries..."
           
             # Backup original binaries
             if [ ! -d "${NDK_PREBUILT_DIR}/bin.original" ]; then
               cp -r "${NDK_PREBUILT_DIR}/bin" "${NDK_PREBUILT_DIR}/bin.original"
             fi
           
-            # Replace only the underlying clang binaries that the wrapper scripts call
-            # Keep ALL original NDK wrapper scripts - they know how to find Android libraries
+            # Replace clang binaries with system versions
             cp /usr/bin/clang "${NDK_PREBUILT_DIR}/bin/clang"
             cp /usr/bin/clang++ "${NDK_PREBUILT_DIR}/bin/clang++"
           
-            # Replace LLVM tools if available
+            # Replace LLVM tools
             for tool in lld llvm-ar llvm-ranlib llvm-strip llvm-objcopy llvm-objdump; do
               if which "$tool" >/dev/null 2>&1; then
                 cp "/usr/bin/$tool" "${NDK_PREBUILT_DIR}/bin/"
               fi
             done
           
-            # Don't modify the wrapper scripts - they contain NDK-specific logic for finding libraries
-            # The original 201-byte wrapper scripts know how to set up Android library paths correctly
+            # The key fix: Ensure Android runtime libraries are accessible
+            # Copy libgcc and other runtime libraries that clang expects
+            GCC_CROSS_LIB="/usr/lib/gcc-cross/aarch64-linux-gnu"
+            if [ -d "$GCC_CROSS_LIB" ]; then
+              echo "Setting up Android runtime libraries from cross-compiler..."
+          
+              # Find the GCC version directory
+              GCC_VERSION_DIR=$(find "$GCC_CROSS_LIB" -maxdepth 1 -type d -name "[0-9]*" | head -1)
+              if [ -n "$GCC_VERSION_DIR" ]; then
+                echo "Found GCC cross-compiler libs at: $GCC_VERSION_DIR"
+          
+                # Create a lib directory in the NDK for runtime libraries
+                mkdir -p "${NDK_PREBUILT_DIR}/lib/gcc/aarch64-linux-android"
+                cp -r "$GCC_VERSION_DIR" "${NDK_PREBUILT_DIR}/lib/gcc/aarch64-linux-android/"
+          
+                # Also ensure libgcc is available where the linker expects it
+                if [ -f "$GCC_VERSION_DIR/libgcc.a" ]; then
+                  cp "$GCC_VERSION_DIR/libgcc.a" "${NDK_PREBUILT_DIR}/lib64/"
+                fi
+              fi
+            fi
+          
+            # Update wrapper scripts to use proper library paths
+            for wrapper in aarch64-linux-android21-clang aarch64-linux-android21-clang++; do
+              if [ -f "${NDK_PREBUILT_DIR}/bin/${wrapper}" ]; then
+                # Backup original wrapper
+                cp "${NDK_PREBUILT_DIR}/bin/${wrapper}" "${NDK_PREBUILT_DIR}/bin/${wrapper}.original"
+          
+                # Create new wrapper that adds the runtime library paths
+                cat > "${NDK_PREBUILT_DIR}/bin/${wrapper}" << 'EOF'
+          #!/bin/bash
+          SCRIPT_DIR="$(dirname "$0")"
+          
+          # Determine if this is clang or clang++
+          if [[ "$0" == *"clang++" ]]; then
+            COMPILER="${SCRIPT_DIR}/clang++"
+          else
+            COMPILER="${SCRIPT_DIR}/clang"
+          fi
+          
+          # Add runtime library search paths
+          exec "${COMPILER}" \
+            --target=aarch64-linux-android21 \
+            --sysroot="${SCRIPT_DIR}/../sysroot" \
+            -B"${SCRIPT_DIR}" \
+            -L"${SCRIPT_DIR}/../lib64" \
+            -L"${SCRIPT_DIR}/../lib/gcc/aarch64-linux-android" \
+            --rtlib=compiler-rt \
+            "$@"
+          EOF
+                chmod +x "${NDK_PREBUILT_DIR}/bin/${wrapper}"
+              fi
+            done
           
             touch "${NDK_PREBUILT_DIR}/bin/clang.hybrid_created"
-            echo "Hybrid NDK created - kept original wrapper scripts with native ARM64 clang"
+            echo "Hybrid NDK created with Android runtime libraries"
           else
             echo "Using cached hybrid NDK"
           fi
