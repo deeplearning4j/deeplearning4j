@@ -554,29 +554,30 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
         set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER} PARENT_SCOPE)
         set(LOCAL_CUDA_FLAGS "-maxrregcount=128")
 
-        # 🔧 CRITICAL FIX: Add --std=c++17 flag for CUDA compiler (CMake < 3.18.3 workaround)
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --std=c++17")
+
 
         # IMPORTANT: Disable the new preprocessor which can cause C++17 issues
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/Zc:preprocessor-")
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH")
 
-        # Explicitly enable C++17 for the host compiler (this was already there, keeping it)
+        # Explicitly enable C++17 for the host compiler
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/std:c++17")
 
-        # Windows/MSVC flags: bigobj, EHsc
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/bigobj")
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/EHsc")
+
+
+
+        # Windows/MSVC flags: bigobj, EHsc, *and* disable the new preprocessor
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}
+        -Xcompiler=/bigobj
+        -Xcompiler=/EHsc
+        -Xcompiler=/Zc:preprocessor-")
 
         # Force clean host compiler flags
         set(CMAKE_CXX_FLAGS "" PARENT_SCOPE)
 
-        message(STATUS "CUDA Windows flags configured with C++17 filesystem support")
+        message(STATUS "CUDA Windows flags configured - completely clean of GCC flags")
     else()
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -maxrregcount=128")
-
-        # 🔧 CRITICAL FIX: Add --std=c++17 flag for non-Windows CUDA compiler too
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --std=c++17")
 
         if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
             if(SD_GCC_FUNCTRACE STREQUAL "ON")
@@ -586,8 +587,6 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
                 # Add flags to handle duplicate instantiations for GNU compiler
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fno-implicit-templates -Xcompiler=-Wno-duplicate-decl-specifier")
             endif()
-            # 🔧 ADDITIONAL FIX: Ensure GNU host compiler also uses C++17
-            set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-std=c++17")
         endif()
     endif()
 
@@ -633,41 +632,6 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
     message(STATUS "Final CMAKE_CUDA_FLAGS: ${LOCAL_CUDA_FLAGS}")
 endfunction()
 
-# 🔧 ADDITIONAL HELPER FUNCTION: Apply C++17 target properties to existing targets
-function(apply_cuda_cpp17_target_properties target_name)
-    if(NOT TARGET ${target_name})
-        return()
-    endif()
-
-    message(STATUS "🔧 Applying C++17 target properties to: ${target_name}")
-
-    # Set target properties for C++17
-    set_target_properties(${target_name} PROPERTIES
-            CUDA_STANDARD 17
-            CUDA_STANDARD_REQUIRED ON
-            CXX_STANDARD 17
-            CXX_STANDARD_REQUIRED ON
-    )
-
-    # Additional compile options for CMake < 3.18.3 workaround
-    if(${CMAKE_VERSION} VERSION_LESS "3.18.3")
-        target_compile_options(${target_name} PRIVATE
-                $<$<COMPILE_LANGUAGE:CUDA>:--std=c++17>
-        )
-        if(WIN32 AND MSVC)
-            target_compile_options(${target_name} PRIVATE
-                    $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=/std:c++17>
-            )
-        else()
-            target_compile_options(${target_name} PRIVATE
-                    $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-std=c++17>
-            )
-        endif()
-        message(STATUS "   Applied CMake < 3.18.3 C++17 workaround")
-    endif()
-
-    message(STATUS "✅ C++17 target properties applied to ${target_name}")
-endfunction()
 # Debug configuration function
 function(debug_cuda_configuration)
     message(STATUS "=== CUDA Configuration Debug Info ===")
