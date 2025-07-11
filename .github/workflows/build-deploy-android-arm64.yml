@@ -231,7 +231,6 @@ jobs:
         run: |
           export PATH="/opt/protobuf/bin:/opt/cmake/bin:/usr/bin:$PATH"
           export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${OPENBLAS_PATH}"
-          export JAVA_HOME="${JAVA_HOME_11_X64}"
           
           echo "✅ Using Android NDK at: ${ANDROID_NDK}"
           echo "✅ Cross-compiling from Intel x86_64 to ARM64"
