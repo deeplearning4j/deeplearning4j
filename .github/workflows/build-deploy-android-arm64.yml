@@ -232,7 +232,7 @@ jobs:
           export PATH="/opt/protobuf/bin:/opt/cmake/bin:/usr/bin:$PATH"
           export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${OPENBLAS_PATH}"
           export JAVA_HOME="/opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/11.0.27-6/x64"
-          
+          ls "${JAVA_HOME}"
           echo "✅ Using Android NDK at: ${ANDROID_NDK}"
           echo "✅ Cross-compiling from Intel x86_64 to ARM64"
           
