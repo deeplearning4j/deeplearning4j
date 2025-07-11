@@ -33,7 +33,6 @@
 #include <ops/ops.h>
 
 #include <array/NDArray.hXX>
-#include <array/ArrayOptions.hXX>
 
 #include <memory>
 #include <sstream>

@@ -25,7 +25,6 @@
 #include <system/op_boilerplate.h>
 #include <types/types.h>
 //note: keep this. It's required for proper linker work
-#include <array/ArrayOptions.hXX>
 
 #include "../indexreduce.h"
 #include "../legacy_ops.h"
