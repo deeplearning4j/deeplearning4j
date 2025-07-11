@@ -33,7 +33,9 @@
 namespace sd {
 
 void ShapeBufferPlatformHelper::initialize() {
-
+  if(initialized) {
+    return;
+  }
 #if defined(SD_CUDA)
   printf("Initializing CUDA platform\n");
   fflush(stdout);

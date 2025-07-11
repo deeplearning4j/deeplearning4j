@@ -153,7 +153,7 @@ import static org.nd4j.presets.OpExclusionUtils.getSkipClasses;
                         "lapacke_utils.h",
                         "cnpy/cnpy.h"
                 },
-                compiler = {"cpp11", "nowarnings"},
+                compiler = {"cpp17", "nowarnings"},
                 library = "jnind4jcpu", link = "nd4jcpu", preload = "libnd4jcpu"),
                 @Platform(value = "linux", preload = "gomp@.1", preloadpath = {"/lib64/", "/lib/", "/usr/lib64/", "/usr/lib/"}),
                 @Platform(value = "linux-armhf",preload = "gomp@.1", preloadpath = {"/usr/arm-linux-gnueabihf/lib/", "/usr/lib/arm-linux-gnueabihf/"}),
