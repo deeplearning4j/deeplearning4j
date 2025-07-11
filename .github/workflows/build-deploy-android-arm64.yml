@@ -136,7 +136,6 @@ jobs:
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
-          cache: 'maven'
 
       - name: Cache Android NDK
         uses: actions/cache@v4
@@ -232,7 +231,7 @@ jobs:
           export PATH="/opt/protobuf/bin:/opt/cmake/bin:/usr/bin:$PATH"
           export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${OPENBLAS_PATH}"
           export JAVA_HOME="/opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/11.0.27-6/x64"
-          ls "/opt/hostedtoolcache"
+          find /opt -name java
           echo "✅ Using Android NDK at: ${ANDROID_NDK}"
           echo "✅ Cross-compiling from Intel x86_64 to ARM64"
           
