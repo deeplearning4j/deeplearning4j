@@ -8,12 +8,12 @@ namespace sd {
 
 
 
-SD_HOST sd::LongType ArrayOptions::extraIndex(const sd::LongType *shapeInfo) {
+SD_INLINE SD_HOST sd::LongType ArrayOptions::extraIndex(const sd::LongType *shapeInfo) {
   return ArrayOptions::extraIndex(const_cast<sd::LongType *>(shapeInfo));
 }
 
 
-SD_HOST sd::LongType ArrayOptions::extraIndex(sd::LongType *shapeInfo) {
+SD_INLINE SD_HOST sd::LongType ArrayOptions::extraIndex(sd::LongType *shapeInfo) {
   if(shapeInfo == nullptr)
     THROW_EXCEPTION("Shape info was null!");
   sd::LongType  rank = shapeInfo[0];
@@ -30,50 +30,48 @@ SD_HOST sd::LongType ArrayOptions::extraIndex(sd::LongType *shapeInfo) {
 }
 
 
-SD_HOST void ArrayOptions::setExtra(sd::LongType *shapeInfo, sd::LongType value) {
+SD_INLINE SD_HOST void ArrayOptions::setExtra(sd::LongType *shapeInfo, sd::LongType value) {
   sd::LongType  idx = ArrayOptions::extraIndex(shapeInfo);
   shapeInfo[idx] = value;
 }
 
-SD_HOST LongType ArrayOptions::extra(const LongType *shapeInfo) {
+SD_INLINE SD_HOST LongType ArrayOptions::extra(const LongType *shapeInfo) {
   sd::LongType  idx = ArrayOptions::extraIndex(shapeInfo);
   if(idx >  shape::shapeInfoLength(shape::rank(shapeInfo)))
     THROW_EXCEPTION("Extra index is out of bounds!");
   return shapeInfo[idx];
 }
 
-SD_HOST bool ArrayOptions::isNewFormat(const sd::LongType *shapeInfo) {
+SD_INLINE SD_HOST bool ArrayOptions::isNewFormat(const sd::LongType *shapeInfo) {
   return (extra(const_cast<sd::LongType *>(shapeInfo)) != 0);
 }
 
-SD_HOST bool ArrayOptions::isSparseArray(sd::LongType *shapeInfo) {
+SD_INLINE SD_HOST bool ArrayOptions::isSparseArray(sd::LongType *shapeInfo) {
   return hasPropertyBitSet(shapeInfo, ARRAY_SPARSE);
 }
 
-SD_HOST_DEVICE bool ArrayOptions::hasExtraProperties(sd::LongType *shapeInfo) {
+SD_INLINE SD_HOST_DEVICE bool ArrayOptions::hasExtraProperties(sd::LongType *shapeInfo) {
   return hasPropertyBitSet(shapeInfo, ARRAY_EXTRAS);
 }
 
-SD_HOST bool ArrayOptions::hasPropertyBitSet(const sd::LongType extra, LongType property) {
+SD_INLINE SD_HOST bool ArrayOptions::hasPropertyBitSet(const sd::LongType extra, LongType property) {
   return ((static_cast<int>(extra) & static_cast<int>(property)) == static_cast<int>(property));
 }
 
-SD_HOST bool ArrayOptions:: hasPropertyBitSet(const sd::LongType *shapeInfo, LongType property) {
+SD_INLINE SD_HOST bool ArrayOptions:: hasPropertyBitSet(const sd::LongType *shapeInfo, LongType property) {
   if (!isNewFormat(shapeInfo)) return false;
 
   return ((static_cast<int>(extra(const_cast<sd::LongType *>(shapeInfo)) & property)) == static_cast<int>(property));
 }
 
 
-SD_HOST_DEVICE bool hasPropertyBitSetForFlags(const sd::LongType& flagStorage, LongType property) {
+SD_INLINE SD_HOST bool ArrayOptions::hasPropertyBitSetForFlags(const sd::LongType& flagStorage, LongType property) {
   return static_cast<sd::LongType>(flagStorage & (property)) == (property);
 }
 
-SD_HOST void unsetPropertyBitForFlags(sd::LongType& flagStorage, LongType property) {
-  flagStorage &= ~property;
-}
 
-SD_HOST const char *ArrayOptions::enumerateSetFlagsForFlags(const LongType flagStorage) {
+
+SD_INLINE SD_HOST const char *ArrayOptions::enumerateSetFlagsForFlags(const LongType flagStorage) {
   int maxFlags = 24;
   int flagsArray[] = {
       ARRAY_SPARSE,
@@ -144,7 +142,7 @@ SD_HOST const char *ArrayOptions::enumerateSetFlagsForFlags(const LongType flagS
   return ret->c_str();
 }
 
-SD_HOST  void ArrayOptions::unsetAllFlags(sd::LongType& flagStorage) {
+SD_INLINE SD_HOST  void ArrayOptions::unsetAllFlags(sd::LongType& flagStorage) {
 
   int flagsArray[] = {
       ARRAY_SPARSE,
@@ -178,16 +176,16 @@ SD_HOST  void ArrayOptions::unsetAllFlags(sd::LongType& flagStorage) {
   }
 }
 
-SD_HOST const char *ArrayOptions::enumerateSetFlags(const sd::LongType *shapeInfo) {
+SD_INLINE SD_HOST const char *ArrayOptions::enumerateSetFlags(const sd::LongType *shapeInfo) {
   return enumerateSetFlagsForFlags(shapeInfo[ArrayOptions::extraIndex(shapeInfo)]);
 }
 
-SD_HOST  void ArrayOptions::unsetAllFlags(sd::LongType *shapeInfo) {
+SD_INLINE SD_HOST  void ArrayOptions::unsetAllFlags(sd::LongType *shapeInfo) {
   ArrayOptions::unsetAllFlags(shapeInfo[ArrayOptions::extraIndex(shapeInfo)]);
 }
 
 
-SD_HOST bool ArrayOptions::isUnsigned(sd::LongType *shapeInfo) {
+SD_INLINE SD_HOST bool ArrayOptions::isUnsigned(sd::LongType *shapeInfo) {
   if (!isNewFormat(shapeInfo)) return false;
 
   return hasPropertyBitSet(shapeInfo, ARRAY_UNSIGNED);
@@ -245,9 +243,10 @@ SD_HOST bool ArrayOptions::isUnsigned(sd::LongType *shapeInfo) {
     sd::DataType::UTF32 \
 }
 
-long long int numDataTypesSet(sd::LongType property);
-long long int numDataTypesSet(sd::LongType property);
-SD_HOST sd::DataType ArrayOptions::dataTypeValue(sd::LongType property) {
+sd::LongType numDataTypesSet(sd::LongType property);
+
+
+SD_INLINE SD_HOST sd::DataType ArrayOptions::dataTypeValue(sd::LongType property) {
   const sd::LongType dataTypeFlags[] = DATA_TYPE_FLAGS;
   const sd::DataType dataTypes[] = DATA_TYPES;
   const size_t numTypes = sizeof(dataTypeFlags) / sizeof(sd::LongType);
@@ -276,11 +275,11 @@ SD_HOST sd::DataType ArrayOptions::dataTypeValue(sd::LongType property) {
 
 
 
-SD_HOST void validateFlags(sd::LongType property, const sd::LongType flags[], size_t numFlags) {
+SD_INLINE SD_HOST void ArrayOptions::validateFlags(sd::LongType property, const sd::LongType flags[], size_t numFlags) {
   LongType flagIndices[numFlags];
   int numFlagsSet = 0;
   for (size_t i = 0; i < numFlags; ++i) {
-    if (hasPropertyBitSetForFlags(property, flags[i])) {
+    if (ArrayOptions::hasPropertyBitSetForFlags(property, flags[i])) {
       flagIndices[i] = 1;
       numFlagsSet++;
     } else {
@@ -301,7 +300,7 @@ SD_HOST void validateFlags(sd::LongType property, const sd::LongType flags[], si
   }
 }
 
-SD_HOST void ArrayOptions::validateSingleDataType(sd::LongType property) {
+SD_INLINE SD_HOST void ArrayOptions::validateSingleDataType(sd::LongType property) {
   const sd::LongType dataTypeFlags[] = DATA_TYPE_FLAGS;
   const size_t numDataTypeFlags = sizeof(dataTypeFlags) / sizeof(sd::LongType);
   validateFlags(property, dataTypeFlags, numDataTypeFlags);
@@ -314,7 +313,7 @@ SD_HOST void ArrayOptions::validateSingleDataType(sd::LongType property) {
 }
 
 
-SD_HOST sd::LongType ArrayOptions::numDataTypesSet(sd::LongType property) {
+SD_INLINE SD_HOST sd::LongType ArrayOptions::numDataTypesSet(sd::LongType property) {
   const sd::LongType dataTypeFlags[] = DATA_TYPE_FLAGS;
   const size_t numDataTypeFlags = sizeof(dataTypeFlags) / sizeof(sd::LongType);
 
@@ -328,7 +327,7 @@ SD_HOST sd::LongType ArrayOptions::numDataTypesSet(sd::LongType property) {
   return numFlagsSet;
 }
 
-SD_HOST sd::DataType ArrayOptions::dataType(const sd::LongType *shapeInfo) {
+SD_INLINE SD_HOST sd::DataType ArrayOptions::dataType(const sd::LongType *shapeInfo) {
   if(shapeInfo == nullptr)
     THROW_EXCEPTION("ArrayOptions::dataType(..) shapeInfo can not be null!");
 
@@ -338,13 +337,13 @@ SD_HOST sd::DataType ArrayOptions::dataType(const sd::LongType *shapeInfo) {
 
 
 
-SD_HOST SpaceType ArrayOptions::spaceTypeForFlags(const sd::LongType& flagStorage) {
+SD_INLINE SD_HOST SpaceType ArrayOptions::spaceTypeForFlags(const sd::LongType& flagStorage) {
   if (hasPropertyBitSetForFlags(flagStorage, ARRAY_QUANTIZED)) return SpaceType::QUANTIZED;
   if (hasPropertyBitSetForFlags(flagStorage, ARRAY_COMPLEX)) return SpaceType::COMPLEX;
   return SpaceType::CONTINUOUS;  // by default we return continuous type here
 }
 
-SD_HOST ArrayType ArrayOptions::arrayTypeForFlags(const sd::LongType& flagStorage) {
+SD_INLINE SD_HOST ArrayType ArrayOptions::arrayTypeForFlags(const sd::LongType& flagStorage) {
   if (hasPropertyBitSetForFlags(flagStorage, ARRAY_SPARSE)) return ArrayType::SPARSE;
   if (hasPropertyBitSetForFlags(flagStorage, ARRAY_COMPRESSED)) return ArrayType::COMPRESSED;
   if (hasPropertyBitSetForFlags(flagStorage, ARRAY_EMPTY)) return ArrayType::EMPTY;
@@ -352,16 +351,16 @@ SD_HOST ArrayType ArrayOptions::arrayTypeForFlags(const sd::LongType& flagStorag
   return ArrayType::DENSE;  // by default we return DENSE type here
 }
 
-SD_HOST  bool ArrayOptions::togglePropertyBitForFlags(sd::LongType& flagStorage, LongType property) {
+SD_INLINE SD_HOST  bool ArrayOptions::togglePropertyBitForFlags(sd::LongType& flagStorage, LongType property) {
   flagStorage ^= property;
   return hasPropertyBitSetForFlags(flagStorage, property);
 }
 
-SD_HOST sd::LongType ArrayOptions::unsetPropertyBitForFlags(sd::LongType& flagStorage, LongType property) {
+SD_INLINE SD_HOST sd::LongType ArrayOptions::unsetPropertyBitForFlags(sd::LongType& flagStorage, LongType property) {
   return flagStorage & ~property;
 }
 
-SD_HOST SparseType ArrayOptions::sparseTypeForFlags(const sd::LongType& flagStorage) {
+SD_INLINE SD_HOST SparseType ArrayOptions::sparseTypeForFlags(const sd::LongType& flagStorage) {
   if (hasPropertyBitSetForFlags(flagStorage, ARRAY_CSC)) return SparseType::CSC;
   if (hasPropertyBitSetForFlags(flagStorage, ARRAY_CSR)) return SparseType::CSR;
   if (hasPropertyBitSetForFlags(flagStorage, ARRAY_COO)) return SparseType::COO;
@@ -369,77 +368,77 @@ SD_HOST SparseType ArrayOptions::sparseTypeForFlags(const sd::LongType& flagStor
 }
 
 // Existing function that works with shapeInfo:
-SD_HOST_DEVICE SpaceType ArrayOptions::spaceType(const sd::LongType *shapeInfo) {
+SD_INLINE SD_HOST_DEVICE SpaceType ArrayOptions::spaceType(const sd::LongType *shapeInfo) {
   return spaceTypeForFlags(shapeInfo[ArrayOptions::extraIndex(shapeInfo)]);
 }
 
-SD_HOST ArrayType ArrayOptions::arrayType(const sd::LongType *shapeInfo) {
+SD_INLINE SD_HOST ArrayType ArrayOptions::arrayType(const sd::LongType *shapeInfo) {
   return arrayTypeForFlags(shapeInfo[ArrayOptions::extraIndex(shapeInfo)]);
 }
 
-SD_HOST ArrayType ArrayOptions::arrayType(sd::LongType *shapeInfo) {
+SD_INLINE SD_HOST ArrayType ArrayOptions::arrayType(sd::LongType *shapeInfo) {
   return arrayTypeForFlags(shapeInfo[ArrayOptions::extraIndex(shapeInfo)]);
 }
 
-SD_HOST bool ArrayOptions::isEmpty(sd::LongType *shapeInfo) {
+SD_INLINE SD_HOST bool ArrayOptions::isEmpty(sd::LongType *shapeInfo) {
   return hasPropertyBitSet(shapeInfo, EMPTY);
 }
 
 
- bool ArrayOptions::arrayNeedsCopy(LongType *shapeInfo) {
+ SD_INLINE bool ArrayOptions::arrayNeedsCopy(LongType *shapeInfo) {
   return hasPropertyBitSetForFlags(shapeInfo[ArrayOptions::extraIndex(shapeInfo)], ARRAY_NEEDS_COPY);
 }
 
- void ArrayOptions::toggleArrayNeedsCopy(LongType *shapeInfo) {
+ SD_INLINE void ArrayOptions::toggleArrayNeedsCopy(LongType *shapeInfo) {
     togglePropertyBit(shapeInfo, ARRAY_NEEDS_COPY);
 }
 
-SD_HOST void ArrayOptions::toggleIsEmpty(sd::LongType *shapeInfo) {
+SD_INLINE SD_HOST void ArrayOptions::toggleIsEmpty(sd::LongType *shapeInfo) {
   togglePropertyBit(shapeInfo, EMPTY);
 }
 
-SD_HOST bool ArrayOptions::isView(sd::LongType *shapeInfo) {
+SD_INLINE SD_HOST bool ArrayOptions::isView(sd::LongType *shapeInfo) {
   return hasPropertyBitSet(shapeInfo, ARRAY_IS_VIEW);
 }
 
-SD_HOST void ArrayOptions::toggleIsView(sd::LongType *shapeInfo) {
+SD_INLINE SD_HOST void ArrayOptions::toggleIsView(sd::LongType *shapeInfo) {
   togglePropertyBit(shapeInfo, ARRAY_IS_VIEW);
 }
 
-SD_HOST bool ArrayOptions::togglePropertyBit(sd::LongType *shapeInfo, LongType property) {
+SD_INLINE SD_HOST bool ArrayOptions::togglePropertyBit(sd::LongType *shapeInfo, LongType property) {
   return togglePropertyBitForFlags(shapeInfo[ArrayOptions::extraIndex(shapeInfo)], property);
 }
 
-SD_HOST void ArrayOptions::setPropertyBit(sd::LongType *shapeInfo, LongType property) {
+SD_INLINE SD_HOST void ArrayOptions::setPropertyBit(sd::LongType *shapeInfo, LongType property) {
   shapeInfo[ArrayOptions::extraIndex(shapeInfo)] = setPropertyBitForFlagsValue(shapeInfo[ArrayOptions::extraIndex(shapeInfo)], property);
 }
 
-SD_HOST void ArrayOptions::unsetPropertyBit(sd::LongType *shapeInfo, LongType property) {
+SD_INLINE SD_HOST void ArrayOptions::unsetPropertyBit(sd::LongType *shapeInfo, LongType property) {
   shapeInfo[ArrayOptions::extraIndex(shapeInfo)] = unsetPropertyBitForFlags(shapeInfo[ArrayOptions::extraIndex(shapeInfo)], property);
 }
 
-SD_HOST SparseType ArrayOptions::sparseType(const sd::LongType *shapeInfo) {
+SD_INLINE SD_HOST SparseType ArrayOptions::sparseType(const sd::LongType *shapeInfo) {
   return sparseTypeForFlags(shapeInfo[ArrayOptions::extraIndex(shapeInfo)]);
 }
-SD_HOST void ArrayOptions::setPropertyBits(sd::LongType *shapeInfo, std::initializer_list<LongType> properties) {
+SD_INLINE SD_HOST void ArrayOptions::setPropertyBits(sd::LongType *shapeInfo, std::initializer_list<LongType> properties) {
   for (auto v : properties) {
     if (!hasPropertyBitSet(shapeInfo, v)) setPropertyBit(shapeInfo, v);
   }
 }
 
-SD_HOST void ArrayOptions::flagAsPaddedBuffer(sd::LongType *shapeInfo) {
+SD_INLINE SD_HOST void ArrayOptions::flagAsPaddedBuffer(sd::LongType *shapeInfo) {
   if (!isNewFormat(shapeInfo)) return;
 
   return setPropertyBit(shapeInfo, ARRAY_HAS_PADDED_BUFFER);
 }
 
-SD_HOST bool ArrayOptions::hasPaddedBuffer(const sd::LongType *shapeInfo) {
+SD_INLINE SD_HOST bool ArrayOptions::hasPaddedBuffer(const sd::LongType *shapeInfo) {
   if (!isNewFormat(shapeInfo)) return false;
 
   return hasPropertyBitSet(shapeInfo, ARRAY_HAS_PADDED_BUFFER);
 }
 
-SD_HOST sd::LongType ArrayOptions::propertyWithoutDataTypeValue(sd::LongType extra) {
+SD_INLINE SD_HOST sd::LongType ArrayOptions::propertyWithoutDataTypeValue(sd::LongType extra) {
   sd::LongType property = extra;
   property = property & (~ARRAY_BOOL);
   property = property & (~ARRAY_HALF);
@@ -455,17 +454,17 @@ SD_HOST sd::LongType ArrayOptions::propertyWithoutDataTypeValue(sd::LongType ext
 }
 
 
-SD_HOST sd::LongType ArrayOptions::propertyWithoutDataType(const sd::LongType *shapeInfo) {
+SD_INLINE SD_HOST sd::LongType ArrayOptions::propertyWithoutDataType(const sd::LongType *shapeInfo) {
   auto newCast = const_cast<sd::LongType *>(shapeInfo);
   sd::LongType property = extra(newCast);
   return propertyWithoutDataTypeValue(property);
 }
 
-SD_HOST void ArrayOptions::resetDataType(sd::LongType *shapeInfo) {
+SD_INLINE SD_HOST void ArrayOptions::resetDataType(sd::LongType *shapeInfo) {
   setExtra(shapeInfo, propertyWithoutDataType(shapeInfo));
 }
 
-SD_HOST LongType ArrayOptions::flagForDataType(const sd::DataType dataType) {
+SD_INLINE SD_HOST LongType ArrayOptions::flagForDataType(const sd::DataType dataType) {
   switch (dataType) {
     case sd::DataType::BOOL:
       return ARRAY_BOOL;
@@ -512,7 +511,7 @@ SD_HOST LongType ArrayOptions::flagForDataType(const sd::DataType dataType) {
   }
 }
 
-SD_HOST void ArrayOptions::setDataType(sd::LongType *shapeInfo, const sd::DataType dataType) {
+SD_INLINE SD_HOST void ArrayOptions::setDataType(sd::LongType *shapeInfo, const sd::DataType dataType) {
   switch (dataType) {
     case sd::DataType::BOOL:
       ArrayOptions::resetDataType(shapeInfo);
@@ -608,7 +607,7 @@ SD_HOST void ArrayOptions::setDataType(sd::LongType *shapeInfo, const sd::DataTy
 
 }
 
-SD_HOST sd::LongType ArrayOptions::setDataTypeValue(sd::LongType extraStorage, const sd::DataType dataType) {
+SD_INLINE SD_HOST sd::LongType ArrayOptions::setDataTypeValue(sd::LongType extraStorage, const sd::DataType dataType) {
   sd::LongType  ret = extraStorage;
   if (dataType == sd::DataType::UINT8
       || dataType == sd::DataType::UINT16
@@ -683,16 +682,16 @@ SD_HOST sd::LongType ArrayOptions::setDataTypeValue(sd::LongType extraStorage, c
 
 }
 
-SD_HOST sd::LongType ArrayOptions::defaultFlag() {
+SD_INLINE SD_HOST sd::LongType ArrayOptions::defaultFlag() {
   return DEFAULT_FLAG;
 }
 
-SD_HOST void ArrayOptions::resetFlags(sd::LongType *to) {
+SD_INLINE SD_HOST void ArrayOptions::resetFlags(sd::LongType *to) {
   to[ArrayOptions::extraIndex(to)] = 1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-SD_HOST void ArrayOptions::copyDataType(sd::LongType *to, const sd::LongType *from) {
+SD_INLINE SD_HOST void ArrayOptions::copyDataType(sd::LongType *to, const sd::LongType *from) {
   if(to == nullptr)
     THROW_EXCEPTION("To Shape info was null!");
   if(from == nullptr)

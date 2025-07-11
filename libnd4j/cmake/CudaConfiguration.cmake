@@ -375,7 +375,6 @@ function(configure_cuda_linking main_target_name)
         message(STATUS "🔧 Applying GNU-specific CUDA flags for duplicate instantiation handling")
         target_compile_options(${main_target_name} PRIVATE
                 $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-fno-implicit-templates>
-                $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wno-duplicate-decl-specifier>
         )
     endif()
 
@@ -568,6 +567,7 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
 
         # Windows/MSVC flags: bigobj, EHsc, *and* disable the new preprocessor
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}
+         -Xcompiler=/std:c++17
         -Xcompiler=/bigobj
         -Xcompiler=/EHsc
         -Xcompiler=/Zc:preprocessor-")
@@ -585,7 +585,7 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
             else()
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fPIC -Xcompiler=-fpermissive")
                 # Add flags to handle duplicate instantiations for GNU compiler
-                set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fno-implicit-templates -Xcompiler=-Wno-duplicate-decl-specifier")
+                set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fno-implicit-templates")
             endif()
         endif()
     endif()

@@ -505,7 +505,14 @@ SD_DEVICE void initializeShared(X* extraParams, X** sPartials, int sMemSize) {
   }
 }
 
-BUILD_DOUBLE_TEMPLATE(template class ReduceLongFunction, , SD_COMMON_TYPES, SD_LONG_TYPES);
+
+ITERATE_COMBINATIONS(
+    (SD_COMMON_TYPES),
+    (SD_LONG_TYPES),
+    INSTANT_PROCESS_CLASSCOMBINATION,
+     ReduceLongFunction,
+    ;)
+
 
 }  // namespace reduce
 }  // namespace functions
