@@ -1,0 +1,20 @@
+[
+  {
+    "name": "org.nd4j.nativeblas.NativeOpsHolder",
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.nativeblas.NativeOps",
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.linalg.cpu.nativecpu.bindings.Nd4jCpu",
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true
+  }
+]

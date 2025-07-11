@@ -51,7 +51,7 @@
         <platform.functrace.libs.unix>-ldl -lunwind -lbfd -ldw</platform.functrace.libs.unix>
         <libnd4j.outputPath>${project.build.directory}/../../../../../libnd4j/blasbuild/cpu</libnd4j.outputPath>
         <!-- NDK specific: https://github.com/android/ndk/issues/1690-->
-        <javacpp.compiler.crtoption>${javacpp.compiler.crtoption}</javacpp.compiler.crtoption>
+        <javacpp.compiler.crtoption></javacpp.compiler.crtoption>
 
     </properties>
 

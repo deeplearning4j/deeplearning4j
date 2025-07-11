@@ -1,7 +1,8 @@
-# android-arm64.cmake - Flexible toolchain for NDK r27b+ and cross-platform builds
+# android-arm64.cmake - Intel x86_64 to ARM64 cross-compilation toolchain
 
-# Set the system and processor
-set(CMAKE_SYSTEM_NAME Linux)
+# Set the system and processor for cross-compilation
+set(CMAKE_SYSTEM_NAME Android)
+set(CMAKE_SYSTEM_PROCESSOR aarch64)
 
 # Flexible API level - can be overridden via command line or environment
 if(NOT DEFINED ANDROID_NATIVE_API_LEVEL AND DEFINED ENV{ANDROID_VERSION})
@@ -31,10 +32,10 @@ if(NOT EXISTS "${CMAKE_ANDROID_NDK}")
    message(FATAL_ERROR "Android NDK directory does not exist: ${CMAKE_ANDROID_NDK}")
 endif()
 
-# Use unified headers (available since NDK r14)
+# Set Android STL
 set(CMAKE_ANDROID_STL_TYPE c++_shared)
 
-# Set toolchain paths with flexibility for different NDK structures
+# Set NDK toolchain paths for Intel x86_64 host
 set(NDK_TOOLCHAIN_PATH "${CMAKE_ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64")
 
 # Check if the toolchain path exists
@@ -42,7 +43,7 @@ if(NOT EXISTS "${NDK_TOOLCHAIN_PATH}")
    message(FATAL_ERROR "NDK toolchain path does not exist: ${NDK_TOOLCHAIN_PATH}")
 endif()
 
-# Fix for NDK r27b+ structure - use unified sysroot
+# Set sysroot
 set(CMAKE_SYSROOT "${NDK_TOOLCHAIN_PATH}/sysroot")
 
 # Verify sysroot exists
@@ -50,89 +51,100 @@ if(NOT EXISTS "${CMAKE_SYSROOT}")
    message(FATAL_ERROR "NDK sysroot does not exist: ${CMAKE_SYSROOT}")
 endif()
 
-# Use system compilers instead of NDK compilers to avoid GLIBC issues
-set(CMAKE_C_COMPILER "/usr/bin/clang")
-set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
+# Use NDK compilers for cross-compilation
+set(CMAKE_C_COMPILER "${NDK_TOOLCHAIN_PATH}/bin/aarch64-linux-android${ANDROID_NATIVE_API_LEVEL}-clang")
+set(CMAKE_CXX_COMPILER "${NDK_TOOLCHAIN_PATH}/bin/aarch64-linux-android${ANDROID_NATIVE_API_LEVEL}-clang++")
+set(CMAKE_AR "${NDK_TOOLCHAIN_PATH}/bin/llvm-ar")
+set(CMAKE_STRIP "${NDK_TOOLCHAIN_PATH}/bin/llvm-strip")
+set(CMAKE_RANLIB "${NDK_TOOLCHAIN_PATH}/bin/llvm-ranlib")
 
-# Set target and API level flags for cross compilation with NDK sysroot and libc
-set(ANDROID_TARGET_FLAGS "-target aarch64-linux-android${ANDROID_NATIVE_API_LEVEL} --sysroot=${CMAKE_SYSROOT}")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ANDROID_TARGET_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ANDROID_TARGET_FLAGS}")
+# Verify compilers exist
+if(NOT EXISTS "${CMAKE_C_COMPILER}")
+   message(FATAL_ERROR "C compiler does not exist: ${CMAKE_C_COMPILER}")
+endif()
 
-# Set up NDK library paths for linking
-set(NDK_LIB_PATH "${NDK_TOOLCHAIN_PATH}/lib/gcc/aarch64-linux-android/4.9.x")
-set(NDK_LIB64_PATH "${NDK_TOOLCHAIN_PATH}/aarch64-linux-android/lib64")
+if(NOT EXISTS "${CMAKE_CXX_COMPILER}")
+   message(FATAL_ERROR "C++ compiler does not exist: ${CMAKE_CXX_COMPILER}")
+endif()
+
+# Set cross-compilation flags
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -march=armv8-a")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -march=armv8-a -std=c++14")
+
+# Set NDK library paths for linking
 set(NDK_SYSROOT_LIB_PATH "${CMAKE_SYSROOT}/usr/lib/aarch64-linux-android/${ANDROID_NATIVE_API_LEVEL}")
+set(NDK_TOOLCHAIN_LIB_PATH "${NDK_TOOLCHAIN_PATH}/lib64/clang/14.0.6/lib/linux")
 
-# Ensure we use NDK's libc and runtime libraries
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --sysroot=${CMAKE_SYSROOT}")
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --sysroot=${CMAKE_SYSROOT}")
+# Linker flags
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--build-id=sha1")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-rosegment")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--fatal-warnings")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")
 
-# Add NDK library search paths
-if(EXISTS "${NDK_LIB_PATH}")
-   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L${NDK_LIB_PATH}")
-   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -L${NDK_LIB_PATH}")
-endif()
-
-if(EXISTS "${NDK_LIB64_PATH}")
-   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L${NDK_LIB64_PATH}")
-   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -L${NDK_LIB64_PATH}")
-endif()
-
-if(EXISTS "${NDK_SYSROOT_LIB_PATH}")
-   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L${NDK_SYSROOT_LIB_PATH}")
-   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -L${NDK_SYSROOT_LIB_PATH}")
-endif()
-
-# Use lld linker from NDK
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=${NDK_TOOLCHAIN_PATH}/bin/ld.lld")
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=${NDK_TOOLCHAIN_PATH}/bin/ld.lld")
-
-message(STATUS "Using system compilers with Android target flags and NDK sysroot")
-message(STATUS "Final C compiler: ${CMAKE_C_COMPILER}")
-message(STATUS "Final C++ compiler: ${CMAKE_CXX_COMPILER}")
-
-# Set the find root path
-set(CMAKE_FIND_ROOT_PATH "${CMAKE_SYSROOT}")
-set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
-
-# Architecture-specific flags
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=armv8-a -fPIC")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv8-a -fPIC")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--build-id=sha1")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-rosegment")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--fatal-warnings")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections")
 
 # Additional Android-specific flags
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections")
 
-# Linker flags
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections -Wl,--as-needed")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections -Wl,--as-needed")
+# Set the find root path for cross-compilation
+set(CMAKE_FIND_ROOT_PATH "${CMAKE_SYSROOT}" "${CMAKE_ANDROID_NDK}")
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+
+# Configure for cross-compilation
+set(CMAKE_CROSSCOMPILING TRUE)
+set(CMAKE_CROSSCOMPILING_EMULATOR "")
+
+# Android specific settings
+set(ANDROID TRUE)
+set(ANDROID_ABI "arm64-v8a")
+set(ANDROID_PLATFORM "android-${ANDROID_NATIVE_API_LEVEL}")
+set(ANDROID_STL "c++_shared")
 
 # Debug information
+message(STATUS "Cross-compiling from Intel x86_64 to ARM64")
 message(STATUS "Android NDK: ${CMAKE_ANDROID_NDK}")
 message(STATUS "Android API Level: ${ANDROID_NATIVE_API_LEVEL}")
 message(STATUS "Android ABI: ${CMAKE_ANDROID_ARCH_ABI}")
 message(STATUS "Android Sysroot: ${CMAKE_SYSROOT}")
 message(STATUS "C Compiler: ${CMAKE_C_COMPILER}")
 message(STATUS "C++ Compiler: ${CMAKE_CXX_COMPILER}")
+message(STATUS "Toolchain Path: ${NDK_TOOLCHAIN_PATH}")
 
-# Compatibility layer for older CMake/NDK combinations
-# Create the expected legacy directory structure if it doesn't exist
-set(LEGACY_PLATFORM_DIR "${CMAKE_ANDROID_NDK}/platforms/android-${ANDROID_NATIVE_API_LEVEL}/arch-arm64")
-if(NOT EXISTS "${LEGACY_PLATFORM_DIR}")
-   message(STATUS "Creating legacy platform directory structure for compatibility...")
-   file(MAKE_DIRECTORY "${LEGACY_PLATFORM_DIR}")
+# Ensure we don't accidentally use host tools
+set(CMAKE_C_COMPILER_WORKS 1)
+set(CMAKE_CXX_COMPILER_WORKS 1)
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
-   # Create symbolic links if on Unix-like system
-   if(UNIX)
-      execute_process(
-              COMMAND ${CMAKE_COMMAND} -E create_symlink
-              "${CMAKE_SYSROOT}/usr"
-              "${LEGACY_PLATFORM_DIR}/usr"
-              ERROR_QUIET
-      )
-   endif()
+# Set compiler identification to prevent issues
+set(CMAKE_C_COMPILER_ID "Clang")
+set(CMAKE_CXX_COMPILER_ID "Clang")
+
+# Additional search paths for Android-specific libraries
+if(EXISTS "${NDK_SYSROOT_LIB_PATH}")
+   set(CMAKE_LIBRARY_PATH "${CMAKE_LIBRARY_PATH}:${NDK_SYSROOT_LIB_PATH}")
 endif()
+
+if(EXISTS "${NDK_TOOLCHAIN_LIB_PATH}")
+   set(CMAKE_LIBRARY_PATH "${CMAKE_LIBRARY_PATH}:${NDK_TOOLCHAIN_LIB_PATH}")
+endif()
+
+# Set Android-specific preprocessor definitions
+add_definitions(-DANDROID -D__ANDROID__ -D__ANDROID_API__=${ANDROID_NATIVE_API_LEVEL})
+
+# Optimization flags for ARM64
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -DNDEBUG")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG")
+
+# Enable ARM64 NEON SIMD instructions
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mfpu=neon")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon")
+
+message(STATUS "Android ARM64 cross-compilation toolchain configured successfully")

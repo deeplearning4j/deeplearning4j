@@ -44,7 +44,7 @@ on:
       runsOn:
         description: 'System to run on'
         required: false
-        default: 'ubuntu-22.04-arm'
+        default: 'ubuntu-22.04'
 
       debug_enabled:
         description: 'Enable debug session'
@@ -92,14 +92,14 @@ jobs:
 
       - name: Cache protobuf install
         uses: actions/cache@v4
-        id: cache-protobuf-arm
+        id: cache-protobuf
         with:
           path: /opt/protobuf
-          key: ${{ runner.os }}-protobuf-arm-v1
+          key: ${{ runner.os }}-protobuf-intel-v1
 
       - name: Install protobuf
         uses: ./.github/actions/install-protobuf-linux
-        if: steps.cache-protobuf-arm.outputs.cache-hit != 'true'
+        if: steps.cache-protobuf.outputs.cache-hit != 'true'
 
       - name: Cache CMake install
         uses: actions/cache@v4
@@ -122,7 +122,9 @@ jobs:
             clang \
             lld \
             llvm-dev \
-            gcc-aarch64-linux-gnu
+            gcc-aarch64-linux-gnu \
+            g++-aarch64-linux-gnu \
+            libc6-dev-arm64-cross
 
       - name: Set up Java for publishing
         uses: actions/setup-java@v4
@@ -136,34 +138,27 @@ jobs:
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
           cache: 'maven'
 
-      - name: Cache ARM64 Android NDK
+      - name: Cache Android NDK
         uses: actions/cache@v4
-        id: cache-ndk-arm64
+        id: cache-ndk
         with:
           path: ${{ github.workspace }}/android-ndk-r25c
-          key: android-ndk-r25c-arm64-v1
+          key: android-ndk-r25c-linux-x86_64-v1
 
-      - name: Download and Setup ARM64 Android NDK
+      - name: Download and Setup Android NDK
         shell: bash
         run: |
           NDK_HOME="${GITHUB_WORKSPACE}/android-ndk-r25c"
           if [ ! -d "${NDK_HOME}" ]; then
-            echo "Downloading ARM64 Android NDK r25c..."
+            echo "Downloading Android NDK r25c for Linux x86_64..."
             cd "${GITHUB_WORKSPACE}"
-            wget --progress=dot:giga "https://github.com/SnowNF/ndk-aarch64-linux/releases/download/0.0.1/android-ndk-r25c-aarch64-linux.tgz"
-            tar -xzf "android-ndk-r25c-aarch64-linux.tgz"
-          
-            # The NDK is extracted as directory "25.2.9519653", rename it
-            if [ -d "25.2.9519653" ]; then
-              echo "Renaming 25.2.9519653 to android-ndk-r25c"
-              mv "25.2.9519653" "android-ndk-r25c"
-            fi
-          
-            rm "android-ndk-r25c-aarch64-linux.tgz"
+            wget --progress=dot:giga "https://dl.google.com/android/repository/android-ndk-r25c-linux.zip"
+            unzip -q "android-ndk-r25c-linux.zip"
+            rm "android-ndk-r25c-linux.zip"
             echo "NDK extracted to: ${NDK_HOME}"
             ls -la "${NDK_HOME}" | head -10
           else
-            echo "Using cached ARM64 NDK."
+            echo "Using cached Android NDK."
           fi
           echo "ANDROID_NDK_ROOT=${NDK_HOME}" >> $GITHUB_ENV
           echo "ANDROID_NDK=${NDK_HOME}" >> $GITHUB_ENV
@@ -236,9 +231,10 @@ jobs:
         run: |
           export PATH="/opt/protobuf/bin:/opt/cmake/bin:/usr/bin:$PATH"
           export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${OPENBLAS_PATH}"
-          export JAVA_HOME="${JAVA_HOME_11_X64:-$JAVA_HOME_11_arm64}"
+          export JAVA_HOME="${JAVA_HOME_11_X64}"
           
-          echo "✅ Using ARM64 NDK at: ${ANDROID_NDK}"
+          echo "✅ Using Android NDK at: ${ANDROID_NDK}"
+          echo "✅ Cross-compiling from Intel x86_64 to ARM64"
           
           LIBND4J_CLASSIFIER="android-arm64"
           
