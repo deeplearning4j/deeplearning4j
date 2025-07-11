@@ -37,7 +37,7 @@ on:
       runsOn:
         description: 'System to run on'
         required: false
-        default: windows-2022
+        default: windows-2025
       debug_enabled:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
         required: false
@@ -259,6 +259,7 @@ jobs:
           
           # Find Visual Studio installation
           $vsPaths = @(
+              "${env:ProgramFiles}\Microsoft Visual Studio\2025\Enterprise",
               "${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise",
               "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Enterprise", 
               "${env:ProgramFiles}\Microsoft Visual Studio\2019\Enterprise",
