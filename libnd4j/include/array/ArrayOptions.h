@@ -188,10 +188,8 @@ class SD_LIB_EXPORT ArrayOptions {
   static bool isEmpty(LongType *shapeInfo);
   static void toggleIsEmpty(LongType *shapeInfo);
 
-  static SD_HOST bool arrayNeedsCopy(LongType *shapeInfo);
-  static SD_HOST void toggleArrayNeedsCopy(LongType *shapeInfo);
-  static bool SD_HOST hasPropertyBitSetForFlags(const LongType &flagStorage, LongType property);
-  static void validateFlags(LongType property, const LongType *flags, size_t numFlags);
+  static bool arrayNeedsCopy(LongType *shapeInfo);
+  static void toggleArrayNeedsCopy(LongType *shapeInfo);
 };
 
 }
