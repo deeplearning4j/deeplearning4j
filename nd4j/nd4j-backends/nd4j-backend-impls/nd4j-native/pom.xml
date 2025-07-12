@@ -822,19 +822,13 @@
                                 <compilerOption>-I${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/aarch64-linux-android</compilerOption>
                                 <!-- Add explicit sysroot -->
                                 <compilerOption>--sysroot=${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</compilerOption>
-                                <!-- Manually define missing types that NDK r25c fails to provide -->
-                                <compilerOption>-Duint8_t=unsigned char</compilerOption>
-                                <compilerOption>-Dint8_t=signed char</compilerOption>
-                                <compilerOption>-Duint16_t=unsigned short</compilerOption>
-                                <compilerOption>-Dint16_t=signed short</compilerOption>
-                                <compilerOption>-Duint32_t=unsigned int</compilerOption>
-                                <compilerOption>-Dint32_t=signed int</compilerOption>
-                                <compilerOption>-Duint64_t=unsigned long long</compilerOption>
-                                <compilerOption>-Dint64_t=signed long long</compilerOption>
-                                <compilerOption>-Dsize_t=unsigned long</compilerOption>
-                                <compilerOption>-Dptrdiff_t=long</compilerOption>
-                                <compilerOption>-Dmax_align_t=long double</compilerOption>
-                                <!-- Remove nostdlib++ completely - this is causing the issues -->
+                                <!-- Try C mode instead of C++ to avoid stdlib conflicts -->
+                                <compilerOption>-x</compilerOption>
+                                <compilerOption>c</compilerOption>
+                                <!-- Avoid problematic C++ STL includes -->
+                                <compilerOption>-nostdinc++</compilerOption>
+                                <!-- Use only C standard library -->
+                                <compilerOption>-std=c99</compilerOption>
                             </compilerOptions>
                         </configuration>
                         <executions>
