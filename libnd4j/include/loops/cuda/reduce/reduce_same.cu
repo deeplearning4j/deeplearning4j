@@ -514,9 +514,7 @@ SD_DEVICE void initializeShared(X* extraParams, X** sPartials, int sMemSize) {
     sPartialsDeref[i] = extraParams[0];
   }
 }
-#define INSTANT_PROCESS_CLASSLIST(a1) \
-        template class ReduceSameFunction<GET_SECOND(a1)>;
-ITERATE_LIST((SD_COMMON_TYPES),INSTANT_PROCESS_CLASSLIST)
+
 
 #define INSTANT_PROCESS_SINGLE(a1) \
     template void functions::reduce::ReduceSameFunction<GET_SECOND(a1)>::execReduce( \
