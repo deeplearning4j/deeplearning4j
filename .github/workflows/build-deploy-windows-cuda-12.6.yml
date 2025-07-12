@@ -165,48 +165,145 @@ jobs:
           Write-Host "Final disk space:"
           Get-PSDrive C | Select-Object Used,Free
 
+      - name: Debug System Information
+        shell: powershell
+        run: |
+          Write-Host "=== SYSTEM DEBUG INFORMATION ==="
+          Write-Host "Windows Version: $(Get-ComputerInfo | Select-Object WindowsProductName, WindowsVersion)"
+          Write-Host "PowerShell Version: $($PSVersionTable.PSVersion)"
+          Write-Host "Available Disk Space:"
+          Get-PSDrive C | Select-Object Used,Free
+          
+          Write-Host "`n=== EXISTING VISUAL STUDIO INSTALLATIONS ==="
+          $vsWhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          if (Test-Path $vsWhere) {
+              Write-Host "vswhere.exe found, checking installations:"
+              try {
+                  & $vsWhere -all -property displayName,installationVersion,installationPath | ForEach-Object { Write-Host "  $_" }
+              }
+              catch {
+                  Write-Host "Error running vswhere: $_"
+              }
+          }
+          else {
+              Write-Host "vswhere.exe not found at $vsWhere"
+          }
+          
+          Write-Host "`n=== CHECKING COMMON VS INSTALLATION PATHS ==="
+          $commonPaths = @(
+              "${env:ProgramFiles}\Microsoft Visual Studio\2022",
+              "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022",
+              "${env:ProgramFiles}\Microsoft Visual Studio\2019",
+              "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2019"
+          )
+          
+          foreach ($path in $commonPaths) {
+              if (Test-Path $path) {
+                  Write-Host "Found: $path"
+                  try {
+                      Get-ChildItem $path -Directory | ForEach-Object { 
+                          Write-Host "  Edition: $($_.Name)"
+                          $msvcPath = "$($_.FullName)\VC\Tools\MSVC"
+                          if (Test-Path $msvcPath) {
+                              $versions = Get-ChildItem $msvcPath -Directory
+                              Write-Host "    MSVC Versions:"
+                              $versions | ForEach-Object { Write-Host "      $($_.Name)" }
+                          }
+                      }
+                  }
+                  catch {
+                      Write-Host "  Error checking subdirectories: $_"
+                  }
+              }
+              else {
+                  Write-Host "Not found: $path"
+              }
+          }
+          
+          Write-Host "`n=== NETWORK CONNECTIVITY TEST ==="
+          try {
+              $testUrl = "https://aka.ms/vs/17/release/vs_buildtools.exe"
+              Write-Host "Testing connectivity to VS Build Tools download URL..."
+              $response = Invoke-WebRequest -Uri $testUrl -Method Head -UseBasicParsing -TimeoutSec 30
+              Write-Host "Response Status: $($response.StatusCode) $($response.StatusDescription)"
+              Write-Host "Content Length: $($response.Headers['Content-Length'])"
+          }
+          catch {
+              Write-Host "Network test failed: $_"
+          }
+
       - name: Remove Incompatible MSVC and Install Working Version
         shell: powershell
         run: |
-          Write-Host "=== REMOVING incompatible MSVC and installing working version ==="
+          Write-Host "=== REMOVING INCOMPATIBLE MSVC AND INSTALLING WORKING VERSION ==="
+          
+          # Set error action to continue for better debugging
+          $ErrorActionPreference = "Continue"
           
           # Check current Visual Studio installations
           $vsWhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
           if (Test-Path $vsWhere) {
-              Write-Host "Current VS installations:"
-              & $vsWhere -all -property displayName,installationVersion,installationPath
+              Write-Host "Current VS installations before removal:"
+              try {
+                  & $vsWhere -all -property displayName,installationVersion,installationPath | ForEach-Object { Write-Host "  $_" }
+              }
+              catch {
+                  Write-Host "Error checking current installations: $_"
+              }
           }
           
-          # Find and UNINSTALL existing VS installations that have incompatible MSVC
-          Write-Host "=== UNINSTALLING existing Visual Studio installations ==="
+          # Find and UNINSTALL existing VS installations
+          Write-Host "`n=== UNINSTALLING EXISTING VISUAL STUDIO INSTALLATIONS ==="
           if (Test-Path $vsWhere) {
-              $existingInstalls = & $vsWhere -all -property installationPath
-              foreach ($installPath in $existingInstalls) {
-                  if ($installPath -and (Test-Path $installPath)) {
-                      Write-Host "Uninstalling VS installation at: $installPath"
+              try {
+                  $existingInstalls = & $vsWhere -all -property installationPath 2>$null
+                  if ($existingInstalls) {
+                      foreach ($installPath in $existingInstalls) {
+                          if ($installPath -and (Test-Path $installPath)) {
+                              Write-Host "Attempting to uninstall VS installation at: $installPath"
           
-                      # Find the uninstaller
-                      $uninstallerPath = "$installPath\vs_installer.exe"
-                      if (-not (Test-Path $uninstallerPath)) {
-                          $uninstallerPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe"
-                      }
+                              # Try multiple uninstaller locations
+                              $uninstallerPaths = @(
+                                  "$installPath\vs_installer.exe",
+                                  "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe",
+                                  "${env:ProgramFiles}\Microsoft Visual Studio\Installer\vs_installer.exe"
+                              )
           
-                      if (Test-Path $uninstallerPath) {
-                          try {
-                              Write-Host "Running uninstaller: $uninstallerPath"
-                              $uninstallProcess = Start-Process -FilePath $uninstallerPath -ArgumentList "uninstall", "--installPath", "`"$installPath`"", "--quiet", "--wait" -Wait -PassThru -NoNewWindow
-                              Write-Host "Uninstall process completed with exit code: $($uninstallProcess.ExitCode)"
-                          }
-                          catch {
-                              Write-Host "Uninstall failed for $installPath, continuing anyway: $_"
+                              $uninstallerFound = $false
+                              foreach ($uninstallerPath in $uninstallerPaths) {
+                                  if (Test-Path $uninstallerPath) {
+                                      $uninstallerFound = $true
+                                      Write-Host "Using uninstaller: $uninstallerPath"
+                                      try {
+                                          $uninstallArgs = @("uninstall", "--installPath", "`"$installPath`"", "--quiet", "--wait")
+                                          Write-Host "Uninstall command: $uninstallerPath $($uninstallArgs -join ' ')"
+                                          $uninstallProcess = Start-Process -FilePath $uninstallerPath -ArgumentList $uninstallArgs -Wait -PassThru -NoNewWindow
+                                          Write-Host "Uninstall process completed with exit code: $($uninstallProcess.ExitCode)"
+                                      }
+                                      catch {
+                                          Write-Host "Uninstall failed: $_"
+                                      }
+                                      break
+                                  }
+                              }
+          
+                              if (-not $uninstallerFound) {
+                                  Write-Host "No uninstaller found for $installPath"
+                              }
                           }
                       }
                   }
+                  else {
+                      Write-Host "No existing VS installations found by vswhere"
+                  }
+              }
+              catch {
+                  Write-Host "Error during uninstall process: $_"
               }
           }
           
           # Force remove any remaining MSVC directories
-          Write-Host "=== FORCE REMOVING remaining MSVC directories ==="
+          Write-Host "`n=== FORCE REMOVING REMAINING MSVC DIRECTORIES ==="
           $msvcPaths = @(
               "${env:ProgramFiles}\Microsoft Visual Studio\2022",
               "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022",
@@ -218,38 +315,79 @@ jobs:
               if (Test-Path $path) {
                   Write-Host "Force removing: $path"
                   try {
+                      # Try normal removal first
                       Remove-Item -Path $path -Recurse -Force -ErrorAction SilentlyContinue
-                      Write-Host "Removed: $path"
+                      if (-not (Test-Path $path)) {
+                          Write-Host "Successfully removed: $path"
+                      }
+                      else {
+                          Write-Host "Normal removal failed, trying alternate method for: $path"
+                          # Try using takeown and icacls for stubborn directories
+                          takeown /f $path /r /d y 2>$null
+                          icacls $path /grant administrators:F /t 2>$null
+                          Remove-Item -Path $path -Recurse -Force -ErrorAction SilentlyContinue
+                          if (-not (Test-Path $path)) {
+                              Write-Host "Successfully removed with alternate method: $path"
+                          }
+                          else {
+                              Write-Host "Could not completely remove: $path"
+                          }
+                      }
                   }
                   catch {
-                      Write-Host "Could not remove $path, continuing: $_"
+                      Write-Host "Error removing $path`: $_"
                   }
+              }
+              else {
+                  Write-Host "Path does not exist: $path"
               }
           }
           
-          # Download VS Build Tools 2022 with a known working version
-          Write-Host "=== DOWNLOADING VS Build Tools 2022 ==="
+          # Download VS Build Tools
+          Write-Host "`n=== DOWNLOADING VS BUILD TOOLS 2022 ==="
           $installerUrl = "https://aka.ms/vs/17/release/vs_buildtools.exe"
           $installerPath = "$env:TEMP\vs_buildtools.exe"
           
+          Write-Host "Download URL: $installerUrl"
+          Write-Host "Download Path: $installerPath"
+          
+          # Clean up any existing installer
+          if (Test-Path $installerPath) {
+              Remove-Item $installerPath -Force -ErrorAction SilentlyContinue
+              Write-Host "Removed existing installer file"
+          }
+          
           try {
-              Write-Host "Downloading from: $installerUrl"
-              Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath -UseBasicParsing
-              Write-Host "Download completed successfully to: $installerPath"
+              Write-Host "Starting download..."
+              $downloadStart = Get-Date
+              Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath -UseBasicParsing -TimeoutSec 300
+              $downloadEnd = Get-Date
+              $downloadTime = ($downloadEnd - $downloadStart).TotalSeconds
+              Write-Host "Download completed in $downloadTime seconds"
           
               # Verify download
               if (Test-Path $installerPath) {
                   $fileSize = (Get-Item $installerPath).Length
-                  Write-Host "Downloaded file size: $fileSize bytes"
+                  Write-Host "Downloaded file size: $([math]::Round($fileSize / 1MB, 2)) MB"
+          
+                  if ($fileSize -lt 1MB) {
+                      Write-Error "Downloaded file is too small, likely incomplete or corrupted"
+                      exit 1
+                  }
+              }
+              else {
+                  Write-Error "Downloaded file not found at expected location"
+                  exit 1
               }
           }
           catch {
               Write-Error "Failed to download VS Build Tools installer: $_"
+              Write-Host "Network error details: $($_.Exception.Message)"
               exit 1
           }
           
-          # Install VS Build Tools with specific version components
-          Write-Host "=== INSTALLING VS Build Tools 2022 ==="
+          # Install VS Build Tools
+          Write-Host "`n=== INSTALLING VS BUILD TOOLS 2022 ==="
           $installArgs = @(
               "--quiet",
               "--wait",
@@ -260,95 +398,156 @@ jobs:
               "--add", "Microsoft.VisualStudio.Component.VC.Redist.14.Latest"
           )
           
+          Write-Host "Installation command:"
+          Write-Host "$installerPath $($installArgs -join ' ')"
+          Write-Host ""
+          
           try {
-              Write-Host "Starting installation with command:"
-              Write-Host "$installerPath $($installArgs -join ' ')"
-          
+              Write-Host "Starting installation..."
+              $installStart = Get-Date
               $process = Start-Process -FilePath $installerPath -ArgumentList $installArgs -Wait -PassThru -NoNewWindow
-              Write-Host "Installation process completed with exit code: $($process.ExitCode)"
+              $installEnd = Get-Date
+              $installTime = ($installEnd - $installStart).TotalMinutes
           
-              if ($process.ExitCode -eq 0) {
-                  Write-Host "VS Build Tools installation successful"
-              }
-              elseif ($process.ExitCode -eq 3010) {
-                  Write-Host "VS Build Tools installation successful (reboot recommended but continuing)"
-              }
-              else {
-                  Write-Warning "VS Build Tools installation completed with exit code: $($process.ExitCode)"
-                  Write-Host "Continuing anyway as some non-zero exit codes are normal..."
+              Write-Host "Installation process completed after $([math]::Round($installTime, 2)) minutes"
+              Write-Host "Exit code: $($process.ExitCode)"
+          
+              # Interpret exit codes
+              switch ($process.ExitCode) {
+                  0 { Write-Host "SUCCESS: Installation completed successfully" }
+                  3010 { Write-Host "SUCCESS: Installation completed successfully (reboot recommended but not required)" }
+                  5007 { Write-Host "WARNING: Installation completed but computer restart is required" }
+                  default { 
+                      Write-Host "WARNING: Installation completed with non-standard exit code: $($process.ExitCode)"
+                      Write-Host "This may or may not indicate a problem - continuing with verification..."
+                  }
               }
           }
           catch {
               Write-Error "Failed to install VS Build Tools: $_"
+              Write-Host "Installation error details: $($_.Exception.Message)"
               exit 1
           }
           
           # Wait for installation to settle
-          Write-Host "Waiting 15 seconds for installation to complete..."
-          Start-Sleep -Seconds 15
+          Write-Host "`nWaiting 30 seconds for installation to complete and settle..."
+          Start-Sleep -Seconds 30
           
-          # Verify the new installation
-          Write-Host "=== VERIFYING new installation ==="
+          # Comprehensive verification
+          Write-Host "`n=== COMPREHENSIVE INSTALLATION VERIFICATION ==="
+          
+          # Check with vswhere
+          Write-Host "Checking installations with vswhere:"
           if (Test-Path $vsWhere) {
-              Write-Host "Checking for new VS installations:"
-              $newInstalls = & $vsWhere -all -property displayName,installationVersion,installationPath
-              $newInstalls | ForEach-Object { Write-Host "  $_" }
+              try {
+                  $newInstalls = & $vsWhere -all -property displayName,installationVersion,installationPath 2>$null
+                  if ($newInstalls) {
+                      $newInstalls | ForEach-Object { Write-Host "  $_" }
           
-              $buildToolsPath = & $vsWhere -products Microsoft.VisualStudio.Product.BuildTools -latest -property installationPath
-              if ($buildToolsPath) {
-                  Write-Host "Build Tools found at: $buildToolsPath"
-          
-                  $msvcPath = "$buildToolsPath\VC\Tools\MSVC"
-                  if (Test-Path $msvcPath) {
-                      $msvcVersions = Get-ChildItem $msvcPath -Directory | Sort-Object Name -Descending
-                      Write-Host "Installed MSVC versions:"
-                      $msvcVersions | ForEach-Object { Write-Host "  $($_.Name)" }
-          
-                      # Set the path for the build
-                      if ($msvcVersions.Count -gt 0) {
-                          $installedMsvc = $msvcVersions[0].FullName
-                          echo "MSVC_INSTALL_PATH=$installedMsvc" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                      # Try to find Build Tools specifically
+                      $buildToolsPath = & $vsWhere -products Microsoft.VisualStudio.Product.BuildTools -latest -property installationPath 2>$null
+                      if ($buildToolsPath) {
+                          Write-Host "Build Tools found at: $buildToolsPath"
                           echo "BUILD_TOOLS_PATH=$buildToolsPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-                          Write-Host "Set MSVC_INSTALL_PATH to: $installedMsvc"
-                          Write-Host "Set BUILD_TOOLS_PATH to: $buildToolsPath"
+          
+                          $msvcPath = "$buildToolsPath\VC\Tools\MSVC"
+                          if (Test-Path $msvcPath) {
+                              $msvcVersions = Get-ChildItem $msvcPath -Directory | Sort-Object Name -Descending
+                              Write-Host "MSVC versions found:"
+                              $msvcVersions | ForEach-Object { Write-Host "  $($_.Name)" }
+          
+                              if ($msvcVersions.Count -gt 0) {
+                                  $latestMsvc = $msvcVersions[0].FullName
+                                  echo "MSVC_INSTALL_PATH=$latestMsvc" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                                  Write-Host "Set MSVC_INSTALL_PATH to: $latestMsvc"
+                              }
+                          }
+                          else {
+                              Write-Host "ERROR: MSVC directory not found at: $msvcPath"
+                          }
+                      }
+                      else {
+                          Write-Host "WARNING: Build Tools not found by vswhere"
                       }
                   }
                   else {
-                      Write-Host "MSVC directory not found at: $msvcPath"
+                      Write-Host "WARNING: No VS installations found by vswhere after installation"
                   }
               }
-              else {
-                  Write-Host "Build Tools installation not detected by vswhere"
+              catch {
+                  Write-Host "ERROR running vswhere: $_"
               }
           }
           
-          # Manual verification - check common installation paths
-          Write-Host "=== MANUAL VERIFICATION ==="
-          $commonPaths = @(
+          # Manual verification of common paths
+          Write-Host "`nManual verification of installation paths:"
+          $checkPaths = @(
               "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools",
               "${env:ProgramFiles}\Microsoft Visual Studio\2022\BuildTools",
               "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Community",
               "${env:ProgramFiles}\Microsoft Visual Studio\2022\Community"
           )
           
-          foreach ($path in $commonPaths) {
+          $foundPath = $null
+          foreach ($path in $checkPaths) {
               if (Test-Path $path) {
-                  Write-Host "Found VS installation at: $path"
+                  Write-Host "FOUND: $path"
+                  $foundPath = $path
+          
+                  # Check for MSVC
                   $msvcCheck = "$path\VC\Tools\MSVC"
                   if (Test-Path $msvcCheck) {
-                      $versions = Get-ChildItem $msvcCheck -Directory
-                      Write-Host "  MSVC versions in $msvcCheck:"
+                      $versions = Get-ChildItem $msvcCheck -Directory | Sort-Object Name -Descending
+                      Write-Host "  MSVC versions:"
                       $versions | ForEach-Object { Write-Host "    $($_.Name)" }
+          
+                      # Set environment variables if not already set
+                      if (-not $env:BUILD_TOOLS_PATH) {
+                          echo "BUILD_TOOLS_PATH=$path" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                          Write-Host "  Set BUILD_TOOLS_PATH to: $path"
+                      }
+                      if (-not $env:MSVC_INSTALL_PATH -and $versions.Count -gt 0) {
+                          $latestMsvc = $versions[0].FullName
+                          echo "MSVC_INSTALL_PATH=$latestMsvc" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                          Write-Host "  Set MSVC_INSTALL_PATH to: $latestMsvc"
+                      }
+                  }
+                  else {
+                      Write-Host "  WARNING: No MSVC directory found at $msvcCheck"
+                  }
+          
+                  # Check for vcvars64.bat
+                  $vcvarsCheck = "$path\VC\Auxiliary\Build\vcvars64.bat"
+                  if (Test-Path $vcvarsCheck) {
+                      Write-Host "  FOUND: vcvars64.bat at $vcvarsCheck"
+                  }
+                  else {
+                      Write-Host "  WARNING: vcvars64.bat not found at $vcvarsCheck"
                   }
               }
+              else {
+                  Write-Host "NOT FOUND: $path"
+              }
+          }
+          
+          # Final status
+          if ($foundPath -or $env:BUILD_TOOLS_PATH) {
+              Write-Host "`n=== INSTALLATION VERIFICATION SUCCESSFUL ==="
+              Write-Host "Visual Studio Build Tools appears to be installed correctly"
+          }
+          else {
+              Write-Host "`n=== INSTALLATION VERIFICATION FAILED ==="
+              Write-Host "Visual Studio Build Tools installation could not be verified"
+              Write-Host "This may cause issues in subsequent steps"
           }
           
           # Clean up installer
           if (Test-Path $installerPath) {
               Remove-Item $installerPath -Force -ErrorAction SilentlyContinue
+              Write-Host "Cleaned up installer file"
           }
           
-          Write-Host "=== MSVC installation process completed ==="
+          Write-Host "`n=== MSVC INSTALLATION PROCESS COMPLETED ==="
 
       - name: Set mvn build command based on matrix
         shell: powershell
@@ -436,74 +635,130 @@ jobs:
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
           cache: 'maven'
 
-
       - name: Setup Windows PATH and Compiler Environment
         shell: powershell
         run: |
-          Write-Host "Setting up Windows PATH and Compiler Environment with compatible MSVC..."
+          Write-Host "=== SETTING UP WINDOWS PATH AND COMPILER ENVIRONMENT ==="
           
-          # Check if we have environment variables from previous step
-          if ($env:BUILD_TOOLS_PATH) {
-              Write-Host "Using BUILD_TOOLS_PATH from environment: $env:BUILD_TOOLS_PATH"
+          # Debug environment variables from previous step
+          Write-Host "Environment variables from installation step:"
+          Write-Host "BUILD_TOOLS_PATH: $env:BUILD_TOOLS_PATH"
+          Write-Host "MSVC_INSTALL_PATH: $env:MSVC_INSTALL_PATH"
+          
+          # Find VS installation path
+          $vsPath = $null
+          
+          # First, try environment variable from previous step
+          if ($env:BUILD_TOOLS_PATH -and (Test-Path $env:BUILD_TOOLS_PATH)) {
               $vsPath = $env:BUILD_TOOLS_PATH
+              Write-Host "Using BUILD_TOOLS_PATH from environment: $vsPath"
           }
           else {
-              # Find any VS installation
-              $vsPaths = @(
-                  "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools",
-                  "${env:ProgramFiles}\Microsoft Visual Studio\2022\BuildTools", 
-                  "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Community",
-                  "${env:ProgramFiles}\Microsoft Visual Studio\2022\Community",
-                  "${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise",
-                  "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Enterprise"
-              )
+              Write-Host "BUILD_TOOLS_PATH not set or invalid, searching manually..."
           
-              $vsPath = $null
-              foreach ($path in $vsPaths) {
-                  if (Test-Path $path) {
-                      $vsPath = $path
-                      Write-Host "Found Visual Studio at: $vsPath"
-                      break
+              # Use vswhere to find installations
+              $vsWhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+              if (Test-Path $vsWhere) {
+                  Write-Host "Using vswhere to find VS installations..."
+                  try {
+                      # Try Build Tools first
+                      $buildToolsPath = & $vsWhere -products Microsoft.VisualStudio.Product.BuildTools -latest -property installationPath 2>$null
+                      if ($buildToolsPath -and (Test-Path $buildToolsPath)) {
+                          $vsPath = $buildToolsPath
+                          Write-Host "Found Build Tools via vswhere: $vsPath"
+                      }
+                      else {
+                          # Try any VS installation
+                          $anyVsPath = & $vsWhere -latest -property installationPath 2>$null
+                          if ($anyVsPath -and (Test-Path $anyVsPath)) {
+                              $vsPath = $anyVsPath
+                              Write-Host "Found VS installation via vswhere: $vsPath"
+                          }
+                      }
+                  }
+                  catch {
+                      Write-Host "Error using vswhere: $_"
+                  }
+              }
+          
+              # Manual search if vswhere failed
+              if (-not $vsPath) {
+                  Write-Host "vswhere failed, searching manually..."
+                  $searchPaths = @(
+                      "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools",
+                      "${env:ProgramFiles}\Microsoft Visual Studio\2022\BuildTools",
+                      "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Community",
+                      "${env:ProgramFiles}\Microsoft Visual Studio\2022\Community",
+                      "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Professional",
+                      "${env:ProgramFiles}\Microsoft Visual Studio\2022\Professional",
+                      "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Enterprise",
+                      "${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise"
+                  )
+          
+                  foreach ($path in $searchPaths) {
+                      Write-Host "Checking: $path"
+                      if (Test-Path $path) {
+                          $vsPath = $path
+                          Write-Host "Found VS installation: $vsPath"
+                          break
+                      }
                   }
               }
           }
           
+          # Verify we found a VS installation
           if (-not $vsPath -or -not (Test-Path $vsPath)) {
-              Write-Error "Visual Studio Build Tools not found. Installation may have failed."
-              Write-Host "Checking all possible VS locations:"
-              $allPossiblePaths = @(
+              Write-Host "=== CRITICAL ERROR: VS INSTALLATION NOT FOUND ==="
+              Write-Host "Searched paths:"
+              $allPaths = @(
                   "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022",
-                  "${env:ProgramFiles}\Microsoft Visual Studio\2022",
-                  "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2019",
-                  "${env:ProgramFiles}\Microsoft Visual Studio\2019"
+                  "${env:ProgramFiles}\Microsoft Visual Studio\2022"
               )
-              foreach ($checkPath in $allPossiblePaths) {
+              foreach ($checkPath in $allPaths) {
                   if (Test-Path $checkPath) {
-                      Write-Host "Found: $checkPath"
-                      Get-ChildItem $checkPath -Directory | ForEach-Object { Write-Host "  Subdirectory: $($_.Name)" }
+                      Write-Host "Found directory: $checkPath"
+                      Get-ChildItem $checkPath -Directory | ForEach-Object { 
+                          Write-Host "  Subdirectory: $($_.Name)"
+                          $vcCheck = "$($_.FullName)\VC"
+                          if (Test-Path $vcCheck) {
+                              Write-Host "    Contains VC directory"
+                          }
+                      }
                   }
                   else {
                       Write-Host "Not found: $checkPath"
                   }
               }
+              Write-Error "Visual Studio Build Tools installation not found. Previous installation step may have failed."
               exit 1
           }
           
-          # Use whatever MSVC version we have
+          Write-Host "Using VS installation at: $vsPath"
+          
+          # Find MSVC version
           $msvcBasePath = "$vsPath\VC\Tools\MSVC"
           if (-not (Test-Path $msvcBasePath)) {
-              Write-Error "MSVC tools directory not found at $msvcBasePath"
-              Write-Host "Contents of $vsPath:"
+              Write-Host "=== CRITICAL ERROR: MSVC TOOLS NOT FOUND ==="
+              Write-Host "Expected MSVC path: $msvcBasePath"
+              Write-Host "Contents of VS installation:"
               if (Test-Path "$vsPath\VC") {
-                  Get-ChildItem "$vsPath\VC" -Directory | ForEach-Object { Write-Host "  $($_.Name)" }
+                  Get-ChildItem "$vsPath\VC" -Directory | ForEach-Object { Write-Host "  VC subdirectory: $($_.Name)" }
                   if (Test-Path "$vsPath\VC\Tools") {
                       Write-Host "Contents of VC\Tools:"
-                      Get-ChildItem "$vsPath\VC\Tools" -Directory | ForEach-Object { Write-Host "    $($_.Name)" }
+                      Get-ChildItem "$vsPath\VC\Tools" -Directory | ForEach-Object { Write-Host "    Tools subdirectory: $($_.Name)" }
+                  }
+                  else {
+                      Write-Host "VC\Tools directory does not exist"
                   }
               }
+              else {
+                  Write-Host "VC directory does not exist in VS installation"
+              }
+              Write-Error "MSVC tools directory not found"
               exit 1
           }
           
+          # Get MSVC versions
           $msvcVersions = Get-ChildItem $msvcBasePath -Directory | Sort-Object Name -Descending
           Write-Host "Available MSVC versions:"
           $msvcVersions | ForEach-Object { Write-Host "  $($_.Name)" }
@@ -513,201 +768,85 @@ jobs:
               exit 1
           }
           
-          # Use the first (latest) available version
+          # Select MSVC version
           $selectedVersion = $msvcVersions[0]
           $msvcPath = $selectedVersion.FullName
-          Write-Host "Using MSVC version: $($selectedVersion.Name)"
+          Write-Host "Selected MSVC version: $($selectedVersion.Name)"
           Write-Host "MSVC path: $msvcPath"
           
-          # Setup MSVC environment using vcvars64.bat
+          # Verify critical MSVC components exist
+          $requiredComponents = @(
+              "$msvcPath\bin\Hostx64\x64\cl.exe",
+              "$msvcPath\bin\Hostx64\x64\link.exe"
+          )
+          
+          foreach ($component in $requiredComponents) {
+              if (Test-Path $component) {
+                  Write-Host "Found required component: $component"
+              }
+              else {
+                  Write-Host "WARNING: Missing component: $component"
+              }
+          }
+          
+          # Setup vcvars64.bat
           $vcvarsPath = "$vsPath\VC\Auxiliary\Build\vcvars64.bat"
           if (-not (Test-Path $vcvarsPath)) {
-              Write-Error "vcvars64.bat not found at $vcvarsPath"
-              Write-Host "Contents of VC\Auxiliary:"
+              Write-Host "=== CRITICAL ERROR: VCVARS64.BAT NOT FOUND ==="
+              Write-Host "Expected path: $vcvarsPath"
+              Write-Host "Searching for vcvars64.bat in VS installation:"
               if (Test-Path "$vsPath\VC\Auxiliary") {
-                  Get-ChildItem "$vsPath\VC\Auxiliary" -Recurse | ForEach-Object { Write-Host "  $($_.FullName)" }
+                  Get-ChildItem "$vsPath\VC\Auxiliary" -Recurse -Filter "vcvars*.bat" | ForEach-Object { Write-Host "  Found: $($_.FullName)" }
               }
+              Write-Error "vcvars64.bat not found"
               exit 1
           }
           
-          Write-Host "Setting up MSVC environment using: $vcvarsPath"
+          Write-Host "Found vcvars64.bat at: $vcvarsPath"
           
-          # Set environment to use specific MSVC version
+          # Set up environment variables for MSVC
+          Write-Host "`n=== SETTING UP MSVC ENVIRONMENT ==="
           $env:VCToolsInstallDir = "$msvcPath\"
           echo "VCToolsInstallDir=$msvcPath\" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Set VCToolsInstallDir: $msvcPath\"
           
-          # Get environment after vcvars64.bat
+          # Execute vcvars64.bat and capture environment
+          Write-Host "Executing vcvars64.bat to set up build environment..."
           $tempFile = [System.IO.Path]::GetTempFileName()
           $cmd = "`"$vcvarsPath`" && set"
-          Write-Host "Executing: cmd.exe /c $cmd"
           
           try {
-              cmd.exe /c $cmd | Out-File -FilePath $tempFile -Encoding ASCII
+              Write-Host "Running command: cmd.exe /c `"$cmd`""
+              $output = cmd.exe /c $cmd 2>&1
+              $output | Out-File -FilePath $tempFile -Encoding ASCII
           
-              # Parse and set environment variables
+              # Check if command succeeded
+              if ($LASTEXITCODE -eq 0) {
+                  Write-Host "vcvars64.bat executed successfully"
+              }
+              else {
+                  Write-Host "vcvars64.bat returned exit code: $LASTEXITCODE"
+                  Write-Host "Output:"
+                  $output | ForEach-Object { Write-Host "  $_" }
+              }
+          
+              # Parse environment variables
               $envVarsSet = 0
               Get-Content $tempFile | ForEach-Object {
-                  if ($_ -match '^([^=]+)=(.*)
-
-      - name: Run cuda build
-        shell: cmd
-        env:
-          MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PERFORM_RELEASE: ${{ matrix.deploy_to_release_staging }}
-          RELEASE_VERSION: ${{ matrix.release_version }}
-          SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
-          RELEASE_REPO_ID: ${{ matrix.release_repo_id }}
-          PUBLISH_TO: central
-          LIBND4J_HOME_SUFFIX: cuda
-          HELPER: ${{ matrix.helper }}
-          EXTENSION: ${{ matrix.extension }}
-          MAVEN_OPTS: "-Xmx2g"
-
-        run: |
-          echo "=== CUDA Build Started ==="
-          echo "Libnd4j build threads: ${{ matrix.build_threads }}"
-          echo "Deploy to release staging: %PERFORM_RELEASE%"
-          echo "Release version: %RELEASE_VERSION%"
-          echo "Snapshot version: %SNAPSHOT_VERSION%"
-          echo "Debug enabled: ${{ matrix.debug_enabled }}"
-          echo "Libnd4j URL input: %LIBND4J_FILE_NAME%"
-          echo "Maven flags input: ${{ matrix.mvn_flags }}"
-          echo "Server id: ${{ matrix.server_id }}"
-          echo "Release repo id: %RELEASE_REPO_ID%"
-          echo "CUDA Path from env: %CUDA_PATH%"
-          echo "CUDNN Root Dir from env: %CUDNN_ROOT_DIR%"
-          echo "VCToolsInstallDir: %VCToolsInstallDir%"
-          echo "=== Environment Check ==="
-          
-          echo "Verifying compiler availability..."
-          where cl.exe >nul 2>&1 || (
-              echo "ERROR: cl.exe not found in PATH"
-              echo "Current PATH: %PATH%"
-              exit /b 1
-          )
-          
-          where nvcc.exe >nul 2>&1 || (
-              echo "ERROR: nvcc.exe not found in PATH" 
-              echo "Current PATH: %PATH%"
-              exit /b 1
-          )
-          
-          echo "Compiler verification successful:"
-          echo "cl.exe location:"
-          where cl.exe
-          cl.exe 2>&1 | findstr "Microsoft"
-          
-          echo "nvcc.exe location:"
-          where nvcc.exe  
-          nvcc.exe --version | findstr "release"
-          
-          echo "=== Build Process ==="
-          set MSYSTEM=MINGW64
-          echo "Running cuda build..."
-          echo "Maven command from file:"
-          type "%GITHUB_WORKSPACE%\mvn-command.bat"
-
-          bash ./change-cuda-versions.sh 12.6
-
-          Rem Ensure CUDNN_ROOT_DIR is set if needed by cmake; often CUDA_PATH is sufficient
-          if not defined CUDNN_ROOT_DIR set CUDNN_ROOT_DIR=%CUDA_PATH%
-
-          if "%PERFORM_RELEASE%"=="1" (
-              echo "Running release build..."
-              bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh" windows cuda 12.6 "%HELPER%" "%EXTENSION%"
-              bash "./release-specified-component.sh" "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%"
-          ) else (
-              echo "Running snapshot build..."
-              bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh" windows cuda 12.6 "%HELPER%" "%EXTENSION%"
-              call "%GITHUB_WORKSPACE%\mvn-command.bat"
-          )) {
+                  if ($_ -match '^([^=]+)=(.*)) {
                       $name = $matches[1]
                       $value = $matches[2]
           
-                      # Skip problematic variables
-                      if ($name -notmatch '^(TEMP|TMP|RANDOM)
-
-      - name: Run cuda build
-        shell: cmd
-        env:
-          MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PERFORM_RELEASE: ${{ matrix.deploy_to_release_staging }}
-          RELEASE_VERSION: ${{ matrix.release_version }}
-          SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
-          RELEASE_REPO_ID: ${{ matrix.release_repo_id }}
-          PUBLISH_TO: central
-          LIBND4J_HOME_SUFFIX: cuda
-          HELPER: ${{ matrix.helper }}
-          EXTENSION: ${{ matrix.extension }}
-          MAVEN_OPTS: "-Xmx2g"
-
-        run: |
-          echo "=== CUDA Build Started ==="
-          echo "Libnd4j build threads: ${{ matrix.build_threads }}"
-          echo "Deploy to release staging: %PERFORM_RELEASE%"
-          echo "Release version: %RELEASE_VERSION%"
-          echo "Snapshot version: %SNAPSHOT_VERSION%"
-          echo "Debug enabled: ${{ matrix.debug_enabled }}"
-          echo "Libnd4j URL input: %LIBND4J_FILE_NAME%"
-          echo "Maven flags input: ${{ matrix.mvn_flags }}"
-          echo "Server id: ${{ matrix.server_id }}"
-          echo "Release repo id: %RELEASE_REPO_ID%"
-          echo "CUDA Path from env: %CUDA_PATH%"
-          echo "CUDNN Root Dir from env: %CUDNN_ROOT_DIR%"
-          echo "VCToolsInstallDir: %VCToolsInstallDir%"
-          echo "=== Environment Check ==="
-          
-          echo "Verifying compiler availability..."
-          where cl.exe >nul 2>&1 || (
-              echo "ERROR: cl.exe not found in PATH"
-              echo "Current PATH: %PATH%"
-              exit /b 1
-          )
-          
-          where nvcc.exe >nul 2>&1 || (
-              echo "ERROR: nvcc.exe not found in PATH" 
-              echo "Current PATH: %PATH%"
-              exit /b 1
-          )
-          
-          echo "Compiler verification successful:"
-          echo "cl.exe location:"
-          where cl.exe
-          cl.exe 2>&1 | findstr "Microsoft"
-          
-          echo "nvcc.exe location:"
-          where nvcc.exe  
-          nvcc.exe --version | findstr "release"
-          
-          echo "=== Build Process ==="
-          set MSYSTEM=MINGW64
-          echo "Running cuda build..."
-          echo "Maven command from file:"
-          type "%GITHUB_WORKSPACE%\mvn-command.bat"
-
-          bash ./change-cuda-versions.sh 12.6
-
-          Rem Ensure CUDNN_ROOT_DIR is set if needed by cmake; often CUDA_PATH is sufficient
-          if not defined CUDNN_ROOT_DIR set CUDNN_ROOT_DIR=%CUDA_PATH%
-
-          if "%PERFORM_RELEASE%"=="1" (
-              echo "Running release build..."
-              bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh" windows cuda 12.6 "%HELPER%" "%EXTENSION%"
-              bash "./release-specified-component.sh" "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%"
-          ) else (
-              echo "Running snapshot build..."
-              bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh" windows cuda 12.6 "%HELPER%" "%EXTENSION%"
-              call "%GITHUB_WORKSPACE%\mvn-command.bat"
-          )) {
-                          [Environment]::SetEnvironmentVariable($name, $value, 'Process')
-                          echo "$name=$value" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-                          $envVarsSet++
+                      # Skip problematic variables and empty values
+                      if ($name -notmatch '^(TEMP|TMP|RANDOM) -and $value) {
+                          try {
+                              [Environment]::SetEnvironmentVariable($name, $value, 'Process')
+                              echo "$name=$value" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                              $envVarsSet++
+                          }
+                          catch {
+                              # Ignore errors setting individual environment variables
+                          }
                       }
                   }
               }
@@ -716,28 +855,66 @@ jobs:
               Remove-Item $tempFile -ErrorAction SilentlyContinue
           }
           catch {
-              Write-Error "Failed to execute vcvars64.bat: $_"
-              exit 1
+              Write-Host "Error executing vcvars64.bat: $_"
+              Write-Host "Continuing anyway..."
           }
           
-          # Setup CUDA paths  
+          # Setup CUDA paths
+          Write-Host "`n=== SETTING UP CUDA ENVIRONMENT ==="
           $cudaPath = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6"
           $msysPath = "C:\msys64\mingw64\bin;C:\msys64\usr\bin"
           
-          Write-Host "Setting CUDA paths..."
-          echo "CUDA_PATH=$cudaPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          echo "CUDNN_ROOT_DIR=$cudaPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          if (Test-Path $cudaPath) {
+              Write-Host "Found CUDA at: $cudaPath"
+              echo "CUDA_PATH=$cudaPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+              echo "CUDNN_ROOT_DIR=$cudaPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           
-          # Update PATH with MSYS2 and CUDA
+              # Check for nvcc
+              $nvccPath = "$cudaPath\bin\nvcc.exe"
+              if (Test-Path $nvccPath) {
+                  Write-Host "Found nvcc at: $nvccPath"
+              }
+              else {
+                  Write-Host "WARNING: nvcc not found at expected path: $nvccPath"
+              }
+          }
+          else {
+              Write-Host "WARNING: CUDA not found at expected path: $cudaPath"
+          }
+          
+          # Update PATH
+          Write-Host "`n=== UPDATING SYSTEM PATH ==="
           $newPath = "$msysPath;$cudaPath\bin;$cudaPath\libnvvp;"
           Write-Host "Adding to PATH: $newPath"
           echo $newPath | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           
-          # Verify the setup
-          Write-Host "=== Verification ==="
-          Write-Host "Selected MSVC version: $($selectedVersion.Name)"
-          Write-Host "MSVC path: $msvcPath"
-          Write-Host "VS path: $vsPath"
+          # Final verification
+          Write-Host "`n=== ENVIRONMENT SETUP VERIFICATION ==="
+          Write-Host "VS Path: $vsPath"
+          Write-Host "MSVC Version: $($selectedVersion.Name)"
+          Write-Host "MSVC Path: $msvcPath"
+          Write-Host "VCToolsInstallDir: $env:VCToolsInstallDir"
+          Write-Host "CUDA Path: $cudaPath"
+          
+          # Test compiler availability
+          Write-Host "`n=== COMPILER AVAILABILITY TEST ==="
+          try {
+              $clPath = Get-Command cl.exe -ErrorAction Stop
+              Write-Host "cl.exe found at: $($clPath.Source)"
+          }
+          catch {
+              Write-Host "cl.exe not found in PATH - this may be normal at this stage"
+          }
+          
+          try {
+              $nvccPath = Get-Command nvcc.exe -ErrorAction Stop  
+              Write-Host "nvcc.exe found at: $($nvccPath.Source)"
+          }
+          catch {
+              Write-Host "nvcc.exe not found in PATH - this may be normal at this stage"
+          }
+          
+          Write-Host "`n=== ENVIRONMENT SETUP COMPLETED ==="
 
       - name: Run cuda build
         shell: cmd
@@ -757,7 +934,7 @@ jobs:
           MAVEN_OPTS: "-Xmx2g"
 
         run: |
-          echo "=== CUDA Build Started ==="
+          echo "=== CUDA BUILD STARTED ==="
           echo "Libnd4j build threads: ${{ matrix.build_threads }}"
           echo "Deploy to release staging: %PERFORM_RELEASE%"
           echo "Release version: %RELEASE_VERSION%"
@@ -770,35 +947,47 @@ jobs:
           echo "CUDA Path from env: %CUDA_PATH%"
           echo "CUDNN Root Dir from env: %CUDNN_ROOT_DIR%"
           echo "VCToolsInstallDir: %VCToolsInstallDir%"
-          echo "=== Environment Check ==="
+          echo ""
+          
+          echo "=== ENVIRONMENT CHECK ==="
+          echo "Current PATH (first 500 chars): %PATH:~0,500%"
+          echo "Current working directory: %CD%"
+          echo ""
           
           echo "Verifying compiler availability..."
-          where cl.exe >nul 2>&1 || (
+          where cl.exe >nul 2>&1 && (
+              echo "SUCCESS: cl.exe found"
+              echo "cl.exe location:"
+              where cl.exe
+              echo "cl.exe version:"
+              cl.exe 2>&1 | findstr "Microsoft"
+          ) || (
               echo "ERROR: cl.exe not found in PATH"
+              echo "This indicates the MSVC environment setup failed"
               echo "Current PATH: %PATH%"
               exit /b 1
           )
           
-          where nvcc.exe >nul 2>&1 || (
-              echo "ERROR: nvcc.exe not found in PATH" 
+          where nvcc.exe >nul 2>&1 && (
+              echo "SUCCESS: nvcc.exe found"
+              echo "nvcc.exe location:"
+              where nvcc.exe
+              echo "nvcc.exe version:"
+              nvcc.exe --version | findstr "release"
+          ) || (
+              echo "ERROR: nvcc.exe not found in PATH"
+              echo "This indicates the CUDA environment setup failed"
               echo "Current PATH: %PATH%"
               exit /b 1
           )
           
-          echo "Compiler verification successful:"
-          echo "cl.exe location:"
-          where cl.exe
-          cl.exe 2>&1 | findstr "Microsoft"
-          
-          echo "nvcc.exe location:"
-          where nvcc.exe  
-          nvcc.exe --version | findstr "release"
-          
-          echo "=== Build Process ==="
+          echo ""
+          echo "=== BUILD PROCESS ==="
           set MSYSTEM=MINGW64
           echo "Running cuda build..."
           echo "Maven command from file:"
           type "%GITHUB_WORKSPACE%\mvn-command.bat"
+          echo ""
 
           bash ./change-cuda-versions.sh 12.6
 
