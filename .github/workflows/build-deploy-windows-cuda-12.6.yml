@@ -168,88 +168,84 @@ jobs:
       - name: Uninstall Existing MSVC and Install Latest Version
         shell: powershell
         run: |
+          # Force script to stop on any error
+          $ErrorActionPreference = "Stop"
+
           Write-Host "=== Starting MSVC Installation Process ==="
 
-          # --- 1. UNINSTALL Existing Visual Studio Installations ---
-          Write-Host "--> Locating and uninstalling existing Visual Studio installations..."
-          $vsWherePath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-          if (Test-Path $vsWherePath) {
-              # Get all installation paths
-              $installations = & $vsWherePath -all -property installationPath -value
-              if ($installations) {
-                  foreach ($installPath in $installations) {
-                      # FIX: Ensure we only process valid, existing directory paths
-                      if (-not ([string]::IsNullOrWhiteSpace($installPath)) -and (Test-Path $installPath -PathType Container)) {
-                          $uninstallerPath = Join-Path $installPath "vs_installer.exe"
-                          # Fallback to the default installer path if not found in the installation directory
-                          if (-not (Test-Path $uninstallerPath)) {
-                              $uninstallerPath = Join-Path "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer" "vs_installer.exe"
-                          }
-
-                          if (Test-Path $uninstallerPath) {
-                              Write-Host "Uninstalling VS instance at: $installPath"
-                              $arguments = "uninstall --installPath `"$installPath`" --quiet --norestart"
-                              $process = Start-Process -FilePath $uninstallerPath -ArgumentList $arguments -Wait -PassThru -NoNewWindow
-                              Write-Host "Uninstaller finished with exit code: $($process.ExitCode)"
-                          } else {
-                              Write-Warning "Could not find uninstaller for instance at $installPath."
+          try {
+              # --- 1. UNINSTALL Existing Visual Studio Installations ---
+              Write-Host "--> Locating and uninstalling existing Visual Studio installations..."
+              $vsWherePath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+              if (Test-Path $vsWherePath) {
+                  # Get all installation paths
+                  $installations = & $vsWherePath -all -property installationPath -value
+                  if ($installations) {
+                      foreach ($installPath in $installations) {
+                          if (-not ([string]::IsNullOrWhiteSpace($installPath)) -and (Test-Path $installPath -PathType Container)) {
+                              $uninstallerPath = Join-Path $installPath "vs_installer.exe"
+                              if (-not (Test-Path $uninstallerPath)) {
+                                  $uninstallerPath = Join-Path "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer" "vs_installer.exe"
+                              }
+                              if (Test-Path $uninstallerPath) {
+                                  Write-Host "Uninstalling VS instance at: $installPath"
+                                  $arguments = "uninstall --installPath `"$installPath`" --quiet --norestart"
+                                  $process = Start-Process -FilePath $uninstallerPath -ArgumentList $arguments -Wait -PassThru -NoNewWindow
+                                  Write-Host "Uninstaller finished with exit code: $($process.ExitCode)"
+                              } else {
+                                  Write-Warning "Could not find uninstaller for instance at $installPath."
+                              }
                           }
                       }
+                  } else {
+                      Write-Host "No existing Visual Studio installations found by vswhere."
                   }
               } else {
-                  Write-Host "No existing Visual Studio installations found by vswhere."
+                  Write-Host "vswhere.exe not found. Skipping automated uninstall."
               }
-          } else {
-              Write-Host "vswhere.exe not found. Skipping automated uninstall."
-          }
 
-          # --- 2. DOWNLOAD the Latest VS Build Tools Installer ---
-          Write-Host "--> Downloading the latest Visual Studio Build Tools 2022 installer..."
-          $installerUrl = "https://aka.ms/vs/17/release/vs_buildtools.exe"
-          $installerPath = Join-Path $env:TEMP "vs_buildtools.exe"
-
-          try {
+              # --- 2. DOWNLOAD the Latest VS Build Tools Installer ---
+              Write-Host "--> Downloading the latest Visual Studio Build Tools 2022 installer..."
+              $installerUrl = "https://aka.ms/vs/17/release/vs_buildtools.exe"
+              $installerPath = Join-Path $env:TEMP "vs_buildtools.exe"
               Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath -UseBasicParsing
               Write-Host "Successfully downloaded installer to $installerPath"
-          } catch {
-              Write-Error "Failed to download the VS Build Tools installer. Error: $_"
-              exit 1
-          }
 
-          # --- 3. INSTALL the Latest MSVC Build Tools ---
-          Write-Host "--> Installing the latest MSVC Build Tools..."
-          $installArgs = @(
-              "--quiet",
-              "--wait",
-              "--norestart",
-              "--nocache",
-              "--add", "Microsoft.VisualStudio.Workload.VCTools",
-              "--add", "Microsoft.VisualStudio.Component.Windows11SDK.Latest"
-          )
-
-          try {
+              # --- 3. INSTALL the Latest MSVC Build Tools ---
+              Write-Host "--> Installing the latest MSVC Build Tools..."
+              $installArgs = @(
+                  "--quiet",
+                  "--wait",
+                  "--norestart",
+                  "--nocache",
+                  "--add", "Microsoft.VisualStudio.Workload.VCTools",
+                  "--add", "Microsoft.VisualStudio.Component.Windows11SDK.Latest"
+              )
               Write-Host "Running installer with arguments: $($installArgs -join ' ')"
               $installProcess = Start-Process -FilePath $installerPath -ArgumentList $installArgs -Wait -PassThru -NoNewWindow
               $exitCode = $installProcess.ExitCode
           
               Write-Host "Installation process completed with exit code: $exitCode"
+              # Exit code 3010 means success, but a reboot is required.
               if ($exitCode -ne 0 -and $exitCode -ne 3010) {
-                  Write-Warning "Installation may have encountered an issue."
+                  throw "Installation failed with a non-zero exit code: $exitCode"
               } else {
                   Write-Host "VS Build Tools installation successful."
               }
-          } catch {
-              Write-Error "An error occurred while running the VS Build Tools installer: $_"
+          }
+          catch {
+              Write-Error "An error occurred during the MSVC installation process: $_"
               exit 1
           }
-
-          # --- 4. CLEANUP ---
-          Write-Host "--> Cleaning up the installer..."
-          if (Test-Path $installerPath) {
-              Remove-Item $installerPath -Force -ErrorAction SilentlyContinue
+          finally {
+              # --- 4. CLEANUP ---
+              Write-Host "--> Cleaning up the installer..."
+              $installerPath = Join-Path $env:TEMP "vs_buildtools.exe"
+              if (Test-Path $installerPath) {
+                  Remove-Item $installerPath -Force -ErrorAction SilentlyContinue
+              }
+              Write-Host "=== MSVC Installation Process Finished ==="
           }
-
-          Write-Host "=== MSVC Installation Process Finished ==="
 
       - name: Set mvn build command based on matrix
         shell: powershell
