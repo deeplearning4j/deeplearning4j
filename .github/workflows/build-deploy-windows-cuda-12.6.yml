@@ -139,49 +139,126 @@ jobs:
             return (Test-Path $vcvarsPath) -and (Test-Path $msvcToolsPath) -and ((Get-ChildItem $msvcToolsPath -Directory).Count -gt 0)
           }
           
-          # Check if we already have a working VS installation
+          # Function to properly uninstall VS using the installer
+          function Uninstall-VSInstallation {
+            param([string]$InstallPath)
+            Write-Host "Uninstalling VS installation at: $InstallPath"
+          
+            # Try using vs_installer.exe first
+            $installerExe = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe"
+            if (Test-Path $installerExe) {
+              Write-Host "Using vs_installer.exe to uninstall..."
+              $uninstallArgs = @("uninstall", "--installPath", "`"$InstallPath`"", "--quiet", "--force")
+              $process = Start-Process -FilePath $installerExe -ArgumentList $uninstallArgs -Wait -PassThru -NoNewWindow
+              Write-Host "Uninstaller exit code: $($process.ExitCode)"
+              Start-Sleep -Seconds 15  # Wait for uninstall to complete
+            }
+          
+            # If installer method fails or installer not found, try alternative uninstall
+            if (Test-Path $InstallPath) {
+              $localUninstaller = Join-Path $InstallPath "vs_installer.exe"
+              if (Test-Path $localUninstaller) {
+                Write-Host "Using local vs_installer.exe..."
+                $process = Start-Process -FilePath $localUninstaller -ArgumentList "uninstall", "--quiet", "--force" -Wait -PassThru -NoNewWindow
+                Write-Host "Local uninstaller exit code: $($process.ExitCode)"
+                Start-Sleep -Seconds 15
+              }
+            }
+          
+            # Force remove remaining files if still present
+            if (Test-Path $InstallPath) {
+              Write-Host "Force removing remaining files at: $InstallPath"
+              Remove-Item -Path $InstallPath -Recurse -Force -ErrorAction SilentlyContinue
+            }
+          }
+          
+          # Always perform complete uninstall of existing VS installations
+          Write-Host "=== Uninstalling ALL existing Visual Studio installations ==="
           $vsPaths = @(
             "${env:ProgramFiles}\Microsoft Visual Studio\2022\BuildTools",
             "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools", 
             "${env:ProgramFiles}\Microsoft Visual Studio\2022\Community",
             "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Community",
             "${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise",
-            "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Enterprise"
+            "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Enterprise",
+            "${env:ProgramFiles}\Microsoft Visual Studio\2019\BuildTools",
+            "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2019\BuildTools",
+            "${env:ProgramFiles}\Microsoft Visual Studio\2019\Community",
+            "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2019\Community",
+            "${env:ProgramFiles}\Microsoft Visual Studio\2019\Enterprise",
+            "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2019\Enterprise"
           )
           
-          $workingVSPath = $null
-          foreach ($path in $vsPaths) {
-            if (Test-VSInstallation -Path $path) {
-              $workingVSPath = $path
-              Write-Host "Found working Visual Studio installation at: $workingVSPath"
-              break
+          # Stop all VS related processes first
+          Write-Host "Stopping Visual Studio related processes..."
+          Get-Process | Where-Object {
+            $_.ProcessName -like "*vs_*" -or 
+            $_.ProcessName -eq "vs_installer" -or 
+            $_.ProcessName -eq "VSIXInstaller" -or
+            $_.ProcessName -like "*devenv*" -or
+            $_.ProcessName -like "*MSBuild*"
+          } | Stop-Process -Force -ErrorAction SilentlyContinue
+          Start-Sleep -Seconds 10
+          
+          # Use vswhere to find all installations and uninstall them properly
+          $vsWherePath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          if (Test-Path $vsWherePath) {
+            Write-Host "Using vswhere to find all VS installations..."
+            $installations = & $vsWherePath -all -property installationPath
+            if ($installations) {
+              foreach ($installPath in $installations) {
+                if (-not ([string]::IsNullOrWhiteSpace($installPath)) -and (Test-Path $installPath -PathType Container)) {
+                  Uninstall-VSInstallation -InstallPath $installPath
+                }
+              }
             }
           }
           
-          # If no working installation found, install fresh
-          if (-not $workingVSPath) {
-            Write-Host "No working VS installation found. Installing fresh..."
-          
-            # Clean removal of any broken installations
-            Write-Host "Removing any broken VS installations..."
-            foreach ($path in $vsPaths) {
-              if (Test-Path $path) {
-                Write-Host "Removing potentially broken installation at: $path"
-                Remove-Item -Path $path -Recurse -Force -ErrorAction SilentlyContinue
-              }
+          # Also check our predefined paths and uninstall any found
+          foreach ($path in $vsPaths) {
+            if (Test-Path $path) {
+              Uninstall-VSInstallation -InstallPath $path
             }
+          }
           
-            # Clean VS Installer directory
-            $installerDir = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
-            if (Test-Path $installerDir) {
-              Write-Host "Cleaning VS Installer directory..."
-              Get-Process | Where-Object {$_.ProcessName -like "*vs_*" -or $_.ProcessName -eq "vs_installer"} | Stop-Process -Force -ErrorAction SilentlyContinue
-              Start-Sleep -Seconds 5
-              Remove-Item -Path $installerDir -Recurse -Force -ErrorAction SilentlyContinue
+          # Clean VS Installer directory completely
+          $installerDir = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
+          if (Test-Path $installerDir) {
+            Write-Host "Removing VS Installer directory..."
+            Remove-Item -Path $installerDir -Recurse -Force -ErrorAction SilentlyContinue
+          }
+          
+          # Clean the main VS directory if empty
+          $vsRootDir = "${env:ProgramFiles(x86)}\Microsoft Visual Studio"
+          if (Test-Path $vsRootDir) {
+            $remainingItems = Get-ChildItem $vsRootDir -ErrorAction SilentlyContinue
+            if (-not $remainingItems) {
+              Write-Host "Removing empty VS root directory..."
+              Remove-Item -Path $vsRootDir -Force -ErrorAction SilentlyContinue
             }
+          }
           
-            # Download and install with better error handling
-            Write-Host "Downloading Visual Studio Build Tools installer..."
+          # Clean registry entries
+          Write-Host "Cleaning Visual Studio registry entries..."
+          $regPaths = @(
+            "HKLM:\SOFTWARE\Microsoft\VisualStudio",
+            "HKLM:\SOFTWARE\WOW6432Node\Microsoft\VisualStudio",
+            "HKLM:\SOFTWARE\Microsoft\VSCommon",
+            "HKLM:\SOFTWARE\WOW6432Node\Microsoft\VSCommon"
+          )
+          foreach ($regPath in $regPaths) {
+            if (Test-Path $regPath) {
+              Remove-Item -Path $regPath -Recurse -Force -ErrorAction SilentlyContinue
+            }
+          }
+          
+          Write-Host "=== Complete uninstall finished, proceeding with fresh installation ==="
+          
+          # Now proceed with fresh installation
+          Write-Host "=== Installing fresh Visual Studio Build Tools ==="
+          
+          # Download and install with better error handling
+          Write-Host "Downloading Visual Studio Build Tools installer..."
             $installerUrl = "https://aka.ms/vs/17/release/vs_buildtools.exe"
             $installerPath = Join-Path $env:TEMP "vs_buildtools_$(Get-Date -Format 'yyyyMMdd_HHmmss').exe"
           
@@ -222,28 +299,31 @@ jobs:
             # Clean up installer
             Remove-Item $installerPath -Force -ErrorAction SilentlyContinue
           
-            # Verify installation succeeded
-            Start-Sleep -Seconds 10  # Give filesystem time to settle
-            $workingVSPath = "${env:ProgramFiles}\Microsoft Visual Studio\2022\BuildTools"
+          # Verify installation succeeded
+          Start-Sleep -Seconds 10  # Give filesystem time to settle
+          $workingVSPath = "${env:ProgramFiles}\Microsoft Visual Studio\2022\BuildTools"
           
+          if (-not (Test-VSInstallation -Path $workingVSPath)) {
+            # Try alternative installation path
+            $workingVSPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools"
             if (-not (Test-VSInstallation -Path $workingVSPath)) {
-              # Try alternative installation path
-              $workingVSPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools"
-              if (-not (Test-VSInstallation -Path $workingVSPath)) {
-                Write-Error "VS installation verification failed. Installation was not successful."
-                Write-Host "Checking what was actually installed..."
-                foreach ($path in $vsPaths) {
-                  if (Test-Path $path) {
-                    Write-Host "Found path: $path"
-                    Write-Host "Contents: $(Get-ChildItem $path -Name -ErrorAction SilentlyContinue)"
-                  }
+              Write-Error "VS installation verification failed. Installation was not successful."
+              Write-Host "Checking what was actually installed..."
+              $checkPaths = @(
+                "${env:ProgramFiles}\Microsoft Visual Studio\2022\BuildTools",
+                "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools"
+              )
+              foreach ($path in $checkPaths) {
+                if (Test-Path $path) {
+                  Write-Host "Found path: $path"
+                  Write-Host "Contents: $(Get-ChildItem $path -Name -ErrorAction SilentlyContinue)"
                 }
-                exit 1
               }
+              exit 1
             }
-          
-            Write-Host "VS Build Tools installation verified successfully at: $workingVSPath"
           }
+          
+          Write-Host "VS Build Tools installation verified successfully at: $workingVSPath"
           
           # Set up environment variables
           Write-Host "=== Setting up MSVC Environment ==="
