@@ -33,7 +33,7 @@ using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename OpType>
-SD_KERNEL void simpleReduce(
+SD_KERNEL SD_INLINE void simpleReduce(
     const void* x,
     const sd::LongType* outerXTadShapeInfo,
     const sd::LongType* innerXTadShapeInfo,
@@ -54,7 +54,7 @@ SD_KERNEL void simpleReduce(
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename OpType>
-SD_KERNEL void simpleScalar(
+SD_KERNEL SD_INLINE void simpleScalar(
     const void* x,
     const sd::LongType* xShapeInfo,
     void* extraParams,
@@ -74,7 +74,7 @@ namespace reduce {
 
 template <typename X>
 template <typename OpType>
-SD_DEVICE void ReduceSameFunction<X>::aggregatePartials(
+SD_DEVICE SD_INLINE  void ReduceSameFunction<X>::aggregatePartials(
     void* vsPartials,
     sd::LongType tid,
     sd::LongType numItems,
@@ -107,7 +107,7 @@ SD_DEVICE void ReduceSameFunction<X>::aggregatePartials(
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
 template <typename OpType>
-SD_DEVICE void ReduceSameFunction<X>::transformCuda(
+SD_DEVICE SD_INLINE  void ReduceSameFunction<X>::transformCuda(
     const void* vx,
     const sd::LongType* outerXTadShapeInfo,
     const sd::LongType* innerXTadShapeInfo,
@@ -207,7 +207,7 @@ SD_DEVICE void ReduceSameFunction<X>::transformCuda(
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
-SD_DEVICE void ReduceSameFunction<X>::execScalarCudaLegacy(
+SD_DEVICE SD_INLINE  void ReduceSameFunction<X>::execScalarCudaLegacy(
     int opNum,
     const void* vx,
     const sd::LongType* xShapeInfo,
@@ -226,7 +226,7 @@ SD_DEVICE void ReduceSameFunction<X>::execScalarCudaLegacy(
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
 template <typename OpType>
-SD_DEVICE void ReduceSameFunction<X>::execScalarCuda(
+SD_DEVICE SD_INLINE  void ReduceSameFunction<X>::execScalarCuda(
     const void* vx,
     const sd::LongType* xShapeInfo,
     void* vextraParams,
@@ -330,7 +330,7 @@ SD_DEVICE void ReduceSameFunction<X>::execScalarCuda(
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
 template <typename OpType>
-SD_HOST void ReduceSameFunction<X>::intermediate(
+SD_HOST SD_INLINE void ReduceSameFunction<X>::intermediate(
     dim3 launchDims,
     cudaStream_t* stream,
     const void* x,
@@ -401,7 +401,7 @@ SD_HOST void ReduceSameFunction<X>::intermediate(
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
 template <typename OpType>
-SD_HOST void ReduceSameFunction<X>::intermediateScalar(
+SD_HOST SD_INLINE void ReduceSameFunction<X>::intermediateScalar(
     dim3 launchDims,
     cudaStream_t* stream,
     const void* x,
@@ -446,7 +446,7 @@ SD_HOST void ReduceSameFunction<X>::intermediateScalar(
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
-SD_HOST void ReduceSameFunction<X>::execReduceScalar(
+SD_HOST SD_INLINE  void ReduceSameFunction<X>::execReduceScalar(
     dim3 launchDims,
     cudaStream_t* stream,
     int opNum,
@@ -473,7 +473,7 @@ SD_HOST void ReduceSameFunction<X>::execReduceScalar(
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
-SD_HOST void ReduceSameFunction<X>::execReduce(
+SD_HOST SD_INLINE  void ReduceSameFunction<X>::execReduce(
     dim3 launchDims,
     cudaStream_t* stream,
     const int opNum,
