@@ -178,19 +178,22 @@ jobs:
               $installations = & $vsWherePath -all -property installationPath -value
               if ($installations) {
                   foreach ($installPath in $installations) {
-                      $uninstallerPath = Join-Path $installPath "vs_installer.exe"
-                      # Fallback to the default installer path if not found in the installation directory
-                      if (-not (Test-Path $uninstallerPath)) {
-                          $uninstallerPath = Join-Path "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer" "vs_installer.exe"
-                      }
-          
-                      if (Test-Path $uninstallerPath) {
-                          Write-Host "Uninstalling VS instance at: $installPath"
-                          $arguments = "uninstall --installPath `"$installPath`" --quiet --norestart"
-                          $process = Start-Process -FilePath $uninstallerPath -ArgumentList $arguments -Wait -PassThru -NoNewWindow
-                          Write-Host "Uninstaller finished with exit code: $($process.ExitCode)"
-                      } else {
-                          Write-Warning "Could not find uninstaller for instance at $installPath."
+                      # FIX: Ensure we only process valid, existing directory paths
+                      if (-not ([string]::IsNullOrWhiteSpace($installPath)) -and (Test-Path $installPath -PathType Container)) {
+                          $uninstallerPath = Join-Path $installPath "vs_installer.exe"
+                          # Fallback to the default installer path if not found in the installation directory
+                          if (-not (Test-Path $uninstallerPath)) {
+                              $uninstallerPath = Join-Path "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer" "vs_installer.exe"
+                          }
+
+                          if (Test-Path $uninstallerPath) {
+                              Write-Host "Uninstalling VS instance at: $installPath"
+                              $arguments = "uninstall --installPath `"$installPath`" --quiet --norestart"
+                              $process = Start-Process -FilePath $uninstallerPath -ArgumentList $arguments -Wait -PassThru -NoNewWindow
+                              Write-Host "Uninstaller finished with exit code: $($process.ExitCode)"
+                          } else {
+                              Write-Warning "Could not find uninstaller for instance at $installPath."
+                          }
                       }
                   }
               } else {
