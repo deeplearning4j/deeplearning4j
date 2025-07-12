@@ -165,6 +165,99 @@ jobs:
           Write-Host "Final disk space:"
           Get-PSDrive C | Select-Object Used,Free
 
+      - name: Install Compatible MSVC Build Tools
+        shell: powershell
+        run: |
+          Write-Host "=== Installing MSVC v14.35 (VS 2022 v17.5) Build Tools ==="
+          Write-Host "Current MSVC version check..."
+          
+          # Check current Visual Studio installations
+          $vsWhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          if (Test-Path $vsWhere) {
+              Write-Host "Current VS installations:"
+              & $vsWhere -all -property displayName,installationVersion,installationPath
+          }
+          
+          # Download and install VS Build Tools 2022 with MSVC v14.35
+          $installerUrl = "https://aka.ms/vs/17/release/vs_buildtools.exe"
+          $installerPath = "$env:TEMP\vs_buildtools.exe"
+          
+          Write-Host "Downloading Visual Studio Build Tools installer..."
+          try {
+              Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath -UseBasicParsing
+              Write-Host "Download completed successfully"
+          }
+          catch {
+              Write-Error "Failed to download VS Build Tools installer: $_"
+              exit 1
+          }
+          
+          # Install with specific MSVC v14.35 components
+          Write-Host "Installing MSVC v14.35 Build Tools (compatible with CUDA 12.6)..."
+          $installArgs = @(
+              "--quiet",
+              "--wait",
+              "--add", "Microsoft.VisualStudio.Workload.VCTools",
+              "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+              "--add", "Microsoft.VisualStudio.Component.VC.CMake.Project",
+              "--add", "Microsoft.VisualStudio.Component.Windows11SDK.22621",
+              "--add", "Microsoft.VisualStudio.Component.VC.MSVC.v143.x86.x64.Spectre",
+              "--installChannelUri", "https://aka.ms/vs/17/release/channel",
+              "--channelId", "VisualStudio.17.Release",
+              "--productId", "Microsoft.VisualStudio.Product.BuildTools"
+          )
+          
+          try {
+              $process = Start-Process -FilePath $installerPath -ArgumentList $installArgs -Wait -PassThru -NoNewWindow
+              if ($process.ExitCode -eq 0) {
+                  Write-Host "MSVC Build Tools installation completed successfully"
+              }
+              elseif ($process.ExitCode -eq 3010) {
+                  Write-Host "MSVC Build Tools installation completed (reboot required but continuing)"
+              }
+              else {
+                  Write-Error "MSVC Build Tools installation failed with exit code: $($process.ExitCode)"
+                  exit 1
+              }
+          }
+          catch {
+              Write-Error "Failed to install MSVC Build Tools: $_"
+              exit 1
+          }
+          
+          # Verify installation
+          Write-Host "Verifying MSVC installation..."
+          if (Test-Path $vsWhere) {
+              Write-Host "Updated VS installations:"
+              & $vsWhere -all -property displayName,installationVersion,installationPath
+          
+              # Find the Build Tools installation
+              $buildToolsPath = & $vsWhere -products Microsoft.VisualStudio.Product.BuildTools -latest -property installationPath
+              if ($buildToolsPath) {
+                  Write-Host "Build Tools found at: $buildToolsPath"
+          
+                  # Check for MSVC version
+                  $msvcPath = "$buildToolsPath\VC\Tools\MSVC"
+                  if (Test-Path $msvcPath) {
+                      $msvcVersions = Get-ChildItem $msvcPath -Directory | Sort-Object Name -Descending
+                      Write-Host "Available MSVC versions:"
+                      $msvcVersions | ForEach-Object { Write-Host "  $($_.Name)" }
+          
+                      # Set environment variable for the latest compatible version
+                      $latestMsvc = $msvcVersions[0].FullName
+                      echo "MSVC_INSTALL_PATH=$latestMsvc" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                      Write-Host "Set MSVC_INSTALL_PATH to: $latestMsvc"
+                  }
+              }
+          }
+          
+          # Clean up installer
+          if (Test-Path $installerPath) {
+              Remove-Item $installerPath -Force -ErrorAction SilentlyContinue
+          }
+          
+          Write-Host "MSVC Build Tools installation process completed"
+
       - name: Set mvn build command based on matrix
         shell: powershell
         run: |
@@ -255,11 +348,12 @@ jobs:
       - name: Setup Windows PATH and Compiler Environment
         shell: powershell
         run: |
-          Write-Host "Setting up Windows PATH and Compiler Environment..."
+          Write-Host "Setting up Windows PATH and Compiler Environment with compatible MSVC..."
           
-          # Find Visual Studio installation
+          # Find Build Tools installation (prioritize over full VS)
           $vsPaths = @(
-              "${env:ProgramFiles}\Microsoft Visual Studio\2025\Enterprise",
+              "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools",
+              "${env:ProgramFiles}\Microsoft Visual Studio\2022\BuildTools", 
               "${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise",
               "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Enterprise", 
               "${env:ProgramFiles}\Microsoft Visual Studio\2019\Enterprise",
@@ -276,11 +370,60 @@ jobs:
           }
           
           if (-not $vsPath) {
-              Write-Error "Visual Studio not found in any expected location"
+              Write-Error "Visual Studio Build Tools not found in any expected location"
               exit 1
           }
           
-          # Setup MSVC environment using vcvars64.bat
+          # Find compatible MSVC version (14.35 or earlier)
+          $msvcBasePath = "$vsPath\VC\Tools\MSVC"
+          if (-not (Test-Path $msvcBasePath)) {
+              Write-Error "MSVC tools directory not found at $msvcBasePath"
+              exit 1
+          }
+          
+          $msvcVersions = Get-ChildItem $msvcBasePath -Directory | Sort-Object Name -Descending
+          Write-Host "Available MSVC versions:"
+          $msvcVersions | ForEach-Object { Write-Host "  $($_.Name)" }
+          
+          # Select a compatible version (prefer 14.35.x or earlier, avoid 14.36+ which causes cudafe++ crash)
+          $compatibleVersion = $null
+          foreach ($version in $msvcVersions) {
+              $versionNumber = $version.Name
+              Write-Host "Checking MSVC version: $versionNumber"
+          
+              # Parse version number (e.g., "14.35.32215")
+              if ($versionNumber -match '^(\d+)\.(\d+)') {
+                  $major = [int]$matches[1]
+                  $minor = [int]$matches[2]
+          
+                  # Use versions 14.35 and earlier (avoid 14.36+ which causes CUDA 12.6 issues)
+                  if ($major -eq 14 -and $minor -le 35) {
+                      $compatibleVersion = $version
+                      Write-Host "Selected compatible MSVC version: $versionNumber"
+                      break
+                  }
+                  elseif ($major -lt 14) {
+                      $compatibleVersion = $version
+                      Write-Host "Selected older MSVC version: $versionNumber"
+                      break
+                  }
+                  else {
+                      Write-Host "Skipping incompatible MSVC version: $versionNumber (14.36+ causes cudafe++ crash)"
+                  }
+              }
+          }
+          
+          if (-not $compatibleVersion) {
+              Write-Error "No compatible MSVC version found. Need 14.35 or earlier for CUDA 12.6 compatibility."
+              Write-Host "Available versions:"
+              $msvcVersions | ForEach-Object { Write-Host "  $($_.Name)" }
+              exit 1
+          }
+          
+          $msvcPath = $compatibleVersion.FullName
+          Write-Host "Using MSVC path: $msvcPath"
+          
+          # Setup MSVC environment using vcvars64.bat with specific MSVC version
           $vcvarsPath = "$vsPath\VC\Auxiliary\Build\vcvars64.bat"
           if (-not (Test-Path $vcvarsPath)) {
               Write-Error "vcvars64.bat not found at $vcvarsPath"
@@ -288,6 +431,11 @@ jobs:
           }
           
           Write-Host "Setting up MSVC environment using: $vcvarsPath"
+          Write-Host "MSVC version directory: $msvcPath"
+          
+          # Set environment to use specific MSVC version
+          $env:VCToolsInstallDir = "$msvcPath\"
+          echo "VCToolsInstallDir=$msvcPath\" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           
           # Get environment after vcvars64.bat
           $tempFile = [System.IO.Path]::GetTempFileName()
@@ -321,7 +469,7 @@ jobs:
               exit 1
           }
           
-          # Setup CUDA paths
+          # Setup CUDA paths  
           $cudaPath = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6"
           $msysPath = "C:\msys64\mingw64\bin;C:\msys64\usr\bin"
           
@@ -334,6 +482,11 @@ jobs:
           Write-Host "Adding to PATH: $newPath"
           echo $newPath | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           
+          # Verify the setup
+          Write-Host "=== Verification ==="
+          Write-Host "Selected MSVC version: $($compatibleVersion.Name)"
+          Write-Host "MSVC path: $msvcPath"
+          Write-Host "VS path: $vsPath"
 
       - name: Run cuda build
         shell: cmd
@@ -365,6 +518,7 @@ jobs:
           echo "Release repo id: %RELEASE_REPO_ID%"
           echo "CUDA Path from env: %CUDA_PATH%"
           echo "CUDNN Root Dir from env: %CUDNN_ROOT_DIR%"
+          echo "VCToolsInstallDir: %VCToolsInstallDir%"
           echo "=== Environment Check ==="
           
           echo "Verifying compiler availability..."
