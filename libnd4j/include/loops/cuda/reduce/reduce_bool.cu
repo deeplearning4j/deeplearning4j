@@ -510,12 +510,48 @@ SD_DEVICE void initializeShared(X* extraParams, X** sPartials, int sMemSize) {
   }
 }
 
+
 ITERATE_COMBINATIONS(
     (SD_COMMON_TYPES),
     (SD_BOOL_TYPES),
-    INSTANT_PROCESS_CLASSCOMBINATION,
-     ReduceBoolFunction,
-    ;)
+    INSTANT_PROCESS_COMBINATION,
+    functions::reduce::ReduceBoolFunction,
+    ::execReduce(
+        dim3 launchDims,
+        cudaStream_t* stream,
+        const int opNum,
+        const void* x,
+        sd::LongType* dXShapeInfo,
+        sd::LongType* hXShapeInfo,
+        void* extraParams,
+        void* vreductionBuffer,
+        void* z,
+        sd::LongType* dZShapeInfo,
+        sd::LongType* hZShapeInfo,
+        sd::LongType* dims);
+);
+
+ITERATE_COMBINATIONS(
+    (SD_COMMON_TYPES),
+    (SD_BOOL_TYPES),
+    INSTANT_PROCESS_COMBINATION,
+    functions::reduce::ReduceBoolFunction,
+    ::execReduceScalar(
+        dim3 launchDims,
+        cudaStream_t* stream,
+        const int opNum,
+        const void* x,
+        const sd::LongType* xShapeInfo,
+        const sd::LongType* hXShapeInfo,
+        void* extraParams,
+        void* z,
+        const sd::LongType* zShapeInfo,
+        const sd::LongType* hZShapeInfo,
+        sd::LongType* dimension,
+        sd::LongType dimensionLength,
+        void* reductionBuffer,
+        const sd::LongType* tadOnlyShapeInfo);
+);
 
 }  // namespace reduce
 }  // namespace functions

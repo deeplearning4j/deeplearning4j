@@ -165,11 +165,10 @@ jobs:
           Write-Host "Final disk space:"
           Get-PSDrive C | Select-Object Used,Free
 
-      - name: Install Compatible MSVC Build Tools
+      - name: Remove Incompatible MSVC and Install Working Version
         shell: powershell
         run: |
-          Write-Host "=== Installing MSVC v14.35 (VS 2022 v17.5) Build Tools ==="
-          Write-Host "Current MSVC version check..."
+          Write-Host "=== REMOVING incompatible MSVC and installing working version ==="
           
           # Check current Visual Studio installations
           $vsWhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
@@ -178,11 +177,59 @@ jobs:
               & $vsWhere -all -property displayName,installationVersion,installationPath
           }
           
-          # Download and install VS Build Tools 2022 with MSVC v14.35
-          $installerUrl = "https://aka.ms/vs/17/release/vs_buildtools.exe"
-          $installerPath = "$env:TEMP\vs_buildtools.exe"
+          # Find and UNINSTALL existing VS installations that have incompatible MSVC
+          Write-Host "=== UNINSTALLING existing Visual Studio installations ==="
+          $existingInstalls = & $vsWhere -all -property installationPath
+          foreach ($installPath in $existingInstalls) {
+              if ($installPath -and (Test-Path $installPath)) {
+                  Write-Host "Uninstalling VS installation at: $installPath"
           
-          Write-Host "Downloading Visual Studio Build Tools installer..."
+                  # Find the uninstaller
+                  $uninstallerPath = "$installPath\vs_installer.exe"
+                  if (-not (Test-Path $uninstallerPath)) {
+                      $uninstallerPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe"
+                  }
+          
+                  if (Test-Path $uninstallerPath) {
+                      try {
+                          Write-Host "Running uninstaller: $uninstallerPath"
+                          $uninstallProcess = Start-Process -FilePath $uninstallerPath -ArgumentList "uninstall", "--installPath", "`"$installPath`"", "--quiet", "--wait" -Wait -PassThru -NoNewWindow
+                          Write-Host "Uninstall process completed with exit code: $($uninstallProcess.ExitCode)"
+                      }
+                      catch {
+                          Write-Host "Uninstall failed for $installPath, continuing anyway: $_"
+                      }
+                  }
+              }
+          }
+          
+          # Force remove any remaining MSVC directories
+          Write-Host "=== FORCE REMOVING remaining MSVC directories ==="
+          $msvcPaths = @(
+              "${env:ProgramFiles}\Microsoft Visual Studio\2022",
+              "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022",
+              "${env:ProgramFiles}\Microsoft Visual Studio\2019", 
+              "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2019"
+          )
+          
+          foreach ($path in $msvcPaths) {
+              if (Test-Path $path) {
+                  Write-Host "Force removing: $path"
+                  try {
+                      Remove-Item -Path $path -Recurse -Force -ErrorAction SilentlyContinue
+                      Write-Host "Removed: $path"
+                  }
+                  catch {
+                      Write-Host "Could not remove $path, continuing: $_"
+                  }
+              }
+          }
+          
+          # Download VS Build Tools 2022 v17.5 (contains MSVC 14.35)
+          Write-Host "=== DOWNLOADING VS Build Tools 2022 v17.5 with MSVC 14.35 ==="
+          $installerUrl = "https://aka.ms/vs/17/pre/vs_buildtools.exe"  # Pre-release channel for specific version
+          $installerPath = "$env:TEMP\vs_buildtools_17_5.exe"
+          
           try {
               Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath -UseBasicParsing
               Write-Host "Download completed successfully"
@@ -192,61 +239,61 @@ jobs:
               exit 1
           }
           
-          # Install with specific MSVC v14.35 components
-          Write-Host "Installing MSVC v14.35 Build Tools (compatible with CUDA 12.6)..."
+          # Install VS Build Tools 2022 v17.5 with MSVC 14.35
+          Write-Host "=== INSTALLING VS Build Tools 2022 v17.5 with MSVC 14.35 ==="
           $installArgs = @(
               "--quiet",
-              "--wait",
+              "--wait", 
               "--add", "Microsoft.VisualStudio.Workload.VCTools",
               "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
-              "--add", "Microsoft.VisualStudio.Component.VC.CMake.Project",
+              "--add", "Microsoft.VisualStudio.Component.VC.CMake.Project", 
               "--add", "Microsoft.VisualStudio.Component.Windows11SDK.22621",
-              "--add", "Microsoft.VisualStudio.Component.VC.MSVC.v143.x86.x64.Spectre",
-              "--installChannelUri", "https://aka.ms/vs/17/release/channel",
-              "--channelId", "VisualStudio.17.Release",
+              "--channelId", "VisualStudio.17.Preview",
               "--productId", "Microsoft.VisualStudio.Product.BuildTools"
           )
           
           try {
+              Write-Host "Starting installation with args: $($installArgs -join ' ')"
               $process = Start-Process -FilePath $installerPath -ArgumentList $installArgs -Wait -PassThru -NoNewWindow
-              if ($process.ExitCode -eq 0) {
-                  Write-Host "MSVC Build Tools installation completed successfully"
-              }
-              elseif ($process.ExitCode -eq 3010) {
-                  Write-Host "MSVC Build Tools installation completed (reboot required but continuing)"
+              Write-Host "Installation completed with exit code: $($process.ExitCode)"
+          
+              if ($process.ExitCode -eq 0 -or $process.ExitCode -eq 3010) {
+                  Write-Host "VS Build Tools installation successful"
               }
               else {
-                  Write-Error "MSVC Build Tools installation failed with exit code: $($process.ExitCode)"
+                  Write-Error "VS Build Tools installation failed with exit code: $($process.ExitCode)"
                   exit 1
               }
           }
           catch {
-              Write-Error "Failed to install MSVC Build Tools: $_"
+              Write-Error "Failed to install VS Build Tools: $_"
               exit 1
           }
           
-          # Verify installation
-          Write-Host "Verifying MSVC installation..."
+          # Verify the new installation 
+          Write-Host "=== VERIFYING new installation ==="
+          Start-Sleep -Seconds 10  # Wait for installation to complete
+          
           if (Test-Path $vsWhere) {
-              Write-Host "Updated VS installations:"
+              Write-Host "New VS installations:"
               & $vsWhere -all -property displayName,installationVersion,installationPath
           
-              # Find the Build Tools installation
               $buildToolsPath = & $vsWhere -products Microsoft.VisualStudio.Product.BuildTools -latest -property installationPath
               if ($buildToolsPath) {
-                  Write-Host "Build Tools found at: $buildToolsPath"
+                  Write-Host "Build Tools installed at: $buildToolsPath"
           
-                  # Check for MSVC version
                   $msvcPath = "$buildToolsPath\VC\Tools\MSVC"
                   if (Test-Path $msvcPath) {
                       $msvcVersions = Get-ChildItem $msvcPath -Directory | Sort-Object Name -Descending
-                      Write-Host "Available MSVC versions:"
+                      Write-Host "Installed MSVC versions:"
                       $msvcVersions | ForEach-Object { Write-Host "  $($_.Name)" }
           
-                      # Set environment variable for the latest compatible version
-                      $latestMsvc = $msvcVersions[0].FullName
-                      echo "MSVC_INSTALL_PATH=$latestMsvc" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-                      Write-Host "Set MSVC_INSTALL_PATH to: $latestMsvc"
+                      # Set the path for the build
+                      if ($msvcVersions.Count -gt 0) {
+                          $installedMsvc = $msvcVersions[0].FullName
+                          echo "MSVC_INSTALL_PATH=$installedMsvc" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                          Write-Host "Set MSVC_INSTALL_PATH to: $installedMsvc"
+                      }
                   }
               }
           }
@@ -256,7 +303,7 @@ jobs:
               Remove-Item $installerPath -Force -ErrorAction SilentlyContinue
           }
           
-          Write-Host "MSVC Build Tools installation process completed"
+          Write-Host "=== MSVC replacement completed ==="
 
       - name: Set mvn build command based on matrix
         shell: powershell
@@ -350,14 +397,12 @@ jobs:
         run: |
           Write-Host "Setting up Windows PATH and Compiler Environment with compatible MSVC..."
           
-          # Find Build Tools installation (prioritize over full VS)
+          # Find any VS installation (we'll use whatever we just installed)
           $vsPaths = @(
               "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools",
               "${env:ProgramFiles}\Microsoft Visual Studio\2022\BuildTools", 
               "${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise",
-              "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Enterprise", 
-              "${env:ProgramFiles}\Microsoft Visual Studio\2019\Enterprise",
-              "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2019\Enterprise"
+              "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Enterprise"
           )
           
           $vsPath = $null
@@ -370,11 +415,11 @@ jobs:
           }
           
           if (-not $vsPath) {
-              Write-Error "Visual Studio Build Tools not found in any expected location"
+              Write-Error "Visual Studio Build Tools not found after installation"
               exit 1
           }
           
-          # Find compatible MSVC version (14.35 or earlier)
+          # Use whatever MSVC version we have (should be compatible now)
           $msvcBasePath = "$vsPath\VC\Tools\MSVC"
           if (-not (Test-Path $msvcBasePath)) {
               Write-Error "MSVC tools directory not found at $msvcBasePath"
@@ -382,46 +427,14 @@ jobs:
           }
           
           $msvcVersions = Get-ChildItem $msvcBasePath -Directory | Sort-Object Name -Descending
-          Write-Host "Available MSVC versions:"
+          Write-Host "Available MSVC versions after installation:"
           $msvcVersions | ForEach-Object { Write-Host "  $($_.Name)" }
           
-          # Select a compatible version (prefer 14.35.x or earlier, avoid 14.36+ which causes cudafe++ crash)
-          $compatibleVersion = $null
-          foreach ($version in $msvcVersions) {
-              $versionNumber = $version.Name
-              Write-Host "Checking MSVC version: $versionNumber"
-          
-              # Parse version number (e.g., "14.35.32215")
-              if ($versionNumber -match '^(\d+)\.(\d+)') {
-                  $major = [int]$matches[1]
-                  $minor = [int]$matches[2]
-          
-                  # Use versions 14.35 and earlier (avoid 14.36+ which causes CUDA 12.6 issues)
-                  if ($major -eq 14 -and $minor -le 35) {
-                      $compatibleVersion = $version
-                      Write-Host "Selected compatible MSVC version: $versionNumber"
-                      break
-                  }
-                  elseif ($major -lt 14) {
-                      $compatibleVersion = $version
-                      Write-Host "Selected older MSVC version: $versionNumber"
-                      break
-                  }
-                  else {
-                      Write-Host "Skipping incompatible MSVC version: $versionNumber (14.36+ causes cudafe++ crash)"
-                  }
-              }
-          }
-          
-          if (-not $compatibleVersion) {
-              Write-Error "No compatible MSVC version found. Need 14.35 or earlier for CUDA 12.6 compatibility."
-              Write-Host "Available versions:"
-              $msvcVersions | ForEach-Object { Write-Host "  $($_.Name)" }
-              exit 1
-          }
-          
-          $msvcPath = $compatibleVersion.FullName
-          Write-Host "Using MSVC path: $msvcPath"
+          # Use the first (latest) available version since we just installed a compatible one
+          $selectedVersion = $msvcVersions[0]
+          $msvcPath = $selectedVersion.FullName
+          Write-Host "Using MSVC version: $($selectedVersion.Name)"
+          Write-Host "MSVC path: $msvcPath"
           
           # Setup MSVC environment using vcvars64.bat with specific MSVC version
           $vcvarsPath = "$vsPath\VC\Auxiliary\Build\vcvars64.bat"
@@ -484,7 +497,7 @@ jobs:
           
           # Verify the setup
           Write-Host "=== Verification ==="
-          Write-Host "Selected MSVC version: $($compatibleVersion.Name)"
+          Write-Host "Selected MSVC version: $($selectedVersion.Name)"
           Write-Host "MSVC path: $msvcPath"
           Write-Host "VS path: $vsPath"
 

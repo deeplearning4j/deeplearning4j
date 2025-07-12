@@ -518,5 +518,46 @@ SD_DEVICE void initializeShared(X* extraParams, X** sPartials, int sMemSize) {
         template class ReduceSameFunction<GET_SECOND(a1)>;
 ITERATE_LIST((SD_COMMON_TYPES),INSTANT_PROCESS_CLASSLIST)
 
+
+ITERATE_LIST(
+    (SD_COMMON_TYPES),
+    INSTANT_PROCESS_SINGLE,
+    functions::reduce::ReduceSameFunction,
+    ::execReduce(
+        dim3 launchDims,
+        cudaStream_t* stream,
+        const int opNum,
+        const void* x,
+        const sd::LongType* dXShapeInfo,
+        const sd::LongType* hXShapeInfo,
+        void* extraParams,
+        void* vreductionBuffer,
+        void* z,
+        const sd::LongType* dZShapeInfo,
+        const sd::LongType* hZShapeInfo,
+        const sd::LongType* dims);
+);
+
+ITERATE_LIST(
+    (SD_COMMON_TYPES),
+    INSTANT_PROCESS_SINGLE,
+    functions::reduce::ReduceSameFunction,
+    ::execReduceScalar(
+        dim3 launchDims,
+        cudaStream_t* stream,
+        int opNum,
+        const void* x,
+        const sd::LongType* xShapeInfo,
+        const sd::LongType* hXShapeInfo,
+        void* extraParams,
+        void* z,
+        const sd::LongType* zShapeInfo,
+        const sd::LongType* hZShapeInfo,
+        sd::LongType* dimension,
+        sd::LongType dimensionLength,
+        void* reductionBuffer,
+        const sd::LongType* tadOnlyShapeInfo);
+);
+
 }  // namespace reduce
 }  // namespace functions

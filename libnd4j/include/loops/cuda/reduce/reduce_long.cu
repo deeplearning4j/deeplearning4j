@@ -509,10 +509,44 @@ SD_DEVICE void initializeShared(X* extraParams, X** sPartials, int sMemSize) {
 ITERATE_COMBINATIONS(
     (SD_COMMON_TYPES),
     (SD_LONG_TYPES),
-    INSTANT_PROCESS_CLASSCOMBINATION,
-     ReduceLongFunction,
-    ;)
+    INSTANT_PROCESS_COMBINATION,
+    functions::reduce::ReduceLongFunction,
+    ::execReduce(
+        dim3 launchDims,
+        cudaStream_t* stream,
+        int opNum,
+        const void* vx,
+        sd::LongType* dXShapeInfo,
+        sd::LongType* hXShapeInfo,
+        void* extraParams,
+        void* vreductionBuffer,
+        void* vz,
+        sd::LongType* dZShapeInfo,
+        sd::LongType* hZShapeInfo,
+        sd::LongType* dims);
+);
 
+ITERATE_COMBINATIONS(
+    (SD_COMMON_TYPES),
+    (SD_LONG_TYPES),
+    INSTANT_PROCESS_COMBINATION,
+    functions::reduce::ReduceLongFunction,
+    ::execReduceScalar(
+        dim3 launchDims,
+        cudaStream_t* stream,
+        const int opNum,
+        const void* x,
+        sd::LongType* xShapeInfo,
+        sd::LongType* hXShapeInfo,
+        void* extraParams,
+        void* z,
+        sd::LongType* zShapeInfo,
+        sd::LongType* hZShapeInfo,
+        sd::LongType* dimension,
+        sd::LongType dimensionLength,
+        void* reductionBuffer,
+        sd::LongType* tadOnlyShapeInfo);
+);
 
 }  // namespace reduce
 }  // namespace functions
