@@ -386,11 +386,11 @@ SD_HOST bool ArrayOptions::isEmpty(sd::LongType *shapeInfo) {
 }
 
 
- bool ArrayOptions::arrayNeedsCopy(LongType *shapeInfo) {
+ SD_HOST bool ArrayOptions::arrayNeedsCopy(LongType *shapeInfo) {
   return hasPropertyBitSetForFlags(shapeInfo[ArrayOptions::extraIndex(shapeInfo)], ARRAY_NEEDS_COPY);
 }
 
- void ArrayOptions::toggleArrayNeedsCopy(LongType *shapeInfo) {
+ SD_HOST void ArrayOptions::toggleArrayNeedsCopy(LongType *shapeInfo) {
     togglePropertyBit(shapeInfo, ARRAY_NEEDS_COPY);
 }
 
@@ -703,7 +703,7 @@ SD_HOST void ArrayOptions::copyDataType(sd::LongType *to, const sd::LongType *fr
     return;
   setDataType(to, dt);
 }
-sd::LongType ArrayOptions::setPropertyBitForFlagsValue(LongType extraStorage, LongType property) {
+SD_HOST sd::LongType ArrayOptions::setPropertyBitForFlagsValue(LongType extraStorage, LongType property) {
   if(hasPropertyBitSet(extraStorage, property))
     return extraStorage;
   return extraStorage | property;
