@@ -2,6 +2,7 @@
 #define ND4J_ARRAY_OPTIONS_HXX
 #include <array/ArrayOptions.h>
 #include <system/op_boilerplate.h>
+#include <helpers/shape.h>
 #pragma  once
 
 namespace sd {
