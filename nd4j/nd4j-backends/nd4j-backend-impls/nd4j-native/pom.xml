@@ -359,9 +359,9 @@
                                 <linkPath>${env.OPENBLAS_PATH}/lib</linkPath>
                                 <linkPath>${env.OPENBLAS_PATH}/</linkPath>
 
-                                <!-- Android NDK library paths -->
-                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/21</linkPath>
-                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android</linkPath>
+                                <!-- Fixed Android NDK library paths for aarch64 -->
+                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/21</linkPath>
+                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android</linkPath>
                                 <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/17/lib/linux</linkPath>
                                 <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib</linkPath>
                                 <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib</linkPath>
@@ -389,6 +389,15 @@
                             <compilerOptions>
                                 <compilerOption>${compiler.flag.cpp.standard}</compilerOption>
                                 <compilerOption>${platform.linker.flag.no.undefined}</compilerOption>
+                                <!-- Add system include paths for Android NDK -->
+                                <compilerOption>-I${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include</compilerOption>
+                                <compilerOption>-I${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/aarch64-linux-android</compilerOption>
+                                <!-- Add explicit sysroot -->
+                                <compilerOption>--sysroot=${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</compilerOption>
+                                <!-- Use proper C++ standard library instead of nostdlib++ -->
+                                <compilerOption>-stdlib=libc++</compilerOption>
+                                <!-- Link against static libc++ -->
+                                <compilerOption>-static-libstdc++</compilerOption>
                             </compilerOptions>
                         </configuration>
                         <executions>
@@ -524,9 +533,9 @@
                                 <linkPath>${env.OPENBLAS_PATH}/lib</linkPath>
                                 <linkPath>${env.OPENBLAS_PATH}/</linkPath>
 
-                                <!-- Android NDK library paths -->
-                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/21</linkPath>
-                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android</linkPath>
+                                <!-- Fixed Android NDK library paths for aarch64 -->
+                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/21</linkPath>
+                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android</linkPath>
                                 <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/17/lib/linux</linkPath>
                                 <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib</linkPath>
                                 <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib</linkPath>
@@ -553,17 +562,26 @@
                             </linkResources>
                             <compilerOptions>
                                 <compilerOption>${compiler.flag.cpp.standard}</compilerOption>
-                                <compilerOption>-DSD_GCC_FUNCTRACE=ON</compilerOption> <compilerOption>${platform.linker.flag.no.undefined}</compilerOption>
+                                <compilerOption>-DSD_GCC_FUNCTRACE=ON</compilerOption>
+                                <compilerOption>${platform.linker.flag.no.undefined}</compilerOption>
                                 <compilerOption>${platform.linker.flag.rdynamic}</compilerOption>
                                 <compilerOption>${platform.linker.flag.bsymbolic}</compilerOption>
                                 <compilerOption>${platform.compiler.flag.optimize.none}</compilerOption>
                                 <compilerOption>${platform.compiler.flag.no.omit.fp}</compilerOption>
                                 <compilerOption>${platform.compiler.flag.no.optimize.sibling.calls}</compilerOption>
                                 <compilerOption>${platform.compiler.flag.debug}</compilerOption>
-
                                 <compilerOption>-finstrument-functions</compilerOption>
                                 <!-- NDK specific: https://github.com/android/ndk/issues/1690-->
                                 <compilerOption>${javacpp.compiler.crtoption}</compilerOption>
+                                <!-- Add system include paths for Android NDK -->
+                                <compilerOption>-I${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include</compilerOption>
+                                <compilerOption>-I${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/aarch64-linux-android</compilerOption>
+                                <!-- Add explicit sysroot -->
+                                <compilerOption>--sysroot=${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</compilerOption>
+                                <!-- Use proper C++ standard library instead of nostdlib++ -->
+                                <compilerOption>-stdlib=libc++</compilerOption>
+                                <!-- Link against static libc++ -->
+                                <compilerOption>-static-libstdc++</compilerOption>
                             </compilerOptions>
                         </configuration>
                         <executions>
@@ -735,13 +753,10 @@
                                 <compilerOption>-I${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/aarch64-linux-android</compilerOption>
                                 <!-- Add explicit sysroot -->
                                 <compilerOption>--sysroot=${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</compilerOption>
-                                <!-- Force include standard headers before anything else -->
-                                <compilerOption>-include</compilerOption>
-                                <compilerOption>stdint.h</compilerOption>
-                                <compilerOption>-include</compilerOption>
-                                <compilerOption>stddef.h</compilerOption>
-                                <compilerOption>-include</compilerOption>
-                                <compilerOption>stdlib.h</compilerOption>
+                                <!-- Use proper C++ standard library instead of nostdlib++ -->
+                                <compilerOption>-stdlib=libc++</compilerOption>
+                                <!-- Link against static libc++ -->
+                                <compilerOption>-static-libstdc++</compilerOption>
                             </compilerOptions>
                         </configuration>
                     </plugin>
