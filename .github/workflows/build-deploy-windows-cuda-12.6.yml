@@ -416,145 +416,18 @@ jobs:
         env:
           CUDA_VERSION: "12.6"
         run: |
-          Write-Host "=== Installing CUDA 12.6 with Enhanced Error Handling ==="
-          
-          # CUDA installation constants
-          $CUDA_URL = "https://developer.download.nvidia.com/compute/cuda/12.6.3/network_installers/cuda_12.6.3_win10_network.exe"
-          $CUDA_INSTALLER = "cuda_12.6.3_windows_network.exe"
-          $CUDA_PATH = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6"
-          
-          # cuDNN installation constants - using NVIDIA's official download
-          $CUDNN_URL = "https://developer.download.nvidia.com/compute/cudnn/9.5.0/local_installers/12.6/cudnn-windows-x86_64-9.5.0.50_cuda12-archive.zip"
-          $CUDNN_ZIP = "cudnn.zip"
-          
-          # Function to download with retry and validation
-          function Download-WithRetry {
-            param(
-              [string]$Url,
-              [string]$OutFile,
-              [int]$MaxRetries = 3,
-              [int]$MinSizeBytes = 1MB
-            )
-          
-            for ($attempt = 1; $attempt -le $MaxRetries; $attempt++) {
-              try {
-                Write-Host "Download attempt $attempt of $MaxRetries for $OutFile"
-                Invoke-WebRequest -Uri $Url -OutFile $OutFile -UseBasicParsing -TimeoutSec 1200
-          
-                if (Test-Path $OutFile) {
-                  $fileSize = (Get-Item $OutFile).Length
-                  Write-Host "Downloaded file size: $($fileSize / 1MB) MB"
-          
-                  if ($fileSize -ge $MinSizeBytes) {
-                    Write-Host "Download successful: $OutFile"
-                    return $true
-                  } else {
-                    Write-Warning "Downloaded file too small, retrying..."
-                    Remove-Item $OutFile -Force -ErrorAction SilentlyContinue
-                  }
-                }
-              } catch {
-                Write-Warning "Download attempt $attempt failed: $($_.Exception.Message)"
-                Remove-Item $OutFile -Force -ErrorAction SilentlyContinue
-              }
-          
-              if ($attempt -lt $MaxRetries) {
-                $waitTime = $attempt * 10
-                Write-Host "Waiting $waitTime seconds before retry..."
-                Start-Sleep -Seconds $waitTime
-              }
-            }
-          
-            Write-Error "Failed to download $OutFile after $MaxRetries attempts"
-            return $false
-          }
-          
-          # Download CUDA installer
-          Write-Host "Downloading CUDA installer from: $CUDA_URL"
-          if (-not (Download-WithRetry -Url $CUDA_URL -OutFile $CUDA_INSTALLER -MinSizeBytes 10MB)) {
-            exit 1
-          }
-          
-          # Install CUDA
-          Write-Host "Installing CUDA 12.6..."
-          $cudaArgs = "-s nvcc_12.6 visual_studio_integration_12.6 curand_dev_12.6 nvrtc_dev_12.6 cudart_12.6 cublas_dev_12.6 cusolver_dev_12.6"
+          Write-Host "Downloading and executing CUDA install script..."
+          $scriptUrl = "https://raw.githubusercontent.com/KonduitAI/cuda-install/refs/heads/master/.github/actions/install-cuda-windows/install_cuda_windows.ps1"
+          $scriptPath = ".\install_cuda_windows.ps1"
           
           try {
-            $process = Start-Process -FilePath ".\$CUDA_INSTALLER" -ArgumentList $cudaArgs -Wait -PassThru -NoNewWindow
-            Write-Host "CUDA Installer completed with exit code: $($process.ExitCode)"
-          
-            if ($process.ExitCode -ne 0) {
-              Write-Error "CUDA installation failed with exit code: $($process.ExitCode)"
-              exit 1
-            }
+            Invoke-WebRequest -Uri $scriptUrl -OutFile $scriptPath -UseBasicParsing -TimeoutSec 300
+            Write-Host "Script downloaded successfully"
+            & $scriptPath
           } catch {
-            Write-Error "Failed to run CUDA installer: $($_.Exception.Message)"
+            Write-Error "Failed to download or execute CUDA install script: $($_.Exception.Message)"
             exit 1
           }
-          
-          # Verify CUDA installation
-          if (-not (Test-Path $CUDA_PATH)) {
-            Write-Error "CUDA installation directory not found at: $CUDA_PATH"
-            exit 1
-          }
-          Write-Host "CUDA installation verified at: $CUDA_PATH"
-          
-          # Download cuDNN with validation
-          Write-Host "Downloading cuDNN from: $CUDNN_URL"
-          if (-not (Download-WithRetry -Url $CUDNN_URL -OutFile $CUDNN_ZIP -MinSizeBytes 500MB)) {
-            exit 1
-          }
-          
-          # Validate zip file before extraction
-          Write-Host "Validating cuDNN zip file..."
-          try {
-            Add-Type -AssemblyName System.IO.Compression.FileSystem
-            $archive = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path $CUDNN_ZIP).Path)
-            $entryCount = $archive.Entries.Count
-            $archive.Dispose()
-            Write-Host "cuDNN zip file validated successfully. Contains $entryCount entries."
-          } catch {
-            Write-Error "cuDNN zip file validation failed: $($_.Exception.Message)"
-            Remove-Item $CUDNN_ZIP -Force -ErrorAction SilentlyContinue
-            exit 1
-          }
-          
-          # Extract cuDNN
-          Write-Host "Extracting cuDNN..."
-          $extractDir = ".\cudnn_extracted"
-          if (Test-Path $extractDir) {
-            Remove-Item $extractDir -Recurse -Force
-          }
-          New-Item -ItemType Directory -Path $extractDir -Force | Out-Null
-          
-          try {
-            [System.IO.Compression.ZipFile]::ExtractToDirectory($CUDNN_ZIP, $extractDir)
-            Write-Host "cuDNN extraction successful"
-          } catch {
-            Write-Error "Failed to extract cuDNN: $($_.Exception.Message)"
-            exit 1
-          }
-          
-          # Copy cuDNN files to CUDA installation
-          $cudnnSourceDir = Get-ChildItem -Path $extractDir -Directory | Select-Object -First 1
-          if (-not $cudnnSourceDir) {
-            Write-Error "cuDNN source directory not found after extraction"
-            exit 1
-          }
-          
-          Write-Host "Copying cuDNN files from $($cudnnSourceDir.FullName) to $CUDA_PATH"
-          try {
-            Copy-Item -Path (Join-Path $cudnnSourceDir.FullName "*") -Destination $CUDA_PATH -Recurse -Force
-            Write-Host "cuDNN files copied successfully"
-          } catch {
-            Write-Error "Failed to copy cuDNN files: $($_.Exception.Message)"
-            exit 1
-          }
-          
-          # Clean up temporary files
-          Remove-Item $CUDA_INSTALLER, $CUDNN_ZIP, $extractDir -Recurse -Force -ErrorAction SilentlyContinue
-          
-          Write-Host "=== CUDA 12.6 installation completed successfully ==="
 
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v4
@@ -625,7 +498,7 @@ jobs:
           # Parse and set environment variables
           $envVarsSet = 0
           Get-Content $tempOutput | ForEach-Object {
-            if ($_ -match '^([^=]+)=(.*)) {
+            if ($_ -match '^([^=]+)=(.*)$') {
               $name = $matches[1]
               $value = $matches[2]
               # Skip problematic variables
