@@ -49,7 +49,7 @@
 #include "system/buffer.h"
 #include <helpers/reshapeNoCopy.h>
 #include <array/NDArrayHelpers.hXX>
-
+#include "ArrayOptions.hXX"
 namespace sd {
 
 template <>
