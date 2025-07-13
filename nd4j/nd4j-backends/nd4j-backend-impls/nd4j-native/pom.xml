@@ -827,8 +827,7 @@
                                 <compilerOption>c</compilerOption>
                                 <!-- Avoid problematic C++ STL includes -->
                                 <compilerOption>-nostdinc++</compilerOption>
-                                <!-- Use only C standard library -->
-                                <compilerOption>-std=c99</compilerOption>
+
                             </compilerOptions>
                         </configuration>
                         <executions>
