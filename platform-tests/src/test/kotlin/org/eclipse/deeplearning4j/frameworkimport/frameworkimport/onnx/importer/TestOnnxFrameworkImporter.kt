@@ -21,8 +21,9 @@ class TestOnnxFrameworkImporter {
     fun testOther() {
         Nd4j.getEnvironment().isVariableTracingEnabled = true
         val importer = OnnxFrameworkImporter()
-        val imported = importer.runImport("/home/agibsonccc/Documents/GitHub/kompile/./anserini-models/bge-base-en-v1.5/bge-base-en-v1.5.onnx")
-         SDZSerializer.save(imported, File("bge-base-en-v1.5.sdz"),true,Collections.emptyMap())
+        val imported = importer.runImport("/home/agibsonccc/Documents/GitHub/deeplearning4j/bge-base-en-v1.5-optimized.onnx")
+        SDZSerializer.save(imported, File("bge-base-en-v1.5.sdz"),true,Collections.emptyMap())
+        SDZSerializer.load(File("bge-base-en-v1.5.sdz"),true)
     }
 
 

@@ -23,7 +23,7 @@
 #ifndef NATIVEOPS_H
 #define NATIVEOPS_H
 
-#include <array/ArrayOptions.h>
+#include <array/ArrayOptions.hXX>
 #include <array/DataTypeUtils.h>
 #include <array/ShapeList.h>
 #include <array/ConstantDataBuffer.h>

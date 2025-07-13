@@ -717,7 +717,7 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.custom.Logdet.class
         ));
 
-        log.trace("Created fn classes");
+        System.out.println("Created fn classes");
         // Get a list of all classes annotated with @UserDefinedOp,
         if(System.getProperties().containsKey(ND4JSystemProperties.UDF_NAME_SPACES)) {
             log.trace("In udf namespaces with scanning");
@@ -736,10 +736,11 @@ public class DifferentialFunctionClassHolder {
 
 
 
-        log.trace("Populating op map");
+        System.out.println("Populating op map");
         OP_NAME_MAP = new ConcurrentHashMap<>();
         for(Class<?> c : fnClasses) {
             try {
+                System.out.println("Initializing " + c.getName());
                 DifferentialFunction df = (DifferentialFunction) c.newInstance();
                 if(df == null)
                     continue;
@@ -752,7 +753,7 @@ public class DifferentialFunctionClassHolder {
             }
         }
 
-        log.trace("Populated op map");
+        System.out.println("Populated op map");
 
 
         fieldNamesOpsIgnore = new LinkedHashSet<>() {{
@@ -772,7 +773,7 @@ public class DifferentialFunctionClassHolder {
             add("sameDiff");
             add("ownName");
         }};
-        log.trace("Initialized field names ops ignore");
+        System.out.println("Initialized field names ops ignore");
 
 
         fieldsForFunction = new LinkedHashMap<>();
@@ -785,6 +786,7 @@ public class DifferentialFunctionClassHolder {
                 //this is mainly used in import
                 Map<String, Field> fieldNames = new LinkedHashMap<>();
                 Class<? extends DifferentialFunction> current = df.getClass();
+                System.out.println("Setting up fields for function processing: " + current.getName());
                 val fields = new ArrayList<Field>();
                 boolean isFirst = true;
 
@@ -804,11 +806,11 @@ public class DifferentialFunctionClassHolder {
                             Class<?> currentConfig = current.getSuperclass();
 
                             // find a config field in superclasses
-                            while(currentConfig.getSuperclass() != null){
+                            while(currentConfig.getSuperclass() != null) {
                                 try {
                                     configField = currentConfig.getDeclaredField(fieldName);
                                     break;
-                                } catch (NoSuchFieldException e2){
+                                } catch (NoSuchFieldException e2) {
                                     currentConfig = currentConfig.getSuperclass();
                                 }
                             }
@@ -854,7 +856,7 @@ public class DifferentialFunctionClassHolder {
 
                 fieldsForFunction.put(df.getClass().getName(), fieldNames);
             } catch (NoOpNameFoundException e) {
-                log.trace("Skipping function  " + df.getClass());
+               System.out.println("Skipping function  " + df.getClass());
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -954,7 +956,7 @@ public class DifferentialFunctionClassHolder {
 
 
         INSTANCE = new DifferentialFunctionClassHolder();
-        log.trace("Initialized instance");
+        System.out.println("Initialized instance");
 
         initialized.set(true);
     }

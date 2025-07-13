@@ -19,7 +19,7 @@
 #ifndef NDARRAY_H
 #define NDARRAY_H
 #pragma  once
-#include <array/ArrayOptions.h>
+#include <array/ArrayOptions.hXX>
 #include <array/ConstantShapeBuffer.h>
 #include <array/DataBuffer.h>
 #include <array/DataType.h>

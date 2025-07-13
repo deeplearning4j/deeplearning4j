@@ -5218,14 +5218,25 @@ public class Nd4j {
                 return;
             }
 
+            if(Nd4j.backend != null) {
+                return;
+            }
+
             Nd4j.backend = backend;
             updateNd4jContext();
             props = Nd4jContext.getInstance().getConf();
             PropertyParser pp = new PropertyParser(props);
 
+            System.out.println("=== ND4J Property Loading Debug Information ===");
+            System.out.println("Total properties loaded: " + props.size());
+
+            // Debug DTYPE configuration
             String otherDtype = pp.toString(ND4JSystemProperties.DTYPE);
+            System.out.println("DTYPE property: " + ND4JSystemProperties.DTYPE + " = " + otherDtype);
+
             dtype = otherDtype.equalsIgnoreCase("float") ? DataType.FLOAT
                     : otherDtype.equalsIgnoreCase("half") ? DataType.HALF : DataType.DOUBLE;
+            System.out.println("Resolved DataType: " + dtype);
 
             if (dtype == DataType.HALF && backend.getClass().getName().equals("CpuBackend")) {
                 showAttractiveMessage(getMessageForNativeHalfPrecision());
@@ -5236,73 +5247,234 @@ public class Nd4j {
             }
 
             compressDebug = pp.toBoolean(COMPRESSION_DEBUG);
+            System.out.println("Compression debug: " + COMPRESSION_DEBUG + " = " + compressDebug);
+
             char ORDER = pp.toChar(ORDER_KEY, NDArrayFactory.C);
+            System.out.println("Array order: " + ORDER_KEY + " = " + ORDER);
 
+            // Debug Affinity Manager
+            String affinityManagerName = pp.toString(AFFINITY_MANAGER);
+            System.out.println("Affinity Manager property: " + AFFINITY_MANAGER + " = " + affinityManagerName);
             Class<? extends BasicAffinityManager> affinityManagerClazz = ND4JClassLoading
-                    .loadClassByName(pp.toString(AFFINITY_MANAGER));
-            if(affinityManagerClazz != null)
+                    .loadClassByName(affinityManagerName);
+            System.out.println("Affinity Manager class loaded: " + (affinityManagerClazz != null ? affinityManagerClazz.getName() : "null"));
+            if(affinityManagerClazz != null) {
                 affinityManager = affinityManagerClazz.newInstance();
+                System.out.println("Affinity Manager instance created: " + affinityManager.getClass().getName());
+            }
+
+            // Debug NDArray Factory
+            String ndArrayFactoryName = pp.toString(NDARRAY_FACTORY_CLASS);
+            System.out.println("NDArray Factory property: " + NDARRAY_FACTORY_CLASS + " = " + ndArrayFactoryName);
             Class<? extends NDArrayFactory> ndArrayFactoryClazz = ND4JClassLoading
-                    .loadClassByName(pp.toString(NDARRAY_FACTORY_CLASS));
+                    .loadClassByName(ndArrayFactoryName);
+            System.out.println("NDArray Factory class loaded: " + (ndArrayFactoryClazz != null ? ndArrayFactoryClazz.getName() : "null"));
+
+            // Debug Convolution Instance
+            String convolutionInstanceName = pp.toString(CONVOLUTION_OPS, DefaultConvolutionInstance.class.getName());
+            System.out.println("Convolution Instance property: " + CONVOLUTION_OPS + " = " + convolutionInstanceName);
+            System.out.println("Convolution Instance default fallback: " + DefaultConvolutionInstance.class.getName());
             Class<? extends ConvolutionInstance> convolutionInstanceClazz = ND4JClassLoading
-                    .loadClassByName(pp.toString(CONVOLUTION_OPS, DefaultConvolutionInstance.class.getName()));
+                    .loadClassByName(convolutionInstanceName);
+            System.out.println("Convolution Instance class loaded: " + (convolutionInstanceClazz != null ? convolutionInstanceClazz.getName() : "null"));
+
+            // Debug Data Buffer Factory
             String defaultName = pp.toString(DATA_BUFFER_OPS, "org.nd4j.linalg.cpu.nativecpu.buffer.DefaultDataBufferFactory");
+            System.out.println("Data Buffer Factory property: " + DATA_BUFFER_OPS + " = " + defaultName);
             Class<? extends DataBufferFactory> dataBufferFactoryClazz = ND4JClassLoading
-                    .loadClassByName(pp.toString(DATA_BUFFER_OPS, defaultName));
+                    .loadClassByName(defaultName);
+            System.out.println("Data Buffer Factory class loaded: " + (dataBufferFactoryClazz != null ? dataBufferFactoryClazz.getName() : "null"));
+
+            // Debug Shape Info Provider
+            String shapeInfoProviderName = pp.toString(SHAPEINFO_PROVIDER);
+            System.out.println("Shape Info Provider property: " + SHAPEINFO_PROVIDER + " = " + shapeInfoProviderName);
             Class<? extends BaseShapeInfoProvider> shapeInfoProviderClazz = ND4JClassLoading
-                    .loadClassByName(pp.toString(SHAPEINFO_PROVIDER));
+                    .loadClassByName(shapeInfoProviderName);
+            System.out.println("Shape Info Provider class loaded: " + (shapeInfoProviderClazz != null ? shapeInfoProviderClazz.getName() : "null"));
 
+            // Debug Constant Provider
+            String constantProviderName = pp.toString(CONSTANT_PROVIDER);
+            System.out.println("Constant Provider property: " + CONSTANT_PROVIDER + " = " + constantProviderName);
             Class<? extends BasicConstantHandler> constantProviderClazz = ND4JClassLoading
-                    .loadClassByName(pp.toString(CONSTANT_PROVIDER));
+                    .loadClassByName(constantProviderName);
+            System.out.println("Constant Provider class loaded: " + (constantProviderClazz != null ? constantProviderClazz.getName() : "null"));
 
+            // Debug Memory Manager
+            String memoryManagerName = pp.toString(MEMORY_MANAGER);
+            System.out.println("Memory Manager property: " + MEMORY_MANAGER + " = " + memoryManagerName);
             Class<? extends BasicMemoryManager> memoryManagerClazz = ND4JClassLoading
-                    .loadClassByName(pp.toString(MEMORY_MANAGER));
+                    .loadClassByName(memoryManagerName);
+            System.out.println("Memory Manager class loaded: " + (memoryManagerClazz != null ? memoryManagerClazz.getName() : "null"));
 
             allowsOrder = backend.allowsOrder();
+            System.out.println("Backend allows order: " + allowsOrder);
+
+            // Debug Random Provider
             String rand = pp.toString(RANDOM_PROVIDER, DefaultRandom.class.getName());
+            System.out.println("Random Provider property: " + RANDOM_PROVIDER + " = " + rand);
+            System.out.println("Random Provider default fallback: " + DefaultRandom.class.getName());
             Class<? extends org.nd4j.linalg.api.rng.Random> randomClazz = ND4JClassLoading.loadClassByName(rand);
+            System.out.println("Random Provider class loaded: " + (randomClazz != null ? randomClazz.getName() : "null"));
             randomFactory = new RandomFactory(randomClazz);
+
+            // Debug Device ID Provider
+            String deviceIDProviderName = pp.toString(DEVICE_ID_PROVDER_KEY);
+            System.out.println("Device ID Provider property: " + DEVICE_ID_PROVDER_KEY + " = " + deviceIDProviderName);
             Class<? extends DeviceIDProvider> deviceIDProviderClass = ND4JClassLoading
-                    .loadClassByName(pp.toString(DEVICE_ID_PROVDER_KEY));
-            DEVICE_ID_PROVIDER = deviceIDProviderClass.newInstance();
+                    .loadClassByName(deviceIDProviderName);
+            System.out.println("Device ID Provider class loaded: " + (deviceIDProviderClass != null ? deviceIDProviderClass.getName() : "null"));
+            if(deviceIDProviderClass != null) {
+                DEVICE_ID_PROVIDER = deviceIDProviderClass.newInstance();
+                System.out.println("Device ID Provider instance created: " + DEVICE_ID_PROVIDER.getClass().getName());
+            }
 
+            // Debug Workspace Manager
+            String workspaceManagerName = pp.toString(WORKSPACE_MANAGER);
+            System.out.println("Workspace Manager property: " + WORKSPACE_MANAGER + " = " + workspaceManagerName);
             Class<? extends MemoryWorkspaceManager> workspaceManagerClazz = ND4JClassLoading
-                    .loadClassByName(pp.toString(WORKSPACE_MANAGER));
+                    .loadClassByName(workspaceManagerName);
+            System.out.println("Workspace Manager class loaded: " + (workspaceManagerClazz != null ? workspaceManagerClazz.getName() : "null"));
 
-            Class<? extends BlasWrapper> blasWrapperClazz = ND4JClassLoading.loadClassByName(pp.toString(BLAS_OPS));
+            // Debug BLAS Wrapper
+            String blasWrapperName = pp.toString(BLAS_OPS);
+            System.out.println("BLAS Wrapper property: " + BLAS_OPS + " = " + blasWrapperName);
+            Class<? extends BlasWrapper> blasWrapperClazz = ND4JClassLoading.loadClassByName(blasWrapperName);
+            System.out.println("BLAS Wrapper class loaded: " + (blasWrapperClazz != null ? blasWrapperClazz.getName() : "null"));
+
+            // Debug Distribution Factory
             String clazzName = pp.toString(DISTRIBUTION, DefaultDistributionFactory.class.getName());
+            System.out.println("Distribution Factory property: " + DISTRIBUTION + " = " + clazzName);
+            System.out.println("Distribution Factory default fallback: " + DefaultDistributionFactory.class.getName());
             Class<? extends DistributionFactory> distributionFactoryClazz = ND4JClassLoading.loadClassByName(clazzName);
+            System.out.println("Distribution Factory class loaded: " + (distributionFactoryClazz != null ? distributionFactoryClazz.getName() : "null"));
 
+            System.out.println("\n=== Instance Creation Phase ===");
 
-            memoryManager = memoryManagerClazz.newInstance();
-            constantHandler = constantProviderClazz.newInstance();
-            if(shapeInfoProviderClazz != null)
-                shapeInfoProvider = shapeInfoProviderClazz.newInstance();
-            if(workspaceManagerClazz != null)
-                workspaceManager = workspaceManagerClazz.newInstance();
+            // Create instances with debug info
+            try {
+                memoryManager = memoryManagerClazz.newInstance();
+                System.out.println("Memory Manager instance created: " + memoryManager.getClass().getName());
+            } catch (Exception e) {
+                System.err.println("Failed to create Memory Manager instance: " + e.getMessage());
+                e.printStackTrace();
+            }
 
+            try {
+                constantHandler = constantProviderClazz.newInstance();
+                System.out.println("Constant Handler instance created: " + constantHandler.getClass().getName());
+            } catch (Exception e) {
+                System.err.println("Failed to create Constant Handler instance: " + e.getMessage());
+                e.printStackTrace();
+            }
+
+            if(shapeInfoProviderClazz != null) {
+                try {
+                    shapeInfoProvider = shapeInfoProviderClazz.newInstance();
+                    System.out.println("Shape Info Provider instance created: " + shapeInfoProvider.getClass().getName());
+                } catch (Exception e) {
+                    System.err.println("Failed to create Shape Info Provider instance: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+
+            if(workspaceManagerClazz != null) {
+                try {
+                    workspaceManager = workspaceManagerClazz.newInstance();
+                    System.out.println("Workspace Manager instance created: " + workspaceManager.getClass().getName());
+                } catch (Exception e) {
+                    System.err.println("Failed to create Workspace Manager instance: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+
+            // Debug Op Executioner
+            String opExecutionerName = pp.toString(OP_EXECUTIONER, DefaultOpExecutioner.class.getName());
+            System.out.println("Op Executioner property: " + OP_EXECUTIONER + " = " + opExecutionerName);
+            System.out.println("Op Executioner default fallback: " + DefaultOpExecutioner.class.getName());
             Class<? extends OpExecutioner> opExecutionerClazz = ND4JClassLoading
-                    .loadClassByName(pp.toString(OP_EXECUTIONER, DefaultOpExecutioner.class.getName()));
+                    .loadClassByName(opExecutionerName);
+            System.out.println("Op Executioner class loaded: " + (opExecutionerClazz != null ? opExecutionerClazz.getName() : "null"));
 
-
+            // Debug BLAS Lapack Delegator
+            String blasLapackDelegatorName = pp.toString(BLAS_LAPACK_DELEGATOR);
+            System.out.println("BLAS Lapack Delegator property: " + BLAS_LAPACK_DELEGATOR + " = " + blasLapackDelegatorName);
             Class<? extends BLASLapackDelegator> blasLapackDelegator = ND4JClassLoading
-                    .loadClassByName(pp.toString(BLAS_LAPACK_DELEGATOR));
-            BLAS_HANDLER = blasLapackDelegator.newInstance();
+                    .loadClassByName(blasLapackDelegatorName);
+            System.out.println("BLAS Lapack Delegator class loaded: " + (blasLapackDelegator != null ? blasLapackDelegator.getName() : "null"));
 
+            try {
+                BLAS_HANDLER = blasLapackDelegator.newInstance();
+                System.out.println("BLAS Handler instance created: " + BLAS_HANDLER.getClass().getName());
+            } catch (Exception e) {
+                System.err.println("Failed to create BLAS Handler instance: " + e.getMessage());
+                e.printStackTrace();
+            }
 
+            // Debug Array Stats Provider
+            String arrayStatsProviderName = pp.toString(STATS_PROVIDER_KEY);
+            System.out.println("Array Stats Provider property: " + STATS_PROVIDER_KEY + " = " + arrayStatsProviderName);
             Class<? extends INDArrayStatisticsProvider> arrayStatsProviderClazz = ND4JClassLoading
-                    .loadClassByName(pp.toString(STATS_PROVIDER_KEY));
-            STATS_PROVIDER = arrayStatsProviderClazz.newInstance();
+                    .loadClassByName(arrayStatsProviderName);
+            System.out.println("Array Stats Provider class loaded: " + (arrayStatsProviderClazz != null ? arrayStatsProviderClazz.getName() : "null"));
 
-            OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
-            Constructor c2 = ndArrayFactoryClazz.getConstructor(DataType.class, char.class);
-            INSTANCE = (NDArrayFactory) c2.newInstance(dtype, ORDER);
-            CONVOLUTION_INSTANCE = convolutionInstanceClazz.newInstance();
-            BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
-            DATA_BUFFER_FACTORY_INSTANCE = dataBufferFactoryClazz.newInstance();
+            try {
+                STATS_PROVIDER = arrayStatsProviderClazz.newInstance();
+                System.out.println("Stats Provider instance created: " + STATS_PROVIDER.getClass().getName());
+            } catch (Exception e) {
+                System.err.println("Failed to create Stats Provider instance: " + e.getMessage());
+                e.printStackTrace();
+            }
 
-            DISTRIBUTION_FACTORY = distributionFactoryClazz.newInstance();
+            try {
+                OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
+                System.out.println("Op Executioner instance created: " + OP_EXECUTIONER_INSTANCE.getClass().getName());
+            } catch (Exception e) {
+                System.err.println("Failed to create Op Executioner instance: " + e.getMessage());
+                e.printStackTrace();
+            }
 
+            try {
+                Constructor c2 = ndArrayFactoryClazz.getConstructor(DataType.class, char.class);
+                INSTANCE = (NDArrayFactory) c2.newInstance(dtype, ORDER);
+                System.out.println("NDArray Factory instance created: " + INSTANCE.getClass().getName() + " with dtype=" + dtype + ", order=" + ORDER);
+            } catch (Exception e) {
+                System.err.println("Failed to create NDArray Factory instance: " + e.getMessage());
+                e.printStackTrace();
+            }
+
+            try {
+                CONVOLUTION_INSTANCE = convolutionInstanceClazz.newInstance();
+                System.out.println("Convolution Instance created: " + CONVOLUTION_INSTANCE.getClass().getName());
+            } catch (Exception e) {
+                System.err.println("Failed to create Convolution Instance: " + e.getMessage());
+                e.printStackTrace();
+            }
+
+            try {
+                BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
+                System.out.println("BLAS Wrapper instance created: " + BLAS_WRAPPER_INSTANCE.getClass().getName());
+            } catch (Exception e) {
+                System.err.println("Failed to create BLAS Wrapper instance: " + e.getMessage());
+                e.printStackTrace();
+            }
+
+            try {
+                DATA_BUFFER_FACTORY_INSTANCE = dataBufferFactoryClazz.newInstance();
+                System.out.println("Data Buffer Factory instance created: " + DATA_BUFFER_FACTORY_INSTANCE.getClass().getName());
+            } catch (Exception e) {
+                System.err.println("Failed to create Data Buffer Factory instance: " + e.getMessage());
+                e.printStackTrace();
+            }
+
+            try {
+                DISTRIBUTION_FACTORY = distributionFactoryClazz.newInstance();
+                System.out.println("Distribution Factory instance created: " + DISTRIBUTION_FACTORY.getClass().getName());
+            } catch (Exception e) {
+                System.err.println("Failed to create Distribution Factory instance: " + e.getMessage());
+                e.printStackTrace();
+            }
+
+            System.out.println("=== ND4J Property Loading Complete ===");
             if (isFallback()) {
                 fallbackMode.set(true);
                 showAttractiveMessage(getMessageForFallback());
@@ -5313,25 +5485,6 @@ public class Nd4j {
             String logInitProperty = System.getProperty(ND4JSystemProperties.LOG_INITIALIZATION, "true");
             if(Boolean.parseBoolean(logInitProperty)) {
                 OP_EXECUTIONER_INSTANCE.printEnvironmentInformation();
-            }
-
-            val actions = ND4JClassLoading.loadService(EnvironmentalAction.class);
-            val mappedActions = new HashMap<String, EnvironmentalAction>();
-            for (val a: actions) {
-                if (!mappedActions.containsKey(a.targetVariable()))
-                    mappedActions.put(a.targetVariable(), a);
-            }
-
-            for (val e: mappedActions.keySet()) {
-                val action = mappedActions.get(e);
-                val value = System.getenv(e);
-                if (value != null) {
-                    try {
-                        action.process(value);
-                    } catch (Exception e2) {
-                        logger.info("Failed to process env variable [" + e + "], got exception: " + e2);
-                    }
-                }
             }
 
 
@@ -5956,7 +6109,6 @@ public class Nd4j {
         // --- 5. Determine Order, Calculate Strides & EWS ---
         char ordering = 'c'; // Default C order, as FlatArray doesn't store layout order
         long[] strides = Nd4j.getStrides(shape, ordering); // Empty for rank 0
-        long ews = (rank == 0) ? 1 : Shape.elementWiseStride(shape, strides, ordering == 'f');
 
         // --- 6. Calculate Extras ---
         long extras = 0L;
@@ -5972,18 +6124,21 @@ public class Nd4j {
             // ** Manual creation for scalar (rank 0) **
             shapeInfoBuffer = Nd4j.getDataBufferFactory().createLong(shapeInfoLength); // Length is 4
             shapeInfoBuffer.put(0, 0);   // Rank
-            shapeInfoBuffer.put(1, ews); // EWS (1 for scalar)
-            shapeInfoBuffer.put(2, (int)ordering); // Order ('c')
+            shapeInfoBuffer.put(1, 0); // shape (1 for scalar)
+            shapeInfoBuffer.put(2,0); // Order ('c')
             shapeInfoBuffer.put(3, extras); // Set calculated extras
+            shapeInfoBuffer.put(4, -1); // Set calculated extras
+            shapeInfoBuffer.put(5, ordering); // Set calculated extras
+
         } else {
             // ** Standard creation for non-scalars **
             long[] shapeInfoArray = new long[shapeInfoLength];
             shapeInfoArray[0] = rank;
             System.arraycopy(shape, 0, shapeInfoArray, 1, rank);
             System.arraycopy(strides, 0, shapeInfoArray, 1 + rank, rank);
-            shapeInfoArray[shapeInfoLength - 3] = ews;
-            shapeInfoArray[shapeInfoLength - 2] = (int) ordering;
-            shapeInfoArray[shapeInfoLength - 1] = extras;
+            shapeInfoArray[shapeInfoLength - 3] = -1;
+            shapeInfoArray[shapeInfoLength - 2] = extras;
+            shapeInfoArray[shapeInfoLength - 1] = ordering;
 
             try {
                 Pair<DataBuffer, long[]> siPair = Nd4j.getShapeInfoProvider().createShapeInformation(shapeInfoArray);
@@ -5995,7 +6150,7 @@ public class Nd4j {
         }
 
         // --- 8. Sanity check the created shape info buffer's extras/dataType ---
-        long extrasFromBuffer = shapeInfoBuffer.getLong(shapeInfoLength - 1);
+        long extrasFromBuffer = Shape.options(shapeInfoBuffer);
         DataType dtFromBuffer = DataType.UNKNOWN;
         boolean checkFailed = false;
         try {

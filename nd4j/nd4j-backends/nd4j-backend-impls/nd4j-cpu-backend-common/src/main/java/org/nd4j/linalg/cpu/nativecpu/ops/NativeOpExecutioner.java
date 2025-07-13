@@ -1115,77 +1115,17 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty, boolean isView) {
-        long[] merged = new long[Shape.shapeInfoLength(shape.length)];
+        LongPointer shapePointer = new LongPointer(shape);
+        LongPointer stridePointer = new LongPointer(stride);
+        long extras = ArrayOptionsHelper.composeTypicalChecks(false,DataType.INT64,false,false,isView ,false,false );
+        OpaqueConstantShapeBuffer dbf = Nd4j.getNativeOps().shapeBufferEx(shape.length, shapePointer, stridePointer, dtype.toInt(), order, elementWiseStride, extras);
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
-        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            DataBuffer ret = Nd4j.createBuffer(DataType.INT64,Shape.shapeInfoLength(shape.length),true);
-            merged[0] = shape.length;
-            int shapeIdx = 0;
-            int strideIdx = 0;
-            for(int i = 1; i < shape.length * 2 + 1; i++) {
-                if(shapeIdx < shape.length) {
-                    merged[i] = shape[shapeIdx];
-                    shapeIdx++;
-                } else {
-                    merged[i] = stride[strideIdx];
-                    strideIdx++;
-                }
-            }
+        val result = Nd4j.createBuffer(Nd4j.getNativeOps().getConstantShapeBufferPrimary(dbf),
+                Shape.shapeInfoLength(shape.length),DataType.INT64);
 
-
-
-            Shape.setElementWiseStride(merged,(int) elementWiseStride);
-            LongPointer longPointer = new LongPointer(merged);
-            Nd4j.getNativeOps().setShapeBuffer(longPointer,dtype.toInt(),new LongPointer(ret.addressPointer()),order,(int) elementWiseStride,empty,isView);
-            longPointer.deallocate();
-            longPointer.releaseReference();
-            if(isView != ArrayOptionsHelper.isView(Shape.options(ret))) {
-                throw new IllegalStateException("isView is not set properly");
-            }
-
-            if(empty != ArrayOptionsHelper.isEmpty(Shape.options(ret))) {
-                throw new IllegalStateException("Empty is not set properly");
-            }
-
-
-            long[] shape2 = Shape.shape(ret.asLong());
-            long[] stride2 = Shape.stride(ret.asLong());
-            long ews = Shape.elementWiseStride(ret.asLong());
-            char order2 = Shape.order(ret.asLong());
-            DataType dtype2 = ArrayOptionsHelper.dataType(Shape.options(ret));
-            boolean empty2 = ArrayOptionsHelper.isEmpty(Shape.options(ret));
-            boolean isView2 = ArrayOptionsHelper.isView(Shape.options(ret));
-            if(!Arrays.equals(shape,shape2)) {
-                throw new IllegalStateException("Shape is not set properly");
-            }
-
-            if(!Arrays.equals(stride,stride2)) {
-                throw new IllegalStateException("Stride is not set properly");
-            }
-
-            if(ews > 0 && ews != elementWiseStride) {
-                throw new IllegalStateException("Element wise stride is not set properly");
-            }
-
-            if(order != order2) {
-                throw new IllegalStateException("Order is not set properly");
-            }
-
-            if(dtype != dtype2) {
-                throw new IllegalStateException("Data type is not set properly");
-            }
-
-            if(empty != empty2) {
-                throw new IllegalStateException("Empty is not set properly");
-            }
-
-            if(isView != isView2) {
-                throw new IllegalStateException("Is view is not set properly");
-            }
-            return ret;
-        }
-
-
+        return result;
     }
 
     @Override

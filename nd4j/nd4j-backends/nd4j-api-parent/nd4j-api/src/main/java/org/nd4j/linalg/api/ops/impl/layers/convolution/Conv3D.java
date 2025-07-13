@@ -252,29 +252,8 @@ public class Conv3D extends DynamicCustomOp {
 
     @Override
     public Map<String, Map<String, AttributeAdapter>> attributeAdaptersForFunction() {
-        Map<String, Map<String, AttributeAdapter>> ret = new LinkedHashMap<>();
-        Map<String, AttributeAdapter> tfAdapters = new LinkedHashMap<>();
-        val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
+        throw new RuntimeException();
 
-        //TF uses [kD, kH, kW, iC, oC] for weights
-        tfAdapters.put("kD", new NDArrayShapeAdapter(0));
-        tfAdapters.put("kH", new NDArrayShapeAdapter(1));
-        tfAdapters.put("kW", new NDArrayShapeAdapter(2));
-
-        tfAdapters.put("sD", new IntArrayIntIndexAdapter(1));
-        tfAdapters.put("sH", new IntArrayIntIndexAdapter(2));
-        tfAdapters.put("sW", new IntArrayIntIndexAdapter(3));
-
-        tfAdapters.put("pD", new IntArrayIntIndexAdapter(1));
-        tfAdapters.put("pH", new IntArrayIntIndexAdapter(2));
-        tfAdapters.put("pW", new IntArrayIntIndexAdapter(3));
-
-
-        tfAdapters.put("isSameMode", new StringNotEqualsAdapter("VALID"));
-
-        ret.put(tensorflowName(), tfAdapters);
-
-        return ret;
     }
 
     @Override

@@ -25,7 +25,7 @@
 #pragma  once
 #include <array/NDArray.h>  // Ensure this is included first
 
-#include <array/ArrayOptions.h>
+#include <array/ArrayOptions.hXX>
 #include <execution/LaunchContext.h>
 #include <ops/specials.h>
 #include <ops/specials_sparse.h>

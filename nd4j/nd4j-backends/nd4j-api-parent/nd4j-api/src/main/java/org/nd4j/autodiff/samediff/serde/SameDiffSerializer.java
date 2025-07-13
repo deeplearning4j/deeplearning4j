@@ -577,9 +577,7 @@ public class SameDiffSerializer {
      * For variable shards, it serializes metadata based on the stub `sameDiff` object
      * but appends raw data from the `externalArraysToAppend` map.
      *
-     * MODIFIED: Added detailed logging and checks around metadata buffer read/write
-     * to debug the "Metadata write position error".
-     * Fallback save path uses NIO with Native Order.
+
      *
      * @param sameDiff             The SameDiff instance containing metadata (stubs, ops, small arrays).
      * @param file                 The file to save to.
@@ -625,7 +623,6 @@ public class SameDiffSerializer {
 
 
         // 2. Serialize Metadata FlatBuffer (Same logic as before)
-        // ... (code omitted for brevity, assumed unchanged from previous correct version) ...
         ByteBuffer metadataBuffer = serializeMetadataFlatBuffer(sameDiff, saveUpdaterState, metadata,
                 largeArrayNamesForMetadata, smallInlineArrayNamesForMetadata);
         int metadataLength = metadataBuffer.remaining();
@@ -692,7 +689,11 @@ public class SameDiffSerializer {
                 // Log content check (optional, potentially slow - check first few bytes)
                 boolean hasData = false;
                 int checkLen = Math.min(16, metadataBytes.length);
-                for(int i=0; i<checkLen; i++) { if (metadataBytes[i] != 0) { hasData = true; break; } }
+                for(int i = 0; i < checkLen; i++) {
+                    if (metadataBytes[i] != 0) {
+                        hasData = true; break;
+                    }
+                }
                 log.debug("First {} bytes of metadataBytes have non-zero data? {}", checkLen, hasData);
 
 
@@ -945,10 +946,10 @@ public class SameDiffSerializer {
             if (!Arrays.equals(FILE_MAGIC, magicRead))
                 throw new IOException("Invalid magic number in file: " + file.getAbsolutePath());
 
+            int version = headerBuffer.getInt();
             manifestOffset = headerBuffer.getLong();
             manifestLength = headerBuffer.getLong();
             metadataOffset = headerBuffer.getLong();
-
             // --- Validate Header Offsets/Lengths ---
             if (metadataOffset != HEADER_SIZE || manifestOffset < metadataOffset || manifestLength < 0 || manifestOffset > fileSize || manifestOffset + manifestLength > fileSize)
                 throw new IOException(String.format("Invalid header offsets/lengths in file %s. " +
@@ -2193,7 +2194,7 @@ public class SameDiffSerializer {
     /**
      * Serializes a small INDArray (non-scalar, non-empty) to a FlatBuffer buffer vector.
      * Uses Native Endian byte order. Includes enhanced byte verification.
-     * CORRECTED: Fixed scope issue with checkPassed variable.
+     * ADDED: FATAL validation of shape buffer extras to catch corrupt arrays from import.
      */
     public static int serializeSmallNdArrayToFlatBuffer(@NonNull INDArray arr, @NonNull FlatBufferBuilder builder) throws IOException {
         // Try to get a somewhat identifiable name/string for logging
@@ -2206,6 +2207,68 @@ public class SameDiffSerializer {
         }
 
         log.info("SERIALIZE_INLINE: Attempting for Var='{}', Shape={}, DType={}", varNameForLog, Arrays.toString(arr.shape()), arr.dataType());
+
+        // CRITICAL VALIDATION: Check shape buffer integrity BEFORE any processing
+        try {
+            // Try to access the array's shape info through the Shape utility
+            long[] shapeInfo = arr.shapeInfoDataBuffer().asLong();
+            if (shapeInfo != null && shapeInfo.length > 0) {
+                // The extras value is typically encoded in the shape buffer
+                // Try to extract the data type from the shape buffer using ArrayOptionsHelper
+                try {
+                    // Use the shape info to validate the data type encoding
+                    DataType extractedType = ArrayOptionsHelper.dataType(shapeInfo);
+                    if (extractedType == null || extractedType == DataType.UNKNOWN) {
+                        throw new IllegalStateException(String.format(
+                                "FATAL SERIALIZATION ERROR: INVALID SHAPE BUFFER DETECTED for array '%s'. " +
+                                        "ArrayOptionsHelper.dataType() returned NULL or UNKNOWN. " +
+                                        "Full ShapeInfo: %s. " +
+                                        "Expected DataType: %s. " +
+                                        "This indicates CORRUPT array metadata from ONNX import or array creation process. " +
+                                        "TERMINATING PROCESS TO PREVENT DATA CORRUPTION.",
+                                varNameForLog, Arrays.toString(shapeInfo), arr.dataType()));
+                    }
+
+                    // Additional validation: extracted type should match array's reported type
+                    if (extractedType != arr.dataType()) {
+                        throw new IllegalStateException(String.format(
+                                "FATAL SERIALIZATION ERROR: SHAPE BUFFER DATA TYPE MISMATCH for array '%s'. " +
+                                        "Shape buffer indicates DataType: %s, " +
+                                        "but array reports DataType: %s. " +
+                                        "Full ShapeInfo: %s. " +
+                                        "This indicates CORRUPT array metadata from ONNX import or array creation process. " +
+                                        "TERMINATING PROCESS TO PREVENT DATA CORRUPTION.",
+                                varNameForLog, extractedType, arr.dataType(), Arrays.toString(shapeInfo)));
+                    }
+
+                    log.debug("SERIALIZE_VALIDATION [{}]: Shape buffer validation PASSED. DataType: {}", varNameForLog, extractedType);
+
+                } catch (ND4JUnknownDataTypeException e) {
+                    throw new IllegalStateException(String.format(
+                            "FATAL SERIALIZATION ERROR: INVALID DATA TYPE ENCODING in shape buffer for array '%s'. " +
+                                    "Full ShapeInfo: %s. " +
+                                    "ArrayOptionsHelper.dataType() threw: %s. " +
+                                    "This indicates CORRUPT array metadata from ONNX import or array creation process. " +
+                                    "TERMINATING PROCESS TO PREVENT DATA CORRUPTION.",
+                            varNameForLog, Arrays.toString(shapeInfo), e.getMessage()), e);
+                }
+            } else {
+                throw new IllegalStateException(String.format(
+                        "FATAL SERIALIZATION ERROR: NULL OR EMPTY shape info buffer for array '%s'. " +
+                                "This indicates SEVERELY CORRUPT array metadata. " +
+                                "TERMINATING PROCESS TO PREVENT DATA CORRUPTION.",
+                        varNameForLog));
+            }
+        } catch (Exception e) {
+            if (e instanceof IllegalStateException) {
+                throw e; // Re-throw our fatal errors
+            }
+            throw new IllegalStateException(String.format(
+                    "FATAL SERIALIZATION ERROR: Exception accessing shape info for array '%s': %s. " +
+                            "This indicates SEVERELY CORRUPT array state. " +
+                            "TERMINATING PROCESS TO PREVENT DATA CORRUPTION.",
+                    varNameForLog, e.getMessage()), e);
+        }
 
         // Skip arrays we can't handle safely
         if (arr.dataType() == DataType.UTF8 || arr.dataType() == DataType.COMPRESSED || arr.dataType() == DataType.UNKNOWN) {
@@ -2247,6 +2310,9 @@ public class SameDiffSerializer {
             return finalOffset;
         }
 
+        DataBuffer dataBuffer = arr.data();
+
+
         // --- Standard non-scalar, non-empty array handling ---
         try {
             int shapeOffset = FlatArray.createShapeVector(builder, shape);
@@ -2254,13 +2320,12 @@ public class SameDiffSerializer {
             byte order = (byte)(arr.ordering() == 'c' ? 0 : 1);
             int bufferOffset = 0; // FB offset for the data vector
 
-            DataBuffer buffer = arr.data();
-            ByteBuffer nioBuffer = buffer.asNio(); // Get NIO view
-            long lengthBytes = arr.length() * buffer.getElementSize();
+            ByteBuffer nioBuffer = dataBuffer.asNio(); // Get NIO view
+            long lengthBytes = arr.length() * dataBuffer.getElementSize();
 
             if (nioBuffer != null) {
                 nioBuffer.order(ByteOrder.nativeOrder()); // Ensure NATIVE order
-                long arrOffsetBytes = arr.offset() * buffer.getElementSize(); // Use INDArray offset
+                long arrOffsetBytes = arr.offset() * dataBuffer.getElementSize(); // Use INDArray offset
 
                 // Check if view is usable and within limits
                 if (arrOffsetBytes >= 0 && arrOffsetBytes <= Integer.MAX_VALUE &&
@@ -2280,9 +2345,8 @@ public class SameDiffSerializer {
                         return 0; // Fail if extraction fails
                     }
 
-
                     // *** ENHANCED BYTE CHECK ***
-                    ByteBuffer checkNioBuffer = buffer.asNio(); // Get a fresh view for checking
+                    ByteBuffer checkNioBuffer = dataBuffer.asNio(); // Get a fresh view for checking
                     if (checkNioBuffer != null) {
                         boolean checkIterationPassed = true; // Local check status
                         int checkLength = nativeBytes.length;
@@ -2305,7 +2369,7 @@ public class SameDiffSerializer {
                                 try {
                                     int start = Math.max(0, j - 8);
                                     int end = Math.min(checkLength, j + 8);
-                                    ByteBuffer contextBuffer = buffer.asNio(); // Fresh buffer for context log
+                                    ByteBuffer contextBuffer = dataBuffer.asNio(); // Fresh buffer for context log
                                     byte[] expectedContext = new byte[end - start];
                                     if(contextBuffer != null) {
                                         contextBuffer.order(ByteOrder.nativeOrder());
@@ -2324,8 +2388,12 @@ public class SameDiffSerializer {
                         if(checkIterationPassed) {
                             log.info("SERIALIZE_CHECK [{}]: Full native byte extraction check PASSED ({} bytes).", varNameForLog, checkLength);
                         } else {
-                            log.error("SERIALIZE_CHECK [{}]: Full native byte extraction check FAILED. Aborting inline serialization.", varNameForLog);
-                            return 0; // Fail serialization if bytes don't match
+                            throw new IllegalStateException(String.format(
+                                    "FATAL SERIALIZATION ERROR: Byte verification FAILED for array '%s'. " +
+                                            "Extracted bytes do not match original buffer contents. " +
+                                            "This indicates MEMORY CORRUPTION or BUFFER INCONSISTENCY. " +
+                                            "TERMINATING PROCESS TO PREVENT DATA CORRUPTION.",
+                                    varNameForLog));
                         }
                     } else {
                         log.warn("SERIALIZE_CHECK [{}]: Cannot perform full byte check because asNio() returned null for check. Proceeding without verification.", varNameForLog);
@@ -2333,7 +2401,6 @@ public class SameDiffSerializer {
                         // For now, proceeding but logging the warning.
                     }
                     // *** END ENHANCED BYTE CHECK ***
-
 
                     // Insert into FlatBuffer only if bytes were prepared
                     if (nativeBytes.length > 0) {
@@ -2369,15 +2436,14 @@ public class SameDiffSerializer {
             }
             return finalOffset;
 
+        } catch (IllegalStateException e) {
+            // Re-throw IllegalStateException (our fatal validation errors) without wrapping
+            throw e;
         } catch (Exception e) {
             log.error("SERIALIZE_INLINE [{}]: Unhandled error serializing inline array: {}", varNameForLog, e.getMessage(), e);
             return 0; // Return 0 on any error
         }
-    } // end serializeSmallNdArrayToFlatBuffer
-
-
-
-
+    }
 
     /**
      * Deserializes an inline INDArray from FlatBuffer data. Expects Native Endian bytes.

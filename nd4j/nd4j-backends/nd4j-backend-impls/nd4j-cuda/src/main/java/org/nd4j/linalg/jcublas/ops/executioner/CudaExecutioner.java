@@ -1698,16 +1698,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, long extras) {
+        LongPointer shapePointer = new LongPointer(shape);
+        LongPointer stridePointer = new LongPointer(stride);
+        OpaqueConstantShapeBuffer dbf = Nd4j.getNativeOps().shapeBufferEx(shape.length, shapePointer, stridePointer, dtype.toInt(), order, elementWiseStride, extras);
         if (Nd4j.getNativeOps().lastErrorCode() != 0)
             throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
-        val dbf = Nd4j.getNativeOps().shapeBufferEx(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, extras);
-
-        if (Nd4j.getNativeOps().lastErrorCode() != 0)
-            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
-
-        val result = new CudaLongDataBuffer(Nd4j.getNativeOps().getConstantShapeBufferPrimary(dbf), Nd4j.getNativeOps().getConstantShapeBufferSpecial(dbf), Shape.shapeInfoLength(shape.length));
-
+        val result = Nd4j.createBuffer(Nd4j.getNativeOps().getConstantShapeBufferPrimary(dbf),
+                Shape.shapeInfoLength(shape.length),DataType.INT64);
 
         return result;
     }

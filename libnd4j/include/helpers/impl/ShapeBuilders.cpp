@@ -105,7 +105,6 @@ LongType  * ShapeBuilders::createShapeInfo(const DataType dataType, const char o
   }
 
   ArrayOptions::setExtra(shapeInfo, extras);
-  ArrayOptions::setDataType(shapeInfo, dataType);
   shape::setOrder(shapeInfo, order);
   return shapeInfo;
 

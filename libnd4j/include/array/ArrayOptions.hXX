@@ -3,6 +3,7 @@
 #include <array/ArrayOptions.h>
 #include <system/op_boilerplate.h>
 #include <helpers/shape.h>
+#include <array/DataTypeUtils.h>
 #pragma  once
 
 namespace sd {
@@ -503,7 +504,7 @@ SD_HOST SD_INLINE LongType ArrayOptions::flagForDataType(const sd::DataType data
 #ifndef __CUDA_ARCH__
       std::string errorMessage;
       errorMessage += "Can't set unknown data type ArrayOptions: ";
-      errorMessage += DataTypeUtils::asString(dataType);
+      errorMessage += sd::DataTypeUtils::asString(dataType);
       THROW_EXCEPTION(errorMessage.c_str());
 
 #else
@@ -598,7 +599,7 @@ SD_HOST SD_INLINE void ArrayOptions::setDataType(sd::LongType *shapeInfo, const 
     errorMessage += "setDataType:  Data type set was not correct one. Expected ";
     errorMessage += DataTypeUtils::asString(dataType);
     errorMessage += " but got ";
-    errorMessage += DataTypeUtils::asString(dataType);
+    errorMessage += sd::DataTypeUtils::asString(dataType);
     THROW_EXCEPTION(errorMessage.c_str());
   }
 

@@ -358,13 +358,6 @@
                                 <linkPath>${libnd4j.outputPath}</linkPath>
                                 <linkPath>${env.OPENBLAS_PATH}/lib</linkPath>
                                 <linkPath>${env.OPENBLAS_PATH}/</linkPath>
-
-                                <!-- Fixed Android NDK library paths for aarch64 -->
-                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/21</linkPath>
-                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android</linkPath>
-                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/17/lib/linux</linkPath>
-                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib</linkPath>
-                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib</linkPath>
                             </linkPaths>
                             <resourcePath>${libnd4jhome}/blasbuild/cpu/blas</resourcePath>
                             <buildResources>
@@ -389,15 +382,6 @@
                             <compilerOptions>
                                 <compilerOption>${compiler.flag.cpp.standard}</compilerOption>
                                 <compilerOption>${platform.linker.flag.no.undefined}</compilerOption>
-                                <!-- Add system include paths for Android NDK -->
-                                <compilerOption>-I${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include</compilerOption>
-                                <compilerOption>-I${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/aarch64-linux-android</compilerOption>
-                                <!-- Add explicit sysroot -->
-                                <compilerOption>--sysroot=${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</compilerOption>
-                                <!-- Use proper C++ standard library instead of nostdlib++ -->
-                                <compilerOption>-stdlib=libc++</compilerOption>
-                                <!-- Link against static libc++ -->
-                                <compilerOption>-static-libstdc++</compilerOption>
                             </compilerOptions>
                         </configuration>
                         <executions>
@@ -533,12 +517,6 @@
                                 <linkPath>${env.OPENBLAS_PATH}/lib</linkPath>
                                 <linkPath>${env.OPENBLAS_PATH}/</linkPath>
 
-                                <!-- Fixed Android NDK library paths for aarch64 -->
-                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/21</linkPath>
-                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android</linkPath>
-                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/17/lib/linux</linkPath>
-                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib</linkPath>
-                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib</linkPath>
                             </linkPaths>
                             <resourcePath>${libnd4jhome}/blasbuild/cpu/blas</resourcePath>
                             <buildResources>
@@ -573,15 +551,6 @@
                                 <compilerOption>-finstrument-functions</compilerOption>
                                 <!-- NDK specific: https://github.com/android/ndk/issues/1690-->
                                 <compilerOption>${javacpp.compiler.crtoption}</compilerOption>
-                                <!-- Add system include paths for Android NDK -->
-                                <compilerOption>-I${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include</compilerOption>
-                                <compilerOption>-I${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/aarch64-linux-android</compilerOption>
-                                <!-- Add explicit sysroot -->
-                                <compilerOption>--sysroot=${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</compilerOption>
-                                <!-- Use proper C++ standard library instead of nostdlib++ -->
-                                <compilerOption>-stdlib=libc++</compilerOption>
-                                <!-- Link against static libc++ -->
-                                <compilerOption>-static-libstdc++</compilerOption>
                             </compilerOptions>
                         </configuration>
                         <executions>
@@ -786,13 +755,6 @@
                                 <linkPath>${libnd4j.outputPath}</linkPath>
                                 <linkPath>${env.OPENBLAS_PATH}/lib</linkPath>
                                 <linkPath>${env.OPENBLAS_PATH}/</linkPath>
-
-                                <!-- Fixed Android NDK library paths for aarch64 -->
-                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/21</linkPath>
-                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android</linkPath>
-                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/17/lib/linux</linkPath>
-                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib</linkPath>
-                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib</linkPath>
                             </linkPaths>
                             <resourcePath>${libnd4jhome}/blasbuild/cpu/blas</resourcePath>
                             <buildResources>

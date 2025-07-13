@@ -7,6 +7,7 @@
 #include <system/op_boilerplate.h>
 #include <helpers/reshapeNoCopy.h>
 #include <helpers/shape.h>
+#include <array/ArrayOptions.hXX>
 namespace sd {
 namespace ops {
 namespace helpers {
