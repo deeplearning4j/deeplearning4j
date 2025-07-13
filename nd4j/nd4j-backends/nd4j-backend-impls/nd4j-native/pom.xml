@@ -788,6 +788,11 @@
                                 <!-- Add system include paths for Android NDK arm64 -->
                                 <compilerOption>-I${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include</compilerOption>
                                 <compilerOption>-I${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/aarch64-linux-android</compilerOption>
+                                <!-- Ensure standard C headers are available -->
+                                <compilerOption>-I${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/17/include</compilerOption>
+                                <!-- Define Android platform -->
+                                <compilerOption>-D__ANDROID_API__=21</compilerOption>
+                                <compilerOption>-DANDROID</compilerOption>
                                 <!-- Add multiple -B flags for different possible CRT locations -->
                                 <compilerOption>-B${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/17/lib/linux</compilerOption>
                                 <compilerOption>-B${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/21</compilerOption>
