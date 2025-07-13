@@ -41,12 +41,28 @@ static void force_arrayoptions_symbol_generation() {
 
  // Reference each problematic function to force symbol generation
  (void)ArrayOptions::extraIndex(dummyShape);
- (void)ArrayOptions::extraIndex(constDummyShape);
+ (void)ArrayOptions::extra(constDummyShape);
  (void)ArrayOptions::arrayType(dummyShape);
- (void)ArrayOptions::arrayType(constDummyShape);
+ (void)ArrayOptions::dataType(constDummyShape);
  (void)ArrayOptions::enumerateSetFlags(constDummyShape);
  ArrayOptions::copyDataType(dummyShape2, constDummyShape);
  (void)ArrayOptions::flagForDataType(sd::DataType::FLOAT32);
+ (void)ArrayOptions::hasPropertyBitSet(dummyShape2);
+ (void)ArrayOptions::validateSingleDataType(0);
+ (void)ArrayOptions::setDataType(dummyShape,sd::DataType::FLOAT32);
+ (void)ArrayOptions::setExtra(dummyShape,0);
+ (void)ArrayOptions::arrayNeedsCopy(dummyShape);
+ (void)ArrayOptions::togglePropertyBit(dummyShape);
+ (void)ArrayOptions::toggleIsEmpty(toggleIsEmpty);
+ (void)ArrayOptions::setPropertyBit(dummyShape,0);
+ (void)ArrayOptions::propertyWithoutDataTypeValue(0);
+ (void)ArrayOptions::setPropertyBits(dummyShape2,{0});
+ (void)ArrayOptions::setDataTypeValue(0,sd::DataType::FLOAT32);
+ (void)ArrayOptions::hasPropertyBitSet(0,0);
+ (void)ArrayOptions::flagForDataType(sd::DataType::FLOAT32);
+ (void)ArrayOptions::copyDataType(dummyShape,dummyShape);
+ (void)ArrayOptions::enumerateSetFlags(dummyShape);
+
 }
 
 // Ensure the dummy function itself isn't optimized away by taking its address
