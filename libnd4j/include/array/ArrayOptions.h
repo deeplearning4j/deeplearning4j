@@ -128,68 +128,68 @@
 namespace sd {
 class SD_LIB_EXPORT ArrayOptions {
  public:
-  static SD_HOST LongType extra(const LongType *shapeInfo);
-  static SD_HOST void setExtra(LongType *shapeInfo, LongType value);
-  static SD_HOST bool isNewFormat(const LongType *shapeInfo);
-  static SD_HOST bool hasPropertyBitSet(const LongType *shapeInfo, LongType property);
-  static SD_HOST bool togglePropertyBit(LongType *shapeInfo, LongType property);
-  static SD_HOST void unsetPropertyBit(LongType *shapeInfo, LongType property);
-  static SD_HOST void validateSingleDataType(LongType property);
-  static SD_HOST void setPropertyBit(LongType *shapeInfo, LongType property);
-  static SD_HOST void setPropertyBits(LongType *shapeInfo, std::initializer_list<LongType> properties);
-  static SD_HOST sd::LongType numDataTypesSet(sd::LongType property);
-  static SD_HOST bool isUnsigned(LongType *shapeInfo);
-  static SD_HOST bool isSparseArray(sd::LongType *shapeInfo);
-  static SD_HOST DataType dataType(const LongType *shapeInfo);
+  static SD_HOST SD_INLINE  LongType extra(const LongType *shapeInfo);
+  static SD_HOST SD_INLINE  void setExtra(LongType *shapeInfo, LongType value);
+  static SD_HOST SD_INLINE  bool isNewFormat(const LongType *shapeInfo);
+  static SD_HOST SD_INLINE  bool hasPropertyBitSet(const LongType *shapeInfo, LongType property);
+  static SD_HOST SD_INLINE  bool togglePropertyBit(LongType *shapeInfo, LongType property);
+  static SD_HOST SD_INLINE  void unsetPropertyBit(LongType *shapeInfo, LongType property);
+  static SD_HOST SD_INLINE  void validateSingleDataType(LongType property);
+  static SD_HOST SD_INLINE  void setPropertyBit(LongType *shapeInfo, LongType property);
+  static SD_HOST SD_INLINE  void setPropertyBits(LongType *shapeInfo, std::initializer_list<LongType> properties);
+  static SD_HOST SD_INLINE  sd::LongType numDataTypesSet(sd::LongType property);
+  static SD_HOST SD_INLINE  bool isUnsigned(LongType *shapeInfo);
+  static SD_HOST SD_INLINE  bool isSparseArray(sd::LongType *shapeInfo);
+  static SD_HOST SD_INLINE  DataType dataType(const LongType *shapeInfo);
 
-  static SD_HOST SpaceType spaceType(LongType *shapeInfo);
-  static SD_HOST_DEVICE SpaceType spaceType(const LongType *shapeInfo);
+  static SD_HOST SD_INLINE  SpaceType spaceType(LongType *shapeInfo);
+  static  SD_INLINE SD_HOST_DEVICE SpaceType spaceType(const LongType *shapeInfo);
 
-  static SD_HOST ArrayType arrayType(LongType *shapeInfo);
-  static SD_HOST ArrayType arrayType(const LongType *shapeInfo);
+  static SD_HOST SD_INLINE  ArrayType arrayType(LongType *shapeInfo);
+  static SD_HOST SD_INLINE  ArrayType arrayType(const LongType *shapeInfo);
 
-  static SD_HOST bool isView(LongType *shapeInfo);
-  static SD_HOST void toggleIsView(LongType *shapeInfo);
+  static SD_HOST SD_INLINE  bool isView(LongType *shapeInfo);
+  static SD_HOST SD_INLINE  void toggleIsView(LongType *shapeInfo);
 
-  static SD_HOST_DEVICE SparseType sparseType(LongType *shapeInfo);
-  static SD_HOST SparseType sparseType(const LongType *shapeInfo);
+  static  SD_INLINE SD_HOST_DEVICE SparseType sparseType(LongType *shapeInfo);
+  static SD_HOST SD_INLINE  SparseType sparseType(const LongType *shapeInfo);
 
-  static SD_HOST_DEVICE bool hasExtraProperties(LongType *shapeInfo);
+  static  SD_INLINE SD_HOST_DEVICE bool hasExtraProperties(LongType *shapeInfo);
 
-  static SD_HOST bool hasPaddedBuffer(const LongType *shapeInfo);
-  static SD_HOST void flagAsPaddedBuffer(LongType *shapeInfo);
+  static SD_HOST SD_INLINE  bool hasPaddedBuffer(const LongType *shapeInfo);
+  static SD_HOST SD_INLINE  void flagAsPaddedBuffer(LongType *shapeInfo);
 
-  static SD_HOST void resetDataType(LongType *shapeInfo);
-  static SD_HOST LongType propertyWithoutDataType(const LongType *shapeInfo);
-  static SD_HOST void setDataType(LongType *shapeInfo, const DataType dataType);
-  static SD_HOST LongType setDataTypeValue(LongType extraStorage, const DataType dataType);
-  static SD_HOST LongType flagForDataType(const DataType dataType);
-  static SD_HOST void copyDataType(LongType *to, const LongType *from);
-  static SD_HOST const char *enumerateSetFlags(const LongType *shapeInfo);
-  static SD_HOST void unsetAllFlags(LongType *shapeInfo);
-  static SD_HOST int enumerateSetFlags(const LongType *shapeInfo, const char **setFlagsOutput, int maxFlags);
-  static SD_HOST const char *findFlagString(int flag);
-  static SD_HOST LongType extraIndex(const LongType *shapeInfo);
-  static SD_HOST LongType extraIndex(LongType *shapeInfo);
-  static SD_HOST void unsetAllFlags(LongType &flagStorage);
-  static SD_HOST const char *enumerateSetFlagsForFlags(const LongType flagStorage);
-  static SD_HOST SpaceType spaceTypeForFlags(const LongType &flagStorage);
-  static SD_HOST ArrayType arrayTypeForFlags(const LongType &flagStorage);
-  static SD_HOST bool togglePropertyBitForFlags(LongType &flagStorage, LongType property);
-  static SD_HOST LongType unsetPropertyBitForFlags(LongType &flagStorage, LongType property);
-  static SD_HOST SparseType sparseTypeForFlags(const LongType &flagStorage);
-  static LongType setPropertyBitForFlagsValue(LongType extraStorage, LongType property);
-  static SD_HOST bool hasPropertyBitSet(const LongType extra, LongType property);
-  static SD_HOST void resetFlags(LongType *to);
-  static SD_HOST LongType defaultFlag();
+  static SD_HOST SD_INLINE  void resetDataType(LongType *shapeInfo);
+  static SD_HOST SD_INLINE  LongType propertyWithoutDataType(const LongType *shapeInfo);
+  static SD_HOST SD_INLINE  void setDataType(LongType *shapeInfo, const DataType dataType);
+  static SD_HOST SD_INLINE  LongType setDataTypeValue(LongType extraStorage, const DataType dataType);
+  static SD_HOST SD_INLINE  LongType flagForDataType(const DataType dataType);
+  static SD_HOST SD_INLINE  void copyDataType(LongType *to, const LongType *from);
+  static SD_HOST SD_INLINE  const char *enumerateSetFlags(const LongType *shapeInfo);
+  static SD_HOST SD_INLINE  void unsetAllFlags(LongType *shapeInfo);
+  static SD_HOST SD_INLINE  int enumerateSetFlags(const LongType *shapeInfo, const char **setFlagsOutput, int maxFlags);
+  static SD_HOST SD_INLINE  const char *findFlagString(int flag);
+  static SD_HOST SD_INLINE  LongType extraIndex(const LongType *shapeInfo);
+  static SD_HOST SD_INLINE  LongType extraIndex(LongType *shapeInfo);
+  static SD_HOST SD_INLINE  void unsetAllFlags(LongType &flagStorage);
+  static SD_HOST SD_INLINE  const char *enumerateSetFlagsForFlags(const LongType flagStorage);
+  static SD_HOST SD_INLINE  SpaceType spaceTypeForFlags(const LongType &flagStorage);
+  static SD_HOST SD_INLINE  ArrayType arrayTypeForFlags(const LongType &flagStorage);
+  static SD_HOST SD_INLINE  bool togglePropertyBitForFlags(LongType &flagStorage, LongType property);
+  static SD_HOST SD_INLINE  LongType unsetPropertyBitForFlags(LongType &flagStorage, LongType property);
+  static SD_HOST SD_INLINE  SparseType sparseTypeForFlags(const LongType &flagStorage);
+  static SD_INLINE LongType setPropertyBitForFlagsValue(LongType extraStorage, LongType property);
+  static SD_HOST SD_INLINE  bool hasPropertyBitSet(const LongType extra, LongType property);
+  static SD_HOST SD_INLINE  void resetFlags(LongType *to);
+  static SD_HOST SD_INLINE  LongType defaultFlag();
 
-  static SD_HOST  LongType propertyWithoutDataTypeValue(LongType extra);
-  static SD_HOST DataType dataTypeValue(LongType property);
-  static bool isEmpty(LongType *shapeInfo);
-  static void toggleIsEmpty(LongType *shapeInfo);
+  static SD_HOST SD_INLINE   LongType propertyWithoutDataTypeValue(LongType extra);
+  static SD_HOST SD_INLINE  DataType dataTypeValue(LongType property);
+  static SD_INLINE bool isEmpty(LongType *shapeInfo);
+  static SD_INLINE void toggleIsEmpty(LongType *shapeInfo);
 
-  static bool arrayNeedsCopy(LongType *shapeInfo);
-  static void toggleArrayNeedsCopy(LongType *shapeInfo);
+  static SD_INLINE bool arrayNeedsCopy(LongType *shapeInfo);
+  static SD_INLINE void toggleArrayNeedsCopy(LongType *shapeInfo);
 };
 
 }
