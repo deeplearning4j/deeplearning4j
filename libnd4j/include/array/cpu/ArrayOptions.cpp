@@ -16,6 +16,11 @@
 * SPDX-License-Identifier: Apache-2.0
 ******************************************************************************/
 
+//
+// @author raver119@gmail.com
+//
+
+
 
 #include <array/ArrayOptions.h>
 #include <array/ArrayOptions.hXX>
@@ -28,45 +33,145 @@
 
 namespace sd {
 
-// Force explicit instantiation of the inline functions that are causing linker errors
-// This ensures they are available as symbols for the linker, especially with Clang
+// Force explicit template instantiations for all the problematic functions
+// This approach directly tells the compiler to generate symbols
 
-// Create a dummy function that references all the problematic symbols
-// This forces Clang to generate actual symbols for these inline functions
-static void force_arrayoptions_symbol_generation() {
- // This function is never called, but its presence forces symbol generation
- LongType dummyShape[] = {2, 3, 4, 1, 1, 0, 1, 99};
- const LongType* constDummyShape = dummyShape;
- LongType dummyShape2[] = {2, 3, 4, 1, 1, 0, 1, 99};
+// Explicit instantiation of function templates
+template sd::LongType ArrayOptions::extraIndex<sd::LongType*>(sd::LongType*);
+template sd::LongType ArrayOptions::extraIndex<const sd::LongType*>(const sd::LongType*);
 
- // Reference each problematic function to force symbol generation
- (void)ArrayOptions::extraIndex(dummyShape);
- (void)ArrayOptions::extra(constDummyShape);
- (void)ArrayOptions::arrayType(dummyShape);
- (void)ArrayOptions::dataType(constDummyShape);
- (void)ArrayOptions::enumerateSetFlags(constDummyShape);
- ArrayOptions::copyDataType(dummyShape2, constDummyShape);
- (void)ArrayOptions::flagForDataType(sd::DataType::FLOAT32);
- (void)ArrayOptions::hasPropertyBitSet(constDummyShape,0);
- (void)ArrayOptions::validateSingleDataType(0);
- (void)ArrayOptions::setDataType(dummyShape,sd::DataType::FLOAT32);
- (void)ArrayOptions::setExtra(dummyShape,0);
- (void)ArrayOptions::arrayNeedsCopy(dummyShape);
- (void)ArrayOptions::togglePropertyBit(dummyShape,0);
- (void)ArrayOptions::toggleIsEmpty(dummyShape2);
- (void)ArrayOptions::setPropertyBit(dummyShape,0);
- (void)ArrayOptions::propertyWithoutDataTypeValue(0);
- (void)ArrayOptions::setPropertyBits(dummyShape2,{0});
- (void)ArrayOptions::setDataTypeValue(0,sd::DataType::FLOAT32);
- (void)ArrayOptions::flagForDataType(sd::DataType::FLOAT32);
- (void)ArrayOptions::copyDataType(dummyShape,dummyShape);
- (void)ArrayOptions::enumerateSetFlags(dummyShape);
+// Force non-inline versions of all the problematic functions by creating wrapper functions
+// that call the inline versions. This ensures symbols are generated.
 
+extern "C" {
+// Create C-linkage wrapper functions that are guaranteed not to be inlined
+sd::LongType __arrayoptions_extraindex_nonconst(sd::LongType* shapeInfo) {
+ return ArrayOptions::extraIndex(shapeInfo);
 }
 
-// Ensure the dummy function itself isn't optimized away by taking its address
-static void* dummy_ref = (void*)&force_arrayoptions_symbol_generation;
-
-// No additional implementation needed beyond the inclusion of ArrayOptions.hXX
-// The forced instantiation above ensures symbols are available for linking
+sd::LongType __arrayoptions_extraindex_const(const sd::LongType* shapeInfo) {
+ return ArrayOptions::extraIndex(shapeInfo);
 }
+
+sd::LongType __arrayoptions_extra(const sd::LongType* shapeInfo) {
+ return ArrayOptions::extra(shapeInfo);
+}
+
+sd::DataType __arrayoptions_datatype(const sd::LongType* shapeInfo) {
+ return ArrayOptions::dataType(shapeInfo);
+}
+
+bool __arrayoptions_haspropertybits(const sd::LongType* shapeInfo, sd::LongType property) {
+ return ArrayOptions::hasPropertyBitSet(shapeInfo, property);
+}
+
+void __arrayoptions_validatesingle(sd::LongType property) {
+ ArrayOptions::validateSingleDataType(property);
+}
+
+void __arrayoptions_setdatatype(sd::LongType* shapeInfo, sd::DataType dataType) {
+ ArrayOptions::setDataType(shapeInfo, dataType);
+}
+
+void __arrayoptions_setextra(sd::LongType* shapeInfo, sd::LongType value) {
+ ArrayOptions::setExtra(shapeInfo, value);
+}
+
+sd::ArrayType __arrayoptions_arraytype_nonconst(sd::LongType* shapeInfo) {
+ return ArrayOptions::arrayType(shapeInfo);
+}
+
+sd::ArrayType __arrayoptions_arraytype_const(const sd::LongType* shapeInfo) {
+ return ArrayOptions::arrayType(shapeInfo);
+}
+
+const char* __arrayoptions_enumeratesetflags(const sd::LongType* shapeInfo) {
+ return ArrayOptions::enumerateSetFlags(shapeInfo);
+}
+
+void __arrayoptions_copydatatype(sd::LongType* to, const sd::LongType* from) {
+ ArrayOptions::copyDataType(to, from);
+}
+
+sd::LongType __arrayoptions_flagfordatatype(sd::DataType dataType) {
+ return ArrayOptions::flagForDataType(dataType);
+}
+
+bool __arrayoptions_arrayneedscopy(sd::LongType* shapeInfo) {
+ return ArrayOptions::arrayNeedsCopy(shapeInfo);
+}
+
+bool __arrayoptions_togglepropertybits(sd::LongType* shapeInfo, sd::LongType property) {
+ return ArrayOptions::togglePropertyBit(shapeInfo, property);
+}
+
+void __arrayoptions_toggleisempty(sd::LongType* shapeInfo) {
+ ArrayOptions::toggleIsEmpty(shapeInfo);
+}
+
+void __arrayoptions_setpropertybits(sd::LongType* shapeInfo, sd::LongType property) {
+ ArrayOptions::setPropertyBit(shapeInfo, property);
+}
+
+sd::LongType __arrayoptions_propertywithoutdatatype(sd::LongType extra) {
+ return ArrayOptions::propertyWithoutDataTypeValue(extra);
+}
+
+sd::LongType __arrayoptions_setdatatypevalue(sd::LongType extra, sd::DataType dataType) {
+ return ArrayOptions::setDataTypeValue(extra, dataType);
+}
+}
+
+// Create a function table that references all the wrapper functions
+// This absolutely ensures they won't be optimized away
+struct FunctionTable {
+ void* extraIndex1;
+ void* extraIndex2;
+ void* extra;
+ void* dataType;
+ void* hasPropertyBitSet;
+ void* validateSingleDataType;
+ void* setDataType;
+ void* setExtra;
+ void* arrayType1;
+ void* arrayType2;
+ void* enumerateSetFlags;
+ void* copyDataType;
+ void* flagForDataType;
+ void* arrayNeedsCopy;
+ void* togglePropertyBit;
+ void* toggleIsEmpty;
+ void* setPropertyBit;
+ void* propertyWithoutDataTypeValue;
+ void* setDataTypeValue;
+};
+
+// Initialize the function table with all the wrapper functions
+static FunctionTable g_function_table = {
+   (void*)__arrayoptions_extraindex_nonconst,
+   (void*)__arrayoptions_extraindex_const,
+   (void*)__arrayoptions_extra,
+   (void*)__arrayoptions_datatype,
+   (void*)__arrayoptions_haspropertybits,
+   (void*)__arrayoptions_validatesingle,
+   (void*)__arrayoptions_setdatatype,
+   (void*)__arrayoptions_setextra,
+   (void*)__arrayoptions_arraytype_nonconst,
+   (void*)__arrayoptions_arraytype_const,
+   (void*)__arrayoptions_enumeratesetflags,
+   (void*)__arrayoptions_copydatatype,
+   (void*)__arrayoptions_flagfordatatype,
+   (void*)__arrayoptions_arrayneedscopy,
+   (void*)__arrayoptions_togglepropertybits,
+   (void*)__arrayoptions_toggleisempty,
+   (void*)__arrayoptions_setpropertybits,
+   (void*)__arrayoptions_propertywithoutdatatype,
+   (void*)__arrayoptions_setdatatypevalue
+};
+
+// Export a function that uses the table to prevent optimization
+extern "C" void* get_arrayoptions_function_table() {
+ return &g_function_table;
+}
+
+}  // namespace sd
