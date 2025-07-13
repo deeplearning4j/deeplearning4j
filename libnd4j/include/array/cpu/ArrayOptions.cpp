@@ -53,7 +53,7 @@ static void force_arrayoptions_symbol_generation() {
  (void)ArrayOptions::setExtra(dummyShape,0);
  (void)ArrayOptions::arrayNeedsCopy(dummyShape);
  (void)ArrayOptions::togglePropertyBit(dummyShape,0);
- (void)ArrayOptions::toggleIsEmpty(constDummyShape);
+ (void)ArrayOptions::toggleIsEmpty(dummyShape2);
  (void)ArrayOptions::setPropertyBit(dummyShape,0);
  (void)ArrayOptions::propertyWithoutDataTypeValue(0);
  (void)ArrayOptions::setPropertyBits(dummyShape2,{0});
