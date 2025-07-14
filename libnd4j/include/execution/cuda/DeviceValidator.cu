@@ -111,7 +111,6 @@ std::vector<std::string> DeviceValidator::parseCUBINFile(const std::string& file
 
   return functionNames;
 }
-
 void DeviceValidator::init() {
 // Check if cuobjdump is available
 #ifdef _WIN32
@@ -130,12 +129,16 @@ void DeviceValidator::init() {
   for (const auto &entry : std::filesystem::directory_iterator(directoryPath)) {
     if (entry.path().extension() == ".ptx" || entry.path().extension() == ".cubin") {
       CUmodule cuModule;
-      printf("Adding path %s\n",entry.path().filename().c_str());
-      if (cuModuleLoad(&cuModule, entry.path().c_str()) == CUDA_SUCCESS) {
+      printf("Adding path %s\n",entry.path().filename().string().c_str());
+
+      // Convert path to string to handle Windows wchar_t vs char issues
+      std::string pathString = entry.path().string();
+
+      if (cuModuleLoad(&cuModule, pathString.c_str()) == CUDA_SUCCESS) {
         moduleMap[entry.path().filename().string()] = cuModule;
 
         if (entry.path().extension() == ".ptx") {
-          std::vector<std::string> functionNames = parsePTXFile(entry.path().c_str());
+          std::vector<std::string> functionNames = parsePTXFile(pathString);
           for (const auto& functionName : functionNames) {
             CUfunction cuFunction;
             if (cuModuleGetFunction(&cuFunction, cuModule, functionName.c_str()) == CUDA_SUCCESS) {
@@ -143,7 +146,7 @@ void DeviceValidator::init() {
             }
           }
         } else if (entry.path().extension() == ".cubin") {
-          std::vector<std::string> functionNames = parseCUBINFile(entry.path().c_str());
+          std::vector<std::string> functionNames = parseCUBINFile(pathString);
           for (const auto& functionName : functionNames) {
             CUfunction cuFunction;
             if (cuModuleGetFunction(&cuFunction, cuModule, functionName.c_str()) == CUDA_SUCCESS) {
