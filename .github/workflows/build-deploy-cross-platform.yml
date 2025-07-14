@@ -118,7 +118,7 @@ jobs:
           protoc --version
           sudo apt-get autoremove
           sudo apt-get clean
-          command="mvn   -Possrh -pl !:nd4j-native,!libnd4j,!:nd4j-native-preset,!:nd4j-native-platform  -DskipTestResourceEnforcement=true -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu --batch-mode deploy -DskipTests"
+          command="mvn   -Possrh -pl !:nd4j-native,!libnd4j,!:nd4j-native-preset,!:nd4j-native-platform  -DskipTestResourceEnforcement=true -Djavacpp.platform=linux-x86_64 --batch-mode deploy -DskipTests"
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     echo "Performing release"
                     bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
