@@ -789,6 +789,8 @@
                                 <compilerOption>-B${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/21</compilerOption>
                                 <compilerOption>-L${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/21</compilerOption>
                                 <compilerOption>-L${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android</compilerOption>
+                                <compilerOption>-L${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android</compilerOption>
+                                <compilerOption>-isystem ${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/aarch64-linux-android</compilerOption>
                             </compilerOptions>
                         </configuration>
                         <executions>
