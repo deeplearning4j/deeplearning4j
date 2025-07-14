@@ -118,7 +118,7 @@ jobs:
           protoc --version
           sudo apt-get autoremove
           sudo apt-get clean
-          command="mvn   -Possrh -pl !:blas-lapack-generator  -DskipTestResourceEnforcement=true -Djavacpp.platform=linux-x86_64 --batch-mode deploy -DskipTests"
+          command="mvn   -Possrh -pl !:blas-lapack-generator,!:libnd4j-gen  -DskipTestResourceEnforcement=true -Djavacpp.platform=linux-x86_64 --batch-mode deploy -DskipTests"
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     echo "Performing release"
                     bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
@@ -127,7 +127,6 @@ jobs:
                        eval "$command"
           fi
 
-          bash ./change-spark-versions.sh 3.1.2
 
           if [ "$PERFORM_RELEASE" == 1 ]; then
                         echo "Performing release"
