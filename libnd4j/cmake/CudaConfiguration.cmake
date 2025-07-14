@@ -563,7 +563,70 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/std:c++17")
 
 
+        if(WIN32 AND NOT CMAKE_CUDA_HOST_COMPILER)
+            find_program(CL_IN_PATH cl.exe)
+            if(CL_IN_PATH)
+                # Check if this cl.exe is 64-bit by examining its path
+                get_filename_component(CL_DIR ${CL_IN_PATH} DIRECTORY)
+                if(CL_DIR MATCHES "x64")
+                    set(CMAKE_CUDA_HOST_COMPILER ${CL_IN_PATH})
+                    message(STATUS "Found x64 cl.exe in PATH: ${CMAKE_CUDA_HOST_COMPILER}")
+                else()
+                    # Try to find x64 version relative to this cl.exe
+                    get_filename_component(CL_PARENT ${CL_DIR} DIRECTORY)
+                    if(EXISTS "${CL_PARENT}/x64/cl.exe")
+                        set(CMAKE_CUDA_HOST_COMPILER "${CL_PARENT}/x64/cl.exe")
+                        message(STATUS "Found x64 cl.exe relative to PATH cl.exe: ${CMAKE_CUDA_HOST_COMPILER}")
+                    endif()
+                endif()
+            endif()
+        endif()
 
+        if(WIN32 AND NOT CMAKE_CUDA_HOST_COMPILER)
+            # Only check the most common paths that exist in barebones installs
+            set(COMMON_PATHS
+                    "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC"
+                    "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC"
+                    "C:/Program Files/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC"
+            )
+
+            foreach(BASE_PATH ${COMMON_PATHS})
+                if(EXISTS ${BASE_PATH})
+                    file(GLOB MSVC_VERSIONS "${BASE_PATH}/*")
+                    if(MSVC_VERSIONS)
+                        # Get the lexicographically last version (should be newest)
+                        list(SORT MSVC_VERSIONS)
+                        list(REVERSE MSVC_VERSIONS)
+                        list(GET MSVC_VERSIONS 0 LATEST_MSVC)
+
+                        set(CANDIDATE_COMPILER "${LATEST_MSVC}/bin/Hostx64/x64/cl.exe")
+                        if(EXISTS ${CANDIDATE_COMPILER})
+                            set(CMAKE_CUDA_HOST_COMPILER ${CANDIDATE_COMPILER})
+                            message(STATUS "Found CUDA host compiler in standard path: ${CMAKE_CUDA_HOST_COMPILER}")
+                            break()
+                        endif()
+                    endif()
+                endif()
+            endforeach()
+        endif()
+
+        # Validation and warning
+        if(WIN32)
+            if(CMAKE_CUDA_HOST_COMPILER)
+                if(NOT EXISTS ${CMAKE_CUDA_HOST_COMPILER})
+                    message(WARNING "CUDA host compiler path does not exist: ${CMAKE_CUDA_HOST_COMPILER}")
+                    unset(CMAKE_CUDA_HOST_COMPILER)
+                else()
+                    message(STATUS "Final CUDA host compiler: ${CMAKE_CUDA_HOST_COMPILER}")
+                endif()
+            else()
+                message(WARNING "Could not auto-detect x64 CUDA host compiler.")
+                message(STATUS "Manual options:")
+                message(STATUS "  1. Use x64 Native Tools Command Prompt")
+                message(STATUS "  2. Set manually: -DCMAKE_CUDA_HOST_COMPILER=\"path/to/x64/cl.exe\"")
+                message(STATUS "  3. Ensure x64 cl.exe is in your PATH")
+            endif()
+        endif()
 
         # Windows/MSVC flags: bigobj, EHsc, *and* disable the new preprocessor
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}
