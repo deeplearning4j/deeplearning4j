@@ -4578,6 +4578,22 @@
     "allPublicClasses": true
   },
   {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling3D",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.Invoke",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
     "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.BatchNorm",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,

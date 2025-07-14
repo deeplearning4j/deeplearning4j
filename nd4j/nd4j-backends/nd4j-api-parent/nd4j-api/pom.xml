@@ -36,8 +36,6 @@
     <name>nd4j-api</name>
 
     <properties>
-
-
         <byteunits.version>0.9.1</byteunits.version>
         <neoitertools.version>1.0.0</neoitertools.version>
         <module.name>nd4j.api</module.name>
@@ -141,16 +139,7 @@
             <artifactId>nd4j-common</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-core</artifactId>
-            <scope>test</scope>
-        </dependency>
+
     </dependencies>
 
     <profiles>
