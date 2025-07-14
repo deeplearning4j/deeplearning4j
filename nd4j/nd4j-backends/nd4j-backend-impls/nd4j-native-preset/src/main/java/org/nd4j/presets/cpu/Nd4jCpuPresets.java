@@ -160,6 +160,10 @@ import static org.nd4j.presets.OpExclusionUtils.getSkipClasses;
                 @Platform(value = "linux-arm64",preload = "gomp@.1", preloadpath = {"/usr/aarch64-linux-gnu/lib/", "/usr/lib/aarch64-linux-gnu/"}),
                 @Platform(value = "linux-ppc64", preloadpath = {"/usr/powerpc64-linux-gnu/lib/", "/usr/powerpc64le-linux-gnu/lib/", "/usr/lib/powerpc64-linux-gnu/", "/usr/lib/powerpc64le-linux-gnu/"}),
                 @Platform(value = "windows", preload = {"libwinpthread-1", "libgcc_s_seh-1", "libgomp-1", "libstdc++-6", "libnd4jcpu"}),
+                @Platform(value = "android-arm64",
+                        preload = { "libnd4jcpu"},
+                include = {"cstdint","cstdlib","cfloat","cstring","cstdio","climits"}),
+
                 @Platform(extension = {"-onednn", "-onednn-avx512","-onednn-avx2", "-","-avx2","-avx512", "-compat"})
         })
 public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
