@@ -674,9 +674,7 @@
             </activation>
             <properties>
                 <javacpp.build.output.path>${project.build.directory}/classes/lib/arm64-v8a</javacpp.build.output.path>
-                <!-- Add sysroot configuration for android-arm64 -->
                 <javacpp.platform.sysroot>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</javacpp.platform.sysroot>
-                <!-- Remove -nostartfiles since we need the CRT objects -->
                 <javacpp.compiler.crtoption></javacpp.compiler.crtoption>
             </properties>
             <build>
@@ -756,11 +754,8 @@
                                 <linkPath>${libnd4j.outputPath}</linkPath>
                                 <linkPath>${env.OPENBLAS_PATH}/lib</linkPath>
                                 <linkPath>${env.OPENBLAS_PATH}/</linkPath>
-                                <!-- Android NDK library paths for arm64 -->
                                 <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/21</linkPath>
                                 <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android</linkPath>
-                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/17/lib/linux</linkPath>
-                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib</linkPath>
                             </linkPaths>
                             <resourcePath>${libnd4jhome}/blasbuild/cpu/blas</resourcePath>
                             <buildResources>
@@ -783,34 +778,12 @@
                             <compilerOptions>
                                 <compilerOption>${compiler.flag.cpp.standard}</compilerOption>
                                 <compilerOption>${platform.linker.flag.no.undefined}</compilerOption>
-                                <!-- Add explicit sysroot -->
                                 <compilerOption>--sysroot=${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</compilerOption>
-                                <!-- Add system include paths for Android NDK arm64 -->
                                 <compilerOption>-I${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include</compilerOption>
                                 <compilerOption>-I${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/aarch64-linux-android</compilerOption>
-                                <!-- Define Android platform and required macros -->
                                 <compilerOption>-D__ANDROID_API__=21</compilerOption>
                                 <compilerOption>-DANDROID</compilerOption>
-                                <compilerOption>-D__STDC_LIMIT_MACROS</compilerOption>
-                                <compilerOption>-D__STDC_CONSTANT_MACROS</compilerOption>
-                                <compilerOption>-D__STDC_FORMAT_MACROS</compilerOption>
-                                <!-- Define the types using standard C types -->
-                                <compilerOption>-Duint8_t="unsigned char"</compilerOption>
-                                <compilerOption>-Dint8_t="signed char"</compilerOption>
-                                <compilerOption>-Duint16_t="unsigned short"</compilerOption>
-                                <compilerOption>-Dint16_t="short"</compilerOption>
-                                <compilerOption>-Duint32_t="unsigned int"</compilerOption>
-                                <compilerOption>-Dint32_t="int"</compilerOption>
-                                <compilerOption>-Duint64_t="unsigned long long"</compilerOption>
-                                <compilerOption>-Dint64_t="long long"</compilerOption>
-                                <compilerOption>-Dsize_t="unsigned long"</compilerOption>
-                                <!-- Add multiple -B flags for different possible CRT locations -->
-                                <compilerOption>-B${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/17/lib/linux</compilerOption>
                                 <compilerOption>-B${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/21</compilerOption>
-                                <compilerOption>-B${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android</compilerOption>
-                                <!-- Explicitly tell linker where to find libraries -->
-                                <compilerOption>-Wl,--dynamic-linker=/system/bin/linker64</compilerOption>
-                                <!-- Fix library search paths -->
                                 <compilerOption>-L${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/21</compilerOption>
                                 <compilerOption>-L${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android</compilerOption>
                             </compilerOptions>
