@@ -259,7 +259,7 @@ jobs:
           
           # Download and install with better error handling
           Write-Host "Downloading Visual Studio Build Tools installer..."
-            $installerUrl = "https://aka.ms/vs/17/release.ltsc.17.4/vs_buildtools.exe"
+            $installerUrl = "https://aka.ms/vs/17/release.ltsc.17.2/vs_buildtools.exe""
             $installerPath = Join-Path $env:TEMP "vs_buildtools_$(Get-Date -Format 'yyyyMMdd_HHmmss').exe"
           
             try {
