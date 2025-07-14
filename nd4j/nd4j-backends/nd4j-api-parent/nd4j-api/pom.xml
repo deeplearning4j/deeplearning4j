@@ -171,6 +171,9 @@
         <!-- The main profile that includes libnd4j -->
         <profile>
             <id>cpu</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
             <dependencies>
                 <dependency>
                     <groupId>org.eclipse.deeplearning4j</groupId>
