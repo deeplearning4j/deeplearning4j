@@ -34,6 +34,7 @@ import org.nd4j.imports.descriptors.onnx.OnnxDescriptorParser;
 import org.nd4j.imports.descriptors.onnx.OpDescriptor;
 import org.nd4j.imports.descriptors.tensorflow.TensorflowDescriptorParser;
 import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.custom.Invoke;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.impl.shape.CreateView;
@@ -96,6 +97,7 @@ public class DifferentialFunctionClassHolder {
         fnClasses = new ArrayList<>(Arrays.<Class<?>>asList(
                 org.nd4j.linalg.api.ops.DynamicCustomOp.class,
                 org.nd4j.linalg.api.ops.NoOp.class,
+                Invoke.class,
                 org.nd4j.linalg.api.ops.impl.updaters.SgdUpdater.class,
                 org.nd4j.linalg.api.ops.impl.updaters.RmsPropUpdater.class,
                 org.nd4j.linalg.api.ops.impl.updaters.NesterovsUpdater.class,

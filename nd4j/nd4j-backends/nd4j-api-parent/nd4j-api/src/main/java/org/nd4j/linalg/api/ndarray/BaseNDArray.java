@@ -5998,7 +5998,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public int toFlatArray(FlatBufferBuilder builder) {
-        if(isView()){
+        if(isView()) {
             return dup(this.ordering()).toFlatArray(builder);
         }
         int shape = FlatArray.createShapeVector(builder, this.shapeInfoDataBuffer().asLong());

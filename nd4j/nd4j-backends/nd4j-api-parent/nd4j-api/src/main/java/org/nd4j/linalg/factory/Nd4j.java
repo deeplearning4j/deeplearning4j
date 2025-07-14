@@ -6075,101 +6075,22 @@ public class Nd4j {
                 "Cannot create INDArray from FlatArray with UNKNOWN or COMPRESSED DataType: %s", dtype);
 
 
+        int shapeInfoLength = array.shapeLength();
+        long[] shapeBuffer = new long[shapeInfoLength];
+        for(int i = 0; i < shapeInfoLength; i++) {
+            shapeBuffer[i] = array.shape(i);
+        }
+        long[] shape = new long[(int) shapeBuffer[0]];
         // --- 2. Extract Rank and Shape ---
-        int rank = array.shapeLength();
-        Preconditions.checkState(rank >= 0 && rank <= Shape.MAX_RANK, // Check lower bound too
-                "Rank from FlatArray (%s) is invalid or exceeds maximum allowed rank (%s)", rank, Shape.MAX_RANK);
-
-        long[] shape = new long[rank];
-        for (int i = 0; i < rank; i++) {
-            shape[i] = array.shape(i);
-            Preconditions.checkState(shape[i] >= 0, "Invalid shape dimension size: shape[%s] = %s", i, shape[i]);
+        long rank = shapeBuffer[0];
+        long length = 1;
+        for(int i = 0; i < rank; i++) {
+            length *= shapeBuffer[i + 1];
+            shape[i] = shapeBuffer[i + 1];
         }
-
-        // --- 3. Determine isEmpty based on shape ---
-        boolean isEmpty = false;
-        if (rank > 0) { // Scalars (rank 0) have length 1, not empty by shape check
-            for (long dim : shape) {
-                if (dim == 0) {
-                    isEmpty = true;
-                    break;
-                }
-            }
-        }
-        long length = isEmpty ? 0 : ArrayUtil.prodLong(shape); // Correct length calculation
-        if (rank == 0) length = 1; // Scalar length is 1
-
-
-        // --- 4. Handle Empty Array Case ---
-        if (isEmpty) {
-            // Return an empty INDArray with the correct shape and dtype
-            return Nd4j.empty(dtype).reshape(shape);
-        }
-
-        // --- 5. Determine Order, Calculate Strides & EWS ---
-        char ordering = 'c'; // Default C order, as FlatArray doesn't store layout order
-        long[] strides = Nd4j.getStrides(shape, ordering); // Empty for rank 0
-
-        // --- 6. Calculate Extras ---
-        long extras = 0L;
-        extras = ArrayOptionsHelper.setDataType(extras, dtype); // Set ONLY data type bits initially
-        // Set other flags to false defaults for a new array from buffer
-        // extras = ArrayOptionsHelper.setOptionBit(extras, ArrayOptionsHelper.IS_VIEW, false); // Example if needed
 
         // --- 7. Create ND4J Shape Info Buffer ---
-        DataBuffer shapeInfoBuffer;
-        int shapeInfoLength = Shape.shapeInfoLength(rank);
-
-        if (rank == 0) {
-            // ** Manual creation for scalar (rank 0) **
-            shapeInfoBuffer = Nd4j.getDataBufferFactory().createLong(shapeInfoLength); // Length is 4
-            shapeInfoBuffer.put(0, 0);   // Rank
-            shapeInfoBuffer.put(1, 0); // shape (1 for scalar)
-            shapeInfoBuffer.put(2,0); // Order ('c')
-            shapeInfoBuffer.put(3, extras); // Set calculated extras
-            shapeInfoBuffer.put(4, -1); // Set calculated extras
-            shapeInfoBuffer.put(5, ordering); // Set calculated extras
-
-        } else {
-            // ** Standard creation for non-scalars **
-            long[] shapeInfoArray = new long[shapeInfoLength];
-            shapeInfoArray[0] = rank;
-            System.arraycopy(shape, 0, shapeInfoArray, 1, rank);
-            System.arraycopy(strides, 0, shapeInfoArray, 1 + rank, rank);
-            shapeInfoArray[shapeInfoLength - 3] = -1;
-            shapeInfoArray[shapeInfoLength - 2] = extras;
-            shapeInfoArray[shapeInfoLength - 1] = ordering;
-
-            try {
-                Pair<DataBuffer, long[]> siPair = Nd4j.getShapeInfoProvider().createShapeInformation(shapeInfoArray);
-                shapeInfoBuffer = siPair.getFirst();
-            } catch (Exception e) {
-                log.error("Error during ShapeInfoProvider creation for rank {}. Calculated shapeInfoArray: {}", rank, Arrays.toString(shapeInfoArray), e);
-                throw new RuntimeException("Failed to create shape information buffer for rank " + rank, e);
-            }
-        }
-
-        // --- 8. Sanity check the created shape info buffer's extras/dataType ---
-        long extrasFromBuffer = Shape.options(shapeInfoBuffer);
-        DataType dtFromBuffer = DataType.UNKNOWN;
-        boolean checkFailed = false;
-        try {
-            dtFromBuffer = ArrayOptionsHelper.dataType(extrasFromBuffer);
-            if (dtFromBuffer != dtype) {
-                log.error("POST ShapeInfoBuffer Creation: DataType MISMATCH. Expected: {}, From Buffer Extras ({}): {}. ShapeInfoBuffer content: {}",
-                        dtype, extrasFromBuffer, dtFromBuffer, Arrays.toString(shapeInfoBuffer.asLong()));
-                checkFailed = true;
-            }
-        } catch (ND4JUnknownDataTypeException e) {
-            log.error("POST ShapeInfoBuffer Creation: ND4JUnknownDataTypeException reading DataType. Extras value read from buffer: {}. ShapeInfoBuffer content: {}",
-                    extrasFromBuffer, Arrays.toString(shapeInfoBuffer.asLong()), e);
-            checkFailed = true;
-        }
-        if(checkFailed){
-            // This indicates a deeper issue, likely in the native layer or buffer provider if the manual creation path was used.
-            throw new IllegalStateException("Failed to create or validate INDArray shape information buffer. Extras value mismatch or unreadable.");
-        }
-
+        DataBuffer shapeInfoBuffer = Nd4j.createBufferDetached(shapeBuffer);
         // --- 9. Get and Process Data Buffer ---
         java.nio.ByteBuffer bb = array.bufferAsByteBuffer();
         DataBuffer dataBuffer;

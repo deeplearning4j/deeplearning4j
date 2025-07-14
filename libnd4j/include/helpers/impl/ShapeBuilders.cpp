@@ -96,7 +96,7 @@ LongType* ShapeBuilders::createShapeInfo(const DataType dataType, const char ord
     shapeInfo = new LongType[shape::shapeInfoLength(rank)];
 
     // Initialize entire buffer to zero first
-    memset(shapeInfo, 0, shape::shapeInfoByteLength(rank));
+    memset(shapeInfo, 0, shape::shapeInfoLength(rank) * sizeof(LongType));
 
     shapeInfo[0] = rank;
 
@@ -110,8 +110,11 @@ LongType* ShapeBuilders::createShapeInfo(const DataType dataType, const char ord
       shapeInfo[i + 1 + rank] = strideOnly[i];
     }
 
-    // Set element-wise stride to 1 (will be recalculated later if needed)
-    shapeInfo[shape::shapeInfoLength(rank) - 2] = 1;
+    // Explicitly set EWS to -1 (unused) at position length-2
+    shapeInfo[shape::shapeInfoLength(rank) - 2] = -1;
+
+    // Set order (at position length-1)
+    shapeInfo[shape::shapeInfoLength(rank) - 1] = order;
   }
 
   ArrayOptions::setExtra(shapeInfo, extras);
