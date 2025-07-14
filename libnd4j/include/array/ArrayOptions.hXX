@@ -278,7 +278,7 @@ SD_HOST SD_INLINE sd::DataType ArrayOptions::dataTypeValue(sd::LongType property
 
 
 SD_HOST  SD_INLINE void validateFlags(sd::LongType property, const sd::LongType flags[], size_t numFlags) {
-  LongType flagIndices[numFlags];
+  LongType *flagIndices = new LongType[numFlags];
   int numFlagsSet = 0;
   for (size_t i = 0; i < numFlags; ++i) {
     if (hasPropertyBitSetForFlags(property, flags[i])) {
@@ -300,6 +300,8 @@ SD_HOST  SD_INLINE void validateFlags(sd::LongType property, const sd::LongType 
     errorMsg << "Total: " << numFlagsSet << " data types set.";
     THROW_EXCEPTION(errorMsg.str().c_str());
   }
+
+  delete[] flagIndices;
 }
 
 SD_HOST SD_INLINE void ArrayOptions::validateSingleDataType(sd::LongType property) {

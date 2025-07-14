@@ -84,10 +84,10 @@ LongType* ShapeBuilders::createVectorShapeInfo(const DataType dataType, const Lo
 }
 
 
-LongType  * ShapeBuilders::createShapeInfo(const DataType dataType, const char order, int rank,
-                                           const LongType* shapeOnly,
-                                           const LongType *strideOnly,
-                                           memory::Workspace* workspace, sd::LongType extras) {
+LongType* ShapeBuilders::createShapeInfo(const DataType dataType, const char order, int rank,
+                                         const LongType* shapeOnly,
+                                         const LongType *strideOnly,
+                                         memory::Workspace* workspace, sd::LongType extras) {
   LongType* shapeInfo = nullptr;
 
   if (rank == 0) {  // scalar case
@@ -95,19 +95,27 @@ LongType  * ShapeBuilders::createShapeInfo(const DataType dataType, const char o
   } else {
     shapeInfo = new LongType[shape::shapeInfoLength(rank)];
     shapeInfo[0] = rank;
+
+    // Set shape values
     for (int i = 0; i < rank; i++) {
       shapeInfo[i + 1] = shapeOnly[i];
     }
 
+    // Set stride values
     for (int i = 0; i < rank; i++) {
       shapeInfo[i + 1 + rank] = strideOnly[i];
     }
+
+    // Initialize remaining fields before calling setExtra
+    // Layout: [rank, shape[rank], stride[rank], extra, ews, order]
+    shapeInfo[1 + 2 * rank] = 0;        // extra field (will be overwritten by setExtra)
+    shapeInfo[1 + 2 * rank + 1] = 1;    // element-wise stride
+    shapeInfo[1 + 2*  rank + 2] = order; // order (will be overwritten by setOrder)
   }
 
   ArrayOptions::setExtra(shapeInfo, extras);
   shape::setOrder(shapeInfo, order);
   return shapeInfo;
-
 }
 
 LongType* ShapeBuilders::copyShapeInfoWithNewType(const LongType* inShapeInfo, const DataType newType) {
