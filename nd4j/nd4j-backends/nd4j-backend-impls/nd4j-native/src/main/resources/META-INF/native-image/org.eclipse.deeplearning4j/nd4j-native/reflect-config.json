@@ -152,7 +152,6 @@
     "allDeclaredFields": true,
     "allPublicFields": true
   },
-,
   {
     "name": "org.nd4j.linalg.cpu.nativecpu.BlasWrapper",
     "allDeclaredFields":true,
