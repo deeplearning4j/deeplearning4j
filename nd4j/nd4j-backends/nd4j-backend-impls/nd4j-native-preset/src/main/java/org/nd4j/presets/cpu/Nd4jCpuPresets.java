@@ -122,6 +122,8 @@ import static org.nd4j.presets.OpExclusionUtils.getSkipClasses;
                 "array/ShapeDescriptor.h",
                 "array/TadDescriptor.h",
                 "helpers/DebugInfo.h",
+                "stdint.h",
+                "stddef.h",
                 //note: this is for the generated operations
                 //libnd4j should be built with an include/generated/include_ops.h
                 //before initiating a build, generally this will just default to
@@ -151,7 +153,8 @@ import static org.nd4j.presets.OpExclusionUtils.getSkipClasses;
                         "lapack.h",
                         "lapacke.h",
                         "lapacke_utils.h",
-                        "cnpy/cnpy.h"
+                        "cnpy/cnpy.h",
+
                 },
                 compiler = {"cpp17", "nowarnings"},
                 library = "jnind4jcpu", link = "nd4jcpu", preload = "libnd4jcpu"),
@@ -161,7 +164,7 @@ import static org.nd4j.presets.OpExclusionUtils.getSkipClasses;
                 @Platform(value = "linux-ppc64", preloadpath = {"/usr/powerpc64-linux-gnu/lib/", "/usr/powerpc64le-linux-gnu/lib/", "/usr/lib/powerpc64-linux-gnu/", "/usr/lib/powerpc64le-linux-gnu/"}),
                 @Platform(value = "windows", preload = {"libwinpthread-1", "libgcc_s_seh-1", "libgomp-1", "libstdc++-6", "libnd4jcpu"}),
                 @Platform(value = "android-arm64",
-                        preload = { "libnd4jcpu"},include = {"stdint.h","stddef.h"}),
+                        preload = { "libnd4jcpu"}),
 
                 @Platform(extension = {"-onednn", "-onednn-avx512","-onednn-avx2", "-","-avx2","-avx512", "-compat"})
         })
