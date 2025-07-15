@@ -449,6 +449,8 @@ function(setup_initial_configuration)
 endfunction()
 
 setup_initial_configuration()
+include(Dependencies)
+setup_flatbuffers()
 
 # --- Set library name and default engine first ---
 if(NOT DEFINED SD_LIBRARY_NAME)
@@ -484,11 +486,10 @@ endif()
 
 # --- Phase 2: Handle Dependencies & Operations ---
 print_status_colored("INFO" "=== 2. INITIALIZING DEPENDENCIES & OPERATIONS ===")
-include(Dependencies)
+
 include(DuplicateInstantiationDetection)
 include(TemplateProcessing)
 include(CompilerFlags)
-setup_flatbuffers()
 setup_onednn()
 setup_armcompute()
 

@@ -5264,10 +5264,15 @@ NDArray::p(const sd::LongType i, const T value) {  // Note: value not NDArray re
   // Direct value assignment, no need for scalar.isS() check
   templatedSetString<T,T>(buffer(), xOffset, (void*)&value);
 }
-#if defined(HAS_UTF8) || defined(HAS_UTF16) || defined(HAS_UTF32)
+
+// FIXED: Remove conditional compilation and ensure all string types are instantiated
 #define INSTANTIATE_P_SINGLE_STRING(T) template SD_LIB_EXPORT void NDArray::p(const sd::LongType i,const GET_SECOND(T) value);
 ITERATE_LIST((SD_STRING_TYPES),INSTANTIATE_P_SINGLE_STRING);
-#endif
+
+// ADDITION: Explicit instantiations for the string types to ensure they're always available
+template SD_LIB_EXPORT void NDArray::p<std::string>(const sd::LongType i, const std::string value);
+template SD_LIB_EXPORT void NDArray::p<std::u16string>(const sd::LongType i, const std::u16string value);
+template SD_LIB_EXPORT void NDArray::p<std::u32string>(const sd::LongType i, const std::u32string value);
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType l, NDArray *scalar) {

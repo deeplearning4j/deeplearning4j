@@ -157,11 +157,6 @@ endfunction()
 # FLATBUFFERS (Required)
 # =============================================================================
 function(setup_flatbuffers)
-    # Target Guard: Prevents this from ever running twice.
-    if(TARGET flatbuffers_external)
-        return()
-    endif()
-
     if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
         set(FLATBUFFERS_BUILD_FLATC "ON" CACHE STRING "Enable flatc build" FORCE)
     else()
@@ -194,21 +189,21 @@ function(setup_flatbuffers)
         set(FLATC_EXECUTABLE "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/flatc")
         set(MAIN_GENERATED_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/graph/generated.h")
 
-        add_custom_command(
-                OUTPUT ${MAIN_GENERATED_HEADER}
+        # Execute flatc generation inline
+        ExternalProject_Add_Step(flatbuffers_external generate_headers
                 COMMAND ${CMAKE_COMMAND} -E env "FLATC_PATH=${FLATC_EXECUTABLE}" bash ${CMAKE_CURRENT_SOURCE_DIR}/flatc-generate.sh
-                DEPENDS flatbuffers_external
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                 COMMENT "Running flatc to generate C++ headers"
-                VERBATIM
+                DEPENDEES build
+                BYPRODUCTS ${MAIN_GENERATED_HEADER}
         )
-        add_custom_target(generate_flatbuffers_headers DEPENDS ${MAIN_GENERATED_HEADER})
-        add_custom_command(
-                TARGET generate_flatbuffers_headers POST_BUILD
+
+        # Execute Java file copying inline
+        ExternalProject_Add_Step(flatbuffers_external copy_java_files
                 COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/copy-flatc-java.sh
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                 COMMENT "Copying generated Java files"
-                VERBATIM
+                DEPENDEES generate_headers
         )
     endif()
 endfunction()
