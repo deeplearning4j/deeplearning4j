@@ -548,9 +548,6 @@
                                 <compilerOption>${platform.compiler.flag.no.omit.fp}</compilerOption>
                                 <compilerOption>${platform.compiler.flag.no.optimize.sibling.calls}</compilerOption>
                                 <compilerOption>${platform.compiler.flag.debug}</compilerOption>
-                                <compilerOption>-finstrument-functions</compilerOption>
-                                <!-- NDK specific: https://github.com/android/ndk/issues/1690-->
-                                <compilerOption>${javacpp.compiler.crtoption}</compilerOption>
                             </compilerOptions>
                         </configuration>
                         <executions>
@@ -788,6 +785,11 @@
                                 <compilerOption>-D__ANDROID_API__=21</compilerOption>
                                 <compilerOption>-DANDROID</compilerOption>
                                 <compilerOption>--target=aarch64-none-linux-android21</compilerOption>
+                                <!-- Add these to force inclusion of standard headers -->
+                                <compilerOption>-include</compilerOption>
+                                <compilerOption>stdint.h</compilerOption>
+                                <compilerOption>-include</compilerOption>
+                                <compilerOption>stddef.h</compilerOption>
                             </compilerOptions>
                         </configuration>
                         <executions>
