@@ -37,6 +37,8 @@ import static org.nd4j.presets.OpExclusionUtils.getSkipClasses;
                 //note, order matters here
                 //this particular header file is either
                 //going to be the source of ops, see also:
+                "stdint.h",
+                "stddef.h",
                 //https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/blas/CMakeLists.txt#L76
                 //https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/buildnativeoperations.sh#L517
                 "generated/include_ops.h",
@@ -122,8 +124,7 @@ import static org.nd4j.presets.OpExclusionUtils.getSkipClasses;
                 "array/ShapeDescriptor.h",
                 "array/TadDescriptor.h",
                 "helpers/DebugInfo.h",
-                "stdint.h",
-                "stddef.h",
+
                 //note: this is for the generated operations
                 //libnd4j should be built with an include/generated/include_ops.h
                 //before initiating a build, generally this will just default to
