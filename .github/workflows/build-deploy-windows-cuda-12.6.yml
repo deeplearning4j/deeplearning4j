@@ -227,71 +227,149 @@ jobs:
         run: |
           Write-Host "=== Installing CUDA 12.6 Update 1 ==="
           
-          # Download CUDA 12.6 Update 1 installer
-          $cudaUrl = "https://developer.download.nvidia.com/compute/cuda/12.6.1/network_installers/cuda_12.6.1_windows_network.exe"
-          $cudaInstaller = "$env:TEMP\cuda_installer.exe"
+          # Use local installer instead of network installer for better reliability
+          $cudaUrl = "https://developer.download.nvidia.com/compute/cuda/12.6.1/local_installers/cuda_12.6.1_560.94_windows.exe"
+          $cudaInstaller = "$env:TEMP\cuda_12.6.1_local.exe"
           
-          Write-Host "Downloading CUDA installer..."
+          Write-Host "Downloading CUDA local installer (this may take several minutes)..."
           try {
-            Invoke-WebRequest -Uri $cudaUrl -OutFile $cudaInstaller -UseBasicParsing -TimeoutSec 1200
-            Write-Host "Downloaded CUDA installer: $cudaInstaller"
+            # Download with progress and retry logic
+            $webClient = New-Object System.Net.WebClient
+            $webClient.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+          
+            # Download with retries
+            $retryCount = 0
+            $maxRetries = 3
+            do {
+              try {
+                $webClient.DownloadFile($cudaUrl, $cudaInstaller)
+                break
+              } catch {
+                $retryCount++
+                if ($retryCount -ge $maxRetries) {
+                  throw "Failed to download after $maxRetries attempts: $($_.Exception.Message)"
+                }
+                Write-Host "Download attempt $retryCount failed, retrying in 30 seconds..."
+                Start-Sleep -Seconds 30
+              }
+            } while ($retryCount -lt $maxRetries)
+          
+            $webClient.Dispose()
+          
+            if (-not (Test-Path $cudaInstaller) -or (Get-Item $cudaInstaller).Length -lt 100MB) {
+              throw "Downloaded file is missing or too small"
+            }
+          
+            Write-Host "Downloaded CUDA installer: $cudaInstaller ($(([math]::Round((Get-Item $cudaInstaller).Length / 1MB, 2))) MB)"
           } catch {
             Write-Error "Failed to download CUDA installer: $($_.Exception.Message)"
             exit 1
           }
           
-          # Silent install with essential components only
-          $cudaArgs = @(
-            "-s",
-            "nvcc_12.6",
-            "cuobjdump_12.6", 
-            "nvprune_12.6",
-            "cupti_12.6",
-            "gpu_library_advisor_12.6",
-            "memcheck_12.6",
-            "nvdisasm_12.6",
-            "nvml_dev_12.6",
-            "nvprof_12.6",
-            "nvrtc_12.6",
-            "nvrtc_dev_12.6",
-            "nvtx_12.6",
-            "sanitizer_12.6",
-            "thrust_12.6",
-            "cublas_12.6",
-            "cublas_dev_12.6",
-            "cudart_12.6",
-            "cufft_12.6",
-            "cufft_dev_12.6",
-            "curand_12.6",
-            "curand_dev_12.6",
-            "cusolver_12.6",
-            "cusolver_dev_12.6",
-            "cusparse_12.6",
-            "cusparse_dev_12.6",
-            "npp_12.6",
-            "npp_dev_12.6",
-            "nvjpeg_12.6",
-            "nvjpeg_dev_12.6"
-          )
+          # Extract installer to avoid GUI and get better error handling
+          Write-Host "Extracting CUDA installer..."
+          $extractPath = "$env:TEMP\cuda_extract"
+          if (Test-Path $extractPath) {
+            Remove-Item -Path $extractPath -Recurse -Force
+          }
+          New-Item -Path $extractPath -ItemType Directory -Force | Out-Null
           
-          Write-Host "Installing CUDA 12.6 Update 1..."
-          $process = Start-Process -FilePath $cudaInstaller -ArgumentList $cudaArgs -Wait -PassThru -NoNewWindow
+          try {
+            # Extract the installer
+            $extractProcess = Start-Process -FilePath $cudaInstaller -ArgumentList "-extract:`"$extractPath`"" -Wait -PassThru -NoNewWindow
+            if ($extractProcess.ExitCode -ne 0) {
+              throw "Extraction failed with exit code: $($extractProcess.ExitCode)"
+            }
           
-          if ($process.ExitCode -ne 0) {
-            Write-Error "CUDA installation failed with exit code: $($process.ExitCode)"
+            Write-Host "CUDA installer extracted successfully"
+          } catch {
+            Write-Error "Failed to extract CUDA installer: $($_.Exception.Message)"
             exit 1
           }
           
-          Write-Host "✅ CUDA 12.6 Update 1 installed successfully"
+          # Find and run the setup.exe from extracted files
+          $setupExe = Get-ChildItem -Path $extractPath -Name "setup.exe" -Recurse | Select-Object -First 1
+          if (-not $setupExe) {
+            Write-Error "setup.exe not found in extracted files"
+            exit 1
+          }
+          
+          $setupPath = Join-Path $extractPath $setupExe
+          Write-Host "Found setup.exe at: $setupPath"
+          
+          # Install with minimal components for faster installation
+          $installArgs = @(
+            "-s",
+            "--toolkit",
+            "--silent",
+            "--no-opengl-libs"
+          )
+          
+          Write-Host "Installing CUDA toolkit..."
+          try {
+            $installProcess = Start-Process -FilePath $setupPath -ArgumentList $installArgs -Wait -PassThru -NoNewWindow
+          
+            Write-Host "Setup.exe completed with exit code: $($installProcess.ExitCode)"
+          
+            # Exit codes: 0 = success, 1 = success with reboot required
+            if ($installProcess.ExitCode -notin @(0, 1)) {
+              throw "Installation failed with exit code: $($installProcess.ExitCode)"
+            }
+          
+          } catch {
+            Write-Error "CUDA installation failed: $($_.Exception.Message)"
+          
+            # Try to get more detailed error information
+            $logPath = "$env:TEMP\cuda_install_log.txt"
+            if (Test-Path $logPath) {
+              Write-Host "Installation log:"
+              Get-Content $logPath | Select-Object -Last 50
+            }
+          
+            exit 1
+          }
+          
+          Write-Host "✅ CUDA installation completed"
           
           # Verify installation
           $cudaPath = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6"
-          if (-not (Test-Path "$cudaPath\bin\nvcc.exe")) {
-            Write-Error "CUDA installation verification failed - nvcc.exe not found"
+          $nvccPath = "$cudaPath\bin\nvcc.exe"
+          
+          # Wait a moment for filesystem to settle
+          Start-Sleep -Seconds 5
+          
+          if (-not (Test-Path $nvccPath)) {
+            Write-Error "CUDA installation verification failed - nvcc.exe not found at: $nvccPath"
+          
+            # List what was actually installed
+            $cudaRoot = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA"
+            if (Test-Path $cudaRoot) {
+              Write-Host "Available CUDA versions:"
+              Get-ChildItem $cudaRoot -Directory | ForEach-Object { Write-Host "  $($_.Name)" }
+            }
+          
             exit 1
           }
           
-          Write-Host "✅ CUDA installation verified"
+          # Test nvcc
+          try {
+            $nvccResult = & $nvccPath --version 2>&1
+            Write-Host "✅ CUDA installation verified - nvcc version:"
+            Write-Host $nvccResult
+          } catch {
+            Write-Warning "nvcc found but version check failed: $($_.Exception.Message)"
+          }
+          
+          # Clean up extracted files to save space
+          try {
+            Remove-Item -Path $extractPath -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item -Path $cudaInstaller -Force -ErrorAction SilentlyContinue
+            Write-Host "Cleaned up installation files"
+          } catch {
+            Write-Host "Could not clean up some installation files (this is not critical)"
+          }
+          
+          Write-Host "✅ CUDA 12.6 Update 1 installation complete"
 
       - name: Setup Java
         uses: actions/setup-java@v4
