@@ -493,7 +493,11 @@ function(configure_windows_cuda_build)
         return()
     endif()
 
-    message(STATUS "Configuring Windows CUDA build with clean flags...")
+    message(STATUS "Configuring Windows CUDA build with verbose mode...")
+
+    # Enable verbose output for the build system
+    set(CMAKE_VERBOSE_MAKEFILE ON PARENT_SCOPE)
+    set(CMAKE_CUDA_VERBOSE_FLAG ON PARENT_SCOPE)
 
     # Completely disable response files to prevent command line issues
     set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS OFF PARENT_SCOPE)
@@ -514,9 +518,12 @@ function(configure_windows_cuda_build)
     # Force clean CXX flags to prevent contamination
     set(CMAKE_CXX_FLAGS "" PARENT_SCOPE)
 
-    message(STATUS "Windows CUDA: Cleaned all problematic flags and disabled response files")
-endfunction()
+    # Enable verbose rule and target messages
+    set_property(GLOBAL PROPERTY RULE_MESSAGES ON)
+    set_property(GLOBAL PROPERTY TARGET_MESSAGES ON)
 
+    message(STATUS "Windows CUDA: Verbose mode enabled with clean flags")
+endfunction()
 function(configure_cuda_architecture_flags COMPUTE)
     string(TOLOWER "${COMPUTE}" COMPUTE_CMP)
     if(COMPUTE_CMP STREQUAL "all")
@@ -549,15 +556,26 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
     set(LOCAL_CUDA_FLAGS "")
 
     if(WIN32 AND MSVC)
-        message(STATUS "Configuring CUDA for Windows MSVC...")
+        message(STATUS "Configuring CUDA for Windows MSVC with verbose mode...")
         set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER} PARENT_SCOPE)
         set(LOCAL_CUDA_FLAGS "-maxrregcount=128")
 
+        # Enable verbose mode for Windows CUDA compilation
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --verbose")
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --ptxas-options=-v")
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --resource-usage")
 
+        # Host compiler verbose flags
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/showIncludes")
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/verbose")
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/diagnostics:caret")
+
+        # Linker verbose flags
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xlinker=/VERBOSE")
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xlinker=/TIME")
 
         # Explicitly enable C++17 for the host compiler
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/std:c++17")
-
 
         if(WIN32 AND NOT CMAKE_CUDA_HOST_COMPILER)
             find_program(CL_IN_PATH cl.exe)
@@ -634,11 +652,25 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
         # Force clean host compiler flags
         set(CMAKE_CXX_FLAGS "" PARENT_SCOPE)
 
-        message(STATUS "CUDA Windows flags configured - completely clean of GCC flags")
+        message(STATUS "CUDA Windows verbose flags configured")
     else()
+        message(STATUS "Configuring CUDA for Unix/Linux with verbose mode...")
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -maxrregcount=128")
 
+        # Enable verbose mode for Unix/Linux CUDA compilation
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --verbose")
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --ptxas-options=-v")
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --resource-usage")
+
         if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+            # Host compiler verbose flags for GCC
+            set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-v")
+            set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-H")
+
+            # Linker verbose flags
+            set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xlinker=-v")
+            set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xlinker=--verbose")
+
             if(SD_GCC_FUNCTRACE STREQUAL "ON")
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fPIC --device-debug -lineinfo -G")
             else()
@@ -647,6 +679,8 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fno-implicit-templates")
             endif()
         endif()
+
+        message(STATUS "CUDA Unix/Linux verbose flags configured")
     endif()
 
     if("${SD_PTXAS}" STREQUAL "ON")
@@ -688,7 +722,7 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
     set(CMAKE_CUDA_SEPARABLE_COMPILATION ON PARENT_SCOPE)
     set(CMAKE_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}" PARENT_SCOPE)
 
-    message(STATUS "Final CMAKE_CUDA_FLAGS: ${LOCAL_CUDA_FLAGS}")
+    message(STATUS "Final CMAKE_CUDA_FLAGS (with verbose): ${LOCAL_CUDA_FLAGS}")
 endfunction()
 
 # Debug configuration function
@@ -727,9 +761,12 @@ function(setup_cuda_include_directories)
     endif()
 endfunction()
 
-# MAIN CUDA SETUP FUNCTION
 function(setup_cuda_build)
-    message(STATUS "=== CUDA BUILD CONFIGURATION ===")
+    message(STATUS "=== CUDA BUILD CONFIGURATION (VERBOSE MODE) ===")
+
+    # Enable verbose output for the build system
+    set(CMAKE_VERBOSE_MAKEFILE ON PARENT_SCOPE)
+    set(CMAKE_CUDA_VERBOSE_FLAG ON PARENT_SCOPE)
 
     if(NOT DEFINED _CMAKE_CUDA_WHOLE_FLAG)
         message(STATUS "Setting _CMAKE_CUDA_WHOLE_FLAG (was missing)")
@@ -768,12 +805,16 @@ function(setup_cuda_build)
     # Also set the toolkit include directories for global access
     set(CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES "${CUDA_INCLUDE_DIRS}" PARENT_SCOPE)
 
+    # Enable verbose rule and target messages
+    set_property(GLOBAL PROPERTY RULE_MESSAGES ON)
+    set_property(GLOBAL PROPERTY TARGET_MESSAGES ON)
+
     debug_cuda_configuration()
 
     add_compile_definitions(SD_CUDA=true)
     set(DEFAULT_ENGINE "samediff::ENGINE_CUDA" PARENT_SCOPE)
 
-    message(STATUS "=== CUDA BUILD CONFIGURATION COMPLETE ===")
+    message(STATUS "=== CUDA BUILD CONFIGURATION (VERBOSE MODE) COMPLETE ===")
 endfunction()
 
 # Enhanced function to ensure CUDA paths are available at configure time
