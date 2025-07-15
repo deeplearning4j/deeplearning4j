@@ -1,4 +1,4 @@
-# GCC flags for C++ template duplicate instantiation issues
+# GCC and Clang flags for C++ template duplicate instantiation issues
 cmake_minimum_required(VERSION 3.15)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -10,11 +10,31 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         message(STATUS "Added -fpermissive: Allows duplicate template instantiations")
         message(STATUS "Added template-related flags for C++ duplicate handling")
     else()
-
         # Also set CXX flags for host compilation
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -Wno-error")
-
         message(STATUS "Added CUDA-specific compiler flags for duplicate template instantiations")
         message(STATUS "Added --disable-warnings to suppress NVCC errors")
+    endif()
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # For Clang template duplicate instantiation handling
+    if(NOT SD_CUDA)
+        add_compile_options(-Wno-duplicate-decl-specifier)
+        add_compile_options(-Wno-inconsistent-missing-override)
+        add_compile_options(-ftemplate-depth=1024)
+        # Enable identical code folding to merge duplicate instantiations
+        add_compile_options(-ffunction-sections)
+        add_compile_options(-fdata-sections)
+        # Linker flags for folding (set at target level or globally)
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections")
+        message(STATUS "Added Clang flags for duplicate template instantiation handling")
+        message(STATUS "Enabled function/data sections and garbage collection for folding")
+    else()
+        # CUDA with Clang
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-duplicate-decl-specifier -Wno-inconsistent-missing-override")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections")
+        message(STATUS "Added CUDA-specific Clang flags for duplicate template instantiations")
+        message(STATUS "Enabled linker garbage collection for duplicate folding")
     endif()
 endif()
