@@ -784,12 +784,11 @@
                                 <compilerOption>--sysroot=${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</compilerOption>
                                 <compilerOption>-D__ANDROID_API__=21</compilerOption>
                                 <compilerOption>-DANDROID</compilerOption>
-                                <compilerOption>--target=aarch64-none-linux-android21</compilerOption>
-                                <!-- Add these to force inclusion of standard headers -->
+                                <!-- Use system headers instead of C++ stdlib headers -->
                                 <compilerOption>-include</compilerOption>
-                                <compilerOption>stdint.h</compilerOption>
+                                <compilerOption>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/stdint.h</compilerOption>
                                 <compilerOption>-include</compilerOption>
-                                <compilerOption>stddef.h</compilerOption>
+                                <compilerOption>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/stddef.h</compilerOption>
                             </compilerOptions>
                         </configuration>
                         <executions>
