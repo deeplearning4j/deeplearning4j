@@ -14,7 +14,7 @@
 #endif
 
 #include <filesystem>
-
+#include <system/common.h>
 ValidationResult::ValidationResult()
     : isComputeCapabilitySufficient(true),
       isManagedMemorySupported(true),
@@ -116,17 +116,19 @@ void DeviceValidator::init() {
 #ifdef _WIN32
   // Windows
   if (system("cuobjdump --version > nul 2>&1") != 0) {
-    throw std::runtime_error("cuobjdump is not available on the system's PATH. Please install it and try again.");
+    THROW_EXCEPTION("cuobjdump is not available on the system's PATH. Please install it and try again.");
   }
 #else
   // Linux
   if (system("cuobjdump --version > /dev/null 2>&1") != 0) {
-    throw std::runtime_error("cuobjdump is not available on the system's PATH. Please install it and try again.");
+    THROW_EXCEPTION("cuobjdump is not available on the system's PATH. Please install it and try again.");
   }
 #endif
 
   printf("Initializing DeviceValidator at path %s\n", directoryPath.c_str());
-  for (const auto &entry : std::filesystem::directory_iterator(directoryPath)) {
+  std::filesystem::path pathObj(directoryPath);
+
+  for (const auto &entry : std::filesystem::directory_iterator(pathObj)) {
     if (entry.path().extension() == ".ptx" || entry.path().extension() == ".cubin") {
       CUmodule cuModule;
       printf("Adding path %s\n",entry.path().filename().string().c_str());
