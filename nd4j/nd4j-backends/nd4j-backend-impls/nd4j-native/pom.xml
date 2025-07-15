@@ -784,11 +784,16 @@
                                 <compilerOption>--sysroot=${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</compilerOption>
                                 <compilerOption>-D__ANDROID_API__=21</compilerOption>
                                 <compilerOption>-DANDROID</compilerOption>
-                                <!-- Use system headers instead of C++ stdlib headers -->
-                                <compilerOption>-include</compilerOption>
-                                <compilerOption>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/stdint.h</compilerOption>
-                                <compilerOption>-include</compilerOption>
-                                <compilerOption>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/stddef.h</compilerOption>
+                                <!-- Define the missing types explicitly -->
+                                <compilerOption>-Duint8_t=unsigned char</compilerOption>
+                                <compilerOption>-Dint8_t=signed char</compilerOption>
+                                <compilerOption>-Duint16_t=unsigned short</compilerOption>
+                                <compilerOption>-Dint16_t=short</compilerOption>
+                                <compilerOption>-Duint32_t=unsigned int</compilerOption>
+                                <compilerOption>-Dint32_t=int</compilerOption>
+                                <compilerOption>-Duint64_t=unsigned long long</compilerOption>
+                                <compilerOption>-Dint64_t=long long</compilerOption>
+                                <compilerOption>-Dsize_t=unsigned long</compilerOption>
                             </compilerOptions>
                         </configuration>
                         <executions>
