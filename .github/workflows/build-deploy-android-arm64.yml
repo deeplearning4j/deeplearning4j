@@ -170,7 +170,7 @@ jobs:
           mkdir -p "${OPENBLAS_HOME}"
           cd "${OPENBLAS_HOME}"
           
-          wget -q "https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/${OPENBLAS_JAR}"
+          wget -q "https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/${OPENBLAS_JAR}"
           unzip -q "${OPENBLAS_JAR}"
           
           if [ -f "${OPENBLAS_DIR}/libopenblas.so" ] && [ ! -f "${OPENBLAS_DIR}/libopenblas.so.0" ]; then
