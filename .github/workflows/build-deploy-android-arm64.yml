@@ -152,8 +152,8 @@ jobs:
             echo "Downloading Android NDK r25c for Linux x86_64..."
             cd "${GITHUB_WORKSPACE}"
             wget --progress=dot:giga "https://dl.google.com/android/repository/android-ndk-r27d-linux.zip"
-            unzip -q "android-ndk-r25c-linux.zip"
-            rm "android-ndk-r25c-linux.zip"
+            unzip -q "android-ndk-r27d-linux.zip"
+            rm "android-ndk-r27d-linux.zip"
             echo "NDK extracted to: ${NDK_HOME}"
             ls -la "${NDK_HOME}" | head -10
           else
@@ -168,7 +168,7 @@ jobs:
         shell: bash
         run: |
           echo "Setting up OpenBLAS for Android ARM64..."
-          OPENBLAS_JAR="openblas-0.3.19-1.5.7-android-arm64.jar"
+          OPENBLAS_JAR="openblas-0.3.28-1.5.11-android-arm64.jar"
           OPENBLAS_HOME="${GITHUB_WORKSPACE}/openblas_home"
           OPENBLAS_DIR="${OPENBLAS_HOME}/lib/arm64-v8a"
           
