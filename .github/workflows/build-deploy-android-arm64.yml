@@ -151,7 +151,7 @@ jobs:
           if [ ! -d "${NDK_HOME}" ]; then
             echo "Downloading Android NDK r25c for Linux x86_64..."
             cd "${GITHUB_WORKSPACE}"
-            wget --progress=dot:giga "https://dl.google.com/android/repository/android-ndk-r25c-linux.zip"
+            wget --progress=dot:giga "https://dl.google.com/android/repository/android-ndk-r27d-linux.zip"
             unzip -q "android-ndk-r25c-linux.zip"
             rm "android-ndk-r25c-linux.zip"
             echo "NDK extracted to: ${NDK_HOME}"
