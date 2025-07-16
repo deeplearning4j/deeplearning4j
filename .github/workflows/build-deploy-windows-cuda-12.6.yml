@@ -193,7 +193,7 @@ jobs:
           }
           
           $latestMSVC = $msvcVersions[0]
-          Write-Host "✅ VS Build Tools installed successfully"
+          Write-Host "SUCCESS: VS Build Tools installed successfully"
           Write-Host "   Installation Path: $vsPath"
           Write-Host "   MSVC Version: $($latestMSVC.Name)"
           
@@ -318,7 +318,7 @@ jobs:
             exit 1
           }
           
-          Write-Host "✅ CUDA installation completed"
+          Write-Host "SUCCESS: CUDA installation completed"
           
           # Verify installation
           $cudaPath = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6"
@@ -339,7 +339,7 @@ jobs:
                 Write-Host "  Found: $($version.Name)"
                 $altNvccPath = "$($version.FullName)\bin\nvcc.exe"
                 if (Test-Path $altNvccPath) {
-                  Write-Host "  ✅ nvcc.exe found in $($version.Name)"
+                  Write-Host "  SUCCESS: nvcc.exe found in $($version.Name)"
                   # Update our expected paths to the found version
                   $cudaPath = $version.FullName
                   $nvccPath = $altNvccPath
@@ -358,7 +358,7 @@ jobs:
           # Test nvcc functionality
           try {
             $nvccResult = & $nvccPath --version 2>&1
-            Write-Host "✅ CUDA installation verified - nvcc version:"
+            Write-Host "SUCCESS: CUDA installation verified - nvcc version:"
             Write-Host $nvccResult
           
             # Update environment variable if we found CUDA in a different location
@@ -382,7 +382,7 @@ jobs:
             Write-Host "Could not clean up some installation files (not critical)"
           }
           
-          Write-Host "✅ CUDA 12.6 Update 1 network installation complete"
+          Write-Host "SUCCESS: CUDA 12.6 Update 1 network installation complete"
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -464,9 +464,9 @@ jobs:
           # Setup cuDNN only if needed
           if ("${{ matrix.helper }}" -eq "cudnn") {
             echo "CUDNN_ROOT_DIR=$cudaPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-            Write-Host "✅ cuDNN environment configured (CUDNN_ROOT_DIR=$cudaPath)"
+            Write-Host "SUCCESS: cuDNN environment configured (CUDNN_ROOT_DIR=$cudaPath)"
           } else {
-            Write-Host "ℹ️  Skipping cuDNN configuration (helper: ${{ matrix.helper }})"
+            Write-Host "INFO: Skipping cuDNN configuration (helper: ${{ matrix.helper }})"
           }
           
           # Setup clean PATH
@@ -482,7 +482,7 @@ jobs:
           
           echo $cleanPath | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           
-          Write-Host "✅ Build environment configured"
+          Write-Host "SUCCESS: Build environment configured"
           Write-Host "   VS Path: $vsPath"
           Write-Host "   MSVC Version: $env:MSVC_VERSION"
           Write-Host "   CUDA Path: $cudaPath"
@@ -521,7 +521,7 @@ jobs:
             )
           )
           
-          echo "✅ All build tools verified"
+          echo "SUCCESS: All build tools verified"
 
       - name: Configure Maven Command
         shell: powershell
@@ -567,7 +567,7 @@ jobs:
             echo "LIBND4J_FILE_NAME=${{ github.event.inputs.libnd4jUrl }}/$libnd4jFileName" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           }
           
-          Write-Host "✅ Maven command configured for helper: ${{ matrix.helper }}"
+          Write-Host "SUCCESS: Maven command configured for helper: ${{ matrix.helper }}"
           Write-Host "Command: $fullCommand"
 
       - name: Run CUDA Build
@@ -612,7 +612,7 @@ jobs:
             call "%GITHUB_WORKSPACE%\mvn-command.bat"
           )
           
-          echo "✅ Build completed"
+          echo "SUCCESS: Build completed"
 
       - name: Upload Build Artifacts
         if: always()
