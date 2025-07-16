@@ -158,11 +158,22 @@ endfunction()
 # =============================================================================
 function(setup_flatbuffers)
     # --- Condition Detection ---
-    # Determine if flatc code generation is needed. Can be set as a cache variable
-    # or an environment variable.
+
+    # All arguments passed to this function are treated as schema files.
+    set(FLATBUFFERS_SCHEMA_FILES ${ARGN})
+
+    # Determine if flatc code generation is needed. This is enabled automatically
+    # if schema files are provided, or can be forced with an option/env var.
     option(GENERATE_FLATC "Enable FlatBuffers schema compilation" OFF)
     if(DEFINED ENV{GENERATE_FLATC})
         set(GENERATE_FLATC ON)
+    endif()
+    if(FLATBUFFERS_SCHEMA_FILES)
+        set(GENERATE_FLATC ON) # Automatically enable if schemas are passed
+    endif()
+
+    if(GENERATE_FLATC AND NOT FLATBUFFERS_SCHEMA_FILES)
+        message(FATAL_ERROR "GENERATE_FLATC is ON, but no schema files were passed to setup_flatbuffers().")
     endif()
 
     # Determine if we are cross-compiling for an ARM target, which requires
@@ -219,6 +230,12 @@ function(setup_flatbuffers)
                 -DCMAKE_BUILD_TYPE=Release
                 -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                 -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                -DCMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}
+                -DCMAKE_SYSTEM_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR}
+                -DCMAKE_ANDROID_NDK=${CMAKE_ANDROID_NDK}
+                -DCMAKE_ANDROID_ARCH_ABI=${CMAKE_ANDROID_ARCH_ABI}
+                -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
+                -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
                 # Configure build options
                 -DFLATBUFFERS_BUILD_FLATC=OFF # Do NOT build flatc for the target
                 -DFLATBUFFERS_BUILD_TESTS=OFF
@@ -232,7 +249,6 @@ function(setup_flatbuffers)
         set(FLATBUFFERS_GENERATED_DIR "${CMAKE_BINARY_DIR}/generated/flatbuffers" PARENT_SCOPE)
 
         # Add a step to the host build to generate headers after flatc is built.
-        # This assumes schema files are located in a dir pointed to by FLATBUFFERS_SCHEMA_DIR.
         ExternalProject_Add_Step(flatbuffers_host generate_headers
                 COMMAND           ${FLATC_EXECUTABLE} -o ${FLATBUFFERS_GENERATED_DIR} --cpp ${FLATBUFFERS_SCHEMA_FILES}
                 COMMENT           "Generating C++ headers from schemas using host flatc..."
