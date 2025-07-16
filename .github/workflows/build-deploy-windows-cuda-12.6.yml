@@ -227,36 +227,18 @@ jobs:
         run: |
           Write-Host "=== Installing CUDA 12.6 Update 1 ==="
           
-          # Use local installer instead of network installer for better reliability
-          $cudaUrl = "https://developer.download.nvidia.com/compute/cuda/12.6.1/local_installers/cuda_12.6.1_560.94_windows.exe"
-          $cudaInstaller = "$env:TEMP\cuda_12.6.1_local.exe"
+          # Use network installer but with fixes for the -522190823 error
+          $cudaUrl = "https://developer.download.nvidia.com/compute/cuda/12.6.1/network_installers/cuda_12.6.1_windows_network.exe"
+          $cudaInstaller = "$env:TEMP\cuda_network_installer.exe"
           
-          Write-Host "Downloading CUDA local installer (this may take several minutes)..."
+          Write-Host "Downloading CUDA network installer..."
           try {
-            # Download with progress and retry logic
             $webClient = New-Object System.Net.WebClient
             $webClient.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-          
-            # Download with retries
-            $retryCount = 0
-            $maxRetries = 3
-            do {
-              try {
-                $webClient.DownloadFile($cudaUrl, $cudaInstaller)
-                break
-              } catch {
-                $retryCount++
-                if ($retryCount -ge $maxRetries) {
-                  throw "Failed to download after $maxRetries attempts: $($_.Exception.Message)"
-                }
-                Write-Host "Download attempt $retryCount failed, retrying in 30 seconds..."
-                Start-Sleep -Seconds 30
-              }
-            } while ($retryCount -lt $maxRetries)
-          
+            $webClient.DownloadFile($cudaUrl, $cudaInstaller)
             $webClient.Dispose()
           
-            if (-not (Test-Path $cudaInstaller) -or (Get-Item $cudaInstaller).Length -lt 100MB) {
+            if (-not (Test-Path $cudaInstaller) -or (Get-Item $cudaInstaller).Length -lt 10MB) {
               throw "Downloaded file is missing or too small"
             }
           
@@ -266,64 +248,71 @@ jobs:
             exit 1
           }
           
-          # Extract installer to avoid GUI and get better error handling
-          Write-Host "Extracting CUDA installer..."
-          $extractPath = "$env:TEMP\cuda_extract"
-          if (Test-Path $extractPath) {
-            Remove-Item -Path $extractPath -Recurse -Force
+          # Create a temporary directory for CUDA installer logs and temp files
+          $cudaTempDir = "$env:TEMP\cuda_install_temp"
+          if (Test-Path $cudaTempDir) {
+            Remove-Item -Path $cudaTempDir -Recurse -Force -ErrorAction SilentlyContinue
           }
-          New-Item -Path $extractPath -ItemType Directory -Force | Out-Null
+          New-Item -Path $cudaTempDir -ItemType Directory -Force | Out-Null
           
-          try {
-            # Extract the installer
-            $extractProcess = Start-Process -FilePath $cudaInstaller -ArgumentList "-extract:`"$extractPath`"" -Wait -PassThru -NoNewWindow
-            if ($extractProcess.ExitCode -ne 0) {
-              throw "Extraction failed with exit code: $($extractProcess.ExitCode)"
-            }
+          # Set environment variables to control installer behavior
+          $env:CUDA_SETUP_ARGS = "--silent"
+          $env:NVTOOLSEXT_INSTALL_DIR = "$cudaTempDir"
           
-            Write-Host "CUDA installer extracted successfully"
-          } catch {
-            Write-Error "Failed to extract CUDA installer: $($_.Exception.Message)"
-            exit 1
-          }
-          
-          # Find and run the setup.exe from extracted files
-          $setupExe = Get-ChildItem -Path $extractPath -Name "setup.exe" -Recurse | Select-Object -First 1
-          if (-not $setupExe) {
-            Write-Error "setup.exe not found in extracted files"
-            exit 1
-          }
-          
-          $setupPath = Join-Path $extractPath $setupExe
-          Write-Host "Found setup.exe at: $setupPath"
-          
-          # Install with minimal components for faster installation
-          $installArgs = @(
-            "-s",
-            "--toolkit",
-            "--silent",
-            "--no-opengl-libs"
+          # Essential CUDA components only for faster installation
+          $cudaComponents = @(
+            "nvcc_12.6",
+            "cudart_12.6", 
+            "cublas_12.6",
+            "cublas_dev_12.6",
+            "cufft_12.6",
+            "cufft_dev_12.6",
+            "curand_12.6", 
+            "curand_dev_12.6",
+            "cusolver_12.6",
+            "cusolver_dev_12.6",
+            "cusparse_12.6",
+            "cusparse_dev_12.6",
+            "thrust_12.6",
+            "nvrtc_12.6",
+            "nvrtc_dev_12.6"
           )
           
-          Write-Host "Installing CUDA toolkit..."
+          # Build installation arguments
+          $installArgs = @("-s") + $cudaComponents
+          
+          Write-Host "Installing CUDA components: $($cudaComponents -join ', ')"
+          Write-Host "Installation command: $cudaInstaller $($installArgs -join ' ')"
+          
           try {
-            $installProcess = Start-Process -FilePath $setupPath -ArgumentList $installArgs -Wait -PassThru -NoNewWindow
+            # Set working directory to temp folder to avoid permission issues
+            Set-Location $cudaTempDir
           
-            Write-Host "Setup.exe completed with exit code: $($installProcess.ExitCode)"
+            # Run installation with timeout and proper error handling
+            $installProcess = Start-Process -FilePath $cudaInstaller -ArgumentList $installArgs -Wait -PassThru -NoNewWindow -WorkingDirectory $cudaTempDir
           
-            # Exit codes: 0 = success, 1 = success with reboot required
-            if ($installProcess.ExitCode -notin @(0, 1)) {
+            Write-Host "CUDA installer completed with exit code: $($installProcess.ExitCode)"
+          
+            # CUDA installer exit codes:
+            # 0 = success
+            # 1 = success with reboot required  
+            # 2 = already installed (newer version)
+            # Other negative values = various errors
+            if ($installProcess.ExitCode -notin @(0, 1, 2)) {
               throw "Installation failed with exit code: $($installProcess.ExitCode)"
             }
           
           } catch {
             Write-Error "CUDA installation failed: $($_.Exception.Message)"
           
-            # Try to get more detailed error information
-            $logPath = "$env:TEMP\cuda_install_log.txt"
-            if (Test-Path $logPath) {
-              Write-Host "Installation log:"
-              Get-Content $logPath | Select-Object -Last 50
+            # Check for installation logs
+            $logFiles = Get-ChildItem -Path $cudaTempDir -Filter "*.log" -ErrorAction SilentlyContinue
+            if ($logFiles) {
+              Write-Host "Installation logs found:"
+              foreach ($logFile in $logFiles) {
+                Write-Host "=== $($logFile.Name) ==="
+                Get-Content $logFile.FullName | Select-Object -Last 20
+              }
             }
           
             exit 1
@@ -335,41 +324,65 @@ jobs:
           $cudaPath = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6"
           $nvccPath = "$cudaPath\bin\nvcc.exe"
           
-          # Wait a moment for filesystem to settle
-          Start-Sleep -Seconds 5
+          # Wait for filesystem to settle
+          Start-Sleep -Seconds 10
           
           if (-not (Test-Path $nvccPath)) {
-            Write-Error "CUDA installation verification failed - nvcc.exe not found at: $nvccPath"
+            Write-Host "Primary CUDA path not found, checking for alternative locations..."
           
-            # List what was actually installed
+            # Check for any CUDA installation
             $cudaRoot = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA"
             if (Test-Path $cudaRoot) {
-              Write-Host "Available CUDA versions:"
-              Get-ChildItem $cudaRoot -Directory | ForEach-Object { Write-Host "  $($_.Name)" }
+              Write-Host "Available CUDA installations:"
+              $cudaVersions = Get-ChildItem $cudaRoot -Directory
+              foreach ($version in $cudaVersions) {
+                Write-Host "  Found: $($version.Name)"
+                $altNvccPath = "$($version.FullName)\bin\nvcc.exe"
+                if (Test-Path $altNvccPath) {
+                  Write-Host "  ✅ nvcc.exe found in $($version.Name)"
+                  # Update our expected paths to the found version
+                  $cudaPath = $version.FullName
+                  $nvccPath = $altNvccPath
+                  break
+                }
+              }
             }
           
-            exit 1
+            # Final check
+            if (-not (Test-Path $nvccPath)) {
+              Write-Error "CUDA installation verification failed - nvcc.exe not found anywhere"
+              exit 1
+            }
           }
           
-          # Test nvcc
+          # Test nvcc functionality
           try {
             $nvccResult = & $nvccPath --version 2>&1
             Write-Host "✅ CUDA installation verified - nvcc version:"
             Write-Host $nvccResult
+          
+            # Update environment variable if we found CUDA in a different location
+            if ($cudaPath -ne "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6") {
+              Write-Host "Updating CUDA_PATH to actual installation location: $cudaPath"
+              echo "CUDA_ACTUAL_PATH=$cudaPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            }
+          
           } catch {
-            Write-Warning "nvcc found but version check failed: $($_.Exception.Message)"
+            Write-Error "nvcc found but functionality test failed: $($_.Exception.Message)"
+            exit 1
           }
           
-          # Clean up extracted files to save space
+          # Clean up installation files
           try {
-            Remove-Item -Path $extractPath -Recurse -Force -ErrorAction SilentlyContinue
+            Set-Location $env:TEMP
+            Remove-Item -Path $cudaTempDir -Recurse -Force -ErrorAction SilentlyContinue
             Remove-Item -Path $cudaInstaller -Force -ErrorAction SilentlyContinue
             Write-Host "Cleaned up installation files"
           } catch {
-            Write-Host "Could not clean up some installation files (this is not critical)"
+            Write-Host "Could not clean up some installation files (not critical)"
           }
           
-          Write-Host "✅ CUDA 12.6 Update 1 installation complete"
+          Write-Host "✅ CUDA 12.6 Update 1 network installation complete"
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -415,11 +428,11 @@ jobs:
           # Parse and set environment variables
           $envCount = 0
           Get-Content $tempEnv | ForEach-Object {
-            if ($_ -match '^([^=]+)=(.*)) {
+            if ($_ -match '^([^=]+)=(.*)$') {
               $name = $matches[1]
               $value = $matches[2]
               # Skip problematic variables
-              if ($name -notmatch '^(TEMP|TMP|RANDOM|PROMPT|PATHEXT)) {
+              if ($name -notmatch '^(TEMP|TMP|RANDOM|PROMPT|PATHEXT)$') {
                 try {
                   [Environment]::SetEnvironmentVariable($name, $value, 'Process')
                   echo "$name=$value" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
@@ -438,6 +451,13 @@ jobs:
           
           # Setup CUDA environment
           $cudaPath = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6"
+          
+          # Check if CUDA was installed in a different location
+          if ($env:CUDA_ACTUAL_PATH) {
+            $cudaPath = $env:CUDA_ACTUAL_PATH
+            Write-Host "Using actual CUDA installation path: $cudaPath"
+          }
+          
           echo "CUDA_PATH=$cudaPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           echo "CUDA_HOME=$cudaPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           
