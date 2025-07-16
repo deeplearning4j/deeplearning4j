@@ -16,33 +16,29 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         message(STATUS "Added --disable-warnings to suppress NVCC errors")
     endif()
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    # For Clang template duplicate instantiation handling
+    # For Clang template duplicate instantiation handling with proper folding
     if(NOT SD_CUDA)
-        # Suppress duplicate template instantiation errors
-        add_compile_options(-Wno-duplicate-decl-specifier)
-        add_compile_options(-Wno-inconsistent-missing-override)
-        add_compile_options(-Wno-duplicate-decl-specifier)
-        # Suppress array bounds warnings that may be false positives
-        add_compile_options(-Wno-array-bounds)
-        add_compile_options(-Wno-array-bounds-pointer-arithmetic)
+        # Core template folding configuration
         add_compile_options(-ftemplate-depth=1024)
-        # Enable identical code folding to merge duplicate instantiations
         add_compile_options(-ffunction-sections)
         add_compile_options(-fdata-sections)
-        # Allow duplicate symbols to be merged
-        add_compile_options(-fno-common)
-        # Linker flags for folding (set at target level or globally)
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections -Wl,--allow-multiple-definition")
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections -Wl,--allow-multiple-definition")
-        message(STATUS "Added Clang flags for duplicate template instantiation handling")
-        message(STATUS "Enabled function/data sections and garbage collection for folding")
-        message(STATUS "Enabled multiple definition allowance for duplicate symbols")
+        # Enable COMDAT folding for duplicate template instantiations
+        add_compile_options(-fmerge-all-constants)
+        add_compile_options(-fno-unique-section-names)
+        # Use LLD linker for better template folding support
+        add_compile_options(-fuse-ld=lld)
+        # Linker flags for identical code folding (ICF)
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--icf=all -Wl,--gc-sections")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--icf=all -Wl,--gc-sections")
+        message(STATUS "Added Clang template folding with LLD linker")
+        message(STATUS "Enabled identical code folding for duplicate templates")
     else()
-        # CUDA with Clang
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-duplicate-decl-specifier -Wno-inconsistent-missing-override -Wno-array-bounds")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections -Wl,--allow-multiple-definition")
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections -Wl,--allow-multiple-definition")
-        message(STATUS "Added CUDA-specific Clang flags for duplicate template instantiations")
-        message(STATUS "Enabled linker garbage collection and multiple definition allowance")
+        # CUDA with Clang template folding
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-depth=1024 -ffunction-sections -fdata-sections")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-ffunction-sections -Xcompiler=-fdata-sections")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld -Wl,--icf=all")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld -Wl,--icf=all")
+        message(STATUS "Added CUDA-specific Clang template folding")
+        message(STATUS "Enabled LLD linker with ICF for CUDA builds")
     endif()
 endif()
