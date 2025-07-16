@@ -137,17 +137,12 @@ jobs:
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
-      - name: Cache Android NDK
-        uses: actions/cache@v4
-        id: cache-ndk
-        with:
-          path: ${{ github.workspace }}/android-ndk-r25c
-          key: android-ndk-r25c-linux-x86_64-v1
+
 
       - name: Download and Setup Android NDK
         shell: bash
         run: |
-          NDK_HOME="${GITHUB_WORKSPACE}/android-ndk-r25c"
+          NDK_HOME="${GITHUB_WORKSPACE}/android-ndk-r27d"
           if [ ! -d "${NDK_HOME}" ]; then
             echo "Downloading Android NDK r25c for Linux x86_64..."
             cd "${GITHUB_WORKSPACE}"
