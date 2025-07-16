@@ -157,56 +157,151 @@ endfunction()
 # FLATBUFFERS (Required)
 # =============================================================================
 function(setup_flatbuffers)
-    if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
-        set(FLATBUFFERS_BUILD_FLATC "ON" CACHE STRING "Enable flatc build" FORCE)
+    # --- Condition Detection ---
+    # Determine if flatc code generation is needed. Can be set as a cache variable
+    # or an environment variable.
+    option(GENERATE_FLATC "Enable FlatBuffers schema compilation" OFF)
+    if(DEFINED ENV{GENERATE_FLATC})
+        set(GENERATE_FLATC ON)
+    endif()
+
+    # Determine if we are cross-compiling for an ARM target, which requires
+    # building the flatc compiler for the host and the library for the target.
+    set(NEEDS_SEPARATE_HOST_BUILD FALSE)
+    if(CMAKE_CROSSCOMPILING)
+        if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|AARCH64|arm64|ARM64|arm|ARM" OR
+                CMAKE_ANDROID_ARCH_ABI MATCHES "arm64-v8a|armeabi-v7a")
+            set(NEEDS_SEPARATE_HOST_BUILD TRUE)
+        endif()
+    endif()
+
+    # --- Main Logic ---
+
+    if(NEEDS_SEPARATE_HOST_BUILD AND GENERATE_FLATC)
+        #
+        # ===== CASE 1: CROSS-COMPILING FOR ARM (e.g., Linux Host -> Android Target) =====
+        #
+        message(STATUS "🔧 Cross-compiling for ARM: Configuring separate host/target FlatBuffers builds.")
+
+        # Build flatc for the HOST system.
+        ExternalProject_Add(flatbuffers_host
+                GIT_REPOSITORY    https://github.com/google/flatbuffers.git
+                GIT_TAG           v24.3.25
+                SOURCE_DIR        "${CMAKE_BINARY_DIR}/flatbuffers-host-src"
+                BINARY_DIR        "${CMAKE_BINARY_DIR}/flatbuffers-host-build"
+                INSTALL_COMMAND   ""
+                BUILD_BYPRODUCTS  "${CMAKE_BINARY_DIR}/flatbuffers-host-build/flatc"
+                CMAKE_ARGS
+                # Force a native build by clearing toolchain-specific variables
+                -DCMAKE_BUILD_TYPE=Release
+                -DCMAKE_TOOLCHAIN_FILE=""
+                -DCMAKE_C_COMPILER=""
+                -DCMAKE_CXX_COMPILER=""
+                -DCMAKE_SYSTEM_NAME=${CMAKE_HOST_SYSTEM_NAME}
+                -DCMAKE_SYSTEM_PROCESSOR=${CMAKE_HOST_SYSTEM_PROCESSOR}
+                # Configure build options
+                -DFLATBUFFERS_BUILD_FLATC=ON
+                -DFLATBUFFERS_BUILD_TESTS=OFF
+                -DFLATBUFFERS_BUILD_SHAREDLIB=OFF
+        )
+
+        # Build libflatbuffers.a for the TARGET system (using the NDK toolchain).
+        ExternalProject_Add(flatbuffers_target
+                GIT_REPOSITORY    https://github.com/google/flatbuffers.git
+                GIT_TAG           v24.3.25
+                SOURCE_DIR        "${CMAKE_BINARY_DIR}/flatbuffers-target-src"
+                BINARY_DIR        "${CMAKE_BINARY_DIR}/flatbuffers-target-build"
+                INSTALL_COMMAND   ""
+                BUILD_BYPRODUCTS  "${CMAKE_BINARY_DIR}/flatbuffers-target-build/libflatbuffers.a"
+                CMAKE_ARGS
+                # Pass through all cross-compilation settings from the parent project
+                -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
+                -DCMAKE_BUILD_TYPE=Release
+                -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+                -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                # Configure build options
+                -DFLATBUFFERS_BUILD_FLATC=OFF # Do NOT build flatc for the target
+                -DFLATBUFFERS_BUILD_TESTS=OFF
+                -DFLATBUFFERS_BUILD_SHAREDLIB=OFF
+        )
+
+        # Define paths and create a custom target for code generation.
+        set(FLATC_EXECUTABLE          "${CMAKE_BINARY_DIR}/flatbuffers-host-build/flatc")
+        set(FLATBUFFERS_LIBRARY       "${CMAKE_BINARY_DIR}/flatbuffers-target-build/libflatbuffers.a" PARENT_SCOPE)
+        set(FLATBUFFERS_INCLUDE_DIR   "${CMAKE_BINARY_DIR}/flatbuffers-target-src/include" PARENT_SCOPE)
+        set(FLATBUFFERS_GENERATED_DIR "${CMAKE_BINARY_DIR}/generated/flatbuffers" PARENT_SCOPE)
+
+        # Add a step to the host build to generate headers after flatc is built.
+        # This assumes schema files are located in a dir pointed to by FLATBUFFERS_SCHEMA_DIR.
+        ExternalProject_Add_Step(flatbuffers_host generate_headers
+                COMMAND           ${FLATC_EXECUTABLE} -o ${FLATBUFFERS_GENERATED_DIR} --cpp ${FLATBUFFERS_SCHEMA_FILES}
+                COMMENT           "Generating C++ headers from schemas using host flatc..."
+                DEPENDEES         build
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        )
+        add_custom_target(GenerateFlatbufferHeaders DEPENDS flatbuffers_host-generate_headers)
+
     else()
-        set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Disable flatc build" FORCE)
+        #
+        # ===== CASE 2: NATIVE COMPILATION or NO CODEGEN =====
+        #
+        message(STATUS "🔧 Standard FlatBuffers build configured.")
+
+        ExternalProject_Add(flatbuffers_unified
+                GIT_REPOSITORY    https://github.com/google/flatbuffers.git
+                GIT_TAG           v24.3.25
+                SOURCE_DIR        "${CMAKE_BINARY_DIR}/flatbuffers-src"
+                BINARY_DIR        "${CMAKE_BINARY_DIR}/flatbuffers-build"
+                INSTALL_COMMAND   ""
+                BUILD_BYPRODUCTS  "${CMAKE_BINARY_DIR}/flatbuffers-build/libflatbuffers.a"
+                CMAKE_ARGS
+                -DCMAKE_BUILD_TYPE=Release
+                -DFLATBUFFERS_BUILD_FLATC=${GENERATE_FLATC}
+                -DFLATBUFFERS_BUILD_TESTS=OFF
+                -DFLATBUFFERS_BUILD_SHAREDLIB=OFF
+                -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
+        )
+
+        # Define paths
+        set(FLATBUFFERS_LIBRARY       "${CMAKE_BINARY_DIR}/flatbuffers-build/libflatbuffers.a" PARENT_SCOPE)
+        set(FLATBUFFERS_INCLUDE_DIR   "${CMAKE_BINARY_DIR}/flatbuffers-src/include" PARENT_SCOPE)
+
+        if(GENERATE_FLATC)
+            set(FLATC_EXECUTABLE          "${CMAKE_BINARY_DIR}/flatbuffers-build/flatc")
+            set(FLATBUFFERS_GENERATED_DIR "${CMAKE_BINARY_DIR}/generated/flatbuffers" PARENT_SCOPE)
+
+            ExternalProject_Add_Step(flatbuffers_unified generate_headers
+                    COMMAND           ${FLATC_EXECUTABLE} -o ${FLATBUFFERS_GENERATED_DIR} --cpp ${FLATBUFFERS_SCHEMA_FILES}
+                    COMMENT           "Generating C++ headers from schemas..."
+                    DEPENDEES         build
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            )
+            add_custom_target(GenerateFlatbufferHeaders DEPENDS flatbuffers_unified-generate_headers)
+        endif()
     endif()
 
-    ExternalProject_Add(flatbuffers_external
-            GIT_REPOSITORY    https://github.com/google/flatbuffers/
-            GIT_TAG           v25.2.10
-            SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src"
-            BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build"
-            CMAKE_ARGS
-            -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-            -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-            -DCMAKE_BUILD_TYPE=Release
-            -DFLATBUFFERS_BUILD_FLATC=${FLATBUFFERS_BUILD_FLATC}
-            INSTALL_COMMAND   ""
-            BUILD_BYPRODUCTS  "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/flatc"
-            "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/libflatbuffers.a"
-    )
-
-    include_directories("${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src/include")
-
+    # --- Create a final INTERFACE library for easy consumption ---
+    # This abstracts away the build details. Other targets just link to 'flatbuffers::flatbuffers'.
     add_library(flatbuffers_interface INTERFACE)
-    set(FLATBUFFERS_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/libflatbuffers.a")
+    target_include_directories(flatbuffers_interface INTERFACE
+            ${FLATBUFFERS_INCLUDE_DIR}
+            ${FLATBUFFERS_GENERATED_DIR}
+    )
     target_link_libraries(flatbuffers_interface INTERFACE ${FLATBUFFERS_LIBRARY})
-    add_dependencies(flatbuffers_interface flatbuffers_external)
 
-    if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
-        set(FLATC_EXECUTABLE "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/flatc")
-        set(MAIN_GENERATED_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/graph/generated.h")
-
-        # Execute flatc generation inline
-        ExternalProject_Add_Step(flatbuffers_external generate_headers
-                COMMAND ${CMAKE_COMMAND} -E env "FLATC_PATH=${FLATC_EXECUTABLE}" bash ${CMAKE_CURRENT_SOURCE_DIR}/flatc-generate.sh
-                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                COMMENT "Running flatc to generate C++ headers"
-                DEPENDEES build
-                BYPRODUCTS ${MAIN_GENERATED_HEADER}
-        )
-
-        # Execute Java file copying inline
-        ExternalProject_Add_Step(flatbuffers_external copy_java_files
-                COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/copy-flatc-java.sh
-                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                COMMENT "Copying generated Java files"
-                DEPENDEES generate_headers
-        )
+    # Ensure the library is built before anything tries to link to it.
+    if(NEEDS_SEPARATE_HOST_BUILD AND GENERATE_FLATC)
+        add_dependencies(flatbuffers_interface flatbuffers_target)
+    else()
+        add_dependencies(flatbuffers_interface flatbuffers_unified)
     endif()
+
+    # Create a global alias for easier linking in the parent project.
+    add_library(flatbuffers::flatbuffers ALIAS flatbuffers_interface)
+
+    message(STATUS "✅ Flatbuffers setup complete.")
 endfunction()
+
 
 # =============================================================================
 # ONEDNN (Optional)
