@@ -340,6 +340,8 @@
                                 <classPath>${project.build.outputDirectory}</classPath>
                             </classPaths>
                             <includePaths>
+                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-target-build/include</includePath>
+                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-host-build/include</includePath>
                                 <includePath>${libnd4jhome}/blasbuild/cpu/include</includePath>
                                 <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-src/include/
                                 </includePath>
@@ -498,6 +500,8 @@
                                 <classPath>${project.build.outputDirectory}</classPath>
                             </classPaths>
                             <includePaths>
+                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-target-build/include</includePath>
+                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-host-build/include</includePath>
                                 <includePath>${libnd4jhome}/blasbuild/cpu/include</includePath>
                                 <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-src/include/
                                 </includePath>
