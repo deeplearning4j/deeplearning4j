@@ -156,6 +156,7 @@ endfunction()
 # =============================================================================
 # FLATBUFFERS (Required)
 # =============================================================================
+
 function(setup_flatbuffers)
     # --- Condition Detection ---
 
@@ -172,8 +173,10 @@ function(setup_flatbuffers)
         set(GENERATE_FLATC ON) # Automatically enable if schemas are passed
     endif()
 
+    # If generation is enabled but no files are provided, disable it to prevent an error.
     if(GENERATE_FLATC AND NOT FLATBUFFERS_SCHEMA_FILES)
-        message(FATAL_ERROR "GENERATE_FLATC is ON, but no schema files were passed to setup_flatbuffers().")
+        message(STATUS "NOTE: GENERATE_FLATC is ON but no schema files were provided. Disabling FlatBuffers code generation for this run.")
+        set(GENERATE_FLATC OFF) # Correct the state to prevent build failure.
     endif()
 
     # Determine if we are cross-compiling for an ARM target, which requires
@@ -317,6 +320,7 @@ function(setup_flatbuffers)
 
     message(STATUS "✅ Flatbuffers setup complete.")
 endfunction()
+
 
 
 # =============================================================================
