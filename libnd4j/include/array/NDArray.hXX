@@ -5269,11 +5269,6 @@ NDArray::p(const sd::LongType i, const T value) {  // Note: value not NDArray re
 #define INSTANTIATE_P_SINGLE_STRING(T) template SD_LIB_EXPORT void NDArray::p(const sd::LongType i,const GET_SECOND(T) value);
 ITERATE_LIST((SD_STRING_TYPES),INSTANTIATE_P_SINGLE_STRING);
 
-// ADDITION: Explicit instantiations for the string types to ensure they're always available
-template SD_LIB_EXPORT void NDArray::p<std::string>(const sd::LongType i, const std::string value);
-template SD_LIB_EXPORT void NDArray::p<std::u16string>(const sd::LongType i, const std::u16string value);
-template SD_LIB_EXPORT void NDArray::p<std::u32string>(const sd::LongType i, const std::u32string value);
-
 ////////////////////////////////////////////////////////////////////////
 void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType l, NDArray *scalar) {
   if (!scalar->isScalar()) THROW_EXCEPTION("NDArray::p method: input array must be scalar!");
