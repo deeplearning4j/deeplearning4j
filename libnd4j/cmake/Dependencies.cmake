@@ -265,8 +265,18 @@ function(setup_flatbuffers)
         target_link_libraries(flatbuffers_interface INTERFACE ${FLATBUFFERS_LIBRARY})
         add_dependencies(flatbuffers_interface flatbuffers_target)
 
-        # Create custom target for host flatc
-        add_custom_target(flatc_host DEPENDS ${FLATC_EXECUTABLE})
+        # Generate headers and copy Java files inline after ExternalProject builds
+        ExternalProject_Add_Step(flatbuffers_host generate_headers_and_copy_java
+                COMMAND ${CMAKE_COMMAND} -E env "FLATC_PATH=${FLATC_EXECUTABLE}"
+                        bash ${CMAKE_CURRENT_SOURCE_DIR}/flatc-generate.sh
+                COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/copy-flatc-java.sh
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                COMMENT "Generating FlatBuffers headers and copying Java files using host flatc"
+                DEPENDEES build
+                BYPRODUCTS
+                    ${CMAKE_CURRENT_SOURCE_DIR}/include/graph/generated.h
+                    ${CMAKE_CURRENT_SOURCE_DIR}/.java_files_copied
+        )
 
     else()
         # Native build or cross-compilation without flatc generation
@@ -302,61 +312,25 @@ function(setup_flatbuffers)
 
         if(SHOULD_BUILD_FLATC)
             set(FLATC_EXECUTABLE "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/flatc")
+
+            # Generate headers and copy Java files inline after ExternalProject builds
+            ExternalProject_Add_Step(flatbuffers_external generate_headers_and_copy_java
+                    COMMAND ${CMAKE_COMMAND} -E env "FLATC_PATH=${FLATC_EXECUTABLE}"
+                            bash ${CMAKE_CURRENT_SOURCE_DIR}/flatc-generate.sh
+                    COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/copy-flatc-java.sh
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                    COMMENT "Generating FlatBuffers headers and copying Java files"
+                    DEPENDEES build
+                    BYPRODUCTS
+                        ${CMAKE_CURRENT_SOURCE_DIR}/include/graph/generated.h
+                        ${CMAKE_CURRENT_SOURCE_DIR}/.java_files_copied
+            )
         endif()
 
         # Create interface library
         add_library(flatbuffers_interface INTERFACE)
         target_link_libraries(flatbuffers_interface INTERFACE ${FLATBUFFERS_LIBRARY})
         add_dependencies(flatbuffers_interface flatbuffers_external)
-    endif()
-
-    # Schema generation step (if flatc is available)
-    if(SHOULD_BUILD_FLATC)
-        set(MAIN_GENERATED_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/graph/generated.h")
-
-        if(CMAKE_CROSSCOMPILING)
-            # Use host-built flatc for cross-compilation
-            add_custom_command(
-                    OUTPUT ${MAIN_GENERATED_HEADER}
-                    COMMAND ${CMAKE_COMMAND} -E env "FLATC_PATH=${FLATC_EXECUTABLE}"
-                    bash ${CMAKE_CURRENT_SOURCE_DIR}/flatc-generate.sh
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                    DEPENDS flatc_host ${CMAKE_CURRENT_SOURCE_DIR}/flatc-generate.sh
-                    COMMENT "Generating FlatBuffers headers using host flatc"
-            )
-
-            # Java file copying
-            add_custom_command(
-                    OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/.java_files_copied
-                    COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/copy-flatc-java.sh
-                    COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_SOURCE_DIR}/.java_files_copied
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                    DEPENDS ${MAIN_GENERATED_HEADER}
-                    COMMENT "Copying generated Java files"
-            )
-
-            add_custom_target(flatbuffer_generation
-                    DEPENDS ${MAIN_GENERATED_HEADER} ${CMAKE_CURRENT_SOURCE_DIR}/.java_files_copied
-            )
-
-        else()
-            # Use same-target flatc for native builds
-            ExternalProject_Add_Step(flatbuffers_external generate_headers
-                    COMMAND ${CMAKE_COMMAND} -E env "FLATC_PATH=${FLATC_EXECUTABLE}"
-                    bash ${CMAKE_CURRENT_SOURCE_DIR}/flatc-generate.sh
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                    COMMENT "Running flatc to generate C++ headers"
-                    DEPENDEES build
-                    BYPRODUCTS ${MAIN_GENERATED_HEADER}
-            )
-
-            ExternalProject_Add_Step(flatbuffers_external copy_java_files
-                    COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/copy-flatc-java.sh
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                    COMMENT "Copying generated Java files"
-                    DEPENDEES generate_headers
-            )
-        endif()
     endif()
 
     # Set global variables for parent scope
