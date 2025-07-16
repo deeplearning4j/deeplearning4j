@@ -293,11 +293,6 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
     protected void addOutputsToOp() {
-        // Don't compute arrays during graph building/import
-        if (!SameDiff.isInGraphBuildingMode()) {
-            computeArrays();
-        }
-
         if (sameDiff.getOutputsForOp(this) == null)
             sameDiff.addOutgoingFor(outputVariables, this);
     }
@@ -898,6 +893,8 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     public List<DataBuffer> calculateOutputShape() {
         return calculateOutputShape(null);
     }
+
+
 
     @Override
     public List<DataBuffer> calculateOutputShape(OpContext oc) {

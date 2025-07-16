@@ -693,7 +693,15 @@ public class FlatBuffersMapper {
                     out.put(name, p.l(0));
                 } else if (p.dLength() > 0) {
                     out.put(name, p.d(0));
-                } else if (p.sLength() > 0) {
+                } else if (p.sLength() > 1) {
+                    // FIXED: Multiple strings - return as array
+                    String[] sArr = new String[p.sLength()];
+                    for (int i = 0; i < sArr.length; i++) {
+                        sArr[i] = p.s(i);
+                    }
+                    out.put(name, sArr);
+                } else if (p.sLength() == 1) {
+                    // FIXED: Single string - return as string
                     out.put(name, p.s(0));
                 } else if (p.aLength() > 0) {
                     FlatArray fa = p.a(0);
@@ -841,7 +849,8 @@ public class FlatBuffersMapper {
         // --- ID assignment & Output Name Mapping ---
         int ownId = id != null ? id : (forwardMap.containsKey(nodeOwnName) ? forwardMap.get(nodeOwnName) :
                 idCounter.incrementAndGet());
-        String[] outNames = node.outputVariablesNames(); if(outNames == null) outNames = new String[0];
+        String[] outNames = node.outputVariablesNames();
+        if(outNames == null) outNames = new String[0];
         for (String s : outNames) {
             if(s == null)
                 continue;
@@ -999,7 +1008,6 @@ public class FlatBuffersMapper {
                                  Map<String, Integer> reverseMap, Map<String, Integer> forwardMap, Map<String, Integer> framesMap, AtomicInteger idCounter, Integer id) throws IOException {
         return asFlatNode(sameDiff, node, bufferBuilder, variables, reverseMap, forwardMap, framesMap, idCounter, id, false); // Default isCloneContext to false
     }
-
     /**
      * Maps function properties to FlatBuffer property objects, optionally skipping INDArray/SDVariable properties
      * if in clone context, and validating INDArray rank/shape before serialization otherwise.
@@ -1010,34 +1018,105 @@ public class FlatBuffersMapper {
      * @return Array of offsets to FlatProperties tables, or empty array if no valid properties found.
      */
     public static int[] mapFunctionPropertiesToFlatProperties(FlatBufferBuilder fbb, Map<String, Object> fnProps, boolean isCloneContext) {
-        if (fnProps == null || fnProps.isEmpty()) { return EMPTY_INT; }
+        if (fnProps == null || fnProps.isEmpty()) {
+            return EMPTY_INT;
+        }
         List<Integer> outOffsets = new ArrayList<>();
 
-        List<Map.Entry<String, Object>> sortedEntries = new ArrayList<>(fnProps.entrySet()); sortedEntries.sort(Map.Entry.comparingByKey());
+        List<Map.Entry<String, Object>> sortedEntries = new ArrayList<>(fnProps.entrySet());
+        sortedEntries.sort(Map.Entry.comparingByKey());
 
         for (Map.Entry<String, Object> e : sortedEntries) {
-            Object v = e.getValue(); String key = e.getKey(); if (key == null) { log.warn("Skipping null property key."); continue; }
+            Object v = e.getValue();
+            String key = e.getKey();
+            if (key == null) {
+                log.warn("Skipping null property key.");
+                continue;
+            }
 
             // --- Skip logic for Clone Context ---
-            if (isCloneContext) { if (v instanceof INDArray || v instanceof SDVariable || (v != null && v.getClass().isArray() && (v instanceof INDArray[] || v instanceof SDVariable[]))) { log.trace("Skipping Array/Variable property '{}' during op cloning.", key); continue; } }
+            if (isCloneContext) {
+                if (v instanceof INDArray || v instanceof SDVariable ||
+                        (v != null && v.getClass().isArray() && (v instanceof INDArray[] || v instanceof SDVariable[]))) {
+                    log.trace("Skipping Array/Variable property '{}' during op cloning.", key);
+                    continue;
+                }
+            }
             // --- End Skip logic ---
 
             int iname = fbb.createString(key);
-            int[] i_arr = null; long[] l_arr = null; double[] d_arr = null; int[] aIdx = null; boolean[] b_arr = null; int[] sIdx = null; int[] shape = null;
+            int[] i_arr = null;
+            long[] l_arr = null;
+            double[] d_arr = null;
+            int[] aIdx = null;
+            boolean[] b_arr = null;
+            int[] sIdx = null;
+            int[] shape = null;
 
             // --- Handle different property types ---
-            if (v == null) { /* Defaults handle */ }
-            else if (v instanceof Boolean) { b_arr = new boolean[]{(Boolean) v}; shape = EMPTY_INT; }
-            else if (v instanceof Character) { i_arr = new int[]{(Character) v}; shape = EMPTY_INT; }
-            else if (v instanceof Integer) { i_arr = new int[]{(Integer) v}; shape = EMPTY_INT; }
-            else if (v instanceof Long) { l_arr = new long[]{(Long) v}; shape = EMPTY_INT; }
-            else if (v instanceof Float) { d_arr = new double[]{(Float) v}; shape = EMPTY_INT; }
-            else if (v instanceof Double) { d_arr = new double[]{(Double) v}; shape = EMPTY_INT; }
-            else if (v instanceof Number) { d_arr = new double[]{((Number)v).doubleValue()}; shape = EMPTY_INT; }
-            else if (v instanceof String) { sIdx = new int[]{fbb.createString((String) v)}; shape = EMPTY_INT; }
-            else if (v instanceof DataType) { sIdx = new int[]{fbb.createString(v.toString())}; shape = EMPTY_INT; }
-            else if (v instanceof SDVariable) { sIdx = new int[]{fbb.createString(((SDVariable) v).name())}; shape = EMPTY_INT; }
-            else if (v instanceof Enum) { sIdx = new int[]{fbb.createString(v.toString())}; shape = EMPTY_INT; }
+            if (v == null) {
+                /* Defaults handle null case */
+            }
+            else if (v instanceof Boolean) {
+                b_arr = new boolean[]{(Boolean) v};
+                shape = EMPTY_INT;
+            }
+            else if (v instanceof Character) {
+                i_arr = new int[]{(Character) v};
+                shape = EMPTY_INT;
+            }
+            else if (v instanceof Integer) {
+                i_arr = new int[]{(Integer) v};
+                shape = EMPTY_INT;
+            }
+            else if (v instanceof Long) {
+                l_arr = new long[]{(Long) v};
+                shape = EMPTY_INT;
+            }
+            else if (v instanceof Float) {
+                d_arr = new double[]{(Float) v};
+                shape = EMPTY_INT;
+            }
+            else if (v instanceof Double) {
+                d_arr = new double[]{(Double) v};
+                shape = EMPTY_INT;
+            }
+            else if (v instanceof Number) {
+                d_arr = new double[]{((Number)v).doubleValue()};
+                shape = EMPTY_INT;
+            }
+            else if (v instanceof String) {
+                sIdx = new int[]{fbb.createString((String) v)};
+                shape = EMPTY_INT;
+            }
+            else if (v instanceof String[]) {
+                String[] stringArr = (String[]) v;
+                sIdx = new int[stringArr.length];
+                for (int i = 0; i < stringArr.length; i++) {
+                    sIdx[i] = fbb.createString(stringArr[i]);
+                }
+                shape = new int[]{stringArr.length};
+            }
+            else if (v instanceof DataType) {
+                sIdx = new int[]{fbb.createString(v.toString())};
+                shape = EMPTY_INT;
+            }
+            else if (v instanceof SDVariable) {
+                sIdx = new int[]{fbb.createString(((SDVariable) v).name())};
+                shape = EMPTY_INT;
+            }
+            else if (v instanceof SDVariable[]) {
+                SDVariable[] sdVarArr = (SDVariable[]) v;
+                sIdx = new int[sdVarArr.length];
+                for (int i = 0; i < sdVarArr.length; i++) {
+                    sIdx[i] = fbb.createString(sdVarArr[i] != null ? sdVarArr[i].name() : "");
+                }
+                shape = new int[]{sdVarArr.length};
+            }
+            else if (v instanceof Enum) {
+                sIdx = new int[]{fbb.createString(v.toString())};
+                shape = EMPTY_INT;
+            }
             else if (v instanceof INDArray) {
                 INDArray arr = (INDArray) v;
 
@@ -1066,26 +1145,183 @@ public class FlatBuffersMapper {
                 aIdx = new int[]{arr.toFlatArray(fbb)};
             }
             else if (v.getClass().isArray()) {
-                if (v.getClass().getComponentType().isPrimitive()) { /* ... handle primitive arrays ... */ }
-                else if (v instanceof String[]) { /* ... handle String[] ... */ }
-                else if (v instanceof INDArray[]) {
-                    INDArray[] arrArr = (INDArray[]) v; List<Integer> validOffsets = new ArrayList<>();
-                    for(INDArray arr : arrArr){ if(arr == null) { validOffsets.add(0); continue; } int rank = -1; boolean skip = false; try{ rank = arr.rank(); if(rank > Shape.MAX_RANK || rank < 0) {skip=true;} if(!skip && arr.shape()!=null){ for(long d : arr.shape()){ if(d>Integer.MAX_VALUE || d<0){skip=true; break;}}} } catch(Exception ex){ skip=true;} if(!skip){ try { validOffsets.add(SameDiffSerializer.serializeSmallNdArrayToFlatBuffer(arr, fbb)); } catch(Exception serEx){ validOffsets.add(0); } } else { validOffsets.add(0); } }
-                    aIdx = Ints.toArray(validOffsets); shape = new int[]{arrArr.length};
+                if (v.getClass().getComponentType().isPrimitive()) {
+                    if (v instanceof boolean[]) {
+                        b_arr = (boolean[]) v;
+                        shape = new int[]{b_arr.length};
+                    }
+                    else if (v instanceof int[]) {
+                        i_arr = (int[]) v;
+                        shape = new int[]{i_arr.length};
+                    }
+                    else if (v instanceof long[]) {
+                        l_arr = (long[]) v;
+                        shape = new int[]{l_arr.length};
+                    }
+                    else if (v instanceof float[]) {
+                        float[] fArr = (float[]) v;
+                        d_arr = new double[fArr.length];
+                        for (int i = 0; i < fArr.length; i++) {
+                            d_arr[i] = fArr[i];
+                        }
+                        shape = new int[]{fArr.length};
+                    }
+                    else if (v instanceof double[]) {
+                        d_arr = (double[]) v;
+                        shape = new int[]{d_arr.length};
+                    }
+                    else if (v instanceof char[]) {
+                        char[] cArr = (char[]) v;
+                        i_arr = new int[cArr.length];
+                        for (int i = 0; i < cArr.length; i++) {
+                            i_arr[i] = cArr[i];
+                        }
+                        shape = new int[]{cArr.length};
+                    }
+                    else if (v instanceof byte[]) {
+                        byte[] bArr = (byte[]) v;
+                        i_arr = new int[bArr.length];
+                        for (int i = 0; i < bArr.length; i++) {
+                            i_arr[i] = bArr[i];
+                        }
+                        shape = new int[]{bArr.length};
+                    }
+                    else if (v instanceof short[]) {
+                        short[] sArr = (short[]) v;
+                        i_arr = new int[sArr.length];
+                        for (int i = 0; i < sArr.length; i++) {
+                            i_arr[i] = sArr[i];
+                        }
+                        shape = new int[]{sArr.length};
+                    }
+                    else {
+                        log.warn("Unsupported primitive array property '{}': {}. Skipping.", key, v.getClass());
+                        continue;
+                    }
                 }
-                else if (v instanceof SDVariable[]) { /* ... handle SDVariable[] ... */ }
-                else if (v.getClass().getComponentType().isArray()) { /* ... handle multi-dim primitive arrays ... */ }
-                else { log.warn("Unsupported array prop '{}': {}. Skipping.", key, v.getClass()); continue; }
-            } else { log.warn("Unsupported property type '{}': {}. Skipping.", key, v.getClass()); continue; }
+                else if (v instanceof INDArray[]) {
+                    INDArray[] arrArr = (INDArray[]) v;
+                    List<Integer> validOffsets = new ArrayList<>();
+                    for(INDArray arr : arrArr){
+                        if(arr == null) {
+                            validOffsets.add(0);
+                            continue;
+                        }
+                        int rank = -1;
+                        boolean skip = false;
+                        try{
+                            rank = arr.rank();
+                            if(rank > Shape.MAX_RANK || rank < 0) {
+                                skip=true;
+                            }
+                            if(!skip && arr.shape()!=null) {
+                                for(long d : arr.shape()) {
+                                    if(d>Integer.MAX_VALUE || d<0) {
+                                        skip=true;
+                                        break;
+                                    }
+                                }
+                            }
+                        } catch(Exception ex){
+                            skip=true;
+                        }
+                        if(!skip){
+                            try {
+                                validOffsets.add(SameDiffSerializer.serializeSmallNdArrayToFlatBuffer(arr, fbb));
+                            } catch(Exception serEx){
+                                validOffsets.add(0);
+                            }
+                        } else {
+                            validOffsets.add(0);
+                        }
+                    }
+                    aIdx = Ints.toArray(validOffsets);
+                    shape = new int[]{arrArr.length};
+                }
+                else if (v.getClass().getComponentType().isArray()) {
+                    // Handle multi-dimensional primitive arrays
+                    if (v instanceof int[][]) {
+                        int[][] intArr2D = (int[][]) v;
+                        List<Integer> flatList = new ArrayList<>();
+                        for (int[] row : intArr2D) {
+                            for (int val : row) {
+                                flatList.add(val);
+                            }
+                        }
+                        i_arr = Ints.toArray(flatList);
+                        shape = new int[]{intArr2D.length, intArr2D[0].length};
+                    }
+                    else if (v instanceof double[][]) {
+                        double[][] doubleArr2D = (double[][]) v;
+                        List<Double> flatList = new ArrayList<>();
+                        for (double[] row : doubleArr2D) {
+                            for (double val : row) {
+                                flatList.add(val);
+                            }
+                        }
+                        d_arr = new double[flatList.size()];
+                        for (int i = 0; i < flatList.size(); i++) {
+                            d_arr[i] = flatList.get(i);
+                        }
+                        shape = new int[]{doubleArr2D.length, doubleArr2D[0].length};
+                    }
+                    else if (v instanceof long[][]) {
+                        long[][] longArr2D = (long[][]) v;
+                        List<Long> flatList = new ArrayList<>();
+                        for (long[] row : longArr2D) {
+                            for (long val : row) {
+                                flatList.add(val);
+                            }
+                        }
+                        l_arr = new long[flatList.size()];
+                        for (int i = 0; i < flatList.size(); i++) {
+                            l_arr[i] = flatList.get(i);
+                        }
+                        shape = new int[]{longArr2D.length, longArr2D[0].length};
+                    }
+                    else if (v instanceof boolean[][]) {
+                        boolean[][] boolArr2D = (boolean[][]) v;
+                        List<Boolean> flatList = new ArrayList<>();
+                        for (boolean[] row : boolArr2D) {
+                            for (boolean val : row) {
+                                flatList.add(val);
+                            }
+                        }
+                        b_arr = new boolean[flatList.size()];
+                        for (int i = 0; i < flatList.size(); i++) {
+                            b_arr[i] = flatList.get(i);
+                        }
+                        shape = new int[]{boolArr2D.length, boolArr2D[0].length};
+                    }
+                    else {
+                        log.warn("Unsupported multi-dimensional array property '{}': {}. Skipping.", key, v.getClass());
+                        continue;
+                    }
+                }
+                else {
+                    log.warn("Unsupported array property '{}': {}. Skipping.", key, v.getClass());
+                    continue;
+                }
+            }
+            else {
+                log.warn("Unsupported property type '{}': {}. Skipping.", key, v.getClass());
+                continue;
+            }
 
             // Create vectors
-            int idxD = FlatProperties.createDVector(fbb, d_arr != null ? d_arr : EMPTY_DOUBLE); int idxI = FlatProperties.createIVector(fbb, i_arr != null ? i_arr : EMPTY_INT); int idxL = FlatProperties.createLVector(fbb, l_arr != null ? l_arr : EMPTY_LONG); int idxA = FlatProperties.createAVector(fbb, aIdx != null ? aIdx : EMPTY_INT); int idxB = FlatProperties.createBVector(fbb, b_arr != null ? b_arr : EMPTY_BOOLEAN); int idxS = FlatProperties.createSVector(fbb, sIdx != null ? sIdx : EMPTY_INT); int idxShape = FlatProperties.createShapeVector(fbb, shape != null ? shape : EMPTY_INT);
+            int idxD = FlatProperties.createDVector(fbb, d_arr != null ? d_arr : EMPTY_DOUBLE);
+            int idxI = FlatProperties.createIVector(fbb, i_arr != null ? i_arr : EMPTY_INT);
+            int idxL = FlatProperties.createLVector(fbb, l_arr != null ? l_arr : EMPTY_LONG);
+            int idxA = FlatProperties.createAVector(fbb, aIdx != null ? aIdx : EMPTY_INT);
+            int idxB = FlatProperties.createBVector(fbb, b_arr != null ? b_arr : EMPTY_BOOLEAN);
+            int idxS = FlatProperties.createSVector(fbb, sIdx != null ? sIdx : EMPTY_INT);
+            int idxShape = FlatProperties.createShapeVector(fbb, shape != null ? shape : EMPTY_INT);
+
             outOffsets.add(FlatProperties.createFlatProperties(fbb, iname, idxI, idxL, idxD, idxA, idxB, idxS, idxShape));
         } // End loop
 
         return Ints.toArray(outOffsets);
     }
-
 
 
     /** Clones a DifferentialFunction via FlatBuffers serialization/deserialization. */

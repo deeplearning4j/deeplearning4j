@@ -124,6 +124,9 @@ public class SameDiff extends SDBaseOps {
     private final Map<Long, InferenceSession> sessions = new ConcurrentHashMap<>();      //Key: thread ID
 
     @Getter
+    private Map<String, SameDiff> sameDiffFunctionInstances;
+
+    @Getter
     @Setter
     private Map<String,INDArray[]> sequences = new ConcurrentHashMap<>(); //sequence items
 
@@ -359,7 +362,6 @@ public class SameDiff extends SDBaseOps {
         return linalg;
     }
 
-    private Map<String, SameDiff> sameDiffFunctionInstances;
 
 
     // flag, shows if graph was already registered with libnd4j
@@ -448,6 +450,8 @@ public class SameDiff extends SDBaseOps {
     public Set<String> variableNames() {
         return variables.keySet();
     }
+
+
 
     public static class DefaultInferenceFactory implements InferenceFactory {
         public InferenceSession create(SameDiff sameDiff) {
@@ -1658,6 +1662,9 @@ public class SameDiff extends SDBaseOps {
      * @return The outputs of the SameDiff instance, or null if no outputs have been set
      */
     public List<String> outputs() {
+        if(outputs == null) {
+            outputs = new ArrayList<>();
+        }
         return this.outputs;
     }
 
@@ -6146,33 +6153,22 @@ public class SameDiff extends SDBaseOps {
         return asFlatBuffers(0, configuration, includeUpdaterState);
     }
 
-    /**
-     * This method exports the current SameDiff instance into FlatBuffers format, returning the array ops and
-     * all arrays as a ByteBuffer containing the FlatBuffers format data
-     *
-     * @param configuration       - ExecutorConfiguration to be embedded into serialized graph
-     * @param includeUpdaterState If true: include the updater state (state for updaters such as Adam, Nesterov, AdaGrad etc)
-     * @return a ByteBuffer holding the exported FlatBuffers representation of the graph
-     */
     @SneakyThrows
     public ByteBuffer asFlatBuffers(long graphId, @NonNull ExecutorConfiguration configuration, boolean includeUpdaterState) {
         Nd4j.getExecutioner().commit();
-        // Use a slightly larger initial size, helps prevent resizing for moderately sized graphs
-        val bufferBuilder = new FlatBufferBuilder(1024 * 1024); // 1MB initial size
+        val bufferBuilder = new FlatBufferBuilder(1024 * 1024);
         val idCounter = new AtomicInteger(0);
 
         val flatVariables = new ArrayList<Integer>();
-        val flatOffsets = new ArrayList<Integer>(); // This list seems unused in the final graph creation.
+        val flatOffsets = new ArrayList<Integer>();
         val flatNodes = new ArrayList<Integer>();
 
-        // first of all we build VariableSpace dump
         val variableList = new ArrayList<>(variables());
         val reverseMap = new LinkedHashMap<String, Integer>();
         val forwardMap = new LinkedHashMap<String, Integer>();
         val framesMap = new LinkedHashMap<String, Integer>();
 
-        //add the sequences - Note: SequenceItemRoot is not part of FlatGraph schema
-        int sequenceItemsOffset = -1; // Keep track if sequences exist
+        int sequenceItemsOffset = -1;
         if (!sequences.isEmpty()) {
             int[] sequenceItems = new int[sequences.size()];
             int sequenceIdx = 0;
@@ -6180,23 +6176,18 @@ public class SameDiff extends SDBaseOps {
                 int sequenceName = bufferBuilder.createString(sequence.getKey());
                 int[] arrays = new int[sequence.getValue().length];
                 for(int i = 0; i < arrays.length; i++) {
-                    // Use INDArray.toFlatArray directly as SameDiffSerializer isn't available here
                     arrays[i] = sequence.getValue()[i].toFlatArray(bufferBuilder);
                 }
                 int associatedVariables = SequenceItem.createAssociatedVariableVector(bufferBuilder, arrays);
                 sequenceItems[sequenceIdx++] = SequenceItem.createSequenceItem(bufferBuilder,sequenceName,associatedVariables);
             }
-            // This seems incorrect - SequenceItemRoot is not part of FlatGraph
-            // sequenceItemsOffset = SequenceItemRoot.createSequenceItemsVector(bufferBuilder, sequenceItems);
             log.warn("Sequence serialization is present but FlatGraph schema doesn't directly support it. Sequences will not be included in the FlatBuffer.");
         }
-
 
         int idx = 0;
         val idxForOps = new IdentityHashMap<DifferentialFunction, Integer>();
         List<SDVariable> allVars = variables();
         for (SDVariable variable : allVars) {
-            // Skip sequence types as they aren't standard FlatVariables
             if (variable.getVariableType() == VariableType.SEQUENCE) continue;
 
             INDArray arr = variable.getVariableType() == VariableType.ARRAY ? null : variable.getArr();
@@ -6205,10 +6196,10 @@ public class SameDiff extends SDBaseOps {
             String varName = variable.name();
             int varIdx;
             int outputNum;
-            Variable vMeta = variables.get(varName); // Fetch the internal Variable metadata
+            Variable vMeta = variables.get(varName);
             if (vMeta == null) {
                 log.warn("Internal Variable metadata not found for SDVariable: {}. Skipping.", varName);
-                continue; // Should not happen in a consistent state
+                continue;
             }
 
             if (vMeta.getOutputOfOp() != null) {
@@ -6225,16 +6216,12 @@ public class SameDiff extends SDBaseOps {
                 }
                 String[] outNames = df.outputVariablesNames();
                 outputNum = ArrayUtils.indexOf(outNames, varName);
-                // Allow -1 index if outputVariablesNames() returns null/empty for some reason (though it shouldn't)
-                // Preconditions.checkState(outputNum >= 0, "Variable name \"%s\" not found in list of outputs for function named %s of type %s: %s", varName, df.getOwnName(),df.opName(),outNames);
                 if(outputNum < 0 && outNames != null && outNames.length > 0) {
                     log.warn("Variable name \"{}\" not found in list of outputs {} for function named {} of type {}.", varName, Arrays.toString(outNames), df.getOwnName(), df.opName());
-                    // Attempt to recover or skip? Skipping might be safer.
-                    // For now, proceed with outputNum = 0 as a fallback, but log prominently.
                     outputNum = 0;
                     log.warn("Proceeding with outputNum = 0 for variable {} as fallback.", varName);
                 } else if (outNames == null || outNames.length == 0) {
-                    outputNum = 0; // Assume single output if names are not defined
+                    outputNum = 0;
                 }
             } else {
                 varIdx = idCounter.incrementAndGet();
@@ -6244,14 +6231,13 @@ public class SameDiff extends SDBaseOps {
             reverseMap.put(variable.name(), varIdx);
 
             log.trace("Adding [{}] as [{}]", variable.name(), varIdx);
-            int shapeOffset = 0; // Renamed local var
-            int nameOffset = bufferBuilder.createString(variable.name()); // Renamed local var
-            int arrayOffset = 0; // Renamed local var
-            int idOffset = IntPair.createIntPair(bufferBuilder, varIdx, outputNum); // Renamed local var
-            byte varTypeByte = (byte) variable.getVariableType().ordinal(); // Renamed local var
+            int shapeOffset = 0;
+            int nameOffset = bufferBuilder.createString(variable.name());
+            int arrayOffset = 0;
+            int idOffset = IntPair.createIntPair(bufferBuilder, varIdx, outputNum);
+            byte varTypeByte = (byte) variable.getVariableType().ordinal();
 
             if (arr != null && (variable.isConstant() || variable.isPlaceHolder() || variable.getVariableType() == VariableType.VARIABLE)) {
-                // Use INDArray.toFlatArray directly as SameDiffSerializer isn't available here
                 arrayOffset = arr.toFlatArray(bufferBuilder);
             }
 
@@ -6262,9 +6248,9 @@ public class SameDiff extends SDBaseOps {
                 }
             }
 
-            int controlDepsOffset = 0; // Renamed local var
-            int controlDepsForOpOffset = 0; // Renamed local var
-            int controlDepsForVarOffset = 0; // Renamed local var
+            int controlDepsOffset = 0;
+            int controlDepsForOpOffset = 0;
+            int controlDepsForVarOffset = 0;
 
             int[] cds = FlatBuffersMapper.mapOrNull(vMeta.getControlDeps(), bufferBuilder);
             if(cds != null)
@@ -6283,8 +6269,8 @@ public class SameDiff extends SDBaseOps {
                     nameOffset,
                     FlatBuffersMapper.getDataTypeAsByte(variable.dataType()),
                     shapeOffset,
-                    arrayOffset, // Pass offset of FlatArray
-                    -1, // device - deprecated/unused
+                    arrayOffset,
+                    -1,
                     varTypeByte,
                     controlDepsOffset,
                     controlDepsForOpOffset,
@@ -6292,13 +6278,10 @@ public class SameDiff extends SDBaseOps {
             flatVariables.add(flatVariableOffset);
         }
 
-        //add functions
         for (SameDiffOp op : ops.values()) {
             DifferentialFunction func = op.getOp();
             Integer fnId = idxForOps.get(func);
             if (fnId == null) {
-                // This might happen if an op has no output variable that was processed above
-                // Assign a new ID if needed, though this op might be detached/unused.
                 log.warn("Op {} ({}) was not found in idxForOps map, potentially unused or no outputs. Assigning new ID.", func.getOwnName(), func.opName());
                 fnId = idCounter.incrementAndGet();
                 idxForOps.put(func, fnId);
@@ -6306,13 +6289,10 @@ public class SameDiff extends SDBaseOps {
             flatNodes.add(FlatBuffersMapper.asFlatNode(this, func, bufferBuilder, variableList, reverseMap, forwardMap, framesMap, idCounter, fnId));
         }
 
-        // Create vectors for graph fields
         int variablesVectorOffset = FlatGraph.createVariablesVector(bufferBuilder, Ints.toArray(flatVariables));
         int nodesVectorOffset = FlatGraph.createNodesVector(bufferBuilder, Ints.toArray(flatNodes));
-        // outputsOffset - flatOffsets is not populated, so create empty vector
         int outputsVectorOffset = FlatGraph.createOutputsVector(bufferBuilder, new int[]{});
 
-        // Placeholders
         int numPlaceholders = 0;
         for (SDVariable v : variables()) {
             if (v.getVariableType() == VariableType.SEQUENCE) continue;
@@ -6320,7 +6300,7 @@ public class SameDiff extends SDBaseOps {
                 numPlaceholders++;
             }
         }
-        int placeholdersVectorOffset = 0; // Default to 0 offset
+        int placeholdersVectorOffset = 0;
         if (numPlaceholders > 0) {
             int[] placeholderOffsetsArray = new int[numPlaceholders];
             int i = 0;
@@ -6333,10 +6313,8 @@ public class SameDiff extends SDBaseOps {
             placeholdersVectorOffset = FlatGraph.createPlaceholdersVector(bufferBuilder, placeholderOffsetsArray);
         }
 
-
-        // Loss Variables
         List<String> lossVars = getLossVariables();
-        int lossVariablesVectorOffset = 0; // Default to 0 offset
+        int lossVariablesVectorOffset = 0;
         if (lossVars != null && !lossVars.isEmpty()) {
             int[] lossVarOffsetsArray = new int[lossVars.size()];
             for (int i = 0; i < lossVarOffsetsArray.length; i++) {
@@ -6345,9 +6323,7 @@ public class SameDiff extends SDBaseOps {
             lossVariablesVectorOffset = FlatGraph.createLossVariablesVector(bufferBuilder, lossVarOffsetsArray);
         }
 
-
-        // Training Config
-        int trainingConfigStringOffset = 0; // Default to 0 offset
+        int trainingConfigStringOffset = 0;
         if (trainingConfig != null) {
             String json = trainingConfig.toJson();
             if (json != null && !json.isEmpty()) {
@@ -6355,15 +6331,14 @@ public class SameDiff extends SDBaseOps {
             }
         }
 
-        // Updater State
-        int updaterStateVectorOffset = 0; // Default to 0 offset
+        int updaterStateVectorOffset = 0;
         if (includeUpdaterState && updaterMap != null && !updaterMap.isEmpty()) {
             int[] updaterOffsetsArray = new int[updaterMap.size()];
             int updaterNum = 0;
             for (Map.Entry<String, GradientUpdater> g : updaterMap.entrySet()) {
                 int paramNameOffset = bufferBuilder.createString(g.getKey());
-                int stateKeyVectorOffset = 0; // Default to 0 offset
-                int stateValuesVectorOffset = 0; // Default to 0 offset
+                int stateKeyVectorOffset = 0;
+                int stateValuesVectorOffset = 0;
                 Map<String, INDArray> state = g.getValue().getState();
                 if (state != null && !state.isEmpty()) {
                     int[] keysOffsets = new int[state.size()];
@@ -6371,7 +6346,6 @@ public class SameDiff extends SDBaseOps {
                     int i = 0;
                     for (Map.Entry<String, INDArray> e : state.entrySet()) {
                         keysOffsets[i] = bufferBuilder.createString(e.getKey());
-                        // Use INDArray.toFlatArray directly
                         valuesOffsets[i] = e.getValue().toFlatArray(bufferBuilder);
                         i++;
                     }
@@ -6383,37 +6357,62 @@ public class SameDiff extends SDBaseOps {
             updaterStateVectorOffset = FlatGraph.createUpdaterStateVector(bufferBuilder, updaterOffsetsArray);
         }
 
-        // Configuration (assuming getFlatConfiguration returns the correct offset)
         int configurationTableOffset = configuration.getFlatConfiguration(bufferBuilder);
 
-        // Metadata Keys/Values - Not handled in this version, pass 0
         int metadataKeysVectorOffset = 0;
         int metadataValuesVectorOffset = 0;
 
-        // *** FIXED CALL to createFlatGraph ***
-        // Corresponds to the new 11-parameter signature:
-        // createFlatGraph(builder, id, variablesOffset, nodesOffset, outputsOffset, configurationOffset,
-        //                 placeholdersOffset, lossVariablesOffset, trainingConfigOffset, updaterStateOffset,
-        //                 metadataKeysOffset, metadataValuesOffset)
+        int subInstancesVectorOffset = 0;
+        if (sameDiffFunctionInstances != null && !sameDiffFunctionInstances.isEmpty()) {
+            List<Integer> subInstanceOffsetsList = new ArrayList<>();
+            List<Map.Entry<String, SameDiff>> sortedSubInstances = new ArrayList<>(sameDiffFunctionInstances.entrySet());
+            sortedSubInstances.sort(Map.Entry.comparingByKey());
+
+            for (Map.Entry<String, SameDiff> entry : sortedSubInstances) {
+                String subInstanceName = entry.getKey();
+                SameDiff subInstance = entry.getValue();
+
+                if (subInstanceName == null || subInstance == null) continue;
+
+                int nameOffset = bufferBuilder.createString(subInstanceName);
+                ByteBuffer subInstanceBuffer = subInstance.asFlatBuffers(0, configuration, false);
+
+                byte[] subInstanceBytes = new byte[subInstanceBuffer.remaining()];
+                subInstanceBuffer.get(subInstanceBytes);
+
+                int serializedDataOffset = SameDiffSubInstance.createSerializedDataVector(bufferBuilder, subInstanceBytes);
+                int subInstanceTableOffset = SameDiffSubInstance.createSameDiffSubInstance(bufferBuilder, nameOffset, serializedDataOffset);
+
+                subInstanceOffsetsList.add(subInstanceTableOffset);
+            }
+
+            if (!subInstanceOffsetsList.isEmpty()) {
+                int[] finalSubInstanceOffsets = new int[subInstanceOffsetsList.size()];
+                for (int i = 0; i < subInstanceOffsetsList.size(); i++) {
+                    finalSubInstanceOffsets[i] = subInstanceOffsetsList.get(i);
+                }
+                subInstancesVectorOffset = FlatGraph.createSubInstancesVector(bufferBuilder, finalSubInstanceOffsets);
+            }
+        }
+
         int fg = FlatGraph.createFlatGraph(bufferBuilder,
-                graphId,                     // id (param 1)
-                variablesVectorOffset,       // variablesOffset (param 2)
-                nodesVectorOffset,           // nodesOffset (param 3)
-                outputsVectorOffset,         // outputsOffset (param 4) - Likely empty
-                configurationTableOffset,    // configurationOffset (param 5)
-                placeholdersVectorOffset,    // placeholdersOffset (param 6)
-                lossVariablesVectorOffset,   // lossVariablesOffset (param 7)
-                trainingConfigStringOffset,  // trainingConfigOffset (param 8)
-                updaterStateVectorOffset,    // updaterStateOffset (param 9)
-                metadataKeysVectorOffset,    // metadataKeysOffset (param 10) - Added as 0
-                metadataValuesVectorOffset); // metadataValuesOffset (param 11) - Added as 0
+                graphId,
+                variablesVectorOffset,
+                nodesVectorOffset,
+                outputsVectorOffset,
+                configurationTableOffset,
+                placeholdersVectorOffset,
+                lossVariablesVectorOffset,
+                trainingConfigStringOffset,
+                updaterStateVectorOffset,
+                metadataKeysVectorOffset,
+                metadataValuesVectorOffset,
+                subInstancesVectorOffset);
 
         bufferBuilder.finish(fg);
 
-        // Update variable indices (no change needed here)
         synchronized (this) {
             for (Map.Entry<String, Integer> e : reverseMap.entrySet()) {
-                // Check if variable still exists before setting index
                 if(this.variables.containsKey(e.getKey())) {
                     this.variables.get(e.getKey()).setVariableIndex(e.getValue());
                 } else {
@@ -6423,7 +6422,6 @@ public class SameDiff extends SDBaseOps {
         }
         return bufferBuilder.dataBuffer();
     }
-
     /**
      * See {@link #asFlatGraph(long, ExecutorConfiguration, boolean)}.
      *

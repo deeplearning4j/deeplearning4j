@@ -6093,6 +6093,12 @@ public class Nd4j {
         DataBuffer shapeInfoBuffer = Nd4j.createBufferDetached(shapeBuffer);
         // --- 9. Get and Process Data Buffer ---
         java.nio.ByteBuffer bb = array.bufferAsByteBuffer();
+        bb.rewind();
+        //only direct buffers work not heap
+        java.nio.ByteBuffer direct  = ByteBuffer.allocateDirect(array.bufferLength());
+        direct.order(bb.order());
+        bb.put(direct);
+        direct.rewind();
         DataBuffer dataBuffer;
 
         if (bb == null) {
@@ -6101,20 +6107,20 @@ public class Nd4j {
         } else {
             java.nio.ByteOrder dataByteBufferOrder = FlatBuffersMapper.getOrderFromByte(array.byteOrder());
             int bytesPerElement = Nd4j.sizeOfDataType(dtype);
-            long expectedBytes = (bytesPerElement > 0) ? length * bytesPerElement : bb.remaining();
+            long expectedBytes = (bytesPerElement > 0) ? length * bytesPerElement : direct.remaining();
 
-            if (bb.remaining() < expectedBytes) {
+            if (direct.remaining() < expectedBytes) {
                 log.warn("FlatArray buffer remaining bytes ({}) is less than expected ({}) for shape {} and dtype {}. Data may be incomplete.",
                         bb.remaining(), expectedBytes, Arrays.toString(shape), dtype);
             }
 
             // Ensure we read from the beginning of the buffer content
-            bb.order(dataByteBufferOrder);
+            direct.order(dataByteBufferOrder);
             if(bb.position() != 0) bb.position(0); // Reset position
 
             // Create DataBuffer by copying data
             try {
-                dataBuffer = Nd4j.createBuffer(bb, dtype, (int) length); // Use createBuffer(ByteBuffer, ...)
+                dataBuffer = Nd4j.createBuffer(direct, dtype, (int) length); // Use createBuffer(ByteBuffer, ...)
             } catch (Exception e) {
                 log.error("Error creating DataBuffer from ByteBuffer for dtype {} shape {}", dtype, Arrays.toString(shape), e);
                 throw new RuntimeException("Failed to create data buffer from FlatArray ByteBuffer", e);
