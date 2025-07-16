@@ -37,8 +37,6 @@ import static org.nd4j.presets.OpExclusionUtils.getSkipClasses;
                 //note, order matters here
                 //this particular header file is either
                 //going to be the source of ops, see also:
-                "stdint.h",
-                "stddef.h",
                 //https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/blas/CMakeLists.txt#L76
                 //https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/buildnativeoperations.sh#L517
                 "generated/include_ops.h",
@@ -194,12 +192,6 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                 .put(new Info("OpaqueNDArray").pointerTypes("org.nd4j.nativeblas.OpaqueNDArray"))
                 .put(new Info("OpaqueNDArrayArr").pointerTypes("org.nd4j.nativeblas.OpaqueNDArrayArr"))
                //android arm64
-                .put(new Info("stdint.h", "stddef.h").skip(false)) // Make sure these aren't skipped
-                .put(new Info("uint8_t", "int8_t", "uint16_t", "int16_t", "uint32_t", "int32_t", "uint64_t", "int64_t", "size_t")
-                        .cast().valueTypes("byte", "byte", "short", "short", "int", "int", "long", "long", "long")
-                        .pointerTypes("BytePointer", "BytePointer", "ShortPointer", "ShortPointer",
-                                "IntPointer", "IntPointer", "LongPointer", "LongPointer", "SizeTPointer"))
-
 
                 .put(new Info("createOpaqueNDArray").javaNames("create"))
                 .put(new Info("OpaqueTadPack").pointerTypes("org.nd4j.nativeblas.OpaqueTadPack"))
