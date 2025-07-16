@@ -143,8 +143,5 @@ add_definitions(-DANDROID -D__ANDROID__ -D__ANDROID_API__=${ANDROID_NATIVE_API_L
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -DNDEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG")
 
-# Enable ARM64 NEON SIMD instructions
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mfpu=neon")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon")
 
 message(STATUS "Android ARM64 cross-compilation toolchain configured successfully")
