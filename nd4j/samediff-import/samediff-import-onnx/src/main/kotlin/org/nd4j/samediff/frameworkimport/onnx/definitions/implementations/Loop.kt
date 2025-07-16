@@ -26,6 +26,7 @@ import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.SameDiffLambda
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.linalg.api.buffer.DataType
+import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
@@ -55,7 +56,7 @@ class Loop : PreImportHook  {
         dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String, List<SDVariable>> {
         // Parameter docs below are from the onnx operator docs:
-        // https://github.com/onnx/onnx/blob/master/docs/Operators.md#non
+        // https://github.com/onnx/onnx/blob/master/docs/Operators.md#Loop
 
         val funcName = "${op.name}"
         val importedBody = attributes["body"] as OnnxIRGraph
@@ -66,57 +67,82 @@ class Loop : PreImportHook  {
             importGraph = importGraph
         )
 
-
         val tensors = OnnxInputTensors(importedBody = importedBody,op = op,sd = sd)
         val inputTensors = tensors.toInputTensors()
-        val outputs = ArrayList<String>()
-        outputs.addAll(inputTensors.map { input -> input.name() })
 
-        //  combine for loop and while loop together
+        // ONNX Loop inputs:
+        // 0: max_trip_count (may be empty scalar for infinite)
+        // 1: termination_condition (boolean)
+        // 2+: loop variables
+
+        // We need to transform these into the format expected by ControlFlow.condBody()
+        // which expects: [current_iteration, max_iterations, condition, ...extra_args]
+
+        val maxTripCount = inputTensors[0]
+        val terminationCondition = inputTensors[1]
+        val loopVariables = if (inputTensors.size > 2) inputTensors.drop(2) else emptyList()
+
+        // Create initial iteration counter
+        val initialIteration = sd.constant("${funcName}_iter_start", 0)
+
+        // Create the loop variables array in the expected format
+        val loopVars = mutableListOf<SDVariable>()
+        loopVars.add(initialIteration)      // current iteration
+        loopVars.add(maxTripCount)         // max iterations
+        loopVars.add(terminationCondition) // condition
+        loopVars.addAll(loopVariables)     // user variables
+
+        // Use the standard ControlFlow.condBody() - this will create curr_cond properly
         val forCondBody = ControlFlow.condBody()
 
-        /**
-         * inputs here:
-         * condition
-         * trip_count
-         * curr_iteration
-         * seq_empty
-         */
-        val loopBody  = loopBody(
+        // Create the loop body that handles ONNX semantics
+        val loopBody = loopBody(
             importedBody = importedBody,
             funcName = funcName,
-            parent =  sd, funcBody = body)
+            parent = sd,
+            funcBody = body
+        )
 
-        val outputNames = inputTensors.map { input -> "${funcName}_${input.name()}_output" }.toMutableList()
+        // Create output names
+        val outputNamesList = mutableListOf<String>()
+        // First add internal loop variable names
+        outputNamesList.add("${funcName}_final_iter")
+        outputNamesList.add("${funcName}_final_max_iter")
+        outputNamesList.add("${funcName}_final_cond")
+        // Then add user loop variable output names
+        loopVariables.forEach { lv ->
+            outputNamesList.add("${funcName}_${lv.name()}_output")
+        }
+
+        // Override with actual expected output names if provided
         for(i in 0 until op.outputsOfOp.size) {
-            outputNames[outputNames.size - i - 1] = op.outputsOfOp[i]
+            val outputIndex = 3 + i // Skip the first 3 internal outputs
+            if (outputIndex < outputNamesList.size) {
+                outputNamesList[outputIndex] = op.outputsOfOp[i]
+            }
         }
 
         val loopRet = sd.whileLoop(
-            outputNames.toTypedArray(),
+            outputNamesList.toTypedArray(),
             funcName,
-            inputTensors.toTypedArray(),
-            forCondBody,loopBody)
+            loopVars.toTypedArray(),
+            forCondBody,
+            loopBody
+        )
 
-
-
-
-
-        val ret2 = loopRet.associate { input -> input.name() to listOf(input) }.toMutableMap()
+        // Return only the actual user outputs (skip internal loop variables)
+        val userOutputs = if (loopRet.size > 3) loopRet.drop(3) else emptyList()
+        val ret2 = userOutputs.associate { output -> output.name() to listOf(output) }.toMutableMap()
         return ret2
-
     }
 
-
-
-    fun loopBody(importedBody: OnnxIRGraph,parent: SameDiff,funcBody: SameDiff,funcName: String): SameDiffLambda {
+    fun loopBody(importedBody: OnnxIRGraph, parent: SameDiff, funcBody: SameDiff, funcName: String): SameDiffLambda {
         return ControlFlow.loopBody(parent,
             funcBody,
             funcName,
             importedBody.inputList.toTypedArray(),
             importedBody.outputList.toTypedArray())
     }
-
 
     fun importAndValidateGraph(importedBody: OnnxIRGraph,
                                dynamicVariables: Map<String, GeneratedMessageV3>,
@@ -139,22 +165,29 @@ class Loop : PreImportHook  {
         sd.putSubFunction(funcName,body)
         sd.isEagerMode = false
 
-        //only validate if present
-        //all graphs must have iteration number, condition (2 + N inputs) and extra deps
-        val iterCountVar = importedBody.inputList[0]
-        val iterCountVarImported = body.getVariable(iterCountVar)
-        if(!iterCountVarImported.dataType().isNumerical) {
-            throw IllegalArgumentException("Attribute trip count on graph is invalid data type. Must be numerical.")
+        // Validate the imported graph inputs/outputs
+        if (importedBody.inputList.size < 2) {
+            throw IllegalArgumentException("Loop body must have at least 2 inputs (iteration_num, condition)")
         }
 
+        if (importedBody.outputList.isEmpty()) {
+            throw IllegalArgumentException("Loop body must have at least 1 output (condition)")
+        }
 
+        // Validate iteration number input (first input should be numerical)
+        val iterCountVar = importedBody.inputList[0]
+        val iterCountVarImported = body.getVariable(iterCountVar)
+        if(iterCountVarImported != null && !iterCountVarImported.dataType().isNumerical) {
+            throw IllegalArgumentException("Loop body first input (iteration number) must be numerical, got: ${iterCountVarImported.dataType()}")
+        }
+
+        // Validate condition input (second input should be boolean)
         val condInVar = importedBody.inputList[1]
         val condInVarImported = body.getVariable(condInVar)
-        if(condInVarImported.dataType() != DataType.BOOL) {
-            throw IllegalArgumentException("Attribute cond on graph is invalid data type. Must be boolean.")
+        if(condInVarImported != null && condInVarImported.dataType() != DataType.BOOL) {
+            throw IllegalArgumentException("Loop body second input (condition) must be boolean, got: ${condInVarImported.dataType()}")
         }
 
         return body
     }
-
 }

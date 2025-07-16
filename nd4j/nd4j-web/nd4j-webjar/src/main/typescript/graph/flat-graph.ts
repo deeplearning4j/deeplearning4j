@@ -8,6 +8,7 @@ import { FlatConfiguration } from '../graph/flat-configuration.js';
 import { FlatNode } from '../graph/flat-node.js';
 import { FlatVariable } from '../graph/flat-variable.js';
 import { IntPair } from '../graph/int-pair.js';
+import { SameDiffSubInstance } from '../graph/same-diff-sub-instance.js';
 import { UpdaterState } from '../graph/updater-state.js';
 
 
@@ -134,8 +135,18 @@ metadataValuesLength():number {
   return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
 }
 
+subInstances(index: number, obj?:SameDiffSubInstance):SameDiffSubInstance|null {
+  const offset = this.bb!.__offset(this.bb_pos, 26);
+  return offset ? (obj || new SameDiffSubInstance()).__init(this.bb!.__indirect(this.bb!.__vector(this.bb_pos + offset) + index * 4), this.bb!) : null;
+}
+
+subInstancesLength():number {
+  const offset = this.bb!.__offset(this.bb_pos, 26);
+  return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
+}
+
 static startFlatGraph(builder:flatbuffers.Builder) {
-  builder.startObject(11);
+  builder.startObject(12);
 }
 
 static addId(builder:flatbuffers.Builder, id:bigint) {
@@ -275,6 +286,22 @@ static createMetadataValuesVector(builder:flatbuffers.Builder, data:flatbuffers.
 }
 
 static startMetadataValuesVector(builder:flatbuffers.Builder, numElems:number) {
+  builder.startVector(4, numElems, 4);
+}
+
+static addSubInstances(builder:flatbuffers.Builder, subInstancesOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(11, subInstancesOffset, 0);
+}
+
+static createSubInstancesVector(builder:flatbuffers.Builder, data:flatbuffers.Offset[]):flatbuffers.Offset {
+  builder.startVector(4, data.length, 4);
+  for (let i = data.length - 1; i >= 0; i--) {
+    builder.addOffset(data[i]!);
+  }
+  return builder.endVector();
+}
+
+static startSubInstancesVector(builder:flatbuffers.Builder, numElems:number) {
   builder.startVector(4, numElems, 4);
 }
 
