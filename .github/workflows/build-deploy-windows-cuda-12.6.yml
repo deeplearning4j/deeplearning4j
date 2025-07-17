@@ -139,7 +139,7 @@ jobs:
           Write-Host "=== Installing Fresh VS Build Tools 2022 (17.8 LTSC) ==="
           
           # Download VS Build Tools installer
-          $installerUrl = "https://aka.ms/vs/17/release.ltsc.17.8/vs_buildtools.exe"
+          $installerUrl = "https://aka.ms/vs/17/release.ltsc.17.0/vs_buildtools.exe"
           $installerPath = "$env:TEMP\vs_buildtools.exe"
           
           try {
