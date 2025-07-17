@@ -788,6 +788,7 @@
                                 <compilerOption>-D__ANDROID_API__=21</compilerOption>
                                 <compilerOption>-DANDROID</compilerOption>
                                 <compilerOption>-nostdlib++</compilerOption>
+                                <compilerOption>-B</compilerOption>
                             </compilerOptions>
                         </configuration>
                         <executions>
