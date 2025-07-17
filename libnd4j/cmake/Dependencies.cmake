@@ -268,14 +268,18 @@ function(setup_flatbuffers)
         # Generate headers and copy Java files inline after ExternalProject builds
         ExternalProject_Add_Step(flatbuffers_host generate_headers_and_copy_java
                 COMMAND ${CMAKE_COMMAND} -E env "FLATC_PATH=${FLATC_EXECUTABLE}"
-                        bash ${CMAKE_CURRENT_SOURCE_DIR}/flatc-generate.sh
+                bash ${CMAKE_CURRENT_SOURCE_DIR}/flatc-generate.sh
                 COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/copy-flatc-java.sh
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-host/include/flatbuffers/flatbuffers.h"
+                "${CMAKE_SOURCE_DIR}/libnd4j/include/flatbuffers.h"
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                COMMENT "Generating FlatBuffers headers and copying Java files using host flatc"
+                COMMENT "Generating FlatBuffers headers, copying Java files, and copying flatbuffers.h using host flatc"
                 DEPENDEES build
                 BYPRODUCTS
-                    ${CMAKE_CURRENT_SOURCE_DIR}/include/graph/generated.h
-                    ${CMAKE_CURRENT_SOURCE_DIR}/.java_files_copied
+                ${CMAKE_CURRENT_SOURCE_DIR}/include/graph/generated.h
+                ${CMAKE_CURRENT_SOURCE_DIR}/.java_files_copied
+                ${CMAKE_SOURCE_DIR}/libnd4j/include/flatbuffers.h
         )
 
     else()
@@ -316,14 +320,30 @@ function(setup_flatbuffers)
             # Generate headers and copy Java files inline after ExternalProject builds
             ExternalProject_Add_Step(flatbuffers_external generate_headers_and_copy_java
                     COMMAND ${CMAKE_COMMAND} -E env "FLATC_PATH=${FLATC_EXECUTABLE}"
-                            bash ${CMAKE_CURRENT_SOURCE_DIR}/flatc-generate.sh
+                    bash ${CMAKE_CURRENT_SOURCE_DIR}/flatc-generate.sh
                     COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/copy-flatc-java.sh
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src/include/flatbuffers/flatbuffers.h"
+                    "${CMAKE_SOURCE_DIR}/libnd4j/include/flatbuffers.h"
                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                    COMMENT "Generating FlatBuffers headers and copying Java files"
+                    COMMENT "Generating FlatBuffers headers, copying Java files, and copying flatbuffers.h"
                     DEPENDEES build
                     BYPRODUCTS
-                        ${CMAKE_CURRENT_SOURCE_DIR}/include/graph/generated.h
-                        ${CMAKE_CURRENT_SOURCE_DIR}/.java_files_copied
+                    ${CMAKE_CURRENT_SOURCE_DIR}/include/graph/generated.h
+                    ${CMAKE_CURRENT_SOURCE_DIR}/.java_files_copied
+                    ${CMAKE_SOURCE_DIR}/libnd4j/include/flatbuffers.h
+            )
+        else()
+            # Even without flatc generation, copy the flatbuffers.h header
+            ExternalProject_Add_Step(flatbuffers_external copy_flatbuffers_header
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src/include/flatbuffers/flatbuffers.h"
+                    "${CMAKE_SOURCE_DIR}/libnd4j/include/flatbuffers.h"
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                    COMMENT "Copying flatbuffers.h header"
+                    DEPENDEES build
+                    BYPRODUCTS
+                    ${CMAKE_SOURCE_DIR}/libnd4j/include/flatbuffers.h
             )
         endif()
 
