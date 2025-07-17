@@ -265,6 +265,12 @@ function(setup_flatbuffers)
         target_link_libraries(flatbuffers_interface INTERFACE ${FLATBUFFERS_LIBRARY})
         add_dependencies(flatbuffers_interface flatbuffers_target)
 
+        # Check if flatbuffers.h already exists
+        set(FLATBUFFERS_HEADER_DEST "${CMAKE_SOURCE_DIR}/libnd4j/include/flatbuffers/flatbuffers.h")
+        if(EXISTS ${FLATBUFFERS_HEADER_DEST})
+            message(STATUS "Found existing flatbuffers.h at ${FLATBUFFERS_HEADER_DEST}")
+        endif()
+
         # Generate headers and copy Java files inline after ExternalProject builds
         ExternalProject_Add_Step(flatbuffers_host generate_headers_and_copy_java
                 COMMAND ${CMAKE_COMMAND} -E env "FLATC_PATH=${FLATC_EXECUTABLE}"
@@ -315,6 +321,12 @@ function(setup_flatbuffers)
         include_directories("${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src/include")
         set(FLATBUFFERS_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/libflatbuffers.a")
         set(FLATBUFFERS_SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src")
+
+        # Check if flatbuffers.h already exists
+        set(FLATBUFFERS_HEADER_DEST "${CMAKE_SOURCE_DIR}/libnd4j/include/flatbuffers/flatbuffers.h")
+        if(EXISTS ${FLATBUFFERS_HEADER_DEST})
+            message(STATUS "Found existing flatbuffers.h at ${FLATBUFFERS_HEADER_DEST}")
+        endif()
 
         if(SHOULD_BUILD_FLATC)
             set(FLATC_EXECUTABLE "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/flatc")
