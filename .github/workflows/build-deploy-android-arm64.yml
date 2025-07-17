@@ -243,7 +243,6 @@ jobs:
           
           BASE_COMMAND="mvn ${{ matrix.mvn_ext }} \
             -Dlibnd4j.generate.flatc=ON \
-            -Djavacpp.platform.sysroot=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot \
             -Djavacpp.platform.compiler=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++ \
             --no-transfer-progress \
             -Posx-aarch64-protoc \
