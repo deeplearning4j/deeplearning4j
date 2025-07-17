@@ -337,10 +337,10 @@ function(setup_flatbuffers)
                     bash ${CMAKE_CURRENT_SOURCE_DIR}/flatc-generate.sh
                     COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/copy-flatc-java.sh
                     COMMAND ${CMAKE_COMMAND} -E make_directory
-                    "${CMAKE_SOURCE_DIR}/libnd4j/include/flatbuffers"
+                    "${CMAKE_SOURCE_DIR}/include/flatbuffers"
                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
                     "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src/include/flatbuffers/flatbuffers.h"
-                    "${CMAKE_SOURCE_DIR}/libnd4j/include/flatbuffers/flatbuffers.h"
+                    "${CMAKE_SOURCE_DIR}/include/flatbuffers/flatbuffers.h"
                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                     COMMENT "Generating FlatBuffers headers, copying Java files, and copying flatbuffers.h"
                     DEPENDEES build
