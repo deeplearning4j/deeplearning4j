@@ -38,6 +38,25 @@ if [ ! -x "$FLATC_PATH" ]; then
     exit 1
 fi
 
+# Find flatbuffers.h in any subdirectory
+echo "Searching for flatbuffers.h..."
+FLATBUFFERS_H=$(find . -name "flatbuffers.h" -type f | head -1)
+
+if [ -z "$FLATBUFFERS_H" ]; then
+    echo "Error: flatbuffers.h not found in any subdirectory"
+    exit 1
+fi
+
+echo "Found flatbuffers.h at: $FLATBUFFERS_H"
+
+# Create flatbuffers directory under ./include
+mkdir -p ./include/flatbuffers
+
+# Copy flatbuffers.h to the include directory
+cp "$FLATBUFFERS_H" ./include/flatbuffers/
+echo "Copied flatbuffers.h to ./include/flatbuffers/"
+echo "Verifying flatbuffers.h"
+ls  ./include/flatbuffers/
 # Ensure output directories exist
 mkdir -p ./include/graph/generated
 
