@@ -675,8 +675,6 @@
             </activation>
             <properties>
                 <javacpp.build.output.path>${project.build.directory}/classes/lib/arm64-v8a</javacpp.build.output.path>
-                <javacpp.platform.sysroot>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</javacpp.platform.sysroot>
-                <javacpp.compiler.crtoption></javacpp.compiler.crtoption>
             </properties>
             <build>
                 <plugins>
@@ -684,59 +682,7 @@
                         <groupId>org.bytedeco</groupId>
                         <artifactId>javacpp</artifactId>
                         <version>${javacpp.version}</version>
-                        <dependencies>
-                            <dependency>
-                                <groupId>org.eclipse.deeplearning4j</groupId>
-                                <artifactId>nd4j-cpu-backend-common</artifactId>
-                                <version>${project.version}</version>
-                            </dependency>
-                            <dependency>
-                                <groupId>org.eclipse.deeplearning4j</groupId>
-                                <artifactId>nd4j-native-preset</artifactId>
-                                <version>${project.version}</version>
-                            </dependency>
-                            <dependency>
-                                <groupId>org.eclipse.deeplearning4j</groupId>
-                                <artifactId>nd4j-native-api</artifactId>
-                                <version>${project.version}</version>
-                            </dependency>
-                            <dependency>
-                                <groupId>org.bytedeco</groupId>
-                                <artifactId>openblas</artifactId>
-                                <version>${openblas.version}-${javacpp-presets.version}</version>
-                                <optional>true</optional>
-                            </dependency>
-                            <dependency>
-                                <groupId>org.bytedeco</groupId>
-                                <artifactId>openblas</artifactId>
-                                <version>${openblas.version}-${javacpp-presets.version}</version>
-                                <classifier>${dependency.platform}</classifier>
-                                <optional>true</optional>
-                            </dependency>
-                        </dependencies>
                         <configuration>
-                            <properties>${javacpp.platform.properties}</properties>
-                            <propertyKeysAndValues>
-                                <property>
-                                    <name>platform.root</name>
-                                    <value>${javacpp.platform.root}</value>
-                                </property>
-                                <property>
-                                    <name>platform.compiler</name>
-                                    <value>${javacpp.platform.compiler}</value>
-                                </property>
-                                <property>
-                                    <name>platform.sysroot</name>
-                                    <value>${javacpp.platform.sysroot}</value>
-                                </property>
-                                <property>
-                                    <name>platform.extension</name>
-                                    <value>${javacpp.platform.extension}</value>
-                                </property>
-                            </propertyKeysAndValues>
-                            <classPaths>
-                                <classPath>${project.build.outputDirectory}</classPath>
-                            </classPaths>
                             <includePaths>
                                 <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-target-build/include</includePath>
                                 <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-host-build/include</includePath>
@@ -752,80 +698,26 @@
                                 <includePath>${libnd4jhome}/include/graph</includePath>
                                 <includePath>${libnd4jhome}/include/indexing</includePath>
                                 <includePath>${libnd4jhome}/include/memory</includePath>
-                                <includePath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include</includePath>
-                                <includePath>${env.ANDROID_NDK}/sources/android/support/include</includePath>
                             </includePaths>
                             <linkPaths>
                                 <linkPath>${libnd4j.outputPath}</linkPath>
                                 <linkPath>${env.OPENBLAS_PATH}/lib</linkPath>
                                 <linkPath>${env.OPENBLAS_PATH}/</linkPath>
-                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/21</linkPath>
-                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android</linkPath>
                             </linkPaths>
-                            <resourcePath>${libnd4jhome}/blasbuild/cpu/blas</resourcePath>
-                            <buildResources>
-                                <buildResource>/${javacpp.platform.library.path}/</buildResource>
-                                <buildResource>/org/bytedeco/openblas/${javacpp.platform}/</buildResource>
-                                <buildResource>/lib/</buildResource>
-                                <buildResource>/</buildResource>
-                                <buildResource>${libnd4jhome}/blasbuild/cpu</buildResource>
-                            </buildResources>
-                            <includeResources>
-                                <includeResource>/${javacpp.platform.library.path}/include/</includeResource>
-                                <includeResource>/org/bytedeco/openblas/${javacpp.platform}/include/</includeResource>
-                            </includeResources>
-                            <linkResources>
-                                <linkResource>/${javacpp.platform.library.path}/</linkResource>
-                                <linkResource>/${javacpp.platform.library.path}/lib/</linkResource>
-                                <linkResource>/org/bytedeco/openblas/${javacpp.platform}/</linkResource>
-                                <linkResource>/org/bytedeco/openblas/${javacpp.platform}/lib/</linkResource>
-                            </linkResources>
+
                             <compilerOptions>
                                 <compilerOption>${compiler.flag.cpp.standard}</compilerOption>
                                 <compilerOption>${platform.linker.flag.no.undefined}</compilerOption>
-                                <compilerOption>--target=aarch64-none-linux-android21</compilerOption>
+
+                                <compilerOption>--target=aarch64-linux-android21</compilerOption>
+
                                 <compilerOption>--sysroot=${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</compilerOption>
+
                                 <compilerOption>-D__ANDROID_API__=21</compilerOption>
                                 <compilerOption>-DANDROID</compilerOption>
-                                <compilerOption>-B</compilerOption>
                             </compilerOptions>
+
                         </configuration>
-                        <executions>
-                            <execution>
-                                <id>javacpp-validate</id>
-                                <phase>validate</phase>
-                                <goals>
-                                    <goal>build</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>javacpp-parser</id>
-                                <phase>generate-sources</phase>
-                                <goals>
-                                    <goal>build</goal>
-                                </goals>
-                                <configuration>
-                                    <skip>${javacpp.parser.skip}</skip>
-                                    <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
-                                    <classOrPackageName>org.nd4j.presets.cpu.Nd4jCpuPresets</classOrPackageName>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>javacpp-compiler</id>
-                                <phase>process-classes</phase>
-                                <goals>
-                                    <goal>build</goal>
-                                </goals>
-                                <configuration>
-                                    <skip>${javacpp.compiler.skip}</skip>
-                                    <classOrPackageName>org.nd4j.linalg.cpu.nativecpu.bindings.Nd4jCpu</classOrPackageName>
-                                    <copyLibs>true</copyLibs>
-                                    <copyResources>true</copyResources>
-                                    <configDirectory>${project.build.directory}/classes/META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</configDirectory>
-                                    <outputDirectory>${javacpp.build.output.path}</outputDirectory>
-                                </configuration>
-                            </execution>
-                        </executions>
                     </plugin>
                 </plugins>
             </build>
