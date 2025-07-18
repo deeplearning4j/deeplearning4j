@@ -84,37 +84,6 @@ val mul = OnnxMappingProcess(
         attributeMappingRules = booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0),
         opMappingRegistry = onnxOpRegistry)
 
-val lessEqual = OnnxMappingProcess(
-        inputFrameworkOpName = "LessOrEqual",
-        opName = "less_equal",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "A","y" to "B"))),
-        attributeMappingRules = booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0),
-        opMappingRegistry = onnxOpRegistry)
-
-
-val less = OnnxMappingProcess(
-        inputFrameworkOpName = "Less",
-        opName = "less",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "A","y" to "B"))),
-        attributeMappingRules = booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0),
-        opMappingRegistry = onnxOpRegistry)
-
-
-
-val greaterEqual = OnnxMappingProcess(
-        inputFrameworkOpName = "GreaterOrEqual",
-        opName = "greater_equal",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "A","y" to "B"))),
-        attributeMappingRules = booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0),
-        opMappingRegistry = onnxOpRegistry)
-
-
-val greater = OnnxMappingProcess(
-        inputFrameworkOpName = "Greater",
-        opName = "greater",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "A","y" to "B"))),
-        attributeMappingRules = booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0),
-        opMappingRegistry = onnxOpRegistry)
 
 val divide = OnnxMappingProcess(
         inputFrameworkOpName = "Div",

@@ -682,6 +682,13 @@
                         <groupId>org.bytedeco</groupId>
                         <artifactId>javacpp</artifactId>
                         <version>${javacpp.version}</version>
+                        <properties>
+                            <property>
+                                <name>platform.compiler.output</name>
+                                <value>-Wl,-rpath,lib/ -D__ANDROID_API__=21 -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -march=armv8-a -Wall -nostdlib++ -fPIC -shared -Wl,--no-undefined -z text -o </value>
+                            </property>
+                        </properties>
+
                         <configuration>
                             <includePaths>
                                 <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-target-build/include</includePath>

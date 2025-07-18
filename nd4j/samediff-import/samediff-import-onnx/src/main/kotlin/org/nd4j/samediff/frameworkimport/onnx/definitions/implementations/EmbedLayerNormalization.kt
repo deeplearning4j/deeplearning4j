@@ -135,8 +135,7 @@ class EmbedLayerNormalization: PreImportHook {
         val epsilon = attributes.getOrDefault("epsilon", 1e-12) as Number
 
         // Get sequence length for position embeddings
-        val inputShape = sd.shape(inputIds)
-        val seqLen = inputShape.get(sd.constant(1))
+        val seqLen = sd.sizeAt(inputIds,1)
 
         // Ensure inputIds are integer type for gather operation
         val inputIdsInt = if (inputIds.dataType().isIntType()) {

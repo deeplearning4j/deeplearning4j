@@ -23,23 +23,20 @@ import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.linalg.api.buffer.DataType
-import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
-import java.util.*
 
 /**
- * Extremely simplified Slice implementation that avoids ALL operations that could create control flow.
- * Uses direct stridedSlice without any complex sparse operations.
+ * ONNX Greater operation implementation that casts output to boolean.
  *
  * @author Adam Gibson
  */
-@PreHookRule(nodeNames = [],opNames = ["Slice"],frameworkName = "onnx")
-class Slice : PreImportHook  {
+@PreHookRule(nodeNames = [],opNames = ["Greater"],frameworkName = "onnx")
+class Greater : PreImportHook  {
 
     override fun doImport(
         sd: SameDiff,
@@ -50,58 +47,15 @@ class Slice : PreImportHook  {
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
         dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String, List<SDVariable>> {
-
-        val inputVariable = sd.getVariable(op.inputsToOp[0])
-
-        // Cast indices to INT64 as required
-        val starts = sd.getVariable(op.inputsToOp[1]).castTo(
-            sd.generateNewVarName("cast_int64_${op.inputsToOp[1]}_" + UUID.randomUUID().toString(), 0),
-            DataType.INT64
-        )
-        val ends = sd.getVariable(op.inputsToOp[2]).castTo(
-            sd.generateNewVarName("cast_int64_${op.inputsToOp[2]}" + UUID.randomUUID().toString(), 0),
-            DataType.INT64
-        )
-
-        // Handle axes - if not provided, assume [0]
-        val axes = if (op.inputsToOp.size < 4) {
-            sd.constant(0)
-        } else {
-            sd.getVariable(op.inputsToOp[3])
-        }
-
-        // Handle steps - if not provided, assume [1]
-        val steps = if (op.inputsToOp.size >= 5) {
-            sd.getVariable(op.inputsToOp[4])
-        } else {
-            sd.constant(1)
-        }
-
-        // For now, handle only the simple case where we slice on axis 0
-        // This avoids all the complex sparse operations that were causing control flow
-        val result = if (op.inputsToOp.size < 4) {
-            // Simple case: slice on axis 0
-            sd.stridedSlice(
-                outputNames[0],
-                inputVariable,
-                starts,
-                ends,
-                steps,
-                0, 0, 0, 0, 0
-            )
-        } else {
-            // For multi-axis slicing, we need to be more careful
-            // But let's try the simplest approach first
-            sd.stridedSlice(
-                outputNames[0],
-                inputVariable,
-                starts,
-                ends,
-                steps,
-                0, 0, 0, 0, 0
-            )
-        }
-
-        return mapOf(result.name() to listOf(result))
+        val inputA = sd.getVariable(op.inputsToOp[0])
+        val inputB = sd.getVariable(op.inputsToOp[1])
+        
+        // Perform the greater than comparison
+        val greaterResult = sd.gt(inputA, inputB)
+        
+        // Cast the result to boolean
+        val outputVar = sd.castTo(outputNames[0], greaterResult, DataType.BOOL)
+        
+        return mapOf(outputVar.name() to listOf(outputVar))
     }
 }
