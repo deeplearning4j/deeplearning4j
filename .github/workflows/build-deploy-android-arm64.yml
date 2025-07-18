@@ -288,22 +288,3 @@ jobs:
         with:
           limit-access-to-actor: true
 
-      - name: Verify Build Artifacts
-        if: always()
-        shell: bash
-        run: |
-          echo "--- Verifying nd4j-native artifacts ---"
-          if [ -d "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/target" ]; then
-            find nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/target -name "*.jar" -o -name "*.so"
-          fi
-          
-          echo "--- Verifying libnd4j artifacts ---"
-          if [ -d "libnd4j" ]; then
-            find libnd4j -name "*.so" -o -name "*.a" | grep -E "(arm64|aarch64|android)"
-          fi
-
-      - name: Cleanup Build Artifacts
-        if: always()
-        shell: bash
-        run: |
-          rm -rf /tmp/maven-* 2>/dev/null || true
