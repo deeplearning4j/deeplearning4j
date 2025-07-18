@@ -735,7 +735,7 @@
                                 </property>
                                 <property>
                                     <name>platform.compiler.output</name>
-                                    <value>${javacpp.platform.compiler.output}</value>
+                                    <value>-Wl,-rpath,lib/ -D__ANDROID_API__=21 -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -march=armv8-a -Wall -nostdlib++ -fPIC -shared -Wl,--no-undefined -z text -o </value>
                                 </property>
                             </propertyKeysAndValues>
                         </configuration>

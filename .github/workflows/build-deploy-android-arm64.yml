@@ -247,7 +247,6 @@ jobs:
             --no-transfer-progress \
             -Posx-aarch64-protoc \
             -pl ${MODULES} \
-           -Djavacpp.platform.compiler.output= \
             -Pcpu \
             -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} \
             -Dhttp.keepAlive=false \
