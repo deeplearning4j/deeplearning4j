@@ -157,7 +157,7 @@ DECLARE_SHAPE_FN(gather) {
     ArrayOptions::setPropertyBit(outputShapeInfo, ARRAY_EMPTY);
   }
 
-  auto desc = new ShapeDescriptor(outputShapeInfo, false);
+
 
   auto result = ConstantShapeHelper::getInstance().bufferForShapeInfo(outputShapeInfo)->primary();
   RELEASE(outputShapeInfo, block.getWorkspace());

@@ -8,7 +8,7 @@ function(apply_android_x86_64_plt_fixes target_name)
     if(NOT (SD_ANDROID_BUILD AND ANDROID_ABI MATCHES "x86_64"))
         return()
     endif()
-    
+
     # Additional target-specific compiler flags (all verified) - FIXED: Only for GCC/Clang
     if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         target_compile_options(${target_name} PRIVATE
@@ -43,7 +43,7 @@ function(configure_large_template_linker)
     if(NOT (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND SD_X86_BUILD))
         return()
     endif()
-    
+
     message(STATUS "Configuring linker for large template library with PLT overflow prevention")
 
     # Clear any existing conflicting linker flags
@@ -146,7 +146,7 @@ function(determine_platform_type)
             endif()
         endif()
     endif()
-    
+
     # Set default for ARM builds if not specified
     if(SD_ARM_BUILD)
         if(NOT DEFINED SD_ARCH OR SD_ARCH STREQUAL "")
@@ -234,7 +234,9 @@ function(apply_compiler_specific_flags ARCH_TUNE)
             set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -export-dynamic,--verbose" PARENT_SCOPE)
         endif()
 
-        if("${SD_GCC_FUNCTRACE}" STREQUAL "ON")
+        # In PlatformOptimizations.cmake, update the SD_GCC_FUNCTRACE section:
+
+        if(SD_GCC_FUNCTRACE)
             set(COMPILER_IS_NVCC false)
             get_filename_component(COMPILER_NAME ${CMAKE_CXX_COMPILER} NAME)
             if(COMPILER_NAME MATCHES "^nvcc")
@@ -252,8 +254,15 @@ function(apply_compiler_specific_flags ARCH_TUNE)
                 set(CMAKE_CXX_EXTENSIONS OFF PARENT_SCOPE)
             endif()
 
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -ftemplate-backtrace-limit=0 -gno-record-gcc-switches -ftrack-macro-expansion=0 -fstack-protector -fstack-protector-all  -Wall  -Wextra -Werror -Wno-return-type -Wno-error=int-in-bool-context -Wno-unused-variable -Wno-error=implicit-fallthrough -Wno-return-type -Wno-unused-parameter -Wno-error=unknown-pragmas -ggdb3 -lpthread -pthread -MT -Bsymbolic -lbfd -rdynamic -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -finstrument-functions  -O0 -fPIC" PARENT_SCOPE)
-            add_compile_definitions(SD_GCC_FUNCTRACE)
+            # Compiler flags (no linker libraries here)
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-backtrace-limit=0 -gno-record-gcc-switches -ftrack-macro-expansion=0 -fstack-protector -fstack-protector-all -Wall -Wextra -Wno-return-type -Wno-error=int-in-bool-context -Wno-unused-variable -Wno-error=implicit-fallthrough -Wno-return-type -Wno-unused-parameter -Wno-error=unknown-pragmas -ggdb3 -pthread -MT -Bsymbolic -rdynamic -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -finstrument-functions -O0 -fPIC" PARENT_SCOPE)
+
+            # Linker libraries (separate from compiler flags)
+            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread -lbfd -lunwind -ldw -ldl -lelf" PARENT_SCOPE)
+            set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -lpthread -lbfd -lunwind -ldw -ldl -lelf" PARENT_SCOPE)
+
+            # Add the compiler definition
+            add_compile_definitions(SD_GCC_FUNCTRACE=ON)
         endif()
     endif()
 endfunction()
@@ -261,32 +270,32 @@ endfunction()
 # Main function to setup all platform optimizations
 function(setup_platform_optimizations)
     message(STATUS "Setting up platform-specific optimizations...")
-    
+
     # Determine platform type
     determine_platform_type()
-    
+
     # Configure PLT disable
     configure_plt_disable()
-    
+
     # Configure memory model
     configure_memory_model()
-    
+
     # Configure compilation memory optimization
     configure_compilation_memory_optimization()
-    
+
     # Configure section splitting
     configure_section_splitting()
-    
+
     # Configure large template linker
     configure_large_template_linker()
 
     # Configure architecture tuning
     configure_architecture_tuning()
-    
+
     # Apply architecture tuning based on calculated ARCH_TUNE
     if(DEFINED ARCH_TUNE)
         apply_compiler_specific_flags("${ARCH_TUNE}")
     endif()
-    
+
     message(STATUS "Platform optimizations setup complete")
 endfunction()

@@ -5139,7 +5139,6 @@ ITERATE_LIST((SD_NUMERIC_TYPES),INSTANTIATE_P_I_J_K);
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType l, const T value) {
-  //(*this)(i,j,k) = value;
   if (rankOf() != 4 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2] || l >= shapeOf()[3])
     THROW_EXCEPTION("NDArray::p(i,j,k,l, value): one of input indexes is out of array length or rank!=4 !");
 
@@ -5248,9 +5247,13 @@ NDArray::p(const sd::LongType i, const T value) {  // Note: value not NDArray re
 #define INSTANTIATE_P_SINGLE(T) template SD_LIB_EXPORT void NDArray::p(const sd::LongType i,const GET_SECOND(T) value);
 ITERATE_LIST((SD_COMMON_TYPES_ALL),INSTANTIATE_P_SINGLE);
 
+
+// In NDArray.cpp, wrap the string template instantiations:
+#if COUNT_NARG(SD_STRING_TYPES_L) > 0
+
 template<typename T>
 typename std::enable_if<DataTypeUtils::stringTypesForNDarray<T>::value, void>::type
-NDArray::p(const sd::LongType i, const T value) {  // Note: value not NDArray reference
+NDArray::p(const sd::LongType i, const T value) {
   if (i >= _length) {
     std::string errorMessage = "NDArray::p(i, value): input index is out of array length ! i = "
                                + std::to_string(i) + " length = " + std::to_string(_length);
@@ -5260,15 +5263,14 @@ NDArray::p(const sd::LongType i, const T value) {  // Note: value not NDArray re
   sd::LongType coords[1] = {i};
   sd::LongType xOffset;
   COORDS2INDEX(shape::rank(shapeInfo()), shape::stride(shapeInfo()), coords, xOffset);
-
-  // Direct value assignment, no need for scalar.isS() check
   templatedSetString<T,T>(buffer(), xOffset, (void*)&value);
 }
 
-// FIXED: Remove conditional compilation and ensure all string types are instantiated
 #define INSTANTIATE_P_SINGLE_STRING(T) template SD_LIB_EXPORT void NDArray::p(const sd::LongType i,const GET_SECOND(T) value);
 ITERATE_LIST((SD_STRING_TYPES),INSTANTIATE_P_SINGLE_STRING);
+#undef INSTANTIATE_P_SINGLE_STRING
 
+#endif
 ////////////////////////////////////////////////////////////////////////
 void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType l, NDArray *scalar) {
   if (!scalar->isScalar()) THROW_EXCEPTION("NDArray::p method: input array must be scalar!");

@@ -257,7 +257,7 @@ endfunction()
 function(validate_and_process_types)
     # Determine validation mode
     set(validation_mode "NORMAL")
-    if(SD_GCC_FUNCTRACE STREQUAL "ON")
+    if(SD_GCC_FUNCTRACE)
         set(validation_mode "DEBUG")
     endif()
     if(SD_STRICT_TYPE_VALIDATION)
@@ -265,7 +265,7 @@ function(validate_and_process_types)
     endif()
 
     # Handle debug builds with auto-reduction
-    if(SD_GCC_FUNCTRACE STREQUAL "ON" AND SD_DEBUG_AUTO_REDUCE)
+    if(SD_GCC_FUNCTRACE AND SD_DEBUG_AUTO_REDUCE)
         print_status_colored("INFO" "=== DEBUG BUILD TYPE REDUCTION ACTIVE ===")
 
         if(SD_DEBUG_TYPE_PROFILE AND NOT SD_DEBUG_TYPE_PROFILE STREQUAL "")
@@ -495,7 +495,7 @@ endfunction()
 macro(SETUP_LIBND4J_TYPE_VALIDATION)
     # Set default validation mode
     if(NOT DEFINED SD_TYPES_VALIDATION_MODE)
-        if(SD_GCC_FUNCTRACE STREQUAL "ON")
+        if(SD_GCC_FUNCTRACE)
             set(SD_TYPES_VALIDATION_MODE "DEBUG")
         elseif(SD_STRICT_TYPE_VALIDATION)
             set(SD_TYPES_VALIDATION_MODE "STRICT")
@@ -505,7 +505,7 @@ macro(SETUP_LIBND4J_TYPE_VALIDATION)
     endif()
 
     # Enable debug auto-reduction by default for debug builds
-    if(NOT DEFINED SD_DEBUG_AUTO_REDUCE AND SD_GCC_FUNCTRACE STREQUAL "ON")
+    if(NOT DEFINED SD_DEBUG_AUTO_REDUCE AND SD_GCC_FUNCTRACE)
         set(SD_DEBUG_AUTO_REDUCE TRUE)
     endif()
 

@@ -28,7 +28,7 @@
 #include <sstream>
 
 #include "system/op_boilerplate.h"
-
+#include <helpers/logger.h>
 namespace sd {
     
     // Static member definitions
@@ -58,6 +58,8 @@ namespace sd {
     }
     
     void DataTypeValidation::populateTypeNames() {
+        if (initialized_) return;
+
         // All possible data types defined in DataType enum
         typeNames_[DataType::INHERIT] = "INHERIT";
         typeNames_[DataType::BOOL] = "BOOL";
@@ -83,6 +85,8 @@ namespace sd {
         typeNames_[DataType::UNKNOWN] = "UNKNOWN";
     }
     void DataTypeValidation::populateCompiledTypes() {
+        if (initialized_) return;
+
         // Auto-register types based on compile-time flags
         // This mirrors the logic from the CMake type system
 
@@ -156,14 +160,7 @@ namespace sd {
         registerCompiledType(DataType::UTF32, "UTF32");
 #endif
 #endif
-
-        // Debug: Log what types were registered (only in debug builds)
-#if defined(SD_GCC_FUNCTRACE)
-        sd_printf("DataTypeValidation: Registered %zu compiled types\n", compiledTypes_.size());
-        for (const auto& type : compiledTypes_) {
-            sd_printf("  - %s\n", getDataTypeName(type));
-        }
-#endif
+        
     }
     
     void DataTypeValidation::registerCompiledType(DataType type, const std::string& name) {

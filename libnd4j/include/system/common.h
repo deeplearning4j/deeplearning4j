@@ -240,8 +240,7 @@ struct ErrorResult {
 
 #ifndef __JAVACPP_HACK__
 
-#if defined(SD_GCC_FUNCTRACE) && !defined(OP_BOILER_PLATE_THROW_EXCEPTIONS)
-#define OP_BOILER_PLATE_THROW_EXCEPTIONS
+#if defined(SD_GCC_FUNCTRACE)
 #include <exceptions/backward.hpp>
 using namespace backward;
 void throwException(const char* exceptionMessage);

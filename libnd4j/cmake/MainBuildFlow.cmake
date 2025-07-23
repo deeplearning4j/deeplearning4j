@@ -242,11 +242,18 @@ function(collect_all_sources out_source_list)
     endif()
 endfunction()
 
-# --- Linking functions for CPU and CUDA ---
 function(configure_cpu_linking main_target_name)
     target_link_libraries(${main_target_name} PUBLIC
             ${ONEDNN} ${ARMCOMPUTE_LIBRARIES} ${OPENBLAS_LIBRARIES}
             ${BLAS_LIBRARIES} flatbuffers_interface)
+
+    # Add debug libraries when SD_GCC_FUNCTRACE is enabled
+    if(SD_GCC_FUNCTRACE)
+        target_link_libraries(${main_target_name} PUBLIC
+                bfd dw dl elf unwind pthread)
+        message(STATUS "✅ Added debug libraries for SD_GCC_FUNCTRACE")
+    endif()
+
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         find_package(OpenMP)
         if(OpenMP_CXX_FOUND)
@@ -490,6 +497,7 @@ print_status_colored("INFO" "=== 2. INITIALIZING DEPENDENCIES & OPERATIONS ===")
 include(DuplicateInstantiationDetection)
 include(TemplateProcessing)
 include(CompilerFlags)
+setup_platform_optimizations()
 setup_onednn()
 setup_armcompute()
 

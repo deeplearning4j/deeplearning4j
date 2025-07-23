@@ -671,7 +671,7 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
             set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xlinker=-v")
             set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xlinker=--verbose")
 
-            if(SD_GCC_FUNCTRACE STREQUAL "ON")
+            if(SD_GCC_FUNCTRACE)
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fPIC --device-debug -lineinfo -G")
             else()
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fPIC -Xcompiler=-fpermissive")

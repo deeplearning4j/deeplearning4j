@@ -265,7 +265,7 @@ function(run_ci_validation)
         print_status_colored("WARNING" "BUILD_TYPE not specified for CI build")
     endif()
 
-    if(DEFINED ENV{CI} AND SD_GCC_FUNCTRACE STREQUAL "ON")
+    if(DEFINED ENV{CI} AND SD_GCC_FUNCTRACE)
         print_status_colored("WARNING" "Function tracing enabled in CI environment")
     endif()
 
