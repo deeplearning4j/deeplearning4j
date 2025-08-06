@@ -36,19 +36,15 @@ void standardDeviation_(NDArray& input, NDArray& output, const std::vector<sd::L
 void variance(NDArray& input, NDArray& output, const std::vector<LongType>& dimensions, bool biasCorrected) {
   auto inputDType = input.dataType();
   auto outputDType = output.dataType();
-#if SD_IS_PAIR_TYPE_COMPILED(inputDType,outputDType)
   BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), variance_, (input, output, dimensions, biasCorrected),
                         SD_COMMON_TYPES, SD_FLOAT_TYPES);
-#endif
 }
 
 void standardDeviation(NDArray& input, NDArray& output, const std::vector<LongType>& dimensions, bool biasCorrected) {
   auto inputDType = input.dataType();
   auto outputDType = output.dataType();
-#if SD_IS_PAIR_TYPE_COMPILED(inputDType,outputDType)
   BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), standardDeviation_,
                         (input, output, dimensions, biasCorrected), SD_COMMON_TYPES, SD_FLOAT_TYPES);
-#endif
 }
 
 }  // namespace helpers

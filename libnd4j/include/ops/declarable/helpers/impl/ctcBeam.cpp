@@ -639,12 +639,10 @@ void beamSearch(NDArray& logit, NDArray& sequence_length, NDArray& result_sequen
                 bool normalize_logits = true) {
   auto logitDType = logit.dataType();
   auto resSeqDType = result_sequences.dataType();
-#if SD_IS_PAIR_TYPE_COMPILED(logitDtype,resSeqDType)
   BUILD_DOUBLE_SELECTOR(logit.dataType(), result_sequences.dataType(), beamSearch_,
                         (logit, sequence_length, result_sequences, result_probs, result_sequences_length, blank_index,
                             beam_width, nbest_len, normalize_logits),
                         SD_FLOAT_TYPES, SD_INDEXING_TYPES);
-#endif
 }
 
 BUILD_DOUBLE_TEMPLATE(template void beamSearch_,

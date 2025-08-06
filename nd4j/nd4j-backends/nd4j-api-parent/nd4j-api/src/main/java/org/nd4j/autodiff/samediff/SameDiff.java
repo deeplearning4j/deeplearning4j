@@ -83,7 +83,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.nativeblas.NativeOps;
-import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpExecTraceVector;
 import org.nd4j.shade.guava.primitives.Booleans;
 import org.nd4j.shade.guava.primitives.Doubles;
@@ -91,7 +90,6 @@ import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.weightinit.WeightInitScheme;
 import org.nd4j.weightinit.impl.NDArraySupplierInitScheme;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
-import org.tensorflow.framework.GraphDef;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -3081,7 +3079,7 @@ public class SameDiff extends SDBaseOps {
         ExecutionResult ret = directExecHelper(placeholders,
                 otherPlaceholders,
                 At.defaultAt(operation),
-                null, Collections.emptyList(),
+                null,Collections.emptyList(),
                 activeListeners,
                 outputs);
 
@@ -3279,9 +3277,9 @@ public class SameDiff extends SDBaseOps {
      * @return The created variable
      */
     public SDVariable constant(String name, @NonNull INDArray constant) {
-       if(variables.containsKey(name)) {
-           return variables.get(name).getVariable();
-       }
+        if(variables.containsKey(name)) {
+            return variables.get(name).getVariable();
+        }
 
         if (name == null || name.length() < 1)
             name = getNewVarName();
@@ -4160,6 +4158,9 @@ public class SameDiff extends SDBaseOps {
      * @param to   The new name for the variable - no variable with this name must already exist
      */
     public void renameVariable(SameDiffOp opToReName,String from, String to) {
+       if(from.equals(to)) {
+           return;
+       }
         if(!variables.containsKey(from)) {
             System.out.println(String.format("Failed to rename variable %s to %s, no variable found",from,to));
             return;
@@ -4173,23 +4174,29 @@ public class SameDiff extends SDBaseOps {
         if (v.getInputsForOp() != null) {
             for (String opName : v.getInputsForOp()) {
                 SameDiffOp op = ops.get(opName);
-                List<String> newInputs = new ArrayList<>(op.getInputsToOp());
-                while (newInputs.contains(from)) {
-                    newInputs.set(newInputs.indexOf(from), to);
+                if(op != null) {
+                    List<String> newInputs = new ArrayList<>(op.getInputsToOp());
+                    while (newInputs.contains(from)) {
+                        newInputs.set(newInputs.indexOf(from), to);
+                    }
+
+                    op.setInputsToOp(newInputs);
                 }
 
-                op.setInputsToOp(newInputs);
             }
         }
 
         if (v.getControlDepsForOp() != null) {
             for (String opName : v.getControlDepsForOp()) {
                 SameDiffOp op = ops.get(opName);
-                List<String> newCDs = new ArrayList<>(op.getControlDeps());
-                while (newCDs.contains(from)) {
-                    newCDs.set(newCDs.indexOf(from), to);
+                if(op != null) {
+                    List<String> newCDs = new ArrayList<>(op.getControlDeps());
+                    while (newCDs.contains(from)) {
+                        newCDs.set(newCDs.indexOf(from), to);
+                    }
+                    op.setControlDeps(newCDs);
                 }
-                op.setControlDeps(newCDs);
+
             }
         }
 
@@ -4308,7 +4315,8 @@ public class SameDiff extends SDBaseOps {
      * @param to   The new name for the variable - no variable with this name must already exist
      */
     public void renameVariable(String from, String to) {
-        SameDiffOp op = ops.get(stripVarSuffix(from));
+        SameDiffOp op = ops.containsKey(stripVarSuffix(from)) ? ops.get(stripVarSuffix(from))
+        : null;
         renameVariable(op,from,to);
     }
 
@@ -6494,7 +6502,7 @@ public class SameDiff extends SDBaseOps {
      * @param saveUpdaterState whether to save updater state
      */
     public void saveSharded(File file,boolean saveUpdaterState) throws IOException {
-       saveSharded(file,saveUpdaterState,Collections.emptyMap());
+        saveSharded(file,saveUpdaterState,Collections.emptyMap());
     }
 
     /**
@@ -7309,6 +7317,435 @@ public class SameDiff extends SDBaseOps {
     }
 
 
+    /**
+     * Performs a dry run execution to show the DAG of operations that would be executed.
+     * This method traces through the execution path without actually computing arrays,
+     * useful for debugging and understanding execution flow.
+     *
+     * @param outputs The output variables to trace execution for
+     * @return A DAGExecutionPlan containing the execution order and dependencies
+     */
+    public DAGExecutionPlan dryRunExecutionDAG(String... outputs) {
+        return dryRunExecutionDAG(Arrays.asList(outputs));
+    }
+
+    /**
+     * Performs a dry run execution to show the DAG of operations that would be executed.
+     * This method traces through the execution path without actually computing arrays,
+     * useful for debugging and understanding execution flow with frame context for control flow.
+     *
+     * @param outputs The output variables to trace execution for
+     * @return A DAGExecutionPlan containing the execution order and dependencies
+     */
+    public DAGExecutionPlan dryRunExecutionDAG(Collection<String> outputs) {
+        Preconditions.checkArgument(outputs != null && !outputs.isEmpty(), "At least one output must be specified");
+
+        // Validate all outputs exist
+        for (String output : outputs) {
+            Preconditions.checkState(variables.containsKey(output), "Output variable '%s' does not exist", output);
+        }
+
+        DAGExecutionPlan plan = new DAGExecutionPlan();
+        Set<String> visited = new HashSet<>();
+        Set<String> executing = new HashSet<>(); // For cycle detection
+        Map<String, Set<String>> dependencies = new HashMap<>();
+        List<String> executionOrder = new ArrayList<>();
+
+        // Trace execution for each output starting from OUTER_FRAME
+        for (String output : outputs) {
+            traceExecutionDAGWithFrame(output, "OUTER_FRAME", 0, null, visited, executing, dependencies, executionOrder, plan);
+        }
+
+        plan.setExecutionOrder(executionOrder);
+        plan.setDependencies(dependencies);
+        plan.setRequestedOutputs(new ArrayList<>(outputs));
+
+        return plan;
+    }
+
+    /**
+     * Enhanced recursive method that tracks frame context for control flow operations
+     */
+    /**
+     * Enhanced recursive method that tracks frame context for control flow operations
+     */
+    private void traceExecutionDAGWithFrame(String varName, String frame, int iteration, String parentFrame,
+                                            Set<String> visited, Set<String> executing,
+                                            Map<String, Set<String>> dependencies, List<String> executionOrder,
+                                            DAGExecutionPlan plan) {
+
+        String frameKey = varName + "@" + frame + ":*"; // Use * for iteration since we're analyzing structure, not executing
+
+        if (visited.contains(frameKey)) {
+            return; // Already processed in this frame context
+        }
+
+        if (executing.contains(frameKey)) {
+            // This is expected for loops - mark as cycle but continue analysis
+            plan.addCycle(varName + " in frame " + frame + " (loop structure)");
+            return;
+        }
+
+        Variable var = variables.get(varName);
+        if (var == null) {
+            plan.addMissingVariable(varName);
+            return;
+        }
+
+        executing.add(frameKey);
+
+        // Add variable info to plan with frame context (iteration=0 for structure analysis)
+        plan.addVariableWithFrame(varName, var.getVariable().getVariableType(), var.getVariable().dataType(),
+                frame, 0, parentFrame);
+
+        // Handle different variable types
+        switch (var.getVariable().getVariableType()) {
+            case CONSTANT:
+            case PLACEHOLDER:
+                plan.addLeafVariable(varName);
+                break;
+
+            case VARIABLE:
+                plan.addTrainableVariable(varName);
+                break;
+
+            case ARRAY:
+                String producingOpName = var.getOutputOfOp();
+                if (producingOpName != null) {
+                    SameDiffOp op = ops.get(producingOpName);
+                    if (op != null) {
+                        traceOperationDAGWithFrame(op, varName, frame, 0, parentFrame,
+                                visited, executing, dependencies, executionOrder, plan);
+                    } else {
+                        plan.addOrphanedVariable(varName, producingOpName);
+                    }
+                } else {
+                    plan.addOrphanedVariable(varName, null);
+                }
+                break;
+
+            case SEQUENCE:
+                plan.addSequenceVariable(varName);
+                break;
+        }
+
+        executing.remove(frameKey);
+        visited.add(frameKey);
+    }
+
+    /**
+     * Trace the DAG for a specific operation with frame awareness
+     */
+    private void traceOperationDAGWithFrame(SameDiffOp op, String outputVar, String currentFrame, int currentIteration,
+                                            String parentFrame, Set<String> visited, Set<String> executing,
+                                            Map<String, Set<String>> dependencies, List<String> executionOrder,
+                                            DAGExecutionPlan plan) {
+
+        String opName = op.getName();
+        DifferentialFunction df = op.getOp();
+
+        // Determine frame transitions based on operation type
+        FrameInfo frameInfo = analyzeFrameTransition(df, currentFrame, currentIteration, parentFrame);
+
+        String opFrameKey = opName + "@" + frameInfo.outputFrame + ":" + frameInfo.outputIteration;
+
+        if (plan.isOperationProcessed(opFrameKey)) {
+            return; // Already processed this operation in this frame context
+        }
+
+        // For Enter operations, we need to trace what's INSIDE the frame
+        if (df instanceof org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter) {
+            org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter enter =
+                    (org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter) df;
+            String newFrame = enter.getFrameName();
+
+            // Find all operations that execute within this frame
+            traceFrameContents(newFrame, currentFrame, plan, visited, executing, dependencies, executionOrder);
+        }
+
+        // Get operation inputs and trace them in the correct frame context
+        List<String> inputs = op.getInputsToOp();
+        Set<String> opDependencies = new HashSet<>();
+
+        if (inputs != null) {
+            for (String input : inputs) {
+                traceExecutionDAGWithFrame(input, frameInfo.inputFrame, frameInfo.inputIteration,
+                        frameInfo.inputParentFrame, visited, executing, dependencies, executionOrder, plan);
+                opDependencies.add(input);
+            }
+        }
+
+        // Record operation in execution plan with frame information
+        plan.addOperationWithFrame(opName, df.opName(), df.getClass().getSimpleName(),
+                inputs, op.getOutputsOfOp(), frameInfo);
+
+        dependencies.put(opFrameKey, opDependencies);
+
+        if (!executionOrder.contains(opFrameKey)) {
+            executionOrder.add(opFrameKey);
+        }
+
+        // Check for control dependencies
+        List<String> controlDeps = op.getControlDeps();
+        if (controlDeps != null && !controlDeps.isEmpty()) {
+            plan.addControlDependencies(opFrameKey, controlDeps);
+        }
+
+        List<String> varControlDeps = op.getVarControlDeps();
+        if (varControlDeps != null && !varControlDeps.isEmpty()) {
+            plan.addVariableControlDependencies(opFrameKey, varControlDeps);
+        }
+
+        plan.addFrameOperation(opFrameKey, frameInfo.frameTransition, frameInfo.outputFrame, frameInfo.outputParentFrame);
+    }
+
+    /**
+     * Trace all operations that belong to a specific frame
+     */
+    private void traceFrameContents(String frameName, String parentFrame, DAGExecutionPlan plan,
+                                    Set<String> visited, Set<String> executing,
+                                    Map<String, Set<String>> dependencies, List<String> executionOrder) {
+
+        // Find all Enter operations that target this frame
+        for (SameDiffOp op : ops.values()) {
+            if (op.getOp() instanceof org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter) {
+                org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter enter =
+                        (org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter) op.getOp();
+                if (frameName.equals(enter.getFrameName())) {
+                    // Trace what this Enter operation leads to within the frame
+                    List<String> outputs = op.getOutputsOfOp();
+                    if (outputs != null) {
+                        for (String output : outputs) {
+                            traceVariableUsageInFrame(output, frameName, 0, parentFrame, plan, visited, executing, dependencies, executionOrder);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Trace how a variable is used within a specific frame
+     */
+    private void traceVariableUsageInFrame(String varName, String frame, int iteration, String parentFrame,
+                                           DAGExecutionPlan plan, Set<String> visited, Set<String> executing,
+                                           Map<String, Set<String>> dependencies, List<String> executionOrder) {
+
+        Variable var = variables.get(varName);
+        if (var == null) return;
+
+        // Find all operations in this frame that use this variable
+        List<String> inputsForOp = var.getInputsForOp();
+        if (inputsForOp != null) {
+            for (String opName : inputsForOp) {
+                SameDiffOp op = ops.get(opName);
+                if (op != null) {
+                    // Check if this operation should execute in the current frame
+                    if (shouldOpExecuteInFrame(op.getOp(), frame)) {
+                        traceOperationDAGWithFrame(op, varName, frame, iteration, parentFrame,
+                                visited, executing, dependencies, executionOrder, plan);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Determine if an operation should execute within a given frame
+     */
+    private boolean shouldOpExecuteInFrame(DifferentialFunction op, String frame) {
+        // Exit operations move out of the frame
+        if (op instanceof org.nd4j.linalg.api.ops.impl.controlflow.compat.Exit) {
+            return false;
+        }
+
+        // Enter operations transition into a new frame
+        if (op instanceof org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter) {
+            org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter enter =
+                    (org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter) op;
+            return !frame.equals(enter.getFrameName()); // Execute in parent frame, not target frame
+        }
+
+        // Most operations execute within their current frame
+        return true;
+    }
+
+    /**
+     * Analyze how an operation affects frame transitions
+     */
+    private FrameInfo analyzeFrameTransition(DifferentialFunction op, String currentFrame, int currentIteration, String parentFrame) {
+        FrameInfo frameInfo = new FrameInfo();
+
+        // Default: same frame for input and output
+        frameInfo.inputFrame = currentFrame;
+        frameInfo.inputIteration = currentIteration;
+        frameInfo.inputParentFrame = parentFrame;
+        frameInfo.outputFrame = currentFrame;
+        frameInfo.outputIteration = currentIteration;
+        frameInfo.outputParentFrame = parentFrame;
+
+        // Handle control flow operations that change frames
+        if (op instanceof org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter) {
+            org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter enter =
+                    (org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter) op;
+            frameInfo.outputFrame = enter.getFrameName();
+            frameInfo.outputIteration = 0;
+            frameInfo.outputParentFrame = currentFrame;
+            frameInfo.frameTransition = FrameTransition.ENTER;
+            frameInfo.targetFrame = enter.getFrameName();
+
+        } else if (op instanceof org.nd4j.linalg.api.ops.impl.controlflow.compat.Exit) {
+            frameInfo.outputFrame = parentFrame != null ? parentFrame : "OUTER_FRAME";
+            frameInfo.outputIteration = 0;
+            frameInfo.outputParentFrame = null;
+            frameInfo.frameTransition = FrameTransition.EXIT;
+
+        } else if (op instanceof org.nd4j.linalg.api.ops.impl.controlflow.compat.NextIteration) {
+            frameInfo.outputIteration = currentIteration + 1;
+            frameInfo.frameTransition = FrameTransition.NEXT_ITERATION;
+
+        } else if (op instanceof org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch) {
+            frameInfo.frameTransition = FrameTransition.SWITCH;
+
+        } else if (op instanceof org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge) {
+            frameInfo.frameTransition = FrameTransition.MERGE;
+
+        } else if (op instanceof org.nd4j.linalg.api.ops.impl.controlflow.compat.LoopCond) {
+            frameInfo.frameTransition = FrameTransition.LOOP_CONDITION;
+        }
+
+        return frameInfo;
+    }
+
+    /**
+     * Recursive method to trace the execution DAG for a given variable
+     */
+    private void traceExecutionDAG(String varName, Set<String> visited, Set<String> executing,
+                                   Map<String, Set<String>> dependencies, List<String> executionOrder,
+                                   DAGExecutionPlan plan) {
+
+        if (visited.contains(varName)) {
+            return; // Already processed
+        }
+
+        if (executing.contains(varName)) {
+            // Cycle detected
+            plan.addCycle(varName);
+            return;
+        }
+
+        Variable var = variables.get(varName);
+        if (var == null) {
+            plan.addMissingVariable(varName);
+            return;
+        }
+
+        executing.add(varName);
+
+        // Add variable info to plan
+        plan.addVariable(varName, var.getVariable().getVariableType(), var.getVariable().dataType());
+
+        // Handle different variable types
+        switch (var.getVariable().getVariableType()) {
+            case CONSTANT:
+            case PLACEHOLDER:
+                // These don't require computation
+                plan.addLeafVariable(varName);
+                break;
+
+            case VARIABLE:
+                // Training variables - check if they have dependencies
+                plan.addTrainableVariable(varName);
+                break;
+
+            case ARRAY:
+                // Array variables are outputs of operations
+                String producingOpName = var.getOutputOfOp();
+                if (producingOpName != null) {
+                    SameDiffOp op = ops.get(producingOpName);
+                    if (op != null) {
+                        traceOperationDAG(op, varName, visited, executing, dependencies, executionOrder, plan);
+                    } else {
+                        plan.addOrphanedVariable(varName, producingOpName);
+                    }
+                } else {
+                    plan.addOrphanedVariable(varName, null);
+                }
+                break;
+
+            case SEQUENCE:
+                plan.addSequenceVariable(varName);
+                break;
+        }
+
+        executing.remove(varName);
+        visited.add(varName);
+    }
+
+    /**
+     * Trace the DAG for a specific operation
+     */
+    private void traceOperationDAG(SameDiffOp op, String outputVar, Set<String> visited, Set<String> executing,
+                                   Map<String, Set<String>> dependencies, List<String> executionOrder,
+                                   DAGExecutionPlan plan) {
+
+        String opName = op.getName();
+
+        if (plan.isOperationProcessed(opName)) {
+            return; // Already processed this operation
+        }
+
+        // Get operation inputs
+        List<String> inputs = op.getInputsToOp();
+        Set<String> opDependencies = new HashSet<>();
+
+        if (inputs != null) {
+            for (String input : inputs) {
+                // Recursively trace input dependencies
+                traceExecutionDAG(input, visited, executing, dependencies, executionOrder, plan);
+                opDependencies.add(input);
+            }
+        }
+
+        // Record operation in execution plan
+        plan.addOperation(opName, op.getOp().opName(), op.getOp().getClass().getSimpleName(),
+                inputs, op.getOutputsOfOp());
+
+        dependencies.put(opName, opDependencies);
+
+        // Add to execution order (topological order)
+        if (!executionOrder.contains(opName)) {
+            executionOrder.add(opName);
+        }
+
+        // Check for control dependencies
+        List<String> controlDeps = op.getControlDeps();
+        if (controlDeps != null && !controlDeps.isEmpty()) {
+            plan.addControlDependencies(opName, controlDeps);
+        }
+    }
+
+    /**
+     * Returns a formatted string representation of the execution DAG
+     */
+    public String getExecutionDAGSummary(String... outputs) {
+        return getExecutionDAGSummary(Arrays.asList(outputs));
+    }
+
+    /**
+     * Returns a formatted string representation of the execution DAG
+     */
+    public String getExecutionDAGSummary(Collection<String> outputs) {
+        DAGExecutionPlan plan = dryRunExecutionDAG(outputs);
+        return plan.formatSummary();
+    }
+
+    /**
+     * Prints the execution DAG to console
+     */
+    public void printExecutionDAG(String... outputs) {
+        System.out.println(getExecutionDAGSummary(outputs));
+    }
 
     /**
      * Invoke a sub graph and return the outputs

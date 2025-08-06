@@ -234,8 +234,6 @@ function(apply_compiler_specific_flags ARCH_TUNE)
             set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -export-dynamic,--verbose" PARENT_SCOPE)
         endif()
 
-        # In PlatformOptimizations.cmake, update the SD_GCC_FUNCTRACE section:
-
         if(SD_GCC_FUNCTRACE)
             set(COMPILER_IS_NVCC false)
             get_filename_component(COMPILER_NAME ${CMAKE_CXX_COMPILER} NAME)

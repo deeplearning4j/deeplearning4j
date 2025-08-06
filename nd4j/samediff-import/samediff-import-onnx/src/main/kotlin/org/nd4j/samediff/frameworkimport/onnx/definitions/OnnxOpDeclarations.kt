@@ -62,13 +62,6 @@ val names = mapOf(
 val pairWiseNames = mapOf(
         "And" to "boolean_and")
 
-val equal = OnnxMappingProcess(
-        inputFrameworkOpName = "Equal",
-        opName = "equals",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "A","y" to "B"))),
-        attributeMappingRules = booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0),
-        opMappingRegistry = onnxOpRegistry)
-
 
 val sub = OnnxMappingProcess(
         inputFrameworkOpName = "Sub",
@@ -1029,12 +1022,7 @@ val topK = OnnxMappingProcess(
 )
 
 
-val where = OnnxMappingProcess(
-        inputFrameworkOpName = "Where",
-        opName = "Where",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("condition" to "condition","input" to "X","y" to "Y"))),
-        opMappingRegistry = onnxOpRegistry
-)
+
 
 
 val abs = OnnxMappingProcess(
@@ -1143,7 +1131,8 @@ booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0)
 
 
 object OnnxOpDeclarations {
-        init {
+
+        fun init() {
                 val onnxops = OpDescriptorLoaderHolder.listForFramework<Onnx.NodeProto>("onnx")
                 val groupedOps = onnxops.values.groupBy { input -> input.name }
                 val singleGroupedOps = HashMap<String,Onnx.NodeProto>()
@@ -1173,6 +1162,10 @@ object OnnxOpDeclarations {
 
 
                 OpRegistryHolder.registerOpMappingRegistry("onnx", onnxOpRegistry)
+        }
+
+        init {
+             init()
 
         }
 }

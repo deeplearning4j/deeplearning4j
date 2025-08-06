@@ -2342,12 +2342,10 @@ void sortByKey(sd::Pointer *extraPointers, OpaqueNDArray x,
       // Perform bitonic sort steps
       for (int k = 2; k <= xLength; k *= 2) {
         for (int j = k >> 1; j > 0; j >>= 1) {
-#if SD_IS_PAIR_TYPE_COMPILED(xType,yType)
           BUILD_DOUBLE_SELECTOR(xType, yType, bitonicSortStepGenericKey,
                                 (launchDims, stream, x->specialBuffer(),
                                     dXShapeInfo, y->specialBuffer(), dyShapeInfo, j, k, xLength, descending),
                                 SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
-#endif
         }
       }
     } else {
@@ -2370,12 +2368,10 @@ void sortByKey(sd::Pointer *extraPointers, OpaqueNDArray x,
         int n = window;
         int rev = 0;
         do {
-#if SD_IS_PAIR_TYPE_COMPILED(xType,yType)
           BUILD_DOUBLE_SELECTOR(xType, yType, bitonicArbitraryStepGenericKey,
                                 (launchDims, stream, x->specialBuffer(),
                                     dXShapeInfo, y->specialBuffer(), dyShapeInfo, n, xLength, rev, descending),
                                 SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
-#endif
           n >>= 1;
           rev = 1;
         } while (n > 1);
@@ -2436,13 +2432,11 @@ void sortByValue(sd::Pointer *extraPointers,OpaqueNDArray x,
       // Perform bitonic sort steps
       for (int k = 2; k <= xLength; k *= 2) {
         for (int j = k >> 1; j > 0; j >>= 1) {
-#if SD_IS_PAIR_TYPE_COMPILED(xType,yType)
           BUILD_DOUBLE_SELECTOR(xType, yType, bitonicSortStepGenericKey,
                                 (launchDims, stream, y->specialBuffer(),
                                     dyShapeInfo, x->specialBuffer(),
                                     dXShapeInfo, j, k, xLength, descending),
                                 SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
-#endif
         }
       }
     } else {
@@ -2461,12 +2455,10 @@ void sortByValue(sd::Pointer *extraPointers,OpaqueNDArray x,
         int n = window;
         int rev = 0;
         do {
-#if SD_IS_PAIR_TYPE_COMPILED(xType,yType)
           BUILD_DOUBLE_SELECTOR(xType, yType, bitonicArbitraryStepGenericKey,
                                 (launchDims, stream, y->specialBuffer(),
                                     dyShapeInfo, x->specialBuffer(), dXShapeInfo, n, xLength, rev, descending),
                                 SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
-#endif
           n >>= 1;
           rev = 1;
         } while (n > 1);
@@ -2521,14 +2513,12 @@ void sortTadByKey(sd::Pointer *extraPointers,
 
     // Get the launch dimensions for sorting TADs
     dim3 launchDims = getSortTadDims(numTads);
-#if SD_IS_PAIR_TYPE_COMPILED(xType,yType)
     // Execute the sortTadByKey operation based on data types
     BUILD_DOUBLE_SELECTOR(xType, yType, oesTadGenericKey,
                           (launchDims, stream, x->specialBuffer(),
                               dXShapeInfo, y->specialBuffer(), dyShapeInfo,
                               dimensionPtr, dimensionLength, tadPack->platformShapeInfo(), tadPack->platformOffsets(), descending),
                           SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
-#endif
 
     // Check for CUDA errors after sort execution
     sd::DebugHelper::checkErrorCode(stream, "sortTadByKey(...) failed");
@@ -2578,13 +2568,11 @@ void sortTadByValue(sd::Pointer *extraPointers,
 
     // Get the launch dimensions for sorting TADs
     dim3 launchDims = getSortTadDims(numTads);
-#if SD_IS_PAIR_TYPE_COMPILED(xType,yType)
     // Execute the sortTadByValue operation based on data types
     BUILD_DOUBLE_SELECTOR(xType, yType, oesTadGenericKey,
                           (launchDims, stream, y->specialBuffer(), dyShapeInfo, x->specialBuffer(), dXShapeInfo,
                               dimensionPtr, dimensionLength, tadPack->platformShapeInfo(), tadPack->platformOffsets(), descending),
                           SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
-#endif
     // Check for CUDA errors after sort execution
     sd::DebugHelper::checkErrorCode(stream, "sortTadByValue(...) failed");
   }

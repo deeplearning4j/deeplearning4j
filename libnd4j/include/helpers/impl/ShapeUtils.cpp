@@ -215,6 +215,8 @@ LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType
 //////////////////////////////////////////////////////////////////////////
 // return new (shorter) sorted dimensions array without dimensions that are present in input vector
 std::vector<LongType>* ShapeUtils::evalDimsToExclude(const LongType rank, const LongType dimsLen, const LongType* dimensions) {
+ std::vector<LongType> * ret = new std::vector<LongType>();
+
  // Validate input parameters
  if (rank <= 0) {
    THROW_EXCEPTION("ShapeUtils::evalDimsToExclude: rank must be positive");
@@ -226,41 +228,36 @@ std::vector<LongType>* ShapeUtils::evalDimsToExclude(const LongType rank, const 
    THROW_EXCEPTION("ShapeUtils::evalDimsToExclude: dimensions array is null but dimsLen > 0");
  }
 
- std::vector<LongType>* newDimensions = new std::vector<LongType>();
-
- try {
-   if (dimsLen == 0) {  // if input vector is empty then return whole shape range
-     newDimensions->resize(rank);
-     std::iota(newDimensions->begin(), newDimensions->end(), 0);  // fill with 0, 1, ... rank-1
-   } else {
-     // Validate dimensions are within bounds
-     for (LongType j = 0; j < dimsLen; j++) {
-       LongType dim = dimensions[j] >= 0 ? dimensions[j] : dimensions[j] + rank;
-       if (dim < 0 || dim >= rank) {
-         delete newDimensions;
-         THROW_EXCEPTION("ShapeUtils::evalDimsToExclude: dimension index is out of bounds");
-       }
-     }
-
-     bool isAbsent;
-     for (LongType i = 0; i < rank; i++) {
-       isAbsent = true;
-       for (LongType j = 0; j < dimsLen; j++) {
-         LongType dim = dimensions[j] >= 0 ? dimensions[j] : dimensions[j] + rank;
-         if (i == dim) {
-           isAbsent = false;
-           break;
-         }
-       }
-       if (isAbsent) newDimensions->emplace_back(i);
+ if (dimsLen == 0) {  // if input vector is empty then return whole shape range
+   ret->resize(rank);
+   std::iota(ret->begin(), ret->end(), 0);  // fill with 0, 1, ... rank-1
+ } else {
+   // Validate dimensions are within bounds
+   for (LongType j = 0; j < dimsLen; j++) {
+     LongType dim = dimensions[j] >= 0 ? dimensions[j] : dimensions[j] + rank;
+     if (dim < 0 || dim >= rank) {
+       delete ret;
+       THROW_EXCEPTION("ShapeUtils::evalDimsToExclude: dimension index is out of bounds");
      }
    }
- } catch (...) {
-   delete newDimensions;
-   throw;
+
+   bool isAbsent;
+   for (LongType i = 0; i < rank; i++) {
+     isAbsent = true;
+     for (LongType j = 0; j < dimsLen; j++) {
+       LongType dim = dimensions[j] >= 0 ? dimensions[j] : dimensions[j] + rank;
+       if (i == dim) {
+         isAbsent = false;
+         break;
+       }
+     }
+     if (isAbsent) ret->emplace_back(i);
+   }
  }
 
- return newDimensions;
+ // Note: We keep the original behavior - if ret is empty, it means all dimensions
+ // were excluded, which is a valid case that the caller (gather operation) should handle
+ return ret;
 }
 
 //////////////////////////////////////////////////////////////////////////

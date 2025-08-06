@@ -2887,9 +2887,9 @@ SD_INLINE SD_LIB_EXPORT SD_HOST void calcOffsets(const sd::LongType rank, const 
 }
 
 //////////////////////////////////////////////////////////////////////
-SD_LIB_EXPORT SD_HOST  SD_INLINE void calcSubArrShapeInfoAndOffset(const sd::LongType *idx, const sd::LongType *maxShapeInfo, sd::LongType *minShapeInfo,
-                                                                   sd::LongType &minOffset, const bool keepUnitiesInShape, const bool isStrided,
-                                                                   const sd::LongType numOfUntiesInMinShape) {
+SD_LIB_EXPORT SD_HOST SD_INLINE void calcSubArrShapeInfoAndOffset(const sd::LongType *idx, const sd::LongType *maxShapeInfo, sd::LongType *minShapeInfo,
+                                                                  sd::LongType &minOffset, const bool keepUnitiesInShape, const bool isStrided,
+                                                                  const sd::LongType numOfUntiesInMinShape) {
   if (sd::ArrayOptions::dataType(maxShapeInfo) == sd::DataType::UNKNOWN) {
     THROW_EXCEPTION("calcSubArrShapeInfoAndOffset: maxShapeInfo has unknown data type !");
   }
@@ -2898,21 +2898,91 @@ SD_LIB_EXPORT SD_HOST  SD_INLINE void calcSubArrShapeInfoAndOffset(const sd::Lon
   minOffset = 0;
   sd::LongType first, last, stride, n(isStrided ? 3 : 2);
 
+  // Enhanced debugging - log input parameters
+  if (sd::Environment::getInstance().isDebug()) {
+    sd_print("=== calcSubArrShapeInfoAndOffset DEBUG ===\n");
+    sd_printf("maxRank: %lld, isStrided: %s, keepUnitiesInShape: %s\n",
+              maxRank, isStrided ? "true" : "false", keepUnitiesInShape ? "true" : "false");
+    sd_print("maxShape: [");
+    for (sd::LongType i = 0; i < maxRank; i++) {
+      sd_printf("%lld%s", sizeAt(maxShapeInfo, i), i < maxRank-1 ? ", " : "");
+    }
+    sd_print("]\n");
+    sd_printf("Input indices (step=%lld):\n", n);
+    for (sd::LongType i = 0; i < maxRank; i++) {
+      sd::LongType step = i * n;
+      if (isStrided) {
+        sd_printf("  Dim %lld: idx[%lld]=%lld, idx[%lld]=%lld, idx[%lld]=%lld\n",
+                  i, step, idx[step], step+1, idx[step+1], step+2, idx[step+2]);
+      } else {
+        sd_printf("  Dim %lld: idx[%lld]=%lld, idx[%lld]=%lld\n",
+                  i, step, idx[step], step+1, idx[step+1]);
+      }
+    }
+  }
+
   minShapeInfo[0] = keepUnitiesInShape ? maxRank : maxRank - numOfUntiesInMinShape;
 
   for (sd::LongType step = 0, j = 0, i = 0; i < maxRank; ++i, step += n) {
     if (idx[step] == idx[step + 1]) {  // means whole dimension
       shapeOf(minShapeInfo)[j] = shapeOf(maxShapeInfo)[i];
       shape::stride(minShapeInfo)[j++] = shape::stride(maxShapeInfo)[i];
-    } else {
-      first = idx[step] >= 0 ? idx[step] : idx[step] + sizeAt(maxShapeInfo, i) + 1;
-      last = idx[step + 1] >= 0 ? idx[step + 1] : idx[step + 1] + sizeAt(maxShapeInfo, i) + 1;
 
-      if (last < first)
-        THROW_EXCEPTION("shape::calcSubArrShapeInfoAndOffset: negative range in input indexes is found!");
+      if (sd::Environment::getInstance().isDebug()) {
+        sd_printf("  Dim %lld: whole dimension (idx[%lld]==idx[%lld]=%lld)\n",
+                  i, step, step+1, idx[step]);
+      }
+    } else {
+      // Store original indices for error reporting
+      sd::LongType orig_first = idx[step];
+      sd::LongType orig_last = idx[step + 1];
+      sd::LongType shape_size = sizeAt(maxShapeInfo, i);
+
+      first = idx[step] >= 0 ? idx[step] : idx[step] + shape_size + 1;
+      last = idx[step + 1] >= 0 ? idx[step + 1] : idx[step + 1] + shape_size + 1;
+
+      // Enhanced error reporting before the check
+      if (last < first) {
+        sd_printf("ERROR: Negative range detected in dimension %lld!\n", i);
+        sd_printf("  Original indices: first=%lld, last=%lld\n", orig_first, orig_last);
+        sd_printf("  After processing: first=%lld, last=%lld\n", first, last);
+        sd_printf("  Shape size for dim %lld: %lld\n", i, shape_size);
+        sd_printf("  Processing: first = %lld >= 0 ? %lld : %lld + %lld + 1 = %lld\n",
+                  orig_first, orig_first, orig_first, shape_size, first);
+        sd_printf("  Processing: last = %lld >= 0 ? %lld : %lld + %lld + 1 = %lld\n",
+                  orig_last, orig_last, orig_last, shape_size, last);
+
+        // Print full context
+        sd_print("  Full maxShape: [");
+        for (sd::LongType k = 0; k < maxRank; k++) {
+          sd_printf("%lld%s", sizeAt(maxShapeInfo, k), k < maxRank-1 ? ", " : "");
+        }
+        sd_print("]\n");
+        sd_print("  All indices for this operation:\n");
+        for (sd::LongType k = 0; k < maxRank; k++) {
+          sd::LongType k_step = k * n;
+          if (isStrided) {
+            sd_printf("    Dim %lld: [%lld, %lld, %lld]\n", k, idx[k_step], idx[k_step+1], idx[k_step+2]);
+          } else {
+            sd_printf("    Dim %lld: [%lld, %lld]\n", k, idx[k_step], idx[k_step+1]);
+          }
+        }
+
+        std::string error_msg = "shape::calcSubArrShapeInfoAndOffset: negative range in input indexes is found for dimension ";
+        error_msg += std::to_string(i);
+        error_msg += "! Check strided_slice parameters.";
+        THROW_EXCEPTION(error_msg.c_str());
+      }
 
       if (isStrided) {
         stride = idx[step + 2];
+        if (stride == 0) {
+          sd_printf("ERROR: Zero stride detected in dimension %lld!\n", i);
+          std::string error_msg = "shape::calcSubArrShapeInfoAndOffset: zero stride detected in dimension ";
+          error_msg += std::to_string(i);
+          error_msg += "!";
+          THROW_EXCEPTION(error_msg.c_str());
+        }
         last /*resulting sub-array axis*/ = (last - first + stride - 1) / stride;  // ceil (last - first) / stride;
       } else {
         stride = 1;
@@ -2920,6 +2990,15 @@ SD_LIB_EXPORT SD_HOST  SD_INLINE void calcSubArrShapeInfoAndOffset(const sd::Lon
       }
 
       minOffset += first * shape::stride(maxShapeInfo)[i];
+
+      if (sd::Environment::getInstance().isDebug()) {
+        sd_printf("  Dim %lld: orig_indices=[%lld,%lld", i, orig_first, orig_last);
+        if (isStrided) {
+          sd_printf(",%lld", idx[step+2]);
+        }
+        sd_printf("], processed=[%lld,%lld], resulting_size=%lld, minOffset_contribution=%lld\n",
+                  first, last, last, first * shape::stride(maxShapeInfo)[i]);
+      }
 
       if (!keepUnitiesInShape && last == 1) continue;
 
@@ -2933,9 +3012,17 @@ SD_LIB_EXPORT SD_HOST  SD_INLINE void calcSubArrShapeInfoAndOffset(const sd::Lon
   setOrder(minShapeInfo, 'c');                                                     // order
   sd::ArrayOptions::setDataType(minShapeInfo, sd::ArrayOptions::dataType(maxShapeInfo));  // type
   checkStridesEwsAndOrder(minShapeInfo);
+
+  if (sd::Environment::getInstance().isDebug()) {
+    sd_printf("  Final minOffset: %lld\n", minOffset);
+    sd_printf("  Final minShape rank: %lld\n", minShapeInfo[0]);
+    sd_print("=== End calcSubArrShapeInfoAndOffset DEBUG ===\n");
+  }
+
   if (sd::ArrayOptions::dataType(minShapeInfo) == sd::DataType::UNKNOWN)
     THROW_EXCEPTION("Attempted to set unknown data type for minShapeInfo !");
 }
+
 
 SD_LIB_EXPORT SD_HOST_DEVICE SD_INLINE void updateStrides(sd::LongType *shapeInfo, const char order,
                                                           bool resetStridesIfView) {

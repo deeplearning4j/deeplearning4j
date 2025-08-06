@@ -233,12 +233,10 @@ sd::LongType nonMaxSuppressionGeneric(sd::LaunchContext* context, NDArray* boxes
                                       double overlapThreshold, double scoreThreshold, NDArray* output) {
 auto boxesDType = boxes->dataType();
 auto outputDType = output == nullptr ? DataType::INT32 : output->dataType();
-#if SD_IS_PAIR_TYPE_COMPILED(boxesDType,outputDType)
   BUILD_DOUBLE_SELECTOR(boxes->dataType(), output == nullptr ? DataType::INT32 : output->dataType(),
                         return nonMaxSuppressionGeneric_,
                         (context, boxes, scores, maxSize, overlapThreshold, scoreThreshold, output, similiratyOverlaps),
                         SD_FLOAT_TYPES, SD_INTEGER_TYPES);
-#endif
   return 0;
 }
 
@@ -246,12 +244,11 @@ sd::LongType nonMaxSuppressionV3(sd::LaunchContext* context, NDArray* boxes, NDA
                                  double overlapThreshold, double scoreThreshold, NDArray* output) {
   auto boxesDType = boxes->dataType();
   auto outputDType = output == nullptr ? DataType::INT32 : output->dataType();
-#if SD_IS_PAIR_TYPE_COMPILED(boxesDType,outputDType)
   BUILD_DOUBLE_SELECTOR(boxes->dataType(), output == nullptr ? DataType::INT32 : output->dataType(),
                         return nonMaxSuppressionGeneric_,
                         (context, boxes, scores, maxSize, overlapThreshold, scoreThreshold, output, similarityV3),
                         SD_FLOAT_TYPES, SD_INTEGER_TYPES);
-#endif
+
   return 0;
 }
 

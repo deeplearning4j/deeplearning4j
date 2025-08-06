@@ -95,11 +95,11 @@ class SkipLayerNormalization: PreImportHook {
         if (outputNames.size > 1) {
             summed.rename(outputNames[1])
             return mapOf(
-                outputNames[0] to listOf(result),
-                outputNames[1] to listOf(summed)
+                outputNames[0] to listOf(result.rename(outputNames[0])),
+                outputNames[1] to listOf(summed.rename(outputNames[1]))
             )
         }
         
-        return mapOf(outputNames[0] to listOf(result))
+        return mapOf(outputNames[0] to listOf(result.rename(outputNames[0])))
     }
 }

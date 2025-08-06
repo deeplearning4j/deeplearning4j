@@ -7,7 +7,9 @@ import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.serde.SDZSerializer
 import org.nd4j.common.io.ClassPathResource
 import org.nd4j.common.resources.Resources
+import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
+import org.nd4j.onnxruntime.runner.OnnxRuntimeRunner
 import org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter
 import java.io.File
 import java.util.*
@@ -22,10 +24,21 @@ class TestOnnxFrameworkImporter {
     fun testOther() {
         Nd4j.getEnvironment().isVariableTracingEnabled = true
         val importer = OnnxFrameworkImporter()
-        val imported = importer.runImport("/home/agibsonccc/Documents/GitHub/deeplearning4j/bge-base-en-v1.5-optimized.onnx")
-        SDZSerializer.save(imported, File("bge-base-en-v1.5.sdz"),true,Collections.emptyMap())
-        val sd = SDZSerializer.load(File("bge-base-en-v1.5.sdz"),true)
+        val filePath = "/home/agibsonccc/Documents/GitHub/deeplearning4j/bge-base-en-v1.5-optimized.onnx";
+        val imported = importer.runImport(filePath);
+        val runner = OnnxRuntimeRunner(filePath)
+        val arr = Nd4j.readBinary(File("inputs.bin"))
+        val inputPlaceHolder = mutableMapOf<String,INDArray>()
+        inputPlaceHolder["input_ids"] = arr
+        val runnerOutput = runner.exec(inputPlaceHolder,listOf(   "/Gather_1_output_0",  "/Shape_1_output_0", "/Unsqueeze_2_output_0","/Slice_output_0","/Expand_output_0","1492"))
+        val output = imported.output(inputPlaceHolder,"1492")
+        val dryRun = imported.dryRunExecutionDAG("1492")
+        val finalFile = File("bge-base-en-v1.5.sdz")
+        SDZSerializer.save(imported, finalFile,true,Collections.emptyMap())
+        val sd = SDZSerializer.load(finalFile,true)
+
         println(sd.summary())
+        println()
     }
 
 

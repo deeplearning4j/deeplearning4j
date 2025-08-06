@@ -186,10 +186,12 @@ class EmbedLayerNormalization: PreImportHook {
             outputVars.add(maskInput)
         }
 
-        return if (outputNames.size > 1 && outputVars.size > 1) {
+        return if (outputNames.size > 1) {
+            // Always create the second output even if no mask input
+            val maskOutput = maskInput ?: sd.zerosLike(inputIds).castTo(DataType.INT32)
             mapOf(
-                outputNames[0] to listOf(outputVars[0]),
-                outputNames[1] to listOf(outputVars[1])
+                outputNames[0] to listOf(normalizedEmbeddings.rename(outputNames[0])),
+                outputNames[1] to listOf(maskOutput.rename(outputNames[1]))
             )
         } else {
             mapOf(outputNames[0] to listOf(normalizedEmbeddings))

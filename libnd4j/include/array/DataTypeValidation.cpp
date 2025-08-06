@@ -160,7 +160,7 @@ namespace sd {
         registerCompiledType(DataType::UTF32, "UTF32");
 #endif
 #endif
-        
+
     }
     
     void DataTypeValidation::registerCompiledType(DataType type, const std::string& name) {

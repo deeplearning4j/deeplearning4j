@@ -66,12 +66,10 @@ void histogramHelper(sd::LaunchContext *context, NDArray &input, NDArray &output
   double max_val = input.reduceNumber(reduce::SameOps::Max).e<double>(0);
   auto inputDType = input.dataType();
   auto outputDType = output.dataType();
-#if SD_IS_PAIR_TYPE_COMPILED(inputDType,outputDType)
   BUILD_DOUBLE_SELECTOR(
       input.dataType(), output.dataType(), histogram_,
       (input.buffer(), input.shapeInfo(), output.buffer(), output.shapeInfo(), numBins, min_val, max_val),
       SD_COMMON_TYPES, SD_INDEXING_TYPES);
-#endif
 }
 }  // namespace helpers
 }  // namespace ops

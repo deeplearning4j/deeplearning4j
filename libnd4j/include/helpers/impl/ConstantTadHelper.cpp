@@ -46,38 +46,63 @@ TadPack* ConstantTadHelper::tadForDimensions(TadDescriptor* descriptor) {
 }
 
 TadPack* ConstantTadHelper::tadForDimensions(LongType* originalShape, LongType* dimensions, LongType dimLength) {
-    if (originalShape == nullptr) {
-        THROW_EXCEPTION("Original shape is null");
-    }
-    if (dimensions == nullptr) {
-        THROW_EXCEPTION("Dimensions array is null");
-    }
-    if (dimLength <= 0) {
-        THROW_EXCEPTION("Invalid dimension length");
+  if (originalShape == nullptr) {
+    THROW_EXCEPTION("Original shape is null");
+  }
+
+  if (dimensions == nullptr && dimLength > 0) {
+    THROW_EXCEPTION("Dimensions array is null but dimLength > 0");
+  }
+
+  sd::LongType rank = shape::rank(originalShape);
+  if (rank < 0) {
+    THROW_EXCEPTION("Invalid shape rank");
+  }
+
+  // Handle zero dimension length case - create TAD for entire array
+  // This follows PyTorch/TensorFlow convention of taking whole array when no dimensions specified
+  if (dimLength <= 0) {
+    // Create dimensions vector for entire array (all dimensions)
+    std::vector<LongType> wholeDims;
+    for (LongType i = 0; i < rank; i++) {
+      wholeDims.push_back(i);
     }
 
-    sd::LongType rank = shape::rank(originalShape);
-    if (rank < 0) {
-        THROW_EXCEPTION("Invalid shape rank");
-    }
-    
-    // Additional validation: check if dimensions are within valid range
-    for (LongType i = 0; i < dimLength; i++) {
-        LongType dim = dimensions[i];
-        if (dim < 0) dim += rank;  // Handle negative dimensions
-        if (dim < 0 || dim >= rank) {
-            THROW_EXCEPTION("Dimension index is out of bounds");
-        }
+    // If rank is 0 (scalar), return a TAD pack for scalar
+    if (rank == 0) {
+      try {
+        return _trie.getOrCreate(wholeDims, originalShape);
+      } catch (const std::exception& e) {
+        THROW_EXCEPTION("Failed to create TAD pack for scalar");
+      }
     }
 
-    std::vector<LongType> dims(dimensions, dimensions + dimLength);
-
-    // Single attempt pattern - no double locking
+    // For non-scalar case, create TAD for all dimensions
     try {
-        return _trie.getOrCreate(dims, originalShape);
+      return _trie.getOrCreate(wholeDims, originalShape);
     } catch (const std::exception& e) {
-        THROW_EXCEPTION("Failed to create or retrieve TAD pack");
+      THROW_EXCEPTION("Failed to create TAD pack for whole array");
     }
+  }
+
+  // Additional validation: check if dimensions are within valid range
+  for (LongType i = 0; i < dimLength; i++) {
+    LongType dim = dimensions[i];
+    if (dim < 0) dim += rank;  // Handle negative dimensions
+    if (dim < 0 || dim >= rank) {
+      THROW_EXCEPTION("Dimension index is out of bounds");
+    }
+  }
+
+  // Create non-temporary vector to satisfy the reference requirement
+  std::vector<LongType> dims(dimensions, dimensions + dimLength);
+
+  // Single attempt pattern - no double locking
+  try {
+    return _trie.getOrCreate(dims, originalShape);
+  } catch (const std::exception& e) {
+    THROW_EXCEPTION("Failed to create or retrieve TAD pack");
+  }
 }
 
 } // namespace sd

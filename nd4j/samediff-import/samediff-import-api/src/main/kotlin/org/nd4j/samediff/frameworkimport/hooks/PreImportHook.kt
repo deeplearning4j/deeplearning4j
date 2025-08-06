@@ -80,10 +80,7 @@ interface PreImportHook {
             }
 
             opVar!!.outputOfOp = entry.key
-            /**
-             * Change op output to make sure op name is accounted for. The op name
-             * is not propagated for output variables.
-             */
+
 
         }
 

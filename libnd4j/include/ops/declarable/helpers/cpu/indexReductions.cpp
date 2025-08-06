@@ -40,37 +40,29 @@ void argAbsMin_(NDArray& input, NDArray& output, const std::vector<LongType>& di
 void argMax(NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
 auto inputDType = input.dataType();
 auto outputDType = output.dataType();
-#if SD_IS_PAIR_TYPE_COMPILED(inputDType,outputDType)
   BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), argMax_, (input, output, dimensions), SD_COMMON_TYPES,
                         SD_INDEXING_TYPES);
-#endif
 }
 
 void argMin(NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
   auto inputDType = input.dataType();
   auto outputDType = output.dataType();
-#if SD_IS_PAIR_TYPE_COMPILED(inputDType,outputDType)
   BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), argMin_, (input, output, dimensions), SD_COMMON_TYPES,
                         SD_INDEXING_TYPES);
-#endif
 }
 
 void argAbsMax(NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
   auto inputDType = input.dataType();
   auto outputDType = output.dataType();
-#if SD_IS_PAIR_TYPE_COMPILED(inputDType,outputDType)
   BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), argAbsMax_, (input, output, dimensions), SD_COMMON_TYPES,
                         SD_INDEXING_TYPES);
- #endif
 }
 
 void argAbsMin(NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
   auto inputDType = input.dataType();
   auto outputDType = output.dataType();
-#if SD_IS_PAIR_TYPE_COMPILED(inputDType,outputDType)
   BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), argAbsMin_, (input, output, dimensions), SD_COMMON_TYPES,
                         SD_INDEXING_TYPES);
-#endif
 
 }
 }  // namespace helpers

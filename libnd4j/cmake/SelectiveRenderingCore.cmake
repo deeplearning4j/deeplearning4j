@@ -1,30 +1,29 @@
 # ============================================================================
-# SelectiveRenderingCore.cmake (v19 - With Semantic Filtering)
+# SelectiveRenderingCore.cmake (v20 - Production Optimized) - FIXED
 #
-# Enhanced version that implements proper semantic filtering to reduce
-# template instantiation combinations from 125 to ~30-40 meaningful ones.
-# This file contains ALL logic for the selective rendering system.
+# Optimized version with debug profiles removed for production builds.
+# Conditional diagnostics only when explicitly enabled via SD_ENABLE_DIAGNOSTICS.
 # ============================================================================
-
 
 # Export type validation results for use by SelectiveRenderingCore
 function(export_validated_types_for_selective_rendering)
-    # Export the validated type list and mode for SelectiveRenderingCore to use
     if(SD_TYPES_LIST_COUNT GREATER 0)
-        # SELECTIVE mode - export the specific types that were validated
         set(SRCORE_USE_SELECTIVE_TYPES TRUE PARENT_SCOPE)
         set(SRCORE_VALIDATED_TYPES "${SD_TYPES_LIST}" PARENT_SCOPE)
-        message(STATUS "📤 Exporting SELECTIVE types for SelectiveRenderingCore: ${SD_TYPES_LIST}")
+        if(SD_ENABLE_DIAGNOSTICS)
+            message(STATUS "Exporting SELECTIVE types for SelectiveRenderingCore: ${SD_TYPES_LIST}")
+        endif()
     else()
-        # ALL types mode - let SelectiveRenderingCore discover all types
         set(SRCORE_USE_SELECTIVE_TYPES FALSE PARENT_SCOPE)
         set(SRCORE_VALIDATED_TYPES "" PARENT_SCOPE)
-        message(STATUS "📤 Exporting ALL_TYPES mode for SelectiveRenderingCore")
+        if(SD_ENABLE_DIAGNOSTICS)
+            message(STATUS "Exporting ALL_TYPES mode for SelectiveRenderingCore")
+        endif()
     endif()
 endfunction()
 
 # ============================================================================
-# SECTION 1: SEMANTIC FILTERING LOGIC
+# SECTION 1: SEMANTIC FILTERING LOGIC (Optimized)
 # ============================================================================
 function(_internal_srcore_is_type_numeric type_name output_var)
     set(numeric_types "DOUBLE;FLOAT32;INT32;INT64;FLOAT16;BFLOAT16")
@@ -57,7 +56,6 @@ function(_internal_srcore_is_type_integer type_name output_var)
 endfunction()
 
 function(_internal_srcore_get_type_priority type_name output_var)
-    # Higher numbers = higher precision/priority
     if(type_name STREQUAL "DOUBLE")
         set(${output_var} 8 PARENT_SCOPE)
     elseif(type_name STREQUAL "FLOAT32")
@@ -78,7 +76,6 @@ function(_internal_srcore_get_type_priority type_name output_var)
 endfunction()
 
 function(_internal_srcore_is_valid_pair type1 type2 output_var)
-    # Get type properties
     _internal_srcore_is_type_numeric("${type1}" is_numeric_1)
     _internal_srcore_is_type_numeric("${type2}" is_numeric_2)
     _internal_srcore_is_type_floating("${type1}" is_float_1)
@@ -86,39 +83,38 @@ function(_internal_srcore_is_valid_pair type1 type2 output_var)
     _internal_srcore_is_type_integer("${type1}" is_int_1)
     _internal_srcore_is_type_integer("${type2}" is_int_2)
 
-    # Rule 1: Identical types are always valid
+    # Identical types are always valid
     if(type1 STREQUAL type2)
         set(${output_var} TRUE PARENT_SCOPE)
         return()
     endif()
 
-    # Rule 2: Both must be numeric for mixed pairs
+    # Both must be numeric for mixed pairs
     if(NOT is_numeric_1 OR NOT is_numeric_2)
         set(${output_var} FALSE PARENT_SCOPE)
         return()
     endif()
 
-    # Rule 3: Bool can pair with any numeric type (for broadcasting)
+    # Bool can pair with any numeric type
     if(type1 STREQUAL "BOOL" OR type2 STREQUAL "BOOL")
         set(${output_var} TRUE PARENT_SCOPE)
         return()
     endif()
 
-    # Rule 4: Floating types can pair with each other
+    # Floating types can pair with each other
     if(is_float_1 AND is_float_2)
         set(${output_var} TRUE PARENT_SCOPE)
         return()
     endif()
 
-    # Rule 5: Integer types can pair with each other
+    # Integer types can pair with each other
     if(is_int_1 AND is_int_2)
         set(${output_var} TRUE PARENT_SCOPE)
         return()
     endif()
 
-    # Rule 6: Integer-to-Float promotion patterns
+    # Integer-to-Float promotion patterns
     if((is_int_1 AND is_float_2) OR (is_float_1 AND is_int_2))
-        # Allow common promotion patterns
         if((type1 STREQUAL "INT32" AND type2 STREQUAL "FLOAT32") OR
         (type1 STREQUAL "FLOAT32" AND type2 STREQUAL "INT32") OR
         (type1 STREQUAL "INT64" AND type2 STREQUAL "DOUBLE") OR
@@ -128,12 +124,10 @@ function(_internal_srcore_is_valid_pair type1 type2 output_var)
         endif()
     endif()
 
-    # Default: invalid combination
     set(${output_var} FALSE PARENT_SCOPE)
 endfunction()
 
 function(_internal_srcore_is_valid_triple type1 type2 type3 output_var)
-    # Get type properties
     _internal_srcore_is_type_numeric("${type1}" is_numeric_1)
     _internal_srcore_is_type_numeric("${type2}" is_numeric_2)
     _internal_srcore_is_type_numeric("${type3}" is_numeric_3)
@@ -144,22 +138,19 @@ function(_internal_srcore_is_valid_triple type1 type2 type3 output_var)
     _internal_srcore_get_type_priority("${type2}" priority_2)
     _internal_srcore_get_type_priority("${type3}" priority_3)
 
-    # Rule 1: All three types must be numeric
+    # All three types must be numeric
     if(NOT is_numeric_1 OR NOT is_numeric_2 OR NOT is_numeric_3)
         set(${output_var} FALSE PARENT_SCOPE)
         return()
     endif()
 
-    # Rule 2: Identical types are always valid (T, T, T)
+    # Identical types are always valid
     if(type1 STREQUAL type2 AND type2 STREQUAL type3)
         set(${output_var} TRUE PARENT_SCOPE)
         return()
     endif()
 
-    # Rule 3: Output type should be highest precision among inputs
-    # For (A, B, C), C should be >= max(A, B) in precision
-    # Rule 3: Output type should be highest precision among inputs
-    # For (A, B, C), C should be >= max(A, B) in precision
+    # Output type should be highest precision among inputs
     if(priority_1 GREATER priority_2)
         set(max_input_priority ${priority_1})
     else()
@@ -167,24 +158,20 @@ function(_internal_srcore_is_valid_triple type1 type2 type3 output_var)
     endif()
 
     if(priority_3 LESS max_input_priority)
-        # Exception: Allow bool output for comparison operations
         if(NOT type3 STREQUAL "BOOL")
             set(${output_var} FALSE PARENT_SCOPE)
             return()
         endif()
     endif()
 
-    # Rule 4: Common operation patterns
-    # Pattern A: (T, T, U) - Same input types, different output
+    # Common operation patterns
     if(type1 STREQUAL type2)
-        # Allow same-type inputs with promoted output
         if(priority_3 GREATER_EQUAL priority_1 OR type3 STREQUAL "BOOL")
             set(${output_var} TRUE PARENT_SCOPE)
             return()
         endif()
     endif()
 
-    # Pattern B: (T, U, T) - Mixed inputs, output matches first input
     if(type1 STREQUAL type3)
         _internal_srcore_is_valid_pair("${type1}" "${type2}" pair_valid)
         if(pair_valid)
@@ -193,7 +180,6 @@ function(_internal_srcore_is_valid_triple type1 type2 type3 output_var)
         endif()
     endif()
 
-    # Pattern C: (T, U, U) - Mixed inputs, output matches second input
     if(type2 STREQUAL type3)
         _internal_srcore_is_valid_pair("${type1}" "${type2}" pair_valid)
         if(pair_valid)
@@ -202,9 +188,8 @@ function(_internal_srcore_is_valid_triple type1 type2 type3 output_var)
         endif()
     endif()
 
-    # Pattern D: Broadcasting with bool
+    # Broadcasting with bool
     if(type1 STREQUAL "BOOL" OR type2 STREQUAL "BOOL")
-        # Bool can broadcast with any numeric type
         _internal_srcore_is_valid_pair("${type2}" "${type3}" pair_valid_23)
         _internal_srcore_is_valid_pair("${type1}" "${type3}" pair_valid_13)
         if(pair_valid_23 OR pair_valid_13)
@@ -213,9 +198,8 @@ function(_internal_srcore_is_valid_triple type1 type2 type3 output_var)
         endif()
     endif()
 
-    # Pattern E: Type promotion chains (int -> float -> double)
+    # Type promotion chains
     if(is_float_3)
-        # Allow promotion to floating point output
         if((type1 STREQUAL "INT32" OR type1 STREQUAL "INT64") AND
         (type2 STREQUAL "INT32" OR type2 STREQUAL "INT64" OR is_float_2))
             set(${output_var} TRUE PARENT_SCOPE)
@@ -223,8 +207,7 @@ function(_internal_srcore_is_valid_triple type1 type2 type3 output_var)
         endif()
     endif()
 
-    # Rule 5: Specific beneficial combinations for ML/scientific computing
-    # Common ML patterns: mixed precision training
+    # ML-specific patterns
     if((type1 STREQUAL "FLOAT16" AND type2 STREQUAL "FLOAT32" AND type3 STREQUAL "FLOAT32") OR
     (type1 STREQUAL "BFLOAT16" AND type2 STREQUAL "FLOAT32" AND type3 STREQUAL "FLOAT32") OR
     (type1 STREQUAL "FLOAT32" AND type2 STREQUAL "FLOAT16" AND type3 STREQUAL "FLOAT32") OR
@@ -233,30 +216,30 @@ function(_internal_srcore_is_valid_triple type1 type2 type3 output_var)
         return()
     endif()
 
-    # Comparison operations: (T, T, bool)
+    # Comparison operations
     if(type3 STREQUAL "BOOL" AND type1 STREQUAL type2)
         set(${output_var} TRUE PARENT_SCOPE)
         return()
     endif()
 
-    # Index operations: (T, INT32/INT64, T)
+    # Index operations
     if((type2 STREQUAL "INT32" OR type2 STREQUAL "INT64") AND type1 STREQUAL type3)
         set(${output_var} TRUE PARENT_SCOPE)
         return()
     endif()
 
-    # Default: invalid combination
     set(${output_var} FALSE PARENT_SCOPE)
 endfunction()
 
 # ============================================================================
-# SECTION 2: ENHANCED COMBINATION GENERATION WITH FILTERING
+# SECTION 2: OPTIMIZED COMBINATION GENERATION
 # ============================================================================
 function(_internal_srcore_generate_combinations active_indices type_names profile result_2_var result_3_var)
     list(LENGTH active_indices type_count)
     if(type_count EQUAL 0)
         message(FATAL_ERROR "No active types provided for combination generation")
     endif()
+
     set(combinations_2 "")
     set(combinations_3 "")
     set(filtered_count_2 0)
@@ -265,7 +248,7 @@ function(_internal_srcore_generate_combinations active_indices type_names profil
     set(total_possible_3 0)
 
     math(EXPR max_index "${type_count} - 1")
-    message(STATUS "🔍 Generating filtered combinations for ${type_count} types...")
+
     # Generate 2-type combinations with filtering
     foreach(i RANGE ${max_index})
         list(GET type_names ${i} type_name_i)
@@ -280,6 +263,7 @@ function(_internal_srcore_generate_combinations active_indices type_names profil
             endif()
         endforeach()
     endforeach()
+
     # Generate 3-type combinations with filtering
     foreach(i RANGE ${max_index})
         list(GET type_names ${i} type_name_i)
@@ -297,58 +281,36 @@ function(_internal_srcore_generate_combinations active_indices type_names profil
             endforeach()
         endforeach()
     endforeach()
-    # Calculate savings
-    math(EXPR savings_2 "${total_possible_2} - ${filtered_count_2}")
-    math(EXPR savings_3 "${total_possible_3} - ${filtered_count_3}")
-    if(total_possible_2 GREATER 0)
-        math(EXPR percent_saved_2 "100 * ${savings_2} / ${total_possible_2}")
-    else()
-        set(percent_saved_2 0)
+
+    # Statistics only if diagnostics enabled
+    if(SD_ENABLE_DIAGNOSTICS)
+        math(EXPR savings_2 "${total_possible_2} - ${filtered_count_2}")
+        math(EXPR savings_3 "${total_possible_3} - ${filtered_count_3}")
+        if(total_possible_2 GREATER 0)
+            math(EXPR percent_saved_2 "100 * ${savings_2} / ${total_possible_2}")
+        else()
+            set(percent_saved_2 0)
+        endif()
+        if(total_possible_3 GREATER 0)
+            math(EXPR percent_saved_3 "100 * ${savings_3} / ${total_possible_3}")
+        else()
+            set(percent_saved_3 0)
+        endif()
+        message(STATUS "Semantic Filtering Results:")
+        message(STATUS "   2-type: ${filtered_count_2}/${total_possible_2} combinations (${percent_saved_2}% filtered)")
+        message(STATUS "   3-type: ${filtered_count_3}/${total_possible_3} combinations (${percent_saved_3}% filtered)")
     endif()
-    if(total_possible_3 GREATER 0)
-        math(EXPR percent_saved_3 "100 * ${savings_3} / ${total_possible_3}")
-    else()
-        set(percent_saved_3 0)
-    endif()
-    message(STATUS "✅ Semantic Filtering Results:")
-    message(STATUS "   2-type: ${filtered_count_2}/${total_possible_2} combinations (${percent_saved_2}% filtered)")
-    message(STATUS "   3-type: ${filtered_count_3}/${total_possible_3} combinations (${percent_saved_3}% filtered)")
-    # Optional: Show sample filtered combinations for verification
-    if(SRCORE_ENABLE_DIAGNOSTICS)
-        message(STATUS "🔍 Sample valid 3-type combinations:")
-        set(sample_count 0)
-        foreach(combo ${combinations_3})
-            if(sample_count GREATER_EQUAL 5)
-                break()
-            endif()
-            string(REPLACE "," ";" combo_parts "${combo}")
-            list(GET combo_parts 0 i)
-            list(GET combo_parts 1 j)
-            list(GET combo_parts 2 k)
-            list(GET type_names ${i} name_i)
-            list(GET type_names ${j} name_j)
-            list(GET type_names ${k} name_k)
-            message(STATUS "     (${name_i}, ${name_j}, ${name_k})")
-            math(EXPR sample_count "${sample_count} + 1")
-        endforeach()
-    endif()
+
     set(${result_2_var} "${combinations_2}" PARENT_SCOPE)
     set(${result_3_var} "${combinations_3}" PARENT_SCOPE)
 endfunction()
 
 # ============================================================================
-# SECTION 3: ORIGINAL HELPER FUNCTIONS (Updated)
+# SECTION 3: CORE HELPER FUNCTIONS (Optimized)
 # ============================================================================
-function(_internal_srcore_debug_message message)
-    if(DEFINED SRCORE_ENABLE_DIAGNOSTICS AND SRCORE_ENABLE_DIAGNOSTICS)
-        message(STATUS "🔧 SelectiveRenderingCore: ${message}")
-    endif()
-endfunction()
-
 function(srcore_normalize_type input_type output_var)
     set(normalized_type "${input_type}")
 
-    # Standard aliases
     if(normalized_type STREQUAL "float32")
         set(normalized_type "float")
     elseif(normalized_type STREQUAL "float64")
@@ -380,84 +342,46 @@ function(srcore_normalize_type input_type output_var)
     set(${output_var} "${normalized_type}" PARENT_SCOPE)
 endfunction()
 
-# Define any other missing functions that might be called
 function(is_semantically_valid_combination type1 type2 type3 mode result_var)
-    # Simple validation - just return true for now
     set(${result_var} TRUE PARENT_SCOPE)
 endfunction()
 
 function(get_all_types result_var)
-    # Based on DataType.h enum, get all available types
     set(all_types
-            "bool"      # BOOL = 1
-            "float8"    # FLOAT8 = 2
-            "float16"   # HALF = 3
-            "half2"     # HALF2 = 4
-            "float32"   # FLOAT32 = 5
-            "double"    # DOUBLE = 6
-            "int8"      # INT8 = 7
-            "int16"     # INT16 = 8
-            "int32"     # INT32 = 9
-            "int64"     # INT64 = 10
-            "uint8"     # UINT8 = 11
-            "uint16"    # UINT16 = 12
-            "uint32"    # UINT32 = 13
-            "uint64"    # UINT64 = 14
-            "qint8"     # QINT8 = 15
-            "qint16"    # QINT16 = 16
-            "bfloat16"  # BFLOAT16 = 17
-            "utf8"      # UTF8 = 50
-            "utf16"     # UTF16 = 51
-            "utf32"     # UTF32 = 52
+            "bool" "float8" "float16" "half2" "float32" "double"
+            "int8" "int16" "int32" "int64" "uint8" "uint16" "uint32" "uint64"
+            "qint8" "qint16" "bfloat16" "utf8" "utf16" "utf32"
     )
-
     set(${result_var} "${all_types}" PARENT_SCOPE)
 endfunction()
 
 function(_internal_srcore_discover_types result_indices_var result_names_var result_enums_var result_cpp_types_var)
-    message(STATUS "🔍 SelectiveRenderingCore: Starting type discovery...")
-
-    # Debug: Show what variables we received from TypeValidation
-    message(STATUS "🔍 DEBUG: SRCORE_USE_SELECTIVE_TYPES = ${SRCORE_USE_SELECTIVE_TYPES}")
-    message(STATUS "🔍 DEBUG: SRCORE_VALIDATED_TYPES = ${SRCORE_VALIDATED_TYPES}")
-
-    # Check cache variables first (these are set by TypeValidation.cmake)
     if(NOT DEFINED SRCORE_USE_SELECTIVE_TYPES)
-        # Fallback: try to read from cache
         get_property(cache_selective CACHE SRCORE_USE_SELECTIVE_TYPES PROPERTY VALUE)
         get_property(cache_types CACHE SRCORE_VALIDATED_TYPES PROPERTY VALUE)
 
         if(DEFINED cache_selective)
             set(SRCORE_USE_SELECTIVE_TYPES "${cache_selective}")
             set(SRCORE_VALIDATED_TYPES "${cache_types}")
-            message(STATUS "🔍 Read from CACHE: USE_SELECTIVE=${SRCORE_USE_SELECTIVE_TYPES}, TYPES=${SRCORE_VALIDATED_TYPES}")
         else()
-            message(STATUS "🔍 No exported variables found - defaulting to ALL types discovery")
             set(SRCORE_USE_SELECTIVE_TYPES FALSE)
             set(SRCORE_VALIDATED_TYPES "")
         endif()
     endif()
 
-    # DECISION: Use the exported information to determine discovery mode
     if(SRCORE_USE_SELECTIVE_TYPES AND DEFINED SRCORE_VALIDATED_TYPES AND NOT SRCORE_VALIDATED_TYPES STREQUAL "")
-        message(STATUS "🎯 Using SELECTIVE type discovery for types: ${SRCORE_VALIDATED_TYPES}")
         _internal_srcore_discover_selective_types("${SRCORE_VALIDATED_TYPES}" discovered_indices discovered_names discovered_enums discovered_cpp_types)
     else()
-        message(STATUS "🎯 Using ALL types discovery (no selective types specified)")
         _internal_srcore_discover_all_types(discovered_indices discovered_names discovered_enums discovered_cpp_types)
     endif()
 
-    # Set return variables
     set(${result_indices_var} "${discovered_indices}" PARENT_SCOPE)
     set(${result_names_var} "${discovered_names}" PARENT_SCOPE)
     set(${result_enums_var} "${discovered_enums}" PARENT_SCOPE)
     set(${result_cpp_types_var} "${discovered_cpp_types}" PARENT_SCOPE)
 endfunction()
 
-
 function(_internal_srcore_discover_selective_types validated_types_list result_indices_var result_names_var result_enums_var result_cpp_types_var)
-    message(STATUS "🔍 SELECTIVE: Discovering validated types: ${validated_types_list}")
-
     # Find types.h
     set(possible_headers
             "${CMAKE_CURRENT_SOURCE_DIR}/include/types/types.h"
@@ -471,18 +395,17 @@ function(_internal_srcore_discover_selective_types validated_types_list result_i
     foreach(header_path ${possible_headers})
         if(EXISTS "${header_path}")
             set(types_header "${header_path}")
-            message(STATUS "Found types.h at: ${header_path}")
             break()
         endif()
     endforeach()
 
     if(NOT types_header)
-        message(FATAL_ERROR "❌ SelectiveRenderingCore: Could not find types.h in any expected location")
+        message(FATAL_ERROR "Could not find types.h in any expected location")
     endif()
 
     file(READ "${types_header}" types_content)
 
-    # Enhanced mapping from user input types to types.h type keys
+    # Type mapping
     set(type_mapping_float32 "FLOAT32")
     set(type_mapping_float "FLOAT32")
     set(type_mapping_double "DOUBLE")
@@ -513,28 +436,22 @@ function(_internal_srcore_discover_selective_types validated_types_list result_i
     set(discovered_cpp_types "")
     set(type_index 0)
 
-    # Convert validated types list to type keys and discover them
     string(REPLACE ";" ";" validated_list "${validated_types_list}")
     foreach(user_type ${validated_list})
-        # Normalize the user type
         string(STRIP "${user_type}" user_type)
 
-        # Map to types.h key
         set(type_key "")
         if(DEFINED type_mapping_${user_type})
             set(type_key "${type_mapping_${user_type}}")
         else()
-            # Try direct match with uppercase
             string(TOUPPER "${user_type}" upper_type)
             set(type_key "${upper_type}")
         endif()
 
         if(NOT type_key)
-            message(WARNING "⚠️ Could not map user type '${user_type}' to types.h type key")
             continue()
         endif()
 
-        # Search for this type in types.h
         string(REGEX MATCH "#define[ \t]+TTYPE_${type_key}[ \t]*,[ \t]*\\(([^)]+)\\)" type_match "${types_content}")
         if(type_match)
             list(APPEND discovered_types "${type_key}")
@@ -552,18 +469,13 @@ function(_internal_srcore_discover_selective_types validated_types_list result_i
             list(APPEND discovered_enums "${enum_part}")
             list(APPEND discovered_cpp_types "${cpp_part}")
 
-            message(STATUS "✅ SELECTIVE Type ${type_index}: ${type_key} (from ${user_type}) -> enum: ${enum_part}, cpp: ${cpp_part}")
             math(EXPR type_index "${type_index} + 1")
-        else()
-            message(WARNING "⚠️ Could not find type definition for ${type_key} (from ${user_type}) in types.h")
         endif()
     endforeach()
 
     if(type_index EQUAL 0)
-        message(FATAL_ERROR "❌ SELECTIVE: No valid types discovered from validated list: ${validated_types_list}")
+        message(FATAL_ERROR "No valid types discovered from validated list: ${validated_types_list}")
     endif()
-
-    message(STATUS "✅ SELECTIVE: Successfully discovered ${type_index} types")
 
     set(${result_indices_var} "${discovered_indices}" PARENT_SCOPE)
     set(${result_names_var} "${discovered_types}" PARENT_SCOPE)
@@ -571,11 +483,8 @@ function(_internal_srcore_discover_selective_types validated_types_list result_i
     set(${result_cpp_types_var} "${discovered_cpp_types}" PARENT_SCOPE)
 endfunction()
 
-
 function(_internal_srcore_discover_all_types result_indices_var result_names_var result_enums_var result_cpp_types_var)
-    message(STATUS "🔍 ALL: Discovering all available types from types.h")
-
-    # Find types.h in the expected locations
+    # Find types.h
     set(possible_headers
             "${CMAKE_CURRENT_SOURCE_DIR}/include/types/types.h"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/system/types.h"
@@ -588,39 +497,20 @@ function(_internal_srcore_discover_all_types result_indices_var result_names_var
     foreach(header_path ${possible_headers})
         if(EXISTS "${header_path}")
             set(types_header "${header_path}")
-            message(STATUS "Found types.h at: ${header_path}")
             break()
         endif()
     endforeach()
 
     if(NOT types_header)
-        message(FATAL_ERROR "❌ SelectiveRenderingCore: Could not find types.h in any expected location")
+        message(FATAL_ERROR "Could not find types.h in any expected location")
     endif()
 
     file(READ "${types_header}" types_content)
 
-    # Complete list of all types from DataType.h enum (enhanced with all 20+ types)
     set(all_types
-            "BOOL"      # DataType::BOOL = 1
-            "FLOAT8"    # DataType::FLOAT8 = 2
-            "HALF"      # DataType::HALF = 3 (float16)
-            "HALF2"     # DataType::HALF2 = 4
-            "FLOAT32"   # DataType::FLOAT32 = 5
-            "DOUBLE"    # DataType::DOUBLE = 6
-            "INT8"      # DataType::INT8 = 7
-            "INT16"     # DataType::INT16 = 8
-            "INT32"     # DataType::INT32 = 9
-            "INT64"     # DataType::INT64 = 10
-            "UINT8"     # DataType::UINT8 = 11
-            "UINT16"    # DataType::UINT16 = 12
-            "UINT32"    # DataType::UINT32 = 13
-            "UINT64"    # DataType::UINT64 = 14
-            "QINT8"     # DataType::QINT8 = 15
-            "QINT16"    # DataType::QINT16 = 16
-            "BFLOAT16"  # DataType::BFLOAT16 = 17
-            "UTF8"      # DataType::UTF8 = 50
-            "UTF16"     # DataType::UTF16 = 51
-            "UTF32"     # DataType::UTF32 = 52
+            "BOOL" "FLOAT8" "HALF" "HALF2" "FLOAT32" "DOUBLE"
+            "INT8" "INT16" "INT32" "INT64" "UINT8" "UINT16" "UINT32" "UINT64"
+            "QINT8" "QINT16" "BFLOAT16" "UTF8" "UTF16" "UTF32"
     )
 
     set(discovered_types "")
@@ -630,13 +520,11 @@ function(_internal_srcore_discover_all_types result_indices_var result_names_var
     set(type_index 0)
 
     foreach(type_key ${all_types})
-        # Look for the type definition in types.h
         string(REGEX MATCH "#define[ \t]+TTYPE_${type_key}[ \t]*,[ \t]*\\(([^)]+)\\)" type_match "${types_content}")
         if(type_match)
             list(APPEND discovered_types "${type_key}")
             list(APPEND discovered_indices ${type_index})
 
-            # Parse the type tuple (DataType::ENUM, cpp_type)
             string(REGEX MATCH "\\(([^)]+)\\)" tuple_match "${type_match}")
             string(SUBSTRING "${tuple_match}" 1 -1 type_tuple)
             string(REGEX REPLACE "^([^,]+),[ \t]*(.+)$" "\\1;\\2" tuple_parts "${type_tuple}")
@@ -649,32 +537,47 @@ function(_internal_srcore_discover_all_types result_indices_var result_names_var
             list(APPEND discovered_enums "${enum_part}")
             list(APPEND discovered_cpp_types "${cpp_part}")
 
-            message(STATUS "✅ ALL Type ${type_index}: ${type_key} -> enum: ${enum_part}, cpp: ${cpp_part}")
             math(EXPR type_index "${type_index} + 1")
-        else()
-            message(STATUS "⚠️ Type ${type_key} not found in types.h (may not be implemented)")
         endif()
     endforeach()
 
     if(type_index EQUAL 0)
-        message(FATAL_ERROR "❌ No types discovered from types.h")
+        message(FATAL_ERROR "No types discovered from types.h")
     endif()
-
-    message(STATUS "✅ ALL: Successfully discovered ${type_index} types from types.h")
 
     set(${result_indices_var} "${discovered_indices}" PARENT_SCOPE)
     set(${result_names_var} "${discovered_types}" PARENT_SCOPE)
     set(${result_enums_var} "${discovered_enums}" PARENT_SCOPE)
     set(${result_cpp_types_var} "${discovered_cpp_types}" PARENT_SCOPE)
 endfunction()
+
 # ============================================================================
-# SECTION 4: ORIGINAL PUBLIC FUNCTIONS
+# SECTION 4: PUBLIC API FUNCTIONS
 # ============================================================================
 function(srcore_discover_active_types result_var result_enums_var result_cpp_types_var)
     _internal_srcore_discover_types(active_indices active_names discovered_enums discovered_cpp_types)
     set(SRCORE_ACTIVE_TYPES "${active_names}" PARENT_SCOPE)
     list(LENGTH active_indices type_count)
     set(SRCORE_ACTIVE_TYPE_COUNT ${type_count} PARENT_SCOPE)
+
+    # Store type mappings for later use
+    set(type_index 0)
+    foreach(type_enum IN LISTS discovered_enums)
+        set(SRCORE_TYPE_ENUM_${type_index} "${type_enum}" PARENT_SCOPE)
+        math(EXPR type_index "${type_index} + 1")
+    endforeach()
+
+    set(type_index 0)
+    foreach(type_cpp IN LISTS discovered_cpp_types)
+        set(SRCORE_TYPE_CPP_${type_index} "${type_cpp}" PARENT_SCOPE)
+        math(EXPR type_index "${type_index} + 1")
+    endforeach()
+
+    set(type_index 0)
+    foreach(type_name IN LISTS active_names)
+        set(SRCORE_TYPE_NAME_${type_index} "${type_name}" PARENT_SCOPE)
+        math(EXPR type_index "${type_index} + 1")
+    endforeach()
 
     set(${result_var} "${active_indices}" PARENT_SCOPE)
     set(${result_enums_var} "${discovered_enums}" PARENT_SCOPE)
@@ -689,17 +592,21 @@ function(srcore_generate_combinations active_indices profile result_2_var result
     set(${result_3_var} "${combinations_3}" PARENT_SCOPE)
 endfunction()
 
-# ============================================================================
-# SECTION 5: REMAINING ORIGINAL FUNCTIONS
-# ============================================================================
-
 function(srcore_generate_headers active_indices combinations_2 combinations_3 output_dir type_enums type_cpp_types)
+    # Generate the base validity header
     _internal_srcore_generate_validity_header("${active_indices}" "${type_enums}" "${type_cpp_types}" "${combinations_2}" "${combinations_3}" "${output_dir}")
-    _internal_generate_override_content("${active_indices}" "${combinations_2}" "${combinations_3}" FINAL_HEADER_CONTENT)
+
+
+
+    if(SD_ENABLE_DIAGNOSTICS)
+        message(STATUS "Generated BUILD_ macro overrides: ${override_header_file}")
+    endif()
+
+    # Also enhance the main selective_rendering.h with runtime dispatch
+    srcore_generate_enhanced_header("${active_indices}" "${combinations_2}" "${combinations_3}" "${output_dir}" "${type_enums}" "${type_cpp_types}")
 endfunction()
 
 function(srcore_validate_output active_indices combinations_2 combinations_3)
-    # Basic validation
     list(LENGTH active_indices type_count)
     list(LENGTH combinations_2 combo_2_count)
     list(LENGTH combinations_3 combo_3_count)
@@ -713,22 +620,20 @@ function(srcore_validate_output active_indices combinations_2 combinations_3)
     if(combo_3_count EQUAL 0)
         message(FATAL_ERROR "No 3-type combinations generated")
     endif()
-
-    message(STATUS "Validation passed: ${type_count} types, ${combo_2_count} pairs, ${combo_3_count} triples")
 endfunction()
 
 function(srcore_emergency_fallback)
-    # Fallback with minimal type set
     set(UNIFIED_ACTIVE_TYPES "float;double;int32_t;bool" PARENT_SCOPE)
     set(UNIFIED_COMBINATIONS_2 "0,0;0,1;1,0;1,1;2,2;3,3" PARENT_SCOPE)
     set(UNIFIED_COMBINATIONS_3 "0,0,0;1,1,1;2,2,2;3,3,3" PARENT_SCOPE)
     set(UNIFIED_TYPE_COUNT 4 PARENT_SCOPE)
-    message(WARNING "Using emergency fallback type configuration")
+    if(SD_ENABLE_DIAGNOSTICS)
+        message(WARNING "Using emergency fallback type configuration")
+    endif()
 endfunction()
 
 function(srcore_auto_setup)
     if(NOT DEFINED UNIFIED_COMBINATIONS_3 OR NOT UNIFIED_COMBINATIONS_3)
-        message(STATUS "Auto-setup: Running selective rendering setup")
         setup_selective_rendering_unified_safe()
     endif()
 endfunction()
@@ -737,154 +642,135 @@ function(_internal_srcore_generate_validity_header active_indices type_enums typ
     file(MAKE_DIRECTORY "${output_dir}/system")
     set(header_file "${output_dir}/system/selective_rendering.h")
 
-    # Function to convert C++ types to simple macro names
-    function(cpp_type_to_macro_name cpp_type output_var)
-        set(macro_name "${cpp_type}")
-
-        # Handle basic types
-        if(macro_name STREQUAL "bool")
-            set(macro_name "BOOL")
-        elseif(macro_name STREQUAL "float")
-            set(macro_name "FLOAT32")
-        elseif(macro_name STREQUAL "double")
-            set(macro_name "DOUBLE")
-        elseif(macro_name STREQUAL "int32_t")
-            set(macro_name "INT32")
-        elseif(macro_name STREQUAL "sd::LongType")
-            set(macro_name "INT64")
-        elseif(macro_name STREQUAL "uint64_t")
-            set(macro_name "UINT64")
-        elseif(macro_name STREQUAL "int8_t")
-            set(macro_name "int8_t")
-        elseif(macro_name STREQUAL "int16_t")
-            set(macro_name "int16_t")
-        elseif(macro_name STREQUAL "uint8_t")
-            set(macro_name "uint8_t")
-        elseif(macro_name STREQUAL "uint16_t")
-            set(macro_name "uint16_t")
-        elseif(macro_name STREQUAL "uint32_t")
-            set(macro_name "uint32_t")
-        elseif(macro_name STREQUAL "float16")
-            set(macro_name "HALF")
-        elseif(macro_name STREQUAL "bfloat16")
-            set(macro_name "BFLOAT16")
-
-        elseif(macro_name STREQUAL "std::string")
-            set(macro_name "std_string")
-        elseif(macro_name STREQUAL "std::u16string")
-            set(macro_name "std_u16string")
-        elseif(macro_name STREQUAL "std::u32string")
-            set(macro_name "std_u32string")
-        elseif(macro_name STREQUAL "std::wstring")
-            set(macro_name "std_wstring")
-
-            # Fallback: Handle any other std:: types that might appear
-        elseif(macro_name MATCHES "^std::")
-            # Replace :: with _ to make it preprocessor-safe
-            string(REPLACE "::" "_" macro_name "${macro_name}")
-
-            # Handle any other namespace types
-        elseif(macro_name MATCHES "::")
-            # Replace all :: with _ to make any namespace safe for preprocessor
-            string(REPLACE "::" "_" macro_name "${macro_name}")
-        endif()
-
-        set(${output_var} "${macro_name}" PARENT_SCOPE)
-    endfunction()
-
-    # Function to convert enum values to integer constants
     function(enum_to_int_value enum_value output_var)
         string(REGEX REPLACE ".*::" "" datatype_name "${enum_value}")
         if(datatype_name STREQUAL "BOOL")
             set(int_value "1")
+        elseif(datatype_name STREQUAL "FLOAT8")
+            set(int_value "2")
+        elseif(datatype_name STREQUAL "HALF")
+            set(int_value "3")
+        elseif(datatype_name STREQUAL "HALF2")
+            set(int_value "4")
         elseif(datatype_name STREQUAL "FLOAT32")
             set(int_value "5")
         elseif(datatype_name STREQUAL "DOUBLE")
             set(int_value "6")
+        elseif(datatype_name STREQUAL "INT8")
+            set(int_value "7")
+        elseif(datatype_name STREQUAL "INT16")
+            set(int_value "8")
         elseif(datatype_name STREQUAL "INT32")
             set(int_value "9")
         elseif(datatype_name STREQUAL "INT64")
             set(int_value "10")
+        elseif(datatype_name STREQUAL "UINT8")
+            set(int_value "11")
+        elseif(datatype_name STREQUAL "UINT16")
+            set(int_value "12")
+        elseif(datatype_name STREQUAL "UINT32")
+            set(int_value "13")
         elseif(datatype_name STREQUAL "UINT64")
             set(int_value "14")
-        elseif(datatype_name STREQUAL "HALF")
-            set(int_value "3")
+        elseif(datatype_name STREQUAL "QINT8")
+            set(int_value "15")
+        elseif(datatype_name STREQUAL "QINT16")
+            set(int_value "16")
         elseif(datatype_name STREQUAL "BFLOAT16")
             set(int_value "17")
+        elseif(datatype_name STREQUAL "UTF8")
+            set(int_value "50")
+        elseif(datatype_name STREQUAL "UTF16")
+            set(int_value "51")
+        elseif(datatype_name STREQUAL "UTF32")
+            set(int_value "52")
         else()
             set(int_value "255")  # UNKNOWN
         endif()
         set(${output_var} "${int_value}" PARENT_SCOPE)
     endfunction()
 
-    set(header_content "/* AUTOMATICALLY GENERATED by SelectiveRenderingCore.cmake */\n")
+    set(header_content "/* AUTOMATICALLY GENERATED - Selective Rendering Header */\n")
     string(APPEND header_content "#ifndef SD_SELECTIVE_RENDERING_H\n")
-    string(APPEND header_content "#define SD_SELECTIVE_RENDERING_H\n")
-    string(APPEND header_content "#define SD_TYPE_VALID_CHECK_AVAILABLE 1\n\n")
+    string(APPEND header_content "#define SD_SELECTIVE_RENDERING_H\n\n")
 
-    # Define the COLON macro for namespace resolution
-    string(APPEND header_content "// Macro to handle namespace resolution in preprocessor\n")
-    string(APPEND header_content "#define COLON ::\n\n")
+    # Generate single type compilation flags
+    string(APPEND header_content "// Single type compilation flags\n")
+    list(LENGTH type_enums num_types)
+    set(compiled_type_numbers "")
 
-    # Generate individual type combination checks for triples
-    string(APPEND header_content "// Define individual type combination checks that work with #if\n")
-    foreach(combo IN LISTS combinations_3)
-        string(REPLACE "," ";" parts "${combo}")
-        list(GET parts 0 i)
-        list(GET parts 1 j)
-        list(GET parts 2 k)
-
-        list(LENGTH type_cpp_types num_types)
-        if(i LESS ${num_types} AND j LESS ${num_types} AND k LESS ${num_types})
-            list(GET type_cpp_types ${i} cpp_i)
-            list(GET type_cpp_types ${j} cpp_j)
-            list(GET type_cpp_types ${k} cpp_k)
-            cpp_type_to_macro_name("${cpp_i}" macro_i)
-            cpp_type_to_macro_name("${cpp_j}" macro_j)
-            cpp_type_to_macro_name("${cpp_k}" macro_k)
-            string(APPEND header_content "#define SD_TRIPLE_${macro_i}_${macro_j}_${macro_k} 1\n")
+    # Collect all compiled type numbers
+    foreach(i RANGE 0 ${num_types})
+        if(i LESS ${num_types})
+            list(GET type_enums ${i} enum_value)
+            enum_to_int_value("${enum_value}" int_value)
+            list(FIND compiled_type_numbers "${int_value}" found_idx)
+            if(found_idx EQUAL -1)
+                list(APPEND compiled_type_numbers "${int_value}")
+            endif()
         endif()
     endforeach()
 
-    # Generate individual pair combination checks
-    string(APPEND header_content "\n// Define individual pair combination checks that work with #if\n")
+    # Generate single type macros for all possible DataType values
+    set(all_possible_types "1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16;17;50;51;52")
+    foreach(type_num IN LISTS all_possible_types)
+        list(FIND compiled_type_numbers "${type_num}" found_idx)
+        if(found_idx GREATER_EQUAL 0)
+            string(APPEND header_content "#define SD_SINGLE_TYPE_${type_num}_COMPILED 1\n")
+        else()
+            string(APPEND header_content "#define SD_SINGLE_TYPE_${type_num}_COMPILED 0\n")
+        endif()
+    endforeach()
+
+    string(APPEND header_content "\n")
+
+    # Generate pair type compilation macros
+    string(APPEND header_content "// Pair type compilation macros\n")
+    set(all_pair_keys "")
+
+    # Collect all valid pairs
     foreach(combo IN LISTS combinations_2)
         string(REPLACE "," ";" parts "${combo}")
         list(GET parts 0 i)
         list(GET parts 1 j)
-
-        list(LENGTH type_cpp_types num_types)
         if(i LESS ${num_types} AND j LESS ${num_types})
-            list(GET type_cpp_types ${i} cpp_i)
-            list(GET type_cpp_types ${j} cpp_j)
-            cpp_type_to_macro_name("${cpp_i}" macro_i)
-            cpp_type_to_macro_name("${cpp_j}" macro_j)
-            string(APPEND header_content "#define SD_PAIR_${macro_i}_${macro_j} 1\n")
+            list(GET type_enums ${i} enum_i)
+            list(GET type_enums ${j} enum_j)
+            enum_to_int_value("${enum_i}" int_i)
+            enum_to_int_value("${enum_j}" int_j)
+            set(pair_key "${int_i}_${int_j}")
+            list(FIND all_pair_keys "${pair_key}" found_idx)
+            if(found_idx EQUAL -1)
+                list(APPEND all_pair_keys "${pair_key}")
+            endif()
         endif()
     endforeach()
 
-    string(APPEND header_content "// UTF8 combinations are NOT defined, so they default to 0\n\n")
+    # Generate pair macros for all combinations of compiled types
+    foreach(type1 IN LISTS compiled_type_numbers)
+        foreach(type2 IN LISTS compiled_type_numbers)
+            set(pair_key "${type1}_${type2}")
+            list(FIND all_pair_keys "${pair_key}" found_idx)
+            if(found_idx GREATER_EQUAL 0)
+                string(APPEND header_content "#define SD_PAIR_TYPE_${type1}_${type2}_COMPILED 1\n")
+            else()
+                string(APPEND header_content "#define SD_PAIR_TYPE_${type1}_${type2}_COMPILED 0\n")
+            endif()
+        endforeach()
+    endforeach()
 
-    # Add the compile-time checking helper macros
-    string(APPEND header_content "// Helper macro to check if a specific triple is compiled\n")
-    string(APPEND header_content "#define SD_IS_TRIPLE_COMPILED(T1, T2, T3) SD_TRIPLE_ ## T1 ## _ ## T2 ## _ ## T3\n\n")
+    string(APPEND header_content "\n")
 
-    string(APPEND header_content "// Helper macro to check if a specific pair is compiled\n")
-    string(APPEND header_content "#define SD_IS_PAIR_COMPILED(T1, T2) SD_PAIR_ ## T1 ## _ ## T2\n\n")
+    # Generate triple type compilation macros
+    string(APPEND header_content "// Triple type compilation macros\n")
+    set(all_triple_keys "")
 
-    # Generate the runtime checking macro for triples using integer comparisons
-    string(APPEND header_content "// The main runtime checking macro for triples (for actual use)\n")
-    string(APPEND header_content "#define SD_IS_TRIPLE_TYPE_COMPILED(TYPE1_ENUM, TYPE2_ENUM, TYPE3_ENUM) \\\n")
-    string(APPEND header_content "    (")
-
-    set(first_triple TRUE)
-    list(LENGTH type_cpp_types num_types)
+    # Collect all valid triples
     foreach(combo IN LISTS combinations_3)
         string(REPLACE "," ";" parts "${combo}")
         list(GET parts 0 i)
         list(GET parts 1 j)
         list(GET parts 2 k)
-
         if(i LESS ${num_types} AND j LESS ${num_types} AND k LESS ${num_types})
             list(GET type_enums ${i} enum_i)
             list(GET type_enums ${j} enum_j)
@@ -892,335 +778,178 @@ function(_internal_srcore_generate_validity_header active_indices type_enums typ
             enum_to_int_value("${enum_i}" int_i)
             enum_to_int_value("${enum_j}" int_j)
             enum_to_int_value("${enum_k}" int_k)
-
-            if(NOT first_triple)
-                string(APPEND header_content " || \\\n     ")
-            else()
-                set(first_triple FALSE)
+            set(triple_key "${int_i}_${int_j}_${int_k}")
+            list(FIND all_triple_keys "${triple_key}" found_idx)
+            if(found_idx EQUAL -1)
+                list(APPEND all_triple_keys "${triple_key}")
             endif()
-            string(APPEND header_content "((TYPE1_ENUM) == ${int_i} && (TYPE2_ENUM) == ${int_j} && (TYPE3_ENUM) == ${int_k})")
-        endif()
-    endforeach()
-    string(APPEND header_content ")\n\n")
-
-    # Generate single type validity flags
-    string(APPEND header_content "// Single Type Validity\n")
-    foreach(i RANGE 0 ${num_types})
-        if(i LESS ${num_types})
-            list(GET type_cpp_types ${i} cpp_type)
-            cpp_type_to_macro_name("${cpp_type}" macro_name)
-            string(APPEND header_content "#define SD_TYPE_${macro_name}_VALID 1\n")
         endif()
     endforeach()
 
-    # Generate pairwise type validity flags
-    string(APPEND header_content "\n// Pairwise Type Validity\n")
-    foreach(combo IN LISTS combinations_2)
-        string(REPLACE "," ";" parts "${combo}")
-        list(GET parts 0 i)
-        list(GET parts 1 j)
-
-        if(i LESS ${num_types} AND j LESS ${num_types})
-            list(GET type_cpp_types ${i} cpp_i)
-            list(GET type_cpp_types ${j} cpp_j)
-            cpp_type_to_macro_name("${cpp_i}" macro_i)
-            cpp_type_to_macro_name("${cpp_j}" macro_j)
-            string(APPEND header_content "#define SD_TYPE_PAIR_${macro_i}_${macro_j}_VALID 1\n")
-        endif()
+    # Generate triple macros for all combinations of compiled types
+    foreach(type1 IN LISTS compiled_type_numbers)
+        foreach(type2 IN LISTS compiled_type_numbers)
+            foreach(type3 IN LISTS compiled_type_numbers)
+                set(triple_key "${type1}_${type2}_${type3}")
+                list(FIND all_triple_keys "${triple_key}" found_idx)
+                if(found_idx GREATER_EQUAL 0)
+                    string(APPEND header_content "#define SD_TRIPLE_TYPE_${type1}_${type2}_${type3}_COMPILED 1\n")
+                else()
+                    string(APPEND header_content "#define SD_TRIPLE_TYPE_${type1}_${type2}_${type3}_COMPILED 0\n")
+                endif()
+            endforeach()
+        endforeach()
     endforeach()
 
-    # Generate helper macros using integer values
-    string(APPEND header_content "\n// Helper Macros for Dynamic Type Checking\n")
+    string(APPEND header_content "\n")
 
-    # Single type macro
-    string(APPEND header_content "#define SD_IS_SINGLE_TYPE_COMPILED(TYPE_ENUM) \\\n")
-    string(APPEND header_content "    (")
+    # Define the conditional handlers directly - no token concatenation needed
+    string(APPEND header_content "// Direct conditional handlers - no token concatenation\n")
+    foreach(type_num IN LISTS all_possible_types)
+        list(FIND compiled_type_numbers "${type_num}" found_idx)
+        if(found_idx GREATER_EQUAL 0)
+            string(APPEND header_content "#define SD_IF_SINGLE_${type_num}(code) code\n")
+        else()
+            string(APPEND header_content "#define SD_IF_SINGLE_${type_num}(code) /* empty */\n")
+        endif()
+    endforeach()
+    string(APPEND header_content "\n")
 
-    set(first_single TRUE)
+    # Generate pair conditional handlers
+    string(APPEND header_content "// Pair conditional handlers\n")
+    foreach(type1 IN LISTS compiled_type_numbers)
+        foreach(type2 IN LISTS compiled_type_numbers)
+            set(pair_key "${type1}_${type2}")
+            list(FIND all_pair_keys "${pair_key}" found_idx)
+            if(found_idx GREATER_EQUAL 0)
+                string(APPEND header_content "#define SD_IF_PAIR_${type1}_${type2}(code) code\n")
+            else()
+                string(APPEND header_content "#define SD_IF_PAIR_${type1}_${type2}(code) /* empty */\n")
+            endif()
+        endforeach()
+    endforeach()
+    string(APPEND header_content "\n")
+
+    # Generate triple conditional handlers
+    string(APPEND header_content "// Triple conditional handlers\n")
+    foreach(type1 IN LISTS compiled_type_numbers)
+        foreach(type2 IN LISTS compiled_type_numbers)
+            foreach(type3 IN LISTS compiled_type_numbers)
+                set(triple_key "${type1}_${type2}_${type3}")
+                list(FIND all_triple_keys "${triple_key}" found_idx)
+                if(found_idx GREATER_EQUAL 0)
+                    string(APPEND header_content "#define SD_IF_TRIPLE_${type1}_${type2}_${type3}(code) code\n")
+                else()
+                    string(APPEND header_content "#define SD_IF_TRIPLE_${type1}_${type2}_${type3}(code) /* empty */\n")
+                endif()
+            endforeach()
+        endforeach()
+    endforeach()
+    string(APPEND header_content "\n")
+
+    # DataType alias to number mappings - simplified since aliases are just names
+    string(APPEND header_content "// DataType alias to number mappings\n")
     foreach(i RANGE 0 ${num_types})
         if(i LESS ${num_types})
             list(GET type_enums ${i} enum_value)
             enum_to_int_value("${enum_value}" int_value)
-
-            if(NOT first_single)
-                string(APPEND header_content " || \\\n     ")
-            else()
-                set(first_single FALSE)
-            endif()
-            string(APPEND header_content "((TYPE_ENUM) == ${int_value})")
+            string(REGEX REPLACE ".*::" "" datatype_name "${enum_value}")
+            string(APPEND header_content "#define SD_DTYPE_NUM_${datatype_name} ${int_value}\n")
         endif()
     endforeach()
-    string(APPEND header_content ")\n\n")
 
-    # Pair type macro
-    string(APPEND header_content "#define SD_IS_PAIR_TYPE_COMPILED(TYPE1_ENUM, TYPE2_ENUM) \\\n")
-    string(APPEND header_content "    (")
+    string(APPEND header_content "\n")
 
-    set(first_pair TRUE)
-    foreach(combo IN LISTS combinations_2)
-        string(REPLACE "," ";" parts "${combo}")
-        list(GET parts 0 i)
-        list(GET parts 1 j)
+    # Helper macros for token concatenation - simplified for alias usage
+    string(APPEND header_content "// Helper macros for token manipulation\n")
+    string(APPEND header_content "#define SD_CAT(a, b) SD_CAT_I(a, b)\n")
+    string(APPEND header_content "#define SD_CAT_I(a, b) a ## b\n")
 
-        if(i LESS ${num_types} AND j LESS ${num_types})
-            list(GET type_enums ${i} enum_i)
-            list(GET type_enums ${j} enum_j)
-            enum_to_int_value("${enum_i}" int_i)
-            enum_to_int_value("${enum_j}" int_j)
-
-            if(NOT first_pair)
-                string(APPEND header_content " || \\\n     ")
-            else()
-                set(first_pair FALSE)
-            endif()
-            string(APPEND header_content "((TYPE1_ENUM) == ${int_i} && (TYPE2_ENUM) == ${int_j})")
+    # Since aliases are just constexpr variables, we can use them directly
+    # Generate direct mappings for each DataType alias to its integer value
+    foreach(i RANGE 0 ${num_types})
+        if(i LESS ${num_types})
+            list(GET type_enums ${i} enum_value)
+            enum_to_int_value("${enum_value}" int_value)
+            string(REGEX REPLACE ".*::" "" datatype_name "${enum_value}")
+            string(APPEND header_content "#define SD_ALIAS_TO_NUM_${datatype_name} ${int_value}\n")
         endif()
     endforeach()
-    string(APPEND header_content ")\n\n")
 
-    string(APPEND header_content "#endif // SD_SELECTIVE_RENDERING_H\n")
+    string(APPEND header_content "\n")
+
+    # Compile-time type checking macros
+    string(APPEND header_content "// Compile-time type checking macros\n")
+    string(APPEND header_content "#define SD_IS_SINGLE_TYPE_COMPILED(TYPE_NUM) SD_CAT(SD_SINGLE_TYPE_, SD_CAT(TYPE_NUM, _COMPILED))\n")
+    string(APPEND header_content "#define SD_IS_PAIR_TYPE_COMPILED(TYPE1_NUM, TYPE2_NUM) SD_CAT(SD_PAIR_TYPE_, SD_CAT(TYPE1_NUM, SD_CAT(_, SD_CAT(TYPE2_NUM, _COMPILED))))\n")
+    string(APPEND header_content "#define SD_IS_TRIPLE_TYPE_COMPILED(TYPE1_NUM, TYPE2_NUM, TYPE3_NUM) SD_CAT(SD_TRIPLE_TYPE_, SD_CAT(TYPE1_NUM, SD_CAT(_, SD_CAT(TYPE2_NUM, SD_CAT(_, SD_CAT(TYPE3_NUM, _COMPILED))))))\n")
+
+    string(APPEND header_content "\n")
+
+    # Simplified alias checking macros - since aliases resolve to enum values, we can use them directly
+    string(APPEND header_content "// DataType alias checking macros - simplified for constexpr aliases\n")
+    string(APPEND header_content "#define SD_IS_SINGLE_ALIAS_COMPILED(ALIAS) SD_IS_SINGLE_TYPE_COMPILED(SD_CAT(SD_ALIAS_TO_NUM_, ALIAS))\n")
+    string(APPEND header_content "#define SD_IS_PAIR_ALIAS_COMPILED(ALIAS1, ALIAS2) SD_IS_PAIR_TYPE_COMPILED(SD_CAT(SD_ALIAS_TO_NUM_, ALIAS1), SD_CAT(SD_ALIAS_TO_NUM_, ALIAS2))\n")
+    string(APPEND header_content "#define SD_IS_TRIPLE_ALIAS_COMPILED(ALIAS1, ALIAS2, ALIAS3) SD_IS_TRIPLE_TYPE_COMPILED(SD_CAT(SD_ALIAS_TO_NUM_, ALIAS1), SD_CAT(SD_ALIAS_TO_NUM_, ALIAS2), SD_CAT(SD_ALIAS_TO_NUM_, ALIAS3))\n")
+
+    string(APPEND header_content "\n")
+
+    # Conditional instantiation macros using alias names directly
+    string(APPEND header_content "// Conditional instantiation macros using alias names\n")
+    string(APPEND header_content "#define SD_IF_SINGLE_ALIAS_COMPILED(ALIAS, code) SD_CAT(SD_IF_SINGLE_, SD_CAT(SD_ALIAS_TO_NUM_, ALIAS))(code)\n")
+    string(APPEND header_content "#define SD_IF_PAIR_ALIAS_COMPILED(ALIAS1, ALIAS2, code) SD_CAT(SD_IF_PAIR_, SD_CAT(SD_CAT(SD_ALIAS_TO_NUM_, ALIAS1), SD_CAT(_, SD_CAT(SD_ALIAS_TO_NUM_, ALIAS2))))(code)\n")
+    string(APPEND header_content "#define SD_IF_TRIPLE_ALIAS_COMPILED(ALIAS1, ALIAS2, ALIAS3, code) SD_CAT(SD_IF_TRIPLE_, SD_CAT(SD_CAT(SD_ALIAS_TO_NUM_, ALIAS1), SD_CAT(_, SD_CAT(SD_CAT(SD_ALIAS_TO_NUM_, ALIAS2), SD_CAT(_, SD_CAT(SD_ALIAS_TO_NUM_, ALIAS3))))))(code)\n")
+
+    string(APPEND header_content "\n")
+
+    # Direct numeric conditional macros
+    string(APPEND header_content "// Direct numeric conditional macros\n")
+    string(APPEND header_content "#define SD_IF_SINGLE_COMPILED(TYPE_NUM, code) SD_CAT(SD_IF_SINGLE_, TYPE_NUM)(code)\n")
+    string(APPEND header_content "#define SD_IF_PAIR_COMPILED(TYPE1_NUM, TYPE2_NUM, code) SD_CAT(SD_IF_PAIR_, SD_CAT(TYPE1_NUM, SD_CAT(_, TYPE2_NUM)))(code)\n")
+    string(APPEND header_content "#define SD_IF_TRIPLE_COMPILED(TYPE1_NUM, TYPE2_NUM, TYPE3_NUM, code) SD_CAT(SD_IF_TRIPLE_, SD_CAT(TYPE1_NUM, SD_CAT(_, SD_CAT(TYPE2_NUM, SD_CAT(_, TYPE3_NUM)))))(code)\n")
+
+    string(APPEND header_content "\n")
+
+    # FIXED: Legacy compatibility - cleaner approach without double macro expansion issues
+    string(APPEND header_content "// Legacy DataType enum checking macros (for backward compatibility)\n")
+    string(APPEND header_content "// Direct enum value to number mappings to avoid macro expansion issues\n")
+
+    # Generate direct enum to number mappings to avoid the problematic SD_STRIP_* approach
+    foreach(i RANGE 0 ${num_types})
+        if(i LESS ${num_types})
+            list(GET type_enums ${i} enum_value)
+            enum_to_int_value("${enum_value}" int_value)
+            # Generate direct mapping without the problematic SD_STRIP prefix
+            string(APPEND header_content "#define SD_ENUM_TO_NUM_${enum_value} ${int_value}\n")
+        endif()
+    endforeach()
+
+    string(APPEND header_content "\n")
+
+    # FIXED: Simplified legacy macros that avoid the problematic token concatenation
+    string(APPEND header_content "// Simplified legacy macros to avoid macro expansion issues\n")
+    string(APPEND header_content "#define SD_IS_SINGLE_DATATYPE_COMPILED(DTYPE) SD_IS_SINGLE_TYPE_COMPILED(SD_CAT(SD_ENUM_TO_NUM_, DTYPE))\n")
+    string(APPEND header_content "#define SD_IS_PAIR_DATATYPE_COMPILED(DTYPE1, DTYPE2) SD_IS_PAIR_TYPE_COMPILED(SD_CAT(SD_ENUM_TO_NUM_, DTYPE1), SD_CAT(SD_ENUM_TO_NUM_, DTYPE2))\n")
+    string(APPEND header_content "#define SD_IS_TRIPLE_DATATYPE_COMPILED(DTYPE1, DTYPE2, DTYPE3) SD_IS_TRIPLE_TYPE_COMPILED(SD_CAT(SD_ENUM_TO_NUM_, DTYPE1), SD_CAT(SD_ENUM_TO_NUM_, DTYPE2), SD_CAT(SD_ENUM_TO_NUM_, DTYPE3))\n")
+    string(APPEND header_content "#define SD_IF_SINGLE_DATATYPE_COMPILED(DTYPE, code) SD_CAT(SD_IF_SINGLE_, SD_CAT(SD_ENUM_TO_NUM_, DTYPE))(code)\n")
+    string(APPEND header_content "#define SD_IF_PAIR_DATATYPE_COMPILED(DTYPE1, DTYPE2, code) SD_CAT(SD_IF_PAIR_, SD_CAT(SD_CAT(SD_ENUM_TO_NUM_, DTYPE1), SD_CAT(_, SD_CAT(SD_ENUM_TO_NUM_, DTYPE2))))(code)\n")
+    string(APPEND header_content "#define SD_IF_TRIPLE_DATATYPE_COMPILED(DTYPE1, DTYPE2, DTYPE3, code) SD_CAT(SD_IF_TRIPLE_, SD_CAT(SD_CAT(SD_ENUM_TO_NUM_, DTYPE1), SD_CAT(_, SD_CAT(SD_CAT(SD_ENUM_TO_NUM_, DTYPE2), SD_CAT(_, SD_CAT(SD_ENUM_TO_NUM_, DTYPE3))))))(code)\n")
+
+    string(APPEND header_content "\n#endif // SD_SELECTIVE_RENDERING_H\n")
+
     file(WRITE "${header_file}" "${header_content}")
 
-    list(LENGTH combinations_3 total_triple_combinations)
-    list(LENGTH combinations_2 total_pair_combinations)
-    message(STATUS "✅ Generated selective_rendering.h with ${num_types} types, ${total_pair_combinations} pair combinations, ${total_triple_combinations} triple combinations")
-endfunction()
-
-function(_internal_prepare_double_map active_indices combinations_2)
-    foreach(index_x IN LISTS active_indices)
-        set(SD_TEMP_COMBO_MAP_${index_x} "")
-    endforeach()
-    foreach(combo IN LISTS combinations_2)
-        string(REPLACE "," ";" combo_parts "${combo}")
-        list(GET combo_parts 0 index_x)
-        list(GET combo_parts 1 index_y)
-        set(SD_TEMP_COMBO_MAP_${index_x} "${SD_TEMP_COMBO_MAP_${index_x}};${index_y}")
-    endforeach()
-endfunction()
-
-function(_internal_generate_override_content active_indices combinations_2 combinations_3 output_var)
-    _internal_srcore_debug_message("Generating override content with ${CMAKE_CURRENT_LIST_LENGTH} active indices")
-
-    # Start building the header content
-    set(header_content "")
-
-    # Add necessary includes and setup
-    string(APPEND header_content "// Core infrastructure includes\n")
-    string(APPEND header_content "#include <system/op_boilerplate.h>\n")
-    string(APPEND header_content "#include <array/DataTypeValidation.h>\n")
-    string(APPEND header_content "#include <stdexcept>\n\n")
-
-    # Ensure THROW_EXCEPTION is defined
-    string(APPEND header_content "// Ensure THROW_EXCEPTION is available\n")
-    string(APPEND header_content "#ifndef THROW_EXCEPTION\n")
-    string(APPEND header_content "#define THROW_EXCEPTION(msg) throw std::runtime_error(msg)\n")
-    string(APPEND header_content "#endif\n\n")
-
-    # Add simple validity check macros - FIXED VERSION
-    string(APPEND header_content "// Simple validity check macros\n")
-    string(APPEND header_content "#ifndef SD_IF_VALID\n")
-    string(APPEND header_content "#define SD_IF_VALID(condition, code) code\n")
-    string(APPEND header_content "#endif\n\n")
-
-    string(APPEND header_content "#ifndef SD_IS_SINGLE_TYPE_VALID\n")
-    string(APPEND header_content "#define SD_IS_SINGLE_TYPE_VALID(type) 1\n")
-    string(APPEND header_content "#endif\n\n")
-
-    string(APPEND header_content "#ifndef SD_IS_TYPE_PAIR_VALID\n")
-    string(APPEND header_content "#define SD_IS_TYPE_PAIR_VALID(type1, type2) 1\n")
-    string(APPEND header_content "#endif\n\n")
-
-    string(APPEND header_content "#ifndef SD_IS_TYPE_TRIPLE_VALID\n")
-    string(APPEND header_content "#define SD_IS_TYPE_TRIPLE_VALID(type1, type2, type3) 1\n")
-    string(APPEND header_content "#endif\n\n")
-
-    # Generate BUILD_SINGLE_SELECTOR - FIXED VERSION
-    string(APPEND header_content "// ===================================================================\n")
-    string(APPEND header_content "// BUILD_SINGLE_SELECTOR - Fixed Version\n")
-    string(APPEND header_content "// ===================================================================\n")
-    string(APPEND header_content "#undef BUILD_SINGLE_SELECTOR\n")
-    string(APPEND header_content "#define BUILD_SINGLE_SELECTOR(XTYPE, NAME, SIGNATURE, ...) \\\\\n")
-    string(APPEND header_content "    switch (XTYPE) { \\\\\n")
-
-    list(LENGTH active_indices num_types)
-    foreach(index IN LISTS active_indices)
-        if(DEFINED SRCORE_TYPE_CPP_${index} AND DEFINED SRCORE_TYPE_ENUM_${index})
-            string(APPEND header_content "        case ${SRCORE_TYPE_ENUM_${index}}: { NAME<${SRCORE_TYPE_CPP_${index}}> SIGNATURE; break; } \\\\\n")
-        endif()
-    endforeach()
-
-    string(APPEND header_content "        default: { \\\\\n")
-    string(APPEND header_content "            auto e = sd::DataTypeValidation::getDataTypeErrorMessage(XTYPE, #NAME \"_SINGLE\"); \\\\\n")
-    string(APPEND header_content "            THROW_EXCEPTION(e.c_str()); \\\\\n")
-    string(APPEND header_content "        } \\\\\n")
-    string(APPEND header_content "    }\n\n")
-
-    string(APPEND header_content "// ===================================================================\n")
-    string(APPEND header_content "// BUILD_DOUBLE_SELECTOR - Fixed Version\n")
-    string(APPEND header_content "// ===================================================================\n")
-    string(APPEND header_content "#undef BUILD_DOUBLE_SELECTOR\n")
-    string(APPEND header_content "#define BUILD_DOUBLE_SELECTOR(XTYPE, YTYPE, NAME, SIGNATURE, ...) \\\\\n")
-    string(APPEND header_content "    switch (XTYPE) { \\\\\n")
-
-    foreach(index_x IN LISTS active_indices)
-        if(DEFINED SRCORE_TYPE_ENUM_${index_x})
-            string(APPEND header_content "        case ${SRCORE_TYPE_ENUM_${index_x}}: { \\\\\n")
-            string(APPEND header_content "            switch (YTYPE) { \\\\\n")
-
-            # Generate valid Y-type cases for this X-type
-            foreach(combo IN LISTS combinations_2)
-                string(REPLACE "," ";" combo_parts "${combo}")
-                list(GET combo_parts 0 combo_x)
-                list(GET combo_parts 1 combo_y)
-
-                # Only generate cases where X matches current index_x
-                if(combo_x EQUAL index_x)
-                    if(DEFINED SRCORE_TYPE_CPP_${combo_x} AND DEFINED SRCORE_TYPE_CPP_${combo_y} AND DEFINED SRCORE_TYPE_ENUM_${combo_y})
-                        string(APPEND header_content "                case ${SRCORE_TYPE_ENUM_${combo_y}}: { NAME<${SRCORE_TYPE_CPP_${combo_x}}, ${SRCORE_TYPE_CPP_${combo_y}}> SIGNATURE; break; } \\\\\n")
-                    endif()
-                endif()
-            endforeach()
-
-            string(APPEND header_content "                default: { \\\\\n")
-            string(APPEND header_content "                    auto e = sd::DataTypeValidation::getDataTypeErrorMessage(YTYPE, #NAME \"_DOUBLE_Y\"); \\\\\n")
-            string(APPEND header_content "                    THROW_EXCEPTION(e.c_str()); \\\\\n")
-            string(APPEND header_content "                } \\\\\n")
-            string(APPEND header_content "            } \\\\\n")
-            string(APPEND header_content "            break; \\\\\n")
-            string(APPEND header_content "        } \\\\\n")
-        endif()
-    endforeach()
-
-    string(APPEND header_content "        default: { \\\\\n")
-    string(APPEND header_content "            auto e = sd::DataTypeValidation::getDataTypeErrorMessage(XTYPE, #NAME \"_DOUBLE_X\"); \\\\\n")
-    string(APPEND header_content "            THROW_EXCEPTION(e.c_str()); \\\\\n")
-    string(APPEND header_content "        } \\\\\n")
-    string(APPEND header_content "    }\n\n")
-
-    string(APPEND header_content "// ===================================================================\n")
-    string(APPEND header_content "// BUILD_TRIPLE_SELECTOR - Fixed Version\n")
-    string(APPEND header_content "// ===================================================================\n")
-    string(APPEND header_content "#undef BUILD_TRIPLE_SELECTOR\n")
-    string(APPEND header_content "#define BUILD_TRIPLE_SELECTOR(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, ...) \\\\\n")
-    string(APPEND header_content "    switch (XTYPE) { \\\\\n")
-
-    foreach(index_x IN LISTS active_indices)
-        if(DEFINED SRCORE_TYPE_ENUM_${index_x})
-            string(APPEND header_content "        case ${SRCORE_TYPE_ENUM_${index_x}}: { \\\\\n")
-            string(APPEND header_content "            switch (YTYPE) { \\\\\n")
-
-            # Group 3-type combinations by X,Y pairs for this X
-            set(handled_xy_pairs "")
-            foreach(combo IN LISTS combinations_3)
-                string(REPLACE "," ";" combo_parts "${combo}")
-                list(GET combo_parts 0 combo_x)
-                list(GET combo_parts 1 combo_y)
-                list(GET combo_parts 2 combo_z)
-
-                if(combo_x EQUAL index_x)
-                    # Check if we've already handled this X,Y pair
-                    set(xy_pair "${combo_x},${combo_y}")
-                    list(FIND handled_xy_pairs "${xy_pair}" found_idx)
-                    if(found_idx EQUAL -1)
-                        list(APPEND handled_xy_pairs "${xy_pair}")
-
-                        if(DEFINED SRCORE_TYPE_ENUM_${combo_y})
-                            string(APPEND header_content "                case ${SRCORE_TYPE_ENUM_${combo_y}}: { \\\\\n")
-                            string(APPEND header_content "                    switch (ZTYPE) { \\\\\n")
-
-                            # Generate all Z cases for this X,Y pair
-                            foreach(z_combo IN LISTS combinations_3)
-                                string(REPLACE "," ";" z_parts "${z_combo}")
-                                list(GET z_parts 0 z_x)
-                                list(GET z_parts 1 z_y)
-                                list(GET z_parts 2 z_z)
-
-                                if(z_x EQUAL combo_x AND z_y EQUAL combo_y)
-                                    if(DEFINED SRCORE_TYPE_CPP_${z_x} AND DEFINED SRCORE_TYPE_CPP_${z_y} AND DEFINED SRCORE_TYPE_CPP_${z_z} AND DEFINED SRCORE_TYPE_ENUM_${z_z})
-                                        string(APPEND header_content "                        case ${SRCORE_TYPE_ENUM_${z_z}}: { NAME<${SRCORE_TYPE_CPP_${z_x}}, ${SRCORE_TYPE_CPP_${z_y}}, ${SRCORE_TYPE_CPP_${z_z}}> SIGNATURE; break; } \\\\\n")
-                                    endif()
-                                endif()
-                            endforeach()
-
-                            string(APPEND header_content "                        default: { \\\\\n")
-                            string(APPEND header_content "                            auto e = sd::DataTypeValidation::getDataTypeErrorMessage(ZTYPE, #NAME \"_TRIPLE_Z\"); \\\\\n")
-                            string(APPEND header_content "                            THROW_EXCEPTION(e.c_str()); \\\\\n")
-                            string(APPEND header_content "                        } \\\\\n")
-                            string(APPEND header_content "                    } \\\\\n")
-                            string(APPEND header_content "                    break; \\\\\n")
-                            string(APPEND header_content "                } \\\\\n")
-                        endif()
-                    endif()
-                endif()
-            endforeach()
-
-            string(APPEND header_content "                default: { \\\\\n")
-            string(APPEND header_content "                    auto e = sd::DataTypeValidation::getDataTypeErrorMessage(YTYPE, #NAME \"_TRIPLE_Y\"); \\\\\n")
-            string(APPEND header_content "                    THROW_EXCEPTION(e.c_str()); \\\\\n")
-            string(APPEND header_content "                } \\\\\n")
-            string(APPEND header_content "            } \\\\\n")
-            string(APPEND header_content "            break; \\\\\n")
-            string(APPEND header_content "        } \\\\\n")
-        endif()
-    endforeach()
-
-    string(APPEND header_content "        default: { \\\\\n")
-    string(APPEND header_content "            auto e = sd::DataTypeValidation::getDataTypeErrorMessage(XTYPE, #NAME \"_TRIPLE_X\"); \\\\\n")
-    string(APPEND header_content "            THROW_EXCEPTION(e.c_str()); \\\\\n")
-    string(APPEND header_content "        } \\\\\n")
-    string(APPEND header_content "    }\n\n")
-
-    # Add selector macro overrides - FIXED VERSION
-    string(APPEND header_content "// ===================================================================\n")
-    string(APPEND header_content "// Selector Macro Overrides\n")
-    string(APPEND header_content "// ===================================================================\n")
-    string(APPEND header_content "#undef _SELECTOR_SINGLE\n")
-    string(APPEND header_content "#define _SELECTOR_SINGLE(A, B, C, D) \\\\\n")
-    string(APPEND header_content "    case C: { A<D> B; break; }\n\n")
-
-    string(APPEND header_content "#undef _SELECTOR_DOUBLE_2\n")
-    string(APPEND header_content "#define _SELECTOR_DOUBLE_2(NAME, SIGNATURE, TYPE_A, ENUM, TYPE_B) \\\\\n")
-    string(APPEND header_content "    case ENUM: { NAME<TYPE_A, TYPE_B> SIGNATURE; break; }\n\n")
-
-    string(APPEND header_content "#undef _SELECTOR_TRIPLE_3\n")
-    string(APPEND header_content "#define _SELECTOR_TRIPLE_3(NAME, SIGNATURE, TYPE_X, TYPE_Y, ENUM_Z, TYPE_Z) \\\\\n")
-    string(APPEND header_content "    case ENUM_Z: { NAME<TYPE_X, TYPE_Y, TYPE_Z> SIGNATURE; break; }\n\n")
-
-    set(${output_var} "${header_content}" PARENT_SCOPE)
-endfunction()
-# ==========================================================================================
-# SECTION 6: THE SINGLE PUBLIC ORCHESTRATOR FUNCTION
-# ==========================================================================================
-function(SETUP_AND_GENERATE_ALL_RENDERING_FILES)
-    message(STATUS "Executing unified selective rendering setup and generation...")
-    cmake_parse_arguments(SRCORE "" "TYPE_PROFILE;OUTPUT_DIR" "" ${ARGN})
-
-    # --- PART A: RUN CORE ANALYSIS ---
-    _internal_srcore_discover_types(active_indices active_names)
-    _internal_srcore_generate_combinations("${active_indices}" "${active_names}" "${SRCORE_TYPE_PROFILE}" combinations_2 combinations_3)
-
-    list(LENGTH active_indices type_count)
-    if(type_count EQUAL 0)
-        message(FATAL_ERROR "Analysis failed: No active types were discovered.")
-    endif()
-    message(STATUS "Analysis complete. Active types found: ${type_count}")
-
-    # --- PART B: GENERATE HEADERS ---
-    set(output_dir "${SRCORE_OUTPUT_DIR}")
-    if(NOT output_dir)
-        set(output_dir "${CMAKE_BINARY_DIR}/include")
+    if(SD_ENABLE_DIAGNOSTICS)
+        list(LENGTH all_triple_keys total_triple_combinations)
+        list(LENGTH all_pair_keys total_pair_combinations)
+        list(LENGTH compiled_type_numbers total_single_types)
+        message(STATUS "Generated selective_rendering.h with FIXED alias support: ${total_single_types} types, ${total_pair_combinations} pairs, ${total_triple_combinations} triples")
     endif()
 
-    # Generate selective_rendering.h with the validity flags
-    _internal_srcore_generate_validity_header("${active_indices}" "${combinations_2}" "${combinations_3}" "${output_dir}")
-
-    # Generate type_boilerplate_overrides.h with the new BUILD_* macro definitions
-    _internal_generate_override_content("${active_indices}" "${combinations_2}" "${combinations_3}" FINAL_HEADER_CONTENT)
-
-    message(STATUS "✅ Successfully generated all selective rendering headers to ${GENERATED_DIR}")
 endfunction()
-# Add this entire function to your SelectiveRenderingCore.cmake file.
-
+# ============================================================================
+# SECTION 5: MAIN ORCHESTRATOR FUNCTIONS
+# ============================================================================
 function(setup_selective_rendering_unified)
     set(options "")
     set(one_value_args TYPE_PROFILE OUTPUT_DIR)
@@ -1234,21 +963,17 @@ function(setup_selective_rendering_unified)
         set(SRCORE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/include")
     endif()
 
-    # Phase 1: Discover active types - NOW WITH ALL DATA
     srcore_discover_active_types(active_types_indices discovered_enums discovered_cpp_types)
     list(LENGTH active_types_indices type_count)
 
     if(type_count EQUAL 0)
-        message(FATAL_ERROR "❌ SelectiveRenderingCore: No active types discovered!")
+        message(FATAL_ERROR "No active types discovered!")
     endif()
 
-    # Phase 2: Generate combinations
     srcore_generate_combinations("${active_types_indices}" "${SRCORE_TYPE_PROFILE}" combinations_2 combinations_3)
-
-    # Phase 3: Generate headers - NOW WITH TYPE DATA
     srcore_generate_headers("${active_types_indices}" "${combinations_2}" "${combinations_3}" "${SRCORE_OUTPUT_DIR}" "${discovered_enums}" "${discovered_cpp_types}")
 
-    # Phase 4: Set output variables
+
     set(UNIFIED_COMBINATIONS_2 "${combinations_2}" PARENT_SCOPE)
     set(UNIFIED_COMBINATIONS_3 "${combinations_3}" PARENT_SCOPE)
     set(UNIFIED_ACTIVE_TYPES "${SRCORE_ACTIVE_TYPES}" PARENT_SCOPE)
@@ -1261,53 +986,35 @@ function(setup_selective_rendering_unified)
 endfunction()
 
 function(setup_selective_rendering_unified_safe)
-    # Try normal setup first
     if(NOT CMAKE_CROSSCOMPILING AND NOT ANDROID)
-        # Full setup for normal builds
         setup_selective_rendering_unified(${ARGN})
-
-        if(DEFINED UNIFIED_COMBINATIONS_3)
-            set(UNIFIED_COMBINATIONS_3 "${UNIFIED_COMBINATIONS_3}" PARENT_SCOPE)
-        endif()
-        if(DEFINED UNIFIED_COMBINATIONS_2)
-            set(UNIFIED_COMBINATIONS_2 "${UNIFIED_COMBINATIONS_2}" PARENT_SCOPE)
-        endif()
-        if(DEFINED UNIFIED_ACTIVE_TYPES)
-            set(UNIFIED_ACTIVE_TYPES "${UNIFIED_ACTIVE_TYPES}" PARENT_SCOPE)
-        endif()
-        if(DEFINED UNIFIED_TYPE_COUNT)
-            set(UNIFIED_TYPE_COUNT "${UNIFIED_TYPE_COUNT}" PARENT_SCOPE)
-        endif()
-
         srcore_map_to_legacy_variables()
-
-        # Generate diagnostic report
-        srcore_generate_diagnostic_report()
+        if(SD_ENABLE_DIAGNOSTICS)
+            srcore_generate_diagnostic_report()
+        endif()
     else()
-        # Simplified setup for cross-compilation/Android
-        srcore_debug_message("Cross-compilation detected, using simplified setup")
         setup_selective_rendering_unified(${ARGN})
-
-        if(DEFINED UNIFIED_COMBINATIONS_3)
-            set(UNIFIED_COMBINATIONS_3 "${UNIFIED_COMBINATIONS_3}" PARENT_SCOPE)
-        endif()
-        if(DEFINED UNIFIED_COMBINATIONS_2)
-            set(UNIFIED_COMBINATIONS_2 "${UNIFIED_COMBINATIONS_2}" PARENT_SCOPE)
-        endif()
-        if(DEFINED UNIFIED_ACTIVE_TYPES)
-            set(UNIFIED_ACTIVE_TYPES "${UNIFIED_ACTIVE_TYPES}" PARENT_SCOPE)
-        endif()
-        if(DEFINED UNIFIED_TYPE_COUNT)
-            set(UNIFIED_TYPE_COUNT "${UNIFIED_TYPE_COUNT}" PARENT_SCOPE)
-        endif()
-
         srcore_map_to_legacy_variables()
     endif()
 
-    # Final verification that we have usable results
+    # Propagate variables to parent scope
+    if(DEFINED UNIFIED_COMBINATIONS_3)
+        set(UNIFIED_COMBINATIONS_3 "${UNIFIED_COMBINATIONS_3}" PARENT_SCOPE)
+    endif()
+    if(DEFINED UNIFIED_COMBINATIONS_2)
+        set(UNIFIED_COMBINATIONS_2 "${UNIFIED_COMBINATIONS_2}" PARENT_SCOPE)
+    endif()
+    if(DEFINED UNIFIED_ACTIVE_TYPES)
+        set(UNIFIED_ACTIVE_TYPES "${UNIFIED_ACTIVE_TYPES}" PARENT_SCOPE)
+    endif()
+    if(DEFINED UNIFIED_TYPE_COUNT)
+        set(UNIFIED_TYPE_COUNT "${UNIFIED_TYPE_COUNT}" PARENT_SCOPE)
+    endif()
+
+    # Final verification
     if(NOT DEFINED UNIFIED_COMBINATIONS_3 OR NOT UNIFIED_COMBINATIONS_3)
-        message(WARNING "⚠️ Unified setup failed, falling back to emergency mode")
         srcore_emergency_fallback()
+        srcore_map_to_legacy_variables()
 
         if(DEFINED UNIFIED_COMBINATIONS_3)
             set(UNIFIED_COMBINATIONS_3 "${UNIFIED_COMBINATIONS_3}" PARENT_SCOPE)
@@ -1321,23 +1028,10 @@ function(setup_selective_rendering_unified_safe)
         if(DEFINED UNIFIED_TYPE_COUNT)
             set(UNIFIED_TYPE_COUNT "${UNIFIED_TYPE_COUNT}" PARENT_SCOPE)
         endif()
-
-        srcore_map_to_legacy_variables()
     endif()
 
-    # FINAL VERIFICATION: Ensure variables are properly set before returning
     if(NOT DEFINED UNIFIED_COMBINATIONS_3 OR NOT UNIFIED_COMBINATIONS_3)
-        message(FATAL_ERROR "❌ CRITICAL: Unable to establish UNIFIED_COMBINATIONS_3 even with emergency fallback!")
-    endif()
-
-    # Debug output for verification
-    list(LENGTH UNIFIED_COMBINATIONS_3 final_combo_count)
-    srcore_debug_message("✅ Final verification passed: ${final_combo_count} combinations ready")
-endfunction()
-
-function(srcore_debug_message message)
-    if(SRCORE_ENABLE_DIAGNOSTICS)
-        message(STATUS "🔧 SelectiveRenderingCore: ${message}")
+        message(FATAL_ERROR "Unable to establish UNIFIED_COMBINATIONS_3 even with emergency fallback!")
     endif()
 endfunction()
 
@@ -1356,12 +1050,10 @@ function(srcore_map_to_legacy_variables)
         set(ACTIVE_TYPES "${UNIFIED_ACTIVE_TYPES}" PARENT_SCOPE)
         set(ACTIVE_TYPES "${UNIFIED_ACTIVE_TYPES}" CACHE INTERNAL "Legacy active types")
 
-        # Also set SD_COMMON_TYPES_COUNT for legacy compatibility
         list(LENGTH UNIFIED_ACTIVE_TYPES legacy_count)
         set(SD_COMMON_TYPES_COUNT ${legacy_count} PARENT_SCOPE)
         set(SD_COMMON_TYPES_COUNT ${legacy_count} CACHE INTERNAL "Legacy type count")
 
-        # Set TYPE_NAME_X variables for legacy lookup
         set(type_index 0)
         foreach(type_name ${UNIFIED_ACTIVE_TYPES})
             set(TYPE_NAME_${type_index} "${type_name}" PARENT_SCOPE)
@@ -1372,7 +1064,7 @@ function(srcore_map_to_legacy_variables)
 endfunction()
 
 function(srcore_generate_diagnostic_report)
-    if(NOT SRCORE_ENABLE_DIAGNOSTICS)
+    if(NOT SD_ENABLE_DIAGNOSTICS)
         return()
     endif()
 
@@ -1384,12 +1076,10 @@ function(srcore_generate_diagnostic_report)
     string(APPEND report_content "Generated: ${current_time}\n")
     string(APPEND report_content "========================================\n\n")
 
-    # System configuration
     string(APPEND report_content "Configuration:\n")
     string(APPEND report_content "- SD_ENABLE_SEMANTIC_FILTERING: ${SD_ENABLE_SEMANTIC_FILTERING}\n")
     string(APPEND report_content "- SD_TYPE_PROFILE: ${SD_TYPE_PROFILE}\n")
     string(APPEND report_content "- SD_SELECTIVE_TYPES: ${SD_SELECTIVE_TYPES}\n")
-    string(APPEND report_content "- SRCORE_ENABLE_CACHING: ${SRCORE_ENABLE_CACHING}\n")
     string(APPEND report_content "\n")
 
     # Active types
@@ -1423,7 +1113,7 @@ function(srcore_generate_diagnostic_report)
         string(APPEND report_content "\n")
     endif()
 
-    # Sample combinations
+    # Sample combinations (only if diagnostics enabled)
     if(DEFINED SRCORE_COMBINATIONS_3)
         string(APPEND report_content "Sample 3-type combinations (first 10):\n")
         set(sample_count 0)
@@ -1440,7 +1130,7 @@ function(srcore_generate_diagnostic_report)
             if(DEFINED SRCORE_TYPE_NAME_${i} AND DEFINED SRCORE_TYPE_NAME_${j} AND DEFINED SRCORE_TYPE_NAME_${k})
                 string(APPEND report_content "  (${SRCORE_TYPE_NAME_${i}}, ${SRCORE_TYPE_NAME_${j}}, ${SRCORE_TYPE_NAME_${k}}) -> (${i},${j},${k})\n")
             else()
-                string(APPEND report_content "  (${i},${j},${k}) -> [type names not available]\n")
+                string(APPEND report_content "  (${i},${j},${k})\n")
             endif()
 
             math(EXPR sample_count "${sample_count} + 1")
@@ -1448,7 +1138,210 @@ function(srcore_generate_diagnostic_report)
         string(APPEND report_content "\n")
     endif()
 
-    # Write report
     file(WRITE "${report_file}" "${report_content}")
-    srcore_debug_message("Diagnostic report written to: ${report_file}")
+endfunction()
+
+# ============================================================================
+# OPTIMIZED WRAPPER FUNCTIONS (Production Ready)
+# ============================================================================
+
+# Main wrapper for existing code
+function(setup_selective_rendering)
+    setup_selective_rendering_unified_safe()
+
+    if(DEFINED UNIFIED_COMBINATIONS_2)
+        set(COMBINATIONS_2 "${UNIFIED_COMBINATIONS_2}" PARENT_SCOPE)
+    endif()
+    if(DEFINED UNIFIED_COMBINATIONS_3)
+        set(COMBINATIONS_3 "${UNIFIED_COMBINATIONS_3}" PARENT_SCOPE)
+    endif()
+    if(DEFINED UNIFIED_ACTIVE_TYPES)
+        set(ACTIVE_TYPES "${UNIFIED_ACTIVE_TYPES}" PARENT_SCOPE)
+    endif()
+endfunction()
+
+# Legacy wrapper functions (now no-ops for performance)
+function(track_combination_states active_types combinations_3)
+    # Handled internally - no action needed
+endfunction()
+
+function(generate_selective_rendering_header)
+    # Handled internally - no action needed
+endfunction()
+
+function(generate_selective_wrapper_header)
+    # Handled internally - no action needed
+endfunction()
+
+function(setup_definitive_semantic_filtering_with_selective_rendering)
+    set(SD_ENABLE_SEMANTIC_FILTERING TRUE PARENT_SCOPE)
+    set(SD_ENABLE_SELECTIVE_RENDERING TRUE PARENT_SCOPE)
+
+    setup_selective_rendering_unified_safe()
+
+    if(DEFINED UNIFIED_COMBINATIONS_2)
+        set(COMBINATIONS_2 "${UNIFIED_COMBINATIONS_2}" PARENT_SCOPE)
+    endif()
+    if(DEFINED UNIFIED_COMBINATIONS_3)
+        set(COMBINATIONS_3 "${UNIFIED_COMBINATIONS_3}" PARENT_SCOPE)
+    endif()
+endfunction()
+
+function(enhanced_semantic_filtering_setup)
+    setup_definitive_semantic_filtering_with_selective_rendering()
+endfunction()
+
+function(setup_definitive_semantic_filtering)
+    set(SD_ENABLE_SEMANTIC_FILTERING TRUE PARENT_SCOPE)
+    setup_selective_rendering_unified_safe(TYPE_PROFILE "${SD_TYPE_PROFILE}")
+
+    if(DEFINED UNIFIED_COMBINATIONS_2)
+        set(COMBINATIONS_2 "${UNIFIED_COMBINATIONS_2}" PARENT_SCOPE)
+        set(COMBINATIONS_2 "${UNIFIED_COMBINATIONS_2}" CACHE INTERNAL "2-type combinations" FORCE)
+    endif()
+    if(DEFINED UNIFIED_COMBINATIONS_3)
+        set(COMBINATIONS_3 "${UNIFIED_COMBINATIONS_3}" PARENT_SCOPE)
+        set(COMBINATIONS_3 "${UNIFIED_COMBINATIONS_3}" CACHE INTERNAL "3-type combinations" FORCE)
+    endif()
+    if(DEFINED UNIFIED_ACTIVE_TYPES)
+        set(ACTIVE_TYPES "${UNIFIED_ACTIVE_TYPES}" PARENT_SCOPE)
+        set(ACTIVE_TYPES "${UNIFIED_ACTIVE_TYPES}" CACHE INTERNAL "Active type list" FORCE)
+    endif()
+endfunction()
+
+function(initialize_definitive_combinations)
+    setup_definitive_semantic_filtering()
+endfunction()
+
+function(extract_definitive_types result_var)
+    if(DEFINED UNIFIED_ACTIVE_TYPES)
+        set(${result_var} "${UNIFIED_ACTIVE_TYPES}" PARENT_SCOPE)
+    else()
+        srcore_auto_setup()
+        set(${result_var} "${UNIFIED_ACTIVE_TYPES}" PARENT_SCOPE)
+    endif()
+endfunction()
+
+function(generate_definitive_combinations active_types result_2_var result_3_var)
+    if(DEFINED UNIFIED_COMBINATIONS_2 AND DEFINED UNIFIED_COMBINATIONS_3)
+        set(${result_2_var} "${UNIFIED_COMBINATIONS_2}" PARENT_SCOPE)
+        set(${result_3_var} "${UNIFIED_COMBINATIONS_3}" PARENT_SCOPE)
+    else()
+        srcore_auto_setup()
+        set(${result_2_var} "${UNIFIED_COMBINATIONS_2}" PARENT_SCOPE)
+        set(${result_3_var} "${UNIFIED_COMBINATIONS_3}" PARENT_SCOPE)
+    endif()
+endfunction()
+
+function(validate_critical_types_coverage active_types combinations_3)
+    # Handled internally - no action needed
+endfunction()
+
+# ============================================================================
+# PRODUCTION-OPTIMIZED SEMANTIC ENGINE INTEGRATION
+# ============================================================================
+
+# Simplified version without debug overhead
+function(setup_enhanced_semantic_validation)
+    # Core validation logic without debug output
+    if(SD_ENABLE_SEMANTIC_FILTERING)
+        if(NOT SD_TYPE_PROFILE OR SD_TYPE_PROFILE STREQUAL "")
+            if(SD_TYPES_LIST_COUNT GREATER 0)
+                set(detected_profile "")
+                if("int8_t" IN_LIST SD_TYPES_LIST AND "uint8_t" IN_LIST SD_TYPES_LIST)
+                    set(detected_profile "quantization")
+                elseif("float16" IN_LIST SD_TYPES_LIST OR "bfloat16" IN_LIST SD_TYPES_LIST)
+                    set(detected_profile "training")
+                elseif(SD_TYPES_LIST MATCHES ".*string.*")
+                    set(detected_profile "nlp")
+                endif()
+
+                if(NOT detected_profile STREQUAL "")
+                    set(SD_TYPE_PROFILE "${detected_profile}" PARENT_SCOPE)
+                else()
+                    set(SD_TYPE_PROFILE "inference" PARENT_SCOPE)
+                endif()
+            else()
+                set(SD_TYPE_PROFILE "inference" PARENT_SCOPE)
+            endif()
+        endif()
+    endif()
+endfunction()
+
+# Remove debug function calls to avoid GCC function tracing overhead
+macro(print_status_colored level message)
+    # Only output if diagnostics are explicitly enabled
+    if(SD_ENABLE_DIAGNOSTICS)
+        message(STATUS "${message}")
+    endif()
+endmacro()
+
+
+
+function(_internal_srcore_generate_helper_macros output_var)
+    set(helper_content "")
+
+    string(APPEND helper_content "#define SD_BUILD_TRIPLE_IF_VALID(t1, t2, t3, build_macro) \\\n")
+    string(APPEND helper_content "    do { \\\n")
+    string(APPEND helper_content "        if (SD_IS_TRIPLE_TYPE_COMPILED(t1, t2, t3)) { \\\n")
+    string(APPEND helper_content "            SD_DISPATCH_TRIPLE_RUNTIME(t1, t2, t3, build_macro); \\\n")
+    string(APPEND helper_content "        } \\\n")
+    string(APPEND helper_content "    } while(0)\n\n")
+
+    string(APPEND helper_content "#define SD_BUILD_PAIR_IF_VALID(t1, t2, build_macro) \\\n")
+    string(APPEND helper_content "    do { \\\n")
+    string(APPEND helper_content "        if (SD_IS_PAIR_TYPE_COMPILED(t1, t2)) { \\\n")
+    string(APPEND helper_content "            SD_DISPATCH_PAIR_RUNTIME(t1, t2, build_macro); \\\n")
+    string(APPEND helper_content "        } \\\n")
+    string(APPEND helper_content "    } while(0)\n\n")
+
+    string(APPEND helper_content "#define SD_BUILD_SINGLE_IF_VALID(t1, build_macro) \\\n")
+    string(APPEND helper_content "    do { \\\n")
+    string(APPEND helper_content "        if (SD_IS_SINGLE_TYPE_COMPILED(t1)) { \\\n")
+    string(APPEND helper_content "            SD_DISPATCH_SINGLE_RUNTIME(t1, build_macro); \\\n")
+    string(APPEND helper_content "        } \\\n")
+    string(APPEND helper_content "    } while(0)\n\n")
+
+    set(${output_var} "${helper_content}" PARENT_SCOPE)
+endfunction()
+
+function(srcore_generate_enhanced_header active_indices combinations_2 combinations_3 output_dir type_enums type_cpp_types)
+    _internal_srcore_generate_validity_header("${active_indices}" "${type_enums}" "${type_cpp_types}" "${combinations_2}" "${combinations_3}" "${output_dir}")
+    _internal_srcore_append_runtime_dispatch_to_header("${active_indices}" "${type_enums}" "${type_cpp_types}" "${combinations_2}" "${combinations_3}" "${output_dir}")
+endfunction()
+
+function(_internal_srcore_append_runtime_dispatch_to_header active_indices type_enums type_cpp_types combinations_2 combinations_3 output_dir)
+    set(header_file "${output_dir}/system/selective_rendering.h")
+
+    _internal_srcore_generate_helper_macros(helper_macros)
+
+    if(EXISTS "${header_file}")
+        file(READ "${header_file}" existing_content)
+
+        string(REGEX REPLACE "\n#endif // SD_SELECTIVE_RENDERING_H\n?$" "" content_without_endif "${existing_content}")
+
+        set(new_content "${content_without_endif}")
+        string(APPEND new_content "\n${dispatch_macros}")
+        string(APPEND new_content "${helper_macros}")
+        string(APPEND new_content "#endif // SD_SELECTIVE_RENDERING_H\n")
+
+        file(WRITE "${header_file}" "${new_content}")
+
+        if(SD_ENABLE_DIAGNOSTICS)
+            list(LENGTH combinations_3 total_triple_combinations)
+            list(LENGTH combinations_2 total_pair_combinations)
+            message(STATUS "Enhanced selective_rendering.h with runtime dispatch - ${total_pair_combinations} pair dispatches, ${total_triple_combinations} triple dispatches")
+        endif()
+    else()
+        message(FATAL_ERROR "Cannot append runtime dispatch - header file does not exist: ${header_file}")
+    endif()
+endfunction()
+
+function(srcore_enable_runtime_dispatch)
+    set(SD_ENABLE_RUNTIME_DISPATCH TRUE PARENT_SCOPE)
+    set(SD_ENABLE_RUNTIME_DISPATCH TRUE CACHE BOOL "Enable runtime dispatch macro generation")
+
+    if(SD_ENABLE_DIAGNOSTICS)
+        message(STATUS "Runtime dispatch enabled - will generate SD_DISPATCH_*_RUNTIME macros")
+    endif()
 endfunction()

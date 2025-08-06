@@ -119,18 +119,14 @@ class SD_LIB_EXPORT DataTypeUtils {
   /**
  * Check if a single data type is enabled for compilation in selective rendering
    */
-  SD_INLINE SD_HOST_DEVICE static bool isCompiledDataType(DataType dataType);
 
   /**
- * Check if a pair of data types is enabled for compilation in selective rendering
+   * Check if a pair of data types is enabled for compilation in selective rendering
    */
-  SD_INLINE SD_HOST_DEVICE static bool isCompiledTypePair(DataType type1, DataType type2);
 
   /**
- * Check if a triple of data types is enabled for compilation in selective rendering
+   * Check if a triple of data types is enabled for compilation in selective rendering
    */
-  SD_INLINE SD_HOST_DEVICE static bool isCompiledTypeTriple(DataType type1, DataType type2, DataType type3);
-
 
   template <typename T>
   struct scalarTypesForExecution {

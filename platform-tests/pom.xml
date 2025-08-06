@@ -236,6 +236,11 @@
     </dependencyManagement>
 
     <dependencies>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-onnxruntime</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
 
         <dependency>

@@ -417,11 +417,9 @@ void ctcLoss(graph::Context &block, NDArray&logits, NDArray&targetLabels, NDArra
              NDArray&targetLabelLengths, NDArray &logLosses, NDArray &gradients, int blankIndex) {
   auto logitsDType = logits.dataType();
   auto targetLabelsDType = targetLabels.dataType();
-#if SD_IS_PAIR_TYPE_COMPILED(logitsDType,targetLabelsDType)
   BUILD_DOUBLE_SELECTOR(logits.dataType(), targetLabels.dataType(), ctc_loss_,
                         (logits, targetLabels, logitsLengths, targetLabelLengths, logLosses, gradients, blankIndex),
                         SD_FLOAT_TYPES, SD_INDEXING_TYPES);
-#endif
 }
 
 BUILD_DOUBLE_TEMPLATE(template void ctc_loss_,

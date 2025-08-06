@@ -78,15 +78,13 @@ class LayerNormalization: PreImportHook {
             
             // Compute mean and variance manually for additional outputs
             val mean = sd.mean(input, false, actualAxis)
-            mean.rename(outputNames[1])
-            outputs[outputNames[1]] = listOf(mean)
+            outputs[outputNames[1]] = listOf( mean.rename(outputNames[1]))
             
             if (outputNames.size > 2) {
                 // Compute inverse standard deviation
                 val variance = sd.variance(input, false, actualAxis)
                 val invStdDev = sd.math().pow(variance.add(sd.constant(epsilon)), sd.constant(-0.5))
-                invStdDev.rename(outputNames[2])
-                outputs[outputNames[2]] = listOf(invStdDev)
+                outputs[outputNames[2]] = listOf( invStdDev.rename(outputNames[2]))
             }
         }
         

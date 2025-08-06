@@ -404,10 +404,8 @@ void NDArray::tile(const std::vector<LongType>& reps, NDArray& target) {
     auto targetDataType = target.dataType();
     auto selfDType = dataType();
     // Copy the value
-#if SD_IS_PAIR_TYPE_COMPILED(targetDataType,selfDType)
     BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign,
                           (target.buffer(), xOffset, buffer(), sourceOffset), SD_COMMON_TYPES, SD_COMMON_TYPES);
-#endif
   }
 }
 
@@ -429,10 +427,8 @@ void NDArray::tile(NDArray& target)  {
       auto yOffset = shape::subArrayOffset(i, target.shapeInfo(), shapeInfo());
       auto targetDataType = target.dataType();
       auto selfDType = dataType();
-#if SD_IS_PAIR_TYPE_COMPILED(targetDataType,selfDType)
       BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign,
                             (target.buffer(), i * ews, buffer(), yOffset), SD_COMMON_TYPES, SD_COMMON_TYPES);
-#endif
     }
   } else {
     for (sd::LongType i = 0; i < targetLen; ++i) {
@@ -440,10 +436,8 @@ void NDArray::tile(NDArray& target)  {
       auto yOffset = shape::subArrayOffset(i, target.shapeInfo(), shapeInfo());
       auto targetDataType = target.dataType();
       auto selfDType = dataType();
-#if SD_IS_PAIR_TYPE_COMPILED(targetDataType,selfDType)
       BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign,
                             (target.buffer(), xOffset, buffer(), yOffset), SD_COMMON_TYPES, SD_COMMON_TYPES);
-#endif
     }
   }
 }
@@ -522,10 +516,8 @@ void NDArray::repeat(const int axis, const std::vector<LongType>& repeats, NDArr
         "target array!");
   auto targetDataType = target.dataType();
   auto selfDType = dataType();
-#if SD_IS_PAIR_TYPE_COMPILED(selfDType,targetDataType)
   BUILD_DOUBLE_SELECTOR(dataType(), target.dataType(), repeat_, (*this, target, repeats, axis), SD_COMMON_TYPES,
                         SD_COMMON_TYPES);
-#endif
 }
 
 //////////////////////////////////////////////////////////////////////////

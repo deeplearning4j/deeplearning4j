@@ -597,13 +597,11 @@ void NDArray::repeat(const int axis, const std::vector<LongType>& repeats, NDArr
   auto targetDataType = target.dataType();
   auto selfDType = dataType();
   prepareSpecialUse({&target}, {this});
-#if SD_IS_PAIR_TYPE_COMPILED(selfDType,targetDataType)
   BUILD_DOUBLE_SELECTOR(
       dataType(), target.dataType(), repeatCudaLauncher,
       (launchDims.y, launchDims.x, launchDims.z, getContext()->getCudaStream(), specialBuffer(), specialShapeInfo(),
           target.specialBuffer(), target.specialShapeInfo(), reps, repeats.size(), axis),
       SD_COMMON_TYPES, SD_COMMON_TYPES);
-#endif
   prepareSpecialUse({&target}, {this});
 
   manager.synchronize();

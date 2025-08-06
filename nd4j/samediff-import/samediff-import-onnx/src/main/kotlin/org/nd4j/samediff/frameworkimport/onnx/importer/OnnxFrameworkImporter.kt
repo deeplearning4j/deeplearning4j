@@ -27,6 +27,7 @@ import org.nd4j.samediff.frameworkimport.FrameworkImporter
 import org.nd4j.samediff.frameworkimport.ir.IRGraph
 import org.nd4j.samediff.frameworkimport.onnx.OnnxImportGraph
 import org.nd4j.samediff.frameworkimport.onnx.convertToOnnxTensors
+import org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarations
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraph
 import org.nd4j.samediff.frameworkimport.onnx.opdefs.OnnxOpDescriptorLoader
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
@@ -42,7 +43,9 @@ class OnnxFrameworkImporter: FrameworkImporter {
     val onnxOpDescriptorLoader = OnnxOpDescriptorLoader()
     val registry = onnxOpDescriptorLoader.createOpMappingRegistry<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>()
     val loadedGraphBuilder = Onnx.GraphProto.newBuilder()
+
     init {
+        OnnxOpDeclarations.init()
         loader.values.forEach { loadedGraphBuilder.addNode(it) }
     }
 

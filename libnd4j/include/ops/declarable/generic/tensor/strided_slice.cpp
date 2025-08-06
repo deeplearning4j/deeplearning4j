@@ -127,13 +127,44 @@ void vectorize(std::vector<LongType>& input_shape) {
   }
 }
 
-bool _preprocess_strided_slice(std::vector<LongType>* indicesList, std::vector<LongType>* final_shape,
-                               std::vector<LongType>& input_shape, std::vector<LongType>& begin,
-                               std::vector<LongType>& end, std::vector<LongType>& strides, int begin_mask, int ellipsis_mask, int end_mask,
+bool _preprocess_strided_slice(std::vector<sd::LongType>* indicesList, std::vector<sd::LongType>* final_shape,
+                               std::vector<sd::LongType>& input_shape, std::vector<sd::LongType>& begin,
+                               std::vector<sd::LongType>& end, std::vector<sd::LongType>& strides, int begin_mask, int ellipsis_mask, int end_mask,
                                int new_axis_mask, int shrink_axis_mask, bool* is_identity, bool* is_simple_slice,
                                bool* slice_dim0) {
-  std::vector<int> preshape;
 
+  // Add validation logging before processing
+  if (sd::Environment::getInstance().isDebug()) {
+    sd_print("=== _preprocess_strided_slice INPUT ===\n");
+    sd_print("input_shape: [");
+    for (size_t i = 0; i < input_shape.size(); i++) {
+      sd_printf("%lld%s", input_shape[i], i < input_shape.size()-1 ? ", " : "");
+    }
+    sd_print("]\n");
+
+    sd_print("begin: [");
+    for (size_t i = 0; i < begin.size(); i++) {
+      sd_printf("%lld%s", begin[i], i < begin.size()-1 ? ", " : "");
+    }
+    sd_print("]\n");
+
+    sd_print("end: [");
+    for (size_t i = 0; i < end.size(); i++) {
+      sd_printf("%lld%s", end[i], i < end.size()-1 ? ", " : "");
+    }
+    sd_print("]\n");
+
+    sd_print("strides: [");
+    for (size_t i = 0; i < strides.size(); i++) {
+      sd_printf("%lld%s", strides[i], i < strides.size()-1 ? ", " : "");
+    }
+    sd_print("]\n");
+
+    sd_printf("masks: begin=%d, end=%d, ellipsis=%d, new_axis=%d, shrink_axis=%d\n",
+              begin_mask, end_mask, ellipsis_mask, new_axis_mask, shrink_axis_mask);
+  }
+
+  std::vector<int> preshape;
   bool ellipsis_seen = false;
 
   StridedSliceSparseSpec sparse_spec = {(int)strides.size(), 0,        &begin,        &end,          &strides,
@@ -165,8 +196,11 @@ bool _preprocess_strided_slice(std::vector<LongType>* indicesList, std::vector<L
       {},                       // final_shape_gather_indices (empty vector)
       0                         // shrink_axis_mask
   };
-  if (!dense_spec.buildDenseSpec(sparse_spec)) return false;
 
+  if (!dense_spec.buildDenseSpec(sparse_spec)) {
+    sd_print("ERROR: buildDenseSpec failed in _preprocess_strided_slice\n");
+    return false;
+  }
 
   for (int e = 0; e < (int)input_shape.size(); e++) {
     sd::LongType begin_idx = begin[e];
@@ -177,6 +211,7 @@ bool _preprocess_strided_slice(std::vector<LongType>* indicesList, std::vector<L
     bool shrink_i = (dense_spec.shrink_axis_mask & (1 << e));
 
     if (stride_idx == 0) {
+      sd_printf("ERROR: Zero stride detected in dimension %d during preprocessing\n", e);
       return false;
     }
     if (size_idx == -1) {
@@ -197,6 +232,7 @@ bool _preprocess_strided_slice(std::vector<LongType>* indicesList, std::vector<L
     };
 
     if (shrink_i && stride_idx <= 0) {
+      sd_printf("ERROR: Invalid stride %d for shrink dimension %d\n", stride_idx, e);
       return false;
     }
 
@@ -210,6 +246,7 @@ bool _preprocess_strided_slice(std::vector<LongType>* indicesList, std::vector<L
         begin_idx = x_fwd;
         end_idx = begin_idx + 1;
         if (x_fwd < 0 || x_fwd >= size_idx) {
+          sd_printf("ERROR: Shrink index %d out of bounds [0, %d) for dimension %d\n", x_fwd, size_idx, e);
           return false;
         }
       } else {
@@ -226,6 +263,14 @@ bool _preprocess_strided_slice(std::vector<LongType>* indicesList, std::vector<L
     if (dense_spec.begin_valid && dense_spec.end_valid) {
       interval_length = end_idx - begin_idx;
       known_interval = true;
+
+      // Early detection of negative ranges
+      if (interval_length < 0 && stride_idx > 0) {
+        sd_printf("ERROR: Negative interval detected in dimension %d: end_idx=%lld < begin_idx=%lld (stride=%d > 0)\n",
+                  e, end_idx, begin_idx, stride_idx);
+        sd_printf("  Original begin=%lld, end=%lld, size=%d\n", begin[e], end[e], size_idx);
+        return false;
+      }
     } else if (shrink_i) {
       interval_length = 1;
       known_interval = true;
@@ -236,7 +281,6 @@ bool _preprocess_strided_slice(std::vector<LongType>* indicesList, std::vector<L
         } else {
           interval_length = size_idx;
         }
-
         known_interval = true;
       }
     }
@@ -276,7 +320,36 @@ bool _preprocess_strided_slice(std::vector<LongType>* indicesList, std::vector<L
       final_shape->emplace_back(1);
   }
 
+  // Validate generated indices before returning
+  if (indicesList && !indicesList->empty()) {
+    if (sd::Environment::getInstance().isDebug()) {
+      sd_print("Generated indices: [");
+      for (size_t i = 0; i < indicesList->size(); i++) {
+        sd_printf("%lld%s", (*indicesList)[i], i < indicesList->size()-1 ? ", " : "");
+      }
+      sd_print("]\n");
 
+      // Analyze indices in groups of 3
+      for (size_t i = 0; i < indicesList->size(); i += 3) {
+        if (i + 2 < indicesList->size()) {
+          sd::LongType dim_begin = (*indicesList)[i];
+          sd::LongType dim_end = (*indicesList)[i + 1];
+          sd::LongType dim_stride = (*indicesList)[i + 2];
+          size_t dim_idx = i / 3;
+
+          sd_printf("  Dimension %zu: [%lld, %lld, %lld]", dim_idx, dim_begin, dim_end, dim_stride);
+          if (dim_idx < input_shape.size()) {
+            sd_printf(" (input_size=%lld)", input_shape[dim_idx]);
+          }
+          if (dim_end < dim_begin) {
+            sd_print(" *** NEGATIVE RANGE ***");
+          }
+          sd_print("\n");
+        }
+      }
+      sd_print("=== End _preprocess_strided_slice ===\n");
+    }
+  }
 
   return true;
 }

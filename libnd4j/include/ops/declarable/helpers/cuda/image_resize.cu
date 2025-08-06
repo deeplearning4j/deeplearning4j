@@ -1095,11 +1095,9 @@ void cropAndResizeFunctor(LaunchContext* context, NDArray * images, NDArray * bo
 auto imagesDType = images->dataType();
 auto boxesDType = boxes->dataType();
 auto indicesDType = indices->dataType();
-#if SD_IS_TRIPLE_TYPE_COMPILED(imagesDType,boxesDType,indicesDType)
   BUILD_TRIPLE_SELECTOR(images->dataType(), boxes->dataType(), indices->dataType(), cropAndResizeFunctor_,
                         (context, images, boxes, indices, cropSize, method, extrapolationVal, crops), SD_NUMERIC_TYPES,
                         SD_FLOAT_TYPES, SD_INTEGER_TYPES);
-#endif
 
 }
 BUILD_TRIPLE_TEMPLATE(template void cropAndResizeFunctor_,

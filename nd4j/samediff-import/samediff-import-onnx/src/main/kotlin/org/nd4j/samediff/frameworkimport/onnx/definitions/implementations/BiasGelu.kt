@@ -63,9 +63,7 @@ class BiasGelu: PreImportHook {
         val erfInput = x.div(sqrt2)
         val erfResult = sd.math().erf(erfInput)
         val onePlusErf = erfResult.add(sd.constant(1.0))
-        val result = x.mul(onePlusErf).mul(sd.constant(0.5))
-        
-        result.rename(outputNames[0])
+        val result = x.mul(onePlusErf).mul(outputNames[0],sd.constant(0.5))
         return mapOf(outputNames[0] to listOf(result))
     }
 }

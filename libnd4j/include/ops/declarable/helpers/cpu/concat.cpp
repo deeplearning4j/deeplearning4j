@@ -35,9 +35,7 @@ static void concat_(const std::vector<NDArray*>& inArrs, NDArray& output, const 
 
 void concat(sd::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
 auto outputTYpe = output.dataType();
-#if SD_IS_SINGLE_TYPE_COMPILED(outputTYpe)
   BUILD_SINGLE_SELECTOR(output.dataType(), concat_, (inArrs, output, axis), SD_COMMON_TYPES);
-#endif
 }
 
 BUILD_SINGLE_TEMPLATE(template void concat_,

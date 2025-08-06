@@ -119,12 +119,10 @@ void compat_sparse_to_dense(NDArray& values, NDArray& indices, NDArray* def, NDA
     // write out values
     auto valuesDType = values.dataType();
     auto indicesDataType = indices.dataType();
-#if SD_IS_PAIR_TYPE_COMPILED(valuesDType,indicesDataType)
     BUILD_DOUBLE_SELECTOR(
         values.dataType(), indices.dataType(), fill_,
         (values.buffer(), indices.buffer(), output.buffer(), output.shapeInfo(), rank, values.lengthOf()),
         SD_COMMON_TYPES, SD_INDEXING_TYPES);
-#endif
     NDArray::registerPrimaryUse({&output}, {&values, &indices});
   }
 }

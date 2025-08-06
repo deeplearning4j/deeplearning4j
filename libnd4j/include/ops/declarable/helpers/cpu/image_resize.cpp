@@ -260,11 +260,9 @@ sd::Status resizeBilinearFunctor(sd::LaunchContext* context, NDArray * images, i
 
   auto imagesDtype = images->dataType();
   auto outputDType = output->dataType();
-#if SD_IS_PAIR_TYPE_COMPILED(imagesDtype,outputDType)
   BUILD_DOUBLE_SELECTOR(images->dataType(), output->dataType(), return resizeBilinearFunctor_,
                         (images, width, height, alignCorners, halfPixelCenter, output), SD_NUMERIC_TYPES,
                         SD_FLOAT_TYPES);
-#endif
   return sd::Status::OK;
 }
 
@@ -770,11 +768,9 @@ static sd::Status resizeBilinear(sd::LaunchContext* context, NDArray * image, in
   auto kernel = std::unique_ptr<IKernelFunc<float>>(new TriangleKernelFunc());
   auto imageDType = image->dataType();
   auto outputDtype = output->dataType();
-#if SD_IS_PAIR_TYPE_COMPILED(imageDType,outputDtype)
   BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
                         (kernel.get(), image, (sd::LongType)width, (sd::LongType)height, antialias, output),
                         SD_NUMERIC_TYPES, SKIP_FIRST_COMMA(TTYPE_FLOAT32));
-#endif
   return Logger::logStatusMsg(Status::VALIDATION, "helpers::resizeBilinear: Unknown error occured.");
 }
 
@@ -792,11 +788,9 @@ static sd::Status resizeBicubicAntialias(sd::LaunchContext* context, NDArray * i
   auto kernel = std::unique_ptr<IKernelFunc<float>>(new KeysCubicKernelFunc<float>(coefficient));
   auto imageDType = image->dataType();
   auto outputDtype = output->dataType();
-#if SD_IS_PAIR_TYPE_COMPILED(imageDType,outputDType)
   BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
                         (kernel.get(), image, (sd::LongType)width, (sd::LongType)height, antialias, output),
                         SD_NUMERIC_TYPES, SKIP_FIRST_COMMA(TTYPE_FLOAT32));
-#endif
   return sd::Status::OK;
 }
 #endif
@@ -811,11 +805,9 @@ static sd::Status resizeLanczos3(sd::LaunchContext* context, NDArray * image, in
   auto kernel = std::unique_ptr<IKernelFunc<float>>(new LanczosKernelFunc(3.f));
   auto imageDType = image->dataType();
   auto outputDtype = output->dataType();
-#if SD_IS_PAIR_TYPE_COMPILED(imageDType,outputDtype)
   BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
                         (kernel.get(), image, (sd::LongType)width, (sd::LongType)height, antialias, output),
                         SD_NUMERIC_TYPES, SKIP_FIRST_COMMA(TTYPE_FLOAT32));
-#endif
   return Logger::logStatusMsg(Status::VALIDATION, "helpers::resizeLanczos3: Unknown error occured.");
 }
 
@@ -824,11 +816,9 @@ static sd::Status resizeLanczos5(sd::LaunchContext* context, NDArray * image, in
   auto kernel = std::unique_ptr<IKernelFunc<float>>(new LanczosKernelFunc(5.f));
   auto imageDType = image->dataType();
   auto outputDtype = output->dataType();
-#if SD_IS_PAIR_TYPE_COMPILED(imageDType,outputDtype)
   BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
                         (kernel.get(), image, (sd::LongType)width, (sd::LongType)height, antialias, output),
                         SD_NUMERIC_TYPES, SKIP_FIRST_COMMA(TTYPE_FLOAT32));
-#endif
   return Logger::logStatusMsg(Status::VALIDATION, "helpers::resizeLanczos5: Unknown error occured.");
 }
 
@@ -837,11 +827,9 @@ static sd::Status resizeGaussian(sd::LaunchContext* context, NDArray * image, in
   auto kernel = std::unique_ptr<IKernelFunc<float>>(new GaussianKernelFunc());
   auto imageDType = image->dataType();
   auto outputDtype = output->dataType();
-#if SD_IS_PAIR_TYPE_COMPILED(imageDType,outputDtype)
   BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
                         (kernel.get(), image, (sd::LongType)width, (sd::LongType)height, antialias, output),
                         SD_NUMERIC_TYPES, SKIP_FIRST_COMMA(TTYPE_FLOAT32));
-#endif
   return Logger::logStatusMsg(Status::VALIDATION, "helpers::resizeGaussian: Unknown error occured.");
 }
 
@@ -850,11 +838,9 @@ static sd::Status resizeMitchellcubic(sd::LaunchContext* context, NDArray * imag
   auto kernel = std::unique_ptr<IKernelFunc<float>>(new MitchellCubicKernelFunc());
   auto imageDType = image->dataType();
   auto outputDtype = output->dataType();
-#if SD_IS_PAIR_TYPE_COMPILED(imageDType,outputDtype)
   BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
                         (kernel.get(), image, (sd::LongType)width, (sd::LongType)height, antialias, output),
                         SD_NUMERIC_TYPES, SKIP_FIRST_COMMA(TTYPE_FLOAT32));
-#endif
   return Logger::logStatusMsg(Status::VALIDATION, "helpers::ResizeMitchellcubic: Unknown error occured.");
 }
 #endif

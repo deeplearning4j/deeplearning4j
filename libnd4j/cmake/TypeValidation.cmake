@@ -520,36 +520,6 @@ function(show_available_types)
     message(STATUS "")
 endfunction()
 
-# Function to resolve debug type profile
-function(resolve_debug_profile profile custom_types result_var)
-    if(profile STREQUAL "CUSTOM")
-        if(custom_types AND NOT custom_types STREQUAL "")
-            # Ensure minimum indexing types are included
-            set(minimum_types "int32;int64;float32")
-            set(combined_types "${minimum_types}")
-
-            # Add custom types, avoiding duplicates
-            string(REPLACE ";" ";" CUSTOM_LIST "${custom_types}")
-            foreach(type IN LISTS CUSTOM_LIST)
-                if(NOT type IN_LIST combined_types)
-                    set(combined_types "${combined_types};${type}")
-                endif()
-            endforeach()
-            set(${result_var} "${combined_types}" PARENT_SCOPE)
-        else()
-            message(FATAL_ERROR "CUSTOM profile specified but no custom types provided!")
-        endif()
-    elseif(DEFINED DEBUG_PROFILE_${profile})
-        set(${result_var} "${DEBUG_PROFILE_${profile}}" PARENT_SCOPE)
-    else()
-        if(COMMAND print_status_colored)
-            print_status_colored("WARNING" "Unknown debug profile '${profile}', using MINIMAL_INDEXING")
-        else()
-            message(WARNING "Unknown debug profile '${profile}', using MINIMAL_INDEXING")
-        endif()
-        set(${result_var} "${DEBUG_PROFILE_MINIMAL_INDEXING}" PARENT_SCOPE)
-    endif()
-endfunction()
 
 # Enhanced estimate_build_impact with ML considerations
 function(estimate_build_impact types_string build_type)
@@ -817,12 +787,6 @@ endfunction()
 function(validate_and_process_types)
     # Determine validation mode
     set(validation_mode "NORMAL")
-    if(SD_GCC_FUNCTRACE)
-        set(validation_mode "DEBUG")
-    endif()
-    if(SD_STRICT_TYPE_VALIDATION)
-        set(validation_mode "STRICT")
-    endif()
 
     message(STATUS "🎯 =================================================================")
     message(STATUS "🎯 TYPE VALIDATION: Determining type selection mode...")
@@ -835,7 +799,49 @@ function(validate_and_process_types)
         message(STATUS "🎯 SD_FORCE_ALL_TYPES=ON detected - USER EXPLICITLY REQUESTED ALL TYPES")
     endif()
 
-    # STEP 2: Check if user EXPLICITLY provided specific types via command line
+    # STEP 2: Check if the current SD_TYPES_LIST matches any debug profile (CRITICAL FIX)
+    set(TYPES_ARE_DEBUG_PROFILE FALSE)
+    if(DEFINED SD_TYPES_LIST AND SD_TYPES_LIST AND NOT SD_TYPES_LIST STREQUAL "")
+        string(STRIP "${SD_TYPES_LIST}" stripped_types)
+
+        # Check if this matches any debug profile exactly
+        if(stripped_types STREQUAL "float32;double;int32;int64")
+            set(TYPES_ARE_DEBUG_PROFILE TRUE)
+            set(matched_profile "DEBUG_PROFILE_MINIMAL_INDEXING")
+        elseif(stripped_types STREQUAL "float32;double;int32;int64;int8;int16")
+            set(TYPES_ARE_DEBUG_PROFILE TRUE)
+            set(matched_profile "DEBUG_PROFILE_ESSENTIAL")
+        elseif(stripped_types STREQUAL "float32;double;float16")
+            set(TYPES_ARE_DEBUG_PROFILE TRUE)
+            set(matched_profile "DEBUG_PROFILE_FLOATS_ONLY")
+        elseif(stripped_types STREQUAL "int8;int16;int32;int64;uint8;uint16;uint32;uint64")
+            set(TYPES_ARE_DEBUG_PROFILE TRUE)
+            set(matched_profile "DEBUG_PROFILE_INTEGERS_ONLY")
+        elseif(stripped_types STREQUAL "float32;int32;int64")
+            set(TYPES_ARE_DEBUG_PROFILE TRUE)
+            set(matched_profile "DEBUG_PROFILE_SINGLE_PRECISION")
+        elseif(stripped_types STREQUAL "double;int32;int64")
+            set(TYPES_ARE_DEBUG_PROFILE TRUE)
+            set(matched_profile "DEBUG_PROFILE_DOUBLE_PRECISION")
+        elseif(stripped_types STREQUAL "int8;uint8;float32;int32;int64")
+            set(TYPES_ARE_DEBUG_PROFILE TRUE)
+            set(matched_profile "DEBUG_PROFILE_QUANTIZATION")
+        elseif(stripped_types STREQUAL "float16;bfloat16;float32;int32;int64")
+            set(TYPES_ARE_DEBUG_PROFILE TRUE)
+            set(matched_profile "DEBUG_PROFILE_MIXED_PRECISION")
+        elseif(stripped_types STREQUAL "std::string;float32;int32;int64")
+            set(TYPES_ARE_DEBUG_PROFILE TRUE)
+            set(matched_profile "DEBUG_PROFILE_NLP")
+        endif()
+
+        if(TYPES_ARE_DEBUG_PROFILE)
+            message(STATUS "🎯 DETECTED: Current SD_TYPES_LIST matches debug profile ${matched_profile}")
+            message(STATUS "🎯 Types: ${stripped_types}")
+            message(STATUS "🎯 This is NOT user-provided - this is an auto-applied debug profile!")
+        endif()
+    endif()
+
+    # STEP 3: Check if user EXPLICITLY provided specific types via command line
     set(USER_EXPLICITLY_PROVIDED_TYPES FALSE)
     if(DEFINED SD_TYPES_LIST AND SD_TYPES_LIST AND NOT SD_TYPES_LIST STREQUAL "")
         string(STRIP "${SD_TYPES_LIST}" stripped_types)
@@ -843,32 +849,31 @@ function(validate_and_process_types)
             if(DEFINED SD_FORCE_SELECTIVE_TYPES AND SD_FORCE_SELECTIVE_TYPES)
                 set(USER_EXPLICITLY_PROVIDED_TYPES TRUE)
                 message(STATUS "🎯 SD_FORCE_SELECTIVE_TYPES=ON - User explicitly wants selective types: ${SD_TYPES_LIST}")
+            elseif(TYPES_ARE_DEBUG_PROFILE)
+                # CRITICAL FIX: If types match a debug profile, they are NOT user-provided
+                set(USER_EXPLICITLY_PROVIDED_TYPES FALSE)
+                message(STATUS "🎯 Types match debug profile ${matched_profile} - NOT treating as user-provided")
             elseif(CMAKE_BUILD_TYPE STREQUAL "Debug" AND SD_GCC_FUNCTRACE)
                 message(STATUS "🎯 Debug mode detected with types: ${SD_TYPES_LIST}")
                 message(STATUS "🎯 These appear to be auto-generated debug types, not user-provided")
                 set(USER_EXPLICITLY_PROVIDED_TYPES FALSE)
             else()
+                # Only treat as user-provided if it doesn't match any debug profile
                 set(USER_EXPLICITLY_PROVIDED_TYPES TRUE)
                 message(STATUS "🎯 Non-debug build with types: ${SD_TYPES_LIST} - treating as user-provided")
             endif()
         endif()
     endif()
 
-    # STEP 3: Check if debug auto-reduction should apply
+    # STEP 4: Check if debug auto-reduction should apply
     set(DEBUG_AUTO_REDUCTION_APPLIES FALSE)
-    if(SD_GCC_FUNCTRACE AND
-            DEFINED SD_DEBUG_AUTO_REDUCE AND SD_DEBUG_AUTO_REDUCE AND
-            NOT EXPLICIT_ALL_TYPES_REQUEST AND
-            NOT USER_EXPLICITLY_PROVIDED_TYPES)
-        set(DEBUG_AUTO_REDUCTION_APPLIES TRUE)
-        message(STATUS "🎯 Debug auto-reduction applies (no explicit user overrides)")
-    endif()
 
-    # STEP 4: DECIDE THE FINAL MODE BASED ON CORRECTED PRIORITY
+    # STEP 5: DECIDE THE FINAL MODE BASED ON CORRECTED PRIORITY
     message(STATUS "🎯 -----------------------------------------------------------------")
     message(STATUS "🎯 DECISION LOGIC:")
     message(STATUS "🎯   EXPLICIT_ALL_TYPES_REQUEST: ${EXPLICIT_ALL_TYPES_REQUEST}")
     message(STATUS "🎯   USER_EXPLICITLY_PROVIDED_TYPES: ${USER_EXPLICITLY_PROVIDED_TYPES}")
+    message(STATUS "🎯   TYPES_ARE_DEBUG_PROFILE: ${TYPES_ARE_DEBUG_PROFILE}")
     message(STATUS "🎯   DEBUG_AUTO_REDUCTION_APPLIES: ${DEBUG_AUTO_REDUCTION_APPLIES}")
     message(STATUS "🎯   CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
     message(STATUS "🎯   SD_GCC_FUNCTRACE: ${SD_GCC_FUNCTRACE}")
@@ -885,8 +890,14 @@ function(validate_and_process_types)
         set(SD_TYPES_LIST "" PARENT_SCOPE)
         set(SD_TYPES_LIST_COUNT 0 PARENT_SCOPE)
 
-    elseif(USER_EXPLICITLY_PROVIDED_TYPES)
-        # PRIORITY 2: User explicitly provided specific types
+        # CRITICAL: Also clear all cached variables to prevent them from overriding
+        unset(SD_TYPES_LIST CACHE)
+        unset(SD_TYPES_LIST_COUNT CACHE)
+        unset(SRCORE_VALIDATED_TYPES CACHE)
+        unset(SRCORE_USE_SELECTIVE_TYPES CACHE)
+
+    elseif(USER_EXPLICITLY_PROVIDED_TYPES AND NOT TYPES_ARE_DEBUG_PROFILE)
+        # PRIORITY 2: User explicitly provided specific types (and they're not from a debug profile)
         message(STATUS "🎯 ✅ DECISION: SELECTIVE TYPES MODE (user-provided types)")
         message(STATUS "🎯 Reason: User explicitly specified types: ${SD_TYPES_LIST}")
         set(USE_ALL_TYPES FALSE)
@@ -895,29 +906,25 @@ function(validate_and_process_types)
         # Validate the user-provided types
         validate_type_list("${SD_TYPES_LIST}" "${validation_mode}")
 
-    elseif(DEBUG_AUTO_REDUCTION_APPLIES)
-        # PRIORITY 3: Debug auto-reduction (only when no user input)
-        message(STATUS "🎯 ✅ DECISION: SELECTIVE TYPES MODE (debug auto-reduction)")
-        message(STATUS "🎯 Reason: Debug build with auto-reduction enabled, no user override")
-        set(USE_ALL_TYPES FALSE)
+    elseif(TYPES_ARE_DEBUG_PROFILE)
+        # CRITICAL FIX: If types are from a debug profile, ignore them and use ALL types
+        message(STATUS "🎯 ✅ DECISION: ALL TYPES MODE (debug profile detected and ignored)")
+        message(STATUS "🎯 Reason: SD_TYPES_LIST matches debug profile ${matched_profile} - ignoring and using ALL types")
+        set(USE_ALL_TYPES TRUE)
+        set(FINAL_TYPES_LIST "")
 
-        # Apply debug profile
-        if(SD_DEBUG_TYPE_PROFILE AND NOT SD_DEBUG_TYPE_PROFILE STREQUAL "")
-            resolve_debug_profile("${SD_DEBUG_TYPE_PROFILE}" "${SD_DEBUG_CUSTOM_TYPES}" resolved_types)
-            message(STATUS "🎯 Debug Profile: ${SD_DEBUG_TYPE_PROFILE}")
-            message(STATUS "🎯 Auto-generated Types: ${resolved_types}")
-        else()
-            resolve_debug_profile("MINIMAL_INDEXING" "" resolved_types)
-            message(STATUS "🎯 Auto-selected MINIMAL_INDEXING profile for debug build")
-            message(STATUS "🎯 Auto-generated Types: ${resolved_types}")
-        endif()
+        # Clear the debug profile types to ensure ALL mode
+        set(SD_TYPES_LIST "" PARENT_SCOPE)
+        set(SD_TYPES_LIST_COUNT 0 PARENT_SCOPE)
 
-        set(FINAL_TYPES_LIST "${resolved_types}")
-        set(SD_TYPES_LIST "${resolved_types}" PARENT_SCOPE)
-        validate_type_list("${resolved_types}" "${validation_mode}")
+        # CRITICAL: Also clear all cached variables to prevent them from overriding
+        unset(SD_TYPES_LIST CACHE)
+        unset(SD_TYPES_LIST_COUNT CACHE)
+        unset(SRCORE_VALIDATED_TYPES CACHE)
+        unset(SRCORE_USE_SELECTIVE_TYPES CACHE)
 
     else()
-        # PRIORITY 4: DEFAULT = ALL TYPES (this is the key fix)
+        # PRIORITY 4: DEFAULT = ALL TYPES
         message(STATUS "🎯 ✅ DECISION: ALL TYPES MODE (default behavior)")
         message(STATUS "🎯 Reason: No explicit user requests detected - using default ALL types")
         set(USE_ALL_TYPES TRUE)
@@ -926,9 +933,15 @@ function(validate_and_process_types)
         # Clear any existing types to ensure ALL mode
         set(SD_TYPES_LIST "" PARENT_SCOPE)
         set(SD_TYPES_LIST_COUNT 0 PARENT_SCOPE)
+
+        # CRITICAL: Also clear all cached variables to prevent them from overriding
+        unset(SD_TYPES_LIST CACHE)
+        unset(SD_TYPES_LIST_COUNT CACHE)
+        unset(SRCORE_VALIDATED_TYPES CACHE)
+        unset(SRCORE_USE_SELECTIVE_TYPES CACHE)
     endif()
 
-    # STEP 5: SET UP THE FINAL CONFIGURATION AND EXPORT IMMEDIATELY
+    # STEP 6: SET UP THE FINAL CONFIGURATION AND EXPORT IMMEDIATELY
     message(STATUS "🎯 =================================================================")
     if(USE_ALL_TYPES)
         message(STATUS "🎯 FINAL CONFIGURATION: ALL TYPES MODE")
@@ -960,21 +973,10 @@ function(validate_and_process_types)
 endfunction()
 
 macro(SETUP_LIBND4J_TYPE_VALIDATION)
-    # Set default validation mode
-    if(NOT DEFINED SD_TYPES_VALIDATION_MODE)
-        if(SD_GCC_FUNCTRACE)
-            set(SD_TYPES_VALIDATION_MODE "DEBUG")
-        elseif(SD_STRICT_TYPE_VALIDATION)
-            set(SD_TYPES_VALIDATION_MODE "STRICT")
-        else()
-            set(SD_TYPES_VALIDATION_MODE "NORMAL")
-        endif()
-    endif()
+    set(SD_TYPES_VALIDATION_MODE "NORMAL")
 
-    # Enable debug auto-reduction by default for debug builds
-    if(NOT DEFINED SD_DEBUG_AUTO_REDUCE AND SD_GCC_FUNCTRACE)
-        set(SD_DEBUG_AUTO_REDUCE TRUE)
-    endif()
+
+
 
     # Call the main validation function
     validate_and_process_types()
@@ -1079,22 +1081,7 @@ function(LIBND4J_SETUP_TYPE_VALIDATION)
         set(SD_TYPES_LIST_COUNT 0 PARENT_SCOPE)
     endif()
 
-    # Set up debug auto-reduction based on build type and tracing
-    set(DEBUG_AUTO_REDUCTION_APPLIES FALSE)
-    if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND SD_GCC_FUNCTRACE)
-        if(NOT SD_EXPLICIT_ALL_TYPES_REQUEST AND NOT SD_USER_EXPLICITLY_PROVIDED_TYPES)
-            set(DEBUG_AUTO_REDUCTION_APPLIES TRUE PARENT_SCOPE)
-            message(STATUS "🎯 Debug auto-reduction will apply")
-        endif()
-    endif()
 
-    # Type validation setup
-    if(DEBUG_AUTO_REDUCTION_APPLIES AND SD_TYPES_LIST_COUNT EQUAL 0)
-        # Auto-select minimal types for debug
-        set(SD_TYPES_LIST "bool;float;double;int8;int16;int32;int64;uint8;uint16;uint32;uint64" PARENT_SCOPE)
-        set(SD_TYPES_LIST_COUNT 11 PARENT_SCOPE)
-        message(STATUS "🎯 Auto-selected types for debug build: ${SD_TYPES_LIST}")
-    endif()
 
     message(STATUS "✅ Type validation configuration ready")
 endfunction()
@@ -1236,19 +1223,11 @@ endfunction()
 macro(LIBND4J_SETUP_TYPE_VALIDATION)
     # Set default validation mode
     if(NOT DEFINED SD_TYPES_VALIDATION_MODE)
-        if(SD_GCC_FUNCTRACE)
-            set(SD_TYPES_VALIDATION_MODE "DEBUG")
-        elseif(SD_STRICT_TYPE_VALIDATION)
-            set(SD_TYPES_VALIDATION_MODE "STRICT")
-        else()
-            set(SD_TYPES_VALIDATION_MODE "NORMAL")
-        endif()
+        set(SD_TYPES_VALIDATION_MODE "NORMAL")
+
     endif()
 
-    # Enable debug auto-reduction by default for debug builds
-    if(NOT DEFINED SD_DEBUG_AUTO_REDUCE AND SD_GCC_FUNCTRACE)
-        set(SD_DEBUG_AUTO_REDUCE TRUE)
-    endif()
+
 
     # Call the main validation function
     libnd4j_validate_and_setup_types()
@@ -1415,21 +1394,7 @@ function(setup_type_definitions_for_target target_name)
 
     # Set up debug auto-reduction based on build type and tracing
     set(DEBUG_AUTO_REDUCTION_APPLIES FALSE)
-    if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND SD_GCC_FUNCTRACE)
-        if(NOT SD_EXPLICIT_ALL_TYPES_REQUEST AND NOT SD_USER_EXPLICITLY_PROVIDED_TYPES)
-            set(DEBUG_AUTO_REDUCTION_APPLIES TRUE)
-            message(STATUS "🎯 Debug auto-reduction applies")
-        endif()
-    endif()
 
-    # Type validation setup
-    if(DEBUG_AUTO_REDUCTION_APPLIES AND SD_TYPES_LIST_COUNT EQUAL 0)
-        # Auto-select minimal types for debug - include all common types
-        set(SD_TYPES_LIST "bool;float;double;int8;int16;int32;int64;uint8;uint16;uint32;uint64" PARENT_SCOPE)
-        set(SD_TYPES_LIST_COUNT 11 PARENT_SCOPE)
-        message(STATUS "🎯 Auto-selected MINIMAL_INDEXING profile for debug build")
-        message(STATUS "🎯 Auto-generated Types: ${SD_TYPES_LIST}")
-    endif()
 
     # Apply the type definitions to the target
     if(TARGET ${target_name})
@@ -1502,12 +1467,6 @@ function(generate_type_config_summary)
         file(APPEND "${CONFIG_FILE}" "\nDebug Type Profile: ${SD_DEBUG_TYPE_PROFILE}\n")
     endif()
 
-    if(SD_GCC_FUNCTRACE)
-        file(APPEND "${CONFIG_FILE}" "Function Tracing: ENABLED\n")
-        if(SD_DEBUG_AUTO_REDUCE)
-            file(APPEND "${CONFIG_FILE}" "Debug Auto-Reduction: ENABLED\n")
-        endif()
-    endif()
 
     file(APPEND "${CONFIG_FILE}" "\nValidation Mode: ${SD_TYPES_VALIDATION_MODE}\n")
 

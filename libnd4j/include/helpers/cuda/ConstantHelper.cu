@@ -160,12 +160,10 @@ ConstantDataBuffer *ConstantHelper::constantBuffer(const ConstantDescriptor &des
           (sd::DataType::DOUBLE, double), SD_COMMON_TYPES);
     } else if (descriptor.isInteger()) {
       auto int64DType = sd::DataType::INT64;
-#if SD_IS_PAIR_TYPE_COMPILED(int64DType,dataType)
       BUILD_DOUBLE_SELECTOR(sd::DataType::INT64, dataType, sd::SpecialTypeConverter::convertGeneric,
                             (nullptr, const_cast<sd::LongType *>(descriptor.integerValues().data()),
                                 descriptor.length(), cbuff->pointer()),
                             (sd::DataType::INT64, sd::LongType), SD_COMMON_TYPES);
-#endif
     }
 
     // we don't have deallocator here.

@@ -31,10 +31,10 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
 /**
  * Implementation of the ONNX Shape operator.
- * 
+ *
  * The Shape operator takes a tensor as input and outputs an integer tensor
  * containing the shape (dimensions) of the input tensor.
- * 
+ *
  * ONNX Shape operator reference:
  * https://github.com/onnx/onnx/blob/master/docs/Operators.md#shape
  *
@@ -59,38 +59,29 @@ class Shape : PreImportHook {
         val start = attributes["start"] as? Long ?: 0L
         val end = attributes["end"] as? Long
 
-        // CRITICAL: During import, disable eager mode to prevent execution
-        val wasEagerMode = sd.isEagerMode
-        sd.isEagerMode = false
+        val shapeVariable = if (start > 0 || end != null) {
+            // Handle slicing case
+            val fullShape = inputVariable.shape()
 
-        try {
-            val shapeVariable = if (start > 0 || end != null) {
-                // Handle slicing case
-                val fullShape = inputVariable.shape()
-
-                if (end != null) {
-                    val sliceBegin = intArrayOf(start.toInt())
-                    val sliceSize = intArrayOf((end - start).toInt())
-                    val slicedShape = sd.slice(fullShape, sliceBegin, *sliceSize)
-                    sd.updateVariableNameAndReference(slicedShape, outputNames[0])
-                } else {
-                    val shapeRank = inputVariable.shape?.size ?: 1
-                    val sliceBegin = intArrayOf(start.toInt())
-                    val sliceSize = intArrayOf(shapeRank - start.toInt())
-                    val slicedShape = sd.slice(fullShape, sliceBegin, *sliceSize)
-                    sd.updateVariableNameAndReference(slicedShape, outputNames[0])
-                }
+            if (end != null) {
+                val sliceBegin = intArrayOf(start.toInt())
+                val sliceSize = intArrayOf((end - start).toInt())
+                sd.slice(fullShape, sliceBegin, *sliceSize)
             } else {
-                // Default case: get the full shape of the input tensor
-                val shapeOp = inputVariable.shape()
-                sd.updateVariableNameAndReference(shapeOp, outputNames[0])
+                val shapeRank = inputVariable.shape?.size ?: 1
+                val sliceBegin = intArrayOf(start.toInt())
+                val sliceSize = intArrayOf(shapeRank - start.toInt())
+                sd.slice(fullShape, sliceBegin, *sliceSize)
+
             }
-
-            return mapOf(outputNames[0] to listOf(shapeVariable))
-
-        } finally {
-            // Restore eager mode
-            sd.isEagerMode = wasEagerMode
+        } else {
+            // Default case: get the full shape of the input tensor
+             inputVariable.shape()
         }
+
+        val ret = shapeVariable.rename(outputNames[0])
+        return mapOf(outputNames[0] to listOf(ret))
+
+
     }
 }

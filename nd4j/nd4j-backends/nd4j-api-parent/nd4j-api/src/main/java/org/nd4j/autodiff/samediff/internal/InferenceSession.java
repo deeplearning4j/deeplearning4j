@@ -31,6 +31,9 @@ import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.config.ExecutionResult;
 import org.nd4j.autodiff.samediff.config.SDValue;
 import org.nd4j.autodiff.samediff.config.SDValueType;
+import org.nd4j.autodiff.samediff.execution.ExecutionNode;
+import org.nd4j.autodiff.samediff.execution.ForwardExecutionDAG;
+import org.nd4j.autodiff.samediff.execution.ForwardExecutionDAGBuilder;
 import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
 import org.nd4j.autodiff.samediff.internal.memory.HashDependencyTracker;
 import org.nd4j.common.base.Preconditions;
@@ -54,7 +57,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.Assert;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Assign;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Identity;
-import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -95,6 +97,587 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         super(sameDiff);
         mmgr = new ArrayCacheMemoryMgr();
     }
+
+
+    public ExecutionResult output(@NonNull List<String> variables,
+                                  Map<String, INDArray> placeholderValues,
+                                  Map<String, SDValue> otherPlaceHolderValues,
+                                  MultiDataSet batch,
+                                  Collection<String> requiredActivations,
+                                  List<Listener> listeners, At at) {
+
+        log.info("Executing forward pass for {} variables", variables.size());
+
+        // Prepare all required outputs
+        Set<String> allRequired = new LinkedHashSet<>(variables);
+        if (requiredActivations != null) {
+            allRequired.addAll(requiredActivations);
+        }
+
+        // Build corrected DAG (replaces broken initSubgraph)
+        ForwardExecutionDAGBuilder builder = new ForwardExecutionDAGBuilder(sameDiff);
+        ForwardExecutionDAG dag = builder.buildForwardDAG(allRequired);
+
+        // Preprocess placeholders using existing logic
+        Map<String, INDArray> processedPlaceholders = preprocessPlaceholders(placeholderValues, at);
+        Map<String, SDValue> processedOtherPlaceholders = preprocessValuePlaceholders(otherPlaceHolderValues, at);
+        // Execute with corrected ordering
+        Map<String, SDValue> results = executeOperations(dag, processedPlaceholders,
+                processedOtherPlaceholders, allRequired, listeners, at, batch);
+
+        // Post-process results using existing logic
+        Map<String, SDValue> finalResults = postProcessOutputValues(results);
+
+        // Return only requested variables
+        Map<String, SDValue> filteredResults = new HashMap<>();
+        for (String var : variables) {
+            if (finalResults.containsKey(var)) {
+                filteredResults.put(var, finalResults.get(var));
+            }
+        }
+
+        log.info("Forward pass completed: {} results", filteredResults.size());
+        return ExecutionResult.builder().valueOutputs(filteredResults).build();
+    }
+
+
+    private Map<String, SDValue> executeOperations(ForwardExecutionDAG dag,
+                                                   Map<String, INDArray> placeholderValues,
+                                                   Map<String, SDValue> otherPlaceholderValues,
+                                                   Set<String> allRequired,
+                                                   List<Listener> listeners,
+                                                   At at,
+                                                   MultiDataSet batch) {
+
+        Map<String, SDValue> variableValues = new HashMap<>();
+        Map<String, SDValue> results = new HashMap<>();
+        Set<String> completedOps = new HashSet<>();
+
+        // Initialize constants, variables, and placeholders
+        initializeValues(variableValues, dag, placeholderValues, otherPlaceholderValues);
+
+        // Execute operations in corrected topological order
+        List<ExecutionNode> executionOrder = dag.getFrameAwareExecutionOrder();
+
+        for (ExecutionNode node : executionOrder) {
+            if (node.getNodeType() == ExecutionNode.ExecutionNodeType.VARIABLE_INIT ||
+                    node.getNodeType() == ExecutionNode.ExecutionNodeType.PLACEHOLDER_SET) {
+                // Skip - already handled in initialization
+                continue;
+            }
+
+            // Check dependencies are satisfied
+            if (!node.isReadyToExecute(completedOps)) {
+                Set<String> missing = new HashSet<>(node.getDependsOnOperations());
+                missing.removeAll(completedOps);
+                throw new IllegalStateException("Operation " + node.getOperationName() +
+                        " not ready. Missing dependencies: " + missing);
+            }
+
+            // Execute the operation
+            executeNode(node, variableValues, allRequired, listeners, at, batch);
+
+            // Mark as completed
+            completedOps.add(node.getOperationName());
+
+            // Store results for requested outputs
+            // After each operation execution, sync to nodeValueOutputs
+            for (String outputVar : node.getOutputVariables()) {
+                if (variableValues.containsKey(outputVar)) {
+                    VarId vid = new VarId(outputVar, currentFrame, currentFrameIter, currParentFrame);
+                    putNodeValue(variableValues.get(outputVar), vid);
+                }
+            }
+        }
+
+        return results;
+    }
+
+
+    private void initializeValues(Map<String, SDValue> variableValues,
+                                  ForwardExecutionDAG dag,
+                                  Map<String, INDArray> placeholderValues,
+                                  Map<String, SDValue> otherPlaceholderValues) {
+
+        // Initialize constants
+        for (String constName : dag.getConstants()) {
+            INDArray constValue = getConstantOrVariable(constName);
+            if (constValue != null) {
+                variableValues.put(constName, SDValue.create(constValue));
+            }
+        }
+
+        // Initialize variables
+        for (String varName : dag.getVariables()) {
+            INDArray varValue = getConstantOrVariable(varName);
+            if (varValue != null) {
+                variableValues.put(varName, SDValue.create(varValue));
+            }
+        }
+
+        // Initialize placeholders
+        if (placeholderValues != null) {
+            for (Map.Entry<String, INDArray> entry : placeholderValues.entrySet()) {
+                variableValues.put(entry.getKey(), SDValue.create(entry.getValue()));
+            }
+        }
+
+        if (otherPlaceholderValues != null) {
+            variableValues.putAll(otherPlaceholderValues);
+        }
+    }
+
+// =============================================================================
+// OVERRIDE 4: Execute single node (add this to InferenceSession)
+// =============================================================================
+
+    private void executeNode(ExecutionNode node,
+                             Map<String, SDValue> variableValues,
+                             Set<String> allRequired,
+                             List<Listener> listeners,
+                             At at,
+                             MultiDataSet batch) {
+
+        String opName = node.getOperationName();
+        log.trace("Executing operation: {}", opName);
+
+        try {
+            // Get the operation
+            SameDiffOp sameDiffOp = sameDiff.getOps().get(opName);
+            if (sameDiffOp == null) {
+                throw new IllegalStateException("Operation not found: " + opName);
+            }
+
+            DifferentialFunction op = sameDiffOp.getOp();
+
+            // Handle special control flow operations directly
+            if (op instanceof Identity) {
+                executeIdentityNode(node, variableValues);
+                return;
+            }
+
+            if (op instanceof Switch) {
+                executeSwitchNode(node, variableValues, op);
+                return;
+            }
+
+            if (op instanceof Enter) {
+                executeEnterNode(node, variableValues, op);
+                return;
+            }
+
+            if (op instanceof Exit) {
+                executeExitNode(node, variableValues, op);
+                return;
+            }
+
+            if (op instanceof NextIteration) {
+                executeNextIterationNode(node, variableValues, op);
+                return;
+            }
+
+            if (op instanceof Merge) {
+                executeMergeNode(node, variableValues, op);
+                return;
+            }
+
+            if (op instanceof LoopCond) {
+                executeLoopCondNode(node, variableValues, op);
+                return;
+            }
+
+            if (op instanceof BaseTensorOp) {
+                executeTensorArrayNode(node, variableValues, op);
+                return;
+            }
+
+            // For regular operations, use the existing doExec infrastructure
+            executeRegularOperation(node, variableValues, allRequired, listeners, at, batch);
+
+
+        } catch (Exception e) {
+            log.error("Failed to execute operation: {}", opName, e);
+            throw new RuntimeException("Operation execution failed: " + opName, e);
+        }
+    }
+
+    private void executeIdentityNode(ExecutionNode node, Map<String, SDValue> variableValues) {
+        String opName = node.getOperationName();
+        List<String> inputs = node.getInputVariables();
+        List<String> outputs = node.getOutputVariables();
+
+        if (inputs.isEmpty() || outputs.isEmpty()) {
+            throw new IllegalStateException("Identity operation " + opName + " has no inputs or outputs");
+        }
+
+        String inputVar = inputs.get(0);
+        String outputVar = outputs.get(0);
+
+        SDValue inputValue = variableValues.get(inputVar);
+        if (inputValue == null) {
+            throw new IllegalStateException("Input variable " + inputVar + " not found for Identity operation " + opName);
+        }
+
+        variableValues.put(outputVar, inputValue);
+    }
+
+    private void executeSwitchNode(ExecutionNode node, Map<String, SDValue> variableValues, DifferentialFunction op) {
+        Switch switchOp = (Switch) op;
+        List<String> inputs = node.getInputVariables();
+        List<String> outputs = node.getOutputVariables();
+
+        if (inputs.size() < 2) {
+            throw new IllegalStateException("Switch operation requires at least 2 inputs");
+        }
+
+        String dataInput = inputs.get(0);
+        String predicateInput = inputs.get(1);
+
+        SDValue dataValue = variableValues.get(dataInput);
+        SDValue predicateValue = variableValues.get(predicateInput);
+
+        if (dataValue == null || predicateValue == null) {
+            throw new IllegalStateException("Switch inputs not available: data=" + (dataValue != null) +
+                    ", predicate=" + (predicateValue != null));
+        }
+
+        INDArray predicate = predicateValue.getTensorValue();
+        boolean condition = predicate.getDouble(0) != 0.0;
+
+        // Switch outputs: [false_output, true_output]
+        if (outputs.size() >= 2) {
+            if (condition) {
+                variableValues.put(outputs.get(1), dataValue); // true branch
+                variableValues.put(outputs.get(0), null);       // false branch (null)
+            } else {
+                variableValues.put(outputs.get(0), dataValue);  // false branch
+                variableValues.put(outputs.get(1), null);       // true branch (null)
+            }
+        }
+    }
+
+    private void executeEnterNode(ExecutionNode node, Map<String, SDValue> variableValues, DifferentialFunction op) {
+        Enter enterOp = (Enter) op;
+        List<String> inputs = node.getInputVariables();
+        List<String> outputs = node.getOutputVariables();
+
+        if (inputs.isEmpty() || outputs.isEmpty()) {
+            throw new IllegalStateException("Enter operation requires inputs and outputs");
+        }
+
+        String inputVar = inputs.get(0);
+        String outputVar = outputs.get(0);
+
+        SDValue inputValue = variableValues.get(inputVar);
+        if (inputValue == null) {
+            throw new IllegalStateException("Input variable " + inputVar + " not found for Enter operation");
+        }
+
+        // Enter just forwards the input to the output (entering a new frame)
+        variableValues.put(outputVar, inputValue);
+    }
+
+    private void executeExitNode(ExecutionNode node, Map<String, SDValue> variableValues, DifferentialFunction op) {
+        List<String> inputs = node.getInputVariables();
+        List<String> outputs = node.getOutputVariables();
+
+        if (inputs.isEmpty() || outputs.isEmpty()) {
+            throw new IllegalStateException("Exit operation requires inputs and outputs");
+        }
+
+        String inputVar = inputs.get(0);
+        String outputVar = outputs.get(0);
+
+        SDValue inputValue = variableValues.get(inputVar);
+        if (inputValue == null) {
+            throw new IllegalStateException("Input variable " + inputVar + " not found for Exit operation");
+        }
+
+        // Exit forwards the input to the parent frame
+        variableValues.put(outputVar, inputValue);
+    }
+
+    private void executeNextIterationNode(ExecutionNode node, Map<String, SDValue> variableValues, DifferentialFunction op) {
+        List<String> inputs = node.getInputVariables();
+        List<String> outputs = node.getOutputVariables();
+
+        if (inputs.isEmpty() || outputs.isEmpty()) {
+            throw new IllegalStateException("NextIteration operation requires inputs and outputs");
+        }
+
+        String inputVar = inputs.get(0);
+        String outputVar = outputs.get(0);
+
+        SDValue inputValue = variableValues.get(inputVar);
+        if (inputValue == null) {
+            throw new IllegalStateException("Input variable " + inputVar + " not found for NextIteration operation");
+        }
+
+        // NextIteration forwards input to next iteration
+        variableValues.put(outputVar, inputValue);
+    }
+
+    private void executeMergeNode(ExecutionNode node, Map<String, SDValue> variableValues, DifferentialFunction op) {
+        List<String> inputs = node.getInputVariables();
+        List<String> outputs = node.getOutputVariables();
+
+        if (inputs.size() < 2 || outputs.isEmpty()) {
+            throw new IllegalStateException("Merge operation requires at least 2 inputs and 1 output");
+        }
+
+        String outputVar = outputs.get(0);
+
+        // Find the first available input (standard Merge behavior)
+        for (String inputVar : inputs) {
+            SDValue inputValue = variableValues.get(inputVar);
+            if (inputValue != null) {
+                variableValues.put(outputVar, inputValue);
+                return;
+            }
+        }
+
+        throw new IllegalStateException("No inputs available for Merge operation " + node.getOperationName());
+    }
+
+    private void executeLoopCondNode(ExecutionNode node, Map<String, SDValue> variableValues, DifferentialFunction op) {
+        List<String> inputs = node.getInputVariables();
+        List<String> outputs = node.getOutputVariables();
+
+        if (inputs.isEmpty() || outputs.isEmpty()) {
+            throw new IllegalStateException("LoopCond operation requires inputs and outputs");
+        }
+
+        String inputVar = inputs.get(0);
+        String outputVar = outputs.get(0);
+
+        SDValue inputValue = variableValues.get(inputVar);
+        if (inputValue == null) {
+            throw new IllegalStateException("Input variable " + inputVar + " not found for LoopCond operation");
+        }
+
+        // LoopCond forwards boolean condition
+        variableValues.put(outputVar, inputValue);
+    }
+
+    private void executeTensorArrayNode(ExecutionNode node, Map<String, SDValue> variableValues, DifferentialFunction op) {
+        // Convert to VarId-based approach for tensor array operations
+        // This maintains compatibility with existing tensor array handling
+
+        FrameIter frameIter = new FrameIter(OUTER_FRAME, 0, null);
+        Set<VarId> opInputs = new HashSet<>();
+        Set<VarId> allIterInputs = new HashSet<>();
+
+        // Convert string-based inputs to VarIds for tensor array compatibility
+        for (String inputVar : node.getInputVariables()) {
+            VarId vid = new VarId(inputVar, OUTER_FRAME, 0, null);
+            // Store the variable value in nodeValueOutputs for tensor array ops
+            SDValue value = variableValues.get(inputVar);
+            if (value != null) {
+                putNodeValue(value, vid);
+            }
+            opInputs.add(vid);
+        }
+
+        try {
+            ExecutionResult result = getOutputsHelperTensorArrayOps(op, frameIter, opInputs, allIterInputs, variableValues);
+
+            // Store results back in variableValues
+            if (result.hasValues()) {
+                Map<String, SDValue> outputs = result.getValueOutputs();
+                for (Map.Entry<String, SDValue> entry : outputs.entrySet()) {
+                    variableValues.put(entry.getKey(), entry.getValue());
+                }
+            } else if (result.hasSingle()) {
+                List<String> outputNames = node.getOutputVariables();
+                for (int i = 0; i < outputNames.size() && i < result.numResults(); i++) {
+                    INDArray resultArray = result.resultAt(i);
+                    if (resultArray != null) {
+                        variableValues.put(outputNames.get(i), SDValue.create(resultArray));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to execute tensor array operation " + node.getOperationName(), e);
+        }
+    }
+
+    private void executeRegularOperation(ExecutionNode node, Map<String, SDValue> variableValues,
+                                         Set<String> allRequired, List<Listener> listeners,
+                                         At at, MultiDataSet batch) {
+        String opName = node.getOperationName();
+        SameDiffOp sameDiffOp = sameDiff.getOps().get(opName);
+        DifferentialFunction op = sameDiffOp.getOp();
+
+        // Create OpContext for the operation
+        OpContext opContext = opContexts.get(opName);
+        if (opContext == null) {
+            opContext = Nd4j.getExecutioner().buildContext();
+            opContexts.put(opName, opContext);
+        }
+
+        // Prepare inputs
+        String[] argNames = op.argNames();
+        if (argNames != null && argNames.length > 0) {
+            INDArray[] inputArrays = new INDArray[argNames.length];
+
+            for (int i = 0; i < argNames.length; i++) {
+                String argName = argNames[i];
+                SDValue argValue = variableValues.get(argName);
+
+                if (argValue == null) {
+                    // Try to get from constants/variables
+                    SDVariable variable = sameDiff.getVariable(argName);
+                    if (variable != null) {
+                        if (variable.isConstant() || variable.getVariableType() == VariableType.VARIABLE) {
+                            INDArray arr = getConstantOrVariable(argName);
+                            inputArrays[i] = arr;
+                            continue;
+                        }
+                    }
+                    throw new IllegalStateException("Input " + argName + " not found for operation " + opName);
+                }
+
+                switch (argValue.getSdValueType()) {
+                    case TENSOR:
+                        inputArrays[i] = argValue.getTensorValue();
+                        break;
+                    case LIST:
+                        // For list values, try to use the first non-null element
+                        List<INDArray> list = argValue.getListValue();
+                        if (!list.isEmpty()) {
+                            for (INDArray arr : list) {
+                                if (arr != null) {
+                                    inputArrays[i] = arr;
+                                    break;
+                                }
+                            }
+                        }
+                        if (inputArrays[i] == null) {
+                            throw new IllegalStateException("No valid array found in list for input " + argName);
+                        }
+                        break;
+                    default:
+                        throw new IllegalStateException("Unsupported SDValue type: " + argValue.getSdValueType());
+                }
+            }
+
+            opContext.setInputArrays(inputArrays);
+        }
+
+        // Handle different operation types
+        if (op instanceof CustomOp) {
+            executeCustomOp((CustomOp) op, opContext, node, variableValues, allRequired);
+        } else if (op instanceof Op) {
+            executeStandardOp((Op) op, opContext, node, variableValues, allRequired);
+        } else {
+            throw new UnsupportedOperationException("Unsupported operation type: " + op.getClass().getName());
+        }
+    }
+
+    private void executeCustomOp(CustomOp customOp, OpContext opContext, ExecutionNode node,
+                                 Map<String, SDValue> variableValues, Set<String> allRequired) {
+
+        DynamicCustomOp dynOp = (DynamicCustomOp) customOp;
+
+        // Set op arguments
+        opContext.setInputArrays(customOp.inputArguments());
+        opContext.setIArguments(dynOp.iArgs());
+        opContext.setTArguments(dynOp.tArgs());
+        opContext.setDArguments(dynOp.dArgs());
+        opContext.setBArguments(dynOp.bArgs());
+        // Calculate output shapes
+        List<DataBuffer> outShape = dynOp.calculateOutputShape(opContext);
+        if (outShape == null || outShape.isEmpty()) {
+            throw new IllegalStateException("No output shapes calculated for op: " + customOp.opName());
+        }
+
+        // Allocate output arrays
+        List<String> outputNames = node.getOutputVariables();
+        INDArray[] outputArrays = new INDArray[outShape.size()];
+
+        for (int i = 0; i < outShape.size(); i++) {
+            DataBuffer shapeBuffer = outShape.get(i);
+            long[] shape = shapeBuffer.asLong();
+
+            // Get output datatype from variable definition
+            DataType dt = DataType.FLOAT; // default
+            if (i < outputNames.size()) {
+                SDVariable outVar = sameDiff.getVariable(outputNames.get(i));
+                if (outVar != null) {
+                    dt = outVar.dataType();
+                }
+            }
+
+            boolean isOutput = allRequired.contains(outputNames.get(i));
+            outputArrays[i] = mmgr.allocate(isOutput, dt, Shape.shape(shape));
+        }
+
+        opContext.setOutputArrays(outputArrays);
+
+        // Execute the operation
+        Nd4j.exec(dynOp, opContext);
+
+        // Store results
+        for (int i = 0; i < outputArrays.length && i < outputNames.size(); i++) {
+            variableValues.put(outputNames.get(i), SDValue.create(outputArrays[i]));
+        }
+    }
+
+    private void executeStandardOp(Op op, OpContext opContext, ExecutionNode node,
+                                   Map<String, SDValue> variableValues, Set<String> allRequired) {
+
+        // Handle reduction operations with axis
+        if (op instanceof ReduceOp && ((ReduceOp) op).getOpType() != Op.Type.REDUCE3) {
+            handleReduceOpAxis(op, opContext);
+        }
+
+        // Handle scalar operations
+        if (op instanceof ScalarOp && opContext.getInputArrays().size() >= 2) {
+            INDArray scalar = opContext.getInputArray(1);
+            if (scalar.isScalar()) {
+                ((ScalarOp) op).setScalar(scalar);
+            }
+        }
+
+        // Calculate output shape
+        List<DataBuffer> outputShape = ((BaseOp) op).calculateOutputShape(opContext);
+        if (outputShape == null || outputShape.isEmpty()) {
+            throw new IllegalStateException("No output shape calculated for op: " + op.opName());
+        }
+
+        // Allocate output array
+        DataBuffer shapeBuffer = outputShape.get(0);
+        List<String> outputNames = node.getOutputVariables();
+        boolean isOutput = !outputNames.isEmpty() && allRequired.contains(outputNames.get(0));
+        INDArray outputArray = mmgr.allocateFromDescriptor(isOutput, shapeBuffer);
+
+        opContext.setOutputArray(0, outputArray);
+
+        // Execute the operation
+        Nd4j.exec(op, opContext);
+
+        // Store result
+        if (!outputNames.isEmpty()) {
+            variableValues.put(outputNames.get(0), SDValue.create(outputArray));
+        }
+    }
+
+    private void handleReduceOpAxis(Op op, OpContext opContext) {
+        if (opContext.getInputArrays().size() >= 2) {
+            INDArray axisArray = opContext.getInputArray(1);
+            if (!axisArray.isEmpty()) {
+                long[] axis = axisArray.toLongVector();
+                int rank = opContext.getInputArray(0).rank();
+                axis = Shape.normalizeAxis(rank, axis);
+                ((DifferentialFunction) op).setDimensions(axis);
+                ((BaseReduceOp) op).setEmptyReduce(false);
+            } else {
+                ((DifferentialFunction) op).setDimensions(null);
+                ((BaseReduceOp) op).setEmptyReduce(true);
+            }
+        }
+    }
+
 
     @Override
     protected Map<String, INDArray> preprocessPlaceholders(Map<String, INDArray> placeholders, At at) {
@@ -169,14 +752,21 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 arrayUseTracker.addDependency(arrValue, new ExecDoneDep());
             } else if (arr.dataType() == dt) {
                 //Mark as a placeholder array in the array use tracker, so we never deallocate this array...
-                arrayUseTracker.addDependency(arrValue, new PlaceholderDep(e.getKey()));
+                arrayUseTracker.addDependency(arrValue,
+                        PlaceholderDep.builder()
+                        .phName(e.getKey())
+                        .frame(currentFrame).parentFrame(currParentFrame)
+                        .build());
             } else {
                 INDArray cast = mmgr.allocate(false, dt, arr.shape());
                 cast.assign(arr);
                 arr = cast;
                 //This array CAN be deallocated once consumed, because of the cast
                 //TODO we can likely close this sooner
-                arrayUseTracker.addDependency(arrValue, new ExecDoneDep());
+                arrayUseTracker.addDependency(arrValue, ExecDoneDep.builder()
+                        .frame(currentFrame)
+                        .parentFrame(currParentFrame)
+                        .build());
             }
             out.put(e.getKey(), arr);
         }
@@ -225,10 +815,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         return output;
     }
 
-    @Override
-    protected Map<String, INDArray> postProcessOutput(Map<String, INDArray> output) {
-        return output;
-    }
+
 
     @Override
     public ExecutionResult getOutputs(Pair<SameDiffOp, OpContext> opPair,
@@ -473,356 +1060,982 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
         boolean constPhInput = (opInputs == null || opInputs.size() == 0) && (allIterInputs == null || allIterInputs.size() == 0);
 
-        if (op instanceof Identity) {
-            Identity i = (Identity) op;
-            String[] argNames = i.argNames();
-            Preconditions.checkState(argNames.length == 1, "Expected only 1 arg name in identity op, got %s", (Object) argNames);
-            VarId vid = outputFrameIter.toVarId(argNames[0]);
-            SDValue orig = getSdValue(vid);
-            return ExecutionResult.createValue(vid.getVariable(),orig);
-        } else if (op instanceof Switch) {
-            Switch s = (Switch) op;
-            String[] argNames = s.argNames();       //Order: input, boolean array
-            VarId vidPredicate = outputFrameIter.toVarId(argNames[1]);
-            SDValue sdValuePred = getSdValue(vidPredicate);
-            INDArray predicate = sdValuePred.getSdValueType() == SDValueType.LIST ? sdValuePred.getListValue().get(0) :
-                    sdValuePred.getTensorValue();
-            if(predicate != null && predicate.isEmpty()) {
-                predicate = Nd4j.scalar(false);
-            }
-            if(predicate == null && !constAndPhInputs.isEmpty() && constAndPhInputs.contains(argNames[1])) {
-                //Constant predicate...
-                predicate = getTensorFromOutputs(new VarId(argNames[1], OUTER_FRAME, 0, null));
-            }
-            Preconditions.checkNotNull(predicate, "Error during graph execution: Predicate array was null. VarId=%s", vidPredicate);
-            Preconditions.checkState(predicate.isScalar() && predicate.dataType() == DataType.BOOL, "Expected boolean predicate: got %ndSInfo", predicate);
-            VarId vid = outputFrameIter.toVarId(argNames[0]);
-            SDValue sdValue = getSdValue(vid);
-            Map<String,SDValue> values = new LinkedHashMap<>();
-            ExecutionResult.ExecutionResultBuilder executionResultBuilder = ExecutionResult.builder()
-                    .valueOutputs(values);
+        // Initialize visualization if enabled - mimic output() method
+        if (visualizationEnabled && visualizer != null) {
+            // Prepare visualization data
+            List<String> stepInputs = getStepInputsForVisualization(opInputs, constAndPhInputs, allIterInputs);
+            List<String> stepOutputs = getStepOutputsForVisualization(op);
+            String executionStatus = "INITIALIZING";
+            String detailedStatus = String.format("Operation: %s, Type: %s, Inputs: %d",
+                    op.getOwnName(), op.getClass().getSimpleName(), totalInputs);
 
-            if (predicate.getDouble(0) == 0.0) {
-                //tensorflow import case
-                if(vid.getVariable().equals(vidPredicate.getVariable())) {
-                    SDValue sdValue1 = SDValue.create(Arrays.asList(sdValue.getTensorValue(), null));
-                    values.put(vidPredicate.getVariable(),sdValue1);
-                    putNodeValue(sdValue1,vid);
-                    VarId varId1 = new VarId(vid.getVariable() + ":1", vid.getFrame(), vid.getIteration(),vid.getParentFrame());
-                    putNodeValue(sdValue1,varId1);
+            visualizer.recordStep(
+                    ExecType.OP,
+                    op.getOwnName(),
+                    outputFrameIter,
+                    stepInputs,
+                    stepOutputs,
+                    executionStatus + " | " + detailedStatus
+            );
+        }
 
-                } else {
-                    values.put(vid.getVariable(),sdValue);
-                    values.put(vidPredicate.getVariable(),null);
+        // Execution status tracking for visualization
+        String executionStatus = "SUCCESS";
+        String detailedStatus = "";
+        List<String> outputNames = new ArrayList<>();
+
+        try {
+            if (op instanceof Identity) {
+                Identity i = (Identity) op;
+                String[] argNames = i.argNames();
+                Preconditions.checkState(argNames.length == 1, "Expected only 1 arg name in identity op, got %s", (Object) argNames);
+                VarId vid = outputFrameIter.toVarId(argNames[0]);
+                SDValue orig = getSdValue(vid);
+
+                executionStatus = "SUCCESS";
+                detailedStatus = "Identity passthrough";
+                outputNames.add(vid.getVariable());
+
+                ExecutionResult result = ExecutionResult.createValue(vid.getVariable(), orig);
+
+                // Record successful execution
+                if (visualizationEnabled && visualizer != null) {
+                    visualizer.recordStep(
+                            ExecType.OP,
+                            op.getOwnName(),
+                            outputFrameIter,
+                            Arrays.asList(argNames[0]),
+                            outputNames,
+                            executionStatus + " | " + detailedStatus
+                    );
                 }
 
+                return result;
 
-            } else {
-                //tensorflow import case
-                if(vid.getVariable().equals(vidPredicate.getVariable())) {
-                    SDValue sdValue1 = SDValue.create(Arrays.asList(null,sdValue.getTensorValue()));
-                    values.put(vidPredicate.getVariable(),sdValue1);
-                    values.put(vidPredicate.getVariable() + ":1",sdValue1);
+            } else if (op instanceof Switch) {
+                Switch s = (Switch) op;
+                String[] argNames = s.argNames();       //Order: input, boolean array
+                VarId vidPredicate = outputFrameIter.toVarId(argNames[1]);
+                SDValue sdValuePred = getSdValue(vidPredicate);
+                INDArray predicate = sdValuePred.getSdValueType() == SDValueType.LIST ? sdValuePred.getListValue().get(0) :
+                        sdValuePred.getTensorValue();
+                if(predicate != null && predicate.isEmpty()) {
+                    predicate = Nd4j.scalar(false);
+                }
+                if(predicate == null && !constAndPhInputs.isEmpty() && constAndPhInputs.contains(argNames[1])) {
+                    //Constant predicate...
+                    predicate = getTensorFromOutputs(new VarId(argNames[1], OUTER_FRAME, 0, null));
+                }
+                Preconditions.checkNotNull(predicate, "Error during graph execution: Predicate array was null. VarId=%s", vidPredicate);
+                Preconditions.checkState(predicate.isScalar() && predicate.dataType() == DataType.BOOL, "Expected boolean predicate: got %ndSInfo", predicate);
+                VarId vid = outputFrameIter.toVarId(argNames[0]);
+                SDValue sdValue = getSdValue(vid);
+                Map<String,SDValue> values = new LinkedHashMap<>();
+                ExecutionResult.ExecutionResultBuilder executionResultBuilder = ExecutionResult.builder()
+                        .valueOutputs(values);
+
+                boolean predicateValue = predicate.getDouble(0) != 0.0;
+                String branchTaken = predicateValue ? "RIGHT" : "LEFT";
+                executionStatus = "SWITCH_" + branchTaken;
+                detailedStatus = String.format("SWITCH decision: %s branch taken (frame: %s, iter: %d) | Exec count: 1, Switches: 1",
+                        branchTaken, outputFrameIter.getFrame(), outputFrameIter.getIteration());
+
+                if (predicate.getDouble(0) == 0.0) {
+                    //tensorflow import case
+                    if(vid.getVariable().equals(vidPredicate.getVariable())) {
+                        SDValue sdValue1 = SDValue.create(Arrays.asList(sdValue.getTensorValue(), null));
+                        values.put(vidPredicate.getVariable(),sdValue1);
+                        putNodeValue(sdValue1,vid);
+                        VarId varId1 = new VarId(vid.getVariable() + ":1", vid.getFrame(), vid.getIteration(),vid.getParentFrame());
+                        putNodeValue(sdValue1,varId1);
+                        outputNames.add(vid.getVariable());
+                    } else {
+                        values.put(vid.getVariable(),sdValue);
+                        values.put(vidPredicate.getVariable(),null);
+                        outputNames.add(vid.getVariable());
+                    }
                 } else {
-                    values.put(vid.getVariable(),null);
-                    values.put(vidPredicate.getVariable(),sdValue);
+                    //tensorflow import case
+                    if(vid.getVariable().equals(vidPredicate.getVariable())) {
+                        SDValue sdValue1 = SDValue.create(Arrays.asList(null,sdValue.getTensorValue()));
+                        values.put(vidPredicate.getVariable(),sdValue1);
+                        values.put(vidPredicate.getVariable() + ":1",sdValue1);
+                        outputNames.add(vidPredicate.getVariable());
+                    } else {
+                        values.put(vid.getVariable(),null);
+                        values.put(vidPredicate.getVariable(),sdValue);
+                        outputNames.add(vidPredicate.getVariable());
+                    }
                 }
 
+                ExecutionResult result = executionResultBuilder.build();
 
-            }
+                // Record switch execution with enhanced details
+                if (visualizationEnabled && visualizer != null) {
+                    visualizer.recordStep(
+                            ExecType.OP,
+                            op.getOwnName(),
+                            outputFrameIter,
+                            Arrays.asList(argNames),
+                            outputNames,
+                            executionStatus + " | " + detailedStatus
+                    );
+                }
 
-            return executionResultBuilder.build();
+                return result;
 
+            } else if (op instanceof Enter) {
+                Enter e = (Enter) op;
+                String[] input = e.argNames();
+                Preconditions.checkState(input.length == 1, "Expected only 1 arg name for enter op: got %s", (Object) input);
+                Preconditions.checkState(totalInputs == 1, "Expected exactly 1 op input for Enter op \"%s\", got %s+%s", e.getOwnName(), opInputs, constAndPhInputs);
 
-        } else if (op instanceof Enter) {
-            //Enter op: forwards input to specified execution frame
-            Enter e = (Enter) op;
-            String[] input = e.argNames();
-            Preconditions.checkState(input.length == 1, "Expected only 1 arg name for enter op: got %s", (Object) input);
-            Preconditions.checkState(totalInputs == 1, "Expected exactly 1 op input for Enter op \"%s\", got %s+%s", e.getOwnName(), opInputs, constAndPhInputs);
+                VarId inputVarId;
+                if (constPhInput) {
+                    inputVarId = new VarId(constAndPhInputs.iterator().next(), OUTER_FRAME, 0, null);
+                } else if (allIterInputs != null && allIterInputs.size() > 0) {
+                    inputVarId = allIterInputs.iterator().next();
+                } else {
+                    inputVarId = opInputs.iterator().next();
+                }
 
-            VarId inputVarId;
-            if (constPhInput) {
-                //Constant or placeholder
-                inputVarId = new VarId(constAndPhInputs.iterator().next(), OUTER_FRAME, 0, null);
-            } else if (allIterInputs != null && allIterInputs.size() > 0) {
-                inputVarId = allIterInputs.iterator().next();
-            } else {
-                inputVarId = opInputs.iterator().next();
-            }
+                inputVarId.setVariable(VariableUtils.stripVarSuffix(inputVarId.getVariable()));
 
-            //note: we strip suffixes on purpose here. DO NOT REMOVE
-            inputVarId.setVariable(VariableUtils.stripVarSuffix(inputVarId.getVariable()));
+                // Create explicit dependency aliases for cross-frame access
+                SameDiffOp enterOp = sameDiff.getOps().get(e.getOwnName());
+                List<String> enterOutputs = enterOp.getOutputsOfOp();
+                String outFrame = e.getFrameName();
+                FrameIter enterOutFrameIter = new FrameIter(outFrame, 0, outputFrameIter);
 
-            if(nodeValueOutputs.containsKey(inputVarId)) {
-                SDValue value = getSdValue(inputVarId);
-                if(value != null && value.getSdValueType() == SDValueType.LIST) {
-                    return ExecutionResult.createValue(inputVarId.getVariable(),
-                            value);
-                } else if(value != null &&  value.getSdValueType() == SDValueType.TENSOR) {
-                    INDArray inArr = getTensorFromOutputs(inputVarId);
-                    if (inArr == null) {
-                        Preconditions.throwStateEx("Could not find array for NextIteration operation %s with output %s (frame=%s, iteration=%s)",
-                                op.getOwnName(), sameDiff.getOps().get(op.getOwnName()).getOutputsOfOp().get(0), outputFrameIter.getFrame(), outputFrameIter.getIteration());
+                if (enterOutputs != null) {
+                    for (String outputVar : enterOutputs) {
+                        String inputVar = enterOp.getInputsToOp().get(0);
+
+                        ExecStep expectedStep = new ExecStep(ExecType.OP, outputVar, enterOutFrameIter);
+                        ExecStep actualStep = new ExecStep(ExecType.OP, e.getOwnName(), enterOutFrameIter);
+                        dt.createDependeeAlias(expectedStep, actualStep);
+
+                        log.debug("Created Enter dependency alias: {} -> {} (frame: {} -> {})",
+                                outputVar, inputVar, outputFrameIter.getFrame(), outFrame);
                     }
 
-                    return ExecutionResult.createFrom(Arrays.asList(inputVarId.getVariable()),new INDArray[]{inArr});
+                    // Handle frame transition to ensure cross-frame dependencies are properly established
+                    handleFrameTransition(e.getOwnName(), outputFrameIter, enterOutFrameIter, enterOutputs);
+
+                    // Validate that dependent Merge operations will be able to find the Enter outputs
+                    validateMergeDependencies(enterOutFrameIter, enterOutputs);
+                }
+
+                ExecutionResult result;
+                if(nodeValueOutputs.containsKey(inputVarId)) {
+                    SDValue value = getSdValue(inputVarId);
+                    if(value != null && value.getSdValueType() == SDValueType.LIST) {
+                        result = ExecutionResult.createValue(inputVarId.getVariable(), value);
+                    } else if(value != null &&  value.getSdValueType() == SDValueType.TENSOR) {
+                        INDArray inArr = getTensorFromOutputs(inputVarId);
+                        if (inArr == null) {
+                            Preconditions.throwStateEx("Could not find array for Enter operation %s with output %s (frame=%s, iteration=%s)",
+                                    op.getOwnName(), sameDiff.getOps().get(op.getOwnName()).getOutputsOfOp().get(0), enterOutFrameIter.getFrame(), enterOutFrameIter.getIteration());
+                        }
+                        result = ExecutionResult.createFrom(Arrays.asList(inputVarId.getVariable()),new INDArray[]{inArr});
+                    } else {
+                        throw new IllegalStateException("Illegal value type " + value.getSdValueType() + " for input " + inputVarId);
+                    }
                 } else {
-                    throw new IllegalStateException("Illegal value type " + value.getSdValueType() + " for input " + inputVarId);
+                    INDArray inArr = getTensorFromOutputs(inputVarId);
+                    if (inArr == null) {
+                        Preconditions.throwStateEx("Could not find array for Enter operation %s with output %s (frame=%s, iteration=%s)",
+                                op.getOwnName(), sameDiff.getOps().get(op.getOwnName()).getOutputsOfOp().get(0), enterOutFrameIter.getFrame(), enterOutFrameIter.getIteration());
+                    }
+                    result = ExecutionResult.createFrom(Arrays.asList(inputVarId.getVariable()),new INDArray[]{inArr});
                 }
-            } else {
-                INDArray inArr = getTensorFromOutputs(inputVarId);
-                if (inArr == null) {
-                    Preconditions.throwStateEx("Could not find array for Enter operation %s with output %s (frame=%s, iteration=%s)",
-                            op.getOwnName(), sameDiff.getOps().get(op.getOwnName()).getOutputsOfOp().get(0), outputFrameIter.getFrame(), outputFrameIter.getIteration());
+
+                return result;
+            }else if (op instanceof Exit) {
+                //Exit node forwards input to parent frame
+                VarId inputVarId;
+                if (constPhInput) {
+                    //Constant or placeholder
+                    inputVarId = new VarId(constAndPhInputs.iterator().next(), OUTER_FRAME, 0, null);
+                } else if (allIterInputs != null && allIterInputs.size() > 0) {
+                    inputVarId = allIterInputs.iterator().next();
+                } else {
+                    inputVarId = opInputs.iterator().next();
                 }
-                return ExecutionResult.createFrom(Arrays.asList(inputVarId.getVariable()),new INDArray[]{inArr});
-            }
 
-        } else if (op instanceof Exit) {
-            //Exit node forwards input to parent frame
+                executionStatus = "EXIT_FRAME";
+                detailedStatus = String.format("EXIT from frame '%s' (iter: %d) | Variables exiting: %d",
+                        outputFrameIter.getFrame(), outputFrameIter.getIteration(), 1);
+                outputNames.add(inputVarId.getVariable());
 
-            VarId inputVarId;
-            if (constPhInput) {
-                //Constant or placeholder
-                inputVarId = new VarId(constAndPhInputs.iterator().next(), OUTER_FRAME, 0, null);
-            } else if (allIterInputs != null && allIterInputs.size() > 0) {
-                inputVarId = allIterInputs.iterator().next();
-            } else {
-                inputVarId = opInputs.iterator().next();
-            }
-            SDValue sdValue = getSdValue(inputVarId);
-            return ExecutionResult.createValue(inputVarId.getVariable(), sdValue);
-        } else if (op instanceof NextIteration) {
-            //NextIteration op: forwards its single input to the output of the current frame, but increments the iteration number
-            Preconditions.checkState(totalInputs == 1, "Expected exactly 1 op input for NextIteration: got %s+%s", opInputs, constAndPhInputs);
-            VarId in = (allIterInputs != null && !allIterInputs.isEmpty() ? allIterInputs.iterator().next() : opInputs.iterator().next());
-            Preconditions.checkState(outputFrameIter.getFrame().equals(in.getFrame()), "Expected same frame for NextIteration input vs. output:" +
-                    " got input %s, output %s", in, outputFrameIter);
-            Preconditions.checkState(outputFrameIter.getIteration() == in.getIteration() + 1, "Expected output iteration for NextIteration output to" +
-                    " be 1 larger than the input iteration. Input: %s, output %s", in, outputFrameIter);
+                SDValue sdValue = getSdValue(inputVarId);
+                ExecutionResult result = ExecutionResult.createValue(inputVarId.getVariable(), sdValue);
 
-            if(nodeValueOutputs.containsKey(in) && getSdValue(in) != null) {
-                SDValue value = getSdValue(in);
-                if(value != null && value.getSdValueType() == SDValueType.LIST) {
-                    return ExecutionResult.createValue(in.getVariable(),value);
-                } else if(value != null && value.getSdValueType() == SDValueType.TENSOR) {
+                // Record exit execution
+                if (visualizationEnabled && visualizer != null) {
+                    visualizer.recordStep(
+                            ExecType.OP,
+                            op.getOwnName(),
+                            outputFrameIter,
+                            Arrays.asList(inputVarId.getVariable()),
+                            outputNames,
+                            executionStatus + " | " + detailedStatus
+                    );
+                }
+
+                return result;
+
+            } else if (op instanceof NextIteration) {
+                //NextIteration op: forwards its single input to the output of the current frame, but increments the iteration number
+                Preconditions.checkState(totalInputs == 1, "Expected exactly 1 op input for NextIteration: got %s+%s", opInputs, constAndPhInputs);
+                VarId in = (allIterInputs != null && !allIterInputs.isEmpty() ? allIterInputs.iterator().next() : opInputs.iterator().next());
+                Preconditions.checkState(outputFrameIter.getFrame().equals(in.getFrame()), "Expected same frame for NextIteration input vs. output:" +
+                        " got input %s, output %s", in, outputFrameIter);
+                Preconditions.checkState(outputFrameIter.getIteration() == in.getIteration() + 1, "Expected output iteration for NextIteration output to" +
+                        " be 1 larger than the input iteration. Input: %s, output %s", in, outputFrameIter);
+
+                executionStatus = "NEXT_ITERATION";
+                detailedStatus = String.format("NEXT_ITERATION in frame '%s' (iter: %d -> %d)",
+                        outputFrameIter.getFrame(), in.getIteration(), outputFrameIter.getIteration());
+                outputNames.add(in.getVariable());
+
+                ExecutionResult result;
+                if(nodeValueOutputs.containsKey(in) && getSdValue(in) != null) {
+                    SDValue value = getSdValue(in);
+                    if(value != null && value.getSdValueType() == SDValueType.LIST) {
+                        result = ExecutionResult.createValue(in.getVariable(),value);
+                    } else if(value != null && value.getSdValueType() == SDValueType.TENSOR) {
+                        INDArray inArr = getTensorFromOutputs(in);
+                        if (inArr == null) {
+                            Preconditions.throwStateEx("Could not find array for NextIteration operation %s with output %s (frame=%s, iteration=%s)",
+                                    op.getOwnName(), sameDiff.getOps().get(op.getOwnName()).getOutputsOfOp().get(0), outputFrameIter.getFrame(), outputFrameIter.getIteration());
+                        }
+                        result = ExecutionResult.createFrom(Arrays.asList(in.getVariable()),new INDArray[]{inArr});
+                    } else {
+                        throw new IllegalStateException("Illegal value type " + value.getSdValueType() + " for input " + in);
+                    }
+                } else {
                     INDArray inArr = getTensorFromOutputs(in);
                     if (inArr == null) {
                         Preconditions.throwStateEx("Could not find array for NextIteration operation %s with output %s (frame=%s, iteration=%s)",
                                 op.getOwnName(), sameDiff.getOps().get(op.getOwnName()).getOutputsOfOp().get(0), outputFrameIter.getFrame(), outputFrameIter.getIteration());
                     }
+                    result = ExecutionResult.createFrom(Arrays.asList(in.getVariable()),new INDArray[]{inArr});
+                }
 
-                    return ExecutionResult.createFrom(Arrays.asList(in.getVariable()),new INDArray[]{inArr});
+                // Record next iteration execution
+                if (visualizationEnabled && visualizer != null) {
+                    visualizer.recordStep(
+                            ExecType.OP,
+                            op.getOwnName(),
+                            outputFrameIter,
+                            Arrays.asList(in.getVariable()),
+                            outputNames,
+                            executionStatus + " | " + detailedStatus
+                    );
+                }
+
+                return result;
+
+            } else if (op instanceof Merge) {
+                Merge m = (Merge) op;
+                String[] in = sameDiff.getInputsForOp(op);
+
+                // Multi-frame input resolution for Merge operations
+                List<VarId> candidateInputs = new ArrayList<>();
+                List<SDValue> availableValues = new ArrayList<>();
+
+                for (String inputName : in) {
+                    SDValue foundValue = null;
+                    VarId foundVarId = null;
+
+                    // Strategy 1: Current frame lookup
+                    VarId currentFrameVid = outputFrameIter.toVarId(inputName);
+                    foundValue = getSdValue(currentFrameVid);
+                    if (foundValue != null) {
+                        candidateInputs.add(currentFrameVid);
+                        availableValues.add(foundValue);
+                        continue;
+                    }
+
+                    // Strategy 2: Cross-frame lookup for Enter operations
+                    for (Map.Entry<VarId, SDValue> entry : nodeValueOutputs.entrySet()) {
+                        VarId storedVid = entry.getKey();
+
+                        if (storedVid.getFrame().equals(outputFrameIter.getFrame())) {
+                            String producerOp = findVariableProducer(storedVid.getVariable());
+                            if (producerOp != null) {
+                                SameDiffOp producer = sameDiff.getOps().get(producerOp);
+                                if (producer != null && producer.getOp() instanceof Enter) {
+                                    List<String> enterOutputs = producer.getOutputsOfOp();
+                                    if (enterOutputs != null && enterOutputs.contains(inputName)) {
+                                        foundValue = entry.getValue();
+                                        foundVarId = storedVid;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Strategy 3: Look for alias mappings in dependency tracker
+                    if (foundValue == null) {
+                        VarId aliasVid = resolveVarIdAlias(currentFrameVid);
+                        if (aliasVid != null && !aliasVid.equals(currentFrameVid)) {
+                            foundValue = getSdValue(aliasVid);
+                            foundVarId = aliasVid;
+                        }
+                    }
+
+                    if (foundValue != null) {
+                        candidateInputs.add(foundVarId != null ? foundVarId : currentFrameVid);
+                        availableValues.add(foundValue);
+                    }
+                }
+
+                if (log.isDebugEnabled()) {
+                    log.debug("Merge operation {} found {} available inputs out of {} expected",
+                            m.getOwnName(), availableValues.size(), in.length);
+                    for (int i = 0; i < candidateInputs.size(); i++) {
+                        log.debug("  Input {}: {} -> {}", i, candidateInputs.get(i),
+                                availableValues.get(i) != null ? "AVAILABLE" : "NULL");
+                    }
+                }
+
+                if (availableValues.isEmpty()) {
+                    throw new IllegalStateException(String.format(
+                            "Merge node %s has no available inputs (expected: %s, frame: %s) - cross-frame dependency resolution failure",
+                            m.getOwnName(), Arrays.toString(in), outputFrameIter));
+                }
+
+                // Use first available input (standard Merge behavior)
+                SDValue selectedValue = availableValues.get(0);
+                VarId selectedVarId = candidateInputs.get(0);
+
+                log.trace("Merge {} selected input: {} from frame {}",
+                        m.getOwnName(), selectedVarId.getVariable(), selectedVarId.getFrame());
+
+                ExecutionResult result;
+                if(selectedValue.getSdValueType() == SDValueType.LIST) {
+                    result = ExecutionResult.createValue(selectedVarId.getVariable(), selectedValue);
+                } else if(selectedValue.getSdValueType() == SDValueType.TENSOR) {
+                    INDArray inArr = getTensorFromOutputs(selectedVarId);
+                    if (inArr == null) {
+                        inArr = selectedValue.getTensorValue();
+                    }
+                    if (inArr == null) {
+                        throw new IllegalStateException(String.format(
+                                "Could not resolve tensor for Merge operation %s input %s (frame=%s, iteration=%s)",
+                                op.getOwnName(), selectedVarId.getVariable(), outputFrameIter.getFrame(), outputFrameIter.getIteration()));
+                    }
+                    result = ExecutionResult.createFrom(Arrays.asList(selectedVarId.getVariable()), new INDArray[]{inArr});
                 } else {
-                    throw new IllegalStateException("Illegal value type " + value.getSdValueType() + " for input " + in);
-                }
-            } else {
-                INDArray inArr = getTensorFromOutputs(in);
-                if (inArr == null) {
-                    Preconditions.throwStateEx("Could not find array for NextIteration operation %s with output %s (frame=%s, iteration=%s)",
-                            op.getOwnName(), sameDiff.getOps().get(op.getOwnName()).getOutputsOfOp().get(0), outputFrameIter.getFrame(), outputFrameIter.getIteration());
-                }
-                return ExecutionResult.createFrom(Arrays.asList(in.getVariable()),new INDArray[]{inArr});
-            }
-
-        } else if (op instanceof Merge) {
-            //Merge available for forward pass when any of its inputs are available. When multiple are available, behaviour
-            // is undefined
-            Merge m = (Merge) op;
-            String[] in = sameDiff.getInputsForOp(op);
-            VarId firstInput = outputFrameIter.toVarId(in[0]);
-            VarId secondInput = outputFrameIter.toVarId(in[1]);
-
-            SDValue firstValue = getSdValue(firstInput);
-            SDValue secondValue = getSdValue(secondInput);
-            String s = secondValue != null ? in[1] : in[0];
-            VarId vid = secondValue != null ? secondInput :firstInput;
-            if(firstValue == null && secondValue == null)
-                throw new IllegalStateException("Merge node " + m.getOwnName() + " has no available inputs (all inputs: " + Arrays.toString(in) +
-                        ") - should not be executed at this point");
-            log.trace("Returning input \"{}\" for merge node \"{}\"", m.getOwnName(), s);
-            SDValue value = getSdValue(vid);
-            if(value.getSdValueType() == SDValueType.LIST) {
-                return ExecutionResult.createValue(vid.getVariable(), getSdValue(vid));
-            } else if(value.getSdValueType() == SDValueType.TENSOR) {
-                INDArray inArr = getTensorFromOutputs(vid);
-                if (inArr == null) {
-                    Preconditions.throwStateEx("Could not find array for NextIteration operation %s with output %s (frame=%s, iteration=%s)",
-                            op.getOwnName(), sameDiff.getOps().get(op.getOwnName()).getOutputsOfOp().get(0), outputFrameIter.getFrame(), outputFrameIter.getIteration());
+                    throw new IllegalStateException("Illegal value type " + selectedValue.getSdValueType() + " for Merge input " + selectedVarId);
                 }
 
-                return ExecutionResult.createFrom(Arrays.asList(vid.getVariable()),new INDArray[]{inArr});
-            } else {
-                throw new IllegalStateException("Illegal value type " + value.getSdValueType() + " for input " + in);
-            }
+                return result;
+            }else if (op instanceof LoopCond) {
+                //LoopCond just forwards scalar boolean to output
+                LoopCond lc = (LoopCond) op;
+                String[] argNames = lc.argNames();
+                Preconditions.checkState(argNames.length == 1, "Expected only 1 arg name in LoopCond op, got %s", (Object) argNames);
+                VarId vid = outputFrameIter.toVarId(argNames[0]);
+                SDValue getValue = getSdValue(vid);
+                if(getValue.getTensorValue() == null) {
+                    throw new IllegalStateException("Node value output at " + vid.getVariable() + " was not a boolean tensor!");
+                }
+                Preconditions.checkNotNull(getValue, "Input to LoopCond op must not be null");
+                Preconditions.checkState(getValue.getTensorValue().isScalar() && getValue.getTensorValue().dataType() == DataType.BOOL, "LoopCond input must be a scalar boolean, got %ndShape");
 
+                boolean conditionValue = getValue.getTensorValue().getDouble(0) != 0.0;
+                executionStatus = "SUCCESS";
+                detailedStatus = String.format("LoopCond forwarded: %s", conditionValue);
+                outputNames.add(vid.getVariable());
 
+                ExecutionResult result = ExecutionResult.createValue(vid.getVariable(), getValue);
 
-        } else if (op instanceof LoopCond) {
-            //LoopCond just forwards scalar boolean to output
-            LoopCond lc = (LoopCond) op;
-            String[] argNames = lc.argNames();
-            Preconditions.checkState(argNames.length == 1, "Expected only 1 arg name in LoopCond op, got %s", (Object) argNames);
-            VarId vid = outputFrameIter.toVarId(argNames[0]);
-            SDValue getValue = getSdValue(vid);
-            if(getValue.getTensorValue() == null) {
-                throw new IllegalStateException("Node value output at " + vid.getVariable() + " was not a boolean tensor!");
-            }
-            Preconditions.checkNotNull(getValue, "Input to LoopCond op must not be null");
-            Preconditions.checkState(getValue.getTensorValue().isScalar() && getValue.getTensorValue().dataType() == DataType.BOOL, "LoopCond input must be a scalar boolean, got %ndShape");
-            return ExecutionResult.createValue(vid.getVariable(), getValue);
-        } else if (op instanceof BaseTensorOp) {
-            //TensorOps - special cases...
-            return getOutputsHelperTensorArrayOps(op, outputFrameIter, opInputs, allIterInputs, otherPlaceHolders);
-        } else if(op instanceof Identity) {
-            List<VarId> orderedInputs = new ArrayList<>(opInputs);
-            SDValue sdValue = getSdValue(orderedInputs.get(0));
-            return ExecutionResult.createValue(op.outputVariablesNames()[0], sdValue);
+                // Record loop condition execution
+                if (visualizationEnabled && visualizer != null) {
+                    visualizer.recordStep(
+                            ExecType.OP,
+                            op.getOwnName(),
+                            outputFrameIter,
+                            Arrays.asList(argNames[0]),
+                            outputNames,
+                            executionStatus + " | " + detailedStatus
+                    );
+                }
 
-        } else if(op instanceof Assign) {
-            List<VarId> orderedInputs = new ArrayList<>(opInputs);
-            if(orderedInputs.size() > 1) {
+                return result;
+
+            } else if (op instanceof BaseTensorOp) {
+                //TensorOps - special cases...
+                executionStatus = "SUCCESS";
+                detailedStatus = "TensorArray operation";
+
+                ExecutionResult result = getOutputsHelperTensorArrayOps(op, outputFrameIter, opInputs, allIterInputs, otherPlaceHolders);
+
+                // Record tensor op execution
+                if (visualizationEnabled && visualizer != null) {
+                    visualizer.recordStep(
+                            ExecType.OP,
+                            op.getOwnName(),
+                            outputFrameIter,
+                            getStepInputsForVisualization(opInputs, constAndPhInputs, allIterInputs),
+                            getStepOutputsForVisualization(op),
+                            executionStatus + " | " + detailedStatus
+                    );
+                }
+
+                return result;
+
+            } else if(op instanceof Identity) {
+                List<VarId> orderedInputs = new ArrayList<>(opInputs);
                 SDValue sdValue = getSdValue(orderedInputs.get(0));
-                SDValue sdValue1 = getSdValue(orderedInputs.get(1));
-                switch(sdValue.getSdValueType()) {
-                    case TENSOR:
-                        Assign c = (Assign) op;
-                        Nd4j.exec(c, opContext);
-                        return ExecutionResult.createFrom(c,opContext);
-                    case LIST:
-                        return ExecutionResult.createValue(op.outputVariablesNames()[0], sdValue1);
+                executionStatus = "SUCCESS";
+                detailedStatus = "Identity operation";
+                outputNames.add(op.outputVariablesNames()[0]);
 
+                ExecutionResult result = ExecutionResult.createValue(op.outputVariablesNames()[0], sdValue);
+
+                // Record identity execution
+                if (visualizationEnabled && visualizer != null) {
+                    visualizer.recordStep(
+                            ExecType.OP,
+                            op.getOwnName(),
+                            outputFrameIter,
+                            Arrays.asList(orderedInputs.get(0).getVariable()),
+                            outputNames,
+                            executionStatus + " | " + detailedStatus
+                    );
                 }
 
-            }
+                return result;
 
-            SDValue sdValue = getSdValue(orderedInputs.get(0));
-            return ExecutionResult.createValue(op.outputVariablesNames()[0], sdValue);
+            } else if(op instanceof Assign) {
+                List<VarId> orderedInputs = new ArrayList<>(opInputs);
+                executionStatus = "SUCCESS";
+                detailedStatus = "Assign operation";
+                outputNames.add(op.outputVariablesNames()[0]);
 
-        } else if (op instanceof GradientBackwardsMarker) {
-            INDArray out = mmgr.allocate(false, DataType.FLOAT).assign(1.0f);
-            return ExecutionResult.createFrom(Arrays.asList("gradientbackwardsmarker"), new INDArray[]{out});
-        } else if(op instanceof CreateView) {
-            Map<String,VarId> inputVars = new LinkedHashMap<>();
-            String[] argNames = op.argNames();
-            for(Iterator<VarId> iter = opInputs.iterator(); iter.hasNext();) {
-                VarId varId  = iter.next();
-                inputVars.put(varId.getVariable(),varId);
-            }
-            SDValue sdValue = getSdValue(inputVars.get(argNames[0]));
-            if(sdValue == null) {
-                sdValue = SDValue.create(opContext.getInputArray(0));
-            }
-            INDArray[] indices = new INDArray[argNames.length - 1];
-            for(int i = 1; i < argNames.length; i++) {
-                indices[i - 1] = getSdValue(inputVars.get(argNames[i])).getTensorValue();
-            }
-
-            INDArray from = CreateView.createFrom(sdValue.getTensorValue(), indices);
-            from.setCloseable(false);
-            sdValue.getTensorValue().setCloseable(false);
-            for(INDArray arr : indices)
-                arr.setCloseable(false);
-            return ExecutionResult.createFrom(op.outputVariablesNames()[0], from);
-        } else if (op instanceof ExternalErrorsFunction) {
-            ExternalErrorsFunction fn = (ExternalErrorsFunction) op;
-            String n = fn.getGradPlaceholderName();
-            INDArray arr = getTensorFromOutputs(new VarId(n, OUTER_FRAME, 0, null));
-            Preconditions.checkState(arr != null, "Could not find external errors placeholder array: %s", arr);
-            INDArray out = mmgr.allocate(false, arr.dataType(), arr.shape());
-            out.assign(arr);
-            return ExecutionResult.createFrom(Arrays.asList(n), new INDArray[]{out});
-        } else if(op instanceof Invoke) {
-            Invoke invoke = (Invoke) op;
-            boolean hasValues = false;
-            for(VarId varId : opInputs) {
-                //need to invoke with values
-                if(nodeValueOutputs.containsKey(varId)) {
-                    hasValues = true;
-                    break;
+                ExecutionResult result;
+                if(orderedInputs.size() > 1) {
+                    SDValue sdValue = getSdValue(orderedInputs.get(0));
+                    SDValue sdValue1 = getSdValue(orderedInputs.get(1));
+                    switch(sdValue.getSdValueType()) {
+                        case TENSOR:
+                            Assign c = (Assign) op;
+                            Nd4j.exec(c, opContext);
+                            result = ExecutionResult.createFrom(c,opContext);
+                            break;
+                        case LIST:
+                            result = ExecutionResult.createValue(op.outputVariablesNames()[0], sdValue1);
+                            break;
+                        default:
+                            throw new IllegalStateException("Unknown SDValue type: " + sdValue.getSdValueType());
+                    }
+                } else {
+                    SDValue sdValue = getSdValue(orderedInputs.get(0));
+                    result = ExecutionResult.createValue(op.outputVariablesNames()[0], sdValue);
                 }
-            }
 
-            //no need to check placeholders if other values are present
-            if(!hasValues)
-                for(Map.Entry<String,SDValue> entry : otherPlaceHolders.entrySet()) {
-                    if(constAndPhInputs.contains(entry.getKey())) {
+                // Record assign execution
+                if (visualizationEnabled && visualizer != null) {
+                    List<String> inputs = new ArrayList<>();
+                    for (VarId vid : orderedInputs) {
+                        inputs.add(vid.getVariable());
+                    }
+                    visualizer.recordStep(
+                            ExecType.OP,
+                            op.getOwnName(),
+                            outputFrameIter,
+                            inputs,
+                            outputNames,
+                            executionStatus + " | " + detailedStatus
+                    );
+                }
+
+                return result;
+
+            } else if (op instanceof GradientBackwardsMarker) {
+                INDArray out = mmgr.allocate(false, DataType.FLOAT).assign(1.0f);
+                executionStatus = "SUCCESS";
+                detailedStatus = "Gradient backwards marker";
+                outputNames.add("gradientbackwardsmarker");
+
+                ExecutionResult result = ExecutionResult.createFrom(Arrays.asList("gradientbackwardsmarker"), new INDArray[]{out});
+
+                // Record gradient marker execution
+                if (visualizationEnabled && visualizer != null) {
+                    visualizer.recordStep(
+                            ExecType.OP,
+                            op.getOwnName(),
+                            outputFrameIter,
+                            Collections.emptyList(),
+                            outputNames,
+                            executionStatus + " | " + detailedStatus
+                    );
+                }
+
+                return result;
+
+            } else if(op instanceof CreateView) {
+                Map<String,VarId> inputVars = new LinkedHashMap<>();
+                String[] argNames = op.argNames();
+                for(Iterator<VarId> iter = opInputs.iterator(); iter.hasNext();) {
+                    VarId varId  = iter.next();
+                    inputVars.put(varId.getVariable(),varId);
+                }
+
+                executionStatus = "SUCCESS";
+                detailedStatus = String.format("CreateView with %d indices", argNames.length - 1);
+                outputNames.add(op.outputVariablesNames()[0]);
+
+                SDValue sdValue = getSdValue(inputVars.get(argNames[0]));
+                if(sdValue == null) {
+                    sdValue = SDValue.create(opContext.getInputArray(0));
+                }
+                INDArray[] indices = new INDArray[argNames.length - 1];
+                for(int i = 1; i < argNames.length; i++) {
+                    indices[i - 1] = getSdValue(inputVars.get(argNames[i])).getTensorValue();
+                }
+
+                INDArray from = CreateView.createFrom(sdValue.getTensorValue(), indices);
+                from.setCloseable(false);
+                sdValue.getTensorValue().setCloseable(false);
+                for(INDArray arr : indices)
+                    arr.setCloseable(false);
+                ExecutionResult result = ExecutionResult.createFrom(op.outputVariablesNames()[0], from);
+
+                // Record create view execution
+                if (visualizationEnabled && visualizer != null) {
+                    visualizer.recordStep(
+                            ExecType.OP,
+                            op.getOwnName(),
+                            outputFrameIter,
+                            Arrays.asList(argNames),
+                            outputNames,
+                            executionStatus + " | " + detailedStatus
+                    );
+                }
+
+                return result;
+
+            } else if (op instanceof ExternalErrorsFunction) {
+                ExternalErrorsFunction fn = (ExternalErrorsFunction) op;
+                String n = fn.getGradPlaceholderName();
+                INDArray arr = getTensorFromOutputs(new VarId(n, OUTER_FRAME, 0, null));
+                Preconditions.checkState(arr != null, "Could not find external errors placeholder array: %s", arr);
+
+                executionStatus = "SUCCESS";
+                detailedStatus = "External errors function";
+                outputNames.add(n);
+
+                INDArray out = mmgr.allocate(false, arr.dataType(), arr.shape());
+                out.assign(arr);
+                ExecutionResult result = ExecutionResult.createFrom(Arrays.asList(n), new INDArray[]{out});
+
+                // Record external errors execution
+                if (visualizationEnabled && visualizer != null) {
+                    visualizer.recordStep(
+                            ExecType.OP,
+                            op.getOwnName(),
+                            outputFrameIter,
+                            Arrays.asList(n),
+                            outputNames,
+                            executionStatus + " | " + detailedStatus
+                    );
+                }
+
+                return result;
+
+            } else if(op instanceof Invoke) {
+                Invoke invoke = (Invoke) op;
+
+                executionStatus = "SUCCESS";
+                detailedStatus = String.format("Invoke with %d inputs", invoke.getInputVarNames().length);
+                outputNames.addAll(Arrays.asList(invoke.getOutputVarNames()));
+
+                boolean hasValues = false;
+                for(VarId varId : opInputs) {
+                    //need to invoke with values
+                    if(nodeValueOutputs.containsKey(varId)) {
                         hasValues = true;
                         break;
                     }
                 }
 
-            Map<String,INDArray> inputs = new LinkedHashMap<>();
-            Map<String,SDValue> valueInputs = new LinkedHashMap<>();
-            //need to pull from tensor arrays
-            if(!hasValues) {
-                //simple linear scan of inputs over inputs
-                int currInput = 0;
-                for(VarId opInput : opInputs) {
-                    inputs.put(opInput.getVariable(),opContext.getInputArray(currInput));
-                    currInput++;
+                //no need to check placeholders if other values are present
+                if(!hasValues)
+                    for(Map.Entry<String,SDValue> entry : otherPlaceHolders.entrySet()) {
+                        if(constAndPhInputs.contains(entry.getKey())) {
+                            hasValues = true;
+                            break;
+                        }
+                    }
+
+                Map<String,INDArray> inputs = new LinkedHashMap<>();
+                Map<String,SDValue> valueInputs = new LinkedHashMap<>();
+                //need to pull from tensor arrays
+                if(!hasValues) {
+                    //simple linear scan of inputs over inputs
+                    int currInput = 0;
+                    for(VarId opInput : opInputs) {
+                        inputs.put(opInput.getVariable(),opContext.getInputArray(currInput));
+                        currInput++;
+                    }
+                } else {
+                    //simple linear scan of inputs over inputs
+                    Map<String,VarId> varIdsByVariable = new HashMap<>();
+                    for(VarId opInput : opInputs) {
+                        varIdsByVariable.put(opInput.getVariable(),opInput);
+                    }
+
+                    for(int i = 0; i < invoke.getInputVarNames().length; i++) {
+                        VarId opInput = varIdsByVariable.get(invoke.getInputVarNames()[i]);
+                        if(constAndPhInputs.contains(invoke.getInputVarNames()[i])) {
+                            if(otherPlaceHolders.containsKey(invoke.getInputVarNames()[i]))
+                                valueInputs.put(invoke.getInputVarNames()[i],otherPlaceHolders.get(invoke.getInputVarNames()[i]));
+                            else if(inputs.containsKey(invoke.getInputVarNames()[i]))
+                                valueInputs.put(invoke.getInputVarNames()[i],SDValue.create(inputs.get(invoke.getInputVarNames()[i])));
+                        }else if(sameDiff.getArrForVarName(invoke.getInputVarNames()[i]) != null) {
+                            valueInputs.put(invoke.getInputVarNames()[i],SDValue.create(sameDiff.getArrForVarName(invoke.getInputVarNames()[i])));
+                        }  else if(nodeValueOutputs.containsKey(opInput)) {
+                            valueInputs.put(opInput.getVariable(), getSdValue(opInput));
+                        } else {
+                            valueInputs.put(opInput.getVariable(),SDValue.create(opContext.getInputArray(i)));
+                        }
+                    }
                 }
+
+                if(valueInputs.size() + inputs.size() != op.args().length) {
+                    throw new IllegalArgumentException("Value inputs and inputs combined did not fulfill all arguments. Inputs were: " + Arrays.toString(op.argNames()) + " for op name " + op.getOwnName());
+                }
+
+                ExecutionResult result = Invoke.doInvoke(invoke,inputs,valueInputs);
+
+                // Record invoke execution
+                if (visualizationEnabled && visualizer != null) {
+                    visualizer.recordStep(
+                            ExecType.OP,
+                            op.getOwnName(),
+                            outputFrameIter,
+                            Arrays.asList(invoke.getInputVarNames()),
+                            outputNames,
+                            executionStatus + " | " + detailedStatus
+                    );
+                }
+
+                return result;
+
+            } else if (op instanceof Assert) {
+                Assert a = (Assert) op;
+                boolean condition = !opContext.getInputArray(0).isEmpty() && opContext.getInputArray(0).getDouble(0) != 0.0;
+
+                executionStatus = "SUCCESS";
+                detailedStatus = String.format("Assert condition: %s", condition);
+
+                if(!condition) {
+                    //Assertion failed
+                    String s = "Assertion failed for operation \"" + op.getOwnName() + "\" during execution";
+                    if(a.numInputArguments() >= 3) {
+                        INDArray msg = opContext.getInputArray(2);
+                        if (msg != null && msg.dataType() == DataType.UTF8) {
+                            s += ": " + msg.getString(0);
+                        }
+                    }
+                    if(a.numInputArguments() >= 5) {
+                        INDArray arr = opContext.getInputArray(4);
+                        s += "\n" + arr;
+                    }
+
+                    // Record failed assertion
+                    if (visualizationEnabled && visualizer != null) {
+                        visualizer.recordStep(
+                                ExecType.OP,
+                                op.getOwnName(),
+                                outputFrameIter,
+                                getStepInputsForVisualization(opInputs, constAndPhInputs, allIterInputs),
+                                Collections.emptyList(),
+                                "EXECUTION_FAILED | Assertion failed: " + s
+                        );
+                    }
+
+                    throw new IllegalStateException(s);
+                }
+
+                ExecutionResult result = ExecutionResult.createFrom(a,opContext);
+
+                // Record successful assertion
+                if (visualizationEnabled && visualizer != null) {
+                    visualizer.recordStep(
+                            ExecType.OP,
+                            op.getOwnName(),
+                            outputFrameIter,
+                            getStepInputsForVisualization(opInputs, constAndPhInputs, allIterInputs),
+                            getStepOutputsForVisualization(op),
+                            executionStatus + " | " + detailedStatus
+                    );
+                }
+
+                return result;
+
+            } else if (op instanceof CustomOp) {
+                CustomOp c = (CustomOp) op;
+
+                executionStatus = "SUCCESS";
+                detailedStatus = String.format("CustomOp: %s", c.opName());
+
+                Nd4j.exec(c, opContext);
+                ExecutionResult result = ExecutionResult.createFrom((DifferentialFunction) c,opContext);
+
+                // Record custom op execution
+                if (visualizationEnabled && visualizer != null) {
+                    visualizer.recordStep(
+                            ExecType.OP,
+                            op.getOwnName(),
+                            outputFrameIter,
+                            getStepInputsForVisualization(opInputs, constAndPhInputs, allIterInputs),
+                            getStepOutputsForVisualization(op),
+                            executionStatus + " | " + detailedStatus
+                    );
+                }
+
+                return result;
+
+            } else if (op instanceof Op) {
+                Op o = (Op) op;
+
+                executionStatus = "SUCCESS";
+                detailedStatus = String.format("Op: %s", o.opName());
+
+                Nd4j.exec(o, opContext);
+                ExecutionResult result = ExecutionResult.createFrom((DifferentialFunction)o,opContext);
+
+                // Record op execution
+                if (visualizationEnabled && visualizer != null) {
+                    visualizer.recordStep(
+                            ExecType.OP,
+                            op.getOwnName(),
+                            outputFrameIter,
+                            getStepInputsForVisualization(opInputs, constAndPhInputs, allIterInputs),
+                            getStepOutputsForVisualization(op),
+                            executionStatus + " | " + detailedStatus
+                    );
+                }
+
+                return result;
+
             } else {
-                //simple linear scan of inputs over inputs
-                Map<String,VarId> varIdsByVariable = new HashMap<>();
-                for(VarId opInput : opInputs) {
-                    varIdsByVariable.put(opInput.getVariable(),opInput);
-                }
+                throw new UnsupportedOperationException("Execution not yet implemented for: " + op.getClass().getName());
+            }
 
-                for(int i = 0; i < invoke.getInputVarNames().length; i++) {
-                    VarId opInput = varIdsByVariable.get(invoke.getInputVarNames()[i]);
-                    if(constAndPhInputs.contains(invoke.getInputVarNames()[i])) {
-                        if(otherPlaceHolders.containsKey(invoke.getInputVarNames()[i]))
-                            valueInputs.put(invoke.getInputVarNames()[i],otherPlaceHolders.get(invoke.getInputVarNames()[i]));
-                        else if(inputs.containsKey(invoke.getInputVarNames()[i]))
-                            valueInputs.put(invoke.getInputVarNames()[i],SDValue.create(inputs.get(invoke.getInputVarNames()[i])));
-                    }else if(sameDiff.getArrForVarName(invoke.getInputVarNames()[i]) != null) {
-                        valueInputs.put(invoke.getInputVarNames()[i],SDValue.create(sameDiff.getArrForVarName(invoke.getInputVarNames()[i])));
-                    }  else if(nodeValueOutputs.containsKey(opInput)) {
-                        valueInputs.put(opInput.getVariable(), getSdValue(opInput));
-                    } else {
-                        valueInputs.put(opInput.getVariable(),SDValue.create(opContext.getInputArray(i)));
-                    }
+        } catch (Exception e) {
+            // Enhanced error visualization - mimic output() method error handling
+            executionStatus = "EXECUTION_FAILED";
+            detailedStatus = String.format("Exception: %s - %s", e.getClass().getSimpleName(), e.getMessage());
+
+            // Record failed execution with comprehensive context
+            if (visualizationEnabled && visualizer != null) {
+                String failureContext = generateOperationFailureContext(op, opInputs, constAndPhInputs, allIterInputs, e);
+
+                visualizer.recordStep(
+                        ExecType.OP,
+                        op.getOwnName(),
+                        outputFrameIter,
+                        getStepInputsForVisualization(opInputs, constAndPhInputs, allIterInputs),
+                        getStepOutputsForVisualization(op),
+                        executionStatus + " | " + detailedStatus + " | " + failureContext
+                );
+
+                // Enhanced failure analysis for control flow operations
+                if (op instanceof Switch || op instanceof Merge || op instanceof Enter ||
+                        op instanceof Exit || op instanceof NextIteration || op instanceof LoopCond) {
+
+                    visualizer.analyzeControlFlowFailure(op, opInputs, allIterInputs, constAndPhInputs,
+                            outputFrameIter, nodeValueOutputs, e);
                 }
             }
 
-            if(valueInputs.size() + inputs.size() != op.args().length) {
-                throw new IllegalArgumentException("Value inputs and inputs combined did not fulfill all arguments. Inputs were: " + Arrays.toString(op.argNames()) + " for op name " + op.getOwnName());
-            }
-
-
-            return Invoke.doInvoke(invoke,inputs,valueInputs);
-        } else if (op instanceof Assert) {
-            Assert a = (Assert) op;
-            boolean condition =  !opContext.getInputArray(0).isEmpty() && opContext.getInputArray(0).getDouble(0) != 0.0;
-            if(!condition) {
-                //Assertion failed
-                String s = "Assertion failed for operation \"" + op.getOwnName() + "\" during execution";
-                if(a.numInputArguments() >= 3) {
-                    INDArray msg = opContext.getInputArray(2);
-                    if (msg != null && msg.dataType() == DataType.UTF8) {
-                        s += ": " + msg.getString(0);
-                    }
-                }
-                if(a.numInputArguments() >= 5) {
-                    INDArray arr = opContext.getInputArray(4);
-                    s += "\n" + arr;
-                }
-                throw new IllegalStateException(s);
-            }
-            return ExecutionResult.createFrom(a,opContext);
-        } else if (op instanceof CustomOp) {
-            CustomOp c = (CustomOp) op;
-            Nd4j.exec(c, opContext);
-            return ExecutionResult.createFrom((DifferentialFunction) c,opContext);
-        } else if (op instanceof Op) {
-            Op o = (Op) op;
-            Nd4j.exec(o, opContext);
-            return ExecutionResult.createFrom((DifferentialFunction)o,opContext);
-        } else {
-            throw new UnsupportedOperationException("Execution not yet implemented for: " + op.getClass().getName());
+            throw e; // Re-throw the exception
         }
+    }
+
+
+
+    /**
+     * Initialize variable values from constants, variables, and placeholders
+     */
+    private void initializeVariableValues(Map<String, SDValue> variableValues,
+                                          ForwardExecutionDAG dag,
+                                          Map<String, INDArray> placeholderValues,
+                                          Map<String, SDValue> otherPlaceholderValues) {
+
+        // Initialize constants
+        for (String constName : dag.getConstants()) {
+            INDArray constValue = getConstantOrVariable(constName);
+            if (constValue != null) {
+                variableValues.put(constName, SDValue.create(constValue));
+            }
+        }
+
+        // Initialize variables
+        for (String varName : dag.getVariables()) {
+            INDArray varValue = getConstantOrVariable(varName);
+            if (varValue != null) {
+                variableValues.put(varName, SDValue.create(varValue));
+            }
+        }
+
+        // Initialize placeholders
+        if (placeholderValues != null) {
+            for (Map.Entry<String, INDArray> entry : placeholderValues.entrySet()) {
+                variableValues.put(entry.getKey(), SDValue.create(entry.getValue()));
+            }
+        }
+
+        if (otherPlaceholderValues != null) {
+            variableValues.putAll(otherPlaceholderValues);
+        }
+    }
+
+    /**
+     * Execute a single operation using existing InferenceSession infrastructure.
+     * This delegates to the existing doExec method to maintain compatibility.
+     */
+    private void executeOperation(ExecutionNode node,
+                                  Map<String, SDValue> variableValues,
+                                  Set<String> allRequired,
+                                  List<Listener> listeners,
+                                  At at,
+                                  MultiDataSet batch) {
+
+        String opName = node.getOperationName();
+        log.trace("Executing operation: {}", opName);
+
+        try {
+            // Get the operation
+            SameDiffOp sameDiffOp = sameDiff.getOps().get(opName);
+            if (sameDiffOp == null) {
+                throw new IllegalStateException("Operation not found: " + opName);
+            }
+
+            // Prepare inputs (simplified - in practice you'd need proper VarId handling)
+            Set<VarId> opInputs = new HashSet<>();
+            Set<VarId> allIterInputs = new HashSet<>();
+            Set<String> constAndPhInputs = new HashSet<>();
+
+
+
+            // Classify inputs based on corrected DAG information
+            for (String inputVar : node.getInputVariables()) {
+                if (variableValues.containsKey(inputVar)) {
+                    // Variable is available, put in constAndPhInputs
+                    constAndPhInputs.add(inputVar);
+                } else {
+                    // Variable not found - this is the problem
+                    log.warn("Input variable {} not found in variableValues", inputVar);
+                    // Still add it to constAndPhInputs to let getAndParameterizeOp handle it
+                    constAndPhInputs.add(inputVar);
+                }
+            }
+
+            // Create frame iterator (simplified)
+            FrameIter frameIter = new FrameIter(OUTER_FRAME, 0, null);
+
+            // Use existing doExec method to maintain compatibility with memory management, etc.
+            ExecutionResult opResult = doExec(
+                    sameDiffOp.getOp(),
+                    null, // OpContext - will be created in doExec
+                    frameIter,
+                    opInputs,
+                    allIterInputs,
+                    constAndPhInputs,
+                    variableValues // Pass as otherPlaceHolders
+            );
+
+            // Store outputs
+            if (opResult.hasValues()) {
+                Map<String, SDValue> outputs = opResult.getValueOutputs();
+                for (Map.Entry<String, SDValue> entry : outputs.entrySet()) {
+                    variableValues.put(entry.getKey(), entry.getValue());
+                }
+            } else if (opResult.hasSingle()) {
+                // Handle single output case
+                List<String> outputNames = node.getOutputVariables();
+                for (int i = 0; i < outputNames.size() && i < opResult.numResults(); i++) {
+                    INDArray result = opResult.resultAt(i);
+                    if (result != null) {
+                        variableValues.put(outputNames.get(i), SDValue.create(result));
+                    }
+                }
+            }
+
+        } catch (Exception e) {
+            log.error("Failed to execute operation: {}", opName, e);
+            throw new RuntimeException("Operation execution failed: " + opName, e);
+        }
+    }
+// Helper methods for visualization - mimic the output() method approach
+
+    private List<String> getStepInputsForVisualization(Set<VarId> opInputs, Set<String> constAndPhInputs, Set<VarId> allIterInputs) {
+        List<String> stepInputs = new ArrayList<>();
+
+        if (opInputs != null) {
+            for (VarId vid : opInputs) {
+                stepInputs.add(vid.getVariable());
+            }
+        }
+
+        if (constAndPhInputs != null) {
+            stepInputs.addAll(constAndPhInputs);
+        }
+
+        if (allIterInputs != null) {
+            for (VarId vid : allIterInputs) {
+                stepInputs.add(vid.getVariable());
+            }
+        }
+
+        return stepInputs;
+    }
+
+    private List<String> getStepOutputsForVisualization(DifferentialFunction op) {
+        if (op.outputVariablesNames() != null) {
+            return Arrays.asList(op.outputVariablesNames());
+        }
+
+        // For ops that might not have standard output variable names
+        SameDiffOp sdOp = sameDiff.getOps().get(op.getOwnName());
+        if (sdOp != null && sdOp.getOutputsOfOp() != null) {
+            return sdOp.getOutputsOfOp();
+        }
+
+        return Collections.emptyList();
+    }
+
+    private String generateOperationFailureContext(DifferentialFunction op, Set<VarId> opInputs,
+                                                   Set<String> constAndPhInputs, Set<VarId> allIterInputs,
+                                                   Exception e) {
+        StringBuilder context = new StringBuilder();
+
+        context.append("Op: ").append(op.getClass().getSimpleName());
+        context.append(", Inputs: ").append(opInputs != null ? opInputs.size() : 0);
+        context.append(", ConstPh: ").append(constAndPhInputs != null ? constAndPhInputs.size() : 0);
+        context.append(", AllIter: ").append(allIterInputs != null ? allIterInputs.size() : 0);
+
+        // Add input availability analysis
+        if (opInputs != null) {
+            int availableInputs = 0;
+            for (VarId vid : opInputs) {
+                if (getSdValue(vid) != null) {
+                    availableInputs++;
+                }
+            }
+            context.append(", Available: ").append(availableInputs).append("/").append(opInputs.size());
+        }
+
+        return context.toString();
     }
 
     private SDValue getPreviousValue(VarId varId) {
@@ -1489,63 +2702,4 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         }
     }
 
-    @Data
-    public abstract static class Dep {
-        protected String frame;
-        protected FrameIter parentFrame;
-    }
-
-    @AllArgsConstructor
-    @Data
-    @EqualsAndHashCode(callSuper = true)
-    public static class OpDep extends Dep {
-        protected String opName;
-        protected int iter;
-
-        protected OpDep(@NonNull String opName, @NonNull String frame, int iter, FrameIter parentFrame) {
-            this.opName = opName;
-            this.frame = frame;
-            this.iter = iter;
-            this.parentFrame = parentFrame;
-        }
-
-        @Override
-        public String toString() {
-            return "OpDep(" + opName + ",frame=" + frame + ",iter=" + iter + (parentFrame == null ? "" : ",parent=" + parentFrame) + ")";
-        }
-    }
-
-    @Data
-    @EqualsAndHashCode(callSuper = true)
-    @AllArgsConstructor
-    protected static class PlaceholderDep extends Dep {
-        protected String phName;
-    }
-
-    @Data
-    @EqualsAndHashCode(callSuper = true)
-    @AllArgsConstructor
-    protected static class VariableDep extends Dep {
-        protected String varName;
-    }
-
-    @Data
-    @EqualsAndHashCode(callSuper = true)
-    @AllArgsConstructor
-    protected static class ConstantDep extends Dep {
-        protected String constName;
-    }
-
-    @Data
-    @EqualsAndHashCode(callSuper = true)
-    @AllArgsConstructor
-    protected static class ReqOutputDep extends Dep {
-        protected String outputName;
-    }
-
-    @Data
-    @EqualsAndHashCode(callSuper = true)
-    @NoArgsConstructor
-    protected static class ExecDoneDep extends Dep {
-    }
 }

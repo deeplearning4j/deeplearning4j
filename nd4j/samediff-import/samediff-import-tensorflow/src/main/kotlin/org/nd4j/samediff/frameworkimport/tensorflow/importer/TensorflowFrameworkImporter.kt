@@ -27,6 +27,7 @@ import org.nd4j.samediff.frameworkimport.ir.IRGraph
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import org.nd4j.samediff.frameworkimport.tensorflow.TensorflowImportGraph
 import org.nd4j.samediff.frameworkimport.tensorflow.convertNDArrayToTensorflowTensor
+import org.nd4j.samediff.frameworkimport.tensorflow.definitions.TensorflowOpDeclarations
 import org.nd4j.samediff.frameworkimport.tensorflow.definitions.tensorflowOpRegistry
 import org.nd4j.samediff.frameworkimport.tensorflow.ir.TensorflowIRGraph
 import org.nd4j.samediff.frameworkimport.tensorflow.opdefs.TensorflowOpDescriptorLoader
@@ -48,6 +49,7 @@ class TensorflowFrameworkImporter: FrameworkImporter {
         tfOpDescriptorLoader.createOpMappingRegistry<GraphDef, NodeDef, OpDef, TensorProto, OpDef.AttrDef, AttrValue, DataType>()
 
     init {
+        TensorflowOpDeclarations.init()
         loader.values.forEach { opDef -> opDefListBuilder.addOp(opDef) }
 
     }
