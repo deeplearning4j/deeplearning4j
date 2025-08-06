@@ -687,4 +687,13 @@ else()
     endif()
 endif()
 
+# Set OBJECT_LIB_NAME for PostBuild.cmake (matches pattern from create_and_link_library function)
+if(NOT DEFINED OBJECT_LIB_NAME AND DEFINED SD_LIBRARY_NAME)
+    set(OBJECT_LIB_NAME "${SD_LIBRARY_NAME}_object")
+    message(STATUS "Set OBJECT_LIB_NAME for PostBuild: ${OBJECT_LIB_NAME}")
+endif()
+
+
+include(PostBuild)
+
 print_status_colored("SUCCESS" "=== ENHANCED TEMPLATE SYSTEM VERIFICATION COMPLETE ===")

@@ -31,7 +31,7 @@ endif()
 
 # --- Memory Optimization during compilation ---
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=100 --param ggc-min-heapsize=131072")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wfatal-errors --param ggc-min-expand=100 --param ggc-min-heapsize=131072")
 endif()
 
 # --- Section splitting for better linker handling ---
@@ -105,4 +105,34 @@ if(SD_SANITIZE)
     if(SD_CUDA)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  ${SANITIZE_FLAGS} -lpthread -ftls-model=local-dynamic --relocatable-device-code=true")
     endif()
+endif()
+
+if(SD_GCC_FUNCTRACE)
+    message(STATUS "✅ Applying SD_GCC_FUNCTRACE debug flags for line number information")
+
+    # Override any optimization flags with debug-friendly ones
+    set(CMAKE_CXX_FLAGS_RELEASE "-O0 -ggdb3 -fPIC -DNDEBUG")
+    set(CMAKE_CXX_FLAGS_DEBUG "-O0 -ggdb3 -fPIC")
+    set(CMAKE_C_FLAGS_RELEASE "-O0 -ggdb3 -fPIC -DNDEBUG")
+    set(CMAKE_C_FLAGS_DEBUG "-O0 -ggdb3 -fPIC")
+
+    # Add comprehensive debug flags
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb3 -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -finstrument-functions -gdwarf-4 -fno-eliminate-unused-debug-types")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ggdb3 -fno-omit-frame-pointer -gdwarf-4")
+
+        # Override any conflicting optimization
+        string(REGEX REPLACE "-O[0-9s]" "-O0" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+        string(REGEX REPLACE "-O[0-9s]" "-O0" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+    endif()
+
+    # Ensure debug info is preserved in linker
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -rdynamic")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -rdynamic")
+
+    # Prevent stripping
+    set(CMAKE_STRIP "/bin/true")
+
+    # Add the compiler definition
+    add_compile_definitions(SD_GCC_FUNCTRACE=ON)
 endif()
