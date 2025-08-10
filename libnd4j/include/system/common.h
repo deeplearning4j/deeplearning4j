@@ -273,11 +273,11 @@ void throwException(const char* exceptionMessage);
 #define CONCAT7_IMPL(a, b, c, d, e, f, g) a##b##c##d##e##f##g
 #define CONCAT7(a, b, c, d, e, f, g) CONCAT7_IMPL(a, b, c, d, e, f, g)
 #define CONCAT8_IMPL(a, b, c, d, e, f, g, h) a##b##c##d##e##f##g##h
-#define CONCAT8(a, b, c, d, e, f, g, h) CONCAT8_IMPL(a, b, c, d, e, f, g, h)
 
 #define UNDERSCORE _
 #define COMMA_MATH ,
-
+#define TUPLE_TO_ARGS(x) TUPLE_TO_ARGS_IMPL x
+#define TUPLE_TO_ARGS_IMPL(first, second) first, second
 #define EXPAND(...) __VA_ARGS__
 #define EXPAND2(...) __VA_ARGS__
 #define EXPAND3(...) __VA_ARGS__

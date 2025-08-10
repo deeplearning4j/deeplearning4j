@@ -137,3 +137,7 @@ add_custom_target(verify_types
         COMMENT "Verify that type definitions are properly set"
         VERBATIM
 )
+
+if(BUILD_PPSTEP)
+include(cmake/Ppstep.cmake)
+endif()

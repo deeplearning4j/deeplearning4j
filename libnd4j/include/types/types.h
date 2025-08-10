@@ -321,7 +321,7 @@
  _20
 
 // we have to define bool anyway
-#define SD_BOOLS (BOOL, bool)
+#define SD_BOOL_TYPES (BOOL, bool)
 #define SD_LONG_TYPES_L TTYPE_INT64 TTYPE_UINT64
 #define SD_STRING_TYPES_L TTYPE_UTF8 TTYPE_UTF16 TTYPE_UTF32
 #define SD_INDEXING_TYPES_L TTYPE_INT32 TTYPE_INT64
@@ -362,7 +362,7 @@
 
 #if COUNT_NARG(SD_FLOAT_NATIVE_L) < 1
 #pragma message WARN("it will use float32 as SD_FLOAT_NATIVE")
-#define SD_FLOAT_NATIVE (FLOAT3, float)
+#define SD_FLOAT_NATIVE (FLOAT32, float)
 #else
 #define SD_FLOAT_NATIVE SKIP_FIRST_COMMA(SD_FLOAT_NATIVE_L)
 #endif
@@ -392,12 +392,12 @@
 
 #if COUNT_NARG(SD_GENERIC_NUMERIC_TYPES_L) < 1
 #pragma message WARN("it will use float32 as SD_GENERIC_NUMERIC_TYPES")
-#define SD_GENERIC_NUMERIC_TYPES (FLOAT3, float)
+#define SD_GENERIC_NUMERIC_TYPES (FLOAT32, float)
 #else
 #define SD_GENERIC_NUMERIC_TYPES SKIP_FIRST_COMMA(SD_GENERIC_NUMERIC_TYPES_L)
 #endif
 
-#define SD_NATIVE_FLOAT_TYPES  (FLOAT3, float), (DOUBLE, double)
+#define SD_NATIVE_FLOAT_TYPES  (FLOAT32, float), (DOUBLE, double)
 
 
 ///////////FULL LIST FOR THE METHODS WHICH SHOULD BE DEFINED FOR GENERAL TYPES///////////////
@@ -1440,9 +1440,7 @@
 #define CALLBACK_INSTANTIATE_NORM(a1, b1, FUNC_NAME, ARGS) \
    INSTANTIATE_NORM(a1, b1, FUNC_NAME, ARGS)
 
-// Helper macro to extract second element from tuple
-#define GET_SECOND(tuple) GET_SECOND_IMPL tuple
-#define GET_SECOND_IMPL(first, second) second
+
 
 // ============================================================================
 // ITERATION MACROS FOR TYPE COMBINATIONS

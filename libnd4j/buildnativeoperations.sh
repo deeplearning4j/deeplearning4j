@@ -522,6 +522,7 @@ KEEP_NVCC="${KEEP_NVCC:-OFF}"
 PREPROCESS="${PREPROCESS:-ON}"
 CMAKE_ARGUMENTS="${CMAKE_ARGUMENTS:-}"
 PTXAS_INFO="${PTXAS_INFO:-OFF}"
+BUILD_PPSTEP="${BUILD_PPSTEP:-OFF}"
 
 # Type validation specific variables
 DEBUG_TYPE_PROFILE="${DEBUG_TYPE_PROFILE:-}"
@@ -709,8 +710,12 @@ do
             OP_OUTPUT_FILE="$value"
             shift # past argument
             ;;
-        --preprocess)
+          --preprocess)
             PREPROCESS="$value"
+            shift # past argument
+            ;;
+        --ppstep|--build-ppstep)
+            BUILD_PPSTEP="$value"
             shift # past argument
             ;;
         --default)
@@ -1362,7 +1367,7 @@ echo KEEP_NVCC           = "$KEEP_NVCC"
 echo PRINT_INDICES       = "$PRINT_INDICES"
 echo PRINT_MATH          = "$PRINT_MATH"
 echo PREPROCESS          = "$PREPROCESS"
-
+echo BUILD_PPSTEP        = "$BUILD_PPSTEP"
 mkbuilddir
 pwd
 
@@ -1440,6 +1445,7 @@ if [ "$PREPROCESS" == "ON" ]; then
            -DSD_KEEP_NVCC_OUTPUT="$KEEP_NVCC" \
            -DSD_GCC_FUNCTRACE="$FUNC_TRACE" \
             -DSD_PREPROCESS="$PREPROCESS" \
+           -DBUILD_PPSTEP="$BUILD_PPSTEP" \
            -DSD_PTXAS="$PTXAS_INFO" \
            "$BLAS_ARG" \
            "$ARCH_ARG" \
@@ -1468,6 +1474,8 @@ if [ "$PREPROCESS" == "ON" ]; then
            -DSD_KEEP_NVCC_OUTPUT="$KEEP_NVCC" \
            -DSD_GCC_FUNCTRACE="$FUNC_TRACE" \
            -DSD_PREPROCESS="$PREPROCESS" \
+          -DBUILD_PPSTEP="$BUILD_PPSTEP" \
+
            "$BLAS_ARG" \
            "$ARCH_ARG" \
            "$NAME_ARG" \
@@ -1508,6 +1516,44 @@ fi
 # Build the project
 
 
+if [ "$BUILD_PPSTEP" == "ON" ]; then
+    print_colored "cyan" "Building ppstep preprocessor tool..."
+    
+    if [ "$LOG_OUTPUT" == "none" ]; then
+        eval "$CMAKE_COMMAND" \
+            -DBUILD_PPSTEP=ON \
+            "$BLAS_ARG" \
+            "$ARCH_ARG" \
+            "$NAME_ARG" \
+            -DOPENBLAS_PATH="$OPENBLAS_PATH" \
+            ../..
+    else
+        eval "$CMAKE_COMMAND" \
+            -DBUILD_PPSTEP=ON \
+            "$BLAS_ARG" \
+            "$ARCH_ARG" \
+            "$NAME_ARG" \
+            -DOPENBLAS_PATH="$OPENBLAS_PATH" \
+            ../.. >> "$LOG_OUTPUT" 2>&1
+    fi
+    
+    # Build ppstep
+    if [ "$LOG_OUTPUT" == "none" ]; then
+        eval "$MAKE_COMMAND" ppstep
+    else
+        eval "$MAKE_COMMAND" ppstep >> "$LOG_OUTPUT" 2>&1
+    fi
+    
+    print_colored "green" "✅ ppstep build complete"
+    print_colored "cyan" "Wrapper created at: blasbuild/$CHIP/ppstep-nd4j"
+    echo "Usage: ./blasbuild/$CHIP/ppstep-nd4j <source_file.cpp>"
+    
+    # CRITICAL: EXIT EARLY like preprocess does
+    exit 0
+fi
+
+
+# Determine script location
 if [ "$LOG_OUTPUT" == "none" ]; then
     eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" && cd ../../..
 else
@@ -1516,7 +1562,6 @@ fi
 
 # Determine script location
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
 # Find the libnd4j directory
 if [[ "$SCRIPT_DIR" == */libnd4j* ]]; then
     # Already in or under libnd4j directory

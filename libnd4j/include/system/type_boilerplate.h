@@ -25,7 +25,7 @@
 
 
 #include "array/DataTypeValidation.h"
-#include <system/common.h>
+#include <system/selective_rendering.h>
 /*
 *
 * Selector Macros:
@@ -48,81 +48,24 @@ Template Instantiation Macros:
 INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMBINATION_CLASS, INSTANT_PROCESS_COMBINATION_CLASS_3: These macros are used to instantiate templates for specific type combinations.
 * */
 
-// Add at top of type_boilerplate.h after includes:
-
-#define SD_UNPAREN(...) __VA_ARGS__
-#define SD_UNPAREN2(x) SD_UNPAREN x
-
-//============================================================================
-// TEMPLATE INSTANTIATION MACROS WITH ALIAS SUPPORT
-//============================================================================
-
-// New alias-based instantiation macros (preferred)
-#define SD_INSTANTIATE_SINGLE_ALIAS(TEMPLATE_NAME, SIGNATURE, TYPE_ALIAS, TYPE) \
-    SD_IF_SINGLE_ALIAS_COMPILED(TYPE_ALIAS, TEMPLATE_NAME<TYPE> SIGNATURE)
-
-#define SD_INSTANTIATE_DOUBLE_ALIAS(TEMPLATE_NAME, SIGNATURE, TYPE_A_ALIAS, TYPE_A, TYPE_B_ALIAS, TYPE_B) \
-    SD_IF_PAIR_ALIAS_COMPILED(TYPE_A_ALIAS, TYPE_B_ALIAS, TEMPLATE_NAME<TYPE_A, TYPE_B> SIGNATURE)
-
-#define SD_INSTANTIATE_TRIPLE_ALIAS(TEMPLATE_NAME, SIGNATURE, TYPE_A_ALIAS, TYPE_A, TYPE_B_ALIAS, TYPE_B, TYPE_C_ALIAS, TYPE_C) \
-    SD_IF_TRIPLE_ALIAS_COMPILED(TYPE_A_ALIAS, TYPE_B_ALIAS, TYPE_C_ALIAS, TEMPLATE_NAME<TYPE_A, TYPE_B, TYPE_C> SIGNATURE)
-
-#define SD_INSTANTIATE_SINGLE_TWICE_ALIAS(TEMPLATE_NAME, SIGNATURE, TYPE_ALIAS, TYPE) \
-    SD_IF_PAIR_ALIAS_COMPILED(TYPE_ALIAS, TYPE_ALIAS, TEMPLATE_NAME<TYPE, TYPE> SIGNATURE)
-
-#define SD_INSTANTIATE_SINGLE_THRICE_ALIAS(TEMPLATE_NAME, SIGNATURE, TYPE_ALIAS, TYPE) \
-    SD_IF_TRIPLE_ALIAS_COMPILED(TYPE_ALIAS, TYPE_ALIAS, TYPE_ALIAS, TEMPLATE_NAME<TYPE, TYPE, TYPE> SIGNATURE)
-
-#define SD_INSTANTIATE_UNCHAINED_SINGLE_ALIAS(TEMPLATE_NAME, SIGNATURE, TYPE_ALIAS, TYPE) \
-    SD_IF_SINGLE_ALIAS_COMPILED(TYPE_ALIAS, TEMPLATE_NAME TYPE SIGNATURE)
-
-#define SD_INSTANTIATE_PARTIAL_SINGLE_ALIAS(TEMPLATE_NAME, SIGNATURE, TYPE_ALIAS, TYPE) \
-    SD_IF_SINGLE_ALIAS_COMPILED(TYPE_ALIAS, TEMPLATE_NAME TYPE, UNPAREN2(SIGNATURE))
-
-#define SD_INSTANTIATE_TRIPLE_PARTIAL_ALIAS(TEMPLATE_NAME, SIGNATURE, TYPE_A, TYPE_B, TYPE_C_ALIAS, TYPE_C) \
-    SD_IF_SINGLE_ALIAS_COMPILED(TYPE_C_ALIAS, TEMPLATE_NAME<TYPE_A, TYPE_B, TYPE_C> SIGNATURE)
-
-// Legacy enum-based instantiation macros (for backward compatibility)
-#define SD_INSTANTIATE_SINGLE(TEMPLATE_NAME, SIGNATURE, TYPE_ENUM, TYPE) \
-    SD_IF_SINGLE_DATATYPE_COMPILED(TYPE_ENUM, TEMPLATE_NAME<TYPE> SIGNATURE)
-
-#define SD_INSTANTIATE_DOUBLE(TEMPLATE_NAME, SIGNATURE, TYPE_A_ENUM, TYPE_A, TYPE_B_ENUM, TYPE_B) \
-    SD_IF_PAIR_DATATYPE_COMPILED(TYPE_A_ENUM, TYPE_B_ENUM, TEMPLATE_NAME<TYPE_A, TYPE_B> SIGNATURE)
-
-#define SD_INSTANTIATE_TRIPLE(TEMPLATE_NAME, SIGNATURE, TYPE_A_ENUM, TYPE_A, TYPE_B_ENUM, TYPE_B, TYPE_C_ENUM, TYPE_C) \
-    SD_IF_TRIPLE_DATATYPE_COMPILED(TYPE_A_ENUM, TYPE_B_ENUM, TYPE_C_ENUM, TEMPLATE_NAME<TYPE_A, TYPE_B, TYPE_C> SIGNATURE)
-
-#define SD_INSTANTIATE_SINGLE_TWICE(TEMPLATE_NAME, SIGNATURE, TYPE_ENUM, TYPE) \
-    SD_IF_PAIR_DATATYPE_COMPILED(TYPE_ENUM, TYPE_ENUM, TEMPLATE_NAME<TYPE, TYPE> SIGNATURE)
-
-#define SD_INSTANTIATE_SINGLE_THRICE(TEMPLATE_NAME, SIGNATURE, TYPE_ENUM, TYPE) \
-    SD_IF_TRIPLE_DATATYPE_COMPILED(TYPE_ENUM, TYPE_ENUM, TYPE_ENUM, TEMPLATE_NAME<TYPE, TYPE, TYPE> SIGNATURE)
-
-#define SD_INSTANTIATE_UNCHAINED_SINGLE(TEMPLATE_NAME, SIGNATURE, TYPE_ENUM, TYPE) \
-    SD_IF_SINGLE_DATATYPE_COMPILED(TYPE_ENUM, TEMPLATE_NAME TYPE SIGNATURE)
-
-#define SD_INSTANTIATE_PARTIAL_SINGLE(TEMPLATE_NAME, SIGNATURE, TYPE_ENUM, TYPE) \
-    SD_IF_SINGLE_DATATYPE_COMPILED(TYPE_ENUM, TEMPLATE_NAME TYPE, UNPAREN2(SIGNATURE))
-
-#define SD_INSTANTIATE_TRIPLE_PARTIAL(TEMPLATE_NAME, SIGNATURE, TYPE_A, TYPE_B, TYPE_C_ENUM, TYPE_C) \
-    SD_IF_SINGLE_DATATYPE_COMPILED(TYPE_C_ENUM, TEMPLATE_NAME<TYPE_A, TYPE_B, TYPE_C> SIGNATURE)
-
-#define SD_INSTANTIATE_TRIPLE_TYPES_ONLY(TEMPLATE_NAME, SIGNATURE, TYPE_A, TYPE_B, TYPE_C) \
-    TEMPLATE_NAME<TYPE_A, TYPE_B, TYPE_C> SIGNATURE
-
-// Direct numeric type versions for when you already have the integer type numbers
-#define SD_INSTANTIATE_SINGLE_NUM(TEMPLATE_NAME, SIGNATURE, TYPE_NUM, TYPE) \
-    SD_IF_SINGLE_COMPILED(TYPE_NUM, TEMPLATE_NAME<TYPE> SIGNATURE)
-
-#define SD_INSTANTIATE_DOUBLE_NUM(TEMPLATE_NAME, SIGNATURE, TYPE_A_NUM, TYPE_A, TYPE_B_NUM, TYPE_B) \
-    SD_IF_PAIR_COMPILED(TYPE_A_NUM, TYPE_B_NUM, TEMPLATE_NAME<TYPE_A, TYPE_B> SIGNATURE)
-
-#define SD_INSTANTIATE_TRIPLE_NUM(TEMPLATE_NAME, SIGNATURE, TYPE_A_NUM, TYPE_A, TYPE_B_NUM, TYPE_B, TYPE_C_NUM, TYPE_C) \
-    SD_IF_TRIPLE_COMPILED(TYPE_A_NUM, TYPE_B_NUM, TYPE_C_NUM, TEMPLATE_NAME<TYPE_A, TYPE_B, TYPE_C> SIGNATURE)
-
-
-#define SD_STR(x) SD_STR_I(x)
-#define SD_STR_I(x) #x
+#define EXPAND(...) __VA_ARGS__
+#define EXPAND2(...) __VA_ARGS__
+#define EXPAND3(...) __VA_ARGS__
+#define EXTRACT(...) EXTRACT __VA_ARGS__
+#define NOTHING_EXTRACT
+#define PASTE(x, ...) x##__VA_ARGS__
+#define PASTE2(x, ...) x##__VA_ARGS__
+#define PASTE3(x, ...) x##__VA_ARGS__
+#define EVALUATING_PASTE(x, ...) PASTE(x, __VA_ARGS__)
+#define EVALUATING_PASTE2(x, ...) PASTE2(x, __VA_ARGS__)
+#define EVALUATING_PASTE3(x, ...) PASTE3(x, __VA_ARGS__)
+#define UNPAREN_IMPL(...) __VA_ARGS__
+#define EVAL0(...) EVAL1(EVAL1(EVAL1(__VA_ARGS__)))
+#define EVAL1(...) EVAL2(EVAL2(EVAL2(__VA_ARGS__)))
+#define EVAL2(...) EVAL3(EVAL3(EVAL3(__VA_ARGS__)))
+#define EVAL3(...) EVAL4(EVAL4(EVAL4(__VA_ARGS__)))
+#define EVAL4(...) EVAL5(EVAL5(EVAL5(__VA_ARGS__)))
+#define EVAL5(...) __VA_ARGS__
 
 #define SEL_T_1(WHAT, NAME, SIGNATURE, TYPE_A) WHAT(NAME, SIGNATURE, TYPE_A)
 #define SEL_T_2(WHAT, NAME, SIGNATURE, TYPE_A, ...) \
@@ -1288,6 +1231,7 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 
 #define BUILD_TRIPLE_TEMPLATE(NAME, SIGNATURE, TYPES_X, TYPES_Y, TYPES_Z) \
  EVAL(_EXEC_TRIPLE_T1(RANDOMTRIPLE, NAME, (SIGNATURE), (TYPES_X), (TYPES_Y), TYPES_Z))
+
 #define BUILD_PAIRWISE_TEMPLATE(NAME, SIGNATURE, TYPES_A) \
  EVAL(_EXEC_DOUBLE_P(RANDOMPAIRWISE, NAME, (SIGNATURE), TYPES_A))
 
@@ -1305,27 +1249,24 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
  }
 
 
-
-
 // Helper macro to apply a macro to arguments, forcing expansion
 #define APPLY(macro, args) macro args
 
 #define LIST(...) __VA_ARGS__
 
 #define _SELECTOR_DOUBLE_2(NAME, SIGNATURE, TYPE_A, ENUM, TYPE_B) \
- case ENUM: { \
-   if (!sd::DataTypeValidation::isValidDataType(ENUM) || \
-       !sd::DataTypeValidation::isCompiledDataType(ENUM)) { \
+ case ENUM: {                                                    \
+   if (!sd::DataTypeValidation::isValidDataType(ENUM) ||        \
+       !sd::DataTypeValidation::isCompiledDataType(ENUM)) {     \
      auto errorMsg = sd::DataTypeValidation::getDataTypeErrorMessage( \
-         ENUM, #NAME "_DOUBLE_2"); \
+         ENUM, #NAME "_DOUBLE_2");                               \
      printf("[ERROR] %s at %s:%d\n", errorMsg.c_str(), __FILE__, __LINE__); \
-     fflush(stdout); \
-     THROW_EXCEPTION(errorMsg.c_str()); \
-   } \
-   SD_INSTANTIATE_DOUBLE(NAME, SIGNATURE, ENUM, TYPE_A, ENUM, TYPE_B); \
-   break; \
+     fflush(stdout);                                             \
+     THROW_EXCEPTION(errorMsg.c_str());                         \
+   }                                                             \
+   NAME<TYPE_A, TYPE_B> SIGNATURE;                              \
+   break;                                                        \
  };
-
 #define SELECTOR_DOUBLE_2(NAME, SIGNATURE, TYPE_A, TYPE_B) \
  EVALUATING_PASTE2(_SELECT, OR_DOUBLE_2(NAME, UNPAREN3(SIGNATURE), TYPE_A, UNPAREN3(TYPE_B)))
 
@@ -1350,20 +1291,22 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
  EVALUATING_PASTE(_SELECTOR, _DOUBLE(YTYPE, NAME, SIGNATURE, UNPAREN(TYPE_A), UNPAREN(TYPES_B)))
 
 #define _SELECTOR_PAIRWISE_2(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, ENUM, TYPE_B) \
- case ENUM: { \
-   if (ZTYPE == YTYPE) { \
-     SD_INSTANTIATE_TRIPLE(NAME, SIGNATURE, XTYPE, TYPE_A, YTYPE, TYPE_B, YTYPE, TYPE_B) \
-   } else if (XTYPE == ZTYPE) { \
-     SD_INSTANTIATE_TRIPLE(NAME, SIGNATURE, XTYPE, TYPE_A, YTYPE, TYPE_B, XTYPE, TYPE_A) \
-   } else { \
-     auto errorMsg = sd::DataTypeValidation::getDataTypeErrorMessage( \
-         ZTYPE, #NAME "_PAIRWISE_MISMATCH"); \
-     printf("[ERROR] %s at %s:%d\n", errorMsg.c_str(), __FILE__, __LINE__); \
-     fflush(stdout); \
-     THROW_EXCEPTION(errorMsg.c_str()); \
-   } \
-   break; \
+ case ENUM: {                                                                           \
+   if (ZTYPE == YTYPE) {                                                               \
+     NAME<TYPE_A, TYPE_B, TYPE_B> SIGNATURE;                                           \
+   } else if (XTYPE == ZTYPE) {                                                        \
+     NAME<TYPE_A, TYPE_B, TYPE_A> SIGNATURE;                                           \
+   } else {                                                                            \
+     auto errorMsg = sd::DataTypeValidation::getDataTypeErrorMessage(                 \
+         ZTYPE, #NAME "_PAIRWISE_MISMATCH");                                           \
+     printf("[ERROR] %s at %s:%d\n", errorMsg.c_str(), __FILE__, __LINE__);           \
+     fflush(stdout);                                                                   \
+     THROW_EXCEPTION(errorMsg.c_str());                                               \
+   };                                                                                  \
+   break;                                                                              \
  };
+
+ 
 #define SELECTOR_PAIRWISE_2(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B) \
  EVALUATING_PASTE2(_SELECT, OR_PAIRWISE_2(XTYPE, YTYPE, ZTYPE, NAME, UNPAREN3(SIGNATURE), TYPE_A, UNPAREN3(TYPE_B)))
 #define _SELECTOR_PAIRWISE(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, ENUM, TYPE_A, ...)          \
@@ -1385,19 +1328,22 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
  EVALUATING_PASTE(_SELECTOR, _PAIRWISE(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, UNPAREN(TYPE_A), UNPAREN(TYPES_B)))
 
 #define _SELECTOR_TRIPLE_3(NAME, SIGNATURE, TYPE_X, TYPE_Y, ENUM_Z, TYPE_Z) \
- case ENUM_Z: { \
-   if (!sd::DataTypeValidation::isValidDataType(ENUM_Z) || \
-       !sd::DataTypeValidation::isCompiledDataType(ENUM_Z)) { \
-     auto errorMsg = sd::DataTypeValidation::getDataTypeErrorMessage( \
-         ENUM_Z, #NAME "_TRIPLE_3"); \
+ case ENUM_Z: {                                                            \
+   if (!sd::DataTypeValidation::isValidDataType(ENUM_Z) ||                 \
+       !sd::DataTypeValidation::isCompiledDataType(ENUM_Z)) {              \
+     auto errorMsg = sd::DataTypeValidation::getDataTypeErrorMessage(      \
+         ENUM_Z, #NAME "_TRIPLE_3");                                        \
      printf("[ERROR] %s at %s:%d\n", errorMsg.c_str(), __FILE__, __LINE__); \
-     fflush(stdout); \
-     THROW_EXCEPTION(errorMsg.c_str()); \
-   } \
-   SD_INSTANTIATE_TRIPLE_PARTIAL(NAME, SIGNATURE, TYPE_X, TYPE_Y, ENUM_Z, TYPE_Z) \
+     fflush(stdout);                                                        \
+     THROW_EXCEPTION(errorMsg.c_str());                                    \
+   }                                                                        \
+   NAME<TYPE_X, TYPE_Y, TYPE_Z> SIGNATURE;                                 \
  }; break;
+
+
 #define SELECTOR_TRIPLE_3(ZTYPE, NAME, SIGNATURE, TYPE_X, TYPE_Y, TYPE_Z) \
  EVALUATING_PASTE3(_SELECTOR, _TRIPLE_3(NAME, SIGNATURE, TYPE_X, TYPE_Y, UNPAREN3(TYPE_Z)))
+
 #define _SELECTOR_TRIPLE_2(ZTYPE, NAME, SIGNATURE, TYPE_X, ENUM_Y, TYPE_Y, TYPES_Z)         \
  case ENUM_Y: {                                                                            \
    switch (ZTYPE) {                                                                        \
@@ -1415,7 +1361,8 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 
 #define SELECTOR_TRIPLE_2(ZTYPE, NAME, SIGNATURE, TYPE_X, TYPES_Z, TYPE_Y) \
  EVALUATING_PASTE2(_SELECTOR, _TRIPLE_2(ZTYPE, NAME, SIGNATURE, TYPE_X, UNPAREN2(TYPE_Y), TYPES_Z))
-#define _SELECTOR_TRIPLE(YTYPE, ZTYPE, NAME, SIGNATURE, ENUM_X, TYPE_X, TYPES_Z, ...) \
+
+ #define _SELECTOR_TRIPLE(YTYPE, ZTYPE, NAME, SIGNATURE, ENUM_X, TYPE_X, TYPES_Z, ...) \
  case ENUM_X: {                                                                      \
    switch (YTYPE) {                                                                  \
      EXPAND(DISPATCH_TTYPES2(ZTYPE, NAME, SIGNATURE, TYPE_X, TYPES_Z, __VA_ARGS__)); \
@@ -1434,95 +1381,91 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
  EVALUATING_PASTE(_SELECTOR, _TRIPLE(YTYPE, ZTYPE, NAME, SIGNATURE, UNPAREN(TYPE_X), TYPES_Z, UNPAREN(TYPES_Y)))
 
 #define _SELECTOR_SINGLE(A, B, C, D) \
- case C: { \
+ case C: {                          \
    if (!sd::DataTypeValidation::isValidDataType(C) ||  \
        !sd::DataTypeValidation::isCompiledDataType(C)) { \
      auto errorMsg = sd::DataTypeValidation::getDataTypeErrorMessage( \
-         C, #A "_SINGLE"); \
+         C, #A "_SINGLE");                              \
      printf("[ERROR] %s at %s:%d\n", errorMsg.c_str(), __FILE__, __LINE__); \
-     fflush(stdout); \
-     THROW_EXCEPTION(errorMsg.c_str()); \
-   } \
-   SD_INSTANTIATE_SINGLE(A, B, C, D); \
-   break; \
+     fflush(stdout);                                    \
+     THROW_EXCEPTION(errorMsg.c_str());                \
+   }                                                    \
+   A<D> B;                                              \
+   break;                                               \
  };
 
 
 #define SELECTOR_SINGLE(A, B, C) EVALUATING_PASTE(_SEL, ECTOR_SINGLE(A, B, UNPAREN(C)))
 
 #define _SELECTOR_SINGLE_THRICE(A, B, C, D) \
- case C: { \
+ case C: {                                 \
    if (!sd::DataTypeValidation::isValidDataType(C) ||  \
        !sd::DataTypeValidation::isCompiledDataType(C)) { \
      auto errorMsg = sd::DataTypeValidation::getDataTypeErrorMessage( \
-         C, #A "_SINGLE_THRICE"); \
+         C, #A "_SINGLE_THRICE");                       \
      printf("[ERROR] %s at %s:%d\n", errorMsg.c_str(), __FILE__, __LINE__); \
-     fflush(stdout); \
-     THROW_EXCEPTION(errorMsg.c_str()); \
-   } \
-   SD_INSTANTIATE_SINGLE_THRICE(A, B, C, D); \
-   break; \
+     fflush(stdout);                                    \
+     THROW_EXCEPTION(errorMsg.c_str());                \
+   }                                                    \
+   A<D, D, D> B;                                        \
+   break;                                               \
  };
-
 #define SELECTOR_SINGLE_THRICE(A, B, C) EVALUATING_PASTE(_SEL, ECTOR_SINGLE_THRICE(A, B, UNPAREN(C)))
 
 #define _SELECTOR_SINGLE_TWICE(A, B, C, D) \
- case C: { \
+ case C: {                                \
    if (!sd::DataTypeValidation::isValidDataType(C) ||  \
        !sd::DataTypeValidation::isCompiledDataType(C)) { \
      auto errorMsg = sd::DataTypeValidation::getDataTypeErrorMessage( \
-         C, #A "_SINGLE_TWICE"); \
+         C, #A "_SINGLE_TWICE");                        \
      printf("[ERROR] %s at %s:%d\n", errorMsg.c_str(), __FILE__, __LINE__); \
-     fflush(stdout); \
-     THROW_EXCEPTION(errorMsg.c_str()); \
-   } \
-   SD_INSTANTIATE_SINGLE_TWICE(A, B, C, D); \
-   break; \
+     fflush(stdout);                                    \
+     THROW_EXCEPTION(errorMsg.c_str());                \
+   }                                                    \
+   A<D, D> B;                                           \
+   break;                                               \
  };
 
 #define SELECTOR_SINGLE_TWICE(A, B, C) EVALUATING_PASTE(_SEL, ECTOR_SINGLE_TWICE(A, B, UNPAREN(C)))
 
-#define _TEMPLATE_SINGLE_TWICE(A, B, C, D) \
-    SD_INSTANTIATE_SINGLE_TWICE(A, B, C, D)
+#define _TEMPLATE_SINGLE_TWICE(A, B, C, D) A<D, D> B;
 #define TEMPLATE_SINGLE_TWICE(A, B, C) EVALUATING_PASTE(_TEM, PLATE_SINGLE_TWICE(A, B, UNPAREN(C)))
 
 #define _SELECTOR_PARTIAL_SINGLE(A, B, C, D) \
- case C: { \
+ case C: {                                  \
    if (!sd::DataTypeValidation::isValidDataType(C) ||  \
        !sd::DataTypeValidation::isCompiledDataType(C)) { \
      auto errorMsg = sd::DataTypeValidation::getDataTypeErrorMessage( \
-         C, #A "_PARTIAL_SINGLE"); \
+         C, #A "_PARTIAL_SINGLE");                      \
      printf("[ERROR] %s at %s:%d\n", errorMsg.c_str(), __FILE__, __LINE__); \
-     fflush(stdout); \
-     THROW_EXCEPTION(errorMsg.c_str()); \
-   } \
-   SD_INSTANTIATE_PARTIAL_SINGLE(A, B, C, D) \
-   break; \
+     fflush(stdout);                                    \
+     THROW_EXCEPTION(errorMsg.c_str());                \
+   }                                                    \
+   A D, UNPAREN2(B);                                    \
+   break;                                               \
  };
 
 
 #define SELECTOR_PARTIAL_SINGLE(A, B, C) EVALUATING_PASTE(_SEL, ECTOR_PARTIAL_SINGLE(A, B, UNPAREN(C)))
 
-#define _RANDOMSINGLE(A, B, C, D) \
-    SD_INSTANTIATE_SINGLE(A, B, C, D)
-
-#define _RANDOMSINGLEU(A, B, C, D) \
-    SD_INSTANTIATE_UNCHAINED_SINGLE(A, B, C, D)
+#define _RANDOMSINGLE(A, B, C, D) A<D> B;
+#define _RANDOMSINGLEU(A, B, C, D) A D B;
 #define RANDOMSINGLE(A, B, C) EVALUATING_PASTE(_RAND, OMSINGLE(A, UNPAREN(B), UNPAREN(C)))
 #define RANDOMSINGLEU(A, B, C) EVALUATING_PASTE(_RAND, OMSINGLEU(A, UNPAREN(B), UNPAREN(C)))
 #define RANDOMDOUBLE(A, B, C, D) EXPAND(DISPATCH_DTYPES(A, UNPAREN(B), D, UNPAREN(C)))
 
-#define _RANDOMDOUBLE2(A, B, C, D, E, F) \
-    SD_INSTANTIATE_DOUBLE(A, B, E, F, C, D)
-
+#define _RANDOMDOUBLE2(TEMPLATE_NAME, SIGNATURE, ENUM_A, TYPE_A, ENUM_B, TYPE_B) \
+    EVAL(SD_IF_PAIR_ALIAS_COMPILED_DECL( \
+        ENUM_A, \
+        ENUM_B, \
+        TEMPLATE_NAME < TYPE_B , TYPE_A > SIGNATURE ; \
+    ))
 #define RANDOMDOUBLE2(A, B, C, D) EVALUATING_PASTE(_RAND, OMDOUBLE2(A, B, UNPAREN(C), UNPAREN(D)))
 
-#define _RANDOMPAIRWISE2(A, B, C, D, E) \
-    SD_INSTANTIATE_TRIPLE_TYPES_ONLY(A, E, B, C, D)
+#define _RANDOMPAIRWISE2(A, B, C, D, E) A<B, C, D> E;
 #define RANDOMPAIRWISE(A, B, C) EVALUATING_PASTE(_RANDOM, PAIRWISE2(A, UNPAREN(C), UNPAREN(B)))
 
-#define _RANDOMTRIPLE3(A, B, ZN, ZT, YN, YT, XN, XT) \
-    SD_INSTANTIATE_TRIPLE(A, B, XN, XT, YN, YT, ZN, ZT)
+#define _RANDOMTRIPLE3(A, B, ZN, ZT, YN, YT, XN, XT) A<XT, YT, ZT> B;
 #define RANDOMTRIPLE3(A, B, Z, Y, X) \
  EVALUATING_PASTE(_RANDOM, TRIPLE3(A, UNPAREN(B), UNPAREN(Z), UNPAREN(Y), UNPAREN(X)))
 
@@ -1549,21 +1492,12 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 #define CAT(a, b) CAT_IMPL(a, b)
 #define CAT_IMPL(a, b) a##b
 
-#ifdef _MSC_VER
-// MSVC needs extra indirection for __VA_ARGS__ expansion
-#define PP_NARGS(...) PP_NARGS_MSVC(__VA_ARGS__)
-#define PP_NARGS_MSVC(...) PP_NARGS_IMPL(__VA_ARGS__, PP_RSEQ_N())
-#define PP_NARGS_IMPL(...) PP_NARGS_EXPAND(PP_ARG_N(__VA_ARGS__))
-#define PP_NARGS_EXPAND(x) x
-#define PP_ARG_N(_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,N,...) N
-#define PP_RSEQ_N() 16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0
-#else
-// Your existing definitions work fine for GCC/Clang
 #define PP_NARGS(...) PP_NARGS_IMPL(__VA_ARGS__, PP_RSEQ_N())
 #define PP_NARGS_IMPL(...) PP_ARG_N(__VA_ARGS__)
 #define PP_ARG_N(_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,N,...) N
 #define PP_RSEQ_N() 16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0
-#endif
+
+
 #define GET(n, list) CAT(GET_, n) list
 
 #define GET_0(t1, ...) t1
@@ -1657,10 +1591,6 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 #define INNER_LOOP_16(OUTER_ELEMENT, INNER_LIST, CALLBACK,FUNC_NAME,ARGS) \
    INNER_LOOP_15(OUTER_ELEMENT, INNER_LIST, CALLBACK,FUNC_NAME,ARGS) \
    CALLBACK(OUTER_ELEMENT, GET(15, INNER_LIST),FUNC_NAME,ARGS)
-
-#define OUTER_LOOP_(OUTER_LIST, INNER_LIST, INNER_SIZE, CALLBACK, FUNC_NAME, ARGS) \
-    CAT(OUTER_LOOP_, PP_NARGS OUTER_LIST)(OUTER_LIST, INNER_LIST, \
-        PP_NARGS INNER_LIST, CALLBACK, FUNC_NAME, ARGS)
 
 #define OUTER_LOOP_1(OUTER_LIST, INNER_LIST, INNER_SIZE, CALLBACK,FUNC_NAME,ARGS) \
    CAT(INNER_LOOP_, INNER_SIZE)(GET(0, OUTER_LIST), INNER_LIST, CALLBACK,FUNC_NAME,ARGS)
@@ -1922,8 +1852,14 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 #define ITERATE_COMBINATIONS_3(OUTER_LIST, MIDDLE_LIST, INNER_LIST, CALLBACK,FUNC_NAME,ARGS) \
    CAT(OUTER_LOOP_, CAT(PP_NARGS(EXPAND OUTER_LIST),_3))(OUTER_LIST, MIDDLE_LIST, INNER_LIST, PP_NARGS(EXPAND MIDDLE_LIST), PP_NARGS(EXPAND INNER_LIST), CALLBACK,FUNC_NAME,ARGS)
 
+#define INSTANT_PROCESS_CLASSCOMBINATION(a1, b1,FUNC_NAME,ARGS) template  FUNC_NAME<GET_SECOND(a1), GET_SECOND(b1)>ARGS;
+#define INSTANT_PROCESS_COMBINATION(a1, b1,FUNC_NAME,ARGS) template void FUNC_NAME<GET_SECOND(a1), GET_SECOND(b1)>ARGS;
+#define INSTANT_PROCESS_COMBINATION_3(a1, b1,c1,FUNC_NAME,ARGS)  template void FUNC_NAME<GET_SECOND(a1),GET_SECOND(b1), GET_SECOND(c1)>ARGS;
 
-#include "type_instantiation_macros.h"
+#define INSTANT_PROCESS_COMBINATION_CLASS(a1, b1,FUNC_NAME,ARGS) template class FUNC_NAME<GET_SECOND(a1), GET_SECOND(b1)>ARGS;
+#define INSTANT_PROCESS_COMBINATION_CLASS_3(a1, b1,c1,FUNC_NAME,ARGS) extern template class FUNC_NAME<GET_SECOND(a1),GET_SECOND(b1), GET_SECOND(c1)>ARGS;
+
+
 
 #define LOOP_1(CALLBACK, LIST) \
    CALLBACK(GET(0, LIST))
@@ -1988,13 +1924,8 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
    LOOP_15(CALLBACK, LIST) \
    CALLBACK(GET(15, LIST))
 
-#ifdef _MSC_VER
-#define ITERATE_LIST(LIST, CALLBACK) \
-   CAT(LOOP_, EXPAND(PP_NARGS(EXPAND LIST)))(CALLBACK, LIST)
-#else
 #define ITERATE_LIST(LIST, CALLBACK) \
    CAT(LOOP_, PP_NARGS(EXPAND LIST))(CALLBACK, LIST)
-#endif
 
 #define PROCESS_ELEMENT(a, b, FUNC_NAME, ARGS) \
    std::cout << "(" << a << ", " << b << ")\n";
@@ -2149,7 +2080,6 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
       } \
     } \
   } while(0)
-
 
 
 #endif  // TESTS_CPU_TYPE_BOILERPLATE_H

@@ -106,10 +106,10 @@
         <libnd4j.printindices>OFF</libnd4j.printindices>
         <libnd4j.printmath>OFF</libnd4j.printmath>
         <junit.version>5.9.2</junit.version>
-
         <cpu.core.count></cpu.core.count>
         <libnd4j.preprocess>OFF</libnd4j.preprocess>
-    </properties>
+        <libnd4j.build.ppstep>OFF</libnd4j.build.ppstep>
+ </properties>
 
     <dependencies>
         <dependency>
@@ -549,7 +549,9 @@
                                         <argument>--debug-custom-types</argument>
                                         <argument>${libnd4j.debug.types.custom}</argument>
                                         <argument>--debug-auto-reduce</argument>
-                                        <argument>${libnd4j.debug.auto.reduce}</argument>
+                                         <argument>${libnd4j.debug.auto.reduce}</argument>
+                                         <argument>--ppstep</argument>
+                                        <argument>${libnd4j.build.ppstep}</argument>
 
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
@@ -701,6 +703,8 @@
                                         <argument>${libnd4j.debug.types.custom}</argument>
                                         <argument>--debug-auto-reduce</argument>
                                         <argument>${libnd4j.debug.auto.reduce}</argument>
+                                       <argument>--ppstep</argument>
+                                        <argument>${libnd4j.build.ppstep}</argument>
 
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
