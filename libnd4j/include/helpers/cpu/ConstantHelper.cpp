@@ -108,15 +108,15 @@ ConstantDataBuffer *ConstantHelper::constantBuffer(const ConstantDescriptor &des
       auto doubleDtype = sd::DataType::DOUBLE;
 
       BUILD_DOUBLE_SELECTOR(
-          sd::DataType::DOUBLE, dataType, sd::TypeCast::convertGeneric,
+          DOUBLE, dataType, sd::TypeCast::convertGeneric,
           (nullptr, const_cast<double *>(descriptor.floatValues().data()), descriptor.length(), cbuff->pointer()),
-          (sd::DataType::DOUBLE, double), SD_COMMON_TYPES_ALL);
+          (DOUBLE, double), SD_COMMON_TYPES_ALL);
     } else if (descriptor.isInteger()) {
-      auto int64DType = sd::DataType::INT64;
-      BUILD_DOUBLE_SELECTOR(sd::DataType::INT64, dataType, sd::TypeCast::convertGeneric,
+      auto int64DType = INT64;
+      BUILD_DOUBLE_SELECTOR(INT64, dataType, sd::TypeCast::convertGeneric,
                             (nullptr, const_cast<sd::LongType *>(descriptor.integerValues().data()),
                              descriptor.length(), cbuff->pointer()),
-                            (sd::DataType::INT64, sd::LongType), SD_COMMON_TYPES_ALL);
+                            (INT64, LongType), SD_COMMON_TYPES_ALL);
     }
 
     ConstantDataBuffer dataBuffer(cbuff, descriptor.length(), dataType);

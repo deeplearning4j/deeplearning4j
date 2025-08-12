@@ -248,14 +248,14 @@ void logSoftmax(LaunchContext* context, NDArray* input, NDArray* output, const i
   }
 }
 
-BUILD_SINGLE_TEMPLATE(template void thresholdReluDerivative_,
+BUILD_SINGLE_TEMPLATE( void thresholdReluDerivative_,
                       (sd::LaunchContext * context, NDArray* input, double threshold, NDArray* dLdO, NDArray* output),
                       SD_FLOAT_TYPES);
-BUILD_SINGLE_TEMPLATE(template void logSoftMaxForVector_,
+BUILD_SINGLE_TEMPLATE( void logSoftMaxForVector_,
                       (void const* input, sd::LongType const* inShapeInfo, void* output,
                           sd::LongType const* outShapeInfo),
                       SD_FLOAT_TYPES);
-BUILD_SINGLE_TEMPLATE(template void _softMaxDerivForVector,
+BUILD_SINGLE_TEMPLATE( void _softMaxDerivForVector,
                       (sd::LaunchContext * context, const void* input, const sd::LongType* inShapeInfo, void* output),
                       SD_FLOAT_TYPES);
 

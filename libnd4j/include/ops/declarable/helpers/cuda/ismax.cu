@@ -99,7 +99,7 @@ void ismax(LaunchContext* context, NDArray* input, NDArray* output, const std::v
   NDArray::registerSpecialUse({output}, {input});
 }
 
-BUILD_SINGLE_TEMPLATE(template void ismax_,
+BUILD_SINGLE_TEMPLATE( void ismax_,
                       (sd::LaunchContext * context, NDArray* input, NDArray* output,
                        const std::vector<sd::LongType>& dimensions),
                       SD_COMMON_TYPES);

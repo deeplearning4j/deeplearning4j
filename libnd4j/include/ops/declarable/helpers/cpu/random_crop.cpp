@@ -67,7 +67,7 @@ sd::Status randomCropFunctor(graph::Context& context, NDArray* input, NDArray* s
                         SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template sd::Status _randomCropFunctor,
+BUILD_SINGLE_TEMPLATE( sd::Status _randomCropFunctor,
                       (graph::Context & context, NDArray* input, NDArray* shape, NDArray* output, int seed),
                       SD_FLOAT_TYPES);
 

@@ -252,7 +252,7 @@ sd::LongType nonMaxSuppressionV3(sd::LaunchContext* context, NDArray* boxes, NDA
   return 0;
 }
 
-BUILD_DOUBLE_TEMPLATE(template sd::LongType nonMaxSuppressionGeneric_,
+BUILD_DOUBLE_TEMPLATE( sd::LongType nonMaxSuppressionGeneric_,
                       (sd::LaunchContext * context, NDArray* boxes, NDArray* scores, int maxSize,
                        float overlapThreshold, float scoreThreshold, NDArray* output, SimilarityFunc SimilarityFunc),
                       SD_FLOAT_TYPES, SD_INTEGER_TYPES);
@@ -262,7 +262,7 @@ void nonMaxSuppression(sd::LaunchContext* context, NDArray* boxes, NDArray* scal
   BUILD_SINGLE_SELECTOR(boxes->dataType(), nonMaxSuppressionV2_,
                         (boxes, scales, maxSize, overlapThreshold, scoreThreshold, output), SD_NUMERIC_TYPES);
 }
-BUILD_SINGLE_TEMPLATE(template void nonMaxSuppressionV2_,
+BUILD_SINGLE_TEMPLATE( void nonMaxSuppressionV2_,
                       (NDArray * boxes, NDArray* scales, int maxSize, double overlapThreshold, double scoreThreshold,
                        NDArray* output),
                       SD_NUMERIC_TYPES);

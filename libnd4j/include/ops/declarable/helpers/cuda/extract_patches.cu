@@ -163,7 +163,7 @@ static void _extractPatches(LaunchContext* context, NDArray* images, NDArray* ou
 
   samediff::Threads::parallel_tad(func, 0, batchCount);
 }
-BUILD_SINGLE_TEMPLATE(template void _extractPatches,
+BUILD_SINGLE_TEMPLATE( void _extractPatches,
                       (sd::LaunchContext * context, NDArray* input, NDArray* output, int sizeRow, int sizeCol,
                           int stradeRow, int stradeCol, int rateRow, int rateCol, bool theSame),
                       SD_COMMON_TYPES);

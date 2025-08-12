@@ -132,6 +132,6 @@ SD_HOST void TransformStrict<X>::intermediateShaped(dim3 launchDims, cudaStream_
  sd::DebugHelper::checkErrorCode(stream, "transformStrict(...) failed");
 }
 
-BUILD_SINGLE_TEMPLATE(template class TransformStrict, , SD_FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE( class TransformStrict, , SD_FLOAT_TYPES);
 }  // namespace transform
 }  // namespace functions

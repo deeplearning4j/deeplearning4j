@@ -73,7 +73,7 @@ static void batchToSpace_(NDArray& input, NDArray& output, const sd::LongType cr
   samediff::Threads::parallel_for(func, 0, bS, 1, cropBottom, iH - cropTop, 1, cropLeft, iW - cropRight, 1);
 }
 
-BUILD_SINGLE_TEMPLATE(template void batchToSpace_,
+BUILD_SINGLE_TEMPLATE( void batchToSpace_,
                       (NDArray& input, NDArray& output, const sd::LongType cropBottom, const sd::LongType cropTop,
                        const sd::LongType cropLeft, const sd::LongType cropRight),
                       SD_COMMON_TYPES);
@@ -146,7 +146,7 @@ static void batchToSpaceND_(NDArray& input, NDArray& crop, NDArray& output,
   samediff::Threads::parallel_tad(func, 0, zLen);
 }
 
-BUILD_SINGLE_TEMPLATE(template void batchToSpaceND_,
+BUILD_SINGLE_TEMPLATE( void batchToSpaceND_,
                       (NDArray& input, NDArray& crop, NDArray& output, const sd::LongType numOfSpatialDims),
                       SD_COMMON_TYPES);
 
@@ -251,7 +251,7 @@ static void spaceToBatch_(NDArray& input, NDArray& output, const sd::LongType pa
   samediff::Threads::parallel_for(func, 0, bS, 1, 0, oH, 1);
 }
 
-BUILD_SINGLE_TEMPLATE(template void spaceToBatch_,
+BUILD_SINGLE_TEMPLATE( void spaceToBatch_,
                       (NDArray& input, NDArray& output, const sd::LongType padBottom, const sd::LongType padTop,
                        const sd::LongType padLeft, const sd::LongType padRight),
                       SD_COMMON_TYPES);
@@ -341,7 +341,7 @@ static void spaceToBatchND_(NDArray& input, NDArray& padding, NDArray& output,
   samediff::Threads::parallel_tad(func, 0, zLen);
 }
 
-BUILD_SINGLE_TEMPLATE(template void spaceToBatchND_,
+BUILD_SINGLE_TEMPLATE( void spaceToBatchND_,
                       (NDArray& input, NDArray& padding, NDArray& output,
                        const sd::LongType numOfSpatialDims),
                       SD_COMMON_TYPES);

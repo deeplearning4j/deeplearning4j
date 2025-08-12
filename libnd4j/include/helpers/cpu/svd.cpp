@@ -834,7 +834,7 @@ void SVD<T>::evalData(NDArray& matrix) {
 
 }
 
-BUILD_SINGLE_TEMPLATE(template class SVD, , SD_FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE( class SVD, , SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

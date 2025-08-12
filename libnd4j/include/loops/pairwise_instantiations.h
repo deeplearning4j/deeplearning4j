@@ -281,7 +281,7 @@
 #elif COUNT_SD_LONG_TYPES == 1
 #define SD_LONG_TYPES_PART_0 (GET_ELEMENT(0, SD_LONG_TYPES))
 #else
-#define SD_LONG_TYPES_PART_0 ((sd::DataType::INT64, sd::LongType))
+#define SD_LONG_TYPES_PART_0 ((sd::DataType::INT64, LongType))
 #endif
 
 #define SD_LONG_TYPES_PART_1 SD_LONG_TYPES_PART_0

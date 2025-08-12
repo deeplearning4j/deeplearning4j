@@ -400,6 +400,6 @@ Status LegacyRandomOp::validateDataTypes(Context& block) {
   return Status::OK;
 }
 
-BUILD_SINGLE_TEMPLATE(template sd::Status LegacyRandomOp::validateAndExecute_, (Context&), SD_FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE( sd::Status LegacyRandomOp::validateAndExecute_, (Context&), SD_FLOAT_TYPES);
 }  // namespace ops
 }  // namespace sd

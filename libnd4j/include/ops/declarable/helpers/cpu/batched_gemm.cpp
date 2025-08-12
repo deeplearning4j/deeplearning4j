@@ -173,7 +173,7 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
                         SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void bgemm_,
+BUILD_SINGLE_TEMPLATE( void bgemm_,
                       ( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector<NDArray *> &vC,
                           NDArray *alphas,  NDArray *betas, int transA, int transB, int M, int N, int K,
                           int lda,  int ldb,  int ldc),

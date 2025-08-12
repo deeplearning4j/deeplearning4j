@@ -266,7 +266,7 @@ void Sqrtm<T>::calc(NDArray& in, NDArray& out) {
   delete inULike;
 }
 
-BUILD_SINGLE_TEMPLATE(template class Sqrtm, , SD_FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE( class Sqrtm, , SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

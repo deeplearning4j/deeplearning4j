@@ -1565,16 +1565,16 @@ void printDeviceBuffer(OpaqueDataBuffer *buffer, sd::LongType offset) {
 
 
 
-BUILD_SINGLE_TEMPLATE(template void pullRowsGeneric,
+BUILD_SINGLE_TEMPLATE( void pullRowsGeneric,
                       (OpaqueNDArray, OpaqueNDArray, const int, OpaqueNDArray, sd::LongType),
                       SD_COMMON_TYPES);
 
 
 
-BUILD_SINGLE_TEMPLATE(template void tearGeneric,
+BUILD_SINGLE_TEMPLATE( void tearGeneric,
                       (void *, sd::LongType const *, sd::Pointer *, sd::LongType const *, sd::LongType const *,sd::LongType const *),
                       SD_COMMON_TYPES);
 
-BUILD_SINGLE_TEMPLATE(template void shuffleGeneric,
+BUILD_SINGLE_TEMPLATE( void shuffleGeneric,
                       (OpaqueNDArrayArr, OpaqueNDArrayArr, int, int *,sd::LongType *, sd::LongType),
                       SD_COMMON_TYPES);

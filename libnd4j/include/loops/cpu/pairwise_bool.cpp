@@ -146,6 +146,6 @@ void PairWiseBoolTransform<X, Z>::exec(const void *vx, const sd::LongType *xShap
 
 }
 
-BUILD_DOUBLE_TEMPLATE(template class PairWiseBoolTransform, , SD_COMMON_TYPES, SD_BOOL_TYPES);
+BUILD_DOUBLE_TEMPLATE( class PairWiseBoolTransform, , SD_COMMON_TYPES, SD_BOOL_TYPES);
 }  // namespace pairwise_transforms
 }  // namespace functions

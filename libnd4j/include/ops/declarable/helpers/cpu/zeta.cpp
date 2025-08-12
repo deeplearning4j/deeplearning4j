@@ -70,7 +70,7 @@ void zeta(sd::LaunchContext* context, NDArray& x, NDArray& q, NDArray& z) {
   BUILD_SINGLE_SELECTOR(x.dataType(), zeta_, (context, x, q, z), SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template  void zeta_,
+BUILD_SINGLE_TEMPLATE(  void zeta_,
                       (sd::LaunchContext * context, NDArray& x, NDArray& q, NDArray& z), SD_FLOAT_TYPES);
 
 }  // namespace helpers

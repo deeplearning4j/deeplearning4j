@@ -600,7 +600,7 @@ auto biasDType = bias.dataType();
                         SD_FLOAT_TYPES);
 }
 
-BUILD_DOUBLE_TEMPLATE(template void addBias_,
+BUILD_DOUBLE_TEMPLATE( void addBias_,
                       (NDArray& input, NDArray& bias, NDArray& output, const bool isNCHW), SD_FLOAT_TYPES,
                       SD_FLOAT_TYPES);
 }  // namespace helpers

@@ -204,7 +204,7 @@ SD_HOST void TransformBool<X, Z>::intermediateShaped(
 
 ////////////////////////////////////////////////////////////////////////////////
 // Macro to instantiate templates for TransformBool with common and bool types
-BUILD_DOUBLE_TEMPLATE(template class TransformBool, , SD_COMMON_TYPES, SD_BOOL_TYPES);
+BUILD_DOUBLE_TEMPLATE( class TransformBool, , SD_COMMON_TYPES, SD_BOOL_TYPES);
 
 }  // namespace transform
 }  // namespace functions

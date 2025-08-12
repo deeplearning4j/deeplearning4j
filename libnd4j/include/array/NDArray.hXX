@@ -1642,7 +1642,7 @@ std::vector<T> NDArray::getBufferAsVector()  {
   for (sd::LongType e = 0; e < len; e++) vector[e] = this->e<T>(e);
   return vector;
 }
-BUILD_SINGLE_TEMPLATE(template  SD_LIB_EXPORT std::vector, NDArray::getBufferAsVector(), SD_COMMON_TYPES_ALL);
+BUILD_SINGLE_TEMPLATE(  SD_LIB_EXPORT std::vector, NDArray::getBufferAsVector(), SD_COMMON_TYPES_ALL);
 
 ////////////////////////////////////////////////////////////////////////
 std::vector<int64_t> NDArray::getShapeAsFlatVector()  {
@@ -1961,7 +1961,7 @@ void NDArray::templatedSet(void *buffer, LongType offset, void *value) {
   tickWriteHost();
   NDArray::registerPrimaryUse({this}, {this});
 }
-BUILD_DOUBLE_TEMPLATE( template SD_LIB_EXPORT  void NDArray::templatedSet,
+BUILD_DOUBLE_TEMPLATE( SD_LIB_EXPORT  void NDArray::templatedSet,
                       (void *buffer,  sd::LongType offset,  void *value), SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
 
 
@@ -2958,7 +2958,7 @@ T *NDArray::specialBufferasTWithOffset(LongType offset) {
   return reinterpret_cast<T *>(specialBufferWithOffset(offset));
 }
 
-BUILD_SINGLE_UNCHAINED_TEMPLATE( template SD_LIB_EXPORT, *NDArray::specialBufferasTWithOffset(LongType), SD_COMMON_TYPES);
+BUILD_SINGLE_UNCHAINED_TEMPLATE(  SD_LIB_EXPORT, *NDArray::specialBufferasTWithOffset(LongType), SD_COMMON_TYPES);
 
 
 template <typename T>
@@ -2966,7 +2966,7 @@ T *NDArray::specialBufferasT() {
   return specialBufferasTWithOffset<T>(0);
 }
 
-BUILD_SINGLE_UNCHAINED_TEMPLATE(template  SD_LIB_EXPORT, *NDArray::specialBufferasT(), SD_COMMON_TYPES);
+BUILD_SINGLE_UNCHAINED_TEMPLATE(  SD_LIB_EXPORT, *NDArray::specialBufferasT(), SD_COMMON_TYPES);
 
 
 template <typename T>
@@ -2974,7 +2974,7 @@ T *NDArray::bufferAsT() {
   return bufferasTWithOffset<T>(0);
 }
 
-BUILD_SINGLE_UNCHAINED_TEMPLATE( template SD_LIB_EXPORT, *NDArray::bufferAsT(), SD_COMMON_TYPES);
+BUILD_SINGLE_UNCHAINED_TEMPLATE(  SD_LIB_EXPORT, *NDArray::bufferAsT(), SD_COMMON_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -2982,7 +2982,7 @@ T *NDArray::bufferasTWithOffset(sd::LongType offset) {
   return reinterpret_cast<T *>(bufferWithOffset(offset));
 }
 
-BUILD_SINGLE_UNCHAINED_TEMPLATE( template SD_LIB_EXPORT, * NDArray::bufferasTWithOffset(sd::LongType),
+BUILD_SINGLE_UNCHAINED_TEMPLATE(  SD_LIB_EXPORT, * NDArray::bufferasTWithOffset(sd::LongType),
                                 SD_COMMON_TYPES_ALL);
 
 //////////////////////////////////////////////////////////////////////////
@@ -3003,7 +3003,7 @@ NDArray NDArray::asT()  {
 
   return result;
 }
-BUILD_SINGLE_TEMPLATE( template SD_LIB_EXPORT NDArray NDArray::asT, (), SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE(  SD_LIB_EXPORT NDArray NDArray::asT, (), SD_COMMON_TYPES);
 void NDArray::checkIfStringArrayAndNotEmpty()  {
   if (!isS()) {
     auto actualType = DataTypeUtils::asString(dataType());
@@ -3751,7 +3751,7 @@ std::vector<T> NDArray::asVectorT() {
 
   return result;
 }
-BUILD_SINGLE_TEMPLATE( template SD_LIB_EXPORT std::vector, NDArray::asVectorT(), SD_COMMON_TYPES_ALL);
+BUILD_SINGLE_TEMPLATE(  SD_LIB_EXPORT std::vector, NDArray::asVectorT(), SD_COMMON_TYPES_ALL);
 
 //////////////////////////////////////////////////////////////////////////
 // set new order and shape in case of suitable array length
@@ -3925,7 +3925,7 @@ template <typename T, typename Y, typename>
 void NDArray::templatedSet(void *buffer, LongType xOffset, DataType dtype, void *value) {
   BUILD_SINGLE_PARTIAL_SELECTOR(dtype, templatedSet<, T>(buffer, xOffset, value), SD_COMMON_TYPES);
 }
-BUILD_DOUBLE_TEMPLATE( template void NDArray::templatedSet,
+BUILD_DOUBLE_TEMPLATE(  void NDArray::templatedSet,
                       (void *buffer, LongType xOffset, DataType dtype, void *value),
                       SD_COMMON_TYPES, SD_COMMON_TYPES);
 
@@ -4001,7 +4001,7 @@ void NDArray::templatedDoubleAssign(void *xBuffer,  sd::LongType xOffset,  void 
 
   x[xOffset] = y[yOffset];
 }
-BUILD_DOUBLE_TEMPLATE(template SD_LIB_EXPORT void NDArray::templatedDoubleAssign,
+BUILD_DOUBLE_TEMPLATE( SD_LIB_EXPORT void NDArray::templatedDoubleAssign,
                       (void *xBuffer,  sd::LongType xOffset,  void *yBuffer,  sd::LongType yOffset),
                       SD_COMMON_TYPES, SD_COMMON_TYPES);
 
@@ -4242,7 +4242,7 @@ T NDArray::e( sd::LongType i)  {
   if(getDataBuffer() != nullptr)
     BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), return templatedGet<, T>(buffer(), rp), SD_COMMON_TYPES_ALL);
 }
-BUILD_SINGLE_UNCHAINED_TEMPLATE(template SD_LIB_EXPORT, NDArray::e(sd::LongType), SD_COMMON_TYPES_ALL);
+BUILD_SINGLE_UNCHAINED_TEMPLATE( SD_LIB_EXPORT, NDArray::e(sd::LongType), SD_COMMON_TYPES_ALL);
 
 //////////////////////////////////////////////////////////////////////////
 // Returns value from 2D matrix by coordinates/indexes
@@ -4301,7 +4301,7 @@ T NDArray::e(sd::LongType i, sd::LongType j) {
 
 
 
-BUILD_SINGLE_UNCHAINED_TEMPLATE( template SD_LIB_EXPORT , NDArray::e( sd::LongType,  sd::LongType),
+BUILD_SINGLE_UNCHAINED_TEMPLATE(  SD_LIB_EXPORT , NDArray::e( sd::LongType,  sd::LongType),
                                 SD_COMMON_TYPES_ALL);
 
 //////////////////////////////////////////////////////////////////////////
@@ -4355,7 +4355,7 @@ T NDArray::e(const sd::LongType i, const sd::LongType j, const sd::LongType k)  
 
   return static_cast<T>(119);
 }
-BUILD_SINGLE_UNCHAINED_TEMPLATE(template SD_LIB_EXPORT,
+BUILD_SINGLE_UNCHAINED_TEMPLATE( SD_LIB_EXPORT,
                                 NDArray::e(const sd::LongType, const sd::LongType, const sd::LongType) ,
                                 SD_COMMON_TYPES_ALL);
 
@@ -4391,7 +4391,7 @@ T NDArray::e(const sd::LongType i, const sd::LongType j, const sd::LongType k, c
 
   return static_cast<T>(119);
 }
-BUILD_SINGLE_UNCHAINED_TEMPLATE( template SD_LIB_EXPORT,
+BUILD_SINGLE_UNCHAINED_TEMPLATE(  SD_LIB_EXPORT,
                                 NDArray::e( sd::LongType,  sd::LongType,  sd::LongType,
                                             sd::LongType),
                                 SD_COMMON_TYPES_ALL);
@@ -5529,7 +5529,7 @@ void NDArray::templatedAssign(void *xBuffer, sd::LongType xOffset,  void *yBuffe
   if (xBuffer != nullptr && yBuffer != nullptr)
     *(reinterpret_cast<T *>(xBuffer) + xOffset) = *(reinterpret_cast<const T *>(yBuffer) + yOffset);
 }
-BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void NDArray::templatedAssign,
+BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT void NDArray::templatedAssign,
                       (void *xBuffer,  sd::LongType xOffset,  void *yBuffer,  sd::LongType yOffset),
                       SD_COMMON_TYPES);
 

@@ -140,7 +140,7 @@ void ScalarBoolTransform<X, Z>::transform(const void *vx, const sd::LongType *xS
   }
 }
 
-BUILD_DOUBLE_TEMPLATE(template class ScalarBoolTransform, , SD_COMMON_TYPES, SD_BOOL_TYPES);
+BUILD_DOUBLE_TEMPLATE( class ScalarBoolTransform, , SD_COMMON_TYPES, SD_BOOL_TYPES);
 
 }  // namespace scalar
 }  // namespace functions

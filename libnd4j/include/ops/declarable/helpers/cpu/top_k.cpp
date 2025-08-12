@@ -160,10 +160,10 @@ sd::Status inTopKFunctor(sd::LaunchContext* context, NDArray* input, NDArray* ta
                         SD_NUMERIC_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template sd::Status topKFunctor_,
+BUILD_SINGLE_TEMPLATE( sd::Status topKFunctor_,
                       (NDArray* input, NDArray* values, NDArray* indices, const sd::LongType k, bool needSort),
                       SD_NUMERIC_TYPES);
-BUILD_SINGLE_TEMPLATE(template sd::Status inTopKFunctor_,
+BUILD_SINGLE_TEMPLATE( sd::Status inTopKFunctor_,
                       (sd::LaunchContext * context, NDArray* input, NDArray* target, NDArray* result,
                        const sd::LongType k),
                       SD_NUMERIC_TYPES);

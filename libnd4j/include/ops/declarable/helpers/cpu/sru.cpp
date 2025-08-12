@@ -325,12 +325,11 @@ void sruBIBP(sd::LaunchContext* context, NDArray* x, NDArray* w, NDArray* b, NDA
   BUILD_SINGLE_SELECTOR(x->dataType(), sruBIBP_,
                         (x, w, b, c0, ct, inGradC0, inGradH, mask, gradI, gradW, gradB, gradC0), SD_FLOAT_TYPES);
 }
-
-BUILD_SINGLE_TEMPLATE(template void sruBI_,
+BUILD_SINGLE_TEMPLATE( void sruBI_,
                       (NDArray * x, NDArray* w, NDArray* b, NDArray* c0, NDArray* mask,
                           NDArray* ht, NDArray* ct),
                       SD_FLOAT_TYPES);
-BUILD_SINGLE_TEMPLATE(template void sruBIBP_,
+BUILD_SINGLE_TEMPLATE( void sruBIBP_,
                       (NDArray * x, NDArray* w, NDArray* b, NDArray* c0, NDArray* ct,
                           NDArray* inGradC0, NDArray* inGradH, NDArray* mask, NDArray* gradI,
                           NDArray* gradW, NDArray* gradB, NDArray* gradC0),

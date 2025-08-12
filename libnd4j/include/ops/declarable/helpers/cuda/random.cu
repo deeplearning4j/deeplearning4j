@@ -242,7 +242,7 @@ void fillRandomGamma(LaunchContext* context, graph::RandomGenerator& rng, NDArra
   else
     NDArray::prepareSpecialUse({output}, {alpha});
 }
-BUILD_SINGLE_TEMPLATE(template void fillRandomGamma_,
+BUILD_SINGLE_TEMPLATE( void fillRandomGamma_,
                       (LaunchContext * context, graph::RandomGenerator& rng, NDArray* alpha, NDArray* beta,
                           NDArray* output),
                       SD_FLOAT_NATIVE);
@@ -347,7 +347,7 @@ void fillRandomPoisson(LaunchContext* context, graph::RandomGenerator& rng, NDAr
   NDArray::registerSpecialUse({output}, {lambda});
 }
 
-BUILD_SINGLE_TEMPLATE(template void fillRandomPoisson_,
+BUILD_SINGLE_TEMPLATE( void fillRandomPoisson_,
                       (LaunchContext * context, graph::RandomGenerator& rng, NDArray* lambda, NDArray* output),
                       SD_FLOAT_NATIVE);
 

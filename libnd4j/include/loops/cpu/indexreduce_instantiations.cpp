@@ -8,16 +8,16 @@
 
 ITERATE_LIST((SD_COMMON_TYPES), LIST_CALLBACK_BASE)
 
-// Now instantiate the operations with int index type
-#define LIST_CALLBACK_OPS_INT(INPUT) \
-    template void sd::IndexReductionLoops<GET_SECOND(INPUT), int>::loopIndexReduce<simdOps::IndexMin<GET_SECOND(INPUT), int>>(GET_SECOND(INPUT)*, const sd::LongType*, int*, const sd::LongType*, const sd::LongType*, const sd::LongType*, void*); \
-    template void sd::IndexReductionLoops<GET_SECOND(INPUT), int>::loopIndexReduce<simdOps::IndexAbsoluteMin<GET_SECOND(INPUT), int>>(GET_SECOND(INPUT)*, const sd::LongType*, int*, const sd::LongType*, const sd::LongType*, const sd::LongType*, void*); \
-    template void sd::IndexReductionLoops<GET_SECOND(INPUT), int>::loopIndexReduce<simdOps::LastIndex<GET_SECOND(INPUT), int>>(GET_SECOND(INPUT)*, const sd::LongType*, int*, const sd::LongType*, const sd::LongType*, const sd::LongType*, void*); \
-    template void sd::IndexReductionLoops<GET_SECOND(INPUT), int>::loopIndexReduce<simdOps::FirstIndex<GET_SECOND(INPUT), int>>(GET_SECOND(INPUT)*, const sd::LongType*, int*, const sd::LongType*, const sd::LongType*, const sd::LongType*, void*); \
-    template void sd::IndexReductionLoops<GET_SECOND(INPUT), int>::loopIndexReduce<simdOps::IndexAbsoluteMax<GET_SECOND(INPUT), int>>(GET_SECOND(INPUT)*, const sd::LongType*, int*, const sd::LongType*, const sd::LongType*, const sd::LongType*, void*); \
-    template void sd::IndexReductionLoops<GET_SECOND(INPUT), int>::loopIndexReduce<simdOps::IndexMax<GET_SECOND(INPUT), int>>(GET_SECOND(INPUT)*, const sd::LongType*, int*, const sd::LongType*, const sd::LongType*, const sd::LongType*, void*);
+// Now instantiate the operations with int32_t index type
+#define LIST_CALLBACK_OPS_int32_t(INPUT) \
+    template void sd::IndexReductionLoops<GET_SECOND(INPUT), int32_t>::loopIndexReduce<simdOps::IndexMin<GET_SECOND(INPUT), int32_t>>(GET_SECOND(INPUT)*, const sd::LongType*, int32_t*, const sd::LongType*, const sd::LongType*, const sd::LongType*, void*); \
+    template void sd::IndexReductionLoops<GET_SECOND(INPUT), int32_t>::loopIndexReduce<simdOps::IndexAbsoluteMin<GET_SECOND(INPUT), int32_t>>(GET_SECOND(INPUT)*, const sd::LongType*, int32_t*, const sd::LongType*, const sd::LongType*, const sd::LongType*, void*); \
+    template void sd::IndexReductionLoops<GET_SECOND(INPUT), int32_t>::loopIndexReduce<simdOps::LastIndex<GET_SECOND(INPUT), int32_t>>(GET_SECOND(INPUT)*, const sd::LongType*, int32_t*, const sd::LongType*, const sd::LongType*, const sd::LongType*, void*); \
+    template void sd::IndexReductionLoops<GET_SECOND(INPUT), int32_t>::loopIndexReduce<simdOps::FirstIndex<GET_SECOND(INPUT), int32_t>>(GET_SECOND(INPUT)*, const sd::LongType*, int32_t*, const sd::LongType*, const sd::LongType*, const sd::LongType*, void*); \
+    template void sd::IndexReductionLoops<GET_SECOND(INPUT), int32_t>::loopIndexReduce<simdOps::IndexAbsoluteMax<GET_SECOND(INPUT), int32_t>>(GET_SECOND(INPUT)*, const sd::LongType*, int32_t*, const sd::LongType*, const sd::LongType*, const sd::LongType*, void*); \
+    template void sd::IndexReductionLoops<GET_SECOND(INPUT), int32_t>::loopIndexReduce<simdOps::IndexMax<GET_SECOND(INPUT), int32_t>>(GET_SECOND(INPUT)*, const sd::LongType*, int32_t*, const sd::LongType*, const sd::LongType*, const sd::LongType*, void*);
 
-ITERATE_LIST((SD_COMMON_TYPES), LIST_CALLBACK_OPS_INT)
+ITERATE_LIST((SD_COMMON_TYPES), LIST_CALLBACK_OPS_int32_t)
 
 // And with long long index type
 #define LIST_CALLBACK_OPS_LONG(INPUT) \
@@ -31,5 +31,5 @@ ITERATE_LIST((SD_COMMON_TYPES), LIST_CALLBACK_OPS_INT)
 ITERATE_LIST((SD_COMMON_TYPES), LIST_CALLBACK_OPS_LONG)
 
 #undef LIST_CALLBACK_BASE
-#undef LIST_CALLBACK_OPS_INT
+#undef LIST_CALLBACK_OPS_int32_t
 #undef LIST_CALLBACK_OPS_LONG

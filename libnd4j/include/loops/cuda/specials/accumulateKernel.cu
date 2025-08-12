@@ -82,7 +82,7 @@ SD_HOST void accumulateKernelGeneric(dim3 &launchDims, cudaStream_t *stream, voi
   DebugHelper::checkErrorCode(stream, "accumulate(...) failed");
 }
 
-BUILD_SINGLE_TEMPLATE(template void accumulateKernelGeneric,
+BUILD_SINGLE_TEMPLATE( void accumulateKernelGeneric,
                       (dim3 & launchDims, cudaStream_t *stream, void **vx, void *vz, int n, const sd::LongType length),
                       SD_COMMON_TYPES);
 }  // namespace sd

@@ -645,7 +645,7 @@ void beamSearch(NDArray& logit, NDArray& sequence_length, NDArray& result_sequen
                         SD_FLOAT_TYPES, SD_INDEXING_TYPES);
 }
 
-BUILD_DOUBLE_TEMPLATE(template void beamSearch_,
+BUILD_DOUBLE_TEMPLATE( void beamSearch_,
                       (NDArray& logit, NDArray& sequence_length, NDArray& result_sequences,
                           NDArray& result_probs, NDArray& result_sequences_length, int blank_index, int beam_width,
                           int nbest_len, bool normalize_logits),

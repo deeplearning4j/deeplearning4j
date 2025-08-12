@@ -76,7 +76,7 @@ void polyGamma(sd::LaunchContext* context, NDArray& n, NDArray& x, NDArray& outp
   BUILD_SINGLE_SELECTOR(x.dataType(), polyGamma_, (context, n, x, output), SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void polyGamma_,
+BUILD_SINGLE_TEMPLATE( void polyGamma_,
                       (sd::LaunchContext * context, NDArray& n, NDArray& x, NDArray& output),
                       SD_FLOAT_TYPES);
 

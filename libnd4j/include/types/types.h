@@ -57,6 +57,11 @@
   static constexpr auto UTF32 = sd::DataType::UTF32;
   static constexpr auto UTF8 = sd::DataType::UTF8;
 
+  using LongType = sd::LongType;
+  using UnsignedLong = sd::UnsignedLong;
+  using stdstring = std::string;
+  using u32string = std::u32string;
+  using u16string = std::u16string;
 // ============================================================================
 // SELECTIVE RENDERING INTEGRATION
 // ============================================================================
@@ -170,17 +175,18 @@
 #if defined(HAS_UINT64) && !defined(HAS_UNSIGNEDLONG)
 #define HAS_UNSIGNEDLONG
 #endif
-#if defined(HAS_INT) && !defined(HAS_INT32)
+#if defined(HAS_int32_t) && !defined(HAS_INT32)
 #define HAS_INT32
 #endif
 #if defined(HAS_BFLOAT16) && !defined(HAS_BFLOAT)
 #define HAS_BFLOAT
 #endif
-
 #if defined(HAS_BFLOAT)
 #define TTYPE_BFLOAT , (BFLOAT16, bfloat16)
+#define TTYPE_BFLOAT16 , (BFLOAT16, bfloat16)  
 #else
 #define TTYPE_BFLOAT
+#define TTYPE_BFLOAT16  
 #endif
 #if defined(HAS_BOOL)
 #define TTYPE_BOOL , (BOOL, bool)
@@ -214,7 +220,7 @@
 #endif
 
 #if defined(HAS_LONG)
-#define TTYPE_INT64 , (INT64, sd::LongType)
+#define TTYPE_INT64 , (INT64, LongType)
 #else
 #define TTYPE_INT64
 #endif
@@ -245,17 +251,17 @@
 #define TTYPE_UINT8
 #endif
 #if defined(HAS_UTF16)
-#define TTYPE_UTF16 , (UTF16, std::u16string)
+#define TTYPE_UTF16 , (UTF16, u16string)
 #else
 #define TTYPE_UTF16
 #endif
 #if defined(HAS_UTF32)
-#define TTYPE_UTF32 , (UTF32, std::u32string)
+#define TTYPE_UTF32 , (UTF32, u32string)
 #else
 #define TTYPE_UTF32
 #endif
 #if defined(HAS_UTF8)
-#define TTYPE_UTF8 , (UTF8, std::string)
+#define TTYPE_UTF8 , (UTF8, stdstring)
 #else
 #define TTYPE_UTF8
 #endif
@@ -334,7 +340,7 @@
 
 #if COUNT_NARG(SD_STRING_TYPES_L) < 1
 #pragma message WARN("it will use utf8 as SD_STRING_TYPES")
-#define SD_STRING_TYPES (UTF8, std::string)
+#define SD_STRING_TYPES (UTF8, stdstring)
 #else
 #define SD_STRING_TYPES SKIP_FIRST_COMMA(SD_STRING_TYPES_L)
 #endif
@@ -404,8 +410,8 @@
 #define SD_COMMON_TYPES_ALL                                                                                         \
  (HALF, float16), (FLOAT32, float), (DOUBLE, double),                    \
      (BOOL, bool), (INT8, int8_t), (UINT8, uint8_t),                     \
-     (INT16, int16_t), (INT32, int32_t), (INT64, sd::LongType),          \
-     (UINT16, uint16_t), (UINT64, sd::UnsignedLong), (UINT32, uint32_t), \
+     (INT16, int16_t), (INT32, int32_t), (INT64, LongType),          \
+     (UINT16, uint16_t), (UINT64, UnsignedLong), (UINT32, uint32_t), \
      (BFLOAT16, bfloat16)
 
 
@@ -462,8 +468,8 @@
 #define TTYPE_BFLOAT16_INT8_INT8
 #endif
 #if defined(HAS_LONG)
-#define TTYPE_BFLOAT16_LONG_BFLOAT16 , (bfloat16, sd::LongType, bfloat16)
-#define TTYPE_BFLOAT16_LONG_LONG , (bfloat16, sd::LongType, sd::LongType)
+#define TTYPE_BFLOAT16_LONG_BFLOAT16 , (bfloat16, LongType, bfloat16)
+#define TTYPE_BFLOAT16_LONG_LONG , (bfloat16, LongType, LongType)
 #else
 #define TTYPE_BFLOAT16_LONG_BFLOAT16
 #define TTYPE_BFLOAT16_LONG_LONG
@@ -531,8 +537,8 @@
 #define TTYPE_BOOL_INT8_INT8
 #endif
 #if defined(HAS_LONG)
-#define TTYPE_BOOL_LONG_BOOL , (bool, sd::LongType, bool)
-#define TTYPE_BOOL_LONG_LONG , (bool, sd::LongType, sd::LongType)
+#define TTYPE_BOOL_LONG_BOOL , (bool, LongType, bool)
+#define TTYPE_BOOL_LONG_LONG , (bool, LongType, LongType)
 #else
 #define TTYPE_BOOL_LONG_BOOL
 #define TTYPE_BOOL_LONG_LONG
@@ -600,8 +606,8 @@
 #define TTYPE_DOUBLE_INT8_INT8
 #endif
 #if defined(HAS_LONG)
-#define TTYPE_DOUBLE_LONG_DOUBLE , (double, sd::LongType, double)
-#define TTYPE_DOUBLE_LONG_LONG , (double, sd::LongType, sd::LongType)
+#define TTYPE_DOUBLE_LONG_DOUBLE , (double, LongType, double)
+#define TTYPE_DOUBLE_LONG_LONG , (double, LongType, LongType)
 #else
 #define TTYPE_DOUBLE_LONG_DOUBLE
 #define TTYPE_DOUBLE_LONG_LONG
@@ -669,8 +675,8 @@
 #define TTYPE_FLOAT_INT8_INT8
 #endif
 #if defined(HAS_LONG)
-#define TTYPE_FLOAT_LONG_FLOAT , (float, sd::LongType, float)
-#define TTYPE_FLOAT_LONG_LONG , (float, sd::LongType, sd::LongType)
+#define TTYPE_FLOAT_LONG_FLOAT , (float, LongType, float)
+#define TTYPE_FLOAT_LONG_LONG , (float, LongType, LongType)
 #else
 #define TTYPE_FLOAT_LONG_FLOAT
 #define TTYPE_FLOAT_LONG_LONG
@@ -738,8 +744,8 @@
 #define TTYPE_FLOAT16_INT8_INT8
 #endif
 #if defined(HAS_LONG)
-#define TTYPE_FLOAT16_LONG_FLOAT16 , (float16, sd::LongType, float16)
-#define TTYPE_FLOAT16_LONG_LONG , (float16, sd::LongType, sd::LongType)
+#define TTYPE_FLOAT16_LONG_FLOAT16 , (float16, LongType, float16)
+#define TTYPE_FLOAT16_LONG_LONG , (float16, LongType, LongType)
 #else
 #define TTYPE_FLOAT16_LONG_FLOAT16
 #define TTYPE_FLOAT16_LONG_LONG
@@ -807,8 +813,8 @@
 #define TTYPE_INT16_INT8_INT8
 #endif
 #if defined(HAS_LONG)
-#define TTYPE_INT16_LONG_INT16 , (int16_t, sd::LongType, int16_t)
-#define TTYPE_INT16_LONG_LONG , (int16_t, sd::LongType, sd::LongType)
+#define TTYPE_INT16_LONG_INT16 , (int16_t, LongType, int16_t)
+#define TTYPE_INT16_LONG_LONG , (int16_t, LongType, LongType)
 #else
 #define TTYPE_INT16_LONG_INT16
 #define TTYPE_INT16_LONG_LONG
@@ -876,8 +882,8 @@
 #define TTYPE_INT32_INT8_INT8
 #endif
 #if defined(HAS_LONG)
-#define TTYPE_INT32_LONG_INT32 , (int32_t, sd::LongType, int32_t)
-#define TTYPE_INT32_LONG_LONG , (int32_t, sd::LongType, sd::LongType)
+#define TTYPE_INT32_LONG_INT32 , (int32_t, LongType, int32_t)
+#define TTYPE_INT32_LONG_LONG , (int32_t, LongType, LongType)
 #else
 #define TTYPE_INT32_LONG_INT32
 #define TTYPE_INT32_LONG_LONG
@@ -945,8 +951,8 @@
 #define TTYPE_INT8_INT32_INT8
 #endif
 #if defined(HAS_LONG)
-#define TTYPE_INT8_LONG_INT8 , (int8_t, sd::LongType, int8_t)
-#define TTYPE_INT8_LONG_LONG , (int8_t, sd::LongType, sd::LongType)
+#define TTYPE_INT8_LONG_INT8 , (int8_t, LongType, int8_t)
+#define TTYPE_INT8_LONG_LONG , (int8_t, LongType, LongType)
 #else
 #define TTYPE_INT8_LONG_INT8
 #define TTYPE_INT8_LONG_LONG
@@ -963,66 +969,66 @@
 #endif
 
 #if defined(HAS_LONG)
-#define TTYPE_LONG_LONG_LONG , (sd::LongType, sd::LongType, sd::LongType)
+#define TTYPE_LONG_LONG_LONG , (LongType, LongType, LongType)
 #if defined(HAS_BFLOAT16)
-#define TTYPE_LONG_BFLOAT16_BFLOAT16 , (sd::LongType, bfloat16, bfloat16)
-#define TTYPE_LONG_BFLOAT16_LONG , (sd::LongType, bfloat16, sd::LongType)
+#define TTYPE_LONG_BFLOAT16_BFLOAT16 , (LongType, bfloat16, bfloat16)
+#define TTYPE_LONG_BFLOAT16_LONG , (LongType, bfloat16, LongType)
 #else
 #define TTYPE_LONG_BFLOAT16_BFLOAT16
 #define TTYPE_LONG_BFLOAT16_LONG
 #endif
 #if defined(HAS_BOOL)
-#define TTYPE_LONG_BOOL_BOOL , (sd::LongType, bool, bool)
-#define TTYPE_LONG_BOOL_LONG , (sd::LongType, bool, sd::LongType)
+#define TTYPE_LONG_BOOL_BOOL , (LongType, bool, bool)
+#define TTYPE_LONG_BOOL_LONG , (LongType, bool, LongType)
 #else
 #define TTYPE_LONG_BOOL_BOOL
 #define TTYPE_LONG_BOOL_LONG
 #endif
 #if defined(HAS_DOUBLE)
-#define TTYPE_LONG_DOUBLE_DOUBLE , (sd::LongType, double, double)
-#define TTYPE_LONG_DOUBLE_LONG , (sd::LongType, double, sd::LongType)
+#define TTYPE_LONG_DOUBLE_DOUBLE , (LongType, double, double)
+#define TTYPE_LONG_DOUBLE_LONG , (LongType, double, LongType)
 #else
 #define TTYPE_LONG_DOUBLE_DOUBLE
 #define TTYPE_LONG_DOUBLE_LONG
 #endif
 #if defined(HAS_FLOAT32)
-#define TTYPE_LONG_FLOAT_FLOAT , (sd::LongType, float, float)
-#define TTYPE_LONG_FLOAT_LONG , (sd::LongType, float, sd::LongType)
+#define TTYPE_LONG_FLOAT_FLOAT , (LongType, float, float)
+#define TTYPE_LONG_FLOAT_LONG , (LongType, float, LongType)
 #else
 #define TTYPE_LONG_FLOAT_FLOAT
 #define TTYPE_LONG_FLOAT_LONG
 #endif
 #if defined(HAS_FLOAT16)
-#define TTYPE_LONG_FLOAT16_FLOAT16 , (sd::LongType, float16, float16)
-#define TTYPE_LONG_FLOAT16_LONG , (sd::LongType, float16, sd::LongType)
+#define TTYPE_LONG_FLOAT16_FLOAT16 , (LongType, float16, float16)
+#define TTYPE_LONG_FLOAT16_LONG , (LongType, float16, LongType)
 #else
 #define TTYPE_LONG_FLOAT16_FLOAT16
 #define TTYPE_LONG_FLOAT16_LONG
 #endif
 #if defined(HAS_INT16)
-#define TTYPE_LONG_INT16_INT16 , (sd::LongType, int16_t, int16_t)
-#define TTYPE_LONG_INT16_LONG , (sd::LongType, int16_t, sd::LongType)
+#define TTYPE_LONG_INT16_INT16 , (LongType, int16_t, int16_t)
+#define TTYPE_LONG_INT16_LONG , (LongType, int16_t, LongType)
 #else
 #define TTYPE_LONG_INT16_INT16
 #define TTYPE_LONG_INT16_LONG
 #endif
 #if defined(HAS_INT32)
-#define TTYPE_LONG_INT32_INT32 , (sd::LongType, int32_t, int32_t)
-#define TTYPE_LONG_INT32_LONG , (sd::LongType, int32_t, sd::LongType)
+#define TTYPE_LONG_INT32_INT32 , (LongType, int32_t, int32_t)
+#define TTYPE_LONG_INT32_LONG , (LongType, int32_t, LongType)
 #else
 #define TTYPE_LONG_INT32_INT32
 #define TTYPE_LONG_INT32_LONG
 #endif
 #if defined(HAS_INT8)
-#define TTYPE_LONG_INT8_INT8 , (sd::LongType, int8_t, int8_t)
-#define TTYPE_LONG_INT8_LONG , (sd::LongType, int8_t, sd::LongType)
+#define TTYPE_LONG_INT8_INT8 , (LongType, int8_t, int8_t)
+#define TTYPE_LONG_INT8_LONG , (LongType, int8_t, LongType)
 #else
 #define TTYPE_LONG_INT8_INT8
 #define TTYPE_LONG_INT8_LONG
 #endif
 #if defined(HAS_UINT8)
-#define TTYPE_LONG_UINT8_LONG , (sd::LongType, uint8_t, sd::LongType)
-#define TTYPE_LONG_UINT8_UINT8 , (sd::LongType, uint8_t, uint8_t)
+#define TTYPE_LONG_UINT8_LONG , (LongType, uint8_t, LongType)
+#define TTYPE_LONG_UINT8_UINT8 , (LongType, uint8_t, uint8_t)
 #else
 #define TTYPE_LONG_UINT8_LONG
 #define TTYPE_LONG_UINT8_UINT8
@@ -1090,8 +1096,8 @@
 #define TTYPE_UINT8_INT8_UINT8
 #endif
 #if defined(HAS_LONG)
-#define TTYPE_UINT8_LONG_LONG , (uint8_t, sd::LongType, sd::LongType)
-#define TTYPE_UINT8_LONG_UINT8 , (uint8_t, sd::LongType, uint8_t)
+#define TTYPE_UINT8_LONG_LONG , (uint8_t, LongType, LongType)
+#define TTYPE_UINT8_LONG_UINT8 , (uint8_t, LongType, uint8_t)
 #else
 #define TTYPE_UINT8_LONG_LONG
 #define TTYPE_UINT8_LONG_UINT8

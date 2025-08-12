@@ -358,6 +358,6 @@ SD_HOST void SummaryStatsReduce<X, Z>::execSummaryStatsReduce(
   DEBUG_KERNEL(stream, opNum);
 }
 
-BUILD_DOUBLE_TEMPLATE(template class SummaryStatsReduce, , SD_COMMON_TYPES, SD_FLOAT_TYPES);
-}
+BUILD_DOUBLE_TEMPLATE( class SummaryStatsReduce, , SD_COMMON_TYPES, SD_FLOAT_TYPES);
+
 }

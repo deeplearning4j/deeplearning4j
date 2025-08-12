@@ -295,7 +295,7 @@ void clipByNormBp_(LaunchContext* context, NDArray* input, NDArray* gradO, NDArr
     delete dimsToExclude;
   }
 }
-BUILD_SINGLE_TEMPLATE(template void clipByNormBp_,
+BUILD_SINGLE_TEMPLATE( void clipByNormBp_,
                       (sd::LaunchContext * context, NDArray* input, NDArray* gradO, NDArray* gradI,
                           const std::vector<sd::LongType>& dimensions, NDArray* clipNorm, const bool useAverage),
                       SD_FLOAT_TYPES);
@@ -343,7 +343,7 @@ void clipByGlobalNorm(LaunchContext* context, std::vector<NDArray*>& inputs, dou
                         (context, inputs, clipNorm, workspace, outputs, isInplace), SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void clipByGlobalNorm_,
+BUILD_SINGLE_TEMPLATE( void clipByGlobalNorm_,
                       (sd::LaunchContext * context, std::vector<NDArray*> & inputs, double clipNorm,
                           sd::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace),
                       SD_FLOAT_TYPES);
@@ -419,7 +419,7 @@ void clipByValue(LaunchContext* context, NDArray* input, double leftBound, doubl
                         SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void clipByValue_, (sd::LaunchContext * context, NDArray* input, double leftBound,
+BUILD_SINGLE_TEMPLATE( void clipByValue_, (sd::LaunchContext * context, NDArray* input, double leftBound,
     double rightBound, NDArray* output);
 , SD_FLOAT_TYPES);
 

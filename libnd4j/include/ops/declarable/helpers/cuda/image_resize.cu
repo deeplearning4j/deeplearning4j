@@ -343,7 +343,7 @@ void resizeImage(LaunchContext* context, NDArray * images, LongType batchSize, L
       SD_NUMERIC_TYPES, SD_FLOAT_TYPES);
 }
 
-BUILD_DOUBLE_TEMPLATE(template void resizeImage_,
+BUILD_DOUBLE_TEMPLATE( void resizeImage_,
                       (sd::LaunchContext * context, NDArray * images, sd::LongType batchSize,
                        sd::LongType inHeight, sd::LongType inWidth, sd::LongType outHeight, sd::LongType outWidth,
                        sd::LongType channels, BilinearInterpolationData* xs_, BilinearInterpolationData* ys_,
@@ -709,7 +709,7 @@ Status resizeBicubicFunctor(LaunchContext* context, NDArray * image, int width, 
   BUILD_SINGLE_SELECTOR(image->dataType(), return resizeBicubicFunctor_,
                         (context, image, width, height, preserveAspectRatio, antialias, output), SD_NUMERIC_TYPES);
 }
-BUILD_SINGLE_TEMPLATE(template sd::Status resizeBicubicFunctor_,
+BUILD_SINGLE_TEMPLATE( sd::Status resizeBicubicFunctor_,
                       (sd::LaunchContext * context, NDArray * image, int width, int height,
                        bool preserveAspectRatio, bool antialias, NDArray* output),
                       SD_NUMERIC_TYPES);
@@ -1100,7 +1100,7 @@ auto indicesDType = indices->dataType();
                         SD_FLOAT_TYPES, SD_INTEGER_TYPES);
 
 }
-BUILD_TRIPLE_TEMPLATE(template void cropAndResizeFunctor_,
+BUILD_TRIPLE_TEMPLATE( void cropAndResizeFunctor_,
                       (sd::LaunchContext * context, NDArray * images, NDArray * boxes, NDArray * indices,
                        NDArray * cropSize, int method, double extrapolationVal, NDArray* crops),
                       SD_NUMERIC_TYPES, SD_FLOAT_TYPES, SD_INTEGER_TYPES);

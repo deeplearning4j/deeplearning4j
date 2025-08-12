@@ -304,9 +304,9 @@ void eig(NDArray& input, NDArray& vals, NDArray& vecs) {
   BUILD_SINGLE_SELECTOR(input.dataType(), eig_, (input, vals, vecs), SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void eig_, (NDArray& input, NDArray& vals, NDArray& vecs), SD_FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE( void eig_, (NDArray& input, NDArray& vals, NDArray& vecs), SD_FLOAT_TYPES);
 
-BUILD_SINGLE_TEMPLATE(template class EigenValsAndVecs, , SD_FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE( class EigenValsAndVecs, , SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

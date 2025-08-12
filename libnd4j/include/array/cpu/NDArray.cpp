@@ -152,7 +152,7 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
 
   samediff::Threads::parallel_for(func, 0, zLen);
 }
-BUILD_SINGLE_TEMPLATE(template void NDArray::fillAsTriangular,
+BUILD_SINGLE_TEMPLATE( void NDArray::fillAsTriangular,
                       (const float val, int lower, int upper, NDArray& target, const char direction,const bool includeEdges), SD_COMMON_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
@@ -238,7 +238,7 @@ static void templatedSwap(void* xBuffer, void* yBuffer, const sd::LongType* xSha
 
   samediff::Threads::parallel_for(func, 0, length);
 }
-BUILD_SINGLE_TEMPLATE(template void templatedSwap,
+BUILD_SINGLE_TEMPLATE( void templatedSwap,
                       (void* xBuffer, void* yBuffer, const sd::LongType* xShapeInfo, const sd::LongType* yShapeInfo,
                           sd::LongType length),
                       SD_COMMON_TYPES);

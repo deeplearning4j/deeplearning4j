@@ -159,6 +159,6 @@ void SummaryStatsReduce<X, Z>::exec(bool biasCorrected,  void *vx,  sd::LongType
  samediff::Threads::parallel_tad(func, 0, resultLength, 1);
 }
 
-BUILD_DOUBLE_TEMPLATE(template class SummaryStatsReduce, , SD_COMMON_TYPES, SD_FLOAT_TYPES);
+BUILD_DOUBLE_TEMPLATE( class SummaryStatsReduce, , SD_COMMON_TYPES, SD_FLOAT_TYPES);
 }  // namespace summarystats
 }  // namespace functions

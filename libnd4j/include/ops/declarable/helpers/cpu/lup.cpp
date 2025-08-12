@@ -35,7 +35,7 @@ static void swapRows_(NDArray* matrix, sd::LongType theFirst, sd::LongType theSe
       math::sd_swap(matrix->r<T>(theFirst, i), matrix->r<T>(theSecond, i));
     }
 }
-BUILD_SINGLE_TEMPLATE(template void swapRows_, (NDArray * matrix, sd::LongType theFirst, sd::LongType theSecond), SD_FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE( void swapRows_, (NDArray * matrix, sd::LongType theFirst, sd::LongType theSecond), SD_FLOAT_TYPES);
 
 template <typename T>
 static void swapRows(T* matrixBuf, sd::LongType const* matrixShape, sd::LongType theFirst, sd::LongType theSecond) {
@@ -93,7 +93,7 @@ static void invertLowerMatrix_(NDArray* inputMatrix, NDArray* invertedMatrix) {
   }
 }
 
-BUILD_SINGLE_TEMPLATE(template void invertLowerMatrix_, (NDArray * inputMatrix, NDArray* invertedMatrix);
+BUILD_SINGLE_TEMPLATE( void invertLowerMatrix_, (NDArray * inputMatrix, NDArray* invertedMatrix);
                       , SD_FLOAT_TYPES);
 
 void invertLowerMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
@@ -131,7 +131,7 @@ static void _invertUpperMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
   }
 }
 
-BUILD_SINGLE_TEMPLATE(template void _invertUpperMatrix, (NDArray * inputMatrix, NDArray* invertedMatrix);
+BUILD_SINGLE_TEMPLATE( void _invertUpperMatrix, (NDArray * inputMatrix, NDArray* invertedMatrix);
                       , SD_FLOAT_TYPES);
 
 void invertUpperMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
@@ -199,7 +199,7 @@ static NDArray lup_(LaunchContext* context, NDArray* input, NDArray* compound, N
   return determinant;
 }
 
-BUILD_DOUBLE_TEMPLATE(template NDArray lup_,
+BUILD_DOUBLE_TEMPLATE( NDArray lup_,
                       (LaunchContext * context, NDArray* input, NDArray* output, NDArray* permutation), SD_FLOAT_TYPES,
                       SD_INDEXING_TYPES);
 /*

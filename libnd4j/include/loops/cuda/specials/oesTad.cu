@@ -237,13 +237,13 @@ SD_HOST void oesTadGenericKey(dim3 &launchDims, cudaStream_t *stream, void *vx, 
   sd::DebugHelper::checkErrorCode(stream, "execOesTadKernelKey failed");
 }
 
-BUILD_SINGLE_TEMPLATE(template void oesTadGeneric,
+BUILD_SINGLE_TEMPLATE( void oesTadGeneric,
                       (dim3 & launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo,
                        sd::LongType *dimension, sd::LongType dimensionLength, sd::LongType const *tadShapeInfo,
                        sd::LongType const *tadOffsets, bool descending),
                       SD_COMMON_TYPES);
 
-BUILD_DOUBLE_TEMPLATE(template void oesTadGenericKey,
+BUILD_DOUBLE_TEMPLATE( void oesTadGenericKey,
                       (dim3 & launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo, void *vy,
                        sd::LongType const *yShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength,
                        sd::LongType const *tadShapeInfo, sd::LongType const *tadOffsets, bool descending),

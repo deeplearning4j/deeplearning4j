@@ -54,7 +54,7 @@ static void __where(NDArray &condition, NDArray &output, memory::Workspace *work
   output.assign(s);
   delete s;
 }
-BUILD_SINGLE_TEMPLATE(template void __where, (NDArray & condition, NDArray &output, memory::Workspace *workspace),
+BUILD_SINGLE_TEMPLATE( void __where, (NDArray & condition, NDArray &output, memory::Workspace *workspace),
                       SD_COMMON_TYPES);
 
 void _where(sd::LaunchContext *context, NDArray &condition, NDArray &output, memory::Workspace *workspace) {

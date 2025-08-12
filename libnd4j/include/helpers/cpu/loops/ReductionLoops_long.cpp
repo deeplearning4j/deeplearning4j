@@ -44,6 +44,6 @@ void ReductionLongLoops<X, Y>::wrapper(int opNum, sd::memory::Workspace* workspa
                        REDUCE_LONG_OPS);
 }
 
-BUILD_DOUBLE_TEMPLATE(template class ReductionLongLoops, , SD_COMMON_TYPES, SD_LONG_TYPES);
+BUILD_DOUBLE_TEMPLATE( class ReductionLongLoops, , SD_COMMON_TYPES, SD_LONG_TYPES);
 
 }  // namespace sd

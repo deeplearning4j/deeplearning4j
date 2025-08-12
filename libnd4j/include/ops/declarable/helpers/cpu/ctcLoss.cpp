@@ -422,7 +422,7 @@ void ctcLoss(graph::Context &block, NDArray&logits, NDArray&targetLabels, NDArra
                         SD_FLOAT_TYPES, SD_INDEXING_TYPES);
 }
 
-BUILD_DOUBLE_TEMPLATE(template void ctc_loss_,
+BUILD_DOUBLE_TEMPLATE( void ctc_loss_,
                       (NDArray&logits, NDArray&targetLabels, NDArray&logitsLengths,
                        NDArray&targetLabelLengths, NDArray &logLosses, NDArray &gradients, int blankIndex),
                       SD_FLOAT_TYPES, SD_INDEXING_TYPES);

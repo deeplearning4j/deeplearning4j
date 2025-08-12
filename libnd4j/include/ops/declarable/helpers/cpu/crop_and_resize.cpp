@@ -36,7 +36,7 @@ limitations under the License.
 //  @author sgazeos@gmail.com
 //
 #include <execution/Threads.h>
-#include <ops/declarable/helpers/crop_and_resize.h>
+#include "crop_and_resize.hpp"
 #include <system/selective_rendering.h>
 #if NOT_EXCLUDED(OP_crop_and_resize)
 namespace sd {
@@ -67,7 +67,10 @@ void cropAndResizeFunctor(sd::LaunchContext *context, NDArray *images, NDArray *
                         SD_FLOAT_TYPES, SD_INTEGER_TYPES);
 }
 
-
+BUILD_TRIPLE_TEMPLATE( void cropAndResizeFunctor_,
+                      (sd::LaunchContext * context, NDArray * images, NDArray * boxes, NDArray * indices,
+                       NDArray * cropSize, int method, double extrapolationVal, NDArray* crops),
+                      SD_NUMERIC_TYPES, SD_FLOAT_TYPES, SD_INTEGER_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

@@ -344,8 +344,8 @@ void Schur<T>::calcFromHessenberg() {
   }
 }
 
-BUILD_SINGLE_TEMPLATE(template class Hessenberg, , SD_FLOAT_TYPES);
-BUILD_SINGLE_TEMPLATE(template class Schur, , SD_FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE( class Hessenberg, , SD_FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE( class Schur, , SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

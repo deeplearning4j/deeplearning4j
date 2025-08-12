@@ -164,7 +164,7 @@ void ScalarIntTransform<X>::transform(const void *vx, sd::LongType xEws, void *v
   }
 }
 
-BUILD_SINGLE_TEMPLATE(template class ScalarIntTransform, , SD_INTEGER_TYPES);
+BUILD_SINGLE_TEMPLATE( class ScalarIntTransform, , SD_INTEGER_TYPES);
 
 }  // namespace scalar
 }  // namespace functions

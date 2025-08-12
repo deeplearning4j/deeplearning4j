@@ -114,7 +114,7 @@ void polyGamma(LaunchContext *context, NDArray&n, NDArray&x, NDArray &z) {
   NDArray::registerSpecialUse({&z}, {&n, &x});
 }
 
-BUILD_SINGLE_TEMPLATE(template void polyGammaCudaLauncher,
+BUILD_SINGLE_TEMPLATE( void polyGammaCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,const cudaStream_t *stream, const void *vn,
                        const sd::LongType *nShapeInfo, const void *vx, const sd::LongType *xShapeInfo, void *vz,
                        const sd::LongType *zShapeInfo),

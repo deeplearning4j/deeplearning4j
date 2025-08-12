@@ -195,7 +195,7 @@ SD_KERNEL void printDeviceBufferKernel(void* buffer, sd::LongType offset, sd::Lo
   }
 }
 
-BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT  SD_KERNEL void printDeviceBufferKernel,(void* buffer, sd::LongType offset, sd::LongType length),SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT  SD_KERNEL void printDeviceBufferKernel,(void* buffer, sd::LongType offset, sd::LongType length),SD_COMMON_TYPES);
 
 
 // Wrapper function to launch the kernel
@@ -207,7 +207,7 @@ void launchPrintDeviceBufferKernel(void* buffer, sd::LongType offset, sd::LongTy
   sd::DebugHelper::checkErrorCode(LaunchContext::defaultContext()->getCudaStream(),
                                   "printBufferDebug kernel failed");
 }
-BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void launchPrintDeviceBufferKernel,(void* buffer, sd::LongType offset, sd::LongType length),SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT void launchPrintDeviceBufferKernel,(void* buffer, sd::LongType offset, sd::LongType length),SD_COMMON_TYPES);
 
 
 template <typename T>
@@ -226,7 +226,7 @@ void DataBuffer::printHostBufferContent(void* buffer, sd::LongType offset, sd::L
   }
   sd_printf("]", 0);
 }
-BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void DataBuffer::printHostBufferContent,(void* buffer, sd::LongType offset, sd::LongType length),SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT void DataBuffer::printHostBufferContent,(void* buffer, sd::LongType offset, sd::LongType length),SD_COMMON_TYPES);
 
 
 // DataBuffer implementation for .cu file

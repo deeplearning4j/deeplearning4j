@@ -205,7 +205,7 @@ void SparseUtils<T>::sortCooIndicesGeneric(sd::LongType *indices, void *vx, sd::
 #endif
 }
 
-BUILD_SINGLE_TEMPLATE(template class SparseUtils, , SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE( class SparseUtils, , SD_COMMON_TYPES);
 
 void IndexUtils::ravelMultiIndex(sd::LongType *indices, sd::LongType *flatIndices, sd::LongType length,
                                  sd::LongType *shapeInfo, int mode) {

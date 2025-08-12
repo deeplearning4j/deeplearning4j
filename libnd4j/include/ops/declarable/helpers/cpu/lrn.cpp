@@ -135,7 +135,7 @@ static sd::Status lrnFunctor_(sd::graph::Context& block, NDArray* input, NDArray
   return sd::Status::OK;
 }
 
-BUILD_SINGLE_TEMPLATE(template sd::Status lrnFunctor_,
+BUILD_SINGLE_TEMPLATE( sd::Status lrnFunctor_,
                       (sd::graph::Context & block, NDArray* input, NDArray* output, int depth, float bias, float alpha,
                        float beta),
                       SD_FLOAT_TYPES);

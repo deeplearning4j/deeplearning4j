@@ -240,7 +240,7 @@ void skipgram_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &expTableV, NDArr
     throw cuda_exception::build("helpers::skipgram_: Cannot deallocate temp memory for lingual net", err);
   }
 }
-BUILD_SINGLE_TEMPLATE(template void skipgram_,
+BUILD_SINGLE_TEMPLATE( void skipgram_,
                       (NDArray & syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable,
                        NDArray &infVector, int target, int ngStarter, NDArray &indices, NDArray &codes, double alpha,
                        sd::LongType randomValue, const int hsRounds, const int nsRounds),
@@ -345,7 +345,7 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &expTabl
     }
   }
 }
-BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_,
+BUILD_SINGLE_TEMPLATE( void skipgramBatchExec_,
                       (NDArray & s0, NDArray &s1, NDArray &s1n, NDArray &expTable, NDArray &negTable, NDArray &targets,
                        NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom,
                        const int nsRounds, const bool preciseMode, const int numThreads),
@@ -561,7 +561,7 @@ void cbow_(LaunchContext *lc, void *vsyn0, void *vsyn1, void *vsyn1Neg, void *ve
     throw cuda_exception::build("helpers::cbow_: Cannot deallocate memory for antonims table", err);
   }
 }
-BUILD_SINGLE_TEMPLATE(template void cbow_,
+BUILD_SINGLE_TEMPLATE( void cbow_,
                       (LaunchContext * lc, void *syn0, void *syn1, void *syn1Neg, void *expTable, void *vnegTable,
                        void *vinfVector, int target, int ngStarter, int *context, int *lockedWords, int *indices,
                        int8_t *codes, double alpha, sd::LongType randomValue, const int contextWidth,
@@ -770,7 +770,7 @@ void cbowBatchExec_(LaunchContext *lc, NDArray &s0, NDArray &s1, NDArray &s1n, v
     throw cuda_exception::build("Cannot deallocate temp buffer1", cerr);
   }
 }
-BUILD_SINGLE_TEMPLATE(template void cbowBatchExec_,
+BUILD_SINGLE_TEMPLATE( void cbowBatchExec_,
                       (LaunchContext * lc, NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable,
                        void *vinfVector, NDArray &context, NDArray &lockedWords, NDArray &targets, NDArray &negStarters,
                        NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, NDArray &nLabels,

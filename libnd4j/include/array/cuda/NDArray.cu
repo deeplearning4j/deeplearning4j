@@ -167,7 +167,7 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
 
   manager.synchronize();
 }
-BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void NDArray::fillAsTriangular,
+BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT void NDArray::fillAsTriangular,
                       (const float val, int lower, int upper, NDArray& target, const char direction,
                           const bool includeEdges),
                       SD_COMMON_TYPES);
@@ -237,7 +237,7 @@ static void identityMatrixCudaLauncher(const int blocksPerGrid, const int thread
   sd::DebugHelper::checkGlobalErrorCode("identityMatrix  failed");
 
 }
-BUILD_SINGLE_TEMPLATE(template void identityMatrixCudaLauncher,
+BUILD_SINGLE_TEMPLATE( void identityMatrixCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                           const cudaStream_t* stream, void* vx, const sd::LongType* xShapeInfo, const float val),
                       SD_COMMON_TYPES);
@@ -547,7 +547,7 @@ static void repeatCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
   DebugHelper::checkGlobalErrorCode("NDArray repeat cuda failed(...) failed");
 
 }
-BUILD_DOUBLE_TEMPLATE(template void repeatCudaLauncher,
+BUILD_DOUBLE_TEMPLATE( void repeatCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                           const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo, void* vz,
                           const sd::LongType* zShapeInfo, const sd::LongType* repeats, const sd::LongType repSize, const sd::LongType axis),

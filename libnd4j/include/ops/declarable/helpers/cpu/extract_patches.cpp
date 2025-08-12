@@ -95,7 +95,7 @@ void extractPatches(sd::LaunchContext* context, NDArray* images, NDArray* output
                         SD_COMMON_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void _extractPatches,
+BUILD_SINGLE_TEMPLATE( void _extractPatches,
                       (NDArray * input, NDArray* output, int sizeRow, int sizeCol, int stradeRow, int stradeCol,
                        int rateRow, int rateCol, bool theSame),
                       SD_COMMON_TYPES);

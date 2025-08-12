@@ -115,7 +115,7 @@ void betaInc(sd::LaunchContext* context, NDArray& a, NDArray& b, NDArray& x, NDA
   BUILD_SINGLE_SELECTOR(xType, betaIncForArray, (context, a, b, x, output), SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void betaIncForArray,
+BUILD_SINGLE_TEMPLATE( void betaIncForArray,
                       (sd::LaunchContext * context, NDArray& a, NDArray& b, NDArray& x,
                        NDArray& output),
                       SD_FLOAT_TYPES);

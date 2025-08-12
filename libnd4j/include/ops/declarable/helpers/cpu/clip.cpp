@@ -124,7 +124,7 @@ static void clipByNormBp_(NDArray *input, NDArray *gradO, NDArray *gradI,
     samediff::Threads::parallel_tad(func, 0, gradISubArrs.size());
   }
 }
-BUILD_SINGLE_TEMPLATE(template void clipByNormBp_,
+BUILD_SINGLE_TEMPLATE(void clipByNormBp_,
                       (NDArray *input, NDArray *gradO, NDArray *gradI, const std::vector<sd::LongType>& dimensions,
                        NDArray *clipNorm, const bool useAverage),
                       SD_FLOAT_TYPES);
@@ -170,7 +170,7 @@ void clipByGlobalNorm(LaunchContext* context, std::vector<NDArray*>& inputs, dou
                         SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void clipByGlobalNorm_,
+BUILD_SINGLE_TEMPLATE( void clipByGlobalNorm_,
                       (std::vector<NDArray*> & inputs, double clipNorm, sd::memory::Workspace* workspace,
                        std::vector<NDArray*>& outputs, bool isInplace),
                       SD_FLOAT_TYPES);
@@ -190,7 +190,7 @@ void clipByValue(LaunchContext* context, NDArray* input, double leftBound, doubl
   BUILD_SINGLE_SELECTOR(input->dataType(), clipByValue_, (input, leftBound, rightBound, output), SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void clipByValue_,
+BUILD_SINGLE_TEMPLATE( void clipByValue_,
                       (NDArray * input, double leftBound, double rightBound, NDArray* output);
                       , SD_FLOAT_TYPES);
 

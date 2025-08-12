@@ -50,6 +50,6 @@ void SD_HOST TransformFloat<X, Z>::exec(const void *vx, const sd::LongType *xSha
                                                               numThreads);
 }
 
-BUILD_DOUBLE_TEMPLATE(template class TransformFloat, , SD_COMMON_TYPES, SD_FLOAT_TYPES);
+BUILD_DOUBLE_TEMPLATE( class TransformFloat, , SD_COMMON_TYPES, SD_FLOAT_TYPES);
 }  // namespace transform
 }  // namespace functions

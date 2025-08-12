@@ -301,5 +301,41 @@ void throwException(const char* exceptionMessage);
 #define EVAL4(...) EVAL5(EVAL5(EVAL5(__VA_ARGS__)))
 #define EVAL5(...) __VA_ARGS__
 
+#define EXPAND(...) __VA_ARGS__
+#define CAT(a, b) CAT_IMPL(a, b)
+#define CAT_IMPL(a, b) a##b
+
+#define PP_NARGS(...) PP_NARGS_IMPL(__VA_ARGS__, PP_RSEQ_N())
+#define PP_NARGS_IMPL(...) PP_ARG_N(__VA_ARGS__)
+#define PP_ARG_N(_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,N,...) N
+#define PP_RSEQ_N() 16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0
+
+
+#define GET(n, list) CAT(GET_, n) list
+
+#define GET_0(t1, ...) t1
+#define GET_1(t1, t2, ...) t2
+#define GET_2(t1, t2, t3, ...) t3
+#define GET_3(t1, t2, t3, t4, ...) t4
+#define GET_4(t1, t2, t3, t4, t5, ...) t5
+#define GET_5(t1, t2, t3, t4, t5, t6, ...) t6
+#define GET_6(t1, t2, t3, t4, t5, t6, t7, ...) t7
+#define GET_7(t1, t2, t3, t4, t5, t6, t7, t8, ...) t8
+#define GET_8(t1, t2, t3, t4, t5, t6, t7, t8, t9, ...) t9
+#define GET_9(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, ...) t10
+#define GET_10(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, ...) t11
+#define GET_11(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, ...) t12
+#define GET_12(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, ...) t13
+#define GET_13(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, ...) t14
+#define GET_14(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, ...) t15
+#define GET_15(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, ...) t16
+
+#define GET_FIRST_IMPL(a, b) a
+#define GET_FIRST(tuple) GET_FIRST_IMPL tuple
+
+
+#define GET_SECOND_IMPL(a, b) b
+#define GET_SECOND(tuple) GET_SECOND_IMPL tuple
+
 
 #endif

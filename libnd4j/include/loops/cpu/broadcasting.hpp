@@ -892,7 +892,7 @@ void Broadcast<X, Y, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, co
   }
 }
 
-BUILD_TRIPLE_TEMPLATE(template class SD_LIB_HIDDEN Broadcast, ,SD_INTEGER_TYPES_0,SD_INTEGER_TYPES_0,SD_INTEGER_TYPES_0);
+BUILD_TRIPLE_TEMPLATE( class SD_LIB_HIDDEN Broadcast, ,SD_INTEGER_TYPES_0,SD_INTEGER_TYPES_0,SD_INTEGER_TYPES_0);
 
 
 }  // namespace broadcast

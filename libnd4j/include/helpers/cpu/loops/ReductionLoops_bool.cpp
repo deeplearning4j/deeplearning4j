@@ -43,5 +43,5 @@ void ReductionBoolLoops<X, Y>::wrapper(int opNum, memory::Workspace* workspace, 
                        REDUCE_BOOL_OPS);
 #endif
 }
-BUILD_DOUBLE_TEMPLATE(template class ReductionBoolLoops, , SD_COMMON_TYPES, SD_BOOL_TYPES);
+BUILD_DOUBLE_TEMPLATE( class ReductionBoolLoops, , SD_COMMON_TYPES, SD_BOOL_TYPES);
 }  // namespace sd

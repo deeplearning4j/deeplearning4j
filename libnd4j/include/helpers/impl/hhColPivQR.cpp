@@ -127,7 +127,7 @@ void HHcolPivQR::_evalData() {
   }
 }
 
-BUILD_SINGLE_TEMPLATE(template void HHcolPivQR::_evalData, (), SD_FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE( void HHcolPivQR::_evalData, (), SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

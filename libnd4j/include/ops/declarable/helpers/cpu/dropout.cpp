@@ -49,7 +49,7 @@ static void dropoutSimple(NDArray* input, NDArray* output, double probValue, int
 
   samediff::Threads::parallel_for(func, 0, inLen);
 }
-BUILD_SINGLE_TEMPLATE(template void dropoutSimple, (NDArray* input, NDArray* output, double probValue, int seed,NDArray *mask),
+BUILD_SINGLE_TEMPLATE( void dropoutSimple, (NDArray* input, NDArray* output, double probValue, int seed,NDArray *mask),
                       SD_FLOAT_TYPES);
 
 template <typename T>
@@ -100,7 +100,7 @@ sd::Status dropOutFunctor(graph::Context& context, NDArray* input, NDArray* outp
                         SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template sd::Status dropOutFunctor_, (graph::Context & context, NDArray* input, NDArray* output,
+BUILD_SINGLE_TEMPLATE( sd::Status dropOutFunctor_, (graph::Context & context, NDArray* input, NDArray* output,
     NDArray* reduceShape, int seed, double probValue,NDArray *mask);
 , SD_FLOAT_TYPES);
 
@@ -148,8 +148,8 @@ sd::Status dropOutFunctorBP(graph::Context& context, NDArray* input, NDArray* gr
   BUILD_SINGLE_SELECTOR(context.dataType(), return dropOutFunctorBP_,
                         (context, input, gradOut, output, reduceShape, seed, probValue,mask), SD_FLOAT_TYPES);
 }
-BUILD_SINGLE_TEMPLATE(template sd::Status dropOutFunctorBP_,
-                      (graph::Context & context, NDArray* input, NDArray* gradOut, NDArray* output,
+BUILD_SINGLE_TEMPLATE( sd::Status dropOutFunctorBP_,
+                      (::Context & context, NDArray* input, NDArray* gradOut, NDArray* output,
                           NDArray* reduceShape, int seed, double probValue,NDArray* mask),
                       SD_FLOAT_TYPES);
 
@@ -158,7 +158,7 @@ sd::Status alphaDropOutFunctor(graph::Context& context, NDArray* input, NDArray*
   BUILD_SINGLE_SELECTOR(context.dataType(), return alphaDropOutFunctor_,
                         (context, input, output, reduceShape, seed, probValue, alpha, alpha1, beta,mask), SD_FLOAT_TYPES);
 }
-BUILD_SINGLE_TEMPLATE(template sd::Status alphaDropOutFunctor_,
+BUILD_SINGLE_TEMPLATE( sd::Status alphaDropOutFunctor_,
                       (graph::Context & context, NDArray* input, NDArray* output, NDArray* reduceShape, int seed,
                           double probValue, double alpha, double alpha1, double beta,NDArray* mask),
                       SD_FLOAT_TYPES);
@@ -170,7 +170,7 @@ sd::Status alphaDropOutFunctorBP(graph::Context& context, NDArray* input, NDArra
                         (context, input, gradOut, output, reduceShape, seed, probValue, alpha, alpha1, beta,mask),
                         SD_FLOAT_TYPES);
 }
-BUILD_SINGLE_TEMPLATE(template sd::Status alphaDropOutFunctorBP_,
+BUILD_SINGLE_TEMPLATE( sd::Status alphaDropOutFunctorBP_,
                       (graph::Context & context, NDArray* input, NDArray* gradOut, NDArray* output,
                           NDArray* reduceShape, int seed, double probValue, double alpha, double alpha1, double beta,NDArray *mask),
                       SD_FLOAT_TYPES);

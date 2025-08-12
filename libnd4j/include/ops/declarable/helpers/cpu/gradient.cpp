@@ -35,7 +35,7 @@ static void applyGradientDescent_(NDArray* input, NDArray* step, double weight, 
 void applyGradientDescent(sd::LaunchContext* context, NDArray* input, NDArray* step, double weight, NDArray* output) {
   BUILD_SINGLE_SELECTOR(input->dataType(), applyGradientDescent_, (input, step, weight, output), SD_FLOAT_TYPES);
 }
-BUILD_SINGLE_TEMPLATE(template void applyGradientDescent_,
+BUILD_SINGLE_TEMPLATE( void applyGradientDescent_,
                       (NDArray * input, NDArray* step, double weight, NDArray* output), SD_FLOAT_TYPES);
 }  // namespace helpers
 }  // namespace ops

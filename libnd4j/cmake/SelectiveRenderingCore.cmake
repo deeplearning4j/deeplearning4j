@@ -247,9 +247,30 @@ function(_internal_srcore_generate_combinations active_indices type_names profil
     set(total_possible_2 0)
     set(total_possible_3 0)
 
+    # Debug file setup
+    set(debug_file "${CMAKE_BINARY_DIR}/type_combinations_debug.txt")
+    set(debug_content "Type Combinations Debug Report\n")
+    string(TIMESTAMP current_time "%Y-%m-%d %H:%M:%S")
+    string(APPEND debug_content "Generated: ${current_time}\n")
+    string(APPEND debug_content "=====================================\n\n")
+
+    string(APPEND debug_content "Active Types (${type_count}):\n")
+    foreach(i RANGE 0 ${type_count})
+        if(i LESS ${type_count})
+            list(GET type_names ${i} type_name)
+            string(APPEND debug_content "  [${i}] ${type_name}\n")
+        endif()
+    endforeach()
+    string(APPEND debug_content "\n")
+
     math(EXPR max_index "${type_count} - 1")
 
     # Generate 2-type combinations with filtering
+    string(APPEND debug_content "2-TYPE COMBINATIONS:\n")
+    string(APPEND debug_content "====================\n")
+    set(valid_2_list "")
+    set(invalid_2_list "")
+
     foreach(i RANGE ${max_index})
         list(GET type_names ${i} type_name_i)
         foreach(j RANGE ${max_index})
@@ -260,11 +281,26 @@ function(_internal_srcore_generate_combinations active_indices type_names profil
             if(is_valid)
                 list(APPEND combinations_2 "${i},${j}")
                 math(EXPR filtered_count_2 "${filtered_count_2} + 1")
+                string(APPEND valid_2_list "  [VALID]   (${type_name_i}, ${type_name_j}) -> indices(${i},${j})\n")
+            else()
+                string(APPEND invalid_2_list "  [INVALID] (${type_name_i}, ${type_name_j}) -> indices(${i},${j})\n")
             endif()
         endforeach()
     endforeach()
 
+    string(APPEND debug_content "\nValid 2-Type Combinations (${filtered_count_2}):\n")
+    string(APPEND debug_content "${valid_2_list}")
+    string(APPEND debug_content "\nInvalid 2-Type Combinations (")
+    math(EXPR invalid_2_count "${total_possible_2} - ${filtered_count_2}")
+    string(APPEND debug_content "${invalid_2_count}):\n")
+    string(APPEND debug_content "${invalid_2_list}")
+
     # Generate 3-type combinations with filtering
+    string(APPEND debug_content "\n3-TYPE COMBINATIONS:\n")
+    string(APPEND debug_content "====================\n")
+    set(valid_3_list "")
+    set(invalid_3_list "")
+
     foreach(i RANGE ${max_index})
         list(GET type_names ${i} type_name_i)
         foreach(j RANGE ${max_index})
@@ -277,10 +313,49 @@ function(_internal_srcore_generate_combinations active_indices type_names profil
                 if(is_valid)
                     list(APPEND combinations_3 "${i},${j},${k}")
                     math(EXPR filtered_count_3 "${filtered_count_3} + 1")
+                    string(APPEND valid_3_list "  [VALID]   (${type_name_i}, ${type_name_j}, ${type_name_k}) -> indices(${i},${j},${k})\n")
+                else()
+                    string(APPEND invalid_3_list "  [INVALID] (${type_name_i}, ${type_name_j}, ${type_name_k}) -> indices(${i},${j},${k})\n")
                 endif()
             endforeach()
         endforeach()
     endforeach()
+
+    string(APPEND debug_content "\nValid 3-Type Combinations (${filtered_count_3}):\n")
+    string(APPEND debug_content "${valid_3_list}")
+    string(APPEND debug_content "\nInvalid 3-Type Combinations (")
+    math(EXPR invalid_3_count "${total_possible_3} - ${filtered_count_3}")
+    string(APPEND debug_content "${invalid_3_count}):\n")
+    string(APPEND debug_content "${invalid_3_list}")
+
+    # Statistics
+    string(APPEND debug_content "\n\nSTATISTICS:\n")
+    string(APPEND debug_content "============\n")
+    string(APPEND debug_content "2-Type Combinations:\n")
+    string(APPEND debug_content "  Total Possible: ${total_possible_2}\n")
+    string(APPEND debug_content "  Valid: ${filtered_count_2}\n")
+    string(APPEND debug_content "  Invalid: ${invalid_2_count}\n")
+    if(total_possible_2 GREATER 0)
+        math(EXPR percent_valid_2 "100 * ${filtered_count_2} / ${total_possible_2}")
+        math(EXPR percent_invalid_2 "100 - ${percent_valid_2}")
+        string(APPEND debug_content "  Valid %: ${percent_valid_2}%\n")
+        string(APPEND debug_content "  Invalid %: ${percent_invalid_2}%\n")
+    endif()
+
+    string(APPEND debug_content "\n3-Type Combinations:\n")
+    string(APPEND debug_content "  Total Possible: ${total_possible_3}\n")
+    string(APPEND debug_content "  Valid: ${filtered_count_3}\n")
+    string(APPEND debug_content "  Invalid: ${invalid_3_count}\n")
+    if(total_possible_3 GREATER 0)
+        math(EXPR percent_valid_3 "100 * ${filtered_count_3} / ${total_possible_3}")
+        math(EXPR percent_invalid_3 "100 - ${percent_valid_3}")
+        string(APPEND debug_content "  Valid %: ${percent_valid_3}%\n")
+        string(APPEND debug_content "  Invalid %: ${percent_invalid_3}%\n")
+    endif()
+
+    # Write debug file
+    file(WRITE "${debug_file}" "${debug_content}")
+    message(STATUS "Type combinations debug report written to: ${debug_file}")
 
     # Statistics only if diagnostics enabled
     if(SD_ENABLE_DIAGNOSTICS)
@@ -818,10 +893,8 @@ function(_internal_srcore_generate_validity_header active_indices type_enums typ
     string(APPEND header_content "// SECTION 2: MAPPING TABLES\n")
     string(APPEND header_content "// ============================================================================\n\n")
 
-    # Generate enum to number mappings (handling namespace prefixes)
+    # Generate enum to number mappings
     string(APPEND header_content "// DataType enum to number mappings (with namespace handling)\n")
-
-    # Define ALL mappings regardless of what's in type_enums
     string(APPEND header_content "#define SD_ENUM_TO_NUM_BOOL 1\n")
     string(APPEND header_content "#define SD_ENUM_TO_NUM_FLOAT8 2\n")
     string(APPEND header_content "#define SD_ENUM_TO_NUM_HALF 3\n")
@@ -844,7 +917,7 @@ function(_internal_srcore_generate_validity_header active_indices type_enums typ
     string(APPEND header_content "#define SD_ENUM_TO_NUM_UTF32 52\n")
     string(APPEND header_content "\n")
 
-    # Also add the alias mappings
+    # Generate alias to number mappings
     string(APPEND header_content "// Constexpr alias to number mappings\n")
     string(APPEND header_content "#define SD_ALIAS_TO_NUM_BOOL 1\n")
     string(APPEND header_content "#define SD_ALIAS_TO_NUM_FLOAT8 2\n")
@@ -870,382 +943,45 @@ function(_internal_srcore_generate_validity_header active_indices type_enums typ
 
     # Generate C++ type to number mappings
     string(APPEND header_content "// C++ type name to number mappings\n")
-    foreach(i RANGE 0 ${num_types})
-        if(i LESS ${num_types})
-            list(GET type_cpp_types ${i} cpp_type)
-            list(GET type_enums ${i} enum_value)
-            enum_to_int_value("${enum_value}" int_value)
 
-            # Clean up the C++ type name for macro usage
-            string(REPLACE "::" "__" safe_cpp_type "${cpp_type}")
-            string(REPLACE " " "_" safe_cpp_type "${safe_cpp_type}")
-            string(APPEND header_content "#define SD_TYPE_TO_NUM_${safe_cpp_type} ${int_value}\n")
+    # Boolean
+    string(APPEND header_content "#define SD_TYPE_TO_NUM_bool 1\n")
 
-            # Add common variations
-            if(cpp_type STREQUAL "float")
-                string(APPEND header_content "#define SD_TYPE_TO_NUM_float ${int_value}\n")
-            elseif(cpp_type STREQUAL "double")
-                string(APPEND header_content "#define SD_TYPE_TO_NUM_double ${int_value}\n")
-            elseif(cpp_type STREQUAL "bool")
-                string(APPEND header_content "#define SD_TYPE_TO_NUM_bool ${int_value}\n")
-            elseif(cpp_type STREQUAL "int8_t")
-                string(APPEND header_content "#define SD_TYPE_TO_NUM_int8_t ${int_value}\n")
-            elseif(cpp_type STREQUAL "int16_t")
-                string(APPEND header_content "#define SD_TYPE_TO_NUM_int16_t ${int_value}\n")
-            elseif(cpp_type STREQUAL "int32_t")
-                string(APPEND header_content "#define SD_TYPE_TO_NUM_int32_t ${int_value}\n")
-            elseif(cpp_type STREQUAL "sd::LongType")
-                string(APPEND header_content "#define SD_TYPE_TO_NUM_sd__LongType ${int_value}\n")
-                string(APPEND header_content "#define SD_TYPE_TO_NUM_int64_t ${int_value}\n")
-                string(APPEND header_content "#define SD_TYPE_TO_NUM_long_long ${int_value}\n")
-            elseif(cpp_type STREQUAL "uint8_t")
-                string(APPEND header_content "#define SD_TYPE_TO_NUM_uint8_t ${int_value}\n")
-            elseif(cpp_type STREQUAL "uint16_t")
-                string(APPEND header_content "#define SD_TYPE_TO_NUM_uint16_t ${int_value}\n")
-            elseif(cpp_type STREQUAL "uint32_t")
-                string(APPEND header_content "#define SD_TYPE_TO_NUM_uint32_t ${int_value}\n")
-            elseif(cpp_type STREQUAL "uint64_t")
-                string(APPEND header_content "#define SD_TYPE_TO_NUM_uint64_t ${int_value}\n")
-                string(APPEND header_content "#define SD_TYPE_TO_NUM_sd__UnsignedLong ${int_value}\n")
-            elseif(cpp_type STREQUAL "float16")
-                string(APPEND header_content "#define SD_TYPE_TO_NUM_float16 ${int_value}\n")
-            elseif(cpp_type STREQUAL "bfloat16")
-                string(APPEND header_content "#define SD_TYPE_TO_NUM_bfloat16 ${int_value}\n")
-            endif()
-        endif()
-    endforeach()
+    # Floating point types
+    string(APPEND header_content "#define SD_TYPE_TO_NUM_float8 2\n")
+    string(APPEND header_content "#define SD_TYPE_TO_NUM_float16 3\n")
+    string(APPEND header_content "#define SD_TYPE_TO_NUM_half 3\n")
+    string(APPEND header_content "#define SD_TYPE_TO_NUM_half2 4\n")
+    string(APPEND header_content "#define SD_TYPE_TO_NUM_float 5\n")
+    string(APPEND header_content "#define SD_TYPE_TO_NUM_double 6\n")
+
+    # Signed integer types
+    string(APPEND header_content "#define SD_TYPE_TO_NUM_int8_t 7\n")
+    string(APPEND header_content "#define SD_TYPE_TO_NUM_int16_t 8\n")
+    string(APPEND header_content "#define SD_TYPE_TO_NUM_int32_t 9\n")
+    string(APPEND header_content "#define SD_TYPE_TO_NUM_int64_t 10\n")
+    string(APPEND header_content "#define SD_TYPE_TO_NUM_LongType 10\n")
+
+    # Unsigned integer types
+    string(APPEND header_content "#define SD_TYPE_TO_NUM_uint8_t 11\n")
+    string(APPEND header_content "#define SD_TYPE_TO_NUM_uint16_t 12\n")
+    string(APPEND header_content "#define SD_TYPE_TO_NUM_uint32_t 13\n")
+    string(APPEND header_content "#define SD_TYPE_TO_NUM_uint64_t 14\n")
+    string(APPEND header_content "#define SD_TYPE_TO_NUM_UnsignedLong 14\n")
+
+    # Quantized types
+    string(APPEND header_content "#define SD_TYPE_TO_NUM_qint8 15\n")
+    string(APPEND header_content "#define SD_TYPE_TO_NUM_qint16 16\n")
+
+    # BFloat16
+    string(APPEND header_content "#define SD_TYPE_TO_NUM_bfloat16 17\n")
+
+    # String types - using type aliases without std:: prefix
+    string(APPEND header_content "#define SD_TYPE_TO_NUM_stdstring 50\n")
+    string(APPEND header_content "#define SD_TYPE_TO_NUM_u16string 51\n")
+    string(APPEND header_content "#define SD_TYPE_TO_NUM_u32string 52\n")
+
     string(APPEND header_content "\n")
-
-    # ============================================================================
-    # SECTION 3: CONDITIONAL EXPANSION PRIMITIVES (FIXED FOR WHITESPACE)
-    # ============================================================================
-
-    string(APPEND header_content "// ============================================================================\n")
-    string(APPEND header_content "// SECTION 3: CONDITIONAL EXPANSION PRIMITIVES (VARIADIC)\n")
-    string(APPEND header_content "// ============================================================================\n\n")
-
-    string(APPEND header_content "// CRITICAL: Using variadic macros to preserve whitespace\n")
-    string(APPEND header_content "// Statement context expansions (for use in function bodies)\n")
-    string(APPEND header_content "#define SD_IF_1(...) __VA_ARGS__\n")
-    string(APPEND header_content "#define SD_IF_0(...) do {} while(0);\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "// Declaration context expansions (for use at file/namespace scope)\n")
-    string(APPEND header_content "#define SD_IF_DECL_1(...) __VA_ARGS__\n")
-    string(APPEND header_content "#define SD_IF_DECL_0(...) /* filtered out */\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "// Expression context expansions (for use in expressions)\n")
-    string(APPEND header_content "#define SD_IF_EXPR_1(...) __VA_ARGS__\n")
-    string(APPEND header_content "#define SD_IF_EXPR_0(...) ((void)0)\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "// Special whitespace-preserving helpers\n")
-    string(APPEND header_content "#define SD_UNPAREN(...) SD_UNPAREN_IMPL __VA_ARGS__\n")
-    string(APPEND header_content "#define SD_UNPAREN_IMPL(...) __VA_ARGS__\n")
-    string(APPEND header_content "#define SD_IDENTITY(...) __VA_ARGS__\n")
-    string(APPEND header_content "#define SD_EXPAND(...) __VA_ARGS__\n")
-    string(APPEND header_content "\n")
-
-    # ============================================================================
-    # SECTION 4: TOKEN MANIPULATION HELPERS
-    # ============================================================================
-
-    string(APPEND header_content "// ============================================================================\n")
-    string(APPEND header_content "// SECTION 4: TOKEN MANIPULATION HELPERS\n")
-    string(APPEND header_content "// ============================================================================\n\n")
-
-    string(APPEND header_content "// Basic concatenation macros\n")
-    string(APPEND header_content "#define SD_CAT(a, b) SD_CAT_I(a, b)\n")
-    string(APPEND header_content "#define SD_CAT_I(a, b) a ## b\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "// Three-token concatenation\n")
-    string(APPEND header_content "#define SD_CAT3(a, b, c) SD_CAT3_I(a, b, c)\n")
-    string(APPEND header_content "#define SD_CAT3_I(a, b, c) a ## b ## c\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "// Five-token concatenation\n")
-    string(APPEND header_content "#define SD_CAT5(a, b, c, d, e) SD_CAT5_I(a, b, c, d, e)\n")
-    string(APPEND header_content "#define SD_CAT5_I(a, b, c, d, e) a ## b ## c ## d ## e\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "// Seven-token concatenation\n")
-    string(APPEND header_content "#define SD_CAT7(a, b, c, d, e, f, g) SD_CAT7_I(a, b, c, d, e, f, g)\n")
-    string(APPEND header_content "#define SD_CAT7_I(a, b, c, d, e, f, g) a ## b ## c ## d ## e ## f ## g\n")
-    string(APPEND header_content "\n")
-
-    # ============================================================================
-    # SECTION 5: COMPILATION CHECK MACROS
-    # ============================================================================
-
-    string(APPEND header_content "// ============================================================================\n")
-    string(APPEND header_content "// SECTION 5: COMPILATION CHECK MACROS\n")
-    string(APPEND header_content "// ============================================================================\n\n")
-
-    string(APPEND header_content "// Check if type combinations are compiled (returns 0 or 1)\n")
-    string(APPEND header_content "#define SD_IS_SINGLE_COMPILED(NUM) \\\n")
-    string(APPEND header_content "    SD_CAT3(SD_SINGLE_TYPE_, NUM, _COMPILED)\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "#define SD_IS_PAIR_COMPILED(NUM1, NUM2) \\\n")
-    string(APPEND header_content "    SD_CAT5(SD_PAIR_TYPE_, NUM1, _, NUM2, _COMPILED)\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "#define SD_IS_TRIPLE_COMPILED(NUM1, NUM2, NUM3) \\\n")
-    string(APPEND header_content "    SD_CAT7(SD_TRIPLE_TYPE_, NUM1, _, NUM2, _, NUM3, _COMPILED)\n")
-    string(APPEND header_content "\n")
-
-    # ============================================================================
-    # SECTION 6: UNIFIED INTERFACE - NUMERIC (FIXED)
-    # ============================================================================
-
-    string(APPEND header_content "// ============================================================================\n")
-    string(APPEND header_content "// SECTION 6: UNIFIED INTERFACE - NUMERIC (VARIADIC)\n")
-    string(APPEND header_content "// ============================================================================\n\n")
-
-    string(APPEND header_content "// Direct numeric type ID interfaces (statement context)\n")
-    string(APPEND header_content "#define SD_IF_SINGLE_COMPILED(TYPE_NUM, ...) \\\n")
-    string(APPEND header_content "    SD_CAT(SD_IF_, SD_IS_SINGLE_COMPILED(TYPE_NUM))(__VA_ARGS__)\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "#define SD_IF_PAIR_COMPILED(TYPE1_NUM, TYPE2_NUM, ...) \\\n")
-    string(APPEND header_content "    SD_CAT(SD_IF_, SD_IS_PAIR_COMPILED(TYPE1_NUM, TYPE2_NUM))(__VA_ARGS__)\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "#define SD_IF_TRIPLE_COMPILED(TYPE1_NUM, TYPE2_NUM, TYPE3_NUM, ...) \\\n")
-    string(APPEND header_content "    SD_CAT(SD_IF_, SD_IS_TRIPLE_COMPILED(TYPE1_NUM, TYPE2_NUM, TYPE3_NUM))(__VA_ARGS__)\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "// Direct numeric type ID interfaces (declaration context)\n")
-    string(APPEND header_content "#define SD_IF_SINGLE_COMPILED_DECL(TYPE_NUM, ...) \\\n")
-    string(APPEND header_content "    SD_CAT(SD_IF_DECL_, SD_IS_SINGLE_COMPILED(TYPE_NUM))(__VA_ARGS__)\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "#define SD_IF_PAIR_COMPILED_DECL(TYPE1_NUM, TYPE2_NUM, ...) \\\n")
-    string(APPEND header_content "    SD_CAT(SD_IF_DECL_, SD_IS_PAIR_COMPILED(TYPE1_NUM, TYPE2_NUM))(__VA_ARGS__)\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "#define SD_IF_TRIPLE_COMPILED_DECL(TYPE1_NUM, TYPE2_NUM, TYPE3_NUM, ...) \\\n")
-    string(APPEND header_content "    SD_CAT(SD_IF_DECL_, SD_IS_TRIPLE_COMPILED(TYPE1_NUM, TYPE2_NUM, TYPE3_NUM))(__VA_ARGS__)\n")
-    string(APPEND header_content "\n")
-
-    # ============================================================================
-    # SECTION 7: UNIFIED INTERFACE - DATATYPE ENUM (FIXED)
-    # ============================================================================
-
-    string(APPEND header_content "// ============================================================================\n")
-    string(APPEND header_content "// SECTION 7: UNIFIED INTERFACE - DATATYPE ENUM (VARIADIC)\n")
-    string(APPEND header_content "// ============================================================================\n\n")
-
-    # Add helper macros for proper evaluation with indirection
-    string(APPEND header_content "// Helper macros for forcing evaluation through indirection\n")
-    string(APPEND header_content "#define SD_EVAL_ENUM_TO_NUM_I(x) x\n")
-    string(APPEND header_content "#define SD_EVAL_ENUM_TO_NUM(DTYPE) SD_EVAL_ENUM_TO_NUM_I(SD_CAT(SD_ENUM_TO_NUM_, DTYPE))\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "// DataType enum interfaces (statement context)\n")
-    string(APPEND header_content "#define SD_IF_SINGLE_DATATYPE_COMPILED(DTYPE, ...) \\\n")
-    string(APPEND header_content "    SD_IF_SINGLE_COMPILED(SD_EVAL_ENUM_TO_NUM(DTYPE), __VA_ARGS__)\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "#define SD_IF_PAIR_DATATYPE_COMPILED(DTYPE1, DTYPE2, ...) \\\n")
-    string(APPEND header_content "    SD_IF_PAIR_COMPILED( \\\n")
-    string(APPEND header_content "        SD_EVAL_ENUM_TO_NUM(DTYPE1), \\\n")
-    string(APPEND header_content "        SD_EVAL_ENUM_TO_NUM(DTYPE2), \\\n")
-    string(APPEND header_content "        __VA_ARGS__)\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "#define SD_IF_TRIPLE_DATATYPE_COMPILED(DTYPE1, DTYPE2, DTYPE3, ...) \\\n")
-    string(APPEND header_content "    SD_IF_TRIPLE_COMPILED( \\\n")
-    string(APPEND header_content "        SD_EVAL_ENUM_TO_NUM(DTYPE1), \\\n")
-    string(APPEND header_content "        SD_EVAL_ENUM_TO_NUM(DTYPE2), \\\n")
-    string(APPEND header_content "        SD_EVAL_ENUM_TO_NUM(DTYPE3), \\\n")
-    string(APPEND header_content "        __VA_ARGS__)\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "// DataType enum interfaces (declaration context)\n")
-    string(APPEND header_content "#define SD_IF_SINGLE_DATATYPE_COMPILED_DECL(DTYPE, ...) \\\n")
-    string(APPEND header_content "    SD_IF_SINGLE_COMPILED_DECL(SD_EVAL_ENUM_TO_NUM(DTYPE), __VA_ARGS__)\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "#define SD_IF_PAIR_DATATYPE_COMPILED_DECL(DTYPE1, DTYPE2, ...) \\\n")
-    string(APPEND header_content "    SD_IF_PAIR_COMPILED_DECL( \\\n")
-    string(APPEND header_content "        SD_EVAL_ENUM_TO_NUM(DTYPE1), \\\n")
-    string(APPEND header_content "        SD_EVAL_ENUM_TO_NUM(DTYPE2), \\\n")
-    string(APPEND header_content "        __VA_ARGS__)\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "#define SD_IF_TRIPLE_DATATYPE_COMPILED_DECL(DTYPE1, DTYPE2, DTYPE3, ...) \\\n")
-    string(APPEND header_content "    SD_IF_TRIPLE_COMPILED_DECL( \\\n")
-    string(APPEND header_content "        SD_EVAL_ENUM_TO_NUM(DTYPE1), \\\n")
-    string(APPEND header_content "        SD_EVAL_ENUM_TO_NUM(DTYPE2), \\\n")
-    string(APPEND header_content "        SD_EVAL_ENUM_TO_NUM(DTYPE3), \\\n")
-    string(APPEND header_content "        __VA_ARGS__)\n")
-    string(APPEND header_content "\n")
-
-    # ============================================================================
-    # SECTION 8: UNIFIED INTERFACE - CONSTEXPR ALIASES (FIXED)
-    # ============================================================================
-
-    string(APPEND header_content "// ============================================================================\n")
-    string(APPEND header_content "// SECTION 8: UNIFIED INTERFACE - CONSTEXPR ALIASES (VARIADIC)\n")
-    string(APPEND header_content "// ============================================================================\n\n")
-
-    string(APPEND header_content "// Constexpr alias interfaces (statement context)\n")
-    string(APPEND header_content "#define SD_IF_SINGLE_ALIAS_COMPILED(ALIAS, ...) \\\n")
-    string(APPEND header_content "    SD_IF_SINGLE_COMPILED(SD_CAT(SD_ALIAS_TO_NUM_, ALIAS), __VA_ARGS__)\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "#define SD_IF_PAIR_ALIAS_COMPILED(ALIAS1, ALIAS2, ...) \\\n")
-    string(APPEND header_content "    SD_IF_PAIR_COMPILED( \\\n")
-    string(APPEND header_content "        SD_CAT(SD_ALIAS_TO_NUM_, ALIAS1), \\\n")
-    string(APPEND header_content "        SD_CAT(SD_ALIAS_TO_NUM_, ALIAS2), \\\n")
-    string(APPEND header_content "        __VA_ARGS__)\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "#define SD_IF_TRIPLE_ALIAS_COMPILED(ALIAS1, ALIAS2, ALIAS3, ...) \\\n")
-    string(APPEND header_content "    SD_IF_TRIPLE_COMPILED( \\\n")
-    string(APPEND header_content "        SD_CAT(SD_ALIAS_TO_NUM_, ALIAS1), \\\n")
-    string(APPEND header_content "        SD_CAT(SD_ALIAS_TO_NUM_, ALIAS2), \\\n")
-    string(APPEND header_content "        SD_CAT(SD_ALIAS_TO_NUM_, ALIAS3), \\\n")
-    string(APPEND header_content "        __VA_ARGS__)\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "// Constexpr alias interfaces (declaration context)\n")
-    string(APPEND header_content "#define SD_IF_SINGLE_ALIAS_COMPILED_DECL(ALIAS, ...) \\\n")
-    string(APPEND header_content "    SD_IF_SINGLE_COMPILED_DECL(SD_CAT(SD_ALIAS_TO_NUM_, ALIAS), __VA_ARGS__)\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "#define SD_IF_PAIR_ALIAS_COMPILED_DECL(ALIAS1, ALIAS2, ...) \\\n")
-    string(APPEND header_content "    SD_IF_PAIR_COMPILED_DECL( \\\n")
-    string(APPEND header_content "        SD_CAT(SD_ALIAS_TO_NUM_, ALIAS1), \\\n")
-    string(APPEND header_content "        SD_CAT(SD_ALIAS_TO_NUM_, ALIAS2), \\\n")
-    string(APPEND header_content "        __VA_ARGS__)\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "#define SD_IF_TRIPLE_ALIAS_COMPILED_DECL(ALIAS1, ALIAS2, ALIAS3, ...) \\\n")
-    string(APPEND header_content "    SD_IF_TRIPLE_COMPILED_DECL( \\\n")
-    string(APPEND header_content "        SD_CAT(SD_ALIAS_TO_NUM_, ALIAS1), \\\n")
-    string(APPEND header_content "        SD_CAT(SD_ALIAS_TO_NUM_, ALIAS2), \\\n")
-    string(APPEND header_content "        SD_CAT(SD_ALIAS_TO_NUM_, ALIAS3), \\\n")
-    string(APPEND header_content "        __VA_ARGS__)\n")
-    string(APPEND header_content "\n")
-
-    # ============================================================================
-    # SECTION 9: UNIFIED INTERFACE - C++ TYPE NAMES (FIXED)
-    # ============================================================================
-
-    string(APPEND header_content "// ============================================================================\n")
-    string(APPEND header_content "// SECTION 9: UNIFIED INTERFACE - C++ TYPE NAMES (VARIADIC)\n")
-    string(APPEND header_content "// ============================================================================\n\n")
-
-    string(APPEND header_content "// C++ type name interfaces (statement context)\n")
-    string(APPEND header_content "#define SD_IF_SINGLE_TYPE_COMPILED(TYPE, ...) \\\n")
-    string(APPEND header_content "    SD_IF_SINGLE_COMPILED(SD_CAT(SD_TYPE_TO_NUM_, TYPE), __VA_ARGS__)\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "#define SD_IF_PAIR_TYPE_COMPILED(TYPE1, TYPE2, ...) \\\n")
-    string(APPEND header_content "    SD_IF_PAIR_COMPILED( \\\n")
-    string(APPEND header_content "        SD_CAT(SD_TYPE_TO_NUM_, TYPE1), \\\n")
-    string(APPEND header_content "        SD_CAT(SD_TYPE_TO_NUM_, TYPE2), \\\n")
-    string(APPEND header_content "        __VA_ARGS__)\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "#define SD_IF_TRIPLE_TYPE_COMPILED(TYPE1, TYPE2, TYPE3, ...) \\\n")
-    string(APPEND header_content "    SD_IF_TRIPLE_COMPILED( \\\n")
-    string(APPEND header_content "        SD_CAT(SD_TYPE_TO_NUM_, TYPE1), \\\n")
-    string(APPEND header_content "        SD_CAT(SD_TYPE_TO_NUM_, TYPE2), \\\n")
-    string(APPEND header_content "        SD_CAT(SD_TYPE_TO_NUM_, TYPE3), \\\n")
-    string(APPEND header_content "        __VA_ARGS__)\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "// C++ type name interfaces (declaration context)\n")
-    string(APPEND header_content "#define SD_IF_SINGLE_TYPE_COMPILED_DECL(TYPE, ...) \\\n")
-    string(APPEND header_content "    SD_IF_SINGLE_COMPILED_DECL(SD_CAT(SD_TYPE_TO_NUM_, TYPE), __VA_ARGS__)\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "#define SD_IF_PAIR_TYPE_COMPILED_DECL(TYPE1, TYPE2, ...) \\\n")
-    string(APPEND header_content "    SD_IF_PAIR_COMPILED_DECL( \\\n")
-    string(APPEND header_content "        SD_CAT(SD_TYPE_TO_NUM_, TYPE1), \\\n")
-    string(APPEND header_content "        SD_CAT(SD_TYPE_TO_NUM_, TYPE2), \\\n")
-    string(APPEND header_content "        __VA_ARGS__)\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "#define SD_IF_TRIPLE_TYPE_COMPILED_DECL(TYPE1, TYPE2, TYPE3, ...) \\\n")
-    string(APPEND header_content "    SD_IF_TRIPLE_COMPILED_DECL( \\\n")
-    string(APPEND header_content "        SD_CAT(SD_TYPE_TO_NUM_, TYPE1), \\\n")
-    string(APPEND header_content "        SD_CAT(SD_TYPE_TO_NUM_, TYPE2), \\\n")
-    string(APPEND header_content "        SD_CAT(SD_TYPE_TO_NUM_, TYPE3), \\\n")
-    string(APPEND header_content "        __VA_ARGS__)\n")
-    string(APPEND header_content "\n")
-
-    # ============================================================================
-    # SECTION 10: BACKWARD COMPATIBILITY
-    # ============================================================================
-
-    string(APPEND header_content "// ============================================================================\n")
-    string(APPEND header_content "// SECTION 10: BACKWARD COMPATIBILITY\n")
-    string(APPEND header_content "// ============================================================================\n\n")
-
-    string(APPEND header_content "// Legacy macros for existing code\n")
-    string(APPEND header_content "#define SD_IS_SINGLE_DATATYPE_COMPILED(DTYPE) \\\n")
-    string(APPEND header_content "    SD_IS_SINGLE_COMPILED(SD_CAT(SD_ENUM_TO_NUM_, DTYPE))\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "#define SD_IS_PAIR_DATATYPE_COMPILED(DTYPE1, DTYPE2) \\\n")
-    string(APPEND header_content "    SD_IS_PAIR_COMPILED( \\\n")
-    string(APPEND header_content "        SD_CAT(SD_ENUM_TO_NUM_, DTYPE1), \\\n")
-    string(APPEND header_content "        SD_CAT(SD_ENUM_TO_NUM_, DTYPE2))\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "#define SD_IS_TRIPLE_DATATYPE_COMPILED(DTYPE1, DTYPE2, DTYPE3) \\\n")
-    string(APPEND header_content "    SD_IS_TRIPLE_COMPILED( \\\n")
-    string(APPEND header_content "        SD_CAT(SD_ENUM_TO_NUM_, DTYPE1), \\\n")
-    string(APPEND header_content "        SD_CAT(SD_ENUM_TO_NUM_, DTYPE2), \\\n")
-    string(APPEND header_content "        SD_CAT(SD_ENUM_TO_NUM_, DTYPE3))\n")
-    string(APPEND header_content "\n")
-
-    string(APPEND header_content "// Whitespace-preserving wrappers for BUILD_* macros\n")
-    string(APPEND header_content "// These help preserve whitespace when selective rendering is used\n")
-    string(APPEND header_content "#define SD_PRESERVE_WS(...) __VA_ARGS__\n")
-    string(APPEND header_content "#define SD_PASS_THROUGH(...) __VA_ARGS__\n")
-    string(APPEND header_content "\n")
-    
-    string(APPEND header_content "// Helper for fixing parenthesized arguments\n")
-    string(APPEND header_content "#define SD_FIX_PAREN(x) SD_FIX_PAREN_IMPL x\n")
-    string(APPEND header_content "#define SD_FIX_PAREN_IMPL(...) __VA_ARGS__\n")
-    string(APPEND header_content "\n")
-
-    # ============================================================================
-    # SECTION 11: DIAGNOSTIC INFORMATION
-    # ============================================================================
-
-    if(SD_ENABLE_DIAGNOSTICS)
-        string(APPEND header_content "// ============================================================================\n")
-        string(APPEND header_content "// SECTION 11: DIAGNOSTIC INFORMATION\n")
-        string(APPEND header_content "// ============================================================================\n\n")
-
-        string(APPEND header_content "// Generated with the following active types:\n")
-        foreach(i RANGE 0 ${num_types})
-            if(i LESS ${num_types})
-                list(GET type_enums ${i} enum_value)
-                list(GET type_cpp_types ${i} cpp_type)
-                enum_to_int_value("${enum_value}" int_value)
-                string(APPEND header_content "// [${i}] ${enum_value} -> ${cpp_type} (ID: ${int_value})\n")
-            endif()
-        endforeach()
-        string(APPEND header_content "\n")
-
-        list(LENGTH all_pair_keys num_pairs)
-        list(LENGTH all_triple_keys num_triples)
-        string(APPEND header_content "// Statistics:\n")
-        string(APPEND header_content "// - Single types compiled: ${num_types}\n")
-        string(APPEND header_content "// - Pair combinations compiled: ${num_pairs}\n")
-        string(APPEND header_content "// - Triple combinations compiled: ${num_triples}\n")
-        string(APPEND header_content "// - VARIADIC MACROS ENABLED FOR WHITESPACE PRESERVATION\n")
-        string(APPEND header_content "\n")
-    endif()
 
     # Close the header guard
     string(APPEND header_content "#endif // SD_SELECTIVE_RENDERING_H\n")
@@ -1258,12 +994,11 @@ function(_internal_srcore_generate_validity_header active_indices type_enums typ
         list(LENGTH all_triple_keys total_triple_combinations)
         list(LENGTH all_pair_keys total_pair_combinations)
         list(LENGTH compiled_type_numbers total_single_types)
-        message(STATUS "Generated selective_rendering.h (with variadic fixes):")
+        message(STATUS "Generated selective_rendering.h:")
         message(STATUS "  - Location: ${header_file}")
         message(STATUS "  - Single types: ${total_single_types}")
         message(STATUS "  - Pair combinations: ${total_pair_combinations}")
         message(STATUS "  - Triple combinations: ${total_triple_combinations}")
-        message(STATUS "  - VARIADIC MACROS ENABLED")
     endif()
 endfunction()
 # ============================================================================
@@ -1432,7 +1167,30 @@ function(srcore_generate_diagnostic_report)
         string(APPEND report_content "\n")
     endif()
 
-    # Sample combinations (only if diagnostics enabled)
+    # Sample combinations with type names
+    if(DEFINED SRCORE_COMBINATIONS_2)
+        string(APPEND report_content "Sample 2-type combinations (first 10):\n")
+        set(sample_count 0)
+        foreach(combo ${SRCORE_COMBINATIONS_2})
+            if(sample_count GREATER_EQUAL 10)
+                break()
+            endif()
+
+            string(REPLACE "," ";" combo_parts "${combo}")
+            list(GET combo_parts 0 i)
+            list(GET combo_parts 1 j)
+
+            if(DEFINED SRCORE_TYPE_NAME_${i} AND DEFINED SRCORE_TYPE_NAME_${j})
+                string(APPEND report_content "  (${SRCORE_TYPE_NAME_${i}}, ${SRCORE_TYPE_NAME_${j}}) -> (${i},${j})\n")
+            else()
+                string(APPEND report_content "  (${i},${j})\n")
+            endif()
+
+            math(EXPR sample_count "${sample_count} + 1")
+        endforeach()
+        string(APPEND report_content "\n")
+    endif()
+
     if(DEFINED SRCORE_COMBINATIONS_3)
         string(APPEND report_content "Sample 3-type combinations (first 10):\n")
         set(sample_count 0)
@@ -1457,7 +1215,18 @@ function(srcore_generate_diagnostic_report)
         string(APPEND report_content "\n")
     endif()
 
+    # Write validation rules summary
+    string(APPEND report_content "Validation Rules Applied:\n")
+    string(APPEND report_content "- Numeric type pairings allowed\n")
+    string(APPEND report_content "- Bool can pair with any numeric type\n")
+    string(APPEND report_content "- Float types can pair together\n")
+    string(APPEND report_content "- Integer types can pair together\n")
+    string(APPEND report_content "- Specific int-to-float promotions allowed\n")
+    string(APPEND report_content "- Triple output type must be >= input types (except bool)\n")
+    string(APPEND report_content "\n")
+
     file(WRITE "${report_file}" "${report_content}")
+    message(STATUS "Diagnostic report written to: ${report_file}")
 endfunction()
 
 # ============================================================================

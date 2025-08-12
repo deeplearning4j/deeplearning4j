@@ -131,6 +131,6 @@ SD_HOST void TransformSame<X>::intermediateShaped(dim3 launchDims, cudaStream_t 
  sd::DebugHelper::checkErrorCode(stream, "transformSame(...) failed");
 }
 
-BUILD_SINGLE_TEMPLATE(template class TransformSame, , SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE( class TransformSame, , SD_COMMON_TYPES);
 }  // namespace transform
 }  // namespace functions

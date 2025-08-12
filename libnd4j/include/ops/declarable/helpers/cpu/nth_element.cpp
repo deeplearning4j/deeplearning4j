@@ -63,7 +63,7 @@ void nthElementFunctor(sd::LaunchContext* launchContext, NDArray* input, sd::Lon
   auto inputDType = input->dataType();
   BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (input, n, output, reverse), SD_NUMERIC_TYPES);
 }
-BUILD_SINGLE_TEMPLATE(template void nthElementFunctor_,
+BUILD_SINGLE_TEMPLATE( void nthElementFunctor_,
                       (NDArray * input, sd::LongType n, NDArray* output, bool reverse), SD_NUMERIC_TYPES);
 
 }  // namespace helpers

@@ -158,7 +158,7 @@ void fillRandomGamma(LaunchContext* context, graph::RandomGenerator& rng, NDArra
                      NDArray* output) {
   BUILD_SINGLE_SELECTOR(output->dataType(), fillRandomGamma_, (context, rng, alpha, beta, output), SD_FLOAT_NATIVE);
 }
-BUILD_SINGLE_TEMPLATE(template void fillRandomGamma_,
+BUILD_SINGLE_TEMPLATE( void fillRandomGamma_,
                       (LaunchContext * context, graph::RandomGenerator& rng, NDArray* alpha, NDArray* beta,
                        NDArray* output),
                       SD_FLOAT_NATIVE);
@@ -208,7 +208,7 @@ void fillRandomPoisson(LaunchContext* context, graph::RandomGenerator& rng, NDAr
                         SD_FLOAT_TYPES, SD_FLOAT_TYPES);
 }
 
-BUILD_DOUBLE_TEMPLATE(template void fillRandomPoisson_,
+BUILD_DOUBLE_TEMPLATE( void fillRandomPoisson_,
                       (LaunchContext * context, graph::RandomGenerator& rng, NDArray* lambda, NDArray* output),
                       SD_FLOAT_TYPES, SD_FLOAT_TYPES);
 

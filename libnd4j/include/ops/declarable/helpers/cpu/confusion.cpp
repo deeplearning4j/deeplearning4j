@@ -51,7 +51,7 @@ void confusionFunctor(sd::LaunchContext* context, NDArray* labels, NDArray* pred
   BUILD_SINGLE_SELECTOR(xType, _confusionFunctor, (labels, predictions, weights, output), SD_NUMERIC_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void _confusionFunctor,
+BUILD_SINGLE_TEMPLATE( void _confusionFunctor,
                       (NDArray * labels, NDArray* predictions, NDArray* weights, NDArray* output);
                       , SD_NUMERIC_TYPES);
 
