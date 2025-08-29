@@ -253,24 +253,28 @@ class OP_NAME { \
   template <typename X, typename Y, typename Z>                                                 \
   class OP_NAME {                                                                               \
    private:                                                                                     \
-    SD_HOST_DEVICE SD_INLINE static  Z op_logic(X d1, Y d2, Z* params) {                                       \
-      OPERATION                                                                                 \
+    SD_HOST_DEVICE SD_INLINE static Z op_logic(X d1, Y d2, Z* params) {                        \
+      if constexpr (any_my_string_v<X, Y, Z>) {                                                \
+        return static_cast<Z>(d1);  /* For non-arithmetic types, just return cast of first value */ \
+      } else {                                                                                  \
+        OPERATION                                                                               \
+      }                                                                                         \
     }                                                                                           \
                                                                                                 \
     template<typename TX = X, typename TY = Y, typename TZ = Z>                                \
-    SD_HOST_DEVICE SD_INLINE static  enable_if_simd_safe<TZ COMMA TX COMMA TY> op_simd(TX d1, TY d2, TZ* params) { \
+    SD_HOST_DEVICE SD_INLINE static enable_if_simd_safe<TZ COMMA TX COMMA TY> op_simd(TX d1, TY d2, TZ* params) { \
       return op_logic(d1, d2, params);                                                         \
     }                                                                                           \
                                                                                                 \
     template<typename TX = X, typename TY = Y, typename TZ = Z>                                \
-    SD_HOST_DEVICE SD_INLINE static  enable_if_simd_unsafe<TZ COMMA TX COMMA TY> op_simd(TX d1, TY d2, TZ* params) { \
+    SD_HOST_DEVICE SD_INLINE static enable_if_simd_unsafe<TZ COMMA TX COMMA TY> op_simd(TX d1, TY d2, TZ* params) { \
       return op_logic(d1, d2, params);                                                         \
     }                                                                                           \
                                                                                                 \
    public:                                                                                      \
-    no_op_exec_special no_op_exec_special_cuda;                                                 \
+    no_op_exec_special no_op_exec_special_cuda;                                                \
                                                                                                 \
-    static SD_HOST_DEVICE Z op(X d1, Y d2, Z* params) {                                                       \
+    static SD_HOST_DEVICE Z op(X d1, Y d2, Z* params) {                                        \
       if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||                      \
                     simdOps::is_simd_unsupported_argument_type<X>::value ||                    \
                     simdOps::is_simd_unsupported_argument_type<Y>::value)                      \
@@ -279,6 +283,7 @@ class OP_NAME { \
         return op_simd(d1, d2, params);                                                        \
     }                                                                                           \
   };
+
 
 /**
  * @brief DECLARE_MIXED_ACCUMULATION_SIMD_SAFE_OP macro

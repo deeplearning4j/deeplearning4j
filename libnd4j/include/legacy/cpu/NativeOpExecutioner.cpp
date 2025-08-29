@@ -519,7 +519,7 @@ void NativeOpExecutioner::execReduceLong(sd::LaunchContext *lc, int opNum, const
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::reduce::ReduceLongFunction,
       ::exec(opNum, lc ? lc->getWorkspace() : nullptr, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension),
-      SD_COMMON_TYPES, SD_LONG_TYPES);
+      SD_NUMERIC_TYPES, SD_LONG_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////

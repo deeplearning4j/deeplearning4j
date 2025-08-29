@@ -45,9 +45,60 @@ function(srcore_normalize_type input_type output_var)
 endfunction()
 
 # Define any other missing functions that might be called
+# In TypeValidation.cmake, replace the stub function with real validation
 function(is_semantically_valid_combination type1 type2 type3 mode result_var)
-    # Simple validation - just return true for now
-    set(${result_var} TRUE PARENT_SCOPE)
+    # Normalize types first
+    srcore_normalize_type("${type1}" norm_t1)
+    srcore_normalize_type("${type2}" norm_t2)
+    srcore_normalize_type("${type3}" norm_t3)
+    
+    # Rule 1: Same type combinations are ALWAYS valid
+    if(norm_t1 STREQUAL norm_t2 AND norm_t2 STREQUAL norm_t3)
+        set(${result_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+    
+    # Rule 2: Same input types with different output - check if sensible
+    if(norm_t1 STREQUAL norm_t2)
+        # float,float -> double (precision upgrade) - VALID
+        if(norm_t1 MATCHES "float" AND norm_t3 STREQUAL "double")
+            set(${result_var} TRUE PARENT_SCOPE)
+            return()
+        endif()
+        
+        # int,int -> float (division result) - VALID
+        if(norm_t1 MATCHES "int" AND norm_t3 MATCHES "float|double")
+            set(${result_var} TRUE PARENT_SCOPE)
+            return()
+        endif()
+        
+        # any,any -> bool (comparison) - VALID
+        if(norm_t3 STREQUAL "bool")
+            set(${result_var} TRUE PARENT_SCOPE)
+            return()
+        endif()
+        
+        # float16,float16 -> float (mixed precision) - VALID
+        if(norm_t1 MATCHES "float16|bfloat16" AND norm_t3 STREQUAL "float")
+            set(${result_var} TRUE PARENT_SCOPE)
+            return()
+        endif()
+        
+        # int8,int8 -> int32 (quantization accumulation) - VALID
+        if(norm_t1 MATCHES "int8_t|uint8_t" AND norm_t3 MATCHES "int32_t")
+            set(${result_var} TRUE PARENT_SCOPE)
+            return()
+        endif()
+    endif()
+    
+    # Rule 3: REJECT nonsensical mixed type combinations
+    # Examples that should be REJECTED:
+    # - bool,float16,double (what operation is this?)
+    # - float16,int8_t,int32_t (mixing float and int without clear pattern)
+    # - bfloat16,sd::LongType,float (random mixing)
+    
+    # If we get here, it's an invalid combination
+    set(${result_var} FALSE PARENT_SCOPE)
 endfunction()
 
 # =============================================================================

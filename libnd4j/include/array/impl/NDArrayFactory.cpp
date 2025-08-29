@@ -90,11 +90,9 @@ NDArray NDArrayFactory::create(const char order, const std::vector<LongType>& sh
     THROW_EXCEPTION("NDArrayFactory::create: data size doesn't match shape");
   }
 
-
   T *hostData = nullptr;
   ALLOCATE(hostData, context->getWorkspace(), data.size(), T);
   std::copy(data.begin(), data.end(), hostData);
-
 
   //note here we use data.size() to work around the scalar case. If the shape is zero but the data is actually length 1 we need this reflected
   //to create a correct length data buffer
@@ -106,12 +104,20 @@ NDArray NDArrayFactory::create(const char order, const std::vector<LongType>& sh
   return result;
 }
 
-#define TMPL_INSTANTIATE_CREATE_A(TYPE) \
-template SD_LIB_EXPORT NDArray NDArrayFactory::create<GET_SECOND(TYPE)>(const char order, const std::vector<sd::LongType>& shape, \
-                                                      const std::vector<GET_SECOND(TYPE)>& data, sd::LaunchContext* context);
+// Update the instantiation macro to use the expanded type pattern
+#define TMPL_INSTANTIATE_CREATE_A_TYPE(TYPE) \
+    template SD_LIB_EXPORT NDArray NDArrayFactory::create<TYPE>(const char order, const std::vector<sd::LongType>& shape, \
+                                                      const std::vector<TYPE>& data, sd::LaunchContext* context);
+
+#define TMPL_INSTANTIATE_CREATE_A(T) \
+EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
+    GET_FIRST(T), \
+    CONCAT(EXPAND_TYPE_APPLY_, GET_SECOND(T))(TMPL_INSTANTIATE_CREATE_A_TYPE) \
+))
 
 ITERATE_LIST((SD_NUMERIC_TYPES), TMPL_INSTANTIATE_CREATE_A)
 
+#undef TMPL_INSTANTIATE_CREATE_A_TYPE
 #undef TMPL_INSTANTIATE_CREATE_A
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -136,7 +142,10 @@ void SD_LIB_EXPORT NDArrayFactory::memcpyFromVector(void* ptr, const std::vector
 
 
 #define TMPL_INSTANTIATE_MEMCPY(TYPE) \
-template SD_LIB_EXPORT void NDArrayFactory::memcpyFromVector<GET_SECOND(TYPE)>(void* ptr, const std::vector<GET_SECOND(TYPE)>& vector);
+EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
+    GET_FIRST(TYPE), \
+    template SD_LIB_EXPORT void NDArrayFactory::memcpyFromVector<GET_SECOND(TYPE)>(void* ptr, const std::vector<GET_SECOND(TYPE)>& vector); \
+))
 
 ITERATE_LIST((SD_NUMERIC_TYPES), TMPL_INSTANTIATE_MEMCPY)
 #undef TMPL_INSTANTIATE_MEMCPY
@@ -151,10 +160,12 @@ NDArray* NDArrayFactory::valueOf(const std::initializer_list<LongType>& shape, c
 }
 
 #define TMPL_INSTANTIATE_VALUEOF_A(TYPE) \
-template SD_LIB_EXPORT NDArray* NDArrayFactory::valueOf<GET_SECOND(TYPE)>(const std::initializer_list<sd::LongType>& shape, \
+EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
+    GET_FIRST(TYPE), \
+    template SD_LIB_EXPORT NDArray* NDArrayFactory::valueOf<GET_SECOND(TYPE)>(const std::initializer_list<sd::LongType>& shape, \
                                                         const GET_SECOND(TYPE) value, const char order, \
-                                                        sd::LaunchContext* context);
-
+                                                        sd::LaunchContext* context); \
+))
 ITERATE_LIST((SD_NUMERIC_TYPES), TMPL_INSTANTIATE_VALUEOF_A)
 
 #undef TMPL_INSTANTIATE_VALUEOF_A
@@ -186,7 +197,10 @@ NDArray* NDArrayFactory::create_(const T scalar, LaunchContext* context) {
 }
 
 #define TMPL_INSTANTIATE_CREATE_C(TYPE) \
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_<GET_SECOND(TYPE)>(const GET_SECOND(TYPE) scalar, sd::LaunchContext* context);
+EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
+    GET_FIRST(TYPE), \
+    template SD_LIB_EXPORT NDArray* NDArrayFactory::create_<GET_SECOND(TYPE)>(const GET_SECOND(TYPE) scalar, sd::LaunchContext* context); \
+))
 ITERATE_LIST((SD_COMMON_TYPES_ALL), TMPL_INSTANTIATE_CREATE_C)
 
 #undef TMPL_INSTANTIATE_CREATE_C
@@ -207,7 +221,10 @@ NDArray NDArrayFactory::create(DataType type, const T scalar, LaunchContext* con
 }
 
 #define TMPL_INSTANTIATE_CREATE_D(TYPE) \
-template SD_LIB_EXPORT NDArray NDArrayFactory::create<GET_SECOND(TYPE)>(DataType type, const GET_SECOND(TYPE) scalar, sd::LaunchContext* context);
+EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
+    GET_FIRST(TYPE), \
+    template SD_LIB_EXPORT NDArray NDArrayFactory::create<GET_SECOND(TYPE)>(DataType type, const GET_SECOND(TYPE) scalar, sd::LaunchContext* context); \
+))
 
 ITERATE_LIST((SD_COMMON_TYPES_ALL), TMPL_INSTANTIATE_CREATE_D)
 
@@ -229,8 +246,10 @@ NDArray NDArrayFactory::create(const T scalar, LaunchContext* context) {
 }
 
 #define TMPL_INSTANTIATE_CREATE_E(TYPE) \
-template SD_LIB_EXPORT NDArray NDArrayFactory::create<GET_SECOND(TYPE)>(const GET_SECOND(TYPE) scalar, sd::LaunchContext* context);
-
+EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
+    GET_FIRST(TYPE), \
+    template SD_LIB_EXPORT NDArray NDArrayFactory::create<GET_SECOND(TYPE)>(const GET_SECOND(TYPE) scalar, sd::LaunchContext* context); \
+))
 ITERATE_LIST((SD_COMMON_TYPES_ALL), TMPL_INSTANTIATE_CREATE_E)
 #undef TMPL_INSTANTIATE_CREATE_E
 
@@ -242,8 +261,12 @@ NDArray* NDArrayFactory::create_(const char order, const std::vector<LongType>& 
 }
 
 #define TMPL_INSTANTIATE_CREATE_F(TYPE) \
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_<GET_SECOND(TYPE)>(const char order, const std::vector<sd::LongType>& shape, \
-                                                        const std::vector<GET_SECOND(TYPE)>& data, sd::LaunchContext* context);
+EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
+    GET_FIRST(TYPE), \
+    template SD_LIB_EXPORT NDArray* NDArrayFactory::create_<GET_SECOND(TYPE)>(const char order, const std::vector<sd::LongType>& shape, \
+                                                        const std::vector<GET_SECOND(TYPE)>& data, sd::LaunchContext* context); \
+))
+
 ITERATE_LIST((SD_COMMON_TYPES_ALL), TMPL_INSTANTIATE_CREATE_F)
 
 
@@ -274,10 +297,14 @@ NDArray* NDArrayFactory::valueOf(std::vector<LongType>& shape,  T value, const c
   return result;
 }
 
+// Replace TMPL_INSTANTIATE_VALUEOF
 #define TMPL_INSTANTIATE_VALUEOF(TYPE) \
-template SD_LIB_EXPORT NDArray* \
-NDArrayFactory::valueOf<GET_SECOND(TYPE)>(std::vector<sd::LongType>& shape,  GET_SECOND(TYPE) value, \
-                                                        const char order, sd::LaunchContext* context);
+EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
+    GET_FIRST(TYPE), \
+    template SD_LIB_EXPORT NDArray* \
+    NDArrayFactory::valueOf<GET_SECOND(TYPE)>(std::vector<sd::LongType>& shape,  GET_SECOND(TYPE) value, \
+                                                        const char order, sd::LaunchContext* context); \
+))
 
 ITERATE_LIST((SD_COMMON_TYPES_ALL), TMPL_INSTANTIATE_VALUEOF)
 
@@ -299,9 +326,11 @@ NDArray* NDArrayFactory::linspace(const T from, const T to, const LongType numEl
 }
 
 #define TMPL_INSTANTIATE_LINSPACE(TYPE) \
-template SD_LIB_EXPORT NDArray* NDArrayFactory::linspace<GET_SECOND(TYPE)>(const GET_SECOND(TYPE) from, const GET_SECOND(TYPE) to, \
-                                                         const sd::LongType numElements);
-
+EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
+    GET_FIRST(TYPE), \
+    template SD_LIB_EXPORT NDArray* NDArrayFactory::linspace<GET_SECOND(TYPE)>(const GET_SECOND(TYPE) from, const GET_SECOND(TYPE) to, \
+                                                         const sd::LongType numElements); \
+))
 ITERATE_LIST((SD_NUMERIC_TYPES), TMPL_INSTANTIATE_LINSPACE)
 
 
@@ -325,8 +354,12 @@ NDArray* NDArrayFactory::vector(LongType length,  T value, LaunchContext* contex
 }
 
 #define TMPL_INSTANTIATE_VECTOR(TYPE) \
-template SD_LIB_EXPORT NDArray* NDArrayFactory::vector<GET_SECOND(TYPE)>(sd::LongType length, const GET_SECOND(TYPE) startingValue, \
-                                                       sd::LaunchContext* context);
+EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
+    GET_FIRST(TYPE), \
+    template SD_LIB_EXPORT NDArray* NDArrayFactory::vector<GET_SECOND(TYPE)>(sd::LongType length, const GET_SECOND(TYPE) startingValue, \
+                                                       sd::LaunchContext* context); \
+))
+
 ITERATE_LIST((SD_COMMON_TYPES_ALL), TMPL_INSTANTIATE_VECTOR)
 
 
@@ -392,7 +425,11 @@ NDArray NDArrayFactory::create(const std::vector<T>& values, LaunchContext* cont
 }
 
 #define TMPL_INSTANTIATE_CREATE_G(TYPE) \
-template SD_LIB_EXPORT NDArray NDArrayFactory::create<GET_SECOND(TYPE)>(const std::vector<GET_SECOND(TYPE)>& values, sd::LaunchContext* context);
+EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
+    GET_FIRST(TYPE), \
+    template SD_LIB_EXPORT NDArray NDArrayFactory::create<GET_SECOND(TYPE)>(const std::vector<GET_SECOND(TYPE)>& values, sd::LaunchContext* context); \
+))
+
 ITERATE_LIST((SD_NUMERIC_TYPES), TMPL_INSTANTIATE_CREATE_G)
 
 
@@ -431,7 +468,7 @@ BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT NDArray NDArrayFactory::empty, (sd::LaunchC
                       SD_COMMON_TYPES_ALL);
 
 ////////////////////////////////////////////////////////////////////////
-NDArray NDArrayFactory::empty(DataType dataType, LaunchContext* context) {
+SD_LIB_EXPORT NDArray NDArrayFactory::empty(DataType dataType, LaunchContext* context) {
   auto shapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, context->getWorkspace());
   ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
   NDArray result(nullptr, shapeInfo, context, false, 0);
@@ -472,15 +509,20 @@ NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializ
   return result;
 }
 
+// Replace TMPL_INSTANTIATE_CREATE_H
 #define TMPL_INSTANTIATE_CREATE_H(TYPE) \
-template SD_LIB_EXPORT NDArray NDArrayFactory::create<GET_SECOND(TYPE)>(GET_SECOND(TYPE)* buffer, const char order, \
+EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
+    GET_FIRST(TYPE), \
+    template SD_LIB_EXPORT NDArray NDArrayFactory::create<GET_SECOND(TYPE)>(GET_SECOND(TYPE)* buffer, const char order, \
                                                       const std::initializer_list<sd::LongType>& shape,  \
-                                                      sd::LaunchContext* context);
+                                                      sd::LaunchContext* context); \
+))
 ITERATE_LIST((SD_COMMON_TYPES),TMPL_INSTANTIATE_CREATE_H)
 
 
 
 
+#if defined(HAS_UTF16)
 /////////////////////////////////////////////////////////////////////////////////////
 NDArray NDArrayFactory::string(const char16_t* u16string, DataType dtype, LaunchContext* context) {
   return NDArray(u16string, dtype, context);
@@ -499,6 +541,9 @@ NDArray* NDArrayFactory::string_(const std::u16string& u16string, DataType dtype
 NDArray NDArrayFactory::string(const std::u16string& u16string, DataType dtype, LaunchContext* context) {
   return NDArray(u16string, dtype, context);
 }
+#endif
+#if defined(HAS_UTF32)
+#if defined(HAS_UTF32)
 /////////////////////////////////////////////////////////////////////////
 NDArray NDArrayFactory::string(const char32_t* u32string, DataType dtype, LaunchContext* context) {
   return NDArray(u32string, dtype, context);
@@ -517,6 +562,9 @@ NDArray* NDArrayFactory::string_(const std::u32string& u32string, DataType dtype
 NDArray NDArrayFactory::string(const std::u32string& u32string, DataType dtype, LaunchContext* context) {
   return NDArray(u32string, dtype, context);
 }
+#endif
+#endif
+#if defined(HAS_UTF8)
 /////////////////////////////////////////////////////////////////////////
 NDArray NDArrayFactory::string(const char* str, DataType dtype, LaunchContext* context) {
   return NDArray(str, dtype, context);
@@ -535,6 +583,8 @@ NDArray* NDArrayFactory::string_(const std::string& str, DataType dtype, LaunchC
 NDArray NDArrayFactory::string(const std::string& str, DataType dtype, LaunchContext* context) {
   return NDArray(str, dtype, context);
 }
+#endif
+#if defined(HAS_UTF8)
 /////////////////////////////////////////////////////////////////////////
 NDArray NDArrayFactory::string(std::vector<LongType>& shape, const std::vector<const char*>& strings,
                                DataType dataType, LaunchContext* context) {
@@ -561,6 +611,8 @@ NDArray* NDArrayFactory::string_(std::vector<LongType>& shape, const std::vector
   *res = NDArray(shape, string, dataType, context);
   return res;
 }
+#endif
+#if defined(HAS_UTF16)
 /////////////////////////////////////////////////////////////////////////
 NDArray NDArrayFactory::string(std::vector<LongType>& shape,
                                const std::initializer_list<const char16_t*>& strings, DataType dataType,
@@ -611,6 +663,8 @@ NDArray NDArrayFactory::string(std::vector<LongType>& shape, const std::vector<s
                                DataType dtype, LaunchContext* context) {
   return NDArray(shape, string, dtype, context);
 }
+#endif
+#if defined(HAS_UTF32)
 /////////////////////////////////////////////////////////////////////////
 NDArray NDArrayFactory::string(std::vector<LongType>& shape,
                                const std::initializer_list<const char32_t*>& strings, DataType dataType,
@@ -660,6 +714,7 @@ NDArray NDArrayFactory::string(std::vector<LongType>& shape, const std::vector<s
                                DataType dtype, LaunchContext* context) {
   return NDArray(shape, string, dtype, context);
 }
+#endif
 
 NDArray NDArrayFactory::fromNpyFile(const char* fileName) {
   auto size = getFileSize(fileName);

@@ -142,8 +142,7 @@ class ExponentialDistribution {
   static SD_INLINE SD_HOST_DEVICE T op(T valueX, sd::LongType idx, sd::LongType length,
                                        sd::graph::RandomGenerator *helper, T *extraParams) {
     T lambda = extraParams[0];
-    return valueX <= (T)0.f ? (T)0.f : (T)(valueX / lambda);  // 1.f - sd::math::sd_exp<T,T>(-lambda * valueX); //pow<T,
-                                                              // T, T>((T) M_E, -(lambda * valueX));
+    return valueX <= (T)0.f ? (T)0.f : (T)(valueX / lambda);  // 1.f - sd::math::sd_exp<T,T>(-lambda * valueX); //pow<T, T, T>((T) M_E, -(lambda * valueX));
   }
 };
 
@@ -273,36 +272,111 @@ template <typename T>
 class ExponentialDistributionInv {  // inverse exponential distribution
  public:
   no_exec_special no_exec_special_cuda
-
       method_XY
-
+      
       static SD_INLINE SD_HOST_DEVICE T
       op(sd::LongType idx, sd::LongType length, sd::graph::RandomGenerator *helper, T *extraParams) {
-    T lambda = extraParams[0];
-
-    if constexpr (std::is_same<float16,T>::value) {
-      // For float16, delegate to float
-      float x = helper->relativeT(idx,
-                                  static_cast<float>(sd::DataTypeUtils::min_positive<float16>()),
-                                  1.f - static_cast<float>(sd::DataTypeUtils::min_positive<float16>()));
-      float result = -sd::math::sd_log<float, float>(1.f - x) / static_cast<float>(lambda);
-      return static_cast<float16>(result);
+    // For integer types, we need to use float for intermediate calculations
+    // since exponential distribution requires floating point math
+    if constexpr (std::is_integral<T>::value && !std::is_same<bool, T>::value) {
+      float lambdaFloat = 1.0f;  // Default lambda for integer types
+      if (extraParams != nullptr && sizeof(T) >= sizeof(float)) {
+        lambdaFloat = static_cast<float>(extraParams[0]);
+      }
+      if (lambdaFloat == 0.0f) lambdaFloat = 1.0f;  // Avoid division by zero
+      
+      // Get a float random value in (0, 1)
+      float x = helper->relativeT<float>(idx);
+      // Ensure x is in the valid range for log
+      if (x <= 0.0f) x = sd::DataTypeUtils::min_positive<float>();
+      if (x >= 1.0f) x = 1.0f - sd::DataTypeUtils::min_positive<float>();
+      
+      float result = -sd::math::sd_log<float, float>(1.0f - x) / lambdaFloat;
+      
+      // Scale the result to fit in the integer type's range
+      // Map [0, inf) to [0, max(T)]
+      if (result < 0.0f) result = 0.0f;
+      float maxVal = static_cast<float>(sd::DataTypeUtils::max<T>());
+      if (result > maxVal) result = maxVal;
+      
+      return static_cast<T>(result);
+    } else if constexpr (std::is_same<bool, T>::value) {
+      // For bool type, use float intermediate and return based on threshold
+      float x = helper->relativeT<float>(idx);
+      if (x <= 0.0f) x = sd::DataTypeUtils::min_positive<float>();
+      if (x >= 1.0f) x = 1.0f - sd::DataTypeUtils::min_positive<float>();
+      
+      float result = -sd::math::sd_log<float, float>(1.0f - x);
+      // For bool, return true if result > 0.5, false otherwise
+      return result > 0.5f;
+    } else if constexpr (std::is_same<float16, T>::value || std::is_same<bfloat16, T>::value) {
+      // For half precision types, use float for calculation
+      float lambda = extraParams != nullptr ? static_cast<float>(extraParams[0]) : 1.0f;
+      if (lambda == 0.0f) lambda = 1.0f;
+      
+      float x = helper->relativeT<float>(idx);
+      if (x <= 0.0f) x = sd::DataTypeUtils::min_positive<float>();
+      if (x >= 1.0f) x = 1.0f - sd::DataTypeUtils::min_positive<float>();
+      
+      float result = -sd::math::sd_log<float, float>(1.0f - x) / lambda;
+      return static_cast<T>(result);
     } else {
-      // For other types, use the original implementation
-      T x = helper->relativeT(idx,
-                              sd::DataTypeUtils::min_positive<T>(),
-                              (T)1.f - sd::DataTypeUtils::min_positive<T>());
-      return -sd::math::sd_log<T, T>((T)1.f - x) / lambda;
+      // For floating point types (float, double), use the original implementation
+      T lambda = extraParams[0];
+      if (lambda == static_cast<T>(0)) lambda = static_cast<T>(1);  // Avoid division by zero
+      
+      T x = helper->relativeT<T>(idx, 
+                                  sd::DataTypeUtils::min_positive<T>(),
+                                  static_cast<T>(1) - sd::DataTypeUtils::min_positive<T>());
+      return -sd::math::sd_log<T, T>(static_cast<T>(1) - x) / lambda;
     }
   }
-
+  
   static SD_INLINE SD_HOST_DEVICE T op(T valueX, sd::LongType idx, sd::LongType length,
                                        sd::graph::RandomGenerator *helper, T *extraParams) {
-    T lambda = extraParams[0];
-    return -sd::math::sd_log<T, T>((T)1.f - valueX) / lambda;  // valueX must be within (0, 1]
+    if constexpr (std::is_integral<T>::value && !std::is_same<bool, T>::value) {
+      float lambdaFloat = 1.0f;
+      if (extraParams != nullptr && sizeof(T) >= sizeof(float)) {
+        lambdaFloat = static_cast<float>(extraParams[0]);
+      }
+      if (lambdaFloat == 0.0f) lambdaFloat = 1.0f;
+      
+      float floatValueX = static_cast<float>(valueX) / static_cast<float>(sd::DataTypeUtils::max<T>());
+      // Ensure value is in valid range
+      if (floatValueX <= 0.0f) floatValueX = sd::DataTypeUtils::min_positive<float>();
+      if (floatValueX >= 1.0f) floatValueX = 1.0f - sd::DataTypeUtils::min_positive<float>();
+      
+      float result = -sd::math::sd_log<float, float>(1.0f - floatValueX) / lambdaFloat;
+      
+      if (result < 0.0f) result = 0.0f;
+      float maxVal = static_cast<float>(sd::DataTypeUtils::max<T>());
+      if (result > maxVal) result = maxVal;
+      
+      return static_cast<T>(result);
+    } else if constexpr (std::is_same<bool, T>::value) {
+      float floatValueX = valueX ? 1.0f : 0.0f;
+      if (floatValueX <= 0.0f) floatValueX = sd::DataTypeUtils::min_positive<float>();
+      if (floatValueX >= 1.0f) floatValueX = 1.0f - sd::DataTypeUtils::min_positive<float>();
+      
+      float result = -sd::math::sd_log<float, float>(1.0f - floatValueX);
+      return result > 0.5f;
+    } else if constexpr (std::is_same<float16, T>::value || std::is_same<bfloat16, T>::value) {
+      float lambda = extraParams != nullptr ? static_cast<float>(extraParams[0]) : 1.0f;
+      if (lambda == 0.0f) lambda = 1.0f;
+      
+      float floatValueX = static_cast<float>(valueX);
+      if (floatValueX <= 0.0f) floatValueX = sd::DataTypeUtils::min_positive<float>();
+      if (floatValueX >= 1.0f) floatValueX = 1.0f - sd::DataTypeUtils::min_positive<float>();
+      
+      float result = -sd::math::sd_log<float, float>(1.0f - floatValueX) / lambda;
+      return static_cast<T>(result);
+    } else {
+      T lambda = extraParams[0];
+      if (lambda == static_cast<T>(0)) lambda = static_cast<T>(1);
+      return -sd::math::sd_log<T, T>(static_cast<T>(1) - valueX) / lambda;
+    }
   }
 };
-
 }  // namespace randomOps
 
 #endif  // LIBND4J_RANDOM_OPS_H

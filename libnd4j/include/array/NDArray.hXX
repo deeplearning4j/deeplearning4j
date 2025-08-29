@@ -52,34 +52,46 @@
 #include "ArrayOptions.hXX"
 namespace sd {
 
+#ifdef HAS_UTF8
 template <>
 SD_LIB_EXPORT utf8string NDArray::e( sd::LongType i);
 template <>
 SD_LIB_EXPORT std::string NDArray::e( sd::LongType i);
+#endif
+
+#ifdef HAS_UTF16
 template <>
 SD_LIB_EXPORT std::u16string NDArray::e( sd::LongType i);
+#endif
+
+#ifdef HAS_UTF32
 template <>
 SD_LIB_EXPORT std::u32string NDArray::e( sd::LongType i);
+#endif
 
 
+#ifdef HAS_UTF32
 template <>
 std::u32string NDArray::e(sd::LongType i)  {
   if (!isS()) THROW_EXCEPTION("Can't get std::u32string out of non-string array");
 
-
+#ifdef HAS_UTF8
   if (this->dataType() == DataType::UTF8) {
     auto u = this->e<std::string>(i);
     std::u32string s;
     StringUtils::u8StringToU32String(u, s);
     return s;
   }
+#endif
 
+#ifdef HAS_UTF16
   if (this->dataType() == DataType::UTF16) {
     auto u16 = this->e<std::u16string>(i);
     std::u32string s;
     StringUtils::u16StringToU32String(u16, s);
     return s;
   }
+#endif
 
   NDArray::preparePrimaryUse({}, {this});
 
@@ -96,6 +108,7 @@ std::u32string NDArray::e(sd::LongType i)  {
 
   return r;
 }
+#endif
 
 LongType NDArray::getOffset(const LongType i) {
   if (!isScalar() && i >= lengthOf()) {
@@ -114,6 +127,7 @@ LongType NDArray::getOffset(const LongType i) {
 
 }
 
+#ifdef HAS_UTF8
 template <>
 std::string NDArray::e(const sd::LongType i)  {
   if (!isS()) THROW_EXCEPTION("Can't get std::string out of non-string array");
@@ -129,19 +143,23 @@ std::string NDArray::e(const sd::LongType i)  {
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
+#ifdef HAS_UTF16
   if (this->dataType() == DataType::UTF16) {
     auto u16 = this->e<std::u16string>(i);
     std::string s;
     StringUtils::u16StringToU8String(u16, s);
     return s;
   }
+#endif
 
+#ifdef HAS_UTF32
   if (this->dataType() == DataType::UTF32) {
     auto u32 = this->e<std::u32string>(i);
     std::string s;
     StringUtils::u32StringToU8String(u32, s);
     return s;
   }
+#endif
 
   NDArray::preparePrimaryUse({}, {this});
 
@@ -157,26 +175,32 @@ std::string NDArray::e(const sd::LongType i)  {
 
   return r;
 }
+#endif
 
+#ifdef HAS_UTF16
 template <>
 std::u16string NDArray::e(sd::LongType i)  {
   if (!isS()) THROW_EXCEPTION("Can't get std::u16string out of non-string array");
 
   if (i == lengthOf()) THROW_EXCEPTION("Can't get std::u16string for index out of range");
 
+#ifdef HAS_UTF8
   if (this->dataType() == DataType::UTF8) {
     auto u = this->e<std::string>(i);
     std::u16string s;
     StringUtils::u8StringToU16String(u, s);
     return s;
   }
+#endif
 
+#ifdef HAS_UTF32
   if (this->dataType() == DataType::UTF32) {
     auto u32 = this->e<std::u32string>(i);
     std::u16string s;
     StringUtils::u32StringToU16String(u32, s);
     return s;
   }
+#endif
 
   NDArray::preparePrimaryUse({}, {this});
 
@@ -192,6 +216,7 @@ std::u16string NDArray::e(sd::LongType i)  {
 
   return r;
 }
+#endif
 
 
 
@@ -792,6 +817,8 @@ NDArray::NDArray(DataBuffer *buffer, char order, std::vector<LongType> &shape, L
 }
 /////////////////////////////////////////////////////////////////////////
 // u16 string constructors
+
+#if defined(HAS_UTF16)
 NDArray::NDArray(const std::u16string &u16string, sd::DataType dtype, sd::LaunchContext *context) {
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     sd_print("NDArray::NDArray(const std::u16string &u16string, sd::DataType dtype, sd::LaunchContext *context) - constructor 19\n");
@@ -844,7 +871,8 @@ NDArray::NDArray(const std::u16string &u16string, sd::DataType dtype, sd::Launch
   tickWriteHost();
   syncToDevice();
 }
-
+#endif
+#ifdef HAS_UTF32
 /////////////////////////////////////////////////////////////////////////
 // u32 string constructors
 NDArray::NDArray(const std::u32string &u32string, sd::DataType dtype, sd::LaunchContext *context) {
@@ -898,7 +926,9 @@ NDArray::NDArray(const std::u32string &u32string, sd::DataType dtype, sd::Launch
   tickWriteHost();
   syncToDevice();
 }
+#endif // HAS_UTF32
 
+#ifdef HAS_UTF8
 /////////////////////////////////////////////////////////////////////////
 // u8 string constructors
 NDArray::NDArray(const std::string &str, sd::DataType dtype, sd::LaunchContext *context) {
@@ -954,6 +984,8 @@ NDArray::NDArray(const std::string &str, sd::DataType dtype, sd::LaunchContext *
   tickWriteHost();
   syncToDevice();
 }
+
+#endif
 /////////////////////////////////////////////////////////////////////////
 // constructors for vector of  strings
 NDArray::NDArray(std::vector<LongType> &shape, const std::vector<const char *> &strings, DataType dtype,
@@ -1794,7 +1826,13 @@ NDArray &NDArray::operator=(T scalar) {
   this->assign(localValue,false);
   return *this;
 }
-#define OPERATOR_TEMPLATE(T) template NDArray &NDArray::operator=(GET_SECOND(T) scalar);
+
+#define OPERATOR_TEMPLATE(T) \
+EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
+    GET_FIRST(T), \
+    template NDArray &NDArray::operator=(GET_SECOND(T) scalar); \
+))
+
 ITERATE_LIST((SD_COMMON_TYPES),OPERATOR_TEMPLATE)
 
 
@@ -1842,7 +1880,13 @@ void NDArray::assign(T &value, bool allowParallelism) {
   registerUse(std::vector<NDArray *>{this}, std::vector<NDArray *>{temp});
 }
 
-#define ASSIGN_SCALAR(T) template SD_LIB_EXPORT void NDArray::assign( GET_SECOND(T) &value, bool allowParallelism);
+
+#define ASSIGN_SCALAR(T) \
+EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
+    GET_FIRST(T), \
+    template SD_LIB_EXPORT void NDArray::assign( GET_SECOND(T) &value, bool allowParallelism); \
+))
+
 ITERATE_LIST((SD_COMMON_TYPES_ALL),ASSIGN_SCALAR)
 
 //////////////////////////////////////////////////////////////////////////
@@ -1961,6 +2005,9 @@ void NDArray::templatedSet(void *buffer, LongType offset, void *value) {
   tickWriteHost();
   NDArray::registerPrimaryUse({this}, {this});
 }
+
+
+
 BUILD_DOUBLE_TEMPLATE( SD_LIB_EXPORT  void NDArray::templatedSet,
                       (void *buffer,  sd::LongType offset,  void *value), SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
 
@@ -2049,9 +2096,15 @@ void NDArray::templatedSetString(void *buffer, LongType offset, void *value) {
   tickWriteHost();
   NDArray::registerPrimaryUse({this}, {this});
 }
+#ifdef HAS_UTF8
 template void NDArray::templatedSetString<std::string, std::string>(void*, LongType, void*);
+#endif
+#ifdef HAS_UTF16
 template void NDArray::templatedSetString<std::u16string, std::u16string>(void*, LongType, void*);
+#endif
+#ifdef HAS_UTF32
 template void NDArray::templatedSetString<std::u32string, std::u32string>(void*, LongType, void*);
+#endif
 //////////////////////////////////////////////////////////////////////////
 void NDArray::setContext(sd::LaunchContext *context) {
   _context = context;
@@ -2966,7 +3019,7 @@ T *NDArray::specialBufferasT() {
   return specialBufferasTWithOffset<T>(0);
 }
 
-BUILD_SINGLE_UNCHAINED_TEMPLATE(  SD_LIB_EXPORT, *NDArray::specialBufferasT(), SD_COMMON_TYPES);
+BUILD_SINGLE_UNCHAINED_TEMPLATE(  SD_LIB_EXPORT, *NDArray::specialBufferasT(), SD_COMMON_TYPES_ALL);
 
 
 template <typename T>
@@ -2974,7 +3027,7 @@ T *NDArray::bufferAsT() {
   return bufferasTWithOffset<T>(0);
 }
 
-BUILD_SINGLE_UNCHAINED_TEMPLATE(  SD_LIB_EXPORT, *NDArray::bufferAsT(), SD_COMMON_TYPES);
+BUILD_SINGLE_UNCHAINED_TEMPLATE(  SD_LIB_EXPORT, *NDArray::bufferAsT(), SD_COMMON_TYPES_ALL);
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -4672,26 +4725,44 @@ SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::IntOps op, NDArray *scalar, 
                                         ExtraArguments *extraParams)  {
   THROW_EXCEPTION("NDArray::applyScalar<NDArray*> method: do not use me!");
 }
-template SD_LIB_EXPORT void NDArray::applyScalar<double>(sd::scalar::IntOps op,  double scalar, NDArray *target,
-                                                         ExtraArguments *extraParams) ;
 template SD_LIB_EXPORT void NDArray::applyScalar<float>(sd::scalar::IntOps op,  float scalar, NDArray *target,
                                                         ExtraArguments *extraParams) ;
+#ifdef HAS_FLOAT32
+template SD_LIB_EXPORT void NDArray::applyScalar<float>(sd::scalar::IntOps op,  float scalar, NDArray *target,
+                                                        ExtraArguments *extraParams) ;
+#endif
+#ifdef HAS_FLOAT16
 template SD_LIB_EXPORT void NDArray::applyScalar<float16>(sd::scalar::IntOps op,  float16 scalar, NDArray *target,
                                                           ExtraArguments *extraParams) ;
+#endif
+#ifdef HAS_BFLOAT16
 template SD_LIB_EXPORT void NDArray::applyScalar<bfloat16>(sd::scalar::IntOps op,  bfloat16 scalar,
                                                            NDArray *target, ExtraArguments *extraParams) ;
+#endif
+#ifdef HAS_LONG
 template SD_LIB_EXPORT void NDArray::applyScalar<sd::LongType>(sd::scalar::IntOps op,  sd::LongType scalar,
                                                                NDArray *target, ExtraArguments *extraParams) ;
+#endif
+#ifdef HAS_INT32
 template SD_LIB_EXPORT void NDArray::applyScalar<int>(sd::scalar::IntOps op,  int scalar, NDArray *target,
                                                       ExtraArguments *extraParams) ;
+#endif
+#ifdef HAS_INT16
 template SD_LIB_EXPORT void NDArray::applyScalar<int16_t>(sd::scalar::IntOps op,  int16_t scalar, NDArray *target,
                                                           ExtraArguments *extraParams) ;
+#endif
+#ifdef HAS_INT8
 template SD_LIB_EXPORT void NDArray::applyScalar<int8_t>(sd::scalar::IntOps op,  int8_t scalar, NDArray *target,
                                                          ExtraArguments *extraParams) ;
+#endif
+#ifdef HAS_UINT8
 template SD_LIB_EXPORT void NDArray::applyScalar<uint8_t>(sd::scalar::IntOps op,  uint8_t scalar, NDArray *target,
                                                           ExtraArguments *extraParams) ;
+#endif
+#ifdef HAS_BOOL
 template SD_LIB_EXPORT void NDArray::applyScalar<bool>(sd::scalar::IntOps op,  bool scalar, NDArray *target,
                                                        ExtraArguments *extraParams);
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -4704,26 +4775,46 @@ SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::Ops op, NDArray *scalar, NDA
                                         ExtraArguments *extraParams) {
   THROW_EXCEPTION("NDArray::applyScalar<NDArray*> method: do not use me!");
 }
+#ifdef HAS_DOUBLE
 template SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::Ops op, const double scalar, NDArray *target,
                                                  ExtraArguments *extraParams);
+#endif
+#ifdef HAS_FLOAT32
 template SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::Ops op, const float scalar, NDArray *target,
                                                  ExtraArguments *extraParams);
+#endif
+#ifdef HAS_FLOAT16
 template SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::Ops op, const float16 scalar, NDArray *target,
                                                  ExtraArguments *extraParams);
+#endif
+#ifdef HAS_BFLOAT16
 template SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::Ops op, const bfloat16 scalar, NDArray *target,
                                                  ExtraArguments *extraParams);
+#endif
+#ifdef HAS_LONG
 template SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::Ops op, const sd::LongType scalar, NDArray *target,
                                                  ExtraArguments *extraParams);
+#endif
+#ifdef HAS_INT32
 template SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::Ops op, const int scalar, NDArray *target,
                                                  ExtraArguments *extraParams);
+#endif
+#ifdef HAS_INT16
 template SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::Ops op, const int16_t scalar, NDArray *target,
                                                  ExtraArguments *extraParams);
+#endif
+#ifdef HAS_INT8
 template SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::Ops op, const int8_t scalar, NDArray *target,
                                                  ExtraArguments *extraParams);
+#endif
+#ifdef HAS_UINT8
 template SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::Ops op, const uint8_t scalar, NDArray *target,
                                                  ExtraArguments *extraParams);
+#endif
+#ifdef HAS_BOOL
 template SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::Ops op, const bool scalar, NDArray *target,
                                                  ExtraArguments *extraParams);
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -4732,7 +4823,11 @@ void NDArray::applyScalar(sd::scalar::BoolOps op, const T scalar, NDArray *targe
   applyScalarArr(op, &scalarArr, target, extraParams);
 }
 
-#define INSTANTIATE__APPLY_SCALAR_BOOL(T) template SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::BoolOps op, const GET_SECOND(T) scalar, NDArray *target, ExtraArguments *extraParams);
+#define INSTANTIATE__APPLY_SCALAR_BOOL(T) \
+EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
+    GET_FIRST(T), \
+    template SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::BoolOps op, const GET_SECOND(T) scalar, NDArray *target, ExtraArguments *extraParams); \
+))
 ITERATE_LIST((SD_NUMERIC_TYPES), INSTANTIATE__APPLY_SCALAR_BOOL)
 
 template <>
@@ -5114,7 +5209,11 @@ void NDArray::p(const sd::LongType i, const sd::LongType j, const T value) {
   NDArray::registerPrimaryUse({this}, {});
 }
 
-#define INSTANTIATE_P_I_J(T) template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const GET_SECOND(T) value);
+#define INSTANTIATE_P_I_J(T) \
+EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
+    GET_FIRST(T), \
+    template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const GET_SECOND(T) value); \
+))
 ITERATE_LIST((SD_COMMON_TYPES_ALL),INSTANTIATE_P_I_J);
 
 //////////////////////////////////////////////////////////////////////////
@@ -5132,11 +5231,15 @@ void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k
   BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->buffer(), xOffset, p), SD_COMMON_TYPES);
   NDArray::registerPrimaryUse({this}, {});
 }
-
+#if HAS_BOOL
 template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k,
                                        const bool value);
-
-#define INSTANTIATE_P_I_J_K(T) template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const GET_SECOND(T) value);
+#endif
+#define INSTANTIATE_P_I_J_K(T) \
+EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
+    GET_FIRST(T), \
+    template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const GET_SECOND(T) value); \
+))
 ITERATE_LIST((SD_NUMERIC_TYPES),INSTANTIATE_P_I_J_K);
 
 //////////////////////////////////////////////////////////////////////////
@@ -5153,10 +5256,17 @@ void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k
   NDArray::registerPrimaryUse({this}, {});
 }
 
-#define INSTANTIATE_P_I_J_K_L(T) template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType l, const GET_SECOND(T) value);
+
+#define INSTANTIATE_P_I_J_K_L(T) \
+EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
+    GET_FIRST(T), \
+    template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType l, const GET_SECOND(T) value); \
+))
 ITERATE_LIST((SD_COMMON_TYPES_ALL),INSTANTIATE_P_I_J_K_L);
 
 ////////////////////////////////////////////////////////////////////////
+
+
 void NDArray::p(const sd::LongType i, NDArray *scalar) {
   if (scalar->lengthOf() > 1) {
     THROW_EXCEPTION("NDArray::p method: input array must be scalar!");
@@ -5168,61 +5278,101 @@ void NDArray::p(const sd::LongType i, NDArray *scalar) {
     errorMessage += ", input index: " + std::to_string(i);
     THROW_EXCEPTION(errorMessage.c_str());
   }
-
   NDArray::preparePrimaryUse({this}, {scalar}, true);
   auto rp = getOffset(i);
-
+  
   if (scalar->isS()) {
     switch(scalar->dataType()) {
+#ifdef HAS_UTF8
       case DataType::UTF8:
         templatedSetString<std::string, std::string>(buffer(), rp, scalar->buffer());
         break;
+#endif
+#ifdef HAS_UTF16
       case DataType::UTF16:
         templatedSetString<std::u16string, std::u16string>(buffer(), rp, scalar->buffer());
         break;
+#endif
+#ifdef HAS_UTF32
       case DataType::UTF32:
         templatedSetString<std::u32string, std::u32string>(buffer(), rp, scalar->buffer());
         break;
+#endif
       default:
-        THROW_EXCEPTION("Unknown string type");
+        THROW_EXCEPTION("Unknown or unsupported string type");
     }
   } else {
     // Modified to use both template parameters and match the three-argument version
     switch(scalar->dataType()) {
+#ifdef HAS_FLOAT32
       case FLOAT32:
         templatedSet<float, float>(buffer(), rp, scalar->buffer());
         break;
+#endif
+#ifdef HAS_DOUBLE
       case DOUBLE:
         templatedSet<double, double>(buffer(), rp, scalar->buffer());
         break;
-      case INT32:
-        templatedSet<int, int>(buffer(), rp, scalar->buffer());
+#endif
+#ifdef HAS_FLOAT16
+      case HALF:
+        templatedSet<float16, float16>(buffer(), rp, scalar->buffer());
         break;
-      case INT64:
-        templatedSet<sd::LongType, sd::LongType>(buffer(), rp, scalar->buffer());
+#endif
+#ifdef HAS_BFLOAT16
+      case BFLOAT16:
+        templatedSet<bfloat16, bfloat16>(buffer(), rp, scalar->buffer());
         break;
+#endif
+#ifdef HAS_BOOL
       case BOOL:
         templatedSet<bool, bool>(buffer(), rp, scalar->buffer());
         break;
+#endif
+#ifdef HAS_INT8
+      case INT8:
+        templatedSet<int8_t, int8_t>(buffer(), rp, scalar->buffer());
+        break;
+#endif
+#ifdef HAS_INT16
+      case INT16:
+        templatedSet<int16_t, int16_t>(buffer(), rp, scalar->buffer());
+        break;
+#endif
+#ifdef HAS_INT32
+      case INT32:
+        templatedSet<Int32Type, Int32Type>(buffer(), rp, scalar->buffer());
+        break;
+#endif
+#ifdef HAS_LONG
+      case INT64:
+        templatedSet<LongType, LongType>(buffer(), rp, scalar->buffer());
+        break;
+#endif
+#ifdef HAS_UINT8
       case UINT8:
         templatedSet<uint8_t, uint8_t>(buffer(), rp, scalar->buffer());
         break;
+#endif
+#ifdef HAS_UINT16
       case UINT16:
         templatedSet<uint16_t, uint16_t>(buffer(), rp, scalar->buffer());
         break;
+#endif
+#ifdef HAS_UINT32
       case UINT32:
         templatedSet<uint32_t, uint32_t>(buffer(), rp, scalar->buffer());
         break;
+#endif
+#ifdef HAS_UNSIGNEDLONG
       case UINT64:
-        templatedSet<uint64_t, uint64_t>(buffer(), rp, scalar->buffer());
+        templatedSet<UnsignedLong, UnsignedLong>(buffer(), rp, scalar->buffer());
         break;
-
-        // Add other numeric types as needed
+#endif
       default:
         THROW_EXCEPTION("Unsupported numeric type");
     }
   }
-
   NDArray::registerPrimaryUse({this}, {scalar});
 }
 
@@ -5247,7 +5397,14 @@ NDArray::p(const sd::LongType i, const T value) {  // Note: value not NDArray re
   templatedSet<T, T>(buffer(), xOffset, dataType(), (void*)&value);
 }
 
-#define INSTANTIATE_P_SINGLE(T) template SD_LIB_EXPORT void NDArray::p(const sd::LongType i,const GET_SECOND(T) value);
+#define INSTANTIATE_P_FOR_TYPE(TYPE) \
+    template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const TYPE value);
+
+#define INSTANTIATE_P_SINGLE(T) \
+EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
+    GET_FIRST(T), \
+    CONCAT(EXPAND_TYPE_APPLY_, GET_SECOND(T))(INSTANTIATE_P_FOR_TYPE) \
+))
 ITERATE_LIST((SD_COMMON_TYPES_ALL),INSTANTIATE_P_SINGLE);
 
 
@@ -5269,7 +5426,11 @@ NDArray::p(const sd::LongType i, const T value) {
   templatedSetString<T,T>(buffer(), xOffset, (void*)&value);
 }
 
-#define INSTANTIATE_P_SINGLE_STRING(T) template SD_LIB_EXPORT void NDArray::p(const sd::LongType i,const GET_SECOND(T) value);
+#define INSTANTIATE_P_SINGLE_STRING(T) \
+EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
+    GET_FIRST(T), \
+    template SD_LIB_EXPORT void NDArray::p(const sd::LongType i,const GET_SECOND(T) value); \
+))
 ITERATE_LIST((SD_STRING_TYPES),INSTANTIATE_P_SINGLE_STRING);
 #undef INSTANTIATE_P_SINGLE_STRING
 

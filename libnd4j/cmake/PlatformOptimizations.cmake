@@ -67,8 +67,8 @@ endfunction()
 function(configure_memory_model)
     # Use large memory model (required for template scale) - FIXED: Only for x86-64, not ARM
     if(SD_X86_BUILD AND NOT WIN32)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=large" PARENT_SCOPE)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcmodel=large" PARENT_SCOPE)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=medium -fPIC" PARENT_SCOPE)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcmodel=medium" PARENT_SCOPE)
         message(STATUS "Applied large memory model for x86-64 architecture")
     else()
         if(SD_ARM_BUILD OR SD_ANDROID_BUILD)
@@ -217,11 +217,6 @@ function(apply_compiler_specific_flags ARCH_TUNE)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=10 ${ARCH_TUNE} ${INFORMATIVE_FLAGS} -std=c++17 -fPIC" PARENT_SCOPE)
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --param ggc-min-expand=10 -fPIC" PARENT_SCOPE)
 
-        # Add flags to handle large relocations for x86_64
-        if(SD_X86_BUILD)
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,--no-relax" PARENT_SCOPE)
-            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,--no-relax" PARENT_SCOPE)
-        endif()
 
         if(UNIX)
             set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath,$ORIGIN/,-z,--no-undefined,--verbose" PARENT_SCOPE)

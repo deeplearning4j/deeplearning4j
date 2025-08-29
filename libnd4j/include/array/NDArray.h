@@ -1596,14 +1596,24 @@ bool NDArray::isAttached() { return this->_context->getWorkspace() != nullptr; }
 //this method is used in lieu of constexrp to avoid a dependency on c++ 17
 template <typename T, typename R>
 struct TemplatedGetter {
-  static R get(void  *buffer, LongType index) {
+  static R get(void *buffer, LongType index) {
     if(buffer == nullptr)
       THROW_EXCEPTION("TemplatedGetter: Buffer is nullptr!");
-    auto b = reinterpret_cast<T const *>(buffer);
-    auto v = static_cast<R>(b[index]);
-    return v;
+    
+    if constexpr (std::is_convertible_v<T, R>) {
+      auto b = reinterpret_cast<T const *>(buffer);
+      auto v = static_cast<R>(b[index]);
+      return v;
+    } else {
+      THROW_EXCEPTION("Invalid type conversion in TemplatedGetter");
+    }
   }
 };
+
+
+
+
+#if defined(HAS_BFLOAT16) && defined(HAS_FLOAT16)
 
 template <>
 struct TemplatedGetter<bfloat16, float16> {
@@ -1614,6 +1624,8 @@ struct TemplatedGetter<bfloat16, float16> {
     return v;
   }
 };
+
+#endif
 
 template <typename T, typename R>
 SD_INLINE R NDArray::templatedGet(void  *buffer, LongType index)  {

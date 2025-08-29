@@ -92,13 +92,13 @@ void extractPatches(sd::LaunchContext* context, NDArray* images, NDArray* output
 
   BUILD_SINGLE_SELECTOR(xType, _extractPatches,
                         (images, output, sizeRow, sizeCol, stradeRow, stradeCol, rateRow, rateCol, theSame),
-                        SD_COMMON_TYPES);
+                        SD_NUMERIC_TYPES);
 }
 
 BUILD_SINGLE_TEMPLATE( void _extractPatches,
                       (NDArray * input, NDArray* output, int sizeRow, int sizeCol, int stradeRow, int stradeCol,
                        int rateRow, int rateCol, bool theSame),
-                      SD_COMMON_TYPES);
+                      SD_NUMERIC_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

@@ -46,13 +46,9 @@
 namespace sd {
 namespace graph {
 void sd::graph::Node::setOuterTime(sd::LongType time) {
-  //            if (hasBlockAttached())
-  //                _block->setOuterTime(time);
 }
 
 void sd::graph::Node::setInnerTime(sd::LongType time) {
-  //            if (hasBlockAttached())
-  //                _block->setInnerTime(time);
 }
 
 void sd::graph::Node::setGraph(sd::graph::Graph* graph) { _graph = graph; }

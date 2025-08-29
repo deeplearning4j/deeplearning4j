@@ -38,7 +38,7 @@ namespace helpers {
 //      crops - output (4D tensor - [batch, outWidth, outHeight, pixels])
 //
 template <typename T, typename Z, typename I>
-void cropAndResizeFunctor_(LaunchContext* context, NDArray * images, NDArray * boxes,
+SD_LIB_EXPORT void cropAndResizeFunctor_(LaunchContext* context, NDArray * images, NDArray * boxes,
                            NDArray * indices, NDArray * cropSize, int method, double extrapolationVal,
                            NDArray* crops) {
   const int batchSize = images->sizeAt(0);
@@ -134,7 +134,14 @@ void cropAndResizeFunctor_(LaunchContext* context, NDArray * images, NDArray * b
     samediff::Threads::parallel_for(func, 0, cropHeight);
   }
 }
-}  // namespace helpers
+}
 }  // namespace ops
 }  // namespace sd
+
+
+BUILD_TRIPLE_TEMPLATE( SD_LIB_EXPORT void sd::ops::helpers::cropAndResizeFunctor_,
+                      (sd::LaunchContext * context, NDArray * images, NDArray * boxes, NDArray * indices,
+                       NDArray * cropSize, int method, double extrapolationVal, NDArray* crops),
+                      SD_NUMERIC_TYPES, SD_FLOAT_TYPES, SD_INTEGER_TYPES);
+                      
 #endif

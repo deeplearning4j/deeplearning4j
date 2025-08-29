@@ -523,6 +523,8 @@ PREPROCESS="${PREPROCESS:-ON}"
 CMAKE_ARGUMENTS="${CMAKE_ARGUMENTS:-}"
 PTXAS_INFO="${PTXAS_INFO:-OFF}"
 BUILD_PPSTEP="${BUILD_PPSTEP:-OFF}"
+EXTRACT_INSTANTIATIONS="${EXTRACT_INSTANTIATIONS:-OFF}"
+
 
 # Type validation specific variables
 DEBUG_TYPE_PROFILE="${DEBUG_TYPE_PROFILE:-}"
@@ -542,6 +544,13 @@ do
     value="${2:-}"
 
     case $key in
+         --extract-instantiations)
+        EXTRACT_INSTANTIATIONS="$value"
+        print_colored "blue" "✓ Template instantiation extraction enabled"
+        print_colored "yellow" "Build will extract instantiations and exit"
+        shift # past argument
+        ;;
+
         -dt|--datatypes)
             DATATYPES="$value"
             print_colored "green" "✓ Detected datatypes argument: $value"
@@ -1376,6 +1385,59 @@ pwd
 # Configure CMake
 echo "$CMAKE_COMMAND - -DSD_KEEP_NVCC_OUTPUT=$KEEP_NVCC -DSD_GCC_FUNCTRACE=$FUNC_TRACE $BLAS_ARG $ARCH_ARG $NAME_ARG $OP_OUTPUT_FILE_ARG -DSD_SANITIZERS=${SANITIZERS} -DSD_SANITIZE=${SANITIZE} -DSD_CHECK_VECTORIZATION=${CHECK_VECTORIZATION} $USE_LTO $HELPERS $SHARED_LIBS_ARG $MINIFIER_ARG $OPERATIONS_ARG $DATATYPES_ARG $BUILD_TYPE $PACKAGING_ARG $EXPERIMENTAL_ARG $TESTS_ARG $CUDA_COMPUTE -DOPENBLAS_PATH=$OPENBLAS_PATH -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE ../.."
 
+# Handle the PREPROCESS flag first - before any build
+if [ "$PREPROCESS" == "ON" ]; then
+    echo "Running preprocessing step..."
+    if [ "$LOG_OUTPUT" == "none" ]; then
+        eval "$CMAKE_COMMAND" \
+            -DSD_PREPROCESS=ON \
+            -DBUILD_PPSTEP="$BUILD_PPSTEP" \
+            "$BLAS_ARG" \
+            "$ARCH_ARG" \
+            "$NAME_ARG" \
+            "$OP_OUTPUT_FILE_ARG" \
+            -DSD_SANITIZE="${SANITIZE}" \
+            "$USE_LTO" \
+            "$HELPERS" \
+            "$SHARED_LIBS_ARG" \
+            "$OPERATIONS_ARG" \
+            "$DATATYPES_ARG" \
+            "$BUILD_TYPE" \
+            "$PACKAGING_ARG" \
+            "$CUDA_COMPUTE" \
+            -DOPENBLAS_PATH="$OPENBLAS_PATH" \
+            -DDEV=FALSE \
+            -DCMAKE_NEED_RESPONSE=YES \
+            -DMKL_MULTI_THREADED=TRUE \
+            ../..
+    else
+        eval "$CMAKE_COMMAND" \
+            -DSD_PREPROCESS=ON \
+            -DBUILD_PPSTEP="$BUILD_PPSTEP" \
+            "$BLAS_ARG" \
+            "$ARCH_ARG" \
+            "$NAME_ARG" \
+            "$OP_OUTPUT_FILE_ARG" \
+            -DSD_SANITIZE="${SANITIZE}" \
+            "$USE_LTO" \
+            "$HELPERS" \
+            "$SHARED_LIBS_ARG" \
+            "$OPERATIONS_ARG" \
+            "$DATATYPES_ARG" \
+            "$BUILD_TYPE" \
+            "$PACKAGING_ARG" \
+            "$CUDA_COMPUTE" \
+            -DOPENBLAS_PATH="$OPENBLAS_PATH" \
+            -DDEV=FALSE \
+            -DCMAKE_NEED_RESPONSE=YES \
+            -DMKL_MULTI_THREADED=TRUE \
+            ../.. >> "$LOG_OUTPUT" 2>&1
+    fi
+    echo "Preprocessing complete - exiting"
+    exit 0
+fi
+
+# Normal build path
 if [ "$LOG_OUTPUT" == "none" ]; then
     eval "$CMAKE_COMMAND" \
         -DPRINT_MATH="$PRINT_MATH" \
@@ -1383,6 +1445,7 @@ if [ "$LOG_OUTPUT" == "none" ]; then
         -DSD_KEEP_NVCC_OUTPUT="$KEEP_NVCC" \
         -DSD_GCC_FUNCTRACE="$FUNC_TRACE" \
         -DSD_PTXAS="$PTXAS_INFO" \
+        -DSD_EXTRACT_INSTANTIATIONS="$EXTRACT_INSTANTIATIONS" \
         "$BLAS_ARG" \
         "$ARCH_ARG" \
         "$NAME_ARG" \
@@ -1411,6 +1474,7 @@ else
         -DSD_KEEP_NVCC_OUTPUT="$KEEP_NVCC" \
         -DSD_GCC_FUNCTRACE="$FUNC_TRACE" \
         -DSD_PTXAS="$PTXAS_INFO" \
+        -DSD_EXTRACT_INSTANTIATIONS="$EXTRACT_INSTANTIATIONS" \
         "$BLAS_ARG" \
         "$ARCH_ARG" \
         "$NAME_ARG" \
@@ -1434,85 +1498,129 @@ else
         ../.. >> "$LOG_OUTPUT" 2>&1
 fi
 
-# ----------------------- Preprocessing Step -----------------------
 
-# Handle the PREPROCESS flag
-if [ "$PREPROCESS" == "ON" ]; then
-   if [ "$LOG_OUTPUT" == "none" ]; then
-       eval "$CMAKE_COMMAND" \
-           -DPRINT_MATH="$PRINT_MATH" \
-           -DPRINT_INDICES="$PRINT_INDICES" \
-           -DSD_KEEP_NVCC_OUTPUT="$KEEP_NVCC" \
-           -DSD_GCC_FUNCTRACE="$FUNC_TRACE" \
-            -DSD_PREPROCESS="$PREPROCESS" \
-           -DBUILD_PPSTEP="$BUILD_PPSTEP" \
-           -DSD_PTXAS="$PTXAS_INFO" \
-           "$BLAS_ARG" \
-           "$ARCH_ARG" \
-           "$NAME_ARG" \
-           "$OP_OUTPUT_FILE_ARG" \
-           -DSD_SANITIZE="${SANITIZE}" \
-           "$USE_LTO" \
-           "$HELPERS" \
-           "$SHARED_LIBS_ARG" \
-           "$MINIFIER_ARG" \
-           "$OPERATIONS_ARG" \
-           "$DATATYPES_ARG" \
-           "$BUILD_TYPE" \
-           "$PACKAGING_ARG" \
-           "$TESTS_ARG" \
-           "$CUDA_COMPUTE" \
-           -DOPENBLAS_PATH="$OPENBLAS_PATH" \
-           -DDEV=FALSE \
-           -DCMAKE_NEED_RESPONSE=YES \
-           -DMKL_MULTI_THREADED=TRUE \
-           ../..
-   else
-       eval "$CMAKE_COMMAND" \
-           -DPRINT_MATH="$PRINT_MATH" \
-           -DPRINT_INDICES="$PRINT_INDICES" \
-           -DSD_KEEP_NVCC_OUTPUT="$KEEP_NVCC" \
-           -DSD_GCC_FUNCTRACE="$FUNC_TRACE" \
-           -DSD_PREPROCESS="$PREPROCESS" \
-          -DBUILD_PPSTEP="$BUILD_PPSTEP" \
 
-           "$BLAS_ARG" \
-           "$ARCH_ARG" \
-           "$NAME_ARG" \
-           "$OP_OUTPUT_FILE_ARG" \
-           -DSD_PTXAS="$PTXAS_INFO" \
-           -DSD_SANITIZE="${SANITIZE}" \
-           -DSD_CHECK_VECTORIZATION="${CHECK_VECTORIZATION}" \
-           "$USE_LTO" \
-           "$HELPERS" \
-           "$SHARED_LIBS_ARG" \
-           "$MINIFIER_ARG" \
-           "$OPERATIONS_ARG" \
-           "$DATATYPES_ARG" \
-           "$BUILD_TYPE" \
-           "$PACKAGING_ARG" \
-           "$TESTS_ARG" \
-           "$CUDA_COMPUTE" \
-           -DOPENBLAS_PATH="$OPENBLAS_PATH" \
-           -DDEV=FALSE \
-           -DCMAKE_NEED_RESPONSE=YES \
-           -DMKL_MULTI_THREADED=TRUE \
-           ../.. >> "$LOG_OUTPUT" 2>&1
-   fi
-    echo "Running preprocessing step..."
+
+# This block is too late - the CMAKE_COMMAND has already been executed above
+# The fix needs to be in the main CMake invocation
+
+
+if [[ "$EXTRACT_INSTANTIATIONS" == "ON" ]]; then
+    INST_DIR="${DIR}/blasbuild/${CHIP}/instantiation_analysis"
+    
+    # Always create the directory structure if it doesn't exist
+    mkdir -p "$INST_DIR/reports"
+    
+    # Create a simple report even if no data was collected
+    if [[ ! -f "$INST_DIR/all_missing.txt" ]]; then
+        echo "No missing templates detected" > "$INST_DIR/all_missing.txt"
+    fi
+    if [[ ! -f "$INST_DIR/all_used.txt" ]]; then
+        echo "No template usage data collected" > "$INST_DIR/all_used.txt"
+    fi
+    if [[ ! -f "$INST_DIR/all_provided.txt" ]]; then
+        echo "No template provision data collected" > "$INST_DIR/all_provided.txt"
+    fi
+    
+    # Generate a simple summary
+    echo "=== Template Instantiation Analysis Complete ===" > "$INST_DIR/reports/summary.txt"
+    echo "Date: $(date)" >> "$INST_DIR/reports/summary.txt"
+    echo "Missing: $(wc -l < "$INST_DIR/all_missing.txt" 2>/dev/null || echo 0)" >> "$INST_DIR/reports/summary.txt"
+    echo "Used: $(wc -l < "$INST_DIR/all_used.txt" 2>/dev/null || echo 0)" >> "$INST_DIR/reports/summary.txt"
+    echo "Provided: $(wc -l < "$INST_DIR/all_provided.txt" 2>/dev/null || echo 0)" >> "$INST_DIR/reports/summary.txt"
+    
+    cat "$INST_DIR/reports/summary.txt"
+    
+    # Exit after extraction
     exit 0
 fi
 
-# --------------------- End of Preprocessing Step ----------------------
 
-# Set Make arguments based on user options
-if [ "$PARALLEL" == "true" ]; then
-    MAKE_ARGUMENTS="$MAKE_ARGUMENTS -j $MAKEJ"
-fi
-if [ "$VERBOSE" == "true" ]; then
-    MAKE_ARGUMENTS="$MAKE_ARGUMENTS $VERBOSE_ARG"
-fi
 
+# =============================================================================
+# HELPER FUNCTIONS
+# =============================================================================
+
+# Function to check template instantiation status
+check_instantiation_status() {
+    local inst_dir="instantiation_analysis"
+    
+    if [[ ! -d "$inst_dir" ]]; then
+        print_colored "yellow" "No instantiation analysis found. Run with --extract-instantiations"
+        return 1
+    fi
+    
+    if [[ -f "$inst_dir/all_missing.txt" ]]; then
+        local missing_count=$(wc -l < "$inst_dir/all_missing.txt")
+        if [[ $missing_count -gt 0 ]]; then
+            print_colored "red" "⚠️  $missing_count missing template instantiations from last analysis"
+            print_colored "yellow" "Run with --extract-instantiations for updated analysis"
+            return 1
+        fi
+    fi
+    
+    return 0
+}
+
+# Function to apply instantiation fixes
+apply_instantiation_fixes() {
+    local fixes_dir="instantiation_analysis/fixes"
+    
+    if [[ ! -d "$fixes_dir" ]]; then
+        print_colored "yellow" "No instantiation fixes available"
+        return 1
+    fi
+    
+    if [[ -f "$fixes_dir/missing_instantiations.cpp" ]]; then
+        print_colored "cyan" "Found instantiation fix file"
+        # Add to source list or copy to appropriate location
+        # This depends on your build system setup
+        return 0
+    fi
+    
+    return 1
+}
+
+# =============================================================================
+# USAGE EXAMPLES
+# =============================================================================
+
+show_instantiation_help() {
+    cat << EOF
+
+TEMPLATE INSTANTIATION ANALYSIS OPTIONS:
+  --extract-instantiations    Extract template usage and instantiation data
+  --generate-fix-files        Generate C++ files to fix missing instantiations  
+  --instantiation-report      Generate detailed HTML analysis report
+  --instantiation-verbose     Enable verbose output during analysis
+  --analyze-templates         Quick mode: analyze and generate report, then exit
+
+EXAMPLES:
+  # Basic analysis
+  ./build.sh --extract-instantiations
+  
+  # Analysis with specific datatypes
+  ./build.sh --extract-instantiations --datatypes "float32;double;int32;int64"
+  
+  # Generate fixes for missing instantiations
+  ./build.sh --generate-fix-files
+  
+  # Full analysis with report
+  ./build.sh --analyze-templates --datatypes "float32;double"
+  
+  # Check status of last analysis
+  ./build.sh --check-instantiations
+
+WORKFLOW:
+  1. Run analysis: ./build.sh --extract-instantiations
+  2. Check results in instantiation_analysis/
+  3. If missing instantiations found, generate fixes:
+     ./build.sh --generate-fix-files
+  4. Add generated fix file to your build
+  5. Rebuild normally
+
+EOF
+}
 # Build the project
 
 

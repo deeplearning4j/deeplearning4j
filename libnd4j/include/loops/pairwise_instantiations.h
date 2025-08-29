@@ -294,9 +294,6 @@
 #define INSTANT_PROCESS_COMBINATION_2(name, suffix, tuple1, tuple2) \
     template name<GET_SECOND_ARG tuple1, GET_SECOND_ARG tuple2>suffix
 
-#define INSTANT_PROCESS_COMBINATION_3(name, suffix, tuple1, tuple2, tuple3) \
-    template name<GET_SECOND_ARG tuple1, GET_SECOND_ARG tuple2, GET_SECOND_ARG tuple3>suffix
-
 // Special callback for promotion
 #define CALLBACK_INSTANTIATE_PROMOTE(tuple1, tuple2, name, suffix, end) \
     template void functions::pairwise_transforms::PairWiseTransform<GET_SECOND_ARG tuple1, GET_SECOND_ARG tuple2, \

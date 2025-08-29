@@ -29,7 +29,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 template <typename T, typename F, typename I>
- void cropAndResizeFunctor_(NDArray * images, NDArray * boxes, NDArray * indices,
+ SD_LIB_EXPORT void cropAndResizeFunctor_(NDArray * images, NDArray * boxes, NDArray * indices,
                                          NDArray * cropSize, int method, double extrapolationVal, NDArray* crops);
 
  void cropAndResizeFunctor(LaunchContext* context, NDArray * images, NDArray * boxes,

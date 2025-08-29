@@ -31,6 +31,185 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
+// Helper function to get element value regardless of data type
+template<typename T>
+inline T getElementValue(NDArray* array, sd::LongType index) {
+  switch(array->dataType()) {
+#if defined(HAS_FLOAT32)
+    case FLOAT32:
+      return static_cast<T>(array->e<float>(index));
+#endif
+#if defined(HAS_DOUBLE)
+    case DOUBLE:
+      return static_cast<T>(array->e<double>(index));
+#endif
+#if defined(HAS_INT32)
+    case INT32:
+      return static_cast<T>(array->e<int32_t>(index));
+#endif
+#if defined(HAS_LONG)
+    case INT64:
+      return static_cast<T>(array->e<sd::LongType>(index));
+#endif
+#if defined(HAS_BOOL)
+    case BOOL:
+      return static_cast<T>(array->e<bool>(index));
+#endif
+#if defined(HAS_INT8)
+    case INT8:
+      return static_cast<T>(array->e<int8_t>(index));
+#endif
+#if defined(HAS_INT16)
+    case INT16:
+      return static_cast<T>(array->e<int16_t>(index));
+#endif
+#if defined(HAS_UINT8)
+    case UINT8:
+      return static_cast<T>(array->e<uint8_t>(index));
+#endif
+#if defined(HAS_UINT16)
+    case UINT16:
+      return static_cast<T>(array->e<uint16_t>(index));
+#endif
+#if defined(HAS_UINT32)
+    case UINT32:
+      return static_cast<T>(array->e<uint32_t>(index));
+#endif
+#if defined(HAS_UNSIGNEDLONG)
+    case UINT64:
+      return static_cast<T>(array->e<uint64_t>(index));
+#endif
+#if defined(HAS_FLOAT16)
+    case HALF:
+      return static_cast<T>(array->e<float16>(index));
+#endif
+#if defined(HAS_BFLOAT16)
+    case BFLOAT16:
+      return static_cast<T>(array->e<bfloat16>(index));
+#endif
+    default:
+      // Fallback: try double if available, otherwise float
+#if defined(HAS_DOUBLE)
+      return static_cast<T>(array->e<double>(index));
+#elif defined(HAS_FLOAT32)
+      return static_cast<T>(array->e<float>(index));
+#else
+      return static_cast<T>(0);
+#endif
+  }
+}
+
+// Helper function to set element value regardless of data type
+inline void setElementValue(NDArray* array, sd::LongType index, NDArray* source, sd::LongType sourceIndex) {
+  switch (source->dataType()) {
+#if defined(HAS_FLOAT32)
+    case FLOAT32: {
+      auto value = source->e<float>(sourceIndex);
+      array->p(index, value);
+      break;
+    }
+#endif
+#if defined(HAS_DOUBLE)
+    case DOUBLE: {
+      auto value = source->e<double>(sourceIndex);
+      array->p(index, value);
+      break;
+    }
+#endif
+#if defined(HAS_INT32)
+    case INT32: {
+      auto value = source->e<int32_t>(sourceIndex);
+      array->p(index, value);
+      break;
+    }
+#endif
+#if defined(HAS_LONG)
+    case INT64: {
+      auto value = source->e<sd::LongType>(sourceIndex);
+      array->p(index, value);
+      break;
+    }
+#endif
+#if defined(HAS_BOOL)
+    case BOOL: {
+      auto value = source->e<bool>(sourceIndex);
+      array->p(index, value);
+      break;
+    }
+#endif
+#if defined(HAS_INT8)
+    case INT8: {
+      auto value = source->e<int8_t>(sourceIndex);
+      array->p(index, value);
+      break;
+    }
+#endif
+#if defined(HAS_INT16)
+    case INT16: {
+      auto value = source->e<int16_t>(sourceIndex);
+      array->p(index, value);
+      break;
+    }
+#endif
+#if defined(HAS_UINT8)
+    case UINT8: {
+      auto value = source->e<uint8_t>(sourceIndex);
+      array->p(index, value);
+      break;
+    }
+#endif
+#if defined(HAS_UINT16)
+    case UINT16: {
+      auto value = source->e<uint16_t>(sourceIndex);
+      array->p(index, value);
+      break;
+    }
+#endif
+#if defined(HAS_UINT32)
+    case UINT32: {
+      auto value = source->e<uint32_t>(sourceIndex);
+      array->p(index, value);
+      break;
+    }
+#endif
+#if defined(HAS_UNSIGNEDLONG)
+    case UINT64: {
+      auto value = source->e<uint64_t>(sourceIndex);
+      array->p(index, value);
+      break;
+    }
+#endif
+#if defined(HAS_FLOAT16)
+    case HALF: {
+      auto value = source->e<float16>(sourceIndex);
+      array->p(index, value);
+      break;
+    }
+#endif
+#if defined(HAS_BFLOAT16)
+    case BFLOAT16: {
+      auto value = source->e<bfloat16>(sourceIndex);
+      array->p(index, value);
+      break;
+    }
+#endif
+    default: {
+      // Generic fallback using available types
+#if defined(HAS_DOUBLE)
+      auto value = source->e<double>(sourceIndex);
+      array->p(index, value);
+#elif defined(HAS_FLOAT32)
+      auto value = source->e<float>(sourceIndex);
+      array->p(index, value);
+#elif defined(HAS_INT32)
+      auto value = source->e<int32_t>(sourceIndex);
+      array->p(index, value);
+#endif
+      break;
+    }
+  }
+}
+
 ////////////////////////////////////////////////////////////////////////
 void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output,
             const std::vector<LongType>& intArgs) {
@@ -75,80 +254,7 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
         // For scalar indices, rank 0 or 1 input: use only element accessor methods
         // These should be the most basic operations that don't trigger TAD
         try {
-          // Use type-specific element access and assignment
-          switch (input->dataType()) {
-            case FLOAT32: {
-              auto value = input->e<float>(idx);
-              output->p(0, value);
-              break;
-            }
-            case DOUBLE: {
-              auto value = input->e<double>(idx);
-              output->p(0, value);
-              break;
-            }
-            case INT32: {
-              auto value = input->e<int32_t>(idx);
-              output->p(0, value);
-              break;
-            }
-            case INT64: {
-              auto value = input->e<sd::LongType>(idx);
-              output->p(0, value);
-              break;
-            }
-            case BOOL: {
-              auto value = input->e<bool>(idx);
-              output->p(0, value);
-              break;
-            }
-            case INT8: {
-              auto value = input->e<int8_t>(idx);
-              output->p(0, value);
-              break;
-            }
-            case INT16: {
-              auto value = input->e<int16_t>(idx);
-              output->p(0, value);
-              break;
-            }
-            case UINT8: {
-              auto value = input->e<uint8_t>(idx);
-              output->p(0, value);
-              break;
-            }
-            case UINT16: {
-              auto value = input->e<uint16_t>(idx);
-              output->p(0, value);
-              break;
-            }
-            case UINT32: {
-              auto value = input->e<uint32_t>(idx);
-              output->p(0, value);
-              break;
-            }
-            case UINT64: {
-              auto value = input->e<uint64_t>(idx);
-              output->p(0, value);
-              break;
-            }
-            case HALF: {
-              auto value = input->e<float16>(idx);
-              output->p(0, value);
-              break;
-            }
-            case BFLOAT16: {
-              auto value = input->e<bfloat16>(idx);
-              output->p(0, value);
-              break;
-            }
-            default: {
-              // Generic fallback using double
-              auto value = input->e<double>(idx);
-              output->p(0, value);
-              break;
-            }
-          }
+          setElementValue(output, 0, input, idx);
         } catch (const std::exception& e) {
           THROW_EXCEPTION("Gather operation: failed to access element in simple case");
         }
@@ -173,40 +279,7 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
             auto curr = indices->e<sd::LongType>(i);
             
             try {
-              // Use type-specific element access for maximum compatibility
-              switch (input->dataType()) {
-                case FLOAT32: {
-                  auto value = input->e<float>(curr);
-                  output->p(i, value);
-                  break;
-                }
-                case DOUBLE: {
-                  auto value = input->e<double>(curr);
-                  output->p(i, value);
-                  break;
-                }
-                case INT32: {
-                  auto value = input->e<int32_t>(curr);
-                  output->p(i, value);
-                  break;
-                }
-                case INT64: {
-                  auto value = input->e<sd::LongType>(curr);
-                  output->p(i, value);
-                  break;
-                }
-                case BOOL: {
-                  auto value = input->e<bool>(curr);
-                  output->p(i, value);
-                  break;
-                }
-                default: {
-                  // Generic fallback
-                  auto value = input->e<double>(curr);
-                  output->p(i, value);
-                  break;
-                }
-              }
+              setElementValue(output, i, input, curr);
             } catch (const std::exception& e) {
               // Skip this element if there's an error
               continue;
@@ -252,38 +325,7 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
                 // This avoids TAD operations that can fail on degenerate cases
                 if (input->rankOf() <= 2 && input->lengthOf() <= 4) {
                   // Use simple element access for very small tensors
-                  switch (input->dataType()) {
-                    case FLOAT32: {
-                      auto value = input->e<float>(idx);
-                      output->p(i, value);
-                      break;
-                    }
-                    case DOUBLE: {
-                      auto value = input->e<double>(idx);
-                      output->p(i, value);
-                      break;
-                    }
-                    case INT32: {
-                      auto value = input->e<int32_t>(idx);
-                      output->p(i, value);
-                      break;
-                    }
-                    case INT64: {
-                      auto value = input->e<sd::LongType>(idx);
-                      output->p(i, value);
-                      break;
-                    }
-                    case BOOL: {
-                      auto value = input->e<bool>(idx);
-                      output->p(i, value);
-                      break;
-                    }
-                    default: {
-                      auto value = input->e<double>(idx);
-                      output->p(i, value);
-                      break;
-                    }
-                  }
+                  setElementValue(output, i, input, idx);
                 } else {
                   // For larger tensors, fall back to slice operations
                   NDArray inSubArr = (*input)(idx, {axis});
@@ -429,33 +471,7 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
       if (input->rankOf() <= 1) {
         // For rank 0 or 1 input, use only element accessors
         try {
-          switch (input->dataType()) {
-            case FLOAT32: {
-              auto value = input->e<float>(idx);
-              output->p(0, value);
-              break;
-            }
-            case DOUBLE: {
-              auto value = input->e<double>(idx);
-              output->p(0, value);
-              break;
-            }
-            case INT32: {
-              auto value = input->e<int32_t>(idx);
-              output->p(0, value);
-              break;
-            }
-            case INT64: {
-              auto value = input->e<sd::LongType>(idx);
-              output->p(0, value);
-              break;
-            }
-            default: {
-              auto value = input->e<double>(idx);
-              output->p(0, value);
-              break;
-            }
-          }
+          setElementValue(output, 0, input, idx);
         } catch (const std::exception& e) {
           THROW_EXCEPTION("Gather operation: failed to access element in integer argument case");
         }

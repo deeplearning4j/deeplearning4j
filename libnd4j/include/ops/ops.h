@@ -587,98 +587,122 @@ DECLARE_BINARY_COPY_OP(ReplaceNans,
 )
 
 
+
+
 template <typename X, typename Y, typename Z>
 class CompareAndReplace {
  private:
   static SD_HOST_DEVICE SD_INLINE Z op_logic(X d1, Y d2, Z *params) {
-    auto zd1 = static_cast<Z>(d1);
-    auto zd2 = static_cast<Z>(d2);
-    auto compare = params[0];
-    auto eps = params[2];
-    int mode = (int)params[3];
+    // Type guard for non-arithmetic types
+    if constexpr (any_my_string_v<X, Y, Z>) {
+      return static_cast<Z>(d1);  // For non-arithmetic types, just return cast of first value
+    } else {
+      // All the arithmetic logic is now inside the else block
+      // This code is only compiled when none of X, Y, Z are string types
+      auto zd1 = static_cast<Z>(d1);
+      auto zd2 = static_cast<Z>(d2);
+      auto compare = params[0];
+      auto eps = params[2];
+      int mode = (int)params[3];  // This line is now safe - only compiled for non-string types
 
-    if (mode == 0)  // equals
-      if (sd::math::sd_abs<Z,Z>(zd1 - compare) <= eps)
-        return zd2;
+      if (mode == 0)  // equals
+        if (sd::math::sd_abs<Z,Z>(zd1 - compare) <= eps)
+          return zd2;
+        else
+          return zd1;
+      else if (mode == 1)  // not equals eps
+        if (sd::math::sd_abs<Z,Z>(zd1 - compare) > eps)
+          return zd2;
+        else
+          return zd1;
+      else if (mode == 2)  // less_than eps
+        if (zd1 < compare)
+          return zd2;
+        else
+          return zd1;
+      else if (mode == 3)  // greater_than
+        if (zd1 > compare)
+          return zd2;
+        else
+          return zd1;
+      else if (mode == 4)  // less_or_equals_than
+        if (zd1 <= compare)
+          return zd2;
+        else
+          return zd1;
+      else if (mode == 5)  // greater_or_equals_than
+        if (zd1 >= compare)
+          return zd2;
+        else
+          return zd1;
+      else if (mode == 6)  // abs_less_than
+        if (sd::math::sd_abs<Z,Z>(zd1) < compare)
+          return zd2;
+        else
+          return zd1;
+      else if (mode == 7)  // abs_greater_than
+        if (sd::math::sd_abs<Z,Z>(zd1) > compare)
+          return zd2;
+        else
+          return zd1;
+      else if (mode == 8 || mode == 15)  // is inf
+        if constexpr (std::is_arithmetic<X>::value) {
+          if (sd::math::sd_isinf<X>(d1))  // Use original d1, not cast zd1
+            return zd2;
+          else
+            return zd1;
+        } else {
+          return zd1;
+        }
+      else if (mode == 9)  // is nan
+        if constexpr (std::is_arithmetic<X>::value) {
+          if (sd::math::sd_isnan<X>(d1))  // Use original d1, not cast zd1
+            return zd2;
+          else
+            return zd1;
+        } else {
+          return zd1;
+        }
+      else if (mode == 10)
+        if (zd1 == compare)
+          return zd2;
+        else
+          return zd1;
+      else if (mode == 11)
+        if (zd1 != compare)
+          return zd2;
+        else
+          return zd1;
+      else if (mode == 12)  // abs_greater_or_equals_than
+        if (sd::math::sd_abs<Z,Z>(zd1) >= compare)
+          return zd2;
+        else
+          return zd1;
+      else if (mode == 13) {  // abs_less_or_equals_than
+        if (sd::math::sd_abs<Z,Z>(zd1) <= compare)
+          return zd2;
+        else
+          return zd1;
+      }
+      else if (mode == 14) {  // is_finite (not inf)
+        if constexpr (std::is_arithmetic<X>::value) {
+          if (!sd::math::sd_isinf<X>(d1))  // Use original d1, not cast zd1
+            return zd2;
+          else
+            return zd1;
+        } else {
+          return zd1;
+        }
+      }
       else
-        return zd1;
-    else if (mode == 1)  // not equals eps
-      if (sd::math::sd_abs<Z,Z>(zd1 - compare) > eps)
-        return zd2;
-      else
-        return zd1;
-    else if (mode == 2)  // less_than eps
-      if (zd1 < compare)
-        return zd2;
-      else
-        return zd1;
-    else if (mode == 3)  // greater_than
-      if (zd1 > compare)
-        return zd2;
-      else
-        return zd1;
-    else if (mode == 4)  // less_or_equals_than
-      if (zd1 <= compare)
-        return zd2;
-      else
-        return zd1;
-    else if (mode == 5)  // greater_or_equals_than
-      if (zd1 >= compare)
-        return zd2;
-      else
-        return zd1;
-    else if (mode == 6)  // abs_less_than
-      if (sd::math::sd_abs<Z,Z>(zd1) < compare)
-        return zd2;
-      else
-        return zd1;
-    else if (mode == 7)  // abs_greater_than
-      if (sd::math::sd_abs<Z,Z>(zd1) > compare)
-        return zd2;
-      else
-        return zd1;
-    else if (mode == 8 || mode == 15)  // is inf
-      if (sd::math::sd_isinf<X>(d1))  // Use original d1, not cast zd1
-        return zd2;
-      else
-        return zd1;
-    else if (mode == 9)  // is nan
-      if (sd::math::sd_isnan<X>(d1))  // Use original d1, not cast zd1
-        return zd2;
-      else
-        return zd1;
-    else if (mode == 10)
-      if (zd1 == compare)
-        return zd2;
-      else
-        return zd1;
-    else if (mode == 11)
-      if (zd1 != compare)
-        return zd2;
-      else
-        return zd1;
-    else if (mode == 12)  // abs_greater_or_equals_than
-      if (sd::math::sd_abs<Z,Z>(zd1) >= compare)
-        return zd2;
-      else
-        return zd1;
-    else if (mode == 13) {  // abs_less_or_equals_than
-      if (sd::math::sd_abs<Z,Z>(zd1) <= compare)
-        return zd2;
-      else
-        return zd1;
+        sd_printf("Undefined boolean operation: [%i]\n", mode);
+      return zd1;
     }
-    else if (mode == 14) {  // is_finite (not inf)
-      if (!sd::math::sd_isinf<X>(d1))  // Use original d1, not cast zd1
-        return zd2;
-      else
-        return zd1;
-    }
-    else
-      sd_printf("Undefined boolean operation: [%i]\n", mode);
-    return zd1;
   }
-  static SD_HOST_DEVICE SD_INLINE Z op_simd(X d1, Y d2, Z *params) { return op_logic(d1, d2, params); }
+  
+  static SD_HOST_DEVICE SD_INLINE Z op_simd(X d1, Y d2, Z *params) { 
+    return op_logic(d1, d2, params); 
+  }
 
  public:
   static SD_HOST_DEVICE SD_INLINE Z op(X d1, Y d2, Z *params) {
@@ -695,93 +719,116 @@ template <typename X, typename Y, typename Z>
 class CompareAndSet {
  private:
   static SD_HOST_DEVICE SD_INLINE Z op_logic(X dX, Y dY, Z *params) {
-    auto d1 = static_cast<Z>(dX);
-    auto d2 = static_cast<Z>(dY);
-    auto compare = params[0];
-    auto eps = params[2];
-    auto mode = static_cast<int>(params[3]);
+    // Type guard for non-arithmetic types - early return
+    if constexpr (any_my_string_v<X, Y, Z>) {
+      return static_cast<Z>(dX);  // For non-arithmetic types, just return cast of first value
+    } else {
+      // All arithmetic logic inside else block - only compiled for non-string types
+      auto d1 = static_cast<Z>(dX);
+      auto d2 = static_cast<Z>(dY);
+      auto compare = params[0];
+      auto eps = params[2];
+      auto mode = static_cast<int>(params[3]);  // Safe - only compiled for non-string types
 
-    if (mode == 0)  // equals
-      if (sd::math::sd_abs<Z,Z>(d2 - compare) <= eps)
-        return d2;
+      if (mode == 0)  // equals
+        if (sd::math::sd_abs<Z,Z>(d2 - compare) <= eps)
+          return d2;
+        else
+          return d1;
+      else if (mode == 1)  // not equals
+        if (sd::math::sd_abs<Z,Z>(d2 - compare) > eps)
+          return d2;
+        else
+          return d1;
+      else if (mode == 2)  // less_than
+        if (d2 < compare)
+          return d2;
+        else
+          return d1;
+      else if (mode == 3)  // greater_than
+        if (d2 > compare)
+          return d2;
+        else
+          return d1;
+      else if (mode == 4)  // less_or_equals_than
+        if (d2 <= compare)
+          return d2;
+        else
+          return d1;
+      else if (mode == 5)  // greater_or_equals_than
+        if (d2 >= compare)
+          return d2;
+        else
+          return d1;
+      else if (mode == 6)  // abs_less_than
+        if (sd::math::sd_abs<Z,Z>(d2) < compare)
+          return d2;
+        else
+          return d1;
+      else if (mode == 7)  // abs_greater_than
+        if (sd::math::sd_abs<Z,Z>(d2) > compare)
+          return d2;
+        else
+          return d1;
+      else if (mode == 8 || mode == 15) {  // is inf
+        if constexpr (std::is_arithmetic<Y>::value) {
+          if (sd::math::sd_isinf<Y>(dY))  // Use original dY, not cast d2
+            return d2;
+          else
+            return d1;
+        } else {
+          return d1;
+        }
+      }
+      else if (mode == 9) {  // is nan
+        if constexpr (std::is_arithmetic<Y>::value) {
+          if (sd::math::sd_isnan<Y>(dY))  // Use original dY, not cast d2
+            return d2;
+          else
+            return d1;
+        } else {
+          return d1;
+        }
+      }
+      else if (mode == 10)
+        if (d2 == compare)
+          return d2;
+        else
+          return d1;
+      else if (mode == 11)
+        if (d2 != compare)
+          return d2;
+        else
+          return d1;
+      else if (mode == 12)  // abs_greater_or_equals_than
+        if (sd::math::sd_abs<Z,Z>(d1) >= compare)
+          return d2;
+        else
+          return d1;
+      else if (mode == 13)  // abs_less_or_equals_than
+        if (sd::math::sd_abs<Z,Z>(d1) <= compare)
+          return d2;
+        else
+          return d1;
+      else if (mode == 14) {  // is_finite (not inf)
+        if constexpr (std::is_arithmetic<X>::value) {
+          if (!sd::math::sd_isinf<X>(dX))  // Use original dX, not cast d1
+            return d2;
+          else
+            return d1;
+        } else {
+          return d1;
+        }
+      }
       else
-        return d1;
-    else if (mode == 1)  // not equals
-      if (sd::math::sd_abs<Z,Z>(d2 - compare) > eps)
-        return d2;
-      else
-        return d1;
-    else if (mode == 2)  // less_than
-      if (d2 < compare)
-        return d2;
-      else
-        return d1;
-    else if (mode == 3)  // greater_than
-      if (d2 > compare)
-        return d2;
-      else
-        return d1;
-    else if (mode == 4)  // less_or_equals_than
-      if (d2 <= compare)
-        return d2;
-      else
-        return d1;
-    else if (mode == 5)  // greater_or_equals_than
-      if (d2 >= compare)
-        return d2;
-      else
-        return d1;
-    else if (mode == 6)  // abs_less_than
-      if (sd::math::sd_abs<Z,Z>(d2) < compare)
-        return d2;
-      else
-        return d1;
-    else if (mode == 7)  // abs_greater_than
-      if (sd::math::sd_abs<Z,Z>(d2) > compare)
-        return d2;
-      else
-        return d1;
-    else if (mode == 8 || mode == 15)  // is inf
-      if (sd::math::sd_isinf<Y>(dY))  // Use original dY, not cast d2
-        return d2;
-      else
-        return d1;
-    else if (mode == 9)  // is nan
-      if (sd::math::sd_isnan<Y>(dY))  // Use original dY, not cast d2
-        return d2;
-      else
-        return d1;
-    else if (mode == 10)
-      if (d2 == compare)
-        return d2;
-      else
-        return d1;
-    else if (mode == 11)
-      if (d2 != compare)
-        return d2;
-      else
-        return d1;
-    else if (mode == 12)  // abs_greater_or_equals_than
-      if (sd::math::sd_abs<Z,Z>(d1) >= compare)
-        return d2;
-      else
-        return d1;
-    else if (mode == 13)  // abs_less_or_equals_than
-      if (sd::math::sd_abs<Z,Z>(d1) <= compare)
-        return d2;
-      else
-        return d1;
-    else if (mode == 14) {  // is_finite (not inf)
-      if (!sd::math::sd_isinf<X>(dX))  // Use original dX, not cast d1
-        return d2;
-      else
-        return d1;
+        sd_printf("Undefined boolean operation: [%i]\n", mode);
+      return d1;
     }
-    else
-      sd_printf("Undefined boolean operation: [%i]\n", mode);
-    return d1;
   }
-  static SD_HOST_DEVICE SD_INLINE Z op_simd(X dX, Y dY, Z *params) { return op_logic(dX, dY, params); }
+  
+  static SD_HOST_DEVICE SD_INLINE Z op_simd(X dX, Y dY, Z *params) { 
+    return op_logic(dX, dY, params); 
+  }
 
  public:
   static SD_HOST_DEVICE SD_INLINE Z op(X dX, Y dY, Z *params) {
@@ -798,95 +845,105 @@ template <typename X>
 class CompareAndSetTransform {
  private:
   static SD_HOST_DEVICE SD_INLINE X op_logic(X d1, X *params) {
-    auto compare = params[0];
-    auto set = params[1];
-    auto eps = params[2];
-    int mode = (int)params[3];
+    // Type guard for non-arithmetic types - early return
+    if constexpr (!std::is_arithmetic<X>::value) {
+      return d1;  // For non-arithmetic types, just return the input value
+    } else {
+      // All arithmetic logic inside else block - only compiled for arithmetic types
+      auto compare = params[0];
+      auto set = params[1];
+      auto eps = params[2];
+      int mode = (int)params[3];  // Safe - only compiled for arithmetic types
 
-    if (mode == 0)  // equals
-      if (sd::math::sd_abs<X,X>(d1 - compare) <= eps)
-        return set;
+      if (mode == 0)  // equals
+        if (sd::math::sd_abs<X,X>(d1 - compare) <= eps)
+          return set;
+        else
+          return d1;
+      else if (mode == 1)  // not equals
+        if (sd::math::sd_abs<X,X>(d1 - compare) > eps)
+          return set;
+        else
+          return d1;
+      else if (mode == 2)  // less_than
+        if (d1 < compare)
+          return set;
+        else
+          return d1;
+      else if (mode == 3)  // greater_than
+        if (d1 > compare)
+          return set;
+        else
+          return d1;
+      else if (mode == 4)  // less_or_equals_than
+        if (d1 <= compare)
+          return set;
+        else
+          return d1;
+      else if (mode == 5)  // greater_or_equals_than
+        if (d1 >= compare)
+          return set;
+        else
+          return d1;
+      else if (mode == 6)  // abs_less_than
+        if (sd::math::sd_abs<X,X>(d1) < compare)
+          return set;
+        else
+          return d1;
+      else if (mode == 7)  // abs_greater_than
+        if (sd::math::sd_abs<X,X>(d1) > compare)
+          return set;
+        else
+          return d1;
+      else if (mode == 8)  // is inf
+        if (sd::math::sd_isinf<X>(d1))
+          return set;
+        else
+          return d1;
+      else if (mode == 9)  // is nan
+        if (sd::math::sd_isnan<X>(d1))
+          return set;
+        else
+          return d1;
+      else if (mode == 10)
+        if (d1 == compare)
+          return set;
+        else
+          return d1;
+      else if (mode == 11)
+        if (d1 != compare)
+          return set;
+        else
+          return d1;
+      else if (mode == 12)  // abs_greater_or_equals_than
+        if (sd::math::sd_abs<X,X>(d1) >= compare)
+          return set;
+        else
+          return d1;
+      else if (mode == 13)  // abs_less_or_equals_than
+        if (sd::math::sd_abs<X,X>(d1) <= compare)
+          return set;
+        else
+          return d1;
+      else if (mode == 14) {  // is_finite (not inf)
+        if (!sd::math::sd_isinf<X>(d1))
+          return compare;  // Note: original code returns compare, not set
+        else
+          return d1;
+      }
       else
-        return d1;
-    else if (mode == 1)  // not equals
-      if (sd::math::sd_abs<X,X>(d1 - compare) > eps)
-        return set;
-      else
-        return d1;
-    else if (mode == 2)  // less_than
-      if (d1 < compare)
-        return set;
-      else
-        return d1;
-    else if (mode == 3)  // greater_than
-      if (d1 > compare)
-        return set;
-      else
-        return d1;
-    else if (mode == 4)  // less_or_equals_than
-      if (d1 <= compare)
-        return set;
-      else
-        return d1;
-    else if (mode == 5)  // greater_or_equals_than
-      if (d1 >= compare)
-        return set;
-      else
-        return d1;
-    else if (mode == 6)  // abs_less_than
-      if (sd::math::sd_abs<X,X>(d1) < compare)
-        return set;
-      else
-        return d1;
-    else if (mode == 7)  // abs_greater_than
-      if (sd::math::sd_abs<X,X>(d1) > compare)
-        return set;
-      else
-        return d1;
-    else if (mode == 8)  // is inf
-      if (sd::math::sd_isinf<X>(d1))
-        return set;
-      else
-        return d1;
-    else if (mode == 9)  // is nan
-      if (sd::math::sd_isnan<X>(d1))
-        return set;
-      else
-        return d1;
-    else if (mode == 10)
-      if (d1 == compare)
-        return set;
-      else
-        return d1;
-    else if (mode == 11)
-      if (d1 != compare)
-        return set;
-      else
-        return d1;
-    else if (mode == 12)  // abs_greater_or_equals_than
-      if (sd::math::sd_abs<X,X>(d1) >= compare)
-        return set;
-      else
-        return d1;
-    else if (mode == 13)  // abs_less_or_equals_than
-      if (sd::math::sd_abs<X,X>(d1) <= compare)
-        return set;
-      else
-        return d1;
-    else if (mode == 14) {  // is_finite (not inf)
-      if (!sd::math::sd_isinf<X>(d1))
-        return compare;  // Note: original code returns compare, not set
-      else
-        return d1;
+        sd_printf("Undefined boolean operation: [%i]\n", mode);
+      return d1;
     }
-    else
-      sd_printf("Undefined boolean operation: [%i]\n", mode);
-    return d1;
   }
-  static SD_HOST_DEVICE SD_INLINE X op_simd(X d1, X *params) { return op_logic(d1, params); }
+  
+  static SD_HOST_DEVICE SD_INLINE X op_simd(X d1, X *params) { 
+    return op_logic(d1, params); 
+  }
 
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda;
+  
   static SD_HOST_DEVICE SD_INLINE X op(X d1, X *params) {
     if constexpr (simdOps::is_simd_unsupported_return_type<X>::value)
       return op_logic(d1, params);
@@ -894,7 +951,6 @@ class CompareAndSetTransform {
       return op_simd(d1, params);
   }
 };
-
 
 
 
@@ -1532,20 +1588,119 @@ DECLARE_UNARY_CLIPPING_OP(ThresholdedReLU,
                               return d1 > theta ? d1 : static_cast<X>(0);
 )
 
+#define DECLARE_INTEGER_ONLY_BINARY_OP(OP_NAME, OPERATION)                                                \
+  template <typename X>                                                                                    \
+  class OP_NAME {                                                                                         \
+   private:                                                                                               \
+    static SD_INLINE X op_logic(X d1, X d2) {                                                            \
+      if constexpr (std::is_integral<X>::value) {                                                        \
+        return OPERATION;                                                                                \
+      } else {                                                                                           \
+        /* For floating point, interpret bits as integer */                                              \
+        using IntType = typename std::conditional<sizeof(X) == 4, uint32_t,                              \
+                        typename std::conditional<sizeof(X) == 8, uint64_t,                              \
+                        typename std::conditional<sizeof(X) == 2, uint16_t, uint8_t>::type>::type>::type;\
+        IntType i1, i2, iresult;                                                                         \
+        std::memcpy(&i1, &d1, sizeof(X));                                                                \
+        std::memcpy(&i2, &d2, sizeof(X));                                                                \
+        /* Create a lambda to evaluate OPERATION with integer values */                                  \
+        iresult = [&]() {                                                                                \
+          auto d1 = i1;                                                                                  \
+          auto d2 = i2;                                                                                  \
+          return OPERATION;                                                                             \
+        }();                                                                                             \
+        X result;                                                                                        \
+        std::memcpy(&result, &iresult, sizeof(X));                                                       \
+        return result;                                                                                   \
+      }                                                                                                  \
+    }                                                                                                     \
+    static SD_INLINE X op_logic(X d1, X d2, X *params) { return op_logic(d1, d2); }                       \
+    static SD_INLINE SD_HOST_DEVICE X op_simd(X d1, X d2) { return op_logic(d1, d2); }                    \
+    static SD_INLINE SD_HOST_DEVICE X op_simd(X d1, X d2, X *params) { return op_logic(d1, d2, params); } \
+                                                                                                          \
+   public:                                                                                                \
+    static SD_INLINE SD_HOST_DEVICE X op(X d1, X d2) {                                                    \
+      if constexpr (simdOps::is_simd_unsupported_return_type<X>::value)                                   \
+        return op_logic(d1, d2);                                                                          \
+      else                                                                                                \
+        return op_simd(d1, d2);                                                                           \
+    }                                                                                                     \
+    static SD_INLINE SD_HOST_DEVICE X op(X d1, X d2, X *params) {                                         \
+      if constexpr (simdOps::is_simd_unsupported_return_type<X>::value)                                   \
+        return op_logic(d1, d2, params);                                                                  \
+      else                                                                                                \
+        return op_simd(d1, d2, params);                                                                   \
+    }                                                                                                     \
+  };
+// Then use it exactly as before:
+DECLARE_INTEGER_ONLY_BINARY_OP(ShiftLeft, d1 << d2)
+DECLARE_INTEGER_ONLY_BINARY_OP(ShiftRight, d1 >> d2)
+DECLARE_INTEGER_ONLY_BINARY_OP(IntOr, d2 | d1)
+DECLARE_INTEGER_ONLY_BINARY_OP(IntAnd, d2 & d1)
+DECLARE_INTEGER_ONLY_BINARY_OP(IntXor, d2 ^ d1)
+
+#define DECLARE_INTEGER_ONLY_BINARY_TEMPLATE_OP(OP_NAME, OPERATION)                                       \
+  template <typename X>                                                                                   \
+  class OP_NAME {                                                                                         \
+   private:                                                                                               \
+    static SD_HOST_DEVICE SD_INLINE X op_logic(X d1, X d2) {                                             \
+      if constexpr (std::is_integral<X>::value) {                                                        \
+        return OPERATION;                                                                                \
+      } else {                                                                                           \
+        /* For floating point types, the template operation might not be valid */                        \
+        /* This requires special handling based on the specific operation */                             \
+        return static_cast<X>(0); /* Default fallback - you may need to specialize per operation */     \
+      }                                                                                                  \
+    }                                                                                                     \
+    static SD_HOST_DEVICE SD_INLINE X op_logic(X d1, X d2, X *params) { return op_logic(d1, d2); }        \
+    static SD_HOST_DEVICE SD_INLINE X op_simd(X d1, X d2) { return op_logic(d1, d2); }                    \
+    static SD_HOST_DEVICE SD_INLINE X op_simd(X d1, X d2, X *params) { return op_logic(d1, d2, params); } \
+                                                                                                          \
+   public:                                                                                                \
+    static SD_HOST_DEVICE SD_INLINE X op(X d1, X d2) {                                                    \
+      if constexpr (simdOps::is_simd_unsupported_return_type<X>::value)                                   \
+        return op_logic(d1, d2);                                                                          \
+      else                                                                                                \
+        return op_simd(d1, d2);                                                                           \
+    }                                                                                                     \
+    static SD_HOST_DEVICE SD_INLINE X op(X d1, X d2, X *params) {                                         \
+      if constexpr (simdOps::is_simd_unsupported_return_type<X>::value)                                   \
+        return op_logic(d1, d2, params);                                                                  \
+      else                                                                                                \
+        return op_simd(d1, d2, params);                                                                   \
+    }                                                                                                     \
+  };
+
+// Then use it for cyclic shift operations:
+DECLARE_INTEGER_ONLY_BINARY_TEMPLATE_OP(CyclicShiftLeft, sd::math::sd_rotl<X>(d1, d2))
+DECLARE_INTEGER_ONLY_BINARY_TEMPLATE_OP(CyclicShiftRight, sd::math::sd_rotr<X>(d1, d2))
 
 
 
-// Use the new macro for bitwise operations
-DECLARE_SIMPLE_BINARY_OP(IntOr, d2 | d1)
-DECLARE_SIMPLE_BINARY_OP(IntAnd, d2 & d1)
-DECLARE_SIMPLE_BINARY_OP(IntXor, d2 ^ d1)
-DECLARE_SIMPLE_BINARY_OP(ShiftLeft, d1 << d2)
-DECLARE_SIMPLE_BINARY_OP(ShiftRight, d1 >> d2)
 
-
-DECLARE_SIMPLE_BINARY_TEMPLATE_OP(CyclicShiftLeft, sd::math::sd_rotl<X>(d1 COMMA d2))
-DECLARE_SIMPLE_BINARY_TEMPLATE_OP(CyclicShiftRight, sd::math::sd_rotr<X>(d1 COMMA d2))
-
+#define DECLARE_INTEGER_ONLY_BINARY_TEMPLATE_OP(OP_NAME, OPERATION)                                       \
+  template <typename X, typename = typename std::enable_if<std::is_integral<X>::value>::type>             \
+  class OP_NAME {                                                                                         \
+   private:                                                                                               \
+    static SD_HOST_DEVICE SD_INLINE X op_logic(X d1, X d2) { return OPERATION; }                          \
+    static SD_HOST_DEVICE SD_INLINE X op_logic(X d1, X d2, X *params) { return op_logic(d1, d2); }        \
+    static SD_HOST_DEVICE SD_INLINE X op_simd(X d1, X d2) { return op_logic(d1, d2); }                    \
+    static SD_HOST_DEVICE SD_INLINE X op_simd(X d1, X d2, X *params) { return op_logic(d1, d2, params); } \
+                                                                                                          \
+   public:                                                                                                \
+    static SD_HOST_DEVICE SD_INLINE X op(X d1, X d2) {                                                    \
+      if constexpr (simdOps::is_simd_unsupported_return_type<X>::value)                                   \
+        return op_logic(d1, d2);                                                                          \
+      else                                                                                                \
+        return op_simd(d1, d2);                                                                           \
+    }                                                                                                     \
+    static SD_HOST_DEVICE SD_INLINE X op(X d1, X d2, X *params) {                                         \
+      if constexpr (simdOps::is_simd_unsupported_return_type<X>::value)                                   \
+        return op_logic(d1, d2, params);                                                                  \
+      else                                                                                                \
+        return op_simd(d1, d2, params);                                                                   \
+    }                                                                                                     \
+  };
 
 
 template <typename X, typename Y, typename Z>
@@ -2056,80 +2211,145 @@ DECLARE_BINARY_COPY_OP(RelativeError,
                        static_cast<Z>(0)
 )
 
-// BinaryRelativeError - Custom conditional logic, manual implementation needed
+
+
 template <typename X, typename Y, typename Z>
 class BinaryRelativeError {
  private:
-  static SD_HOST_DEVICE SD_INLINE  Z op_logic(X d1, Y d2, Z *params) {
-    X threshold = static_cast<X>(params[0]);
-    return sd::math::sd_re<X>(d1, static_cast<X>(d2)) > threshold ? static_cast<Z>(1) : static_cast<Z>(0);
+  static SD_HOST_DEVICE SD_INLINE Z op_logic(X d1, Y d2, Z *params) {
+    // Type guard for non-arithmetic types
+    if constexpr (any_my_string_v<X, Y, Z>) {
+      return static_cast<Z>(d1);  // For non-arithmetic types, just return cast of first value
+    } else {
+      // All arithmetic operations inside else block
+      X threshold = static_cast<X>(params[0]);
+      return sd::math::sd_re<X>(d1, static_cast<X>(d2)) > threshold ? static_cast<Z>(1) : static_cast<Z>(0);
+    }
   }
-  static SD_HOST_DEVICE SD_INLINE  Z op_logic(X d1) { return static_cast<Z>(0); }
-  SD_HOST_DEVICE SD_INLINE  static Z op_simd(X d1, Y d2, Z *params) { return op_logic(d1, d2, params); }
-  SD_HOST_DEVICE SD_INLINE  static Z op_simd(X d1) { return op_logic(d1); }
+  
+  static SD_HOST_DEVICE SD_INLINE Z op_logic(X d1) { 
+    // Type guard for non-arithmetic types
+    if constexpr (any_my_string_v<X, Z>) {
+      return static_cast<Z>(d1);  // For non-arithmetic types, just return cast of first value
+    } else {
+      return static_cast<Z>(0);
+    }
+  }
+  
+  SD_HOST_DEVICE SD_INLINE static Z op_simd(X d1, Y d2, Z *params) { 
+    return op_logic(d1, d2, params); 
+  }
+  
+  SD_HOST_DEVICE SD_INLINE static Z op_simd(X d1) { 
+    return op_logic(d1); 
+  }
 
  public:
   no_op_exec_special no_op_exec_special_cuda
-  static  SD_HOST_DEVICE Z op(X d1, Y d2, Z *params) {
-    if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||
+  
+  static SD_HOST_DEVICE Z op(X d1, Y d2, Z *params) {
+    if constexpr (any_my_string_v<X, Y, Z> ||
+                  simdOps::is_simd_unsupported_return_type<Z>::value ||
                   simdOps::is_simd_unsupported_argument_type<X>::value ||
                   simdOps::is_simd_unsupported_argument_type<Y>::value)
       return op_logic(d1, d2, params);
-    else return op_simd(d1, d2, params);
+    else 
+      return op_simd(d1, d2, params);
   }
+  
   static SD_HOST_DEVICE Z op(X d1) {
-    if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||
+    if constexpr (any_my_string_v<X, Z> ||
+                  simdOps::is_simd_unsupported_return_type<Z>::value ||
                   simdOps::is_simd_unsupported_argument_type<X>::value)
       return op_logic(d1);
-    else return op_simd(d1);
+    else 
+      return op_simd(d1);
   }
 };
 
+
+// BinaryRelativeError - Custom conditional logic, manual implementation needed
 template <typename X, typename Y, typename Z>
 class BinaryMinimumAbsoluteRelativeError {
  private:
-  static SD_HOST_DEVICE SD_INLINE  Z op_logic(X d1, X *params) {
-    X d2 = params[0];
-    X thresholdRelative = params[1];
-    X thresholdAbsolute = params[2];
-    return sd::math::sd_re<X>(d1, d2) > thresholdRelative
-           ? (sd::math::sd_abs<X,X>(d1 - static_cast<X>(d2)) < thresholdAbsolute ? static_cast<Z>(0)
-                                                                                 : static_cast<Z>(1))
-           : static_cast<Z>(0);
+  static SD_HOST_DEVICE SD_INLINE Z op_logic(X d1, X *params) {
+    // Type guard for non-arithmetic types
+    if constexpr (any_my_string_v<X, Z>) {
+      return static_cast<Z>(d1);  // For non-arithmetic types, just return cast of first value
+    } else {
+      // All arithmetic operations inside else block
+      X d2 = params[0];
+      X thresholdRelative = params[1];
+      X thresholdAbsolute = params[2];
+      return sd::math::sd_re<X>(d1, d2) > thresholdRelative
+             ? (sd::math::sd_abs<X,X>(d1 - static_cast<X>(d2)) < thresholdAbsolute ? static_cast<Z>(0)
+                                                                                   : static_cast<Z>(1))
+             : static_cast<Z>(0);
+    }
   }
-  static SD_HOST_DEVICE SD_INLINE  Z op_logic(X d1, Y d2, Z *params) {
-    X thresholdRelative = static_cast<X>(params[0]);
-    X thresholdAbsolute = static_cast<X>(params[1]);
-    return sd::math::sd_re<X>(d1, static_cast<X>(d2)) > thresholdRelative
-           ? (sd::math::sd_abs<X,X>(d1 - static_cast<X>(d2)) < thresholdAbsolute ? static_cast<Z>(0)
-                                                                                 : static_cast<Z>(1))
-           : static_cast<Z>(0);
+  
+  static SD_HOST_DEVICE SD_INLINE Z op_logic(X d1, Y d2, Z *params) {
+    // Type guard for non-arithmetic types
+    if constexpr (any_my_string_v<X, Y, Z>) {
+      return static_cast<Z>(d1);  // For non-arithmetic types, just return cast of first value
+    } else {
+      // All arithmetic operations inside else block
+      X thresholdRelative = static_cast<X>(params[0]);
+      X thresholdAbsolute = static_cast<X>(params[1]);
+      return sd::math::sd_re<X>(d1, static_cast<X>(d2)) > thresholdRelative
+             ? (sd::math::sd_abs<X,X>(d1 - static_cast<X>(d2)) < thresholdAbsolute ? static_cast<Z>(0)
+                                                                                   : static_cast<Z>(1))
+             : static_cast<Z>(0);
+    }
   }
-  static SD_HOST_DEVICE SD_INLINE  Z op_logic(X d1) { return static_cast<Z>(0); }
-  SD_HOST_DEVICE SD_INLINE  static Z op_simd(X d1, X *params) { return op_logic(d1, params); }
-  SD_HOST_DEVICE SD_INLINE  static Z op_simd(X d1, Y d2, Z *params) { return op_logic(d1, d2, params); }
-  SD_HOST_DEVICE SD_INLINE  static Z op_simd(X d1) { return op_logic(d1); }
-
+  
+  static SD_HOST_DEVICE SD_INLINE Z op_logic(X d1) { 
+    // Type guard for non-arithmetic types
+    if constexpr (any_my_string_v<X, Z>) {
+      return static_cast<Z>(d1);  // For non-arithmetic types, just return cast of first value
+    } else {
+      return static_cast<Z>(0);
+    }
+  }
+  
+  SD_HOST_DEVICE SD_INLINE static Z op_simd(X d1, X *params) { 
+    return op_logic(d1, params); 
+  }
+  
+  SD_HOST_DEVICE SD_INLINE static Z op_simd(X d1, Y d2, Z *params) { 
+    return op_logic(d1, d2, params); 
+  }
+  
+  SD_HOST_DEVICE SD_INLINE static Z op_simd(X d1) { 
+    return op_logic(d1); 
+  }
+  
  public:
   no_op_exec_special no_op_exec_special_cuda
-  static SD_HOST_DEVICE SD_INLINE  Z op(X d1, X *params) {
+  
+  static SD_HOST_DEVICE SD_INLINE Z op(X d1, X *params) {
     if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||
                   simdOps::is_simd_unsupported_argument_type<X>::value)
       return op_logic(d1, params);
-    else return op_simd(d1, params);
+    else 
+      return op_simd(d1, params);
   }
-  static SD_HOST_DEVICE SD_INLINE  Z op(X d1, Y d2, Z *params) {
+  
+  static SD_HOST_DEVICE SD_INLINE Z op(X d1, Y d2, Z *params) {
     if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||
                   simdOps::is_simd_unsupported_argument_type<X>::value ||
                   simdOps::is_simd_unsupported_argument_type<Y>::value)
       return op_logic(d1, d2, params);
-    else return op_simd(d1, d2, params);
+    else 
+      return op_simd(d1, d2, params);
   }
-  static  SD_HOST_DEVICE SD_INLINE  Z op(X d1) {
+  
+  static SD_HOST_DEVICE SD_INLINE Z op(X d1) {
     if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||
                   simdOps::is_simd_unsupported_argument_type<X>::value)
       return op_logic(d1);
-    else return op_simd(d1);
+    else 
+      return op_simd(d1);
   }
 };
 

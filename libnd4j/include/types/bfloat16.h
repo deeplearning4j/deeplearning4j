@@ -173,6 +173,16 @@ struct alignas(2) bfloat16 {
     return *this;
   }
 
+
+  // Add these assignment operators to the bfloat16 struct
+SD_INLINE SD_HOST_DEVICE bfloat16& operator=(const char rhs) {
+  return operator=(static_cast<float>(rhs));
+}
+
+SD_INLINE SD_HOST_DEVICE bfloat16& operator=(const unsigned char rhs) {
+  return operator=(static_cast<float>(rhs));
+}
+
   SD_INLINE SD_HOST_DEVICE bfloat16& operator=(const float& rhs) {
 #if defined(__CUDA_ARCH__)
     if (isnan(rhs)) {

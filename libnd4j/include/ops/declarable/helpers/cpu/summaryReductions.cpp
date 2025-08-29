@@ -44,8 +44,18 @@ void standardDeviation(NDArray& input, NDArray& output, const std::vector<LongTy
   auto inputDType = input.dataType();
   auto outputDType = output.dataType();
   BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), standardDeviation_,
-                        (input, output, dimensions, biasCorrected), SD_COMMON_TYPES, SD_FLOAT_TYPES);
+                        (input, output, dimensions, biasCorrected), SD_NUMERIC_TYPES, SD_FLOAT_TYPES);
 }
+
+BUILD_DOUBLE_TEMPLATE(void variance_, 
+    (NDArray&, NDArray&, const std::vector<sd::LongType>&, bool),
+    SD_NUMERIC_TYPES,
+    SD_FLOAT_TYPES)
+
+BUILD_DOUBLE_TEMPLATE(void standardDeviation_, 
+    (NDArray&, NDArray&, const std::vector<sd::LongType>&, bool),
+    SD_NUMERIC_TYPES,
+    SD_FLOAT_TYPES)
 
 }  // namespace helpers
 }  // namespace ops

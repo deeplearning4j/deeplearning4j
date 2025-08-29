@@ -111,6 +111,12 @@ struct is_simd_native {
                                 std::is_integral_v<T>;
 };
 
+template <typename X, typename Y, typename Z>
+static inline constexpr bool any_non_simd = simdOps::is_simd_unsupported_return_type<Z>::value ||                         \
+                    simdOps::is_simd_unsupported_argument_type<X>::value 
+                    ||                       \
+                    simdOps::is_simd_unsupported_argument_type<Y>::value;
+
 // =============================================================================
 // SIMD OPERATION DISPATCHING HELPERS
 // =============================================================================

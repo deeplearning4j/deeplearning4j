@@ -32,7 +32,10 @@ namespace simdOps {
  * @brief Declares an index reduce operation with proper SIMD handling
  */
 #define DECLARE_INDEX_REDUCE_OP(OP_NAME, STARTING_VAL, UPDATE_CONDITION, MERGE_CONDITION)       \
-  template <typename X, typename Z>                                                             \
+  template <typename X, typename Z,                                                             \
+            typename std::enable_if<                                                            \
+                std::is_arithmetic<X>::value &&                                                 \
+                std::is_arithmetic<Z>::value, int>::type = 0>                                   \
   class OP_NAME {                                                                               \
    public:                                                                                      \
     static SD_HOST_DEVICE inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> val, \
@@ -67,7 +70,6 @@ namespace simdOps {
       return d1;                                                                               \
     }                                                                                           \
   };
-
 } // namespace simdOps
 
 #endif // OP_MACROS_INDEX_REDUCE_H_

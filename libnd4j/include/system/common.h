@@ -307,8 +307,8 @@ void throwException(const char* exceptionMessage);
 
 #define PP_NARGS(...) PP_NARGS_IMPL(__VA_ARGS__, PP_RSEQ_N())
 #define PP_NARGS_IMPL(...) PP_ARG_N(__VA_ARGS__)
-#define PP_ARG_N(_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,N,...) N
-#define PP_RSEQ_N() 16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0
+#define PP_ARG_N(_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,N,...) N
+#define PP_RSEQ_N() 28,27,26,25,24,23,22,21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0
 
 
 #define GET(n, list) CAT(GET_, n) list
@@ -329,6 +329,20 @@ void throwException(const char* exceptionMessage);
 #define GET_13(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, ...) t14
 #define GET_14(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, ...) t15
 #define GET_15(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, ...) t16
+#define GET_16(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, ...) t17
+#define GET_17(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, ...) t18
+#define GET_18(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, ...) t19
+#define GET_19(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, ...) t20
+#define GET_20(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, ...) t21
+#define GET_21(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, ...) t22
+#define GET_22(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23, ...) t23 
+#define GET_23(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23, t24, ...) t24
+#define GET_24(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23, t24, t25, ...) t25
+#define GET_25(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23, t24, t25, t26, ...) t26
+#define GET_26(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23, t24, t25, t26, t27, ...) t27 
+#define GET_27(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23, t24, t25, t26, t27, t28, ...) t28
+#define GET_28(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23, t24, t25, t26, t27, t28, t29, ...) t29
+
 
 #define GET_FIRST_IMPL(a, b) a
 #define GET_FIRST(tuple) GET_FIRST_IMPL tuple
@@ -336,6 +350,17 @@ void throwException(const char* exceptionMessage);
 
 #define GET_SECOND_IMPL(a, b) b
 #define GET_SECOND(tuple) GET_SECOND_IMPL tuple
+
+
+template <class T>
+inline constexpr bool is_my_string_v =
+    std::is_same_v<std::decay_t<T>, std::string>          ||
+    std::is_same_v<std::decay_t<T>, std::u16string>       ||
+    std::is_same_v<std::decay_t<T>, std::u32string>;
+
+template <class... Ts>
+inline constexpr bool any_my_string_v = (... || is_my_string_v<Ts>);
+
 
 
 #endif

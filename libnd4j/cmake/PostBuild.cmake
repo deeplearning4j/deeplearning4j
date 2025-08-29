@@ -28,6 +28,11 @@ if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
     )
 endif()
 
+if(SD_EXTRACT_INSTANTIATIONS)
+    include(ExtractInstantiations)
+
+endif()
+
 # --- Self-Contained Preprocessing Target ---
 if(SD_PREPROCESS)
     message("Preprocessing enabled: ${CMAKE_BINARY_DIR}")
@@ -230,20 +235,3 @@ if(SD_PREPROCESS)
     add_custom_target(preprocess_sources ALL DEPENDS ${PREPROCESSED_FILES})
 endif()
 
-# --- Developer Analysis Targets ---
-add_custom_target(analyze_types
-        COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/scripts/analyze_type_usage.py
-        --base-path ${CMAKE_CURRENT_SOURCE_DIR}
-        --output ${CMAKE_BINARY_DIR}/type_analysis.json
-        --summary
-        COMMENT "Analyzing type usage patterns in codebase"
-        VERBATIM
-)
-
-add_custom_target(show_combinations
-        COMMAND ${CMAKE_COMMAND} -E echo "=== TYPE COMBINATION STATISTICS ==="
-        COMMAND ${CMAKE_COMMAND} -E echo "Type profile: ${SD_TYPE_PROFILE}"
-        COMMAND ${CMAKE_COMMAND} -E echo "Selected types: ${SD_TYPES_LIST}"
-        COMMAND ${CMAKE_COMMAND} -E echo "Semantic filtering: ${SD_ENABLE_SEMANTIC_FILTERING}"
-        COMMENT "Display type combination configuration"
-)

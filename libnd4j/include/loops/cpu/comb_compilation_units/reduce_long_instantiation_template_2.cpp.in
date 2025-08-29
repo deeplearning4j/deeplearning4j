@@ -50,5 +50,5 @@ ITERATE_COMBINATIONS(
     SD_LONG_TYPES_PART_@COMB2@,
     INSTANT_PROCESS_COMBINATION_2,
     functions::reduce::ReduceLongFunction,
-    ::exec(int opNum, sd::memory::Workspace *workspace, const void *vx, const sd::LongType *xShapeInfo, void *vextraParams, void *vz, const sd::LongType *zShapeInfo, const sd::LongType *dims)
+    ::exec(const int opNum, sd::memory::Workspace *workspace, const void *vx, const sd::LongType *xShapeInfo, void *vextraParams, void *vz, const sd::LongType *zShapeInfo, sd::LongType *dims)
 )

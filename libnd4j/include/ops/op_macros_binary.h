@@ -116,7 +116,11 @@ namespace simdOps {
  * @brief Declares a binary math operation with proper SIMD handling
  */
 #define DECLARE_BINARY_MATH_OP(OP_NAME, MATH_FUNC)                                                                      \
-  template <typename X, typename Y, typename Z>                                                                       \
+  template <typename X, typename Y, typename Z,                                                                        \
+            typename std::enable_if<                                                                                   \
+                std::is_arithmetic<X>::value &&                                                                        \
+                std::is_arithmetic<Y>::value &&                                                                        \
+                std::is_arithmetic<Z>::value, int>::type = 0>                                                          \
   class OP_NAME {                                                                                                     \
    private:                                                                                                           \
     SD_HOST_DEVICE SD_INLINE static Z op_logic(X d1, Y d2) { return sd::math::MATH_FUNC<X COMMA Y COMMA Z>(d1, d2); }           \
@@ -154,7 +158,6 @@ namespace simdOps {
     }                                                                                                                 \
     SD_HOST_DEVICE SD_INLINE static X startingValue() { return static_cast<X>(1.f); }                                 \
   };
-
 // =============================================================================
 // COMPARISON OPERATION MACROS
 // =============================================================================
@@ -328,17 +331,32 @@ namespace simdOps {
     SD_HOST_DEVICE SD_INLINE static X startingValue() { return static_cast<X>(0.f); }         \
   };
 
-/**
- * @brief Declares a binary copy operation with proper SIMD handling
- */
 #define DECLARE_BINARY_COPY_OP(OP_NAME, BINARY_OP, BINARY_PARAM_OP, UNARY_OP, PARAM_OP)          \
   template <typename X, typename Y, typename Z>                                                   \
   class OP_NAME {                                                                                 \
    private:                                                                                       \
-    SD_HOST_DEVICE SD_INLINE static Z op_logic(X d1, Y d2) { return BINARY_OP; }                \
-    SD_HOST_DEVICE SD_INLINE static Z op_logic(X d1, Y d2, Z *params) { return BINARY_PARAM_OP; } \
+    SD_HOST_DEVICE SD_INLINE static Z op_logic(X d1, Y d2) {                                    \
+      if constexpr (std::is_arithmetic<X>::value && std::is_arithmetic<Y>::value && std::is_arithmetic<Z>::value) { \
+        return BINARY_OP;                                                                         \
+      } else {                                                                                    \
+        return UNARY_OP;                                                                          \
+      }                                                                                           \
+    }                                                                                             \
+    SD_HOST_DEVICE SD_INLINE static Z op_logic(X d1, Y d2, Z *params) {                         \
+      if constexpr (std::is_arithmetic<X>::value && std::is_arithmetic<Y>::value && std::is_arithmetic<Z>::value) { \
+        return BINARY_PARAM_OP;                                                                   \
+      } else {                                                                                    \
+        return UNARY_OP;                                                                          \
+      }                                                                                           \
+    }                                                                                             \
     SD_HOST_DEVICE SD_INLINE static Z op_logic(X d1) { return UNARY_OP; }                       \
-    SD_HOST_DEVICE SD_INLINE static Z op_logic(X d1, Y *params) { return PARAM_OP; }            \
+    SD_HOST_DEVICE SD_INLINE static Z op_logic(X d1, Y *params) {                               \
+      if constexpr (std::is_arithmetic<X>::value && std::is_arithmetic<Y>::value && std::is_arithmetic<Z>::value) { \
+        return PARAM_OP;                                                                          \
+      } else {                                                                                    \
+        return UNARY_OP;                                                                          \
+      }                                                                                           \
+    }                                                                                             \
     SD_HOST_DEVICE SD_INLINE static Z op_simd(X d1, Y d2) { return op_logic(d1, d2); }          \
     SD_HOST_DEVICE SD_INLINE static Z op_simd(X d1, Y d2, Z *params) { return op_logic(d1, d2, params); } \
     SD_HOST_DEVICE SD_INLINE static Z op_simd(X d1) { return op_logic(d1); }                    \
@@ -346,16 +364,12 @@ namespace simdOps {
                                                                                                   \
    public:                                                                                        \
     SD_HOST_DEVICE SD_INLINE static Z op(X d1, Y d2) {                                          \
-      if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||                         \
-                    simdOps::is_simd_unsupported_argument_type<X>::value ||                       \
-                    simdOps::is_simd_unsupported_argument_type<Y>::value)                         \
+if constexpr(any_non_simd<X,Y,Z>)                         \
         return op_logic(d1, d2);                                                                  \
       else return op_simd(d1, d2);                                                               \
     }                                                                                             \
     SD_HOST_DEVICE SD_INLINE static Z op(X d1, Y d2, Z *params) {                               \
-      if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||                         \
-                    simdOps::is_simd_unsupported_argument_type<X>::value ||                       \
-                    simdOps::is_simd_unsupported_argument_type<Y>::value)                         \
+if constexpr(any_non_simd<X,Y,Z>)                         \
         return op_logic(d1, d2, params);                                                          \
       else return op_simd(d1, d2, params);                                                       \
     }                                                                                             \
@@ -366,9 +380,7 @@ namespace simdOps {
       else return op_simd(d1);                                                                   \
     }                                                                                             \
     SD_HOST_DEVICE SD_INLINE static Z op(X d1, Y *params) {                                     \
-      if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||                         \
-                    simdOps::is_simd_unsupported_argument_type<X>::value ||                       \
-                    simdOps::is_simd_unsupported_argument_type<Y>::value)                         \
+if constexpr(any_non_simd<X,Y,Z>)                         \
         return op_logic(d1, params);                                                              \
       else return op_simd(d1, params);                                                           \
     }                                                                                             \
@@ -381,66 +393,78 @@ namespace simdOps {
 /**
  * @brief Declares a binary operation with parameters only
  */
-#define DECLARE_BINARY_PARAM_OP(OP_NAME, OPERATION, BOILERPLATE)                               \
-  template <typename X, typename Y, typename Z>                                                \
-  class OP_NAME {                                                                              \
-   private:                                                                                    \
-    SD_HOST_DEVICE SD_INLINE static Z op_logic(X d1, Y d2, Z* params) { return OPERATION; }  \
-    SD_HOST_DEVICE SD_INLINE static Z op_simd(X d1, Y d2, Z* params) { return op_logic(d1, d2, params); } \
-                                                                                               \
-   public:                                                                                     \
-    BOILERPLATE;                                                                               \
-    SD_HOST_DEVICE SD_INLINE static Z op(X d1, Y d2, Z* params) {                            \
-      if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||                      \
-                    simdOps::is_simd_unsupported_argument_type<X>::value ||                    \
-                    simdOps::is_simd_unsupported_argument_type<Y>::value)                      \
-        return op_logic(d1, d2, params);                                                      \
-      else return op_simd(d1, d2, params);                                                    \
-    }                                                                                          \
-  };
+
+#define DECLARE_BINARY_PARAM_OP(OP_NAME, OPERATION, BOILERPLATE) \
+template <typename X, typename Y, typename Z> \
+class OP_NAME { \
+private: \
+  SD_HOST_DEVICE SD_INLINE static Z op_logic(X d1, Y d2, Z* params) { \
+    if constexpr (any_my_string_v<X, Y, Z>) { \
+      return static_cast<Z>(d1); \
+    } else { \
+      return OPERATION; \
+    } \
+  } \
+  SD_HOST_DEVICE SD_INLINE static Z op_simd(X d1, Y d2, Z* params) { \
+    return op_logic(d1, d2, params); \
+  } \
+\
+public: \
+  BOILERPLATE; \
+  SD_HOST_DEVICE SD_INLINE static Z op(X d1, Y d2, Z* params) { \
+    if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value || \
+                  simdOps::is_simd_unsupported_argument_type<X>::value || \
+                  simdOps::is_simd_unsupported_argument_type<Y>::value) \
+      return op_logic(d1, d2, params); \
+    else \
+      return op_simd(d1, d2, params); \
+  } \
+};
 
 /**
  * @brief Declares a binary math operation with different input/output types
  */
-#define DECLARE_BINARY_MATH_OP_XZ(OP_NAME, MATH_FUNC)                                               \
-  template <typename X, typename Y, typename Z>                                                     \
-  class OP_NAME {                                                                                   \
-   private:                                                                                         \
-    SD_HOST_DEVICE SD_INLINE static Z op_logic(X d1, Y d2) { return sd::math::MATH_FUNC<X COMMA Z>(d1, static_cast<X>(d2)); } \
-    SD_HOST_DEVICE SD_INLINE static Z op_logic(X d1, Y d2, Z* params) { return sd::math::MATH_FUNC<X COMMA Z>(d1, static_cast<X>(d2)); } \
-    SD_HOST_DEVICE SD_INLINE static Z op_logic(X d1) { return static_cast<Z>(d1); }               \
-    SD_HOST_DEVICE SD_INLINE static Z op_logic(X d1, Y* params) { return sd::math::MATH_FUNC<X COMMA Z>(d1, static_cast<X>(params[0])); } \
-    SD_HOST_DEVICE SD_INLINE static Z op_simd(X d1, Y d2) { return op_logic(d1, d2); }            \
-    SD_HOST_DEVICE SD_INLINE static Z op_simd(X d1, Y d2, Z* params) { return op_logic(d1, d2, params); } \
-    SD_HOST_DEVICE SD_INLINE static Z op_simd(X d1) { return op_logic(d1); }                      \
-    SD_HOST_DEVICE SD_INLINE static Z op_simd(X d1, Y* params) { return op_logic(d1, params); }   \
-                                                                                                    \
-   public:                                                                                          \
-    SD_HOST_DEVICE SD_INLINE static Z op(X d1, Y d2) {                                            \
-      if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||                           \
-                    simdOps::is_simd_unsupported_argument_type<X>::value ||                         \
-                    simdOps::is_simd_unsupported_argument_type<Y>::value) return op_logic(d1, d2);  \
-      else return op_simd(d1, d2);                                                                 \
-    }                                                                                               \
-    SD_HOST_DEVICE SD_INLINE static Z op(X d1, Y d2, Z* params) {                                 \
-      if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||                           \
-                    simdOps::is_simd_unsupported_argument_type<X>::value ||                         \
-                    simdOps::is_simd_unsupported_argument_type<Y>::value) return op_logic(d1, d2, params); \
-      else return op_simd(d1, d2, params);                                                         \
-    }                                                                                               \
-    SD_HOST_DEVICE SD_INLINE static Z op(X d1) {                                                  \
-      if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||                           \
-                    simdOps::is_simd_unsupported_argument_type<X>::value) return op_logic(d1);      \
-      else return op_simd(d1);                                                                     \
-    }                                                                                               \
-    SD_HOST_DEVICE SD_INLINE static Z op(X d1, Y* params) {                                       \
-      if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||                           \
-                    simdOps::is_simd_unsupported_argument_type<X>::value ||                         \
-                    simdOps::is_simd_unsupported_argument_type<Y>::value) return op_logic(d1, params); \
-      else return op_simd(d1, params);                                                             \
-    }                                                                                               \
-    SD_HOST_DEVICE SD_INLINE static X startingValue() { return static_cast<X>(1.f); }             \
-  };
+#define DECLARE_BINARY_MATH_OP_XZ(OP_NAME, MATH_FUNC) \
+template <typename X, typename Y, typename Z> \
+class OP_NAME { \
+private: \
+  SD_HOST_DEVICE SD_INLINE static Z op_logic(X d1, Y d2) { return sd::math::MATH_FUNC<X COMMA Z>(d1, static_cast<X>(d2)); } \
+  SD_HOST_DEVICE SD_INLINE static Z op_logic(X d1, Y d2, Z* params) { return sd::math::MATH_FUNC<X COMMA Z>(d1, static_cast<X>(d2)); } \
+  SD_HOST_DEVICE SD_INLINE static Z op_logic(X d1) { return static_cast<Z>(d1); } \
+  SD_HOST_DEVICE SD_INLINE static Z op_logic(X d1, Y* params) { return sd::math::MATH_FUNC<X COMMA Z>(d1, static_cast<X>(params[0])); } \
+  SD_HOST_DEVICE SD_INLINE static Z op_simd(X d1, Y d2) { return op_logic(d1, d2); } \
+  SD_HOST_DEVICE SD_INLINE static Z op_simd(X d1, Y d2, Z* params) { return op_logic(d1, d2, params); } \
+  SD_HOST_DEVICE SD_INLINE static Z op_simd(X d1) { return op_logic(d1); } \
+  SD_HOST_DEVICE SD_INLINE static Z op_simd(X d1, Y* params) { return op_logic(d1, params); } \
+\
+public: \
+  SD_HOST_DEVICE SD_INLINE static Z op(X d1, Y d2) { \
+    if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value || \
+                  simdOps::is_simd_unsupported_argument_type<X>::value || \
+                  simdOps::is_simd_unsupported_argument_type<Y>::value) \
+      return op_logic(d1, d2); \
+    else \
+      return op_simd(d1, d2); \
+  } \
+  SD_HOST_DEVICE SD_INLINE static Z op(X d1, Y d2, Z* params) { \
+    if constexpr (any_my_string_v<X, Y, Z>) \
+      return d1; \
+    return op_simd(d1, d2, params); \
+  } \
+  SD_HOST_DEVICE SD_INLINE static Z op(X d1) { \
+    if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value || \
+                  simdOps::is_simd_unsupported_argument_type<X>::value) \
+      return op_logic(d1); \
+    else \
+      return op_simd(d1); \
+  } \
+  SD_HOST_DEVICE SD_INLINE static Z op(X d1, Y* params) { \
+    if constexpr (any_my_string_v<X, Y, Z>) \
+      return d1; \
+    return op_simd(d1, params); \
+  } \
+  SD_HOST_DEVICE SD_INLINE static X startingValue() { return static_cast<X>(1.f); } \
+};
 
 /**
  * @brief Declares a binary math operation with custom starting value
@@ -460,16 +484,12 @@ namespace simdOps {
                                                                                                   \
    public:                                                                                        \
     SD_HOST_DEVICE SD_INLINE static Z op(X d1, Y d2) {                                          \
-      if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||                         \
-                    simdOps::is_simd_unsupported_argument_type<X>::value ||                       \
-                    simdOps::is_simd_unsupported_argument_type<Y>::value)                         \
+if constexpr(any_non_simd<X,Y,Z>)                         \
         return op_logic(d1, d2);                                                                  \
       else return op_simd(d1, d2);                                                               \
     }                                                                                             \
     SD_HOST_DEVICE SD_INLINE static Z op(X d1, Y d2, Z *params) {                               \
-      if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||                         \
-                    simdOps::is_simd_unsupported_argument_type<X>::value ||                       \
-                    simdOps::is_simd_unsupported_argument_type<Y>::value)                         \
+if constexpr(any_non_simd<X,Y,Z>)                         \
         return op_logic(d1, d2, params);                                                          \
       else return op_simd(d1, d2, params);                                                       \
     }                                                                                             \
@@ -480,9 +500,7 @@ namespace simdOps {
       else return op_simd(d1);                                                                   \
     }                                                                                             \
     SD_HOST_DEVICE SD_INLINE static Z op(X d1, Y *params) {                                     \
-      if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||                         \
-                    simdOps::is_simd_unsupported_argument_type<X>::value ||                       \
-                    simdOps::is_simd_unsupported_argument_type<Y>::value)                         \
+if constexpr(any_non_simd<X,Y,Z>)                         \
         return op_logic(d1, params);                                                              \
       else return op_simd(d1, params);                                                           \
     }                                                                                             \
@@ -514,25 +532,29 @@ namespace simdOps {
 
 
 #define DECLARE_SIMPLE_BINARY_TEMPLATE_OP(OP_NAME, OPERATION)                                  \
-  template <typename X>                                                                        \
-  class OP_NAME {                                                                             \
-   private:                                                                                   \
-    static SD_HOST_DEVICE SD_INLINE X op_logic(X d1, X d2) { return OPERATION; }                            \
-    static SD_HOST_DEVICE SD_INLINE X op_logic(X d1, X d2, X *params) { return op_logic(d1, d2); }          \
-    static SD_HOST_DEVICE SD_INLINE X op_simd(X d1, X d2) { return op_logic(d1, d2); }                                \
-    static SD_HOST_DEVICE SD_INLINE X op_simd(X d1, X d2, X *params) { return op_logic(d1, d2, params); }             \
-                                                                                              \
-   public:                                                                                    \
-    static SD_HOST_DEVICE SD_INLINE  X op(X d1, X d2) {                                                                 \
-      if constexpr (simdOps::is_simd_unsupported_return_type<X>::value)                       \
-        return op_logic(d1, d2);                                                             \
-      else return op_simd(d1, d2);                                                           \
-    }                                                                                         \
-    static SD_HOST_DEVICE SD_INLINE X op(X d1, X d2, X *params) {                                                      \
-      if constexpr (simdOps::is_simd_unsupported_return_type<X>::value)                       \
-        return op_logic(d1, d2, params);                                                     \
-      else return op_simd(d1, d2, params);                                                   \
-    }                                                                                         \
+  template <typename X>                                                                         \
+  class OP_NAME {                                                                              \
+   private:                                                                                    \
+    static SD_HOST_DEVICE SD_INLINE X op_logic(X d1, X d2) { return OPERATION; }              \
+    static SD_HOST_DEVICE SD_INLINE X op_logic(X d1, X d2, X *params) { return op_logic(d1, d2); } \
+    static SD_HOST_DEVICE SD_INLINE X op_simd(X d1, X d2) { return op_logic(d1, d2); }        \
+    static SD_HOST_DEVICE SD_INLINE X op_simd(X d1, X d2, X *params) { return op_logic(d1, d2, params); } \
+                                                                                               \
+   public:                                                                                     \
+    static SD_HOST_DEVICE SD_INLINE X op(X d1, X d2) {                                        \
+      if constexpr (simdOps::is_simd_unsupported_return_type<X>::value) {                     \
+        return op_logic(d1, d2);                                                               \
+      } else {                                                                                 \
+        return op_simd(d1, d2);                                                                \
+      }                                                                                        \
+    }                                                                                          \
+    static SD_HOST_DEVICE SD_INLINE X op(X d1, X d2, X *params) {                             \
+      if constexpr (simdOps::is_simd_unsupported_return_type<X>::value) {                     \
+        return op_logic(d1, d2, params);                                                      \
+      } else {                                                                                 \
+        return op_simd(d1, d2, params);                                                       \
+      }                                                                                        \
+    }                                                                                          \
   };
 
 }

@@ -44,8 +44,9 @@ static void __where(NDArray &condition, NDArray &output, memory::Workspace *work
     if (condition.e<bool>(offset)) {
       std::vector<sd::LongType> arrShape = {1, condition.rankOf()};
       auto array = NDArrayFactory::create_('c', arrShape, output.dataType(), output.getContext());
-      for (int f = 0; f < condition.rankOf(); f++) array->p(f, (T)coords[f]);
-
+      for (sd::LongType f = 0; f < condition.rankOf(); f++)  {
+        array->p(f, (T)coords[f]);
+      }
       list.write(cnt++, array);
     }
   }

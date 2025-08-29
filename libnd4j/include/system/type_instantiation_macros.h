@@ -100,36 +100,6 @@
 #define EXPAND_AND_CHECK_TRIPLE(a1, b1, c1) SD_IS_TRIPLE_TYPE_COMPILED(GET_FIRST(a1),GET_FIRST(b1),GET_FIRST(c1))
 #define EXPAND_AND_CHECK_PAIR(a1, b1) SD_IS_PAIR_TYPE_COMPILED(GET_FIRST(a1), GET_FIRST(b1))
 
-// ============================================================================
-// TEMPLATE INSTANTIATION MACROS
-// ============================================================================
-// Function template instantiation for 2 types
-#define INSTANT_PROCESS_COMBINATION(a1, b1, FUNC_NAME, ARGS) \
-    UNPAREN(CONDITIONAL_INSTANTIATE( \
-        EXPAND_AND_CHECK_PAIR(a1, b1), \
-        (template void FUNC_NAME<GET_SECOND(a1), GET_SECOND(b1)>ARGS); \
-    ))
-
-// Function template instantiation for 3 types
-#define INSTANT_PROCESS_COMBINATION_3(a1, b1, c1, FUNC_NAME, ARGS) \
-    UNPAREN(CONDITIONAL_INSTANTIATE( \
-        EXPAND_AND_CHECK_TRIPLE(a1, b1, c1), \
-        (template void FUNC_NAME<GET_SECOND(a1), GET_SECOND(b1),GET_SECOND(c1)> ARGS); \
-    ))
-
-// Class template instantiation for 2 types
-#define INSTANT_PROCESS_CLASSCOMBINATION(a1, b1, CLASS_NAME, ARGS) \
-    UNPAREN(CONDITIONAL_INSTANTIATE( \
-        EXPAND_AND_CHECK_PAIR(a1, b1), \
-        (template class CLASS_NAME<GET_SECOND(a1),GET_SECOND(b1)>); \
-    ))
-
-// Class template instantiation for 3 types
-#define INSTANT_PROCESS_COMBINATION_CLASS_3(a1, b1, c1, CLASS_NAME, ARGS) \
-    UNPAREN(CONDITIONAL_INSTANTIATE( \
-        EXPAND_AND_CHECK_TRIPLE(a1, b1, c1), \
-        template class CLASS_NAME<GET_SECOND(a1) COMMA GET_SECOND(b1) COMMA GET_SECOND(c1)>; \
-    ))
 
 
 

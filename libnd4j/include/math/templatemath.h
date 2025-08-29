@@ -73,7 +73,11 @@ The BODY parameter is evaluated to compute the result, which is then cast to typ
 // Macro to define functions with advanced type promotion and debugging
 // Updated SD_PROMOTE_FUNC macro
 #define SD_PROMOTE_FUNC(FUNC_NAME, BODY)                                \
-template<typename T, typename U = T, typename Z = T>                    \
+template<typename T, typename U = T, typename Z = T,                    \
+         typename std::enable_if<                                       \
+             std::is_arithmetic<T>::value &&                            \
+             std::is_arithmetic<U>::value &&                            \
+             std::is_arithmetic<Z>::value, int>::type = 0>              \
 SD_HOST_DEVICE SD_INLINE Z FUNC_NAME(T val1, U val2) {                  \
    using calc_type = typename promote_type3<T, U, Z>::type;            \
    calc_type promoted_val1 = static_cast<calc_type>(val1);             \
@@ -84,7 +88,12 @@ SD_HOST_DEVICE SD_INLINE Z FUNC_NAME(T val1, U val2) {                  \
 }
 
 #define SD_PROMOTE_FUNC3(FUNC_NAME, BODY)                                \
-template<typename T, typename U = T, typename V = T, typename Z = T>     \
+template<typename T, typename U = T, typename V = T, typename Z = T,     \
+         typename std::enable_if<                                        \
+             std::is_arithmetic<T>::value &&                             \
+             std::is_arithmetic<U>::value &&                             \
+             std::is_arithmetic<V>::value &&                             \
+             std::is_arithmetic<Z>::value, int>::type = 0>               \
 SD_HOST_DEVICE SD_INLINE Z FUNC_NAME(T val1, U val2, V eps) {            \
    using calc_type = typename promote_type3<T, U, Z>::type;             \
    calc_type promoted_val1 = static_cast<calc_type>(val1);              \
@@ -224,7 +233,7 @@ template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_elu(T val, T alpha) {
  Z result;
  if (val >= (T)0.f)
-   result = val;
+   result = static_cast<Z>(val);
  else
    result = static_cast<Z>(alpha) * (sd_exp<T, Z>(val) - static_cast<Z>(1.0f));
  SD_PRINT_MATH_FUNC2("sd_elu", val, alpha, result,Z);
@@ -235,9 +244,9 @@ template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_leakyrelu(T val, T alpha) {
  Z result;
  if (val < (T)0.0f)
-   result = alpha * val;
+   result = static_cast<Z>(alpha * val);
  else
-   result = val;
+   result = static_cast<Z>(val);
  SD_PRINT_MATH_FUNC2("sd_leakyrelu", val, alpha, result,Z);
  return result;
 }
@@ -291,7 +300,7 @@ SD_HOST_DEVICE SD_INLINE Z sd_log2(X val) {
 
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_softsign(T val) {
- Z result = val / ((T)1.0f + sd::math::sd_abs<T, T>(val));
+ Z result = static_cast<Z>(val) / (static_cast<Z>(1.0f) + sd::math::sd_abs<T, Z>(val));
  SD_PRINT_MATH_FUNC("sd_softsign", val, result,Z);
  return result;
 }
@@ -333,22 +342,22 @@ SD_HOST_DEVICE SD_INLINE Z sd_tanhderivative(T val) {
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE T sd_sigmoidderivative(T val) {
  Z sigmoid = sd_sigmoid<T, Z>(val);
- T result = sigmoid * ((Z)1.0f - sigmoid);
+ T result = static_cast<T>(sigmoid * (static_cast<Z>(1.0f) - sigmoid));
  SD_PRINT_MATH_FUNC("sd_sigmoidderivative", val, result,Z);
  return result;
 }
 
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE T sd_softsignderivative(T val) {
- T y = (T)1.0f + sd_abs<T, T>(val);
- T result = (Z)1.0f / (y * y);
+ T y = static_cast<T>(1.0f) + sd_abs<T, T>(val);
+ T result = static_cast<T>(static_cast<Z>(1.0f) / (y * y));
  SD_PRINT_MATH_FUNC("sd_softsignderivative", val, result,Z);
  return result;
 }
 
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE T sd_sgn(T val) {
- Z result = val < (T)0.0f ? (Z)-1.0f : val > (T)0.0f ? (Z)1.0f : (Z)0.0f;
+ T result = val < static_cast<T>(0.0f) ? static_cast<T>(-1.0f) : val > static_cast<T>(0.0f) ? static_cast<T>(1.0f) : static_cast<T>(0.0f);
  SD_PRINT_MATH_FUNC("sd_sgn", val, result,Z);
  return result;
 }
@@ -411,6 +420,11 @@ SD_HOST_DEVICE SD_INLINE Z sd_atan(T val);
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_atanh(T val);
 
+// ============================================================================
+// CONDITIONAL SPECIALIZATIONS BASED ON HAS_* MACROS
+// ============================================================================
+
+#ifdef HAS_FLOAT16
 template <>
 SD_HOST_DEVICE SD_INLINE float16 sd_abs<float16, float16>(float16 value) {
 #ifdef SD_NATIVE_HALFS
@@ -426,35 +440,45 @@ SD_HOST_DEVICE SD_INLINE float16 sd_abs<float16, float16>(float16 value) {
  SD_PRINT_MATH_FUNC("sd_abs<float16>", value, result,float16);
  return result;
 }
+#endif // HAS_FLOAT16
 
+#ifdef HAS_BFLOAT16
 template <>
 SD_HOST_DEVICE SD_INLINE bfloat16 sd_abs<bfloat16, bfloat16>(bfloat16 value) {
  bfloat16 result = (bfloat16)fabsf((float)value);
  SD_PRINT_MATH_FUNC("sd_abs<bfloat16>", value, result,bfloat16);
  return result;
 }
+#endif // HAS_BFLOAT16
 
+#ifdef HAS_FLOAT32
 template <>
 SD_HOST_DEVICE SD_INLINE float sd_abs<float, float>(float value) {
  float result = fabsf(value);
  SD_PRINT_MATH_FUNC("sd_abs<float>", value, result,float);
  return result;
 }
+#endif // HAS_FLOAT32
 
+#ifdef HAS_DOUBLE
 template <>
 SD_HOST_DEVICE SD_INLINE double sd_abs<double, double>(double value) {
  double result = fabs(value);
  SD_PRINT_MATH_FUNC("sd_abs<double>", value, result,double);
  return result;
 }
+#endif // HAS_DOUBLE
 
+#ifdef HAS_INT32
 template <>
 SD_HOST_DEVICE SD_INLINE int sd_abs<int, int>(int value) {
  int result = abs(value);
  SD_PRINT_MATH_FUNC("sd_abs<int>", value, result,int);
  return result;
 }
+#endif // HAS_INT32
 
+#ifdef HAS_LONG
 template <>
 SD_HOST_DEVICE SD_INLINE sd::LongType sd_abs<sd::LongType, sd::LongType>(sd::LongType value) {
  sd::LongType result = llabs(value);
@@ -462,19 +486,31 @@ SD_HOST_DEVICE SD_INLINE sd::LongType sd_abs<sd::LongType, sd::LongType>(sd::Lon
  return result;
 }
 
+template <>
+SD_HOST_DEVICE SD_INLINE long sd_abs<long, long>(long value) {
+ long result = labs(value);
+ SD_PRINT_MATH_FUNC("sd_abs<long>", value, result,long);
+ return result;
+}
+#endif // HAS_LONG
 
+#ifdef HAS_BOOL
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_abs<bool>(bool value) {
  SD_PRINT_MATH_FUNC("sd_abs<bool>", value, value,bool);
  return value;
 }
+#endif // HAS_BOOL
 
+#ifdef HAS_UINT8
 template <>
 SD_HOST_DEVICE SD_INLINE uint8_t sd_abs<uint8_t>(uint8_t value) {
  SD_PRINT_MATH_FUNC("sd_abs<uint8_t>", value, value,uint8_t);
  return value;
 }
+#endif // HAS_UINT8
 
+#ifdef HAS_UINT16
 template <>
 SD_HOST_DEVICE SD_INLINE uint16_t sd_abs<uint16_t>(uint16_t value) {
  SD_PRINT_MATH_FUNC("sd_abs<uint16_t>", value, value,uint16_t);
@@ -482,17 +518,35 @@ SD_HOST_DEVICE SD_INLINE uint16_t sd_abs<uint16_t>(uint16_t value) {
 }
 
 template <>
+SD_HOST_DEVICE SD_INLINE unsigned short sd_abs<unsigned short, unsigned short>(unsigned short value) {
+ SD_PRINT_MATH_FUNC("sd_abs<unsigned short>", value, value,unsigned short);
+ return value;
+}
+#endif // HAS_UINT16
+
+#ifdef HAS_UINT32
+template <>
 SD_HOST_DEVICE SD_INLINE uint32_t sd_abs<uint32_t>(uint32_t value) {
  SD_PRINT_MATH_FUNC("sd_abs<uint32_t>", value, value,uint32_t);
  return value;
 }
 
 template <>
+SD_HOST_DEVICE SD_INLINE unsigned int sd_abs<unsigned int, unsigned int>(unsigned int value) {
+ SD_PRINT_MATH_FUNC("sd_abs<unsigned int>", value, value,unsigned int);
+ return value;
+}
+#endif // HAS_UINT32
+
+#ifdef HAS_UINT64
+template <>
 SD_HOST_DEVICE SD_INLINE sd::UnsignedLong sd_abs<sd::UnsignedLong>(sd::UnsignedLong value) {
  SD_PRINT_MATH_FUNC("sd_abs<sd::UnsignedLong>", value, value,sd::UnsignedLong);
  return value;
 }
+#endif
 
+#ifdef HAS_INT8
 template <>
 SD_HOST_DEVICE SD_INLINE int8_t sd_abs<int8_t>(int8_t value) {
  int8_t result = value < 0 ? -value : value;
@@ -501,6 +555,15 @@ SD_HOST_DEVICE SD_INLINE int8_t sd_abs<int8_t>(int8_t value) {
 }
 
 template <>
+SD_HOST_DEVICE SD_INLINE char sd_abs<char>(char value) {
+    char result = (value < 0) ? static_cast<char>(-value) : value;
+    SD_PRINT_MATH_FUNC("sd_abs<char>", value, result, char);
+    return result;
+}
+#endif // HAS_INT8
+
+#ifdef HAS_INT16
+template <>
 SD_HOST_DEVICE SD_INLINE int16_t sd_abs<int16_t>(int16_t value) {
  int16_t result = value < 0 ? -value : value;
  SD_PRINT_MATH_FUNC("sd_abs<int16_t>", value, result,int16_t);
@@ -508,40 +571,60 @@ SD_HOST_DEVICE SD_INLINE int16_t sd_abs<int16_t>(int16_t value) {
 }
 
 template <>
+SD_HOST_DEVICE SD_INLINE short sd_abs<short, short>(short value) {
+ short result = value < 0 ? -value : value;
+ SD_PRINT_MATH_FUNC("sd_abs<short>", value, result,short);
+ return result;
+}
+#endif // HAS_INT16
+
+
+#ifdef HAS_FLOAT16
+template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<float16>(float16 value) {
   bool result = *(value.data.getXP()) == 0x7fffU;
   SD_PRINT_MATH_FUNC("sd_isnan<float16>", value, result,bool);
   return result;
 }
+#endif // HAS_FLOAT16
 
+#ifdef HAS_BFLOAT16
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<bfloat16>(bfloat16 value) {
   bool result = value == bfloat16::nan();  // 0x7fffU;
   SD_PRINT_MATH_FUNC("sd_isnan<bfloat16>", value, result,bool);
   return result;
 }
+#endif // HAS_BFLOAT16
 
+#ifdef HAS_FLOAT32
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<float>(float value) {
   bool result = value != value;
   SD_PRINT_MATH_FUNC("sd_isnan<float>", value, result,bool);
   return result;
 }
+#endif // HAS_FLOAT32
 
+#ifdef HAS_DOUBLE
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<double>(double value) {
   bool result = value != value;
   SD_PRINT_MATH_FUNC("sd_isnan<double>", value, result,double);
   return result;
 }
+#endif // HAS_DOUBLE
 
+#ifdef HAS_INT32
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<int>(int value) {
   bool result = false;
   SD_PRINT_MATH_FUNC("sd_isnan<int>", value, result,int);
   return result;
 }
+#endif // HAS_INT32
 
+#ifdef HAS_UINT32
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<uint32_t>(uint32_t value) {
   bool result = false;
@@ -550,6 +633,15 @@ SD_HOST_DEVICE SD_INLINE bool sd_isnan<uint32_t>(uint32_t value) {
 }
 
 template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<unsigned int>(unsigned int value) {
+  bool result = false;
+  SD_PRINT_MATH_FUNC("sd_isnan<unsigned int>", value, result,unsigned int);
+  return result;
+}
+#endif // HAS_UINT32
+
+#ifdef HAS_UINT16
+template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<uint16_t>(uint16_t value) {
   bool result = false;
   SD_PRINT_MATH_FUNC("sd_isnan<uint16_t>", value, result,uint16_t);
@@ -557,12 +649,23 @@ SD_HOST_DEVICE SD_INLINE bool sd_isnan<uint16_t>(uint16_t value) {
 }
 
 template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<unsigned short>(unsigned short value) {
+  bool result = false;
+  SD_PRINT_MATH_FUNC("sd_isnan<unsigned short>", value, result,unsigned short);
+  return result;
+}
+#endif // HAS_UINT16
+
+#ifdef HAS_UINT8
+template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<uint8_t>(uint8_t value) {
   bool result = false;
   SD_PRINT_MATH_FUNC("sd_isnan<uint8_t>", value, result,uint8_t);
   return result;
 }
+#endif // HAS_UINT8
 
+#ifdef HAS_INT16
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<int16_t>(int16_t value) {
   bool result = false;
@@ -571,6 +674,15 @@ SD_HOST_DEVICE SD_INLINE bool sd_isnan<int16_t>(int16_t value) {
 }
 
 template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<short>(short value) {
+  bool result = false;
+  SD_PRINT_MATH_FUNC("sd_isnan<short>", value, result,short);
+  return result;
+}
+#endif // HAS_INT16
+
+#ifdef HAS_INT8
+template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<int8_t>(int8_t value) {
   bool result = false;
   SD_PRINT_MATH_FUNC("sd_isnan<int8_t>", value, result,int8_t);
@@ -578,12 +690,24 @@ SD_HOST_DEVICE SD_INLINE bool sd_isnan<int8_t>(int8_t value) {
 }
 
 template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<char>(char value) {
+    bool result = false;
+    SD_PRINT_MATH_FUNC("sd_isnan<char>", value, result, char);
+    return result;
+}
+
+#endif // HAS_INT8
+
+#ifdef HAS_BOOL
+template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<bool>(bool value) {
   bool result = false;
   SD_PRINT_MATH_FUNC("sd_isnan<bool>", value, result,bool);
   return result;
 }
+#endif // HAS_BOOL
 
+#ifdef HAS_LONG
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<sd::LongType>(sd::LongType value) {
   bool result = false;
@@ -592,26 +716,45 @@ SD_HOST_DEVICE SD_INLINE bool sd_isnan<sd::LongType>(sd::LongType value) {
 }
 
 template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<long>(long value) {
+  bool result = false;
+  SD_PRINT_MATH_FUNC("sd_isnan<long>", value, result,long);
+  return result;
+}
+#endif // HAS_LONG
+
+#ifdef HAS_UINT64
+template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<sd::UnsignedLong>(sd::UnsignedLong value) {
   bool result = false;
   SD_PRINT_MATH_FUNC("sd_isnan<sd::UnsignedLong>", value, result,sd::UnsignedLong);
   return result;
 }
 
+
+#endif // HAS_UNSIGNEDLONG
+
+// sd_isinf specializations with HAS_* guards
+
+#ifdef HAS_FLOAT16
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<float16>(float16 value) {
   bool result = value < (float16)-HALF_MAX_VALUE || value > (float16)HALF_MAX_VALUE;
   SD_PRINT_MATH_FUNC("sd_isinf<float16>", value, result, bool);
   return result;
 }
+#endif // HAS_FLOAT16
 
+#ifdef HAS_BFLOAT16
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<bfloat16>(bfloat16 value) {
   bool result = value < (bfloat16)-BFLOAT16_MAX_VALUE || value > (bfloat16)BFLOAT16_MAX_VALUE;
   SD_PRINT_MATH_FUNC("sd_isinf<bfloat16>", value, result, bool);
   return result;
 }
+#endif // HAS_BFLOAT16
 
+#ifdef HAS_FLOAT32
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<float>(float value) {
 #ifdef __CUDACC__
@@ -622,7 +765,9 @@ SD_HOST_DEVICE SD_INLINE bool sd_isinf<float>(float value) {
   SD_PRINT_MATH_FUNC("sd_isinf<float>", value, result,float);
   return result;
 }
+#endif // HAS_FLOAT32
 
+#ifdef HAS_DOUBLE
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<double>(double value) {
 #ifdef __CUDACC__
@@ -633,14 +778,18 @@ SD_HOST_DEVICE SD_INLINE bool sd_isinf<double>(double value) {
   SD_PRINT_MATH_FUNC("sd_isinf<double>", value, result,double);
   return result;
 }
+#endif // HAS_DOUBLE
 
+#ifdef HAS_INT32
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<int>(int value) {
   bool result = false;
   SD_PRINT_MATH_FUNC("sd_isinf<int>", value, result,int);
   return result;
 }
+#endif // HAS_INT32
 
+#ifdef HAS_UINT32
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<uint32_t>(uint32_t value) {
   bool result = false;
@@ -649,12 +798,30 @@ SD_HOST_DEVICE SD_INLINE bool sd_isinf<uint32_t>(uint32_t value) {
 }
 
 template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<unsigned int>(unsigned int value) {
+  bool result = false;
+  SD_PRINT_MATH_FUNC("sd_isinf<unsigned int>", value, result,unsigned int);
+  return result;
+}
+#endif // HAS_UINT32
+
+#ifdef HAS_UINT16
+template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<uint16_t>(uint16_t value) {
   bool result = false;
   SD_PRINT_MATH_FUNC("sd_isinf<uint16_t>", value, result,uint16_t);
   return result;
 }
 
+template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<unsigned short>(unsigned short value) {
+  bool result = false;
+  SD_PRINT_MATH_FUNC("sd_isinf<unsigned short>", value, result,unsigned short);
+  return result;
+}
+#endif // HAS_UINT16
+
+#ifdef HAS_UINT8
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<uint8_t>(uint8_t value) {
   bool result = false;
@@ -663,12 +830,30 @@ SD_HOST_DEVICE SD_INLINE bool sd_isinf<uint8_t>(uint8_t value) {
 }
 
 template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<unsigned short>(unsigned short value) {
+  bool result = false;
+  SD_PRINT_MATH_FUNC("sd_isinf<unsigned short>", value, result,unsigned short);
+  return result;
+}
+#endif // HAS_UINT8
+
+#ifdef HAS_INT16
+template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<int16_t>(int16_t value) {
   bool result = false;
   SD_PRINT_MATH_FUNC("sd_isinf<int16_t>", value, result,int16_t);
   return result;
 }
 
+template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<short>(short value) {
+  bool result = false;
+  SD_PRINT_MATH_FUNC("sd_isinf<short>", value, result,short);
+  return result;
+}
+#endif // HAS_INT16
+
+#ifdef HAS_INT8
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<int8_t>(int8_t value) {
   bool result = false;
@@ -677,12 +862,23 @@ SD_HOST_DEVICE SD_INLINE bool sd_isinf<int8_t>(int8_t value) {
 }
 
 template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<char>(char value) {
+    bool result = false;
+    SD_PRINT_MATH_FUNC("sd_isinf<char>", value, result, char);
+    return result;
+}
+#endif // HAS_INT8
+
+#ifdef HAS_BOOL
+template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<bool>(bool value) {
   bool result = false;
   SD_PRINT_MATH_FUNC("sd_isinf<bool>", value, result,bool);
   return result;
 }
+#endif // HAS_BOOL
 
+#ifdef HAS_LONG
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<sd::LongType>(sd::LongType value) {
   bool result = false;
@@ -691,12 +887,24 @@ SD_HOST_DEVICE SD_INLINE bool sd_isinf<sd::LongType>(sd::LongType value) {
 }
 
 template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<long>(long value) {
+  bool result = false;
+  SD_PRINT_MATH_FUNC("sd_isinf<long>", value, result,long);
+  return result;
+}
+
+
+#endif // HAS_LONG
+
+#ifdef HAS_UINT64
+template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<sd::UnsignedLong>(sd::UnsignedLong value) {
   bool result = false;
   SD_PRINT_MATH_FUNC("sd_isinf<sd::UnsignedLong>", value, result,sd::UnsignedLong);
   return result;
 }
 
+#endif // HAS_UINT64
 
 template <typename T>
 SD_HOST_DEVICE SD_INLINE bool sd_isfin(T value) {
@@ -705,41 +913,52 @@ SD_HOST_DEVICE SD_INLINE bool sd_isfin(T value) {
   return result;
 }
 
+// sd_copysign specializations with HAS_* guards
+
+#ifdef HAS_FLOAT16
 template <>
 SD_HOST_DEVICE SD_INLINE float16 sd_copysign<float16>(float16 val1, float16 val2) {
   float16 result = (float16)copysignf((float)val1, (float)val2);
   SD_PRINT_MATH_FUNC2("sd_copysign<float16>", val1, val2, result,float16);
   return result;
 }
+#endif // HAS_FLOAT16
 
+#ifdef HAS_FLOAT32
 template <>
 SD_HOST_DEVICE SD_INLINE float sd_copysign<float>(float val1, float val2) {
   float result = copysignf(val1, val2);
   SD_PRINT_MATH_FUNC2("sd_copysign<float>", val1, val2, result,float);
   return result;
 }
+#endif // HAS_FLOAT32
 
+#ifdef HAS_DOUBLE
 template <>
 SD_HOST_DEVICE SD_INLINE double sd_copysign<double>(double val1, double val2) {
   double result = copysign(val1, val2);
   SD_PRINT_MATH_FUNC2("sd_copysign<double>", val1, val2, result,double);
   return result;
 }
+#endif // HAS_DOUBLE
 
+#ifdef HAS_INT32
 template <>
 SD_HOST_DEVICE SD_INLINE int sd_copysign<int>(int val1, int val2) {
   int result = (val2 < 0) ? -(sd_abs<int,int>(val1)) : sd_abs<int,int>(val1);
   SD_PRINT_MATH_FUNC2("sd_copysign<int>", val1, val2, result,int);
   return result;
 }
+#endif // HAS_INT32
 
+#ifdef HAS_LONG
 template <>
 SD_HOST_DEVICE SD_INLINE sd::LongType sd_copysign<sd::LongType>(sd::LongType val1, sd::LongType val2) {
   sd::LongType result = (val2 < 0) ? -(sd_abs<sd::LongType,sd::LongType>(val1)) : sd_abs<sd::LongType,sd::LongType>(val1);
   SD_PRINT_MATH_FUNC2("sd_copysign<sd::LongType>", val1, val2, result,sd::LongType);
   return result;
 }
-
+#endif // HAS_LONG
 
 template <typename X, typename Y, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_igamma(X a, Y x) {
@@ -764,15 +983,12 @@ SD_HOST_DEVICE SD_INLINE Z sd_igamma(X a, Y x) {
   return result;
 }
 
-
-
 template <typename X, typename Y, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_igammac(X a, Y x) {
   Z result = Z(1.) - sd_igamma<X, Y, Z>(a, x);
   SD_PRINT_MATH_FUNC2("sd_igammac", a, x, result,Z);
   return result;
 }
-
 
 /**
 * This func is special case - it must return floating point value, and optionally Y arg can be floating point argument
@@ -783,21 +999,24 @@ SD_HOST_DEVICE SD_INLINE Z sd_igammac(X a, Y x) {
 * @param val2
 * @return
  */
+
+#ifdef HAS_FLOAT32
 template <>
 SD_HOST_DEVICE SD_INLINE float sd_pow(float val, float val2) {
   float result = p_pow<float>(val, val2);
   SD_PRINT_MATH_FUNC2("sd_pow float", val, val2, result,float);
   return result;
 }
+#endif // HAS_FLOAT32
 
+#ifdef HAS_BFLOAT16
 template <>
 SD_HOST_DEVICE SD_INLINE bfloat16 sd_pow<bfloat16, bfloat16, bfloat16>(bfloat16 val, bfloat16 val2) {
   bfloat16 result = (bfloat16)p_pow<float>((float)val, (float)val2);
   SD_PRINT_MATH_FUNC2("sd_pow<bfloat16>", val, val2, result, bfloat16);
   return result;
 }
-
-
+#endif // HAS_BFLOAT16
 
 template <typename X, typename Y, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_pow(X val, Y val2) {
@@ -812,8 +1031,6 @@ SD_HOST_DEVICE SD_INLINE Z sd_floordiv(X val, Y val2) {
   SD_PRINT_MATH_FUNC2("sd_floordiv", val, val2, result,Z);
   return result;
 }
-
-
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_ceil(X val) {
@@ -879,20 +1096,24 @@ template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_exp(X val) {
   return static_cast<Z>(p_exp<X>(val));
 }
+
+#ifdef HAS_BFLOAT16
 template <>
 SD_HOST_DEVICE SD_INLINE bfloat16 sd_exp<bfloat16, bfloat16>(bfloat16 val) {
   bfloat16 result = (bfloat16)p_exp<float>((float)val);
   SD_PRINT_MATH_FUNC("sd_exp<bfloat16>", val, result, bfloat16);
   return result;
 }
+#endif // HAS_BFLOAT16
 
+#ifdef HAS_FLOAT16
 template <>
 SD_HOST_DEVICE SD_INLINE float16 sd_exp<float16, float16>(float16 val) {
   float16 result = (float16)p_exp<float>((float)val);
   SD_PRINT_MATH_FUNC("sd_exp<bfloat16>", val, result, float16);
   return result;
 }
-
+#endif // HAS_FLOAT16
 
 // Implement sd_lgamma with print statements
 template <typename X, typename Z>
@@ -945,8 +1166,6 @@ SD_HOST_DEVICE SD_INLINE Z sd_fmod(X val, Y val2) {
   return result;
 }
 
-
-
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_sin(X val) {
   Z result = p_sin<Z>(static_cast<Z>(val));
@@ -994,6 +1213,7 @@ SD_HOST_DEVICE SD_INLINE float neu_tanh(float val, float sign) {
   return result;
 }
 
+#ifdef HAS_FLOAT32
 template <>
 SD_HOST_DEVICE SD_INLINE float sd_tanh(float val) {
   float sign = copysignfk(1.0f, val);
@@ -1001,6 +1221,7 @@ SD_HOST_DEVICE SD_INLINE float sd_tanh(float val) {
   SD_PRINT_MATH_FUNC("sd_tanh<float>", val, result,float);
   return result;
 }
+#endif // HAS_FLOAT32
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_tanh(X val) {
@@ -1037,16 +1258,12 @@ SD_HOST_DEVICE SD_INLINE Z sd_erfc(X val) {
   return result;
 }
 
-
-
-
 template <typename T>
 SD_HOST_DEVICE SD_INLINE  void  sd_swap(T& val1, T& val2) {
   T temp = val1;
   val1 = val2;
   val2 = temp;
 };
-
 
 // Implement sd_gamma with print statements
 template <typename X, typename Z>
@@ -1104,13 +1321,12 @@ SD_HOST_DEVICE SD_INLINE Z sd_gamma(X a) {
   return result;
 }
 
-
+// CUDA-specific atomics section (continued in next part due to length)
 #if defined(__CUDACC__)
 namespace atomics {
 
 SD_DEVICE SD_INLINE int atomicCAS(int* address, int compare, int val);
 SD_DEVICE SD_INLINE unsigned int atomicCAS(unsigned int* address, unsigned int compare, unsigned int val);
-
 
 // Type conversion functions
 SD_DEVICE SD_INLINE int __float_as_int(float val) {
@@ -1128,9 +1344,6 @@ SD_DEVICE SD_INLINE long long int __double_as_longlong(double val) {
 SD_DEVICE SD_INLINE double __longlong_as_double(long long int val) {
   return *reinterpret_cast<double*>(&val);
 }
-
-
-
 
 SD_DEVICE SD_INLINE unsigned short atomicCAS(unsigned short* address, unsigned short compare, unsigned short val) {
   unsigned int* base_address = (unsigned int*)((size_t)address & ~2);
@@ -1153,8 +1366,6 @@ SD_DEVICE SD_INLINE unsigned short atomicCAS(unsigned short* address, unsigned s
 
   return (unsigned short)((old & mask) >> shift);
 }
-
-
 
 template <typename T>
 SD_DEVICE SD_INLINE T __sync_val_compare_and_swap_custom(T* address, T compare, T val) {
@@ -1217,8 +1428,6 @@ SD_DEVICE SD_INLINE unsigned long   atomicCAS(unsigned long * address,
   return __sync_val_compare_and_swap_custom(address, compare, val);
 }
 
-
-
 template <typename T>
 SD_INLINE SD_DEVICE T sd_atomicAdd(T* address, T val);
 
@@ -1237,17 +1446,19 @@ SD_INLINE SD_DEVICE T sd_atomicMax(T* address, T val);
 template <typename T>
 SD_INLINE SD_DEVICE T sd_atomicCAS(T* address, T compare, T val);
 
+#ifdef HAS_INT32
 template <>
 SD_INLINE SD_DEVICE int32_t sd_atomicCAS<int32_t>(int32_t* address,int32_t compare, int32_t val) {
   return atomicCAS((int *) address, (int )compare,(int) val);
 }
+#endif // HAS_INT32
 
+#ifdef HAS_UINT32
 template <>
 SD_INLINE SD_DEVICE uint32_t sd_atomicCAS<uint32_t>(uint32_t* address, uint32_t compare,uint32_t val) {
   return atomicCAS((int *)address, (int) compare,(int) val);
 }
-
-
+#endif // HAS_UINT32
 
 SD_DEVICE SD_INLINE int atomicMin(int* address, int val) {
   int old = *address, assumed;
@@ -1276,18 +1487,19 @@ SD_DEVICE SD_INLINE unsigned long long int atomicMin(unsigned long long int* add
   return old;
 }
 
-
+#ifdef HAS_INT32
 template <>
 inline SD_DEVICE int32_t sd_atomicMin<int32_t>(int32_t* address, int32_t val) {
   return atomicMin(address, val);
 }
+#endif // HAS_INT32
 
+#ifdef HAS_UINT32
 template <>
 inline SD_DEVICE uint32_t sd_atomicMin<uint32_t>(uint32_t* address, uint32_t val) {
   return atomicMin(address, val);
 }
-
-
+#endif // HAS_UINT32
 
 // Generic wrapper for atomicCAS
 template <typename T>
@@ -1296,6 +1508,7 @@ inline SD_DEVICE T sd_atomicCAS(T* address, T compare, T val) {
   return atomicCAS(address, compare, val);
 }
 
+#ifdef HAS_UINT8
 template <>
 inline SD_DEVICE uint8_t sd_atomicCAS<uint8_t>(uint8_t* address, uint8_t compare, uint8_t val) {
   unsigned int* address_as_uint = reinterpret_cast<unsigned int*>(reinterpret_cast<char*>(address) - (reinterpret_cast<size_t>(address) & 3));
@@ -1315,11 +1528,10 @@ inline SD_DEVICE uint8_t sd_atomicCAS<uint8_t>(uint8_t* address, uint8_t compare
 
   return (old >> shift) & 0xFF;
 }
-
-
-
+#endif // HAS_UINT8
 
 // Specialization for float
+#ifdef HAS_FLOAT32
 template <>
 inline SD_DEVICE float sd_atomicCAS<float>(float* address, float compare, float val) {
   int* address_as_int = reinterpret_cast<int*>(address);
@@ -1334,13 +1546,17 @@ inline SD_DEVICE float sd_atomicCAS<float>(float* address, float compare, float 
 
   return __int_as_float(old);
 }
+#endif // HAS_FLOAT32
 
+#ifdef HAS_UINT64
 template <>
 inline SD_DEVICE uint64_t sd_atomicCAS<uint64_t>(uint64_t* address, uint64_t compare, uint64_t val) {
   unsigned long long int* address_as_ull = reinterpret_cast<unsigned long long int*>(address);
   return atomicCAS(address_as_ull, static_cast<unsigned long long int>(compare), static_cast<unsigned long long int>(val));
 }
+#endif // HAS_UINT64
 
+#ifdef HAS_UINT16
 template <>
 inline SD_DEVICE uint16_t sd_atomicCAS<uint16_t>(uint16_t* address, uint16_t compare, uint16_t val) {
   unsigned int* address_as_uint = reinterpret_cast<unsigned int*>(reinterpret_cast<char*>(address) - (reinterpret_cast<size_t>(address) & 2));
@@ -1360,7 +1576,9 @@ inline SD_DEVICE uint16_t sd_atomicCAS<uint16_t>(uint16_t* address, uint16_t com
 
   return (reinterpret_cast<size_t>(address) & 2) ? (old >> 16) : (old & 0xFFFF);
 }
+#endif // HAS_UINT16
 
+#ifdef HAS_INT16
 template <>
 inline SD_DEVICE int16_t sd_atomicCAS<int16_t>(int16_t* address, int16_t compare, int16_t val) {
   int* address_as_uint = reinterpret_cast<int*>(reinterpret_cast<char*>(address) - (reinterpret_cast<size_t>(address) & 2));
@@ -1380,7 +1598,9 @@ inline SD_DEVICE int16_t sd_atomicCAS<int16_t>(int16_t* address, int16_t compare
 
   return (reinterpret_cast<size_t>(address) & 2) ? (old >> 16) : (old & 0xFFFF);
 }
+#endif // HAS_INT16
 
+#ifdef HAS_LONG
 template <>
 inline SD_DEVICE sd::LongType sd_atomicCAS<sd::LongType>(sd::LongType* address, sd::LongType compare, sd::LongType val) {
   unsigned long long int* address_as_ull = reinterpret_cast<unsigned long long int*>(address);
@@ -1391,8 +1611,9 @@ inline SD_DEVICE sd::LongType sd_atomicCAS<sd::LongType>(sd::LongType* address, 
 
   return static_cast<sd::LongType>(old_as_ull);
 }
+#endif // HAS_LONG
 
-
+#ifdef HAS_DOUBLE
 template <>
 inline SD_DEVICE double sd_atomicCAS<double>(double* address, double compare, double val) {
   unsigned long long int* address_as_ull = (unsigned long long int*)address;
@@ -1403,9 +1624,9 @@ inline SD_DEVICE double sd_atomicCAS<double>(double* address, double compare, do
 
   return __longlong_as_double(old_as_ull);
 }
+#endif // HAS_DOUBLE
 
-
-
+#ifdef HAS_INT8
 template <>
 inline SD_DEVICE int8_t sd_atomicCAS<int8_t>(int8_t* address, int8_t compare, int8_t val) {
   int* address_as_int = reinterpret_cast<int*>(reinterpret_cast<char*>(address) - (reinterpret_cast<size_t>(address) & 3));
@@ -1425,10 +1646,9 @@ inline SD_DEVICE int8_t sd_atomicCAS<int8_t>(int8_t* address, int8_t compare, in
 
   return (old >> shift) & 0xFF;
 }
+#endif // HAS_INT8
 
-// Specialization for int32_t
-
-
+#ifdef HAS_FLOAT16
 template <>
 inline __device__ float16 sd_atomicCAS<float16>(float16* address, float16 compare, float16 val) {
   auto address_as_ushort = reinterpret_cast<unsigned short*>(address);
@@ -1456,6 +1676,7 @@ inline __device__ float16 sd_atomicCAS<float16>(float16* address, float16 compar
   result = misaligned ? (old & 0xFF) : (old & 0xFF00);
   return result;
 }
+#endif // HAS_FLOAT16
 
 // Updated BPAIR structure for bfloat16 operations
 union BPAIR {
@@ -1467,6 +1688,7 @@ union BPAIR {
   int W;
 };
 
+#ifdef HAS_BFLOAT16
 // Specialization for bfloat16
 template <>
 inline SD_DEVICE bfloat16 sd_atomicCAS<bfloat16>(bfloat16* address, bfloat16 compare, bfloat16 val) {
@@ -1498,9 +1720,10 @@ inline SD_DEVICE bfloat16 sd_atomicCAS<bfloat16>(bfloat16* address, bfloat16 com
   else
     return bfloat16(old.B.L);
 }
-
+#endif // HAS_BFLOAT16
 
 // Fallback implementation for __half_as_ushort
+#ifdef HAS_FLOAT16
 SD_DEVICE SD_INLINE unsigned short __half_as_ushort(float16 h) {
   return *reinterpret_cast<unsigned short*>(&h);
 }
@@ -1509,8 +1732,9 @@ SD_DEVICE SD_INLINE unsigned short __half_as_ushort(float16 h) {
 SD_DEVICE SD_INLINE float16 __ushort_as_half(unsigned short u) {
   return *reinterpret_cast<float16*>(&u);
 }
+#endif // HAS_FLOAT16
 
-
+#ifdef HAS_FLOAT32
 template <>
 inline SD_DEVICE float sd_atomicMin<float>(float* address, float val) {
   int* address_as_ull = (int*)address;
@@ -1521,6 +1745,9 @@ inline SD_DEVICE float sd_atomicMin<float>(float* address, float val) {
   } while (assumed != old);
   return __int_as_float(old);
 }
+#endif // HAS_FLOAT32
+
+#ifdef HAS_DOUBLE
 template <>
 inline SD_DEVICE double sd_atomicMin<double>(double* address, double val) {
   unsigned long long int* address_as_ull = (unsigned long long int*)address;
@@ -1532,6 +1759,9 @@ inline SD_DEVICE double sd_atomicMin<double>(double* address, double val) {
   } while (assumed != old);
   return __longlong_as_double(old);
 }
+#endif // HAS_DOUBLE
+
+#ifdef HAS_UINT64
 template <>
 inline SD_DEVICE uint64_t sd_atomicMin<uint64_t>(uint64_t* address, uint64_t val) {
 #if __CUDA_ARCH__ >= 350
@@ -1546,6 +1776,9 @@ inline SD_DEVICE uint64_t sd_atomicMin<uint64_t>(uint64_t* address, uint64_t val
   return old;
 #endif
 }
+#endif // HAS_UINT64
+
+#ifdef HAS_LONG
 template <>
 inline SD_DEVICE sd::LongType sd_atomicMin<sd::LongType>(sd::LongType* address, sd::LongType val) {
 #if __CUDA_ARCH__ >= 350
@@ -1560,17 +1793,24 @@ inline SD_DEVICE sd::LongType sd_atomicMin<sd::LongType>(sd::LongType* address, 
   return old;
 #endif
 }
+#endif // HAS_LONG
+
+#ifdef HAS_INT16
 template <>
 inline SD_DEVICE int16_t sd_atomicMin<int16_t>(int16_t* address, int16_t val) {
   int32_t temp = *address;
   *address = atomicMin(&temp, (int)val);
   return *address;
 }
+#endif // HAS_INT16
 
+#ifdef HAS_FLOAT16
 template <>
 inline SD_DEVICE float16 sd_atomicMin<float16>(float16* address, float16 val) {
   return float16(sd_atomicMin<int16_t>(reinterpret_cast<int16_t*>(&address->data), (int16_t)val.data));
 }
+#endif // HAS_FLOAT16
+
 // Custom max functions
 SD_DEVICE SD_INLINE int32_t sd_max(int32_t a, int32_t b) {
   return a > b ? a : b;
@@ -1580,6 +1820,7 @@ SD_DEVICE SD_INLINE uint32_t sd_max(uint32_t a, uint32_t b) {
   return a > b ? a : b;
 }
 
+#ifdef HAS_INT32
 template <>
 inline SD_DEVICE int32_t sd_atomicMax<int32_t>(int32_t* address, int32_t val) {
   int32_t old = *address, assumed;
@@ -1589,7 +1830,9 @@ inline SD_DEVICE int32_t sd_atomicMax<int32_t>(int32_t* address, int32_t val) {
   } while (assumed != old);
   return old;
 }
+#endif // HAS_INT32
 
+#ifdef HAS_UINT32
 template <>
 SD_DEVICE SD_INLINE  uint32_t sd_atomicMax<uint32_t>(uint32_t* address, uint32_t val) {
   uint32_t old = *address, assumed;
@@ -1599,8 +1842,9 @@ SD_DEVICE SD_INLINE  uint32_t sd_atomicMax<uint32_t>(uint32_t* address, uint32_t
   } while (assumed != old);
   return old;
 }
+#endif // HAS_UINT32
 
-
+#ifdef HAS_UINT64
 template <>
 SD_DEVICE SD_INLINE  unsigned long sd_atomicMax<unsigned long>(unsigned long* address, unsigned long val) {
   uint32_t old = *address, assumed;
@@ -1610,7 +1854,9 @@ SD_DEVICE SD_INLINE  unsigned long sd_atomicMax<unsigned long>(unsigned long* ad
   } while (assumed != old);
   return old;
 }
+#endif // HAS_UINT64
 
+#ifdef HAS_DOUBLE
 template <>
 SD_DEVICE SD_INLINE  double sd_atomicMax<double>(double* address, double val) {
   unsigned long long int* address_as_ull = (unsigned long long int*)address;
@@ -1622,6 +1868,9 @@ SD_DEVICE SD_INLINE  double sd_atomicMax<double>(double* address, double val) {
   } while (assumed != old);
   return __longlong_as_double(old);
 }
+#endif // HAS_DOUBLE
+
+#ifdef HAS_FLOAT32
 template <>
 SD_DEVICE SD_INLINE  float sd_atomicMax<float>(float* address, float val) {
   int* address_as_ull = (int*)address;
@@ -1632,31 +1881,41 @@ SD_DEVICE SD_INLINE  float sd_atomicMax<float>(float* address, float val) {
   } while (assumed != old);
   return __int_as_float(old);
 }
+#endif // HAS_FLOAT32
+
+#ifdef HAS_UINT8
 template <>
 SD_DEVICE SD_INLINE  uint8_t sd_atomicMin<uint8_t>(uint8_t* address, uint8_t val) {
   uint32_t temp = *address;
   *address = atomicMin(&temp, (uint32_t)val);
   return *address;
 }
+#endif // HAS_UINT8
 
+#ifdef HAS_INT8
 template <>
 SD_DEVICE SD_INLINE  int8_t sd_atomicMin<int8_t>(int8_t* address, int8_t val) {
   int32_t temp = *address;
   *address = atomicMin(&temp, (int)val);
   return *address;
 }
+#endif // HAS_INT8
 
+#ifdef HAS_UINT16
 template <>
 SD_DEVICE SD_INLINE uint16_t sd_atomicMin<uint16_t>(uint16_t* address, uint16_t val) {
   uint32_t temp = *address;
   *address = atomicMin(&temp, (uint32_t)val);
   return *address;
 }
+#endif // HAS_UINT16
 
+#ifdef HAS_BFLOAT16
 template <>
 inline SD_DEVICE bfloat16 sd_atomicMin<bfloat16>(bfloat16* address, bfloat16 val) {
   return bfloat16(sd_atomicMin<uint16_t>(&address->_data, val._data));
 }
+#endif // HAS_BFLOAT16
 
 // Custom max functions
 SD_DEVICE SD_INLINE  uint8_t sd_max(uint8_t a, uint8_t b) {
@@ -1666,6 +1925,7 @@ SD_DEVICE SD_INLINE  uint8_t sd_max(uint8_t a, uint8_t b) {
 SD_DEVICE SD_INLINE int8_t sd_max(int8_t a, int8_t b) {
   return a > b ? a : b;
 }
+
 // Simplified __byte_perm for uint8_t operations
 SD_DEVICE SD_INLINE unsigned int __byte_perm_uint8(unsigned int a, unsigned int b, unsigned int selector) {
   unsigned int result;
@@ -1682,6 +1942,7 @@ SD_DEVICE SD_INLINE unsigned int __byte_perm_uint8(unsigned int a, unsigned int 
   return result;
 }
 
+#ifdef HAS_UINT8
 template <>
 inline SD_DEVICE uint8_t sd_atomicMax<uint8_t>(uint8_t* address, uint8_t val) {
   unsigned int* base_address = (unsigned int*)((size_t)address & ~3);
@@ -1699,6 +1960,7 @@ inline SD_DEVICE uint8_t sd_atomicMax<uint8_t>(uint8_t* address, uint8_t val) {
 
   return (uint8_t)(__byte_perm_uint8(old, 0, ((size_t)address & 3) | 0x4440));
 }
+#endif // HAS_UINT8
 
 // Custom implementation of __byte_perm
 SD_DEVICE SD_INLINE unsigned int __byte_perm(unsigned int a, unsigned int b, unsigned int selector) {
@@ -1717,7 +1979,7 @@ SD_DEVICE SD_INLINE unsigned int __byte_perm(unsigned int a, unsigned int b, uns
   return result;
 }
 
-
+#ifdef HAS_INT8
 template <>
 inline SD_DEVICE int8_t sd_atomicMax<int8_t>(int8_t* address, int8_t val) {
   unsigned int* base_address = (unsigned int*)((size_t)address & ~3);
@@ -1735,7 +1997,7 @@ inline SD_DEVICE int8_t sd_atomicMax<int8_t>(int8_t* address, int8_t val) {
 
   return (int8_t)(__byte_perm(old, 0, ((size_t)address & 3) | 0x4440));
 }
-
+#endif // HAS_INT8
 
 // AtomicMax signatures
 SD_DEVICE SD_INLINE int atomicMax(int* address, int val);
@@ -1777,29 +2039,39 @@ SD_DEVICE SD_INLINE int16_t atomicMax(int16_t* address, int16_t val) {
   return (int16_t)((old & mask) >> offset);
 }
 
+#ifdef HAS_UINT16
 // Updated sd_atomicMax implementations
 template <>
 inline SD_DEVICE uint16_t sd_atomicMax<uint16_t>(uint16_t* address, uint16_t val) {
   return atomicMax(address, val);
 }
+#endif // HAS_UINT16
 
 // Proper PAIR struct for float16 operations
 struct PAIR {
   SD_HOST_DEVICE PAIR() {}
   union {
     struct {
+#ifdef HAS_FLOAT16
       float16 L;
       float16 H;
+#else
+      unsigned short L;
+      unsigned short H;
+#endif
     } B;
     int W;
   };
 };
 
+#ifdef HAS_INT16
 template <>
 inline SD_DEVICE int16_t sd_atomicMax<int16_t>(int16_t* address, int16_t val) {
   return atomicMax(address, val);
 }
+#endif // HAS_INT16
 
+#ifdef HAS_FLOAT16
 template <>
 SD_INLINE SD_DEVICE float16 sd_atomicMax<float16>(float16* address, float16 val) {
   unsigned int* address_as_uint = reinterpret_cast<unsigned int*>((reinterpret_cast<char*>(address) - (reinterpret_cast<uintptr_t>(address) & 2)));
@@ -1824,7 +2096,9 @@ SD_INLINE SD_DEVICE float16 sd_atomicMax<float16>(float16* address, float16 val)
   return (reinterpret_cast<uintptr_t>(address) & 2) ? float16(static_cast<unsigned short>(old >> 16))
                                                     : float16(static_cast<unsigned short>(old & 0xFFFF));
 }
+#endif // HAS_FLOAT16
 
+#ifdef HAS_BFLOAT16
 template <>
 SD_INLINE SD_DEVICE bfloat16 sd_atomicMax<bfloat16>(bfloat16* address, bfloat16 val) {
   unsigned int* address_as_uint = reinterpret_cast<unsigned int*>((reinterpret_cast<char*>(address) - (reinterpret_cast<uintptr_t>(address) & 2)));
@@ -1849,6 +2123,9 @@ SD_INLINE SD_DEVICE bfloat16 sd_atomicMax<bfloat16>(bfloat16* address, bfloat16 
   return (reinterpret_cast<uintptr_t>(address) & 2) ? bfloat16(static_cast<unsigned short>(old >> 16))
                                                     : bfloat16(static_cast<unsigned short>(old & 0xFFFF));
 }
+#endif // HAS_BFLOAT16
+
+#ifdef HAS_LONG
 template <>
 inline SD_DEVICE sd::LongType sd_atomicMax<sd::LongType>(sd::LongType* address, sd::LongType val) {
   unsigned long long int* address_as_ull = (unsigned long long int*)address;
@@ -1860,7 +2137,9 @@ inline SD_DEVICE sd::LongType sd_atomicMax<sd::LongType>(sd::LongType* address, 
   } while (assumed != old);
   return old;
 }
+#endif // HAS_LONG
 
+#ifdef HAS_DOUBLE
 template <>
 inline SD_DEVICE double sd_atomicAdd<double>(double* address, double val) {
   unsigned long long int* address_as_ull = (unsigned long long int*)address;
@@ -1871,7 +2150,9 @@ inline SD_DEVICE double sd_atomicAdd<double>(double* address, double val) {
   } while (assumed != old);
   return __longlong_as_double(old);
 }
+#endif // HAS_DOUBLE
 
+#ifdef HAS_LONG
 template <>
 inline SD_DEVICE sd::LongType sd_atomicAdd<sd::LongType>(sd::LongType* address, sd::LongType val) {
   unsigned long long int* address_as_ull = (unsigned long long int*)address;
@@ -1896,6 +2177,7 @@ inline SD_DEVICE long sd_atomicAdd<long>(long* address, long val) {
   } while (assumed != old);
   return old;
 }
+#endif // HAS_LONG
 
 // Custom atomicAdd for uint32_t
 SD_DEVICE SD_INLINE uint32_t atomicAdd(uint32_t* address, uint32_t val) {
@@ -1918,21 +2200,23 @@ SD_DEVICE SD_INLINE uint64_t atomicAdd(uint64_t* address, uint64_t val) {
   return old;
 }
 
+#ifdef HAS_UINT32
 // Updated sd_atomicAdd implementation for uint32_t
 template <>
 inline SD_DEVICE uint32_t sd_atomicAdd<uint32_t>(uint32_t* address, uint32_t val) {
   return atomicAdd(address, val);
 }
+#endif // HAS_UINT32
 
+#ifdef HAS_UINT64
 // Updated sd_atomicAdd implementation for uint64_t
 template <>
 inline SD_DEVICE uint64_t sd_atomicAdd<uint64_t>(uint64_t* address, uint64_t val) {
   return atomicAdd(address, val);
 }
+#endif // HAS_UINT64
 
-
-
-
+#ifdef HAS_FLOAT16
 template <>
 inline SD_DEVICE float16 sd_atomicAdd<float16>(float16* address, float16 val) {
 #if __CUDA_ARCH__ >= 700 && CUDA_VERSION_MAJOR >= 10
@@ -1969,7 +2253,9 @@ inline SD_DEVICE float16 sd_atomicAdd<float16>(float16* address, float16 val) {
     return old.B.L;
 #endif
 }
+#endif // HAS_FLOAT16
 
+#ifdef HAS_BFLOAT16
 template <>
 inline SD_DEVICE bfloat16 sd_atomicAdd<bfloat16>(bfloat16* address, bfloat16 val) {
   auto address_as_ull = (int*)address;
@@ -2002,6 +2288,7 @@ inline SD_DEVICE bfloat16 sd_atomicAdd<bfloat16>(bfloat16* address, bfloat16 val
   else
     return old.B.L;
 }
+#endif // HAS_BFLOAT16
 
 template <typename T>
 static SD_INLINE SD_DEVICE T internal_16bit_atomicAdd(T* address, T val) {
@@ -2049,15 +2336,19 @@ static SD_INLINE SD_DEVICE T internal_16bit_atomicAdd(T* address, T val) {
   }
 }
 
+#ifdef HAS_INT16
 template <>
 inline SD_DEVICE int16_t sd_atomicAdd<int16_t>(int16_t* address, int16_t val) {
   return internal_16bit_atomicAdd<int16_t>(address, val);
 }
+#endif // HAS_INT16
 
+#ifdef HAS_UINT16
 template <>
 inline SD_DEVICE uint16_t sd_atomicAdd<uint16_t>(uint16_t* address, uint16_t val) {
   return internal_16bit_atomicAdd<uint16_t>(address, val);
 }
+#endif // HAS_UINT16
 
 // Custom atomicAdd for int8_t
 SD_DEVICE SD_INLINE int8_t atomicAdd(int8_t* address, int8_t val) {
@@ -2097,24 +2388,31 @@ SD_DEVICE SD_INLINE uint8_t atomicAdd(uint8_t* address, uint8_t val) {
   return (uint8_t)((old & mask) >> shift);
 }
 
+#ifdef HAS_INT8
 // Updated sd_atomicAdd implementation for int8_t
 template <>
 inline SD_DEVICE int8_t sd_atomicAdd<int8_t>(int8_t* address, int8_t val) {
   return atomicAdd(address, val);
 }
+#endif // HAS_INT8
 
+#ifdef HAS_UINT8
 // Updated sd_atomicAdd implementation for uint8_t
 template <>
 inline SD_DEVICE uint8_t sd_atomicAdd<uint8_t>(uint8_t* address, uint8_t val) {
   return atomicAdd(address, val);
 }
+#endif // HAS_UINT8
 
+#ifdef HAS_BOOL
 template <>
 inline SD_DEVICE bool sd_atomicAdd<bool>(bool* address, bool val) {
   *address += (val);
   return *address;
 }
+#endif // HAS_BOOL
 
+#ifdef HAS_DOUBLE
 template <>
 inline SD_DEVICE double sd_atomicSub<double>(double* address, double val) {
   return sd_atomicAdd<double>(address, -val);
@@ -2135,7 +2433,7 @@ template <>
 inline SD_DEVICE double sd_atomicDiv<double>(double* address, double val) {
   return sd_atomicMul<double>(address, 1. / val);
 }
-
+#endif // HAS_DOUBLE
 
 // Helper functions for float-int conversions
 SD_DEVICE SD_INLINE unsigned int __float_as_uint(float f) {
@@ -2145,7 +2443,6 @@ SD_DEVICE SD_INLINE unsigned int __float_as_uint(float f) {
 SD_DEVICE SD_INLINE float __uint_as_float(unsigned int u) {
   return *reinterpret_cast<float*>(&u);
 }
-
 
 // Custom atomicAdd for float
 SD_DEVICE SD_INLINE float atomicAdd(float* address, float val) {
@@ -2175,32 +2472,16 @@ SD_DEVICE SD_INLINE int32_t atomicAdd(int32_t* address, int32_t val) {
   return (int32_t)old;
 }
 
+#ifdef HAS_FLOAT32
 // Updated sd_atomicAdd implementation for float
 template <>
 inline SD_DEVICE float sd_atomicAdd<float>(float* address, float val) {
   return atomicAdd(address, val);
 }
 
-// Updated sd_atomicAdd implementation for int32_t
-template <>
-inline SD_DEVICE int32_t sd_atomicAdd<int32_t>(int32_t* address, int32_t val) {
-  return atomicAdd(address, val);
-}
-
-
-
 template <>
 inline SD_DEVICE float sd_atomicSub<float>(float* address, float val) {
   return sd_atomicAdd<float>(address, -val);
-}
-
-template <>
-inline SD_DEVICE float16 sd_atomicSub<float16>(float16* address, float16 val) {
-  return sd_atomicAdd<float16>(address, -val);
-}
-template <>
-inline SD_DEVICE bfloat16 sd_atomicSub<bfloat16>(bfloat16* address, bfloat16 val) {
-  return sd_atomicAdd<bfloat16>(address, -val);
 }
 
 template <>
@@ -2214,6 +2495,50 @@ inline SD_DEVICE float sd_atomicMul<float>(float* address, float val) {
   return __int_as_float(old);
 }
 
+template <>
+inline SD_DEVICE float sd_atomicDiv<float>(float* address, float val) {
+  return sd_atomicMul<float>(address, 1.f / val);
+}
+#endif // HAS_FLOAT32
+
+#ifdef HAS_INT32
+// Updated sd_atomicAdd implementation for int32_t
+template <>
+inline SD_DEVICE int32_t sd_atomicAdd<int32_t>(int32_t* address, int32_t val) {
+  return atomicAdd(address, val);
+}
+#endif // HAS_INT32
+
+#ifdef HAS_FLOAT16
+template <>
+inline SD_DEVICE float16 sd_atomicSub<float16>(float16* address, float16 val) {
+  return sd_atomicAdd<float16>(address, -val);
+}
+
+template <>
+inline SD_DEVICE float16 sd_atomicDiv<float16>(float16* address, float16 val) {
+  return internal_16bit_atomicMul<float16>(address, (float16)1.f / val);
+}
+#endif // HAS_FLOAT16
+
+#ifdef HAS_BFLOAT16
+template <>
+inline SD_DEVICE bfloat16 sd_atomicSub<bfloat16>(bfloat16* address, bfloat16 val) {
+  return sd_atomicAdd<bfloat16>(address, -val);
+}
+
+template <>
+inline SD_DEVICE bfloat16 sd_atomicMul<bfloat16>(bfloat16* address, bfloat16 val) {
+  return internal_16bit_atomicMul<bfloat16>(address, val);
+}
+
+template <>
+inline SD_DEVICE bfloat16 sd_atomicDiv<bfloat16>(bfloat16* address, bfloat16 val) {
+  return internal_16bit_atomicMul<bfloat16>(address, (bfloat16)1 / val);
+}
+#endif // HAS_BFLOAT16
+
+#ifdef HAS_INT8
 template <>
 inline SD_DEVICE int8_t sd_atomicMul<int8_t>(int8_t* address, int8_t val) {
   unsigned int* base_address = (unsigned int*)((size_t)address & ~3);
@@ -2234,7 +2559,9 @@ inline SD_DEVICE int8_t sd_atomicMul<int8_t>(int8_t* address, int8_t val) {
   } while (assumed != old);
   return (int8_t)old;
 }
+#endif // HAS_INT8
 
+#ifdef HAS_UINT8
 template <>
 inline SD_DEVICE unsigned char sd_atomicMul<unsigned char>(unsigned char* address, unsigned char val) {
   unsigned int* base_address = (unsigned int*)((size_t)address & ~3);
@@ -2255,6 +2582,7 @@ inline SD_DEVICE unsigned char sd_atomicMul<unsigned char>(unsigned char* addres
   } while (assumed != old);
   return (uint8_t)old;
 }
+#endif // HAS_UINT8
 
 template <typename T>
 static SD_INLINE SD_DEVICE T internal_16bit_atomicMul(T* address, T val) {
@@ -2302,16 +2630,21 @@ static SD_INLINE SD_DEVICE T internal_16bit_atomicMul(T* address, T val) {
   }
 }
 
+#ifdef HAS_INT16
 template <>
 inline SD_DEVICE int16_t sd_atomicMul<int16_t>(int16_t* address, int16_t val) {
   return internal_16bit_atomicMul<int16_t>(address, val);
 }
+#endif // HAS_INT16
 
+#ifdef HAS_UINT16
 template <>
 inline SD_DEVICE uint16_t sd_atomicMul<uint16_t>(uint16_t* address, uint16_t val) {
   return internal_16bit_atomicMul<uint16_t>(address, val);
 }
+#endif // HAS_UINT16
 
+#ifdef HAS_INT32
 template <>
 inline SD_DEVICE int sd_atomicMul<int>(int* address, int val) {
   int* res_address = address;
@@ -2322,7 +2655,9 @@ inline SD_DEVICE int sd_atomicMul<int>(int* address, int val) {
   } while (assumed != old);
   return old;
 }
+#endif // HAS_INT32
 
+#ifdef HAS_UINT32
 template <>
 inline SD_DEVICE unsigned int sd_atomicMul<unsigned int>(unsigned int* address, unsigned int val) {
   unsigned int* res_address = address;
@@ -2333,7 +2668,9 @@ inline SD_DEVICE unsigned int sd_atomicMul<unsigned int>(unsigned int* address, 
   } while (assumed != old);
   return old;
 }
+#endif // HAS_UINT32
 
+#ifdef HAS_LONG
 template <>
 inline SD_DEVICE int64_t sd_atomicMul<int64_t>(int64_t* address, int64_t val) {
   unsigned long long int* res_address = (unsigned long long int*)address;
@@ -2344,7 +2681,9 @@ inline SD_DEVICE int64_t sd_atomicMul<int64_t>(int64_t* address, int64_t val) {
   } while (assumed != old);
   return (int64_t)old;
 }
+#endif // HAS_LONG
 
+#ifdef HAS_UINT64
 template <>
 inline SD_DEVICE uint64_t sd_atomicMul<uint64_t>(uint64_t* address, uint64_t val) {
   unsigned long long int* res_address = (unsigned long long int*)address;
@@ -2355,8 +2694,9 @@ inline SD_DEVICE uint64_t sd_atomicMul<uint64_t>(uint64_t* address, uint64_t val
   } while (assumed != old);
   return (uint64_t)old;
 }
+#endif // HAS_UINT64
 
-#if !defined(_WIN32) && !defined(_WIN64)
+#if !defined(_WIN32) && !defined(_WIN64) && defined(HAS_LONG)
 template <>
 inline SD_DEVICE sd::LongType sd_atomicMul<sd::LongType>(sd::LongType* address, sd::LongType val) {
   unsigned long long int* res_address = (unsigned long long*)address;
@@ -2369,35 +2709,15 @@ inline SD_DEVICE sd::LongType sd_atomicMul<sd::LongType>(sd::LongType* address, 
 }
 #endif
 
-template <>
-inline SD_DEVICE bfloat16 sd_atomicMul<bfloat16>(bfloat16* address, bfloat16 val) {
-  return internal_16bit_atomicMul<bfloat16>(address, val);
-}
-
+#ifdef HAS_FLOAT16
 template <>
 inline SD_DEVICE float16 sd_atomicMul<float16>(float16* address, float16 val) {
   return internal_16bit_atomicMul<float16>(address, val);
 }
-
-template <>
-inline SD_DEVICE float sd_atomicDiv<float>(float* address, float val) {
-  return sd_atomicMul<float>(address, 1.f / val);
-}
-
-template <>
-inline SD_DEVICE float16 sd_atomicDiv<float16>(float16* address, float16 val) {
-  return internal_16bit_atomicMul<float16>(address, (float16)1.f / val);
-}
-
-template <>
-inline SD_DEVICE bfloat16 sd_atomicDiv<bfloat16>(bfloat16* address, bfloat16 val) {
-  return internal_16bit_atomicMul<bfloat16>(address, (bfloat16)1 / val);
-}
-
-
+#endif // HAS_FLOAT16
 
 }  // namespace atomics
-#endif
+#endif // __CUDACC__
 
 }  // namespace math
 }  // namespace sd

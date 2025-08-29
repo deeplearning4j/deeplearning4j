@@ -51,5 +51,15 @@ void SD_HOST TransformFloat<X, Z>::exec(const void *vx, const sd::LongType *xSha
 }
 
 BUILD_DOUBLE_TEMPLATE( class TransformFloat, , SD_COMMON_TYPES, SD_FLOAT_TYPES);
+
+ITERATE_COMBINATIONS(
+   (SD_COMMON_TYPES),
+   (SD_COMMON_TYPES),
+   INSTANT_PROCESS_COMBINATION,
+    TransformFloat,
+   ::exec(int, const void*, const sd::LongType*, void*, const sd::LongType*, void*, sd::LongType, sd::LongType)
+);
+
+
 }  // namespace transform
 }  // namespace functions

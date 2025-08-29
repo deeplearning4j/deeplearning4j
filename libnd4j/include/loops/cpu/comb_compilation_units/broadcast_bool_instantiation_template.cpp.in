@@ -17,64 +17,62 @@
 ******************************************************************************/
 
 //
-// Broadcast template instantiations
+// BroadcastBool template instantiations
 //
 
 #include <loops/pairwise_instantiations.h>
 #include <types/type_promote.h>
-#include <loops/cpu/broadcasting.hpp>
+#include <loops/cpu/broadcasting_bool.hpp>
 
 /*
 *
 * Function Instantiation:
-* Broadcast::exec instantiated for types in @COMB1@, @COMB2@, @COMB3@
+* BroadcastBool::exec instantiated for types in @COMB1@, @COMB2@
 */
 
-ITERATE_COMBINATIONS_3(
+ITERATE_COMBINATIONS(
    SD_COMMON_TYPES_PART_@COMB1@,
    SD_COMMON_TYPES_PART_@COMB2@,
-   SD_COMMON_TYPES_PART_@COMB3@,
-   INSTANT_PROCESS_COMBINATION_3,
-   functions::broadcast::Broadcast,
+   INSTANT_PROCESS_COMBINATION,
+   functions::broadcast::BroadcastBool,
    ::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
           const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo,
-          sd::LongType *dimension, sd::LongType dimensionLength,
+          void *extraParams, sd::LongType *dimension, sd::LongType dimensionLength,
           const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets,
           const sd::LongType *tadOnlyShapeInfoZ, const sd::LongType *tadOffsetsZ,
-          sd::LoopKind::Kind loopKind, sd::LongType start, sd::LongType stop)
+          sd::LongType start, sd::LongType stop)
 )
 
 /*
 *
 * Function Instantiation:
-* Broadcast::exec (simple version) instantiated for types in @COMB1@, @COMB2@, @COMB3@
+* BroadcastBool::exec (simple version) instantiated for types in @COMB1@, @COMB2@
 */
 
-ITERATE_COMBINATIONS_3(
+ITERATE_COMBINATIONS(
    SD_COMMON_TYPES_PART_@COMB1@,
    SD_COMMON_TYPES_PART_@COMB2@,
-   SD_COMMON_TYPES_PART_@COMB3@,
-   INSTANT_PROCESS_COMBINATION_3,
-   functions::broadcast::Broadcast,
+   INSTANT_PROCESS_COMBINATION,
+   functions::broadcast::BroadcastBool,
    ::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
-          const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo)
+          const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo,
+          void *extraParams)
 )
 
 /*
 *
 * Function Instantiation:
-* Broadcast::execInverse instantiated for types in @COMB1@, @COMB2@, @COMB3@
+* BroadcastBool::execInverse instantiated for types in @COMB1@, @COMB2@
 */
 
-ITERATE_COMBINATIONS_3(
+ITERATE_COMBINATIONS(
    SD_COMMON_TYPES_PART_@COMB1@,
    SD_COMMON_TYPES_PART_@COMB2@,
-   SD_COMMON_TYPES_PART_@COMB3@,
-   INSTANT_PROCESS_COMBINATION_3,
-   functions::broadcast::Broadcast,
+   INSTANT_PROCESS_COMBINATION,
+   functions::broadcast::BroadcastBool,
    ::execInverse(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                  const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo,
-                 sd::LongType *dimension, sd::LongType dimensionLength,
+                 void *extraParams, sd::LongType *dimension, sd::LongType dimensionLength,
                  const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets,
                  const sd::LongType *tadOnlyShapeInfoZ, const sd::LongType *tadOffsetsZ,
                  sd::LongType start, sd::LongType stop)
@@ -82,14 +80,7 @@ ITERATE_COMBINATIONS_3(
 
 /*
 *
-* Function Instantiation:
-* BroadcastBool::exec instantiated for bool types
+* Explicit instantiation for bool types (since BroadcastBool typically uses bool output)
 */
 
-template void functions::broadcast::BroadcastBool<bool, bool>::exec(
-   int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
-   const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo,
-   void *extraParams, sd::LongType *dimension, sd::LongType dimensionLength,
-   const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets,
-   const sd::LongType *tadOnlyShapeInfoZ, const sd::LongType *tadOffsetsZ,
-   sd::LongType start, sd::LongType stop);
+template class functions::broadcast::BroadcastBool<bool, bool>;
