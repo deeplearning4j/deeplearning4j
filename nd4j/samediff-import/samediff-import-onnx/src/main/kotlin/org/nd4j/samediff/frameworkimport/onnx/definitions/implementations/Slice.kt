@@ -19,27 +19,20 @@
  */
 package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 
+
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.linalg.api.buffer.DataType
-import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
-import java.util.*
 
-/**
- * Extremely simplified Slice implementation that avoids ALL operations that could create control flow.
- * Uses direct stridedSlice without any complex sparse operations.
- *
- * @author Adam Gibson
- */
-@PreHookRule(nodeNames = [],opNames = ["Slice"],frameworkName = "onnx")
-class Slice : PreImportHook  {
+@PreHookRule(nodeNames = [], opNames = ["Slice"], frameworkName = "onnx")
+class Slice : PreImportHook {
 
     override fun doImport(
         sd: SameDiff,
@@ -52,56 +45,75 @@ class Slice : PreImportHook  {
     ): Map<String, List<SDVariable>> {
 
         val inputVariable = sd.getVariable(op.inputsToOp[0])
-
-        // Cast indices to INT64 as required
-        val starts = sd.getVariable(op.inputsToOp[1]).castTo(
-            sd.generateNewVarName("cast_int64_${op.inputsToOp[1]}_" + UUID.randomUUID().toString(), 0),
-            DataType.INT64
-        )
-        val ends = sd.getVariable(op.inputsToOp[2]).castTo(
-            sd.generateNewVarName("cast_int64_${op.inputsToOp[2]}" + UUID.randomUUID().toString(), 0),
-            DataType.INT64
-        )
-
-        // Handle axes - if not provided, assume [0]
-        val axes = if (op.inputsToOp.size < 4) {
-            sd.constant(0)
+        
+        // Get the slice parameters
+        var starts = sd.getVariable(op.inputsToOp[1])
+        var ends = sd.getVariable(op.inputsToOp[2])
+        
+        // Flatten the starts and ends to 1D if they have extra dimensions
+        starts = sd.reshape(starts, -1)
+        ends = sd.reshape(ends, -1)
+        
+        // Cast to INT64 for compatibility
+        starts = starts.castTo(DataType.INT64)
+        ends = ends.castTo(DataType.INT64)
+        
+        // Handle axes parameter (optional, 4th input) - if present, only slice specified axes
+        val hasAxes = op.inputsToOp.size >= 4 && op.inputsToOp[3] != null
+        
+        // Handle steps parameter (optional, 5th input)
+        val steps = if (op.inputsToOp.size >= 5 && op.inputsToOp[4] != null) {
+            var stepsVar = sd.getVariable(op.inputsToOp[4])
+            stepsVar = sd.reshape(stepsVar, -1)
+            stepsVar.castTo(DataType.INT64)
         } else {
-            sd.getVariable(op.inputsToOp[3])
+            // Default steps to 1 for each element in starts
+            sd.onesLike(starts).castTo(DataType.INT64)
         }
-
-        // Handle steps - if not provided, assume [1]
-        val steps = if (op.inputsToOp.size >= 5) {
-            sd.getVariable(op.inputsToOp[4])
-        } else {
-            sd.constant(1)
-        }
-
-        // For now, handle only the simple case where we slice on axis 0
-        // This avoids all the complex sparse operations that were causing control flow
-        val result = if (op.inputsToOp.size < 4) {
-            // Simple case: slice on axis 0
-            sd.stridedSlice(
+        
+        // ONNX Slice semantics:
+        // - If axes is not provided, slicing is performed on all axes [0, 1, ..., ndim-1]
+        // - If axes is provided, slicing is only performed on the specified axes
+        // - For dimensions not in axes, the full range is used
+        
+        if (hasAxes) {
+            // Complex case: need to handle selective axis slicing
+            // For now, we'll use the starts/ends/steps as provided
+            // This is a simplified implementation - full support would require
+            // building full-size arrays with appropriate values for non-specified axes
+            
+            val result = sd.stridedSlice(
                 outputNames[0],
                 inputVariable,
                 starts,
                 ends,
                 steps,
-                0, 0, 0, 0, 0
+                0,  // beginMask - all zeros means use the begin values
+                0,  // endMask - all zeros means use the end values  
+                0,  // ellipsisMask
+                0,  // newAxisMask
+                0   // shrinkAxisMask
             )
+            
+            return mapOf(outputNames[0] to listOf(result))
         } else {
-            // For multi-axis slicing, we need to be more careful
-            // But let's try the simplest approach first
-            sd.stridedSlice(
+            // Simple case: slicing all dimensions from 0 to len(starts)-1
+            // This is the most common case in ONNX
+            
+            val result = sd.stridedSlice(
                 outputNames[0],
                 inputVariable,
                 starts,
                 ends,
                 steps,
-                0, 0, 0, 0, 0
+                0,  // beginMask
+                0,  // endMask
+                0,  // ellipsisMask
+                0,  // newAxisMask
+                0   // shrinkAxisMask
             )
+            
+            return mapOf(outputNames[0] to listOf(result))
         }
-
-        return mapOf(result.name() to listOf(result))
     }
 }

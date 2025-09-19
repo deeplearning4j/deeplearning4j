@@ -54,35 +54,34 @@ TadPack* ConstantTadHelper::tadForDimensions(LongType* originalShape, LongType* 
     THROW_EXCEPTION("Dimensions array is null but dimLength > 0");
   }
 
+  // Check for empty array
+  if (shape::isEmptyConst(originalShape)) {
+    THROW_EXCEPTION("Cannot create TADs for empty array");
+  }
+
   sd::LongType rank = shape::rank(originalShape);
   if (rank < 0) {
     THROW_EXCEPTION("Invalid shape rank");
   }
 
-  // Handle zero dimension length case - create TAD for entire array
-  // This follows PyTorch/TensorFlow convention of taking whole array when no dimensions specified
+  // Check for zero-sized dimensions
+  for (LongType i = 0; i < rank; i++) {
+    if (shape::sizeAt(originalShape, i) == 0) {
+      THROW_EXCEPTION("Cannot create TADs for array with zero-sized dimensions");
+    }
+  }
+
+  // Handle zero dimension length case - treat entire array as single TAD
   if (dimLength <= 0) {
-    // Create dimensions vector for entire array (all dimensions)
-    std::vector<LongType> wholeDims;
+    // When no dimensions specified, create TAD along all dimensions
+    // This means the entire array is treated as a single TAD
+    std::vector<LongType> allDims;
     for (LongType i = 0; i < rank; i++) {
-      wholeDims.push_back(i);
+      allDims.push_back(i);
     }
 
-    // If rank is 0 (scalar), return a TAD pack for scalar
-    if (rank == 0) {
-      try {
-        return _trie.getOrCreate(wholeDims, originalShape);
-      } catch (const std::exception& e) {
-        THROW_EXCEPTION("Failed to create TAD pack for scalar");
-      }
-    }
-
-    // For non-scalar case, create TAD for all dimensions
-    try {
-      return _trie.getOrCreate(wholeDims, originalShape);
-    } catch (const std::exception& e) {
-      THROW_EXCEPTION("Failed to create TAD pack for whole array");
-    }
+    // Recursively call with all dimensions
+    return tadForDimensions(originalShape, allDims.data(), rank);
   }
 
   // Additional validation: check if dimensions are within valid range

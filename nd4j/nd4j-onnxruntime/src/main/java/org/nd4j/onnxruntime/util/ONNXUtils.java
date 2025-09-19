@@ -270,19 +270,64 @@ public class ONNXUtils {
      * @return
      */
     public static Value getTensor(INDArray ndArray, MemoryInfo memoryInfo) {
-        if(ndArray == null || ndArray.isEmpty()) {
-            /**
-             *   static Value CreateTensor(const OrtMemoryInfo* info, void* p_data, size_t p_data_byte_count, const int64_t* shape, size_t shape_len,
-             *                             ONNXTensorElementDataType type)
-             */
-            LongPointer dims = new LongPointer(0);
-            Value ret =  Value.CreateTensor(
+        if(ndArray == null) {
+            throw new IllegalArgumentException("Cannot create tensor from null array");
+        }
+        
+        if(ndArray.isEmpty()) {
+            // Handle empty arrays properly - they still have shape information
+            long[] shape = ndArray.shape();
+            LongPointer dims = new LongPointer(shape);
+            
+            // For empty arrays, we need at least a minimal buffer to avoid "not enough space" error
+            // Create a dummy buffer with 1 element
+            Pointer dummyData;
+            int elementSize;
+            int onnxType = onnxTypeForDataType(ndArray.dataType());
+            
+            switch (ndArray.dataType()) {
+                case FLOAT:
+                    dummyData = new FloatPointer(1);
+                    elementSize = 4;
+                    break;
+                case DOUBLE:
+                    dummyData = new DoublePointer(1);
+                    elementSize = 8;
+                    break;
+                case INT:
+                    dummyData = new IntPointer(1);
+                    elementSize = 4;
+                    break;
+                case LONG:
+                    dummyData = new LongPointer(1);
+                    elementSize = 8;
+                    break;
+                case BYTE:
+                    dummyData = new BytePointer(1);
+                    elementSize = 1;
+                    break;
+                case SHORT:
+                    dummyData = new ShortPointer(1);
+                    elementSize = 2;
+                    break;
+                case BOOL:
+                    dummyData = new BoolPointer(1);
+                    elementSize = 1;
+                    break;
+                default:
+                    // Default to float for other types
+                    dummyData = new FloatPointer(1);
+                    elementSize = 4;
+                    onnxType = onnxTypeForDataType(FLOAT);
+            }
+            
+            Value ret = Value.CreateTensor(
                     memoryInfo.asOrtMemoryInfo(),
-                    new FloatPointer(),
-                    0,
+                    dummyData,
+                    elementSize,
                     dims,
-                    0,
-                    onnxTypeForDataType(FLOAT));
+                    ndArray.rank(),
+                    onnxType);
             return ret;
         }
 
@@ -290,10 +335,6 @@ public class ONNXUtils {
         Pointer inputTensorValues = inputTensorValuesPtr;
         long sizeInBytes = ndArray.length() * ndArray.data().getElementSize();
 
-        /**
-         *   static Value CreateTensor(const OrtMemoryInfo* info, void* p_data, size_t p_data_byte_count, const int64_t* shape, size_t shape_len,
-         *                             ONNXTensorElementDataType type)
-         */
         LongPointer dims = new LongPointer(ndArray.shape());
         Value ret =  Value.CreateTensor(
                 memoryInfo.asOrtMemoryInfo(),

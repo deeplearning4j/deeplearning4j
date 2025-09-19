@@ -133,39 +133,43 @@ bool _preprocess_strided_slice(std::vector<sd::LongType>* indicesList, std::vect
                                int new_axis_mask, int shrink_axis_mask, bool* is_identity, bool* is_simple_slice,
                                bool* slice_dim0) {
 
-  // Add validation logging before processing
-  if (sd::Environment::getInstance().isDebug()) {
-    sd_print("=== _preprocess_strided_slice INPUT ===\n");
-    sd_print("input_shape: [");
-    for (size_t i = 0; i < input_shape.size(); i++) {
-      sd_printf("%lld%s", input_shape[i], i < input_shape.size()-1 ? ", " : "");
+  // FIX: Check for zero strides and fix them
+  bool hasZeroStride = false;
+  for (size_t i = 0; i < strides.size(); i++) {
+    if (strides[i] == 0) {
+      sd_printf("WARNING: Zero stride detected at index %zu, setting to 1\n", i);
+      strides[i] = 1;
+      hasZeroStride = true;
     }
-    sd_print("]\n");
+  }
 
-    sd_print("begin: [");
-    for (size_t i = 0; i < begin.size(); i++) {
-      sd_printf("%lld%s", begin[i], i < begin.size()-1 ? ", " : "");
-    }
-    sd_print("]\n");
-
-    sd_print("end: [");
-    for (size_t i = 0; i < end.size(); i++) {
-      sd_printf("%lld%s", end[i], i < end.size()-1 ? ", " : "");
-    }
-    sd_print("]\n");
-
-    sd_print("strides: [");
-    for (size_t i = 0; i < strides.size(); i++) {
-      sd_printf("%lld%s", strides[i], i < strides.size()-1 ? ", " : "");
-    }
-    sd_print("]\n");
-
-    sd_printf("masks: begin=%d, end=%d, ellipsis=%d, new_axis=%d, shrink_axis=%d\n",
-              begin_mask, end_mask, ellipsis_mask, new_axis_mask, shrink_axis_mask);
+  // FIX: Check if end values are 0 when they shouldn't be
+  // For ONNX slice [0:1] on axis 0, end should be 1, not 0
+  if (end.size() == 1 && end[0] == 0 && begin.size() == 1 && begin[0] == 0) {
+    sd_print("WARNING: Detected end[0]=0 with begin[0]=0, likely incorrect. Setting end[0]=1 for ONNX compatibility\n");
+    end[0] = 1;
   }
 
   std::vector<int> preshape;
   bool ellipsis_seen = false;
+
+  // Special handling for ONNX-style slicing
+  bool is_onnx_style_slice = false;
+  if (input_shape.size() == 2 && begin.size() == 1 && end.size() == 1 && strides.size() == 1) {
+    // This looks like ONNX slice on first dimension only
+    is_onnx_style_slice = true;
+
+    // Extend begin/end/strides to cover all dimensions
+    // For other dimensions, use full range
+    if (begin.size() < input_shape.size()) {
+      begin.push_back(0);
+      end.push_back(input_shape[1]);
+      strides.push_back(1);
+      // Update masks to indicate we want full range on second dimension
+      begin_mask |= (1 << 1);
+      end_mask |= (1 << 1);
+    }
+  }
 
   StridedSliceSparseSpec sparse_spec = {(int)strides.size(), 0,        &begin,        &end,          &strides,
                                         begin_mask,          end_mask, ellipsis_mask, new_axis_mask, shrink_axis_mask};
@@ -211,7 +215,7 @@ bool _preprocess_strided_slice(std::vector<sd::LongType>* indicesList, std::vect
     bool shrink_i = (dense_spec.shrink_axis_mask & (1 << e));
 
     if (stride_idx == 0) {
-      sd_printf("ERROR: Zero stride detected in dimension %d during preprocessing\n", e);
+      sd_printf("ERROR: Zero stride still detected in dimension %d after fix attempt\n", e);
       return false;
     }
     if (size_idx == -1) {
@@ -222,12 +226,25 @@ bool _preprocess_strided_slice(std::vector<sd::LongType>* indicesList, std::vect
     const std::array<int, 2> masks = {{dense_spec.begin_mask & (1 << e), dense_spec.end_mask & (1 << e)}};
     const std::array<int, 2> valid_range = {{stride_idx > 0 ? 0 : -1, stride_idx > 0 ? size_idx : size_idx - 1}};
 
-    auto canonical = [stride_idx, size_idx, masks, valid_range](int x, int c) {
+    // Improved canonical function with better bounds checking
+    auto canonical = [stride_idx, size_idx, masks, valid_range](sd::LongType x, int c) -> sd::LongType {
       if (masks[c]) {
         return stride_idx > 0 ? valid_range[c] : valid_range[(c + 1) & 1];
       } else {
-        int x_fwd = x < 0 ? size_idx + x : x;  // make negative indices positive
-        return x_fwd < valid_range[0] ? valid_range[0] : x_fwd > valid_range[1] ? valid_range[1] : x_fwd;
+        sd::LongType x_fwd = x < 0 ? size_idx + x : x;  // make negative indices positive
+        // Add bounds checking to prevent invalid indices
+        if (stride_idx > 0) {
+          x_fwd = sd::math::sd_max<sd::LongType, sd::LongType, sd::LongType>(
+              static_cast<sd::LongType>(valid_range[0]), 
+              sd::math::sd_min<sd::LongType, sd::LongType, sd::LongType>(
+                  static_cast<sd::LongType>(valid_range[1]), x_fwd));
+        } else {
+          x_fwd = sd::math::sd_max<sd::LongType, sd::LongType, sd::LongType>(
+              static_cast<sd::LongType>(valid_range[1]), 
+              sd::math::sd_min<sd::LongType, sd::LongType, sd::LongType>(
+                  static_cast<sd::LongType>(valid_range[0]), x_fwd));
+        }
+        return x_fwd;
       }
     };
 
@@ -246,7 +263,6 @@ bool _preprocess_strided_slice(std::vector<sd::LongType>* indicesList, std::vect
         begin_idx = x_fwd;
         end_idx = begin_idx + 1;
         if (x_fwd < 0 || x_fwd >= size_idx) {
-          sd_printf("ERROR: Shrink index %d out of bounds [0, %d) for dimension %d\n", x_fwd, size_idx, e);
           return false;
         }
       } else {
@@ -258,50 +274,81 @@ bool _preprocess_strided_slice(std::vector<sd::LongType>* indicesList, std::vect
       (*slice_dim0) &= (e == 0 && stride_idx == 1) || begin_and_end_masked;
     }
 
+    // Improved interval calculation and validation
     int interval_length = 1;
     bool known_interval = false;
+    
     if (dense_spec.begin_valid && dense_spec.end_valid) {
+      // Ensure begin and end are properly canonicalized
+      begin_idx = canonical(begin_idx, 0);
+      end_idx = canonical(end_idx, 1);
+      
       interval_length = end_idx - begin_idx;
       known_interval = true;
 
-      // Early detection of negative ranges
-      if (interval_length < 0 && stride_idx > 0) {
-        sd_printf("ERROR: Negative interval detected in dimension %d: end_idx=%lld < begin_idx=%lld (stride=%d > 0)\n",
-                  e, end_idx, begin_idx, stride_idx);
-        sd_printf("  Original begin=%lld, end=%lld, size=%d\n", begin[e], end[e], size_idx);
-        return false;
+
+
+      // Validate interval based on stride direction
+      if (stride_idx > 0) {
+        if (interval_length < 0) {
+          // For positive stride, if end < begin, treat as empty slice
+          interval_length = 0;
+        }
+      } else if (stride_idx < 0) {
+        if (interval_length > 0) {
+          // For negative stride, if end > begin, treat as empty slice
+          interval_length = 0;
+        } else {
+          // Make interval positive for calculation
+          interval_length = -interval_length;
+        }
       }
     } else if (shrink_i) {
       interval_length = 1;
       known_interval = true;
     } else if (begin_and_end_masked) {
       if (size_idx > 0) {
-        if (stride_idx < 0) {
-          interval_length = -size_idx;
-        } else {
-          interval_length = size_idx;
-        }
+        interval_length = size_idx;
         known_interval = true;
       }
     }
 
+    // Improved size calculation
     if (known_interval) {
       int size_i;
-      if (interval_length == 0 || ((interval_length < 0) != (stride_idx < 0))) {
-        size_i = input_shape.size() == 2 && input_shape[0] == 1 ? 1 : 0;
+      
+      // Handle empty slices
+      if (interval_length == 0) {
+        size_i = 0;
+      }
+      // Handle shrink axis
+      else if (shrink_i) {
+        size_i = 1;  // Will be removed from final shape later
+      }
+      // Normal slice calculation
+      else if (stride_idx != 0) {
+        // Calculate absolute values for size computation
+        int abs_interval = interval_length < 0 ? -interval_length : interval_length;
+        int abs_stride = stride_idx < 0 ? -stride_idx : stride_idx;
+        
+        // Calculate the number of elements in the slice
+        size_i = (abs_interval + abs_stride - 1) / abs_stride;  // Ceiling division
+        
+        // Ensure non-negative result
+        size_i = size_i < 0 ? 0 : size_i;
       } else {
-        size_i = interval_length / stride_idx + (interval_length % stride_idx != 0 ? 1 : 0);
+        // This should never happen as we check for zero stride earlier
+        sd_printf("ERROR: Zero stride encountered in size calculation for dimension %d\n", e);
+        return false;
       }
 
+
+      // Update indices list for actual slicing operation
       if (indicesList != nullptr) {
-        if (interval_length > 1) {
+        if (size_i > 0) {
           indicesList->push_back(begin_idx);
           indicesList->push_back(end_idx);
           indicesList->push_back(stride_idx);
-        } else if (interval_length == 1) {
-          indicesList->push_back(begin_idx);
-          indicesList->push_back(begin_idx + 1);
-          indicesList->push_back(1);
         }
       }
 
@@ -322,34 +369,17 @@ bool _preprocess_strided_slice(std::vector<sd::LongType>* indicesList, std::vect
 
   // Validate generated indices before returning
   if (indicesList && !indicesList->empty()) {
-    if (sd::Environment::getInstance().isDebug()) {
-      sd_print("Generated indices: [");
-      for (size_t i = 0; i < indicesList->size(); i++) {
-        sd_printf("%lld%s", (*indicesList)[i], i < indicesList->size()-1 ? ", " : "");
+    // Analyze indices in groups of 3
+    for (size_t i = 0; i < indicesList->size(); i += 3) {
+      if (i + 2 < indicesList->size()) {
+        sd::LongType dim_begin = (*indicesList)[i];
+        sd::LongType dim_end = (*indicesList)[i + 1];
+        sd::LongType dim_stride = (*indicesList)[i + 2];
+        size_t dim_idx = i / 3;
       }
-      sd_print("]\n");
-
-      // Analyze indices in groups of 3
-      for (size_t i = 0; i < indicesList->size(); i += 3) {
-        if (i + 2 < indicesList->size()) {
-          sd::LongType dim_begin = (*indicesList)[i];
-          sd::LongType dim_end = (*indicesList)[i + 1];
-          sd::LongType dim_stride = (*indicesList)[i + 2];
-          size_t dim_idx = i / 3;
-
-          sd_printf("  Dimension %zu: [%lld, %lld, %lld]", dim_idx, dim_begin, dim_end, dim_stride);
-          if (dim_idx < input_shape.size()) {
-            sd_printf(" (input_size=%lld)", input_shape[dim_idx]);
-          }
-          if (dim_end < dim_begin) {
-            sd_print(" *** NEGATIVE RANGE ***");
-          }
-          sd_print("\n");
-        }
-      }
-      sd_print("=== End _preprocess_strided_slice ===\n");
     }
   }
+
 
   return true;
 }

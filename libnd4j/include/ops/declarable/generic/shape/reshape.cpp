@@ -90,8 +90,76 @@ bool handleOptionalOrder(std::vector<LongType> &reshapeArgs, char &ordering) {
   return true;
 }
 
+LongType* handleScalarAndLength1Case(NDArray* x, std::vector<LongType>& reshapeArgs) {
+  //need to handle disambiguation between empty and scalar
+  if(x->isScalar() || x->lengthOf() == 1) {
+    if(reshapeArgs.size() < 1) {
+      return ConstantShapeHelper::getInstance().scalarShapeInfo(x->dataType());
+    }
+
+    // For scalar/length-1 input, if reshape args contain -1, replace it with 1
+    std::vector<LongType> finalShape = reshapeArgs;
+    for (size_t i = 0; i < finalShape.size(); i++) {
+      if (finalShape[i] == -1) {
+        finalShape[i] = 1;
+      }
+    }
+
+    return ConstantShapeHelper::getInstance().createShapeInfo(x->dataType(), 'c', finalShape);
+  }
+  return nullptr;
+}
+
+void processReshapeArgs(std::vector<LongType>& reshapeArgs, std::vector<LongType>& shapeNew,
+                        LongType& newShapeLen, int& pos, bool& newShapeEmpty) {
+  newShapeLen = 1;
+  pos = -1;
+  newShapeEmpty = false;
+
+  for (size_t i = 0; i < reshapeArgs.size(); i++) {
+    int dim = reshapeArgs[i];
+    if (dim == -1) {
+      REQUIRE_TRUE(pos == -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
+      pos = i;
+      shapeNew.push_back(1);
+    } else if (dim == 0) {
+      shapeNew.push_back(0);
+      newShapeEmpty = true;
+    } else {
+      shapeNew.push_back(dim);
+      newShapeLen *= dim;
+    }
+  }
+}
+
+void computeUnknownDimension(NDArray* x, std::vector<LongType>& shapeNew, int pos,
+                             LongType newShapeLen, bool newShapeEmpty) {
+  if (pos != -1) {
+    LongType xLen = x->lengthOf();
+    if (x->isEmpty()) {
+      xLen = 1;
+      // For empty shapes, calculate length considering non-zero dimensions
+      for (LongType i = 0; i < x->rankOf(); ++i)  // take into account possible empty shapes
+        if (x->sizeAt(i) > 0 || !newShapeEmpty) xLen *= x->sizeAt(i);
+    }
+
+    shapeNew[pos] = xLen / newShapeLen;
+  }
+}
+
+LongType* handleEmptyShapeCase(NDArray* x, std::vector<LongType> reshapeArgs, bool newShapeEmpty) {
+  if(newShapeEmpty) {
+    for(size_t i = 0; i < reshapeArgs.size(); i++) {
+      if(reshapeArgs[i] < 0)
+        reshapeArgs[i] = 1;
+    }
+    return ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(x->dataType(), reshapeArgs);
+  }
+  return nullptr;
+}
+
 DECLARE_SHAPE_FN(reshape) {
-  const auto x = INPUT_VARIABLE(0);
+  auto x = INPUT_VARIABLE(0);
   std::vector<LongType> reshapeArgs;
   std::vector<LongType> shapeNew;
   char orderNew = 'c';
@@ -134,44 +202,27 @@ DECLARE_SHAPE_FN(reshape) {
     }
   }
 
-  LongType newShapeLen = 1;
-  int pos = -1;
-  bool newShapeEmpty = false;
-
-  for (size_t i = 0; i < reshapeArgs.size(); i++) {
-    const int dim = reshapeArgs[i];
-    if (dim == -1) {
-      REQUIRE_TRUE(pos == -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
-      pos = i;
-      shapeNew.push_back(1);
-    } else if (dim == 0) {
-      shapeNew.push_back(0);
-      newShapeEmpty = true;
-    } else {
-      shapeNew.push_back(dim);
-      newShapeLen *= dim;
-    }
+  // Handle scalar/length 1 case
+  LongType* scalarResult = handleScalarAndLength1Case(x, reshapeArgs);
+  if (scalarResult != nullptr) {
+    return SHAPELIST(scalarResult);
   }
 
-  if (pos != -1) {
-    LongType xLen = x->lengthOf();
-    if (x->isEmpty()) {
-      xLen = 1;
-      for (LongType i = 0; i < x->rankOf(); ++i)  // take into account possible empty shapes
-        if (x->sizeAt(i) > 0 || !newShapeEmpty) xLen *= x->sizeAt(i);
-    }
+  LongType newShapeLen;
+  int pos;
+  bool newShapeEmpty;
 
-    shapeNew[pos] = xLen / newShapeLen;
+  // Process reshape arguments
+  processReshapeArgs(reshapeArgs, shapeNew, newShapeLen, pos, newShapeEmpty);
+
+  // Compute unknown dimension if needed
+  computeUnknownDimension(x, shapeNew, pos, newShapeLen, newShapeEmpty);
+
+  // Handle empty shape case
+  LongType* emptyResult = handleEmptyShapeCase(x, reshapeArgs, newShapeEmpty);
+  if (emptyResult != nullptr) {
+    return SHAPELIST(emptyResult);
   }
-
-  if(newShapeEmpty) {
-    for(size_t i = 0; i < reshapeArgs.size(); i++) {
-      if(reshapeArgs[i] < 0)
-        reshapeArgs[i] = 1;
-    }
-    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(x->dataType(), reshapeArgs));
-  }
-
 
   auto len = shape::prodLong(shapeNew.data(), shapeNew.size());
   if(!x->isScalar() && !x->isEmpty())

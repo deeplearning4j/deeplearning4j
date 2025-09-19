@@ -745,9 +745,10 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext *lc, int opNum, const voi
   auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
   auto func = PRAGMA_THREADS_FOR {
-    BUILD_SINGLE_SELECTOR_THRICE(
-        xType, functions::scalar::ScalarTransform,
-        ::transform(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, hScalar, extraParams, start, stop), SD_COMMON_TYPES_ALL);
+    BUILD_TRIPLE_SELECTOR(xType,yType,zType,functions::scalar::ScalarTransform,
+                          ::transform(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, hScalar, extraParams, start, stop),
+                          SD_NUMERIC_TYPES,SD_NUMERIC_TYPES,SD_NUMERIC_TYPES
+                          );
   };
 
   auto zLen = shape::length(hZShapeInfo);
@@ -771,11 +772,11 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext *lc, int opNum, void cons
   auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
   auto func = PRAGMA_THREADS_FOR {
-    BUILD_SINGLE_SELECTOR_THRICE(
-        xType, functions::scalar::ScalarTransform,
-        ::transform(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, hScalars, dimension, dimensionLength,
-                    tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ, start, stop),
-        SD_COMMON_TYPES_ALL);
+    BUILD_TRIPLE_SELECTOR(xType,yType,zType,functions::scalar::ScalarTransform,
+                          ::transform(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, hScalars, dimension, dimensionLength,
+                   tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ, start, stop),
+                          SD_NUMERIC_TYPES,SD_NUMERIC_TYPES,SD_NUMERIC_TYPES);
+
   };
 
   auto yLen = shape::length(hScalarShapeInfo);

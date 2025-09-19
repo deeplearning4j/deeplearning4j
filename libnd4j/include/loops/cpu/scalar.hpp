@@ -72,7 +72,7 @@ void ScalarTransform<X, Y, Z>::transform(const void *vx, const sd::LongType *xSh
       INDEX2COORDS(f, zTadRank, zTadShape, coords);
       COORDS2INDEX(xTadRank, xTadStride, coords, xOffset);
       COORDS2INDEX(zTadRank, zTadStride, coords, zOffset);
-      oZ[zOffset] = OpType::op(oX[xOffset], scalars[r], extraParams);
+      oZ[zOffset] = OpType::op(oX[xOffset], scalars[0], extraParams);
     }
   }
 }
@@ -109,9 +109,16 @@ void ScalarTransform<X, Y, Z>::transform(const void *vx, const sd::LongType *xSh
                                          const sd::LongType start, const sd::LongType stop) {
   auto x = reinterpret_cast<const X *>(vx);
   auto z = reinterpret_cast<Z *>(vz);
-  auto scalar = reinterpret_cast<const Y *>(vscalar)[0];
+  auto scalar = reinterpret_cast<const Y *>(vscalar);
   auto extraParams = reinterpret_cast<Z *>(vextraParams);
+  //need special handling for scalars as strides may not be set for scalars
+  if(shape::length(xShapeInfo) <= 1 && shape::length(zShapeInfo) <= 1) {
+    printf("scalar transform values %f scalar value %f\n",x[0],scalar[0]);
+    fflush(stdout);
+    z[0] = OpType::op(x[0], scalar[0], extraParams);
+    return;
 
+  }
   // Cache shape-related values
   sd::LongType xRank = shape::rank(xShapeInfo);
   sd::LongType zRank = shape::rank(zShapeInfo);
@@ -129,7 +136,7 @@ void ScalarTransform<X, Y, Z>::transform(const void *vx, const sd::LongType *xSh
     INDEX2COORDS(i, zRank, zShape, zCoords);
     COORDS2INDEX(xRank, xStride, coords, xOffset);
     COORDS2INDEX(zRank, zStride, zCoords, zOffset);
-    z[zOffset] = OpType::op(x[xOffset], scalar, extraParams);
+    z[zOffset] = OpType::op(x[xOffset], scalar[0], extraParams);
   };
 }
 ////////////////////////////////////////////////////////////////////////

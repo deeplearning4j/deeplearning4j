@@ -92,14 +92,25 @@ else() # Generic Linux/Unix
 endif()
 
 # --- Sanitizer Configuration ---
+# In CompilerFlags.cmake, change the sanitizer section:
+# --- Sanitizer Configuration ---
 if(SD_SANITIZE)
-    set(SANITIZE_FLAGS " -Wall -Wextra -fPIE -lpthread -ftls-model=local-dynamic -static-libasan -fsanitize=${SD_SANITIZERS} -fno-sanitize-recover=all")
+    # Use global-dynamic TLS model for shared libraries
+    set(SANITIZE_FLAGS " -Wall -Wextra -fPIC -ftls-model=global-dynamic -fsanitize=${SD_SANITIZERS} -fno-sanitize-recover=all")
+    set(SANITIZE_LINK_FLAGS "-fsanitize=${SD_SANITIZERS}")
+    
     message("Using sanitizers: ${SD_SANITIZERS}...")
     if(SD_CPU)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  ${SANITIZE_FLAGS}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SANITIZE_FLAGS}")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SANITIZE_FLAGS}")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${SANITIZE_LINK_FLAGS}")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${SANITIZE_LINK_FLAGS}")
     endif()
     if(SD_CUDA)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  ${SANITIZE_FLAGS} -lpthread -ftls-model=local-dynamic --relocatable-device-code=true")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SANITIZE_FLAGS} --relocatable-device-code=true")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${SANITIZE_FLAGS}")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${SANITIZE_LINK_FLAGS}")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${SANITIZE_LINK_FLAGS}")
     endif()
 endif()
 

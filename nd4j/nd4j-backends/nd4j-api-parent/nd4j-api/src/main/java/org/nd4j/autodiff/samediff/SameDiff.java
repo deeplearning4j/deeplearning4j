@@ -4158,9 +4158,9 @@ public class SameDiff extends SDBaseOps {
      * @param to   The new name for the variable - no variable with this name must already exist
      */
     public void renameVariable(SameDiffOp opToReName,String from, String to) {
-       if(from.equals(to)) {
-           return;
-       }
+        if(from.equals(to)) {
+            return;
+        }
         if(!variables.containsKey(from)) {
             System.out.println(String.format("Failed to rename variable %s to %s, no variable found",from,to));
             return;
@@ -4316,7 +4316,7 @@ public class SameDiff extends SDBaseOps {
      */
     public void renameVariable(String from, String to) {
         SameDiffOp op = ops.containsKey(stripVarSuffix(from)) ? ops.get(stripVarSuffix(from))
-        : null;
+                : null;
         renameVariable(op,from,to);
     }
 
@@ -4515,9 +4515,8 @@ public class SameDiff extends SDBaseOps {
      * @return SDVariable
      */
     public SDVariable scalar(String name, double value) {
-        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            return var(name, Nd4j.scalar(value));
-        }
+        return var(name, Nd4j.scalar(value));
+
     }
 
     /**
@@ -4528,9 +4527,8 @@ public class SameDiff extends SDBaseOps {
      * @return SDVariable
      */
     public SDVariable scalar(String name, float value) {
-        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            return var(name, Nd4j.scalar(value));
-        }
+        return var(name, Nd4j.scalar(value));
+
     }
 
     /**
@@ -4541,9 +4539,8 @@ public class SameDiff extends SDBaseOps {
      * @return SDVariable
      */
     public SDVariable scalar(String name, int value) {
-        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            return var(name, Nd4j.scalar(value));
-        }
+        return var(name, Nd4j.scalar(value));
+
     }
 
     /**
@@ -4554,9 +4551,8 @@ public class SameDiff extends SDBaseOps {
      * @return SDVariable
      */
     public SDVariable scalar(String name, long value) {
-        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            return var(name, Nd4j.scalar(value));
-        }
+        return var(name, Nd4j.scalar(value));
+
     }
 
     /**
@@ -4568,9 +4564,8 @@ public class SameDiff extends SDBaseOps {
      * @return SDVariable
      */
     public SDVariable scalar(String name, DataType dataType, Number value) {
-        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            return var(name, Nd4j.scalar(dataType, value));
-        }
+        return var(name, Nd4j.scalar(dataType, value));
+
     }
 
     /**
@@ -4592,9 +4587,8 @@ public class SameDiff extends SDBaseOps {
      * @return SDVariable
      */
     public SDVariable constant(String name, double value) {
-        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            return constant(name, Nd4j.scalar(value));
-        }
+        return constant(name, Nd4j.scalar(value));
+
     }
 
     /**
@@ -4616,9 +4610,8 @@ public class SameDiff extends SDBaseOps {
      * @return SDVariable
      */
     public SDVariable constant(String name, float value) {
-        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            return constant(name, Nd4j.scalar(value));
-        }
+        return constant(name, Nd4j.scalar(value));
+
     }
 
     /**
@@ -4638,9 +4631,8 @@ public class SameDiff extends SDBaseOps {
      * @return SDVariable
      */
     public SDVariable constant(String name, int value) {
-        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            return constant(name, Nd4j.scalar(value));
-        }
+        return constant(name, Nd4j.scalar(value));
+
     }
 
 
@@ -4661,9 +4653,8 @@ public class SameDiff extends SDBaseOps {
      * @param value Value to initialize the constant with
      */
     public SDVariable constant(String name, boolean value) {
-        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            return constant(name, Nd4j.scalar(value));
-        }
+        return constant(name, Nd4j.scalar(value));
+
     }
 
     /**
@@ -4682,9 +4673,8 @@ public class SameDiff extends SDBaseOps {
      * @param value Value to initialize the constant with
      */
     public SDVariable constant(String name, long value) {
-        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            return constant(name, Nd4j.scalar(value));
-        }
+        return constant(name, Nd4j.scalar(value));
+
     }
 
     /**
@@ -4695,9 +4685,8 @@ public class SameDiff extends SDBaseOps {
      * @param value    Value to initialize the constant with
      */
     public SDVariable constant(String name, DataType dataType, Number value) {
-        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            return constant(name, Nd4j.scalar(dataType, value));
-        }
+        return constant(name, Nd4j.scalar(dataType, value));
+
     }
 
     /**

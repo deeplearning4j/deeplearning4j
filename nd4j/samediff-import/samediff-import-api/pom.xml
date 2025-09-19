@@ -39,7 +39,7 @@
     <commonsio.version>2.7</commonsio.version>
     <commons.lang.version>3.7</commons.lang.version>
     <commons.dbutils.version>1.7</commons.dbutils.version>
-    <lombok.version>1.18.38</lombok.version>
+    <lombok.version>1.18.40</lombok.version>
     <logback.version>1.2.3</logback.version>
     <protobuf.version>3.8.0</protobuf.version>
     <classgraph.version>4.8.90</classgraph.version>

@@ -17,31 +17,37 @@ import java.util.*
 class TestOnnxFrameworkImporter {
 
 
-
-
-
     @Test
     fun testOther() {
         Nd4j.getEnvironment().isVariableTracingEnabled = true
+        Nd4j.getEnvironment().isLogNativeNDArrayCreation = true
+        Nd4j.getEnvironment().isFuncTracePrintJavaOnly = true
         val importer = OnnxFrameworkImporter()
         val filePath = "/home/agibsonccc/Documents/GitHub/deeplearning4j/bge-base-en-v1.5-optimized.onnx";
-        val imported = importer.runImport(filePath);
         val runner = OnnxRuntimeRunner(filePath)
+        val imported = importer.runImport(filePath);
+
         val arr = Nd4j.readBinary(File("inputs.bin"))
-        val inputPlaceHolder = mutableMapOf<String,INDArray>()
+        val inputPlaceHolder = mutableMapOf<String, INDArray>()
         inputPlaceHolder["input_ids"] = arr
-        val runnerOutput = runner.exec(inputPlaceHolder,listOf(   "/Gather_1_output_0",  "/Shape_1_output_0", "/Unsqueeze_2_output_0","/Slice_output_0","/Expand_output_0","1492"))
-        val output = imported.output(inputPlaceHolder,"1492")
+        val initMatmUl = runner.getConstantOrInitializer("onnx::MatMul_1509")
+        val runnerOutput = runner.exec(
+            inputPlaceHolder, listOf(
+                "/encoder/layer.0/attention/self/Reshape_3_output_0",
+                "1492"
+            )
+        )
+        val output = imported.output(inputPlaceHolder, "1492")
         val dryRun = imported.dryRunExecutionDAG("1492")
         val finalFile = File("bge-base-en-v1.5.sdz")
-        SDZSerializer.save(imported, finalFile,true,Collections.emptyMap())
-        val sd = SDZSerializer.load(finalFile,true)
+        SDZSerializer.save(imported, finalFile, true, Collections.emptyMap())
+        val sd = SDZSerializer.load(finalFile, true)
 
         println(sd.summary())
         println()
     }
-
-
-
-
 }
+
+
+
+

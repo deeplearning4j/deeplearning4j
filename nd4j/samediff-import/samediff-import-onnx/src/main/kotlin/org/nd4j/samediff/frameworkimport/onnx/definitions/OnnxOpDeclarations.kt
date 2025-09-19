@@ -353,14 +353,7 @@ val gru = OnnxMappingProcess(
         inputFrameworkOpName = "GRU",
         opMappingRegistry = onnxOpRegistry
 )
-val gather = OnnxMappingProcess(
-        opMappingRegistry = onnxOpRegistry,
-        inputFrameworkOpName = "Gather",
-        opName = "gather",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("indices" to "indices","input" to "data"))),
-        attributeMappingRules = listOf(valueMappings(mapOf("dimensions" to "axis")),
-                booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0)[0])
-)
+
 //TODO: GatherElements
 val gatherNd = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry,
@@ -614,21 +607,7 @@ val leakyRelu = OnnxMappingProcess(
 //TODO: Loop
 //TODO: LpNormalization
 //TODO: LpPool
-val matMul = OnnxMappingProcess(
-        opMappingRegistry = onnxOpRegistry,
-        inputFrameworkOpName = "MatMul",
-        opName = "matmul",
-        attributeMappingRules = listOf(
-                booleanConstant(inputName = "transX",constantValue = false,argumentIndex = 0)[0],
-                booleanConstant(inputName = "transY",constantValue = false,argumentIndex = 1)[0],
-                booleanConstant(inputName = "transZ",constantValue = false,argumentIndex = 2)[0],
-                booleanConstant(inputName = "transposeX",constantValue = false,argumentIndex = 0)[0],
-                booleanConstant(inputName = "transposeY",constantValue = false,argumentIndex = 1)[0],
-                booleanConstant(inputName = "transposeZ",constantValue = false,argumentIndex = 2)[0],
-                doubleConstant(inputName = "alpha",constantValue = 0.0,argumentIndex = 0)[0],
-                doubleConstant(inputName = "beta",constantValue = 1.0,argumentIndex = 1)[0]),
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "A","y" to "B")))
-)
+
 
 
 //TODO: MatMulInteger

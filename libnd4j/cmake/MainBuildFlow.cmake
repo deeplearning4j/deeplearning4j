@@ -692,7 +692,13 @@ if(NOT DEFINED OBJECT_LIB_NAME AND DEFINED SD_LIBRARY_NAME)
     set(OBJECT_LIB_NAME "${SD_LIBRARY_NAME}_object")
     message(STATUS "Set OBJECT_LIB_NAME for PostBuild: ${OBJECT_LIB_NAME}")
 endif()
-
+# Check for instantiation extraction BEFORE PostBuild
+if(SD_EXTRACT_INSTANTIATIONS)
+    print_status_colored("INFO" "=== TEMPLATE INSTANTIATION EXTRACTION MODE ===")
+    include(ExtractInstantiations)
+    # ExtractInstantiations.cmake will handle everything and exit
+    return()
+endif()
 
 include(PostBuild)
 

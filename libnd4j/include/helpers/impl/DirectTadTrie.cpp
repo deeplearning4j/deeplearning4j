@@ -89,9 +89,15 @@ size_t DirectTadTrie::computeStrideAwareHash(const std::vector<LongType>& dimens
 
   size_t hash = 17; // Prime number starting point
 
-  // Add dimension-specific hash contribution with position-dependence
-  for (size_t i = 0; i < dimensions.size(); i++) {
-    hash = hash * 31 + static_cast<size_t>(dimensions[i]) * (i + 1);
+  // Handle empty dimensions specially
+  if (dimensions.empty()) {
+    // Empty dimensions case - hash based on shape only
+    hash = hash * 31 + 0; // Marker for empty dimensions
+  } else {
+    // Add dimension-specific hash contribution with position-dependence
+    for (size_t i = 0; i < dimensions.size(); i++) {
+      hash = hash * 31 + static_cast<size_t>(dimensions[i]) * (i + 1);
+    }
   }
 
   // Add rank - critical for distinguishing different dimension arrays

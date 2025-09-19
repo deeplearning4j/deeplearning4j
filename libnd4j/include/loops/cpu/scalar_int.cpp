@@ -71,7 +71,7 @@ void ScalarIntTransform<X>::transform(const void *vx, const sd::LongType *xShape
       INDEX2COORDS(f, xTadRank, xTadShape, coords);
       COORDS2INDEX(xTadRank, xTadStride, coords, xOffset);
       COORDS2INDEX(zTadRank, zTadStride, coords, zOffset);
-      oZ[zOffset] = OpType::op(oX[xOffset], scalars[r], extraParams);
+      oZ[zOffset] = OpType::op(oX[xOffset], scalars[0], extraParams);
     }
   }
 }

@@ -149,9 +149,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                                                    At at,
                                                    MultiDataSet batch) {
 
-        Map<String, SDValue> variableValues = new HashMap<>();
-        Map<String, SDValue> results = new HashMap<>();
-        Set<String> completedOps = new HashSet<>();
+        Map<String, SDValue> variableValues = new LinkedHashMap<>();
+        Map<String, SDValue> results = new LinkedHashMap<>();
+        Set<String> completedOps = new LinkedHashSet<>();
 
         // Initialize constants, variables, and placeholders
         initializeValues(variableValues, dag, placeholderValues, otherPlaceholderValues);
@@ -194,6 +194,75 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     }
 
 
+
+    /**
+     * Get all dependent values for a variable as a formatted string.
+     *
+     * @param variableValues Current variable values from execution
+     * @param variableName Variable to get dependencies for
+     * @return Formatted string with dependent values
+     */
+    public String getDependentValuesString(Map<String, SDValue> variableValues, String variableName) {
+        Map<String, String> deps = getDependentValuesMap(variableValues, variableName);
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, String> entry : deps.entrySet()) {
+            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Get all dependent values for a variable as a map.
+     *
+     * @param variableValues Current variable values from execution
+     * @param variableName Variable to get dependencies for
+     * @return Map of variable names to their values
+     */
+    public Map<String, String> getDependentValuesMap(Map<String, SDValue> variableValues, String variableName) {
+        Map<String, String> result = new LinkedHashMap<>();
+        Set<String> visited = new HashSet<>();
+        collectDependentValues(variableValues, variableName, result, visited);
+        return result;
+    }
+
+    private void collectDependentValues(Map<String, SDValue> variableValues, String varName,
+                                        Map<String, String> result, Set<String> visited) {
+        if (visited.contains(varName)) {
+            return;
+        }
+        visited.add(varName);
+
+        // Add this variable's value
+        SDValue value = variableValues.get(varName);
+        if (value != null) {
+            result.put(varName, formatValue(value));
+        }
+
+        // Find the op that produces this variable
+        for (SameDiffOp op : sameDiff.getOps().values()) {
+            if (op.getOutputsOfOp() != null && op.getOutputsOfOp().contains(varName)) {
+                // Collect values from all inputs
+                if (op.getInputsToOp() != null) {
+                    for (String input : op.getInputsToOp()) {
+                        collectDependentValues(variableValues, input, result, visited);
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    private String formatValue(SDValue value) {
+        if (value.getSdValueType() == SDValueType.TENSOR) {
+            INDArray arr = value.getTensorValue();
+            if (arr == null) return "null";
+            if (arr.isScalar()) return String.valueOf(arr.getDouble(0));
+            return Arrays.toString(arr.shape()) + " = " + arr.toString().replaceAll("\\s+", " ").trim();
+        } else if (value.getSdValueType() == SDValueType.LIST) {
+            return "List[" + value.getListValue().size() + "]";
+        }
+        return value.toString();
+    }
     private void initializeValues(Map<String, SDValue> variableValues,
                                   ForwardExecutionDAG dag,
                                   Map<String, INDArray> placeholderValues,
@@ -564,7 +633,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             opContext.setInputArrays(inputArrays);
         }
 
-        // Handle different operation types
+        // Hanle different operation types
         if (op instanceof CustomOp) {
             executeCustomOp((CustomOp) op, opContext, node, variableValues, allRequired);
         } else if (op instanceof Op) {

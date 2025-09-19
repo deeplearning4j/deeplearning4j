@@ -42,6 +42,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.bytedeco.onnxruntime.global.onnxruntime.*;
 import static org.nd4j.onnxruntime.util.ONNXUtils.*;
@@ -59,13 +61,8 @@ public class OnnxRuntimeRunner implements Closeable {
     private Pointer bp;
     private Onnx.ModelProto modelProto;
 
-    // Store the original model path for reloading
     private final String originalModelUri;
-    private String currentModelPath; // Path to currently loaded model (may be modified)
-
-    // Track current session configuration
-    private List<String> currentOutputNames;
-    private boolean sessionNeedsReload = false;
+    private String processedModelPath; // Path to the processed model with all outputs available
 
     @Getter
     private List<Onnx.TensorProto> initializers = new ArrayList<>();
@@ -74,13 +71,15 @@ public class OnnxRuntimeRunner implements Closeable {
     @Getter
     private List<Onnx.ValueInfoProto> outputs = new ArrayList<>();
 
-    // Cache of all possible output names and their types from the model graph
+    // Map of ALL possible outputs (including intermediate nodes) with their types
     private Map<String, Onnx.ValueInfoProto> allAvailableOutputs;
+    
+    // Map of output names that need casting to their cast node outputs
+    private Map<String, String> outputCastMapping = new HashMap<>();
 
     @Builder
     public OnnxRuntimeRunner(String modelUri) {
         this.originalModelUri = modelUri;
-        this.currentModelPath = modelUri;
 
         if (env == null) {
             // First create a basic environment to register the default logger
@@ -95,15 +94,13 @@ public class OnnxRuntimeRunner implements Closeable {
         allocator.retainReference();
 
         if (modelUri != null) {
-            loadModel();
+            // Process the model ONCE to make all outputs available
+            processModelForAllOutputs();
             createSession();
         } else {
             runOptions = new RunOptions();
             memoryInfo = MemoryInfo.CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
         }
-
-        // Initialize with default outputs
-        this.currentOutputNames = getDefaultOutputNames();
     }
 
     /**
@@ -124,114 +121,108 @@ public class OnnxRuntimeRunner implements Closeable {
     }
 
     /**
-     * Load the ONNX model proto and extract metadata
+     * Process the model to ensure ALL node outputs are available as graph outputs
+     * This is done ONCE during initialization
      */
-    private void loadModel() {
+    private void processModelForAllOutputs() {
         try {
-            modelProto = Onnx.ModelProto.parseFrom(FileUtils.readFileToByteArray(new File(currentModelPath)));
+            // Load the original model
+            modelProto = Onnx.ModelProto.parseFrom(FileUtils.readFileToByteArray(new File(originalModelUri)));
+            
+            // Extract metadata
+            extractModelMetadata();
+            
+            // Build a complete map of all available outputs with their types
+            buildCompleteOutputMap();
+            
+            // Create a modified model where ALL outputs are available
+            Onnx.ModelProto processedModel = createModelWithAllOutputs();
+            
+            // Save the processed model
+            Path tempDir = Files.createTempDirectory("onnx_all_outputs_");
+            processedModelPath = tempDir.resolve("all_outputs_model.onnx").toString();
+            Files.write(Paths.get(processedModelPath), processedModel.toByteArray());
+            
+            log.info("Processed model saved to: {} with {} total outputs available", 
+                    processedModelPath, allAvailableOutputs.size());
+            
         } catch (IOException e) {
-            log.error("Failed to parse model proto", e);
-            throw new RuntimeException("Failed to load model: " + currentModelPath, e);
+            throw new RuntimeException("Failed to process model", e);
         }
+    }
 
-        // Clear and reload metadata
+    /**
+     * Extract model metadata
+     */
+    private void extractModelMetadata() {
         initializers.clear();
         inputs.clear();
         outputs.clear();
 
-        for (int i = 0; i < modelProto.getGraph().getInitializerCount(); i++) {
-            initializers.add(modelProto.getGraph().getInitializer(i));
+        Onnx.GraphProto graph = modelProto.getGraph();
+        
+        for (int i = 0; i < graph.getInitializerCount(); i++) {
+            initializers.add(graph.getInitializer(i));
         }
-        for (int i = 0; i < modelProto.getGraph().getInputCount(); i++) {
-            inputs.add(modelProto.getGraph().getInput(i));
+        for (int i = 0; i < graph.getInputCount(); i++) {
+            inputs.add(graph.getInput(i));
         }
-        for (int i = 0; i < modelProto.getGraph().getOutputCount(); i++) {
-            outputs.add(modelProto.getGraph().getOutput(i));
+        for (int i = 0; i < graph.getOutputCount(); i++) {
+            outputs.add(graph.getOutput(i));
         }
-
-        // Build cache of all available outputs with their ACTUAL types
-        allAvailableOutputs = new HashMap<>();
-
-        // Add existing graph outputs
-        for (Onnx.ValueInfoProto output : outputs) {
-            allAvailableOutputs.put(output.getName(), output);
-        }
-
-        // Create maps for easy lookup
-        Map<String, Onnx.ValueInfoProto> valueInfoMap = new HashMap<>();
-        for (Onnx.ValueInfoProto valueInfo : modelProto.getGraph().getValueInfoList()) {
-            valueInfoMap.put(valueInfo.getName(), valueInfo);
-        }
-
-        Map<String, Onnx.TensorProto> initializerMap = new HashMap<>();
-        for (Onnx.TensorProto initializer : modelProto.getGraph().getInitializerList()) {
-            initializerMap.put(initializer.getName(), initializer);
-        }
-
-        Map<String, Onnx.ValueInfoProto> inputMap = new HashMap<>();
-        for (Onnx.ValueInfoProto input : modelProto.getGraph().getInputList()) {
-            inputMap.put(input.getName(), input);
-        }
-
-        // Process all node outputs with improved type inference
-        processAllNodeOutputs(valueInfoMap, initializerMap, inputMap);
     }
 
     /**
-     * Process all node outputs and ensure they're all added to available outputs
+     * Build a complete map of all available outputs
      */
-    private void processAllNodeOutputs(Map<String, Onnx.ValueInfoProto> valueInfoMap,
-                                       Map<String, Onnx.TensorProto> initializerMap,
-                                       Map<String, Onnx.ValueInfoProto> inputMap) {
-
-        // Build a comprehensive type resolution map using multiple passes
-        Map<String, Onnx.ValueInfoProto> resolvedTypes = new HashMap<>();
-
-        // First pass: Add all known types
-        resolvedTypes.putAll(valueInfoMap);
-        resolvedTypes.putAll(inputMap);
-
-        // Add initializers as value info
-        for (Map.Entry<String, Onnx.TensorProto> entry : initializerMap.entrySet()) {
-            if (!resolvedTypes.containsKey(entry.getKey())) {
-                resolvedTypes.put(entry.getKey(), createValueInfoFromInitializer(entry.getValue()));
+    private void buildCompleteOutputMap() {
+        allAvailableOutputs = new HashMap<>();
+        Onnx.GraphProto graph = modelProto.getGraph();
+        
+        // Add existing graph outputs
+        for (Onnx.ValueInfoProto output : graph.getOutputList()) {
+            allAvailableOutputs.put(output.getName(), output);
+        }
+        
+        // Add value_info entries
+        for (Onnx.ValueInfoProto valueInfo : graph.getValueInfoList()) {
+            allAvailableOutputs.put(valueInfo.getName(), valueInfo);
+        }
+        
+        // Add initializers as potential outputs
+        for (Onnx.TensorProto initializer : graph.getInitializerList()) {
+            if (!allAvailableOutputs.containsKey(initializer.getName())) {
+                allAvailableOutputs.put(initializer.getName(), createValueInfoFromInitializer(initializer));
             }
         }
-
-        // Multiple passes to resolve all node outputs
-        boolean typesResolved = true;
-        int maxPasses = 10; // Prevent infinite loops
-        int passCount = 0;
-
-        do {
-            typesResolved = true;
-            passCount++;
-
-            for (Onnx.NodeProto node : modelProto.getGraph().getNodeList()) {
-                for (String nodeOutput : node.getOutputList()) {
-                    if (!resolvedTypes.containsKey(nodeOutput) && !allAvailableOutputs.containsKey(nodeOutput)) {
-                        Onnx.ValueInfoProto inferredType = inferOutputTypeImproved(node, nodeOutput, resolvedTypes);
-                        if (inferredType != null) {
-                            resolvedTypes.put(nodeOutput, inferredType);
-                            allAvailableOutputs.put(nodeOutput, inferredType);
-                        } else {
-                            // Create a fallback type if we can't infer - ensures ALL outputs are available
-                            Onnx.ValueInfoProto fallbackType = createFallbackOutputType(nodeOutput, node.getOpType());
-                            resolvedTypes.put(nodeOutput, fallbackType);
-                            allAvailableOutputs.put(nodeOutput, fallbackType);
-                            log.warn("Using fallback type for output '{}' from node '{}' (op: {})",
-                                    nodeOutput, node.getName(), node.getOpType());
-                        }
-                    } else if (resolvedTypes.containsKey(nodeOutput) && !allAvailableOutputs.containsKey(nodeOutput)) {
-                        // Add to available outputs if resolved but not added yet
-                        allAvailableOutputs.put(nodeOutput, resolvedTypes.get(nodeOutput));
-                    }
+        
+        // Add all node outputs
+        for (Onnx.NodeProto node : graph.getNodeList()) {
+            for (String outputName : node.getOutputList()) {
+                if (!allAvailableOutputs.containsKey(outputName)) {
+                    // Try to infer type from value_info or create a minimal entry
+                    Onnx.ValueInfoProto outputInfo = findOrInferOutputInfo(outputName, graph);
+                    allAvailableOutputs.put(outputName, outputInfo);
                 }
             }
-        } while (!typesResolved && passCount < maxPasses);
+        }
+    }
 
-        log.debug("Resolved all node outputs in {} passes. Total available outputs: {}",
-                passCount, allAvailableOutputs.size());
+    /**
+     * Find or infer output info for a given output name
+     */
+    private Onnx.ValueInfoProto findOrInferOutputInfo(String outputName, Onnx.GraphProto graph) {
+        // Check value_info first
+        for (Onnx.ValueInfoProto valueInfo : graph.getValueInfoList()) {
+            if (valueInfo.getName().equals(outputName)) {
+                return valueInfo;
+            }
+        }
+        
+        // Create minimal info - we'll fix type mismatches later
+        return Onnx.ValueInfoProto.newBuilder()
+                .setName(outputName)
+                .build();
     }
 
     /**
@@ -264,652 +255,277 @@ public class OnnxRuntimeRunner implements Closeable {
     }
 
     /**
-     * Improved output type inference that handles more cases and uses resolved types
+     * Create a model where ALL outputs are exposed as graph outputs
      */
-    private Onnx.ValueInfoProto inferOutputTypeImproved(Onnx.NodeProto node, String outputName,
-                                                        Map<String, Onnx.ValueInfoProto> resolvedTypes) {
-        String opType = node.getOpType();
-
-        // Handle specific operations with known type transformations
-        switch (opType) {
-            case "Equal":
-            case "Greater":
-            case "Less":
-            case "GreaterOrEqual":
-            case "LessOrEqual":
-            case "And":
-            case "Or":
-            case "Not":
-                return createBooleanOutputType(outputName, getShapeFromFirstInput(node, resolvedTypes));
-
-            case "Shape":
-                return createInt64OutputType(outputName, null); // Shape output is always 1D
-
-            case "Cast":
-                return handleCastOperation(node, outputName, resolvedTypes);
-
-            case "ConstantOfShape":
-                return handleConstantOfShapeOperation(node, outputName, resolvedTypes);
-
-            case "Gather":
-            case "GatherElements":
-            case "GatherND":
-                return handleGatherOperation(node, outputName, resolvedTypes);
-
-            case "Expand":
-            case "Broadcast":
-                return handleExpandOperation(node, outputName, resolvedTypes);
-
-            case "Where":
-                return handleWhereOperation(node, outputName, resolvedTypes);
-
-            case "Unsqueeze":
-            case "Squeeze":
-            case "Reshape":
-            case "Transpose":
-            case "Flatten":
-                return handleShapeManipulationOperation(node, outputName, resolvedTypes);
-
-            case "Slice":
-                return handleSliceOperation(node, outputName, resolvedTypes);
-
-            case "Concat":
-                return handleConcatOperation(node, outputName, resolvedTypes);
-
-            case "Split":
-                return handleSplitOperation(node, outputName, resolvedTypes);
-
-            default:
-                // For most operations, try to preserve the first input type
-                return inheritFromFirstInput(node, outputName, resolvedTypes);
-        }
-    }
-
-    /**
-     * Handle Cast operation - get target type from 'to' attribute
-     */
-    private Onnx.ValueInfoProto handleCastOperation(Onnx.NodeProto node, String outputName,
-                                                    Map<String, Onnx.ValueInfoProto> resolvedTypes) {
-        for (Onnx.AttributeProto attr : node.getAttributeList()) {
-            if (attr.getName().equals("to")) {
-                int targetType = (int) attr.getI();
-                return createTypedOutputType(outputName, targetType, getShapeFromFirstInput(node, resolvedTypes));
+    private Onnx.ModelProto createModelWithAllOutputs() {
+        Onnx.GraphProto.Builder graphBuilder = modelProto.getGraph().toBuilder();
+        
+        // Clear existing outputs
+        graphBuilder.clearOutput();
+        
+        // First, try adding all outputs and see what fails
+        Map<String, Onnx.ValueInfoProto> outputsToAdd = new HashMap<>(allAvailableOutputs);
+        
+        // Try to create a test session to detect type mismatches
+        boolean hasTypeMismatches = true;
+        int maxAttempts = 10; // Prevent infinite loops
+        int attempt = 0;
+        
+        while (hasTypeMismatches && attempt < maxAttempts) {
+            attempt++;
+            hasTypeMismatches = false;
+            
+            // Build test model
+            graphBuilder.clearOutput();
+            for (Onnx.ValueInfoProto output : outputsToAdd.values()) {
+                graphBuilder.addOutput(output);
             }
-        }
-        return inheritFromFirstInput(node, outputName, resolvedTypes);
-    }
-
-    /**
-     * Handle ConstantOfShape operation
-     */
-    private Onnx.ValueInfoProto handleConstantOfShapeOperation(Onnx.NodeProto node, String outputName,
-                                                               Map<String, Onnx.ValueInfoProto> resolvedTypes) {
-        // Check value attribute for data type
-        for (Onnx.AttributeProto attr : node.getAttributeList()) {
-            if (attr.getName().equals("value") && attr.hasT()) {
-                int dataType = attr.getT().getDataType();
-                return createTypedOutputType(outputName, dataType, null); // Shape determined at runtime
-            }
-        }
-        // Default to float if no value attribute
-        return createTypedOutputType(outputName, Onnx.TensorProto.DataType.FLOAT.getNumber(), null);
-    }
-
-    /**
-     * Handle Gather operations - preserve data tensor type
-     */
-    private Onnx.ValueInfoProto handleGatherOperation(Onnx.NodeProto node, String outputName,
-                                                      Map<String, Onnx.ValueInfoProto> resolvedTypes) {
-        if (!node.getInputList().isEmpty()) {
-            String dataInput = node.getInput(0); // First input is data tensor
-            if (resolvedTypes.containsKey(dataInput)) {
-                return createOutputFromInputType(resolvedTypes.get(dataInput), outputName, node.getOpType());
-            }
-        }
-        return createFallbackOutputType(outputName, node.getOpType());
-    }
-
-    /**
-     * Handle Expand operation - preserve input type
-     */
-    private Onnx.ValueInfoProto handleExpandOperation(Onnx.NodeProto node, String outputName,
-                                                      Map<String, Onnx.ValueInfoProto> resolvedTypes) {
-        if (!node.getInputList().isEmpty()) {
-            String inputTensor = node.getInput(0); // First input is the tensor to expand
-            if (resolvedTypes.containsKey(inputTensor)) {
-                return createOutputFromInputType(resolvedTypes.get(inputTensor), outputName, node.getOpType());
-            }
-        }
-        return createFallbackOutputType(outputName, node.getOpType());
-    }
-
-    /**
-     * Handle Where operation - output type matches second input (true values)
-     */
-    private Onnx.ValueInfoProto handleWhereOperation(Onnx.NodeProto node, String outputName,
-                                                     Map<String, Onnx.ValueInfoProto> resolvedTypes) {
-        if (node.getInputList().size() >= 2) {
-            String trueInput = node.getInput(1); // Second input provides the output type
-            if (resolvedTypes.containsKey(trueInput)) {
-                return createOutputFromInputType(resolvedTypes.get(trueInput), outputName, node.getOpType());
-            }
-        }
-        return createFallbackOutputType(outputName, node.getOpType());
-    }
-
-    /**
-     * Handle shape manipulation operations - preserve input type
-     */
-    private Onnx.ValueInfoProto handleShapeManipulationOperation(Onnx.NodeProto node, String outputName,
-                                                                 Map<String, Onnx.ValueInfoProto> resolvedTypes) {
-        return inheritFromFirstInput(node, outputName, resolvedTypes);
-    }
-
-    /**
-     * Handle Slice operation - preserve input type
-     */
-    private Onnx.ValueInfoProto handleSliceOperation(Onnx.NodeProto node, String outputName,
-                                                     Map<String, Onnx.ValueInfoProto> resolvedTypes) {
-        return inheritFromFirstInput(node, outputName, resolvedTypes);
-    }
-
-    /**
-     * Handle Concat operation - preserve input type from first input
-     */
-    private Onnx.ValueInfoProto handleConcatOperation(Onnx.NodeProto node, String outputName,
-                                                      Map<String, Onnx.ValueInfoProto> resolvedTypes) {
-        return inheritFromFirstInput(node, outputName, resolvedTypes);
-    }
-
-    /**
-     * Handle Split operation - preserve input type
-     */
-    private Onnx.ValueInfoProto handleSplitOperation(Onnx.NodeProto node, String outputName,
-                                                     Map<String, Onnx.ValueInfoProto> resolvedTypes) {
-        return inheritFromFirstInput(node, outputName, resolvedTypes);
-    }
-
-    /**
-     * Try to inherit type from first input
-     */
-    private Onnx.ValueInfoProto inheritFromFirstInput(Onnx.NodeProto node, String outputName,
-                                                      Map<String, Onnx.ValueInfoProto> resolvedTypes) {
-        if (!node.getInputList().isEmpty()) {
-            String firstInput = node.getInput(0);
-            if (resolvedTypes.containsKey(firstInput)) {
-                return createOutputFromInputType(resolvedTypes.get(firstInput), outputName, node.getOpType());
-            }
-        }
-        return null; // Will trigger fallback type creation
-    }
-
-    /**
-     * Get shape information from first input if available
-     */
-    private Onnx.TensorShapeProto getShapeFromFirstInput(Onnx.NodeProto node,
-                                                         Map<String, Onnx.ValueInfoProto> resolvedTypes) {
-        if (!node.getInputList().isEmpty()) {
-            String firstInput = node.getInput(0);
-            if (resolvedTypes.containsKey(firstInput)) {
-                Onnx.ValueInfoProto inputInfo = resolvedTypes.get(firstInput);
-                if (inputInfo.getType().hasTensorType() && inputInfo.getType().getTensorType().hasShape()) {
-                    return inputInfo.getType().getTensorType().getShape();
+            
+            Onnx.ModelProto testModel = modelProto.toBuilder()
+                    .setGraph(graphBuilder.build())
+                    .build();
+            
+            // Test for type mismatches
+            Map<String, TypeMismatchInfo> mismatches = detectTypeMismatches(testModel);
+            
+            if (!mismatches.isEmpty()) {
+                hasTypeMismatches = true;
+                log.info("Attempt {}: Found {} type mismatches, adding cast nodes", attempt, mismatches.size());
+                
+                // Add cast nodes for each mismatch
+                for (Map.Entry<String, TypeMismatchInfo> entry : mismatches.entrySet()) {
+                    String outputName = entry.getKey();
+                    TypeMismatchInfo mismatch = entry.getValue();
+                    
+                    // Create a cast node
+                    String castOutputName = outputName + "_cast_to_" + mismatch.expectedType.toLowerCase().replace("tensor(", "").replace(")", "");
+                    Onnx.NodeProto castNode = createCastNode(outputName, castOutputName, 
+                            parseDataType(mismatch.expectedType));
+                    graphBuilder.addNode(castNode);
+                    
+                    // Update the output to use the cast output
+                    Onnx.ValueInfoProto castOutputInfo = createOutputInfo(castOutputName, 
+                            parseDataType(mismatch.expectedType));
+                    outputsToAdd.put(outputName, castOutputInfo);
+                    
+                    // Store the mapping
+                    outputCastMapping.put(outputName, castOutputName);
                 }
             }
         }
+        
+        return modelProto.toBuilder()
+                .setGraph(graphBuilder.build())
+                .build();
+    }
+
+    /**
+     * Detect type mismatches by trying to create a test session
+     */
+    private Map<String, TypeMismatchInfo> detectTypeMismatches(Onnx.ModelProto testModel) {
+        Map<String, TypeMismatchInfo> mismatches = new HashMap<>();
+        
+        try {
+            // Save test model temporarily
+            Path tempPath = Files.createTempFile("onnx_test_", ".onnx");
+            Files.write(tempPath, testModel.toByteArray());
+            
+            // Try to create a session
+            try (Session testSession = new Session(env, new BytePointer(tempPath.toString()), sessionOptions)) {
+                // Success - no mismatches
+            }
+            
+            // Clean up
+            Files.deleteIfExists(tempPath);
+            
+        } catch (RuntimeException e) {
+            if (e.getMessage() != null && e.getMessage().contains("Type Error")) {
+                TypeMismatchInfo mismatch = parseTypeMismatchError(e.getMessage());
+                if (mismatch != null) {
+                    mismatches.put(mismatch.outputName, mismatch);
+                }
+            }
+        } catch (IOException e) {
+            log.error("Failed to test model", e);
+        }
+        
+        return mismatches;
+    }
+
+    /**
+     * Helper class for type mismatch information
+     */
+    private static class TypeMismatchInfo {
+        String outputName;
+        String actualType;
+        String expectedType;
+        
+        TypeMismatchInfo(String outputName, String actualType, String expectedType) {
+            this.outputName = outputName;
+            this.actualType = actualType;
+            this.expectedType = expectedType;
+        }
+    }
+
+    /**
+     * Parse ONNX Runtime type mismatch error to extract information
+     */
+    private TypeMismatchInfo parseTypeMismatchError(String errorMessage) {
+        // Parse error like: "Type (tensor(int32)) of output arg (/encoder/layer.0/attention/self/Reshape_3_output_0) 
+        // of node (Attention_0) does not match expected type (tensor(float))."
+        
+        Pattern pattern = Pattern.compile(
+            "Type \\(tensor\\((\\w+)\\)\\) of output arg \\(([^)]+)\\) .* expected type \\(tensor\\((\\w+)\\)\\)"
+        );
+        
+        Matcher matcher = pattern.matcher(errorMessage);
+        if (matcher.find()) {
+            return new TypeMismatchInfo(
+                matcher.group(2),  // output name
+                matcher.group(1),  // actual type
+                matcher.group(3)   // expected type
+            );
+        }
+        
         return null;
     }
 
     /**
-     * Create a boolean output type
+     * Create a Cast node
      */
-    private Onnx.ValueInfoProto createBooleanOutputType(String outputName, Onnx.TensorShapeProto shape) {
-        return createTypedOutputType(outputName, Onnx.TensorProto.DataType.BOOL.getNumber(), shape);
+    private Onnx.NodeProto createCastNode(String input, String output, int toType) {
+        return Onnx.NodeProto.newBuilder()
+                .setOpType("Cast")
+                .setName(input + "_to_" + getDataTypeName(toType))
+                .addInput(input)
+                .addOutput(output)
+                .addAttribute(Onnx.AttributeProto.newBuilder()
+                        .setName("to")
+                        .setType(Onnx.AttributeProto.AttributeType.INT)
+                        .setI(toType)
+                        .build())
+                .build();
     }
 
     /**
-     * Create an int64 output type
+     * Create a ValueInfoProto with the specified type
      */
-    private Onnx.ValueInfoProto createInt64OutputType(String outputName, Onnx.TensorShapeProto shape) {
-        return createTypedOutputType(outputName, Onnx.TensorProto.DataType.INT64.getNumber(), shape);
+    private Onnx.ValueInfoProto createOutputInfo(String name, int dataType) {
+        return Onnx.ValueInfoProto.newBuilder()
+                .setName(name)
+                .setType(Onnx.TypeProto.newBuilder()
+                        .setTensorType(Onnx.TypeProto.Tensor.newBuilder()
+                                .setElemType(dataType)
+                                .build())
+                        .build())
+                .build();
     }
 
     /**
-     * Create output type with specific data type and shape
+     * Parse data type from string representation
      */
-    private Onnx.ValueInfoProto createTypedOutputType(String outputName, int dataType, Onnx.TensorShapeProto shape) {
-        Onnx.ValueInfoProto.Builder outputBuilder = Onnx.ValueInfoProto.newBuilder();
-        outputBuilder.setName(outputName);
-
-        Onnx.TypeProto.Tensor.Builder tensorBuilder = Onnx.TypeProto.Tensor.newBuilder();
-        tensorBuilder.setElemType(dataType);
-
-        if (shape != null) {
-            tensorBuilder.setShape(shape);
-        }
-
-        Onnx.TypeProto.Builder typeBuilder = Onnx.TypeProto.newBuilder();
-        typeBuilder.setTensorType(tensorBuilder.build());
-        outputBuilder.setType(typeBuilder.build());
-
-        return outputBuilder.build();
-    }
-
-    /**
-     * Create output type based on input ValueInfoProto
-     */
-    private Onnx.ValueInfoProto createOutputFromInputType(Onnx.ValueInfoProto input, String outputName, String opType) {
-        Onnx.ValueInfoProto.Builder outputBuilder = Onnx.ValueInfoProto.newBuilder();
-        outputBuilder.setName(outputName);
-
-        // Handle operation-specific type changes
-        if (opType.equals("Equal") || opType.equals("Greater") || opType.equals("Less") ||
-                opType.equals("GreaterOrEqual") || opType.equals("LessOrEqual")) {
-            // Comparison operations output BOOL
-            Onnx.TypeProto.Tensor.Builder tensorBuilder = Onnx.TypeProto.Tensor.newBuilder();
-            tensorBuilder.setElemType(Onnx.TensorProto.DataType.BOOL.getNumber());
-
-            // Preserve shape if available
-            if (input.getType().hasTensorType() && input.getType().getTensorType().hasShape()) {
-                tensorBuilder.setShape(input.getType().getTensorType().getShape());
-            }
-
-            Onnx.TypeProto.Builder typeBuilder = Onnx.TypeProto.newBuilder();
-            typeBuilder.setTensorType(tensorBuilder.build());
-            outputBuilder.setType(typeBuilder.build());
-        } else {
-            // Most operations preserve the input type
-            outputBuilder.setType(input.getType());
-        }
-
-        return outputBuilder.build();
-    }
-
-    /**
-     * Create a fallback output type when we can't infer the actual type
-     * This ensures ALL outputs are available, even if the type might not be perfect
-     */
-    private Onnx.ValueInfoProto createFallbackOutputType(String outputName, String opType) {
-        Onnx.ValueInfoProto.Builder outputBuilder = Onnx.ValueInfoProto.newBuilder();
-        outputBuilder.setName(outputName);
-
-        Onnx.TypeProto.Tensor.Builder tensorBuilder = Onnx.TypeProto.Tensor.newBuilder();
-
-        // Use reasonable defaults based on operation type
-        switch (opType) {
-            case "Equal":
-            case "Greater":
-            case "Less":
-            case "GreaterOrEqual":
-            case "LessOrEqual":
-            case "And":
-            case "Or":
-            case "Not":
-                tensorBuilder.setElemType(Onnx.TensorProto.DataType.BOOL.getNumber());
-                break;
-            case "Shape":
-                tensorBuilder.setElemType(Onnx.TensorProto.DataType.INT64.getNumber());
-                break;
+    private int parseDataType(String typeStr) {
+        // Parse strings like "tensor(float)" or "float" or "float32"
+        typeStr = typeStr.toLowerCase()
+                .replace("tensor(", "")
+                .replace(")", "")
+                .trim();
+        
+        switch (typeStr) {
+            case "float":
+            case "float32":
+                return Onnx.TensorProto.DataType.FLOAT.getNumber();
+            case "double":
+            case "float64":
+                return Onnx.TensorProto.DataType.DOUBLE.getNumber();
+            case "int32":
+            case "int":
+                return Onnx.TensorProto.DataType.INT32.getNumber();
+            case "int64":
+            case "long":
+                return Onnx.TensorProto.DataType.INT64.getNumber();
+            case "bool":
+            case "boolean":
+                return Onnx.TensorProto.DataType.BOOL.getNumber();
+            case "int8":
+                return Onnx.TensorProto.DataType.INT8.getNumber();
+            case "int16":
+                return Onnx.TensorProto.DataType.INT16.getNumber();
+            case "uint8":
+                return Onnx.TensorProto.DataType.UINT8.getNumber();
+            case "uint16":
+                return Onnx.TensorProto.DataType.UINT16.getNumber();
+            case "uint32":
+                return Onnx.TensorProto.DataType.UINT32.getNumber();
+            case "uint64":
+                return Onnx.TensorProto.DataType.UINT64.getNumber();
+            case "float16":
+            case "half":
+                return Onnx.TensorProto.DataType.FLOAT16.getNumber();
             default:
-                // Default to float32 for unknown operations
-                tensorBuilder.setElemType(Onnx.TensorProto.DataType.FLOAT.getNumber());
-                break;
+                log.warn("Unknown type string: {}, defaulting to FLOAT", typeStr);
+                return Onnx.TensorProto.DataType.FLOAT.getNumber();
         }
-
-        Onnx.TypeProto.Builder typeBuilder = Onnx.TypeProto.newBuilder();
-        typeBuilder.setTensorType(tensorBuilder.build());
-        outputBuilder.setType(typeBuilder.build());
-
-        return outputBuilder.build();
     }
 
     /**
-     * Infer the output type based on node operation and input types
+     * Get human-readable name for ONNX data type
      */
-    private Onnx.ValueInfoProto inferOutputType(Onnx.NodeProto node, String outputName,
-                                                Map<String, Onnx.ValueInfoProto> valueInfoMap,
-                                                Map<String, Onnx.TensorProto> initializerMap,
-                                                Map<String, Onnx.ValueInfoProto> inputMap) {
-        String opType = node.getOpType();
-
-        // For most operations, output type matches the first input type
-        if (!node.getInputList().isEmpty()) {
-            String firstInput = node.getInput(0);
-
-            // Check value_info first
-            if (valueInfoMap.containsKey(firstInput)) {
-                return createOutputFromInputType(valueInfoMap.get(firstInput), outputName, opType);
-            }
-
-            // Check initializers
-            if (initializerMap.containsKey(firstInput)) {
-                return createOutputFromInitializer(initializerMap.get(firstInput), outputName, opType);
-            }
-
-            // Check graph inputs
-            if (inputMap.containsKey(firstInput)) {
-                return createOutputFromInputType(inputMap.get(firstInput), outputName, opType);
-            }
+    private String getDataTypeName(int dataType) {
+        switch (dataType) {
+            case 1: return "FLOAT";
+            case 2: return "UINT8";
+            case 3: return "INT8";
+            case 4: return "UINT16";
+            case 5: return "INT16";
+            case 6: return "INT32";
+            case 7: return "INT64";
+            case 8: return "STRING";
+            case 9: return "BOOL";
+            case 10: return "FLOAT16";
+            case 11: return "DOUBLE";
+            case 12: return "UINT32";
+            case 13: return "UINT64";
+            case 14: return "COMPLEX64";
+            case 15: return "COMPLEX128";
+            case 16: return "BFLOAT16";
+            default: return "UNKNOWN(" + dataType + ")";
         }
-
-        // Handle specific operations that have known output types
-        return createOutputFromOperation(outputName, opType, node);
-    }
-
-
-
-    /**
-     * Create output type based on initializer tensor
-     */
-    private Onnx.ValueInfoProto createOutputFromInitializer(Onnx.TensorProto initializer, String outputName, String opType) {
-        Onnx.ValueInfoProto.Builder outputBuilder = Onnx.ValueInfoProto.newBuilder();
-        outputBuilder.setName(outputName);
-
-        Onnx.TypeProto.Tensor.Builder tensorBuilder = Onnx.TypeProto.Tensor.newBuilder();
-
-        // Handle operation-specific type changes
-        if (opType.equals("Equal") || opType.equals("Greater") || opType.equals("Less")) {
-            tensorBuilder.setElemType(Onnx.TensorProto.DataType.BOOL.getNumber());
-        } else {
-            // Use the initializer's actual data type number
-            tensorBuilder.setElemType(initializer.getDataType());
-        }
-
-        // Copy shape if available
-        if (initializer.getDimsCount() > 0) {
-            Onnx.TensorShapeProto.Builder shapeBuilder = Onnx.TensorShapeProto.newBuilder();
-            for (long dim : initializer.getDimsList()) {
-                Onnx.TensorShapeProto.Dimension.Builder dimBuilder =
-                        Onnx.TensorShapeProto.Dimension.newBuilder();
-                dimBuilder.setDimValue(dim);
-                shapeBuilder.addDim(dimBuilder.build());
-            }
-            tensorBuilder.setShape(shapeBuilder.build());
-        }
-
-        Onnx.TypeProto.Builder typeBuilder = Onnx.TypeProto.newBuilder();
-        typeBuilder.setTensorType(tensorBuilder.build());
-        outputBuilder.setType(typeBuilder.build());
-
-        return outputBuilder.build();
     }
 
     /**
-     * Create output type based on operation type when input types are unknown
-     */
-    private Onnx.ValueInfoProto createOutputFromOperation(String outputName, String opType, Onnx.NodeProto node) {
-        Onnx.ValueInfoProto.Builder outputBuilder = Onnx.ValueInfoProto.newBuilder();
-        outputBuilder.setName(outputName);
-
-        Onnx.TypeProto.Tensor.Builder tensorBuilder = Onnx.TypeProto.Tensor.newBuilder();
-
-        // Determine type based on operation
-        switch (opType) {
-            case "Equal":
-            case "Greater":
-            case "Less":
-            case "And":
-            case "Or":
-            case "Not":
-                tensorBuilder.setElemType(Onnx.TensorProto.DataType.BOOL.getNumber());
-                break;
-            case "Shape":
-                tensorBuilder.setElemType(Onnx.TensorProto.DataType.INT64.getNumber());
-                break;
-            case "Cast":
-                // Look for 'to' attribute to determine output type
-                for (Onnx.AttributeProto attr : node.getAttributeList()) {
-                    if (attr.getName().equals("to")) {
-                        tensorBuilder.setElemType((int) attr.getI());
-                        break;
-                    }
-                }
-
-                break;
-            case "ConstantOfShape":
-                // Check value attribute for data type
-                for (Onnx.AttributeProto attr : node.getAttributeList()) {
-                    if (attr.getName().equals("value") && attr.hasT()) {
-                        tensorBuilder.setElemType(attr.getT().getDataType());
-                        break;
-                    }
-                }
-
-                break;
-            case "Gather":
-                // Gather preserves the data type of the first input (data tensor)
-                // but we need to look up the first input to get its type
-                if (!node.getInputList().isEmpty()) {
-                    // We would need to recursively look up the input type here
-                    // For now, return null to indicate we can't infer without more context
-                    return null;
-                }
-                break;
-            case "Expand":
-                // Expand preserves the input data type
-                // but we need the input type - return null for now
-                return null;
-            case "Where":
-                // Where operation: output type matches the second input (true values)
-                // but we need to look up the input type
-                return null;
-            case "Unsqueeze":
-                // Unsqueeze preserves input type but changes shape
-                return null;
-            default:
-                // For unknown operations, we can't safely infer the type
-                return null;
-        }
-
-        Onnx.TypeProto.Builder typeBuilder = Onnx.TypeProto.newBuilder();
-        typeBuilder.setTensorType(tensorBuilder.build());
-        outputBuilder.setType(typeBuilder.build());
-
-        return outputBuilder.build();
-    }
-
-    /**
-     * Create or recreate the ONNX Runtime session
+     * Create the ONNX Runtime session with the processed model
      */
     private void createSession() {
-        // Close existing session if present
-        if (session != null) {
-            session.close();
-            session = null;
-        }
-
         bp = Loader.getPlatform().toLowerCase().startsWith("windows") ?
-                new CharPointer(currentModelPath) : new BytePointer(currentModelPath);
+                new CharPointer(processedModelPath) : new BytePointer(processedModelPath);
         session = new Session(env, bp, sessionOptions);
         session.retainReference();
 
         runOptions = new RunOptions();
         memoryInfo = MemoryInfo.CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
 
-        sessionNeedsReload = false;
-        log.debug("Created new ONNX Runtime session for model: {}", currentModelPath);
+        log.debug("Created ONNX Runtime session with all outputs available");
     }
 
-    /**
-     * Get the default output names from the model
-     */
-    private List<String> getDefaultOutputNames() {
-        List<String> defaultOutputs = new ArrayList<>();
-        for (Onnx.ValueInfoProto output : outputs) {
-            defaultOutputs.add(output.getName());
+    public Map<String,INDArray> getConstantsOrInitializers(List<String> names) {
+        Map<String,INDArray> ret = new LinkedHashMap<>();
+        for(String name : names) {
+            ret.put(name,getConstantOrInitializer(name));
         }
-        return defaultOutputs;
+        return ret;
     }
 
-    /**
-     * Validate that all requested output names are available in the model
-     */
-    private void validateOutputNames(List<String> requestedOutputs) {
-        if (requestedOutputs == null || requestedOutputs.isEmpty()) {
-            return; // Default outputs are always valid
-        }
-
-        for (String outputName : requestedOutputs) {
-            if (!allAvailableOutputs.containsKey(outputName)) {
-                throw new IllegalArgumentException(
-                        String.format("Requested output '%s' is not available in the model. " +
-                                "Available outputs: %s", outputName, allAvailableOutputs.keySet()));
-            }
-        }
+    public INDArray getConstantOrInitializer(String name) {
+        return this.initializers.stream().filter(input -> input.getName().equals(name))
+                .map(input -> OnnxTensorUtils.toINDArray(input)).findAny().orElseThrow();
     }
 
-    /**
-     * Check if outputs are different and reload session if necessary
-     */
-    private void checkAndReloadSession(List<String> requestedOutputs) {
-        if (requestedOutputs == null || requestedOutputs.isEmpty()) {
-            requestedOutputs = getDefaultOutputNames();
-        }
-
-        validateOutputNames(requestedOutputs);
-
-        // Check if the requested outputs are different from current outputs
-        if (!Objects.equals(currentOutputNames, requestedOutputs)) {
-            log.info("Outputs are different. Modifying protobuf and reloading EVERYTHING. Previous: {}, New: {}",
-                    currentOutputNames, requestedOutputs);
-
-            // Modify protobuf, write to disk, and reload everything
-            modifyProtobufAndReload(requestedOutputs);
-            currentOutputNames = new ArrayList<>(requestedOutputs);
-        }
-    }
-
-    /**
-     * Modify the protobuf to set custom outputs, write to disk, and reload everything
-     */
-    private void modifyProtobufAndReload(List<String> customOutputNames) {
-        try {
-            // Load the original model proto
-            Onnx.ModelProto originalModel = Onnx.ModelProto.parseFrom(
-                    FileUtils.readFileToByteArray(new File(originalModelUri)));
-
-            // Create a new graph builder from the existing graph
-            Onnx.GraphProto.Builder graphBuilder = originalModel.getGraph().toBuilder();
-
-            // Clear existing outputs
-            graphBuilder.clearOutput();
-
-            // Add the custom outputs using their ACTUAL types from our cache
-            for (String outputName : customOutputNames) {
-                Onnx.ValueInfoProto outputInfo = allAvailableOutputs.get(outputName);
-                if (outputInfo != null) {
-                    graphBuilder.addOutput(outputInfo);
-                } else {
-                    throw new IllegalArgumentException("Output '" + outputName + "' not found in available outputs");
-                }
-            }
-
-            // Build the modified model
-            Onnx.ModelProto.Builder modelBuilder = originalModel.toBuilder();
-            modelBuilder.setGraph(graphBuilder.build());
-            Onnx.ModelProto modifiedModel = modelBuilder.build();
-
-            // Write the modified model to a temporary file
-            Path tempDir = Files.createTempDirectory("onnx_modified_");
-            Path tempModelPath = tempDir.resolve("modified_model.onnx");
-            Files.write(tempModelPath, modifiedModel.toByteArray());
-
-            // Update current model path to the modified model
-            currentModelPath = tempModelPath.toString();
-
-            // Now reload everything with the modified model
-            reloadEverything();
-
-            log.info("Successfully modified protobuf with outputs {} and reloaded model from {}",
-                    customOutputNames, currentModelPath);
-
-        } catch (IOException e) {
-            log.error("Failed to modify protobuf and reload model", e);
-            throw new RuntimeException("Failed to modify model protobuf", e);
-        }
-    }
-
-    /**
-     * Reload everything after protobuf modification
-     */
-    private void reloadEverything() {
-        // Close existing session if present
-        if (session != null) {
-            session.close();
-            session = null;
-        }
-
-        // Release all existing resources
-        if (sessionOptions != null) {
-            sessionOptions.releaseReference();
-            sessionOptions = null;
-        }
-        if (allocator != null) {
-            allocator.releaseReference();
-            allocator = null;
-        }
-        if (runOptions != null) {
-            runOptions.releaseReference();
-            runOptions = null;
-        }
-
-        // Clear all model metadata
-        initializers.clear();
-        inputs.clear();
-        outputs.clear();
-        if (allAvailableOutputs != null) {
-            allAvailableOutputs.clear();
-        }
-
-        // Reload everything from the modified model
-        loadModel();
-        initializeSessionOptions();
-
-        allocator = new OrtAllocator();
-        allocator.retainReference();
-
-        createSession();
-
-        sessionNeedsReload = false;
-        log.debug("Completely reloaded model, graph, and session for ONNX Runtime: {}", currentModelPath);
-    }
-
-    @Override
-    public void close() {
-        if (session != null) {
-            session.close();
-        }
-
-        if (sessionOptions != null) {
-            sessionOptions.releaseReference();
-        }
-        if (allocator != null) {
-            allocator.releaseReference();
-        }
-        if (runOptions != null) {
-            runOptions.releaseReference();
-        }
-
-        // Clean up temporary files
-        if (!currentModelPath.equals(originalModelUri)) {
-            try {
-                Path tempModel = Paths.get(currentModelPath);
-                if (Files.exists(tempModel)) {
-                    Files.delete(tempModel);
-                    // Also try to delete the temp directory if it's empty
-                    Path tempDir = tempModel.getParent();
-                    if (Files.exists(tempDir)) {
-                        try {
-                            Files.delete(tempDir);
-                        } catch (Exception e) {
-                            // Ignore if directory is not empty
-                        }
-                    }
-                }
-            } catch (IOException e) {
-                log.warn("Failed to clean up temporary model file: {}", currentModelPath, e);
-            }
-        }
+    public INDArray getInitializer(String arr) {
+        return this.initializers.stream()
+                .filter(input -> input.getName().equals(arr))
+                .map(input -> OnnxTensorUtils.toINDArray(input))
+                .findFirst().orElseThrow();
     }
 
     /**
@@ -928,12 +544,37 @@ public class OnnxRuntimeRunner implements Closeable {
      * @return a map of the names of the SDValues
      */
     public Map<String, SDValue> execValues(Map<String, SDValue> input, List<String> customOutputNames) {
-        // Check if outputs are different and reload session if necessary
-        checkAndReloadSession(customOutputNames);
+        // Validate inputs first
+        if (input == null || input.isEmpty()) {
+            throw new IllegalArgumentException("No inputs provided. Model expects the following inputs: " + 
+                    getAvailableInputNames());
+        }
+        
+        if (customOutputNames == null || customOutputNames.isEmpty()) {
+            customOutputNames = getDefaultOutputNames();
+        }
+        
+        // Validate outputs exist
+        for (String output : customOutputNames) {
+            if (!allAvailableOutputs.containsKey(output) && !outputCastMapping.containsKey(output)) {
+                throw new IllegalArgumentException(
+                    String.format("Output '%s' not available. Available outputs: %s", 
+                        output, allAvailableOutputs.keySet()));
+            }
+        }
+        
+        // Map requested outputs to actual outputs (handling casts)
+        List<String> actualOutputs = new ArrayList<>();
+        Map<String, String> reverseMapping = new HashMap<>();
+        
+        for (String output : customOutputNames) {
+            String actualOutput = outputCastMapping.getOrDefault(output, output);
+            actualOutputs.add(actualOutput);
+            reverseMapping.put(actualOutput, output);
+        }
 
         long numInputNodes = session.GetInputCount();
-        List<String> outputNames = getOutputNames(customOutputNames);
-        long numOutputNodes = outputNames.size();
+        long numOutputNodes = actualOutputs.size();
 
         PointerPointer<BytePointer> inputNodeNames = new PointerPointer<>(numInputNodes);
         PointerPointer<BytePointer> outputNodeNames = new PointerPointer<>(numOutputNodes);
@@ -942,8 +583,15 @@ public class OnnxRuntimeRunner implements Closeable {
         for (long i = 0; i < numInputNodes; i++) {
             BytePointer inputName = session.GetInputNameAllocated(i, allocator);
             inputNodeNames.put(i, inputName);
+            String inputNameStr = inputName.getString();
+            
+            if (!input.containsKey(inputNameStr)) {
+                throw new IllegalArgumentException("Missing required input: '" + inputNameStr + 
+                        "'. Provided inputs: " + input.keySet());
+            }
+            
             ONNXType typeForInput = getTypeForInput(session, i);
-            List<INDArray> arr = input.get(inputName.getString()).getListValue();
+            List<INDArray> arr = input.get(inputNameStr).getListValue();
             if (arr.size() == 1 && typeForInput == ONNXType.ONNX_TYPE_TENSOR) {
                 INDArray arr2 = arr.get(0);
                 Value inputTensor = getTensor(arr2, memoryInfo);
@@ -952,7 +600,7 @@ public class OnnxRuntimeRunner implements Closeable {
             }
             // empty sequence
             else if (arr.size() == 0) {
-                throw new IllegalArgumentException("Onnx Runtime does not support empty sequences! Found at input name " + inputName.getString());
+                throw new IllegalArgumentException("Onnx Runtime does not support empty sequences! Found at input name " + inputNameStr);
             } else if (arr.size() > 1 || typeForInput == ONNXType.ONNX_TYPE_SEQUENCE) {
                 ValueVector inputTensor = getSequence(arr, memoryInfo);
                 inputVal.position(i).put(Value.CreateSequence(inputTensor));
@@ -963,7 +611,7 @@ public class OnnxRuntimeRunner implements Closeable {
         inputVal.position(0);
 
         for (int i = 0; i < numOutputNodes; i++) {
-            outputNodeNames.put(i, new BytePointer(outputNames.get(i)));
+            outputNodeNames.put(i, new BytePointer(actualOutputs.get(i)));
         }
 
         ValueVector outputVector = session.Run(
@@ -980,12 +628,16 @@ public class OnnxRuntimeRunner implements Closeable {
         for (int i = 0; i < numOutputNodes; i++) {
             Value outValue = outputVector.get(i);
             outValue.retainReference();
+            
+            String actualOutputName = actualOutputs.get(i);
+            String requestedOutputName = reverseMapping.getOrDefault(actualOutputName, actualOutputName);
+            
             if (outValue.IsTensor()) {
                 INDArray arr = getArray(outValue);
-                ret.put((outputNodeNames.get(BytePointer.class, i)).getString(), SDValue.create(arr));
+                ret.put(requestedOutputName, SDValue.create(arr));
             } else {
                 INDArray[] seq = ndarraysFromSequence(outValue, allocator);
-                ret.put((outputNodeNames.get(BytePointer.class, i)).getString(), SDValue.create(Arrays.asList(seq)));
+                ret.put(requestedOutputName, SDValue.create(Arrays.asList(seq)));
             }
         }
 
@@ -1001,13 +653,6 @@ public class OnnxRuntimeRunner implements Closeable {
         return exec(input, null);
     }
 
-    public INDArray getInitializer(String arr) {
-        return this.initializers.stream()
-                .filter(input -> input.getName().equals(arr))
-                .map(input -> OnnxTensorUtils.toINDArray(input))
-                .findFirst().orElseThrow();
-    }
-
     /**
      * Execute the session using the given input Map with custom output names
      * @param input the input map
@@ -1015,12 +660,52 @@ public class OnnxRuntimeRunner implements Closeable {
      * @return a map of the names of the ndarrays
      */
     public Map<String, INDArray> exec(Map<String, INDArray> input, List<String> customOutputNames) {
-        // Check if outputs are different and reload session if necessary
-        checkAndReloadSession(customOutputNames);
+        // Validate inputs first
+        if (input == null || input.isEmpty()) {
+            throw new IllegalArgumentException("No inputs provided. Model expects the following inputs: " + 
+                    getAvailableInputNames());
+        }
+        
+        // Check that all required inputs are present
+        for (Onnx.ValueInfoProto inputInfo : inputs) {
+            String inputName = inputInfo.getName();
+            if (!input.containsKey(inputName)) {
+                throw new IllegalArgumentException("Missing required input: '" + inputName + 
+                        "'. Provided inputs: " + input.keySet());
+            }
+            
+            // Validate non-null
+            INDArray arr = input.get(inputName);
+            if (arr == null) {
+                throw new IllegalArgumentException("Input '" + inputName + "' is null");
+            }
+        }
+        
+        if (customOutputNames == null || customOutputNames.isEmpty()) {
+            customOutputNames = getDefaultOutputNames();
+        }
+        
+        // Validate outputs exist
+        for (String output : customOutputNames) {
+            if (!allAvailableOutputs.containsKey(output) && !outputCastMapping.containsKey(output)) {
+                throw new IllegalArgumentException(
+                    String.format("Output '%s' not available. Available outputs: %s", 
+                        output, allAvailableOutputs.keySet()));
+            }
+        }
+        
+        // Map requested outputs to actual outputs (handling casts)
+        List<String> actualOutputs = new ArrayList<>();
+        Map<String, String> reverseMapping = new HashMap<>();
+        
+        for (String output : customOutputNames) {
+            String actualOutput = outputCastMapping.getOrDefault(output, output);
+            actualOutputs.add(actualOutput);
+            reverseMapping.put(actualOutput, output);
+        }
 
         long numInputNodes = session.GetInputCount();
-        List<String> outputNames = getOutputNames(customOutputNames);
-        long numOutputNodes = outputNames.size();
+        long numOutputNodes = actualOutputs.size();
 
         PointerPointer<BytePointer> inputNodeNames = new PointerPointer<>(numInputNodes);
         PointerPointer<BytePointer> outputNodeNames = new PointerPointer<>(numOutputNodes);
@@ -1040,7 +725,7 @@ public class OnnxRuntimeRunner implements Closeable {
         inputVal.position(0);
 
         for (int i = 0; i < numOutputNodes; i++) {
-            outputNodeNames.put(i, new BytePointer(outputNames.get(i)));
+            outputNodeNames.put(i, new BytePointer(actualOutputs.get(i)));
         }
 
         ValueVector outputVector = session.Run(
@@ -1057,41 +742,21 @@ public class OnnxRuntimeRunner implements Closeable {
         for (int i = 0; i < numOutputNodes; i++) {
             Value outValue = outputVector.get(i);
             outValue.retainReference();
+            
+            String actualOutputName = actualOutputs.get(i);
+            String requestedOutputName = reverseMapping.getOrDefault(actualOutputName, actualOutputName);
 
-            // For custom outputs, we need to determine the type dynamically
-            ONNXType typeForOutput = getOutputType(outValue, outputNames.get(i));
-
-            switch (typeForOutput) {
-                case ONNX_TYPE_SEQUENCE:
-                    long count = outValue.GetCount();
-                    // Handle sequence outputs if needed
-                    INDArray[] seqArrays = ndarraysFromSequence(outValue, allocator);
-                    if (seqArrays.length > 0) {
-                        // For backward compatibility, return the first array in sequence
-                        ret.put(outputNames.get(i), seqArrays[0]);
-                    }
-                    break;
-                case ONNX_TYPE_TENSOR:
-                    DataBuffer buffer = getDataBuffer(outValue);
-                    LongVector longPointer = outValue.GetTensorTypeAndShapeInfo().GetShape();
-                    // shape info can be null
-                    if (longPointer != null) {
-                        long[] shape = new long[(int)longPointer.size()];
-                        for (int j = 0; j < shape.length; j++) {
-                            shape[j] = longPointer.get(j);
-                        }
-                        ret.put(outputNames.get(i), Nd4j.create(buffer).reshape(shape));
-                    } else {
-                        ret.put(outputNames.get(i), Nd4j.create(buffer));
-                    }
-                    break;
-                case ONNX_TYPE_MAP:
-                case ONNX_TYPE_OPAQUE:
-                case ONNX_TYPE_UNKNOWN:
-                case ONNX_TYPE_OPTIONAL:
-                case ONNX_TYPE_SPARSE_TENSOR:
-                default:
-                    throw new IllegalStateException("Unable to get type " + typeForOutput + " only accepts tensors and sequences.");
+            DataBuffer buffer = getDataBuffer(outValue);
+            LongVector longPointer = outValue.GetTensorTypeAndShapeInfo().GetShape();
+            // shape info can be null
+            if (longPointer != null) {
+                long[] shape = new long[(int)longPointer.size()];
+                for (int j = 0; j < shape.length; j++) {
+                    shape[j] = longPointer.get(j);
+                }
+                ret.put(requestedOutputName, Nd4j.create(buffer).reshape(shape));
+            } else {
+                ret.put(requestedOutputName, Nd4j.create(buffer));
             }
         }
 
@@ -1099,33 +764,14 @@ public class OnnxRuntimeRunner implements Closeable {
     }
 
     /**
-     * Get the list of output names to use for execution
-     * @param customOutputNames custom output names, can be null
-     * @return list of output names to use
+     * Get the default output names from the model
      */
-    private List<String> getOutputNames(List<String> customOutputNames) {
-        if (customOutputNames != null && !customOutputNames.isEmpty()) {
-            return customOutputNames;
+    private List<String> getDefaultOutputNames() {
+        List<String> defaultOutputs = new ArrayList<>();
+        for (Onnx.ValueInfoProto output : outputs) {
+            defaultOutputs.add(output.getName());
         }
-
-        // Default to graph outputs
-        return getDefaultOutputNames();
-    }
-
-    /**
-     * Determine the ONNX type for a given output value and name
-     * @param outValue the output value
-     * @param outputName the output name
-     * @return the ONNXType
-     */
-    private ONNXType getOutputType(Value outValue, String outputName) {
-        if (outValue.IsTensor()) {
-            return ONNXType.ONNX_TYPE_TENSOR;
-        } else if (outValue.IsSparseTensor()) {
-            return ONNXType.ONNX_TYPE_SPARSE_TENSOR;
-        } else {
-            return ONNXType.ONNX_TYPE_UNKNOWN;
-        }
+        return defaultOutputs;
     }
 
     /**
@@ -1157,18 +803,40 @@ public class OnnxRuntimeRunner implements Closeable {
     }
 
     /**
-     * Force a session reload on next execution (useful for external configuration changes)
+     * Save temporary model to disk
      */
-    public void forceSessionReload() {
-        this.sessionNeedsReload = true;
-        log.info("Forcing complete reload of ONNX session on next execution");
+    private Path saveTemporaryModel(Onnx.ModelProto model) throws IOException {
+        Path tempDir = Files.createTempDirectory("onnx_test_");
+        Path tempModelPath = tempDir.resolve("test_model.onnx");
+        Files.write(tempModelPath, model.toByteArray());
+        return tempModelPath;
     }
 
-    /**
-     * Get the currently configured output names for this session
-     * @return list of current output names
-     */
-    public List<String> getCurrentOutputNames() {
-        return new ArrayList<>(currentOutputNames);
+    @Override
+    public void close() {
+        if (session != null) {
+            session.close();
+        }
+
+        if (sessionOptions != null) {
+            sessionOptions.releaseReference();
+        }
+        if (allocator != null) {
+            allocator.releaseReference();
+        }
+        if (runOptions != null) {
+            runOptions.releaseReference();
+        }
+
+        // Clean up temporary files
+        if (processedModelPath != null) {
+            try {
+                Path path = Paths.get(processedModelPath);
+                Files.deleteIfExists(path);
+                Files.deleteIfExists(path.getParent());
+            } catch (IOException e) {
+                log.warn("Failed to clean up temporary files", e);
+            }
+        }
     }
 }

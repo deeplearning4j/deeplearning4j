@@ -160,11 +160,9 @@ DECLARE_SHAPE_FN(gather) {
 
 
   auto result = ConstantShapeHelper::getInstance().bufferForShapeInfo(outputShapeInfo)->primary();
-  RELEASE(outputShapeInfo, block.getWorkspace());
   return SHAPELIST(result);
 }
 
 }  // namespace ops
 }  // namespace sd
-
 #endif

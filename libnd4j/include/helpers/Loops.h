@@ -1095,7 +1095,7 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
   }
 
   // Get basic shape information
-  const LongType len = shape::length(xShapeInfo);
+  const LongType len = shape::length(zShapeInfo);
   const LongType xRank = shape::rank(xShapeInfo);
   const LongType zRank = shape::rank(zShapeInfo);
 

@@ -1460,7 +1460,7 @@ public class SDVariable implements Serializable {
      * Get the shape of the array as a dynamic SDVariable
      * @return Shape SDVariable
      */
-    public SDVariable shape(){
+    public SDVariable shape() {
         return sameDiff.shape(this);
     }
 
@@ -1692,14 +1692,13 @@ public class SDVariable implements Serializable {
             if(variableIndices && (indices[i].getIndexType() == SDIndex.IndexType.INTERVAL || indices[i].getIndexType() == SDIndex.IndexType.POINT)) {
                 switch(indices[i].getIndexType()) {
                     case INTERVAL:
-                        indices[i] = SDIndex.interval(sameDiff.constant(indices[i].getIntervalBegin()),sameDiff.constant(indices[i].getIntervalEnd()),sameDiff.constant(indices[i].getIntervalEnd()));
+                        indices[i] = SDIndex.interval(sameDiff.constant(indices[i].getIntervalBegin()),sameDiff.constant(indices[i].getIntervalEnd()),sameDiff.constant(indices[i].getIntervalStrides()));
                         break;
                     case POINT:
                         indices[i] = SDIndex.point(sameDiff.constant(indices[i].getPointIndex()),indices[i].isPointKeepDim());
                         break;
                 }
             }
-
         }
 
         long[] begin = new long[ndims];
@@ -1709,9 +1708,10 @@ public class SDVariable implements Serializable {
         int[] end_mask_arr = new int[ndims];
         int[] shrink_axis_mask_arr = new int[ndims];
 
-        SDVariable beginVar = null;
-        SDVariable endVar = null;
-        SDVariable stridesVar = null;
+        // Build complete arrays for variable indices
+        SDVariable[] beginParts = new SDVariable[ndims];
+        SDVariable[] endParts = new SDVariable[ndims];
+        SDVariable[] stridesParts = new SDVariable[ndims];
 
         for (int i = 0; i < ndims; i++) {
             strides[i] = 1;
@@ -1720,19 +1720,28 @@ public class SDVariable implements Serializable {
             if (indexType == SDIndex.IndexType.ALL) {
                 begin_mask_arr[i] = 1;
                 end_mask_arr[i] = 1;
+
+                // For variable indices, we need to provide values even for ALL dimensions
+                if(variableIndices) {
+                    beginParts[i] = sameDiff.constant(0L);
+                    endParts[i] = sameDiff.sizeAt(this, i);
+                    stridesParts[i] = sameDiff.constant(1L);
+                }
             } else if (indexType == SDIndex.IndexType.POINT || indexType == SDIndex.IndexType.POINT_INPUT) {
                 if(indexType == SDIndex.IndexType.POINT) {
                     long pointIndex = index.getPointIndex();
                     begin[i] = pointIndex;
                     end[i] = pointIndex + 1;
-                } else if(indexType == SDIndex.IndexType.POINT_INPUT) {
-                    if(beginVar == null && endVar == null) {
-                        beginVar = index.getPointVar();
-                        endVar = index.getPointVar().add(1.0);
-                    }  else {
-                        beginVar = sameDiff.concat(0,beginVar,index.getPointVar());
-                        endVar = sameDiff.concat(0,endVar,index.getPointVar().add(1.0));
+
+                    if(variableIndices) {
+                        beginParts[i] = sameDiff.constant(pointIndex);
+                        endParts[i] = sameDiff.constant(pointIndex + 1);
+                        stridesParts[i] = sameDiff.constant(1L);
                     }
+                } else if(indexType == SDIndex.IndexType.POINT_INPUT) {
+                    beginParts[i] = index.getPointVar();
+                    endParts[i] = index.getPointVar().add(1.0);
+                    stridesParts[i] = sameDiff.constant(1L);
                 }
 
                 if(!index.isPointKeepDim()) {
@@ -1742,38 +1751,46 @@ public class SDVariable implements Serializable {
                 if (index.getIntervalBegin() == null && indexType != SDIndex.IndexType.INTERVAL_INPUT) {
                     begin_mask_arr[i] = 1;
                 } else if(indexType == SDIndex.IndexType.INTERVAL_INPUT) {
-                    if(beginVar == null) {
-                        beginVar = index.getIntervalInputBegin();
+                    if(index.getIntervalInputBegin() != null) {
+                        beginParts[i] = index.getIntervalInputBegin();
                     } else {
-                        beginVar = sameDiff.concat(0,beginVar,index.getIntervalInputBegin());
+                        beginParts[i] = sameDiff.constant(0L);
+                        begin_mask_arr[i] = 1;
                     }
                 } else {
                     begin[i] = index.getIntervalBegin();
+                    if(variableIndices) {
+                        beginParts[i] = sameDiff.constant(index.getIntervalBegin());
+                    }
                 }
+
                 if (index.getIntervalEnd() == null && indexType != SDIndex.IndexType.INTERVAL_INPUT) {
                     end_mask_arr[i] = 1;
                 } else if(indexType == SDIndex.IndexType.INTERVAL_INPUT) {
-                    if(endVar == null) {
-                        endVar = index.getIntervalInputEnd();
+                    if(index.getIntervalInputEnd() != null) {
+                        endParts[i] = index.getIntervalInputEnd();
                     } else {
-                        endVar = sameDiff.concat(0,endVar,index.getIntervalInputEnd());
+                        endParts[i] = sameDiff.sizeAt(this, i);
+                        end_mask_arr[i] = 1;
                     }
                 } else {
                     end[i] = index.getIntervalEnd();
-                }
-                if (index.getIntervalStrides() == null) {
-                    strides[i] = 1;
-                    if(stridesVar != null) {
-                        stridesVar = sameDiff.concat(0,stridesVar,sameDiff.constant(1).reshape(1));
-                    } else {
-                        stridesVar = sameDiff.constant(1).reshape(1);
+                    if(variableIndices) {
+                        endParts[i] = sameDiff.constant(index.getIntervalEnd());
                     }
+                }
+
+                if (index.getIntervalStrides() == null && indexType != SDIndex.IndexType.INTERVAL_INPUT) {
+                    strides[i] = 1;
+                    if(variableIndices) {
+                        stridesParts[i] = sameDiff.constant(1L);
+                    }
+                } else if(indexType == SDIndex.IndexType.INTERVAL_INPUT && index.getIntervalStrideInput() != null) {
+                    stridesParts[i] = index.getIntervalStrideInput();
                 } else {
                     strides[i] = index.getIntervalStrides();
-                    if(stridesVar != null) {
-                        stridesVar = sameDiff.concat(0,stridesVar,index.getIntervalStrideInput());
-                    } else {
-                        stridesVar = index.getIntervalStrideInput();
+                    if(variableIndices) {
+                        stridesParts[i] = sameDiff.constant(index.getIntervalStrides());
                     }
                 }
             }
@@ -1783,10 +1800,12 @@ public class SDVariable implements Serializable {
         int begin_mask = binArrToInt(begin_mask_arr);
         int end_mask = binArrToInt(end_mask_arr);
         int shrink_axis = binArrToInt(shrink_axis_mask_arr);
+
         if(variableIndices) {
-            if(stridesVar == null) {
-                stridesVar = sameDiff.onesLike(beginVar);
-            }
+            // Stack the parts to create complete begin/end/stride tensors
+            SDVariable beginVar = sameDiff.concat(0, beginParts);
+            SDVariable endVar = sameDiff.concat(0, endParts);
+            SDVariable stridesVar = sameDiff.concat(0, stridesParts);
 
             return this.sameDiff.stridedSlice(this, beginVar, endVar, stridesVar,
                     begin_mask, end_mask, 0, 0, shrink_axis);
@@ -1795,7 +1814,6 @@ public class SDVariable implements Serializable {
                     begin_mask, end_mask, 0, 0, shrink_axis);
         }
     }
-
 
 
     public static  SDVariable sliceEnd(SDVariable input,SDVariable sliceIndexInput) {

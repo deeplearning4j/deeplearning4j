@@ -60,7 +60,6 @@ public class Gather extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[] {input, sameDiff.constant(Nd4j.createFromArray(indices))}, inPlace);
 
         addIArgument(axis);
-        // FIXED: Removed incorrect addIArgument(indices) call
         this.jaxis = axis;
         this.indices = indices;
     }

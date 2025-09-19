@@ -1349,9 +1349,25 @@ SD_INLINE SD_HOST sd::LongType *shapeBufferOfNpy(cnpy::NpyArray arr) {
 SD_LIB_EXPORT SD_HOST_DEVICE  SD_INLINE sd::LongType *calcStrides(sd::LongType const *shape, sd::LongType rank, sd::LongType startNum) {
   sd::LongType *stride = new sd::LongType[rank];
 
-  if (rank == 1) {
+  if (rank <= 1) {
+    if (rank < 0) {
+      delete[] stride;
+      THROW_EXCEPTION("calcStrides: Invalid rank, must be >= 0");
+    }
     stride[0] = 1;
     return stride;
+  }
+
+  // Validate shape array to prevent buffer overflow
+  for (sd::LongType i = 0; i < rank; i++) {
+    if (shape[i] < 0) {
+      delete[] stride;
+      std::string errorMessage = "calcStrides: Invalid shape dimension at index ";
+      errorMessage += std::to_string(i);
+      errorMessage += ", all dimensions must be >= 0, but got: ";
+      errorMessage += std::to_string(shape[i]);
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
   }
 
   sd::LongType st = startNum;
@@ -1366,7 +1382,7 @@ SD_LIB_EXPORT SD_HOST_DEVICE  SD_INLINE sd::LongType *calcStrides(sd::LongType c
 
 SD_INLINE SD_HOST_DEVICE sd::LongType *calcStrides(sd::LongType const *shape, sd::LongType rank, sd::LongType startNum,
                                                    sd::LongType *ret) {
-  if (rank == 1) {
+  if (rank <= 1) {
     ret[0] = 1;
     return ret;
   }
@@ -2593,6 +2609,24 @@ SD_LIB_EXPORT SD_HOST SD_INLINE void calcSubArrsShapeInfoAndOffsets(const sd::Lo
                                                                     sd::LongType *subArrShapeInfo, sd::LongType *subArrOffsets,
                                                                     bool keepUnitiesInShape) {
   const sd::LongType rank = shape::rank(wholeShapeInfo);
+
+  // Special handling for when all dimensions are excluded and we want scalar TADs
+  if (dimsSize == rank && !keepUnitiesInShape) {
+    // Create scalar TADs - each element is its own TAD
+    subArrShapeInfo[0] = 0;  // rank = 0 for scalar
+    subArrShapeInfo[1] = 0;  // no shape dimensions
+    subArrShapeInfo[2] = 1;  // stride (not used for scalar)
+    subArrShapeInfo[3] = 0;  // offset
+    subArrShapeInfo[4] = 1;  // element-wise stride
+    subArrShapeInfo[5] = 99; // order 'c'
+    sd::ArrayOptions::copyDataType(subArrShapeInfo, wholeShapeInfo);
+    
+    // Set sequential offsets for each scalar TAD
+    for (sd::LongType i = 0; i < numOfSubArrs; ++i) {
+      subArrOffsets[i] = i;
+    }
+    return;
+  }
 
   if (dimsSize == rank || dimsSize == 0) {  // means there is one sub-array and it coincides with whole array, return
     // copy of wholeShapeInfo and one zero offset in this case

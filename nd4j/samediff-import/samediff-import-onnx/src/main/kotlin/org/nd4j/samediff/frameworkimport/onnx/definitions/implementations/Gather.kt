@@ -30,18 +30,17 @@ import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
 /**
- * Implementation of the ONNX Shape operator.
- *
- * The Shape operator takes a tensor as input and outputs an integer tensor
- * containing the shape (dimensions) of the input tensor.
- *
- * ONNX Shape operator reference:
- * https://github.com/onnx/onnx/blob/master/docs/Operators.md#shape
+ * Implementation of ONNX Gather operation mapping for SameDiff.
+ * Maps the ONNX Gather operation to SameDiff's gather function.
+ * 
+ * ONNX Gather spec: https://github.com/onnx/onnx/blob/main/docs/Operators.md#gather
+ * Given data tensor of rank r >= 1, and indices tensor of rank q, gather entries of the axis dimension of data
+ * (axis specified as an attribute) indexed by indices, and concatenates them in an output tensor of rank q + (r - 1).
  *
  * @author Adam Gibson
  */
-@PreHookRule(nodeNames = [], opNames = ["Shape"], frameworkName = "onnx")
-class Shape : PreImportHook {
+@PreHookRule(nodeNames = [], opNames = ["Gather"], frameworkName = "onnx")
+class Gather : PreImportHook {
 
     override fun doImport(
         sd: SameDiff,
@@ -52,35 +51,17 @@ class Shape : PreImportHook {
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
         dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String, List<SDVariable>> {
-        // Get the input tensor whose shape we want to extract
-        val inputVariable = sd.getVariable(op.inputsToOp[0])
-
-        // The ONNX Shape operator may have optional 'start' and 'end' attributes
-        val start = attributes["start"] as? Long ?: 0L
-        val end = attributes["end"] as? Long
-
-        val shapeVariable = if (start > 0 || end != null) {
-            // Handle slicing case
-            val fullShape = inputVariable.shape()
-
-            if (end != null) {
-                val sliceBegin = intArrayOf(start.toInt())
-                val sliceSize = intArrayOf((end - start).toInt())
-                sd.slice(fullShape, sliceBegin, *sliceSize)
-            } else {
-                val shapeRank = inputVariable.shape?.size ?: 1
-                val sliceBegin = intArrayOf(start.toInt())
-                val sliceSize = intArrayOf(shapeRank - start.toInt())
-                sd.slice(fullShape, sliceBegin, *sliceSize)
-
-            }
-        } else {
-            // Default case: get the full shape of the input tensor
-            sd.shape(outputNames[0],inputVariable)
-        }
-
-        return mapOf(outputNames[0] to listOf(shapeVariable))
-
-
+        // Get input variables
+        val dataVariable = sd.getVariable(op.inputsToOp[0])
+        val indicesVariable = sd.getVariable(op.inputsToOp[1])
+        
+        // Get axis attribute (default to 0 if not specified)
+        val axis = attributes["axis"]?.let { (it as Long).toInt() } ?: 0
+        
+        // Call SameDiff's gather method
+        val outputVarName = outputNames[0]
+        val outputVar = sd.gather(outputVarName, dataVariable, indicesVariable, axis)
+        
+        return mapOf(outputVar.name() to listOf(outputVar))
     }
 }

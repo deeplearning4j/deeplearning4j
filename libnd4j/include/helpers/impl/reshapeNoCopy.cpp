@@ -25,6 +25,12 @@ bool reshapeNoAlloc(const sd::LongType* inShape,
   int newnd = newShape.size();
   bool isFOrder = order == 'f';
 
+  // FIX: Set data type early, before any return statements
+  // This ensures data type is preserved even for empty arrays
+  if(ArrayOptions::numDataTypesSet(ArrayOptions::extra(outShape)) < 1) {
+    ArrayOptions::setDataType(outShape, ArrayOptions::dataType(inShape));
+  }
+
   // Remove axes with dimension 1 from the old array
   int actual_oldnd = 0;
   for (oi = 0; oi < oldnd; oi++) {
@@ -50,6 +56,7 @@ bool reshapeNoAlloc(const sd::LongType* inShape,
   }
 
   if (np == 0) {
+    // FIX: Data type has already been set above, so empty arrays will have correct type
     return false;  // don't support empty arrays
   }
 
@@ -123,10 +130,10 @@ bool reshapeNoAlloc(const sd::LongType* inShape,
 
   shape::setShape(outShape, const_cast<sd::LongType*>(newShape.data()));
   shape::setStride(outShape, newStrides.data());
-  if(ArrayOptions::numDataTypesSet(ArrayOptions::extra(outShape)) < 1) {
-    ArrayOptions::setDataType(outShape, ArrayOptions::dataType(inShape));
-  }
-
+  
+  // NOTE: Data type was already set at the beginning of the function
+  // No need to set it again here
+  
   shape::setOrder(outShape, order);
 
   return true;

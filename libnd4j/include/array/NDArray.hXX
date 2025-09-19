@@ -1862,7 +1862,7 @@ bool NDArray::isBroadcastableTo(NDArray &other)  {
 void NDArray::assign(NDArray *other, bool allowParallelism) {
   NDArray::validateAssign(this, other);
   const sd::LongType* modifiedOtherShapeInfo = NDArray::modifyShapeForAssign(this, other);
-  NDArray::copyDataForAssign(other, this, modifiedOtherShapeInfo, allowParallelism);
+  NDArray::copyDataForAssign(this, other, modifiedOtherShapeInfo, allowParallelism);
 }
 //////////////////////////////////////////////////////////////////////////
 
@@ -1982,34 +1982,9 @@ bool NDArray::isFinite() {
 
 //////////////////////////////////////////////////////////////////////////
 
-//////////////////////////////////////////////////////////////////////////
-template <typename T, typename Y, typename>
-void NDArray::templatedSet(void *buffer, LongType offset, void *value) {
-  NDArray::preparePrimaryUse({this}, {this});
-  int len = isScalar() ? 1 : lengthOf();
-
-  // Check if offset is valid
-  if (offset < 0 || offset >= len) {
-    std::string errorMessage = "NDArray::templatedSet: offset out of bounds "
-                               + std::to_string(offset) + " vs " + std::to_string(len);
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-
-  auto t = reinterpret_cast<T *>(buffer);
-  const auto y = *(reinterpret_cast<const Y *>(value));
-  if(t == nullptr) {
-    THROW_EXCEPTION("NDArray::templatedSet: first buffer is nullptr");
-  }
-
-  t[offset] = y;
-  tickWriteHost();
-  NDArray::registerPrimaryUse({this}, {this});
-}
-
-
 
 BUILD_DOUBLE_TEMPLATE( SD_LIB_EXPORT  void NDArray::templatedSet,
-                      (void *buffer,  sd::LongType offset,  void *value), SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
+                       (void *buffer,  sd::LongType offset,  void *value), SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
 
 
 template <typename T, typename Y, typename>
@@ -2673,19 +2648,36 @@ void NDArray::validateAssign(NDArray *thisArray,  NDArray *other) {
 }
 
 // Performs the data copy for assignment
-void NDArray::copyDataForAssign(NDArray *thisArray,  NDArray *other, const sd::LongType* otherShapeInfo, bool allowParallelism) {
+void NDArray::copyDataForAssign(NDArray *thisArray, NDArray *other, const sd::LongType* otherShapeInfo, bool allowParallelism) {
   if (other->lengthOf() <= 1) {
+    printf("Copy data for assign <=1");
+    fflush(stdout);
+
+    // Simple fix for length <= 1 cases - just use p() which handles offsets correctly
+    if (thisArray->lengthOf() <= 1 && other->lengthOf() <= 1) {
+      printf("\nDirect copy via p() for length<=1\n");
+      printf("Source (other) value: %f\n", other->e<float>(0));
+      printf("Dest (thisArray) value before: %f\n", thisArray->e<float>(0));
+
+      thisArray->p(0, other);
+
+      printf("Dest (thisArray) value after: %f\n", thisArray->e<float>(0));
+      return;
+    }
+
     thisArray->prepareSpecialUse({thisArray}, {other});
-    NativeOpExecutioner::execScalar(thisArray->getContext(), scalar::CopyPws, thisArray->buffer(), thisArray->shapeInfo(),
-                                    thisArray->specialBuffer(), thisArray->specialShapeInfo(), thisArray->buffer(),
-                                    thisArray->shapeInfo(), thisArray->specialBuffer(), thisArray->specialShapeInfo(),
-                                    other->buffer(), other->shapeInfo(), other->specialBuffer(),
-                                    other->specialShapeInfo(), nullptr, allowParallelism);
-    thisArray->registerSpecialUse({thisArray}, {other}); // Registering through the instance
+    NativeOpExecutioner::execScalar(thisArray->getContext(), scalar::CopyPws,
+                                    thisArray->buffer(), thisArray->shapeInfo(),
+                                    thisArray->specialBuffer(), thisArray->specialShapeInfo(),
+                                    thisArray->buffer(), thisArray->shapeInfo(),
+                                    thisArray->specialBuffer(), thisArray->specialShapeInfo(),
+                                    other->buffer(), other->shapeInfo(),
+                                    other->specialBuffer(), other->specialShapeInfo(),
+                                    nullptr, allowParallelism);
+    thisArray->registerSpecialUse({thisArray}, {other});
 
   } else {
     thisArray->prepareSpecialUse({thisArray}, {other});
-
 
     NativeOpExecutioner::execTransformAny(thisArray->getContext(),
                                           transform::Assign,
@@ -2697,12 +2689,11 @@ void NDArray::copyDataForAssign(NDArray *thisArray,  NDArray *other, const sd::L
                                           otherShapeInfo,
                                           other->specialBuffer(),
                                           other->specialShapeInfo(),
-                                          nullptr
-        , allowParallelism);
-    thisArray->registerSpecialUse({thisArray}, {other}); // Registering through the instance
+                                          nullptr,
+                                          allowParallelism);
+    thisArray->registerSpecialUse({thisArray}, {other});
   }
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -2726,29 +2717,22 @@ LongType *NDArray::reshapeShapeInfo(NDArray *array, char order, const std::vecto
     sd::LongType *ret = new sd::LongType[shape::shapeInfoLength(newShape.size())];
     // Initialize memory to prevent garbage values
     memset(ret, 0, sizeof(sd::LongType) * shape::shapeInfoLength(newShape.size()));
-
     ret[0] = newShape.size();
     for (size_t i = 0; i < newShape.size(); i++) {
       ret[i + 1] = newShape[i];
     }
-
-
     shape::setOrder(ret, 'c');
     ArrayOptions::setExtra(ret, ArrayOptions::defaultFlag());
     ArrayOptions::setDataType(ret, array->dataType());
-
     auto ret2 = ConstantShapeHelper::getInstance().bufferForShapeInfo(ret);
     delete[] ret;
     return ret2->primary();
   }
-
   if (order != 'c' && order != 'f') {
     std::string errorMessage = "reshapeShapeInfo: unknown order, must be 'c' or 'f', received: ";
     errorMessage += order;
     THROW_EXCEPTION(errorMessage.c_str());
   }
-
-
   std::vector<sd::LongType> shape_vector;
   int numberNegativesOnes = 0;
   for (size_t i = 0; i < newShape.size(); i++) {
@@ -2770,55 +2754,66 @@ LongType *NDArray::reshapeShapeInfo(NDArray *array, char order, const std::vecto
       shape_vector.push_back(newShape[i]);
     }
   }
-
-
   sd::LongType arrLength = 1;
   for (const auto& dim : shape_vector) {
     arrLength *= dim;
   }
-
   if (arrLength != array->lengthOf() && !array->isScalar()) {
     THROW_EXCEPTION("reshapeShapeInfo: bad length of new shape!");
   }
-
-
-  size_t shapeInfoLength = shape::shapeInfoLength(shape_vector.size());
-
-
+  sd::LongType shapeInfoLength = shape::shapeInfoLength(shape_vector.size());
   sd::LongType* shapeInfoNew = new sd::LongType[shapeInfoLength];
-
   // Initialize to prevent garbage values
   memset(shapeInfoNew, 0, sizeof(sd::LongType) * shapeInfoLength);
-
   shapeInfoNew[0] = static_cast<sd::LongType>(shape_vector.size());
 
-  bool canReshape = ops::helpers::reshapeNoAlloc(array->shapeInfo(), shape_vector, order, shapeInfoNew);
 
+  for (int i = 0; i < shape_vector.size(); i++) {
+    shapeInfoNew[i + 1] = shape_vector[i];
+  }
+
+
+  bool canReshape = ops::helpers::reshapeNoAlloc(array->shapeInfo(), shape_vector, order, shapeInfoNew);
   if (!canReshape) {
-    shape::calcStrides(shapeInfoNew, order);
+    // reshapeNoAlloc failed - need to properly initialize shapeInfoNew
+    shapeInfoNew[0] = shape_vector.size(); // rank
+    for (int i = 0; i < shape_vector.size(); i++) {
+      shapeInfoNew[i + 1] = shape_vector[i]; // shape values
+    }
+
+    shape::updateStrides(shapeInfoNew,order,true);
     shape::setOrder(shapeInfoNew, order);
   }
 
-  // Additional validation before passing to buffer
-  if (shapeInfoNew == nullptr) {
-    THROW_EXCEPTION("reshapeShapeInfo: shapeInfoNew is null after initialization!");
-  }
 
+  ArrayOptions::setDataType(shapeInfoNew, array->dataType());
+
+  // Additional validation before passing to buffer
 
   auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoNew);
-
   delete[] shapeInfoNew;
-
-
   return ret->primary();
 }
 
+
 NDArray& NDArray::reshape(const char order, std::vector<sd::LongType>& shape, bool copyToNewBuff) & {
   sd::LongType* newShapeInfo = NDArray::reshapeShapeInfo(this, order, shape);
-
+  printf("Array reshape call for order\n");
+  fflush(stdout);
   if (copyToNewBuff) {
+    printf("Copying new buff reshape call\n");
+    fflush(stdout);
+
     NDArray* ret = new NDArray(newShapeInfo, true, getContext(), false);
-    this->applyTransform(transform::Assign, ret, nullptr);
+    if(this->isScalar() || this->lengthOf() <= 1) {
+      printf("Array reshape scalar put\n");
+      fflush(stdout);
+      ret->p(0,this);
+      ret->printIndexedBuffer("Ret after array reshape result\n",1);
+    } else {
+      this->applyTransform(transform::Assign, ret, nullptr);
+
+    }
     return *ret;
   } else {
     NDArray* ret = new NDArray(getDataBuffer(), const_cast<sd::LongType*>(newShapeInfo), getContext(), offset());
@@ -3036,7 +3031,7 @@ T *NDArray::bufferasTWithOffset(sd::LongType offset) {
 }
 
 BUILD_SINGLE_UNCHAINED_TEMPLATE(  SD_LIB_EXPORT, * NDArray::bufferasTWithOffset(sd::LongType),
-                                SD_COMMON_TYPES_ALL);
+                                  SD_COMMON_TYPES_ALL);
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -3979,8 +3974,8 @@ void NDArray::templatedSet(void *buffer, LongType xOffset, DataType dtype, void 
   BUILD_SINGLE_PARTIAL_SELECTOR(dtype, templatedSet<, T>(buffer, xOffset, value), SD_COMMON_TYPES);
 }
 BUILD_DOUBLE_TEMPLATE(  void NDArray::templatedSet,
-                      (void *buffer, LongType xOffset, DataType dtype, void *value),
-                      SD_COMMON_TYPES, SD_COMMON_TYPES);
+                        (void *buffer, LongType xOffset, DataType dtype, void *value),
+                        SD_COMMON_TYPES, SD_COMMON_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::applyPairwiseTransform(pairwise::Ops op, NDArray *other, NDArray *target,
@@ -4055,8 +4050,8 @@ void NDArray::templatedDoubleAssign(void *xBuffer,  sd::LongType xOffset,  void 
   x[xOffset] = y[yOffset];
 }
 BUILD_DOUBLE_TEMPLATE( SD_LIB_EXPORT void NDArray::templatedDoubleAssign,
-                      (void *xBuffer,  sd::LongType xOffset,  void *yBuffer,  sd::LongType yOffset),
-                      SD_COMMON_TYPES, SD_COMMON_TYPES);
+                       (void *xBuffer,  sd::LongType xOffset,  void *yBuffer,  sd::LongType yOffset),
+                       SD_COMMON_TYPES, SD_COMMON_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::varianceAlongDimension(sd::variance::Ops op, NDArray &target, const bool biasCorrected,
@@ -4355,7 +4350,7 @@ T NDArray::e(sd::LongType i, sd::LongType j) {
 
 
 BUILD_SINGLE_UNCHAINED_TEMPLATE(  SD_LIB_EXPORT , NDArray::e( sd::LongType,  sd::LongType),
-                                SD_COMMON_TYPES_ALL);
+                                  SD_COMMON_TYPES_ALL);
 
 //////////////////////////////////////////////////////////////////////////
 // returns value from 3D tensor by coordinates
@@ -4409,8 +4404,8 @@ T NDArray::e(const sd::LongType i, const sd::LongType j, const sd::LongType k)  
   return static_cast<T>(119);
 }
 BUILD_SINGLE_UNCHAINED_TEMPLATE( SD_LIB_EXPORT,
-                                NDArray::e(const sd::LongType, const sd::LongType, const sd::LongType) ,
-                                SD_COMMON_TYPES_ALL);
+                                 NDArray::e(const sd::LongType, const sd::LongType, const sd::LongType) ,
+                                 SD_COMMON_TYPES_ALL);
 
 //////////////////////////////////////////////////////////////////////////
 // returns value from 3D tensor by coordinates
@@ -4445,9 +4440,9 @@ T NDArray::e(const sd::LongType i, const sd::LongType j, const sd::LongType k, c
   return static_cast<T>(119);
 }
 BUILD_SINGLE_UNCHAINED_TEMPLATE(  SD_LIB_EXPORT,
-                                NDArray::e( sd::LongType,  sd::LongType,  sd::LongType,
-                                            sd::LongType),
-                                SD_COMMON_TYPES_ALL);
+                                  NDArray::e( sd::LongType,  sd::LongType,  sd::LongType,
+                                              sd::LongType),
+                                  SD_COMMON_TYPES_ALL);
 
 //////////////////////////////////////////////////////////////////////////
 NDArray NDArray::e(const sd::LongType i)  {
@@ -5278,9 +5273,22 @@ void NDArray::p(const sd::LongType i, NDArray *scalar) {
     errorMessage += ", input index: " + std::to_string(i);
     THROW_EXCEPTION(errorMessage.c_str());
   }
+
+  printf("=== p() method debug ===\n");
+  printf("this->_offset: %lld\n", _offset);
+  printf("i: %lld\n", i);
+
   NDArray::preparePrimaryUse({this}, {scalar}, true);
   auto rp = getOffset(i);
-  
+
+  printf("getOffset(i) returned: %lld\n", rp);
+  printf("this->buffer(): %p\n", buffer());
+  printf("this->getDataBuffer()->primary(): %p\n", getDataBuffer()->primary());
+  printf("scalar->buffer(): %p\n", scalar->buffer());
+  printf("scalar value via e<float>: %f\n", scalar->e<float>(0));
+  printf("scalar buffer[0]: %f\n", ((float*)scalar->buffer())[0]);
+  fflush(stdout);
+
   if (scalar->isS()) {
     switch(scalar->dataType()) {
 #ifdef HAS_UTF8
@@ -5289,12 +5297,12 @@ void NDArray::p(const sd::LongType i, NDArray *scalar) {
         break;
 #endif
 #ifdef HAS_UTF16
-      case DataType::UTF16:
+        case DataType::UTF16:
         templatedSetString<std::u16string, std::u16string>(buffer(), rp, scalar->buffer());
         break;
 #endif
 #ifdef HAS_UTF32
-      case DataType::UTF32:
+        case DataType::UTF32:
         templatedSetString<std::u32string, std::u32string>(buffer(), rp, scalar->buffer());
         break;
 #endif
@@ -5306,67 +5314,93 @@ void NDArray::p(const sd::LongType i, NDArray *scalar) {
     switch(scalar->dataType()) {
 #ifdef HAS_FLOAT32
       case FLOAT32:
+        printf("Before templatedSet<float,float> - will write to buffer %p at offset %lld\n", buffer(), rp);
         templatedSet<float, float>(buffer(), rp, scalar->buffer());
+        printf("After templatedSet - value at position 0: %f\n", e<float>(0));
         break;
 #endif
 #ifdef HAS_DOUBLE
       case DOUBLE:
+        printf("Before templatedSet<double,double> - will write to buffer %p at offset %lld\n", buffer(), rp);
         templatedSet<double, double>(buffer(), rp, scalar->buffer());
+        printf("After templatedSet - value at position 0: %f\n", e<double>(0));
         break;
 #endif
 #ifdef HAS_FLOAT16
       case HALF:
+        printf("Before templatedSet<float16,float16> - will write to buffer %p at offset %lld\n", buffer(), rp);
         templatedSet<float16, float16>(buffer(), rp, scalar->buffer());
+        printf("After templatedSet - value at position 0: %f\n", (float)e<float16>(0));
         break;
 #endif
 #ifdef HAS_BFLOAT16
       case BFLOAT16:
+        printf("Before templatedSet<bfloat16,bfloat16> - will write to buffer %p at offset %lld\n", buffer(), rp);
         templatedSet<bfloat16, bfloat16>(buffer(), rp, scalar->buffer());
+        printf("After templatedSet - value at position 0: %f\n", (float)e<bfloat16>(0));
         break;
 #endif
 #ifdef HAS_BOOL
       case BOOL:
+        printf("Before templatedSet<bool,bool> - will write to buffer %p at offset %lld\n", buffer(), rp);
         templatedSet<bool, bool>(buffer(), rp, scalar->buffer());
+        printf("After templatedSet - value at position 0: %d\n", e<bool>(0));
         break;
 #endif
 #ifdef HAS_INT8
       case INT8:
+        printf("Before templatedSet<int8_t,int8_t> - will write to buffer %p at offset %lld\n", buffer(), rp);
         templatedSet<int8_t, int8_t>(buffer(), rp, scalar->buffer());
+        printf("After templatedSet - value at position 0: %d\n", e<int8_t>(0));
         break;
 #endif
 #ifdef HAS_INT16
-      case INT16:
+        case INT16:
+        printf("Before templatedSet<int16_t,int16_t> - will write to buffer %p at offset %lld\n", buffer(), rp);
         templatedSet<int16_t, int16_t>(buffer(), rp, scalar->buffer());
+        printf("After templatedSet - value at position 0: %d\n", e<int16_t>(0));
         break;
 #endif
 #ifdef HAS_INT32
       case INT32:
+        printf("Before templatedSet<Int32Type,Int32Type> - will write to buffer %p at offset %lld\n", buffer(), rp);
         templatedSet<Int32Type, Int32Type>(buffer(), rp, scalar->buffer());
+        printf("After templatedSet - value at position 0: %d\n", e<Int32Type>(0));
         break;
 #endif
 #ifdef HAS_LONG
       case INT64:
+        printf("Before templatedSet<LongType,LongType> - will write to buffer %p at offset %lld\n", buffer(), rp);
         templatedSet<LongType, LongType>(buffer(), rp, scalar->buffer());
+        printf("After templatedSet - value at position 0: %lld\n", e<LongType>(0));
         break;
 #endif
 #ifdef HAS_UINT8
       case UINT8:
+        printf("Before templatedSet<uint8_t,uint8_t> - will write to buffer %p at offset %lld\n", buffer(), rp);
         templatedSet<uint8_t, uint8_t>(buffer(), rp, scalar->buffer());
+        printf("After templatedSet - value at position 0: %u\n", e<uint8_t>(0));
         break;
 #endif
 #ifdef HAS_UINT16
-      case UINT16:
+        case UINT16:
+        printf("Before templatedSet<uint16_t,uint16_t> - will write to buffer %p at offset %lld\n", buffer(), rp);
         templatedSet<uint16_t, uint16_t>(buffer(), rp, scalar->buffer());
+        printf("After templatedSet - value at position 0: %u\n", e<uint16_t>(0));
         break;
 #endif
 #ifdef HAS_UINT32
-      case UINT32:
+        case UINT32:
+        printf("Before templatedSet<uint32_t,uint32_t> - will write to buffer %p at offset %lld\n", buffer(), rp);
         templatedSet<uint32_t, uint32_t>(buffer(), rp, scalar->buffer());
+        printf("After templatedSet - value at position 0: %u\n", e<uint32_t>(0));
         break;
 #endif
 #ifdef HAS_UNSIGNEDLONG
-      case UINT64:
+        case UINT64:
+        printf("Before templatedSet<UnsignedLong,UnsignedLong> - will write to buffer %p at offset %lld\n", buffer(), rp);
         templatedSet<UnsignedLong, UnsignedLong>(buffer(), rp, scalar->buffer());
+        printf("After templatedSet - value at position 0: %llu\n", e<UnsignedLong>(0));
         break;
 #endif
       default:
@@ -5374,6 +5408,47 @@ void NDArray::p(const sd::LongType i, NDArray *scalar) {
     }
   }
   NDArray::registerPrimaryUse({this}, {scalar});
+  printf("=== p() method done ===\n");
+  fflush(stdout);
+}
+
+template <typename T, typename Y, typename>
+void NDArray::templatedSet(void *buffer, LongType offset, void *value) {
+  printf("=== templatedSet debug ===\n");
+  printf("buffer param: %p\n", buffer);
+  printf("offset param: %lld\n", offset);
+  printf("value param: %p\n", value);
+
+  NDArray::preparePrimaryUse({this}, {this});
+  int len = isScalar() ? 1 : lengthOf();
+  printf("isScalar(): %d, lengthOf(): %d, len: %d\n", isScalar(), lengthOf(), len);
+
+  // Check if offset is valid
+  if (offset < 0 || offset >= len) {
+    std::string errorMessage = "NDArray::templatedSet: offset out of bounds "
+                               + std::to_string(offset) + " vs " + std::to_string(len);
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
+  auto t = reinterpret_cast<T *>(buffer);
+  const auto y = *(reinterpret_cast<const Y *>(value));
+
+  printf("value to write (y): %f\n", (float)y);
+  printf("writing to address: %p (base) + %lld (offset) = %p\n",
+         t, offset, &t[offset]);
+
+  if(t == nullptr) {
+    THROW_EXCEPTION("NDArray::templatedSet: first buffer is nullptr");
+  }
+
+  printf("Before write: t[offset] = %f\n", (float)t[offset]);
+  t[offset] = y;
+  printf("After write: t[offset] = %f\n", (float)t[offset]);
+
+  tickWriteHost();
+  NDArray::registerPrimaryUse({this}, {this});
+  printf("=== templatedSet done ===\n");
+  fflush(stdout);
 }
 
 template<typename T>
@@ -5691,8 +5766,8 @@ void NDArray::templatedAssign(void *xBuffer, sd::LongType xOffset,  void *yBuffe
     *(reinterpret_cast<T *>(xBuffer) + xOffset) = *(reinterpret_cast<const T *>(yBuffer) + yOffset);
 }
 BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT void NDArray::templatedAssign,
-                      (void *xBuffer,  sd::LongType xOffset,  void *yBuffer,  sd::LongType yOffset),
-                      SD_COMMON_TYPES);
+                       (void *xBuffer,  sd::LongType xOffset,  void *yBuffer,  sd::LongType yOffset),
+                       SD_COMMON_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 

@@ -16,7 +16,7 @@
     <jackson.version>1.0.0-SNAPSHOT</jackson.version>
     <maven.compiler.source>11</maven.compiler.source>
     <maven.compiler.target>11</maven.compiler.target>
-    <lombok.version>1.18.38</lombok.version>
+    <lombok.version>1.18.40</lombok.version>
     <javaparser.version>3.24.4</javaparser.version>
 
   </properties>

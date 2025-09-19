@@ -170,7 +170,8 @@ public abstract class DifferentialFunction {
 
 
     protected void recordCreation() {
-        if(Nd4j.getEnvironment().isDebug() || Nd4j.getEnvironment().isVerbose()) {
+        if(Nd4j.getEnvironment().isDebug() || Nd4j.getEnvironment().isVerbose() ||
+        Nd4j.getEnvironment().isFuncTracePrintJavaOnly()) {
             StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
             this.creationLocation = StackTraceUtils.pointOfInvocation(stackTrace);
             this.creationPointofOrigin = StackTraceUtils.pointOfOrigin(stackTrace);
