@@ -5262,20 +5262,11 @@ void NDArray::p(const sd::LongType i, NDArray *scalar) {
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
-  printf("=== p() method debug ===\n");
-  printf("this->_offset: %lld\n", _offset);
-  printf("i: %lld\n", i);
 
   NDArray::preparePrimaryUse({this}, {scalar}, true);
   auto rp = getOffset(i);
 
-  printf("getOffset(i) returned: %lld\n", rp);
-  printf("this->buffer(): %p\n", buffer());
-  printf("this->getDataBuffer()->primary(): %p\n", getDataBuffer()->primary());
-  printf("scalar->buffer(): %p\n", scalar->buffer());
-  printf("scalar value via e<float>: %f\n", scalar->e<float>(0));
-  printf("scalar buffer[0]: %f\n", ((float*)scalar->buffer())[0]);
-  fflush(stdout);
+
 
   if (scalar->isS()) {
     switch(scalar->dataType()) {
@@ -5302,93 +5293,67 @@ void NDArray::p(const sd::LongType i, NDArray *scalar) {
     switch(scalar->dataType()) {
 #ifdef HAS_FLOAT32
       case FLOAT32:
-        printf("Before templatedSet<float,float> - will write to buffer %p at offset %lld\n", buffer(), rp);
         templatedSet<float, float>(buffer(), rp, scalar->buffer());
-        printf("After templatedSet - value at position 0: %f\n", e<float>(0));
         break;
 #endif
 #ifdef HAS_DOUBLE
       case DOUBLE:
-        printf("Before templatedSet<double,double> - will write to buffer %p at offset %lld\n", buffer(), rp);
         templatedSet<double, double>(buffer(), rp, scalar->buffer());
-        printf("After templatedSet - value at position 0: %f\n", e<double>(0));
         break;
 #endif
 #ifdef HAS_FLOAT16
       case HALF:
-        printf("Before templatedSet<float16,float16> - will write to buffer %p at offset %lld\n", buffer(), rp);
         templatedSet<float16, float16>(buffer(), rp, scalar->buffer());
-        printf("After templatedSet - value at position 0: %f\n", (float)e<float16>(0));
         break;
 #endif
 #ifdef HAS_BFLOAT16
       case BFLOAT16:
-        printf("Before templatedSet<bfloat16,bfloat16> - will write to buffer %p at offset %lld\n", buffer(), rp);
         templatedSet<bfloat16, bfloat16>(buffer(), rp, scalar->buffer());
-        printf("After templatedSet - value at position 0: %f\n", (float)e<bfloat16>(0));
         break;
 #endif
 #ifdef HAS_BOOL
       case BOOL:
-        printf("Before templatedSet<bool,bool> - will write to buffer %p at offset %lld\n", buffer(), rp);
         templatedSet<bool, bool>(buffer(), rp, scalar->buffer());
-        printf("After templatedSet - value at position 0: %d\n", e<bool>(0));
         break;
 #endif
 #ifdef HAS_INT8
       case INT8:
-        printf("Before templatedSet<int8_t,int8_t> - will write to buffer %p at offset %lld\n", buffer(), rp);
         templatedSet<int8_t, int8_t>(buffer(), rp, scalar->buffer());
-        printf("After templatedSet - value at position 0: %d\n", e<int8_t>(0));
         break;
 #endif
 #ifdef HAS_INT16
         case INT16:
-        printf("Before templatedSet<int16_t,int16_t> - will write to buffer %p at offset %lld\n", buffer(), rp);
         templatedSet<int16_t, int16_t>(buffer(), rp, scalar->buffer());
-        printf("After templatedSet - value at position 0: %d\n", e<int16_t>(0));
         break;
 #endif
 #ifdef HAS_INT32
       case INT32:
-        printf("Before templatedSet<Int32Type,Int32Type> - will write to buffer %p at offset %lld\n", buffer(), rp);
         templatedSet<Int32Type, Int32Type>(buffer(), rp, scalar->buffer());
-        printf("After templatedSet - value at position 0: %d\n", e<Int32Type>(0));
         break;
 #endif
 #ifdef HAS_LONG
       case INT64:
-        printf("Before templatedSet<LongType,LongType> - will write to buffer %p at offset %lld\n", buffer(), rp);
         templatedSet<LongType, LongType>(buffer(), rp, scalar->buffer());
-        printf("After templatedSet - value at position 0: %lld\n", e<LongType>(0));
         break;
 #endif
 #ifdef HAS_UINT8
       case UINT8:
-        printf("Before templatedSet<uint8_t,uint8_t> - will write to buffer %p at offset %lld\n", buffer(), rp);
         templatedSet<uint8_t, uint8_t>(buffer(), rp, scalar->buffer());
-        printf("After templatedSet - value at position 0: %u\n", e<uint8_t>(0));
         break;
 #endif
 #ifdef HAS_UINT16
         case UINT16:
-        printf("Before templatedSet<uint16_t,uint16_t> - will write to buffer %p at offset %lld\n", buffer(), rp);
         templatedSet<uint16_t, uint16_t>(buffer(), rp, scalar->buffer());
-        printf("After templatedSet - value at position 0: %u\n", e<uint16_t>(0));
         break;
 #endif
 #ifdef HAS_UINT32
         case UINT32:
-        printf("Before templatedSet<uint32_t,uint32_t> - will write to buffer %p at offset %lld\n", buffer(), rp);
         templatedSet<uint32_t, uint32_t>(buffer(), rp, scalar->buffer());
-        printf("After templatedSet - value at position 0: %u\n", e<uint32_t>(0));
         break;
 #endif
 #ifdef HAS_UNSIGNEDLONG
         case UINT64:
-        printf("Before templatedSet<UnsignedLong,UnsignedLong> - will write to buffer %p at offset %lld\n", buffer(), rp);
         templatedSet<UnsignedLong, UnsignedLong>(buffer(), rp, scalar->buffer());
-        printf("After templatedSet - value at position 0: %llu\n", e<UnsignedLong>(0));
         break;
 #endif
       default:
@@ -5396,8 +5361,6 @@ void NDArray::p(const sd::LongType i, NDArray *scalar) {
     }
   }
   NDArray::registerPrimaryUse({this}, {scalar});
-  printf("=== p() method done ===\n");
-  fflush(stdout);
 }
 
 template <typename T, typename Y, typename>
