@@ -2650,18 +2650,9 @@ void NDArray::validateAssign(NDArray *thisArray,  NDArray *other) {
 // Performs the data copy for assignment
 void NDArray::copyDataForAssign(NDArray *thisArray, NDArray *other, const sd::LongType* otherShapeInfo, bool allowParallelism) {
   if (other->lengthOf() <= 1) {
-    printf("Copy data for assign <=1");
-    fflush(stdout);
-
     // Simple fix for length <= 1 cases - just use p() which handles offsets correctly
-    if (thisArray->lengthOf() <= 1 && other->lengthOf() <= 1) {
-      printf("\nDirect copy via p() for length<=1\n");
-      printf("Source (other) value: %f\n", other->e<float>(0));
-      printf("Dest (thisArray) value before: %f\n", thisArray->e<float>(0));
-
+    if (thisArray->lengthOf() <= 1 && other->lengthOf() <= 1) {;
       thisArray->p(0, other);
-
-      printf("Dest (thisArray) value after: %f\n", thisArray->e<float>(0));
       return;
     }
 
@@ -2806,10 +2797,7 @@ NDArray& NDArray::reshape(const char order, std::vector<sd::LongType>& shape, bo
 
     NDArray* ret = new NDArray(newShapeInfo, true, getContext(), false);
     if(this->isScalar() || this->lengthOf() <= 1) {
-      printf("Array reshape scalar put\n");
-      fflush(stdout);
       ret->p(0,this);
-      ret->printIndexedBuffer("Ret after array reshape result\n",1);
     } else {
       this->applyTransform(transform::Assign, ret, nullptr);
 
@@ -5414,14 +5402,8 @@ void NDArray::p(const sd::LongType i, NDArray *scalar) {
 
 template <typename T, typename Y, typename>
 void NDArray::templatedSet(void *buffer, LongType offset, void *value) {
-  printf("=== templatedSet debug ===\n");
-  printf("buffer param: %p\n", buffer);
-  printf("offset param: %lld\n", offset);
-  printf("value param: %p\n", value);
-
   NDArray::preparePrimaryUse({this}, {this});
   int len = isScalar() ? 1 : lengthOf();
-  printf("isScalar(): %d, lengthOf(): %d, len: %d\n", isScalar(), lengthOf(), len);
 
   // Check if offset is valid
   if (offset < 0 || offset >= len) {
@@ -5433,22 +5415,14 @@ void NDArray::templatedSet(void *buffer, LongType offset, void *value) {
   auto t = reinterpret_cast<T *>(buffer);
   const auto y = *(reinterpret_cast<const Y *>(value));
 
-  printf("value to write (y): %f\n", (float)y);
-  printf("writing to address: %p (base) + %lld (offset) = %p\n",
-         t, offset, &t[offset]);
-
   if(t == nullptr) {
     THROW_EXCEPTION("NDArray::templatedSet: first buffer is nullptr");
   }
 
-  printf("Before write: t[offset] = %f\n", (float)t[offset]);
   t[offset] = y;
-  printf("After write: t[offset] = %f\n", (float)t[offset]);
 
   tickWriteHost();
   NDArray::registerPrimaryUse({this}, {this});
-  printf("=== templatedSet done ===\n");
-  fflush(stdout);
 }
 
 template<typename T>
