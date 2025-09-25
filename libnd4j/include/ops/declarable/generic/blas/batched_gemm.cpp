@@ -95,13 +95,11 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 2) {
   }
 
   // Convert transpose flags to BLAS format
-  if (transA == 0) transA = 111;
-  if (transB == 0) transB = 111;
-  if (transA == 1) transA = 112;
-  if (transB == 1) transB = 112;
+  int transABlas = transA ? 112 : 111;  // 112 = CblasTrans, 111 = CblasNoTrans
+  int transBBlas = transB ? 112 : 111;
 
-  REQUIRE_TRUE((transA == 111 || transA == 112) && (transB == 111 || transB == 112), 0,
-               "BatchedGemm: valid values for transA and transB are: 0/1 or 111/112, for NoTrans/Trans respectively")
+  REQUIRE_TRUE((transA == 0 || transA == 1) && (transB == 0 || transB == 1), 0,
+               "BatchedGemm: valid values for transA and transB are: 0/1 for NoTrans/Trans respectively")
   REQUIRE_TRUE(M > 0 && N > 0 && K > 0 && ldA > 0 && ldB > 0 && ldC > 0, 0, 
                "BatchedGemm: Invalid dimensions M=%d, N=%d, K=%d, ldA=%d, ldB=%d, ldC=%d", M, N, K, ldA, ldB, ldC);
 
@@ -147,10 +145,10 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 2) {
     REQUIRE_TRUE(vC[e]->rankOf() == 2, 0, "BatchedGemm: batch %i, rank of C should be equal to 2", e);
 
     // Verify dimensions are consistent across batch
-    int currM = transA == 111 ? vA[e]->sizeAt(0) : vA[e]->sizeAt(1);
-    int currK_A = transA == 111 ? vA[e]->sizeAt(1) : vA[e]->sizeAt(0);
-    int currK_B = transB == 111 ? vB[e]->sizeAt(0) : vB[e]->sizeAt(1);
-    int currN = transB == 111 ? vB[e]->sizeAt(1) : vB[e]->sizeAt(0);
+    int currM = transABlas == 111 ? vA[e]->sizeAt(0) : vA[e]->sizeAt(1);
+    int currK_A = transABlas == 111 ? vA[e]->sizeAt(1) : vA[e]->sizeAt(0);
+    int currK_B = transBBlas == 111 ? vB[e]->sizeAt(0) : vB[e]->sizeAt(1);
+    int currN = transBBlas == 111 ? vB[e]->sizeAt(1) : vB[e]->sizeAt(0);
     
     REQUIRE_TRUE(currM == M, 0, "BatchedGemm: batch %i, inconsistent M dimension: expected %d, got %d", e, M, currM);
     REQUIRE_TRUE(currK_A == K, 0, "BatchedGemm: batch %i, inconsistent K dimension in A: expected %d, got %d", e, K, currK_A);
@@ -158,7 +156,7 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 2) {
     REQUIRE_TRUE(currN == N, 0, "BatchedGemm: batch %i, inconsistent N dimension: expected %d, got %d", e, N, currN);
   }
 
-  helpers::bgemm(vA, vB, vC, alphaInput, betaInput, transA, transB, M, N, K, ldA, ldB, ldC);
+  helpers::bgemm(vA, vB, vC, alphaInput, betaInput, transABlas, transBBlas, M, N, K, ldA, ldB, ldC);
 
   if(alphaInput != alpha) {
     delete alphaInput;
