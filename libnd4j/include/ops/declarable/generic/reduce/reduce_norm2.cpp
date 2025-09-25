@@ -139,8 +139,10 @@ CUSTOM_OP_IMPL(reduce_norm2_bp, -1, 1, false, 0, 0) {
         ShapeUtils::evalReduceShapeInfo(gradO->ordering(), &dimensions, *input, true, false, block.getWorkspace());
     std::vector<sd::LongType> shape =  ShapeUtils::pullShapeFromShapeInfo(
         gradOShapeKeepDims);
-    *gradI *= gradO->reshape(gradO->ordering(),
-                           shape);  // for example could be something like [a,b] -> [1,a,1,b]
+    auto reshaped = gradO->reshape(gradO->ordering(),
+                                   shape);
+    *gradI *=   *reshaped;// for example could be something like [a,b] -> [1,a,1,b]
+    delete reshaped;
   } else
     *gradI *= *gradO;
 

@@ -43,11 +43,14 @@ static void dropoutSimple(NDArray* input, NDArray* output, double probValue, int
       float val = nodeRng.relativeT<T>(e, T(0.f), T(1.f));
       //dropout mask might not be the same length
       if (mask != nullptr && e < mask->lengthOf()) mask->p<T>(e, static_cast<T>(val));
-      if (val < probValue) flattenedOutput.p<T>(e, flattenedInput.e<T>(e));
+      if (val < probValue) flattenedOutput->p<T>(e, flattenedInput->e<T>(e));
     }
   };
 
   samediff::Threads::parallel_for(func, 0, inLen);
+
+  delete flattenedInput;
+  delete flattenedOutput;
 }
 BUILD_SINGLE_TEMPLATE( void dropoutSimple, (NDArray* input, NDArray* output, double probValue, int seed,NDArray *mask),
                       SD_FLOAT_TYPES);

@@ -19,8 +19,6 @@ class TestOnnxFrameworkImporter {
 
     @Test
     fun testOther() {
-        Nd4j.getEnvironment().isVariableTracingEnabled = true
-        Nd4j.getEnvironment().isLogNativeNDArrayCreation = true
         Nd4j.getEnvironment().isFuncTracePrintJavaOnly = true
         val importer = OnnxFrameworkImporter()
         val filePath = "/home/agibsonccc/Documents/GitHub/deeplearning4j/bge-base-en-v1.5-optimized.onnx";

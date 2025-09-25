@@ -137,17 +137,14 @@ bool _preprocess_strided_slice(std::vector<sd::LongType>* indicesList, std::vect
   bool hasZeroStride = false;
   for (size_t i = 0; i < strides.size(); i++) {
     if (strides[i] == 0) {
-      sd_printf("WARNING: Zero stride detected at index %zu, setting to 1\n", i);
-      strides[i] = 1;
-      hasZeroStride = true;
+      THROW_EXCEPTION("WARNING: Zero stride detected at index %zu, setting to 1\n");
     }
   }
 
   // FIX: Check if end values are 0 when they shouldn't be
   // For ONNX slice [0:1] on axis 0, end should be 1, not 0
   if (end.size() == 1 && end[0] == 0 && begin.size() == 1 && begin[0] == 0) {
-    sd_print("WARNING: Detected end[0]=0 with begin[0]=0, likely incorrect. Setting end[0]=1 for ONNX compatibility\n");
-    end[0] = 1;
+    THROW_EXCEPTION("Invalid bounds for strided slice. Result is empty.");
   }
 
   std::vector<int> preshape;
@@ -201,8 +198,8 @@ bool _preprocess_strided_slice(std::vector<sd::LongType>* indicesList, std::vect
       0                         // shrink_axis_mask
   };
 
+  // Build the dense spec from sparse spec
   if (!dense_spec.buildDenseSpec(sparse_spec)) {
-    sd_print("ERROR: buildDenseSpec failed in _preprocess_strided_slice\n");
     return false;
   }
 
@@ -214,10 +211,6 @@ bool _preprocess_strided_slice(std::vector<sd::LongType>* indicesList, std::vect
 
     bool shrink_i = (dense_spec.shrink_axis_mask & (1 << e));
 
-    if (stride_idx == 0) {
-      sd_printf("ERROR: Zero stride still detected in dimension %d after fix attempt\n", e);
-      return false;
-    }
     if (size_idx == -1) {
       preshape.emplace_back(shrink_i ? 1 : -1);
       continue;
@@ -235,12 +228,12 @@ bool _preprocess_strided_slice(std::vector<sd::LongType>* indicesList, std::vect
         // Add bounds checking to prevent invalid indices
         if (stride_idx > 0) {
           x_fwd = sd::math::sd_max<sd::LongType, sd::LongType, sd::LongType>(
-              static_cast<sd::LongType>(valid_range[0]), 
+              static_cast<sd::LongType>(valid_range[0]),
               sd::math::sd_min<sd::LongType, sd::LongType, sd::LongType>(
                   static_cast<sd::LongType>(valid_range[1]), x_fwd));
         } else {
           x_fwd = sd::math::sd_max<sd::LongType, sd::LongType, sd::LongType>(
-              static_cast<sd::LongType>(valid_range[1]), 
+              static_cast<sd::LongType>(valid_range[1]),
               sd::math::sd_min<sd::LongType, sd::LongType, sd::LongType>(
                   static_cast<sd::LongType>(valid_range[0]), x_fwd));
         }
@@ -248,10 +241,7 @@ bool _preprocess_strided_slice(std::vector<sd::LongType>* indicesList, std::vect
       }
     };
 
-    if (shrink_i && stride_idx <= 0) {
-      sd_printf("ERROR: Invalid stride %d for shrink dimension %d\n", stride_idx, e);
-      return false;
-    }
+
 
     (*is_simple_slice) &= stride_idx == 1;
 
@@ -277,12 +267,12 @@ bool _preprocess_strided_slice(std::vector<sd::LongType>* indicesList, std::vect
     // Improved interval calculation and validation
     int interval_length = 1;
     bool known_interval = false;
-    
+
     if (dense_spec.begin_valid && dense_spec.end_valid) {
       // Ensure begin and end are properly canonicalized
       begin_idx = canonical(begin_idx, 0);
       end_idx = canonical(end_idx, 1);
-      
+
       interval_length = end_idx - begin_idx;
       known_interval = true;
 
@@ -316,36 +306,36 @@ bool _preprocess_strided_slice(std::vector<sd::LongType>* indicesList, std::vect
     // Improved size calculation
     if (known_interval) {
       int size_i;
-      
+
       // Handle empty slices
       if (interval_length == 0) {
         size_i = 0;
       }
-      // Handle shrink axis
+        // Handle shrink axis
       else if (shrink_i) {
         size_i = 1;  // Will be removed from final shape later
       }
-      // Normal slice calculation
+        // Normal slice calculation
       else if (stride_idx != 0) {
         // Calculate absolute values for size computation
         int abs_interval = interval_length < 0 ? -interval_length : interval_length;
         int abs_stride = stride_idx < 0 ? -stride_idx : stride_idx;
-        
+
         // Calculate the number of elements in the slice
         size_i = (abs_interval + abs_stride - 1) / abs_stride;  // Ceiling division
-        
+
         // Ensure non-negative result
         size_i = size_i < 0 ? 0 : size_i;
       } else {
         // This should never happen as we check for zero stride earlier
-        sd_printf("ERROR: Zero stride encountered in size calculation for dimension %d\n", e);
+        THROW_EXCEPTION("ERROR: Zero stride encountered in size calculation for dimension %d\n");
         return false;
       }
 
 
       // Update indices list for actual slicing operation
       if (indicesList != nullptr) {
-        if (size_i > 0) {
+        if (size_i > 0 || shrink_i) {
           indicesList->push_back(begin_idx);
           indicesList->push_back(end_idx);
           indicesList->push_back(stride_idx);
@@ -360,11 +350,15 @@ bool _preprocess_strided_slice(std::vector<sd::LongType>* indicesList, std::vect
 
   std::vector<int> * postshape = new std::vector<int>();
   final_shape->clear();
-  for (size_t gather_index : dense_spec.final_shape_gather_indices) {
-    if (preshape.size() > gather_index)
+  for (LongType gather_index : dense_spec.final_shape_gather_indices) {
+    if (gather_index == kShrinkAxis) {
+      // Skip shrink axis dimensions - they are removed from output shape
+      continue;
+    } else if (gather_index >= 0 && static_cast<size_t>(gather_index) < preshape.size()) {
       final_shape->emplace_back(preshape.at(gather_index));
-    else
+    } else {
       final_shape->emplace_back(1);
+    }
   }
 
   // Validate generated indices before returning
@@ -437,7 +431,13 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
 
     for (int e = 0; e < v_end->lengthOf(); e++) {
       if(v_end->e<int>(e) < 0) {
-        end->emplace_back(v_end->e<LongType>(e)+ x->sizeAt(e));
+        // Special case: -1 means "to the end"
+        if(v_end->e<int>(e) == -1) {
+          end->emplace_back(x->sizeAt(e));
+        } else {
+          // Other negative indices: convert to positive
+          end->emplace_back(v_end->e<LongType>(e) + x->sizeAt(e));
+        }
       } else {
         end->emplace_back(v_end->e<LongType>(e));
       }
@@ -494,7 +494,6 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
   bool is_simple_slice;
   bool is_dim0;
 
-  // FIXME: remove this method once we get 1D vectors supported
   REQUIRE_TRUE(
       _preprocess_strided_slice(indices, final_shape, input_shape, *begin, *end, *strides, begin_mask, ellipsis_mask,
                                 end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0),
@@ -558,7 +557,12 @@ DECLARE_SHAPE_FN(strided_slice) {
     end = INPUT_VARIABLE(2)->template asVectorT<LongType>();
     for(size_t  e = 0; e < end.size(); e++) {
       if(end[e] < 0) {
-        end[e] += inShape[e];
+        // Special case: -1 means "to the end"
+        if(end[e] == -1) {
+          end[e] = shape::shapeOf(inShape)[e];
+        } else {
+          end[e] += shape::shapeOf(inShape)[e];
+        }
       }
     }
 

@@ -113,8 +113,6 @@ void ScalarTransform<X, Y, Z>::transform(const void *vx, const sd::LongType *xSh
   auto extraParams = reinterpret_cast<Z *>(vextraParams);
   //need special handling for scalars as strides may not be set for scalars
   if(shape::length(xShapeInfo) <= 1 && shape::length(zShapeInfo) <= 1) {
-    printf("scalar transform values %f scalar value %f\n",x[0],scalar[0]);
-    fflush(stdout);
     z[0] = OpType::op(x[0], scalar[0], extraParams);
     return;
 

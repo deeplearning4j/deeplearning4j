@@ -59,8 +59,9 @@ CUSTOM_OP_IMPL(reshape, 1, 1, false, 0, -2) {
   //only perform assign when we aren't using a view
   if(x->dataBuffer() != z->dataBuffer()) {
     std::vector<sd::LongType> shape = z->getShapeAsVector();
-    NDArray &reshapedX = x->reshape(z->ordering(), shape,true);
-    z->assign(&reshapedX);
+    NDArray *reshapedX = x->reshape(z->ordering(), shape,true);
+    z->assign(reshapedX);
+    delete reshapedX;
   }
 
   return Status::OK;

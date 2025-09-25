@@ -154,14 +154,14 @@ void MmulHelper::tensorDot2(NDArray* a, NDArray* b, NDArray* c, const std::vecto
   NDArray* bP = permuteBt.empty() ? b : new NDArray(b->permute(permuteBt, false, false));
 
   auto apReshaped = aP->permute(newaxes_a, false, false).reshape('c', newshape_a,true);
-  NDArray* aPR =  new NDArray(apReshaped);
+  NDArray* aPR =  apReshaped;
 
   auto bpReshape = bP->permute(newaxes_b, false, false).reshape('c', newshape_b,true);
-  NDArray* bPR = new NDArray(bpReshape);
+  NDArray* bPR = bpReshape;
 
   std::vector<LongType> requiredCshape  = {aPR->sizeAt(0), bPR->sizeAt(1)};
-  NDArray cP2 = cP->reshape('f', requiredCshape, false);
-  NDArray* cPR = new NDArray(cP2);
+  NDArray *cP2 = cP->reshape('f', requiredCshape, false);
+  NDArray* cPR = cP2;
 
   NDArray * ret = mmul(aPR, bPR, cPR, 1.0, 0.0);
 
@@ -199,8 +199,8 @@ void MmulHelper::tensorDot(NDArray* a, NDArray* b, NDArray* c,
   NDArray* bP = permutBt.empty() ? b : new NDArray(b->permute(permutBt, false, false));
 
   // check whether reshape is necessary
-  NDArray* aPR = aP->isSameShape(shapeAt) ? aP : new NDArray(aP->reshape(aP->ordering(), shapeAt));
-  NDArray* bPR = bP->isSameShape(shapeAt) ? bP : new NDArray(bP->reshape(bP->ordering(), shapeBt));
+  NDArray* aPR = aP->isSameShape(shapeAt) ? aP : aP->reshape(aP->ordering(), shapeAt);
+  NDArray* bPR = bP->isSameShape(shapeAt) ? bP : bP->reshape(bP->ordering(), shapeBt);
 
   std::vector<LongType> requiredCshape = {aPR->sizeAt(0), bPR->sizeAt(1)};
 
@@ -210,8 +210,9 @@ void MmulHelper::tensorDot(NDArray* a, NDArray* b, NDArray* c,
 
   if (c != ret) {  // this means both permute and reshape have been performed on c, cP
     // always points on c->buffer()
-    NDArray assign2 = ret->reshape(c->ordering(),requiredCshape);
-    c->assign(&assign2);
+    NDArray *assign2 = ret->reshape(c->ordering(),requiredCshape);
+    c->assign(assign2);
+    delete assign2;
   }
 
 
@@ -265,7 +266,7 @@ void MmulHelper::tensorDot(NDArray* a, NDArray* b, NDArray* c,
 
   if (!whatToDoWithA.empty())
     aPR = (whatToDoWithA[0] == 'p') ? new NDArray(a->permute(modifA[0], false, false))
-                                    : new NDArray(a->reshape(a->ordering(), modifA[0]));
+                                    :a->reshape(a->ordering(), modifA[0]);
   // first step for b array
   if (!whatToDoWithB.empty())
     bPR = (whatToDoWithB[0] == 'p') ? new NDArray(b->permute(modifB[0], false, false))

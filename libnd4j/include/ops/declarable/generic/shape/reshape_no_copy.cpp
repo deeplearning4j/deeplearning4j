@@ -60,6 +60,47 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
     order = iArgs->at(iArgs->size() - 1) == RESHAPE_NO_COPY_F_ORDER_MARKER ? 'f' : 'c';
   }
 
+  // Handle -1 in shape specification
+  sd::LongType negativeOneCount = 0;
+  sd::LongType negativeOneIndex = -1;
+  sd::LongType totalElements = shape::length(inShape);
+  sd::LongType knownDimProduct = 1;
+  
+  // Count -1s and calculate product of known dimensions
+  for (size_t i = 0; i < newShape.size(); i++) {
+    if (newShape[i] == -1) {
+      negativeOneCount++;
+      negativeOneIndex = i;
+    } else if (newShape[i] <= 0) {
+      std::string errorMessage = "Shape value is invalid: ";
+      errorMessage += std::to_string(newShape[i]);
+      errorMessage += " at index ";
+      errorMessage += std::to_string(i);
+      errorMessage += " in shape ";
+      errorMessage += std::to_string(newShape.size());
+      THROW_EXCEPTION(errorMessage.c_str());
+    } else {
+      knownDimProduct *= newShape[i];
+    }
+  }
+  
+  // Validate -1 usage
+  if (negativeOneCount > 1) {
+    THROW_EXCEPTION("Only one dimension can be -1 in reshape operation");
+  }
+  
+  // Calculate the -1 dimension if present
+  if (negativeOneCount == 1) {
+    if (totalElements % knownDimProduct != 0) {
+      std::string errorMessage = "Cannot reshape array of size ";
+      errorMessage += std::to_string(totalElements);
+      errorMessage += " into shape with known dimensions product ";
+      errorMessage += std::to_string(knownDimProduct);
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+    newShape[negativeOneIndex] = totalElements / knownDimProduct;
+  }
+
   sd::LongType len = shape::shapeInfoLength(newShape.size());
   sd::LongType *newShapeInfo = new sd::LongType[len];
   newShapeInfo[0] = newShape.size();

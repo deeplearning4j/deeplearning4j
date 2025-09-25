@@ -3155,7 +3155,6 @@ public class SameDiff extends SDBaseOps {
             otherPlaceHolders = otherPlaceHoldersPerThread.get(Thread.currentThread().getId());
         }
 
-        //Placeholder validation is performed in InferenceSession
 
         InferenceSession is = sessions.get(threadId);
         return is.output(outputs == null ? Collections.emptyList() : Arrays.asList(outputs),

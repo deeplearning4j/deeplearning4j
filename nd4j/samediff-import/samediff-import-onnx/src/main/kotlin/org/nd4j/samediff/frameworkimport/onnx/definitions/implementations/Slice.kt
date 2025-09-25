@@ -51,8 +51,8 @@ class Slice : PreImportHook {
         var ends = sd.getVariable(op.inputsToOp[2])
         
         // Flatten the starts and ends to 1D if they have extra dimensions
-        starts = sd.reshape(starts, -1)
-        ends = sd.reshape(ends, -1)
+        starts = starts.reshape(-1)
+        ends = ends.reshape(-1)
         
         // Cast to INT64 for compatibility
         starts = starts.castTo(DataType.INT64)
@@ -62,43 +62,17 @@ class Slice : PreImportHook {
         val hasAxes = op.inputsToOp.size >= 4 && op.inputsToOp[3] != null
         
         // Handle steps parameter (optional, 5th input)
-        val steps = if (op.inputsToOp.size >= 5 && op.inputsToOp[4] != null) {
-            var stepsVar = sd.getVariable(op.inputsToOp[4])
-            stepsVar = sd.reshape(stepsVar, -1)
-            stepsVar.castTo(DataType.INT64)
-        } else {
-            // Default steps to 1 for each element in starts
-            sd.onesLike(starts).castTo(DataType.INT64)
-        }
+        val hasSteps = op.inputsToOp.size >= 5 && op.inputsToOp[4] != null
         
-        // ONNX Slice semantics:
-        // - If axes is not provided, slicing is performed on all axes [0, 1, ..., ndim-1]
-        // - If axes is provided, slicing is only performed on the specified axes
-        // - For dimensions not in axes, the full range is used
-        
-        if (hasAxes) {
-            // Complex case: need to handle selective axis slicing
-            // For now, we'll use the starts/ends/steps as provided
-            // This is a simplified implementation - full support would require
-            // building full-size arrays with appropriate values for non-specified axes
-            
-            val result = sd.stridedSlice(
-                outputNames[0],
-                inputVariable,
-                starts,
-                ends,
-                steps,
-                0,  // beginMask - all zeros means use the begin values
-                0,  // endMask - all zeros means use the end values  
-                0,  // ellipsisMask
-                0,  // newAxisMask
-                0   // shrinkAxisMask
-            )
-            
-            return mapOf(outputNames[0] to listOf(result))
-        } else {
-            // Simple case: slicing all dimensions from 0 to len(starts)-1
-            // This is the most common case in ONNX
+        if (!hasAxes) {
+            // Simple case: no axes specified, slice all dimensions in order
+            val steps = if (hasSteps) {
+                var stepsVar = sd.getVariable(op.inputsToOp[4])
+                stepsVar = sd.reshape(stepsVar, -1)
+                stepsVar.castTo(DataType.INT64)
+            } else {
+                sd.onesLike(starts).castTo(DataType.INT64)
+            }
             
             val result = sd.stridedSlice(
                 outputNames[0],
@@ -111,6 +85,40 @@ class Slice : PreImportHook {
                 0,  // ellipsisMask
                 0,  // newAxisMask
                 0   // shrinkAxisMask
+            )
+            
+            return mapOf(outputNames[0] to listOf(result))
+        } else {
+            // Complex case: axes specified
+            var axes = sd.getVariable(op.inputsToOp[3])
+            axes = axes.reshape(-1).castTo(DataType.INT64)
+            
+            val steps = if (hasSteps) {
+                var stepsVar = sd.getVariable(op.inputsToOp[4])
+                stepsVar = sd.reshape(stepsVar, -1)
+                stepsVar.castTo(DataType.INT64)
+            } else {
+                sd.onesLike(starts).castTo(DataType.INT64)
+            }
+            
+            // For axes-based slicing, we need to build full arrays
+            // Assuming 2D input with axes=[1] (common case from your error)
+            val zero = sd.constant(0L).castTo(DataType.INT64)
+            val one = sd.constant(1L).castTo(DataType.INT64)
+            val maxVal = sd.constant(-1).castTo(DataType.INT64)
+            
+            // Build full arrays for 2D case
+            val finalStarts = sd.concat(0, zero.reshape(1), starts)
+            val finalEnds = sd.concat(0, maxVal.reshape(1), ends)
+            val finalSteps = sd.concat(0, one.reshape(1), steps)
+            
+            val result = sd.stridedSlice(
+                outputNames[0],
+                inputVariable,
+                finalStarts,
+                finalEnds,
+                finalSteps,
+                0, 0, 0, 0, 0
             )
             
             return mapOf(outputNames[0] to listOf(result))

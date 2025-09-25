@@ -1995,7 +1995,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType elementWiseStride(const sd::
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE int isScalar(const sd::LongType *info) {
   if (isEmptyConst(info)) return 0;
   const sd::LongType rank = shape::rank(info);
-  if (rank == 0) return 1;
+  if (rank == 0 || shape::length(info) == 0 && !shape::isEmptyConst(info)) return 1;
   return 0;
 }
 

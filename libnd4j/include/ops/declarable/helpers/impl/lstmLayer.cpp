@@ -544,15 +544,15 @@ void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* 
     std::vector<sd::LongType> xShape = {nIn, 1};
     std::vector<sd::LongType> hIShape = {nOut, 1};
     std::vector<sd::LongType> dLdzShape = {1, 4 * nOut};
-    NDArray xT = x->reshape(x->ordering(), xShape);              // [nIn]  -> [nIn, 1]
-    NDArray hIT = hI->reshape(hI->ordering(), hIShape);          // [nOut] -> [nOut, 1]
-    NDArray dLdzR = dLdz.reshape(dLdz.ordering(), dLdzShape);  // [nOut] -> [1, 4*nOut]
+    NDArray *xT = x->reshape(x->ordering(), xShape);              // [nIn]  -> [nIn, 1]
+    NDArray *hIT = hI->reshape(hI->ordering(), hIShape);          // [nOut] -> [nOut, 1]
+    NDArray *dLdzR = dLdz.reshape(dLdz.ordering(), dLdzShape);  // [nOut] -> [1, 4*nOut]
 
     // dLdWx
-    *dLdWx += mmul(xT, dLdzR);  // [nIn, 1] x [1, 4*nOut] = [nIn, 4*nOut]
+    *dLdWx += mmul(*xT, *dLdzR);  // [nIn, 1] x [1, 4*nOut] = [nIn, 4*nOut]
 
     // dLdWr
-    *dLdWr += mmul(hIT, dLdzR);  // [nOut, 1] x [1, 4*nOut] = [nOut, 4*nOut]
+    *dLdWr += mmul(*hIT, *dLdzR);  // [nOut, 1] x [1, 4*nOut] = [nOut, 4*nOut]
   } else {
     NDArray xT = x->transpose();
     NDArray hIT = hI->transpose();

@@ -640,6 +640,10 @@ bool ShapeUtils::areShapesBroadcastable(NDArray& arr1, NDArray& arr2) {
 }
 
 bool ShapeUtils::areShapesBroadcastable(const LongType* shapeInfo1, const LongType* shapeInfo2) {
+ // Scalars can be broadcast with anything
+ if (shape::isScalar(shapeInfo1) || shape::isScalar(shapeInfo2))
+   return true;
+
  LongType minRank =
      shape::rank(shapeInfo1) < shape::rank(shapeInfo2) ? shape::rank(shapeInfo1) : shape::rank(shapeInfo2);
 
@@ -654,6 +658,11 @@ bool ShapeUtils::areShapesBroadcastable(const LongType* shapeInfo1, const LongTy
 bool ShapeUtils::areShapesBroadcastable(const std::vector<LongType>& shape1, const std::vector<LongType>& shape2) {
  const auto rank1 = shape1.size();
  const auto rank2 = shape2.size();
+
+ // Scalars can be broadcast with anything
+ if (rank1 == 0 || rank2 == 0)
+   return true;
+
  const LongType minRank = rank1 < rank2 ? rank1 : rank2;
 
  for (LongType i = 1; i <= minRank; ++i)
@@ -675,7 +684,15 @@ bool ShapeUtils::evalBroadcastShapeInfo(NDArray& x, NDArray& y, const bool evalM
 
 
 bool ShapeUtils::evalBroadcastShapeInfo( LongType* max,  LongType* min, const bool evalMinMax,
-                                       LongType*& resultShapeInfo, memory::Workspace* workspace) {
+                                        LongType*& resultShapeInfo, memory::Workspace* workspace) {
+
+ // Scalars can be broadcast with anything
+ if (shape::isScalar(max) || shape::isScalar(min))
+   return true;
+ // Handle empty arrays early - if either input has a dimension of size 0, result should be empty
+ bool maxEmpty = shape::isEmptyConst(max);
+ bool minEmpty = shape::isEmptyConst(min);
+
  if (shape::shapeEquals(max, min)) {
    const int len = shape::shapeInfoLength(shape::rank(max));
    resultShapeInfo = new LongType[len];
@@ -720,17 +737,27 @@ bool ShapeUtils::evalBroadcastShapeInfo( LongType* max,  LongType* min, const bo
  LongType* tmpShapeInfo = nullptr;
  ALLOCATE(tmpShapeInfo, workspace, shape::shapeInfoLength(maxRank), sd::LongType);
 
- // FIXME: get rid of memcpy here
  memcpy(tmpShapeInfo, maxShapeInfo, shape::shapeInfoByteLength(maxRank));
- for (LongType i = 0; i < minRank; ++i)
-   if ((maxShapeInfo[maxRank - i] != 0 && maxShapeInfo[maxRank - i] < minShapeInfo[minRank - i]) ||
-       minShapeInfo[minRank - i] == 0)
-     tmpShapeInfo[maxRank - i] = minShapeInfo[minRank - i];
+
+ // Handle dimension broadcasting - dimension size 0 should be preserved (empty arrays)
+ for (LongType i = 0; i < minRank; ++i) {
+   LongType maxDim = maxShapeInfo[maxRank - i];
+   LongType minDim = minShapeInfo[minRank - i];
+
+   // If either dimension is 0, result should be 0 (empty array)
+   if (maxDim == 0 || minDim == 0) {
+     tmpShapeInfo[maxRank - i] = 0;
+   }
+   // Otherwise follow standard broadcasting rules
+   else if (maxDim < minDim) {
+     tmpShapeInfo[maxRank - i] = minDim;
+   }
+ }
 
  updateStridesAndType(tmpShapeInfo, DataTypeUtils::pickPairwiseResultType(maxShapeInfo, minShapeInfo),
                       shape::order(maxShapeInfo));
 
- if (shape::isEmptyConst(max) || shape::isEmptyConst(min)) {
+ if (maxEmpty || minEmpty) {
    ArrayOptions::setPropertyBit(tmpShapeInfo, ARRAY_EMPTY);
    memset(shape::stride(tmpShapeInfo), 0, shape::rank(tmpShapeInfo) * sizeof(LongType));
  }

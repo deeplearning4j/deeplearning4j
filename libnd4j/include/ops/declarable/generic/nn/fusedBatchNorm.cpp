@@ -135,8 +135,9 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
     // need to reshape from matrix to 4d then permute the ordering due to NWHC  ordering
     auto newShape = xCast.getShapeAsVector();
     auto reshaped = xShifted1.reshape(xCast.ordering(), newShape,false);
-    reshaped.permutei({0, 3, 1, 2}, 0, false);
-    y->assign(&reshaped);
+    reshaped->permutei({0, 3, 1, 2}, 0, false);
+    y->assign(reshaped);
+    delete reshaped;
 
   } else  // NWHC case
     y->assign(&xShifted1);

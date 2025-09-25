@@ -87,25 +87,25 @@ void batchToSpace(sd::LaunchContext* context, NDArray input, NDArray& output, co
   // oW = W - cropLeft - cropRight
 
   std::vector<sd::LongType> shape =  {blockSize, blockSize, output.sizeAt(0), input.sizeAt(1), input.sizeAt(2), input.sizeAt(3)};
-  NDArray inputRearranged0 = input.reshape(
+  NDArray *inputRearranged0 = input.reshape(
       input.ordering(),shape);
-  inputRearranged0.permutei({2, 3, 0, 4, 1, 5}, false, false);
+  inputRearranged0->permutei({2, 3, 0, 4, 1, 5}, false, false);
 
   if (input.lengthOf() == output.lengthOf())
-    output.assign(&inputRearranged0);
+    output.assign(inputRearranged0);
   else {
     std::vector<sd::LongType> temp = {output.sizeAt(0), input.sizeAt(1) * blockSize, input.sizeAt(2) * blockSize, input.sizeAt(3)};
-    NDArray inputRearranged1 = inputRearranged0.reshape(
+    NDArray *inputRearranged1 = inputRearranged0->reshape(
         input.ordering(),
         temp);
     BUILD_SINGLE_SELECTOR(input.dataType(), batchToSpace_,
-                          (inputRearranged1, output, cropBottom, cropTop, cropLeft, cropRight), SD_COMMON_TYPES);
+                          (*inputRearranged1, output, cropBottom, cropTop, cropLeft, cropRight), SD_COMMON_TYPES);
   }
 }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void batchToSpaceND_(NDArray& input, NDArray& crop, NDArray& output,
+static void batchToSpaceND_(NDArray* input, NDArray* crop, NDArray* output,
                             const LongType numOfSpatialDims) {
   // input [bS, H * blockShape[0], W * blockShape[1], iC]
   // output [bS, H * blockShape[0] - cropBottom - cropTop, W * blockShape[1] - cropLeft - cropRight, iC]
@@ -116,28 +116,28 @@ static void batchToSpaceND_(NDArray& input, NDArray& crop, NDArray& output,
   // oW -> [cropLeft,   iH - cropRight]
   // xLen >= zLen
 
-  const T* x = input.bufferAsT<T>();
-  T* z = output.bufferAsT<T>();
+  const T* x = input->bufferAsT<T>();
+  T* z = output->bufferAsT<T>();
 
-  const sd::LongType rank = input.rankOf();
-  const sd::LongType zLen = output.lengthOf();
+  const sd::LongType rank = input->rankOf();
+  const sd::LongType zLen = output->lengthOf();
 
   // loop through input array
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType zCoords[SD_MAX_RANK], xCoords[SD_MAX_RANK];
 
     for (auto i = start; i < stop; i++) {
-      INDEX2COORDS(i, rank, shape::shapeOf(output.shapeInfo()), zCoords);
+      INDEX2COORDS(i, rank, shape::shapeOf(output->shapeInfo()), zCoords);
 
       memcpy(xCoords, zCoords, rank * sizeof(sd::LongType));
 
       // evaluate spatial coordinates for x
       for (sd::LongType j = 1; j <= numOfSpatialDims; ++j)
-        xCoords[j] += crop.e<sd::LongType>(j - 1, 0);  // add crop left
+        xCoords[j] += crop->e<sd::LongType>(j - 1, 0);  // add crop left
 
       sd::LongType zOffset, xOffset;
-      COORDS2INDEX(rank, shape::stride(output.shapeInfo()), zCoords, zOffset);
-      COORDS2INDEX(rank, shape::stride(input.shapeInfo()), xCoords, xOffset);
+      COORDS2INDEX(rank, shape::stride(output->shapeInfo()), zCoords, zOffset);
+      COORDS2INDEX(rank, shape::stride(input->shapeInfo()), xCoords, xOffset);
 
       z[zOffset] = x[xOffset];
     }
@@ -147,7 +147,7 @@ static void batchToSpaceND_(NDArray& input, NDArray& crop, NDArray& output,
 }
 
 BUILD_SINGLE_TEMPLATE( void batchToSpaceND_,
-                      (NDArray& input, NDArray& crop, NDArray& output, const sd::LongType numOfSpatialDims),
+                      (NDArray* input, NDArray* crop, NDArray* output, const sd::LongType numOfSpatialDims),
                       SD_COMMON_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
@@ -169,7 +169,7 @@ void batchToSpaceND(sd::LaunchContext* context, NDArray& input, NDArray& blockSh
   temp[i++] = output.sizeAt(0);
   for (sd::LongType j = 1; j < rank; ++i, ++j) temp[i] = input.sizeAt(j);
 
-  NDArray inputRearranged0 = input.reshape(input.ordering(), temp);
+  NDArray *inputRearranged0 = input.reshape(input.ordering(), temp);
 
   //*** construct permuting std::vector for permutation of input array ***//
 
@@ -181,10 +181,10 @@ void batchToSpaceND(sd::LaunchContext* context, NDArray& input, NDArray& blockSh
   }
   for (i = 2 * numOfSpatialDims + 1; i < static_cast<sd::LongType>(temp.size()); ++i) temp[i] = i;
 
-  inputRearranged0.permutei(temp, false, false);
+  inputRearranged0->permutei(temp, false, false);
 
   if (input.lengthOf() == output.lengthOf()) {
-    output.assign(&inputRearranged0);
+    output.assign(inputRearranged0);
   } else {
     //*** construct reshaping std::vector for second reshape of input array ***//
 
@@ -195,9 +195,9 @@ void batchToSpaceND(sd::LaunchContext* context, NDArray& input, NDArray& blockSh
     for (i = 1; i < rank; ++i)
       temp[i] = (i <= numOfSpatialDims) ? input.sizeAt(i) * blockShape.e<sd::LongType>(i - 1) : input.sizeAt(i);
 
-    NDArray inputRearranged1 = inputRearranged0.reshape(input.ordering(), temp);
+    NDArray *inputRearranged1 = inputRearranged0->reshape(input.ordering(), temp);
 
-    BUILD_SINGLE_SELECTOR(input.dataType(), batchToSpaceND_, (inputRearranged1, crop, output, numOfSpatialDims),
+    BUILD_SINGLE_SELECTOR(input.dataType(), batchToSpaceND_, (inputRearranged1, &crop, &output, numOfSpatialDims),
                           SD_COMMON_TYPES);
   }
 }
@@ -264,22 +264,22 @@ void spaceToBatch(sd::LaunchContext* context, NDArray& input, NDArray& output, c
   // padLeft + padRight)/blockSize, iC]
 
   std::vector<sd::LongType> shape1 = {blockSize, blockSize, input.sizeAt(0), output.sizeAt(1), output.sizeAt(2), output.sizeAt(3)};
-  NDArray outputRearranged0 = output.reshape(
+  NDArray *outputRearranged0 = output.reshape(
       output.ordering(), shape1,
       false);
-  outputRearranged0.permutei({2, 3, 0, 4, 1, 5}, false, false);
+  outputRearranged0->permutei({2, 3, 0, 4, 1, 5}, false, false);
 
   if (input.lengthOf() == output.lengthOf()) {
-    outputRearranged0.assign(&input);
+    outputRearranged0->assign(&input);
   } else {
     std::vector<sd::LongType> shape2 = {input.sizeAt(0), output.sizeAt(1) * blockSize, output.sizeAt(2) * blockSize, output.sizeAt(3)};
-    NDArray outputRearranged1 = outputRearranged0.reshape(
+    NDArray *outputRearranged1 = outputRearranged0->reshape(
         output.ordering(),
         shape2, false);
     BUILD_SINGLE_SELECTOR(input.dataType(), spaceToBatch_,
-                          (input, outputRearranged1, padBottom, padTop, padLeft, padRight), SD_COMMON_TYPES);
+                          (input, *outputRearranged1, padBottom, padTop, padLeft, padRight), SD_COMMON_TYPES);
 
-    if (output.buffer() != outputRearranged1.buffer()) outputRearranged0.assign(&outputRearranged1);
+    if (output.buffer() != outputRearranged1->buffer()) outputRearranged0->assign(outputRearranged1);
   }
 }
 
@@ -365,7 +365,7 @@ void spaceToBatchND(sd::LaunchContext* context, NDArray& input, NDArray& blockSh
   temp[i++] = input.sizeAt(0);
   for (int j = 1; j < rank; ++i, ++j) temp[i] = output.sizeAt(j);
 
-  NDArray outputRearranged0 = output.reshape(output.ordering(), temp, false);
+  NDArray *outputRearranged0 = output.reshape(output.ordering(), temp, false);
 
   //*** construct permuting std::vector for permutation of output array ***//
 
@@ -377,12 +377,12 @@ void spaceToBatchND(sd::LaunchContext* context, NDArray& input, NDArray& blockSh
   }
   for (i = 2 * numOfSpatialDims + 1; i < static_cast<int>(temp.size()); ++i) temp[i] = i;
 
-  outputRearranged0.permutei(temp, false, false);
+  outputRearranged0->permutei(temp, false, false);
 
   // ****** //
 
   if (input.lengthOf() == output.lengthOf()) {
-    outputRearranged0.assign(&input);
+    outputRearranged0->assign(&input);
   } else {
     //*** construct reshaping std::vector for second reshape of output array ***//
     temp.resize(rank);
@@ -392,12 +392,12 @@ void spaceToBatchND(sd::LaunchContext* context, NDArray& input, NDArray& blockSh
     for (i = 1; i < rank; ++i)
       temp[i] = (i <= numOfSpatialDims) ? output.sizeAt(i) * blockShape.e<sd::LongType>(i - 1) : output.sizeAt(i);
 
-    NDArray outputRearranged1 = outputRearranged0.reshape(output.ordering(), temp, false);
+    NDArray *outputRearranged1 = outputRearranged0->reshape(output.ordering(), temp, false);
 
-    BUILD_SINGLE_SELECTOR(input.dataType(), spaceToBatchND_, (input, padding, outputRearranged1, numOfSpatialDims),
+    BUILD_SINGLE_SELECTOR(input.dataType(), spaceToBatchND_, (input, padding, *outputRearranged1, numOfSpatialDims),
                           SD_COMMON_TYPES);
 
-    if (output.buffer() != outputRearranged1.buffer()) outputRearranged0.assign(&outputRearranged1);
+    if (output.buffer() != outputRearranged1->buffer()) outputRearranged0->assign(outputRearranged1);
   }
 }
 

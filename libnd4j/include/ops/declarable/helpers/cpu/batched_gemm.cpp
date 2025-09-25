@@ -1,4 +1,4 @@
- /* ******************************************************************************
+/* ******************************************************************************
  *
  *
  * This program and the accompanying materials are made available under the
@@ -73,6 +73,9 @@ static void bgemm_( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std
                     NDArray *alphas,  NDArray *betas, int transA, int transB, int M, int N, int K,
                     int lda,  int ldb,  int ldc) {
   int batchSize = vA.size();
+
+
+  
   if (BlasHelper::getInstance().hasBatchedGEMM<T>() || !Environment::getInstance().isEnableBlas()) {
     auto arr = vA.at(0);
     CBLAS_TRANSPOSE *tA, *tB;

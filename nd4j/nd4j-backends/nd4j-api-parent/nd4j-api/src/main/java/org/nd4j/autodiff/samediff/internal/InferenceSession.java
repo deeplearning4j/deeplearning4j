@@ -33,6 +33,7 @@ import org.nd4j.autodiff.samediff.config.SDValue;
 import org.nd4j.autodiff.samediff.config.SDValueType;
 import org.nd4j.autodiff.samediff.execution.ExecutionNode;
 import org.nd4j.autodiff.samediff.execution.ForwardExecutionDAG;
+import org.nd4j.autodiff.samediff.execution.DAGCache;
 import org.nd4j.autodiff.samediff.execution.ForwardExecutionDAGBuilder;
 import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
 import org.nd4j.autodiff.samediff.internal.memory.HashDependencyTracker;
@@ -93,6 +94,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     @Getter
     private Map<String,OpContext> opContexts = new LinkedHashMap<>();
 
+    // DAG cache for avoiding expensive convergence process
+    private final DAGCache dagCache = new DAGCache();
+
     public InferenceSession(@NonNull SameDiff sameDiff) {
         super(sameDiff);
         mmgr = new ArrayCacheMemoryMgr();
@@ -114,9 +118,13 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             allRequired.addAll(requiredActivations);
         }
 
-        // Build corrected DAG (replaces broken initSubgraph)
-        ForwardExecutionDAGBuilder builder = new ForwardExecutionDAGBuilder(sameDiff);
-        ForwardExecutionDAG dag = builder.buildForwardDAG(allRequired);
+        // Build corrected DAG with caching (replaces broken initSubgraph)
+        ForwardExecutionDAG dag = dagCache.getOrCompute(allRequired, () -> {
+            ForwardExecutionDAGBuilder builder = new ForwardExecutionDAGBuilder(sameDiff);
+            return builder.buildForwardDAG(allRequired);
+        });
+
+
 
         // Preprocess placeholders using existing logic
         Map<String, INDArray> processedPlaceholders = preprocessPlaceholders(placeholderValues, at);
@@ -188,6 +196,13 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     putNodeValue(variableValues.get(outputVar), vid);
                 }
             }
+        }
+
+        for(String output : allRequired) {
+            if(!variableValues.containsKey(output)) {
+                throw new IllegalStateException("Output: " + output + " missing from the final output!");
+            }
+            results.put(output,variableValues.get(output));
         }
 
         return results;

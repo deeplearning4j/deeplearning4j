@@ -1862,7 +1862,7 @@ bool NDArray::isBroadcastableTo(NDArray &other)  {
 void NDArray::assign(NDArray *other, bool allowParallelism) {
   NDArray::validateAssign(this, other);
   const sd::LongType* modifiedOtherShapeInfo = NDArray::modifyShapeForAssign(this, other);
-  NDArray::copyDataForAssign(this, other, modifiedOtherShapeInfo, allowParallelism);
+  NDArray::copyDataForAssign(other, this, modifiedOtherShapeInfo, allowParallelism);
 }
 //////////////////////////////////////////////////////////////////////////
 
@@ -2652,7 +2652,7 @@ void NDArray::copyDataForAssign(NDArray *thisArray, NDArray *other, const sd::Lo
   if (other->lengthOf() <= 1) {
     // Simple fix for length <= 1 cases - just use p() which handles offsets correctly
     if (thisArray->lengthOf() <= 1 && other->lengthOf() <= 1) {;
-      thisArray->p(0, other);
+      other->p(0, thisArray);
       return;
     }
 
@@ -2786,15 +2786,9 @@ LongType *NDArray::reshapeShapeInfo(NDArray *array, char order, const std::vecto
   return ret->primary();
 }
 
-
-NDArray& NDArray::reshape(const char order, std::vector<sd::LongType>& shape, bool copyToNewBuff) & {
+NDArray *NDArray::reshape(char order, std::vector<sd::LongType>& shape, bool copyToNewBuff) & {
   sd::LongType* newShapeInfo = NDArray::reshapeShapeInfo(this, order, shape);
-  printf("Array reshape call for order\n");
-  fflush(stdout);
   if (copyToNewBuff) {
-    printf("Copying new buff reshape call\n");
-    fflush(stdout);
-
     NDArray* ret = new NDArray(newShapeInfo, true, getContext(), false);
     if(this->isScalar() || this->lengthOf() <= 1) {
       ret->p(0,this);
@@ -2802,10 +2796,10 @@ NDArray& NDArray::reshape(const char order, std::vector<sd::LongType>& shape, bo
       this->applyTransform(transform::Assign, ret, nullptr);
 
     }
-    return *ret;
+    return ret;
   } else {
     NDArray* ret = new NDArray(getDataBuffer(), const_cast<sd::LongType*>(newShapeInfo), getContext(), offset());
-    return *ret;
+    return ret;
   }
 }
 
@@ -3959,11 +3953,11 @@ void NDArray::nullify() {
 
 template <typename T, typename Y, typename>
 void NDArray::templatedSet(void *buffer, LongType xOffset, DataType dtype, void *value) {
-  BUILD_SINGLE_PARTIAL_SELECTOR(dtype, templatedSet<, T>(buffer, xOffset, value), SD_COMMON_TYPES);
+  BUILD_SINGLE_PARTIAL_SELECTOR(dtype, templatedSet<, T>(buffer, xOffset, value), SD_NUMERIC_TYPES);
 }
 BUILD_DOUBLE_TEMPLATE(  void NDArray::templatedSet,
                         (void *buffer, LongType xOffset, DataType dtype, void *value),
-                        SD_COMMON_TYPES, SD_COMMON_TYPES);
+                        SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::applyPairwiseTransform(pairwise::Ops op, NDArray *other, NDArray *target,
@@ -4034,8 +4028,8 @@ void NDArray::templatedDoubleAssign(void *xBuffer,  sd::LongType xOffset,  void 
     THROW_EXCEPTION("NDArray::templatedDoubleAssign: x buffer is nullptr !");
   if(y == nullptr)
     THROW_EXCEPTION("NDArray::templatedDoubleAssign: y buffer is nullptr !");
-
   x[xOffset] = y[yOffset];
+
 }
 BUILD_DOUBLE_TEMPLATE( SD_LIB_EXPORT void NDArray::templatedDoubleAssign,
                        (void *xBuffer,  sd::LongType xOffset,  void *yBuffer,  sd::LongType yOffset),
@@ -4662,8 +4656,6 @@ void NDArray::applyScalarArr(sd::scalar::BoolOps op, NDArray *scalar, NDArray *t
                              ExtraArguments *extraParams)  {
   if (!target->isB()) THROW_EXCEPTION("NDArray::applyScalarArr bool method: target has not bool type!");
   if (dataType() != scalar->dataType()) {
-    sd_printf("NDArray::applyScalarArr BoolOps: this dtype: [%i]; scalar dtype: [%i]\n", this->dataType(),
-              scalar->dataType());
     THROW_EXCEPTION("NDArray::applyScalarArr bool method: this and scalar arrays must have the same type!");
   }
 
@@ -4683,8 +4675,6 @@ void NDArray::applyScalarArr(sd::scalar::IntOps op, NDArray *scalar, NDArray *ta
   if (target->dataType() != this->dataType())
     THROW_EXCEPTION("NDArray::applyScalarArr int method: target has not bool type!");
   if (dataType() != scalar->dataType()) {
-    sd_printf("NDArray::applyScalarArr IntOps: this dtype: [%i]; scalar dtype: [%i]\n", this->dataType(),
-              scalar->dataType());
     THROW_EXCEPTION("NDArray::applyScalarArr int method: this and scalar arrays must have the same type!");
   }
 
@@ -5262,104 +5252,100 @@ void NDArray::p(const sd::LongType i, NDArray *scalar) {
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
-
   NDArray::preparePrimaryUse({this}, {scalar}, true);
-  auto rp = getOffset(i);
-
-
 
   if (scalar->isS()) {
     switch(scalar->dataType()) {
 #ifdef HAS_UTF8
       case DataType::UTF8:
-        templatedSetString<std::string, std::string>(buffer(), rp, scalar->buffer());
+        templatedSetString<std::string, std::string>(buffer(), i, scalar->buffer());
         break;
 #endif
 #ifdef HAS_UTF16
-        case DataType::UTF16:
-        templatedSetString<std::u16string, std::u16string>(buffer(), rp, scalar->buffer());
+      case DataType::UTF16:
+        templatedSetString<std::u16string, std::u16string>(buffer(), i, scalar->buffer());
         break;
 #endif
 #ifdef HAS_UTF32
-        case DataType::UTF32:
-        templatedSetString<std::u32string, std::u32string>(buffer(), rp, scalar->buffer());
+      case DataType::UTF32:
+        templatedSetString<std::u32string, std::u32string>(buffer(), i, scalar->buffer());
         break;
 #endif
       default:
         THROW_EXCEPTION("Unknown or unsupported string type");
     }
   } else {
-    // Modified to use both template parameters and match the three-argument version
     switch(scalar->dataType()) {
 #ifdef HAS_FLOAT32
       case FLOAT32:
-        templatedSet<float, float>(buffer(), rp, scalar->buffer());
+        templatedAssign<float>(buffer(),i,scalar->buffer(),0);
         break;
 #endif
 #ifdef HAS_DOUBLE
       case DOUBLE:
-        templatedSet<double, double>(buffer(), rp, scalar->buffer());
+        templatedAssign<double>(buffer(),i,scalar->buffer(),0);
         break;
 #endif
 #ifdef HAS_FLOAT16
       case HALF:
-        templatedSet<float16, float16>(buffer(), rp, scalar->buffer());
+        templatedAssign<float16>(buffer(),i,scalar->buffer(),0);
         break;
 #endif
 #ifdef HAS_BFLOAT16
       case BFLOAT16:
-        templatedSet<bfloat16, bfloat16>(buffer(), rp, scalar->buffer());
+        templatedAssign<bfloat16>(buffer(),i,scalar->buffer(),0);
         break;
 #endif
 #ifdef HAS_BOOL
       case BOOL:
-        templatedSet<bool, bool>(buffer(), rp, scalar->buffer());
+        templatedAssign<bool>(buffer(),i,scalar->buffer(),0);
         break;
 #endif
 #ifdef HAS_INT8
       case INT8:
-        templatedSet<int8_t, int8_t>(buffer(), rp, scalar->buffer());
+        templatedAssign<int8_t>(buffer(),i,scalar->buffer(),0);
         break;
 #endif
 #ifdef HAS_INT16
-        case INT16:
-        templatedSet<int16_t, int16_t>(buffer(), rp, scalar->buffer());
+      case INT16:
+        templatedAssign<int16_t>(buffer(),i,scalar->buffer(),0);
         break;
 #endif
 #ifdef HAS_INT32
       case INT32:
-        templatedSet<Int32Type, Int32Type>(buffer(), rp, scalar->buffer());
+        templatedAssign<Int32Type>(buffer(),i,scalar->buffer(),0);
         break;
 #endif
-#ifdef HAS_LONG
+#ifdef HAS_INT64
       case INT64:
-        templatedSet<LongType, LongType>(buffer(), rp, scalar->buffer());
+        templatedAssign<LongType>(buffer(),i,scalar->buffer(),0);
         break;
 #endif
 #ifdef HAS_UINT8
       case UINT8:
-        templatedSet<uint8_t, uint8_t>(buffer(), rp, scalar->buffer());
+        templatedAssign<uint8_t>(buffer(),i,scalar->buffer(),0);
         break;
 #endif
 #ifdef HAS_UINT16
-        case UINT16:
-        templatedSet<uint16_t, uint16_t>(buffer(), rp, scalar->buffer());
+      case UINT16:
+        templatedAssign<uint16_t>(buffer(),i,scalar->buffer(),0);
         break;
 #endif
 #ifdef HAS_UINT32
-        case UINT32:
-        templatedSet<uint32_t, uint32_t>(buffer(), rp, scalar->buffer());
+      case UINT32:
+        templatedAssign<uint32_t>(buffer(),i,scalar->buffer(),0);
         break;
 #endif
 #ifdef HAS_UNSIGNEDLONG
-        case UINT64:
-        templatedSet<UnsignedLong, UnsignedLong>(buffer(), rp, scalar->buffer());
+      case UINT64:
+        templatedAssign<UnsignedLong>(buffer(),i,scalar->buffer(),0);
         break;
 #endif
       default:
         THROW_EXCEPTION("Unsupported numeric type");
     }
   }
+
   NDArray::registerPrimaryUse({this}, {scalar});
 }
 
@@ -5376,13 +5362,14 @@ void NDArray::templatedSet(void *buffer, LongType offset, void *value) {
   }
 
   auto t = reinterpret_cast<T *>(buffer);
-  const auto y = *(reinterpret_cast<const Y *>(value));
+  const auto y = (reinterpret_cast<const Y *>(value));
 
   if(t == nullptr) {
     THROW_EXCEPTION("NDArray::templatedSet: first buffer is nullptr");
   }
 
-  t[offset] = y;
+  t[offset] = y[0];
+
 
   tickWriteHost();
   NDArray::registerPrimaryUse({this}, {this});
@@ -5396,17 +5383,23 @@ NDArray::p(const sd::LongType i, const T value) {  // Note: value not NDArray re
                                + std::to_string(i) + " length = " + std::to_string(_length);
     THROW_EXCEPTION(errorMessage.c_str());
   }
-  if(isScalar()) {
+  if(isScalar() || this->lengthOf() <= 1) {
     // Direct value assignment, no need for scalar.isS() check
-    templatedSet<T, T>(buffer(), 0, dataType(), (void*)&value);
+    templatedSet<T, T>(buffer(), i, dataType(), (void*)&value);
     return;
   }
 
-  sd::LongType coords[1] = {i};
-  sd::LongType xOffset;
-  COORDS2INDEX(1, shape::stride(shapeInfo()), coords, xOffset);
-  // Direct value assignment, no need for scalar.isS() check
-  templatedSet<T, T>(buffer(), xOffset, dataType(), (void*)&value);
+  if(this->lengthOf() <= 1) {
+    // Direct value assignment, no need for scalar.isS() check
+    templatedSet<T, T>(buffer(), 0, dataType(), (void*)&value);
+  } else {
+    sd::LongType coords[1] = {i};
+    sd::LongType xOffset;
+    COORDS2INDEX(1, shape::stride(shapeInfo()), coords, xOffset);
+    // Direct value assignment, no need for scalar.isS() check
+    templatedSet<T, T>(buffer(), xOffset, dataType(), (void*)&value);
+  }
+
 }
 
 #define INSTANTIATE_P_FOR_TYPE(TYPE) \
@@ -5732,7 +5725,6 @@ ResultSet NDArray::multipleTensorsAlongDimension(const std::vector<LongType> &in
 
   for (auto idx : indices) {
     if (idx >= numTads) {
-      sd_printf("NDArray::multipleTensorsAlongDimension: index %i is higher then number of TADs: %i\n", idx, numTads);
       THROW_EXCEPTION("Bad index");
     }
 

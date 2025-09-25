@@ -94,19 +94,19 @@ static void pooling2dBP_(sd::graph::Context& block, NDArray& input, NDArray& gra
               if (hstart < 0)
                 hstart +=
                     dH * ((-hstart + dH - 1) /
-                          dH);  // (sd::LongType)sd::math::sd_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                          dH);
               if (wstart < 0)
                 wstart +=
                     dW * ((-wstart + dW - 1) /
-                          dW);  //(sd::LongType)sd::math::sd_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                          dW);
               if (hend > iH)
                 hend -=
                     dH * ((hend - iH + dH - 1) /
-                          dH);  //(sd::LongType)sd::math::sd_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                          dH);
               if (wend > iW)
                 wend -=
                     dW * ((wend - iW + dW - 1) /
-                          dW);  //(sd::LongType)sd::math::sd_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                          dW);
 
               sum = -DataTypeUtils::max<T>();
               valO = gO[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3];

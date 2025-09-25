@@ -61,7 +61,7 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
     
     // Reshape x to 2D
     std::vector<sd::LongType> reshapeVec = {batchSize, lastDim};
-    xReshaped = new NDArray(x->reshape('c', reshapeVec));
+    xReshaped = x->reshape('c', reshapeVec);
     x = xReshaped;
     
     // Calculate output shape
@@ -69,7 +69,7 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
     
     // Reshape z to 2D for computation
     std::vector<sd::LongType> zReshapeVec = {batchSize, outputLastDim};
-    zReshaped = new NDArray(z->reshape('c', zReshapeVec));
+    zReshaped = z->reshape('c', zReshapeVec);
     z = zReshaped;
   }
 
@@ -85,7 +85,7 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
   
   if(bTranspose && b->rankOf() == 1) {
     std::vector<sd::LongType> bShape = {b->lengthOf(), 1};
-    b = new NDArray(b->reshape('c', bShape));
+    b = b->reshape('c', bShape);
     if(z->isMatrix()) {
       z->addiColumnVector(b);
     } else {
@@ -94,7 +94,7 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
   } else {
     if(b->rankOf() == 1) {
       std::vector<sd::LongType> bShape = {1, b->lengthOf()};
-      b = new NDArray(b->reshape('c', bShape));
+      b = b->reshape('c', bShape);
     }
 
     if(z->isMatrix()) {
@@ -112,7 +112,7 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
     outputShape[outputShape.size() - 1] = bTranspose ? w->sizeAt(0) : w->sizeAt(1);
     
     // Reshape z back to original dimensions
-    auto zFinal = new NDArray(z->reshape('c', outputShape));
+    auto zFinal = z->reshape('c', outputShape);
     OUTPUT_VARIABLE(0)->assign(zFinal);
     delete zFinal;
   }
