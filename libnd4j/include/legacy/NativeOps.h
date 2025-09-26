@@ -23,7 +23,7 @@
 #ifndef NATIVEOPS_H
 #define NATIVEOPS_H
 
-#include <array/ArrayOptions.h>
+#include <array/ArrayOptions.hXX>
 #include <array/DataTypeUtils.h>
 #include <array/ShapeList.h>
 #include <array/ConstantDataBuffer.h>
@@ -37,6 +37,7 @@
 // Windows-specific backtrace implementation
 #else
 #include <execinfo.h>
+#include <unistd.h>
 // Unix-style backtrace implementation
 #endif
 #include <graph/GraphState.h>
@@ -52,7 +53,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <types/float16.h>
-#include <unistd.h>
+
 typedef sd::InteropDataBuffer  OpaqueDataBuffer;
 typedef sd::ops::OpExecTrace ExecTrace;
 typedef sd::ShapeList OpaqueShapeList;
@@ -68,15 +69,7 @@ typedef sd::TadPack OpaqueTadPack;
 
 typedef sd::ConstantDataBuffer* OpaqueConstantDataBuffer;
 typedef sd::ConstantShapeBuffer* OpaqueConstantShapeBuffer;
-extern "C" {
 
-
-
-//this is to ensure symbol is loaded and exported from this library instead when using LD_PRELOAD.
-__attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_enter (void *this_fn,void *call_site);
-__attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_exit  (void *this_fn,void *call_site);
-
-}
 
 
 
