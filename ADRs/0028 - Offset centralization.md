@@ -11,7 +11,7 @@ Proposed by: Adam Gibson Oct 24,2024
 The current nd4j codebase stores offsets in multiple locations, including opaque data buffers and data buffers. This scattered approach leads to inconsistencies, potential bugs, and difficulties in maintenance. Additionally, the current method of passing NDArray components from Java to C++ involves manually unpacking various elements, which is error-prone and cumbersome.
 
 ## Proposal
-
+``
 We propose to refactor the nd4j codebase to centralize offset storage within NDArrays and introduce a new OpaqueNDArray type for improved Java-C++ interoperability. The key features of this proposal include:
 
 1. Moving all offset information into NDArray objects, removing them from opaque data buffers and data buffers.
