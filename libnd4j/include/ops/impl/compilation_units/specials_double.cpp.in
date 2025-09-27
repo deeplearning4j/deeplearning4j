@@ -35,9 +35,9 @@ namespace sd {
 ITERATE_COMBINATIONS(
     SD_COMMON_TYPES_PART_@COMB1@,
     SD_COMMON_TYPES_PART_@COMB2@,
-    INSTANT_PROCESS_CLASSCOMBINATION, // Template pattern for the class
-    class sd::DoubleMethods,
-    ;
+    INSTANT_PROCESS_CLASSCOMBINATION,
+     sd::DoubleMethods,
+    ()
 )
 
 
