@@ -78,7 +78,8 @@ CUSTOM_OP_IMPL(squeeze, 1, 1, false, 0, -2) {
                                            input->offset());
     } else {
       auto tmp = input->reshape(input->ordering(), shape);
-      output->assign(&tmp);
+      output->assign(tmp);
+      delete tmp;
     }
   }
 
