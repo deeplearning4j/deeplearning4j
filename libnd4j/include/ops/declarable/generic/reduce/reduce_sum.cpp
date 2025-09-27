@@ -130,7 +130,8 @@ CUSTOM_OP_IMPL(reduce_sum_bp, -1, 1, false, 0, 0) {
         gradOShapeKeepDims);
     auto r = gradO->reshape(gradO->ordering(),
                             shape);  // for example could be something like [a,b] -> [1,a,1,b]
-    gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), &r, gradI);
+    gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), r, gradI);
+    delete r;
   } else
     gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), gradO, gradI);
 

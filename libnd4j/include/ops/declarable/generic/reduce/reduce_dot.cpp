@@ -84,11 +84,11 @@ CUSTOM_OP_IMPL(reduce_dot_bp, -1, 2, false, 0, 0) {
                               shape);  // for example could be something like [a,b] -> [1,a,1,b]
 
       // First case - for gradX
-      NDArray gradXTemp1 = (*y) * r;
+      NDArray gradXTemp1 = (*y) * *r;
       gradX->assign(&gradXTemp1);
 
       // First case - for gradY
-      NDArray gradYTemp1 = (*x) * r;
+      NDArray gradYTemp1 = (*x) * *r;
       gradY->assign(&gradYTemp1);
 
     } else {
