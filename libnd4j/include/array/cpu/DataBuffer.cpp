@@ -62,7 +62,7 @@ void DataBuffer::printHostBufferContent(void* buffer, sd::LongType offset, sd::L
   }
   sd_printf("]", 0);
 }
-BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void DataBuffer::printHostBufferContent,(void* buffer, sd::LongType offset, sd::LongType length),SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT  void DataBuffer::printHostBufferContent,(void* buffer, sd::LongType offset, sd::LongType length),SD_COMMON_TYPES);
 
 
 
@@ -99,7 +99,7 @@ void DataBuffer::printBufferDebug(const char* msg, sd::LongType offset, sd::Long
     sd_printf("Device buffer: nullptr\n", 0);
   }
 
-#if defined(__CUDABLAS__)
+#if defined(SD_CUDA)
   // Print sync state counters
   sd_printf("Sync state: _counter=%lld, _writePrimary=%lld, _writeSpecial=%lld, _readPrimary=%lld, _readSpecial=%lld\n",
             (long long)_counter.load(), (long long)_writePrimary.load(), (long long)_writeSpecial.load(),
@@ -207,7 +207,7 @@ void memcpyWithT(DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, 
 
 void DataBuffer::memcpy(DataBuffer* dst, DataBuffer* src,
                         sd::LongType startingOffset, sd::LongType dstOffset) {
-  BUILD_SINGLE_TEMPLATE(memcpyWithT,(dst, src, startingOffset, dstOffset),
+  BUILD_SINGLE_SELECTOR(dst->_dataType, memcpyWithT,(dst, src, startingOffset, dstOffset),
                         SD_COMMON_TYPES);
 
   dst->readPrimary();
@@ -355,7 +355,7 @@ void* DataBuffer::primaryAtOffset(const LongType offset) {
 }
 
 #define PRIMARYOFFSET(T) template void* DataBuffer::primaryAtOffset<GET_SECOND(T)>(const LongType offset);
-ITERATE_LIST((SD_COMMON_TYPES),PRIMARYOFFSET)
+ITERATE_LIST((SD_COMMON_TYPES_ALL),PRIMARYOFFSET)
 
 template <typename T>
 void* DataBuffer::specialAtOffset(const LongType offset) {
@@ -366,5 +366,5 @@ void* DataBuffer::specialAtOffset(const LongType offset) {
 }
 
 #define SPECIALOFFSET(T) template void* DataBuffer::specialAtOffset<GET_SECOND(T)>(const LongType offset);
-ITERATE_LIST((SD_COMMON_TYPES),SPECIALOFFSET)
+ITERATE_LIST((SD_COMMON_TYPES_ALL),SPECIALOFFSET)
 }  // namespace sd

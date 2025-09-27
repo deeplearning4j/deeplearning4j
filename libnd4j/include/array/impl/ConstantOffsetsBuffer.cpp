@@ -44,7 +44,7 @@ LongType *ConstantOffsetsBuffer::special() {
 }
 
 LongType *ConstantOffsetsBuffer::platform() {
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   return special();
 #else
   return primary();

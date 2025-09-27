@@ -22,6 +22,7 @@
 #include <array/DataType.h>
 #include <array/DataTypeUtils.h>
 #include <types/float16.h>
+#include <system/selective_rendering.h>
 
 namespace sd {
 DataType DataTypeUtils::fromInt(int val) { return (DataType)val; }
@@ -29,4 +30,10 @@ DataType DataTypeUtils::fromInt(int val) { return (DataType)val; }
 DataType DataTypeUtils::fromFlatDataType(graph::DType dtype) { return (DataType)dtype; }
 
 int DataTypeUtils::asInt(DataType type) { return static_cast<int>(type); }
+
+/**
+ * Check if a triple of data types is enabled for compilation in selective rendering
+ */
+static bool isCompiledTypeTriple(DataType type1, DataType type2, DataType type3);
+
 }  // namespace sd
