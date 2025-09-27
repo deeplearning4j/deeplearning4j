@@ -100,8 +100,6 @@ template void PointersManager::printDevContentOnDevFromHost<float>(const void* p
 template void PointersManager::printDevContentOnDevFromHost<double>(const void* pDev, const LongType len,
                                                                     const int tid);
 
-// BUILD_SINGLE_TEMPLATE(template void PointersManager::printDevContentOnDevFromHost, (void* pDev, sd::LongType len, int
-// tid), SD_COMMON_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
