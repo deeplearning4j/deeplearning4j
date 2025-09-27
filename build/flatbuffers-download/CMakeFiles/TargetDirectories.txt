@@ -1,0 +1,3 @@
+/home/agibsonccc/Documents/GitHub/deeplearning4j/build/flatbuffers-download/CMakeFiles/flatbuffers.dir
+/home/agibsonccc/Documents/GitHub/deeplearning4j/build/flatbuffers-download/CMakeFiles/edit_cache.dir
+/home/agibsonccc/Documents/GitHub/deeplearning4j/build/flatbuffers-download/CMakeFiles/rebuild_cache.dir
