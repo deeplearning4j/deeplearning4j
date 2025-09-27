@@ -48,15 +48,10 @@ public class BatchMmul extends DynamicCustomOp {
 
     protected int transposeA;
     protected int transposeB;
-
     protected int batchSize;
-
-    protected int M;
-    protected int N;
-    protected int K;
     private SDVariable[] matricesA,matricesB;
     private SDVariable alphas,betas;
-    protected int lda,ldb,ldc;
+    
     public BatchMmul(SameDiff sameDiff,
                      SDVariable[] matricesA,
                      SDVariable[] matricesB,
@@ -67,7 +62,6 @@ public class BatchMmul extends DynamicCustomOp {
         this.matricesB = matricesB;
         this.alphas = sameDiff.constant(Nd4j.scalar(matricesA[0].dataType(),1.0));
         this.betas = sameDiff.constant(Nd4j.scalar(matricesB[0].dataType(),0.0));
-
     }
 
     public BatchMmul(SameDiff sameDiff,
@@ -90,9 +84,9 @@ public class BatchMmul extends DynamicCustomOp {
             matricesA[i] = arg(i + 2);
             matricesB[i] = arg(i + 2 + batchSize);
         }
+        // Only add transpose flags - dimensions will be inferred at runtime
+        addIArgument(this.transposeA, this.transposeB);
     }
-
-
 
     public BatchMmul(SameDiff sd, SDVariable alphas,
                      SDVariable betas,
@@ -104,27 +98,15 @@ public class BatchMmul extends DynamicCustomOp {
         ));
 
         this.batchSize = inputsA.length;
-
         this.transposeA = transposeA ? 1 : 0;
         this.transposeB = transposeB ? 1 : 0;
-
-        long[] firstShape = inputsA[0].getShape();
-        long[] lastShape = inputsB[0].getShape();
-
-        if(firstShape != null && lastShape != null) {
-            this.M = transposeA ? (int) firstShape[1]: (int) firstShape[0];
-            this.N = transposeB ? (int) lastShape[0]: (int) lastShape[1];
-            this.K = transposeB ? (int) lastShape[1]: (int) lastShape[0];
-            this.lda = (int) firstShape[0];
-            this.ldb = (int) lastShape[0];
-            this.ldc = (int) firstShape[0];
-            addArgs();
-            this.alphas = alphas;
-            this.betas = betas;
-            this.matricesA = inputsA;
-            this.matricesB = inputsB;
-        }
-
+        this.alphas = alphas;
+        this.betas = betas;
+        this.matricesA = inputsA;
+        this.matricesB = inputsB;
+        
+        // Only add transpose flags - dimensions will be inferred at runtime
+        addIArgument(this.transposeA, this.transposeB);
     }
 
     public BatchMmul(INDArray alphas, INDArray betas, INDArray[] inputsA, INDArray[] inputsB, boolean transposeA, boolean transposeB) {
@@ -134,66 +116,36 @@ public class BatchMmul extends DynamicCustomOp {
                 inputsA,inputsB
         ),null);
         this.batchSize = inputsA.length;
-
         this.transposeA = transposeA ? 1 : 0;
         this.transposeB = transposeB ? 1 : 0;
-
-        long[] firstShape = inputsA[0].shape();
-        long[] lastShape = inputsB[0].shape();
-        if(firstShape != null && lastShape != null) {
-            this.M = transposeA ? (int) firstShape[1] : (int) firstShape[0];
-            this.N = transposeB ? (int) lastShape[0] : (int) lastShape[1];
-            this.K = transposeB ? (int) lastShape[1] : (int) lastShape[0];
-            this.lda = (int) firstShape[0];
-            this.ldb = (int) lastShape[0];
-            this.ldc = (int) firstShape[0];
-            addArgs();
-        }
+        
+        // Only add transpose flags - dimensions will be inferred at runtime
+        addIArgument(this.transposeA, this.transposeB);
     }
 
     @Override
     public void configureWithSameDiff(SameDiff sameDiff) {
         super.configureWithSameDiff(sameDiff);
         SDVariable[] matrices = args();
-        Preconditions.checkState(matrices.length % 2 == 0, "The number of provided matrices needs" +
-                "to be divisible by two.");
+        Preconditions.checkState(matrices.length >= 2, "BatchMmul requires at least 2 arguments (alphas and betas)");
+        Preconditions.checkState((matrices.length - 2) % 2 == 0, "The number of provided matrices needs" +
+                "to be divisible by two (after alphas and betas).");
         this.batchSize = (matrices.length - 2) / 2;
 
-        SDVariable firstMatrix = matrices[2];
-        long[] firstShape = firstMatrix.getShape();
-
-        SDVariable lastMatrix = matrices[matrices.length - 1];
-        long[] lastShape = lastMatrix.getShape();
-        /**/
-
-        if(firstShape != null) {
-            this.M = transposeA > 0 ? (int) firstShape[1]: (int) firstShape[0];
-            this.lda = (int) firstShape[0];
+        if(batchSize > 0) {
+            this.alphas = arg(0);
+            this.betas = arg(1);
+            this.matricesA = new SDVariable[batchSize];
+            this.matricesB = new SDVariable[batchSize];
+            for(int i = 0 ; i < batchSize; i++) {
+                matricesA[i] = arg(i + 2);
+                matricesB[i] = arg(i + 2 + batchSize);
+            }
         }
-
-        if(lastShape != null) {
-            this.N = transposeB > 0? (int) lastShape[0]: (int) lastShape[1];
-            this.K = transposeB > 0 ? (int) lastShape[1]: (int) lastShape[0];
-            this.ldb = (int) lastShape[0];
-            this.ldc = this.M;
-        }
-
-
-
-        //only add arguments when fully initialized
-        if(M > 0 && N > 0 && K > 0 && firstShape != null && lastShape != null) {
-            addArgs();
-        }
-
-
-
-        this.alphas = arg(0);
-        this.betas = arg(1);
-        this.matricesA = new SDVariable[batchSize];
-        this.matricesB = new SDVariable[batchSize];
-        for(int i = 0 ; i < batchSize; i++) {
-            matricesA[i] = arg(i + 2);
-            matricesB[i] = arg(i + 2 + batchSize);
+        
+        // Ensure IArgs are set (only transpose flags needed)
+        if(iArguments.isEmpty()) {
+            addIArgument(transposeA, transposeB);
         }
     }
 
@@ -202,15 +154,6 @@ public class BatchMmul extends DynamicCustomOp {
         return batchSize;
     }
 
-    public void addArgs() {
-        if(iArguments.isEmpty())
-            addIArgument(transposeA, transposeB,
-                    M, N, K, // K and N are swapped in libnd4j
-                    lda,ldb,ldc, // these three are LDA, LDB and LDC (leading dims / strides) from blas. set to matrix dims here
-                    batchSize);
-    }
-
-
     public BatchMmul() {
     }
 
@@ -218,7 +161,6 @@ public class BatchMmul extends DynamicCustomOp {
     public String opName() {
         return "batched_gemm";
     }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grads) {
@@ -236,20 +178,17 @@ public class BatchMmul extends DynamicCustomOp {
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         List<DataType> out = new ArrayList<>();
-        for(int i = 0; i < dataTypes.size() - 2; i++) {  //-2 for the alpha and beta params
-            Preconditions.checkState(dataTypes.get(i).isFPType(), "Inputs to batch mmul op must all be a floating point type: got %s", dataTypes);
-            if(i % 2 == 0) {
-                out.add(dataTypes.get(i));
-            }
+        for(int i = 0; i < batchSize; i++) {
+            // Use the datatype of the first matrix (alpha) or first input matrix
+            DataType dt = dataTypes.size() > 2 ? dataTypes.get(2) : dataTypes.get(0);
+            Preconditions.checkState(dt.isFPType(), "Inputs to batch mmul op must all be a floating point type: got %s", dt);
+            out.add(dt);
         }
-
         return out;
     }
 
     @Override
     public boolean needsConfigure() {
-        return true;
+        return false;  // We don't need special configuration since dimensions are inferred at runtime
     }
-
 }
-

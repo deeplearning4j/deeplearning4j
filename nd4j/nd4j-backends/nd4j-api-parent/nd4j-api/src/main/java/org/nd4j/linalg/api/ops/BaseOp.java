@@ -30,7 +30,9 @@ import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
+import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.graph.OpType;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -285,114 +287,350 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         return new SDVariable[]{sameDiff.getVariable(zVertexId)};
     }
 
+
+
+    /**
+     * Calculate output shape using Op.Type-aware logic
+     */
+    private long[] calculateOutputShapeByType() {
+        Op.Type opType = opType();
+        switch (opType) {
+            case TRANSFORM_SAME:
+            case TRANSFORM_FLOAT:
+            case TRANSFORM_STRICT:
+                return x.shape();
+
+            case PAIRWISE:
+            case PAIRWISE_BOOL:
+                if (y != null) {
+                    return Shape.broadcastOutputShape(x.shape(), y.shape());
+                }
+                return x.shape();
+
+            case REDUCE_FLOAT:
+            case REDUCE_LONG:
+            case REDUCE_BOOL:
+            case REDUCE_SAME:
+                if (this instanceof ReduceOp) {
+                    ReduceOp reduceOp = (ReduceOp) this;
+                    return Shape.reductionShape(x, dimensions, true, reduceOp.isKeepDims());
+                }
+                return x.shape();
+
+            case SCALAR:
+                if (this instanceof ScalarOp) {
+                    return x.shape(); // Scalar ops typically preserve shape
+                }
+                return x.shape();
+
+            case INDEXREDUCE:
+                if (this instanceof IndexAccumulation) {
+                    IndexAccumulation idxOp = (IndexAccumulation) this;
+                    return Shape.reductionShape(x, dimensions, true, idxOp.isKeepDims());
+                }
+                return x.shape();
+
+            default:
+                return x.shape();
+        }
+    }
+
     /**
      * Compute the output vars using this op
      * and store them in the samediff instance.
      * @param newVars the new variables to compute arrays for
      */
     public void computeVariables(SDVariable[] newVars) {
-        if(sameDiff.isEagerMode()) {
-            SDVariable[] args = args();
-            if(args.length == 1) {
-                x = args[0].getArr();
-            } else if(args.length > 1) {
-                x = args[0].getArr();
-                if(this.opType()  == Type.REDUCE3 ||
-                        this.opType() == Type.PAIRWISE_BOOL
-                        || this.opType() == Type.TRANSFORM_SAME)
-                    y = args[1].getArr();
-                else if((opType() == Type.REDUCE_FLOAT || opType() == Type.REDUCE_LONG || opType() == Type.REDUCE_BOOL  || opType() == Type.REDUCE_BOOL || opType() == Type.REDUCE_SAME) && args.length > 1) {
-                    this.dimensionz = args[1].getArr();
-                    if(!args[1].getArr().isEmpty())
-                        this.dimensions = args[1].getArr().toLongVector();
-                    else
-                        this.dimensions = new long[0];
+        if (!sameDiff.isEagerMode()) {
+            return;
+        }
+
+        // Early check: if any placeholder inputs are missing, skip execution entirely
+        if (shouldSkipExecutionForMissingPlaceholders()) {
+
+            return;
+        }
+
+        try {
+            // Validate and set input arrays
+            validateAndSetInputArrays();
+
+            // Calculate output shape using Op.Type-aware logic
+            long[] outputShape = calculateOutputShapeByType();
+            DataType outputDataType = inferOutputDataType();
+
+            // Allocate output array
+            if (z == null) {
+                z = Nd4j.create(outputDataType, outputShape);
+            }
+
+            // Execute with enhanced validation
+            executeWithValidation(newVars);
+
+        } catch (Exception e) {
+            String errorContext = buildErrorContext(newVars);
+            throw new RuntimeException("Failed to compute variables for op " + getOwnName() + ": " + errorContext, e);
+        }
+    }
+
+    /**
+     * Check if we should skip execution due to missing placeholder arrays
+     */
+    private boolean shouldSkipExecutionForMissingPlaceholders() {
+        SDVariable[] args = args();
+        if (args == null) return false;
+
+        for (SDVariable arg : args) {
+            // If any input is a placeholder without an array, skip execution during import
+            if (arg.isPlaceHolder() && !sameDiff.arrayAlreadyExistsForVarName(arg.name())) {
+                return true;
+            }
+
+            // Also check if it's an ARRAY type variable that doesn't have an array yet
+            if (arg.getVariableType() == VariableType.ARRAY && !sameDiff.arrayAlreadyExistsForVarName(arg.name())) {
+                Variable varMeta = sameDiff.getVariables().get(arg.name());
+                if (varMeta != null && varMeta.getOutputOfOp() != null) {
+                    // This is an operation output that hasn't been computed yet
+
+                    return true;
                 }
             }
+        }
+        return false;
+    }
 
-            if(x == null) {
-                throw new IllegalArgumentException("No variable found for the given input variables of " +  args[0].name() + " At least one input required.");
+    /**
+     * Infer output data type based on operation type
+     */
+    private DataType inferOutputDataType() {
+        Op.Type opType = opType();
+        switch (opType) {
+            case TRANSFORM_SAME:
+            case TRANSFORM_STRICT:
+                return x.dataType();
+
+            case TRANSFORM_FLOAT:
+            case REDUCE_FLOAT:
+                return x.dataType().isFPType() ? x.dataType() : DataType.FLOAT;
+
+            case REDUCE_LONG:
+            case INDEXREDUCE:
+                return DataType.LONG;
+
+            case REDUCE_BOOL:
+            case PAIRWISE_BOOL:
+                return DataType.BOOL;
+
+            case PAIRWISE:
+                if (y != null) {
+                    // Promote to higher precision if different types
+                    return DataType.FLOAT; // Safe default
+                }
+                return x.dataType();
+
+            default:
+                return x.dataType();
+        }
+    }
+
+
+
+    /**
+     * Validate and set input arrays from SameDiff state
+     */
+    private void validateAndSetInputArrays() {
+        SDVariable[] args = args();
+        if (args == null || args.length == 0) {
+            throw new IllegalArgumentException("No input variables found for op " + getOwnName());
+        }
+
+        for (int i = 0; i < args.length; i++) {
+            // Skip validation for placeholders during import - this should have been caught earlier
+            if (args[i].isPlaceHolder() && !sameDiff.arrayAlreadyExistsForVarName(args[i].name())) {
+                throw new IllegalStateException("Placeholder " + args[i].name() + " should have been handled before validateAndSetInputArrays()");
             }
 
-            //ensure data types are correct
-            if(args.length > 0 && args[0].dataType() != null) {
-                x = x.castTo(args[0].dataType());
+            Variable argMeta = sameDiff.getVariables().get(args[i].name());
+            if (argMeta == null || !argMeta.isArrayReady()) {
+                throw new IllegalStateException(String.format(
+                        "Input variable '%s' at index %d for op '%s' is not ready",
+                        args[i].name(), i, getOwnName()));
             }
 
-            //can be reduce float op or something similar where dimensions were specified
-            //as an input
-            if(args.length > 1 && args[1].dataType() != null && y != null) {
-                y = y.castTo(args[1].dataType());
+            INDArray arr = args[i].getArr(true);
+            if (arr == null) {
+                throw new IllegalStateException("Input array for variable " + args[i].name() + " is null");
             }
 
-            if(z == null) {
-                if(!(this instanceof ReduceOp)) {
-                    if(x.isEmpty()) {
-                        setZ(Nd4j.emptyWithShape(x.shape(),x.dataType()));
-                    }
-                    else {
-                        setZ(Nd4j.zeros(x.shape()).castTo(newVars[0].dataType()).detach());
-                    }
-                }  else {
-                    if(this instanceof BaseReduceOp) {
-                        if(dimensions == null && dimensionz != null)
-                            dimensions = dimensionz.ravel().toLongVector();
-                        BaseReduceOp baseReduceOp = (BaseReduceOp) this;
-                        setZ(Nd4j.create(Shape.reductionShape(x,dimensions,true,baseReduceOp.keepDims)).castTo(newVars[0].dataType()).detach());
+            // Set appropriate input based on operation type and index
+            assignInputByTypeAndIndex(arr, i);
+        }
+
+        // Harmonize data types if needed
+        harmonizeInputDataTypes();
+    }
+
+
+
+    /**
+     * Assign input array based on operation type and argument index
+     */
+    private void assignInputByTypeAndIndex(INDArray arr, int index) {
+        if (index == 0) {
+            x = arr;
+        } else if (index == 1) {
+            Op.Type opType = opType();
+            switch (opType) {
+                case REDUCE3:
+                case PAIRWISE:
+                case PAIRWISE_BOOL:
+                case TRANSFORM_SAME:
+                    y = arr;
+                    break;
+                case REDUCE_FLOAT:
+                case REDUCE_LONG:
+                case REDUCE_BOOL:
+                case REDUCE_SAME:
+                    // For reduce ops, second argument might be dimensions
+                    if (!arr.isEmpty()) {
+                        this.dimensionz = arr;
+                        this.dimensions = arr.toLongVector();
                     } else {
-                        setZ(Nd4j.create(Shape.reductionShape(x,dimensions,true,false)).castTo(newVars[0].dataType()).detach());
-
+                        this.dimensions = new long[0];
                     }
-                }
-            }
-
-            if(this instanceof BaseScalarOp) {
-                BaseScalarOp baseScalarOp = (BaseScalarOp) this;
-                if(baseScalarOp.scalar() != null) {
-                    if(baseScalarOp.scalar().dataType() != baseScalarOp.x().dataType()) {
-                        baseScalarOp.setScalar(baseScalarOp.scalar().castTo(x().dataType()));
-                    }
-                }
-            }
-
-
-            try(OpContext ctx = Nd4j.getExecutioner().buildContext()) {
-                if(y == null)
-                    ctx.setInputArrays(x);
-                else if(y != null) {
-                    ctx.setInputArrays(x,y);
-                }
-
-                ctx.setOutputArrays(z);
-
-                SameDiffOp op2 = sameDiff.getOps().get(getOwnName());
-                for(Listener l : sameDiff.getListeners()) {
-                    l.preOpExecution(sameDiff, At.defaultAt(),op2,ctx);
-                }
-
-                INDArray exec = Nd4j.getExecutioner().exec(this,ctx);
-                for(Listener  l : sameDiff.getListeners()) {
-                    l.opExecution(sameDiff, At.defaultAt(),null,op2,ctx,new INDArray[]{exec});
-                }
-
-                for(Listener  l : sameDiff.getListeners()) {
-                    l.preUpdate(sameDiff,At.defaultAt(),sameDiff.getVariables().get(outputVariable().name()),z);
-
-                }
-
-
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-
-            INDArray exec = Nd4j.getExecutioner().exec(this);
-            for (int i = 0; i < newVars.length; i++) {
-                newVars[i].setShape(exec.shape());
-                sameDiff.setEagerArrForVarName(newVars[i].name(),exec);
+                    break;
+                default:
+                    y = arr;
+                    break;
             }
         }
     }
 
+
+    /**
+     * Execute with enhanced validation and error handling
+     */
+    private void executeWithValidation(SDVariable[] outputVars) throws Exception {
+        try (OpContext ctx = Nd4j.getExecutioner().buildContext()) {
+            // Set context inputs/outputs
+            if (y != null) {
+                ctx.setInputArrays(x, y);
+            } else {
+                ctx.setInputArrays(x);
+            }
+            ctx.setOutputArrays(z);
+
+            // Pre-execution listeners
+            SameDiffOp op = sameDiff.getOps().get(getOwnName());
+            for (Listener l : sameDiff.getListeners()) {
+                l.preOpExecution(sameDiff, At.defaultAt(), op, ctx);
+            }
+
+            // Execute
+            INDArray result = Nd4j.getExecutioner().exec(this, ctx);
+
+            // Post-execution listeners
+            for (Listener l : sameDiff.getListeners()) {
+                l.opExecution(sameDiff, At.defaultAt(), null, op, ctx, new INDArray[]{result});
+            }
+
+            // Store results with validation
+            storeResultWithValidation(outputVars, result);
+
+        } catch (Exception e) {
+            throw e;
+        }
+    }
+
+
+    /**
+     * Store execution result with validation
+     */
+    private void storeResultWithValidation(SDVariable[] outputVars, INDArray result) {
+        if (result != null && outputVars.length > 0) {
+            outputVars[0].setShape(result.shape());
+            sameDiff.setEagerArrForVarName(outputVars[0].name(), result);
+
+            // Update listeners
+            for (Listener l : sameDiff.getListeners()) {
+                l.preUpdate(sameDiff, At.defaultAt(), sameDiff.getVariables().get(outputVars[0].name()), result);
+            }
+        }
+    }
+
+    /**
+     * Harmonize input data types if they differ
+     */
+    private void harmonizeInputDataTypes() {
+        if (x != null && y != null && x.dataType() != y.dataType()) {
+            // Promote to higher precision type if needed
+            DataType targetType = DataType.FLOAT; // Default fallback
+            if (x.dataType().isFPType() || y.dataType().isFPType()) {
+                targetType = x.dataType().isFPType() ? x.dataType() : y.dataType();
+            }
+
+            x = x.castTo(targetType);
+            y = y.castTo(targetType);
+        }
+    }
+
+    /**
+     * Allocate output arrays with proper metadata
+     */
+    private void allocateOutputArraysWithMetadata(SDVariable[] outputVars) {
+        if (z == null && outputVars.length > 0) {
+            DataType outputDataType = outputVars[0].dataType();
+
+            if (this instanceof ReduceOp) {
+                ReduceOp reduceOp = (ReduceOp) this;
+                long[] outputShape = Shape.reductionShape(x, dimensions, true, reduceOp.isKeepDims());
+                z = Nd4j.create(outputShape).castTo(outputDataType);
+            } else {
+                long[] outputShape = x.shape(); // Default to input shape
+                try {
+                    if (y != null) {
+                        // For binary ops, try to infer broadcast shape
+                        outputShape = Shape.broadcastOutputShape(x.shape(), y.shape());
+                    }
+                } catch (Exception e) {
+                    // Fall back to x shape if broadcast fails
+                    outputShape = x.shape();
+                }
+                z = Nd4j.create(outputShape).castTo(outputDataType);
+            }
+
+            // Set shape information on the output variable
+            outputVars[0].setShape(z.shape());
+        }
+    }
+
+    /**
+     * Build error context string for debugging
+     */
+    private String buildErrorContext(SDVariable[] outputVars) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Op: ").append(getOwnName()).append(", Type: ").append(opType());
+        sb.append(", Inputs: ");
+        SDVariable[] args = args();
+        if (args != null) {
+            for (int i = 0; i < args.length; i++) {
+                if (i > 0) sb.append(", ");
+                sb.append(args[i].name()).append("(").append(args[i].dataType()).append(")");
+                INDArray arr = args[i].getArr(false);
+                if (arr != null) {
+                    sb.append("[").append(Arrays.toString(arr.shape())).append("]");
+                } else {
+                    sb.append("[null]");
+                }
+            }
+        }
+        sb.append(", Outputs: ");
+        for (int i = 0; i < outputVars.length; i++) {
+            if (i > 0) sb.append(", ");
+            sb.append(outputVars[i].name()).append("(").append(outputVars[i].dataType()).append(")");
+        }
+        return sb.toString();
+    }
 
     @Override
     public String toString() {
@@ -485,11 +723,11 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
             throw new ND4JIllegalStateException("Can't get final result scalar out of N-dim tensor");
 
         if (z.isR())
-            return new Double(z.getDouble(0));
+            return Double.valueOf(z.getDouble(0));
         else if (z.isZ())
-            return new Long(z.getInt(0));
+            return Long.valueOf(z.getInt(0));
         else if (z.isB())
-            return new Integer(z.getInt(0));
+            return  Integer.valueOf(z.getInt(0));
 
         throw new ND4JIllegalStateException("???");
     }

@@ -60,7 +60,6 @@ public class Gather extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[] {input, sameDiff.constant(Nd4j.createFromArray(indices))}, inPlace);
 
         addIArgument(axis);
-        addIArgument(indices);
         this.jaxis = axis;
         this.indices = indices;
     }
@@ -74,16 +73,16 @@ public class Gather extends DynamicCustomOp {
     public Gather(INDArray df, int[] indexes, int axis) {
         addInputArgument(df);
         addIArgument(axis);
-        addIArgument(indexes);
+        // FIXED: Removed incorrect addIArgument(indexes) call
         this.jaxis = axis;
-        this.indices = indices;
+        this.indices = indexes; // FIXED: was setting to 'indices' instead of 'indexes'
     }
 
     public Gather(INDArray df, INDArray indexes, int axis) {
         addInputArgument(df, indexes);
         addIArgument(axis);
         this.jaxis = axis;
-        this.indices = indices;
+        // FIXED: Removed incorrect line that referenced non-existent 'indices' variable
     }
 
     @Override
@@ -104,13 +103,26 @@ public class Gather extends DynamicCustomOp {
 
     @Override
     public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
-
+        // ONNX Gather has an optional axis attribute, default is 0
+        if (attributesForNode.containsKey("axis")) {
+            long axis = attributesForNode.get("axis").getI();
+            addIArgument(axis);
+            this.jaxis = (int) axis;
+        } else {
+            // Default axis is 0
+            addIArgument(0);
+            this.jaxis = 0;
+        }
     }
 
     @Override
     public void configureFromArguments() {
-        if(!iArguments.isEmpty()) {
+        if (!iArguments.isEmpty()) {
             this.jaxis = iArguments.get(0).intValue();
+        } else {
+            // Set default axis if no arguments provided
+            this.jaxis = 0;
+            addIArgument(0);
         }
     }
 

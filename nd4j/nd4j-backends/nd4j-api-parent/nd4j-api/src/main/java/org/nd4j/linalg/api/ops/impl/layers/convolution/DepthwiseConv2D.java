@@ -170,44 +170,7 @@ public class DepthwiseConv2D extends DynamicCustomOp {
 
     @Override
     public Map<String, Map<String, AttributeAdapter>> attributeAdaptersForFunction() {
-        Map<String, Map<String, AttributeAdapter>> ret = new HashMap<>();
-        Map<String, AttributeAdapter> tfMappings = new LinkedHashMap<>();
-        val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
-
-
-        //TF uses [kH, kW, inC, outC] always for weights
-        tfMappings.put("kH", new NDArrayShapeAdapter(0));
-        tfMappings.put("kW", new NDArrayShapeAdapter(1));
-        tfMappings.put("sH", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 2, 1, fields.get("dataFormat")));
-        tfMappings.put("sW", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 3, 2, fields.get("dataFormat")));
-        tfMappings.put("dH", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 2, 1, fields.get("dataFormat")));
-        tfMappings.put("dW", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 3, 2, fields.get("dataFormat")));
-        tfMappings.put("isSameMode", new StringEqualsAdapter("SAME"));
-
-
-        Map<String, AttributeAdapter> onnxMappings = new HashMap<>();
-        onnxMappings.put("kH", new SizeThresholdIntArrayIntIndexAdapter(0, 2, 0));
-        onnxMappings.put("kW", new SizeThresholdIntArrayIntIndexAdapter(1, 2, 0));
-        onnxMappings.put("dH", new SizeThresholdIntArrayIntIndexAdapter(0, 2, 0));
-        onnxMappings.put("dW", new SizeThresholdIntArrayIntIndexAdapter(1, 2, 0));
-        onnxMappings.put("sH", new SizeThresholdIntArrayIntIndexAdapter(0, 2, 0));
-        onnxMappings.put("sW", new SizeThresholdIntArrayIntIndexAdapter(1, 2, 0));
-        onnxMappings.put("isSameMode", new StringEqualsAdapter("SAME"));
-
-
-        try {
-            ret.put(tensorflowName(), tfMappings);
-        } catch (NoOpNameFoundException e) {
-            //
-        }
-
-        try {
-            ret.put(onnxName(), onnxMappings);
-        } catch (NoOpNameFoundException e) {
-            //
-        }
-
-        return ret;
+       throw new RuntimeException();
     }
 
     @Override

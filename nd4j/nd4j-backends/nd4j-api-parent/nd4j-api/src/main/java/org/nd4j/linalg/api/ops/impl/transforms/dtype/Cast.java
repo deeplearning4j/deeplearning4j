@@ -73,15 +73,7 @@ public class Cast extends BaseDynamicTransformOp {
 
     @Override
     public Map<String, Map<String, AttributeAdapter>> attributeAdaptersForFunction() {
-        Map<String,Map<String,AttributeAdapter>> ret = new LinkedHashMap<>();
-        Map<String,AttributeAdapter> tfAdapters = new LinkedHashMap<>();
-
-        val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
-
-        tfAdapters.put("typeDst", new DataTypeAdapter());
-
-        ret.put(tensorflowName(),tfAdapters);
-        return ret;
+       throw new RuntimeException();
     }
 
     @Override

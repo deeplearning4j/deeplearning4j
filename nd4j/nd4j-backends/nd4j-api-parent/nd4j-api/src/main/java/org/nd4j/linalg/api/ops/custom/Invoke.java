@@ -1,21 +1,21 @@
 /*
- *  ******************************************************************************
- *  *
- *  *
- *  * This program and the accompanying materials are made available under the
- *  * terms of the Apache License, Version 2.0 which is available at
- *  * https://www.apache.org/licenses/LICENSE-2.0.
- *  *
- *  *  See the NOTICE file distributed with this work for additional
- *  *  information regarding copyright ownership.
- *  * Unless required by applicable law or agreed to in writing, software
- *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- *  * License for the specific language governing permissions and limitations
- *  * under the License.
- *  *
- *  * SPDX-License-Identifier: Apache-2.0
- *  *****************************************************************************
+ * ******************************************************************************
+ * *
+ * *
+ * * This program and the accompanying materials are made available under the
+ * * terms of the Apache License, Version 2.0 which is available at
+ * * https://www.apache.org/licenses/LICENSE-2.0.
+ * *
+ * * See the NOTICE file distributed with this work for additional
+ * * information regarding copyright ownership.
+ * * Unless required by applicable law or agreed to in writing, software
+ * * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * * License for the specific language governing permissions and limitations
+ * * under the License.
+ * *
+ * * SPDX-License-Identifier: Apache-2.0
+ * *****************************************************************************
  */
 package org.nd4j.linalg.api.ops.custom;
 
@@ -39,9 +39,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.*;
 
-/**
- * Invoke is an op
- */
 @Slf4j
 public class Invoke extends DynamicCustomOp {
 
@@ -73,33 +70,22 @@ public class Invoke extends DynamicCustomOp {
 
     public Invoke(SameDiff sameDiff,InvokeParams invokeParams) {
         super(sameDiff,invokeParams.inputs);
-        this.sameDiff = sameDiff;
         this.outputVarNames = invokeParams.outputVarNames;
         this.functionName = invokeParams.functionName;
         this.inputVarNames = invokeParams.inputVarNames;
         this.subGraphInputVarNames = invokeParams.subGraphInputVarNames;
         this.subGraphOutputVarNames = invokeParams.subGraphOutputVarNames;
+        // Centralize initialization logic
+        configureWithSameDiff(sameDiff);
     }
 
-    /**
-     * Perform the invoke method.
-     * @param op the {@link Invoke} instance to use
-     * @param placeHolders the singular placeholders to pass in to the function
-     * @param valuePlaceHolders the value placeholders to pass in to the function
-     * @return the {@link ExecutionResult} from the sub function
-     */
     public static ExecutionResult doInvoke(DifferentialFunction op, Map<String,INDArray> placeHolders, Map<String, SDValue> valuePlaceHolders) {
         Invoke invoke = (Invoke) op;
         String funcName = invoke.getFunctionName();
         SameDiff instance = op.getSameDiff().getFunction(funcName);
-
         SDVariable[] args = op.args();
-        if(Nd4j.getExecutioner().isDebug()) {
-            log.info("Invoke with function name " + funcName + " being invoked with input variables from parent graph: " + Arrays.toString(op.argNames()));
-        }
 
         String[] inputVarNameMappings = invoke.getInputVarNames();
-
         String[] subGraphInputNames = invoke.subGraphInputVarNames;
         if(subGraphInputNames == null)
             subGraphInputNames = inputVarNameMappings;
@@ -108,7 +94,6 @@ public class Invoke extends DynamicCustomOp {
 
         if(inputVarNameMappings == null) {
             inputVarNameMappings = new String[args.length];
-            //default to input names of op unless specified
             for(int i = 0; i < inputVarNameMappings.length; i++) {
                 inputVarNameMappings[i] = args[i].name();
             }
@@ -122,77 +107,66 @@ public class Invoke extends DynamicCustomOp {
             }
         }
 
-
         String[] subGraphOutputNames = invoke.subGraphOutputVarNames;
         if(subGraphOutputNames == null)
             subGraphOutputNames = outputVarNameMappings;
 
-
-
         List<String> relevantOutputNames = Arrays.asList(subGraphOutputNames);
         if(valuePlaceHolders.isEmpty()) {
-            INDArray[] retOutput = new INDArray[subGraphOutputNames.length];
             Map<String,INDArray> inputMap = new LinkedHashMap<>();
             for(int i = 0; i < inputVarNameMappings.length; i++) {
-                //note that we use the inputs in numerical order ignoring the names
-                //this is because the input names aren't aligned with what's passed in
                 inputMap.put(subGraphInputNames[i],placeHolders.get(op.argNames()[i]));
             }
 
             Map<String, INDArray> output = instance.output(inputMap, relevantOutputNames);
-            //note not all keys maybe the same as what we expect so we only add the keys we care about
-            int numAdded = 0;
-            for(Map.Entry<String,INDArray> result : output.entrySet()) {
-                if(relevantOutputNames.contains(result.getKey())) {
-                    retOutput[numAdded] = output.get(result.getKey());
-                    numAdded++;
-                }
-            }
-
-            if(Nd4j.getExecutioner().isDebug()) {
-                log.info("Returning graph outputs from function name " + funcName + " and output names " + relevantOutputNames);
-            }
-
             return ExecutionResult.builder()
                     .outputs(ExecutionResult.pack(output))
                     .build();
         } else {
             Map<String,SDValue> valueInputs = new LinkedHashMap<>();
             for(int i = 0; i < inputVarNameMappings.length; i++) {
-                //note that we use the inputs in numerical order ignoring the names
-                //this is because the input names aren't aligned with what's passed in
                 valueInputs.put(subGraphInputNames[i],valuePlaceHolders.get(op.argNames()[i]));
             }
 
             Map<String,SDValue> valueOutputs = instance.outputValues(valueInputs,relevantOutputNames);
-            //rearrange to be in right order for return, this is critical
             Map<String,SDValue> result = new LinkedHashMap<>();
             for(int i = 0; i < outputVarNameMappings.length; i++) {
                 result.put(outputs[i].name(), valueOutputs.get(subGraphOutputNames[i]));
             }
 
-
-            if(Nd4j.getExecutioner().isDebug()) {
-                log.info("Returning graph outputs from function name " + funcName + " and output names " + relevantOutputNames);
-            }
             return ExecutionResult.builder()
                     .valueOutputs(result)
                     .build();
-
         }
-
     }
 
     @Override
     public SDVariable[] outputVariables() {
         if(outputVariables == null) {
+            if (this.functionName == null) {
+                throw new IllegalStateException("Invoke operation '" + this.getOwnName() +
+                        "' has no function name set. Cannot determine output variables.");
+            }
+
             SameDiff func = sameDiff.getFunction(this.functionName);
             if (func == null) {
-                throw new IllegalArgumentException("Unable to determine output data types for variables. No function of " + this.functionName + " found!");
+                throw new IllegalArgumentException("Unable to determine output data types for variables. " +
+                        "No function of '" + this.functionName + "' found in SameDiff instance!");
             }
 
             if (subGraphOutputVarNames == null) {
-                throw new IllegalStateException("Invalid InvokeConfiguration found. Please specify sub graph output names.");
+                // Try to auto-configure from the sub-graph's outputs if not explicitly set
+                if (func.outputs() != null && !func.outputs().isEmpty()) {
+                    log.warn("subGraphOutputVarNames is null for Invoke operation '{}' with function '{}'. " +
+                                    "Auto-configuring from sub-graph outputs: {}",
+                            this.getOwnName(), this.functionName, func.outputs());
+                    this.subGraphOutputVarNames = func.outputs().toArray(new String[0]);
+                } else {
+                    throw new IllegalStateException("Invalid InvokeConfiguration found for operation '" +
+                            this.getOwnName() + "'. Please specify sub graph output names. " +
+                            "FunctionName: " + this.functionName + ", Sub-graph outputs: " +
+                            (func.outputs() != null ? func.outputs() : "null"));
+                }
             }
 
             SDVariable[] outputs = new SDVariable[subGraphOutputVarNames.length];
@@ -200,49 +174,29 @@ public class Invoke extends DynamicCustomOp {
                 String subGraphVarName = subGraphOutputVarNames[i];
                 SDVariable variable = func.getVariable(subGraphVarName);
                 if(variable == null) {
-                    throw new IllegalStateException("No variable found in sub graph named " + subGraphVarName);
+                    throw new IllegalStateException("No variable found in sub graph '" + this.functionName +
+                            "' named '" + subGraphVarName + "' for Invoke operation '" + this.getOwnName() + "'");
                 }
+
+                String newVarName = outputVarNames != null && outputVarNames.length > i ?
+                        outputVarNames[i] : (subGraphVarName + "_" + functionName);
+
                 switch(variable.getVariableType()) {
                     case VARIABLE:
                     case ARRAY:
                     case PLACEHOLDER:
                     case SEQUENCE:
-                        if(variable.getShape() != null) {
-                            SDVariable clone2 = sameDiff.var(subGraphVarName + "_" + functionName, variable.dataType(), variable.getShape());
-                            clone2.setVariableType(VariableType.ARRAY);
-                            outputs[i] = clone2;
-                        } else { //placeholder shape
-                            SDVariable clone2 = sameDiff.var(subGraphVarName + "_" + functionName, variable.dataType());
-                            clone2.setVariableType(VariableType.ARRAY);
-                            outputs[i] = clone2;
-                        }
-                        break;
                     case CONSTANT:
-                        SDVariable clone2 = sameDiff.var(subGraphVarName + "_" + functionName, variable.dataType());
-                        clone2.setVariableType(VariableType.ARRAY);
-                        outputs[i] = clone2;
+                        if(variable.getShape() != null) {
+                            outputs[i] = sameDiff.var(newVarName, variable.dataType(), variable.getShape());
+                        } else {
+                            outputs[i] = sameDiff.var(newVarName, variable.dataType());
+                        }
+                        outputs[i].setVariableType(VariableType.ARRAY);
                         break;
-
                 }
-
             }
-
             this.outputVariables = outputs;
-
-            if (outputVarNames != null && outputVarNames.length == outputs.length)
-                for (int i = 0; i < outputs.length; i++) {
-                    if (!outputs[i].name().equals(outputVarNames[i])) {
-                        sameDiff.updateVariableNameAndReference(outputs[i], outputVarNames[i], true);
-                    }
-                }
-            else if (this.outputVariables == null) {
-                throw new IllegalArgumentException("Invalid configuration for output variable names. Must be equal to the number of outputs.");
-            }
-
-            //add outgoing ops after generating output variables
-            addOutputsToOp();
-
-            return outputs;
         }
         return outputVariables;
     }
@@ -253,6 +207,13 @@ public class Invoke extends DynamicCustomOp {
             return subGraphOutputVarNames.length;
         else if(outputVarNames != null)
             return outputVarNames.length;
+
+        if (sameDiff != null && functionName != null) {
+            SameDiff func = sameDiff.getFunction(functionName);
+            if(func != null && func.outputs() != null) {
+                return func.outputs().size();
+            }
+        }
         return 1;
     }
 
@@ -261,43 +222,174 @@ public class Invoke extends DynamicCustomOp {
         return "invoke";
     }
 
+    /**
+     * This is the central point for finalizing the op's configuration.
+     * It's called by the constructor for programmatic creation and by the
+     * deserialization process after properties have been loaded from the file.
+     */
     @Override
-    public void configureFromArguments() {
-        super.configureFromArguments();
+    public void configureWithSameDiff(SameDiff sameDiff) {
+        // 1. Link the op to the graph instance. THIS MUST BE FIRST.
+        super.configureWithSameDiff(sameDiff);
+
+        // 2. Skip output variable calculation if we don't have the required configuration yet
+        if (this.subGraphOutputVarNames == null || this.functionName == null) {
+            log.debug("Invoke operation '{}' configuration incomplete during configureWithSameDiff. " +
+                            "FunctionName: {}, SubGraphOutputVarNames: {}. Skipping output variable calculation.",
+                    this.getOwnName(), this.functionName,
+                    this.subGraphOutputVarNames != null ? Arrays.toString(this.subGraphOutputVarNames) : "null");
+            return; // Skip output variable calculation for now
+        }
+
+        // 3. If outputs haven't been calculated yet and we have the required config, do it now.
+        if (this.outputVariables == null) {
+            try {
+                // Calculate and cache the output variables
+                outputVariables();
+                // Register the newly created variables with the graph
+                addOutputsToOp();
+            } catch (Exception e) {
+                log.warn("Failed to configure output variables for Invoke operation '{}': {}",
+                        this.getOwnName(), e.getMessage());
+            }
+        }
+    }
+
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if (properties == null || properties.isEmpty()) {
+            log.warn("Empty or null properties map for Invoke operation '{}'", this.getOwnName());
+            return;
+        }
+
+        log.info("INVOKE PROPERTIES DEBUG: Setting properties for '{}': {}", this.getOwnName(), properties);
+
+        for (Map.Entry<String, Object> entry : properties.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+
+            log.info("INVOKE PROPERTIES DEBUG: Processing property '{}' = {} (type: {})",
+                    key, value, value != null ? value.getClass().getSimpleName() : "null");
+
+            if (value == null) continue;
+
+            switch (key) {
+                case "functionName":
+                    if(value instanceof String[]) {
+                        String[] arr = (String[])  value;
+                        this.functionName = arr[0];
+                    } else {
+                        this.functionName = (String) value;
+
+                    }
+                    log.info("INVOKE PROPERTIES DEBUG: Set functionName = '{}'", this.functionName);
+                    break;
+                case "subGraphOutputVarNames":
+                    if (value instanceof String[]) {
+                        this.subGraphOutputVarNames = (String[]) value;
+                        log.info("INVOKE PROPERTIES DEBUG: Set subGraphOutputVarNames = {}", Arrays.toString(this.subGraphOutputVarNames));
+                    } else if (value instanceof String) {
+                        this.subGraphOutputVarNames = new String[]{(String) value};
+                        log.info("INVOKE PROPERTIES DEBUG: Set subGraphOutputVarNames from single string = {}", Arrays.toString(this.subGraphOutputVarNames));
+                    }
+                    break;
+                case "inputVarNames":
+                    if (value instanceof String[]) {
+                        this.inputVarNames = (String[]) value;
+                    } else if (value instanceof String) {
+                        this.inputVarNames = new String[]{(String) value};
+                    }
+                    break;
+                case "outputVarNames":
+                    if (value instanceof String[]) {
+                        this.outputVarNames = (String[]) value;
+                    } else if (value instanceof String) {
+                        this.outputVarNames = new String[]{(String) value};
+                    }
+                    break;
+                case "subGraphInputVarNames":
+                    if (value instanceof String[]) {
+                        this.subGraphInputVarNames = (String[]) value;
+                    } else if (value instanceof String) {
+                        this.subGraphInputVarNames = new String[]{(String) value};
+                    }
+                    break;
+                default:
+                    log.warn("Unknown property '{}' for Invoke operation '{}'", key, this.getOwnName());
+                    break;
+            }
+        }
+
+        log.info("INVOKE PROPERTIES DEBUG: Final state - functionName: '{}', subGraphOutputVarNames: {}",
+                this.functionName, this.subGraphOutputVarNames != null ? Arrays.toString(this.subGraphOutputVarNames) : "null");
     }
 
     @Override
-    public void configureWithSameDiff(SameDiff sameDiff) {
-        super.configureWithSameDiff(sameDiff);
+    public Map<String, Object> propertiesForFunction() {
+        Map<String, Object> ret = new LinkedHashMap<>();
+        ret.put("functionName", functionName);
+        ret.put("inputVarNames", inputVarNames);
+        ret.put("outputVarNames", outputVarNames);
+        ret.put("subGraphInputVarNames", subGraphInputVarNames);
+        ret.put("subGraphOutputVarNames", subGraphOutputVarNames);
+        return ret;
     }
+
+
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         List<DataType> ret = new ArrayList<>();
+        if (sameDiff != null && functionName != null) {
+            SameDiff func = sameDiff.getFunction(functionName);
+            if (func != null && subGraphOutputVarNames != null) {
+                for (String varName : subGraphOutputVarNames) {
+                    SDVariable v = func.getVariable(varName);
+                    if (v != null) {
+                        ret.add(v.dataType());
+                    } else {
+                        ret.add(DataType.FLOAT);
+                    }
+                }
+                return ret;
+            }
+        }
+
         for(int i = 0; i < getNumOutputs(); i++)
             ret.add(DataType.FLOAT);
         return ret;
     }
 
     @Override
-    public List<DataBuffer> calculateOutputShape() {
-        return Collections.emptyList();
-    }
-
-
-    @Override
     public List<DataBuffer> calculateOutputShape(OpContext oc) {
-        /**
-         * TODO: Figure out how to invoke calculate output shape
-         * for a graph. This may involve adding a new function
-         * to a samediff graph that just calls compute shape for everything.
-         */
-        List<DataBuffer> ret = new ArrayList<>();
-        for(int i = 0; i < getNumOutputs(); i++) {
-            ret.add(Nd4j.createBuffer(LongShapeDescriptor.fromShape(new int[]{1},DataType.DOUBLE).toShapeInfo()));
+        List<LongShapeDescriptor> shapeDescriptors = new ArrayList<>();
+        if(sameDiff != null && functionName != null) {
+            SameDiff func = sameDiff.getFunction(functionName);
+            if (func != null && subGraphOutputVarNames != null) {
+                for (String varName : subGraphOutputVarNames) {
+                    SDVariable v = func.getVariable(varName);
+                    if (v != null && v.getShape() != null) {
+                        shapeDescriptors.add(LongShapeDescriptor.fromShape(v.getShape(), v.dataType()));
+                    } else {
+                        shapeDescriptors.add(LongShapeDescriptor.fromShape(new long[]{1}, DataType.FLOAT));
+                    }
+                }
+            }
         }
 
+        if (shapeDescriptors.isEmpty()) {
+            for(int i = 0; i < getNumOutputs(); i++) {
+                shapeDescriptors.add(LongShapeDescriptor.fromShape(new long[]{1}, DataType.FLOAT));
+            }
+        }
 
-        return ret;
+        List<DataBuffer> outputBuffers = new ArrayList<>();
+        for (LongShapeDescriptor descriptor : shapeDescriptors) {
+            long[] shapeInfo = descriptor.toShapeInfo();
+            outputBuffers.add(Nd4j.createBuffer(shapeInfo));
+        }
+
+        return outputBuffers;
     }
 }
