@@ -282,13 +282,13 @@ SD_HOST void bitonicArbitraryStepGenericKey(
 }
 
 BUILD_SINGLE_TEMPLATE(
-    template void bitonicArbitraryStepGeneric,
+     void bitonicArbitraryStepGeneric,
     (dim3 & launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo, int window,
      int length, int reverse, bool descending),
     SD_COMMON_TYPES);
 
 BUILD_DOUBLE_TEMPLATE(
-    template void bitonicArbitraryStepGenericKey,
+     void bitonicArbitraryStepGenericKey,
     (dim3 & launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo, void *vy,
      sd::LongType const *yShapeInfo, int window, int length, int reverse, bool descending),
     SD_COMMON_TYPES, SD_COMMON_TYPES);

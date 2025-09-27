@@ -150,7 +150,7 @@ void PairWiseBoolTransform<X,Y>::executeCudaShaped(
       PAIRWISE_BOOL_OPS);
 }
 
-BUILD_DOUBLE_TEMPLATE(template class PairWiseBoolTransform, , SD_COMMON_TYPES, SD_BOOL_TYPES);
+BUILD_DOUBLE_TEMPLATE( class PairWiseBoolTransform, , SD_COMMON_TYPES, SD_BOOL_TYPES);
 
 }  // namespace pairwise_transforms
 }  // namespace functions

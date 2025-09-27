@@ -102,7 +102,7 @@
   }
 
   BUILD_SINGLE_TEMPLATE(
-      template SD_KERNEL void swapUnsafeKernel,
+       SD_KERNEL void swapUnsafeKernel,
       (void* theFirstBuffer,
        sd::LongType const* theFirstShape,
        void* theSecondBuffer,
@@ -129,7 +129,7 @@
   }
 
   BUILD_SINGLE_TEMPLATE(
-      template void templatedSwapUnsafe,
+       void templatedSwapUnsafe,
       (void* theFirstBuffer,
        sd::LongType const* theFirstShape,
        void* theSecondBuffer,

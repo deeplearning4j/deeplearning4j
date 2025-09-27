@@ -283,7 +283,7 @@ SD_HOST void concatKernelGeneric(
 }
 
 BUILD_SINGLE_TEMPLATE(
-   template void concatKernelGeneric,
+    void concatKernelGeneric,
    (dim3 &launchDims,
     cudaStream_t *stream,
     int numArrays,

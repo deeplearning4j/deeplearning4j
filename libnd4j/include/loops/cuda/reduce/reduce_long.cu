@@ -33,7 +33,7 @@
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpType>
-SD_KERNEL void simpleReduce(
+SD_KERNEL SD_INLINE void simpleReduce(
     const void* x,
     const sd::LongType* outerXTadShapeInfo,
     const sd::LongType* innerXTadShapeInfo,
@@ -54,13 +54,13 @@ SD_KERNEL void simpleReduce(
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpType>
-SD_DEVICE void reduceScalarGeneric(
+SD_DEVICE SD_INLINE void reduceScalarGeneric(
     const void* x,
     const sd::LongType* xShapeInfo,
     void* extraParams,
     void* z,
     const sd::LongType* zShapeInfo,
-    long long int* dimension,
+    sd::LongType* dimension,
     long long int dimensionLength,
     void* reductionBuffer,
     const sd::LongType* tadOnlyShapeInfo) {
@@ -77,7 +77,7 @@ SD_DEVICE void reduceScalarGeneric(
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpType>
-SD_KERNEL void simpleScalar(
+SD_KERNEL SD_INLINE  void simpleScalar(
     const void* x,
     const sd::LongType* xShapeInfo,
     void* extraParams,
@@ -105,7 +105,7 @@ namespace reduce {
 
 template <typename X, typename Z>
 template <typename OpType>
-SD_DEVICE void ReduceLongFunction<X, Z>::aggregatePartials(
+SD_DEVICE SD_INLINE void ReduceLongFunction<X, Z>::aggregatePartials(
     void* vsPartials,
     sd::LongType tid,
     sd::LongType numItems,
@@ -137,7 +137,7 @@ SD_DEVICE void ReduceLongFunction<X, Z>::aggregatePartials(
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
-SD_DEVICE void ReduceLongFunction<X, Z>::transformCuda(
+SD_DEVICE SD_INLINE void ReduceLongFunction<X, Z>::transformCuda(
     const void* vx,
     const sd::LongType* outerXTadShapeInfo,
     const sd::LongType* innerXTadShapeInfo,
@@ -236,7 +236,7 @@ SD_DEVICE void ReduceLongFunction<X, Z>::transformCuda(
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
-SD_DEVICE void ReduceLongFunction<X, Z>::execScalarCuda(
+SD_DEVICE SD_INLINE void ReduceLongFunction<X, Z>::execScalarCuda(
     const void* vx,
     const sd::LongType* xShapeInfo,
     void* vextraParams,
@@ -340,7 +340,7 @@ SD_DEVICE void ReduceLongFunction<X, Z>::execScalarCuda(
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
-SD_HOST void ReduceLongFunction<X, Z>::intermediate(
+SD_HOST  SD_INLINE void ReduceLongFunction<X, Z>::intermediate(
     dim3 launchDims,
     cudaStream_t* stream,
     const void* x,
@@ -401,7 +401,7 @@ SD_HOST void ReduceLongFunction<X, Z>::intermediate(
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
-SD_HOST void ReduceLongFunction<X, Z>::intermediateScalar(
+SD_HOST  SD_INLINE void ReduceLongFunction<X, Z>::intermediateScalar(
     dim3 launchDims,
     cudaStream_t* stream,
     const void* x,
@@ -446,7 +446,7 @@ SD_HOST void ReduceLongFunction<X, Z>::intermediateScalar(
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-SD_HOST void ReduceLongFunction<X, Y>::execReduceScalar(
+SD_HOST SD_INLINE void ReduceLongFunction<X, Y>::execReduceScalar(
     dim3 launchDims,
     cudaStream_t* stream,
     const int opNum,
@@ -473,7 +473,7 @@ SD_HOST void ReduceLongFunction<X, Y>::execReduceScalar(
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-SD_HOST void ReduceLongFunction<X, Y>::execReduce(dim3 launchDims, cudaStream_t *stream, int opNum, const void *vx,
+SD_HOST SD_INLINE void ReduceLongFunction<X, Y>::execReduce(dim3 launchDims, cudaStream_t *stream, int opNum, const void *vx,
                                                     sd::LongType *dXShapeInfo,  sd::LongType *hXShapeInfo, void *extraParams,
                                                     void *vreductionBuffer, void *vz,  sd::LongType *dZShapeInfo,
                                                     sd::LongType *hZShapeInfo,  sd::LongType *dims) {
@@ -505,7 +505,48 @@ SD_DEVICE void initializeShared(X* extraParams, X** sPartials, int sMemSize) {
   }
 }
 
-BUILD_DOUBLE_TEMPLATE(template class ReduceLongFunction, , SD_COMMON_TYPES, SD_LONG_TYPES);
+
+ITERATE_COMBINATIONS(
+    (SD_COMMON_TYPES),
+    (SD_LONG_TYPES),
+    INSTANT_PROCESS_COMBINATION,
+    functions::reduce::ReduceLongFunction,
+    ::execReduce(
+        dim3 launchDims,
+        cudaStream_t* stream,
+        int opNum,
+        const void* vx,
+        sd::LongType* dXShapeInfo,
+        sd::LongType* hXShapeInfo,
+        void* extraParams,
+        void* vreductionBuffer,
+        void* vz,
+        sd::LongType* dZShapeInfo,
+        sd::LongType* hZShapeInfo,
+        sd::LongType* dims);
+);
+
+ITERATE_COMBINATIONS(
+    (SD_COMMON_TYPES),
+    (SD_LONG_TYPES),
+    INSTANT_PROCESS_COMBINATION,
+    functions::reduce::ReduceLongFunction,
+    ::execReduceScalar(
+        dim3 launchDims,
+        cudaStream_t* stream,
+        const int opNum,
+        const void* x,
+        sd::LongType* xShapeInfo,
+        sd::LongType* hXShapeInfo,
+        void* extraParams,
+        void* z,
+        sd::LongType* zShapeInfo,
+        sd::LongType* hZShapeInfo,
+        sd::LongType* dimension,
+        sd::LongType dimensionLength,
+        void* reductionBuffer,
+        sd::LongType* tadOnlyShapeInfo);
+);
 
 }  // namespace reduce
 }  // namespace functions

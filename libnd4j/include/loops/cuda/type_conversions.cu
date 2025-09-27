@@ -239,7 +239,7 @@ SD_HOST void encoderKernelP1Generic(dim3 &launchDims, cudaStream_t *stream, cons
   execEncoderKernelP1<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, N, dz, threshold);
   DebugHelper::checkErrorCode(stream, "encoderP1(...) failed");
 }
-BUILD_SINGLE_TEMPLATE(template void encoderKernelP1Generic,
+BUILD_SINGLE_TEMPLATE( void encoderKernelP1Generic,
                       (dim3 & launchDims, cudaStream_t *stream, const void *dx, sd::LongType N, void *dz,
                        float threshold),
                       SD_FLOAT_TYPES);
@@ -317,7 +317,7 @@ SD_HOST void encoderKernelP3Generic(dim3 &launchDims, cudaStream_t *stream, void
   execEncoderKernelP3<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, offsets, N, dz);
   DebugHelper::checkErrorCode(stream, "encoderP3(...) failed");
 }
-BUILD_SINGLE_TEMPLATE(template void encoderKernelP3Generic,
+BUILD_SINGLE_TEMPLATE( void encoderKernelP3Generic,
                       (dim3 & launchDims, cudaStream_t *stream, void *dx, int *offsets, sd::LongType N, void *dz),
                       SD_FLOAT_TYPES);
 
@@ -359,7 +359,7 @@ SD_HOST void decoderKernelGeneric(dim3 &launchDims, cudaStream_t *stream, const 
   execDecoderKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, N, dz);
   DebugHelper::checkErrorCode(stream, "execDecoder(...) failed");
 }
-BUILD_SINGLE_TEMPLATE(template void decoderKernelGeneric,
+BUILD_SINGLE_TEMPLATE( void decoderKernelGeneric,
                       (dim3 & launchDims, cudaStream_t *stream, const void *dx, sd::LongType N, void *dz),
                       SD_FLOAT_TYPES);
 
@@ -441,7 +441,7 @@ SD_HOST void cudaEncodeBitmapGeneric(dim3 &launchDims, cudaStream_t *stream, voi
       <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vdx, N, dz, scalar, reductionBuffer, threshold);
   DebugHelper::checkErrorCode(stream, "encodeBitmap(...) failed");
 }
-BUILD_SINGLE_TEMPLATE(template void cudaEncodeBitmapGeneric,
+BUILD_SINGLE_TEMPLATE( void cudaEncodeBitmapGeneric,
                       (dim3 & launchDims, cudaStream_t *stream, void *vdx, sd::LongType N, int *dz, int *scalar,
                        int *reductionBuffer, float threshold),
                       SD_FLOAT_TYPES);
@@ -505,7 +505,7 @@ SD_HOST void cudaDecodeBitmapGeneric(dim3 &launchDims, cudaStream_t *stream, con
   execCudaDecodeBitmapKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, N, vdz);
   DebugHelper::checkErrorCode(stream, "cudeDecodeBitmap(...) failed");
 }
-BUILD_SINGLE_TEMPLATE(template void cudaDecodeBitmapGeneric,
+BUILD_SINGLE_TEMPLATE( void cudaDecodeBitmapGeneric,
                       (dim3 & launchDims, cudaStream_t *stream, const void *dx, sd::LongType N, void *vdz),
                       SD_FLOAT_TYPES);
 
@@ -529,10 +529,10 @@ SD_KERNEL void convertKernel(void *dx, LongType N, void *dz) {
 
 #define LIBND4J_BOOLS_LOCAL (randomName0, 0), (randomName1, 1)
 
-BUILD_DOUBLE_TEMPLATE(template void TypeCast::convertGenericCuda,
+BUILD_DOUBLE_TEMPLATE( void TypeCast::convertGenericCuda,
                       (sd::Pointer * extras, void *dx, sd::LongType N, void *dz), SD_COMMON_TYPES_ALL,
                       SD_COMMON_TYPES_ALL);
-BUILD_DOUBLE_TEMPLATE(template void prescanLauncher,
+BUILD_DOUBLE_TEMPLATE( void prescanLauncher,
                       (dim3 & blocks, dim3 &threads, int shmem, cudaStream_t *stream, int *g_odata, const int *g_idata,
                        int *g_blockSums, int n, int blockIndex, int baseIndex),
                       LIBND4J_BOOLS_LOCAL, LIBND4J_BOOLS_LOCAL);
