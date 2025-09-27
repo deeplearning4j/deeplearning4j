@@ -26,7 +26,6 @@
 #define LIBND4J_HEADERS_UPDATERS_H
 #include <execution/Threads.h>
 #include <helpers/ConstantTadHelper.h>
-#include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/headers/common.h>
 #include <ops/declarable/helpers/updatersHelpers.h>
 
