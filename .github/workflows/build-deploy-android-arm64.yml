@@ -4,52 +4,52 @@ on:
       buildThreads:
         description: 'Build threads for libnd4j. Used to control memory usage of builds.'
         required: true
-        default: 2
+        default: '2'
 
       deployToReleaseStaging:
         description: 'Whether to deploy to release staging or not.'
         required: false
-        default: 0
+        default: '0'
 
       releaseVersion:
         description: 'Release version target'
         required: false
-        default: 1.0.0-M3
+        default: '1.0.0-M3'
 
       snapshotVersion:
         description: 'Snapshot version target'
         required: false
-        default: 1.0.0-SNAPSHOT
+        default: '1.0.0-SNAPSHOT'
 
       releaseRepoId:
         description: 'Release repository id'
         required: false
-        default:
+        default: ''
 
       serverId:
         description: 'Server id to publish to'
         required: false
-        default: central
+        default: 'central'
 
       mvnFlags:
         description: "Extra maven flags (must escape input yourself if used)"
         required: false
-        default:
+        default: ''
 
       libnd4jUrl:
-        description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
+        description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set.'
         required: false
-        default:
+        default: ''
 
       runsOn:
         description: 'System to run on'
         required: false
-        default: ubuntu-22.04-arm
+        default: 'ubuntu-22.04'
 
       debug_enabled:
-        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        description: 'Enable debug session'
         required: false
-        default: false
+        default: 'false'
 
 jobs:
   android-arm64:
@@ -59,39 +59,27 @@ jobs:
         helper: [armcompute, ""]
         include:
           - mvn_ext: ${{ github.event.inputs.mvnFlags }}
-            experimental: true
-            name: Extra maven flags
-          - debug_enabled: ${{ github.event.inputs.debug_enabled }}
-            experimental: true
-            name: Debug enabled
           - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging }}
-            experimental: true
-            name: Whether to deploy to release staging or not
           - release_version: ${{ github.event.inputs.releaseVersion }}
-            experimental: true
-            name: Release version
           - snapshot_version: ${{ github.event.inputs.snapshotVersion }}
-            experimental: true
-            name: Snapshot version
           - server_id: ${{ github.event.inputs.serverId }}
-            experimental: true
-            name: Server id
           - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
-            experimental: true
-            name: The release repository to run on
           - build_threads: ${{ github.event.inputs.buildThreads }}
-            experimental: true
-            name: The number of threads to build libnd4j with
     runs-on: ${{ github.event.inputs.runsOn }}
+    timeout-minutes: 720
     steps:
-      - uses: AutoModality/action-clean@v1
+      - name: Clean workspace
+        uses: AutoModality/action-clean@v1
+
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
-      - uses: actions/checkout@v2
 
-      - name: Free Disk Space
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Free Disk Space (Initial)
         uses: jlumbroso/free-disk-space@main
         with:
           tool-cache: false
@@ -101,176 +89,202 @@ jobs:
           large-packages: true
           docker-images: true
           swap-storage: true
-          
-      - name: Cache cmake install
-        uses: actions/cache@v4
-        id: cache-cmake
-        with:
-          path: /opt/cmake
-          key: ${{ runner.os }}-cmake
-          restore-keys: ${{ runner.os }}-cmake
+
       - name: Cache protobuf install
         uses: actions/cache@v4
         id: cache-protobuf
         with:
           path: /opt/protobuf
-          key: ${{ runner.os }}-protobuf
-          restore-keys: ${{ runner.os }}-protobuf
-      - uses: ./.github/actions/install-protobuf-linux
+          key: ${{ runner.os }}-protobuf-intel-v1
+
+      - name: Install protobuf
+        uses: ./.github/actions/install-protobuf-linux
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
-      - uses: ./.github/actions/install-cmake-linux
+
+      - name: Cache CMake install
+        uses: actions/cache@v4
+        id: cache-cmake
+        with:
+          path: /opt/cmake
+          key: ${{ runner.os }}-cmake-v1
+
+      - name: Install CMake
+        uses: ./.github/actions/install-cmake-linux
         if: steps.cache-cmake.outputs.cache-hit != 'true'
-      - name: Set up Java for publishing to OSSRH
+
+      - name: Install system dependencies
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            ninja-build \
+            build-essential \
+            clang \
+            lld \
+            llvm-dev \
+            gcc-aarch64-linux-gnu \
+            g++-aarch64-linux-gnu \
+            libc6-dev-arm64-cross
+
+      - name: Set up Java for publishing
         uses: actions/setup-java@v4
         with:
           java-version: 11
           distribution: 'temurin'
-          server-id: 'central'
-          server-username: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
-          server-password: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+          server-id: ${{ github.event.inputs.serverId }}
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
-        
 
-      - uses: nttld/setup-ndk@v1
-        id: setup-ndk
-        with:
-          ndk-version: r21d
 
-      - name: Set mvn build command based on matrix
+      - name: Download and Setup Android NDK
         shell: bash
         run: |
-          # Set constants for Android ARM64
-          LIBND4J_CLASSIFIER="android-arm64"
-          OPENBLAS_JAR="openblas-0.3.19-1.5.7-android-arm64.jar"
-          OPENBLAS_DIR="${GITHUB_WORKSPACE}/openblas_home/lib/arm64-v8a"
-          
-          echo "LIBND4J_CLASSIFIER=${LIBND4J_CLASSIFIER}" >> $GITHUB_ENV
-          echo "OPENBLAS_JAR=${OPENBLAS_JAR}" >> $GITHUB_ENV
-          echo "OPENBLAS_DIR=${OPENBLAS_DIR}" >> $GITHUB_ENV
-          echo "CURRENT_TARGET=android-arm64" >> $GITHUB_ENV
-          echo "ARMCOMPUTE_TARGET=arm64-v8a" >> $GITHUB_ENV
-          echo "NDK_VERSION=r21d" >> $GITHUB_ENV
-          echo "ANDROID_VERSION=21" >> $GITHUB_ENV
-          
-          if [ "${{ github.event.inputs.libnd4jUrl }}" != '' ]; then
-             modules=':nd4j-native,:nd4j-native-preset'
-          else 
-             echo "Building libnd4j from source"
-             modules=':nd4j-native,:nd4j-native-preset,:libnd4j'
-          fi
-          
-          command="mvn ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON -Posx-aarch64-protoc -pl $modules  -Pcpu -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Possrh -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=${LIBND4J_CLASSIFIER} -Pcpu --also-make --batch-mode deploy -DskipTests"
-          
-          if [ "${{ matrix.helper }}" != '' ]; then
-             mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.classifier=${LIBND4J_CLASSIFIER}-${{ matrix.helper }}"
+          NDK_HOME="${GITHUB_WORKSPACE}/android-ndk-r27d"
+          if [ ! -d "${NDK_HOME}" ]; then
+            echo "Downloading Android NDK r25c for Linux x86_64..."
+            cd "${GITHUB_WORKSPACE}"
+            wget --progress=dot:giga "https://dl.google.com/android/repository/android-ndk-r27d-linux.zip"
+            unzip -q "android-ndk-r27d-linux.zip"
+            rm "android-ndk-r27d-linux.zip"
+            echo "NDK extracted to: ${NDK_HOME}"
+            ls -la "${NDK_HOME}" | head -10
           else
-             mvn_ext=""
+            echo "Using cached Android NDK."
           fi
-          
-          command="${command} ${mvn_ext}"
-          echo "Setting command for helper ${{ matrix.helper }} to ${command}"
-          echo "COMMAND=${command}" >> $GITHUB_ENV
+          echo "ANDROID_NDK_ROOT=${NDK_HOME}" >> $GITHUB_ENV
+          echo "ANDROID_NDK=${NDK_HOME}" >> $GITHUB_ENV
 
-      - name: Setup OpenBLAS and ARM Compute Library
+ 
+
+      - name: Setup OpenBLAS
         shell: bash
         run: |
-          # Setup OpenBLAS
-          mkdir -p "${GITHUB_WORKSPACE}/openblas_home"
-          cd "${GITHUB_WORKSPACE}/openblas_home"
-          wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/${OPENBLAS_JAR}
-          unzip ${OPENBLAS_JAR}
+          echo "Setting up OpenBLAS for Android ARM64..."
+          OPENBLAS_JAR="openblas-0.3.28-1.5.11-android-arm64.jar"
+          OPENBLAS_HOME="${GITHUB_WORKSPACE}/openblas_home"
+          OPENBLAS_DIR="${OPENBLAS_HOME}/lib/arm64-v8a"
+          
+          mkdir -p "${OPENBLAS_HOME}"
+          cd "${OPENBLAS_HOME}"
+          
+          wget -q "https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/${OPENBLAS_JAR}"
+          unzip -q "${OPENBLAS_JAR}"
+          
+          if [ -f "${OPENBLAS_DIR}/libopenblas.so" ] && [ ! -f "${OPENBLAS_DIR}/libopenblas.so.0" ]; then
+            ln -s "${OPENBLAS_DIR}/libopenblas.so" "${OPENBLAS_DIR}/libopenblas.so.0"
+          fi
           
           echo "OPENBLAS_PATH=${OPENBLAS_DIR}" >> "$GITHUB_ENV"
-          cp ${OPENBLAS_DIR}/libopenblas.so.0 ${OPENBLAS_DIR}/libopenblas.so
-          
-          # Setup ARM Compute Library if selected
-          if [ "${{ matrix.helper }}" == "armcompute" ]; then
-              mkdir -p "${GITHUB_WORKSPACE}/armcompute_home"
-              cd "${GITHUB_WORKSPACE}/armcompute_home"
-          
-              # Download appropriate ARM Compute Library binary for Android
-              wget https://github.com/ARM-software/ComputeLibrary/releases/download/v25.04/arm_compute-v25.04-android-aarch64-cpu-bin.tar.gz
-              tar -xzf arm_compute-v25.04-android-aarch64-cpu-bin.tar.gz
-          
-              echo "ARMCOMPUTE_ROOT=${GITHUB_WORKSPACE}/armcompute_home" >> "$GITHUB_ENV"
-          fi
+          echo "OPENBLAS_HOME=${OPENBLAS_HOME}" >> "$GITHUB_ENV"
 
-      - name: Debug Info
+      - name: Setup ARM Compute Library
+        if: matrix.helper == 'armcompute'
         shell: bash
         run: |
-          echo "libnd4j build threads ${{ github.event.inputs.buildThreads }}"
-          echo "deploy to release staging repo or not ${{ github.event.inputs.deployToReleaseStaging }}"
-          echo "release version ${{ github.event.inputs.releaseVersion }}"
-          echo "snapshot version ${{ github.event.inputs.snapshotVersion }}"
-          echo "debug enabled ${{ github.event.inputs.debug_enabled }}"
-          echo "libnd4j url ${{ github.event.inputs.libnd4jUrl }}"
-          echo "maven flags ${{ github.event.inputs.mvnFlags }}"
-          echo "server id ${{ github.event.inputs.serverId }}"
-          echo "release repo id ${{ github.event.inputs.releaseRepoId }}"
-          echo "helper ${{ matrix.helper }}"
-          echo "NDK Path: ${{ steps.setup-ndk.outputs.ndk-path }}"
+          echo "Setting up ARM Compute Library for Android ARM64..."
+          ARMCOMPUTE_VERSION="v25.04"
+          ARMCOMPUTE_HOME="${GITHUB_WORKSPACE}/armcompute_home"
+          ARMCOMPUTE_PACKAGE="arm_compute-${ARMCOMPUTE_VERSION}-android-aarch64-cpu-bin"
           
-          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
-          mvn --version
-          cmake --version
-          protoc --version
+          mkdir -p "${ARMCOMPUTE_HOME}"
+          cd "${ARMCOMPUTE_HOME}"
+          
+          wget -q "https://github.com/ARM-software/ComputeLibrary/releases/download/${ARMCOMPUTE_VERSION}/${ARMCOMPUTE_PACKAGE}.tar.gz"
+          tar -xzf "${ARMCOMPUTE_PACKAGE}.tar.gz"
+          
+          ARMCOMPUTE_ROOT="${ARMCOMPUTE_HOME}/${ARMCOMPUTE_PACKAGE}"
+          echo "ARMCOMPUTE_ROOT=${ARMCOMPUTE_ROOT}" >> "$GITHUB_ENV"
+          echo "ARMCOMPUTE_HOME=${ARMCOMPUTE_HOME}" >> "$GITHUB_ENV"
+
 
       - name: Build with Maven
         shell: bash
         env:
-          MAVEN_GPG_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-          CROSS_COMPILER_DIR: ${{ steps.setup-ndk.outputs.ndk-path }}
-          DEBIAN_FRONTEND: noninteractive
+          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DEPLOY: 1
-          BUILD_USING_MAVEN: 1
-          TARGET_OS: android
-          PUBLISH_TO: central
-          MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-          DEPLOY_TO: central
           PERFORM_RELEASE: ${{ github.event.inputs.deployToReleaseStaging }}
           RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
-          MODULES: ${{ github.event.inputs.mvnFlags }}
-          HELPER: ${{ matrix.helper }}
-          MAVEN_OPTS: -Xmx2g
+          MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
+          MAVEN_OPTS: -Xmx3g
           PROTO_EXEC: /opt/protobuf/bin/protoc
-         
-          LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$OPENBLAS_PATH
-
         run: |
-          # Manually configure the Android NDK environment
-          echo "Setting up Android NDK environment variables"
-          echo "ANDROID_NDK=${{ steps.setup-ndk.outputs.ndk-path }}" >> $GITHUB_ENV
-              
-          # Define CMake arguments for building libnd4j
-          cmake_args="-DSD_ARCH=armv8-a -DSD_ANDROID_BUILD=true -DOPENBLAS_PATH=${OPENBLAS_PATH}"
+          export PATH="/opt/protobuf/bin:/opt/cmake/bin:/usr/bin:$PATH"
+          export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${OPENBLAS_PATH}"
+          export JAVA_HOME="/opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/11.0.27-6/x64"
+          find /opt -name java
+          echo "✅ Using Android NDK at: ${ANDROID_NDK}"
+          echo "✅ Cross-compiling from Intel x86_64 to ARM64"
+          
+          LIBND4J_CLASSIFIER="android-arm64"
+          
+          if [ "${{ github.event.inputs.libnd4jUrl }}" != '' ]; then
+             MODULES=':nd4j-native,:nd4j-native-preset'
+          else
+             MODULES=':nd4j-native,:nd4j-native-preset,:libnd4j'
+          fi
+          
+          CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/libnd4j/cmake/android-arm64.cmake \
+            -G Ninja \
+            -DSD_ANDROID_BUILD=true \
+            -DANDROID_ABI=arm64-v8a \
+            -DANDROID_PLATFORM=android-21 \
+            -DANDROID_NDK=${ANDROID_NDK} \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_MAKE_PROGRAM=/usr/bin/ninja \
+            -DBLAS_LIBRARIES=${OPENBLAS_PATH}/libopenblas.so \
+            -DLAPACK_LIBRARIES=${OPENBLAS_PATH}/libopenblas.so"
+          
+          BASE_COMMAND="mvn ${{ matrix.mvn_ext }} \
+            -Dlibnd4j.generate.flatc=ON \
+            -Djavacpp.platform.compiler=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++ \
+            --no-transfer-progress \
+            -Posx-aarch64-protoc \
+            -pl ${MODULES} \
+            -Pcpu \
+            -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} \
+            -Dhttp.keepAlive=false \
+            -Dmaven.wagon.http.pool=false \
+            -Dmaven.wagon.http.retryHandler.count=3 \
+            -Possrh \
+            -DskipTestResourceEnforcement=true \
+            -Dmaven.javadoc.failOnError=false \
+            -Djavacpp.platform=${LIBND4J_CLASSIFIER} \
+            -Dlibnd4j.cmake=\"${CMAKE_ARGS}\" \
+            --also-make \
+            --batch-mode \
+            deploy \
+            -DskipTests"
           
           if [ "${{ matrix.helper }}" == "armcompute" ]; then
-            cmake_args="${cmake_args} -DHELPERS_armcompute=true"
-          fi
-          
-          # Build libnd4j if not provided via URL
-          if [ "${{ github.event.inputs.libnd4jUrl }}" == '' ]; then
-            cd "${GITHUB_WORKSPACE}/libnd4j"
-            mkdir -p blasbuild/android-arm64
-            cd blasbuild/android-arm64
-          
-            # Configure with CMake
-            cmake ${cmake_args} ../..
-          
-            # Build with specified number of threads
-            make -j${{ github.event.inputs.buildThreads }}
-            cd ${GITHUB_WORKSPACE}
-          fi
-          
-          # Run Maven build
-          if [ "$PERFORM_RELEASE" == 1 ]; then
-              bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
+             HELPER_FLAGS="-Dlibnd4j.helper=${{ matrix.helper }} \
+               -Djavacpp.platform.extension=-${{ matrix.helper }} \
+               -Dlibnd4j.classifier=${LIBND4J_CLASSIFIER}-${{ matrix.helper }}"
           else
-              echo "Running build and deploying to snapshots"
-              eval "${COMMAND}"
+             HELPER_FLAGS=""
           fi
+          
+          MAVEN_COMMAND="${BASE_COMMAND} ${HELPER_FLAGS}"
+          
+          if [ "${PERFORM_RELEASE}" == "1" ]; then
+              bash "${GITHUB_WORKSPACE}/release-specified-component.sh" \
+                "${RELEASE_VERSION}" \
+                "${SNAPSHOT_VERSION}" \
+                "${RELEASE_REPO_ID}" \
+                "${MAVEN_COMMAND}"
+          else
+              eval "${MAVEN_COMMAND}"
+          fi
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event.inputs.debug_enabled == 'true' }}
+        with:
+          limit-access-to-actor: true
+

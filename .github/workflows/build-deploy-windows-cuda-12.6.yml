@@ -1,304 +1,631 @@
+# Enhanced CUDA 12.6 Windows Build Workflow with Clean Toolchain Management
+name: CUDA 12.6 Windows Build
+
 on:
   workflow_dispatch:
     inputs:
       buildThreads:
-        description: 'Build threads for libnd4j. Used to control memory usage of builds.'
+        description: 'Build threads for libnd4j (controls memory usage)'
         required: true
-        default: 4
+        default: '4'
       deployToReleaseStaging:
-        description: 'Whether to deploy to release staging or not.'
+        description: 'Deploy to release staging'
         required: false
-        default: 0
+        default: '0'
       releaseVersion:
         description: 'Release version target'
         required: false
-        default: 1.0.0-M3
+        default: '1.0.0-M3'
       snapshotVersion:
         description: 'Snapshot version target'
         required: false
-        default: 1.0.0-SNAPSHOT
+        default: '1.0.0-SNAPSHOT'
       releaseRepoId:
         description: 'Release repository id'
         required: false
-        default:
+        default: ''
       serverId:
         description: 'Server id to publish to'
         required: false
-        default: central
+        default: 'central'
       mvnFlags:
-        description: "Extra maven flags (must escape input yourself if used)"
+        description: 'Extra maven flags'
         required: false
-        default:
+        default: ''
       libnd4jUrl:
-        description: 'Whether to download libnd4j using https://github.com/KonduitAI/gh-actions-libnd4j-urls/ for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
+        description: 'Download libnd4j from URL'
         required: false
-        default:
+        default: ''
       runsOn:
         description: 'System to run on'
         required: false
-        default: windows-2022
+        default: 'windows-2022'
       debug_enabled:
-        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        description: 'Enable tmate debugging'
         required: false
-        default: false
+        default: 'false'
 
 jobs:
   windows-x86_64-cuda-12-6:
     strategy:
       fail-fast: false
       matrix:
-        helper: [ cudnn,"" ]
-        extension: [ "" ]
+        helper: [ 'cudnn', '' ]
         include:
-          - mvn_ext: ${{ github.event.inputs.mvnFlags }}
-            experimental: true
-            name: Extra maven flags
-          - debug_enabled: ${{ github.event.inputs.debug_enabled }}
-            experimental: true
-            name: Debug enabled
           - runs_on: ${{ github.event.inputs.runsOn }}
-            experimental: true
-            name: OS to run on
-          - libnd4j_file_download: ${{ github.event.inputs.libnd4jUrl }}
-            experimental: true
-            name: OS to run on
-          - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging }}
-            experimental: true
-            name: Whether to deploy to release staging or not
-          - release_version: ${{ github.event.inputs.releaseVersion }}
-            experimental: true
-            name: Release version
-          - snapshot_version: ${{ github.event.inputs.snapshotVersion }}
-            experimental: true
-            name: Snapshot version
-          - server_id: ${{ github.event.inputs.serverId }}
-            experimental: true
-            name: Server id
-          - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
-            experimental: true
-            name: The release repository to run on
-          - mvn_flags: ${{ github.event.inputs.mvnFlags }}
-            experimental: true
-            name: Extra maven flags to use as part of the build
           - build_threads: ${{ github.event.inputs.buildThreads }}
-            experimental: true
-            name: The number of threads to build libnd4j with
 
     runs-on: ${{ matrix.runs_on }}
+
     steps:
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.8.0
+        uses: styfle/cancel-workflow-action@0.12.1
         with:
           access_token: ${{ github.token }}
-      - uses: actions/checkout@v4
-      
-      - name: Free Disk Space (Windows)
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Free Disk Space
         shell: powershell
         run: |
-          # Show initial disk space
+          Write-Host "=== Freeing Disk Space ==="
           Write-Host "Initial disk space:"
           Get-PSDrive C | Select-Object Used,Free
           
-          # Remove Windows Defender scan history
-          Remove-Item -Path "$env:ProgramData\Microsoft\Windows Defender\Scans\History\*" -Recurse -Force -ErrorAction SilentlyContinue
-          Write-Host "Removed Windows Defender scan history"
+          # Clean Windows temp and cache directories
+          $cleanupPaths = @(
+            "$env:TEMP\*",
+            "$env:SystemRoot\Temp\*",
+            "$env:ProgramData\Microsoft\Windows Defender\Scans\History\*",
+            "$env:SystemRoot\SoftwareDistribution\Download\*"
+          )
           
-          # Clear Windows temp folders
-          Remove-Item -Path "$env:SystemRoot\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
-          Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
-          Write-Host "Cleared Windows temp folders"
+          foreach ($path in $cleanupPaths) {
+            try {
+              Remove-Item -Path $path -Recurse -Force -ErrorAction SilentlyContinue
+              Write-Host "Cleaned: $path"
+            } catch {
+              Write-Host "Could not clean: $path"
+            }
+          }
           
-          # Clear Windows Update cache safely (without stopping/starting service)
+          # Clean package caches
+          if (Get-Command choco -ErrorAction SilentlyContinue) {
+            choco cache remove -y -ErrorAction SilentlyContinue
+          }
+          
+          # Windows component cleanup
           try {
-              Remove-Item -Path "$env:SystemRoot\SoftwareDistribution\Download\*" -Recurse -Force -ErrorAction SilentlyContinue
-              Write-Host "Cleared Windows Update download cache"
-          }
-          catch {
-              Write-Host "Could not clear Windows Update cache. Continuing..."
+            dism.exe /online /Cleanup-Image /StartComponentCleanup /ResetBase
+          } catch {
+            Write-Host "DISM cleanup skipped"
           }
           
-          # Clean package manager caches
-          if (Test-Path -Path "C:\npm\cache") {
-              Remove-Item -Path "C:\npm\cache\*" -Recurse -Force -ErrorAction SilentlyContinue
-              Write-Host "Cleared NPM cache"
-          }
-          
-          choco cache remove -y -ErrorAction SilentlyContinue
-          Write-Host "Cleared Chocolatey cache"
-          
-          # Remove Docker images if Docker is installed
-          try {
-              if (Get-Command "docker" -ErrorAction SilentlyContinue) {
-                  docker image prune -a -f
-                  docker container prune -f
-                  docker volume prune -f
-                  Write-Host "Pruned Docker resources"
-              }
-          }
-          catch {
-              Write-Host "Failed to prune Docker resources. Continuing..."
-          }
-          
-          # Remove .NET SDK/Runtime backup folders
-          if (Test-Path -Path "$env:ProgramData\Microsoft\.NET\*.backup") {
-              Remove-Item -Path "$env:ProgramData\Microsoft\.NET\*.backup" -Recurse -Force -ErrorAction SilentlyContinue
-              Write-Host "Removed .NET backup folders"
-          }
-          
-          # Clear Azure artifacts cache
-          if (Test-Path -Path "$env:LOCALAPPDATA\Microsoft\Azure\*") {
-              Remove-Item -Path "$env:LOCALAPPDATA\Microsoft\Azure\*" -Recurse -Force -ErrorAction SilentlyContinue
-              Write-Host "Cleared Azure artifacts cache"
-          }
-          
-          # Optimize Windows Component Store
-          try {
-              Start-Process -FilePath "dism.exe" -ArgumentList "/online /Cleanup-Image /StartComponentCleanup" -NoNewWindow -Wait
-              Write-Host "Optimized Windows Component Store"
-          }
-          catch {
-              Write-Host "Failed to optimize Windows Component Store. Continuing..."
-          }
-          
-          # Show final disk space
           Write-Host "Final disk space:"
           Get-PSDrive C | Select-Object Used,Free
 
-      - name: Set mvn build command based on matrix
+      - name: Clean Install Visual Studio Build Tools
         shell: powershell
         run: |
-          if ( "${{ matrix.libnd4j_file_download }}" -ne "" ) {
-              $modules=" :nd4j-cuda-12.6-preset,:nd4j-cuda-12.6"
-           } elseif ( "${{ matrix.helper }}" -ne "" ) {
-              $modules=":nd4j-cuda-12.6-preset,:nd4j-cuda-12.6,libnd4j"
-          } elseif ( "${{ matrix.helper }}" -eq "" ) {
-            $modules=":nd4j-cuda-12.6-preset,:nd4j-cuda-12.6,libnd4j,:nd4j-cuda-12.6-platform"
-           }
+          Write-Host "=== Visual Studio Build Tools Setup ==="
           
-          $command="mvn ${{ matrix.mvn_ext }}  -Pcuda -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda -Pcuda --also-make -pl $modules -Dlibnd4j.compute=`"8.6 9.0`" -Dlibnd4j.cpu.compile.skip=true -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda deploy -DskipTests"
-          
-          if ( "${{ matrix.helper }}" -ne ""  -And "${{ matrix.extension }}" -ne "" ) {
-                $mvn_ext=" -Dlibnd4j.chip=cuda -Dlibnd4j.classifier=windows-x86_64-cuda-12.6-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.helper=${{ matrix.helper }} -Pcuda -Dlibnd4j.chip=cuda deploy -DskipTests"
-                $libnd4j_download_file_url="windows-cuda-12.6-${{ matrix.extension }}-${{ matrix.helper }}"
-           } elseif ( "${{ matrix.helper }}" -ne "" ) {
-                $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-12.6-${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Djavacpp.platform=windows-x86_64 -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda deploy -DskipTests"
-                $libnd4j_download_file_url="windows-cuda-12.6-${{ matrix.helper }}"
-           } else {
-                  $libnd4j_download_file_url="windows-cuda-12.6"
-                  $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-12.6"
+          # Function to completely remove VS installations
+          function Remove-VSInstallation {
+            param([string]$Path)
+            if (Test-Path $Path) {
+              Write-Host "Removing VS installation: $Path"
+              Remove-Item -Path $Path -Recurse -Force -ErrorAction SilentlyContinue
+              Start-Sleep -Seconds 2
+            }
           }
           
-          $command2= -join("$($command)","$($mvn_ext)");
-          $to_write = -join("COMMAND=","$($command2)");
-          if ( "${{ matrix.libnd4j_file_download }}" -ne "") {
-              Write-Host "Adding libnd4j download URL to GITHUB_ENV"
-              $libnd4j_url_to_write = -join("LIBND4J_FILE_NAME=","$(${{ matrix.libnd4j_file_download }}/$libnd4j_download_file_url)");
-              echo $libnd4j_url_to_write | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          # Stop VS processes
+          Get-Process -Name "*vs_*", "vs_installer", "VSIXInstaller", "*devenv*", "*MSBuild*" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          Start-Sleep -Seconds 5
+          
+          # Remove all VS installations
+          $vsPaths = @(
+            "${env:ProgramFiles}\Microsoft Visual Studio",
+            "${env:ProgramFiles(x86)}\Microsoft Visual Studio"
+          )
+          
+          foreach ($vsPath in $vsPaths) {
+            if (Test-Path $vsPath) {
+              Remove-VSInstallation -Path $vsPath
+            }
           }
-          Write-Host "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to $($command2) and the libnd4j bootstrap file name to $($libnd4j_download_file_url)"
-          echo $command2 | Out-File -FilePath "$env:GITHUB_WORKSPACE/mvn-command.bat" -Encoding utf8
-          echo $to_write | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          echo "CUDNN_ROOT_DIR=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          
+          Write-Host "=== Installing Fresh VS Build Tools 2022 (17.8 LTSC) ==="
+          
+          # Download VS Build Tools installer
+          $installerUrl = "https://aka.ms/vs/17/release.ltsc.17.8/vs_buildtools.exe"
+          $installerPath = "$env:TEMP\vs_buildtools.exe"
+          
+          try {
+            Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath -UseBasicParsing -TimeoutSec 600
+            Write-Host "Downloaded VS installer: $installerPath"
+          } catch {
+            Write-Error "Failed to download VS installer: $($_.Exception.Message)"
+            exit 1
+          }
+          
+          # Install with Windows SDK 10.0.22621 (compatible with CUDA 12.6)
+          $installArgs = @(
+            "--quiet", "--wait", "--norestart", "--nocache",
+            "--installPath", "`"C:\BuildTools`"",
+            "--add", "Microsoft.VisualStudio.Workload.VCTools",
+            "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+            "--add", "Microsoft.VisualStudio.Component.VC.CMake.Project",
+            "--add", "Microsoft.VisualStudio.Component.Windows10SDK.22621",
+            "--add", "Microsoft.VisualStudio.Component.VC.ATL",
+            "--includeRecommended"
+          )
+          
+          Write-Host "Installing VS Build Tools..."
+          $process = Start-Process -FilePath $installerPath -ArgumentList $installArgs -Wait -PassThru -NoNewWindow
+          
+          if ($process.ExitCode -ne 0) {
+            Write-Error "VS Build Tools installation failed with exit code: $($process.ExitCode)"
+            exit 1
+          }
+          
+          # Verify installation
+          $vsPath = "C:\BuildTools"
+          $vcvarsPath = "$vsPath\VC\Auxiliary\Build\vcvars64.bat"
+          $msvcPath = "$vsPath\VC\Tools\MSVC"
+          
+          if (-not (Test-Path $vcvarsPath)) {
+            Write-Error "VS Build Tools installation verification failed - vcvars64.bat not found"
+            exit 1
+          }
+          
+          if (-not (Test-Path $msvcPath)) {
+            Write-Error "VS Build Tools installation verification failed - MSVC tools not found"
+            exit 1
+          }
+          
+          # Get MSVC version
+          $msvcVersions = Get-ChildItem $msvcPath -Directory | Sort-Object Name -Descending
+          if ($msvcVersions.Count -eq 0) {
+            Write-Error "No MSVC versions found"
+            exit 1
+          }
+          
+          $latestMSVC = $msvcVersions[0]
+          Write-Host "SUCCESS: VS Build Tools installed successfully"
+          Write-Host "   Installation Path: $vsPath"
+          Write-Host "   MSVC Version: $($latestMSVC.Name)"
+          
+          # Export for later steps
+          echo "VS_INSTALLATION_PATH=$vsPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "MSVC_VERSION=$($latestMSVC.Name)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "MSVC_ROOT=$($latestMSVC.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-      - name: Install MSYS2 and dependencies
+      - name: Install MSYS2
         uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
           update: true
           install: >-
-            base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch
-            mingw-w64-x86_64-make mingw-w64-x86_64-gnupg mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm
-            mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc mingw-w64-x86_64-gcc-fortran
-            mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL mingw-w64-x86_64-ragel
-          pacboy: --noconfirm
+            base-devel git tar pkg-config unzip p7zip zip
+            mingw-w64-x86_64-cmake mingw-w64-x86_64-make
+            mingw-w64-x86_64-toolchain mingw-w64-x86_64-gcc
 
-      - name: Cache cuda install
+      - name: Cache CUDA Installation
         uses: actions/cache@v4
-        id: cache-cuda-126
+        id: cache-cuda
         with:
           path: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6
-          key: ${{ matrix.runs_on }}-cuda-12.6-${{ matrix.helper }}-${{ hashFiles('**/pom.xml') }}
+          key: cuda-12.6-update1-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ matrix.runs_on }}-cuda-12.6-${{ matrix.helper }}-
+            cuda-12.6-update1-${{ runner.os }}-
 
-      - name: Install CUDA 12.6 (if not cached)
-        uses: konduitai/cuda-install/.github/actions/install-cuda-windows@master
-        env:
-          cuda: "12.6"
-        if: steps.cache-cuda-126.outputs.cache-hit != 'true'
+      - name: Install CUDA 12.6 Update 1
+        if: steps.cache-cuda.outputs.cache-hit != 'true'
+        shell: powershell
+        run: |
+          Write-Host "=== Installing CUDA 12.6 Update 1 ==="
+          
+          # Use network installer but with fixes for the -522190823 error
+          $cudaUrl = "https://developer.download.nvidia.com/compute/cuda/12.6.3/network_installers/cuda_12.6.3_windows_network.exe"
+          $cudaInstaller = "$env:TEMP\cuda_network_installer.exe"
+          
+          Write-Host "Downloading CUDA network installer..."
+          try {
+            $webClient = New-Object System.Net.WebClient
+            $webClient.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+            $webClient.DownloadFile($cudaUrl, $cudaInstaller)
+            $webClient.Dispose()
+          
+            if (-not (Test-Path $cudaInstaller) -or (Get-Item $cudaInstaller).Length -lt 10MB) {
+              throw "Downloaded file is missing or too small"
+            }
+          
+            Write-Host "Downloaded CUDA installer: $cudaInstaller ($(([math]::Round((Get-Item $cudaInstaller).Length / 1MB, 2))) MB)"
+          } catch {
+            Write-Error "Failed to download CUDA installer: $($_.Exception.Message)"
+            exit 1
+          }
+          
+          # Create a temporary directory for CUDA installer logs and temp files
+          $cudaTempDir = "$env:TEMP\cuda_install_temp"
+          if (Test-Path $cudaTempDir) {
+            Remove-Item -Path $cudaTempDir -Recurse -Force -ErrorAction SilentlyContinue
+          }
+          New-Item -Path $cudaTempDir -ItemType Directory -Force | Out-Null
+          
+          # Set environment variables to control installer behavior
+          $env:CUDA_SETUP_ARGS = "--silent"
+          $env:NVTOOLSEXT_INSTALL_DIR = "$cudaTempDir"
+          
+          # Essential CUDA components only for faster installation
+          $cudaComponents = @(
+            "nvcc_12.6",
+            "cudart_12.6", 
+            "cublas_12.6",
+            "cublas_dev_12.6",
+            "cufft_12.6",
+            "cufft_dev_12.6",
+            "curand_12.6", 
+            "curand_dev_12.6",
+            "cusolver_12.6",
+            "cusolver_dev_12.6",
+            "cusparse_12.6",
+            "cusparse_dev_12.6",
+            "thrust_12.6",
+            "nvrtc_12.6",
+            "nvrtc_dev_12.6"
+          )
+          
+          # Build installation arguments
+          $installArgs = @("-s") + $cudaComponents
+          
+          Write-Host "Installing CUDA components: $($cudaComponents -join ', ')"
+          Write-Host "Installation command: $cudaInstaller $($installArgs -join ' ')"
+          
+          try {
+            # Set working directory to temp folder to avoid permission issues
+            Set-Location $cudaTempDir
+          
+            # Run installation with timeout and proper error handling
+            $installProcess = Start-Process -FilePath $cudaInstaller -ArgumentList $installArgs -Wait -PassThru -NoNewWindow -WorkingDirectory $cudaTempDir
+          
+            Write-Host "CUDA installer completed with exit code: $($installProcess.ExitCode)"
+          
+            # CUDA installer exit codes:
+            # 0 = success
+            # 1 = success with reboot required  
+            # 2 = already installed (newer version)
+            # Other negative values = various errors
+            if ($installProcess.ExitCode -notin @(0, 1, 2)) {
+              throw "Installation failed with exit code: $($installProcess.ExitCode)"
+            }
+          
+          } catch {
+            Write-Error "CUDA installation failed: $($_.Exception.Message)"
+          
+            # Check for installation logs
+            $logFiles = Get-ChildItem -Path $cudaTempDir -Filter "*.log" -ErrorAction SilentlyContinue
+            if ($logFiles) {
+              Write-Host "Installation logs found:"
+              foreach ($logFile in $logFiles) {
+                Write-Host "=== $($logFile.Name) ==="
+                Get-Content $logFile.FullName | Select-Object -Last 20
+              }
+            }
+          
+            exit 1
+          }
+          
+          Write-Host "SUCCESS: CUDA installation completed"
+          
+          # Verify installation
+          $cudaPath = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6"
+          $nvccPath = "$cudaPath\bin\nvcc.exe"
+          
+          # Wait for filesystem to settle
+          Start-Sleep -Seconds 10
+          
+          if (-not (Test-Path $nvccPath)) {
+            Write-Host "Primary CUDA path not found, checking for alternative locations..."
+          
+            # Check for any CUDA installation
+            $cudaRoot = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA"
+            if (Test-Path $cudaRoot) {
+              Write-Host "Available CUDA installations:"
+              $cudaVersions = Get-ChildItem $cudaRoot -Directory
+              foreach ($version in $cudaVersions) {
+                Write-Host "  Found: $($version.Name)"
+                $altNvccPath = "$($version.FullName)\bin\nvcc.exe"
+                if (Test-Path $altNvccPath) {
+                  Write-Host "  SUCCESS: nvcc.exe found in $($version.Name)"
+                  # Update our expected paths to the found version
+                  $cudaPath = $version.FullName
+                  $nvccPath = $altNvccPath
+                  break
+                }
+              }
+            }
+          
+            # Final check
+            if (-not (Test-Path $nvccPath)) {
+              Write-Error "CUDA installation verification failed - nvcc.exe not found anywhere"
+              exit 1
+            }
+          }
+          
+          # Test nvcc functionality
+          try {
+            $nvccResult = & $nvccPath --version 2>&1
+            Write-Host "SUCCESS: CUDA installation verified - nvcc version:"
+            Write-Host $nvccResult
+          
+            # Update environment variable if we found CUDA in a different location
+            if ($cudaPath -ne "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6") {
+              Write-Host "Updating CUDA_PATH to actual installation location: $cudaPath"
+              echo "CUDA_ACTUAL_PATH=$cudaPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            }
+          
+          } catch {
+            Write-Error "nvcc found but functionality test failed: $($_.Exception.Message)"
+            exit 1
+          }
+          
+          # Clean up installation files
+          try {
+            Set-Location $env:TEMP
+            Remove-Item -Path $cudaTempDir -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item -Path $cudaInstaller -Force -ErrorAction SilentlyContinue
+            Write-Host "Cleaned up installation files"
+          } catch {
+            Write-Host "Could not clean up some installation files (not critical)"
+          }
+          
+          Write-Host "SUCCESS: CUDA 12.6 Update 1 network installation complete"
 
-      - name: Set up Java and Maven cache/auth
-        uses: konduitai/setup-java@main
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           java-version: 11
           distribution: 'temurin'
-        
-        
+          server-id: ${{ github.event.inputs.serverId }}
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+          cache: 'maven'
 
-      - name: Setup Windows PATH
+      - name: Configure Build Environment
         shell: powershell
         run: |
+          Write-Host "=== Configuring Build Environment ==="
+          
+          # Setup VS environment using clean vcvars64.bat
+          $vsPath = $env:VS_INSTALLATION_PATH
+          $vcvarsPath = "$vsPath\VC\Auxiliary\Build\vcvars64.bat"
+          
+          Write-Host "Initializing MSVC environment from: $vcvarsPath"
+          
+          # Create temporary batch file to capture environment
+          $tempBatch = [System.IO.Path]::GetTempFileName() + ".bat"
+          $tempEnv = [System.IO.Path]::GetTempFileName() + ".txt"
+          
+          @"
+          @echo off
+          call "$vcvarsPath" >nul 2>&1
+          if %ERRORLEVEL% NEQ 0 exit /b 1
+          set > "$tempEnv"
+          "@ | Out-File -FilePath $tempBatch -Encoding ASCII
+          
+          $result = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "`"$tempBatch`"" -Wait -PassThru -NoNewWindow
+          
+          if ($result.ExitCode -ne 0 -or -not (Test-Path $tempEnv)) {
+            Write-Error "Failed to initialize MSVC environment"
+            exit 1
+          }
+          
+          # Parse and set environment variables
+          $envCount = 0
+          Get-Content $tempEnv | ForEach-Object {
+            if ($_ -match '^([^=]+)=(.*)$') {
+              $name = $matches[1]
+              $value = $matches[2]
+              # Skip problematic variables
+              if ($name -notmatch '^(TEMP|TMP|RANDOM|PROMPT|PATHEXT)$') {
+                try {
+                  [Environment]::SetEnvironmentVariable($name, $value, 'Process')
+                  echo "$name=$value" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                  $envCount++
+                } catch {
+                  # Silently continue on errors
+                }
+              }
+            }
+          }
+          
+          Write-Host "Set $envCount environment variables from vcvars64.bat"
+          
+          # Clean up
+          Remove-Item $tempBatch, $tempEnv -ErrorAction SilentlyContinue
+          
+          # Setup CUDA environment
           $cudaPath = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6"
-          $msysPath = "C:\msys64\mingw64\bin;C:\msys64\usr\bin"
-          $newPath = "$($msysPath);$($cudaPath)\bin;$($cudaPath)\libnvvp;"
-          Write-Host "Adding to PATH: $newPath"
-          echo $newPath | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          
+          # Check if CUDA was installed in a different location
+          if ($env:CUDA_ACTUAL_PATH) {
+            $cudaPath = $env:CUDA_ACTUAL_PATH
+            Write-Host "Using actual CUDA installation path: $cudaPath"
+          }
+          
           echo "CUDA_PATH=$cudaPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "CUDA_HOME=$cudaPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          
+          # Setup cuDNN only if needed
+          if ("${{ matrix.helper }}" -eq "cudnn") {
+            echo "CUDNN_ROOT_DIR=$cudaPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            Write-Host "SUCCESS: cuDNN environment configured (CUDNN_ROOT_DIR=$cudaPath)"
+          } else {
+            Write-Host "INFO: Skipping cuDNN configuration (helper: ${{ matrix.helper }})"
+          }
+          
+          # Setup clean PATH
+          $cleanPath = @(
+            "C:\msys64\mingw64\bin",
+            "C:\msys64\usr\bin", 
+            "$cudaPath\bin",
+            "$cudaPath\libnvvp",
+            "$env:MSVC_ROOT\bin\Hostx64\x64",
+            "$env:SystemRoot\system32",
+            "$env:SystemRoot"
+          ) -join ";"
+          
+          echo $cleanPath | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          
+          Write-Host "SUCCESS: Build environment configured"
+          Write-Host "   VS Path: $vsPath"
+          Write-Host "   MSVC Version: $env:MSVC_VERSION"
+          Write-Host "   CUDA Path: $cudaPath"
+          Write-Host "   Helper: ${{ matrix.helper }}"
 
-      - name: Import GPG Key
-        if: ${{ secrets.GPG_PRIVATE_KEY != '' && secrets.MAVEN_GPG_PASSPHRASE != '' }}
-        uses: crazy-max/ghaction-import-gpg@v6
-        with:
-          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
-          passphrase: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+      - name: Verify Build Tools
+        shell: cmd
+        run: |
+          echo "=== Verifying Build Tools ==="
+          
+          echo "Checking cl.exe..."
+          where cl.exe
+          if %ERRORLEVEL% NEQ 0 (
+            echo "ERROR: cl.exe not found in PATH"
+            exit /b 1
+          )
+          cl.exe 2>&1 | findstr "Microsoft"
+          
+          echo "Checking nvcc.exe..."
+          where nvcc.exe
+          if %ERRORLEVEL% NEQ 0 (
+            echo "ERROR: nvcc.exe not found in PATH"
+            exit /b 1
+          )
+          nvcc.exe --version | findstr "release"
+          
+          echo "Environment Check:"
+          echo "CUDA_PATH: %CUDA_PATH%"
+          echo "MSVC_ROOT: %MSVC_ROOT%"
+          echo "Helper: ${{ matrix.helper }}"
+          
+          if "${{ matrix.helper }}"=="cudnn" (
+            echo "CUDNN_ROOT_DIR: %CUDNN_ROOT_DIR%"
+            if not defined CUDNN_ROOT_DIR (
+              echo "WARNING: CUDNN_ROOT_DIR not set but cuDNN helper enabled"
+            )
+          )
+          
+          echo "SUCCESS: All build tools verified"
 
-      - name: Run cuda build
+      - name: Configure Maven Command
+        shell: powershell
+        run: |
+          Write-Host "=== Configuring Maven Command ==="
+          
+          # Base modules
+          if ("${{ github.event.inputs.libnd4jUrl }}" -ne "") {
+            $modules = ":nd4j-cuda-12.6-preset,:nd4j-cuda-12.6"
+          } elseif ("${{ matrix.helper }}" -ne "") {
+            $modules = ":nd4j-cuda-12.6-preset,:nd4j-cuda-12.6,libnd4j"
+          } else {
+            $modules = ":nd4j-cuda-12.6-preset,:nd4j-cuda-12.6,libnd4j,:nd4j-cuda-12.6-platform"
+          }
+          
+          # Base command
+          $baseCommand = "mvn ${{ github.event.inputs.mvnFlags }} -Pcuda -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda --also-make -pl $modules"
+          $baseCommand += " -Dlibnd4j.compute=`"8.6 9.0`" -Dlibnd4j.cpu.compile.skip=true"
+          $baseCommand += " -Dlibnd4j.buildthreads=${{ matrix.build_threads }}"
+          $baseCommand += " -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64"
+          $baseCommand += " -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3"
+          $baseCommand += " -Possrh deploy -DskipTests"
+          
+          # Helper-specific extensions
+          if ("${{ matrix.helper }}" -ne "") {
+            $helperExt = " -Dlibnd4j.classifier=windows-x86_64-cuda-12.6-${{ matrix.helper }}"
+            $helperExt += " -Dlibnd4j.extension=${{ matrix.helper }}"
+            $helperExt += " -Djavacpp.platform.extension=-${{ matrix.helper }}"
+            $helperExt += " -Dlibnd4j.helper=${{ matrix.helper }}"
+            $libnd4jFileName = "windows-cuda-12.6-${{ matrix.helper }}"
+          } else {
+            $helperExt = " -Dlibnd4j.classifier=windows-x86_64-cuda-12.6"
+            $libnd4jFileName = "windows-cuda-12.6"
+          }
+          
+          $fullCommand = $baseCommand + $helperExt
+          
+          # Save command
+          echo $fullCommand | Out-File -FilePath "$env:GITHUB_WORKSPACE\mvn-command.bat" -Encoding utf8
+          echo "MAVEN_COMMAND=$fullCommand" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          
+          if ("${{ github.event.inputs.libnd4jUrl }}" -ne "") {
+            echo "LIBND4J_FILE_NAME=${{ github.event.inputs.libnd4jUrl }}/$libnd4jFileName" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          }
+          
+          Write-Host "SUCCESS: Maven command configured for helper: ${{ matrix.helper }}"
+          Write-Host "Command: $fullCommand"
+
+      - name: Run CUDA Build
         shell: cmd
         env:
           MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PERFORM_RELEASE: ${{ matrix.deploy_to_release_staging }}
-          RELEASE_VERSION: ${{ matrix.release_version }}
-          SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
-          RELEASE_REPO_ID: ${{ matrix.release_repo_id }}
-          PUBLISH_TO: central
-          LIBND4J_HOME_SUFFIX: cuda
-          HELPER: ${{ matrix.helper }}
-          EXTENSION: ${{ matrix.extension }}
+          PERFORM_RELEASE: ${{ github.event.inputs.deployToReleaseStaging }}
+          RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
+          SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
+          RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
           MAVEN_OPTS: "-Xmx2g"
-
         run: |
-          echo "Libnd4j build threads: ${{ matrix.build_threads }}"
-          echo "Deploy to release staging: %PERFORM_RELEASE%"
+          echo "=== Starting CUDA Build ==="
+          echo "Build threads: ${{ matrix.build_threads }}"
+          echo "Helper: ${{ matrix.helper }}"
+          echo "Deploy to release: %PERFORM_RELEASE%"
           echo "Release version: %RELEASE_VERSION%"
           echo "Snapshot version: %SNAPSHOT_VERSION%"
-          echo "Debug enabled: ${{ matrix.debug_enabled }}"
-          echo "Libnd4j URL input: %LIBND4J_FILE_NAME%"
-          echo "Maven flags input: ${{ matrix.mvn_flags }}"
-          echo "Server id: ${{ matrix.server_id }}"
-          echo "Release repo id: %RELEASE_REPO_ID%"
-          echo "CUDA Path from env: %CUDA_PATH%"
-          echo "CUDNN Root Dir from env: %CUDNN_ROOT_DIR%"
-
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          set MSYSTEM=MINGW64
-          echo "Running cuda build..."
-          echo "Maven command from file:"
-          type "%GITHUB_WORKSPACE%\mvn-command.bat"
-
-          bash ./change-cuda-versions.sh 12.6
-
-          Rem Ensure CUDNN_ROOT_DIR is set if needed by cmake; often CUDA_PATH is sufficient
-          if not defined CUDNN_ROOT_DIR set CUDNN_ROOT_DIR=%CUDA_PATH%
-
-          if "%PERFORM_RELEASE%"=="1" (
-              echo "Running release build..."
-              bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh" windows cuda 12.6 "%HELPER%" "%EXTENSION%"
-              bash "./release-specified-component.sh" "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%"
-          ) else (
-              echo "Running snapshot build..."
-              bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh" windows cuda 12.6 "%HELPER%" "%EXTENSION%"
-              call "%GITHUB_WORKSPACE%\mvn-command.bat"
+          
+          rem Verify environment one more time
+          echo "CUDA_PATH: %CUDA_PATH%"
+          echo "MSVC_ROOT: %MSVC_ROOT%"
+          if "${{ matrix.helper }}"=="cudnn" (
+            echo "CUDNN_ROOT_DIR: %CUDNN_ROOT_DIR%"
           )
+          
+          rem Change CUDA versions
+          bash ./change-cuda-versions.sh 12.6
+          
+          if "%PERFORM_RELEASE%"=="1" (
+            echo "Running release build..."
+            bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh" windows cuda 12.6 "${{ matrix.helper }}" ""
+            bash "./release-specified-component.sh" "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%"
+          ) else (
+            echo "Running snapshot build..."
+            if "%LIBND4J_FILE_NAME%" NEQ "" (
+              bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh" windows cuda 12.6 "${{ matrix.helper }}" ""
+            )
+            call "%GITHUB_WORKSPACE%\mvn-command.bat"
+          )
+          
+          echo "SUCCESS: Build completed"
+
+      - name: Upload Build Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs-${{ matrix.helper || 'no-helper' }}
+          path: |
+            target/
+            libnd4j/blasbuild/
+            **/*.log
+          retention-days: 7
+
+      - name: Setup tmate session for debugging
+        if: ${{ github.event.inputs.debug_enabled == 'true' && failure() }}
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 30

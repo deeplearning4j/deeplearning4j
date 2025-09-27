@@ -4,7 +4,7 @@ on:
       buildThreads:
         description: 'Build threads for libnd4j. Used to control memory usage of builds.'
         required: true
-        default: 4
+        default: 2
 
       deployToReleaseStaging:
         description: 'Whether to deploy to release staging or not.'
@@ -41,7 +41,6 @@ on:
         required: false
         default:
 
-
       runsOn:
         description: 'OS to run on'
         required: false
@@ -51,6 +50,7 @@ on:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
         required: false
         default: false
+
 jobs:
   windows-x86_64:
     strategy:
@@ -65,44 +65,33 @@ jobs:
           - debug_enabled: ${{ github.event.inputs.debug_enabled }}
             experimental: true
             name: Debug enabled
-
           - runs_on: ${{ github.event.inputs.runsOn }}
             experimental: true
             name: OS to run on
-
           - libnd4j_file_download: ${{ github.event.inputs.libnd4jUrl }}
             experimental: true
             name: OS to run on
-
           - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging }}
             experimental: true
             name: Whether to deploy to release staging or not
-
           - release_version: ${{ github.event.inputs.releaseVersion }}
             experimental: true
             name: Release version
-
           - snapshot_version: ${{ github.event.inputs.snapshotVersion }}
             experimental: true
             name: Snapshot version
-
           - server_id: ${{ github.event.inputs.serverId }}
             experimental: true
             name: Server id
-
           - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
             experimental: true
             name: The release repository to run on
-
           - mvn_flags: ${{ github.event.inputs.mvnFlags }}
             experimental: true
             name: Extra maven flags to use as part of the build
-
           - build_threads: ${{ github.event.inputs.buildThreads }}
             experimental: true
             name: The number of threads to build libnd4j with
-
-
 
     runs-on: ${{ matrix.runs_on }}
     steps:
@@ -111,14 +100,27 @@ jobs:
         with:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
-      
+
       - name: Free Disk Space (Windows)
         shell: powershell
         run: |
           # Show initial disk space
           Write-Host "Initial disk space:"
           Get-PSDrive C | Select-Object Used,Free
+           # The system must be told to stop managing the pagefile size automatically.
+          wmic computersystem set AutomaticManagedPagefile=False
           
+          # Find and delete any existing pagefile configuration to ensure ours is the only one.
+          $currentPagefile = Get-WmiObject -Query "SELECT * FROM Win32_PageFileSetting WHERE Name='C:\\pagefile.sys'"
+          if ($currentPagefile) {
+            $currentPagefile.Delete()
+          }
+
+          # Create a new pagefile with a static size of 12 GB (12288 MB).
+          wmic pagefileset create name="C:\\pagefile.sys"
+          wmic pagefileset where "name='C:\\pagefile.sys'" set InitialSize=12288, MaximumSize=12288
+          
+          echo "Pagefile configured to 12 GB for the duration of this job."
           # Remove Windows Defender scan history
           Remove-Item -Path "$env:ProgramData\Microsoft\Windows Defender\Scans\History\*" -Recurse -Force -ErrorAction SilentlyContinue
           Write-Host "Removed Windows Defender scan history"
@@ -183,43 +185,121 @@ jobs:
           # Show final disk space
           Write-Host "Final disk space:"
           Get-PSDrive C | Select-Object Used,Free
-      
+
+      - name: Install environment
+        shell: cmd
+        env:
+          GITHUB_EVENT_HEAD_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          cd /d %USERPROFILE%
+
+          echo Installing MSYS2
+          C:\msys64\usr\bin\bash -lc "pacman -S --needed --noconfirm pkg-config"
+          C:\msys64\usr\bin\bash -lc "pacman -S --needed --noconfirm base-devel git tar unzip p7zip zip autoconf autoconf-archive automake libtool make patch gnupg"
+          C:\msys64\usr\bin\bash -lc "pacman -S --needed --noconfirm mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc mingw-w64-i686-gcc mingw-w64-x86_64-gcc-fortran mingw-w64-i686-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-i686-libwinpthread-git mingw-w64-x86_64-SDL2 mingw-w64-i686-SDL2 mingw-w64-x86_64-ragel mingw-w64-x86_64-vulkan-headers mingw-w64-i686-vulkan-headers mingw-w64-x86_64-vulkan-loader mingw-w64-i686-vulkan-loader"
+          set "PATH=C:\hostedtoolcache\windows\Python\3.10.11\x64;C:\msys64\usr\bin;%PATH%"
+
+          C:\msys64\usr\bin\bash -lc "pacman -Q"
+
+          echo Installing Windows SDK 8.1
+          curl -Lo sdksetup.exe https://go.microsoft.com/fwlink/p/?LinkId=323507
+          sdksetup.exe /features OptionId.WindowsDesktopSoftwareDevelopmentKit OptionId.NetFxSoftwareDevelopmentKit /quiet
+
+          echo Removing broken stuff from WSL, MSYS2, etc
+          rm "C:/msys64/usr/bin/curl.exe" "C:/msys64/mingw32/bin/curl.exe" "C:/msys64/mingw64/bin/curl.exe"
+          rm "C:/WINDOWS/system32/bash.EXE" "C:/msys64/usr/bin/link.exe" "C:/msys64/usr/bin/timeout.exe" "C:/msys64/usr/bin/python.exe" "C:/msys64/usr/bin/python3.exe"
+          rm "C:/ProgramData/chocolatey/bin/gfortran.exe" "C:/msys64/mingw32/bin/gfortran.exe" "C:/msys64/mingw32/bin/python.exe" "C:/msys64/mingw32/bin/python3.exe"
+          rm "C:/Strawberry/c/bin/gfortran.exe" "C:/msys64/mingw64/bin/gfortran.exe" "C:/msys64/mingw64/bin/python.exe" "C:/msys64/mingw64/bin/python3.exe"
+          rm "C:/msys64/mingw32/bin/clang-cl.exe" "C:/msys64/mingw64/bin/clang-cl.exe" "C:/msys64/mingw32/bin/cmake.exe" "C:/msys64/mingw64/bin/cmake.exe"
+          rm "C:/Strawberry/c/lib/libz.a" "C:/Strawberry/c/lib/libzlib.a" "C:/Strawberry/c/lib/libzdll.a" "C:/Strawberry/c/bin/cmake.exe"
+
+          curl -LO https://archive.apache.org/dist/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz || curl -LO https://archive.apache.org/dist/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz
+          bash -c "tar -xzf apache-maven-3.6.3-bin.tar.gz -C 'C:/Program Files/'"
+
+          python -m pip install gdown || python -m pip install gdown
+
+          echo Installing ccache
+          curl -LO https://github.com/ccache/ccache/releases/download/v4.6/ccache-4.6-windows-64.zip
+          unzip -j ccache-4.6-windows-64.zip -d C:/msys64/usr/bin/
+          mkdir ccache
+          echo max_size = 3.0G                                                                        > ccache\ccache.conf
+          echo hash_dir = false                                                                      >> ccache\ccache.conf
+          echo sloppiness = file_macro,include_file_ctime,include_file_mtime,pch_defines,time_macros >> ccache\ccache.conf
+
+          echo Installing an older less buggy version of GCC
+          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-gcc-13.2.0-6-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-gcc-ada-13.2.0-6-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-gcc-objc-13.2.0-6-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-gcc-libs-13.2.0-6-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-gcc-fortran-13.2.0-6-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-gcc-libgfortran-13.2.0-6-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-binutils-2.42-2-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-crt-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-headers-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-libmangle-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-libwinpthread-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-tools-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-winpthreads-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-winstorecompat-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-vulkan-headers-1.3.280.0-1-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-vulkan-loader-1.3.280.0-1-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-SDL2-2.30.12-1-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-python-3.11.9-1-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-13.2.0-6-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-ada-13.2.0-6-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-objc-13.2.0-6-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libs-13.2.0-6-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-fortran-13.2.0-6-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libgfortran-13.2.0-6-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-binutils-2.42-2-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-crt-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-headers-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-libmangle-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-libwinpthread-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-tools-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-winpthreads-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-winstorecompat-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-vulkan-headers-1.3.280.0-1-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-vulkan-loader-1.3.280.0-1-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-SDL2-2.30.12-1-any.pkg.tar.zst
+          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-python-3.11.9-1-any.pkg.tar.zst
+          bash -c "pacman -U --noconfirm *.pkg.tar.zst"
+
       - name: Set mvn build command based on matrix
         shell: powershell
         run: |
-            if ( "${{ matrix.libnd4j_file_download }}" -ne "" ) {
-              $modules=" :nd4j-native-preset,:nd4j-native"
-            } elseif ( "${{ matrix.helper }}" -ne "" ) {
-              $modules=":nd4j-native-preset,:nd4j-native,libnd4j"
-            }  elseif ( "${{ matrix.extension }}" -ne "" ) {
-              $modules=":nd4j-native-preset,:nd4j-native,libnd4j"
-            }  else {
-              $modules=":nd4j-native-preset,:nd4j-native,libnd4j,:nd4j-native-platform"
-            }
+          if ( "${{ matrix.libnd4j_file_download }}" -ne "" ) {
+            $modules=" :nd4j-native-preset,:nd4j-native"
+          } elseif ( "${{ matrix.helper }}" -ne "" ) {
+            $modules=":nd4j-native-preset,:nd4j-native,libnd4j"
+          }  elseif ( "${{ matrix.extension }}" -ne "" ) {
+            $modules=":nd4j-native-preset,:nd4j-native,libnd4j"
+          }  else {
+            $modules=":nd4j-native-preset,:nd4j-native,libnd4j,:nd4j-native-platform"
+          }
           
-            $command="mvn  ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64   -Dlibnd4j.platform=windows-x86_64 deploy -DskipTests --also-make"
-            if ( "${{ matrix.helper }}" -ne ""  -And "${{ matrix.extension }}" -ne "" ) {
-               $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}  -Dlibnd4j.helper=${{ matrix.helper }}  -Dlibnd4j.platform=windows-x86_64    deploy -DskipTests"
-            } elseif ( "${{ matrix.helper }}" -ne "" ) {
-                $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.platform=windows-x86_64   deploy -DskipTests"
-            }  elseif ( "${{ matrix.extension }}" -ne "" ) {
-                  $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }}"
-            } else {
-               $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64"
-            }
-
-            if  (  "${{ matrix.libnd4j_file_download }}" -ne  "")  {
-                   echo "Adding libnd4j download"
-                   $libnd4j_url_to_write = -join("LIBND4J_FILE_NAME=","$(${{ matrix.libnd4j_file_download }}/$libnd4j_download_file_url)");
-                   echo $libnd4j_url_to_write  | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
-            }
-
-            $command2 = -join("$($command)","$($mvn_ext)");
-            $to_write = -join("COMMAND=","$($command2)");
-            echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to $($command2)"
-            echo $command2  | Out-File -FilePath   "$env:GITHUB_WORKSPACE/mvn-command.bat" -Encoding utf8 -Append
-            echo $to_write  | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
-
+          $command="mvn  ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON --no-transfer-progress -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64   -Dlibnd4j.platform=windows-x86_64 deploy -DskipTests --also-make"
+          if ( "${{ matrix.helper }}" -ne ""  -And "${{ matrix.extension }}" -ne "" ) {
+             $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}  -Dlibnd4j.helper=${{ matrix.helper }}  -Dlibnd4j.platform=windows-x86_64    deploy -DskipTests"
+          } elseif ( "${{ matrix.helper }}" -ne "" ) {
+              $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.platform=windows-x86_64   deploy -DskipTests"
+          }  elseif ( "${{ matrix.extension }}" -ne "" ) {
+                $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }}"
+          } else {
+             $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64"
+          }
+          
+          if  (  "${{ matrix.libnd4j_file_download }}" -ne  "")  {
+                 echo "Adding libnd4j download"
+                 $libnd4j_url_to_write = -join("LIBND4J_FILE_NAME=","$(${{ matrix.libnd4j_file_download }}/$libnd4j_download_file_url)");
+                 echo $libnd4j_url_to_write  | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
+          }
+          
+          $command2 = -join("$($command)","$($mvn_ext)");
+          $to_write = -join("COMMAND=","$($command2)");
+          echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to $($command2)"
+          echo $command2  | Out-File -FilePath   "$env:GITHUB_WORKSPACE/mvn-command.bat" -Encoding utf8 -Append
+          echo $to_write  | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
 
       - name: Set up Java for publishing to GitHub Packages
         uses: konduitai/setup-java@main
@@ -229,70 +309,113 @@ jobs:
           server-id:   ${{ github.event.inputs.serverId }}
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
-          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
-        
 
-
-      - uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW64
-          update: true
-          install: base-devel  git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch   mingw-w64-x86_64-make --noconfirm mingw-w64-x86_64-gnupg mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc  mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL mingw-w64-x86_64-ragel
       - name: Setup windows path
         shell: powershell
         run: echo "C:\msys64\mingw64\bin;C:\msys64\usr\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
       - name: Setup libnd4j home if a download url is specified
         shell: powershell
         run: |
-            mkdir "%GITHUB_WORKSPACE%/openblas_home"
-            cd "%GITHUB_WORKSPACE%/openblas_home"
-            wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/openblas-0.3.28-1.5.11-windows-x86_64.jar
-            unzip openblas-0.3.28-1.5.11-windows-x86_64.jar
-            cd ..
-            echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/windows-x86_64/" | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
+          mkdir "%GITHUB_WORKSPACE%/openblas_home"
+          cd "%GITHUB_WORKSPACE%/openblas_home"
+          wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/openblas-0.3.28-1.5.11-windows-x86_64.jar
+          unzip openblas-0.3.28-1.5.11-windows-x86_64.jar
+          cd ..
+          echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/windows-x86_64/" | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
         if: ${{ matrix.libnd4j_file_download != '' }}
+
       - name: Run windows cpu build
         shell: cmd
         run: |
-              echo "libnd4j build threads ${{ matrix.build_threads }}"
-              echo "deploy to release staging repo or not ${{ matrix.deploy_to_release_staging }}"
-              echo "release version ${{ matrix.release_version }}"
-              echo "snapshot version ${{ matrix.snapshot_version }}"
-              echo "debug enabled ${{ matrix.debug_enabled }}"
-              echo "libnd4j url ${{ matrix.libnd4j_file_download }}"
-              echo "maven flags ${{ matrix.mvn_flags }}"
-              echo "snapshot version ${{ matrix.snapshot_version }}"
-              echo "server id ${{ matrix.server_id }}"
-              echo "release repo id ${{ matrix.release_repo_id }}"
-
-              if "%PERFORM_RELEASE%"=="1" (
-                   echo "Running release"
-                   bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh" windows x86_64 "${{ matrix.helper }}" "${{ matrix.extension }}"
-                   bash "%GITHUB_WORKSPACE%/release-specified-component.sh"  "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%" "%COMMAND%"
-              ) else (
-                  if "%PERFORM_RELEASE%"==1 (
-                        echo "Running release"
-                         bash "%GITHUB_WORKSPACE%/release-specified-component.sh"  "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%" "%COMMAND%"
-                   ) else (
-                      echo "Running snapshots"
-                      call "%GITHUB_WORKSPACE%\mvn-command.bat"
-                   )
-              )
+          call "%ProgramFiles(x86)%\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" amd64
+          call "%ProgramFiles%\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" amd64
+          set MSYSTEM=MINGW64
+          
+          set "CCACHE_DIR=%USERPROFILE%\ccache"
+          set "PATH=C:\hostedtoolcache\windows\Python\3.10.11\x64;C:\msys64\%MSYSTEM%\bin;C:\msys64\usr\bin;%ProgramFiles%\apache-maven-3.6.3\bin;%PATH%"
+          
+          where bash
+          where curl
+          where git
+          where cl
+          where gcc
+          where cmake
+          where mvn
+          where python
+          where python3
+          where ccache
+          
+          bash --version
+          git --version
+          cl
+          gcc --version
+          cmake --version
+          call mvn -version
+          python --version
+          ccache --version -sv
+          df -h
+          wmic pagefile list /format:list
+          
+          set MAKEJ=%NUMBER_OF_PROCESSORS%
+          echo Fetching %GITHUB_REPOSITORY%@%GITHUB_SHA%
+          git init
+          git fetch --depth 1 https://github.com/%GITHUB_REPOSITORY% %GITHUB_SHA%
+          git checkout %GITHUB_SHA%
+          git submodule update --init --recursive
+          git submodule foreach --recursive "git reset --hard"
+          
+          echo "libnd4j build threads ${{ matrix.build_threads }}"
+          echo "deploy to release staging repo or not ${{ matrix.deploy_to_release_staging }}"
+          echo "release version ${{ matrix.release_version }}"
+          echo "snapshot version ${{ matrix.snapshot_version }}"
+          echo "debug enabled ${{ matrix.debug_enabled }}"
+          echo "libnd4j url ${{ matrix.libnd4j_file_download }}"
+          echo "maven flags ${{ matrix.mvn_flags }}"
+          echo "snapshot version ${{ matrix.snapshot_version }}"
+          echo "server id ${{ matrix.server_id }}"
+          echo "release repo id ${{ matrix.release_repo_id }}"
+          
+          if "%PERFORM_RELEASE%"=="1" (
+               echo "Running release"
+               bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh" windows x86_64 "${{ matrix.helper }}" "${{ matrix.extension }}"
+               bash "%GITHUB_WORKSPACE%/release-specified-component.sh"  "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%" "%COMMAND%"
+          ) else (
+              if "%PERFORM_RELEASE%"==1 (
+                    echo "Running release"
+                     bash "%GITHUB_WORKSPACE%/release-specified-component.sh"  "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%" "%COMMAND%"
+               ) else (
+                  echo "Running snapshots"
+                  call "%GITHUB_WORKSPACE%\mvn-command.bat"
+               )
+          )
+          
+          ccache --version -sv
+          df -h
+          wmic pagefile list /format:list
         env:
-          MAVEN_GPG_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_TO: central
           MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
           PERFORM_RELEASE: ${{ matrix.deploy_to_release_staging }}
           RELEASE_VERSION: ${{ matrix.release_version }}
           SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
           RELEASE_REPO_ID: ${{ matrix.release_repo_id }}
           GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
-          GPG_SIGNING_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_SIGNING_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           MODULES: ${{ matrix.mvn_flags }}
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
           LIBND4J_FILE_NAME: ${{ matrix.libnd4j_file_download }}
+
+      - name: Clean up
+        shell: cmd
+        run: |
+          cd /d %USERPROFILE%
+          set "PATH=C:\hostedtoolcache\windows\Python\3.10.11\x64;C:\msys64\usr\bin;%PATH%"
+          bash -c "rm -Rf $(find .m2/repository/ -name '*SNAPSHOT*')"
