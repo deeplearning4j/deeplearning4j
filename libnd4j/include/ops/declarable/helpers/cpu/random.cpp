@@ -57,7 +57,7 @@ T gammaLess(graph::RandomGenerator& rng, T const alpha, T const beta) {
     else
       rawX = -math::p_log(c * (T(1.f) - u) / (alpha * math::p_pow(d, alpha - T(1.f))));
 
-    T v = rng.relativeT(index++, 0.f, 1.f);
+    T v = static_cast<T>(rng.relativeT(index++, 0.f, 1.f));
     if (rawX <= d) {
       auto testVal = (math::p_pow(rawX, alpha - 1.f) * math::p_exp(-T(0.5f) * rawX)) /
                      (powerAlpha * math::p_pow(T(1.f) - math::p_exp(-T(0.5f) * rawX), alpha - T(1.f)));
@@ -158,7 +158,7 @@ void fillRandomGamma(LaunchContext* context, graph::RandomGenerator& rng, NDArra
                      NDArray* output) {
   BUILD_SINGLE_SELECTOR(output->dataType(), fillRandomGamma_, (context, rng, alpha, beta, output), SD_FLOAT_NATIVE);
 }
-BUILD_SINGLE_TEMPLATE(template void fillRandomGamma_,
+BUILD_SINGLE_TEMPLATE( void fillRandomGamma_,
                       (LaunchContext * context, graph::RandomGenerator& rng, NDArray* alpha, NDArray* beta,
                        NDArray* output),
                       SD_FLOAT_NATIVE);
@@ -185,14 +185,14 @@ void fillRandomPoisson_(LaunchContext* context, graph::RandomGenerator& rng, NDA
   PRAGMA_OMP_PARALLEL_FOR
   for (sd::LongType k = 0; k < shift; k++) {
     auto pos = k * step;
-    auto u = rng.relativeT<T>(k, 0., 1.);
+    auto u = rng.relativeT<T>(k, static_cast<T>(0.), static_cast<T>(1.));
     for (sd::LongType e = 0; e < step; e++) {
       auto p = math::sd_exp<T, T>(-lambda->t<T>(e));
       auto s = p;
       auto x = Z(0.f);
       while (u > s) {
         x += 1.f;
-        p *= directLa ? lambdaBuf[e] / x : lambda->t<T>(e) / x;
+        p *= static_cast<T>(directLa ? lambdaBuf[e] / x : lambda->t<T>(e) / x);
         s += p;
       }
       if (directOut)
@@ -208,7 +208,7 @@ void fillRandomPoisson(LaunchContext* context, graph::RandomGenerator& rng, NDAr
                         SD_FLOAT_TYPES, SD_FLOAT_TYPES);
 }
 
-BUILD_DOUBLE_TEMPLATE(template void fillRandomPoisson_,
+BUILD_DOUBLE_TEMPLATE( void fillRandomPoisson_,
                       (LaunchContext * context, graph::RandomGenerator& rng, NDArray* lambda, NDArray* output),
                       SD_FLOAT_TYPES, SD_FLOAT_TYPES);
 
@@ -244,7 +244,7 @@ void fillRandomMultiNomial_(LaunchContext* context, graph::RandomGenerator& rng,
   Tz* z = output.bufferAsT<Tz>();
 
   Tx minVal = DataTypeUtils::min_positive<Tx>();
-  Tx maxVal = 1.0;
+  Tx maxVal = static_cast<Tx>(1.0);
 
   auto dimA = (0 == dimC) ? 1 : 0;
   const sd::LongType batchValue = output.sizeAt(dimC);

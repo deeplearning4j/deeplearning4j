@@ -234,7 +234,7 @@ void cbow_(NDArray &vsyn0, NDArray &vsyn1, NDArray &vsyn1Neg, NDArray &vexpTable
 
   }
 }
-BUILD_SINGLE_TEMPLATE(template void cbow_,
+BUILD_SINGLE_TEMPLATE( void cbow_,
                       (NDArray &syn0, NDArray &syn1,NDArray &syn1Neg, NDArray &expTable, NDArray &vnegTable, NDArray &vinfVector,
                           int target, int ngStarter, int *context, int *lockedWords, int *indices, int *codes,
                           double alpha, sd::LongType randomValue, const int contextWidth, const int hsRounds,
@@ -310,7 +310,7 @@ void skipgram_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *
   delete[] neu1e;
 }
 
-BUILD_SINGLE_TEMPLATE(template void skipgram_,
+BUILD_SINGLE_TEMPLATE( void skipgram_,
                       (void *syn0, void *syn1, void *syn1Neg, void *expTable, void *vnegTable, void *vinfVector,
                           int target, int ngStarter,NDArray &indices, NDArray &codes, double alpha, sd::LongType randomValue,
                           const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength,
@@ -697,7 +697,7 @@ void doSkipGramLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vinfVector
   delete[] neu1e;
 }
 
-BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_,
+BUILD_SINGLE_TEMPLATE( void skipgramBatchExec_,
                       (NDArray & s0, NDArray &s1, NDArray &s1n, NDArray &vexpTable, NDArray &vnegTable, NDArray &vinfVector,
                           NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr,
                           NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength,
@@ -886,7 +886,7 @@ void doCbowLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray&negStarters, ND
     delete[] neu1e;
   }
 }
-BUILD_SINGLE_TEMPLATE(template void cbowBatchExec_,
+BUILD_SINGLE_TEMPLATE( void cbowBatchExec_,
                       (NDArray & s0, NDArray &s1, NDArray &s1n, NDArray &vexpTable, NDArray &vnegTable, NDArray &vinfVector,
                           NDArray &context, NDArray &lockedWords, NDArray &targets, NDArray &negStarters, NDArray &indices,
                           NDArray &codes, NDArray &lr, NDArray &nextRandom, NDArray &nLabels, const int nsRounds,
@@ -995,7 +995,6 @@ void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDA
             trainWords,minLearningRate,iterations),
         SD_NATIVE_FLOAT_TYPES);
   } else if (context.rankOf() == 2 && indices.rankOf() == 2) {
-    sd_printf("CBOW: context rank %i, indices rank %i\n", context.rankOf(), indices.rankOf());
     BUILD_SINGLE_SELECTOR(
         xType, cbowBatchExec_,
         (syn0, syn1, syn1Neg, expTable, negTable, inferenceVector, context, lockedWords, target, ngStarter,

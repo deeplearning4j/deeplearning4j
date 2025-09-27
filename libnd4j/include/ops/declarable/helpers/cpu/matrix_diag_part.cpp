@@ -58,7 +58,7 @@ sd::Status matrixDiagPart(sd::LaunchContext* context, NDArray* input, NDArray* o
   BUILD_SINGLE_SELECTOR(input->dataType(), return _matrixDiagPart, (input, output), SD_COMMON_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template sd::Status _matrixDiagPart, (NDArray* input, NDArray* output), SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE( sd::Status _matrixDiagPart, (NDArray* input, NDArray* output), SD_COMMON_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

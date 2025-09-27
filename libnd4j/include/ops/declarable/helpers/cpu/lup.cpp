@@ -35,7 +35,7 @@ static void swapRows_(NDArray* matrix, sd::LongType theFirst, sd::LongType theSe
       math::sd_swap(matrix->r<T>(theFirst, i), matrix->r<T>(theSecond, i));
     }
 }
-BUILD_SINGLE_TEMPLATE(template void swapRows_, (NDArray * matrix, sd::LongType theFirst, sd::LongType theSecond), SD_FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE( void swapRows_, (NDArray * matrix, sd::LongType theFirst, sd::LongType theSecond), SD_FLOAT_TYPES);
 
 template <typename T>
 static void swapRows(T* matrixBuf, sd::LongType const* matrixShape, sd::LongType theFirst, sd::LongType theSecond) {
@@ -93,7 +93,7 @@ static void invertLowerMatrix_(NDArray* inputMatrix, NDArray* invertedMatrix) {
   }
 }
 
-BUILD_SINGLE_TEMPLATE(template void invertLowerMatrix_, (NDArray * inputMatrix, NDArray* invertedMatrix);
+BUILD_SINGLE_TEMPLATE( void invertLowerMatrix_, (NDArray * inputMatrix, NDArray* invertedMatrix);
                       , SD_FLOAT_TYPES);
 
 void invertLowerMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
@@ -131,7 +131,7 @@ static void _invertUpperMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
   }
 }
 
-BUILD_SINGLE_TEMPLATE(template void _invertUpperMatrix, (NDArray * inputMatrix, NDArray* invertedMatrix);
+BUILD_SINGLE_TEMPLATE( void _invertUpperMatrix, (NDArray * inputMatrix, NDArray* invertedMatrix);
                       , SD_FLOAT_TYPES);
 
 void invertUpperMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
@@ -143,7 +143,7 @@ static NDArray lup_(LaunchContext* context, NDArray* input, NDArray* compound, N
   const sd::LongType rowNum = input->rows();
   const sd::LongType columnNum = input->columns();
 
-  NDArray determinant = NDArrayFactory::create<T>(1.f, context);
+  NDArray determinant = NDArrayFactory::create<T>(static_cast<T>(1.f), context);
   NDArray compoundMatrix = *input;                   // copy
   NDArray permutationMatrix(input, false, context);  // has same shape as input and contiguous strides
   permutationMatrix.setIdentity();
@@ -199,7 +199,7 @@ static NDArray lup_(LaunchContext* context, NDArray* input, NDArray* compound, N
   return determinant;
 }
 
-BUILD_DOUBLE_TEMPLATE(template NDArray lup_,
+BUILD_DOUBLE_TEMPLATE( NDArray lup_,
                       (LaunchContext * context, NDArray* input, NDArray* output, NDArray* permutation), SD_FLOAT_TYPES,
                       SD_INDEXING_TYPES);
 /*
@@ -524,7 +524,7 @@ static bool checkCholeskyInput_(sd::LaunchContext* context, NDArray * input) {
             DataTypeUtils::min_positive<T>())
           return false;
 
-    NDArray output = NDArrayFactory::create<T>(0., context);
+    NDArray output = NDArrayFactory::create<T>(static_cast<T>(0.), context);
     if (sd::Status::OK != determinant(context, thisMatrix, &output)) return false;
     if (output.e<T>(0) <= T(0)) return 0;
     NDArray reversedMatrix(*thisMatrix);
@@ -563,11 +563,11 @@ sd::Status cholesky_(LaunchContext* context, NDArray* input, NDArray* output, bo
 
     for (sd::LongType col = 0; col < n; col++) {
       for (sd::LongType row = 0; row < col; row++) {
-        T rowSum = 0;
+        T rowSum = static_cast<T>(0);
         for (sd::LongType k = 0; k < row; ++k) rowSum += (lowerMatrix->e<T>(col, k) * lowerMatrix->e<T>(row, k));
         lowerMatrix->p(col, row, (matrix->e<T>(row, col) - rowSum) / lowerMatrix->e<T>(row, row));
       }
-      T diagonalSum = 0;
+      T diagonalSum = static_cast<T>(0);
       for (sd::LongType k = 0; k < col; ++k) diagonalSum += lowerMatrix->e<T>(col, k) * lowerMatrix->e<T>(col, k);
       lowerMatrix->p(col, col, sd::math::sd_sqrt<T, T>(matrix->e<T>(col, col) - diagonalSum));
     }
