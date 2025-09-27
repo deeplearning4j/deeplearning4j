@@ -15,7 +15,7 @@
 * SPDX-License-Identifier: Apache-2.0
 ******************************************************************************/
 
-#include <array/ArrayOptions.h>
+#include <array/ArrayOptions.hXX>
 #include <array/ConstantShapeBuffer.h>
 #include <array/DataType.h>
 #include <array/PrimaryPointerDeallocator.h>

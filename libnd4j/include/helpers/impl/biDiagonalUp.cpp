@@ -152,8 +152,8 @@ HHsequence BiDiagonalUp::makeHHsequence(const char type) {
   return HHsequence(dummy, dummy, 'u');
 }
 
-BUILD_SINGLE_TEMPLATE(template void BiDiagonalUp::_evalData, (), SD_FLOAT_TYPES);
-BUILD_SINGLE_TEMPLATE(template HHsequence BiDiagonalUp::makeHHsequence_, (const char type), SD_FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE( void BiDiagonalUp::_evalData, (), SD_FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE( HHsequence BiDiagonalUp::makeHHsequence_, (const char type), SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

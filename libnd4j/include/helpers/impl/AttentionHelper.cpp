@@ -462,9 +462,9 @@ void AttentionHelper::multiHeadProjectBp(NDArray *input, NDArray *projectionMatr
       projectionMatrix->reshape('c', projectionMatrixShape);
 
   ops::matmul_bp mmulBp;
-  NDArray dLdProjectionPrep(projectionPrep.shapeInfo(), false, context);
-  NDArray dLdInputPrep(inputPrep.shapeInfo(), false, context);
-  mmulBp.execute({&projectionPrep, &inputPrep, &epsReshaped}, std::vector<NDArray *>{&dLdProjectionPrep, &dLdInputPrep},
+  NDArray dLdProjectionPrep(projectionPrep->shapeInfo(), false, context);
+  NDArray dLdInputPrep(inputPrep->shapeInfo(), false, context);
+  mmulBp.execute({projectionPrep, inputPrep, epsReshaped}, std::vector<NDArray *>{&dLdProjectionPrep, &dLdInputPrep},
                  {}, {}, {});
 
   dLdProjectionPrep.reshapei({numHeads, projectionMatrix->sizeAt(1), projectionMatrix->sizeAt(2)});
@@ -473,6 +473,10 @@ void AttentionHelper::multiHeadProjectBp(NDArray *input, NDArray *projectionMatr
   dLdInputPrep.reshapei({input->sizeAt(1), miniBatchSize, seqLength});
   dLdInputPrep.permutei({1, 0, 2}, false, false);
   dLdInput->assign(&dLdInputPrep);
+
+  delete inputPrep;
+  delete projectionPrep;
+
 }
 }  // namespace sd
 #endif
