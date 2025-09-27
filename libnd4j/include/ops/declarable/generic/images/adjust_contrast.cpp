@@ -100,14 +100,15 @@ CONFIGURABLE_OP_IMPL(adjust_contrast_v2, 1, 1, true, 0, 0) {
 
   std::vector<LongType> axes({1});  // dim 1 of pseudoresult
   // mean as reduction for last dimension set over size (dim 1) of result3D
-  auto mean = input3D.reduceAlongDimension(reduce::Mean, &axes);
+  auto mean = input3D->reduceAlongDimension(reduce::Mean, &axes);
   // result as (x - mean) * factor + mean
-  auto temp = input3D.ulike();
+  auto temp = input3D->ulike();
   std::vector<LongType> zeroTwo = {0, 2};
-  input3D.applyBroadcast(broadcast::Subtract,&zeroTwo, &mean, temp);
+  input3D->applyBroadcast(broadcast::Subtract,&zeroTwo, &mean, temp);
   temp->applyScalarArr(scalar::Multiply, factor, temp);
-  temp->applyBroadcast(broadcast::Add, &zeroTwo, &mean, &output3D);
-  output->assign(&output3D);
+  temp->applyBroadcast(broadcast::Add, &zeroTwo, &mean, output3D);
+  output->assign(output3D);
+  delete output3D;
   return Status::OK;
 }
 

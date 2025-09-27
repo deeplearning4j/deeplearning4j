@@ -35,45 +35,71 @@ CUSTOM_OP_IMPL(min_max_datatype, -2, 1, false, 0, 2) {
   auto minOrMax = INT_ARG(1);
   if (minOrMax == 0) {
     switch (type) {
+#ifdef HAS_UINT8
       case UINT8:
         output->p(0, DataTypeUtils::min<uint8_t>());
         break;
+#endif
+#ifdef HAS_INT8
       case INT8:
         output->p(0, DataTypeUtils::min<int8_t>());
         break;
+#endif
+#ifdef HAS_BOOL
       case BOOL:
         output->p(0, DataTypeUtils::min<bool>());
         break;
+#endif
+#ifdef HAS_BFLOAT16
       case BFLOAT16:
         output->p(0, DataTypeUtils::min<bfloat16>());
         break;
+#endif
+#ifdef HAS_FLOAT16
       case HALF:
         output->p(0, DataTypeUtils::min<float16>());
         break;
+#endif
+#ifdef HAS_INT16
       case INT16:
         output->p(0, DataTypeUtils::min<int16_t>());
         break;
+#endif
+#ifdef HAS_UINT16
       case UINT16:
         output->p(0, DataTypeUtils::min<uint16_t>());
         break;
+#endif
+#ifdef HAS_INT32
       case INT32:
         output->p(0, DataTypeUtils::min<int>());
         break;
+#endif
+#ifdef HAS_UINT32
       case UINT32:
         output->p(0, DataTypeUtils::min<uint32_t>());
         break;
+#endif
+#ifdef HAS_FLOAT32
       case FLOAT32:
         output->p(0, DataTypeUtils::min<float>());
         break;
+#endif
+#ifdef HAS_UNSIGNEDLONG
       case UINT64:
         output->p(0, DataTypeUtils::min<uint64_t>());
         break;
+#endif
+#ifdef HAS_LONG
       case INT64:
         output->p(0, DataTypeUtils::min<LongType>());
         break;
+#endif
+#ifdef HAS_DOUBLE
       case DOUBLE:
         output->p(0, DataTypeUtils::min<double>());
         break;
+#endif
       default: {
         std::string errorMessage;
         errorMessage += "Min: Unknown type requested: " + DataTypeUtils::asString(type);
@@ -85,45 +111,71 @@ CUSTOM_OP_IMPL(min_max_datatype, -2, 1, false, 0, 2) {
     }
   } else {
     switch (type) {
+#ifdef HAS_UINT8
       case UINT8:
         output->p(0, DataTypeUtils::max<uint8_t>());
         break;
+#endif
+#ifdef HAS_INT8
       case INT8:
         output->p(0, DataTypeUtils::max<int8_t>());
         break;
+#endif
+#ifdef HAS_BOOL
       case BOOL:
         output->p(0, DataTypeUtils::max<bool>());
         break;
+#endif
+#ifdef HAS_BFLOAT16
       case BFLOAT16:
         output->p(0, DataTypeUtils::max<bfloat16>());
         break;
+#endif
+#ifdef HAS_FLOAT16
       case HALF:
         output->p(0, DataTypeUtils::max<float16>());
         break;
+#endif
+#ifdef HAS_INT16
       case INT16:
         output->p(0, DataTypeUtils::max<int16_t>());
         break;
+#endif
+#ifdef HAS_UINT16
       case UINT16:
         output->p(0, DataTypeUtils::max<uint16_t>());
         break;
+#endif
+#ifdef HAS_INT32
       case INT32:
         output->p(0, DataTypeUtils::max<int>());
         break;
+#endif
+#ifdef HAS_UINT32
       case UINT32:
         output->p(0, DataTypeUtils::max<uint32_t>());
         break;
+#endif
+#ifdef HAS_FLOAT32
       case FLOAT32:
         output->p(0, DataTypeUtils::max<float>());
         break;
+#endif
+#ifdef HAS_UNSIGNEDLONG
       case UINT64:
         output->p(0, DataTypeUtils::max<uint64_t>());
         break;
+#endif
+#ifdef HAS_LONG
       case INT64:
         output->p(0, DataTypeUtils::max<LongType>());
         break;
+#endif
+#ifdef HAS_DOUBLE
       case DOUBLE:
         output->p(0, DataTypeUtils::max<double>());
         break;
+#endif
       default: {
         sd_printf("Unknown DataType used: [%i]\n", DataTypeUtils::asInt(type));
 #ifndef __CUDA_ARCH__
