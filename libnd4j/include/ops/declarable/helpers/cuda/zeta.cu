@@ -112,7 +112,7 @@ void zeta(LaunchContext *context, NDArray&x, NDArray&q, NDArray &z) {
   z.tickWriteDevice();
 }
 
-BUILD_SINGLE_TEMPLATE(template void zetaCudaLauncher,
+BUILD_SINGLE_TEMPLATE( void zetaCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const int sharedMmemory,
                        const cudaStream_t *stream, const void *vx, const sd::LongType *xShapeInfo, const void *vq,
                        const sd::LongType *qShapeInfo, void *vz, const sd::LongType *zShapeInfo),

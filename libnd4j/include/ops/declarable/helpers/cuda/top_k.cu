@@ -25,7 +25,7 @@
 
 #include "execution/cuda/LaunchDims.h"
 #include "helpers/DebugHelper.h"
-
+#include <system/selective_rendering.h>
 
 namespace sd {
 namespace ops {

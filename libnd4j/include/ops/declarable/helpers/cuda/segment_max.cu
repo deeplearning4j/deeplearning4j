@@ -28,7 +28,7 @@
 
 #include <ops/declarable/helpers/segment.h>
 #include <ops/declarable/helpers/segment_common.h>
-
+#include <system/selective_rendering.h>
 
 #include "helpers/DebugHelper.h"
 namespace sd {
@@ -266,7 +266,7 @@ static void segmentMaxFunctor_(LaunchContext* context, NDArray* input, NDArray* 
    segmentMaxTadKernel<T, I><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
        input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
        reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(),
-       output->specialShapeInfo(), outputTads, outputTadOffsets,0,
+       output->specialShapeInfo(), outputTads, outputTadOffsets,static_cast<T>(0),
        indices->lengthOf(),packX->numberOfTads(),packZ->numberOfTads());
    sd::DebugHelper::checkErrorCode(stream, "segmentMaxTadKernel failed");
 
@@ -323,7 +323,7 @@ static void unsortedSegmentMaxFunctor_(LaunchContext* context, NDArray* input, N
    segmentMaxTadKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
        input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
        reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(),
-       output->specialShapeInfo(), outputTads, outputTadOffsets,0,indices->lengthOf(),packX->numberOfTads(),packZ->numberOfTads());
+       output->specialShapeInfo(), outputTads, outputTadOffsets,static_cast<T>(0),indices->lengthOf(),packX->numberOfTads(),packZ->numberOfTads());
 
    delete dimensions;
  }
@@ -601,6 +601,8 @@ Status segmentMaxFunctorBP_(LaunchContext* context, NDArray* input, NDArray* ind
 Status segmentMaxFunctorBP(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                           NDArray* output) {
  NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
+ auto indicesDType = indices->dataType();
+ auto outputDType = output->dataType();
  BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return segmentMaxFunctorBP_,
                        (context, input, indices, gradOut, output), SD_FLOAT_TYPES, SD_INDEXING_TYPES);
  NDArray::registerSpecialUse({output}, {input, indices, gradOut});
@@ -664,6 +666,8 @@ static Status unsortedSegmentMaxFunctorBP_(LaunchContext* context, NDArray* inpu
 Status unsortedSegmentMaxFunctorBP(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                                   LongType numOfClasses, NDArray* output) {
  NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
+ auto indicesDType = indices->dataType();
+ auto outputDType = output->dataType();
  BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentMaxFunctorBP_,
                        (context, input, indices, gradOut, numOfClasses, output), SD_FLOAT_TYPES, SD_INDEXING_TYPES);
  NDArray::registerSpecialUse({output}, {input, indices, gradOut});
