@@ -49,8 +49,8 @@ static void usualGemm(NDArray* vA, NDArray* vB, NDArray* vC, const int aMaxis, c
     THROW_EXCEPTION("usualGemm: C is nullptr");
   }
 
-  const T3 alphaZ = alpha;
-  const T3 betaZ = beta;
+  const T3 alphaZ = static_cast<T3> (alpha);
+  const T3 betaZ = static_cast<T3>(beta);
 
   const bool betaPresent = beta;
 
@@ -118,8 +118,8 @@ static void usualGemv( NDArray* vA, NDArray* vX, NDArray* vY, const int incx, co
   T2* X = vX->bufferAsT<T2>();
   T3* Y = vY->bufferAsT<T3>();
 
-  const T3 alphaZ = alpha;
-  const T3 betaZ = beta;
+  const T3 alphaZ = static_cast<T3>(alpha);
+  const T3 betaZ = static_cast<T3>(beta);
 
   const bool betaPersent = beta;
 
@@ -171,7 +171,7 @@ static void usualDot(const sd::LongType length, const double alpha, const void* 
 
   const bool betaPersent = beta;
 
-  T3 sum = 0;
+  T3 sum = static_cast<T3>(0);
 
   auto func = PRAGMA_THREADS_FOR {
     for (sd::LongType i = start; i < stop; ++i) {
@@ -459,8 +459,8 @@ static void batchedGemm(NDArray* vA, NDArray* vB, NDArray* vC, LongType* aBatchD
   T2* B = vB->bufferAsT<T2>();
   T3* C = vC->bufferAsT<T3>();
 
-  const T3 alphaZ = alpha;
-  const T3 betaZ = beta;
+  const T3 alphaZ = static_cast<T3>(alpha);
+  const T3 betaZ = static_cast<T3>(beta);
 
   const bool betaPersent = beta;
 

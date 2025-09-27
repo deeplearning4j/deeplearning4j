@@ -36,14 +36,12 @@ void ReductionBoolLoops<X, Z>::innerloopReduce(sd::memory::Workspace* workspace,
 }
 
 template <typename X, typename Y>
-void ReductionBoolLoops<X, Y>::wrapper(int opNum, sd::memory::Workspace* workspace, const X* x,
-                                       const sd::LongType* xShapeInfo, Y* z, const sd::LongType* zShapeInfo,
-                                       const LongType* dims, X* extraParams) {
+void ReductionBoolLoops<X, Y>::wrapper(int opNum, memory::Workspace* workspace, const X* x, const LongType* xShapeInfo, Y* z,
+                                       const LongType* zShapeInfo, const LongType* dims, X* extraParams) {
 #ifndef SD_LOOPS_INLINED
   DISPATCH_BY_OPNUM_TT(innerloopReduce, PARAMS(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams),
                        REDUCE_BOOL_OPS);
 #endif
 }
-
-BUILD_DOUBLE_TEMPLATE(template class ReductionBoolLoops, , SD_COMMON_TYPES, SD_BOOL_TYPES);
+BUILD_DOUBLE_TEMPLATE( class ReductionBoolLoops, , SD_COMMON_TYPES, SD_BOOL_TYPES);
 }  // namespace sd
