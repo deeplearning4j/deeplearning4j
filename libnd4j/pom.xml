@@ -41,6 +41,36 @@
 
 
     <properties>
+
+        <!-- Type validation modes -->
+        <libnd4j.types.validation.mode>normal</libnd4j.types.validation.mode>
+        <libnd4j.types.strict.validation>false</libnd4j.types.strict.validation>
+        <libnd4j.types.show.impact>true</libnd4j.types.show.impact>
+
+        <!-- Debug type configuration -->
+        <libnd4j.debug.types.profile>MINIMAL_INDEXING</libnd4j.debug.types.profile>
+        <libnd4j.debug.types.custom></libnd4j.debug.types.custom>
+        <libnd4j.debug.auto.reduce>false</libnd4j.debug.auto.reduce>
+
+        <!-- Predefined type profiles for easy selection -->
+        <libnd4j.datatypes.all></libnd4j.datatypes.all>
+        <libnd4j.datatypes.minimal>float32;double;int32;int64</libnd4j.datatypes.minimal>
+        <libnd4j.datatypes.essential>float32;double;int32;int64;int8;int16</libnd4j.datatypes.essential>
+        <libnd4j.datatypes.floats>float32;double;float16</libnd4j.datatypes.floats>
+        <libnd4j.datatypes.integers>int8;int16;int32;int64;uint8;uint16;uint32;uint64</libnd4j.datatypes.integers>
+        <libnd4j.datatypes.single.precision>float32;int32;int64</libnd4j.datatypes.single.precision>
+        <libnd4j.datatypes.double.precision>double;int32;int64</libnd4j.datatypes.double.precision>
+        <libnd4j.datatypes.debug.safe>float32;double;int32;int64</libnd4j.datatypes.debug.safe>
+
+        <!-- Production type configurations -->
+        <libnd4j.datatypes.production.minimal>bool;int8;int16;int32;int64;float32;double</libnd4j.datatypes.production.minimal>
+        <libnd4j.datatypes.production.complete>bool;int8;uint8;int16;uint16;int32;uint32;int64;uint64;float16;bfloat16;float32;double</libnd4j.datatypes.production.complete>
+
+        <!-- ML/AI focused type sets -->
+        <libnd4j.datatypes.ml.training>float32;float16;bfloat16;int32;int64</libnd4j.datatypes.ml.training>
+        <libnd4j.datatypes.ml.inference>float32;float16;int8;int32;int64</libnd4j.datatypes.ml.inference>
+
+
         <libnd4j.generate.flatc>false</libnd4j.generate.flatc>
         <libnd4j.outputPath>${project.basedir}/blasbuild/${libnd4j.chip}</libnd4j.outputPath>
         <cuda.version>12.3</cuda.version>
@@ -59,7 +89,7 @@
         <libnd4j.datatypes></libnd4j.datatypes>
         <libnd4j.sanitize>OFF</libnd4j.sanitize>
         <libnd4j.ptxas>OFF</libnd4j.ptxas>
-        <libnd4j.sanitizers>address,</libnd4j.sanitizers>
+        <libnd4j.sanitizers>address</libnd4j.sanitizers>
         <libnd4j.arch></libnd4j.arch>
         <openblas.artifactId></openblas.artifactId>
         <openblas.classifier></openblas.classifier>
@@ -76,10 +106,16 @@
         <libnd4j.printindices>OFF</libnd4j.printindices>
         <libnd4j.printmath>OFF</libnd4j.printmath>
         <junit.version>5.9.2</junit.version>
-
         <cpu.core.count></cpu.core.count>
         <libnd4j.preprocess>OFF</libnd4j.preprocess>
-    </properties>
+        <libnd4j.build.ppstep>OFF</libnd4j.build.ppstep>
+    <libnd4j.extract.instantiations>OFF</libnd4j.extract.instantiations>
+        <libnd4j.generate.fix.files>OFF</libnd4j.generate.fix.files>
+        <libnd4j.instantiation.report>OFF</libnd4j.instantiation.report>
+        <libnd4j.instantiation.verbose>OFF</libnd4j.instantiation.verbose>
+        <libnd4j.analyze.templates>OFF</libnd4j.analyze.templates>
+        
+ </properties>
 
     <dependencies>
         <dependency>
@@ -298,6 +334,134 @@
                 </libnd4j.classifier>
             </properties>
         </profile>
+
+        <!-- Add these profiles to pom.xml for each platform -->
+
+        <!-- Android ARM64 profile -->
+        <profile>
+            <id>android-arm64-openblas</id>
+            <activation>
+                <property>
+                    <name>javacpp.platform</name>
+                    <value>android-arm64</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <configuration>
+                            <buildResources>
+                                <buildResource>/${javacpp.platform.library.path}/</buildResource>
+                                <buildResource>/org/bytedeco/openblas/android-arm64/</buildResource>
+                                <buildResource>/org/bytedeco/openblas/android-aarch64/</buildResource>
+                                <buildResource>/org/bytedeco/openblas/linux-arm64/</buildResource>
+                                <buildResource>/org/bytedeco/openblas/linux-aarch64/</buildResource>
+                            </buildResources>
+                            <includeResources>
+                                <includeResource>/${javacpp.platform.library.path}/include/</includeResource>
+                                <includeResource>/org/bytedeco/openblas/android-arm64/include/</includeResource>
+                                <includeResource>/org/bytedeco/openblas/android-aarch64/include/</includeResource>
+                                <includeResource>/org/bytedeco/openblas/linux-arm64/include/</includeResource>
+                                <includeResource>/org/bytedeco/openblas/linux-aarch64/include/</includeResource>
+                            </includeResources>
+                            <linkResources>
+                                <linkResource>/${javacpp.platform.library.path}/</linkResource>
+                                <linkResource>/${javacpp.platform.library.path}/lib/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/android-arm64/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/android-arm64/lib/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/android-aarch64/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/android-aarch64/lib/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/linux-arm64/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/linux-arm64/lib/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/linux-aarch64/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/linux-aarch64/lib/</linkResource>
+                            </linkResources>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Linux ARM64 profile -->
+        <profile>
+            <id>linux-arm64-openblas</id>
+            <activation>
+                <property>
+                    <name>javacpp.platform</name>
+                    <value>linux-arm64</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <configuration>
+                            <buildResources>
+                                <buildResource>/${javacpp.platform.library.path}/</buildResource>
+                                <buildResource>/org/bytedeco/openblas/linux-arm64/</buildResource>
+                                <buildResource>/org/bytedeco/openblas/linux-aarch64/</buildResource>
+                            </buildResources>
+                            <includeResources>
+                                <includeResource>/${javacpp.platform.library.path}/include/</includeResource>
+                                <includeResource>/org/bytedeco/openblas/linux-arm64/include/</includeResource>
+                                <includeResource>/org/bytedeco/openblas/linux-aarch64/include/</includeResource>
+                            </includeResources>
+                            <linkResources>
+                                <linkResource>/${javacpp.platform.library.path}/</linkResource>
+                                <linkResource>/${javacpp.platform.library.path}/lib/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/linux-arm64/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/linux-arm64/lib/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/linux-aarch64/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/linux-aarch64/lib/</linkResource>
+                            </linkResources>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Updated Android x86_64 profile -->
+        <profile>
+            <id>android-x86_64-openblas</id>
+            <activation>
+                <property>
+                    <name>javacpp.platform</name>
+                    <value>android-x86_64</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <configuration>
+                            <buildResources>
+                                <buildResource>/${javacpp.platform.library.path}/</buildResource>
+                                <buildResource>/org/bytedeco/openblas/android-x86_64/</buildResource>
+                                <buildResource>/org/bytedeco/openblas/linux-x86_64/</buildResource>
+                            </buildResources>
+                            <includeResources>
+                                <includeResource>/${javacpp.platform.library.path}/include/</includeResource>
+                                <includeResource>/org/bytedeco/openblas/android-x86_64/include/</includeResource>
+                                <includeResource>/org/bytedeco/openblas/linux-x86_64/include/</includeResource>
+                            </includeResources>
+                            <linkResources>
+                                <linkResource>/${javacpp.platform.library.path}/</linkResource>
+                                <linkResource>/${javacpp.platform.library.path}/lib/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/android-x86_64/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/android-x86_64/lib/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/linux-x86_64/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/linux-x86_64/lib/</linkResource>
+                            </linkResources>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
         <profile>
             <id>extension</id>
             <activation>
@@ -386,6 +550,23 @@
                                         <argument>${libnd4j.preprocess}</argument>
                                         <argument>--generate-flatc</argument>
                                         <argument>${libnd4j.generate.flatc}</argument>
+                                        <argument>--debug-type-profile</argument>
+                                        <argument>${libnd4j.debug.types.profile}</argument>
+                                        <argument>--debug-custom-types</argument>
+                                        <argument>${libnd4j.debug.types.custom}</argument>
+                                        <argument>--debug-auto-reduce</argument>
+                                         <argument>${libnd4j.debug.auto.reduce}</argument>
+                                         <argument>--ppstep</argument>
+                                        <argument>${libnd4j.build.ppstep}</argument>
+                                        <argument>--extract-instantiations</argument>
+                                        <argument>${libnd4j.extract.instantiations}</argument>
+                                        <argument>--generate-fix-files</argument>
+                                        <argument>${libnd4j.generate.fix.files}</argument>
+                                        <argument>--instantiation-report</argument>
+                                        <argument>${libnd4j.instantiation.report}</argument>
+                                        <argument>--instantiation-verbose</argument>
+                                        <argument>${libnd4j.instantiation.verbose}</argument>
+
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
 
@@ -530,6 +711,17 @@
                                         <argument>${libnd4j.preprocess}</argument>
                                         <argument>--generate-flatc</argument>
                                         <argument>${libnd4j.generate.flatc}</argument>
+                                        <argument>--debug-type-profile</argument>
+                                        <argument>${libnd4j.debug.types.profile}</argument>
+                                        <argument>--debug-custom-types</argument>
+                                        <argument>${libnd4j.debug.types.custom}</argument>
+                                        <argument>--debug-auto-reduce</argument>
+                                        <argument>${libnd4j.debug.auto.reduce}</argument>
+                                       <argument>--ppstep</argument>
+                                        <argument>${libnd4j.build.ppstep}</argument>
+                                        <argument>--extract-instantiations</argument>
+                                        <argument>${libnd4j.extract.instantiations}</argument>
+                                
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>
@@ -539,6 +731,20 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <profile>
+            <id>debug-functrace-auto-reduce</id>
+            <activation>
+                <property>
+                    <name>libnd4j.calltrace</name>
+                    <value>ON</value>
+                </property>
+            </activation>
+            <properties>
+                <!-- Auto-reduce types for debug builds -->
+                <libnd4j.datatypes>${libnd4j.datatypes.minimal}</libnd4j.datatypes>
+            </properties>
         </profile>
 
         <profile>
