@@ -5998,7 +5998,15 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public int toFlatArray(FlatBufferBuilder builder) {
-      throw new IllegalStateException();
+        if(isView()) {
+            return dup(this.ordering()).toFlatArray(builder);
+        }
+        int shape = FlatArray.createShapeVector(builder, this.shapeInfoDataBuffer().asLong());
+        int buffer = this.isEmpty() ? 0 : this.dataType() == DataType.UTF8 ? stringBuffer(builder, this.data()) : FlatArray.createBufferVector(builder, this.data().asBytes());
+        val type = this.isEmpty() ? FlatBuffersMapper.getDataTypeAsByte(this.dataType()) : FlatBuffersMapper.getDataTypeAsByte(this.data().dataType());
+        int array = FlatArray.createFlatArray(builder, shape, buffer, type, ByteOrder.BE,0,0,0,false);
+
+        return array;
     }
 
 
