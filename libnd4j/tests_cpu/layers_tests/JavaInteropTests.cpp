@@ -679,7 +679,7 @@ TEST_F(JavaInteropTests, Test_Reduce3_EdgeCase) {
   LaunchContext *context = LaunchContext::defaultContext();
 
   Pointer *extraPointers = nullptr;
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   extraPointers = new Pointer[6]{nullptr, context->getCudaStream(),        context->getScalarPointer(),
                                      nullptr, context->getCudaSpecialStream(), context->getReductionPointer()};
 #endif

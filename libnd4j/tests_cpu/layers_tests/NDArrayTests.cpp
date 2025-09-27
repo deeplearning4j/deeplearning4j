@@ -2158,7 +2158,7 @@ TEST_F(NDArrayTest, Operator_Divide_Test_7) {
   ASSERT_EQ(expected,result);
 }
 
-#ifndef __CUDABLAS__
+#ifndef SD_CUDA
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Test_Lambda_1) {
   auto x = NDArrayFactory::create<float>('c', {1, 5}, {1, 2, 3, 4, 5});
