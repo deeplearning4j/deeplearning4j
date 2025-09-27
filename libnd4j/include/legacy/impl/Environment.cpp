@@ -35,7 +35,7 @@
 #include <omp.h>
 #endif
 
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <system/BlasVersionHelper.h>
@@ -170,7 +170,7 @@ Environment::Environment() {
    _blasFallback = true;
  }
 
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  int devCnt = 0;
  cudaGetDeviceCount(&devCnt);
  _cudaDeviceCount.store(devCnt);
@@ -206,7 +206,7 @@ Environment::Environment() {
 }
 
 bool Environment::setCudaDeviceLimit(int limitType, size_t value) {
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  CudaLimitType limitType2 = static_cast<CudaLimitType>(limitType);
 
  cudaLimit cudaLimitValue;
@@ -257,7 +257,7 @@ bool Environment::setCudaDeviceLimit(int limitType, size_t value) {
 
 // Then update all the individual methods:
 void Environment::setCudaStackSize(size_t size) {
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  if (setCudaDeviceLimit(CUDA_LIMIT_STACK_SIZE, size)) {
    _cudaStackSize.store(size);
  }
@@ -265,7 +265,7 @@ void Environment::setCudaStackSize(size_t size) {
 }
 
 void Environment::setCudaMallocHeapSize(size_t size) {
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  if (setCudaDeviceLimit(CUDA_LIMIT_MALLOC_HEAP_SIZE, size)) {
    _cudaMallocHeapSize.store(size);
  }
@@ -273,7 +273,7 @@ void Environment::setCudaMallocHeapSize(size_t size) {
 }
 
 void Environment::setCudaPrintfFifoSize(size_t size) {
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  if (setCudaDeviceLimit(CUDA_LIMIT_PRINTF_FIFO_SIZE, size)) {
    _cudaPrintfFifoSize.store(size);
  }
@@ -281,7 +281,7 @@ void Environment::setCudaPrintfFifoSize(size_t size) {
 }
 
 void Environment::setCudaDevRuntimeSyncDepth(size_t depth) {
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  if (setCudaDeviceLimit(CUDA_LIMIT_DEV_RUNTIME_SYNC_DEPTH, depth)) {
    _cudaDevRuntimeSyncDepth.store(depth);
  }
@@ -289,7 +289,7 @@ void Environment::setCudaDevRuntimeSyncDepth(size_t depth) {
 }
 
 void Environment::setCudaDevRuntimePendingLaunchCount(size_t count) {
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  if (setCudaDeviceLimit(CUDA_LIMIT_DEV_RUNTIME_PENDING_LAUNCH_COUNT, count)) {
    _cudaDevRuntimePendingLaunchCount.store(count);
  }
@@ -297,7 +297,7 @@ void Environment::setCudaDevRuntimePendingLaunchCount(size_t count) {
 }
 
 void Environment::setCudaMaxL2FetchGranularity(size_t size) {
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  if (setCudaDeviceLimit(CUDA_LIMIT_MAX_L2_FETCH_GRANULARITY, size)) {
    _cudaMaxL2FetchGranularity.store(size);
  }
@@ -305,7 +305,7 @@ void Environment::setCudaMaxL2FetchGranularity(size_t size) {
 }
 
 void Environment::setCudaPersistingL2CacheSize(size_t size) {
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  if (setCudaDeviceLimit(CUDA_LIMIT_PERSISTING_L2_CACHE_SIZE, size)) {
    _cudaPersistingL2CacheSize.store(size);
  }
@@ -315,7 +315,7 @@ void Environment::setCudaPersistingL2CacheSize(size_t size) {
 
 void Environment::initCudaDeviceLimits() {
  // Get the current values for all device limits to initialize our variables
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  size_t value;
  if (cudaDeviceGetLimit(&value, cudaLimitStackSize) == cudaSuccess) {
    _cudaStackSize.store(value);
@@ -435,7 +435,7 @@ void Environment::initCudaDeviceLimits() {
 }
 
 void Environment::initCudaEnvironment() {
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  // Initialize CUDA environment settings from environment variables
  const char* cudaDeviceVar = std::getenv("SD_CUDA_DEVICE");
  if (cudaDeviceVar != nullptr) {
@@ -453,7 +453,7 @@ void Environment::initCudaEnvironment() {
  }
 
  const char* cudaPinnedVar = std::getenv("SD_CUDA_PINNED_MEMORY");
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  if (cudaPinnedVar != nullptr) {
    std::string pinnedStr(cudaPinnedVar);
    if (pinnedStr == "true" || pinnedStr == "1" || pinnedStr == "yes") {
@@ -464,7 +464,7 @@ void Environment::initCudaEnvironment() {
  }
 #endif
  const char* cudaManagedVar = std::getenv("SD_CUDA_MANAGED_MEMORY");
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
 
  if (cudaManagedVar != nullptr) {
    std::string managedStr(cudaManagedVar);
@@ -476,7 +476,7 @@ void Environment::initCudaEnvironment() {
  }
 #endif
  const char* cudaPoolSizeVar = std::getenv("SD_CUDA_MEMORY_POOL_SIZE");
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  if (cudaPoolSizeVar != nullptr) {
    try {
      std::string sizeStr(cudaPoolSizeVar);
@@ -491,7 +491,7 @@ void Environment::initCudaEnvironment() {
 #endif
 
  const char* cudaForceP2PVar = std::getenv("SD_CUDA_FORCE_P2P");
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  if (cudaForceP2PVar != nullptr) {
    std::string p2pStr(cudaForceP2PVar);
    if (p2pStr == "true" || p2pStr == "1" || p2pStr == "yes") {
@@ -502,7 +502,7 @@ void Environment::initCudaEnvironment() {
  }
 #endif
  const char* cudaAllocatorVar = std::getenv("SD_CUDA_ALLOCATOR_ENABLED");
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  if (cudaAllocatorVar != nullptr) {
    std::string allocStr(cudaAllocatorVar);
    if (allocStr == "false" || allocStr == "0" || allocStr == "no") {
@@ -513,7 +513,7 @@ void Environment::initCudaEnvironment() {
  }
 #endif
  const char* cudaMaxBlocksVar = std::getenv("SD_CUDA_MAX_BLOCKS");
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  if (cudaMaxBlocksVar != nullptr) {
    try {
      std::string blocksStr(cudaMaxBlocksVar);
@@ -528,7 +528,7 @@ void Environment::initCudaEnvironment() {
 #endif
 
  const char* cudaMaxThreadsVar = std::getenv("SD_CUDA_MAX_THREADS_PER_BLOCK");
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  if (cudaMaxThreadsVar != nullptr) {
    try {
      std::string threadsStr(cudaMaxThreadsVar);
@@ -542,7 +542,7 @@ void Environment::initCudaEnvironment() {
  }
 #endif
  const char* cudaAsyncVar = std::getenv("SD_CUDA_ASYNC_EXECUTION");
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  if (cudaAsyncVar != nullptr) {
    std::string asyncStr(cudaAsyncVar);
    if (asyncStr == "false" || asyncStr == "0" || asyncStr == "no") {
@@ -553,7 +553,7 @@ void Environment::initCudaEnvironment() {
  }
 #endif
  const char* cudaStreamLimitVar = std::getenv("SD_CUDA_STREAM_LIMIT");
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  if (cudaStreamLimitVar != nullptr) {
    try {
      std::string limitStr(cudaStreamLimitVar);
@@ -567,7 +567,7 @@ void Environment::initCudaEnvironment() {
  }
 #endif
  const char* cudaDeviceHostVar = std::getenv("SD_CUDA_USE_DEVICE_HOST");
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  if (cudaDeviceHostVar != nullptr) {
    std::string deviceStr(cudaDeviceHostVar);
    if (deviceStr == "true" || deviceStr == "1" || deviceStr == "yes") {
@@ -578,7 +578,7 @@ void Environment::initCudaEnvironment() {
  }
 #endif
  const char* cudaEventLimitVar = std::getenv("SD_CUDA_EVENT_LIMIT");
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  if (cudaEventLimitVar != nullptr) {
    try {
      std::string limitStr(cudaEventLimitVar);
@@ -592,7 +592,7 @@ void Environment::initCudaEnvironment() {
  }
 #endif
  const char* cudaCachingLimitVar = std::getenv("SD_CUDA_CACHING_ALLOCATOR_LIMIT");
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  if (cudaCachingLimitVar != nullptr) {
    try {
      std::string limitStr(cudaCachingLimitVar);
@@ -606,7 +606,7 @@ void Environment::initCudaEnvironment() {
  }
 #endif
  const char* cudaUnifiedMemVar = std::getenv("SD_CUDA_USE_UNIFIED_MEMORY");
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  if (cudaUnifiedMemVar != nullptr) {
    std::string unifiedStr(cudaUnifiedMemVar);
    if (unifiedStr == "true" || unifiedStr == "1" || unifiedStr == "yes") {
@@ -617,7 +617,7 @@ void Environment::initCudaEnvironment() {
  }
 #endif
  const char* cudaPrefetchVar = std::getenv("SD_CUDA_PREFETCH_SIZE");
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  if (cudaPrefetchVar != nullptr) {
    try {
      std::string sizeStr(cudaPrefetchVar);
@@ -631,7 +631,7 @@ void Environment::initCudaEnvironment() {
  }
 #endif
  const char* cudaGraphVar = std::getenv("SD_CUDA_GRAPH_OPTIMIZATION");
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  if (cudaGraphVar != nullptr) {
    std::string graphStr(cudaGraphVar);
    if (graphStr == "true" || graphStr == "1" || graphStr == "yes") {
@@ -642,7 +642,7 @@ void Environment::initCudaEnvironment() {
  }
 #endif
  const char* cudaTensorCoreVar = std::getenv("SD_CUDA_TENSOR_CORE_ENABLED");
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  if (cudaTensorCoreVar != nullptr) {
    std::string tensorStr(cudaTensorCoreVar);
    if (tensorStr == "false" || tensorStr == "0" || tensorStr == "no") {
@@ -653,7 +653,7 @@ void Environment::initCudaEnvironment() {
  }
 #endif
  const char* cudaBlockingSyncVar = std::getenv("SD_CUDA_BLOCKING_SYNC");
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  if (cudaBlockingSyncVar != nullptr) {
    try {
      std::string syncStr(cudaBlockingSyncVar);
@@ -667,7 +667,7 @@ void Environment::initCudaEnvironment() {
  }
 #endif
  const char* cudaDeviceScheduleVar = std::getenv("SD_CUDA_DEVICE_SCHEDULE");
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  if (cudaDeviceScheduleVar != nullptr) {
    try {
      std::string scheduleStr(cudaDeviceScheduleVar);
@@ -684,7 +684,7 @@ void Environment::initCudaEnvironment() {
 
 
 void Environment::setCudaCurrentDevice(int device) {
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  if (device >= 0 && device < _cudaDeviceCount.load()) {
    cudaError_t err = cudaSetDevice(device);
    if (err == cudaSuccess) {
@@ -773,7 +773,7 @@ void Environment::setCudaGraphOptimization(bool enabled) {
 }
 
 void Environment::setCudaTensorCoreEnabled(bool enabled) {
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  _cudaTensorCoreEnabled.store(enabled);
 
  // Apply TensorCore settings if the device supports it
@@ -797,7 +797,7 @@ void Environment::setCudaTensorCoreEnabled(bool enabled) {
 }
 
 void Environment::setCudaBlockingSync(int mode) {
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  if (mode >= 0 && mode <= 1) {
    _cudaBlockingSync.store(mode);
    cudaSetDeviceFlags(mode == 1 ? cudaDeviceBlockingSync : cudaDeviceScheduleSpin);
@@ -806,7 +806,7 @@ void Environment::setCudaBlockingSync(int mode) {
 }
 
 void Environment::setCudaDeviceSchedule(int schedule) {
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
  if (schedule >= 0 && schedule <= 3) {
    _cudaDeviceSchedule.store(schedule);
 
@@ -941,7 +941,7 @@ void Environment::setCudaDeviceSchedule(int schedule) {
  void Environment::allowPrecisionBoost(bool reallyAllow) { _precBoost.store(reallyAllow); }
 
  bool Environment::isCPU() {
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
    return false;
 #else
    return true;
