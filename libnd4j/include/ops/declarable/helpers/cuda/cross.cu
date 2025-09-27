@@ -109,7 +109,7 @@ SD_HOST static void crossCudaLauncher(const int blocksPerGrid, const int threads
   DebugHelper::checkErrorCode(const_cast<cudaStream_t*>(stream),"crossCuda failed");
 
 }
-BUILD_SINGLE_TEMPLATE(template void crossCudaLauncher,
+BUILD_SINGLE_TEMPLATE( void crossCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                        const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo, const void* vy,
                        const sd::LongType* yShapeInfo, void* vz, const sd::LongType* zShapeInfo),

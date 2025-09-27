@@ -79,7 +79,7 @@ SD_KERNEL static void polyGammaCuda(const void *vn, const LongType *nShapeInfo, 
     } else if (order == 0) {
       z[zOffset] = diGammaScalar<T>(x[xOffset]);
     } else {
-      T factorial = 1;
+      T factorial = static_cast<T>(1);
       for (int j = 2; j <= order; ++j) {
         factorial *= j;
       }
@@ -114,7 +114,7 @@ void polyGamma(LaunchContext *context, NDArray&n, NDArray&x, NDArray &z) {
   NDArray::registerSpecialUse({&z}, {&n, &x});
 }
 
-BUILD_SINGLE_TEMPLATE(template void polyGammaCudaLauncher,
+BUILD_SINGLE_TEMPLATE( void polyGammaCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,const cudaStream_t *stream, const void *vn,
                        const sd::LongType *nShapeInfo, const void *vx, const sd::LongType *xShapeInfo, void *vz,
                        const sd::LongType *zShapeInfo),

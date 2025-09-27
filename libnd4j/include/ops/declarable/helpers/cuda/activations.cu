@@ -255,7 +255,7 @@ SD_DEVICE void softMaxForVectorCuda(const void *vx, const LongType *xShapeInfo, 
   __syncthreads();
 
   T max = -DataTypeUtils::max<T>();
-  T sum = 0.f;
+  T sum = static_cast<T>(0.f);
 
   LongType xCoords[SD_MAX_RANK];
   LongType xOffset;

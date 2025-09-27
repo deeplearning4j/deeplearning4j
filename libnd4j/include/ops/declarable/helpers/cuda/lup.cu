@@ -516,7 +516,7 @@ static void lup_(LaunchContext *context, NDArray *input, NDArray *compound, NDAr
 }
 // ------------------------------------------------------------------------------------------------------------------ //
 
-BUILD_DOUBLE_TEMPLATE(template void lup_,
+BUILD_DOUBLE_TEMPLATE( void lup_,
                       (LaunchContext * context, NDArray *input, NDArray *output, NDArray *permutation), SD_FLOAT_NATIVE,
                       SD_INDEXING_TYPES);
 
@@ -527,7 +527,7 @@ static void swapRows_(NDArray *matrix, LongType theFirst, LongType theSecond) {
       math::sd_swap(matrix->r<T>(theFirst, i), matrix->r<T>(theSecond, i));
     }
 }
-BUILD_SINGLE_TEMPLATE(template void swapRows_, (NDArray * matrix, sd::LongType theFirst, sd::LongType theSecond),
+BUILD_SINGLE_TEMPLATE( void swapRows_, (NDArray * matrix, sd::LongType theFirst, sd::LongType theSecond),
                       SD_FLOAT_TYPES);
 
 void swapRows(NDArray *matrix, LongType theFirst, LongType theSecond) {
@@ -717,7 +717,7 @@ static Status determinant_(LaunchContext *context, NDArray *input, NDArray *outp
   std::vector<LongType> dims2 = {input->rankOf() - 2, input->rankOf() - 1};
 
   auto matrix = NDArrayFactory::create(input->ordering(), {n, n}, DataTypeUtils::fromT<T>(), context);
-  auto det = NDArrayFactory::create<T>(1, context);
+  auto det = NDArrayFactory::create<T>(static_cast<T>(1), context);
   auto stream = context->getCudaStream();
   NDArray::prepareSpecialUse({output}, {input});
   dim3 launchDims = getLaunchDims("logAbsDeterminant");
@@ -775,7 +775,7 @@ Status logAbsDeterminant_(LaunchContext *context, NDArray *input, NDArray *outpu
   if (dtype != DOUBLE) dtype = FLOAT32;
 
   auto matrix = NDArrayFactory::create(input->ordering(), {n, n}, dtype, context);
-  auto det = NDArrayFactory::create<T>(1, context);
+  auto det = NDArrayFactory::create<T>(static_cast<T>(1), context);
   auto stream = context->getCudaStream();
   NDArray::prepareSpecialUse({output}, {input});
   dim3 launchDims = getLaunchDims("logAbsDeterminant");
@@ -1024,7 +1024,7 @@ Status cholesky(LaunchContext *context, NDArray *input, NDArray *output, bool in
   return cholesky_(context, input, output, inplace);
 }
 
-BUILD_SINGLE_TEMPLATE(template sd::Status inverse_, (sd::LaunchContext * context, NDArray *input, NDArray *output),
+BUILD_SINGLE_TEMPLATE( sd::Status inverse_, (sd::LaunchContext * context, NDArray *input, NDArray *output),
                       SD_FLOAT_NATIVE);
 
 template <typename T>

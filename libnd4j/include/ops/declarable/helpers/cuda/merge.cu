@@ -622,7 +622,7 @@ static void mergeAdd_(LaunchContext* context, const std::vector<NDArray*>& inArr
 
   manager.synchronize();
 }
-BUILD_SINGLE_TEMPLATE(template void mergeAdd_,
+BUILD_SINGLE_TEMPLATE( void mergeAdd_,
                       (sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output),
                       SD_NUMERIC_TYPES);
 

@@ -167,7 +167,7 @@ void diagFunctor(LaunchContext* context, NDArray* input, NDArray* output) {
   BUILD_SINGLE_SELECTOR(xType, _diagFunctor, (context, input, output), SD_COMMON_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void _diagFunctor, (sd::LaunchContext * context, NDArray* input, NDArray* output);
+BUILD_SINGLE_TEMPLATE( void _diagFunctor, (sd::LaunchContext * context, NDArray* input, NDArray* output);
                       , SD_COMMON_TYPES);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
