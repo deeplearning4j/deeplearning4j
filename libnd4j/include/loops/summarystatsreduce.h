@@ -125,19 +125,19 @@ class SummaryStatsData {
 
   SD_HOST_DEVICE double getMax() { return max; }
 
-  SD_HOST_DEVICE void setMax(X max) { this->max = max; }
+  SD_HOST_DEVICE void setMax(X maxI) { this->max = maxI; }
 
   SD_HOST_DEVICE double getMean() { return mean; }
 
-  SD_HOST_DEVICE void setMean(X mean) { this->mean = mean; }
+  SD_HOST_DEVICE void setMean(X meanI) { this->mean = meanI; }
 
   SD_HOST_DEVICE double getMin() { return min; }
 
-  SD_HOST_DEVICE void setMin(X min) { this->min = min; }
+  SD_HOST_DEVICE void setMin(X minI) { this->min = minI; }
 
   SD_HOST_DEVICE double getN() { return n; }
 
-  SD_HOST_DEVICE void setN(X n) { this->n = n; }
+  SD_HOST_DEVICE void setN(X nI) { this->n = nI; }
 };
 
 #ifdef __CUDACC__
@@ -260,7 +260,7 @@ class SummaryStatsReduce {
                          void *extraParams, void *vz,  sd::LongType *resultShapeInfoBuffer);
 
   static void exec(int opNum, bool biasCorrected,  void *x,  sd::LongType *xShapeInfo, void *extraParams,
-                   void *vz,  sd::LongType *resultShapeInfoBuffer, long long int *dimension,
+                   void *vz,  sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension,
                    long long int dimensionLength);
 
   template <typename OpType>
