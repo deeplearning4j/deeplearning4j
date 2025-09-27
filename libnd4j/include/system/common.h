@@ -1,29 +1,29 @@
 /* ******************************************************************************
- *
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- *  See the NOTICE file distributed with this work for additional
- *  information regarding copyright ownership.
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+*
+*
+* This program and the accompanying materials are made available under the
+* terms of the Apache License, Version 2.0 which is available at
+* https://www.apache.org/licenses/LICENSE-2.0.
+*
+*  See the NOTICE file distributed with this work for additional
+*  information regarding copyright ownership.
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+* WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+* License for the specific language governing permissions and limitations
+* under the License.
+*
+* SPDX-License-Identifier: Apache-2.0
+******************************************************************************/
 
 #ifndef SD_SYSTEM_COMMON_H
 #define SD_SYSTEM_COMMON_H
 
-#include <system/openmp_pragmas.h>
 #include <cstdint>
 
 #define STRINGIZE2(x) #x
 #define STRINGIZE(x) STRINGIZE2(x)
+#define COMMA ,
 
 #if defined(_MSC_VER)
 
@@ -61,6 +61,14 @@
 #endif
 #endif
 
+// Cross-platform compiler attributes
+#if defined(__GNUC__)
+#define SD_NO_INSTRUMENT __attribute__((no_instrument_function))
+#elif defined(_MSC_VER)
+#define SD_NO_INSTRUMENT __declspec(noinline)
+#else
+#define SD_NO_INSTRUMENT
+#endif
 
 #ifdef __clang__
 #include <unordered_map>
@@ -125,6 +133,9 @@
 
 #endif
 
+// Include openmp_pragmas.h AFTER SD_INLINE is defined
+#include <system/openmp_pragmas.h>
+
 #ifdef __CUDACC__
 
 #define SD_META_DEF SD_INLINE SD_HOST
@@ -137,8 +148,12 @@
 
 #else
 
+// Proper fix: Use SIMD but handle the float16/bfloat16 issue with template specializations
 #define SD_META_DEF PRAGMA_OMP_DECLARE_SIMD SD_INLINE
 #define SD_OP_DEF PRAGMA_OMP_DECLARE_SIMD SD_INLINE
+
+// Alternative macro for problematic template instantiations
+#define SD_OP_DEF_NO_SIMD SD_INLINE
 
 #endif
 
@@ -159,41 +174,41 @@
 
 namespace sd {
 
-    using Pointer = void*;
-    using LongType = long long;
-    using UnsignedLong = uint64_t;
-    using Unsigned = unsigned int;
+using Pointer = void*;
+using LongType = long long;
+using UnsignedLong = uint64_t;
+using Unsigned = unsigned int;
 
 
 
-    enum class Status : int {
-        OK = 0,
-        BAD_INPUT = 1,
-        BAD_SHAPE = 2,
-        BAD_RANK = 3,
-        BAD_PARAMS = 4,
-        BAD_OUTPUT = 5,
-        BAD_RNG = 6,
-        BAD_EPSILON = 7,
-        BAD_GRADIENTS = 8,
-        BAD_BIAS = 9,
-        VALIDATION = 20,
-        BAD_GRAPH = 30,
-        BAD_LENGTH = 31,
-        BAD_DIMENSIONS = 32,
-        BAD_ORDER = 33,
-        BAD_ARGUMENTS = 34,
-        DOUBLE_WRITE = 40,
-        DOUBLE_READ = 45,
-        KERNEL_FAILURE = 50,
-        EQ_TRUE = 100,
-        EQ_FALSE = 101,
-        MAYBE = 119
-    };
-    struct ErrorResult {
-      sd::Status status;
-      std::string message;
-    };
+enum class Status : int {
+  OK = 0,
+  BAD_INPUT = 1,
+  BAD_SHAPE = 2,
+  BAD_RANK = 3,
+  BAD_PARAMS = 4,
+  BAD_OUTPUT = 5,
+  BAD_RNG = 6,
+  BAD_EPSILON = 7,
+  BAD_GRADIENTS = 8,
+  BAD_BIAS = 9,
+  VALIDATION = 20,
+  BAD_GRAPH = 30,
+  BAD_LENGTH = 31,
+  BAD_DIMENSIONS = 32,
+  BAD_ORDER = 33,
+  BAD_ARGUMENTS = 34,
+  DOUBLE_WRITE = 40,
+  DOUBLE_READ = 45,
+  KERNEL_FAILURE = 50,
+  EQ_TRUE = 100,
+  EQ_FALSE = 101,
+  MAYBE = 119
+};
+struct ErrorResult {
+  sd::Status status;
+  std::string message;
+};
 
 }  // namespace sd
 
@@ -221,6 +236,131 @@ namespace sd {
 #else
 #include <omp.h>
 #endif
+
+
+#ifndef __JAVACPP_HACK__
+
+#if defined(SD_GCC_FUNCTRACE)
+#include <exceptions/backward.hpp>
+using namespace backward;
+void throwException(const char* exceptionMessage);
+#else
+void throwException(const char* exceptionMessage);
+
+#endif
+#define THROW_EXCEPTION(exceptionMessage) throwException(exceptionMessage);
+#endif
+
+#define CONCAT2(A, B) A##B
+#define CONCAT3_IMPL(a, b, c) a##b##c
+#define CONCAT3(a, b, c) CONCAT3_IMPL(a, b, c)
+
+
+#define MIX2(A, B) A##_##B
+#define MIX3(A, B, C) A##_##B##_##C
+#define MIX4(A, B, C, D) A##_##B##_##C##_##D
+
+#define EMPTY()
+#define DEFER(id) id EMPTY()
+
+#define CONCAT_IMPL(a, b) a##b
+#define CONCAT(a, b) CONCAT_IMPL(a, b)
+#define CONCAT4(a, b, c, d) a##b##c##d
+#define CONCAT5_IMPL(a, b, c, d, e) a##b##c##d##e
+#define CONCAT5(a, b, c, d, e) CONCAT5_IMPL(a, b, c, d, e)
+#define CONCAT6_IMPL(a, b, c, d, e, f) a##b##c##d##e##f
+#define CONCAT6(a, b, c, d, e, f) CONCAT6_IMPL(a, b, c, d, e, f)
+#define CONCAT7_IMPL(a, b, c, d, e, f, g) a##b##c##d##e##f##g
+#define CONCAT7(a, b, c, d, e, f, g) CONCAT7_IMPL(a, b, c, d, e, f, g)
+#define CONCAT8_IMPL(a, b, c, d, e, f, g, h) a##b##c##d##e##f##g##h
+
+#define UNDERSCORE _
+#define COMMA_MATH ,
+#define TUPLE_TO_ARGS(x) TUPLE_TO_ARGS_IMPL x
+#define TUPLE_TO_ARGS_IMPL(first, second) first, second
+#define EXPAND(...) __VA_ARGS__
+#define EXPAND2(...) __VA_ARGS__
+#define EXPAND3(...) __VA_ARGS__
+#define EXTRACT(...) EXTRACT __VA_ARGS__
+#define NOTHING_EXTRACT
+#define PASTE(x, ...) x##__VA_ARGS__
+#define PASTE2(x, ...) x##__VA_ARGS__
+#define PASTE3(x, ...) x##__VA_ARGS__
+#define EVALUATING_PASTE(x, ...) PASTE(x, __VA_ARGS__)
+#define EVALUATING_PASTE2(x, ...) PASTE2(x, __VA_ARGS__)
+#define EVALUATING_PASTE3(x, ...) PASTE3(x, __VA_ARGS__)
+#define UNPAREN(x) EVALUATING_PASTE(NOTHING_, EXTRACT x)
+#define UNPAREN2(x) EVALUATING_PASTE2(NOTHING_, EXTRACT x)
+#define UNPAREN3(x) EVALUATING_PASTE3(NOTHING_, EXTRACT x)
+#define EVAL(...) EVAL0(__VA_ARGS__)
+#define EVALX(x) x
+#define EVAL0(...) EVAL1(EVAL1(EVAL1(__VA_ARGS__)))
+#define EVAL1(...) EVAL2(EVAL2(EVAL2(__VA_ARGS__)))
+#define EVAL2(...) EVAL3(EVAL3(EVAL3(__VA_ARGS__)))
+#define EVAL3(...) EVAL4(EVAL4(EVAL4(__VA_ARGS__)))
+#define EVAL4(...) EVAL5(EVAL5(EVAL5(__VA_ARGS__)))
+#define EVAL5(...) __VA_ARGS__
+
+#define EXPAND(...) __VA_ARGS__
+#define CAT(a, b) CAT_IMPL(a, b)
+#define CAT_IMPL(a, b) a##b
+
+#define PP_NARGS(...) PP_NARGS_IMPL(__VA_ARGS__, PP_RSEQ_N())
+#define PP_NARGS_IMPL(...) PP_ARG_N(__VA_ARGS__)
+#define PP_ARG_N(_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,N,...) N
+#define PP_RSEQ_N() 28,27,26,25,24,23,22,21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0
+
+
+#define GET(n, list) CAT(GET_, n) list
+
+#define GET_0(t1, ...) t1
+#define GET_1(t1, t2, ...) t2
+#define GET_2(t1, t2, t3, ...) t3
+#define GET_3(t1, t2, t3, t4, ...) t4
+#define GET_4(t1, t2, t3, t4, t5, ...) t5
+#define GET_5(t1, t2, t3, t4, t5, t6, ...) t6
+#define GET_6(t1, t2, t3, t4, t5, t6, t7, ...) t7
+#define GET_7(t1, t2, t3, t4, t5, t6, t7, t8, ...) t8
+#define GET_8(t1, t2, t3, t4, t5, t6, t7, t8, t9, ...) t9
+#define GET_9(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, ...) t10
+#define GET_10(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, ...) t11
+#define GET_11(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, ...) t12
+#define GET_12(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, ...) t13
+#define GET_13(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, ...) t14
+#define GET_14(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, ...) t15
+#define GET_15(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, ...) t16
+#define GET_16(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, ...) t17
+#define GET_17(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, ...) t18
+#define GET_18(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, ...) t19
+#define GET_19(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, ...) t20
+#define GET_20(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, ...) t21
+#define GET_21(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, ...) t22
+#define GET_22(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23, ...) t23 
+#define GET_23(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23, t24, ...) t24
+#define GET_24(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23, t24, t25, ...) t25
+#define GET_25(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23, t24, t25, t26, ...) t26
+#define GET_26(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23, t24, t25, t26, t27, ...) t27 
+#define GET_27(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23, t24, t25, t26, t27, t28, ...) t28
+#define GET_28(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23, t24, t25, t26, t27, t28, t29, ...) t29
+
+
+#define GET_FIRST_IMPL(a, b) a
+#define GET_FIRST(tuple) GET_FIRST_IMPL tuple
+
+
+#define GET_SECOND_IMPL(a, b) b
+#define GET_SECOND(tuple) GET_SECOND_IMPL tuple
+
+
+template <class T>
+inline constexpr bool is_my_string_v =
+    std::is_same_v<std::decay_t<T>, std::string>          ||
+    std::is_same_v<std::decay_t<T>, std::u16string>       ||
+    std::is_same_v<std::decay_t<T>, std::u32string>;
+
+template <class... Ts>
+inline constexpr bool any_my_string_v = (... || is_my_string_v<Ts>);
+
 
 
 #endif
