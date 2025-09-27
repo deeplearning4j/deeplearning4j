@@ -33,7 +33,7 @@
 #include <limits>
 #include <numeric>
 #include <vector>
-
+#include <system/selective_rendering.h>
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -191,8 +191,6 @@ class SequenceContainer {
     // add in the holder
     new_node->next = nullptr;
     new_node->prev = current_;
-    /*std::cout << "add " << (long long)new_node << std::endl;
-    print_seq1(new_node);*/
     if (current_) current_->next = new_node;
 
     current_ = new_node;
@@ -337,7 +335,7 @@ void inner_beam_search(const Type* log_p, const uint64_t inc_p, IndexType* resul
   // additional storage to sort overlapped case by classes
   std::vector<std::pair<IndexType, int>> child_class_sorter_help;
   child_class_sorter_help.resize(beam_width - 1);
-  Type norm_offset = 0;
+  Type norm_offset = static_cast<Type>(0);
 
   for (uint64_t t = 0; t < len_t; t++) {
     auto next_beam_size = 0;
@@ -639,13 +637,15 @@ void beamSearch_(NDArray& logit, NDArray& sequence_length, NDArray& result_seque
 void beamSearch(NDArray& logit, NDArray& sequence_length, NDArray& result_sequences, NDArray& result_probs,
                 NDArray& result_sequences_length, int blank_index, int beam_width, int nbest_len,
                 bool normalize_logits = true) {
+  auto logitDType = logit.dataType();
+  auto resSeqDType = result_sequences.dataType();
   BUILD_DOUBLE_SELECTOR(logit.dataType(), result_sequences.dataType(), beamSearch_,
                         (logit, sequence_length, result_sequences, result_probs, result_sequences_length, blank_index,
                             beam_width, nbest_len, normalize_logits),
                         SD_FLOAT_TYPES, SD_INDEXING_TYPES);
 }
 
-BUILD_DOUBLE_TEMPLATE(template void beamSearch_,
+BUILD_DOUBLE_TEMPLATE( void beamSearch_,
                       (NDArray& logit, NDArray& sequence_length, NDArray& result_sequences,
                           NDArray& result_probs, NDArray& result_sequences_length, int blank_index, int beam_width,
                           int nbest_len, bool normalize_logits),
