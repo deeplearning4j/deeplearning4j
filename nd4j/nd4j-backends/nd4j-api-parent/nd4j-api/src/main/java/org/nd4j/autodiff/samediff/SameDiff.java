@@ -83,7 +83,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.nativeblas.NativeOps;
-import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpExecTraceVector;
 import org.nd4j.shade.guava.primitives.Booleans;
 import org.nd4j.shade.guava.primitives.Doubles;
@@ -91,7 +90,6 @@ import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.weightinit.WeightInitScheme;
 import org.nd4j.weightinit.impl.NDArraySupplierInitScheme;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
-import org.tensorflow.framework.GraphDef;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -122,6 +120,9 @@ public class SameDiff extends SDBaseOps {
     private final Map<String, SameDiffOp> ops = new LinkedHashMap<>();
     @Getter
     private final Map<Long, InferenceSession> sessions = new ConcurrentHashMap<>();      //Key: thread ID
+
+    @Getter
+    private Map<String, SameDiff> sameDiffFunctionInstances;
 
     @Getter
     @Setter
@@ -359,7 +360,6 @@ public class SameDiff extends SDBaseOps {
         return linalg;
     }
 
-    private Map<String, SameDiff> sameDiffFunctionInstances;
 
 
     // flag, shows if graph was already registered with libnd4j
@@ -386,6 +386,26 @@ public class SameDiff extends SDBaseOps {
 
     @Getter
     private SameDiff child;
+
+    private static final ThreadLocal<Boolean> GRAPH_BUILDING_MODE = ThreadLocal.withInitial(() -> false);
+
+
+
+    /**
+     * Set graph building mode (called at start of import)
+     */
+    public static void setGraphBuildingMode(boolean building) {
+        GRAPH_BUILDING_MODE.set(building);
+    }
+
+    /**
+     * Check if currently in graph building mode
+     */
+    public static boolean isInGraphBuildingMode() {
+        return GRAPH_BUILDING_MODE.get();
+    }
+
+
 
     /**
      * Get the inference factory
@@ -428,6 +448,8 @@ public class SameDiff extends SDBaseOps {
     public Set<String> variableNames() {
         return variables.keySet();
     }
+
+
 
     public static class DefaultInferenceFactory implements InferenceFactory {
         public InferenceSession create(SameDiff sameDiff) {
@@ -1638,6 +1660,9 @@ public class SameDiff extends SDBaseOps {
      * @return The outputs of the SameDiff instance, or null if no outputs have been set
      */
     public List<String> outputs() {
+        if(outputs == null) {
+            outputs = new ArrayList<>();
+        }
         return this.outputs;
     }
 
@@ -3054,7 +3079,7 @@ public class SameDiff extends SDBaseOps {
         ExecutionResult ret = directExecHelper(placeholders,
                 otherPlaceholders,
                 At.defaultAt(operation),
-                null, Collections.emptyList(),
+                null,Collections.emptyList(),
                 activeListeners,
                 outputs);
 
@@ -3130,7 +3155,6 @@ public class SameDiff extends SDBaseOps {
             otherPlaceHolders = otherPlaceHoldersPerThread.get(Thread.currentThread().getId());
         }
 
-        //Placeholder validation is performed in InferenceSession
 
         InferenceSession is = sessions.get(threadId);
         return is.output(outputs == null ? Collections.emptyList() : Arrays.asList(outputs),
@@ -3252,7 +3276,10 @@ public class SameDiff extends SDBaseOps {
      * @return The created variable
      */
     public SDVariable constant(String name, @NonNull INDArray constant) {
-        Preconditions.checkState(!variables.containsKey(name), "Variable with name \"%s\" already exists", name);
+        if(variables.containsKey(name)) {
+            return variables.get(name).getVariable();
+        }
+
         if (name == null || name.length() < 1)
             name = getNewVarName();
         if(constant.isView()) {
@@ -4130,6 +4157,9 @@ public class SameDiff extends SDBaseOps {
      * @param to   The new name for the variable - no variable with this name must already exist
      */
     public void renameVariable(SameDiffOp opToReName,String from, String to) {
+        if(from.equals(to)) {
+            return;
+        }
         if(!variables.containsKey(from)) {
             System.out.println(String.format("Failed to rename variable %s to %s, no variable found",from,to));
             return;
@@ -4143,23 +4173,29 @@ public class SameDiff extends SDBaseOps {
         if (v.getInputsForOp() != null) {
             for (String opName : v.getInputsForOp()) {
                 SameDiffOp op = ops.get(opName);
-                List<String> newInputs = new ArrayList<>(op.getInputsToOp());
-                while (newInputs.contains(from)) {
-                    newInputs.set(newInputs.indexOf(from), to);
+                if(op != null) {
+                    List<String> newInputs = new ArrayList<>(op.getInputsToOp());
+                    while (newInputs.contains(from)) {
+                        newInputs.set(newInputs.indexOf(from), to);
+                    }
+
+                    op.setInputsToOp(newInputs);
                 }
 
-                op.setInputsToOp(newInputs);
             }
         }
 
         if (v.getControlDepsForOp() != null) {
             for (String opName : v.getControlDepsForOp()) {
                 SameDiffOp op = ops.get(opName);
-                List<String> newCDs = new ArrayList<>(op.getControlDeps());
-                while (newCDs.contains(from)) {
-                    newCDs.set(newCDs.indexOf(from), to);
+                if(op != null) {
+                    List<String> newCDs = new ArrayList<>(op.getControlDeps());
+                    while (newCDs.contains(from)) {
+                        newCDs.set(newCDs.indexOf(from), to);
+                    }
+                    op.setControlDeps(newCDs);
                 }
-                op.setControlDeps(newCDs);
+
             }
         }
 
@@ -4278,7 +4314,8 @@ public class SameDiff extends SDBaseOps {
      * @param to   The new name for the variable - no variable with this name must already exist
      */
     public void renameVariable(String from, String to) {
-        SameDiffOp op = ops.get(stripVarSuffix(from));
+        SameDiffOp op = ops.containsKey(stripVarSuffix(from)) ? ops.get(stripVarSuffix(from))
+                : null;
         renameVariable(op,from,to);
     }
 
@@ -4477,9 +4514,8 @@ public class SameDiff extends SDBaseOps {
      * @return SDVariable
      */
     public SDVariable scalar(String name, double value) {
-        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            return var(name, Nd4j.scalar(value));
-        }
+        return var(name, Nd4j.scalar(value));
+
     }
 
     /**
@@ -4490,9 +4526,8 @@ public class SameDiff extends SDBaseOps {
      * @return SDVariable
      */
     public SDVariable scalar(String name, float value) {
-        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            return var(name, Nd4j.scalar(value));
-        }
+        return var(name, Nd4j.scalar(value));
+
     }
 
     /**
@@ -4503,9 +4538,8 @@ public class SameDiff extends SDBaseOps {
      * @return SDVariable
      */
     public SDVariable scalar(String name, int value) {
-        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            return var(name, Nd4j.scalar(value));
-        }
+        return var(name, Nd4j.scalar(value));
+
     }
 
     /**
@@ -4516,9 +4550,8 @@ public class SameDiff extends SDBaseOps {
      * @return SDVariable
      */
     public SDVariable scalar(String name, long value) {
-        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            return var(name, Nd4j.scalar(value));
-        }
+        return var(name, Nd4j.scalar(value));
+
     }
 
     /**
@@ -4530,9 +4563,8 @@ public class SameDiff extends SDBaseOps {
      * @return SDVariable
      */
     public SDVariable scalar(String name, DataType dataType, Number value) {
-        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            return var(name, Nd4j.scalar(dataType, value));
-        }
+        return var(name, Nd4j.scalar(dataType, value));
+
     }
 
     /**
@@ -4554,9 +4586,8 @@ public class SameDiff extends SDBaseOps {
      * @return SDVariable
      */
     public SDVariable constant(String name, double value) {
-        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            return constant(name, Nd4j.scalar(value));
-        }
+        return constant(name, Nd4j.scalar(value));
+
     }
 
     /**
@@ -4578,9 +4609,8 @@ public class SameDiff extends SDBaseOps {
      * @return SDVariable
      */
     public SDVariable constant(String name, float value) {
-        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            return constant(name, Nd4j.scalar(value));
-        }
+        return constant(name, Nd4j.scalar(value));
+
     }
 
     /**
@@ -4600,9 +4630,8 @@ public class SameDiff extends SDBaseOps {
      * @return SDVariable
      */
     public SDVariable constant(String name, int value) {
-        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            return constant(name, Nd4j.scalar(value));
-        }
+        return constant(name, Nd4j.scalar(value));
+
     }
 
 
@@ -4623,9 +4652,8 @@ public class SameDiff extends SDBaseOps {
      * @param value Value to initialize the constant with
      */
     public SDVariable constant(String name, boolean value) {
-        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            return constant(name, Nd4j.scalar(value));
-        }
+        return constant(name, Nd4j.scalar(value));
+
     }
 
     /**
@@ -4644,9 +4672,8 @@ public class SameDiff extends SDBaseOps {
      * @param value Value to initialize the constant with
      */
     public SDVariable constant(String name, long value) {
-        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            return constant(name, Nd4j.scalar(value));
-        }
+        return constant(name, Nd4j.scalar(value));
+
     }
 
     /**
@@ -4657,9 +4684,8 @@ public class SameDiff extends SDBaseOps {
      * @param value    Value to initialize the constant with
      */
     public SDVariable constant(String name, DataType dataType, Number value) {
-        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            return constant(name, Nd4j.scalar(dataType, value));
-        }
+        return constant(name, Nd4j.scalar(dataType, value));
+
     }
 
     /**
@@ -6123,33 +6149,22 @@ public class SameDiff extends SDBaseOps {
         return asFlatBuffers(0, configuration, includeUpdaterState);
     }
 
-    /**
-     * This method exports the current SameDiff instance into FlatBuffers format, returning the array ops and
-     * all arrays as a ByteBuffer containing the FlatBuffers format data
-     *
-     * @param configuration       - ExecutorConfiguration to be embedded into serialized graph
-     * @param includeUpdaterState If true: include the updater state (state for updaters such as Adam, Nesterov, AdaGrad etc)
-     * @return a ByteBuffer holding the exported FlatBuffers representation of the graph
-     */
     @SneakyThrows
     public ByteBuffer asFlatBuffers(long graphId, @NonNull ExecutorConfiguration configuration, boolean includeUpdaterState) {
         Nd4j.getExecutioner().commit();
-        // Use a slightly larger initial size, helps prevent resizing for moderately sized graphs
-        val bufferBuilder = new FlatBufferBuilder(1024 * 1024); // 1MB initial size
+        val bufferBuilder = new FlatBufferBuilder(1024 * 1024);
         val idCounter = new AtomicInteger(0);
 
         val flatVariables = new ArrayList<Integer>();
-        val flatOffsets = new ArrayList<Integer>(); // This list seems unused in the final graph creation.
+        val flatOffsets = new ArrayList<Integer>();
         val flatNodes = new ArrayList<Integer>();
 
-        // first of all we build VariableSpace dump
         val variableList = new ArrayList<>(variables());
         val reverseMap = new LinkedHashMap<String, Integer>();
         val forwardMap = new LinkedHashMap<String, Integer>();
         val framesMap = new LinkedHashMap<String, Integer>();
 
-        //add the sequences - Note: SequenceItemRoot is not part of FlatGraph schema
-        int sequenceItemsOffset = -1; // Keep track if sequences exist
+        int sequenceItemsOffset = -1;
         if (!sequences.isEmpty()) {
             int[] sequenceItems = new int[sequences.size()];
             int sequenceIdx = 0;
@@ -6157,23 +6172,18 @@ public class SameDiff extends SDBaseOps {
                 int sequenceName = bufferBuilder.createString(sequence.getKey());
                 int[] arrays = new int[sequence.getValue().length];
                 for(int i = 0; i < arrays.length; i++) {
-                    // Use INDArray.toFlatArray directly as SameDiffSerializer isn't available here
                     arrays[i] = sequence.getValue()[i].toFlatArray(bufferBuilder);
                 }
                 int associatedVariables = SequenceItem.createAssociatedVariableVector(bufferBuilder, arrays);
                 sequenceItems[sequenceIdx++] = SequenceItem.createSequenceItem(bufferBuilder,sequenceName,associatedVariables);
             }
-            // This seems incorrect - SequenceItemRoot is not part of FlatGraph
-            // sequenceItemsOffset = SequenceItemRoot.createSequenceItemsVector(bufferBuilder, sequenceItems);
             log.warn("Sequence serialization is present but FlatGraph schema doesn't directly support it. Sequences will not be included in the FlatBuffer.");
         }
-
 
         int idx = 0;
         val idxForOps = new IdentityHashMap<DifferentialFunction, Integer>();
         List<SDVariable> allVars = variables();
         for (SDVariable variable : allVars) {
-            // Skip sequence types as they aren't standard FlatVariables
             if (variable.getVariableType() == VariableType.SEQUENCE) continue;
 
             INDArray arr = variable.getVariableType() == VariableType.ARRAY ? null : variable.getArr();
@@ -6182,10 +6192,10 @@ public class SameDiff extends SDBaseOps {
             String varName = variable.name();
             int varIdx;
             int outputNum;
-            Variable vMeta = variables.get(varName); // Fetch the internal Variable metadata
+            Variable vMeta = variables.get(varName);
             if (vMeta == null) {
                 log.warn("Internal Variable metadata not found for SDVariable: {}. Skipping.", varName);
-                continue; // Should not happen in a consistent state
+                continue;
             }
 
             if (vMeta.getOutputOfOp() != null) {
@@ -6202,16 +6212,12 @@ public class SameDiff extends SDBaseOps {
                 }
                 String[] outNames = df.outputVariablesNames();
                 outputNum = ArrayUtils.indexOf(outNames, varName);
-                // Allow -1 index if outputVariablesNames() returns null/empty for some reason (though it shouldn't)
-                // Preconditions.checkState(outputNum >= 0, "Variable name \"%s\" not found in list of outputs for function named %s of type %s: %s", varName, df.getOwnName(),df.opName(),outNames);
                 if(outputNum < 0 && outNames != null && outNames.length > 0) {
                     log.warn("Variable name \"{}\" not found in list of outputs {} for function named {} of type {}.", varName, Arrays.toString(outNames), df.getOwnName(), df.opName());
-                    // Attempt to recover or skip? Skipping might be safer.
-                    // For now, proceed with outputNum = 0 as a fallback, but log prominently.
                     outputNum = 0;
                     log.warn("Proceeding with outputNum = 0 for variable {} as fallback.", varName);
                 } else if (outNames == null || outNames.length == 0) {
-                    outputNum = 0; // Assume single output if names are not defined
+                    outputNum = 0;
                 }
             } else {
                 varIdx = idCounter.incrementAndGet();
@@ -6221,14 +6227,13 @@ public class SameDiff extends SDBaseOps {
             reverseMap.put(variable.name(), varIdx);
 
             log.trace("Adding [{}] as [{}]", variable.name(), varIdx);
-            int shapeOffset = 0; // Renamed local var
-            int nameOffset = bufferBuilder.createString(variable.name()); // Renamed local var
-            int arrayOffset = 0; // Renamed local var
-            int idOffset = IntPair.createIntPair(bufferBuilder, varIdx, outputNum); // Renamed local var
-            byte varTypeByte = (byte) variable.getVariableType().ordinal(); // Renamed local var
+            int shapeOffset = 0;
+            int nameOffset = bufferBuilder.createString(variable.name());
+            int arrayOffset = 0;
+            int idOffset = IntPair.createIntPair(bufferBuilder, varIdx, outputNum);
+            byte varTypeByte = (byte) variable.getVariableType().ordinal();
 
             if (arr != null && (variable.isConstant() || variable.isPlaceHolder() || variable.getVariableType() == VariableType.VARIABLE)) {
-                // Use INDArray.toFlatArray directly as SameDiffSerializer isn't available here
                 arrayOffset = arr.toFlatArray(bufferBuilder);
             }
 
@@ -6239,9 +6244,9 @@ public class SameDiff extends SDBaseOps {
                 }
             }
 
-            int controlDepsOffset = 0; // Renamed local var
-            int controlDepsForOpOffset = 0; // Renamed local var
-            int controlDepsForVarOffset = 0; // Renamed local var
+            int controlDepsOffset = 0;
+            int controlDepsForOpOffset = 0;
+            int controlDepsForVarOffset = 0;
 
             int[] cds = FlatBuffersMapper.mapOrNull(vMeta.getControlDeps(), bufferBuilder);
             if(cds != null)
@@ -6260,8 +6265,8 @@ public class SameDiff extends SDBaseOps {
                     nameOffset,
                     FlatBuffersMapper.getDataTypeAsByte(variable.dataType()),
                     shapeOffset,
-                    arrayOffset, // Pass offset of FlatArray
-                    -1, // device - deprecated/unused
+                    arrayOffset,
+                    -1,
                     varTypeByte,
                     controlDepsOffset,
                     controlDepsForOpOffset,
@@ -6269,13 +6274,10 @@ public class SameDiff extends SDBaseOps {
             flatVariables.add(flatVariableOffset);
         }
 
-        //add functions
         for (SameDiffOp op : ops.values()) {
             DifferentialFunction func = op.getOp();
             Integer fnId = idxForOps.get(func);
             if (fnId == null) {
-                // This might happen if an op has no output variable that was processed above
-                // Assign a new ID if needed, though this op might be detached/unused.
                 log.warn("Op {} ({}) was not found in idxForOps map, potentially unused or no outputs. Assigning new ID.", func.getOwnName(), func.opName());
                 fnId = idCounter.incrementAndGet();
                 idxForOps.put(func, fnId);
@@ -6283,13 +6285,10 @@ public class SameDiff extends SDBaseOps {
             flatNodes.add(FlatBuffersMapper.asFlatNode(this, func, bufferBuilder, variableList, reverseMap, forwardMap, framesMap, idCounter, fnId));
         }
 
-        // Create vectors for graph fields
         int variablesVectorOffset = FlatGraph.createVariablesVector(bufferBuilder, Ints.toArray(flatVariables));
         int nodesVectorOffset = FlatGraph.createNodesVector(bufferBuilder, Ints.toArray(flatNodes));
-        // outputsOffset - flatOffsets is not populated, so create empty vector
         int outputsVectorOffset = FlatGraph.createOutputsVector(bufferBuilder, new int[]{});
 
-        // Placeholders
         int numPlaceholders = 0;
         for (SDVariable v : variables()) {
             if (v.getVariableType() == VariableType.SEQUENCE) continue;
@@ -6297,7 +6296,7 @@ public class SameDiff extends SDBaseOps {
                 numPlaceholders++;
             }
         }
-        int placeholdersVectorOffset = 0; // Default to 0 offset
+        int placeholdersVectorOffset = 0;
         if (numPlaceholders > 0) {
             int[] placeholderOffsetsArray = new int[numPlaceholders];
             int i = 0;
@@ -6310,10 +6309,8 @@ public class SameDiff extends SDBaseOps {
             placeholdersVectorOffset = FlatGraph.createPlaceholdersVector(bufferBuilder, placeholderOffsetsArray);
         }
 
-
-        // Loss Variables
         List<String> lossVars = getLossVariables();
-        int lossVariablesVectorOffset = 0; // Default to 0 offset
+        int lossVariablesVectorOffset = 0;
         if (lossVars != null && !lossVars.isEmpty()) {
             int[] lossVarOffsetsArray = new int[lossVars.size()];
             for (int i = 0; i < lossVarOffsetsArray.length; i++) {
@@ -6322,9 +6319,7 @@ public class SameDiff extends SDBaseOps {
             lossVariablesVectorOffset = FlatGraph.createLossVariablesVector(bufferBuilder, lossVarOffsetsArray);
         }
 
-
-        // Training Config
-        int trainingConfigStringOffset = 0; // Default to 0 offset
+        int trainingConfigStringOffset = 0;
         if (trainingConfig != null) {
             String json = trainingConfig.toJson();
             if (json != null && !json.isEmpty()) {
@@ -6332,15 +6327,14 @@ public class SameDiff extends SDBaseOps {
             }
         }
 
-        // Updater State
-        int updaterStateVectorOffset = 0; // Default to 0 offset
+        int updaterStateVectorOffset = 0;
         if (includeUpdaterState && updaterMap != null && !updaterMap.isEmpty()) {
             int[] updaterOffsetsArray = new int[updaterMap.size()];
             int updaterNum = 0;
             for (Map.Entry<String, GradientUpdater> g : updaterMap.entrySet()) {
                 int paramNameOffset = bufferBuilder.createString(g.getKey());
-                int stateKeyVectorOffset = 0; // Default to 0 offset
-                int stateValuesVectorOffset = 0; // Default to 0 offset
+                int stateKeyVectorOffset = 0;
+                int stateValuesVectorOffset = 0;
                 Map<String, INDArray> state = g.getValue().getState();
                 if (state != null && !state.isEmpty()) {
                     int[] keysOffsets = new int[state.size()];
@@ -6348,7 +6342,6 @@ public class SameDiff extends SDBaseOps {
                     int i = 0;
                     for (Map.Entry<String, INDArray> e : state.entrySet()) {
                         keysOffsets[i] = bufferBuilder.createString(e.getKey());
-                        // Use INDArray.toFlatArray directly
                         valuesOffsets[i] = e.getValue().toFlatArray(bufferBuilder);
                         i++;
                     }
@@ -6360,37 +6353,62 @@ public class SameDiff extends SDBaseOps {
             updaterStateVectorOffset = FlatGraph.createUpdaterStateVector(bufferBuilder, updaterOffsetsArray);
         }
 
-        // Configuration (assuming getFlatConfiguration returns the correct offset)
         int configurationTableOffset = configuration.getFlatConfiguration(bufferBuilder);
 
-        // Metadata Keys/Values - Not handled in this version, pass 0
         int metadataKeysVectorOffset = 0;
         int metadataValuesVectorOffset = 0;
 
-        // *** FIXED CALL to createFlatGraph ***
-        // Corresponds to the new 11-parameter signature:
-        // createFlatGraph(builder, id, variablesOffset, nodesOffset, outputsOffset, configurationOffset,
-        //                 placeholdersOffset, lossVariablesOffset, trainingConfigOffset, updaterStateOffset,
-        //                 metadataKeysOffset, metadataValuesOffset)
+        int subInstancesVectorOffset = 0;
+        if (sameDiffFunctionInstances != null && !sameDiffFunctionInstances.isEmpty()) {
+            List<Integer> subInstanceOffsetsList = new ArrayList<>();
+            List<Map.Entry<String, SameDiff>> sortedSubInstances = new ArrayList<>(sameDiffFunctionInstances.entrySet());
+            sortedSubInstances.sort(Map.Entry.comparingByKey());
+
+            for (Map.Entry<String, SameDiff> entry : sortedSubInstances) {
+                String subInstanceName = entry.getKey();
+                SameDiff subInstance = entry.getValue();
+
+                if (subInstanceName == null || subInstance == null) continue;
+
+                int nameOffset = bufferBuilder.createString(subInstanceName);
+                ByteBuffer subInstanceBuffer = subInstance.asFlatBuffers(0, configuration, false);
+
+                byte[] subInstanceBytes = new byte[subInstanceBuffer.remaining()];
+                subInstanceBuffer.get(subInstanceBytes);
+
+                int serializedDataOffset = SameDiffSubInstance.createSerializedDataVector(bufferBuilder, subInstanceBytes);
+                int subInstanceTableOffset = SameDiffSubInstance.createSameDiffSubInstance(bufferBuilder, nameOffset, serializedDataOffset);
+
+                subInstanceOffsetsList.add(subInstanceTableOffset);
+            }
+
+            if (!subInstanceOffsetsList.isEmpty()) {
+                int[] finalSubInstanceOffsets = new int[subInstanceOffsetsList.size()];
+                for (int i = 0; i < subInstanceOffsetsList.size(); i++) {
+                    finalSubInstanceOffsets[i] = subInstanceOffsetsList.get(i);
+                }
+                subInstancesVectorOffset = FlatGraph.createSubInstancesVector(bufferBuilder, finalSubInstanceOffsets);
+            }
+        }
+
         int fg = FlatGraph.createFlatGraph(bufferBuilder,
-                graphId,                     // id (param 1)
-                variablesVectorOffset,       // variablesOffset (param 2)
-                nodesVectorOffset,           // nodesOffset (param 3)
-                outputsVectorOffset,         // outputsOffset (param 4) - Likely empty
-                configurationTableOffset,    // configurationOffset (param 5)
-                placeholdersVectorOffset,    // placeholdersOffset (param 6)
-                lossVariablesVectorOffset,   // lossVariablesOffset (param 7)
-                trainingConfigStringOffset,  // trainingConfigOffset (param 8)
-                updaterStateVectorOffset,    // updaterStateOffset (param 9)
-                metadataKeysVectorOffset,    // metadataKeysOffset (param 10) - Added as 0
-                metadataValuesVectorOffset); // metadataValuesOffset (param 11) - Added as 0
+                graphId,
+                variablesVectorOffset,
+                nodesVectorOffset,
+                outputsVectorOffset,
+                configurationTableOffset,
+                placeholdersVectorOffset,
+                lossVariablesVectorOffset,
+                trainingConfigStringOffset,
+                updaterStateVectorOffset,
+                metadataKeysVectorOffset,
+                metadataValuesVectorOffset,
+                subInstancesVectorOffset);
 
         bufferBuilder.finish(fg);
 
-        // Update variable indices (no change needed here)
         synchronized (this) {
             for (Map.Entry<String, Integer> e : reverseMap.entrySet()) {
-                // Check if variable still exists before setting index
                 if(this.variables.containsKey(e.getKey())) {
                     this.variables.get(e.getKey()).setVariableIndex(e.getValue());
                 } else {
@@ -6400,7 +6418,6 @@ public class SameDiff extends SDBaseOps {
         }
         return bufferBuilder.dataBuffer();
     }
-
     /**
      * See {@link #asFlatGraph(long, ExecutorConfiguration, boolean)}.
      *
@@ -6473,7 +6490,7 @@ public class SameDiff extends SDBaseOps {
      * @param saveUpdaterState whether to save updater state
      */
     public void saveSharded(File file,boolean saveUpdaterState) throws IOException {
-       saveSharded(file,saveUpdaterState,Collections.emptyMap());
+        saveSharded(file,saveUpdaterState,Collections.emptyMap());
     }
 
     /**
@@ -7288,6 +7305,435 @@ public class SameDiff extends SDBaseOps {
     }
 
 
+    /**
+     * Performs a dry run execution to show the DAG of operations that would be executed.
+     * This method traces through the execution path without actually computing arrays,
+     * useful for debugging and understanding execution flow.
+     *
+     * @param outputs The output variables to trace execution for
+     * @return A DAGExecutionPlan containing the execution order and dependencies
+     */
+    public DAGExecutionPlan dryRunExecutionDAG(String... outputs) {
+        return dryRunExecutionDAG(Arrays.asList(outputs));
+    }
+
+    /**
+     * Performs a dry run execution to show the DAG of operations that would be executed.
+     * This method traces through the execution path without actually computing arrays,
+     * useful for debugging and understanding execution flow with frame context for control flow.
+     *
+     * @param outputs The output variables to trace execution for
+     * @return A DAGExecutionPlan containing the execution order and dependencies
+     */
+    public DAGExecutionPlan dryRunExecutionDAG(Collection<String> outputs) {
+        Preconditions.checkArgument(outputs != null && !outputs.isEmpty(), "At least one output must be specified");
+
+        // Validate all outputs exist
+        for (String output : outputs) {
+            Preconditions.checkState(variables.containsKey(output), "Output variable '%s' does not exist", output);
+        }
+
+        DAGExecutionPlan plan = new DAGExecutionPlan();
+        Set<String> visited = new HashSet<>();
+        Set<String> executing = new HashSet<>(); // For cycle detection
+        Map<String, Set<String>> dependencies = new HashMap<>();
+        List<String> executionOrder = new ArrayList<>();
+
+        // Trace execution for each output starting from OUTER_FRAME
+        for (String output : outputs) {
+            traceExecutionDAGWithFrame(output, "OUTER_FRAME", 0, null, visited, executing, dependencies, executionOrder, plan);
+        }
+
+        plan.setExecutionOrder(executionOrder);
+        plan.setDependencies(dependencies);
+        plan.setRequestedOutputs(new ArrayList<>(outputs));
+
+        return plan;
+    }
+
+    /**
+     * Enhanced recursive method that tracks frame context for control flow operations
+     */
+    /**
+     * Enhanced recursive method that tracks frame context for control flow operations
+     */
+    private void traceExecutionDAGWithFrame(String varName, String frame, int iteration, String parentFrame,
+                                            Set<String> visited, Set<String> executing,
+                                            Map<String, Set<String>> dependencies, List<String> executionOrder,
+                                            DAGExecutionPlan plan) {
+
+        String frameKey = varName + "@" + frame + ":*"; // Use * for iteration since we're analyzing structure, not executing
+
+        if (visited.contains(frameKey)) {
+            return; // Already processed in this frame context
+        }
+
+        if (executing.contains(frameKey)) {
+            // This is expected for loops - mark as cycle but continue analysis
+            plan.addCycle(varName + " in frame " + frame + " (loop structure)");
+            return;
+        }
+
+        Variable var = variables.get(varName);
+        if (var == null) {
+            plan.addMissingVariable(varName);
+            return;
+        }
+
+        executing.add(frameKey);
+
+        // Add variable info to plan with frame context (iteration=0 for structure analysis)
+        plan.addVariableWithFrame(varName, var.getVariable().getVariableType(), var.getVariable().dataType(),
+                frame, 0, parentFrame);
+
+        // Handle different variable types
+        switch (var.getVariable().getVariableType()) {
+            case CONSTANT:
+            case PLACEHOLDER:
+                plan.addLeafVariable(varName);
+                break;
+
+            case VARIABLE:
+                plan.addTrainableVariable(varName);
+                break;
+
+            case ARRAY:
+                String producingOpName = var.getOutputOfOp();
+                if (producingOpName != null) {
+                    SameDiffOp op = ops.get(producingOpName);
+                    if (op != null) {
+                        traceOperationDAGWithFrame(op, varName, frame, 0, parentFrame,
+                                visited, executing, dependencies, executionOrder, plan);
+                    } else {
+                        plan.addOrphanedVariable(varName, producingOpName);
+                    }
+                } else {
+                    plan.addOrphanedVariable(varName, null);
+                }
+                break;
+
+            case SEQUENCE:
+                plan.addSequenceVariable(varName);
+                break;
+        }
+
+        executing.remove(frameKey);
+        visited.add(frameKey);
+    }
+
+    /**
+     * Trace the DAG for a specific operation with frame awareness
+     */
+    private void traceOperationDAGWithFrame(SameDiffOp op, String outputVar, String currentFrame, int currentIteration,
+                                            String parentFrame, Set<String> visited, Set<String> executing,
+                                            Map<String, Set<String>> dependencies, List<String> executionOrder,
+                                            DAGExecutionPlan plan) {
+
+        String opName = op.getName();
+        DifferentialFunction df = op.getOp();
+
+        // Determine frame transitions based on operation type
+        FrameInfo frameInfo = analyzeFrameTransition(df, currentFrame, currentIteration, parentFrame);
+
+        String opFrameKey = opName + "@" + frameInfo.outputFrame + ":" + frameInfo.outputIteration;
+
+        if (plan.isOperationProcessed(opFrameKey)) {
+            return; // Already processed this operation in this frame context
+        }
+
+        // For Enter operations, we need to trace what's INSIDE the frame
+        if (df instanceof org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter) {
+            org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter enter =
+                    (org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter) df;
+            String newFrame = enter.getFrameName();
+
+            // Find all operations that execute within this frame
+            traceFrameContents(newFrame, currentFrame, plan, visited, executing, dependencies, executionOrder);
+        }
+
+        // Get operation inputs and trace them in the correct frame context
+        List<String> inputs = op.getInputsToOp();
+        Set<String> opDependencies = new HashSet<>();
+
+        if (inputs != null) {
+            for (String input : inputs) {
+                traceExecutionDAGWithFrame(input, frameInfo.inputFrame, frameInfo.inputIteration,
+                        frameInfo.inputParentFrame, visited, executing, dependencies, executionOrder, plan);
+                opDependencies.add(input);
+            }
+        }
+
+        // Record operation in execution plan with frame information
+        plan.addOperationWithFrame(opName, df.opName(), df.getClass().getSimpleName(),
+                inputs, op.getOutputsOfOp(), frameInfo);
+
+        dependencies.put(opFrameKey, opDependencies);
+
+        if (!executionOrder.contains(opFrameKey)) {
+            executionOrder.add(opFrameKey);
+        }
+
+        // Check for control dependencies
+        List<String> controlDeps = op.getControlDeps();
+        if (controlDeps != null && !controlDeps.isEmpty()) {
+            plan.addControlDependencies(opFrameKey, controlDeps);
+        }
+
+        List<String> varControlDeps = op.getVarControlDeps();
+        if (varControlDeps != null && !varControlDeps.isEmpty()) {
+            plan.addVariableControlDependencies(opFrameKey, varControlDeps);
+        }
+
+        plan.addFrameOperation(opFrameKey, frameInfo.frameTransition, frameInfo.outputFrame, frameInfo.outputParentFrame);
+    }
+
+    /**
+     * Trace all operations that belong to a specific frame
+     */
+    private void traceFrameContents(String frameName, String parentFrame, DAGExecutionPlan plan,
+                                    Set<String> visited, Set<String> executing,
+                                    Map<String, Set<String>> dependencies, List<String> executionOrder) {
+
+        // Find all Enter operations that target this frame
+        for (SameDiffOp op : ops.values()) {
+            if (op.getOp() instanceof org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter) {
+                org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter enter =
+                        (org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter) op.getOp();
+                if (frameName.equals(enter.getFrameName())) {
+                    // Trace what this Enter operation leads to within the frame
+                    List<String> outputs = op.getOutputsOfOp();
+                    if (outputs != null) {
+                        for (String output : outputs) {
+                            traceVariableUsageInFrame(output, frameName, 0, parentFrame, plan, visited, executing, dependencies, executionOrder);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Trace how a variable is used within a specific frame
+     */
+    private void traceVariableUsageInFrame(String varName, String frame, int iteration, String parentFrame,
+                                           DAGExecutionPlan plan, Set<String> visited, Set<String> executing,
+                                           Map<String, Set<String>> dependencies, List<String> executionOrder) {
+
+        Variable var = variables.get(varName);
+        if (var == null) return;
+
+        // Find all operations in this frame that use this variable
+        List<String> inputsForOp = var.getInputsForOp();
+        if (inputsForOp != null) {
+            for (String opName : inputsForOp) {
+                SameDiffOp op = ops.get(opName);
+                if (op != null) {
+                    // Check if this operation should execute in the current frame
+                    if (shouldOpExecuteInFrame(op.getOp(), frame)) {
+                        traceOperationDAGWithFrame(op, varName, frame, iteration, parentFrame,
+                                visited, executing, dependencies, executionOrder, plan);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Determine if an operation should execute within a given frame
+     */
+    private boolean shouldOpExecuteInFrame(DifferentialFunction op, String frame) {
+        // Exit operations move out of the frame
+        if (op instanceof org.nd4j.linalg.api.ops.impl.controlflow.compat.Exit) {
+            return false;
+        }
+
+        // Enter operations transition into a new frame
+        if (op instanceof org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter) {
+            org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter enter =
+                    (org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter) op;
+            return !frame.equals(enter.getFrameName()); // Execute in parent frame, not target frame
+        }
+
+        // Most operations execute within their current frame
+        return true;
+    }
+
+    /**
+     * Analyze how an operation affects frame transitions
+     */
+    private FrameInfo analyzeFrameTransition(DifferentialFunction op, String currentFrame, int currentIteration, String parentFrame) {
+        FrameInfo frameInfo = new FrameInfo();
+
+        // Default: same frame for input and output
+        frameInfo.inputFrame = currentFrame;
+        frameInfo.inputIteration = currentIteration;
+        frameInfo.inputParentFrame = parentFrame;
+        frameInfo.outputFrame = currentFrame;
+        frameInfo.outputIteration = currentIteration;
+        frameInfo.outputParentFrame = parentFrame;
+
+        // Handle control flow operations that change frames
+        if (op instanceof org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter) {
+            org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter enter =
+                    (org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter) op;
+            frameInfo.outputFrame = enter.getFrameName();
+            frameInfo.outputIteration = 0;
+            frameInfo.outputParentFrame = currentFrame;
+            frameInfo.frameTransition = FrameTransition.ENTER;
+            frameInfo.targetFrame = enter.getFrameName();
+
+        } else if (op instanceof org.nd4j.linalg.api.ops.impl.controlflow.compat.Exit) {
+            frameInfo.outputFrame = parentFrame != null ? parentFrame : "OUTER_FRAME";
+            frameInfo.outputIteration = 0;
+            frameInfo.outputParentFrame = null;
+            frameInfo.frameTransition = FrameTransition.EXIT;
+
+        } else if (op instanceof org.nd4j.linalg.api.ops.impl.controlflow.compat.NextIteration) {
+            frameInfo.outputIteration = currentIteration + 1;
+            frameInfo.frameTransition = FrameTransition.NEXT_ITERATION;
+
+        } else if (op instanceof org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch) {
+            frameInfo.frameTransition = FrameTransition.SWITCH;
+
+        } else if (op instanceof org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge) {
+            frameInfo.frameTransition = FrameTransition.MERGE;
+
+        } else if (op instanceof org.nd4j.linalg.api.ops.impl.controlflow.compat.LoopCond) {
+            frameInfo.frameTransition = FrameTransition.LOOP_CONDITION;
+        }
+
+        return frameInfo;
+    }
+
+    /**
+     * Recursive method to trace the execution DAG for a given variable
+     */
+    private void traceExecutionDAG(String varName, Set<String> visited, Set<String> executing,
+                                   Map<String, Set<String>> dependencies, List<String> executionOrder,
+                                   DAGExecutionPlan plan) {
+
+        if (visited.contains(varName)) {
+            return; // Already processed
+        }
+
+        if (executing.contains(varName)) {
+            // Cycle detected
+            plan.addCycle(varName);
+            return;
+        }
+
+        Variable var = variables.get(varName);
+        if (var == null) {
+            plan.addMissingVariable(varName);
+            return;
+        }
+
+        executing.add(varName);
+
+        // Add variable info to plan
+        plan.addVariable(varName, var.getVariable().getVariableType(), var.getVariable().dataType());
+
+        // Handle different variable types
+        switch (var.getVariable().getVariableType()) {
+            case CONSTANT:
+            case PLACEHOLDER:
+                // These don't require computation
+                plan.addLeafVariable(varName);
+                break;
+
+            case VARIABLE:
+                // Training variables - check if they have dependencies
+                plan.addTrainableVariable(varName);
+                break;
+
+            case ARRAY:
+                // Array variables are outputs of operations
+                String producingOpName = var.getOutputOfOp();
+                if (producingOpName != null) {
+                    SameDiffOp op = ops.get(producingOpName);
+                    if (op != null) {
+                        traceOperationDAG(op, varName, visited, executing, dependencies, executionOrder, plan);
+                    } else {
+                        plan.addOrphanedVariable(varName, producingOpName);
+                    }
+                } else {
+                    plan.addOrphanedVariable(varName, null);
+                }
+                break;
+
+            case SEQUENCE:
+                plan.addSequenceVariable(varName);
+                break;
+        }
+
+        executing.remove(varName);
+        visited.add(varName);
+    }
+
+    /**
+     * Trace the DAG for a specific operation
+     */
+    private void traceOperationDAG(SameDiffOp op, String outputVar, Set<String> visited, Set<String> executing,
+                                   Map<String, Set<String>> dependencies, List<String> executionOrder,
+                                   DAGExecutionPlan plan) {
+
+        String opName = op.getName();
+
+        if (plan.isOperationProcessed(opName)) {
+            return; // Already processed this operation
+        }
+
+        // Get operation inputs
+        List<String> inputs = op.getInputsToOp();
+        Set<String> opDependencies = new HashSet<>();
+
+        if (inputs != null) {
+            for (String input : inputs) {
+                // Recursively trace input dependencies
+                traceExecutionDAG(input, visited, executing, dependencies, executionOrder, plan);
+                opDependencies.add(input);
+            }
+        }
+
+        // Record operation in execution plan
+        plan.addOperation(opName, op.getOp().opName(), op.getOp().getClass().getSimpleName(),
+                inputs, op.getOutputsOfOp());
+
+        dependencies.put(opName, opDependencies);
+
+        // Add to execution order (topological order)
+        if (!executionOrder.contains(opName)) {
+            executionOrder.add(opName);
+        }
+
+        // Check for control dependencies
+        List<String> controlDeps = op.getControlDeps();
+        if (controlDeps != null && !controlDeps.isEmpty()) {
+            plan.addControlDependencies(opName, controlDeps);
+        }
+    }
+
+    /**
+     * Returns a formatted string representation of the execution DAG
+     */
+    public String getExecutionDAGSummary(String... outputs) {
+        return getExecutionDAGSummary(Arrays.asList(outputs));
+    }
+
+    /**
+     * Returns a formatted string representation of the execution DAG
+     */
+    public String getExecutionDAGSummary(Collection<String> outputs) {
+        DAGExecutionPlan plan = dryRunExecutionDAG(outputs);
+        return plan.formatSummary();
+    }
+
+    /**
+     * Prints the execution DAG to console
+     */
+    public void printExecutionDAG(String... outputs) {
+        System.out.println(getExecutionDAGSummary(outputs));
+    }
 
     /**
      * Invoke a sub graph and return the outputs
@@ -7546,9 +7992,550 @@ public class SameDiff extends SDBaseOps {
         return loopWithConditions(null,loopParams);
     }
 
+
+
+    /**
+     * Execute an operation once and cache all outputs
+     * @param opName The name of the operation to execute
+     * @param requestedOutputVariable The specific output variable requested
+     * @return The array for the requested output variable
+     */
+    public INDArray computeOperationEagerly(String opName, String requestedOutputVariable) {
+        SameDiffOp opMeta = ops.get(opName);
+        if (opMeta == null) {
+            log.warn("Operation not found: {}", opName);
+            return null;
+        }
+
+        DifferentialFunction op = opMeta.getOp();
+
+        // Check if all outputs for this operation are already cached
+        String[] outputNames = getOutputsForOp(op);
+        if (outputNames != null && areAllOutputsCached(outputNames)) {
+            return getEagerArrForVarName(requestedOutputVariable);
+        }
+
+        // Validate inputs are ready
+        if (!areInputsReady(opMeta)) {
+            log.warn("Inputs not ready for operation: {}", opName);
+            return null;
+        }
+
+        // Execute operation once using built-in shape calculation
+        List<INDArray> results = executeOperationWithShapeValidation(op);
+
+        // Cache all results
+        if (results != null && outputNames != null) {
+            for (int i = 0; i < Math.min(results.size(), outputNames.length); i++) {
+                setEagerArrForVarName(outputNames[i], results.get(i));
+
+                // Update variable metadata
+                SDVariable outputVar = getVariable(outputNames[i]);
+                if (outputVar != null) {
+                    outputVar.setShape(results.get(i).shape());
+                    if (outputVar.dataType() == DataType.UNKNOWN) {
+                        outputVar.setDataType(results.get(i).dataType());
+                    }
+                }
+            }
+        }
+
+        return getEagerArrForVarName(requestedOutputVariable);
+    }
+
+    /**
+     * Execute operation using built-in shape calculation and validation
+     */
+    private List<INDArray> executeOperationWithShapeValidation(DifferentialFunction op) {
+        try {
+            if (op instanceof CustomOp) {
+                return executeCustomOpEagerly((CustomOp) op);
+            } else if (op instanceof BaseOp) {
+                return executeBaseOpEagerly((BaseOp) op);
+            } else {
+                log.warn("Unsupported operation type: {}", op.getClass().getName());
+                return null;
+            }
+        } catch (Exception e) {
+            log.warn("Failed to execute operation {}: {}", op.opName(), e.getMessage(), e);
+            return null;
+        }
+    }
+
+    /**
+     * Execute CustomOp with shape validation
+     */
+    private List<INDArray> executeCustomOpEagerly(CustomOp customOp) {
+        try {
+            // Ensure inputs are set from SameDiff arrays
+            ensureCustomOpInputsReady(customOp);
+
+            // Use built-in shape calculation
+            List<DataBuffer> outputDescs = customOp.calculateOutputShape();
+            if (outputDescs == null || outputDescs.isEmpty()) {
+                log.warn("Could not calculate output shapes for CustomOp: {}", customOp.opName());
+                return null;
+            }
+
+            // Allocate output arrays
+            List<INDArray> outputArrays = new ArrayList<>();
+            for (DataBuffer desc : outputDescs) {
+                outputArrays.add(Nd4j.createFromDescriptor(desc));
+            }
+
+            // Set outputs and execute
+            customOp.clearArrays();
+            for (INDArray output : outputArrays) {
+                customOp.addOutputArgument(output);
+            }
+
+            try (OpContext ctx = Nd4j.getExecutioner().buildContext()) {
+                ctx.setInputArrays(customOp.inputArguments());
+                ctx.setOutputArrays(customOp.outputArguments());
+                ctx.setIArguments(customOp.iArgs());
+                ctx.setTArguments(customOp.tArgs());
+                ctx.setBArguments(customOp.bArgs());
+                ctx.setDArguments(customOp.dArgs());
+
+                INDArray[] results = Nd4j.getExecutioner().exec(customOp, ctx);
+                return Arrays.asList(results);
+            }
+
+        } catch (Exception e) {
+            log.warn("Failed to execute CustomOp {}: {}", customOp.opName(), e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Ensure BaseOp inputs are properly set from SameDiff arrays
+     */
+    private void ensureBaseOpInputsReady(BaseOp baseOp) {
+        SDVariable[] args = baseOp.args();
+        if (args != null && args.length > 0) {
+            if (baseOp.x() == null) {
+                INDArray xArr = getArrForVarName(args[0].name());
+                baseOp.setX(xArr);
+            }
+
+            if (args.length > 1 && baseOp.y() == null) {
+                INDArray yArr = getArrForVarName(args[1].name());
+                baseOp.setY(yArr);
+            }
+        }
+    }
+
+
+    /**
+     * Execute BaseOp with shape validation
+     */
+    private List<INDArray> executeBaseOpEagerly(BaseOp baseOp) {
+        try {
+            // Ensure inputs are set
+            ensureBaseOpInputsReady(baseOp);
+
+            // Calculate output shape using existing BaseOp logic
+            long[] outputShape = calculateBaseOpOutputShape(baseOp);
+            if (outputShape == null) {
+                log.warn("Could not calculate output shape for BaseOp: {}", baseOp.opName());
+                return null;
+            }
+
+            // Infer output datatype
+            DataType outputDataType = inferBaseOpOutputDataType(baseOp);
+
+            // Allocate output array
+            INDArray outputArray = Nd4j.create(outputDataType, outputShape);
+            baseOp.setZ(outputArray);
+
+            // Execute
+            try (OpContext ctx = Nd4j.getExecutioner().buildContext()) {
+                if (baseOp.y() != null) {
+                    ctx.setInputArrays(baseOp.x(), baseOp.y());
+                } else {
+                    ctx.setInputArrays(baseOp.x());
+                }
+                ctx.setOutputArrays(baseOp.z());
+
+                INDArray result = Nd4j.getExecutioner().exec(baseOp, ctx);
+                return Arrays.asList(result);
+            }
+
+        } catch (Exception e) {
+            log.warn("Failed to execute BaseOp {}: {}", baseOp.opName(), e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Calculate output shape for BaseOp using existing methods
+     */
+    private long[] calculateBaseOpOutputShape(BaseOp baseOp) {
+        if (baseOp.x() == null) {
+            return null;
+        }
+
+        Op.Type opType = baseOp.opType();
+        switch (opType) {
+            case TRANSFORM_SAME:
+            case TRANSFORM_FLOAT:
+            case TRANSFORM_STRICT:
+                return baseOp.x().shape();
+
+            case PAIRWISE:
+            case PAIRWISE_BOOL:
+                if (baseOp.y() != null) {
+                    return Shape.broadcastOutputShape(baseOp.x().shape(), baseOp.y().shape());
+                }
+                return baseOp.x().shape();
+
+            case REDUCE_FLOAT:
+            case REDUCE_LONG:
+            case REDUCE_BOOL:
+            case REDUCE_SAME:
+                if (baseOp instanceof ReduceOp) {
+                    ReduceOp reduceOp = (ReduceOp) baseOp;
+                    return Shape.reductionShape(
+                            baseOp.x(),
+                            reduceOp.dimensionsArr(),
+                            true,
+                            reduceOp.isKeepDims());
+                }
+                break;
+
+            default:
+                break;
+        }
+
+        return baseOp.x().shape();
+    }
+
+    /**
+     * Ensure CustomOp inputs are properly set from SameDiff arrays
+     */
+    private void ensureCustomOpInputsReady(CustomOp customOp) {
+        if (customOp.numInputArguments() == 0) {
+            DynamicCustomOp dynamicCustomOp =(DynamicCustomOp)  customOp;
+            SDVariable[] args = dynamicCustomOp.args();
+            if (args != null) {
+                for (SDVariable arg : args) {
+                    INDArray arr = getArrForVarName(arg.name());
+                    if (arr != null) {
+                        customOp.addInputArgument(arr);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Infer output data type for BaseOp
+     */
+    private DataType inferBaseOpOutputDataType(BaseOp baseOp) {
+        Op.Type opType = baseOp.opType();
+        switch (opType) {
+            case TRANSFORM_SAME:
+            case TRANSFORM_STRICT:
+                return baseOp.x().dataType();
+
+            case TRANSFORM_FLOAT:
+            case REDUCE_FLOAT:
+                return baseOp.x().dataType().isFPType() ? baseOp.x().dataType() : DataType.FLOAT;
+
+            case REDUCE_LONG:
+            case INDEXREDUCE:
+                return DataType.LONG;
+
+            case REDUCE_BOOL:
+            case PAIRWISE_BOOL:
+                return DataType.BOOL;
+
+            case PAIRWISE:
+                return DataType.FLOAT; // Safe default
+
+            default:
+                return baseOp.x().dataType();
+        }
+    }
+
+    /**
+     * Check if all outputs for an operation are cached
+     */
+    private boolean areAllOutputsCached(String[] outputNames) {
+        for (String outputName : outputNames) {
+            if (!getEagerArrays().hasArray(outputName)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Check if all inputs for an operation are ready with better validation
+     */
+    private boolean areInputsReady(SameDiffOp opMeta) {
+        if (opMeta == null || opMeta.getOp() == null) {
+            return false;
+        }
+
+        DifferentialFunction op = opMeta.getOp();
+        String[] inputNames = getInputsForOp(op);
+
+        if (inputNames == null || inputNames.length == 0) {
+            // No inputs required - operation can execute
+            return true;
+        }
+
+        for (String inputName : inputNames) {
+            if (!isVariableReadyForExecution(inputName)) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Input variable '{}' not ready for operation '{}' ({})",
+                            inputName, op.getOwnName(), op.opName());
+                }
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Variable-level validation: Check if a specific variable can be used as input to operations.
+     * This is called by areOperationInputsReady() for each input variable.
+     */
+    private boolean isVariableReadyForExecution(String varName) {
+        // Check if variable exists in graph
+        Variable varMeta = variables.get(varName);
+        if (varMeta == null) {
+            return false;
+        }
+
+        // 1. Check if array is already cached/computed
+        if (arrayAlreadyExistsForVarName(varName)) {
+            INDArray arr = getArrForVarName(varName);
+            if (arr != null && !arr.isEmpty()) {
+                return true;
+            }
+        }
+
+        // 2. Check eager arrays cache
+        if (eagerArrays.hasArray(varName)) {
+            INDArray arr = eagerArrays.getArray(varName);
+            if (arr != null && !arr.isEmpty()) {
+                return true;
+            }
+        }
+
+        // 3. Handle different variable types
+        switch (varMeta.getVariable().getVariableType()) {
+            case CONSTANT:
+                // Constants should always have arrays
+                return arrayAlreadyExistsForVarName(varName);
+
+            case PLACEHOLDER:
+                // Placeholders are ready if:
+                // a) User provided data, OR
+                // b) They have defined shape and we're in appropriate execution mode
+                if (arrayAlreadyExistsForVarName(varName)) {
+                    return true;
+                }
+
+                // Don't auto-create placeholders during import/graph building
+                if (isInGraphBuildingMode()) {
+                    return false;
+                }
+
+                // Only consider placeholder ready if user explicitly provided data
+                return eagerArrays.hasArray(varName);
+
+            case ARRAY:
+                // ARRAY variables need their producing operation to have executed
+                String producingOp = varMeta.getOutputOfOp();
+                if (producingOp == null) {
+                    // Orphaned array variable
+                    return false;
+                }
+
+                // Check if producing operation has already executed and cached results
+                if (arrayAlreadyExistsForVarName(varName)) {
+                    return true;
+                }
+
+                // CRITICAL: Don't recurse into producing operation during readiness check
+                // This prevents infinite loops and premature execution
+                return false;
+
+            default:
+                return arrayAlreadyExistsForVarName(varName);
+        }
+    }
+
+
+    /**
+     * SDVariable-level validation helper: Check if the inputs to a variable's producing operation
+     * are ready. This is used by SDVariable.areInputsReady() and should NOT recurse into execution.
+     *
+     * This is different from areOperationInputsReady() which is used for actual execution decisions.
+     */
+    private boolean areProducingOperationInputsReady(Variable varMeta) {
+        if (varMeta.getOutputOfOp() == null) {
+            // Not an operation output - check if variable itself is ready
+            return isVariableReadyForExecution(varMeta.getVariable().name());
+        }
+
+        SameDiffOp opMeta = ops.get(varMeta.getOutputOfOp());
+        return areInputsReady(opMeta);
+    }
+
+    /**
+     * Enhanced validation that prevents execution with malformed inputs.
+     * Call this before attempting any operation execution.
+     */
+    private void validateInputsForExecution(DifferentialFunction op) {
+        String[] inputNames = getInputsForOp(op);
+        if (inputNames == null) {
+            return;
+        }
+
+        for (int i = 0; i < inputNames.length; i++) {
+            String inputName = inputNames[i];
+
+            if (!isVariableReadyForExecution(inputName)) {
+                throw new IllegalStateException(String.format(
+                        "Input variable '%s' at index %d for operation '%s' (%s) is not ready for execution. " +
+                                "Variable exists in graph but has no array data.",
+                        inputName, i, op.getOwnName(), op.opName()));
+            }
+
+            // Additional validation: check array is not null/empty
+            INDArray arr = getArrForVarName(inputName);
+            if (arr == null) {
+                throw new IllegalStateException(String.format(
+                        "Input variable '%s' for operation '%s' has null array",
+                        inputName, op.getOwnName()));
+            }
+
+            if (arr.isEmpty() && !isEmptyArrayExpected(op, i)) {
+                throw new IllegalStateException(String.format(
+                        "Input variable '%s' for operation '%s' has empty array when non-empty expected",
+                        inputName, op.getOwnName()));
+            }
+        }
+    }
+
+    /**
+     * Check if empty arrays are expected for specific operations/indices.
+     */
+    private boolean isEmptyArrayExpected(DifferentialFunction op, int inputIndex) {
+        // Some operations legitimately accept empty arrays
+        // Add operation-specific logic here if needed
+        return false;
+    }
+
+
+    /**
+     * Comprehensive check for variable array readiness
+     */
+    private boolean isVariableArrayReady(String varName) {
+        // Check eager arrays first
+        if (getEagerArrays().hasArray(varName)) {
+            return true;
+        }
+
+        // Check variable arrays
+        if (getVariablesArrays().hasArray(varName)) {
+            return true;
+        }
+
+        // Check constant arrays
+        if (getConstantArrays().hasArray(varName)) {
+            return true;
+        }
+
+        // Check if variable exists and has shape info for placeholders
+        Variable var = variables.get(varName);
+        if (var != null && var.getVariable().getVariableType() == VariableType.PLACEHOLDER) {
+            SDVariable sdVar = getVariable(varName);
+            if (sdVar != null && sdVar.getShape() != null) {
+                // Placeholder with known shape - can create array if needed
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get array with proper fallback logic
+     */
+    private INDArray getArrayForVariable(String varName) {
+        // Try eager arrays first
+        if (getEagerArrays().hasArray(varName)) {
+            return getEagerArrays().getArray(varName);
+        }
+
+        // Try variable arrays
+        if (getVariablesArrays().hasArray(varName)) {
+            return getVariablesArrays().getArray(varName);
+        }
+
+        // Try constant arrays
+        if (getConstantArrays().hasArray(varName)) {
+            return getConstantArrays().getArray(varName);
+        }
+
+        // Try standard getter
+        INDArray arr = getArrForVarName(varName);
+        if (arr != null) {
+            return arr;
+        }
+
+        // Last resort: create array for placeholder if possible
+        Variable var = variables.get(varName);
+        if (var != null && var.getVariable().getVariableType() == VariableType.PLACEHOLDER) {
+            SDVariable sdVar = getVariable(varName);
+            if (sdVar != null && sdVar.getShape() != null) {
+                return createPlaceholderArray(sdVar);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Create array for placeholder with validation
+     */
+    private INDArray createPlaceholderArray(SDVariable placeholder) {
+        long[] shape = placeholder.getShape();
+        DataType dataType = placeholder.dataType();
+
+        if (shape == null) {
+            log.warn("Cannot create array for placeholder {} - no shape information", placeholder.name());
+            return null;
+        }
+
+        // Ensure positive dimensions
+        long[] positiveShape = new long[shape.length];
+        for (int i = 0; i < shape.length; i++) {
+            positiveShape[i] = shape[i] <= 0 ? 1 : shape[i];
+        }
+
+        if (dataType == DataType.UNKNOWN) {
+            dataType = DataType.FLOAT; // Safe default
+        }
+
+        log.debug("Creating placeholder array for {} with shape {} and type {}",
+                placeholder.name(), Arrays.toString(positiveShape), dataType);
+
+        INDArray arr = Nd4j.zeros(dataType, positiveShape);
+        setEagerArrForVarName(placeholder.name(), arr);
+        return arr;
+    }
+
+
     /**
      * Loop with conditions.
-     * For more information see the underlyign class
+     * For more information see the underlying class
      * {@link ControlFlow#loopWithConditions(String[], String, SameDiff, SameDiff, String, SDVariable[], String[], String[])}
      * @param loopParams the loop parameters to loop with
      * @return
@@ -7563,5 +8550,8 @@ public class SameDiff extends SDBaseOps {
 
         return ret;
     }
+
+
+
 
 }
