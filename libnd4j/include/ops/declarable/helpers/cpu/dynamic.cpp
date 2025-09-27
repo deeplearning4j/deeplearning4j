@@ -209,19 +209,19 @@ void dynamicPartitionFunctorBP(sd::LaunchContext* context, NDArray * input, NDAr
                         SD_COMMON_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void _dynamicPartitionFunctorBP,
+BUILD_SINGLE_TEMPLATE( void _dynamicPartitionFunctorBP,
                       (NDArray * input, NDArray * indices, std::vector<NDArray*> const& inputGradientList,
                           std::vector<NDArray*>& outputList);
 , SD_COMMON_TYPES);
-BUILD_SINGLE_TEMPLATE(template sd::Status _dynamicStitchFunctorBP,
+BUILD_SINGLE_TEMPLATE( sd::Status _dynamicStitchFunctorBP,
                       (std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices,
                           NDArray * gradInput, std::vector<NDArray*>& outputList);
 , SD_COMMON_TYPES);
 
-BUILD_SINGLE_TEMPLATE(template void _dynamicPartitionFunctor,
+BUILD_SINGLE_TEMPLATE( void _dynamicPartitionFunctor,
                       (NDArray * input, NDArray * indices, std::vector<NDArray*>& outputList);
 , SD_COMMON_TYPES);
-BUILD_SINGLE_TEMPLATE(template sd::Status _dynamicStitchFunctor,
+BUILD_SINGLE_TEMPLATE( sd::Status _dynamicStitchFunctor,
                       (std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray* output);
 , SD_COMMON_TYPES);
 

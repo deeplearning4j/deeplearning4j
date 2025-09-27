@@ -119,7 +119,7 @@ void fakeQuantWithMinMaxVarsPerChannel(LaunchContext* context, NDArray* input, N
                         (input, min, max, numBits, narrowed, output), SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void fakeQuantWithMinMaxVars_,
+BUILD_SINGLE_TEMPLATE( void fakeQuantWithMinMaxVars_,
                       (NDArray * input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output),
                       SD_FLOAT_TYPES);
 

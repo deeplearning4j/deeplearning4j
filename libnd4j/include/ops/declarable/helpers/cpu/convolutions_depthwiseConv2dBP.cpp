@@ -93,21 +93,21 @@ static void depthwiseConv2dBP_(NDArray* input, NDArray* weights, NDArray* bias, 
 
   std::vector<LongType> colShape = {bS, iC, kH, kW, oH, oW};
   NDArray columns(input->ordering(), colShape, input->dataType(), input->getContext());
-  NDArray gradOreshaped = gradO->reshape(gradO->ordering(), gradOreShape);
+  NDArray *gradOreshaped = gradO->reshape(gradO->ordering(), gradOreShape);
 
   // ----- calculation of gradW and gradB ----- //
   NDArray zero = NDArrayFactory::create(0.f, input->getContext());
   helpers::im2col(
       *input->getContext(), *input, columns, kH, kW, sH, sW, pH, pW, dH, dW,
   zero);  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-  sd::MmulHelper::tensorDot(&columns, &gradOreshaped, gradW, modifColumns, modifGradO1,
+  sd::MmulHelper::tensorDot(&columns, gradOreshaped, gradW, modifColumns, modifGradO1,
                             modifWeights);  // [iC, kW*kH, bS*oH*oW] x [iC, bS*oH*oW, mC] = [iC, kH*kW, mC]
 
   // ----- calculation of gradB ----- //
   if (gradB) {
     NDArray* gradBR = gradB;
     std::vector<LongType> shape = {gradB->lengthOf()};
-    if (gradB->rankOf() == 2) gradBR = new NDArray(gradB->reshape(gradB->ordering(), shape, false));
+    if (gradB->rankOf() == 2) gradBR =gradB->reshape(gradB->ordering(), shape, false);
     std::vector<sd::LongType> axes = {0, indOoH, indOoH + 1};
     gradO->reduceAlongDimension(reduce::Sum, gradBR, &axes);  // sum over bS, oH, oW
 
@@ -124,6 +124,8 @@ static void depthwiseConv2dBP_(NDArray* input, NDArray* weights, NDArray* bias, 
     delete input;
     delete gradI;
   }
+
+  delete gradOreshaped;
 }
 
 void ConvolutionUtils::depthwiseConv2dBP(graph::Context& block, NDArray* input, NDArray* weights,

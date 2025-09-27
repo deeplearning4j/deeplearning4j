@@ -25,7 +25,7 @@
 #include <ops/declarable/helpers/transforms.h>
 
 #include <numeric>
-
+#include <system/selective_rendering.h>
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -99,6 +99,8 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
 
 ////////////////////////////////////////////////////////////////////////
 void gatherND(sd::LaunchContext* context, NDArray& input, NDArray& indices, NDArray& output) {
+  auto inputDType = input.dataType();
+  auto indicesDType = indices.dataType();
   BUILD_DOUBLE_SELECTOR(input.dataType(), indices.dataType(), gatherND_, (input, indices, output), SD_COMMON_TYPES,
                         SD_INDEXING_TYPES);
 }
@@ -128,16 +130,17 @@ static void gather_(NDArray* input, NDArray* indices, NDArray* output, const std
         auto scalarNDArray = input->e(idx);
         output->assign(&scalarNDArray);
       } else {
+        // FIX: Don't call evalDimsToExclude here!
+        // tadForDimensions expects the dimensions to create TADs along,
+        // NOT the dimensions to exclude
         std::vector<sd::LongType> axesVec = {axis};
-        auto dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(),1,axesVec.data());
-        auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
+        // Pass the axis directly - TadCalculator will handle the exclusion internally
+        auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), &axesVec);
 
         auto tadArr = NDArray(reinterpret_cast<void*>(reinterpret_cast<T*>(input->buffer()) +
                                                       tadPack->primaryOffsets()[indices->e<sd::LongType>(0)]),
                               tadPack->primaryShapeInfo(), output->getContext(), 0, 0);
         output->assign(&tadArr);
-        delete dimensions;
-
       }
     } else if (input->rankOf() == 1 && indices->isVector()) {
       // special case

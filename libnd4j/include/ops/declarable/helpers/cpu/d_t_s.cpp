@@ -101,7 +101,7 @@ void _depthToSpace(sd::LaunchContext *context, NDArray&input, NDArray *output, i
   BUILD_SINGLE_SELECTOR(xType, __depthToSpace, (input, output, block_size, isNHWC), SD_COMMON_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void __depthToSpace,
+BUILD_SINGLE_TEMPLATE( void __depthToSpace,
                       (NDArray&input, NDArray *output, int block_size, bool isNHWC);
                       , SD_COMMON_TYPES);
 

@@ -202,7 +202,7 @@ static void pooling2d_(sd::graph::Context& block, NDArray& input, NDArray& outpu
 
               for (sd::LongType kh = hstart; kh < hend; kh += iStep2)
                 for (sd::LongType kw = wstart; kw < wend; kw += iStep3)
-                  sum += sd::math::sd_pow<T, T, T>(sd::math::sd_abs<T,T>(pIn[kh + kw]), extraParam0);
+                  sum += sd::math::sd_pow<T, T, T>(sd::math::sd_abs<T,T>(pIn[kh + kw]), static_cast<T>(extraParam0));
 
               sum = sd::math::sd_pow<T, T, T>(sum, static_cast<T>((T)1.f) / extraParam0);
 

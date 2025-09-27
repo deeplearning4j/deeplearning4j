@@ -26,6 +26,7 @@
 #include <memory>
 #include <stdexcept>
 #include <type_traits>
+#include <system/selective_rendering.h>
 #if NOT_EXCLUDED(OP_ctc_loss)
 namespace sd {
 namespace ops {
@@ -414,12 +415,14 @@ void ctc_loss_(NDArray&logits, NDArray&targetLabels, NDArray&logitsLengths,
 
 void ctcLoss(graph::Context &block, NDArray&logits, NDArray&targetLabels, NDArray&logitsLengths,
              NDArray&targetLabelLengths, NDArray &logLosses, NDArray &gradients, int blankIndex) {
+  auto logitsDType = logits.dataType();
+  auto targetLabelsDType = targetLabels.dataType();
   BUILD_DOUBLE_SELECTOR(logits.dataType(), targetLabels.dataType(), ctc_loss_,
                         (logits, targetLabels, logitsLengths, targetLabelLengths, logLosses, gradients, blankIndex),
                         SD_FLOAT_TYPES, SD_INDEXING_TYPES);
 }
 
-BUILD_DOUBLE_TEMPLATE(template void ctc_loss_,
+BUILD_DOUBLE_TEMPLATE( void ctc_loss_,
                       (NDArray&logits, NDArray&targetLabels, NDArray&logitsLengths,
                        NDArray&targetLabelLengths, NDArray &logLosses, NDArray &gradients, int blankIndex),
                       SD_FLOAT_TYPES, SD_INDEXING_TYPES);
