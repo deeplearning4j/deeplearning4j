@@ -22,7 +22,7 @@
 
 #ifndef DEV_TESTS_SHAPEDESCRIPTOR_H
 #define DEV_TESTS_SHAPEDESCRIPTOR_H
-#include <array/ArrayOptions.h>
+#include <array/ArrayOptions.hXX>
 #include <array/DataType.h>
 #include <helpers/shape.h>
 #include <system/common.h>

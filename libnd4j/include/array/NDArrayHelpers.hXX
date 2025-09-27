@@ -155,11 +155,13 @@ NDArray operator+(T scalar, NDArray&& arr) {
 }
 
 #define INSTANTIATE_SCALAR_OP(OP, T) \
- template SD_LIB_EXPORT NDArray operator OP<GET_SECOND(T), typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<GET_SECOND(T)>::value>::type>(NDArray& arr, GET_SECOND(T) scalar); \
- template SD_LIB_EXPORT NDArray operator OP<GET_SECOND(T), typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<GET_SECOND(T)>::value>::type>(NDArray&& arr, GET_SECOND(T) scalar); \
- template SD_LIB_EXPORT NDArray operator OP<GET_SECOND(T), typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<GET_SECOND(T)>::value>::type>(GET_SECOND(T) scalar, NDArray& arr); \
- template SD_LIB_EXPORT NDArray operator OP<GET_SECOND(T), typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<GET_SECOND(T)>::value>::type>(GET_SECOND(T) scalar, NDArray&& arr);
-
+EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
+    GET_FIRST(T), \
+    template SD_LIB_EXPORT NDArray operator OP<GET_SECOND(T), typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<GET_SECOND(T)>::value>::type>(NDArray& arr, GET_SECOND(T) scalar); \
+    template SD_LIB_EXPORT NDArray operator OP<GET_SECOND(T), typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<GET_SECOND(T)>::value>::type>(NDArray&& arr, GET_SECOND(T) scalar); \
+    template SD_LIB_EXPORT NDArray operator OP<GET_SECOND(T), typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<GET_SECOND(T)>::value>::type>(GET_SECOND(T) scalar, NDArray& arr); \
+    template SD_LIB_EXPORT NDArray operator OP<GET_SECOND(T), typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<GET_SECOND(T)>::value>::type>(GET_SECOND(T) scalar, NDArray&& arr); \
+))
 #define INSTANTIATE_ALL_SCALAR_OPS(T) \
  INSTANTIATE_SCALAR_OP(+, T) \
  INSTANTIATE_SCALAR_OP(-, T) \
@@ -387,8 +389,10 @@ void NDArray::operator/=(const T scalar) {
 
 // Define instantiations matching the header file declarations exactly
 #define INSTANTIATE_COMPOUND_ASSIGN_OP(OP, T) \
- template SD_LIB_EXPORT void NDArray::operator OP<GET_SECOND(T), typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<GET_SECOND(T)>::value>::type>(const GET_SECOND(T) scalar);
-
+EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
+    GET_FIRST(T), \
+    template SD_LIB_EXPORT void NDArray::operator OP<GET_SECOND(T), typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<GET_SECOND(T)>::value>::type>(const GET_SECOND(T) scalar); \
+))
 #define INSTANTIATE_ALL_COMPOUND_ASSIGN_OPS(T) \
  INSTANTIATE_COMPOUND_ASSIGN_OP(+=, T) \
  INSTANTIATE_COMPOUND_ASSIGN_OP(-=, T) \
