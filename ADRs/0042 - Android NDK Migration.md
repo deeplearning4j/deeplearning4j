@@ -1,63 +1,55 @@
-# ADR-0042: Android NDK r21d to r27d Migration
+# ADR: Android NDK Migration from r21d to r27d
 
 ## Status
 
 Proposed
 
-Proposed by: Adam Gibson (27-09-2025)
+Proposed by: Adam Gibson (September 2025)
+
+Discussed with: Development Team
 
 ## Context
 
-Android NDK r21 was released in October 2019 as the first LTS release.
-It uses Clang r365631 (based on LLVM 9).
-NDK r27 was released in July 2024 using Clang r522817d (based on LLVM 18).
-This represents a 5-year gap and 9 major LLVM versions.
+We've been using Android NDK r21d since October 2019, when it was released as the first LTS version. After 5 years, it's time to evaluate whether we should upgrade to the latest r27d release.
 
-Major changes between r21d and r27d:
-- Minimum API level increased from 16 to 21
-- GNU binutils completely removed (as, ld, ar, strip)
-- GDB removed in favor of LLDB only
-- GNU Make upgraded from 4.2 to 4.4.1
-- LLD is now the only linker option
-- 32-bit Windows host support dropped
+The version gap is substantial - we're looking at jumping 9 major LLVM versions (from LLVM 9 to LLVM 18). This isn't just a routine update; it represents fundamental changes in the Android build ecosystem:
 
-KitKat (APIs 19-20) support removed in r26.
-Jelly Bean (APIs 16-18) support removed in r24.
-This means Android 5.0 Lollipop (API 21) is now the minimum.
+**Toolchain Evolution**: The Android team has completely removed GNU binutils (as, ld, ar, strip) in favor of LLVM alternatives. GDB is gone, replaced entirely by LLDB. Even GNU Make has been upgraded from 4.2 to 4.4.1. The toolchain is now purely LLVM-based with LLD as the only linker option.
+
+**Platform Support Changes**: Perhaps most significantly, the minimum API level has increased from 16 to 21. This means dropping support for KitKat (APIs 19-20) and Jelly Bean (APIs 16-18). Android 5.0 Lollipop becomes our new baseline. Additionally, 32-bit Windows host support has been removed entirely.
+
+**Why This Matters**: Our Android builds have been stable, but we're missing out on years of compiler optimizations, C++20/23 features, and security improvements. The old toolchain also makes it harder to integrate with modern Android development practices.
 
 ## Decision
 
-Upgrade to Android NDK r27d for all Android builds.
-Accept the increased minimum API requirement.
-Update build scripts to use LLVM tooling exclusively.
-Modernize cross-compilation toolchain files.
+We will upgrade to Android NDK r27d across all our Android builds. This means accepting the increased minimum API requirement and fully embracing the LLVM toolchain.
 
-### Technical Changes
+### Technical Migration
 
-**Toolchain Updates**
-- Replace GNU as with integrated Clang assembler
-- Remove any `-fno-integrated-as` flags
-- Use `llvm-ar` instead of `ar`
-- Use `llvm-strip` instead of `strip`
+The toolchain changes require several updates:
 
-**Build System Updates**
-- Update CMAKE_TOOLCHAIN_FILE paths
-- Remove any GDB debugging configurations
-- Update minimum API to 21 in all builds
+**Compiler Tooling**:
+- Replace GNU assembler with Clang's integrated assembler
+- Remove any `-fno-integrated-as` flags from our builds
+- Switch from `ar` to `llvm-ar`
+- Switch from `strip` to `llvm-strip`
 
-**Cross-compilation Changes**
-- Windows 32-bit builds no longer possible
-- Updated sysroot structures
-- New compiler flags and optimizations
+**Build System Updates**:
+- Update all CMAKE_TOOLCHAIN_FILE paths
+- Remove GDB debugging configurations
+- Set minimum API to 21 in all Android builds
+- Remove 32-bit Windows cross-compilation support
 
-### CMake Toolchain File Modernization
+### CMake Toolchain Improvements
 
-**Path Detection**
+Beyond just updating versions, we're modernizing our toolchain files to be more robust:
+
+**Flexible Path Detection**:
 ```cmake
-# Before - Required specific env vars
+# Old approach - rigid environment variable
 set(CMAKE_ANDROID_NDK "$ENV{ANDROID_NDK}")
 
-# After - Flexible detection
+# New approach - check multiple common locations
 if(NOT DEFINED CMAKE_ANDROID_NDK)
    if(DEFINED ENV{ANDROID_NDK_ROOT})
       set(CMAKE_ANDROID_NDK $ENV{ANDROID_NDK_ROOT})
@@ -66,109 +58,102 @@ if(NOT DEFINED CMAKE_ANDROID_NDK)
    elseif(DEFINED ENV{ANDROID_NDK})
       set(CMAKE_ANDROID_NDK $ENV{ANDROID_NDK})
    else()
-      message(FATAL_ERROR "Android NDK not found...")
+      message(FATAL_ERROR "Android NDK not found. Please set ANDROID_NDK_ROOT, ANDROID_NDK_HOME, or ANDROID_NDK")
    endif()
 endif()
 ```
 
-**Toolchain Specification**
+**Explicit Toolchain Specification**:
 ```cmake
-# Before - Environment variable compiler
+# Old approach - environment-dependent
 set(CMAKE_C_COMPILER "$ENV{ANDROID_CC}")
 
-# After - Explicit LLVM toolchain
+# New approach - explicit LLVM toolchain
 set(CMAKE_C_COMPILER "${NDK_TOOLCHAIN_PATH}/bin/aarch64-linux-android${ANDROID_NATIVE_API_LEVEL}-clang")
 set(CMAKE_AR "${NDK_TOOLCHAIN_PATH}/bin/llvm-ar")
 set(CMAKE_STRIP "${NDK_TOOLCHAIN_PATH}/bin/llvm-strip")
 set(CMAKE_RANLIB "${NDK_TOOLCHAIN_PATH}/bin/llvm-ranlib")
 ```
 
-**Error Checking**
-Added validation for:
+**Comprehensive Validation**:
+We're adding checks for:
 - NDK directory existence
-- Toolchain path existence
-- Sysroot existence
-- Compiler binary existence
+- Toolchain path validity
+- Sysroot presence
+- Compiler binary availability
 
-**API Level Configuration**
-```cmake
-# Before - Only environment variable
-set(CMAKE_SYSTEM_VERSION "$ENV{ANDROID_VERSION}")
-
-# After - Flexible with default
-if(NOT DEFINED ANDROID_NATIVE_API_LEVEL AND DEFINED ENV{ANDROID_VERSION})
-   set(ANDROID_NATIVE_API_LEVEL $ENV{ANDROID_VERSION})
-elseif(NOT DEFINED ANDROID_NATIVE_API_LEVEL)
-   set(ANDROID_NATIVE_API_LEVEL 21)  # Default API level
-endif()
-```
-
-**Linker Flags**
-Added modern Android linker flags:
-- `-Wl,--build-id=sha1`
-- `-Wl,--no-rosegment`
-- `-Wl,--fatal-warnings`
-- `-Wl,--gc-sections`
-- `-Wl,--no-undefined`
+**Modern Linker Configuration**:
+Adding contemporary Android linker flags:
+- `-Wl,--build-id=sha1` for better debugging
+- `-Wl,--no-rosegment` for compatibility
+- `-Wl,--fatal-warnings` to catch issues early
+- `-Wl,--gc-sections` for smaller binaries
+- `-Wl,--no-undefined` to prevent symbol issues
 
 ## Consequences
 
-### Build Improvements
-- Clang 18 provides better optimization
-- Improved C++20/23 support
-- Better error messages
-- Faster compilation with LLD
+### Advantages
 
-### Compatibility Impact
-- Android 4.4 KitKat devices unsupported
-- Approximately 2-3% of Android devices affected
-- These are primarily older, low-end devices
-- Already struggle with modern ML workloads
+**Build Quality**: Clang 18 brings substantial improvements:
+- Better optimization passes
+- Full C++20 support with preview C++23 features
+- Clearer, more actionable error messages
+- Faster linking with LLD
+- Modern compiler warnings catch more bugs
 
-### Security Benefits
+**Security**: The new toolchain includes:
 - Fortify enabled by default
-- Better stack protection
-- Modern compiler security features
-- No longer maintaining old toolchain patches
+- Enhanced stack protection mechanisms
+- Modern exploit mitigations
+- No more maintaining patches for the old toolchain
 
-### Migration Effort
-- Update all GitHub Actions workflows
-- Modify CMake configurations
-- Test on minimum API devices
-- Update documentation
-
-### Cross-Compilation Improvements
-- More robust error handling
+**Development Experience**: 
+- More robust error handling in toolchain files
 - Better error messages when misconfigured
-- Supports multiple NDK installation methods
-- Enforces LLVM toolchain usage
+- Support for multiple NDK installation methods
+- Consistent LLVM toolchain reduces surprises
 
-## Implementation
+### Disadvantages
 
-Change workflow configurations:
-```yaml
-# Before
-- uses: ndk/setup-ndk@v1
-  with:
-    ndk-version: r21d
+**Device Compatibility**: We lose support for approximately 2-3% of Android devices:
+- Android 4.4 KitKat and older
+- These are primarily older, low-end devices
+- Many already struggle with modern ML workloads
+- No migration path for these users
 
-# After
-- uses: ndk/setup-ndk@v1
-  with:
-    ndk-version: r27d
-```
+**Migration Effort**:
+- Update all GitHub Actions workflows
+- Modify CMake configurations across the project
+- Extensive testing on API 21 devices
+- Documentation updates
+- Potential issues with third-party dependencies
 
-Update CMake minimum API:
-```cmake
-# Before
-set(ANDROID_NATIVE_API_LEVEL 16)
+**Cross-Compilation Complexity**:
+- Windows 32-bit builds no longer possible
+- May affect some contributor workflows
+- Requires all Windows developers to use 64-bit systems
 
-# After
-set(ANDROID_NATIVE_API_LEVEL 21)
-```
+### Implementation Timeline
+
+1. **Phase 1 - Testing** (2 weeks):
+   - Update CI/CD pipelines with r27d
+   - Run parallel builds with both NDKs
+   - Performance comparison
+
+2. **Phase 2 - Migration** (1 week):
+   - Switch primary builds to r27d
+   - Update all documentation
+   - Notify users of minimum API change
+
+3. **Phase 3 - Cleanup** (1 week):
+   - Remove r21d from CI/CD
+   - Archive old toolchain files
+   - Final compatibility testing
 
 ## References
-- Android NDK r21 release notes
+
+- Android NDK r21 Release Notes
+- Android NDK r27 Release Notes  
 - Android NDK Revision History
-- LLVM 18 release notes
-- Android cross-compilation documentation
+- LLVM 18 Release Notes
+- Android Platform Version Distribution
