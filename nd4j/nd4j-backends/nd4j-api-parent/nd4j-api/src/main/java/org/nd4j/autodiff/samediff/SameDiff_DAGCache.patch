@@ -1,0 +1,50 @@
+--- a/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff/samediff/SameDiff.java
++++ b/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff/samediff/SameDiff.java
+@@ -4200,6 +4200,10 @@ public class SameDiff extends SDBaseOps {
+         }
+ 
+         addVariable(ret);
++        
++        // Clear DAG cache since graph structure changed
++        clearDAGCache();
++        
+         return ret;
+     }
+ 
+@@ -4423,6 +4427,9 @@ public class SameDiff extends SDBaseOps {
+             placeHoldersPerThread.get().add(varName);
+         }
+         placeholders.add(varName);
++        
++        // Clear DAG cache since graph structure changed
++        clearDAGCache();
+     }
+ 
+ 
+@@ -4587,6 +4594,9 @@ public class SameDiff extends SDBaseOps {
+             varToUpdate.setVariableType(VariableType.CONSTANT);
+             varToUpdate.setArray(new DeviceLocalNDArray(arr, true));
+         }
++        
++        // Clear DAG cache since graph structure changed
++        clearDAGCache();
+     }
+ 
+     /**
+@@ -6287,4 +6297,15 @@ public class SameDiff extends SDBaseOps {
+         }
+         return ret;
+     }
++    
++    /**
++     * Clear the DAG cache in all sessions. This should be called when the graph structure changes.
++     */
++    private void clearDAGCache() {
++        // Clear caches in all session types that support DAG caching
++        for (Map.Entry<String, InferenceSession> entry : sessions.entrySet()) {
++            if (entry.getValue() instanceof InferenceSession) {
++                ((InferenceSession) entry.getValue()).clearDAGCache();
++            }
++        }
++    }
+ }
