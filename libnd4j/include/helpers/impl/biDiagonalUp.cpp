@@ -134,7 +134,7 @@ HHsequence BiDiagonalUp::makeHHsequence_(const char type) {
   else
     for (int i = 0; i < diagSize; ++i) _hhCoeffs.r<T>(i) = _HHmatrix.t<T>(i, i + 1);
 
-  HHsequence result(_HHmatrix, _hhCoeffs, type);
+  HHsequence result(&_HHmatrix, &_hhCoeffs, type);
 
   if (type != 'u') {
     result._diagSize = diagSize;
@@ -149,7 +149,7 @@ HHsequence BiDiagonalUp::makeHHsequence(const char type) {
   auto xType = _HHmatrix.dataType();
   BUILD_SINGLE_SELECTOR(xType, return makeHHsequence_, (type);, SD_FLOAT_TYPES);
   NDArray dummy = NDArray();
-  return HHsequence(dummy, dummy, 'u');
+  return HHsequence(&dummy, &dummy, 'u');
 }
 
 BUILD_SINGLE_TEMPLATE( void BiDiagonalUp::_evalData, (), SD_FLOAT_TYPES);

@@ -481,11 +481,13 @@ export CMAKE_COMMAND="cmake"
 if which cmake3 &> /dev/null; then
     export CMAKE_COMMAND="cmake3"
 fi
-export MAKE_COMMAND="make"
+
+[[ -z ${MAKEJ:-} ]] && MAKEJ=4
+
+export MAKE_COMMAND="make -j${MAKEJ}"
 export MAKE_ARGUMENTS=
 echo eval $CMAKE_COMMAND
 
-[[ -z ${MAKEJ:-} ]] && MAKEJ=4
 
 # Initialize all script variables to prevent unbound variable errors
 PARALLEL="${PARALLEL:-true}"
@@ -1497,12 +1499,6 @@ else
         -DMKL_MULTI_THREADED=TRUE \
         ../.. >> "$LOG_OUTPUT" 2>&1
 fi
-
-
-
-
-# This block is too late - the CMAKE_COMMAND has already been executed above
-# The fix needs to be in the main CMake invocation
 
 
 if [[ "$EXTRACT_INSTANTIATIONS" == "ON" ]]; then

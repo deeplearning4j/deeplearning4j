@@ -488,7 +488,7 @@ class SD_LIB_EXPORT NDArray {
   /**
    *  cast array elements to given dtype
    */
-  NDArray cast(DataType dtype);
+  NDArray *cast(DataType dtype);
 
   void cast(NDArray &target, DataType dtype);
 
@@ -586,11 +586,11 @@ class SD_LIB_EXPORT NDArray {
   /**
    *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
    */
-  NDArray &permute(std::vector<LongType> &dimensions, bool copyToNewBuff, bool resetStrides) &;
+  NDArray *permute(std::vector<LongType> &dimensions, bool copyToNewBuff, bool resetStrides) &;
 
-  NDArray &permute(LongType *dimensions, const int rank, const bool copyToNewBuff, const bool resetStrides) &;
-  NDArray &permute(std::vector<LongType> &dimensions, const bool copyToNewBuff, const bool resetStrides) &&;
-  NDArray &permute(LongType *dimensions, const int rank, const bool copyToNewBuff, const bool resetStrides) &&;
+  NDArray *permute(LongType *dimensions, const int rank, const bool copyToNewBuff, const bool resetStrides) &;
+  NDArray *permute(std::vector<LongType> &dimensions, const bool copyToNewBuff, const bool resetStrides) &&;
+  NDArray *permute(LongType *dimensions, const int rank, const bool copyToNewBuff, const bool resetStrides) &&;
 
   void permute(LongType *dimensions, const int rank, NDArray &target, const bool resetStrides);
 
@@ -638,7 +638,7 @@ class SD_LIB_EXPORT NDArray {
   /**
    *  returns new copy of this array, optionally in different order
    */
-  NDArray dup(const char newOrder = 'a', bool forceOriginalBuffer = false);
+  NDArray * dup(const char newOrder = 'a', bool forceOriginalBuffer = false);
 
 
 
@@ -1279,12 +1279,12 @@ class SD_LIB_EXPORT NDArray {
 #endif
 
   template <typename N>
-  NDArray asT();
+  NDArray * asT();
 
   template <typename S>
-  NDArray asS();
+  NDArray * asS();
 
-  NDArray asT(DataType dtype);
+  NDArray * asT(DataType dtype);
 
   void linspace(const double start);
 

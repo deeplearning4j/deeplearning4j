@@ -126,7 +126,7 @@ CUSTOM_OP_IMPL(layer_norm_bp, 3, -1, false, 0, -1) {
   eps->applyBroadcast(sd::broadcast::Multiply, &dimvC, gain, dLdx);
 
   auto dLdx_tmp = dLdx->dup();
-  std::vector<NDArray *> standardizeBpArgs = {input, &dLdx_tmp};
+  std::vector<NDArray *> standardizeBpArgs = {input, dLdx_tmp};
   std::vector<NDArray *> standardizeBpOut = {dLdx};
   standardizeBp.execute(standardizeBpArgs, standardizeBpOut, targs, longAxis, bargs);
 

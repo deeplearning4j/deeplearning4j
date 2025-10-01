@@ -69,7 +69,7 @@ DECLARE_SHAPE_FN(barnes_symmetrized) {
   if (block.getIArguments()->size() > 0) N = INT_ARG(0);
   auto dataType = rowP->dataType();  // ArrayOptions::dataType(inputShape->at(0));
   std::vector<sd::LongType>  shape = {N};
-  NDArray* rowCounts = NDArrayFactory::create_<int>('c',shape, block.launchContext());  // rowP->dup();
+  NDArray* rowCounts = NDArrayFactory::create_<int>('c',shape, block.launchContext());
   LongType len = helpers::barnes_row_count(rowP, colP, N, *rowCounts);
   rowCounts->syncToHost();
   if (len <= 0) THROW_EXCEPTION("barnes_symmetrized: Cannot allocate shape due non-positive len.");

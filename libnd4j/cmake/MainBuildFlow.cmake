@@ -11,6 +11,8 @@
 # All functions are defined first to ensure they are available when called.
 # =============================================================================
 
+
+
 # --- Helper for colored status messages ---
 function(print_status_colored type message)
     if(type STREQUAL "ERROR")
@@ -699,6 +701,27 @@ if(SD_EXTRACT_INSTANTIATIONS)
     # ExtractInstantiations.cmake will handle everything and exit
     return()
 endif()
+
+target_precompile_headers(${SD_LIBRARY_NAME} PRIVATE
+        <vector>
+        <memory>
+        <algorithm>
+        <functional>
+        <cstring>
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/system/op_boilerplate.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/system/type_boilerplate.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/system/type_boiler_plate_expansioons.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/array/DataType.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/array/NDArray.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/array/NDArray.hXX"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/types/types.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/math/platformmath.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/math/templatemath.h"
+
+
+)
+
+
 
 include(PostBuild)
 

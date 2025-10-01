@@ -134,7 +134,7 @@ TEST_F(ConstantShapeHelperTests, basic_test_3) {
 TEST_F(ConstantShapeHelperTests, basic_test_4) {
   auto array = NDArrayFactory::create_<float>('c', {128, 256});
 
-  auto dup = new NDArray(array->dup('f'));
+  auto dup = array->dup('f');
 
   ASSERT_TRUE(dup->shapeInfo() != nullptr);
 

@@ -231,11 +231,11 @@ CUSTOM_OP_IMPL(huber_loss_grad, 3, 3, false, 1, 1) {
   auto lteMaskFloat = lteMask.cast(diff.dataType());
 
   // For dLdp
-  NDArray dLdpTemp = lteMaskFloat * diff + gtMaskFloat * delta * signDiff;
+  NDArray dLdpTemp = *lteMaskFloat * diff + *gtMaskFloat * delta * signDiff;
   dLdp->assign(&dLdpTemp);
 
   // For dLdl
-  NDArray dLdlTemp = -lteMaskFloat * diff - gtMaskFloat * delta * signDiff;
+  NDArray dLdlTemp = -*lteMaskFloat * diff - *gtMaskFloat * delta * signDiff;
   dLdl->assign(&dLdlTemp);
 
   switch (reductionMode) {

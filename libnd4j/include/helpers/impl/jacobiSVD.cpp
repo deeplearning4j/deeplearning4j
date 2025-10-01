@@ -281,39 +281,41 @@ void JacobiSVD<T>::evalData(NDArray& matrix) {
   if (_rows > _cols) {
     NDArray scaled = matrix / scale;
     HHcolPivQR qr(scaled);
-    NDArray mAssign = qr._qr({0, _cols, 0, _cols});
+    NDArray qrRef = *qr._qr;
+    NDArray mAssign = qrRef({0, _cols, 0, _cols});
     _m.assign(&mAssign);
     _m.fillAsTriangular<T>(0., 0, 0, _m, 'l',false);
 
     HHsequence hhSeg(qr._qr, qr._coeffs, 'u');
 
     if (_fullUV)
-      hhSeg.applyTo(_u);
+      hhSeg.applyTo(&_u);
     else if (_calcU) {
       _u.setIdentity();
-      hhSeg.mulLeft(_u);
+      hhSeg.mulLeft(&_u);
     }
 
 
-    if (_calcV) _v.assign(&qr._permut);
+    if (_calcV) _v.assign(qr._permut);
   } else if (_rows < _cols) {
     NDArray scaled = matrix.transpose() / scale;
     HHcolPivQR qr(scaled);
-    _m.assign(&qr._qr({0, _rows, 0, _rows}));
+    NDArray qrRef = *qr._qr;
+    _m.assign(&qrRef({0, _rows, 0, _rows}));
     _m.fillAsTriangular<T>(0., 0, 0, _m, 'l',false);
     _m.transposei();
 
     HHsequence hhSeg(qr._qr, qr._coeffs, 'u');  // type = 'u' is not mistake here !
 
     if (_fullUV)
-      hhSeg.applyTo(_v);
+      hhSeg.applyTo(&_v);
     else if (_calcV) {
       _v.setIdentity();
-      hhSeg.mulLeft(_v);
+      hhSeg.mulLeft(&_v);
     }
 
 
-    if (_calcU) _u.assign(&qr._permut);
+    if (_calcU) _u.assign(qr._permut);
   } else {
     NDArray mAssign = matrix({0, _diagSize, 0, _diagSize}) / scale;
     _m.assign(&mAssign);

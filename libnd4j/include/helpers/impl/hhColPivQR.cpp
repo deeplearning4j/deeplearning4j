@@ -32,28 +32,29 @@ HHcolPivQR::HHcolPivQR(NDArray &matrix) {
   std::vector<LongType> coeffsShape = {1,_diagSize};
   _diagSize = math::sd_min<int>(matrix.sizeAt(0), matrix.sizeAt(1));
   std::vector<LongType> permShape = {matrix.sizeAt(1), matrix.sizeAt(1)};
-  _coeffs = NDArray(matrix.ordering(),coeffsShape, matrix.dataType(), matrix.getContext());
+  _coeffs = new NDArray(matrix.ordering(),coeffsShape, matrix.dataType(), matrix.getContext());
 
-  _permut = NDArray(matrix.ordering(), permShape, matrix.dataType(), matrix.getContext());
+  _permut = new NDArray(matrix.ordering(), permShape, matrix.dataType(), matrix.getContext());
 
   evalData();
 }
 
-void HHcolPivQR::evalData() { BUILD_SINGLE_SELECTOR(_qr.dataType(), _evalData, (), SD_FLOAT_TYPES); }
+void HHcolPivQR::evalData() { BUILD_SINGLE_SELECTOR(_qr->dataType(), _evalData, (), SD_FLOAT_TYPES); }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 void HHcolPivQR::_evalData() {
-  const int rows = _qr.sizeAt(0);
-  const int cols = _qr.sizeAt(1);
+  const int rows = _qr->sizeAt(0);
+  const int cols = _qr->sizeAt(1);
 
   std::vector<LongType> colsShape = {cols};
-  NDArray transp(_qr.ordering(), colsShape, _qr.dataType(), _qr.getContext());
-  NDArray normsUpd(_qr.ordering(), colsShape , _qr.dataType(), _qr.getContext());
-  NDArray normsDir(_qr.ordering(),colsShape , _qr.dataType(), _qr.getContext());
+  NDArray transp(_qr->ordering(), colsShape, _qr->dataType(), _qr->getContext());
+  NDArray normsUpd(_qr->ordering(), colsShape , _qr->dataType(), _qr->getContext());
+  NDArray normsDir(_qr->ordering(),colsShape , _qr->dataType(), _qr->getContext());
 
+  auto qRDeRef = *_qr;
   for (int k = 0; k < cols; ++k)
-    normsDir.r<T>(k) = normsUpd.r<T>(k) = _qr({0, 0, k, k + 1}).reduceNumber(reduce::Norm2).t<T>(0);
+    normsDir.r<T>(k) = normsUpd.r<T>(k) = qRDeRef({0, 0, k, k + 1}).reduceNumber(reduce::Norm2).t<T>(0);
 
   T normScaled = (normsUpd.reduceNumber(reduce::Max)).t<T>(0) * DataTypeUtils::eps<T>();
   T threshold1 = normScaled * normScaled / (T)rows;
@@ -73,8 +74,8 @@ void HHcolPivQR::_evalData() {
     transp.r<T>(k) = (T)biggestColIndex;
 
     if (k != biggestColIndex) {
-      NDArray temp1(_qr({0, 0, k, k + 1}));
-      NDArray temp2(_qr({0, 0, biggestColIndex, biggestColIndex + 1}));
+      NDArray temp1(qRDeRef({0, 0, k, k + 1}));
+      NDArray temp2(qRDeRef({0, 0, biggestColIndex, biggestColIndex + 1}));
       temp1.swapUnsafe(temp2);
 
       math::sd_swap<T>(normsUpd.r<T>(k), normsUpd.r<T>(biggestColIndex));
@@ -83,32 +84,32 @@ void HHcolPivQR::_evalData() {
     }
 
     T normX, c;
-    NDArray qrBlock = _qr({k, rows, k, k + 1});
+    NDArray qrBlock = qRDeRef({k, rows, k, k + 1});
     Householder<T>::evalHHmatrixDataI(qrBlock, c, normX);
 
-    _coeffs.r<T>(k) = c;
+    _coeffs->r<T>(k) = c;
 
-    _qr.r<T>(k, k) = normX;
+    _qr->r<T>(k, k) = normX;
 
     T max = math::sd_abs<T,T>(normX);
     if (max > maxPivot) maxPivot = max;
 
     if (k < rows && (k + 1) < cols) {
-      NDArray qrBlock2 = _qr({k, rows, k + 1, cols}, true);
-      NDArray tail = _qr({k + 1, rows, k, k + 1}, true);
-      Householder<T>::mulLeft(qrBlock2, tail, _coeffs.t<T>(k));
+      NDArray qrBlock2 = qRDeRef({k, rows, k + 1, cols}, true);
+      NDArray tail = qRDeRef({k + 1, rows, k, k + 1}, true);
+      Householder<T>::mulLeft(qrBlock2, tail, _coeffs->t<T>(k));
     }
 
     for (int j = k + 1; j < cols; ++j) {
       if (normsUpd.t<T>(j) != (T)0.f) {
-        T temp = math::sd_abs<T,T>(_qr.t<T>(k, j)) / normsUpd.t<T>(j);
+        T temp = math::sd_abs<T,T>(_qr->t<T>(k, j)) / normsUpd.t<T>(j);
         temp = ((T)1. + temp) * ((T)1. - temp);
         temp = temp < (T)0. ? (T)0. : temp;
         T temp2 = temp * normsUpd.t<T>(j) * normsUpd.t<T>(j) / (normsDir.t<T>(j) * normsDir.t<T>(j));
 
         if (temp2 <= threshold2) {
           if (k + 1 < rows && j < cols)
-            normsDir.r<T>(j) = _qr({k + 1, rows, j, j + 1}).reduceNumber(reduce::Norm2).t<T>(0);
+            normsDir.r<T>(j) = qRDeRef({k + 1, rows, j, j + 1}).reduceNumber(reduce::Norm2).t<T>(0);
 
           normsUpd.r<T>(j) = normsDir.t<T>(j);
         } else
@@ -117,12 +118,13 @@ void HHcolPivQR::_evalData() {
     }
   }
 
-  _permut.setIdentity();
+  _permut->setIdentity();
 
+  auto permuteRef = *_permut;
   for (int k = 0; k < _diagSize; ++k) {
     int idx = transp.e<int>(k);
-    NDArray temp1 = _permut({0, 0, k, k + 1});
-    NDArray temp2 = _permut({0, 0, idx, idx + 1});
+    NDArray temp1 = permuteRef({0, 0, k, k + 1});
+    NDArray temp2 = permuteRef({0, 0, idx, idx + 1});
     temp1.swapUnsafe(temp2);
   }
 }

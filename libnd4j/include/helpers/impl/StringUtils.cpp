@@ -105,15 +105,15 @@ void StringUtils::broadcastStringAssign(NDArray* x, NDArray* z) {
   std::vector<LongType> zeroVec = {0};
   std::vector<LongType> *restDims = ShapeUtils::evalDimsToExclude(x->rankOf(), 1, zeroVec.data());
 
-  auto xTensors = xCasted.allTensorsAlongDimension(*restDims);
+  auto xTensors = xCasted->allTensorsAlongDimension(*restDims);
   auto zTensors = z->allTensorsAlongDimension(*restDims);
 
   delete restDims;
 
-  if (xCasted.isScalar()) {
+  if (xCasted->isScalar()) {
     for (int e = 0; e < zTensors.size(); e++) {
       for (int f = 0; f < zTensors.at(e)->lengthOf(); f++) {
-        setValueForDifferentDataType(zTensors.at(e), f, &xCasted, zType);
+        setValueForDifferentDataType(zTensors.at(e), f, xCasted, zType);
       }
     }
   } else {

@@ -42,8 +42,8 @@ CUSTOM_OP_IMPL(bincount, 1, 1, false, 0, 0) {
 
   LongType maxLength = -1;
   LongType minLength = 0;
-  LongType maxIndex = values.argMax();
-  maxLength = values.e<LongType>(maxIndex) + 1;
+  LongType maxIndex = values->argMax();
+  maxLength = values->e<LongType>(maxIndex) + 1;
 
   if (block.numI() > 0) {
     minLength = math::sd_max(INT_ARG(0), (LongType) 0L);
@@ -53,18 +53,18 @@ CUSTOM_OP_IMPL(bincount, 1, 1, false, 0, 0) {
   if (block.width() == 2) {  // the second argument is weights
     weights = INPUT_VARIABLE(1);
     if (weights->lengthOf() < 1) {
-      std::vector<sd::LongType> currShape = values.getShapeAsVector();
-      weights = NDArrayFactory::create_('c', currShape, values.dataType());
+      std::vector<sd::LongType> currShape = values->getShapeAsVector();
+      weights = NDArrayFactory::create_('c', currShape, values->dataType());
       int one = 1;
       weights->assign(one);
     } else if (weights->isScalar()) {
-      auto value = weights->cast(INT64).asVectorT<LongType>();
-      std::vector<sd::LongType> currShape = values.getShapeAsVector();
-      weights = NDArrayFactory::create_('c',currShape, values.dataType());
+      auto value = weights->cast(INT64)->asVectorT<LongType>();
+      std::vector<sd::LongType> currShape = values->getShapeAsVector();
+      weights = NDArrayFactory::create_('c',currShape, values->dataType());
       weights->assign(value[0]);
     }
 
-    REQUIRE_TRUE(values.isSameShape(weights), 0, "bincount: the input and weights shapes should be equals");
+    REQUIRE_TRUE(values->isSameShape(weights), 0, "bincount: the input and weights shapes should be equals");
   } else if (block.width() == 3) {  // the second argument is min and the third is max
     auto min = INPUT_VARIABLE(1);
     auto max = min;
@@ -83,27 +83,27 @@ CUSTOM_OP_IMPL(bincount, 1, 1, false, 0, 0) {
       maxLength = minLength;
     weights = INPUT_VARIABLE(1);
     if (weights->lengthOf() < 1) {
-      std::vector<sd::LongType> currShape = values.getShapeAsVector();
-      weights = NDArrayFactory::create_('c', currShape, values.dataType());
+      std::vector<sd::LongType> currShape = values->getShapeAsVector();
+      weights = NDArrayFactory::create_('c', currShape, values->dataType());
       int one = 1;
       weights->assign(one);
     } else if (weights->isScalar()) {
       auto value = weights->asVectorT<LongType>();
-      std::vector<sd::LongType> currShape = values.getShapeAsVector();
-      weights = NDArrayFactory::create_('c', currShape, values.dataType());
+      std::vector<sd::LongType> currShape = values->getShapeAsVector();
+      weights = NDArrayFactory::create_('c', currShape, values->dataType());
       weights->assign(value[0]);
     }
-    REQUIRE_TRUE(values.isSameShape(weights), 0, "bincount: the input and weights shapes should be equals");
+    REQUIRE_TRUE(values->isSameShape(weights), 0, "bincount: the input and weights shapes should be equals");
   }
 
   minLength = math::sd_max(minLength, (LongType) 0);
-  maxLength = math::sd_min(maxLength, values.e<LongType>(maxIndex) + 1);
+  maxLength = math::sd_min(maxLength, values->e<LongType>(maxIndex) + 1);
 
   auto result = OUTPUT_VARIABLE(0);
   float zero = 0.0f;
   result->assign(zero);
 
-  helpers::adjustWeights(block.launchContext(), &values, weights, result, minLength, maxLength);
+  helpers::adjustWeights(block.launchContext(), values, weights, result, minLength, maxLength);
 
   return Status::OK;
 }

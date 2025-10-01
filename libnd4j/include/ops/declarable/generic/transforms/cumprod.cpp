@@ -103,32 +103,34 @@ CUSTOM_OP_IMPL(cumprod_bp, 2, 1, false, 0, 2) {
   }
 
   sd::ops::helpers::prefix(block.launchContext(), scalar::Multiply, input, output, dims, exclusive, reverse);
-  NDArray val = NDArray(output->dup());
+  NDArray *val = output->dup();
 
-  gradOut->applyPairwiseTransform(pairwise::Multiply, output, &val);
-  val.applyPairwiseTransform(pairwise::Divide, input, &val);
+  gradOut->applyPairwiseTransform(pairwise::Multiply, output, val);
+  val->applyPairwiseTransform(pairwise::Divide, input, val);
   if (!exclusive && !reverse) {
     if (dims.size())
-      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, dims, true, false);
+      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, val, output, dims, true, false);
     else
-      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, false, true);
+      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, val, output, false, true);
 
   } else if (!exclusive && reverse) {
     if (dims.size())
-      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, dims, false, false);
+      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, val, output, dims, false, false);
     else
-      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, false, false);
+      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, val, output, false, false);
   } else if (exclusive && !reverse) {
     if (dims.size())
-      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, dims, true, true);
+      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, val, output, dims, true, true);
     else
-      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, true, true);
+      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, val, output, true, true);
   } else {
     if (dims.size())
-      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, dims, true, false);
+      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, val, output, dims, true, false);
     else
-      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, true, false);
+      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, val, output, true, false);
   }
+
+  delete val;
 
   return sd::Status::OK;
 }

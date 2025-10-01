@@ -691,10 +691,10 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
 
 
   if (_calcU) {
-    NDArray q1 = _u({col1, col1 + k + 1, col1 + k, col1 + k + 1}, true).dup();
-    NDArray *q1Ref = &q1;
-    NDArray uAssignOne = q1 * c0;
-    NDArray uAssignTwo = q1 * (-s0);
+    NDArray *q1 = _u({col1, col1 + k + 1, col1 + k, col1 + k + 1}, true).dup();
+    NDArray *q1Ref = q1;
+    NDArray uAssignOne = *q1 * c0;
+    NDArray uAssignTwo = *q1 * (-s0);
     for (int i = col1 + k - 1; i >= col1; --i)
       _u({col1, col1 + k + 1, i + 1, i + 2}, true).assign(&_u({col1, col1 + k + 1, i, i + 1}, true));
 
@@ -767,7 +767,7 @@ void SVD<T>::exchangeUV(HHsequence& hhU, HHsequence& hhV, NDArray& U, NDArray& V
     _u = temp1;
 
     _u({0, _diagSize, 0, _diagSize}, true).assign(&V({0, _diagSize, 0, _diagSize}, true));
-    const_cast<HHsequence&>(hhU).mulLeft(_u);
+    const_cast<HHsequence&>(hhU).mulLeft(&_u);
   }
 
   if (_calcV) {
@@ -779,7 +779,7 @@ void SVD<T>::exchangeUV(HHsequence& hhU, HHsequence& hhV, NDArray& U, NDArray& V
 
     NDArray assign = U({0, _diagSize, 0, _diagSize}, true);
     _v({0, _diagSize, 0, _diagSize}, true).assign(&assign);
-    const_cast<HHsequence&>(hhV).mulLeft(_v);
+    const_cast<HHsequence&>(hhV).mulLeft(&_v);
   }
 }
 

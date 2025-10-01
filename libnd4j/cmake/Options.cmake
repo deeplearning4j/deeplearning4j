@@ -64,10 +64,10 @@ set(SD_MAX_TEMPLATE_COMBINATIONS "1000" CACHE STRING "Maximum template combinati
 
 # --- NEW: Template Chunking Configuration ---
 # These control how template instantiations are split across files
-set(CHUNK_TARGET_INSTANTIATIONS "50" CACHE STRING "Target template instantiations per chunk file (higher = fewer files, more memory)")
-set(CHUNK_MAX_INSTANTIATIONS "100" CACHE STRING "Maximum template instantiations per chunk file")
+set(CHUNK_TARGET_INSTANTIATIONS "2" CACHE STRING "Target template instantiations per chunk file (higher = fewer files, more memory)")
+set(CHUNK_MAX_INSTANTIATIONS "3" CACHE STRING "Maximum template instantiations per chunk file")
 set(USE_MULTI_PASS_GENERATION "OFF" CACHE STRING "Use multi-pass generation (ON/OFF/AUTO)")
-set(MULTI_PASS_CHUNK_SIZE "100" CACHE STRING "Chunk size for direct instantiation files")
+set(MULTI_PASS_CHUNK_SIZE "5" CACHE STRING "Chunk size for direct instantiation files")
 
 # --- NEW: Type Selection for Fast Builds ---
 if(SD_FAST_BUILD)

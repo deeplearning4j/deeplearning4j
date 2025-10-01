@@ -37,19 +37,19 @@ EigenValsAndVecs<T>::EigenValsAndVecs(NDArray& matrix) {
 
   Schur<T> schur(matrix);
 
-  NDArray& schurMatrixU = schur.u;
-  NDArray& schurMatrixT = schur.t;
+  NDArray* schurMatrixU = schur.u;
+  NDArray* schurMatrixT = schur.t;
 
-  std::vector<LongType> shape = {schurMatrixU.sizeAt(1), schurMatrixU.sizeAt(1), 2};
+  std::vector<LongType> shape = {schurMatrixU->sizeAt(1), schurMatrixU->sizeAt(1), 2};
   _Vecs = NDArray(matrix.ordering(), shape, matrix.dataType(),
                   matrix.getContext());
   std::vector<LongType> shape2 = {matrix.sizeAt(1), 2};
   _Vals = NDArray(matrix.ordering(), shape2, matrix.dataType(), matrix.getContext());
 
   // sequence of methods calls matters
-  calcEigenVals(schurMatrixT);
-  calcPseudoEigenVecs(schurMatrixT, schurMatrixU);  // pseudo-eigenvectors are real and will be stored in schurMatrixU
-  calcEigenVecs(schurMatrixU);
+  calcEigenVals(*schurMatrixT);
+  calcPseudoEigenVecs(*schurMatrixT, *schurMatrixU);  // pseudo-eigenvectors are real and will be stored in schurMatrixU
+  calcEigenVecs(*schurMatrixU);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -293,11 +293,11 @@ void eig_(NDArray& input, NDArray& vals, NDArray& vecs) {
          vecs.sizeAt(2) == 2 && "incorrect shape for the eigenvector results vecs");
 
   Schur<T> schur(input);
-  NDArray& schurMatrixU = schur.u;
-  NDArray& schurMatrixT = schur.t;
-  calcEigenVals_<T>(schurMatrixT, vals);
-  calcPseudoEigenVecs_<T>(schurMatrixT, schurMatrixU, vals);
-  calcEigenVecs_<T>(schurMatrixU, vals, vecs);
+  NDArray* schurMatrixU = schur.u;
+  NDArray* schurMatrixT = schur.t;
+  calcEigenVals_<T>(*schurMatrixT, vals);
+  calcPseudoEigenVecs_<T>(*schurMatrixT, *schurMatrixU, vals);
+  calcEigenVecs_<T>(*schurMatrixU, vals, vecs);
 }
 
 void eig(NDArray& input, NDArray& vals, NDArray& vecs) {

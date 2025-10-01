@@ -30,7 +30,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-
+# Enable ccache if available for faster builds
+include(cmake/Ccache.cmake)
+setup_ccache()
 
 
 if(NOT SD_CUDA)

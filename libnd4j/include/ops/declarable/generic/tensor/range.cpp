@@ -171,14 +171,14 @@ DECLARE_SHAPE_FN(range) {
       LongType start(0), limit, delta(1);
 
       if (numInArrs == 1)
-        limit = INPUT_VARIABLE(0)->cast(INT64).e<LongType>(0);
+        limit = INPUT_VARIABLE(0)->cast(INT64)->e<LongType>(0);
       else if (numInArrs == 2) {
-        start = INPUT_VARIABLE(0)->cast(INT64).e<LongType>(0);
-        limit = INPUT_VARIABLE(1)->cast(INT64).e<LongType>(0);
+        start = INPUT_VARIABLE(0)->cast(INT64)->e<LongType>(0);
+        limit = INPUT_VARIABLE(1)->cast(INT64)->e<LongType>(0);
       } else {
-        start = INPUT_VARIABLE(0)->cast(INT64).e<LongType>(0);
-        limit = INPUT_VARIABLE(1)->cast(INT64).e<LongType>(0);
-        delta = INPUT_VARIABLE(2)->cast(INT64).e<LongType>(0);
+        start = INPUT_VARIABLE(0)->cast(INT64)->e<LongType>(0);
+        limit = INPUT_VARIABLE(1)->cast(INT64)->e<LongType>(0);
+        delta = INPUT_VARIABLE(2)->cast(INT64)->e<LongType>(0);
 
       }
 

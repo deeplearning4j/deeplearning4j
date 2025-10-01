@@ -270,30 +270,30 @@ void hardSigmoidDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArra
 template <typename T>
 static void logSumExp_(NDArray* input, NDArray* axis, NDArray* output) {
   // reduce along axis with
-  NDArray tempInput = input->dup();
-  input->applyTransform(transform::Exp, &tempInput);
+  NDArray *tempInput = input->dup();
+  input->applyTransform(transform::Exp, tempInput);
   std::vector<sd::LongType> axisVector;
   if (axis != nullptr) {
     axisVector.resize(axis->lengthOf());
     for (size_t i = 0; i < axisVector.size(); ++i) axisVector[i] = axis->e<sd::LongType>(i);
   }
-  tempInput.reduceAlongDimension(reduce::Sum, output, &axisVector);
+  tempInput->reduceAlongDimension(reduce::Sum, output, &axisVector);
   output->applyTransform(transform::Log, output);
 }
 
 template <typename T>
 static void logSumExp_(NDArray* input, NDArray* subtrah, NDArray* axis, NDArray* output) {
   // reduce along axis with
-  NDArray tempInput = input->dup();
-  input->applyPairwiseTransform(pairwise::Subtract, subtrah, &tempInput);
-  tempInput.applyTransform(transform::Exp, &tempInput);
+  NDArray *tempInput = input->dup();
+  input->applyPairwiseTransform(pairwise::Subtract, subtrah, tempInput);
+  tempInput->applyTransform(transform::Exp, tempInput);
 
   std::vector<sd::LongType> axisVector;
   if (axis != nullptr) {
     axisVector.resize(axis->lengthOf());
     for (size_t i = 0; i < axisVector.size(); ++i) axisVector[i] = axis->e<sd::LongType>(i);
   }
-  tempInput.reduceAlongDimension(reduce::Sum, output, &axisVector);
+  tempInput->reduceAlongDimension(reduce::Sum, output, &axisVector);
   output->applyTransform(transform::Log, output);
 }
 

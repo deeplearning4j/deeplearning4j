@@ -92,8 +92,8 @@ CUSTOM_OP_IMPL(dynamic_rnn, 4, 2, false, 0, 0) {
 
   if (timeMajor == false) {
     std::vector<sd::LongType> perm = {1, 0, 2};
-    x = new NDArray(x->permute(perm, false, false));  // [bS x time x inSize]   -> [time x bS x inSize]
-    h = new NDArray(h->permute(perm, false, false));  // [bS x time x numUnits] -> [time x bS x numUnits]
+    x = x->permute(perm, false, false);  // [bS x time x inSize]   -> [time x bS x inSize]
+    h = h->permute(perm, false, false);  // [bS x time x numUnits] -> [time x bS x numUnits]
   }
 
   helpers::rnnTimeLoop(block.launchContext(), x, Wx, Wh, b, h0, maxTimeStep, h, hFinal);

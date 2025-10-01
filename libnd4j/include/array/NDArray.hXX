@@ -1752,7 +1752,8 @@ std::vector<int8_t> NDArray::asByteVector() {
     if (this->isView()) {
       auto tmp = this->dup(this->ordering(), false);
       syncToHost();
-      memcpy(result.data(), tmp.buffer(), (unsigned long long)len * sizeOfT());
+      memcpy(result.data(), tmp->buffer(), (unsigned long long)len * sizeOfT());
+      delete tmp;
     } else {
       syncToHost();
       memcpy(result.data(), buffer(), (unsigned long long)len * sizeOfT());
@@ -2867,7 +2868,7 @@ bool NDArray::permutei(std::vector<LongType> &dimensions, const bool copyToNewBu
 //////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////
-NDArray &NDArray::permute(LongType *dimensions, const int rank, const bool copyToNewBuff, const bool resetStrides) & {
+NDArray *NDArray::permute(LongType *dimensions, const int rank, const bool copyToNewBuff, const bool resetStrides) & {
   if(copyToNewBuff) {
     auto shapeInfoPermuted = ShapeUtils::evalPermShapeInfo(dimensions, rank, this, getContext()->getWorkspace(),resetStrides);
     if(ArrayOptions::dataType(shapeInfoPermuted) == sd::DataType::UNKNOWN) {
@@ -2882,8 +2883,7 @@ NDArray &NDArray::permute(LongType *dimensions, const int rank, const bool copyT
                                getContext());
 
     this->applyTransform(transform::Assign, ret, nullptr);
-    NDArray &ret2 =  *ret;
-    return ret2;
+    return ret;
 
   } else {
     // evaluate shapeInfo for output (permuted) array ret
@@ -2894,31 +2894,30 @@ NDArray &NDArray::permute(LongType *dimensions, const int rank, const bool copyT
     auto buff = ConstantShapeHelper::getInstance().createFromExisting(shapeInfoPermuted);
 
     NDArray *ret = new NDArray(getDataBuffer(), buff, getContext());
-    NDArray &ret2 =  *ret;
 
-    return ret2;
+    return ret;
   }
 
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray &NDArray::permute(LongType *dimensions, const int rank, const bool copyToNewBuff, const bool resetStrides) && {
+NDArray *NDArray::permute(LongType *dimensions, const int rank, const bool copyToNewBuff, const bool resetStrides) && {
   return permute(dimensions, rankOf(), copyToNewBuff, resetStrides);
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray &NDArray::permute(std::vector<LongType> &dimensions, bool copyToNewBuff, bool resetStrides) & {
+NDArray *NDArray::permute(std::vector<LongType> &dimensions, bool copyToNewBuff, bool resetStrides) & {
   if(dimensions.size() < 1)
-    return *this;
+    return this;
   return permute(dimensions.data(), rankOf(), copyToNewBuff, resetStrides);
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray &NDArray::permute(std::vector<LongType> &dimensions,
+NDArray *NDArray::permute(std::vector<LongType> &dimensions,
                           const bool copyToNewBuff,
                           const bool resetStrides) && {
   if(dimensions.size() < 1)
-    return *this;
+    return this;
   return permute(dimensions.data(), rankOf(), copyToNewBuff, false);
 }
 
@@ -3017,23 +3016,23 @@ BUILD_SINGLE_UNCHAINED_TEMPLATE(  SD_LIB_EXPORT, * NDArray::bufferasTWithOffset(
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-NDArray NDArray::asT()  {
+NDArray * NDArray::asT()  {
   auto nonConst = const_cast<NDArray *>(this);
   std::vector<sd::LongType> shape = nonConst->getShapeAsVector();
   std::vector<sd::LongType> empty = {};
   std::vector<double> zeroVec = {0.};
-  auto result = isScalar() ? NDArray('c', empty, zeroVec, DataTypeUtils::fromT<T>(), this->getContext())
-                           : NDArray(ordering(), shape, DataTypeUtils::fromT<T>(), this->getContext());
+  auto result = isScalar() ? new NDArray('c', empty, zeroVec, DataTypeUtils::fromT<T>(), this->getContext())
+                           : new NDArray(ordering(), shape, DataTypeUtils::fromT<T>(), this->getContext());
 
-  prepareSpecialUse({&result}, {this});
+  prepareSpecialUse({result}, {this});
   NativeOpExecutioner::execTransformAny(getContext(), transform::AnyOps::Assign, buffer(), shapeInfo(), specialBuffer(),
-                                        specialShapeInfo(), result.buffer(), result.shapeInfo(), result.specialBuffer(),
-                                        result.specialShapeInfo(), nullptr, false);
-  registerSpecialUse({&result}, {this});
+                                        specialShapeInfo(), result->buffer(), result->shapeInfo(), result->specialBuffer(),
+                                        result->specialShapeInfo(), nullptr, false);
+  registerSpecialUse({result}, {this});
 
   return result;
 }
-BUILD_SINGLE_TEMPLATE(  SD_LIB_EXPORT NDArray NDArray::asT, (), SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE(  SD_LIB_EXPORT NDArray * NDArray::asT, (), SD_COMMON_TYPES);
 void NDArray::checkIfStringArrayAndNotEmpty()  {
   if (!isS()) {
     auto actualType = DataTypeUtils::asString(dataType());
@@ -3089,7 +3088,7 @@ void NDArray::debugStringArray() { printStringInternalState();
 }
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-NDArray NDArray::asS()  {
+NDArray * NDArray::asS()  {
   if (!isS()) THROW_EXCEPTION("NDArray::asS: you can use this method only for String array!");
 
   auto dtype = DataTypeUtils::fromT<T>();
@@ -3113,23 +3112,23 @@ NDArray NDArray::asS()  {
   std::vector<sd::LongType> shape2 = nonConst->getShapeAsVector();
   std::vector<sd::LongType> shape = isScalar() ? std::vector<sd::LongType>({1}) : shape2;
   auto desc = new ShapeDescriptor(dtype, ordering(), shape);
-  NDArray res(pBuffer, desc, getContext());
-  res.setAttached(getContext()->getWorkspace() != nullptr);
+  NDArray *res = new NDArray(pBuffer, desc, getContext());
+  res->setAttached(getContext()->getWorkspace() != nullptr);
 
-  preparePrimaryUse({&res}, {this});
+  preparePrimaryUse({res}, {this});
 
   // Copy offsets
-  memcpy(res.bufferAsT<int8_t>(), offsets.data(), offsetsLength * sizeof(sd::LongType));
+  memcpy(res->bufferAsT<int8_t>(), offsets.data(), offsetsLength * sizeof(sd::LongType));
 
   // Convert string data
-  StringUtils::convertStringsForDifferentDataType<T>(this, &res);
+  StringUtils::convertStringsForDifferentDataType<T>(this, res);
 
-  registerPrimaryUse({&res}, {this});
+  registerPrimaryUse({res}, {this});
 
   return res;
 }
 ////////////////////////////////////////////////////////////////////////
-NDArray NDArray::asT(DataType dtype)  {
+NDArray* NDArray::asT(DataType dtype)  {
   if (isS() && !DataTypeUtils::isS(dtype))
     THROW_EXCEPTION("NDArray::asT: you can't use this method on String array with not string DataType!");
 
@@ -3148,7 +3147,7 @@ NDArray NDArray::asT(DataType dtype)  {
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray NDArray::cast(DataType dtype)  {
+NDArray *NDArray::cast(DataType dtype)  {
   if (isS() && !DataTypeUtils::isS(dtype))
     THROW_EXCEPTION("NDArray::cast: you can't use this method on String array with not string DataType!");
 
@@ -4099,8 +4098,8 @@ void NDArray::varianceAlongDimension(sd::variance::Ops op, NDArray &target, cons
 
 ////////////////////////////////////////////////////////////////////////
 // This method returns new copy of this NDArray, optionally in different order
-NDArray NDArray::dup(const char newOrder, bool forceOriginalBuffer)  {
-  if (isEmpty()) return NDArrayFactory::empty(dataType(), getContext());
+NDArray * NDArray::dup(const char newOrder, bool forceOriginalBuffer)  {
+  if (isEmpty()) return new NDArray(NDArrayFactory::empty(dataType(), getContext()));
   auto nonConst = const_cast<NDArray *>(this);
   std::vector<sd::LongType> shape = nonConst->getShapeAsVector();
   if(forceOriginalBuffer) {
@@ -4108,7 +4107,7 @@ NDArray NDArray::dup(const char newOrder, bool forceOriginalBuffer)  {
     DataBuffer *thisBuff = this->getDataBuffer();
     DataBuffer *otherBuff = result->getDataBuffer();
     DataBuffer::memcpy(otherBuff, thisBuff, 0, 0);
-    return *result;
+    return result;
   }
 
   char order = newOrder == 'a' ? ordering() : newOrder;
@@ -4126,7 +4125,7 @@ NDArray NDArray::dup(const char newOrder, bool forceOriginalBuffer)  {
       };
 
       samediff::Threads::parallel_for(func, 0, len, 1);
-      return NDArray(shape, strings, dataType(), getContext());
+      return new NDArray(shape, strings, dataType(), getContext());
     }
     if (dataType() == DataType::UTF16) {
       std::vector<std::u16string> strings(len);
@@ -4138,7 +4137,7 @@ NDArray NDArray::dup(const char newOrder, bool forceOriginalBuffer)  {
       };
 
       samediff::Threads::parallel_for(func, 0, len, 1);
-      return NDArray(shape, strings, dataType(), getContext());
+      return new NDArray(shape, strings, dataType(), getContext());
     }
 
     std::vector<std::u32string> strings(len);
@@ -4149,12 +4148,12 @@ NDArray NDArray::dup(const char newOrder, bool forceOriginalBuffer)  {
     };
 
     samediff::Threads::parallel_for(func, 0,len, 1);
-    return NDArray(shape, strings, dataType(), getContext());
+    return new  NDArray(shape, strings, dataType(), getContext());
   }
 
   std::vector<sd::LongType> shape3 = isScalar() ? std::vector<sd::LongType>({0}) : shape;
-  NDArray result(order, shape3, dataType(), getContext());
-  result.assign(this);
+  NDArray *result = new NDArray(order, shape3, dataType(), getContext());
+  result->assign(this);
 
   return result;
 }

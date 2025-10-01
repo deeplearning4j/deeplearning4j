@@ -61,7 +61,7 @@ Variable *Variable::clone() {
   result->_index = this->_index;
 
   if (this->_ndarray != nullptr) {
-    result->_ndarray = new NDArray(this->_ndarray->dup(this->_ndarray->ordering(), false));
+    result->_ndarray = this->_ndarray->dup(this->_ndarray->ordering(), false);
     result->_readOnly = false;
     result->_removable = true;
   }

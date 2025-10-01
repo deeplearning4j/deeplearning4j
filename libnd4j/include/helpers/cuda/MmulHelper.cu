@@ -469,17 +469,17 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    bool cNcont = N == 1 || C->strideAt(1) == 1;
 
    if (!aMcont && !aKcont) {
-     pA = new NDArray(A->dup('f'));
+     pA = A->dup('f');
      toDelete.push_back(pA);
      aMcont = true;
    }
    if (!bKcont && !bNcont) {
-     pB = new NDArray(B->dup('f'));
+     pB = B->dup('f');
      toDelete.push_back(pB);
      bKcont = true;
    }
    if (!cMcont) {
-     pC = new NDArray(C->dup('f'));
+     pC = C->dup('f');
      toDelete.push_back(pC);
      cMcont = true;
    }

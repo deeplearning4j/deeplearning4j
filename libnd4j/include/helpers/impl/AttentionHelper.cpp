@@ -44,7 +44,7 @@ NDArray AttentionHelper::multiHeadProject(NDArray *input, NDArray *projectionMat
   std::vector<sd::LongType> epsPermVec = {1, 0,2};
   auto inputPerm = input->permute(epsPermVec, false, false);  //[batch, nIn, timeSteps] -> [nIn, batch, timeSteps]
   std::vector<sd::LongType> inputPermShape = {input->sizeAt(1), (miniBatchSize * seqLength)};
-  auto inputPrep = inputPerm.reshape('c', inputPermShape);  //[nIn, batch*timeSteps]
+  auto inputPrep = inputPerm->reshape('c', inputPermShape);  //[nIn, batch*timeSteps]
   std::vector<sd::LongType> projectionMatrixShape = {numHeads * projectionMatrix->sizeAt(1), projectionMatrix->sizeAt(2)};
   auto projectionPrep = projectionMatrix->reshape(
       'c',
@@ -199,13 +199,24 @@ void AttentionHelper::applyAttentionScores(NDArray *scores, NDArray *value, NDAr
                  "Scores mask must be either broadcastable or equal to scores shape. scores size at -1: was: %i scores size at -1 was: %i",scoresMask->sizeAt(-1),scores->sizeAt(-1));
 
     auto castedScoresMask = scoresMask->cast(BOOL);
-    auto paddingMask = booleanNot.evaluate({&castedScoresMask}).at(0);
+    auto paddingMask = booleanNot.evaluate({castedScoresMask}).at(0);
+    auto paddingMaskCast = paddingMask->cast(scores->dataType());
     if (attentionLogits->dataType() == BFLOAT16) {
-      *attentionLogits -= 65504 * paddingMask->cast(scores->dataType());
+      *attentionLogits -= 65504 * *paddingMaskCast;
     } else {
-      *attentionLogits -= 1.0e9 * paddingMask->cast(scores->dataType());
+      *attentionLogits -= 1.0e9 * *paddingMask;
+    }
+
+    if(paddingMaskCast != paddingMask) {
+      delete paddingMaskCast;
+    }
+
+    if(scoresMask != castedScoresMask) {
+      delete castedScoresMask;
     }
   }
+
+
 
   softmax.execute({attentionLogits},{scores},{},{softmaxDim});
   auto weights = scores;
@@ -270,7 +281,7 @@ void AttentionHelper::dotProductAttentionBpHelper(NDArray *query, NDArray *key, 
   if(mask != nullptr && !mask->isEmpty()) {
     ops::expand_dims expandDims;
     auto maskCast = mask->cast(query->dataType());
-    times = maskCast * 1e9;
+    times = *maskCast * 1e9;
     dldS *= times;
 
   }
@@ -434,7 +445,7 @@ void AttentionHelper::doAttention(std::vector<NDArray *> &inputs, std::vector<ND
   if(qMask != nullptr && !qMask->isEmpty()) {
     qMaskInternal = expandDims.evaluate({qMaskInternal},{},{-1}).at(0);
     auto casted = qMaskInternal->cast(attentionScores->dataType());
-    *attentionScores *= casted;
+    *attentionScores *= *casted;
   }
 
 }
@@ -451,12 +462,12 @@ void AttentionHelper::multiHeadProjectBp(NDArray *input, NDArray *projectionMatr
   std::vector<sd::LongType> epsPermVec = {1, 2, 0, 3};
   auto epsPerm = eps->permute(epsPermVec, false, false);
   std::vector<sd::LongType> epsReshapeVec = {numHeads * projectedSize, miniBatchSize * seqLength};
-  auto epsReshaped = epsPerm.reshape('c', epsReshapeVec);
+  auto epsReshaped = epsPerm->reshape('c', epsReshapeVec);
 
   std::vector<sd::LongType> inputPermVec = {1, 0, 2};
   auto inputPerm = input->permute(inputPermVec, false, false);
   std::vector<sd::LongType> inputPermShape = {input->sizeAt(1), miniBatchSize * seqLength};
-  auto inputPrep = inputPerm.reshape('c',inputPermShape,false);
+  auto inputPrep = inputPerm->reshape('c',inputPermShape,false);
   std::vector<sd::LongType> projectionMatrixShape = {numHeads * projectionMatrix->sizeAt(1), projectionMatrix->sizeAt(2)};
   auto projectionPrep =
       projectionMatrix->reshape('c', projectionMatrixShape);

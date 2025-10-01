@@ -499,10 +499,10 @@ void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* 
   dLdzo *= temp;
 
   // dcdcI
-  NDArray dcdcI = f.dup();  // dcdcI = f*clipDeriv [bS, nOut](or[nOut])
+  NDArray *dcdcI = f.dup();
 
   // take into account possible deposit from clipping derivative
-  clipDeriv(params[2], *c, dLdzi, dLdzf, dLdzg, dcdcI);
+  clipDeriv(params[2], *c, dLdzi, dLdzf, dLdzg, *dcdcI);
 
   // dhdc
   NDArray *cUlike = c->ulike();
@@ -512,7 +512,7 @@ void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* 
 
   if (Wp) {
     dhdc += dLdzo * (*Wp)({2 * nOut, 3 * nOut});
-    dcdcI += dLdzi * (*Wp)({0, nOut}) + dLdzf * (*Wp)({nOut, 2 * nOut});  // broadcast [bS, nOut] * nOut + ...
+    *dcdcI += dLdzi * (*Wp)({0, nOut}) + dLdzf * (*Wp)({nOut, 2 * nOut});  // broadcast [bS, nOut] * nOut + ...
   }
 
   if (dLdh) *dLdhI += *dLdh;
@@ -536,7 +536,7 @@ void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* 
   MmulHelper::mmul(&dLdz, &WrT,
                    dLdhI);  // [bS, 4*nOut] x [4*nOut, nOut] (or [4*nOut] x [4*nOut, nOut]) = [bS, nOut] ( or[nOut] )
 
-  NDArray dLdcIAssign = *dLdcI * dcdcI;
+  NDArray dLdcIAssign = *dLdcI * *dcdcI;
   // dLdcI
   dLdcI->assign(&dLdcIAssign);  // [bS, nOut](or[nOut])
 

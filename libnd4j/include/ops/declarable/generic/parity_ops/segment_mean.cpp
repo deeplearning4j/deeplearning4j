@@ -29,21 +29,21 @@ CUSTOM_OP_IMPL(segment_mean, 2, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto idxSegments = INPUT_VARIABLE(1)->cast(INT64);
   auto segmentedOutput = OUTPUT_VARIABLE(0);
-  REQUIRE_TRUE(idxSegments.isVector(), 0, "segment_mean: segment indexes array should be a vector, but it rank is %i.",
-               idxSegments.rankOf());
-  REQUIRE_TRUE(idxSegments.lengthOf() == input->sizeAt(0), 0,
+  REQUIRE_TRUE(idxSegments->isVector(), 0, "segment_mean: segment indexes array should be a vector, but it rank is %i.",
+               idxSegments->rankOf());
+  REQUIRE_TRUE(idxSegments->lengthOf() == input->sizeAt(0), 0,
                "segment_mean: segment indexes array length should be equal to the input first dimension, but %i != %i.",
-               idxSegments.lengthOf(), input->sizeAt(0));
+               idxSegments->lengthOf(), input->sizeAt(0));
 
   auto expected = NDArrayFactory::create(input->dataType(), 0.f, block.launchContext());
   auto wrong = NDArrayFactory::create(input->dataType(), 0.f, block.launchContext());
 
-  REQUIRE_TRUE(helpers::segmentIndicesValidate(block.launchContext(), &idxSegments, expected, wrong), 0,
+  REQUIRE_TRUE(helpers::segmentIndicesValidate(block.launchContext(), idxSegments, expected, wrong), 0,
                "segment_mean: segment indices should be arranged, but %2.1f > %2.1f", expected.e<float>(0),
                wrong.e<float>(0));
 
   segmentedOutput->nullify();
-  helpers::segmentMeanFunctor(block.launchContext(), input, &idxSegments, segmentedOutput);
+  helpers::segmentMeanFunctor(block.launchContext(), input, idxSegments, segmentedOutput);
 
   return Status::OK;
 }

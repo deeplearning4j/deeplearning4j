@@ -69,8 +69,8 @@ CUSTOM_OP_IMPL(avgpool3dnew, 1, 1, false, 0, 14) {
 
   if (!isNCDHW) {
     std::vector<sd::LongType> perm = {0, 4, 1, 2, 3};
-    input = new NDArray(input->permute(perm, false, false));    // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
-    output = new NDArray(output->permute(perm, false, false));  // [bS, oD, oH, oW, iC] -> [bS, iC, oD, oH, oW]
+    input = input->permute(perm, false, false);    // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
+    output =output->permute(perm, false, false);  // [bS, oD, oH, oW, iC] -> [bS, iC, oD, oH, oW]
   }
 
   if (isSameMode)  // SAME
@@ -207,9 +207,9 @@ CUSTOM_OP_IMPL(avgpool3dnew_bp, 2, 1, false, 0, 14) {
 
   if (!isNCDHW) {
     std::vector<sd::LongType> perm = {0, 4, 1, 2, 3};
-    input = new NDArray(input->permute(perm, false, false));  // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
-    gradI = new NDArray(gradI->permute(perm, false, false));  // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
-    gradO = new NDArray(gradO->permute(perm, false, false));  // [bS, oD, oH, oW, iC] -> [bS, iC, oD, oH, oW]
+    input = input->permute(perm, false, false);  // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
+    gradI = gradI->permute(perm, false, false);  // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
+    gradO =gradO->permute(perm, false, false);  // [bS, oD, oH, oW, iC] -> [bS, iC, oD, oH, oW]
   }
 
   if (isSameMode)  // SAME

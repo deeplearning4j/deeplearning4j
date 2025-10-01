@@ -51,8 +51,9 @@ namespace ops {
         if (shape::strideDescendingCAscendingF(input->shapeInfo()))
             helpers::_depthToSpace(block.launchContext(), *input, output, block_size, isNHWC);
         else {
-          NDArray dup = input->dup();
-          helpers::_depthToSpace(block.launchContext(), dup, output, block_size, isNHWC);
+          NDArray *dup = input->dup();
+          helpers::_depthToSpace(block.launchContext(), *dup, output, block_size, isNHWC);
+          delete dup;
         }
         STORE_RESULT(output);     
 

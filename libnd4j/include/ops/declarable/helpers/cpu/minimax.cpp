@@ -65,26 +65,26 @@ static void minimumBPFunctor_(LaunchContext* context, NDArray* x, NDArray* y, ND
 
     auto targetShape = epsNext->getShapeAsVector();
 
-    preX.tileToShape(targetShape, preX);
-    preY.tileToShape(targetShape, preY);
+    preX->tileToShape(targetShape, *preX);
+    preY->tileToShape(targetShape, *preY);
 
-    epsNext->applyTriplewiseLambda<T>(&preX, &preY, lambdaX, &preX);
-    epsNext->applyTriplewiseLambda<T>(&preX, &preY, lambdaY, &preY);
+    epsNext->applyTriplewiseLambda<T>(preX, preY, lambdaX, preX);
+    epsNext->applyTriplewiseLambda<T>(preX, preY, lambdaY, preY);
 
     auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
     auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
     if (axisX.size() > 0) {
-      auto sum = preX.reduceAlongDimension(reduce::Sum, &axisX);
+      auto sum = preX->reduceAlongDimension(reduce::Sum, &axisX);
       gradX->assign(&sum);
     } else
-      gradX->assign(&preX);
+      gradX->assign(preX);
 
     if (axisY.size() > 0) {
-      auto sum = preY.reduceAlongDimension(reduce::Sum, &axisY);
+      auto sum = preY->reduceAlongDimension(reduce::Sum, &axisY);
       gradY->assign(&sum);
     } else
-      gradY->assign(&preY);
+      gradY->assign(preY);
   }
 }
 
@@ -126,26 +126,26 @@ void maximumBPFunctor_(LaunchContext* context, NDArray* x, NDArray* y, NDArray* 
 
     auto targetShape = epsNext->getShapeAsVector();
 
-    preX.tileToShape(targetShape, preX);
-    preY.tileToShape(targetShape, preY);
+    preX->tileToShape(targetShape, *preX);
+    preY->tileToShape(targetShape, *preY);
 
-    epsNext->applyTriplewiseLambda<T>(&preX, &preY, lambdaX, &preX);
-    epsNext->applyTriplewiseLambda<T>(&preX, &preY, lambdaY, &preY);
+    epsNext->applyTriplewiseLambda<T>(preX, preY, lambdaX, preX);
+    epsNext->applyTriplewiseLambda<T>(preX, preY, lambdaY, preY);
 
     auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
     auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
     if (axisX.size() > 0) {
-      auto sum = preX.reduceAlongDimension(reduce::Sum, &axisX);
+      auto sum = preX->reduceAlongDimension(reduce::Sum, &axisX);
       gradX->assign(&sum);
     } else
-      gradX->assign(&preX);
+      gradX->assign(preX);
 
     if (axisY.size() > 0) {
-      auto sum = preY.reduceAlongDimension(reduce::Sum, &axisY);
+      auto sum = preY->reduceAlongDimension(reduce::Sum, &axisY);
       gradY->assign(&sum);
     } else
-      gradY->assign(&preY);
+      gradY->assign(preY);
   }
 }
 

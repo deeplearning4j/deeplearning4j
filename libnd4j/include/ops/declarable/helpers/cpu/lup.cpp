@@ -268,7 +268,7 @@ static void doolitleLU(LaunchContext* context, NDArray* compound, sd::LongType r
       for (sd::LongType j = 0; j < i; j++) sum += compound->t<T>(i, j) * compound->t<T>(j, k);
 
       // Evaluating U(i, k)
-      compound->r<T>(i, k) = input.t<T>(i, k) - sum;
+      compound->r<T>(i, k) = input->t<T>(i, k) - sum;
     }
 
     // Lower Triangular
@@ -278,7 +278,7 @@ static void doolitleLU(LaunchContext* context, NDArray* compound, sd::LongType r
       for (sd::LongType j = 0; j < i; j++) sum += compound->t<T>(k, j) * compound->t<T>(j, i);
 
       // Evaluating L(k, i)
-      compound->r<T>(k, i) = (input.t<T>(k, i) - sum) / compound->t<T>(i, i);
+      compound->r<T>(k, i) = (input->t<T>(k, i) - sum) / compound->t<T>(i, i);
     }
   }
 }
@@ -586,12 +586,12 @@ sd::Status cholesky(sd::LaunchContext* context, NDArray* input, NDArray* output,
 template <typename T>
 sd::Status logdetFunctor_(LaunchContext* context, NDArray* input, NDArray* output) {
   auto tempOutput = input->dup();
-  auto res = cholesky_<T>(context, input, &tempOutput, false);
+  auto res = cholesky_<T>(context, input, tempOutput, false);
   if (res != sd::Status::OK) return res;
   auto n = input->sizeAt(-1);
   auto totalCount = output->lengthOf();
   std::vector<T> d(n);
-  ResultSet matrices = tempOutput.allTensorsAlongDimension({input->rankOf() - 2, input->rankOf() - 1});
+  ResultSet matrices = tempOutput->allTensorsAlongDimension({input->rankOf() - 2, input->rankOf() - 1});
 
   for (sd::LongType e = 0; e < totalCount; e++) {
     for (sd::LongType i = 0; i < n; ++i)

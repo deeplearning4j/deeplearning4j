@@ -189,7 +189,7 @@ static void sqrtmQuasiTrianOffDiag(NDArray& matrixT, NDArray& sqrtT) {
       if (iBlockIs2x2 && jBlockIs2x2) {
         NDArray A = sqrtT({i, i + 2, i, i + 2}, true);
         NDArray B = sqrtT({j, j + 2, j, j + 2}, true);
-        NDArray X = matrixT({i, i + 2, j, j + 2}, true);  //.dup();
+        NDArray X = matrixT({i, i + 2, j, j + 2}, true);
 
         if (j - i > 2) X -= mmul(sqrtT({i, i + 2, i + 2, j}, true), sqrtT({i + 2, j, j, j + 2}, true));
 
@@ -256,13 +256,13 @@ void Sqrtm<T>::calc(NDArray& in, NDArray& out) {
   NDArray sqrtT = *inULike;
   sqrtT.nullify();
 
-  sqrtmQuasiTrianDiag<T>(schur.t, sqrtT);
-  sqrtmQuasiTrianOffDiag<T>(schur.t, sqrtT);
+  sqrtmQuasiTrianDiag<T>(*schur.t, sqrtT);
+  sqrtmQuasiTrianOffDiag<T>(*schur.t, sqrtT);
 
-  NDArray second = schur.u.transpose();
+  NDArray second = schur.u->transpose();
   // out = U * sqrtT * U^T;
   NDArray temp = mmul(sqrtT, second);
-  MmulHelper::mmul(&schur.u, &temp, &out);
+  MmulHelper::mmul(schur.u, &temp, &out);
   delete inULike;
 }
 

@@ -7,6 +7,14 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-plt")
 endif()
 
+
+# Reduce template instantiation depth during compilation
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    add_compile_options(-ftemplate-depth=256)  # Reduce from default 900
+    add_compile_options(-fmax-errors=3)        # Stop on first few errors
+endif()
+
+
 # --- Link Time Optimization (LTO) ---
 if(SD_USE_LTO)
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")

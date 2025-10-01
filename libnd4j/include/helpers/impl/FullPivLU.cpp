@@ -41,10 +41,10 @@ void FullPivLU<T>::solve(NDArray &A, NDArray &b, NDArray& x) {
   if (A.sizeAt(1) != x.sizeAt(0))
     THROW_EXCEPTION("FullPivLU::solve: number of A columns must be equal to number of x rows !");
 
-  NDArray LU = A.dup(A.ordering());
-
-  const int rows = LU.sizeAt(0);
-  const int cols = LU.sizeAt(1);
+  NDArray * LU = A.dup(A.ordering());
+  NDArray luRef = *LU;
+  const int rows = LU->sizeAt(0);
+  const int cols = LU->sizeAt(1);
   const int diagLen = math::sd_min<int>(rows, cols);
 
   std::vector<int> rowsInds(rows), colsInds(cols);
@@ -54,7 +54,7 @@ void FullPivLU<T>::solve(NDArray &A, NDArray &b, NDArray& x) {
   T maxPivot = T(0);
 
   for (int k = 0; k < diagLen; ++k) {
-    NDArray bottomRightCorner = LU({k, rows, k, cols}, true);
+    NDArray bottomRightCorner = luRef({k, rows, k, cols}, true);
     const int indPivot =
         static_cast<int>(bottomRightCorner.indexReduceNumber(indexreduce::IndexAbsoluteMax).t<LongType>(0));
 
@@ -81,22 +81,22 @@ void FullPivLU<T>::solve(NDArray &A, NDArray &b, NDArray& x) {
     colsInds[k] = colPivot;
 
     if (k != rowPivot) {
-      NDArray row1 = LU({k, k + 1, 0, 0}, true);
-      NDArray row2 = LU({rowPivot, rowPivot + 1, 0, 0}, true);
+      NDArray row1 = luRef({k, k + 1, 0, 0}, true);
+      NDArray row2 = luRef({rowPivot, rowPivot + 1, 0, 0}, true);
       row1.swapUnsafe(row2);
     }
     if (k != colPivot) {
-      NDArray col1 = LU({0, 0, k, k + 1}, true);
-      NDArray col2 = LU({0, 0, colPivot, colPivot + 1}, true);
+      NDArray col1 = luRef({0, 0, k, k + 1}, true);
+      NDArray col2 = luRef({0, 0, colPivot, colPivot + 1}, true);
       col1.swapUnsafe(col2);
     }
 
-    if (k < rows - 1) LU({k + 1, rows, k, k + 1}, true) /= LU.t<T>(k, k);
+    if (k < rows - 1) luRef({k + 1, rows, k, k + 1}, true) /= luRef.t<T>(k, k);
 
     if (k < diagLen - 1) {
-      NDArray left = LU({k + 1, rows, k, k + 1}, true);
-      NDArray right = LU({k, k + 1, k + 1, cols}, true);
-      LU({k + 1, rows, k + 1, cols}, true) -=
+      NDArray left = luRef({k + 1, rows, k, k + 1}, true);
+      NDArray right = luRef({k, k + 1, k + 1, cols}, true);
+      luRef({k + 1, rows, k + 1, cols}, true) -=
           mmul(left,right);
     }
   }
@@ -106,7 +106,7 @@ void FullPivLU<T>::solve(NDArray &A, NDArray &b, NDArray& x) {
 
   int nonZeroPivots2 = 0;
   for (int i = 0; i < nonZeroPivots1; ++i)
-    nonZeroPivots2 += static_cast<int>(math::sd_abs<T,T>(LU.t<T>(i, i)) > threshold);
+    nonZeroPivots2 += static_cast<int>(math::sd_abs<T,T>(luRef.t<T>(i, i)) > threshold);
 
   if (nonZeroPivots2 == 0) {
     x.nullify();
@@ -141,15 +141,15 @@ void FullPivLU<T>::solve(NDArray &A, NDArray &b, NDArray& x) {
   }
   NDArray cTopRows1 = c({0, diagLen, 0, 0}, true);
   // TriangularSolver<T>::solve(LU({0,diagLen, 0,diagLen}, true), cTopRows1, true, true, cTopRows1);
-  helpers::triangularSolve2D<T>(nullptr, LU({0, diagLen, 0, diagLen}, true), cTopRows1, true, true, cTopRows1);
+  helpers::triangularSolve2D<T>(nullptr, luRef({0, diagLen, 0, diagLen}, true), cTopRows1, true, true, cTopRows1);
 
   if (rows > cols) {
-    NDArray left = LU({cols, -1, 0, 0}, true);
+    NDArray left = luRef({cols, -1, 0, 0}, true);
     NDArray right = c({0, cols, 0, 0}, true);
     c({cols, -1, 0, 0}, true) -= mmul(left, right);
   }
   NDArray cTopRows2 = c({0, nonZeroPivots2, 0, 0}, true);
-  helpers::triangularSolve2D<T>(nullptr, LU({0, nonZeroPivots2, 0, nonZeroPivots2}, true), cTopRows2, false, false,
+  helpers::triangularSolve2D<T>(nullptr, luRef({0, nonZeroPivots2, 0, nonZeroPivots2}, true), cTopRows2, false, false,
                                 cTopRows2);
 
   for (int i = 0; i < nonZeroPivots2; ++i) {
@@ -158,6 +158,7 @@ void FullPivLU<T>::solve(NDArray &A, NDArray &b, NDArray& x) {
   }
   for (int i = nonZeroPivots2; i < cols; ++i) x({colsPermut[i], colsPermut[i] + 1, 0, 0}, true).nullify();
 
+  delete LU;
   delete bUlike;
 }
 

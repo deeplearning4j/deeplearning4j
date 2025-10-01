@@ -91,28 +91,28 @@ CUSTOM_OP_IMPL(squaredsubtract_bp, 3, 2, false, 0, 0) {
 
     auto targetShape = epsNext->getShapeAsVector();
 
-    preX.tileToShape(targetShape, preX);
-    preY.tileToShape(targetShape, preY);
+    preX->tileToShape(targetShape, *preX);
+    preY->tileToShape(targetShape, *preY);
 
     auto resX = (*epsNext) * ts * ((*x) - (*y));
-    preX.assign(&resX);
+    preX->assign(&resX);
     auto resY = (*epsNext) * ts * ((*y) - (*x));
-    preY.assign(&resY);
+    preY->assign(&resY);
 
     auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
     auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
     if (axisX.size() > 0) {
-      auto sum = preX.reduceAlongDimension(reduce::Sum, &axisX);
+      auto sum = preX->reduceAlongDimension(reduce::Sum, &axisX);
       gradX->assign(&sum);
     } else
-      gradX->assign(&preX);
+      gradX->assign(preX);
 
     if (axisY.size() > 0) {
-      auto sum = preY.reduceAlongDimension(reduce::Sum, &axisY);
+      auto sum = preY->reduceAlongDimension(reduce::Sum, &axisY);
       gradY->assign(&sum);
     } else
-      gradY->assign(&preY);
+      gradY->assign(preY);
   }
 
   return Status::OK;

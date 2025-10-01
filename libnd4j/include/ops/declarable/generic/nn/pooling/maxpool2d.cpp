@@ -186,9 +186,9 @@ CUSTOM_OP_IMPL(maxpool2d_bp, 2, 1, false, 0, 10) {
 
   if (!isNCHW) {
     std::vector<sd::LongType> perm = {0, 3, 1, 2};
-    input = new NDArray(input->permute(perm, false, false));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
-    gradI = new NDArray(gradI->permute(perm, false, false));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
-    gradO = new NDArray(gradO->permute(perm, false, false));  // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
+    input = input->permute(perm, false, false);  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+    gradI = gradI->permute(perm, false, false);  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+    gradO = gradO->permute(perm, false, false);  // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
   }
 
   if (isSameMode)  // SAME

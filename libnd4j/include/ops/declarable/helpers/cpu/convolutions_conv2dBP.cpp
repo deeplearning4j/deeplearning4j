@@ -61,9 +61,9 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
   NDArray *inputPermuted, *gradOPermuted, *gradIPermuted;
   if (!isNCHW) {
     std::vector<sd::LongType> permute = {0, 3, 1, 2};
-    inputPermuted = new NDArray(input->permute(permute, false, false));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
-    gradOPermuted = new NDArray(gradO->permute(permute, false, false));  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
-    gradIPermuted = new NDArray(gradI->permute(permute, false, false));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+    inputPermuted = input->permute(permute, false, false);  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+    gradOPermuted = gradO->permute(permute, false, false);  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
+    gradIPermuted = gradI->permute(permute, false, false);  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
   } else {
     inputPermuted = input;
     gradOPermuted = gradO;
@@ -96,10 +96,10 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
     std::vector<sd::LongType> wShape = {oC, iC * kH * kW};
     NDArray *columns2d = columns->reshape('c',colShape,false);
     std::vector<sd::LongType> permute = {1,0};
-    NDArray gradW2d = gradW->reshape('f', wShape, false)->permute(permute, false, false);
+    NDArray *gradW2d = gradW->reshape('f', wShape, false)->permute(permute, false, false);
 
-    MmulHelper::matmul( columns2d,gradO2d, &gradW2d, true, true, 1.0, 0.0, &gradW2d);
-    gradW->assign(&gradW2d);
+    MmulHelper::matmul( columns2d,gradO2d, gradW2d, true, true, 1.0, 0.0, gradW2d);
+    gradW->assign(gradW2d);
     delete columns2d;
 
   }
@@ -115,14 +115,14 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
   if (wFormat == 0) {
     std::vector<sd::LongType> perm = {3,2,1,0};
     std::vector<sd::LongType> wShape = {iC * kH * kW,oC};
-    weights2d = weights->permute(perm, false, false).reshape('f', wShape);
+    weights2d = weights->permute(perm, false, false)->reshape('f', wShape);
   } else if (wFormat == 1) {
     std::vector<sd::LongType> wShape2 = {iC * kH * kW,oC};
     weights2d = weights->reshape('f', wShape2);
   } else {
     std::vector<sd::LongType> wPermute = {0,2,3,1};
     std::vector<sd::LongType> weights2dShape = {iC * kH * kW,oC};
-    weights2d = weights->permute(wPermute, false, false).reshape('f', weights2dShape);
+    weights2d = weights->permute(wPermute, false, false)->reshape('f', weights2dShape);
   }
 
   std::vector<sd::LongType> columns2dShape = {iC * kH * kW, bS * oH * oW};
@@ -140,11 +140,11 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
 
   // Perform col2im
   auto ctx = block.launchContext();
-  helpers::col2im(*ctx, &permuted, gradIPermuted, sH, sW, pH, pW, iH, iW, dH, dW);
+  helpers::col2im(*ctx, permuted, gradIPermuted, sH, sW, pH, pW, iH, iW, dH, dW);
   // Handle NHWC format if necessary
   if (!isNCHW) {
     std::vector<sd::LongType> perm = {0,2,3,1};
-    gradI->assign(&gradIPermuted->permute(perm, false, false));  // [bS, iC, iH, iW] -> [bS, iH, iW, iC]
+    gradI->assign(gradIPermuted->permute(perm, false, false));  // [bS, iC, iH, iW] -> [bS, iH, iW, iC]
   }
 
   delete gradO2d;

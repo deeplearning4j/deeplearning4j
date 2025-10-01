@@ -87,7 +87,8 @@ CUSTOM_OP_IMPL(batch_to_space_nd, 3, 1, false, 0, 0) {
     helpers::batchToSpaceND(block.launchContext(), *input, *blockShape, *crop, *output);
   else {
     auto dupped = input->dup();
-    helpers::batchToSpaceND(block.launchContext(), dupped, *blockShape, *crop, *output);
+    helpers::batchToSpaceND(block.launchContext(), *dupped, *blockShape, *crop, *output);
+    delete dupped;
   }
   return sd::Status::OK;
 }

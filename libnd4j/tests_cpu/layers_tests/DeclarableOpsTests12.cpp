@@ -766,7 +766,7 @@ TEST_F(DeclarableOpsTests12, pullRows_2) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests12, softmax_9) {
   NDArray arrC('c', {5, 2}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6, -0.7, 0.8, -0.9, 1}, FLOAT32);
-  NDArray *arrF = new NDArray(arrC.dup('f'));
+  NDArray *arrF = arrC.dup('f');
 
   NDArray outCC('c', {5, 2}, FLOAT32);
   NDArray outCF('f', {5, 2}, FLOAT32);

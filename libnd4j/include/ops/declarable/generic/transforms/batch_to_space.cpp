@@ -67,8 +67,8 @@ CUSTOM_OP_IMPL(batch_to_space, 2, 1, false, 0, 1) {
                blockSize * blockSize, dim0);
 
   if (crop->sizeAt(0) != 2 || crop->sizeAt(1) != 2)
-    REQUIRE_TRUE(false, 0, "BatchToSpace: operation expects crop shape to be {2, 2}, but got %s instead",
-                 ShapeUtils::shapeAsString(crop).c_str());
+  REQUIRE_TRUE(false, 0, "BatchToSpace: operation expects crop shape to be {2, 2}, but got %s instead",
+               ShapeUtils::shapeAsString(crop).c_str());
 
   const LongType cropBottom = crop->e<LongType>(0, 0);
   const LongType cropTop = crop->e<LongType>(0, 1);
@@ -84,10 +84,11 @@ CUSTOM_OP_IMPL(batch_to_space, 2, 1, false, 0, 1) {
 
   if (shape::strideDescendingCAscendingF(input->shapeInfo()))
     helpers::batchToSpace(block.launchContext(), *input, *output, cropBottom, cropTop, cropLeft, cropRight, blockSize);
-  else
-    helpers::batchToSpace(block.launchContext(), input->dup(input->ordering()), *output, cropBottom, cropTop, cropLeft, cropRight,
-                          blockSize);
-
+  else {
+    auto dupped = input->dup(input->ordering());
+    helpers::batchToSpace(block.launchContext(), *dupped, *output, cropBottom, cropTop, cropLeft, cropRight, blockSize);
+    delete dupped;
+  }
   return Status::OK;
 }
 
@@ -114,8 +115,8 @@ DECLARE_SHAPE_FN(batch_to_space) {
                blockSize * blockSize, dim0);
 
   if (cropShapeInfo[1] != 2 || cropShapeInfo[2] != 2)
-    REQUIRE_TRUE(false, 0, "BatchToSpace: operation expects crop shape to be {2, 2}, but got %s instead",
-                 ShapeUtils::shapeAsString(cropShapeInfo).c_str());
+  REQUIRE_TRUE(false, 0, "BatchToSpace: operation expects crop shape to be {2, 2}, but got %s instead",
+               ShapeUtils::shapeAsString(cropShapeInfo).c_str());
 
   const LongType cropBottom = INPUT_VARIABLE(1)->e<LongType>(0, 0);
   const LongType cropTop = INPUT_VARIABLE(1)->e<LongType>(0, 1);

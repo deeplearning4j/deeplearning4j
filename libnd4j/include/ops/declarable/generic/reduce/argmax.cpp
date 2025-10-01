@@ -69,7 +69,7 @@ DECLARE_SHAPE_FN(argmax) {
     dims = *block.getIArguments();
   } else {
     auto y = INPUT_VARIABLE(1)->cast(INT64);
-    dims = y.template asVectorT<LongType>();
+    dims = y->template asVectorT<LongType>();
   }
 
   auto keepDims = block.numB() ? B_ARG(0) : false;

@@ -34,11 +34,11 @@ CUSTOM_OP_IMPL(crelu, 1, 1, false, 0, 0) {
   REQUIRE_TRUE(x->isR(), 0, "CRELU: input must be real type");
 
   auto tmp = x->dup(x->ordering());
-  tmp.applyTransform(transform::Neg, &tmp);
+  tmp->applyTransform(transform::Neg, tmp);
 
   auto z = OUTPUT_VARIABLE(0);
 
-  helpers::concat(block.launchContext(), {x, &tmp}, *z, x->rankOf() - 1);
+  helpers::concat(block.launchContext(), {x, tmp}, *z, x->rankOf() - 1);
 
   // TODO: make this configurable?
   double threshold = 0.0;
@@ -46,6 +46,7 @@ CUSTOM_OP_IMPL(crelu, 1, 1, false, 0, 0) {
 
   STORE_RESULT(z);
 
+  delete tmp;
   return Status::OK;
 }
 

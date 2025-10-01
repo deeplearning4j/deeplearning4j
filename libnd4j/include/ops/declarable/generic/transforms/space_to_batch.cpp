@@ -67,8 +67,8 @@ CUSTOM_OP_IMPL(space_to_batch, 2, 1, false, 0, 1) {
   if (shape::strideDescendingCAscendingF(input->shapeInfo()))
     helpers::spaceToBatch(block.launchContext(), *input, *output, padBottom, padTop, padLeft, padRight, blockSize);
   else {
-    NDArray inputDup = input->dup(input->ordering());
-    helpers::spaceToBatch(block.launchContext(), inputDup, *output, padBottom, padTop, padLeft, padRight,
+    NDArray *inputDup = input->dup(input->ordering());
+    helpers::spaceToBatch(block.launchContext(), *inputDup, *output, padBottom, padTop, padLeft, padRight,
                           blockSize);
   }
   return Status::OK;

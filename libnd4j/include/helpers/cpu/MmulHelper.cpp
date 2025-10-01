@@ -252,17 +252,17 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
     bool cNcont = N == 1 || C->strideAt(1) == 1;
 
     if (!aMcont && !aKcont) {
-      pA = new NDArray(A->dup('f', false));
+      pA = A->dup('f', false);
       toDelete.push_back(pA);
       aMcont = true;
     }
     if (!bKcont && !bNcont) {
-      pB = new NDArray(B->dup('f', false));
+      pB = B->dup('f', false);
       toDelete.push_back(pB);
       bKcont = true;
     }
     if (!cMcont && !cNcont) {
-      pC = new NDArray(C->dup('f', false));
+      pC = C->dup('f', false);
       toDelete.push_back(pC);
       cMcont = true;
     }

@@ -68,7 +68,7 @@ NDArray* NDArrayList::remove(int idx) {
   delete _chunks[idx];
 
   _elements--;
-  return new NDArray(readRaw(idx)->dup());
+  return readRaw(idx)->dup();
 }
 
 
@@ -147,7 +147,7 @@ void NDArrayList::unstack(NDArray* array, LongType axis) {
   auto result = array->allTensorsAlongDimension(*newAxis);
   for (sd::LongType e = 0; e < result.size(); e++) {
     auto chunk = result.at(e);
-    write(e, new NDArray(chunk->dup(array->ordering())));
+    write(e, chunk->dup(array->ordering()));
   }
 
   delete newAxis;

@@ -41,7 +41,7 @@ CUSTOM_OP_IMPL(transpose, 1, 1, false, 0, 0) {
     return Status::OK;  // No op
   }
 
-  std::vector<LongType> permutationVector = block.width() > 1 ? INPUT_VARIABLE(1)->cast(INT64).asVectorT<LongType>() : *block.getIArguments();
+  std::vector<LongType> permutationVector = block.width() > 1 ? INPUT_VARIABLE(1)->cast(INT64)->asVectorT<LongType>() : *block.getIArguments();
 
   if (permutationVector.size() == 0) {
     NDArray t =x->transpose();
@@ -65,7 +65,7 @@ CUSTOM_OP_IMPL(transpose, 1, 1, false, 0, 0) {
     return Status::OK;
   }
 
-  z->assign(&x->permute(permutationVector, false, false));
+  z->assign(x->permute(permutationVector, false, false));
 
   return Status::OK;
 }
@@ -78,7 +78,7 @@ DECLARE_SHAPE_FN(transpose) {
 
   if(rank < 1)
     return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(x->dataType()));
-  std::vector<LongType> permutationVector = block.width() > 1 ? INPUT_VARIABLE(1)->cast(INT64).asVectorT<LongType>() : *block.getIArguments();
+  std::vector<LongType> permutationVector = block.width() > 1 ? INPUT_VARIABLE(1)->cast(INT64)->asVectorT<LongType>() : *block.getIArguments();
 
   if (permutationVector.size() == 0) {
     auto temp = ShapeUtils::evalTransposeShapeInfo(*x, nullptr, true);
