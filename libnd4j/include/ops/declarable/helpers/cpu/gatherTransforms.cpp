@@ -130,7 +130,6 @@ static void gather_(NDArray* input, NDArray* indices, NDArray* output, const std
         auto scalarNDArray = input->e(idx);
         output->assign(&scalarNDArray);
       } else {
-        // FIX: Don't call evalDimsToExclude here!
         // tadForDimensions expects the dimensions to create TADs along,
         // NOT the dimensions to exclude
         std::vector<sd::LongType> axesVec = {axis};

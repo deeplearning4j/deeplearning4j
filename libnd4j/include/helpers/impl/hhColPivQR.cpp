@@ -64,7 +64,8 @@ void HHcolPivQR::_evalData() {
   T maxPivot = static_cast<T>(0.);
 
   for (int k = 0; k < _diagSize; ++k) {
-    int biggestColIndex = normsUpd({k, -1}).indexReduceNumber(indexreduce::IndexMax).e<int>(0);
+    NDArray *indexNum = normsUpd({k, -1}).indexReduceNumber(indexreduce::IndexMax);
+    int biggestColIndex = indexNum->e<int>(0);
     T biggestColNorm = normsUpd({k, -1}).reduceNumber(reduce::Max).t<T>(0);
     T biggestColSqNorm = biggestColNorm * biggestColNorm;
     biggestColIndex += k;
@@ -116,6 +117,8 @@ void HHcolPivQR::_evalData() {
           normsUpd.r<T>(j) = normsUpd.t<T>(j) * math::sd_sqrt<T, T>(temp);
       }
     }
+
+    delete indexNum;
   }
 
   _permut->setIdentity();

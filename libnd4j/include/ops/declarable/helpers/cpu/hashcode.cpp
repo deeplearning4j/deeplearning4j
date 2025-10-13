@@ -34,8 +34,8 @@ static void hashCode_(LaunchContext *context, NDArray &array, NDArray &result) {
   auto tempB = NDArrayFactory::create<sd::LongType>('c', {numBlocks / blockSize + 1}, context);
 
   auto buffer = array.bufferAsT<T>();
-  auto tempBufferA = tempA.bufferAsT<sd::LongType>();
-  auto tempBufferB = tempB.bufferAsT<sd::LongType>();
+  auto tempBufferA = tempA->bufferAsT<sd::LongType>();
+  auto tempBufferB = tempB->bufferAsT<sd::LongType>();
 
   // default buffer is the first one, because it might be the last one in case of small arrays (< blockSize)
   auto tempBuffer = tempBufferA;
@@ -93,6 +93,9 @@ static void hashCode_(LaunchContext *context, NDArray &array, NDArray &result) {
     result.p(0, tempBufferA[0]);
   else
     result.p(0, tempResult[0]);
+
+  delete tempA;
+  delete tempB;
 }
 
 void hashCode(LaunchContext *context, NDArray &array, NDArray &result) {

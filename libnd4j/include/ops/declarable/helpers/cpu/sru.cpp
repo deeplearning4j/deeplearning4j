@@ -100,9 +100,11 @@ void sruTimeLoop(sd::LaunchContext* context, NDArray* x, NDArray* c0, NDArray* w
     auto ht = (*h)({0, 0, 0, 0, t, t + 1});
     auto ct = (*c)({0, 0, 0, 0, t, t + 1});
 
-    helpers::sruCell(context, &xt, &ct_1, &wT, b, &ht, &ct);
+    helpers::sruCell(context, &xt, &ct_1, wT, b, &ht, &ct);
     ct_1.assign(&ct);
   }
+
+  delete wT;
 }
 
 //////////////////////////////////////////////////////////////////////////

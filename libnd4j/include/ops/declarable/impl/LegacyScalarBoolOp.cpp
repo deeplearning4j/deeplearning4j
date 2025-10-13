@@ -67,13 +67,14 @@ Status LegacyScalarBoolOp::validateAndExecute(Context &block) {
   } else if (block.getTArguments()->size() > 0) {
     auto y = NDArrayFactory::create(T_ARG(0), block.launchContext());
 
-    NDArray::prepareSpecialUse({z}, {x, &y});
+    NDArray::prepareSpecialUse({z}, {x, y});
 
     NativeOpExecutioner::execScalarBool(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
                                         x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
-                                        z->specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(),
-                                        y.specialShapeInfo(), extras.argumentsAsT(x->dataType(), 1));
+                                        z->specialShapeInfo(), y->buffer(), y->shapeInfo(), y->specialBuffer(),
+                                        y->specialShapeInfo(), extras.argumentsAsT(x->dataType(), 1));
 
+    delete y;
     manager.synchronize();
   } else {
     NDArray::prepareSpecialUse({z}, {x, _scalar});

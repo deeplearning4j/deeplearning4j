@@ -93,9 +93,9 @@ void Householder<T>::mulLeft(NDArray& matrix, NDArray& tail, const T coeff) {
   } else if (coeff != (T)0.f) {
     NDArray bottomPart = matrix({1, matrix.sizeAt(0), 0, 0}, true);
     NDArray fistRow = matrix({0, 1, 0, 0}, true);
-    NDArray tailTranspose = tail.transpose();
+    NDArray *tailTranspose = tail.transpose();
     if (tail.isColumnVector()) {
-      auto resultingRow = mmul(tailTranspose, bottomPart);
+      auto resultingRow = mmul(*tailTranspose, bottomPart);
       resultingRow += fistRow;
       resultingRow *= coeff;
       fistRow -= resultingRow;
@@ -105,8 +105,9 @@ void Householder<T>::mulLeft(NDArray& matrix, NDArray& tail, const T coeff) {
       resultingRow += fistRow;
       resultingRow *= coeff;
       fistRow -= resultingRow;
-      bottomPart -= mmul(tailTranspose, resultingRow);
+      bottomPart -= mmul(*tailTranspose, resultingRow);
     }
+    delete tailTranspose;
   }
 }
 
@@ -119,20 +120,22 @@ void Householder<T>::mulRight(NDArray& matrix, NDArray& tail, const T coeff) {
     NDArray rightPart = matrix({0, 0, 1, matrix.sizeAt(1)}, true);
     NDArray fistCol = matrix({0, 0, 0, 1}, true);
 
-    NDArray transposedTail = tail.transpose();
+    NDArray *transposedTail = tail.transpose();
     if (tail.isColumnVector()) {
       auto resultingCol = mmul(rightPart, tail);
       resultingCol += fistCol;
       resultingCol *= coeff;
       fistCol -= resultingCol;
-      rightPart -= mmul(resultingCol,transposedTail);
+      rightPart -= mmul(resultingCol,*transposedTail);
     } else {
-      auto resultingCol = mmul(rightPart, transposedTail);
+      auto resultingCol = mmul(rightPart, *transposedTail);
       resultingCol += fistCol;
       resultingCol *= coeff;
       fistCol -= resultingCol;
       rightPart -= mmul(resultingCol, tail);
     }
+
+    delete transposedTail;
   }
 }
 

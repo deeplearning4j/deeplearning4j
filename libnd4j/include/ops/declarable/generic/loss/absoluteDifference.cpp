@@ -278,15 +278,19 @@ CUSTOM_OP_IMPL(absolute_difference_loss_grad, 3, 3, false, 0, 1) {
           std::vector<LongType> axesToReduceAlong =
               ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
           E.reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
-          *dLdw /= numOfNonZeroWeightsScalar;
+          *dLdw /= *numOfNonZeroWeightsScalar;
         } else {
-          NDArray dLdwTemp = E / numOfNonZeroWeightsScalar;
+          NDArray dLdwTemp = E / *numOfNonZeroWeightsScalar;
           dLdw->assign(&dLdwTemp);
         }
 
-        NDArray temp = *weightsBroad / numOfNonZeroWeightsScalar;
+        NDArray temp = *weightsBroad / *numOfNonZeroWeightsScalar;
         *dLdp *= temp;
+
+        delete numOfNonZeroWeightsScalar;
+
       }
+
       break;
     }
   }

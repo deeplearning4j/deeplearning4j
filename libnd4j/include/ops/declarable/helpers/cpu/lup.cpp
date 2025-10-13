@@ -143,7 +143,7 @@ static NDArray lup_(LaunchContext* context, NDArray* input, NDArray* compound, N
   const sd::LongType rowNum = input->rows();
   const sd::LongType columnNum = input->columns();
 
-  NDArray determinant = NDArrayFactory::create<T>(static_cast<T>(1.f), context);
+  NDArray *determinant = NDArrayFactory::create<T>(static_cast<T>(1.f), context);
   NDArray compoundMatrix = *input;                   // copy
   NDArray permutationMatrix(input, false, context);  // has same shape as input and contiguous strides
   permutationMatrix.setIdentity();
@@ -177,26 +177,29 @@ static NDArray lup_(LaunchContext* context, NDArray* input, NDArray* compound, N
   }
 
   for (sd::LongType e = 0; e < rowNum; e++) {
-    determinant *= compoundMatrix.e<T>(e, e);
+    *determinant *= compoundMatrix.e<T>(e, e);
   }
-  if (swapCount % 2) determinant = -determinant;
+  if (swapCount % 2)  {
+    NDArray &deReffed = *determinant;
+    deReffed = -deReffed;
+  }
   if (compound != nullptr) compound->assign(&compoundMatrix);
   if (permutation != nullptr) {
     auto permutaionVector = NDArrayFactory::create('c', {rowNum}, DataTypeUtils::fromT<I>(), input->getContext());
     for (auto i = 0; i < rowNum; i++) {
       for (auto j = 0; j < columnNum; j++) {
         if (permutationMatrix.t<T>(i, j) != 0) {
-          permutaionVector.template r<I>(i) = j;
+          permutaionVector->template r<I>(i) = j;
         }
       }
     }
     if (permutationMatrix.isSameShape(permutation))
       permutation->assign(&permutationMatrix);
     else if (permutation->isSameShape(permutaionVector)) {
-      permutation->assign(&permutaionVector);
+      permutation->assign(permutaionVector);
     }
   }
-  return determinant;
+  return *determinant;
 }
 
 BUILD_DOUBLE_TEMPLATE( NDArray lup_,
@@ -364,8 +367,8 @@ static sd::Status determinant_(LaunchContext* context, NDArray* input, NDArray* 
       NDArrayFactory::create(input->ordering(), {n, n}, input->dataType(), context);  //, block.getWorkspace());
 
   for (sd::LongType e = 0; e < output->lengthOf(); e++) {
-    for (sd::LongType k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row) matrix.p(row, input->e<T>(k));
-    auto ret = lup_<T, sd::LongType>(context, &matrix, (NDArray*)nullptr, (NDArray*)nullptr);
+    for (sd::LongType k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row) matrix->p(row, input->e<T>(k));
+    auto ret = lup_<T, sd::LongType>(context, matrix, (NDArray*)nullptr, (NDArray*)nullptr);
     output->p(e, &ret);
   }
 
@@ -381,16 +384,17 @@ sd::Status logAbsDeterminant_(LaunchContext* context, NDArray* input, NDArray* o
   sd::LongType n = input->sizeAt(-1);
   sd::LongType n2 = n * n;
 
-  NDArray matrix =
+  NDArray *matrix =
       NDArrayFactory::create(input->ordering(), {n, n}, input->dataType(), context);  //, block.getWorkspace());
   for (sd::LongType e = 0; e < output->lengthOf(); e++) {
     for (sd::LongType k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row) {
-      matrix.p(row, input->e<T>(k));
+      matrix->p(row, input->e<T>(k));
     }
-    NDArray det = lup_<T, sd::LongType>(context, &matrix, (NDArray*)nullptr, (NDArray*)nullptr);
+    NDArray det = lup_<T, sd::LongType>(context, matrix, (NDArray*)nullptr, (NDArray*)nullptr);
     if (det.e<T>(0) != 0.f) output->p(e, sd::math::sd_log<T, T>(sd::math::sd_abs<T,T>(det.t<T>(0))));
   }
 
+  delete matrix;
   return sd::Status::OK;
 }
 
@@ -405,43 +409,48 @@ static sd::Status inverse_(LaunchContext* context, NDArray* input, NDArray* outp
   auto totalCount = output->lengthOf() / n2;
   float zerof = 0.f;
   output->assign(zerof);  // fill up output tensor with zeros
-  auto matrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context);    //, block.getWorkspace());
-  auto compound = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context);  //, block.getWorkspace());
+  auto matrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context);
+  auto compound = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context);
   auto permutation = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context);
   auto lowerMatrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context);
   auto upperMatrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context);
   float zero = 0.f;
   for (sd::LongType e = 0; e < totalCount; e++) {
-    if (e) matrix.assign(zero);
+    if (e) matrix->assign(zero);
 
     for (sd::LongType k = e * n2, row = 0; k < (e + 1) * n2; k++) {
-      matrix.p(row++, input->e<T>(k));
+      matrix->p(row++, input->e<T>(k));
     }
-    T det = lup_<T, sd::LongType>(context, &matrix, &compound, &permutation).template e<T>(0);
+    T det = lup_<T, sd::LongType>(context, matrix, compound, permutation).template e<T>(0);
 
     // FIXME: and how this is going to work on float16?
     if (sd::math::sd_abs<T,T>(det) < T(0.000001)) {
       sd_printf("matrix_inverse: The matrix %i has no inverse due determinant is %lf. Quiting...\n", e, det);
       return sd::Status::VALIDATION;
     }
-    lowerMatrix.setIdentity();     // set up U to identity matrix
+    lowerMatrix->setIdentity();     // set up U to identity matrix
     for (sd::LongType k = 1; k < n; k++) {  // and then put all values under main diagonal on to it
-      for (sd::LongType j = 0; j < k; j++) lowerMatrix.template r<T>(k, j) = compound.template t<T>(k, j);
+      for (sd::LongType j = 0; j < k; j++) lowerMatrix->template r<T>(k, j) = compound->template t<T>(k, j);
     }
-    upperMatrix.setIdentity();     // set up U to identity matrix
+    upperMatrix->setIdentity();     // set up U to identity matrix
     for (sd::LongType k = 0; k < n; k++) {  // and then put all values under main diagonal on to it
-      for (sd::LongType j = k; j < n; j++) upperMatrix.template r<T>(k, j) = compound.template t<T>(k, j);
+      for (sd::LongType j = k; j < n; j++) upperMatrix->template r<T>(k, j) = compound->template t<T>(k, j);
     }
-    invertUpperMatrix(&upperMatrix, &matrix);
+    invertUpperMatrix(upperMatrix, matrix);
 
-    invertLowerMatrix(&lowerMatrix, &upperMatrix);
+    invertLowerMatrix(lowerMatrix, upperMatrix);
 
-    sd::MmulHelper::mmul(&matrix, &upperMatrix, &compound, 1.0, 0.0);
-    sd::MmulHelper::mmul(&compound, &permutation, &matrix, 1.0, 0.0);
+    sd::MmulHelper::mmul(matrix, upperMatrix, compound, 1.0, 0.0);
+    sd::MmulHelper::mmul(compound, permutation, matrix, 1.0, 0.0);
     for (sd::LongType k = e * n2, row = 0; k < (e + 1) * n2; k++) {
-      output->r<T>(k) = matrix.template t<T>(row++);
+      output->r<T>(k) = matrix->template t<T>(row++);
     }
   }
+
+  delete matrix;
+  delete compound;
+  delete upperMatrix;
+  delete lowerMatrix;
 
   return sd::Status::OK;
 }
@@ -459,28 +468,34 @@ static sd::Status lowerInverse_(LaunchContext* context, NDArray* input, NDArray*
   auto lowerMatrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context);
   auto upperMatrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context);
   for (sd::LongType e = 0; e < totalCount; e++) {
-    if (e) matrix.assign(zero);
+    if (e) matrix->assign(zero);
 
     for (sd::LongType k = e * n2, row = 0; k < (e + 1) * n2; k++) {
-      matrix.p(row++, input->e<T>(k));
+      matrix->p(row++, input->e<T>(k));
     }
     T det = T(1.f);
     for (auto i = 0; i < n; i++) {
-      det *= matrix.template t<T>(i, i);
+      det *= matrix->template t<T>(i, i);
     }
 
-    // FIXME: and how this is going to work on float16?
+    // FIXME: a->d how this is going to work on float16?
     if (sd::math::sd_abs<T,T>(det) < T(0.000001)) {
       sd_printf("matrix_inverse: The matrix %i has no inverse due determinant is %lf. Quitting...\n", e, det);
       return sd::Status::VALIDATION;
     }
-    lowerMatrix.nullify();
-    invertLowerMatrix(&matrix, &lowerMatrix);
+    lowerMatrix->nullify();
+    invertLowerMatrix(matrix, lowerMatrix);
 
     for (sd::LongType k = e * n2, row = 0; k < (e + 1) * n2; k++) {
-      output->r<T>(k) = lowerMatrix.template t<T>(row++);
+      output->r<T>(k) = lowerMatrix->template t<T>(row++);
     }
   }
+
+  delete matrix;
+  delete lowerMatrix;
+  delete compound;
+  delete permutation;
+  delete upperMatrix;
 
   return sd::Status::OK;
 }
@@ -524,13 +539,13 @@ static bool checkCholeskyInput_(sd::LaunchContext* context, NDArray * input) {
             DataTypeUtils::min_positive<T>())
           return false;
 
-    NDArray output = NDArrayFactory::create<T>(static_cast<T>(0.), context);
-    if (sd::Status::OK != determinant(context, thisMatrix, &output)) return false;
-    if (output.e<T>(0) <= T(0)) return 0;
+    NDArray *output = NDArrayFactory::create<T>(static_cast<T>(0.), context);
+    if (sd::Status::OK != determinant(context, thisMatrix, output)) return false;
+    if (output->e<T>(0) <= T(0)) return 0;
     NDArray reversedMatrix(*thisMatrix);
     if (sd::Status::OK != inverse(context, thisMatrix, &reversedMatrix)) return false;
-    if (sd::Status::OK != determinant(context, &reversedMatrix, &output)) return false;
-    if (output.e<T>(0) <= T(0)) return 0;
+    if (sd::Status::OK != determinant(context, &reversedMatrix, output)) return false;
+    if (output->e<T>(0) <= T(0)) return 0;
   }
 
   return true;

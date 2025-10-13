@@ -248,14 +248,17 @@ struct Spans {
   } // The maximum span size of any output pixel.
   int _spanSize;
   // int32 tensor with shape {outputSize}.
-  NDArray _starts;
+  NDArray *_starts;
 
   // float32 tensor of size {outputSize, spanSize}.
   // The output pixel at x is computed as:
   //   dot_product(input[starts[x]:starts[x]+span_size], weights[x]).
-  NDArray _weights;
+  NDArray *_weights;
   // see: https://stackoverflow.com/questions/41552966/getting-new-delete-type-mismatch-from-asan
-  virtual ~Spans() = default;
+  ~Spans()  {
+      delete _starts;
+      delete _weights;
+  };
 
 };
 

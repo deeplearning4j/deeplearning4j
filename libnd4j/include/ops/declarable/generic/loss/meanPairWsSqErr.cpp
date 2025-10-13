@@ -370,13 +370,14 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss_grad, 3, 3, false, 0, 1) {
           std::vector<LongType> axesToReduceAlong =
               ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
           E.reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
-          *dLdw /= numOfNonZeroWeightsScalar;
+          *dLdw /= *numOfNonZeroWeightsScalar;
         } else {
-          NDArray assign = E / numOfNonZeroWeightsScalar;
+          NDArray assign = E / *numOfNonZeroWeightsScalar;
           dLdw->assign(&assign);
         }
-        NDArray temp = *weightsBroad / numOfNonZeroWeightsScalar;
+        NDArray temp = *weightsBroad / *numOfNonZeroWeightsScalar;
         *dLdp *= temp;
+        delete numOfNonZeroWeightsScalar;
       }
       break;
     }

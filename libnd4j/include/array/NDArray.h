@@ -734,7 +734,7 @@ class SD_LIB_EXPORT NDArray {
    *  returns element index which corresponds to some condition imposed by operation
    *  extraParams - extra parameters for operation
    */
-  NDArray indexReduceNumber(indexreduce::Ops op, ExtraArguments *extraParams = nullptr);
+  NDArray *indexReduceNumber(sd::indexreduce::Ops op, ExtraArguments *extraParams = nullptr);
 
   /**
    *  returns index of max element in a given array (optionally: along given dimension(s))
@@ -947,8 +947,7 @@ class SD_LIB_EXPORT NDArray {
   /**
    *   apply transpose operation to the copy of this array, that is this array remains unaffected
    */
-  NDArray transpose() &;
-  NDArray transpose() &&;
+  NDArray *transpose();
 
   /**
    *  perform transpose operation and store result in target, this array remains unaffected

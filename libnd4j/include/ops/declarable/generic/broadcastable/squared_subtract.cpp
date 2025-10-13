@@ -69,11 +69,11 @@ CUSTOM_OP_IMPL(squaredsubtract_bp, 3, 2, false, 0, 0) {
 
     // X gradient
     // X gradient
-    NDArray gradXTemp = (*epsNext) * ts * ((*x) - (*y));
+    NDArray gradXTemp = (*epsNext) * *ts * ((*x) - (*y));
     gradX->assign(&gradXTemp);
 
     // Y gradient
-    NDArray gradYTemp = (*epsNext) * ts * ((*y) - (*x));
+    NDArray gradYTemp = (*epsNext) * *ts * ((*y) - (*x));
     gradY->assign(&gradYTemp);
 
   } else if (y->isScalar()) {
@@ -81,7 +81,7 @@ CUSTOM_OP_IMPL(squaredsubtract_bp, 3, 2, false, 0, 0) {
     auto tmpX = x->reduceNumber(reduce::Sum);
     gradY->assign(&tmpX);
     // X gradient
-    NDArray gradXTemp = (*epsNext) * ts * ((*x) - (*y));
+    NDArray gradXTemp = (*epsNext) * *ts * ((*x) - (*y));
     gradX->assign(&gradXTemp);
   } else {
     // broadcast case
@@ -94,9 +94,9 @@ CUSTOM_OP_IMPL(squaredsubtract_bp, 3, 2, false, 0, 0) {
     preX->tileToShape(targetShape, *preX);
     preY->tileToShape(targetShape, *preY);
 
-    auto resX = (*epsNext) * ts * ((*x) - (*y));
+    auto resX = (*epsNext) * *ts * ((*x) - (*y));
     preX->assign(&resX);
-    auto resY = (*epsNext) * ts * ((*y) - (*x));
+    auto resY = (*epsNext) * *ts * ((*y) - (*x));
     preY->assign(&resY);
 
     auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
@@ -114,6 +114,8 @@ CUSTOM_OP_IMPL(squaredsubtract_bp, 3, 2, false, 0, 0) {
     } else
       gradY->assign(preY);
   }
+
+  delete ts;
 
   return Status::OK;
 }

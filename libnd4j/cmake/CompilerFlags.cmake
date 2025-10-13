@@ -1,10 +1,11 @@
 # cmake/CompilerFlags.cmake
 # Configures compiler and linker flags for optimization and correctness.
 
-# ===== DISABLE PLT COMPLETELY =====
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-plt")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-plt")
+    #This is to avoid jemalloc crashes where c++ uses sized deallocations
+    add_compile_options(-fno-sized-deallocation)
 endif()
 
 
@@ -13,6 +14,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     add_compile_options(-ftemplate-depth=256)  # Reduce from default 900
     add_compile_options(-fmax-errors=3)        # Stop on first few errors
 endif()
+
 
 
 # --- Link Time Optimization (LTO) ---
@@ -104,7 +106,7 @@ endif()
 # --- Sanitizer Configuration ---
 if(SD_SANITIZE)
     # Use global-dynamic TLS model for shared libraries
-    set(SANITIZE_FLAGS " -Wall -Wextra -fPIC -ftls-model=global-dynamic -fsanitize=${SD_SANITIZERS} -fno-sanitize-recover=all")
+    set(SANITIZE_FLAGS " -Wall -Wextra  -fPIC -ftls-model=global-dynamic -fsanitize=${SD_SANITIZERS} -fno-sanitize-recover=all")
     set(SANITIZE_LINK_FLAGS "-fsanitize=${SD_SANITIZERS}")
     
     message("Using sanitizers: ${SD_SANITIZERS}...")

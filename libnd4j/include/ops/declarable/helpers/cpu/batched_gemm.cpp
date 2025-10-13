@@ -40,8 +40,8 @@ void bgemm(NDArray *a,  NDArray *b,  NDArray *c,   NDArray *alphas,   NDArray *b
   if(all != nullptr)
     allIndex = all;
   else {
-    NDArray allLocal = NDIndexUtils::createAll();
-    allIndex = &allLocal;
+    NDArray *allLocal = NDIndexUtils::createAll();
+    allIndex = allLocal;
   }
 
   int batchSize = a->sizeAt(0);
@@ -54,13 +54,16 @@ void bgemm(NDArray *a,  NDArray *b,  NDArray *c,   NDArray *alphas,   NDArray *b
   //divide by 2: queries and keys
   for(int i = 0; i < batchSize; i++) {
     auto point = NDIndexUtils::createPoint(i);
-    auto aSlice = createView.evaluate({a,&point,allIndex,allIndex},{},{});
-    auto bSlice = createView.evaluate({b,&point,allIndex,allIndex},{},{});
-    auto outSlice = createView.evaluate({c,&point,allIndex,allIndex},{},{});
+    auto aSlice = createView.evaluate({a,point,allIndex,allIndex},{},{});
+    auto bSlice = createView.evaluate({b,point,allIndex,allIndex},{},{});
+    auto outSlice = createView.evaluate({c,point,allIndex,allIndex},{},{});
     inputs.push_back(aSlice.at(0));
     bInputs.push_back(bSlice.at(0));
     outputs.push_back(outSlice.at(0));
+    delete point;
   }
+
+  delete allIndex;
 
 
 

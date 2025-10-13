@@ -90,9 +90,10 @@ NDArray *AttentionHelper::computeCasualMask(NDArray *query, NDArray *value, bool
     ops::matrix_band_part matrixBandPart;
     auto ones = NDArrayFactory::create('c',{1,qSeqLength,vSeqLength}, INT32);
     int assignVal = 1;
-    ones.assign(assignVal);
-    auto lower = matrixBandPart.evaluate({&ones},{},{-1,0});
+    ones->assign(assignVal);
+    auto lower = matrixBandPart.evaluate({ones},{},{-1,0});
     auto ret = new NDArray(lower.at(0)->cast(BOOL));
+    delete ones;
     return ret;
 
   } else {
@@ -133,13 +134,13 @@ NDArray *AttentionHelper::computeAttentionMask(NDArray *query, NDArray *value, N
   if (internalQueryMask != nullptr && !internalQueryMask->isEmpty()) {
     internalQueryMask = new NDArray(queryMask->cast(BOOL));
     if (autoMask != nullptr && !autoMask->isEmpty()) {
-      autoMask = createView.evaluate({internalQueryMask, &all, &all, &newAxis}).at(0);
+      autoMask = createView.evaluate({internalQueryMask, all, all, newAxis}).at(0);
     }
   }
 
   if (valueMask != nullptr && !valueMask->isEmpty()) {
     internalValueMask = new NDArray(valueMask->cast(BOOL));
-    auto mask = createView.evaluate({internalValueMask, &all, &newAxis, &all}).at(0);
+    auto mask = createView.evaluate({internalValueMask, all, newAxis, all}).at(0);
     if (autoMask == nullptr || autoMask->isEmpty()) {
       autoMask = mask;
     } else {
@@ -164,6 +165,9 @@ NDArray *AttentionHelper::computeAttentionMask(NDArray *query, NDArray *value, N
       return ret;
     }
   }
+
+  delete all;
+  delete newAxis;
 
   return autoMask;
 }

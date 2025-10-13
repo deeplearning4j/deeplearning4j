@@ -280,7 +280,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
   if (!weights->isScalar() && !weights->isSameShape(&E))
     weightsBroad = new NDArray(weights->tileToShape(E.shapeInfo()));
 
-  dimensions = ShapeUtils::evalDimsToExclude(dLdp->rankOf(), dimensions->size(),dimensions->data());
+  auto excludeDims = ShapeUtils::evalDimsToExclude(dLdp->rankOf(), dimensions->size(), dimensions->data());
 
   switch (reductionMode) {
     case 1: {  // 1 - "none" and "weighted_sum", output is scalar and equal to sum of all elements of E array
@@ -291,8 +291,8 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
         *dLdp *= *weights;
         *dLdl *= *weights;
       } else {
-        dLdp->applyBroadcast(broadcast::Multiply, dimensions, weightsBroad, dLdp);
-        dLdl->applyBroadcast(broadcast::Multiply, dimensions, weightsBroad, dLdl);
+        dLdp->applyBroadcast(broadcast::Multiply, excludeDims, weightsBroad, dLdp);
+        dLdl->applyBroadcast(broadcast::Multiply, excludeDims, weightsBroad, dLdl);
 
         if (weights != weightsBroad) {
           std::vector<LongType> axesToReduceAlong =

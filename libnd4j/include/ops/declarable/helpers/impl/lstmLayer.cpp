@@ -527,19 +527,21 @@ void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* 
   dLdzo *= *dLdhI;  // [bS, nOut](or[nOut])
 
   // dLdx
-  NDArray WxT = Wx->transpose();
-  MmulHelper::mmul(&dLdz, &WxT,
+  NDArray *WxT = Wx->transpose();
+  MmulHelper::mmul(&dLdz, WxT,
                    dLdx);  // [bS, 4*nOut] x [4*nOut, nIn] (or [4*nOut] x [4*nOut, nIn]) = [bS, nIn] ( or[nIn] )
 
   // dLdhI
-  NDArray WrT = Wr->transpose();
-  MmulHelper::mmul(&dLdz, &WrT,
+  NDArray *WrT = Wr->transpose();
+  MmulHelper::mmul(&dLdz, WrT,
                    dLdhI);  // [bS, 4*nOut] x [4*nOut, nOut] (or [4*nOut] x [4*nOut, nOut]) = [bS, nOut] ( or[nOut] )
 
   NDArray dLdcIAssign = *dLdcI * *dcdcI;
   // dLdcI
   dLdcI->assign(&dLdcIAssign);  // [bS, nOut](or[nOut])
 
+  delete WxT;
+  delete WrT;
   if (x->rankOf() == 1) {
     std::vector<sd::LongType> xShape = {nIn, 1};
     std::vector<sd::LongType> hIShape = {nOut, 1};
@@ -554,13 +556,15 @@ void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* 
     // dLdWr
     *dLdWr += mmul(*hIT, *dLdzR);  // [nOut, 1] x [1, 4*nOut] = [nOut, 4*nOut]
   } else {
-    NDArray xT = x->transpose();
-    NDArray hIT = hI->transpose();
+    NDArray *xT = x->transpose();
+    NDArray *hIT = hI->transpose();
     // dLdWx
-    *dLdWx += mmul(xT, dLdz);  // [nIn, bS] x [bS, 4*nOut] = [nIn, 4*nOut]
+    *dLdWx += mmul(*xT, dLdz);  // [nIn, bS] x [bS, 4*nOut] = [nIn, 4*nOut]
 
     // dLdWr
-    *dLdWr += mmul(hIT, dLdz);  // [nOut, bS] x [bS, 4*nOut] = [nOut, 4*nOut]
+    *dLdWr += mmul(*hIT, dLdz);  // [nOut, bS] x [bS, 4*nOut] = [nOut, 4*nOut]
+     delete xT;
+     delete hIT;
   }
 
   // dLdb

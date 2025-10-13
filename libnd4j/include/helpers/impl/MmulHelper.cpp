@@ -68,6 +68,22 @@ NDArray* MmulHelper::tensorDot(NDArray* A, NDArray* B, const std::vector<LongTyp
 
   c->reshapei(outShape);
 
+  // Delete reshaped arrays first
+  if(aPR != A && aPR != aP) {
+    delete aPR;
+  }
+  if(bPR != B && bPR != bP) {
+    delete bPR;
+  }
+
+  // Then delete permuted arrays
+  if(aP != A) {
+    delete aP;
+  }
+  if(bP != B) {
+    delete bP;
+  }
+
   return c;
 }
 
@@ -153,11 +169,11 @@ void MmulHelper::tensorDot2(NDArray* a, NDArray* b, NDArray* c, const std::vecto
   NDArray* aP = permutAt.empty() ? a : a->permute(permutAt, false, false);
   NDArray* bP = permuteBt.empty() ? b :b->permute(permuteBt, false, false);
 
-  auto apReshaped = aP->permute(newaxes_a, false, false)->reshape('c', newshape_a,true);
-  NDArray* aPR =  apReshaped;
+  NDArray* aPermuted = aP->permute(newaxes_a, false, false);
+  NDArray* aPR = aPermuted->reshape('c', newshape_a, true);
 
-  auto bpReshape = bP->permute(newaxes_b, false, false)->reshape('c', newshape_b,true);
-  NDArray* bPR = bpReshape;
+  NDArray* bPermuted = bP->permute(newaxes_b, false, false);
+  NDArray* bPR = bPermuted->reshape('c', newshape_b, true);
 
   std::vector<LongType> requiredCshape  = {aPR->sizeAt(0), bPR->sizeAt(1)};
   NDArray *cP2 = cP->reshape('f', requiredCshape, false);
@@ -178,6 +194,35 @@ void MmulHelper::tensorDot2(NDArray* a, NDArray* b, NDArray* c, const std::vecto
 
   if(realFinalResult != c) {
     realFinalResult->dataBuffer()->copyBufferFrom(*c->dataBuffer());
+  }
+
+  if(cP != c) {
+    delete cP;
+  }
+  if(cPR != c) {
+    delete cPR;
+  }
+
+  if(aP != a && !aP->isView()) {
+    delete aP;
+  }
+  if(bP != b && !bP->isView()) {
+    delete bP;
+  }
+
+  // Delete in reverse order of creation to avoid use-after-free
+  if(bPR != b && bPR != bP && bPR != bPermuted && !bPR->isView()) {
+    delete bPR;
+  }
+  if(bPermuted != b && bPermuted != bP && !bPermuted->isView()) {
+    delete bPermuted;
+  }
+
+  if(aPR != a && aPR != aP && aPR != aPermuted && !aPR->isView()) {
+    delete aPR;
+  }
+  if(aPermuted != a && aPermuted != aP && !aPermuted->isView()) {
+    delete aPermuted;
   }
 
 }
@@ -216,26 +261,26 @@ void MmulHelper::tensorDot(NDArray* a, NDArray* b, NDArray* c,
   }
 
 
-  if(c != cP) {
+  if(c != cP && !cP->isView()) {
     delete cP;
   }
 
-  if(aP != a) {
+  if(aP != a && !aP->isView()) {
     delete aP;
   }
 
-  if(bP != b) {
+  if(bP != b && !bP->isView()) {
     delete bP;
   }
 
-  if(aPR != a) {
+  if(aPR != a && aPR != aP && !aPR->isView()) {
     delete aPR;
   }
-  if(bPR != b) {
+  if(bPR != b && bPR != bP && !bPR->isView()) {
     delete bPR;
   }
 
-  if(cPR != c) {
+  if(cPR != c && cPR != cP && !cPR->isView()) {
     delete cPR;
   }
 }
@@ -464,40 +509,59 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
     permute[rank - 2] = rank - 1;
     permute[rank - 1] = rank - 2;
 
-    //transpose can affect the input data. We shouldn't mutate that.
-    //note we dup here to avoid manipulating the reference
+    // OPTIMIZATION: Use reshape instead of dup+reshape to avoid unnecessary copy
     if (transX) {
-      NDArray *permuted = x->permute(permute, true, false);
+      NDArray *permuted = x->permute(permute, false, false);
       xT = permuted;
     }
     if (transY) {
-      NDArray *yPermuted = y->permute(permute, true, false);
+      NDArray *yPermuted = y->permute(permute, false, false);
       yT = yPermuted;
-
     }
   }
 
   if (xRank <= 2 && yRank <= 2) {
     // dot (1Dx1D), vector-matrix (1Dx2D), matrix-vector (2Dx1D), matrix-matrix (2Dx2D) product cases
+    NDArray* xReshaped = nullptr;
+    NDArray* zReshaped = nullptr;
+    
     if (xRank == 1 && yRank == 2) {
       // reduce vector-matrix to matrix-matrix case
-      //note we dup to avoid mutating input data
       std::vector<sd::LongType> xShape = {1, xT->lengthOf()};
       std::vector<sd::LongType> zShape = {1, z->lengthOf()};
-      NDArray *xReshape = x->dup(x->ordering())->reshape(xT->ordering(), xShape,false);
-      xT =xReshape;  // please note x is not transposed in this case (since xRank=1)
-      NDArray *zReshape = z->dup(z->ordering())->reshape(z->ordering(), zShape,false);
-      zT = zReshape;
-    }
 
+      // Remember if we need to delete the permuted versions
+      NDArray* xPermuted = (xT != x) ? xT : nullptr;
+      NDArray* zPermuted = (zT != z) ? zT : nullptr;
+
+      xReshaped = xT->reshape(xT->ordering(), xShape, false);
+      xT = xReshaped;
+      zReshaped = z->reshape(z->ordering(), zShape, false);
+      zT = zReshaped;
+
+      // Clean up permuted versions if they exist
+      if(xPermuted != nullptr && !xPermuted->isView()) {
+        delete xPermuted;
+      }
+      if(zPermuted != nullptr && !zPermuted->isView()) {
+        delete zPermuted;
+      }
+    }
 
     mmul(xT, yT, zT, alpha, beta);
 
-
+    // Copy back result and clean up reshaped output
     if(zT != z) {
       z->dataBuffer()->copyBufferFrom(*zT->dataBuffer(), zT->lengthOf() * zT->sizeOfT());
+      if(!zT->isView()) {
+        delete zT;
+      }
     }
 
+    // Clean up reshaped input
+    if(xReshaped != nullptr && xReshaped != x && !xReshaped->isView()) {
+      delete xReshaped;
+    }
 
   } else {
     // rest cases - batched mmul
@@ -519,8 +583,8 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
       vC[i] = new NDArray((*zT)(i, dimsToExclude));
     }
 
-    NDArray alphaArr = NDArrayFactory::create<double>('c', {0}, {alpha});
-    NDArray betaArr = NDArrayFactory::create<double>('c', {0}, {beta});
+    NDArray *alphaArr = NDArrayFactory::create<double>('c', {0}, {alpha});
+    NDArray *betaArr = NDArrayFactory::create<double>('c', {0}, {beta});
 
     int M = vA[0]->sizeAt(0);
     int N = vB[0]->sizeAt(1);
@@ -546,24 +610,25 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
 
     }
 
-    ops::helpers::bgemm(vA, vB, vC, &alphaArr, &betaArr, transXResolve ? 1 : 0, transYResolve ? 1 : 0, M, N, K, lda, ldb, ldc);
+    ops::helpers::bgemm(vA, vB, vC, alphaArr, betaArr, transXResolve ? 1 : 0, transYResolve ? 1 : 0, M, N, K, lda, ldb, ldc);
+    delete alphaArr;
+    delete betaArr;
 
     for (LongType i = 0; i < numOfSubArrs; ++i) {
       delete vA[i];
       delete vB[i];
       delete vC[i];
     }
-
-
   }
 
-  if (xT != x) delete xT;
-  if (yT != y) delete yT;
-
+  // Clean up permuted arrays (works for both cases)
+  if (xT != x && xT != nullptr) delete xT;
+  if (yT != y && yT != nullptr) delete yT;
 
   if(realFinalResult != nullptr && realFinalResult != z) {
     realFinalResult->dataBuffer()->copyBufferFrom(*z->dataBuffer());
   }
+
 
 }
 }  // namespace sd

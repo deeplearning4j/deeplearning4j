@@ -45,22 +45,24 @@ NDArray scalarArrayOpHelper(NDArray* arr, T scalar, sd::scalar::Ops op, bool inP
   auto tmp = NDArrayFactory::create(arr->dataType(), scalar, arr->getContext());
 
   if (inPlace && !arr->isView()) {
-    NDArray::prepareSpecialUse({arr}, {arr, &tmp});
+    NDArray::prepareSpecialUse({arr}, {arr, tmp});
     NativeOpExecutioner::execScalar(arr->getContext(), op,
                                     arr->buffer(), arr->shapeInfo(), arr->specialBuffer(), arr->specialShapeInfo(),
                                     arr->buffer(), arr->shapeInfo(), arr->specialBuffer(), arr->specialShapeInfo(),
-                                    tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
-    NDArray::registerSpecialUse({arr}, {arr, &tmp});
+                                    tmp->buffer(), tmp->shapeInfo(), tmp->specialBuffer(), tmp->specialShapeInfo(), nullptr);
+    NDArray::registerSpecialUse({arr}, {arr, tmp});
+    delete tmp;
     return std::move(*arr);
   } else {
     NDArray result(arr->shapeInfo(), DataTypeUtils::pickPairwiseResultType(arr->dataType(), DataTypeUtils::fromT<T>()),
                    false, arr->getContext());
-    NDArray::prepareSpecialUse({&result}, {arr, &tmp});
+    NDArray::prepareSpecialUse({&result}, {arr, tmp});
     NativeOpExecutioner::execScalar(arr->getContext(), op,
                                     arr->buffer(), arr->shapeInfo(), arr->specialBuffer(), arr->specialShapeInfo(),
                                     result.buffer(), result.shapeInfo(), result.specialBuffer(), result.specialShapeInfo(),
-                                    tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
-    NDArray::registerSpecialUse({&result}, {arr, &tmp});
+                                    tmp->buffer(), tmp->shapeInfo(), tmp->specialBuffer(), tmp->specialShapeInfo(), nullptr);
+    NDArray::registerSpecialUse({&result}, {arr, tmp});
+    delete tmp;
     return result;
   }
 }
@@ -127,7 +129,10 @@ NDArray arrayArrayOpHelper(NDArray* arr1, NDArray* arr2, sd::pairwise::Ops op, b
       THROW_EXCEPTION(errorMessage.c_str());
   }
 
-  return *arr1->applyTrueBroadcast(broadcastOp, arr2);
+  NDArray *ret = arr1->applyTrueBroadcast(broadcastOp, arr2);
+  NDArray result = std::move(*ret);
+  delete ret;
+  return result;
 }
 
 /////////////////////////////////////////////////////
@@ -328,12 +333,14 @@ void NDArray::operator+=(const T scalar) {
 
   auto tmp = NDArrayFactory::create(dataType(), scalar, getContext());
 
-  NDArray::prepareSpecialUse({this}, {this, &tmp});
+  NDArray::prepareSpecialUse({this}, {this, tmp});
   NativeOpExecutioner::execScalar(getContext(), sd::scalar::Add,
                                   buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
                                   buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                  tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
-  NDArray::registerSpecialUse({this}, {this, &tmp});
+                                  tmp->buffer(), tmp->shapeInfo(), tmp->specialBuffer(), tmp->specialShapeInfo(), nullptr);
+  NDArray::registerSpecialUse({this}, {this, tmp});
+  delete tmp;
+
 }
 
 template <typename T, typename>
@@ -345,12 +352,14 @@ void NDArray::operator-=(const T scalar) {
 
   auto tmp = NDArrayFactory::create(dataType(), scalar, getContext());
 
-  NDArray::prepareSpecialUse({this}, {this, &tmp});
+  NDArray::prepareSpecialUse({this}, {this, tmp});
   NativeOpExecutioner::execScalar(getContext(), sd::scalar::Subtract,
                                   buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
                                   buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                  tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
-  NDArray::registerSpecialUse({this}, {this, &tmp});
+                                  tmp->buffer(), tmp->shapeInfo(), tmp->specialBuffer(), tmp->specialShapeInfo(), nullptr);
+  NDArray::registerSpecialUse({this}, {this, tmp});
+  delete tmp;
+
 }
 
 template <typename T, typename>
@@ -362,12 +371,14 @@ void NDArray::operator*=(const T scalar) {
 
   auto tmp = NDArrayFactory::create(dataType(), scalar, getContext());
 
-  NDArray::prepareSpecialUse({this}, {this, &tmp});
+  NDArray::prepareSpecialUse({this}, {this, tmp});
   NativeOpExecutioner::execScalar(getContext(), sd::scalar::Multiply,
                                   buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
                                   buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                  tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
-  NDArray::registerSpecialUse({this}, {this, &tmp});
+                                  tmp->buffer(), tmp->shapeInfo(), tmp->specialBuffer(), tmp->specialShapeInfo(), nullptr);
+  NDArray::registerSpecialUse({this}, {this, tmp});
+  delete tmp;
+
 }
 
 template <typename T, typename>
@@ -379,12 +390,14 @@ void NDArray::operator/=(const T scalar) {
 
   auto tmp = NDArrayFactory::create(dataType(), scalar, getContext());
 
-  NDArray::prepareSpecialUse({this}, {this, &tmp});
+  NDArray::prepareSpecialUse({this}, {this, tmp});
   NativeOpExecutioner::execScalar(getContext(), sd::scalar::Divide,
                                   buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
                                   buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                  tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
-  NDArray::registerSpecialUse({this}, {this, &tmp});
+                                  tmp->buffer(), tmp->shapeInfo(), tmp->specialBuffer(), tmp->specialShapeInfo(), nullptr);
+  NDArray::registerSpecialUse({this}, {this, tmp});
+  delete tmp;
+
 }
 
 // Define instantiations matching the header file declarations exactly
@@ -544,7 +557,9 @@ NDArray operator-(T1 &&arr1, T2 &&arr2) {
   NDArray* arr1Addr = &arr1;
   NDArray* arr2Addr = &arr2;
   NDArray *ret =  std::forward<T1>(arr1).applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), arr2Addr);
-  return *ret;
+  NDArray result = std::move(*ret);
+  delete ret;
+  return result;
 }
 
 
@@ -609,7 +624,9 @@ NDArray operator*(T1 &&arr1, T2 &&arr2) {
   NDArray* arr1Addr = &arr1;
   NDArray* arr2Addr = &arr2;
   NDArray *ret =  std::forward<T1>(arr1).applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), arr2Addr);
-  return *ret;
+  NDArray result = std::move(*ret);
+  delete ret;
+  return result;
 }
 template SD_LIB_EXPORT NDArray operator*<NDArray &, NDArray &, void>(NDArray &arr1, NDArray &arr2);
 template SD_LIB_EXPORT NDArray operator*<NDArray &, NDArray, void>(NDArray &arr1, NDArray &&arr2);
@@ -672,7 +689,9 @@ NDArray operator+(T1 &&arr1, T2 &&arr2) {
   NDArray* arr1Addr = &arr1;
   NDArray* arr2Addr = &arr2;
   NDArray *ret =  std::forward<T1>(arr1).applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), arr2Addr);
-  return *ret;
+  NDArray result = std::move(*ret);
+  delete ret;
+  return result;
 }
 template SD_LIB_EXPORT NDArray operator+<NDArray &, NDArray &, void>(NDArray &arr1, NDArray &arr2);
 template SD_LIB_EXPORT NDArray operator+<NDArray &, NDArray, void>(NDArray &arr1, NDArray &&arr2);
@@ -723,7 +742,9 @@ NDArray operator/(T1 &&arr1, T2 &&arr2) {
   NDArray* arr1Addr = &arr1;
   NDArray* arr2Addr = &arr2;
   NDArray *ret =  std::forward<T1>(arr1).applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), arr2Addr);
-  return *ret;
+  NDArray result = std::move(*ret);
+  delete ret;
+  return result;
 }
 template SD_LIB_EXPORT NDArray operator/<NDArray &, NDArray &, void>(NDArray &arr1, NDArray &arr2);
 template SD_LIB_EXPORT NDArray operator/<NDArray &, NDArray, void>(NDArray &arr1, NDArray &&arr2);

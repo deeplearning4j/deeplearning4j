@@ -86,26 +86,26 @@ CONFIGURABLE_OP_IMPL(cbow_inference, 6, 6, true, -2, -2) {
   const std::vector<sd::LongType> *codesShape = codesSize;
 
   std::vector<sd::LongType> *contextSize = new std::vector<sd::LongType>();
-  contextSize->push_back(contextSize->size());
+  contextSize->push_back(context->size());
   const std::vector<sd::LongType> *contextShape = contextSize;
 
   std::vector<sd::LongType> *lockedWordsSize = new std::vector<sd::LongType>();
   lockedWordsSize->push_back(lockedWords->size());
   const std::vector<sd::LongType> *lockedWordsShape = lockedWordsSize;
 
-  auto indicesArrOne = indicesVec->size() > 0 ? NDArrayFactory::create<sd::LongType>('c',*indicesShape,*indicesVec) : NDArrayFactory::empty<sd::LongType>();
-  auto indicesArr = new NDArray(indicesArrOne);
-  auto codesArrOne = codesVec->size() > 0 ?  NDArrayFactory::create<sd::LongType>('c',*codesShape,*codesVec) :  NDArrayFactory::empty<sd::LongType>();
-  auto codesArr = new NDArray(codesArrOne);
+  auto indicesArrOne = indicesVec->size() > 0 ? NDArrayFactory::create_<sd::LongType>('c',*indicesShape,*indicesVec,LaunchContext::defaultContext()) : NDArrayFactory::empty<sd::LongType>();
+  auto indicesArr = indicesArrOne;
+  auto codesArrOne = codesVec->size() > 0 ?  NDArrayFactory::create_<sd::LongType>('c',*codesShape,*codesVec,LaunchContext::defaultContext()) :  NDArrayFactory::empty<sd::LongType>();
+  auto codesArr = codesArrOne;
 
 
 
-  auto contextArrOne = context->size() > 0 ? NDArrayFactory::create<sd::LongType>('c',*contextShape,*contextVec) : NDArrayFactory::empty<sd::LongType>();
-  auto contextArr = new NDArray(contextArrOne);
+  auto contextArrOne = context->size() > 0 ? NDArrayFactory::create_<sd::LongType>('c',*contextShape,*contextVec,LaunchContext::defaultContext()) : NDArrayFactory::empty<sd::LongType>();
+  auto contextArr =contextArrOne;
 
 
-  auto lockedWordsOne = lockedWordsVec->size() > 0 ?  NDArrayFactory::create<sd::LongType>('c',*lockedWordsShape,*lockedWordsVec) : NDArrayFactory::empty<sd::LongType>();
-  auto lockedWordsArr = new NDArray(lockedWordsOne);
+  auto lockedWordsOne = lockedWordsVec->size() > 0 ?  NDArrayFactory::create_<sd::LongType>('c',*lockedWordsShape,*lockedWordsVec,LaunchContext::defaultContext()) : NDArrayFactory::empty<sd::LongType>();
+  auto lockedWordsArr = lockedWordsOne;
 
   auto target = I_ARG(currIdx++);
   auto ngStarter = I_ARG(currIdx++);

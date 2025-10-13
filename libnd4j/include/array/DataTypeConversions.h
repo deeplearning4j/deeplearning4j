@@ -50,9 +50,9 @@ class SD_LIB_EXPORT DataTypeConversions {
 
       // If any conversion from T2 to T is required, perform it here.
       // For example, if T can be constructed from T2, you might do:
-      // for (LongType i = 0; i < length; ++i) {
-      //     buffer[i] = static_cast<T>(tmp[i]);
-      // }
+       for (LongType i = 0; i < length; ++i) {
+           buffer[i] = static_cast<T>(tmp[i]);
+       }
 
       // Free the temporary storage.
       delete[] tmp;

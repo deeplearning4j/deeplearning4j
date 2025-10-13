@@ -239,8 +239,8 @@ void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hLast, NDArray* 
   const int iS = x->sizeAt(1);
   const int nU = hLast->sizeAt(1);
 
-  NDArray xT = x->transpose();          // [iS, bS]
-  NDArray hLastT = hLast->transpose();  // [nU, bS]
+  NDArray *xT = x->transpose();          // [iS, bS]
+  NDArray *hLastT = hLast->transpose();  // [nU, bS]
 
   NDArray Wrx = (*W)({0, iS, 0, nU});             // [iS, nU]
   NDArray Wux = (*W)({0, iS, nU, 2 * nU});        // [iS, nU]
@@ -253,13 +253,13 @@ void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hLast, NDArray* 
   NDArray br = (*b)({0, nU});       // [nU]
   NDArray bu = (*b)({nU, 2 * nU});  // [nU]
 
-  NDArray WrxT = Wrx.transpose();  // [nU, iS]
-  NDArray WuxT = Wux.transpose();  // [nU, iS]
-  NDArray WrhT = Wrh.transpose();  // [nU, nU]
-  NDArray WuhT = Wuh.transpose();  // [nU, nU]
+  NDArray *WrxT = Wrx.transpose();  // [nU, iS]
+  NDArray *WuxT = Wux.transpose();  // [nU, iS]
+  NDArray *WrhT = Wrh.transpose();  // [nU, nU]
+  NDArray *WuhT = Wuh.transpose();  // [nU, nU]
 
-  NDArray WcxT = Wcx.transpose();  // [nU, iS]
-  NDArray WchT = Wch.transpose();  // [nU, nU]
+  NDArray *WcxT = Wcx.transpose();  // [nU, iS]
+  NDArray *WchT = Wch.transpose();  // [nU, nU]
 
   NDArray dLdWrx = (*dLdW)({0, iS, 0, nU});             // [iS, nU]
   NDArray dLdWux = (*dLdW)({0, iS, nU, 2 * nU});        // [iS, nU]
@@ -375,39 +375,39 @@ void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hLast, NDArray* 
   // NDArray dLdr  = mmul(dLdc * dcdZc * *hLast, WchT);  // [bS, nU]
 
   // Calculate dLdx
-  NDArray dLdxTemp = mmul(dLdZu, WuxT) + mmul(dLdZc, WcxT) + mmul(dLdZr, WrxT);
+  NDArray dLdxTemp = mmul(dLdZu, *WuxT) + mmul(dLdZc, *WcxT) + mmul(dLdZr, *WrxT);
   dLdx->assign(&dLdxTemp);  // [bS, iS]
 
   // Calculate dldZTimeR
   NDArray dldZTimeR = dLdZc * r;
 
   // Calculate dLdhLast
-  NDArray dLdhLastTemp = *dLdh * u + mmul(dLdZu, WuhT) + mmul(dldZTimeR, WchT) + mmul(dLdZr, WrhT);
+  NDArray dLdhLastTemp = *dLdh * u + mmul(dLdZu, *WuhT) + mmul(dldZTimeR, *WchT) + mmul(dLdZr, *WrhT);
   dLdhLast->assign(&dLdhLastTemp);  // [bS, nU]
 
   // Calculate dLdWrx
-  NDArray dLdWrxTemp = mmul(xT, dLdZr);
+  NDArray dLdWrxTemp = mmul(*xT, dLdZr);
   dLdWrx.assign(&dLdWrxTemp);  // [iS, bS] × [bS, nU] = [iS, nU]
 
   // Calculate dLdWrh
-  NDArray dLdWrhTemp = mmul(hLastT, dLdZr);
+  NDArray dLdWrhTemp = mmul(*hLastT, dLdZr);
   dLdWrh.assign(&dLdWrhTemp);  // [nU, bS] × [bS, nU] = [nU, nU]
 
   // Calculate dLdWux
-  NDArray dLdWuxTemp = mmul(xT, dLdZu);
+  NDArray dLdWuxTemp = mmul(*xT, dLdZu);
   dLdWux.assign(&dLdWuxTemp);  // [iS, bS] × [bS, nU] = [iS, nU]
 
   // Calculate dLdWuh
-  NDArray dLdWuhTemp = mmul(hLastT, dLdZu);
+  NDArray dLdWuhTemp = mmul(*hLastT, dLdZu);
   dLdWuh.assign(&dLdWuhTemp);  // [nU, bS] × [bS, nU] = [nU, nU]
 
   // Calculate dLdWcx
-  NDArray dLdWcxTemp = mmul(xT, dLdZc);
+  NDArray dLdWcxTemp = mmul(*xT, dLdZc);
   dLdWcx.assign(&dLdWcxTemp);  // [iS, bS] × [bS, nU] = [iS, nU]
 
   // Calculate rTimesHLast and dLdWch
-  NDArray rTimesHLast = (r * *hLast).transpose();
-  NDArray dLdWchTemp = mmul(rTimesHLast, dLdZc);
+  NDArray *rTimesHLast = (r * *hLast).transpose();
+  NDArray dLdWchTemp = mmul(*rTimesHLast, dLdZc);
   dLdWch.assign(&dLdWchTemp);  // [nU, bS] × [bS, nU] = [nU, nU]
 
   // Calculate reduction for bias gradients
@@ -503,7 +503,7 @@ void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hI, NDArray* Wx,
   NDArray u = (*gates)({0, 0, nOut, 2 * nOut});      // [bS, nOut]
   NDArray c = (*gates)({0, 0, 2 * nOut, 3 * nOut});  // [bS, nOut]
 
-  NDArray WhcT = (*Wh)({0, 0, 2 * nOut, 3 * nOut}).transpose();
+  NDArray *WhcT = (*Wh)({0, 0, 2 * nOut, 3 * nOut}).transpose();
 
   if (dLdh) *dLdhI += *dLdh;
 
@@ -519,15 +519,15 @@ void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hI, NDArray* Wx,
 
   // dLdzr
   NDArray temp2 = dLdzc * (*hI) * r * (1 - r);
-  MmulHelper::mmul(&temp2, &WhcT, &dLdzr);  // [bS, nOut] x [nOut, nOut] = [bS, nOut]
+  MmulHelper::mmul(&temp2, WhcT, &dLdzr);  // [bS, nOut] x [nOut, nOut] = [bS, nOut]
 
   // dLdx
-  NDArray WxT = Wx->transpose();
-  MmulHelper::mmul(&dLdz, &WxT, dLdx);  // [bS, 3*nOut] x [3*nOut, nIn] = [bS, nIn]
+  NDArray *WxT = Wx->transpose();
+  MmulHelper::mmul(&dLdz, WxT, dLdx);  // [bS, 3*nOut] x [3*nOut, nIn] = [bS, nIn]
 
-  NDArray xT = x->transpose();
+  NDArray *xT = x->transpose();
   // dLdWx
-  *dLdWx += mmul(xT, dLdz);  // [nIn, bS] x [bS, 3*nOut] = [nIn, 3*nOut]
+  *dLdWx += mmul(*xT, dLdz);  // [nIn, bS] x [bS, 3*nOut] = [nIn, 3*nOut]
 
   std::vector<sd::LongType> zeroVec = {0};
   // dLdb
@@ -536,14 +536,20 @@ void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hI, NDArray* Wx,
   dLdzc *= r;
 
   // dLdhI
-  NDArray WhT = Wh->transpose();
-  NDArray dLdhIAssign = *dLdhI * u + mmul(dLdz, WhT);
+  NDArray *WhT = Wh->transpose();
+  NDArray dLdhIAssign = *dLdhI * u + mmul(dLdz, *WhT);
   dLdhI->assign(&dLdhIAssign);  // [bS, 3*nOut] x [3*nOut, nOut] = [bS, nOut]
 
-  NDArray hITranspose = hI->transpose();
+  NDArray *hITranspose = hI->transpose();
   // dLdWr
-  *dLdWh += mmul(hITranspose, dLdz);  // [nOut, bS] x [bS, 3*nOut] = [nOut, 3*nOut]
+  *dLdWh += mmul(*hITranspose, dLdz);  // [nOut, bS] x [bS, 3*nOut] = [nOut, 3*nOut]
   delete gatesULike;
+
+  delete hITranspose;
+  delete WhT;
+  delete xT;
+  delete WhcT;
+  delete WxT;
 }
 
 //////////////////////////////////////////////////////////////////////////

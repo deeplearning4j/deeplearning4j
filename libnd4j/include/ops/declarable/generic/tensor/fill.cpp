@@ -87,10 +87,12 @@ DECLARE_SHAPE_FN(fill) {
     totalLen *= newShape[e + 1];
   }
   if(len > 1 && hasZeros) {
+    RELEASE(newShape, block.getWorkspace());
     std::vector<LongType> shapeOnly = shapeArray->asVectorT<LongType>();
     return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(shapeArray->dataType(),shapeOnly));
   }
   if (totalLen < 1) {
+    RELEASE(newShape, block.getWorkspace());
     std::vector<LongType> shape = {0};
     return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(shapeArray->dataType(), shape));
   }
@@ -110,7 +112,9 @@ DECLARE_SHAPE_FN(fill) {
 
   ShapeUtils::updateStridesAndType(newShape, dataType, 'c');
 
-  return SHAPELIST(CONSTANT(newShape));
+  auto result = CONSTANT(newShape);
+  RELEASE(newShape, block.getWorkspace());
+  return SHAPELIST(result);
 };
 }  // namespace ops
 }  // namespace sd

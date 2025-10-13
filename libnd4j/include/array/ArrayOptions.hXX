@@ -711,5 +711,86 @@ SD_HOST sd::LongType ArrayOptions::setPropertyBitForFlagsValue(LongType extraSto
     return extraStorage;
   return extraStorage | property;
 }
+
+// New method implementations to add to ArrayOptions.hXX
+
+// needsCopy - const overload to check if array needs copy
+SD_HOST SD_INLINE bool ArrayOptions::needsCopy(const LongType *shapeInfo) {
+  return hasPropertyBitSet(shapeInfo, ARRAY_NEEDS_COPY);
+}
+
+// hasCopyOffset - check if specific input index has copy offset flag set
+SD_HOST SD_INLINE bool ArrayOptions::hasCopyOffset(const LongType *shapeInfo, int inputIndex) {
+  if (inputIndex < 0 || inputIndex > 10) {
+    return false;
+  }
+  LongType flag = copyOffsetFlagForInput(inputIndex);
+  return hasPropertyBitSet(shapeInfo, flag);
+}
+
+// toggleCopyOffset - toggle copy offset flag for specific input index
+SD_HOST SD_INLINE void ArrayOptions::toggleCopyOffset(LongType *shapeInfo, int inputIndex) {
+  if (inputIndex < 0 || inputIndex > 10) {
+#ifndef __CUDA_ARCH__
+    THROW_EXCEPTION("Input index out of range [0-10]");
+#else
+    printf("Input index out of range [0-10]\n");
+#endif
+    return;
+  }
+  LongType flag = copyOffsetFlagForInput(inputIndex);
+  togglePropertyBit(shapeInfo, flag);
+}
+
+// copyOffsetFlagForInput - get the flag constant for a specific input index
+SD_HOST SD_INLINE LongType ArrayOptions::copyOffsetFlagForInput(int inputIndex) {
+  switch (inputIndex) {
+    case 0: return ARRAY_COPY_OFFSET_INPUT_0;
+    case 1: return ARRAY_COPY_OFFSET_INPUT_1;
+    case 2: return ARRAY_COPY_OFFSET_INPUT_2;
+    case 3: return ARRAY_COPY_OFFSET_INPUT_3;
+    case 4: return ARRAY_COPY_OFFSET_INPUT_4;
+    case 5: return ARRAY_COPY_OFFSET_INPUT_5;
+    case 6: return ARRAY_COPY_OFFSET_INPUT_6;
+    case 7: return ARRAY_COPY_OFFSET_INPUT_7;
+    case 8: return ARRAY_COPY_OFFSET_INPUT_8;
+    case 9: return ARRAY_COPY_OFFSET_INPUT_9;
+    case 10: return ARRAY_COPY_OFFSET_INPUT_10;
+    default:
+#ifndef __CUDA_ARCH__
+      THROW_EXCEPTION("Invalid input index for copy offset flag");
+#else
+      printf("Invalid input index for copy offset flag\n");
+#endif
+      return 0;
+  }
+}
+
+// clearAllCopyOffsets - clear all 11 copy offset flags at once
+SD_HOST SD_INLINE void ArrayOptions::clearAllCopyOffsets(LongType *shapeInfo) {
+  for (int i = 0; i <= 10; i++) {
+    LongType flag = copyOffsetFlagForInput(i);
+    if (hasPropertyBitSet(shapeInfo, flag)) {
+      unsetPropertyBit(shapeInfo, flag);
+    }
+  }
+}
+
+// getActiveCopyOffsets - return count or bitmask of which inputs have offset flags set
+SD_HOST SD_INLINE int ArrayOptions::getActiveCopyOffsets(const LongType *shapeInfo) {
+  int count = 0;
+  for (int i = 0; i <= 10; i++) {
+    LongType flag = copyOffsetFlagForInput(i);
+    if (hasPropertyBitSet(shapeInfo, flag)) {
+      count++;
+    }
+  }
+  return count;
+}
+
+// isView - const overload for consistency
+SD_HOST SD_INLINE bool ArrayOptions::isView(const LongType *shapeInfo) {
+  return hasPropertyBitSet(shapeInfo, ARRAY_IS_VIEW);
+}
 }
 #endif

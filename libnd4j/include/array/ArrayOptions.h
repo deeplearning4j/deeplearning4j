@@ -149,6 +149,7 @@ class SD_LIB_EXPORT ArrayOptions {
   static SD_HOST SD_INLINE  ArrayType arrayType(const LongType *shapeInfo);
 
   static SD_HOST SD_INLINE  bool isView(LongType *shapeInfo);
+  static SD_HOST SD_INLINE  bool isView(const LongType *shapeInfo);
   static SD_HOST SD_INLINE  void toggleIsView(LongType *shapeInfo);
 
   static  SD_INLINE SD_HOST_DEVICE SparseType sparseType(LongType *shapeInfo);
@@ -190,6 +191,14 @@ class SD_LIB_EXPORT ArrayOptions {
 
   static SD_INLINE bool arrayNeedsCopy(LongType *shapeInfo);
   static SD_INLINE void toggleArrayNeedsCopy(LongType *shapeInfo);
+
+  // New methods for view and copy offset management
+  static SD_HOST SD_INLINE bool needsCopy(const LongType *shapeInfo);
+  static SD_HOST SD_INLINE bool hasCopyOffset(const LongType *shapeInfo, int inputIndex);
+  static SD_HOST SD_INLINE void toggleCopyOffset(LongType *shapeInfo, int inputIndex);
+  static SD_HOST SD_INLINE LongType copyOffsetFlagForInput(int inputIndex);
+  static SD_HOST SD_INLINE void clearAllCopyOffsets(LongType *shapeInfo);
+  static SD_HOST SD_INLINE int getActiveCopyOffsets(const LongType *shapeInfo);
 };
 
 }

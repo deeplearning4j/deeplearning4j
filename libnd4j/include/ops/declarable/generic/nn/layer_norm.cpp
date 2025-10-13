@@ -105,6 +105,7 @@ CUSTOM_OP_IMPL(layer_norm_bp, 3, -1, false, 0, -1) {
     std::vector<sd::LongType> dimCVector = {dimC};
     auto vec = ShapeUtils::evalDimsToExclude(input->rankOf(),1,dimCVector.data());
     eps->reduceAlongDimension(sd::reduce::Sum, dLdb, vec);
+    delete vec;
   }
 
   NDArray standardized(input->shapeInfo(), false, block.launchContext());
@@ -120,6 +121,7 @@ CUSTOM_OP_IMPL(layer_norm_bp, 3, -1, false, 0, -1) {
   std::vector<sd::LongType> dimCVector = {dimC};
   auto vec = ShapeUtils::evalDimsToExclude(input->rankOf(),1,dimCVector.data());
   standardized.reduceAlongDimension(sd::reduce::Sum, dLdg, vec);
+  delete vec;
 
   sd::ops::standardize_bp standardizeBp;
   std::vector<sd::LongType> dimvC = {dimC};
@@ -129,6 +131,8 @@ CUSTOM_OP_IMPL(layer_norm_bp, 3, -1, false, 0, -1) {
   std::vector<NDArray *> standardizeBpArgs = {input, dLdx_tmp};
   std::vector<NDArray *> standardizeBpOut = {dLdx};
   standardizeBp.execute(standardizeBpArgs, standardizeBpOut, targs, longAxis, bargs);
+
+  delete dLdx_tmp;
 
   return sd::Status::OK;
 }

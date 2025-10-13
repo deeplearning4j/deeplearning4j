@@ -64,6 +64,7 @@ CUSTOM_OP_IMPL(bincount, 1, 1, false, 0, 0) {
       weights->assign(value[0]);
     }
 
+
     REQUIRE_TRUE(values->isSameShape(weights), 0, "bincount: the input and weights shapes should be equals");
   } else if (block.width() == 3) {  // the second argument is min and the third is max
     auto min = INPUT_VARIABLE(1);
@@ -104,7 +105,9 @@ CUSTOM_OP_IMPL(bincount, 1, 1, false, 0, 0) {
   result->assign(zero);
 
   helpers::adjustWeights(block.launchContext(), values, weights, result, minLength, maxLength);
-
+  if(weights->isScalar()) {
+    delete weights;
+  }
   return Status::OK;
 }
 

@@ -69,8 +69,10 @@ DataBuffer::DataBuffer(const DataBuffer& other) {
   _dataType = other._dataType;
   _workspace = other._workspace;
 #if defined(SD_GCC_FUNCTRACE)
-  allocationStackTracePrimary = other.allocationStackTracePrimary;
-  allocationStackTraceSpecial = other.allocationStackTraceSpecial;
+  // Don't share stack traces - they will be created fresh when we allocate
+  allocationStackTracePrimary = nullptr;
+  allocationStackTraceSpecial = nullptr;
+  creationStackTrace = nullptr;
 #endif
   _primaryBuffer = other._primaryBuffer;
   _specialBuffer = other._specialBuffer;
@@ -212,6 +214,8 @@ DataBuffer::DataBuffer(const sd::LongType lenInBytes, const DataType dataType, m
 
   _primaryBuffer = nullptr;
   _specialBuffer = nullptr;
+  _isOwnerPrimary = false;
+  _isOwnerSpecial = false;
 
   _deviceId = AffinityManager::currentDeviceId();
 
@@ -255,6 +259,11 @@ DataBuffer::DataBuffer(DataBuffer&& other) {
 #if defined(SD_GCC_FUNCTRACE)
   allocationStackTracePrimary = other.allocationStackTracePrimary;
   allocationStackTraceSpecial = other.allocationStackTraceSpecial;
+  creationStackTrace = other.creationStackTrace;
+  // Transfer ownership - null out the source pointers to prevent double-free
+  other.allocationStackTracePrimary = nullptr;
+  other.allocationStackTraceSpecial = nullptr;
+  other.creationStackTrace = nullptr;
 #endif
   other._primaryBuffer = other._specialBuffer = nullptr;
   other.setAllocFlags(false, false);
@@ -319,10 +328,20 @@ DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept {
   _lenInBytes = other._lenInBytes;
   _dataType = other._dataType;
   _workspace = other._workspace;
-  _isOwnerPrimary = false;
-  _isOwnerSpecial = false;
+  _isOwnerPrimary = other._isOwnerPrimary;
+  _isOwnerSpecial = other._isOwnerSpecial;
 
   copyCounters(other);
+
+#if defined(SD_GCC_FUNCTRACE)
+  allocationStackTracePrimary = other.allocationStackTracePrimary;
+  allocationStackTraceSpecial = other.allocationStackTraceSpecial;
+  creationStackTrace = other.creationStackTrace;
+  // Transfer ownership - null out the source pointers to prevent double-free
+  other.allocationStackTracePrimary = nullptr;
+  other.allocationStackTraceSpecial = nullptr;
+  other.creationStackTrace = nullptr;
+#endif
 
   other._primaryBuffer = other._specialBuffer = nullptr;
   other.setAllocFlags(false, false);
@@ -352,6 +371,10 @@ DataType DataBuffer::getDataType() { return _dataType; }
 
 ////////////////////////////////////////////////////////////////////////
 size_t DataBuffer::getLenInBytes() const {
+  // Check if buffer has been closed/freed
+  if(closed) {
+    return 0;
+  }
   //we need minimum 1 for scalars
   if(_lenInBytes == 0) {
    if(_dataType == DataType::UNKNOWN) {
@@ -458,6 +481,23 @@ void DataBuffer::deleteBuffers() {
   std::lock_guard<std::mutex> lock(_deleteMutex);
   deletePrimary();
   deleteSpecial();
+
+  // Clean up stack traces to prevent memory leak
+#if defined(SD_GCC_FUNCTRACE)
+  if(allocationStackTracePrimary != nullptr) {
+    delete allocationStackTracePrimary;
+    allocationStackTracePrimary = nullptr;
+  }
+  if(allocationStackTraceSpecial != nullptr) {
+    delete allocationStackTraceSpecial;
+    allocationStackTraceSpecial = nullptr;
+  }
+  if(creationStackTrace != nullptr) {
+    delete creationStackTrace;
+    creationStackTrace = nullptr;
+  }
+#endif
+
   closed = true;
   _lenInBytes = 0;
 }

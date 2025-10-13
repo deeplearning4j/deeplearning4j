@@ -97,7 +97,7 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
   const int restSize = x->lengthOf() / iD;
 
   auto xAffected = NDArrayFactory::create(x->ordering(), {restSize, iD}, mean->dataType(), block.launchContext());
-  xAffected.assign(xCast);
+  xAffected->assign(xCast);
 
   const int restSizeMinusOne = (restSize > 1) ? (restSize - 1) : 1;
   const float restSizeInv = 1.0f / restSize;
@@ -105,22 +105,22 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
 
   if (isTraining) {
     std::vector<sd::LongType > dim = {0};
-    auto sum = xAffected.reduceAlongDimension(reduce::Sum, &dim);
+    auto sum = xAffected->reduceAlongDimension(reduce::Sum, &dim);
     sum *= restSizeInv;
     mean->assign(&sum);
     *batchMean = *mean;
   } else
     *batchMean = 0.;
 
-  auto xCentered = xAffected - *mean;
-  xAffected -= *mean;
+  auto xCentered = *xAffected - *mean;
+  *xAffected -= *mean;
 
   if (isTraining) {
     int power = 2;
-    xAffected.applyScalar(scalar::Pow, power, &xAffected);
+    xAffected->applyScalar(scalar::Pow, power, xAffected);
     std::vector<sd::LongType > dim = {0};
 
-    auto sum = xAffected.reduceAlongDimension(reduce::Sum, &dim);
+    auto sum = xAffected->reduceAlongDimension(reduce::Sum, &dim);
     sum *= restSizeInv;
     variance->assign(&sum);
     auto varOutput = (*variance) * restSizeAdjust;
@@ -128,7 +128,7 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
   } else
     *batchVar = 0.;
 
-  auto scaledVariance = ((*variance + epsilon).transform(transform::RSqrt) * (*scale)).cast(xAffected.dataType());
+  auto scaledVariance = ((*variance + epsilon).transform(transform::RSqrt) * (*scale)).cast(xAffected->dataType());
   auto xScaled1 = xCentered * *scaledVariance;
   auto xShifted1 = xScaled1 + *offset;
   if (dataFormat) {
@@ -146,6 +146,11 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
     delete mean;
     delete variance;
   }
+
+  if(xCast != x) {
+    delete xCast;
+  }
+  delete xAffected;
 
   return sd::Status::OK;
 }

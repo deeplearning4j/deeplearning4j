@@ -68,19 +68,31 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
 
   if (checkIndices) {
     NDArray* pIndices = indices;
+    bool ownsIndices = false;
+    
     if (indices == nullptr) {
-     std::vector<sd::LongType> shape =  {static_cast<sd::LongType>(intArgs.size()) - 1};
-     std::vector<double> inputVec =  std::vector<double>(intArgs.begin() + 1, intArgs.end());
-      pIndices =
-          new NDArray(input->ordering(), shape,
-                     inputVec, DataType::INT64, block.launchContext());
+      std::vector<sd::LongType> shape = {static_cast<sd::LongType>(intArgs.size()) - 1};
+      std::vector<double> inputVec = std::vector<double>(intArgs.begin() + 1, intArgs.end());
+      pIndices = new NDArray(input->ordering(), shape, inputVec, DataType::INT64, block.launchContext());
+      ownsIndices = true;
     }
-      const sd::LongType numOfBadIndx = helpers::checkIndices(block.launchContext(), *pIndices, *input, intArgs[0]);
+    
+    const sd::LongType numOfBadIndx = helpers::checkIndices(block.launchContext(), *pIndices, *input, intArgs[0]);
 
-    REQUIRE_TRUE(numOfBadIndx == 0, 0,
-                 "GATHER OP: please check elements of indices-array, total number of wrong elements is %lld!",
-                 numOfBadIndx);
-    if (indices == nullptr) delete pIndices;
+    // Check condition and cleanup before using REQUIRE_TRUE
+    if (numOfBadIndx != 0) {
+      if (ownsIndices) {
+        delete pIndices;
+      }
+      REQUIRE_TRUE(false, 0,
+                   "GATHER OP: please check elements of indices-array, total number of wrong elements is %lld!",
+                   numOfBadIndx);
+    }
+    
+    // Cleanup after successful validation
+    if (ownsIndices) {
+      delete pIndices;
+    }
   }
 
   helpers::gather(block.launchContext(), input, indices, output, intArgs);
@@ -157,9 +169,8 @@ DECLARE_SHAPE_FN(gather) {
     ArrayOptions::setPropertyBit(outputShapeInfo, ARRAY_EMPTY);
   }
 
-
-
   auto result = ConstantShapeHelper::getInstance().bufferForShapeInfo(outputShapeInfo)->primary();
+  RELEASE(outputShapeInfo, block.getWorkspace());
   return SHAPELIST(result);
 }
 

@@ -127,8 +127,10 @@ DECLARE_SHAPE_FN(standardize_bp) {
   auto in = inputShape->at(0);
   sd::LongType *out;
   COPY_SHAPE(in, out);
+  auto result = CONSTANT(out);
+  delete[] out;
 
-  return SHAPELIST(CONSTANT(out));
+  return SHAPELIST(result);
 }
 
 }  // namespace ops

@@ -162,8 +162,9 @@ bool JacobiSVD<T>::isBlock2x2NotDiag(NDArray& block, int p, int q, T& maxElem) {
 
     rotation.r<T>(1, 0) = -rotation.template t<T>(0, 1);
     mulRotationOnLeft(p, q, block, rotation);
-    NDArray rotT = rotation.transpose();
-    if (_calcU) mulRotationOnRight(p, q, _u, rotT);
+    NDArray *rotT = rotation.transpose();
+    if (_calcU) mulRotationOnRight(p, q, _u, *rotT);
+    delete rotT;
   }
 
   maxElem =
@@ -264,9 +265,10 @@ void JacobiSVD<T>::svd2x2(NDArray& block, int p, int q, NDArray& left, NDArray& 
   m.assign(&mAssign);
 
   createJacobiRotation(m.t<T>(0, 0), m.t<T>(0, 1), m.t<T>(1, 1), right);
-  NDArray rightT = right.transpose();
-  NDArray leftAssign = mmul(rotation, rightT);
+  NDArray *rightT = right.transpose();
+  NDArray leftAssign = mmul(rotation, *rightT);
   left.assign(&leftAssign);
+  delete rightT;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -298,7 +300,8 @@ void JacobiSVD<T>::evalData(NDArray& matrix) {
 
     if (_calcV) _v.assign(qr._permut);
   } else if (_rows < _cols) {
-    NDArray scaled = matrix.transpose() / scale;
+    NDArray *matrixT = matrix.transpose();
+    NDArray scaled = *matrixT / scale;
     HHcolPivQR qr(scaled);
     NDArray qrRef = *qr._qr;
     _m.assign(&qrRef({0, _rows, 0, _rows}));
@@ -316,6 +319,8 @@ void JacobiSVD<T>::evalData(NDArray& matrix) {
 
 
     if (_calcU) _u.assign(qr._permut);
+
+    delete matrixT;
   } else {
     NDArray mAssign = matrix({0, _diagSize, 0, _diagSize}) / scale;
     _m.assign(&mAssign);
@@ -350,8 +355,8 @@ void JacobiSVD<T>::evalData(NDArray& matrix) {
           svd2x2(_m, p, q, rotLeft, rotRight);
 
           mulRotationOnLeft(p, q, _m, rotLeft);
-          NDArray rotLeftTranspose = rotLeft.transpose();
-          if (_calcU) mulRotationOnRight(p, q, _u, rotLeftTranspose);
+          NDArray *rotLeftTranspose = rotLeft.transpose();
+          if (_calcU) mulRotationOnRight(p, q, _u, *rotLeftTranspose);
 
           mulRotationOnRight(p, q, _m, rotRight);
 
@@ -360,6 +365,7 @@ void JacobiSVD<T>::evalData(NDArray& matrix) {
           maxDiagElem = math::sd_max<T>(
               maxDiagElem, math::sd_max<T>(math::sd_abs<T,T>(_m.t<T>(p, p)), math::sd_abs<T,T>(_m.t<T>(q, q))));
 
+          delete rotLeftTranspose;
         }
       }
     }
@@ -379,7 +385,8 @@ void JacobiSVD<T>::evalData(NDArray& matrix) {
 
   _s *= scale;
   for (int i = 0; i < _diagSize; i++) {
-    int pos = (_s({i, -1, 0, 0}).indexReduceNumber(indexreduce::IndexMax, nullptr)).template e<int>(0);
+    NDArray *indexNum = _s({i, -1, 0, 0}).indexReduceNumber(indexreduce::IndexMax, nullptr);
+    int pos = indexNum->template e<int>(0);
     T maxSingVal = _s({i, -1, 0, 0}).reduceNumber(reduce::Max).template t<T>(0);
 
     if (maxSingVal == (T)0.) break;

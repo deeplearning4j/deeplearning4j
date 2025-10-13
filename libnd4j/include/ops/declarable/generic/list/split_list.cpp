@@ -77,7 +77,6 @@ LIST_OP_IMPL(split_list, 2, 1, 0, -2) {
   }
 
   if (!hasList) {
-    // OVERWRITE_RESULT(list);
     setupResultList(list, block);
   }
 

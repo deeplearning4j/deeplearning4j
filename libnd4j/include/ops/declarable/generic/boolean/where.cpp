@@ -290,6 +290,7 @@ DECLARE_SHAPE_FN(Where) {
 #endif
 
      theNewShape = CONSTANT(newShape);
+     RELEASE(newShape, block.getWorkspace());
    } else {
 #if defined(HAS_LONG)
      theNewShape = ConstantShapeHelper::getInstance().emptyShapeInfo(INT64);

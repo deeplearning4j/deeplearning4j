@@ -36,10 +36,7 @@ void ShapeTrieNode::setBuffer(ConstantShapeBuffer* buf) {
   // If we already have a buffer, don't replace it
   if (_buffer != nullptr) {
     // The existing buffer takes precedence
-    // Only delete the new buffer if it's different and not needed elsewhere
-    if (buf != _buffer) {
-      delete buf;  // This buffer is redundant, we already have one
-    }
+    // Don't delete the new buffer - let the caller handle it
     return;
   }
 
@@ -82,6 +79,9 @@ size_t DirectShapeTrie::computeHash(const LongType* shapeInfo) const {
   // Add total element count
   hash = hash * 43 + shape::length(shapeInfo);
 
+  // **NEW: Add property flags to distinguish views from non-views**
+  hash = hash * 47 + static_cast<size_t>(shapeInfo[ArrayOptions::extraIndex(shapeInfo)]);
+
   return hash;
 }
 
@@ -104,6 +104,9 @@ int DirectShapeTrie::calculateShapeSignature(const LongType* shapeInfo) const {
 
   // Include element count
   signature = signature * 23 + static_cast<int>(shape::length(shapeInfo) % 10000);
+
+  // **NEW: Include property flags**
+  signature = signature * 29 + static_cast<int>(shapeInfo[ArrayOptions::extraIndex(shapeInfo)] % 10000);
 
   return signature;
 }

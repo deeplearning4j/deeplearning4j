@@ -55,6 +55,17 @@
 
 
 bool experimentalSupport = false;
+
+// OpaqueNDArray allocation tracking
+static std::atomic<size_t> g_opaqueArrayCount{0};
+static std::atomic<size_t> g_opaqueArrayBytes{0};
+static std::mutex g_opaqueArrayMutex;
+
+// InteropDataBuffer/OpaqueDataBuffer allocation tracking
+static std::atomic<size_t> g_dataBufferCount{0};
+static std::atomic<size_t> g_dataBufferBytes{0};
+static std::mutex g_dataBufferMutex;
+
 #include <execution/Threads.h>
 #include <graph/Context.h>
 #include <graph/ResultWrapper.h>
@@ -861,6 +872,16 @@ void setGraphContextOutputArraysArr(OpaqueContext* ptr, int numArrays,OpaqueNDAr
 }
 
 
+sd::LongType getOpaqueNDArrayLeakCount() {
+  return static_cast<sd::LongType>(g_opaqueArrayCount.load(std::memory_order_relaxed));
+}
+
+sd::LongType getOpaqueNDArrayLeakBytes() {
+  return static_cast<sd::LongType>(g_opaqueArrayBytes.load(std::memory_order_relaxed));
+}
+
+
+
 sd::Pointer createUtf8String(sd::Pointer *extraPointers, const char *string, int length) {
   auto u = new sd::utf8string(string, length);
   return reinterpret_cast<sd::Pointer>(u);
@@ -885,6 +906,7 @@ OpaqueConstantShapeBuffer shapeBufferEx(int rank, sd::LongType *shape, sd::LongT
 
     auto desc = sd::ShapeBuilders::createShapeInfo(dtype, order,rank, shape, strides,nullptr, extras);
     auto buffer = sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
+    delete[] desc;
     return buffer;
 
 }
@@ -1095,6 +1117,20 @@ std::vector<ExecTrace*> * listOpTraces() {
 }
 
 void deleteNDArray(OpaqueNDArray array) {
+  if (array == nullptr) {
+    return;
+  }
+
+  // Track deallocation
+  size_t bytes = array->lengthOf() * array->sizeOfT();
+  g_opaqueArrayCount.fetch_sub(1, std::memory_order_relaxed);
+  g_opaqueArrayBytes.fetch_sub(bytes, std::memory_order_relaxed);
+
+  if(sd::Environment::getInstance().isVerbose()) {
+    sd_printf("deleteNDArray: deallocating array at %p, count=%zu, total_bytes=%zu, freed_bytes=%zu\n",
+              array, g_opaqueArrayCount.load(), g_opaqueArrayBytes.load(), bytes);
+  }
+
   delete array;
 }
 
@@ -1140,20 +1176,33 @@ OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer *shapeInfo,
     THROW_EXCEPTION("createOpaqueNDArray: Shape info was null!");
   }
 
+  sd::LongType* shapeInfoCast = reinterpret_cast<sd::LongType*>(shapeInfo->primary());
 
-  if(shape::isEmpty(static_cast<sd::LongType *>(
-          shapeInfo->primary())) && buffer != nullptr) {
-        THROW_EXCEPTION("createOpaqueNDArray: Shape info was empty but buffer was not null!");
-  } else if(!shape::isEmpty(static_cast<sd::LongType *>(
-          shapeInfo->primary())) && buffer == nullptr) {
-        THROW_EXCEPTION("createOpaqueNDArray: Shape info was empty but  buffer was not null!");
+  if(shape::isEmpty(shapeInfoCast) && buffer != nullptr) {
+    THROW_EXCEPTION("createOpaqueNDArray: Shape info was empty but buffer was not null!");
+  } else if(!shape::isEmpty(shapeInfoCast) && buffer == nullptr) {
+    THROW_EXCEPTION("createOpaqueNDArray: Shape info was not empty but buffer was null!");
   }
 
-  sd::LongType* shapeInfoCast = reinterpret_cast<sd::LongType*>(shapeInfo->primary());
-  sd::NDArray* ret = new sd::NDArray(buffer != nullptr ? buffer->getDataBuffer() : nullptr,
-                                     shapeInfoCast,
-                                     sd::LaunchContext::defaultContext(),
-                                     offset);
+  sd::NDArray* ret = new sd::NDArray(
+    buffer != nullptr ? buffer->getDataBuffer() : nullptr,
+    shapeInfoCast,
+    sd::LaunchContext::defaultContext(),
+    offset
+  );
+
+  // Track allocation
+  if (ret != nullptr) {
+    size_t bytes = ret->lengthOf() * ret->sizeOfT();
+    g_opaqueArrayCount.fetch_add(1, std::memory_order_relaxed);
+    g_opaqueArrayBytes.fetch_add(bytes, std::memory_order_relaxed);
+
+    if(sd::Environment::getInstance().isVerbose()) {
+      sd_printf("createOpaqueNDArray: allocated array at %p, count=%zu, total_bytes=%zu, this_bytes=%zu\n",
+                ret, g_opaqueArrayCount.load(), g_opaqueArrayBytes.load(), bytes);
+    }
+  }
+
   return ret;
 }
 
@@ -1562,7 +1611,9 @@ void setGraphContextDArguments(OpaqueContext *ptr, int *arguments, int numberOfA
   ptr->setDArguments(dtypes);
 }
 
-void deleteGraphContext(Context *ptr) {}
+void deleteGraphContext(Context *ptr) {
+  delete ptr;
+}
 
 OpaqueRandomGenerator createRandomGenerator(sd::LongType rootSeed, sd::LongType nodeSeed) {
   try {
@@ -2000,7 +2051,21 @@ OpaqueDataBuffer *allocateDataBuffer(sd::LongType elements, int dataType, bool a
   try {
     auto dtype = sd::DataTypeUtils::fromInt(dataType);
     sd::LongType totalElementSize = elements == 0 ? sd::DataTypeUtils::sizeOf(dtype) : elements * sd::DataTypeUtils::sizeOf(dtype);
-    return new sd::InteropDataBuffer(totalElementSize, dtype, allocateBoth);
+    auto buffer = new sd::InteropDataBuffer(totalElementSize, dtype, allocateBoth);
+
+    // Track allocation
+    if (buffer != nullptr) {
+      size_t bytes = totalElementSize;
+      g_dataBufferCount.fetch_add(1, std::memory_order_relaxed);
+      g_dataBufferBytes.fetch_add(bytes, std::memory_order_relaxed);
+
+      if(sd::Environment::getInstance().isVerbose()) {
+        sd_printf("allocateDataBuffer: allocated buffer at %p, count=%zu, total_bytes=%zu, this_bytes=%zu\n",
+                  buffer, g_dataBufferCount.load(), g_dataBufferBytes.load(), bytes);
+      }
+    }
+
+    return buffer;
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -2032,7 +2097,13 @@ sd::Pointer dbSpecialBuffer(OpaqueDataBuffer *dataBuffer) {
 
 void deleteDataBuffer(OpaqueDataBuffer *dataBuffer) {
   if(dataBuffer == nullptr)
-    THROW_EXCEPTION("dbPrimaryBuffer: dataBuffer is null");
+    THROW_EXCEPTION("deleteDataBuffer: dataBuffer is null");
+
+  // Close the buffer first to ensure proper cleanup of underlying DataBuffer
+  // This updates tracking counters and frees the actual data
+  dbClose(dataBuffer);
+
+  // Now delete the wrapper
   delete dataBuffer;
 }
 
@@ -2131,9 +2202,46 @@ void dbClose(OpaqueDataBuffer *dataBuffer) {
   if(dataBuffer == nullptr)
     THROW_EXCEPTION("dbClose: dataBuffer is null");
 
-  auto ret = dataBuffer->getDataBuffer();
-  if(ret != nullptr)
-    dataBuffer->getDataBuffer()->close();
+  // Check if already closed - this flag is in InteropDataBuffer, not the freed DataBuffer
+  if(dataBuffer->_closed) {
+    return;
+  }
+
+  // Check constant flag (public field, safe to access)
+  if(dataBuffer->isConstant) {
+    return;
+  }
+
+  // Check if we even have a DataBuffer pointer
+  if(!dataBuffer->hasValidDataBuffer()) {
+    dataBuffer->_closed = true;
+    return;
+  }
+
+  // If we don't own it, don't close it
+  if(!dataBuffer->isOwner()) {
+    return;
+  }
+
+  // Track deallocation using cached size - DO NOT touch the DataBuffer as it may be freed
+  // Use the cached size from InteropDataBuffer instead of accessing potentially freed memory
+  size_t bytes = dataBuffer->_cachedLenInBytes;
+  g_dataBufferCount.fetch_sub(1, std::memory_order_relaxed);
+  g_dataBufferBytes.fetch_sub(bytes, std::memory_order_relaxed);
+
+  if(sd::Environment::getInstance().isVerbose()) {
+    sd_printf("dbClose: deallocating buffer at %p, count=%zu, total_bytes=%zu, freed_bytes=%zu\n",
+              dataBuffer, g_dataBufferCount.load(), g_dataBufferBytes.load(), bytes);
+  }
+
+  // Do NOT call db->close() - if this InteropDataBuffer wraps a DataBuffer that was owned
+  // by an NDArray, that DataBuffer may already be freed. The NDArray destructor will have
+  // already called close() on its DataBuffer. Calling it again causes use-after-free.
+  // Just update tracking and mark as closed.
+
+  // Mark as closed and invalidate pointer after freeing
+  dataBuffer->_closed = true;
+  dataBuffer->invalidateDataBuffer();
 }
 
 int dbDeviceId(OpaqueDataBuffer *dataBuffer) {

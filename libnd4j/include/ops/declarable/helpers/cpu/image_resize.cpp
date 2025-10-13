@@ -635,12 +635,14 @@ static sd::Status computeSpans(IKernelFunc<float>* kernel, sd::LongType const ou
   float const kernelScale = antialias ? math::sd_max(invScale, 1.f) : 1.f;
   spans._spanSize =
       math::sd_min(2 * static_cast<int>(std::ceil(kernel->radius() * kernelScale)) + 1, static_cast<int>(inSize));
-  spans._starts = NDArrayFactory::create<int>('c', {outSize});
-  spans._weights = NDArrayFactory::create<float>('c', {outSize, spans._spanSize});
+  auto starts = NDArrayFactory::create<int>('c', {outSize});
+  auto weights = NDArrayFactory::create<float>('c', {outSize, spans._spanSize});
+  spans._starts = starts;
+  spans._weights = weights;
 
-  auto startsVec = spans._starts.bufferAsT<int>();
-  auto weightsVector = spans._weights.bufferAsT<float>();
-  spans._weights.nullify();
+  auto startsVec = spans._starts->bufferAsT<int>();
+  auto weightsVector = spans._weights->bufferAsT<float>();
+  spans._weights->nullify();
 
   const float invKernelScale = 1.f / kernelScale;
   int maxSpanSize = 0;
@@ -692,6 +694,7 @@ static sd::Status computeSpans(IKernelFunc<float>* kernel, sd::LongType const ou
     }
     startsVec[x] = spanStart;
   }
+
   return sd::Status::OK;
 }
 
@@ -748,18 +751,19 @@ static sd::Status resizeKernel(IKernelFunc<float>* transformationKernel, NDArray
   Spans rowSpans;
   res = computeSpans(transformationKernel, outHeight, inputHeight, rowScale, 0.f, antialias, rowSpans);
 
-  NDArray intermediate = NDArrayFactory::create<Z>('c', {batchSize, outHeight, inputWidth, channels});
+  NDArray *intermediate = NDArrayFactory::create<Z>('c', {batchSize, outHeight, inputWidth, channels});
 
   // const functor::Spans& const_row_spans = row_spans;
   // typename TTypes<int32, 1>::ConstTensor row_starts(
   // const_row_spans.starts.tensor<int32, 1>());
-  auto& rowStarts = rowSpans._starts;       // shape {outWidth}
-  auto& rowWeights = rowSpans._weights;     // shape {outWidth, numSpans}
-  auto& columnStarts = colSpans._starts;    // shape {outHeights}
-  auto& columnWeights = colSpans._weights;  // shape {outHeights, numSpans}
+  auto rowStarts = *rowSpans._starts;       // shape {outWidth}
+  auto rowWeights = *rowSpans._weights;     // shape {outWidth, numSpans}
+  auto columnStarts = *colSpans._starts;    // shape {outHeights}
+  auto columnWeights = *colSpans._weights;  // shape {outHeights, numSpans}
 
   gatherSpans<X, Z>(rowSpans._spanSize, rowStarts, rowWeights, colSpans._spanSize, columnStarts, columnWeights, input,
-                    intermediate, output);
+                    *intermediate, output);
+  delete intermediate;
   return res;
 }
 #if defined(HAS_FLOAT32)

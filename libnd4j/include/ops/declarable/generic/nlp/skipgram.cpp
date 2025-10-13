@@ -52,8 +52,8 @@ CONFIGURABLE_OP_IMPL(skipgram_inference, 6, 6, true, -2, -2) {
     currIdx++;
   }
 
-  const std::vector<sd::LongType> *indicesVec = indices;
-  const std::vector<sd::LongType> *codesVec = codes;
+   const std::vector<sd::LongType> *indicesVec = indices;
+   const std::vector<sd::LongType> *codesVec = codes;
 
   std::vector<sd::LongType> *indicesSize = new std::vector<sd::LongType>();
   indicesSize->push_back(indices->size());
@@ -65,10 +65,10 @@ CONFIGURABLE_OP_IMPL(skipgram_inference, 6, 6, true, -2, -2) {
   const std::vector<sd::LongType> *codesShape = codesSize;
 
 
-  auto indicesArrOne = NDArrayFactory::create('c',*indicesShape,*indicesVec);
-  auto indicesArr = new NDArray(indicesArrOne);
-  auto codesArrOne = NDArrayFactory::create('c',*codesShape,*codesVec);
-  auto codesArr = new NDArray(codesArrOne);
+  auto indicesArrOne = NDArrayFactory::create_<sd::LongType>('c',*indicesShape,*indicesVec,LaunchContext::defaultContext());
+  auto indicesArr = indicesArrOne;
+  auto codesArrOne = NDArrayFactory::create_<sd::LongType>('c',*codesShape,*codesVec,LaunchContext::defaultContext());
+  auto codesArr = codesArrOne;
 
 
   auto target = I_ARG(currIdx++);

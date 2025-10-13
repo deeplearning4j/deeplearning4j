@@ -171,6 +171,7 @@ class SD_LIB_EXPORT DataBuffer {
    * This method deletes buffers, if we're owners
    */
   void close();
+  bool isClosed() { return closed; }
   void printPrimaryAllocationStackTraces();
   void printSpecialAllocationTraces();
   DataBuffer  dup();

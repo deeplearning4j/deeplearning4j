@@ -41,8 +41,8 @@ BROADCASTABLE_OP_IMPL(assign, 0, 0) {
     return Status::OK;
   }
 
-  NDArray *castedX = x->dataType() == z->dataType() ? x : new NDArray(x->cast(z->dataType()));
-  NDArray *castedY = y->dataType() == z->dataType() ? y : new NDArray(y->cast(z->dataType()));
+  NDArray *castedX = x->dataType() == z->dataType() ? x : x->cast(z->dataType());
+  NDArray *castedY = y->dataType() == z->dataType() ? y : y->cast(z->dataType());
 
   ArrayOptions::validateSingleDataType(ArrayOptions::dataType(castedX->shapeInfo()));
   ArrayOptions::validateSingleDataType(ArrayOptions::extra(castedY->shapeInfo()));
@@ -54,6 +54,9 @@ BROADCASTABLE_OP_IMPL(assign, 0, 0) {
     OVERWRITE_RESULT(tZ);
   }
 
+  // Cleanup casted arrays if they were allocated
+  if (castedX != x) delete castedX;
+  if (castedY != y) delete castedY;
 
   return Status::OK;
 }

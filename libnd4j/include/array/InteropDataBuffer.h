@@ -39,15 +39,43 @@ class SD_LIB_EXPORT InteropDataBuffer {
   bool owner;
   DataType _dataType = DataType::UNKNOWN;
  public:
+  size_t _cachedLenInBytes = 0;
+  bool _closed = false;
   bool isConstant = false;
 
   InteropDataBuffer(InteropDataBuffer *dataBuffer, uint64_t length);
   InteropDataBuffer(DataBuffer * databuffer);
   InteropDataBuffer(size_t lenInBytes, DataType dtype, bool allocateBoth);
-  ~InteropDataBuffer() {}
+  ~InteropDataBuffer() {
+    // Mark as closed FIRST to prevent any concurrent access
+    _closed = true;
+    // If we own the DataBuffer and it's not constant, clean it up
+    if (owner && !isConstant && _dataBuffer != nullptr) {
+      delete _dataBuffer;
+    }
+    // Always null out the pointer to prevent use-after-free
+    _dataBuffer = nullptr;
+  }
+
 #ifndef __JAVACPP_HACK__
   DataBuffer * getDataBuffer() const;
   DataBuffer * dataBuffer();
+  // In InteropDataBuffer class, add these public methods:
+  // Check if the underlying DataBuffer pointer is still valid
+  // by checking if it's non-null
+  bool hasValidDataBuffer() const { return _dataBuffer != nullptr; }
+
+  // Get the DataBuffer pointer directly without validation
+  DataBuffer* getDataBufferDirect() const { return _dataBuffer; }
+
+  // Mark the DataBuffer as invalid (set to null)
+  void invalidateDataBuffer() { _dataBuffer = nullptr; }
+  bool isOwner() const { return owner; }
+
+  // Safe accessor that doesn't touch other fields
+  DataBuffer* getDataBufferUnsafe() const {
+    return _dataBuffer;
+  }
 #endif
 
   void printDbAllocationTrace();

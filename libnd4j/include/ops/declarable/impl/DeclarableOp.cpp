@@ -347,7 +347,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
 
           if (shape::isEmptyConst(out) != shape::isEmptyConst(shape)) {
             sd_printf("OP PREPARE OUTPUTS: First array empty: %d Second shape empty: %d\n", shape::isEmptyConst(out), shape::isEmptyConst(shape));
-
+            delete outSha;
             THROW_EXCEPTION("OP PREPARE OUTPUTS: Expected vs provided shapes mismatch");
           }
 
@@ -355,6 +355,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
           if (ArrayOptions::dataType(out) != ArrayOptions::dataType(shape)) {
             std::string msg =
                 "Provided array [" + StringUtils::valueToString<int>(pair.second) + "] has unexpected data type";
+            delete outSha;
             throw sd::datatype_exception::build(msg, ArrayOptions::dataType(out), ArrayOptions::dataType(shape));
           }
         }
@@ -427,6 +428,7 @@ bool sd::ops::DeclarableOp::allocateResult(Context &block, sd::LongType *shape) 
   // if that's first run - we probably have nothing here
   if (var->getNDArray() == nullptr) {
     auto shapeInfo = ConstantShapeHelper::getInstance().bufferForShapeInfo(__shape)->primary();
+    RELEASE(__shape, workspace);
     DataBuffer * buffer = new DataBuffer(len * sizeof(int8_t), ArrayOptions::dataType(shapeInfo), workspace);
     var->setNDArray(new NDArray(buffer, shapeInfo, block.launchContext()));
   } else if (var->getNDArray()->lengthOf() != len) {
@@ -435,7 +437,11 @@ bool sd::ops::DeclarableOp::allocateResult(Context &block, sd::LongType *shape) 
     auto shapeInfo = ConstantShapeHelper::getInstance().bufferForShapeInfo(__shape)->primary();
     DataBuffer * buffer =
         new DataBuffer(len * sizeof(int8_t), ArrayOptions::dataType(shapeInfo), workspace);
-    var->setNDArray(new NDArray(buffer, shapeInfo, block.launchContext()));}
+    var->setNDArray(new NDArray(buffer, shapeInfo, block.launchContext()));
+    RELEASE(__shape, workspace);
+  } else {
+    RELEASE(__shape, workspace);
+  }
 
   return true;
 }

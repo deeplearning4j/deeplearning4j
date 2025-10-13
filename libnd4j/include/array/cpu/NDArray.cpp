@@ -311,7 +311,7 @@ template void NDArray::printCurrentBuffer<sd::LongType>(const bool host, const c
 
 ////////////////////////////////////////////////////////////////////////
 void* NDArray::specialBuffer() {
-  if (!_buffer->special()) return nullptr;
+  if (_buffer != nullptr && !_buffer->special()) return nullptr;
   // FIXME: this should be fixed once CUDA backend added
   return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
 }

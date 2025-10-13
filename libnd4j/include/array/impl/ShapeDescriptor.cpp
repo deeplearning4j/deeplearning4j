@@ -68,6 +68,7 @@ LongType *ShapeDescriptor::toShapeInfo() const {
 ShapeDescriptor::~ShapeDescriptor() {
   // no-op
   if(_shape_strides != nullptr && this->ownsShapeStrides) {
+    delete[] _shape_strides;
     _shape_strides = nullptr;
   }
 
@@ -86,10 +87,12 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const Lo
     std::string errorMessage;
     errorMessage += "Invalid ordering from shape buffer";
     errorMessage += std::to_string(order);
+    delete[] _shape_strides;
     THROW_EXCEPTION(errorMessage.c_str());
 
   }
   if(!DataTypeUtils::validDataType(_dataType)) {
+    delete[] _shape_strides;
     THROW_EXCEPTION("Shape descriptor created with invalid data type");
   }
   auto _shape = _shape_strides;
@@ -112,13 +115,16 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const Lo
                                  const LongType *strides, const LongType rank, LongType extras = -1) {
   if(shape == nullptr)
     THROW_EXCEPTION("ShapeDescriptor constructor: Shape can not be null!");
+  _shape_strides = nullptr;
+  ownsShapeStrides = false;
   if(type  == UNKNOWN)
     THROW_EXCEPTION("Shape descriptor created with invalid data type");
-  _shape_strides = new LongType[2 * rank];
+  ownsShapeStrides = true;
   //note this used to operate directly on the vector buffer
   //it now does manual copies with more checks.
   //this is to handle the 0 length case.
   if(rank < 1) {
+    _shape_strides = new LongType[2 * rank];
     _dataType = type;
     _order = order;
     _rank = rank;
@@ -183,10 +189,12 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
     std::string errorMessage;
     errorMessage += "Invalid ordering from shape buffer";
     errorMessage += std::to_string(_order);
+    delete[] _shape_strides;
     THROW_EXCEPTION(errorMessage.c_str());
 
   }
   if(!DataTypeUtils::validDataType(_dataType)) {
+    delete[] _shape_strides;
     THROW_EXCEPTION("Shape descriptor created with invalid data type");
   }
 #if defined(SD_GCC_FUNCTRACE)
@@ -255,7 +263,7 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, bool validateDataTyp
     }
   }
 
-
+  _shape_strides = nullptr;
   _order = shape::order(shapeInfo);
   this->ownsShapeStrides = true;
   if(_order != 'c' && _order != 'f') {

@@ -43,6 +43,23 @@ TadPack::TadPack( ConstantShapeBuffer *shapes,
 
 }
 
+TadPack::~TadPack() {
+  // Clean up dimensions array that was allocated in constructor
+  if (_dimensions != nullptr) {
+    delete[] _dimensions;
+    _dimensions = nullptr;
+  }
+  
+  // Clean up TAD offsets buffer if we own it
+  // This is owned when transferred via releaseOffsets() from TadCalculator
+  if (_tadOffsets != nullptr) {
+    delete _tadOffsets;
+    _tadOffsets = nullptr;
+  }
+  
+  // DON'T delete _tadShape - it comes from ConstantShapeHelper cache
+}
+
 LongType* TadPack::primaryShapeInfo() {
   if(_tadShape->primary() == nullptr)
     THROW_EXCEPTION("TadPack::primaryShapeInfo: primary shape info is nullptr!");

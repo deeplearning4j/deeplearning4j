@@ -300,11 +300,11 @@ CUSTOM_OP_IMPL(deconv3d_bp, 3, 2, false, 0, 13) {
   // ----- calculation of gradW ----- //
   auto columns = NDArrayFactory::create(input->ordering(), {bS, oC, kD, kH, kW, iD, iH, iW}, input->dataType(),
                                         block.launchContext());
-  ConvolutionUtils::vol2col(block, gradO, &columns, sD, sH, sW, pD, pH, pW, dD, dH,
+  ConvolutionUtils::vol2col(block, gradO, columns, sD, sH, sW, pD, pH, pW, dD, dH,
                             dW);  // [bS, oC, oD, oH, oW] is deconvoluted to [bS, oC, kD, kH, kW, iD, iH, iW]
 
   std::vector<LongType> mulDims = {0,5,6,7};
-  MmulHelper::tensorDot(input, &columns, gradW, inputAxesForDot, mulDims,
+  MmulHelper::tensorDot(input, columns, gradW, inputAxesForDot, mulDims,
                         gradWAxes);  // [bS, iC, iD, iH, iW]/[bS, iD, iH, iW, iC] x [bS, oC, kD, kH, kW, iD, iH, iW] =
                                      // [iC, oC, kD, kH, kW]
 
@@ -319,6 +319,7 @@ CUSTOM_OP_IMPL(deconv3d_bp, 3, 2, false, 0, 13) {
 
   if (!isNCDHW) delete gradO;
 
+  delete columns;
   return sd::Status::OK;
 }
 

@@ -36,10 +36,10 @@ CUSTOM_OP_IMPL(normalize_moments, 3, 2, false, 1, 0) {
   auto resVariances = OUTPUT_VARIABLE(1);
 
   // FIXME: double?
-  NDArray shift = NDArrayFactory::create<double>(0., block.launchContext());
+  NDArray *shift = NDArrayFactory::create<double>(0., block.launchContext());
 
   if (block.getTArguments()->size() > 0) {
-    shift.assign(T_ARG(0));
+    shift->assign(T_ARG(0));
   }
 
   means->applyScalarArr(scalar::Divide, counts, resMeans);
@@ -51,10 +51,11 @@ CUSTOM_OP_IMPL(normalize_moments, 3, 2, false, 1, 0) {
   variances->applyScalarArr(scalar::Divide, counts, tempVariances);
   tempVariances->applyPairwiseTransform(pairwise::Subtract, squareMeans, resVariances);
 
-  if (shift.e<double>(0) != 0) {
-    resMeans->applyScalarArr(scalar::Add, &shift, resMeans);
+  if (shift->e<double>(0) != 0) {
+    resMeans->applyScalarArr(scalar::Add, shift, resMeans);
   }
 
+  delete shift;
   return Status::OK;
 }
 

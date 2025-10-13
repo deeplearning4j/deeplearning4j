@@ -129,12 +129,18 @@ DECLARE_SHAPE_FN(cumsum_bp) {
   COPY_SHAPE(inp, newShapeX);
 
   if (block.width() == 2) {
-    return SHAPELIST(CONSTANT(newShapeX));
+    auto result = CONSTANT(newShapeX);
+    delete[] newShapeX;
+    return SHAPELIST(result);
   } else {
     sd::LongType *newShapeA = nullptr;
     COPY_SHAPE(inputShape->at(1), newShapeA);
 
-    return SHAPELIST(CONSTANT(newShapeX), CONSTANT(newShapeA));
+    auto resultX = CONSTANT(newShapeX);
+    auto resultA = CONSTANT(newShapeA);
+    delete[] newShapeX;
+    delete[] newShapeA;
+    return SHAPELIST(resultX, resultA);
   }
 }
 }  // namespace ops

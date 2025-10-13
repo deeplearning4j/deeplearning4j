@@ -66,15 +66,15 @@ DECLARE_SHAPE_FN(choose) {
     auto second = INPUT_VARIABLE(1);
 
 
-    helpers::chooseFunctorArray(block.launchContext(), first, second, mode, nullptr, &numResults);
+    helpers::chooseFunctorArray(block.launchContext(), first, second, mode, nullptr, numResults);
   } else {
     auto first = INPUT_VARIABLE(0);
     double scalar = T_ARG(0);
 
-    helpers::chooseFunctorScalar(block.launchContext(), first, scalar, mode, nullptr, &numResults);
+    helpers::chooseFunctorScalar(block.launchContext(), first, scalar, mode, nullptr, numResults);
   }
 
-  auto newShape = ConstantShapeHelper::getInstance().vectorShapeInfo(numResults.e<LongType>(0),
+  auto newShape = ConstantShapeHelper::getInstance().vectorShapeInfo(numResults->e<LongType>(0),
                                                                      ArrayOptions::dataType(inputShape->at(0)));
 
   auto shapeScalar = ConstantShapeHelper::getInstance().scalarShapeInfo(INT64);

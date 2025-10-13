@@ -183,7 +183,7 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
   auto dLdw = OUTPUT_VARIABLE(1);  // dL/dweights
   auto dLdl = OUTPUT_VARIABLE(2);  // dL/dlabels
 
-  NDArray labelsSmoothing = NDArrayFactory::create(logits->dataType(), T_ARG(0), block.launchContext());
+  NDArray *labelsSmoothing = NDArrayFactory::create(logits->dataType(), T_ARG(0), block.launchContext());
 
   int reductionMode =
       INT_ARG(0);  // 0 - "none"; 1 - "weighted_sum";  2 - "weighted_mean";  3 - "weighted_sum_by_nonzero_weights"
@@ -218,9 +218,9 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
 
   // If labelsSmoothing is nonzero, smooth the labels towards 1/2:
   auto newLabels = labels;
-  if (labelsSmoothing.e<float>(0) != 0.f) {
+  if (labelsSmoothing->e<float>(0) != 0.f) {
     newLabels = new NDArray(*labels);
-    newLabels->applyScalar(scalar::SXELogitsSmoother, labelsSmoothing.e<float>(0), newLabels);
+    newLabels->applyScalar(scalar::SXELogitsSmoother, labelsSmoothing->e<float>(0), newLabels);
   }
 
   NDArray E(labels, false, block.launchContext());
@@ -232,8 +232,8 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
   helpers::sigmCrossEntropyGrad(block.launchContext(), logits, newLabels, dLdp);
 
   // dLdl = -logits
-  labelsSmoothing -= 1.f;
-  NDArray dLdlTemp = *logits * labelsSmoothing;
+  *labelsSmoothing -= 1.f;
+  NDArray dLdlTemp = *logits * *labelsSmoothing;
   dLdl->assign(&dLdlTemp);
   switch (reductionMode) {
     case 1: {  // 1 - "none" and "weighted_sum", output is scalar and equal to sum of all elements of E array
@@ -303,27 +303,30 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
             NDArrayFactory::create(dLdw->dataType(), numOfNonZeroWeights, block.launchContext());
 
         if (weights->isScalar()) {
-          NDArray dLdwTemp2 = E.reduceNumber(reduce::Sum) / numOfNonZeroWeightsScalar;
+          NDArray dLdwTemp2 = E.reduceNumber(reduce::Sum) / *numOfNonZeroWeightsScalar;
           dLdw->assign(&dLdwTemp2);
         }
         else if (weights != weightsBroad) {
           std::vector<LongType> axesToReduceAlong =
               ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
           E.reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
-          *dLdw /= numOfNonZeroWeightsScalar;
+          *dLdw /= *numOfNonZeroWeightsScalar;
         } else {
-          NDArray dLdwTemp2 = E.reduceNumber(reduce::Sum) / numOfNonZeroWeightsScalar;
+          NDArray dLdwTemp2 = E.reduceNumber(reduce::Sum) / *numOfNonZeroWeightsScalar;
           dLdw->assign(&dLdwTemp2);
         }
 
-        NDArray temp = *weightsBroad / numOfNonZeroWeightsScalar;
+        NDArray temp = *weightsBroad / *numOfNonZeroWeightsScalar;
         *dLdp *= temp;
         *dLdl *= temp;
+        delete numOfNonZeroWeightsScalar;
+
       }
       break;
     }
   }
 
+  delete labelsSmoothing;
   if (weightsBroad != weights) delete weightsBroad;
   if (newLabels != labels) delete newLabels;
 

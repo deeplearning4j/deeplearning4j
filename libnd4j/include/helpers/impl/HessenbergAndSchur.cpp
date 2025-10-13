@@ -73,9 +73,11 @@ void Hessenberg<T>::evalData() {
 
     NDArray bottomRightCorner = hRef({i + 1, -1, i + 1, -1}, true);
     Householder<T>::mulLeft(bottomRightCorner, tail2, coeff);
-    NDArray tail2Trans = tail2.transpose();
+    NDArray *tail2Trans = tail2.transpose();
     NDArray rightCols = hRef({0, 0, i + 1, -1}, true);
-    Householder<T>::mulRight(rightCols, tail2Trans, coeff);
+    Householder<T>::mulRight(rightCols, *tail2Trans, coeff);
+    delete tail2Trans;
+
   }
 
   // calculate _Q
@@ -86,6 +88,7 @@ void Hessenberg<T>::evalData() {
 
   // fill down with zeros starting at first subdiagonal
   _H->fillAsTriangular<T>(0, -1, -1, *_H, 'l',false);
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -152,8 +155,8 @@ void Schur<T>::splitTwoRows(const int ind, const T shift) {
 
     NDArray tRef = *t;
     NDArray rightCols = tRef({0, 0, ind - 1, -1});
-    NDArray rotT = rotation.transpose();
-    JacobiSVD<T>::mulRotationOnLeft(ind - 1, ind, rightCols, rotT);
+    NDArray *rotT = rotation.transpose();
+    JacobiSVD<T>::mulRotationOnLeft(ind - 1, ind, rightCols, *rotT);
 
     NDArray topRows = tRef({0, ind + 1, 0, 0});
     JacobiSVD<T>::mulRotationOnRight(ind - 1, ind, topRows, rotation);
@@ -161,6 +164,7 @@ void Schur<T>::splitTwoRows(const int ind, const T shift) {
     JacobiSVD<T>::mulRotationOnRight(ind - 1, ind, *u, rotation);
 
     t->r<T>(ind, ind - 1) = (T)0;
+    delete rotT;
   }
 
   if (ind > 1) t->r<T>(ind - 1, ind - 2) = (T)0;

@@ -42,7 +42,6 @@ LIST_OP_IMPL(write_list, 2, 1, 0, -2) {
     auto res = NDArrayFactory::create_(list->counter(), block.launchContext());
 
     setupResult(res, block);
-    //                OVERWRITE_RESULT(res);
 
     return result;
   } else if (block.getIArguments()->size() == 1) {

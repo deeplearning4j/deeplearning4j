@@ -41,45 +41,22 @@ TadPack* DirectTadTrie::enhancedSearch(const std::vector<LongType>& dimensions, 
     if (!current) return nullptr;
   }
 
-  // Found a matching node, now verify TadPack compatibility with shape signature
+  // Found a matching node, now verify TadPack compatibility
   TadPack* pack = current->pack();
   if (!pack) return nullptr;
 
-  // Get the stored shape info from the TadPack
-  LongType* storedShapeInfo = pack->primaryShapeInfo();
-  LongType* storedStrides = shape::stride(storedShapeInfo);
-  int storedRank = shape::rank(storedShapeInfo);
-
-  // Compare with expected strides and shape
-  // Create a temporary calculator to check what the strides should be
-  TadCalculator *tempCalc = new TadCalculator(originalShape);
-  tempCalc->createTadPack(dimensions);
-  LongType* expectedShapeInfo = tempCalc->tadShape()->primary();
-  LongType* expectedStrides = shape::stride(expectedShapeInfo);
-
-  // Check if strides are compatible
-  for (int i = 0; i < storedRank; i++) {
-    if (storedStrides[i] != expectedStrides[i]) {
-      return nullptr; // Strides don't match, not the right TadPack
-    }
-  }
-
-  // Additional verification for shape dimensions
-  LongType* storedShape = shape::shapeOf(storedShapeInfo);
-  LongType* expectedShape = shape::shapeOf(expectedShapeInfo);
-  for (int i = 0; i < storedRank; i++) {
-    if (storedShape[i] != expectedShape[i]) {
-      return nullptr; // Shape dimensions don't match
-    }
-  }
-
-  // Verify order and data type match
-  if (shape::order(storedShapeInfo) != shape::order(expectedShapeInfo) ||
-      ArrayOptions::dataType(storedShapeInfo) != ArrayOptions::dataType(expectedShapeInfo)) {
+  // Use cached signature for fast comparison - no TadCalculator needed!
+  const TadPackSignature* signature = current->packSignature();
+  if (!signature) {
+    // Signature not cached (shouldn't happen, but handle gracefully)
     return nullptr;
   }
 
-  // If everything matches, return the found TadPack
+  // Fast comparison using cached signature instead of creating TadCalculator
+  if (!signature->matches(originalShape)) {
+    return nullptr;
+  }
+
   return pack;
 }
 
@@ -127,9 +104,6 @@ size_t DirectTadTrie::computeStrideAwareHash(const std::vector<LongType>& dimens
   return hash % NUM_STRIPES;
 }
 
-// Check if dimensions are compatible with a TadPack
-
-
 bool DirectTadTrie::exists(const std::vector<LongType>& dimensions, LongType* originalShape)  {
   if (!originalShape) return false;
 
@@ -163,7 +137,6 @@ TadPack* DirectTadTrie::search(const std::vector<LongType>& dimensions, int orig
   return current->pack();
 }
 
-// Critical method that needs revision for better thread safety
 TadPack* DirectTadTrie::getOrCreate(std::vector<LongType>& dimensions, LongType* originalShape) {
   if (!originalShape) {
     THROW_EXCEPTION("Original shape cannot be null in TAD calculation");
@@ -225,15 +198,20 @@ TadPack* DirectTadTrie::insert(std::vector<LongType>& dimensions, LongType* orig
       calculator->createTadPack(dimensions);
 
       // Create a new TadPack with full dimension information
+      // Use releaseOffsets() to transfer ownership of the offsets buffer to TadPack
       TadPack* newPack = new TadPack(
           calculator->tadShape(),
-          calculator->tadOffsets(),
+          calculator->releaseOffsets(),  // Transfer ownership
           calculator->numberOfTads(),
           dimensions.data(),
           dimensions.size());
 
-      // Store the TadPack in the node (setPack handles synchronization)
+      // Store the TadPack in the node
+      // setPack now also caches the signature for future fast comparisons
       current->setPack(newPack);
+
+      // Clean up the calculator (safe now that offsets ownership was transferred)
+      delete calculator;
 
     } catch (const std::exception& e) {
       std::string msg = "TAD creation failed: ";

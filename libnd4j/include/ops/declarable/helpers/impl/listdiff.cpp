@@ -37,8 +37,9 @@ static sd::LongType listDiffCount_(NDArray* values, NDArray* keep) {
     auto v = values->e<double>(e);
     ExtraArguments extras({v, 0.0, 10.0});
     auto idx = keep->indexReduceNumber(indexreduce::FirstIndex, &extras);
-    auto index = idx.e<sd::LongType>(0);
+    auto index = idx->e<sd::LongType>(0);
     if (index < 0) saved++;
+    delete idx;
   }
 
 
@@ -65,12 +66,13 @@ static sd::Status listDiffFunctor_(NDArray* values, NDArray* keep, NDArray* outp
   for (sd::LongType e = 0; e < values->lengthOf(); e++) {
     auto v = values->e<double>(e);
     ExtraArguments extras({v, 0.0, 10.0});
-    NDArray idxScalar = keep->indexReduceNumber(indexreduce::FirstIndex, &extras);
-    sd::LongType idx = idxScalar.e<sd::LongType>(0);
+    NDArray *idxScalar = keep->indexReduceNumber(indexreduce::FirstIndex, &extras);
+    sd::LongType idx = idxScalar->e<sd::LongType>(0);
     if (idx < 0) {
       saved.emplace_back(v);
       indices.emplace_back(e);
     }
+    delete idxScalar;
   }
 
   if (saved.size() == 0) {

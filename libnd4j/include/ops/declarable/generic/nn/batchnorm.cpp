@@ -251,6 +251,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
   // stdInv * (g - g_sum/N) (use dLdI as storage for this expression)
   gSum *= Ninv;
   dLdO->applyBroadcast(sd::broadcast::Subtract, &axes, &gSum, dLdI);
+
   dLdI->applyBroadcast(sd::broadcast::Multiply, &axes, &stdInv, dLdI);
 
   // dLdV <- [g*(x - m)]_sum

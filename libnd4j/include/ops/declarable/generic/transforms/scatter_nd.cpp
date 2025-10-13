@@ -103,7 +103,9 @@ DECLARE_SHAPE_FN(scatter_nd) {
 
   ShapeUtils::updateStridesAndType(outShapeInfo, updShapeInfo, shape::order(updShapeInfo));
 
-  return SHAPELIST(CONSTANT(outShapeInfo));
+  auto result = SHAPELIST(CONSTANT(outShapeInfo));
+  RELEASE(outShapeInfo, block.getWorkspace());
+  return result;
 }
 
 }  // namespace ops

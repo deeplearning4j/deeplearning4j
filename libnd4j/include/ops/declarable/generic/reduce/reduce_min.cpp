@@ -125,7 +125,9 @@ CUSTOM_OP_IMPL(reduce_min_bp, -1, 1, false, 0, 0) {
   if (gradO->lengthOf() == 1) {
     auto indOfMaxElem = input->indexReduceNumber(sd::indexreduce::IndexMin);
     auto right = gradO->e(0);
-    gradI->p(indOfMaxElem.e<sd::LongType>(0),&right);
+    gradI->p(indOfMaxElem->e<sd::LongType>(0),&right);
+    delete indOfMaxElem;
+
   } else {
     auto indicesArr = input->applyIndexReduce(sd::indexreduce::IndexMin, &dimensions);
     auto vec = ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions.size(),dimensions.data());

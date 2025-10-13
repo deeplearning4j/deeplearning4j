@@ -45,7 +45,8 @@ CONFIGURABLE_OP_IMPL(clipbyavgnorm, -1, 1, true, -2, 0) {
     const bool isInplace = block.isInplace();
     auto clipNorm = NDArrayFactory::create(T_ARG(0), block.launchContext());
 
-    helpers::clipByNorm(block.launchContext(), input, output, *block.getIArguments(), &clipNorm, isInplace, true);
+    helpers::clipByNorm(block.launchContext(), input, output, *block.getIArguments(), clipNorm, isInplace, true);
+    delete clipNorm;
   }
 
   return sd::Status::OK;
@@ -66,7 +67,8 @@ CUSTOM_OP_IMPL(clipbyavgnorm_bp, -2, 1, false, -1, 0) {
     helpers::clipByNormBp(block.launchContext(), input, gradO, gradI, *block.getIArguments(), clipNorm, true);
   } else {
     auto clipNorm = NDArrayFactory::create(gradI->dataType(), T_ARG(0), block.launchContext());
-    helpers::clipByNormBp(block.launchContext(), input, gradO, gradI, *block.getIArguments(), &clipNorm, true);
+    helpers::clipByNormBp(block.launchContext(), input, gradO, gradI, *block.getIArguments(), clipNorm, true);
+    delete clipNorm;
   }
 
   return sd::Status::OK;

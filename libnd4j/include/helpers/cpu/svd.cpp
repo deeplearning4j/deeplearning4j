@@ -801,14 +801,14 @@ void SVD<T>::evalData(NDArray& matrix) {
   T scale = matrix.reduceNumber(reduce::AMax).t<T>(0);
 
   if (scale == (T)0.) scale = 1.;
-  NDArray input = _transp ? matrix.transpose() : matrix / scale;
-  BiDiagonalUp biDiag(input);
+  NDArray *input = _transp ? matrix.transpose() : new NDArray((matrix / scale));
+  BiDiagonalUp biDiag(*input);
 
   _u.nullify();
   _v.nullify();
 
-  NDArray assign1 = biDiag._HHbidiag.transpose();
-  _m({0, _diagSize, 0, 0}, true).assign(&assign1);
+  NDArray *assign1 = biDiag._HHbidiag.transpose();
+  _m({0, _diagSize, 0, 0}, true).assign(assign1);
 
   _m({_m.sizeAt(0) - 1, _m.sizeAt(0), 0, 0}).nullify();
 
@@ -831,6 +831,7 @@ void SVD<T>::evalData(NDArray& matrix) {
     exchangeUV(hhV, hhU, _v, _u);
   else
     exchangeUV(hhU, hhV, _u, _v);
+  delete input;
 
 }
 

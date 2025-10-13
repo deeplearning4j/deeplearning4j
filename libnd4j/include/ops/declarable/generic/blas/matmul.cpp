@@ -196,20 +196,27 @@ CUSTOM_OP_IMPL(matmul_bp, 3, 2, false, 0, -2) {
   if (eps->isScalar()) {
     if (x->isVector() && y->isVector()) {
       if (x->isRowVector() && y->isRowVector()) {
-        NDArray dldxAssign = (*eps) * y->sumNumber();
-        dldx->assign(&dldxAssign);
-        NDArray dldyAssign = (*eps) * x->sumNumber();
-        dldy->assign(&dldyAssign);
+        double ySum = y->sumNumber().e<double>(0);
+        NDArray dldxTemp = (*eps) * ySum;
+        dldx->assign(&dldxTemp);
+        
+        double xSum = x->sumNumber().e<double>(0);
+        NDArray dldyTemp = (*eps) * xSum;
+        dldy->assign(&dldyTemp);
       } else if (x->isColumnVector() && y->isColumnVector()) {
-        NDArray dldxAssign = (*eps) * y->sumNumber();
-        dldx->assign(&dldxAssign);
-        NDArray dldyAssign = (*eps) * x->sumNumber();
-        dldy->assign(&dldyAssign);
+        double ySum = y->sumNumber().e<double>(0);
+        NDArray dldxTemp = (*eps) * ySum;
+        dldx->assign(&dldxTemp);
+        
+        double xSum = x->sumNumber().e<double>(0);
+        NDArray dldyTemp = (*eps) * xSum;
+        dldy->assign(&dldyTemp);
       } else {
-        NDArray dldxAssign = (*eps) * (*y);
-        dldx->assign(&dldxAssign);
-        NDArray dldyAssign = (*eps) * (*x);
-        dldy->assign(&dldyAssign);
+        NDArray dldxTemp = (*eps) * (*y);
+        dldx->assign(&dldxTemp);
+        
+        NDArray dldyTemp = (*eps) * (*x);
+        dldy->assign(&dldyTemp);
       }
     } else {
       // assign all ones to shape as baseline
@@ -224,23 +231,27 @@ CUSTOM_OP_IMPL(matmul_bp, 3, 2, false, 0, -2) {
 
       dldx->assign(alphaBetaBase);
       dldy->assign(alphaBetaBase);
+      
       // match the dimensions for reduction for matrix multiply: columns on first input, rows on second input
       // the dimensions should match the matching dimensions to compute proper gradients wrt each input
       // core gradient for each is sum(input) * eps as scalar
       std::vector<LongType> axesZero({0});
-      auto xSum = x->reduceAlongDimension(reduce::Sum, &axesZero);
-      xSum *= *eps;
-      std::vector<sd::LongType> xSumShape = {xSum.lengthOf(), 1};
-      // ensure we have proper shape for broadcasted multiplication
-      auto xSumRow = xSum.reshape(xSum.ordering(), xSumShape);
+      NDArray xSum = x->reduceAlongDimension(reduce::Sum, &axesZero);
+      NDArray xSumScaled = xSum * (*eps);
+      std::vector<sd::LongType> xSumShape = {xSumScaled.lengthOf(), 1};
+      NDArray* xSumRow = xSumScaled.reshape(xSumScaled.ordering(), xSumShape);
+      
       std::vector<LongType> axes({1});
-      auto ySum = y->reduceAlongDimension(reduce::Sum, &axes);
-      ySum *= *eps;
-      std::vector<sd::LongType> ySumShape = {1,ySum.lengthOf()};
-      auto ySumRow = ySum.reshape(ySum.ordering(),ySumShape);
+      NDArray ySum = y->reduceAlongDimension(reduce::Sum, &axes);
+      NDArray ySumScaled = ySum * (*eps);
+      std::vector<sd::LongType> ySumShape = {1, ySumScaled.lengthOf()};
+      NDArray* ySumRow = ySumScaled.reshape(ySumScaled.ordering(), ySumShape);
+      
       // execute proper multiplication: rows for first input, columns for second
       dldx->mulRowVector(ySumRow, dldx);
       dldy->muliColumnVector(xSumRow);
+      
+      // Clean up allocated reshape results
       delete xSumRow;
       delete ySumRow;
     }

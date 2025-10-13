@@ -128,10 +128,12 @@ CUSTOM_OP_IMPL(reduce_norm_max_bp, -1, 1, false, 0, 0) {
 
   if (gradO->lengthOf() == 1) {
     auto indOfAbsMaxElem = input->indexReduceNumber(sd::indexreduce::IndexAbsoluteMax);
-    const sd::LongType ind = indOfAbsMaxElem.t<sd::LongType>(0);
+    const sd::LongType ind = indOfAbsMaxElem->t<sd::LongType>(0);
     const int sign = input->e<float>(ind) >= 0 ? 1 : -1;
     auto put = sign * gradO->e(0);
     gradI->p(ind, &put);
+    delete indOfAbsMaxElem;
+
 
   } else {
     auto indicesArr = input->applyIndexReduce(sd::indexreduce::IndexAbsoluteMax, &dimensions);

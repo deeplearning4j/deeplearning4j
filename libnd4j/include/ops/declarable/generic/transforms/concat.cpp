@@ -41,7 +41,7 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
   // first of all take into account possible presence of empty arrays
   // also if scalar is present -> copy its value to vector with length=1
   std::vector<NDArray*> nonEmptyArrs;
-  std::vector<LongType> arrsToDelete;
+  std::vector<NDArray*> arrsToDelete;  // Track allocated arrays for cleanup
   LongType index = 0;
   bool allOfSameType = true;
   auto rankOfFirstArr = block.width() > 0 ? INPUT_VARIABLE(0)->rankOf() : 0;
@@ -57,7 +57,7 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
         auto vec = new NDArray('c',shape, input->dataType(), block.launchContext());
         vec->assign(input);
         nonEmptyArrs.push_back(vec);
-        arrsToDelete.push_back(index);
+        arrsToDelete.push_back(vec);  // Mark for cleanup
       } else {
         nonEmptyArrs.push_back(input);
       }
@@ -68,6 +68,10 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
   const LongType numOfNonEmptyArrs = nonEmptyArrs.size();
 
   if (numOfNonEmptyArrs == 0) {
+    // Clean up allocated temporary arrays before returning
+    for (auto arr : arrsToDelete) {
+      delete arr;
+    }
     // All inputs are empty arrays -> return empty, mainly for TF import compatibility (no op)
     REQUIRE_TRUE(OUTPUT_VARIABLE(0)->isEmpty(), 0, "CONCAT op: If all input variables are empty, output must be empty");
     return Status::OK;
@@ -94,6 +98,9 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
       error += std::string(" ");
       error += std::string(&" did not have same rank. Expected rank: " [ rank]);
       error += std::string(&" but was: " [ nonEmptyArrs[i]->rankOf()]);
+      
+      // Cleanup before throwing
+      for (auto arr : arrsToDelete) delete arr;
       REQUIRE_TRUE(nonEmptyArrs[i]->rankOf() == rank, 0,error.c_str());
     }
 
@@ -106,20 +113,25 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
           error += std::string(" ");
           error += std::string(&" did not have same dimension. Expected dimension : " [ nonEmptyArrs[0]->sizeAt(dim)]);
           error += std::string(&" but was: " [ nonEmptyArrs[i]->sizeAt(dim)]);
+          
+          // Cleanup before throwing
+          for (auto arr : arrsToDelete) delete arr;
           REQUIRE_TRUE(nonEmptyArrs[i]->rankOf() == rank, 0,error.c_str());
         }
       }
     }
-
   }
 
   // ******** end of input validation ******** //
 
   auto output = OUTPUT_VARIABLE(0);
 
-
   helpers::concat(block.launchContext(), nonEmptyArrs, *output, axis);
 
+  // FIX: Clean up allocated temporary arrays
+  for (auto arr : arrsToDelete) {
+    delete arr;
+  }
 
   return Status::OK;
 }
@@ -209,6 +221,13 @@ DECLARE_SHAPE_FN(concat) {
 
     // All inputs are empty arrays -> return empty, mainly for TF import compatibility (no op)
     auto newShape = ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(INPUT_VARIABLE(0)->dataType(),shapeVec);
+    delete[] outShapeInfo;
+
+    // Clean up allocated vectors
+    for (auto idx : shapesToDelete) {
+      delete[] const_cast<LongType*>(arrShapes.at(idx));
+    }
+
     return SHAPELIST(newShape);
   }
 
@@ -236,7 +255,9 @@ DECLARE_SHAPE_FN(concat) {
     // case when we have only one input array
     if (numOfNonEmptyArrs == 1) {
       ShapeUtils::updateStridesAndType(outShapeInfo, arrShapes.at(firstNonEmptyShapeIdx), shape::order(arrShapes.at(firstNonEmptyShapeIdx)));
-      return SHAPELIST(CONSTANT(outShapeInfo));
+      auto result = CONSTANT(outShapeInfo);
+      delete[] outShapeInfo;
+      return SHAPELIST(result);
     }
 
     auto currShape = shape::shapeOf(outShapeInfo);
@@ -246,6 +267,7 @@ DECLARE_SHAPE_FN(concat) {
     //note: always ensure that the constant shape helper is used, otherwise we could end up with
     //some modification of pre existing cache values.
     auto result = ConstantShapeHelper::getInstance().createFromExisting(outShapeInfo);
+    delete[] outShapeInfo;
     return SHAPELIST(result);
   }
 

@@ -66,8 +66,9 @@ CUSTOM_OP_IMPL(ctc_loss, 4, 1, false, 0, 1) {
 
   auto emptyGradients = NDArrayFactory::empty<float>();
   helpers::ctcLoss(block, *logitInput, *targetLabels, *logitInputLengths, *targetLabelLengths, *outputLosses,
-                            emptyGradients, blankIndex);
+                            *emptyGradients, blankIndex);
 
+  delete emptyGradients;
   return Status::OK;
 }
 
@@ -130,8 +131,9 @@ CUSTOM_OP_IMPL(ctc_loss_grad, 4, 1, false, 0, 1) {
                ShapeUtils::shapeAsString(logitInput).c_str(), ShapeUtils::shapeAsString(outputGradients).c_str());
 
   auto emptyLoss = NDArrayFactory::empty<float>();
-  helpers::ctcLoss(block, *logitInput, *targetLabels, *logitInputLengths, *targetLabelLengths, emptyLoss,
+  helpers::ctcLoss(block, *logitInput, *targetLabels, *logitInputLengths, *targetLabelLengths, *emptyLoss,
                             *outputGradients, blankIndex);
+  delete emptyLoss;
 
   return Status::OK;
 }

@@ -313,7 +313,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
 
   // gradX
   auto weightsT = w->transpose();                                                    // [K x 3K]
-  MmulHelper::mmul(&weightsT, gradU, gradX, 1., 0.);                                 // [bS x K x N]
+  MmulHelper::mmul(weightsT, gradU, gradX, 1., 0.);                                 // [bS x K x N]
   gradX->applyPairwiseTransform(pairwise::Add, gradHX, gradX);
   std::vector<LongType> axes3 = {0, 1};
   // + grad_highway_x
@@ -342,7 +342,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
   delete ftMinus;
   delete rtMinus;
   delete gradBias;
-
+  delete weightsT;
   return Status::OK;
 }
 

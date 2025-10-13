@@ -55,8 +55,9 @@ void FullPivLU<T>::solve(NDArray &A, NDArray &b, NDArray& x) {
 
   for (int k = 0; k < diagLen; ++k) {
     NDArray bottomRightCorner = luRef({k, rows, k, cols}, true);
+    NDArray *indexNum = bottomRightCorner.indexReduceNumber(indexreduce::IndexAbsoluteMax);
     const int indPivot =
-        static_cast<int>(bottomRightCorner.indexReduceNumber(indexreduce::IndexAbsoluteMax).t<LongType>(0));
+        static_cast<int>(indexNum->t<LongType>(0));
 
     int colPivot = indPivot % (cols - k);
     int rowPivot = indPivot / (cols - k);
@@ -99,6 +100,9 @@ void FullPivLU<T>::solve(NDArray &A, NDArray &b, NDArray& x) {
       luRef({k + 1, rows, k + 1, cols}, true) -=
           mmul(left,right);
     }
+
+    delete indexNum;
+
   }
   //***************************************************//
 

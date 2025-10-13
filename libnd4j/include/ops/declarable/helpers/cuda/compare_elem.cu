@@ -133,10 +133,10 @@ static void _compare_elem(LaunchContext *context, NDArray *input, bool isStrictl
       input->specialBuffer(), input->specialShapeInfo(), input->lengthOf(), isStrictlyIncreasing,
       context->getReductionPointer(), reinterpret_cast<bool *>(z.specialBuffer()));
 
-  z.tickWriteDevice();
+  z->tickWriteDevice();
   DebugHelper::checkErrorCode(context->getCudaStream(), "is_strictly_increasing");
 
-  output = z.e<bool>(0);
+  output = z->e<bool>(0);
 }
 
 void compare_elem(LaunchContext *context, NDArray *input, bool isStrictlyIncreasing, bool &output) {

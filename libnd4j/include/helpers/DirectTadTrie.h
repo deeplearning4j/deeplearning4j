@@ -38,6 +38,70 @@
 namespace sd {
 #ifndef __JAVACPP_HACK__
 
+/**
+ * Stores cached metadata about a TadPack for fast comparison without recomputation
+ */
+struct TadPackSignature {
+  LongType* strides = nullptr;
+  LongType* shape = nullptr;
+  int rank = 0;
+  char order = 'c';
+  DataType dataType = DataType::FLOAT32;
+  
+  ~TadPackSignature() {
+    if (strides) delete[] strides;
+    if (shape) delete[] shape;
+  }
+  
+  // Store signature from shapeInfo
+  void store(LongType* shapeInfo) {
+    if (!shapeInfo) return;
+    
+    rank = shape::rank(shapeInfo);
+    order = shape::order(shapeInfo);
+    dataType = ArrayOptions::dataType(shapeInfo);
+    
+    // Allocate and copy strides
+    if (strides) delete[] strides;
+    strides = new LongType[rank];
+    LongType* srcStrides = shape::stride(shapeInfo);
+    for (int i = 0; i < rank; i++) {
+      strides[i] = srcStrides[i];
+    }
+    
+    // Allocate and copy shape
+    if (shape) delete[] shape;
+    shape = new LongType[rank];
+    LongType* srcShape = shape::shapeOf(shapeInfo);
+    for (int i = 0; i < rank; i++) {
+      shape[i] = srcShape[i];
+    }
+  }
+  
+  // Compare with another shapeInfo
+  bool matches(LongType* shapeInfo) const {
+    if (!shapeInfo || !strides || !shape) return false;
+    
+    int otherRank = shape::rank(shapeInfo);
+    if (rank != otherRank) return false;
+    
+    if (order != shape::order(shapeInfo)) return false;
+    if (dataType != ArrayOptions::dataType(shapeInfo)) return false;
+    
+    LongType* otherStrides = shape::stride(shapeInfo);
+    for (int i = 0; i < rank; i++) {
+      if (strides[i] != otherStrides[i]) return false;
+    }
+    
+    LongType* otherShape = shape::shapeOf(shapeInfo);
+    for (int i = 0; i < rank; i++) {
+      if (shape[i] != otherShape[i]) return false;
+    }
+    
+    return true;
+  }
+};
+
 class SD_LIB_EXPORT TadTrieNode {
  private:
   std::vector<std::unique_ptr<TadTrieNode>> _children;
@@ -47,13 +111,12 @@ class SD_LIB_EXPORT TadTrieNode {
   TadPack* _tadPack;  // Accessed atomically
   int _shapeRank;     // Store the rank of the original shape for verification
   size_t _nodeHash;   // Additional hash for quick comparison
-  LongType* _originalStrides; // Store the original strides signature (optional)
-  int _stridesLength;  // Length of the strides array
+  TadPackSignature* _packSignature;  // Cached signature for fast comparison
 
  public:
   TadTrieNode(LongType value = 0, int level = 0, bool isDimension = true, int shapeRank = 0)
       : _value(value), _level(level), _isDimension(isDimension), _tadPack(nullptr),
-        _shapeRank(shapeRank), _nodeHash(0), _originalStrides(nullptr), _stridesLength(0) {}
+        _shapeRank(shapeRank), _nodeHash(0), _packSignature(nullptr) {}
 
   // Delete copy operations to prevent issues with unique_ptr
   TadTrieNode(const TadTrieNode&) = delete;
@@ -64,10 +127,13 @@ class SD_LIB_EXPORT TadTrieNode {
   TadTrieNode& operator=(TadTrieNode&&) = default;
 
   ~TadTrieNode() {
-    // Clean up original strides if allocated
-    if (_originalStrides != nullptr) {
-      delete[] _originalStrides;
-      _originalStrides = nullptr;
+    if (_packSignature) {
+      delete _packSignature;
+      _packSignature = nullptr;
+    }
+    if (_tadPack) {
+      delete _tadPack;
+      _tadPack = nullptr;
     }
   }
 
@@ -107,36 +173,16 @@ class SD_LIB_EXPORT TadTrieNode {
    return hash;
  }
 
- // Method to store stride information
- void storeStrides(LongType* strides, int length) {
-   if (_originalStrides != nullptr) {
-     delete[] _originalStrides;
-   }
-
-   if (strides && length > 0) {
-     _originalStrides = new LongType[length];
-     _stridesLength = length;
-
-     // Copy strides
-     for (int i = 0; i < length; i++) {
-       _originalStrides[i] = strides[i];
-     }
-   }
- }
-
-
  // Standard getters
  const std::vector<std::unique_ptr<TadTrieNode>>& children() const { return _children; }
  LongType value() const { return _value; }
  int level() const { return _level; }
  bool isDimension() const { return _isDimension; }
  int shapeRank() const { return _shapeRank; }
-
  size_t nodeHash() const { return _nodeHash; }
+ const TadPackSignature* packSignature() const { return _packSignature; }
 
-
-
- // Enhanced TadPack setter with stride storage
+ // Enhanced TadPack setter with signature caching
  void setPack(TadPack* pack) {
    if (!pack) return;
 
@@ -154,13 +200,12 @@ class SD_LIB_EXPORT TadTrieNode {
 
    if (swapped) {
      // Successfully set the pack
-     // Store stride information for future comparisons
-     if (pack->primaryShapeInfo()) {
-       int rank = shape::rank(pack->primaryShapeInfo());
-       LongType* strides = shape::stride(pack->primaryShapeInfo());
-       storeStrides(strides, rank);
+     // Cache the signature for future fast comparisons
+     if (pack->primaryShapeInfo() && !_packSignature) {
+       _packSignature = new TadPackSignature();
+       _packSignature->store(pack->primaryShapeInfo());
      }
-     // The new pack is now owned by the trie, do nothing.
+     // The new pack is now owned by the trie
    } else if (pack != _tadPack) {
      // If the swap failed, another thread set the pack.
      // We must delete the pack we tried to insert to avoid a memory leak.
@@ -169,10 +214,6 @@ class SD_LIB_EXPORT TadTrieNode {
  }
 
  TadPack* pack() const { return _tadPack; }
-
- // Removed operator== to avoid unique_ptr copy issues
- // If equality comparison is needed, implement it without comparing _children vector directly
-
 };
 
 
@@ -209,8 +250,6 @@ public:
  // Enhanced stride-aware hash computation
  size_t computeStrideAwareHash(const std::vector<LongType>& dimensions, LongType* originalShape) ;
 
- // Dimension compatibility check
- bool areDimensionsCompatible(const std::vector<LongType>& dimensions, const TadPack* pack) ;
  // Enhanced getOrCreate with improved thread safety
  TadPack* getOrCreate(std::vector<LongType>& dimensions, LongType* originalShape);
 
@@ -237,31 +276,6 @@ public:
 
    return hash % NUM_STRIPES;
  }
-
- // Calculate comprehensive shape hash for node identification
- size_t calculateShapeHash(LongType* originalShape) const {
-   size_t hash = 17;
-
-   int rank = shape::rank(originalShape);
-   hash = hash * 31 + rank * 13;
-
-   LongType* shapeInfo = shape::shapeOf(originalShape);
-   for (int i = 0; i < rank; i++) {
-     hash = hash * 19 + static_cast<size_t>(shapeInfo[i]) * (7 + i);
-   }
-
-   LongType* strides = shape::stride(originalShape);
-   for (int i = 0; i < rank; i++) {
-     hash = hash * 23 + static_cast<size_t>(strides[i]) * (11 + i);
-   }
-
-   // Add data type and order
-   hash = hash * 29 + static_cast<size_t>(ArrayOptions::dataType(originalShape));
-   hash = hash * 37 + static_cast<size_t>(shape::order(originalShape));
-
-   return hash;
- }
-
 
  bool exists(const std::vector<LongType>& dimensions, LongType* originalShape) const;
 

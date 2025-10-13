@@ -62,32 +62,40 @@ ConstantShapeBuffer* ConstantShapeHelper::createSubArrShapeInfo( sd::LongType* i
                                                                  sd::LongType dimsSize) {
  sd::LongType* newShapeInfo = ShapeBuilders::createSubArrShapeInfo(inShapeInfo, dims, dimsSize, nullptr);
  auto ret = bufferForShapeInfo(newShapeInfo);
+ delete[] newShapeInfo;
  return ret;
 }
 
 ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(DataType dataType, char order,
                                                             const std::vector<LongType>& shape) {
  auto descriptor = ShapeBuilders::createShapeInfo(dataType, order, shape);
- return bufferForShapeInfo(descriptor);
+ auto result = bufferForShapeInfo(descriptor);
+ delete[] descriptor;
+ return result;
 }
 
 ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(DataType dataType, char order,
                                                             int rank,  LongType* shape) {
  auto descriptor = ShapeBuilders::createShapeInfo(dataType, order, rank, shape, nullptr, false);
- return bufferForShapeInfo(descriptor);
+ auto result = bufferForShapeInfo(descriptor);
+ delete[] descriptor;
+ return result;
 }
 
 LongType* ConstantShapeHelper::emptyShapeInfoWithShape(DataType dataType, std::vector<LongType>& shape) {
  auto descriptor = ShapeBuilders::createShapeInfo(dataType, 'c', shape, nullptr);
  ArrayOptions::setPropertyBit(descriptor, ARRAY_EMPTY);
  auto existing = createFromExisting(descriptor);
+ delete[] descriptor;
  return existing;
 }
 
 LongType* ConstantShapeHelper::createShapeInfo(DataType dataType, char order,
                                               const std::vector<LongType>& shape) {
  auto descriptor = ShapeBuilders::createShapeInfo(dataType, order, shape);
- return bufferForShapeInfo(descriptor)->primary();
+ auto result = bufferForShapeInfo(descriptor)->primary();
+ delete[] descriptor;
+ return result;
 }
 
 LongType* ConstantShapeHelper::createShapeInfo(DataType dataType, char order, int rank,
@@ -104,22 +112,23 @@ LongType* ConstantShapeHelper::createShapeInfo(DataType dataType, char order, in
  auto ret = bufferForShapeInfo(descriptor)->primary();
  ArrayOptions::validateSingleDataType(ArrayOptions::dataType(ret));
 
+ delete[] descriptor;
  return ret;
 }
 
 LongType* ConstantShapeHelper::createShapeInfo(DataType dataType, LongType* shapeInfo) {
- return createShapeInfo(dataType, shape::order(shapeInfo), shape::rank(shapeInfo),
+ auto result = createShapeInfo(dataType, shape::order(shapeInfo), shape::rank(shapeInfo),
                         shape::shapeOf(const_cast<LongType*>(shapeInfo)), -1);
-}
-
-LongType* ConstantShapeHelper::createShapeInfo(ShapeDescriptor* descriptor) {
- return bufferForShapeInfo(descriptor->toShapeInfo())->primary();
+ return result;
 }
 
 LongType* ConstantShapeHelper::emptyShapeInfo(DataType dataType) {
  auto descriptor = ShapeBuilders::emptyShapeInfo(dataType);
- return bufferForShapeInfo(descriptor)->primary();
+ auto result = bufferForShapeInfo(descriptor)->primary();
+ delete[] descriptor;
+ return result;
 }
+
 
 LongType* ConstantShapeHelper::scalarShapeInfo(DataType dataType) {
  auto descriptor = ShapeBuilders::createScalarShapeInfo(dataType);
@@ -128,7 +137,174 @@ LongType* ConstantShapeHelper::scalarShapeInfo(DataType dataType) {
 
 LongType* ConstantShapeHelper::vectorShapeInfo(LongType length, DataType dataType) {
  auto descriptor = ShapeBuilders::createVectorShapeInfo(dataType, length);
- return bufferForShapeInfo(descriptor)->primary();
+ auto result = bufferForShapeInfo(descriptor)->primary();
+ delete[] descriptor;
+ return result;
+}
+
+
+LongType* ConstantShapeHelper::createShapeInfo(ShapeDescriptor* descriptor) {
+ auto shapeInfo = descriptor->toShapeInfo();
+ auto result = bufferForShapeInfo(shapeInfo)->primary();
+ delete[] shapeInfo;
+ return result;
+}
+
+
+ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfoWithView(LongType* shapeInfo) {
+ if (shapeInfo == nullptr) {
+   THROW_EXCEPTION("shapeInfo is nullptr");
+ }
+
+ LongType* newShapeInfo = ShapeBuilders::copyShapeInfo(shapeInfo, false, nullptr);
+
+
+
+ ArrayOptions::setPropertyBit(newShapeInfo, ARRAY_IS_VIEW);
+
+ auto buffer = bufferForShapeInfo(newShapeInfo);
+
+ delete[] newShapeInfo;
+
+ return buffer;
+}
+
+ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfoWithoutView(LongType* shapeInfo) {
+ if (shapeInfo == nullptr) {
+   THROW_EXCEPTION("shapeInfo is nullptr");
+ }
+
+ LongType* newShapeInfo = ShapeBuilders::copyShapeInfo(shapeInfo, false, nullptr);
+ ArrayOptions::unsetPropertyBit(newShapeInfo, ARRAY_IS_VIEW);
+
+ auto buffer = bufferForShapeInfo(newShapeInfo);
+ delete[] newShapeInfo;
+ return buffer;
+}
+
+ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfoWithNeedsCopy(LongType* shapeInfo) {
+ if (shapeInfo == nullptr) {
+   THROW_EXCEPTION("shapeInfo is nullptr");
+ }
+
+ LongType* newShapeInfo = ShapeBuilders::copyShapeInfo(shapeInfo, false, nullptr);
+ ArrayOptions::setPropertyBit(newShapeInfo, ARRAY_NEEDS_COPY);
+
+ auto buffer = bufferForShapeInfo(newShapeInfo);
+ delete[] newShapeInfo;
+ return buffer;
+}
+
+ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfoWithoutNeedsCopy(LongType* shapeInfo) {
+ if (shapeInfo == nullptr) {
+   THROW_EXCEPTION("shapeInfo is nullptr");
+ }
+
+ LongType* newShapeInfo = ShapeBuilders::copyShapeInfo(shapeInfo, false, nullptr);
+ ArrayOptions::unsetPropertyBit(newShapeInfo, ARRAY_NEEDS_COPY);
+
+ auto buffer = bufferForShapeInfo(newShapeInfo);
+ delete[] newShapeInfo;
+ return buffer;
+}
+
+ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfoWithCopyOffset(LongType* shapeInfo, int inputIndex) {
+ if (shapeInfo == nullptr) {
+   THROW_EXCEPTION("shapeInfo is nullptr");
+ }
+
+ if (inputIndex < 0 || inputIndex > 10) {
+   THROW_EXCEPTION("Input index out of range [0-10]");
+ }
+
+ LongType* newShapeInfo = ShapeBuilders::copyShapeInfo(shapeInfo, false, nullptr);
+ LongType flag = ArrayOptions::copyOffsetFlagForInput(inputIndex);
+ ArrayOptions::setPropertyBit(newShapeInfo, flag);
+
+ auto buffer = bufferForShapeInfo(newShapeInfo);
+ delete[] newShapeInfo;
+ return buffer;
+}
+
+ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfoWithoutCopyOffset(LongType* shapeInfo, int inputIndex) {
+ if (shapeInfo == nullptr) {
+   THROW_EXCEPTION("shapeInfo is nullptr");
+ }
+
+ if (inputIndex < 0 || inputIndex > 10) {
+   THROW_EXCEPTION("Input index out of range [0-10]");
+ }
+
+ LongType* newShapeInfo = ShapeBuilders::copyShapeInfo(shapeInfo, false, nullptr);
+ LongType flag = ArrayOptions::copyOffsetFlagForInput(inputIndex);
+ ArrayOptions::unsetPropertyBit(newShapeInfo, flag);
+
+ auto buffer = bufferForShapeInfo(newShapeInfo);
+ delete[] newShapeInfo;
+ return buffer;
+}
+
+ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfoWithoutAllCopyOffsets(LongType* shapeInfo) {
+ if (shapeInfo == nullptr) {
+   THROW_EXCEPTION("shapeInfo is nullptr");
+ }
+
+ LongType* newShapeInfo = ShapeBuilders::copyShapeInfo(shapeInfo, false, nullptr);
+ ArrayOptions::clearAllCopyOffsets(newShapeInfo);
+
+ auto buffer = bufferForShapeInfo(newShapeInfo);
+ delete[] newShapeInfo;
+ return buffer;
+}
+
+ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfoWithFlags(LongType* shapeInfo,
+                                                                      LongType flagsToSet,
+                                                                      LongType flagsToUnset) {
+ if (shapeInfo == nullptr) {
+   THROW_EXCEPTION("shapeInfo is nullptr");
+ }
+
+ LongType* newShapeInfo = ShapeBuilders::copyShapeInfo(shapeInfo, false, nullptr);
+
+ // Unset flags first
+ if (flagsToUnset != 0) {
+   LongType extraIdx = ArrayOptions::extraIndex(newShapeInfo);
+   newShapeInfo[extraIdx] = newShapeInfo[extraIdx] & ~flagsToUnset;
+ }
+
+ // Then set flags
+ if (flagsToSet != 0) {
+   LongType extraIdx = ArrayOptions::extraIndex(newShapeInfo);
+   newShapeInfo[extraIdx] = newShapeInfo[extraIdx] | flagsToSet;
+ }
+
+ auto buffer = bufferForShapeInfo(newShapeInfo);
+ delete[] newShapeInfo;
+ return buffer;
+}
+
+ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfoAsViewWithOffset(LongType* shapeInfo,
+                                                                             int inputIndex) {
+ if (shapeInfo == nullptr) {
+   THROW_EXCEPTION("shapeInfo is nullptr");
+ }
+
+ if (inputIndex < 0 || inputIndex > 10) {
+   THROW_EXCEPTION("Input index out of range [0-10]");
+ }
+
+ LongType* newShapeInfo = ShapeBuilders::copyShapeInfo(shapeInfo, false, nullptr);
+
+ // Set view flag
+ ArrayOptions::setPropertyBit(newShapeInfo, ARRAY_IS_VIEW);
+
+ // Set copy offset flag for specified input
+ LongType flag = ArrayOptions::copyOffsetFlagForInput(inputIndex);
+ ArrayOptions::setPropertyBit(newShapeInfo, flag);
+
+ auto buffer = bufferForShapeInfo(newShapeInfo);
+ delete[] newShapeInfo;
+ return buffer;
 }
 
 LongType* ConstantShapeHelper::createFromExisting(LongType* shapeInfo) {
@@ -154,16 +330,18 @@ LongType* ConstantShapeHelper::castToDataType(LongType* shapeInfo, DataType newT
  }
 
  auto buffer = bufferForShapeInfo(tempShapeInfo);
- if(ArrayOptions::dataType(buffer->primary()) != newType) {
+ auto result = buffer->primary();
+ delete[] tempShapeInfo;
+ if(ArrayOptions::dataType(result) != newType) {
    std::string errorMessage;
    errorMessage += "castToDataType: new data type is ";
    errorMessage += DataTypeUtils::asString(newType);
    errorMessage += " data type from new constant created data type ";
-   errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(buffer->primary()));
+   errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(result));
    errorMessage += "\n";
    THROW_EXCEPTION(errorMessage.c_str());
  }
- return buffer->primary();
+ return result;
 }
 
 
@@ -206,6 +384,7 @@ ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcast
  }
 
  auto ret = bufferForShapeInfo(newShapeInfo);
+ RELEASE(newShapeInfo, workspace);
  return ret;
 }
 
@@ -220,11 +399,13 @@ ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithNoUnitiesForReduce(
  if (dimsWithUnities->size() == 1 && shape::isCommonVector(maxShapeInfo, temp) && temp == dimsWithUnities->at(0)) {
    auto dims = ShapeUtils::evalDimsToExclude(shape::rank(maxShapeInfo), 1,&temp);
    shape::excludeUnitiesFromShapeInfo(maxShapeInfo, dims->data(), dims->size(), newShapeInfo);
+   delete dims;
  } else {
    shape::excludeUnitiesFromShapeInfo(maxShapeInfo, dimsWithUnities->data(), dimsWithUnities->size(), newShapeInfo);
  }
 
  auto ret = bufferForShapeInfo(newShapeInfo);
+ RELEASE(newShapeInfo, workspace);
  return ret;
 }
 

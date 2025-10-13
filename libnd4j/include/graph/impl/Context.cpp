@@ -113,6 +113,12 @@ Context::~Context() {
   this->_fastpath_in.clear();
   this->_fastpath_out.clear();
 
+  // Clean up intermediate results
+  for (auto v : _intermediateResults) {
+    if (v != nullptr) delete v;
+  }
+  _intermediateResults.clear();
+
   for (auto v : _handles) delete v;
 
   if (_context != nullptr) delete _context;

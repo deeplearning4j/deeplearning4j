@@ -70,6 +70,18 @@ class SD_LIB_EXPORT TadCalculator {
   ConstantOffsetsBuffer *tadOffsets() const { return _tadOffsets; }
 
   /**
+    * Releases ownership of the TAD offsets buffer to the caller.
+    * After this call, the TadCalculator no longer owns the offsets and will not delete them.
+    * The caller becomes responsible for deleting the returned buffer.
+    * @return ConstantOffsetsBuffer pointer that the caller must manage
+   */
+  ConstantOffsetsBuffer* releaseOffsets() {
+    ConstantOffsetsBuffer* temp = _tadOffsets;
+    _tadOffsets = nullptr;  // Release ownership
+    return temp;
+  }
+
+  /**
     * Returns the number of TADs calculated
     * @return Number of TADs
    */

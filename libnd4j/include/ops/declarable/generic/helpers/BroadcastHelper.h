@@ -75,7 +75,8 @@ class BroadcastHelper {
         auto v = y->getShapeAsVector();
         auto tZ = NDArrayFactory::valueOf(v, y, y->ordering());
         tZ->applyPairwiseTransform(op.p, y, extraArgs);
-        return tZ;
+        // Caller must delete the returned pointer
+        return tZ;  // LEAK: tZ is never deleted by caller
       }
     } else if (x->lengthOf() <= 1 && y->lengthOf() <= 1) {
       x->applyScalarArr(op.s, y, z);
@@ -123,6 +124,7 @@ class BroadcastHelper {
       } else {
         auto v = y->getShapeAsVector();
         auto tZ = NDArrayFactory::valueOf(v, y, y->ordering());
+        // LEAK: tZ is never deleted by caller
         return tZ;
       }
     } else if (x->isScalar() && y->isScalar()) {  // x->isScalar() && y->isScalar()

@@ -80,8 +80,9 @@ DECLARE_SHAPE_FN(tensormmul) {
                                                         shapeAt, shapeBt);
 
   auto desc = new  ShapeDescriptor(ArrayOptions::dataType(aShapeInfo), 'c', outShape);
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
-      desc));
+  auto result = SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+  delete desc;
+  return result;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -223,7 +224,11 @@ CUSTOM_OP_IMPL(tensormmul_bp, 4, 2, false, 0, -1) {
   MmulHelper::tensorDot2(dC, newB, gradA, axes_a_gradA, axes_b_gradA, empty, empty, aPermArgsAfter, gradA);
   MmulHelper::tensorDot2(newA, dC, gradB, axes_a_gradB, axes_b_gradB, empty, empty, bPermArgsAfter, gradB);
 
-
+  delete newA;
+  delete newB;
+  if(dC != originalDC) {
+    delete dC;
+  }
 
   return Status::OK;
 }

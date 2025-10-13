@@ -1044,9 +1044,12 @@ void execReduceFloat2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,voi
   try {
     std::vector<sd::LongType>  dimensions(dimension->lengthOf());
     for(sd::LongType i = 0; i < dimension->lengthOf(); i++) {
-      dimensions[i] = dimension->e<sd::LongType>(i);
+      sd::LongType curr = dimension->e<sd::LongType>(i);
+      if(curr < 0) {
+        curr += x->rankOf();
+      }
+      dimensions[i] = curr;
     }
-
     const sd::LongType *zShapeInfoH = z->shapeInfo();
     const sd::LongType *zShapeInfoD = z->specialShapeInfo();
 
@@ -1080,7 +1083,11 @@ void execReduceBool2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
   try {
     std::vector<sd::LongType> dimensions(dimension->lengthOf());
     for(sd::LongType i = 0; i < dimension->lengthOf(); i++) {
-      dimensions[i] = dimension->e<sd::LongType>(i);
+      sd::LongType curr = dimension->e<sd::LongType>(i);
+      if(curr < 0) {
+        curr += x->rankOf();
+      }
+      dimensions[i] = curr;
     }
 
     const sd::LongType *zShapeInfoH = z->shapeInfo();
@@ -1116,7 +1123,11 @@ void execReduceSame2(sd::Pointer *extraPointers, int opNum,
   try {
     std::vector<sd::LongType> dimensions(dimension->lengthOf());
     for(sd::LongType i = 0; i < dimension->lengthOf(); i++) {
-      dimensions[i] = dimension->e<sd::LongType>(i);
+      sd::LongType curr = dimension->e<sd::LongType>(i);
+      if(curr < 0) {
+        curr += x->rankOf();
+      }
+      dimensions[i] = curr;
     }
 
     const sd::LongType *zShapeInfoH = z->shapeInfo();
@@ -1152,7 +1163,11 @@ void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
   try {
     std::vector<sd::LongType> dimensions(dimension->lengthOf());
     for(sd::LongType i = 0; i < dimension->lengthOf(); i++) {
-      dimensions[i] = dimension->e<sd::LongType>(i);
+      sd::LongType curr = dimension->e<sd::LongType>(i);
+      if(curr < 0) {
+        curr += x->rankOf();
+      }
+      dimensions[i] = curr;
     }
 
     const sd::LongType *zShapeInfoH = z->shapeInfo();
@@ -1169,9 +1184,9 @@ void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
                                   new std::vector<sd::LongType>();
 
     NativeOpExecutioner::execReduceLong(nullptr, opNum,
-                                        x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                        x->buffer(), x->shapeInfo(), nullptr,nullptr,
                                         extraParams,
-                                        z->buffer(), zShapeInfoH, z->specialBuffer(), zShapeInfoD,
+                                        z->buffer(), zShapeInfoH, nullptr, nullptr,
                                         dims->data(), dims->size());
 
     delete dims;

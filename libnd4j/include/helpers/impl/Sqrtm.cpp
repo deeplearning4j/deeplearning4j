@@ -221,13 +221,15 @@ static void sqrtmQuasiTrianOffDiag(NDArray& matrixT, NDArray& sqrtT) {
         NDArray A(matrixT.ordering(),aShape, matrixT.dataType(), matrixT.getContext());
         A.r<T>(0, 0) = A.r<T>(1, 1) = sqrtT.t<T>(i, i);
         A.r<T>(0, 1) = A.r<T>(1, 0) = T(0);
-        A += sqrtT({j, j + 2, j, j + 2}, true).transpose();
+        NDArray *add = sqrtT({j, j + 2, j, j + 2}, true).transpose();
+        A += *add;
 
-        NDArray rhsT = rhs.transpose();
-        FullPivLU<T>::solve(A, rhsT, rhsT);
+        NDArray *rhsT = rhs.transpose();
+        FullPivLU<T>::solve(A, *rhsT, *rhsT);
 
         // sqrtT.syncToDevice();
         sqrtT({i, i + 1, j, j + 2}, true).assign(&rhs);
+        delete rhsT;
       } else if (!iBlockIs2x2 && !jBlockIs2x2) {
         T temp = mmul(sqrtT({i, i + 1, i + 1, j}), sqrtT({i + 1, j, j, j + 1})).t<T>(0);  // dot
         sqrtT.r<T>(i, j) = (matrixT.t<T>(i, j) - temp) / (sqrtT.t<T>(i, i) + sqrtT.t<T>(j, j));
@@ -259,11 +261,12 @@ void Sqrtm<T>::calc(NDArray& in, NDArray& out) {
   sqrtmQuasiTrianDiag<T>(*schur.t, sqrtT);
   sqrtmQuasiTrianOffDiag<T>(*schur.t, sqrtT);
 
-  NDArray second = schur.u->transpose();
+  NDArray *second = schur.u->transpose();
   // out = U * sqrtT * U^T;
-  NDArray temp = mmul(sqrtT, second);
+  NDArray temp = mmul(sqrtT, *second);
   MmulHelper::mmul(schur.u, &temp, &out);
   delete inULike;
+  delete second;
 }
 
 BUILD_SINGLE_TEMPLATE( class Sqrtm, , SD_FLOAT_TYPES);

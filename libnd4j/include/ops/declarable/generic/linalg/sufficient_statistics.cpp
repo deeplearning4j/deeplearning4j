@@ -43,12 +43,13 @@ CUSTOM_OP_IMPL(sufficient_statistics, 2, 3, false, 0, 0) {
   input->reduceAlongDimension(reduce::SquaredNorm, squares, &axis);
   input->reduceAlongDimension(reduce::Sum, sum, &axis);
   auto count = NDArrayFactory::create(input->dataType(), input->lengthOf() / sum->lengthOf());
-  dataCount->assign(&count);
+  dataCount->assign(count);
   if (block.numT() > 0) {
     auto shift = OUTPUT_VARIABLE(3);
     shift->assign(T_ARG(0));
   }
 
+  delete count;
   return Status::OK;
 }
 

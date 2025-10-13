@@ -60,58 +60,65 @@ static sd::Status topKFunctor_(NDArray* input, NDArray* values, NDArray* indices
       auto trial = (*input)(e, dimsToExclude);
 
       // fill up the first k elements
-      NDArray topValues = NDArrayFactory::create<T>('c', {k}, input->getContext());
-      NDArray sortedVals = NDArrayFactory::create<T>('c', {k}, input->getContext());
-      NDArray topIndices = NDArrayFactory::create<sd::LongType>('c', {k}, input->getContext());
+      NDArray *topValues = NDArrayFactory::create<T>('c', {k}, input->getContext());
+      NDArray *sortedVals = NDArrayFactory::create<T>('c', {k}, input->getContext());
+      NDArray *topIndices = NDArrayFactory::create<sd::LongType>('c', {k}, input->getContext());
       for (sd::LongType pos = 0; pos < k; ++pos) {
-        topIndices.r<sd::LongType>(pos) = pos;
-        topValues.r<T>(pos) = trial.t<T>(pos);
+        topIndices->r<sd::LongType>(pos) = pos;
+        topValues->r<T>(pos) = trial.t<T>(pos);
       }
-      sortedVals.assign(&topValues);
-      SpecialMethods<T>::sortGeneric(&sortedVals, false);
+      sortedVals->assign(topValues);
+      SpecialMethods<T>::sortGeneric(sortedVals, false);
       for (sd::LongType i = static_cast<sd::LongType>(k); i < width; ++i) {
         T val = trial.e<T>(i);
-        T minTopVal = sortedVals.t<T>(0);
+        T minTopVal = sortedVals->t<T>(0);
         if (minTopVal < val) {  // value should be inserted to top k
           // only if it is not contained in
-          T* begin = reinterpret_cast<T*>(sortedVals.buffer());
+          T* begin = reinterpret_cast<T*>(sortedVals->buffer());
           T* end = begin + k;
           bool exists = std::binary_search(begin, end, val);
           if (!exists) {
             // exchangePos - a distance between begin and minimal existed to be suppressed by val
-            T* topBegin = reinterpret_cast<T*>(topValues.buffer());
+            T* topBegin = reinterpret_cast<T*>(topValues->buffer());
             T* topEnd = topBegin + k;
-            auto exchangePos = std::distance(topBegin, std::find(topBegin, topEnd, sortedVals.t<T>(0)));
-            topValues.r<T>(exchangePos) = val;  //*exchangeIt = val;
-            topIndices.r<sd::LongType>(exchangePos) = i;
-            sortedVals.r<T>(0) = val;  // suppress in sorted
-            SpecialMethods<T>::sortGeneric(&sortedVals, false);
+            auto exchangePos = std::distance(topBegin, std::find(topBegin, topEnd, sortedVals->t<T>(0)));
+            topValues->r<T>(exchangePos) = val;  //*exchangeIt = val;
+            topIndices->r<sd::LongType>(exchangePos) = i;
+            sortedVals->r<T>(0) = val;  // suppress in sorted
+            SpecialMethods<T>::sortGeneric(sortedVals, false);
 
           }
         }
       }
       if (needSort) {
-        SpecialMethods<T>::sortGeneric(&topValues,true);
+        SpecialMethods<T>::sortGeneric(topValues,true);
 
         for (sd::LongType j = 0; j < width; j++)
           for (sd::LongType pos = 0; pos < k; ++pos)
-            if (topValues.t<T>(pos) == trial.t<T>(j)) topIndices.r<sd::LongType>(pos) = j;
+            if (topValues->t<T>(pos) == trial.t<T>(j)) topIndices->r<sd::LongType>(pos) = j;
       } else {  // else sort by indices
         std::map<sd::LongType, T> sortValsMap;
-        for (sd::LongType e = 0; e < topValues.lengthOf(); ++e) {
-          sortValsMap[topIndices.t<sd::LongType>(e)] = topValues.t<T>(e);
+        for (sd::LongType e = 0; e < topValues->lengthOf(); ++e) {
+          sortValsMap[topIndices->t<sd::LongType>(e)] = topValues->t<T>(e);
         }
 
         sd::LongType e = 0;
         for (auto it = sortValsMap.begin(); it != sortValsMap.end(); ++it, e++) {
-          topIndices.r<sd::LongType>(e) = it->first;
-          topValues.r<T>(e) = it->second;
+          topIndices->r<sd::LongType>(e) = it->first;
+          topValues->r<T>(e) = it->second;
         }
       }
-      if (values) (*values)(e, dimsToExclude).assign(&topValues);
-      if (indices) (*indices)(e, dimsToExclude).assign(&topIndices);
+      if (values) (*values)(e, dimsToExclude).assign(topValues);
+      if (indices) (*indices)(e, dimsToExclude).assign(topIndices);
+
+
+      delete sortedVals;
+      delete topValues;
+      delete topIndices;
+
     }
   }
+
   return sd::Status::OK;
 }
 // ----------------------------------------------------------------------------------------------- //
@@ -161,12 +168,12 @@ sd::Status inTopKFunctor(sd::LaunchContext* context, NDArray* input, NDArray* ta
 }
 
 BUILD_SINGLE_TEMPLATE( sd::Status topKFunctor_,
-                      (NDArray* input, NDArray* values, NDArray* indices, const sd::LongType k, bool needSort),
-                      SD_NUMERIC_TYPES);
+                       (NDArray* input, NDArray* values, NDArray* indices, const sd::LongType k, bool needSort),
+                       SD_NUMERIC_TYPES);
 BUILD_SINGLE_TEMPLATE( sd::Status inTopKFunctor_,
-                      (sd::LaunchContext * context, NDArray* input, NDArray* target, NDArray* result,
-                       const sd::LongType k),
-                      SD_NUMERIC_TYPES);
+                       (sd::LaunchContext * context, NDArray* input, NDArray* target, NDArray* result,
+                           const sd::LongType k),
+                       SD_NUMERIC_TYPES);
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

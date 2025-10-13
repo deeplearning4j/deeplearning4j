@@ -378,6 +378,11 @@ NDArray* MmulHelper::mmulMxV( NDArray* A, NDArray* X, sd::NDArray* Y, const doub
                                         (float*)X->buffer(), incx, (float)beta, (float*)Y->buffer(), incy);
     }
 
+    // Clean up duplicated array
+    if (pA != A) {
+      delete pA;
+    }
+
   }
 
   return Y;

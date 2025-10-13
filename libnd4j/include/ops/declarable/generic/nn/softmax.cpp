@@ -56,7 +56,7 @@ CONFIGURABLE_OP_IMPL(softmax_bp, 3, 1, true, 0, 0) {
   auto gradO = INPUT_VARIABLE(1);
   auto softmaxedOut = INPUT_VARIABLE(2);
   auto gradI = OUTPUT_VARIABLE(0);
-  gradI->assign(softmaxedOut);
+  
   const int rank = input->rankOf();
   const int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
 
@@ -65,11 +65,26 @@ CONFIGURABLE_OP_IMPL(softmax_bp, 3, 1, true, 0, 0) {
                "but got dimension = %i instead !",
                rank, dim);
 
-
+  // Refactored to minimize temporary allocations and ensure proper cleanup
+  gradI->assign(softmaxedOut);
+  
+  // Perform operations in-place where possible to avoid unnecessary temporaries
   std::vector<sd::LongType> dimVector = {dim};
-  auto sumAlongDim = (*gradI * *gradO).reduceAlongDimension(reduce::Sum, &dimVector, true);
-  NDArray assign =  *gradI * (*gradO - sumAlongDim);
-  gradI->assign(&assign);
+  
+  // Compute gradI * gradO and store in a temporary
+  NDArray temp = *gradI * *gradO;
+  
+  // Reduce along dimension - this returns a new NDArray
+  NDArray sumAlongDim = temp.reduceAlongDimension(reduce::Sum, &dimVector, true);
+  
+  // Compute gradO - sumAlongDim
+  NDArray diff = *gradO - sumAlongDim;
+  
+  // Compute final result: gradI * diff
+  NDArray result = *gradI * diff;
+  
+  // Assign result to output
+  gradI->assign(&result);
 
   return sd::Status::OK;
 }

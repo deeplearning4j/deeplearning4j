@@ -36,7 +36,7 @@
 
 namespace sd {
 
-SD_LIB_EXPORT NDArray NDArrayFactory::create(ShapeDescriptor *shapeDescriptor, LaunchContext* context) {
+SD_LIB_EXPORT NDArray* NDArrayFactory::create(ShapeDescriptor *shapeDescriptor, LaunchContext* context) {
   auto status = shapeDescriptor->validate();
   if (status != SHAPE_DESC_OK) {
     THROW_EXCEPTION("NDArrayFactory::create: invalid ShapeDescriptor ");
@@ -44,15 +44,15 @@ SD_LIB_EXPORT NDArray NDArrayFactory::create(ShapeDescriptor *shapeDescriptor, L
   LongType allocSize = shapeDescriptor->allocLength() * DataTypeUtils::sizeOfElement(shapeDescriptor->dataType());
   DataBuffer *  buffer =
       new DataBuffer(allocSize, shapeDescriptor->dataType(), context->getWorkspace());
-  NDArray result(buffer, shapeDescriptor, context);
-  result.nullify();
+  NDArray *result = new NDArray(buffer, shapeDescriptor, context);
+  result->nullify();
   return result;
 }
 
 
 ////////////////////////////////////////////////////////////////////////
 template <>
-SD_LIB_EXPORT NDArray NDArrayFactory::create<bool>(const char order, const std::vector<LongType>& shape,
+SD_LIB_EXPORT NDArray* NDArrayFactory::create<bool>(const char order, const std::vector<LongType>& shape,
                                                    const std::vector<bool>& data, LaunchContext* context) {
   if ((int)shape.size() > SD_MAX_RANK)
     THROW_EXCEPTION("NDArrayFactory::create: rank of NDArray can't exceed 32 !");
@@ -71,13 +71,16 @@ SD_LIB_EXPORT NDArray NDArrayFactory::create<bool>(const char order, const std::
 
   DataBuffer * buffer = new DataBuffer(hostBuffer, data.size() * sizeof(bool), BOOL, true, context->getWorkspace());
 
-  NDArray result(buffer, descriptor, context);
+  NDArray *result = new NDArray(buffer, descriptor, context);
+  delete descriptor;
   return result;
 }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-NDArray NDArrayFactory::create(const char order, const std::vector<LongType>& shape, const std::vector<T>& data,
+NDArray* NDArrayFactory::create(const char order,
+                                const std::vector<LongType>& shape,
+                                const std::vector<T>& data,
                                LaunchContext* context) {
   if (shape.size() > SD_MAX_RANK)
     THROW_EXCEPTION("NDArrayFactory::create: rank of NDArray can't exceed 32 !");
@@ -85,6 +88,7 @@ NDArray NDArrayFactory::create(const char order, const std::vector<LongType>& sh
 
   //scalars can be created with zero length
   if (descriptor->arrLength() != 0 && data.size() != 1 && static_cast<size_t>(descriptor->arrLength()) != data.size()) {
+    delete descriptor;
     sd_printf("NDArrayFactory::create: data size [%i] doesn't match shape length [%lld]\n", data.size(),
               descriptor->arrLength());
     THROW_EXCEPTION("NDArrayFactory::create: data size doesn't match shape");
@@ -98,15 +102,16 @@ NDArray NDArrayFactory::create(const char order, const std::vector<LongType>& sh
   //to create a correct length data buffer
   auto dtypeString = DataTypeUtils::asString(descriptor->dataType());
   DataBuffer *  buffer = new DataBuffer(
-      data.data(), DataTypeUtils::fromT<T>(), data.size() * sizeof(T), context->getWorkspace());
+      hostData, DataTypeUtils::fromT<T>(), data.size() * sizeof(T), context->getWorkspace());
 
-  NDArray result(buffer, descriptor, context);
+  NDArray *result = new NDArray(buffer, descriptor, context);
+  delete descriptor;
   return result;
 }
 
 // Update the instantiation macro to use the expanded type pattern
 #define TMPL_INSTANTIATE_CREATE_A_TYPE(TYPE) \
-    template SD_LIB_EXPORT NDArray NDArrayFactory::create<TYPE>(const char order, const std::vector<sd::LongType>& shape, \
+    template SD_LIB_EXPORT NDArray* NDArrayFactory::create<TYPE>(const char order, const std::vector<sd::LongType>& shape, \
                                                       const std::vector<TYPE>& data, sd::LaunchContext* context);
 
 #define TMPL_INSTANTIATE_CREATE_A(T) \
@@ -193,6 +198,8 @@ NDArray* NDArrayFactory::create_(const T scalar, LaunchContext* context) {
   res->tickWriteHost();
   res->syncToDevice();
 
+  delete[] desc;  // Free allocated shape info
+
   return res;
 }
 
@@ -205,25 +212,25 @@ ITERATE_LIST((SD_COMMON_TYPES_ALL), TMPL_INSTANTIATE_CREATE_C)
 
 #undef TMPL_INSTANTIATE_CREATE_C
 
-NDArray NDArrayFactory::create(DataType dtype, LaunchContext *context) {
+NDArray* NDArrayFactory::create(DataType dtype, LaunchContext *context) {
   return create(dtype,0, context);
 }
 
 template <typename T>
-NDArray NDArrayFactory::create(DataType type, const T scalar, LaunchContext* context) {
+NDArray* NDArrayFactory::create(DataType type, const T scalar, LaunchContext* context) {
   if (type == DataTypeUtils::fromT<T>()) return NDArrayFactory::create(scalar, context);
 
   NDArray *res = new NDArray(type, context);
   res->p(0, scalar);
   res->syncToDevice();
 
-  return *res;
+  return res;
 }
 
 #define TMPL_INSTANTIATE_CREATE_D(TYPE) \
 EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
     GET_FIRST(TYPE), \
-    template SD_LIB_EXPORT NDArray NDArrayFactory::create<GET_SECOND(TYPE)>(DataType type, const GET_SECOND(TYPE) scalar, sd::LaunchContext* context); \
+    template SD_LIB_EXPORT NDArray* NDArrayFactory::create<GET_SECOND(TYPE)>(DataType type, const GET_SECOND(TYPE) scalar, sd::LaunchContext* context); \
 ))
 
 ITERATE_LIST((SD_COMMON_TYPES_ALL), TMPL_INSTANTIATE_CREATE_D)
@@ -231,16 +238,16 @@ ITERATE_LIST((SD_COMMON_TYPES_ALL), TMPL_INSTANTIATE_CREATE_D)
 #undef TMPL_INSTANTIATE_CREATE_D
 
 template <typename T>
-NDArray NDArrayFactory::create(const T scalar, LaunchContext* context) {
+NDArray* NDArrayFactory::create(const T scalar, LaunchContext* context) {
   DataBuffer *  buffer =
       new DataBuffer(1 * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
 
   auto desc = ShapeDescriptor::scalarDescriptor(DataTypeUtils::fromT<T>());
-  NDArray res(buffer,desc , context);
-  res.bufferAsT<T>()[0] = scalar;
+  NDArray *res = new NDArray(buffer,desc , context);
+  res->bufferAsT<T>()[0] = scalar;
 
-  res.tickWriteHost();
-  res.syncToDevice();
+  res->tickWriteHost();
+  res->syncToDevice();
 
   return res;
 }
@@ -248,7 +255,7 @@ NDArray NDArrayFactory::create(const T scalar, LaunchContext* context) {
 #define TMPL_INSTANTIATE_CREATE_E(TYPE) \
 EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
     GET_FIRST(TYPE), \
-    template SD_LIB_EXPORT NDArray NDArrayFactory::create<GET_SECOND(TYPE)>(const GET_SECOND(TYPE) scalar, sd::LaunchContext* context); \
+    template SD_LIB_EXPORT NDArray* NDArrayFactory::create<GET_SECOND(TYPE)>(const GET_SECOND(TYPE) scalar, sd::LaunchContext* context); \
 ))
 ITERATE_LIST((SD_COMMON_TYPES_ALL), TMPL_INSTANTIATE_CREATE_E)
 #undef TMPL_INSTANTIATE_CREATE_E
@@ -257,7 +264,7 @@ ITERATE_LIST((SD_COMMON_TYPES_ALL), TMPL_INSTANTIATE_CREATE_E)
 template <typename T>
 NDArray* NDArrayFactory::create_(const char order, const std::vector<LongType>& shape, const std::vector<T>& data,
                                  LaunchContext* context) {
-  return new NDArray(NDArrayFactory::create<T>(order, shape, data, context));
+  return NDArrayFactory::create<T>(order, shape, data, context);
 }
 
 #define TMPL_INSTANTIATE_CREATE_F(TYPE) \
@@ -350,6 +357,8 @@ NDArray* NDArrayFactory::vector(LongType length,  T value, LaunchContext* contex
   else
     res->assign(value);
 
+  delete[] desc;  // Free allocated shape info
+
   return res;
 }
 
@@ -367,15 +376,15 @@ ITERATE_LIST((SD_COMMON_TYPES_ALL), TMPL_INSTANTIATE_VECTOR)
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-NDArray NDArrayFactory::create(const char order, const std::vector<LongType>& shape, LaunchContext* context) {
+NDArray *NDArrayFactory::create(const char order, const std::vector<LongType>& shape, LaunchContext* context) {
   return create(order, shape, DataTypeUtils::fromT<T>(), context);
 }
-BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT NDArray NDArrayFactory::create,
+BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT NDArray *NDArrayFactory::create,
                       (const char order, const std::vector<sd::LongType>& shape, sd::LaunchContext* context),
                       SD_COMMON_TYPES_ALL);
 
 ////////////////////////////////////////////////////////////////////////
-NDArray NDArrayFactory::create(const char order, const std::vector<LongType>& shape, DataType dtype,
+NDArray *NDArrayFactory::create(const char order, const std::vector<LongType>& shape, DataType dtype,
                                LaunchContext* context) {
   if ((int)shape.size() > SD_MAX_RANK)
     THROW_EXCEPTION("NDArrayFactory::create: rank of NDArray can't exceed 32");
@@ -386,40 +395,40 @@ NDArray NDArrayFactory::create(const char order, const std::vector<LongType>& sh
   DataBuffer *  buffer = new DataBuffer(
       descriptor->arrLength() * DataTypeUtils::sizeOfElement(dtype), dtype, context->getWorkspace());
 
-  NDArray result(buffer, descriptor, context);
-  result.nullify();
+  NDArray *result = new NDArray(buffer, descriptor, context);
+  delete descriptor;
+  result->nullify();
 
   return result;
 }
 
 NDArray* NDArrayFactory::create_(DataType dtype, LaunchContext* context) {
-  auto result = new NDArray();
-  *result = create(dtype, context);
+  auto result = create(dtype, context);
   return result;
 }
 
 template <typename T>
-static NDArray create(DataType type, const std::vector<LongType>& shape, LaunchContext* context) {
+static NDArray *create(DataType type, const std::vector<LongType>& shape, LaunchContext* context) {
   auto buffer = new DataBuffer(DataTypeUtils::sizeOfElement(type) * shape::prodLong(shape.data(),shape.size()), type, context->getWorkspace());
   auto desc = ShapeBuilders::createShapeInfo(type,'c',shape);
   auto cachedDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
-  NDArray result(buffer, cachedDesc->primary(), context);
+  NDArray *result = new NDArray(buffer, cachedDesc->primary(), context);
   delete[] desc;
   return result;
 }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-NDArray NDArrayFactory::create(const std::vector<T>& values, LaunchContext* context) {
+NDArray *NDArrayFactory::create(const std::vector<T>& values, LaunchContext* context) {
   DataBuffer *  buffer =
       new DataBuffer(values.size() * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
 
   auto desc = ShapeDescriptor::vectorDescriptor(values.size(), DataTypeUtils::fromT<T>());
-  NDArray res(buffer, desc, context);
-  memcpyFromVector<T>(res.buffer(), values);
+  NDArray *res = new NDArray(buffer, desc, context);
+  memcpyFromVector<T>(res->buffer(), values);
 
-  res.tickWriteHost();
-  res.syncToDevice();
+  res->tickWriteHost();
+  res->syncToDevice();
 
   return res;
 }
@@ -427,7 +436,7 @@ NDArray NDArrayFactory::create(const std::vector<T>& values, LaunchContext* cont
 #define TMPL_INSTANTIATE_CREATE_G(TYPE) \
 EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
     GET_FIRST(TYPE), \
-    template SD_LIB_EXPORT NDArray NDArrayFactory::create<GET_SECOND(TYPE)>(const std::vector<GET_SECOND(TYPE)>& values, sd::LaunchContext* context); \
+    template SD_LIB_EXPORT NDArray* NDArrayFactory::create<GET_SECOND(TYPE)>(const std::vector<GET_SECOND(TYPE)>& values, sd::LaunchContext* context); \
 ))
 
 ITERATE_LIST((SD_NUMERIC_TYPES), TMPL_INSTANTIATE_CREATE_G)
@@ -461,17 +470,17 @@ NDArray* NDArrayFactory::empty_(DataType dataType, LaunchContext* context) {
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-NDArray NDArrayFactory::empty(LaunchContext* context) {
+NDArray *NDArrayFactory::empty(LaunchContext* context) {
   return empty(DataTypeUtils::fromT<T>(), context);
 }
-BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT NDArray NDArrayFactory::empty, (sd::LaunchContext * context),
+BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT NDArray *NDArrayFactory::empty, (sd::LaunchContext * context),
                       SD_COMMON_TYPES_ALL);
 
 ////////////////////////////////////////////////////////////////////////
-SD_LIB_EXPORT NDArray NDArrayFactory::empty(DataType dataType, LaunchContext* context) {
+SD_LIB_EXPORT NDArray* NDArrayFactory::empty(DataType dataType, LaunchContext* context) {
   auto shapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, context->getWorkspace());
   ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
-  NDArray result(nullptr, shapeInfo, context, false, 0);
+  NDArray *result= new NDArray(nullptr, shapeInfo, context, false, 0);
 
   RELEASE(shapeInfo, context->getWorkspace());
 
@@ -494,7 +503,7 @@ NDArray* NDArrayFactory::create_(const char order, std::vector<LongType>& shape,
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializer_list<LongType>& shape,
+NDArray *NDArrayFactory::create(T* buffer, const char order, const std::initializer_list<LongType>& shape,
                                LaunchContext* context) {
   if ((int)shape.size() > SD_MAX_RANK)
     THROW_EXCEPTION("NDArrayFactory::create: Rank of NDArray can't exceed 32");
@@ -505,7 +514,8 @@ NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializ
   DataBuffer *  pBuffer = new DataBuffer(
       buffer, descriptor->arrLength() * sizeof(T), descriptor->dataType(), false, context->getWorkspace());
 
-  NDArray result(pBuffer, descriptor, context);
+  NDArray *result = new NDArray(pBuffer, descriptor, context);
+  delete descriptor;
   return result;
 }
 
@@ -513,7 +523,7 @@ NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializ
 #define TMPL_INSTANTIATE_CREATE_H(TYPE) \
 EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
     GET_FIRST(TYPE), \
-    template SD_LIB_EXPORT NDArray NDArrayFactory::create<GET_SECOND(TYPE)>(GET_SECOND(TYPE)* buffer, const char order, \
+    template SD_LIB_EXPORT NDArray *NDArrayFactory::create<GET_SECOND(TYPE)>(GET_SECOND(TYPE)* buffer, const char order, \
                                                       const std::initializer_list<sd::LongType>& shape,  \
                                                       sd::LaunchContext* context); \
 ))
@@ -524,8 +534,8 @@ ITERATE_LIST((SD_COMMON_TYPES),TMPL_INSTANTIATE_CREATE_H)
 
 #if defined(HAS_UTF16)
 /////////////////////////////////////////////////////////////////////////////////////
-NDArray NDArrayFactory::string(const char16_t* u16string, DataType dtype, LaunchContext* context) {
-  return NDArray(u16string, dtype, context);
+NDArray *NDArrayFactory::string(const char16_t* u16string, DataType dtype, LaunchContext* context) {
+  return new NDArray(u16string, dtype, context);
 }
 /////////////////////////////////////////////////////////////////////////
 NDArray* NDArrayFactory::string_(const char16_t* u16string, DataType dtype, LaunchContext* context) {
@@ -533,20 +543,19 @@ NDArray* NDArrayFactory::string_(const char16_t* u16string, DataType dtype, Laun
 }
 /////////////////////////////////////////////////////////////////////////
 NDArray* NDArrayFactory::string_(const std::u16string& u16string, DataType dtype, LaunchContext* context) {
-  auto res = new NDArray();
-  *res = NDArray(u16string, dtype, context);
+  auto res = new NDArray(u16string, dtype, context);
   return res;
 }
 /////////////////////////////////////////////////////////////////////////
-NDArray NDArrayFactory::string(const std::u16string& u16string, DataType dtype, LaunchContext* context) {
-  return NDArray(u16string, dtype, context);
+NDArray* NDArrayFactory::string(const std::u16string& u16string, DataType dtype, LaunchContext* context) {
+  return new NDArray(u16string, dtype, context);
 }
 #endif
 #if defined(HAS_UTF32)
 #if defined(HAS_UTF32)
 /////////////////////////////////////////////////////////////////////////
-NDArray NDArrayFactory::string(const char32_t* u32string, DataType dtype, LaunchContext* context) {
-  return NDArray(u32string, dtype, context);
+NDArray *NDArrayFactory::string(const char32_t* u32string, DataType dtype, LaunchContext* context) {
+  return new NDArray(u32string, dtype, context);
 }
 /////////////////////////////////////////////////////////////////////////
 NDArray* NDArrayFactory::string_(const char32_t* u32string, DataType dtype, LaunchContext* context) {
@@ -554,20 +563,19 @@ NDArray* NDArrayFactory::string_(const char32_t* u32string, DataType dtype, Laun
 }
 /////////////////////////////////////////////////////////////////////////
 NDArray* NDArrayFactory::string_(const std::u32string& u32string, DataType dtype, LaunchContext* context) {
-  auto res = new NDArray();
-  *res = NDArray(u32string, dtype, context);
+  auto res = new NDArray(u32string, dtype, context);
   return res;
 }
 /////////////////////////////////////////////////////////////////////////
-NDArray NDArrayFactory::string(const std::u32string& u32string, DataType dtype, LaunchContext* context) {
-  return NDArray(u32string, dtype, context);
+NDArray * NDArrayFactory::string(const std::u32string& u32string, DataType dtype, LaunchContext* context) {
+  return new NDArray(u32string, dtype, context);
 }
 #endif
 #endif
 #if defined(HAS_UTF8)
 /////////////////////////////////////////////////////////////////////////
-NDArray NDArrayFactory::string(const char* str, DataType dtype, LaunchContext* context) {
-  return NDArray(str, dtype, context);
+NDArray *NDArrayFactory::string(const char* str, DataType dtype, LaunchContext* context) {
+  return new NDArray(str, dtype, context);
 }
 /////////////////////////////////////////////////////////////////////////
 NDArray* NDArrayFactory::string_(const char* str, DataType dtype, LaunchContext* context) {
@@ -575,20 +583,19 @@ NDArray* NDArrayFactory::string_(const char* str, DataType dtype, LaunchContext*
 }
 /////////////////////////////////////////////////////////////////////////
 NDArray* NDArrayFactory::string_(const std::string& str, DataType dtype, LaunchContext* context) {
-  auto res = new NDArray();
-  *res = NDArray(str, dtype, context);
+  auto res = new NDArray(str, dtype, context);
   return res;
 }
 /////////////////////////////////////////////////////////////////////////
-NDArray NDArrayFactory::string(const std::string& str, DataType dtype, LaunchContext* context) {
-  return NDArray(str, dtype, context);
+NDArray *NDArrayFactory::string(const std::string& str, DataType dtype, LaunchContext* context) {
+  return new NDArray(str, dtype, context);
 }
 #endif
 #if defined(HAS_UTF8)
 /////////////////////////////////////////////////////////////////////////
-NDArray NDArrayFactory::string(std::vector<LongType>& shape, const std::vector<const char*>& strings,
+NDArray *NDArrayFactory::string(std::vector<LongType>& shape, const std::vector<const char*>& strings,
                                DataType dataType, LaunchContext* context) {
-  return NDArray(shape, strings, dataType, context);
+  return new NDArray(shape, strings, dataType, context);
 }
 /////////////////////////////////////////////////////////////////////////
 NDArray* NDArrayFactory::string_(std::vector<LongType>& shape, const std::vector<const char*>& strings,
@@ -600,35 +607,34 @@ NDArray* NDArrayFactory::string_(std::vector<LongType>& shape, const std::vector
   return string_(shape, vec, dataType, context);
 }
 /////////////////////////////////////////////////////////////////////////
-NDArray NDArrayFactory::string(std::vector<LongType>& shape, const std::vector<std::string>& string,
+NDArray *NDArrayFactory::string(std::vector<LongType>& shape, const std::vector<std::string>& string,
                                DataType dataType, LaunchContext* context) {
-  return NDArray(shape, string, dataType, context);
+  return new NDArray(shape, string, dataType, context);
 }
 /////////////////////////////////////////////////////////////////////////
 NDArray* NDArrayFactory::string_(std::vector<LongType>& shape, const std::vector<std::string>& string,
                                  DataType dataType, LaunchContext* context) {
-  auto res = new NDArray();
-  *res = NDArray(shape, string, dataType, context);
+  auto res = new NDArray(shape, string, dataType, context);
   return res;
 }
 #endif
 #if defined(HAS_UTF16)
 /////////////////////////////////////////////////////////////////////////
-NDArray NDArrayFactory::string(std::vector<LongType>& shape,
+NDArray *NDArrayFactory::string(std::vector<LongType>& shape,
                                const std::initializer_list<const char16_t*>& strings, DataType dataType,
                                LaunchContext* context) {
-  return NDArray(shape, std::vector<const char16_t*>(strings), dataType, context);
+  return new NDArray(shape, std::vector<const char16_t*>(strings), dataType, context);
 }
 /////////////////////////////////////////////////////////////////////////
-NDArray NDArrayFactory::string(std::vector<LongType>& shape, const std::vector<const char16_t*>& strings,
+NDArray *NDArrayFactory::string(std::vector<LongType>& shape, const std::vector<const char16_t*>& strings,
                                DataType dataType, LaunchContext* context) {
-  return NDArray(shape, strings, dataType, context);
+  return new NDArray(shape, strings, dataType, context);
 }
 /////////////////////////////////////////////////////////////////////////
-NDArray NDArrayFactory::string(std::vector<LongType>& shape,
+NDArray* NDArrayFactory::string(std::vector<LongType>& shape,
                                const std::initializer_list<std::u16string>& string,
                                DataType dataType, LaunchContext* context) {
-  return NDArray(shape, std::vector<std::u16string>(string), dataType, context);
+  return new NDArray(shape, std::vector<std::u16string>(string), dataType, context);
 }
 /////////////////////////////////////////////////////////////////////////
 NDArray* NDArrayFactory::string_(std::vector<LongType>& shape,
@@ -654,33 +660,32 @@ NDArray* NDArrayFactory::string_(std::vector<LongType>& shape,
 /////////////////////////////////////////////////////////////////////////
 NDArray* NDArrayFactory::string_(std::vector<LongType>& shape, const std::vector<std::u16string>& string,
                                  DataType dataType, LaunchContext* context) {
-  auto res = new NDArray();
-  *res = NDArray(shape, string, dataType, context);
+  auto res = new NDArray(shape, string, dataType, context);
   return res;
 }
 /////////////////////////////////////////////////////////////////////////
-NDArray NDArrayFactory::string(std::vector<LongType>& shape, const std::vector<std::u16string>& string,
+NDArray * NDArrayFactory::string(std::vector<LongType>& shape, const std::vector<std::u16string>& string,
                                DataType dtype, LaunchContext* context) {
-  return NDArray(shape, string, dtype, context);
+  return new NDArray(shape, string, dtype, context);
 }
 #endif
 #if defined(HAS_UTF32)
 /////////////////////////////////////////////////////////////////////////
-NDArray NDArrayFactory::string(std::vector<LongType>& shape,
+NDArray *NDArrayFactory::string(std::vector<LongType>& shape,
                                const std::initializer_list<const char32_t*>& strings, DataType dataType,
                                LaunchContext* context) {
-  return NDArray(shape, std::vector<const char32_t*>(strings), dataType, context);
+  return new NDArray(shape, std::vector<const char32_t*>(strings), dataType, context);
 }
 /////////////////////////////////////////////////////////////////////////
-NDArray NDArrayFactory::string(std::vector<LongType>& shape, const std::vector<const char32_t*>& strings,
+NDArray * NDArrayFactory::string(std::vector<LongType>& shape, const std::vector<const char32_t*>& strings,
                                DataType dataType, LaunchContext* context) {
-  return NDArray(shape, strings, dataType, context);
+  return new NDArray(shape, strings, dataType, context);
 }
 /////////////////////////////////////////////////////////////////////////
-NDArray NDArrayFactory::string(std::vector<LongType>& shape,
+NDArray *NDArrayFactory::string(std::vector<LongType>& shape,
                                const std::initializer_list<std::u32string>& string,
                                DataType dataType, LaunchContext* context) {
-  return NDArray(shape, std::vector<std::u32string>(string), dataType, context);
+  return new NDArray(shape, std::vector<std::u32string>(string), dataType, context);
 }
 /////////////////////////////////////////////////////////////////////////
 NDArray* NDArrayFactory::string_(std::vector<LongType>& shape,
@@ -710,9 +715,9 @@ NDArray* NDArrayFactory::string_(std::vector<LongType>& shape, const std::vector
   return res;
 }
 /////////////////////////////////////////////////////////////////////////
-NDArray NDArrayFactory::string(std::vector<LongType>& shape, const std::vector<std::u32string>& string,
+NDArray * NDArrayFactory::string(std::vector<LongType>& shape, const std::vector<std::u32string>& string,
                                DataType dtype, LaunchContext* context) {
-  return NDArray(shape, string, dtype, context);
+  return new NDArray(shape, string, dtype, context);
 }
 #endif
 

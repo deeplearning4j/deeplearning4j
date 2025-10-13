@@ -45,7 +45,7 @@ class SD_LIB_EXPORT TadPack {
                     ConstantOffsetsBuffer *offets, LongType numTads,
                    LongType* dimensions = nullptr, LongType dimLength = 0);
   TadPack() = default;
-  ~TadPack() {};
+  ~TadPack();
 
   LongType* primaryShapeInfo();
   LongType* primaryOffsets();

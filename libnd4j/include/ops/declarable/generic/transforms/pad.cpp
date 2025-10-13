@@ -115,6 +115,7 @@ DECLARE_SHAPE_FN(pad) {
 
   ShapeUtils::updateStridesAndType(outShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
   auto ret = SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(outShapeInfo)->primary());
+  RELEASE(outShapeInfo, block.getWorkspace());
   return ret;
 }
 

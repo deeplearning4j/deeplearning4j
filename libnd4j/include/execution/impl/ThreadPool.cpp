@@ -64,6 +64,11 @@ static void executionLoopWithInterface_(int thread_id, CallableInterface *c) {
     // blocking here until there's something to do
     c->waitForTask();
 
+    // Check if shutdown was requested
+    if (c->isShutdown()) {
+      break;
+    }
+
     // execute whatever we have
     c->execute();
   }
@@ -93,7 +98,7 @@ ThreadPool::ThreadPool() {
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
     CPU_SET(e, &cpuset);
-    int rc = pthread_setaffinity_np(_threads[e]->native_handle(), sizeof(cpu_set_t), &cpuset);
+    int rc = pthread_setaffinity_np(_threads[e].native_handle(), sizeof(cpu_set_t), &cpuset);
     if (rc != 0) THROW_EXCEPTION("Failed to set pthread affinity");
 #endif
 
@@ -103,13 +108,21 @@ ThreadPool::ThreadPool() {
 }
 
 ThreadPool::~ThreadPool() {
-  // TODO: implement this one properly
-  for (size_t e = 0; e < _queues.size(); e++) {
-    // stop each and every thread
+  // Signal all threads to shutdown BEFORE destroying anything
+  for (size_t e = 0; e < _interfaces.size(); e++) {
+    _interfaces[e]->shutdown();
+  }
 
-    // release queue and thread
+  // Wait for all threads to finish
+  for (size_t e = 0; e < _threads.size(); e++) {
+    if (_threads[e].joinable()) {
+      _threads[e].join();
+    }
+  }
+
+  // Now it's safe to delete resources
+  for (size_t e = 0; e < _queues.size(); e++) {
     delete _queues[e];
-    _threads[e].detach();
     delete _interfaces[e];
   }
 

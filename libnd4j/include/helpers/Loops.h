@@ -279,6 +279,7 @@ static void reduceExec31(const X* x, const LongType* xShapeInfo, Z* z, const Lon
 template <typename X, typename Z, typename E, typename OpType>
 SD_LIB_HIDDEN void reduceExec32(const X* x, const LongType* xShapeInfo, Z* z, const LongType* zShapeInfo,
                                 const LongType* dims, E* extraParams) {
+
   const LongType xAxis0 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[1]);
   const LongType xStrd0 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[1]);
   const LongType zStrd0 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<LongType>(0) : static_cast<LongType>(1));
@@ -290,8 +291,9 @@ SD_LIB_HIDDEN void reduceExec32(const X* x, const LongType* xShapeInfo, Z* z, co
   const LongType xAxis2 = shape::sizeAt(xShapeInfo, dims[2]);
   const LongType xStrd2 = shape::strideAt(xShapeInfo, dims[2]);
 
+
+  thread_local Z convertedParams[8] = {0};
   Z* compatibleExtraParams = nullptr;
-  Z convertedParams[8];
 
   if (extraParams != nullptr) {
     if constexpr (std::is_same_v<E, Z>) {
@@ -364,8 +366,8 @@ SD_LIB_HIDDEN void reduceExec41(const X* x,
 
   const LongType tadLen = static_cast<LongType>(xAxis1 * xAxis2 * xAxis3);
 
+  thread_local Z convertedParams[8] = {0};
   Z* compatibleExtraParams = nullptr;
-  Z convertedParams[8];
 
   if (extraParams != nullptr) {
     if constexpr (std::is_same_v<E, Z>) {
@@ -459,8 +461,8 @@ SD_LIB_HIDDEN void reduceExec42(const X* x, const LongType* xShapeInfo, Z* z, co
 
   LongType xRank = shape::rank(xShapeInfo);
 
+  thread_local Z convertedParams[8] = {0};
   Z* compatibleExtraParams = nullptr;
-  Z convertedParams[8];
 
   if (extraParams != nullptr) {
     if constexpr (std::is_same_v<E, Z>) {
@@ -541,8 +543,8 @@ SD_LIB_HIDDEN void reduceExec43(const X* x, const LongType* xShapeInfo, Z* z, co
   const LongType xStrd3 = shape::strideAt(xShapeInfo, dims[3]);
   LongType xRank = shape::rank(xShapeInfo);
 
+  thread_local Z convertedParams[8] = {0};
   Z* compatibleExtraParams = nullptr;
-  Z convertedParams[8];
 
   if (extraParams != nullptr) {
     if constexpr (std::is_same_v<E, Z>) {
@@ -616,8 +618,8 @@ SD_LIB_HIDDEN void reduceExec51(const X* x, const LongType* xShapeInfo, Z* z, co
 
   LongType xRank = shape::rank(xShapeInfo);
 
+  thread_local Z convertedParams[8] = {0};
   Z* compatibleExtraParams = nullptr;
-  Z convertedParams[8];
 
   if (extraParams != nullptr) {
     if constexpr (std::is_same_v<E, Z>) {
@@ -728,8 +730,8 @@ SD_LIB_HIDDEN void reduceExec52(const X* x, const LongType* xShapeInfo, Z* z, co
 
   LongType xRank = shape::rank(xShapeInfo);
 
+  thread_local Z convertedParams[8] = {0};
   Z* compatibleExtraParams = nullptr;
-  Z convertedParams[8];
 
   if (extraParams != nullptr) {
     if constexpr (std::is_same_v<E, Z>) {
@@ -828,8 +830,8 @@ SD_LIB_HIDDEN void reduceExec53(const X* x, const LongType* xShapeInfo, Z* z, co
 
   LongType xRank = shape::rank(xShapeInfo);
 
+  thread_local Z convertedParams[8] = {0};
   Z* compatibleExtraParams = nullptr;
-  Z convertedParams[8];
 
   if (extraParams != nullptr) {
     if constexpr (std::is_same_v<E, Z>) {
@@ -914,8 +916,8 @@ SD_LIB_HIDDEN void reduceExec54(const X* x, const LongType* xShapeInfo, Z* z, co
 
   LongType xRank = shape::rank(xShapeInfo);
 
+  thread_local Z convertedParams[8] = {0};
   Z* compatibleExtraParams = nullptr;
-  Z convertedParams[8];
 
   if (extraParams != nullptr) {
     if constexpr (std::is_same_v<E, Z>) {
@@ -998,8 +1000,8 @@ SD_LIB_HIDDEN void reduceDefault(memory::Workspace* workspace, const X* x, const
 
   LongType xRank = shape::rank(xShapeInfo);
 
+  thread_local Z convertedParams[8] = {0};
   Z* compatibleExtraParams = nullptr;
-  Z convertedParams[8];
 
   if (extraParams != nullptr) {
     if constexpr (std::is_same_v<E, Z>) {

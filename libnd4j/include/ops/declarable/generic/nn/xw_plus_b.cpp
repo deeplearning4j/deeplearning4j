@@ -36,10 +36,11 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
   bool bTranspose = (block.getIArguments()->size() > 1 ? INT_ARG(1) == 1 : false);
   bool cTranspose = (block.getIArguments()->size() > 2 ? INT_ARG(2) == 1 : false);
 
-  auto x = aTranspose ? new NDArray(INPUT_VARIABLE(0)->transpose()) : INPUT_VARIABLE(0);
-  auto w = bTranspose ? new NDArray(INPUT_VARIABLE(1)->transpose()) : INPUT_VARIABLE(1);
+  auto x = aTranspose ? INPUT_VARIABLE(0)->transpose() : INPUT_VARIABLE(0);
+  auto w = bTranspose ? INPUT_VARIABLE(1)->transpose() : INPUT_VARIABLE(1);
   auto b = INPUT_VARIABLE(2);
-  auto z = cTranspose ? new NDArray(OUTPUT_VARIABLE(0)->transpose()) : OUTPUT_VARIABLE(0);
+  auto z = cTranspose ? OUTPUT_VARIABLE(0)->transpose() : OUTPUT_VARIABLE(0);
+  bool deleteBias = false;
 
   if (x->isEmpty() || w->isEmpty() || b->isEmpty()) return Status::OK;
 
@@ -86,6 +87,7 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
   if(bTranspose && b->rankOf() == 1) {
     std::vector<sd::LongType> bShape = {b->lengthOf(), 1};
     b = b->reshape('c', bShape);
+    deleteBias = true;
     if(z->isMatrix()) {
       z->addiColumnVector(b);
     } else {
@@ -95,6 +97,7 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
     if(b->rankOf() == 1) {
       std::vector<sd::LongType> bShape = {1, b->lengthOf()};
       b = b->reshape('c', bShape);
+      deleteBias = true;
     }
 
     if(z->isMatrix()) {
@@ -124,7 +127,7 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
   if (zReshaped != nullptr) {
     delete zReshaped;
   }
-  if(bTranspose || (b->lengthOf() == 1 && b->rankOf() > 1)) {
+  if(deleteBias) {
     delete b;
   }
   if (bTranspose) {

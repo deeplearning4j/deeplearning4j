@@ -136,14 +136,16 @@ void chooseFunctorArray(LaunchContext* context, NDArray* arg, NDArray* comp, int
     }
   } else {
     auto zero = NDArrayFactory::create<float>(0);
-    processCondition(context, mode, arg, comp, result, numResults, zero);
+    processCondition(context, mode, arg, comp, result, numResults, *zero);
+    delete zero;
   }
 }
 
 void chooseFunctorScalar(LaunchContext* context, NDArray* arg, double scalar, int mode, NDArray* result,
                          NDArray* numResults) {
   auto scalarA = NDArrayFactory::create(scalar);
-  processCondition(context, mode, arg, nullptr, result, numResults, scalarA);
+  processCondition(context, mode, arg, nullptr, result, numResults, *scalarA);
+  delete scalarA;
 }
 
 }  // namespace helpers
