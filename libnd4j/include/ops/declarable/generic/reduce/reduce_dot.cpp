@@ -46,10 +46,13 @@ CUSTOM_OP_IMPL(reduce_dot_bp, -1, 2, false, 0, 0) {
                ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str());
 
   if (gradO->lengthOf() == 1) {  // scalar of reduced to scalar with keep dimensions
-    NDArray assign1 = (*y) * (*gradO);
-    gradX->assign(&assign1);
-    NDArray assign2 = (*x) * (*gradO);
-    gradY->assign(&assign2);
+    auto* assign1 = (*y) * (*gradO);
+    gradX->assign(assign1);
+    delete assign1;
+    
+    auto* assign2 = (*x) * (*gradO);
+    gradY->assign(assign2);
+    delete assign2;
   } else {
     bool keepDims = false;
     auto dimensions = *block.getIArguments();
@@ -80,25 +83,30 @@ CUSTOM_OP_IMPL(reduce_dot_bp, -1, 2, false, 0, 0) {
           ShapeUtils::evalReduceShapeInfo(gradO->ordering(), &dimensions, *x, true, false, block.getWorkspace());
       std::vector<sd::LongType> shape =  ShapeUtils::pullShapeFromShapeInfo(
           gradOShapeKeepDims);
-      auto r = gradO->reshape(gradO->ordering(),
-                              shape);  // for example could be something like [a,b] -> [1,a,1,b]
+      auto* r = gradO->reshape(gradO->ordering(), shape);  // for example could be something like [a,b] -> [1,a,1,b]
 
       // First case - for gradX
-      NDArray gradXTemp1 = (*y) * *r;
-      gradX->assign(&gradXTemp1);
+      auto* gradXTemp1 = (*y) * (*r);
+      gradX->assign(gradXTemp1);
+      delete gradXTemp1;
 
       // First case - for gradY
-      NDArray gradYTemp1 = (*x) * *r;
-      gradY->assign(&gradYTemp1);
+      auto* gradYTemp1 = (*x) * (*r);
+      gradY->assign(gradYTemp1);
+      delete gradYTemp1;
+      
+      delete r;
 
     } else {
       // Second case - for gradX
-      NDArray gradXTemp2 = (*y) * (*gradO);
-      gradX->assign(&gradXTemp2);
+      auto* gradXTemp2 = (*y) * (*gradO);
+      gradX->assign(gradXTemp2);
+      delete gradXTemp2;
 
       // Second case - for gradY
-      NDArray gradYTemp2 = (*x) * (*gradO);
-      gradY->assign(&gradYTemp2);
+      auto* gradYTemp2 = (*x) * (*gradO);
+      gradY->assign(gradYTemp2);
+      delete gradYTemp2;
     }
   }
   return sd::Status::OK;

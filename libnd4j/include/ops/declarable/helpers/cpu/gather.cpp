@@ -181,8 +181,9 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
         output->assign(value);
       } else {
         // Standard single index gather
-        NDArray copy = (*input)(intArgs[1], {axis});
-        output->assign(&copy);
+        NDArray *copy = (*input)(intArgs[1], {axis});
+        output->assign(copy);
+        delete copy;
       }
     } else {
       if (is1DFlatGather) {

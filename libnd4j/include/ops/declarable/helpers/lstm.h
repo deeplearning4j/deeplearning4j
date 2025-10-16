@@ -30,7 +30,10 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 static SD_INLINE NDArray sigmoid(NDArray& arr) {
-  return (const_cast<NDArray&>(arr)).transform(transform::Sigmoid);
+  NDArray* result = (const_cast<NDArray&>(arr)).transform(transform::Sigmoid);
+  NDArray copy = *result;
+  delete result;
+  return copy;
 }
 
 static SD_INLINE void sigmoidInplace(NDArray& arr) {
@@ -38,14 +41,19 @@ static SD_INLINE void sigmoidInplace(NDArray& arr) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-static SD_INLINE NDArray tanh(NDArray& arr) { return (const_cast<NDArray&>(arr)).transform(transform::Tanh); }
+static SD_INLINE NDArray tanh(NDArray& arr) {
+  NDArray* result = (const_cast<NDArray&>(arr)).transform(transform::Tanh);
+  NDArray copy = *result;
+  delete result;
+  return copy;
+}
 
 static SD_INLINE void tanhInplace(NDArray& arr) {
   arr.applyTransform(transform::Tanh, &arr);
 }
 
 //////////////////////////////////////////////////////////////////////////
-static NDArray timeSubset(NDArray* arr, const int t, const int dataFormat) {
+static NDArray* timeSubset(NDArray* arr, const int t, const int dataFormat) {
   if (dataFormat == 0) {  // TNS: shape [timeLength, numExamples, inOutSize]
     return (*arr)({t, t + 1, 0, 0, 0, 0});
   } else if (dataFormat == 1) {  // NST: shape [numExamples, inOutSize, timeLength]

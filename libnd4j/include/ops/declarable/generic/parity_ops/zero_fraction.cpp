@@ -40,8 +40,8 @@ CUSTOM_OP_IMPL(zero_fraction, 1, 1, false, 0, 0) {
 
 
   auto countZero = input->reduceNumber(reduce::CountZero);
-  output->p<double>(0, countZero.e<LongType>(0) / double(input->lengthOf()));
-
+  output->p<double>(0, countZero->e<LongType>(0) / double(input->lengthOf()));
+  delete countZero;
   return Status::OK;
 }
 DECLARE_SHAPE_FN(zero_fraction) {

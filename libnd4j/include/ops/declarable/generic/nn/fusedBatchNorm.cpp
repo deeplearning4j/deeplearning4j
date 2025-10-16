@@ -56,10 +56,12 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
     iD = x->sizeAt(3);
   }
 
-  auto xCast = x->cast(sd::DataType::FLOAT32);
+  auto* xCast = x->cast(sd::DataType::FLOAT32);
   if (dataFormat) {
     std::vector<LongType> permute = {0,2,3,1};
-    xCast = xCast->permute(permute, false, false);
+    auto* xCastPermuted = xCast->permute(permute, false, false);
+    delete xCast;
+    xCast = xCastPermuted;
   }
   REQUIRE_TRUE(scale->rankOf() == 1 && scale->sizeAt(0) == iD, 0,
                "CUSTOM_OP fused_batch_norm: wrong shape of input scale array, expected is [%i], but got %s instead", iD,
@@ -96,7 +98,7 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
 
   const int restSize = x->lengthOf() / iD;
 
-  auto xAffected = NDArrayFactory::create(x->ordering(), {restSize, iD}, mean->dataType(), block.launchContext());
+  auto* xAffected = NDArrayFactory::create(x->ordering(), {restSize, iD}, mean->dataType(), block.launchContext());
   xAffected->assign(xCast);
 
   const int restSizeMinusOne = (restSize > 1) ? (restSize - 1) : 1;
@@ -105,14 +107,15 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
 
   if (isTraining) {
     std::vector<sd::LongType > dim = {0};
-    auto sum = xAffected->reduceAlongDimension(reduce::Sum, &dim);
-    sum *= restSizeInv;
-    mean->assign(&sum);
+    auto* sum = xAffected->reduceAlongDimension(reduce::Sum, &dim);
+    *sum *= restSizeInv;
+    mean->assign(sum);
+    delete sum;
     *batchMean = *mean;
   } else
     *batchMean = 0.;
 
-  auto xCentered = *xAffected - *mean;
+  auto* xCentered = (*xAffected) - (*mean);
   *xAffected -= *mean;
 
   if (isTraining) {
@@ -120,27 +123,46 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
     xAffected->applyScalar(scalar::Pow, power, xAffected);
     std::vector<sd::LongType > dim = {0};
 
-    auto sum = xAffected->reduceAlongDimension(reduce::Sum, &dim);
-    sum *= restSizeInv;
-    variance->assign(&sum);
-    auto varOutput = (*variance) * restSizeAdjust;
-    batchVar->assign(&varOutput);
+    auto* sum = xAffected->reduceAlongDimension(reduce::Sum, &dim);
+    *sum *= restSizeInv;
+    variance->assign(sum);
+    delete sum;
+    auto* varOutput = (*variance) * restSizeAdjust;
+    batchVar->assign(varOutput);
+    delete varOutput;
   } else
     *batchVar = 0.;
 
-  auto scaledVariance = ((*variance + epsilon).transform(transform::RSqrt) * (*scale)).cast(xAffected->dataType());
-  auto xScaled1 = xCentered * *scaledVariance;
-  auto xShifted1 = xScaled1 + *offset;
+  // Break down: ((*variance + epsilon).transform(transform::RSqrt) * (*scale)).cast(xAffected->dataType())
+  auto* variancePlusEps = (*variance) + epsilon;
+  variancePlusEps->applyTransform(transform::RSqrt, variancePlusEps);
+  auto* scaledVariance = (*variancePlusEps) * (*scale);
+  delete variancePlusEps;
+  auto* scaledVarianceCast = scaledVariance->cast(xAffected->dataType());
+  delete scaledVariance;
+  
+  auto* xScaled1 = (*xCentered) * (*scaledVarianceCast);
+  delete xCentered;
+  delete scaledVarianceCast;
+  
+  auto* xShifted1 = (*xScaled1) + (*offset);
+  delete xScaled1;
+  
   if (dataFormat) {
     // need to reshape from matrix to 4d then permute the ordering due to NWHC  ordering
-    auto newShape = xCast->getShapeAsVector();
-    auto reshaped = xShifted1.reshape(xCast->ordering(), newShape,false);
+    auto* newShapePtr = xCast->getShapeAsVector();
+    std::vector<LongType> newShape = *newShapePtr;
+    delete newShapePtr;
+    auto* reshaped = xShifted1->reshape(xCast->ordering(), newShape, false);
+    delete xShifted1;
     reshaped->permutei({0, 3, 1, 2}, 0, false);
     y->assign(reshaped);
     delete reshaped;
 
-  } else  // NWHC case
-    y->assign(&xShifted1);
+  } else {  // NWHC case
+    y->assign(xShifted1);
+    delete xShifted1;
+  }
 
   if (isTraining) {
     delete mean;

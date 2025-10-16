@@ -59,8 +59,12 @@ CUSTOM_OP_IMPL(scatter_nd, 3, 1, false, 0, 0) {
       updRank, shapeLen, indices->sizeAt(-1));
 
   std::vector<LongType> outShape = shape->getBufferAsVector<LongType>();
-  std::vector<LongType> updShape = updates->getShapeAsVector();
-  std::vector<LongType> indShape = indices->getShapeAsVector();
+  auto* updShapePtr = updates->getShapeAsVector();
+  std::vector<LongType> updShape = *updShapePtr;
+  delete updShapePtr;
+  auto* indShapePtr = indices->getShapeAsVector();
+  std::vector<LongType> indShape = *indShapePtr;
+  delete indShapePtr;
   std::vector<LongType> expectedUpdShape(std::begin(indShape), std::end(indShape) - 1);
   std::move(std::begin(outShape) + indices->sizeAt(-1), std::end(outShape), std::back_inserter(expectedUpdShape));
   REQUIRE_TRUE(expectedUpdShape == updShape, 0,

@@ -68,9 +68,11 @@ CUSTOM_OP_IMPL(subtract_bp, 3, 2, false, 0, 0) {
     gradX->assign(epsNext);
   } else if (y->isScalar()) {
     // scalar case
-    auto tmp = -epsNext->reduceNumber(reduce::Sum);
+    auto reduce = epsNext->reduceNumber(reduce::Sum);
+    auto tmp = -(*reduce);
     gradY->assign(&tmp);
     gradX->assign(epsNext);
+    delete reduce;
   } else {
     // broadcastable
     auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
@@ -78,13 +80,15 @@ CUSTOM_OP_IMPL(subtract_bp, 3, 2, false, 0, 0) {
 
     if (axisX.size() > 0) {
       auto sum = epsNext->reduceAlongDimension(reduce::Sum, &axisX);
-      gradX->assign(&sum);
+      gradX->assign(sum);
+      delete sum;
     } else
       gradX->assign(epsNext);
 
     if (axisY.size() > 0) {
       auto sum = epsNext->reduceAlongDimension(reduce::Sum, &axisY);
-      sum.applyTransform(transform::Neg, gradY);
+      sum->applyTransform(transform::Neg, gradY);
+      delete sum;
     } else {
       epsNext->applyTransform(transform::Neg, gradY);
     }

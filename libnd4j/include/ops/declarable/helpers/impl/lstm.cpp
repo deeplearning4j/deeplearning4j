@@ -91,7 +91,7 @@ void lstmBlockTimeLoop(NDArray* maxSeqLength, NDArray* xSeq, NDArray* c0, NDArra
     auto ht = timeSubset(hSeq, t, dataFormat);
     auto yt = timeSubset(ySeq, t, dataFormat);
 
-    helpers::lstmBlockCell(&xt, c_t1, y_t1, W, Wci, Wcf, Wco, b, &it, &ct, &ft, &ot, &zt, &ht, &yt, params);
+    helpers::lstmBlockCell(xt, c_t1, y_t1, W, Wci, Wcf, Wco, b, it, ct, ft, ot, zt, ht, yt, params);
 
     if (t != 0) {
       delete c_t1;
@@ -99,9 +99,19 @@ void lstmBlockTimeLoop(NDArray* maxSeqLength, NDArray* xSeq, NDArray* c0, NDArra
     }
 
     if (t < seqLen - 1) {
-      c_t1 = new NDArray(std::move(ct));
-      y_t1 = new NDArray(std::move(yt));
+      c_t1 = ct;
+      y_t1 = yt;
+    } else {
+      delete ct;
+      delete yt;
     }
+
+
+    delete it;
+    delete ft;
+    delete ot;
+    delete zt;
+    delete ht;
   }
 }
 
@@ -133,9 +143,11 @@ void lstmTimeLoop(sd::LaunchContext* context, NDArray* x, NDArray* h0, NDArray* 
     auto ht = (*h)({t, t + 1, 0, 0, 0, 0});
     auto ct = (*c)({t, t + 1, 0, 0, 0, 0});
 
-    helpers::lstmCell(context, &xt, &currentH, &currentC, Wx, Wh, Wc, Wp, b, &ht, &ct, params);
-    currentH.assign(&ht);
-    currentC.assign(&ct);
+    helpers::lstmCell(context, xt, &currentH, &currentC, Wx, Wh, Wc, Wp, b, ht, ct, params);
+    currentH.assign(ht);
+    currentC.assign(ct);
+    delete ht;
+    delete ct;
   }
 }
 

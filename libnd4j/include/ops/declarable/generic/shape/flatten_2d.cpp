@@ -45,12 +45,13 @@ CUSTOM_OP_IMPL(flatten_2d, 1, 1, false, 0, -2) {
                "Reshape: lengths before and after reshape should match, but got %i vs %i", x->lengthOf(),
                z->lengthOf());
 
-  if (Environment::getInstance().isDebugAndVerbose()) sd_printv("Reshape: new shape", z->getShapeAsVector());
+  auto* zShapeVec = z->getShapeAsVector();
+  if (Environment::getInstance().isDebugAndVerbose()) sd_printv("Reshape: new shape", *zShapeVec);
 
-  std::vector<sd::LongType> zShape = z->getShapeAsVector();
-  auto xReshaped = x->reshape(z->ordering(), zShape);
+  auto xReshaped = x->reshape(z->ordering(), *zShapeVec);
+  delete zShapeVec;
   z->assign(xReshaped);
-delete xReshaped;
+  delete xReshaped;
   return Status::OK;
 }
 

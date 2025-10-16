@@ -63,21 +63,35 @@ void Hessenberg<T>::evalData() {
     T coeff, norm;
 
     NDArray hRef = *_H;
-    NDArray tail1 = hRef({i + 1, -1, i, i + 1});
-    NDArray tail2 = hRef({i + 2, -1, i, i + 1}, true);
+    NDArray *tail1Ptr = hRef({i + 1, -1, i, i + 1});
+    NDArray tail1 = *tail1Ptr;
+    delete tail1Ptr;
+    
+    NDArray *tail2Ptr = hRef({i + 2, -1, i, i + 1}, true);
+    NDArray tail2 = *tail2Ptr;
+    delete tail2Ptr;
 
     Householder<T>::evalHHmatrixDataI(tail1, coeff, norm);
 
-    hRef({0, 0, i, i + 1}).template r<T>(i + 1) = norm;
+    NDArray *hViewPtr = hRef({0, 0, i, i + 1});
+    hViewPtr->template r<T>(i + 1) = norm;
+    delete hViewPtr;
+    
     hhCoeffs.template r<T>(i) = coeff;
 
-    NDArray bottomRightCorner = hRef({i + 1, -1, i + 1, -1}, true);
+    NDArray *bottomRightCornerPtr = hRef({i + 1, -1, i + 1, -1}, true);
+    NDArray bottomRightCorner = *bottomRightCornerPtr;
+    delete bottomRightCornerPtr;
+    
     Householder<T>::mulLeft(bottomRightCorner, tail2, coeff);
+    
     NDArray *tail2Trans = tail2.transpose();
-    NDArray rightCols = hRef({0, 0, i + 1, -1}, true);
+    NDArray *rightColsPtr = hRef({0, 0, i + 1, -1}, true);
+    NDArray rightCols = *rightColsPtr;
+    delete rightColsPtr;
+    
     Householder<T>::mulRight(rightCols, *tail2Trans, coeff);
     delete tail2Trans;
-
   }
 
   // calculate _Q
@@ -88,7 +102,6 @@ void Hessenberg<T>::evalData() {
 
   // fill down with zeros starting at first subdiagonal
   _H->fillAsTriangular<T>(0, -1, -1, *_H, 'l',false);
-
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -105,8 +118,9 @@ Schur<T>::Schur(NDArray& matrix) {
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 void Schur<T>::evalData(NDArray& matrix) {
-  const T scale = matrix.reduceNumber(reduce::AMax).template t<T>(0);
-
+  auto res = matrix.reduceNumber(reduce::AMax);
+  const T scale = res->template t<T>(0);
+  delete res;
 
   if (scale < DataTypeUtils::min_positive<T>()) {
     t = matrix.ulike();
@@ -119,8 +133,8 @@ void Schur<T>::evalData(NDArray& matrix) {
   }
 
   // perform Hessenberg decomposition
-  NDArray matrixScale = matrix / scale;
-  Hessenberg<T> hess(&matrixScale);
+  NDArray *matrixScale = matrix / scale;
+  Hessenberg<T> hess(matrixScale);
 
   t = hess._H;
   u = hess._Q;
@@ -128,6 +142,7 @@ void Schur<T>::evalData(NDArray& matrix) {
   calcFromHessenberg();
 
   *t *= scale;
+  delete matrixScale;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -154,11 +169,17 @@ void Schur<T>::splitTwoRows(const int ind, const T shift) {
       JacobiSVD<T>::createJacobiRotationGivens(p - z, t->t<T>(ind, ind - 1), rotation);
 
     NDArray tRef = *t;
-    NDArray rightCols = tRef({0, 0, ind - 1, -1});
+    NDArray *rightColsPtr = tRef({0, 0, ind - 1, -1});
+    NDArray rightCols = *rightColsPtr;
+    delete rightColsPtr;
+    
     NDArray *rotT = rotation.transpose();
     JacobiSVD<T>::mulRotationOnLeft(ind - 1, ind, rightCols, *rotT);
 
-    NDArray topRows = tRef({0, ind + 1, 0, 0});
+    NDArray *topRowsPtr = tRef({0, ind + 1, 0, 0});
+    NDArray topRows = *topRowsPtr;
+    delete topRowsPtr;
+    
     JacobiSVD<T>::mulRotationOnRight(ind - 1, ind, topRows, rotation);
 
     JacobiSVD<T>::mulRotationOnRight(ind - 1, ind, *u, rotation);
@@ -256,7 +277,11 @@ void Schur<T>::doFrancisQR(const int ind1, const int ind2, const int ind3, NDArr
     T coeff, normX;
     std::vector<LongType> tailShape = {2,1};
     NDArray tail(t->ordering(),tailShape, t->dataType(), t->getContext());
-    NDArray first = firstIter ? householderVec : tRef({k, k + 3, k - 1, k});
+    
+    NDArray *firstPtr = firstIter ? &householderVec : tRef({k, k + 3, k - 1, k});
+    NDArray first = *firstPtr;
+    if (!firstIter) delete firstPtr;
+    
     Householder<T>::evalHHmatrixData(first, tail, coeff, normX);
 
     if (normX != T(0)) {
@@ -265,13 +290,19 @@ void Schur<T>::doFrancisQR(const int ind1, const int ind2, const int ind3, NDArr
       else if (!firstIter)
         t->r<T>(k, k - 1) = normX;
 
-      NDArray block1 = tRef({k, k + 3, k, numCols}, true);
+      NDArray *block1Ptr = tRef({k, k + 3, k, numCols}, true);
+      NDArray block1 = *block1Ptr;
+      delete block1Ptr;
       Householder<T>::mulLeft(block1, tail, coeff);
 
-      NDArray block2 = tRef({0, math::sd_min<int>(ind3, k + 3) + 1, k, k + 3}, true);
+      NDArray *block2Ptr = tRef({0, math::sd_min<int>(ind3, k + 3) + 1, k, k + 3}, true);
+      NDArray block2 = *block2Ptr;
+      delete block2Ptr;
       Householder<T>::mulRight(block2, tail, coeff);
 
-      NDArray block3 = uRef({0, numCols, k, k + 3}, true);
+      NDArray *block3Ptr = uRef({0, numCols, k, k + 3}, true);
+      NDArray block3 = *block3Ptr;
+      delete block3Ptr;
       Householder<T>::mulRight(block3, tail, coeff);
     }
   }
@@ -279,19 +310,28 @@ void Schur<T>::doFrancisQR(const int ind1, const int ind2, const int ind3, NDArr
   T coeff, normX;
   std::vector<LongType> tailShape = {1,1};
   NDArray tail(t->ordering(), tailShape, t->dataType(), t->getContext());
-  NDArray first = tRef({ind3 - 1, ind3 + 1, ind3 - 2, ind3 - 1});
+  NDArray *firstPtr = tRef({ind3 - 1, ind3 + 1, ind3 - 2, ind3 - 1});
+  NDArray first = *firstPtr;
+  delete firstPtr;
+  
   Householder<T>::evalHHmatrixData(first, tail, coeff, normX);
 
   if (normX != T(0)) {
     t->r<T>(ind3 - 1, ind3 - 2) = normX;
 
-    NDArray block1 = tRef({ind3 - 1, ind3 + 1, ind3 - 1, numCols}, true);
+    NDArray *block1Ptr = tRef({ind3 - 1, ind3 + 1, ind3 - 1, numCols}, true);
+    NDArray block1 = *block1Ptr;
+    delete block1Ptr;
     Householder<T>::mulLeft(block1, tail, coeff);
 
-    NDArray block2 = tRef({0, ind3 + 1, ind3 - 1, ind3 + 1}, true);
+    NDArray *block2Ptr = tRef({0, ind3 + 1, ind3 - 1, ind3 + 1}, true);
+    NDArray block2 = *block2Ptr;
+    delete block2Ptr;
     Householder<T>::mulRight(block2, tail, coeff);
 
-    NDArray block3 = uRef({0, numCols, ind3 - 1, ind3 + 1}, true);
+    NDArray *block3Ptr = uRef({0, numCols, ind3 - 1, ind3 + 1}, true);
+    NDArray block3 = *block3Ptr;
+    delete block3Ptr;
     Householder<T>::mulRight(block3, tail, coeff);
   }
 
@@ -315,8 +355,13 @@ void Schur<T>::calcFromHessenberg() {
   NDArray tRef = *t;
   NDArray uRef = *u;
   T norm = static_cast<T>(0);
-  for (int j = 0; j < numCols; ++j)
-    norm += tRef({0, math::sd_min<int>(numCols, j + 2), j, j + 1}).reduceNumber(reduce::ASum).template t<T>(0);
+  for (int j = 0; j < numCols; ++j) {
+    NDArray *viewPtr = tRef({0, math::sd_min<int>(numCols, j + 2), j, j + 1});
+    auto sum = viewPtr->reduceNumber(reduce::ASum);
+    norm += sum->template t<T>(0);
+    delete viewPtr;
+    delete sum;
+  }
 
   if (norm != T(0)) {
     while (iu >= 0) {

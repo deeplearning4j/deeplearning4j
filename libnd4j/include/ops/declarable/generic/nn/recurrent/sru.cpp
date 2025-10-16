@@ -234,17 +234,19 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     idx[4] = t;
     idx[5] = t + 1;
     auto xt = (*x)(idx);              // [bS x K x N] -> [bS x K x 1] -> [bS x K]
-    auto zt = wiZ(idx);               // [bS x K x N] -> [bS x K x 1] -> [bS x K]
-    auto ft = wiF(idx);               // [bS x K x N] -> [bS x K x 1] -> [bS x K]
-    auto rt = wiR(idx);               // [bS x K x N] -> [bS x K x 1] -> [bS x K]
+    auto zt = (*wiZ)(idx);               // [bS x K x N] -> [bS x K x 1] -> [bS x K]
+    auto ft = (*wiF)(idx);               // [bS x K x N] -> [bS x K x 1] -> [bS x K]
+    auto rt = (*wiR)(idx);               // [bS x K x N] -> [bS x K x 1] -> [bS x K]
     auto ct = (*c)(idx);              // [bS x K x N] -> [bS x K x 1] -> [bS x K]
     auto inGradHt = (*inGradH)(idx);  // [bS x K x N] -> [bS x K x 1] -> [bS x K]
-    auto gradBRt = gradBR(idx);       // [bS x K x N] -> [bS x K x 1] -> [bS x K]
-    auto gradBFt = gradBF(idx);       // [bS x K x N] -> [bS x K x 1] -> [bS x K]
+    auto gradBRt = (*gradBR)(idx);       // [bS x K x N] -> [bS x K x 1] -> [bS x K]
+    auto gradBFt = (*gradBF)(idx);       // [bS x K x N] -> [bS x K x 1] -> [bS x K]
     auto gradHXt = (*gradHX)(idx);    // [bS x K x N] -> [bS x K x 1] -> [bS x K]
-    auto gradUZt = gradUZ(idx);       // [bS x K x N] -> [bS x K x 1] -> [bS x K]
-    auto gradUFt = gradUF(idx);       // [bS x K x N] -> [bS x K x 1] -> [bS x K]
-    auto gradURt = gradUR(idx);       // [bS x K x N] -> [bS x K x 1] -> [bS x K]
+    auto gradUZt = (*gradUZ)(idx);       // [bS x K x N] -> [bS x K x 1] -> [bS x K]
+    auto gradUFt = (*gradUF)(idx);       // [bS x K x N] -> [bS x K x 1] -> [bS x K]
+    auto gradURt = (*gradUR)(idx);       // [bS x K x N] -> [bS x K x 1] -> [bS x K]
+
+
 
     if (t != 0) {
       idx[4] = t - 1;
@@ -255,57 +257,69 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
 
     ///////////////// forward
     // ft = sigmoid(ft + bf), rt = sigmoid(rt + bR)
-    ft.addRowVector(&bF, &ft);
-    rt.addRowVector(&bR, &rt);
-    ft.applyTransform(transform::Sigmoid, &ft);
-    rt.applyTransform(transform::Sigmoid, &rt);
+    ft->addRowVector(bF, ft);
+    rt->addRowVector(bR, rt);
+    ft->applyTransform(transform::Sigmoid, ft);
+    rt->applyTransform(transform::Sigmoid, rt);
 
     // TODO T val = (activation_type == 1) ? tanh(cur) : ((activation_type == 2) ? reluf(cur) : cur );
-    ct.applyTransform(transform::Tanh, gct);
+    ct->applyTransform(transform::Tanh, gct);
     // ftMinus = 1-ft,  rtMinus = 1-rt
-    ft.applyTransform(transform::OneMinus, ftMinus);
-    rt.applyTransform(transform::OneMinus, rtMinus);
+    ft->applyTransform(transform::OneMinus, ftMinus);
+    rt->applyTransform(transform::OneMinus, rtMinus);
 
     ///////////////// backward
     // bR, *grad_brt_ptr = inGradHt * (g_ct - xt) * (1.0f - rt) * rt;
-    gct->applyPairwiseTransform(pairwise::Subtract, &xt, temp1);      // temp1 = (g_ct - xt)
-    rtMinus->applyPairwiseTransform(pairwise::Multiply, &rt, temp2);  // temp2 = (1.0f - rt) * rt;
+    gct->applyPairwiseTransform(pairwise::Subtract, xt, temp1);      // temp1 = (g_ct - xt)
+    rtMinus->applyPairwiseTransform(pairwise::Multiply, rt, temp2);  // temp2 = (1.0f - rt) * rt;
     temp1->applyPairwiseTransform(pairwise::Multiply, temp2);        // temp1 = (g_ct - xt) * (1.0f - rt) * rt;
-    inGradHt.applyPairwiseTransform(pairwise::Multiply, temp1,
-                                    &gradBRt);  // = inGradHt * (g_ct - xt) * (1.0f - rt) * rt;
+    inGradHt->applyPairwiseTransform(pairwise::Multiply, temp1,
+                                    gradBRt);  // = inGradHt * (g_ct - xt) * (1.0f - rt) * rt;
 
     // bF, TODO - tanh
     // gradTanh = (1.0f - g_ct * g_ct);
     gct->applyPairwiseTransform(pairwise::Multiply, gct, gradTanh);  // gradTanh = g_ct * g_ct
     gradTanh->applyTransform(transform::OneMinus, gradTanh);          // gradTanh = (1.0f - g_ct * g_ct)
     // gradCt  = inGradHt * rt * gradTanh
-    rt.applyPairwiseTransform(pairwise::Multiply, gradTanh, gradCt);      // gradCt = rt * gradTanh
-    inGradHt.applyPairwiseTransform(pairwise::Multiply, gradCt, gradCt);  // gradCt = inGradHt * rt * gradTanh
+    rt->applyPairwiseTransform(pairwise::Multiply, gradTanh, gradCt);      // gradCt = rt * gradTanh
+    inGradHt->applyPairwiseTransform(pairwise::Multiply, gradCt, gradCt);  // gradCt = inGradHt * rt * gradTanh
     // gradBFt = (gradCt + inGradCt) * (ct_1 - zt) * (1 - ft) * ft;
     gradCt->applyPairwiseTransform(pairwise::Add, inGradCt, temp1);     // temp1 = (gradCt + inGradCt)
-    ct_1->applyPairwiseTransform(pairwise::Subtract, &zt, temp2);         // temp2 = (ct_1 - zt)
+    ct_1->applyPairwiseTransform(pairwise::Subtract, zt, temp2);         // temp2 = (ct_1 - zt)
     temp1->applyPairwiseTransform(pairwise::Multiply, ftMinus, temp1);  // temp1 = (gradCt + inGradCt)*(1-ft)
-    temp1->applyPairwiseTransform(pairwise::Multiply, &ft, temp1);        // temp1 = (gradCt + inGradCt)*(1-ft)*ft
+    temp1->applyPairwiseTransform(pairwise::Multiply, ft, temp1);        // temp1 = (gradCt + inGradCt)*(1-ft)*ft
     temp1->applyPairwiseTransform(pairwise::Multiply, temp2,
-                                  &gradBFt);  // gradBFt = (gradCt + inGradCt) * (ct_1 - zt) * (1 - ft) * ft;
+                                  gradBFt);  // gradBFt = (gradCt + inGradCt) * (ct_1 - zt) * (1 - ft) * ft;
 
     // x_t (highway connection), gradHXt = inGradHt * (1.0f - rt);
-    inGradHt.applyPairwiseTransform(pairwise::Multiply, rtMinus, &gradHXt);
+    inGradHt->applyPairwiseTransform(pairwise::Multiply, rtMinus, gradHXt);
 
     // U_t, gradUZt = (inGradHt * rt * grad_tanh + inGradCt) * (1.0f - ft);
-    rt.applyPairwiseTransform(pairwise::Multiply, gradTanh, temp1);     // temp1 = rt * grad_tanh
-    inGradHt.applyPairwiseTransform(pairwise::Multiply, temp1,temp1);  // temp1 = inGradHt * rt * grad_tanh
+    rt->applyPairwiseTransform(pairwise::Multiply, gradTanh, temp1);     // temp1 = rt * grad_tanh
+    inGradHt->applyPairwiseTransform(pairwise::Multiply, temp1,temp1);  // temp1 = inGradHt * rt * grad_tanh
     temp1->applyPairwiseTransform(pairwise::Add, inGradCt, temp1);  // temp1 = inGradHt * rt * grad_tanh + inGradCt
     temp1->applyPairwiseTransform(pairwise::Multiply, ftMinus,
-                                  &gradUZt);  // gradUZt = (inGradHt * rt * grad_tanh + inGradCt) * (1.0f - ft);
-    gradUFt.assign(&gradBFt);
-    gradURt.assign(&gradBRt);
+                                  gradUZt);  // gradUZt = (inGradHt * rt * grad_tanh + inGradCt) * (1.0f - ft);
+    gradUFt->assign(gradBFt);
+    gradURt->assign(gradBRt);
 
     // c_{t-1}, inGradCt = (gradCt + inGradCt) * ft;
     gradCt->applyPairwiseTransform(pairwise::Add, inGradCt, temp1);  // temp1 = (gradCt + inGradCt)
-    temp1->applyPairwiseTransform(pairwise::Multiply, &ft, inGradCt);  // inGradCt = (gradCt + inGradCt) * ft;
+    temp1->applyPairwiseTransform(pairwise::Multiply, ft, inGradCt);  // inGradCt = (gradCt + inGradCt) * ft;
 
     if (t != 0) delete ct_1;
+
+    delete xt;
+    delete zt;
+    delete ft;
+    delete rt;
+    delete ct;
+    delete inGradHt;
+    delete gradBRt;
+    delete gradHXt;
+    delete gradUZt;
+    delete gradUFt;
+    delete gradURt;
   }
 
   // gradInit

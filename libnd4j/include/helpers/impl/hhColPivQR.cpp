@@ -53,20 +53,31 @@ void HHcolPivQR::_evalData() {
   NDArray normsDir(_qr->ordering(),colsShape , _qr->dataType(), _qr->getContext());
 
   auto qRDeRef = *_qr;
-  for (int k = 0; k < cols; ++k)
-    normsDir.r<T>(k) = normsUpd.r<T>(k) = qRDeRef({0, 0, k, k + 1}).reduceNumber(reduce::Norm2).t<T>(0);
+  for (int k = 0; k < cols; ++k) {
+    NDArray *colViewPtr = qRDeRef({0, 0, k, k + 1});
+    auto norm =  colViewPtr->reduceNumber(reduce::Norm2);
+    normsDir.r<T>(k) = normsUpd.r<T>(k) = norm->t<T>(0);
+    delete norm;
+    delete colViewPtr;
+  }
 
-  T normScaled = (normsUpd.reduceNumber(reduce::Max)).t<T>(0) * DataTypeUtils::eps<T>();
+  auto max = (normsUpd.reduceNumber(reduce::Max));
+  T normScaled = max->t<T>(0) * DataTypeUtils::eps<T>();
   T threshold1 = normScaled * normScaled / (T)rows;
   T threshold2 = math::sd_sqrt<T, T>(DataTypeUtils::eps<T>());
 
   T nonZeroPivots = static_cast<T>(_diagSize);
   T maxPivot = static_cast<T>(0.);
-
+ delete max;
   for (int k = 0; k < _diagSize; ++k) {
-    NDArray *indexNum = normsUpd({k, -1}).indexReduceNumber(indexreduce::IndexMax);
+    NDArray *normsUpdViewPtr = normsUpd({k, -1});
+    NDArray *indexNum = normsUpdViewPtr->indexReduceNumber(indexreduce::IndexMax);
     int biggestColIndex = indexNum->e<int>(0);
-    T biggestColNorm = normsUpd({k, -1}).reduceNumber(reduce::Max).t<T>(0);
+    auto max2 = normsUpdViewPtr->reduceNumber(reduce::Max);
+    T biggestColNorm = max->t<T>(0);
+    delete normsUpdViewPtr;
+    delete max2;
+    
     T biggestColSqNorm = biggestColNorm * biggestColNorm;
     biggestColIndex += k;
 
@@ -75,17 +86,25 @@ void HHcolPivQR::_evalData() {
     transp.r<T>(k) = (T)biggestColIndex;
 
     if (k != biggestColIndex) {
-      NDArray temp1(qRDeRef({0, 0, k, k + 1}));
-      NDArray temp2(qRDeRef({0, 0, biggestColIndex, biggestColIndex + 1}));
+      NDArray *temp1Ptr = qRDeRef({0, 0, k, k + 1});
+      NDArray temp1 = *temp1Ptr;
+      delete temp1Ptr;
+      
+      NDArray *temp2Ptr = qRDeRef({0, 0, biggestColIndex, biggestColIndex + 1});
+      NDArray temp2 = *temp2Ptr;
+      delete temp2Ptr;
+      
       temp1.swapUnsafe(temp2);
 
       math::sd_swap<T>(normsUpd.r<T>(k), normsUpd.r<T>(biggestColIndex));
       math::sd_swap<T>(normsDir.r<T>(k), normsDir.r<T>(biggestColIndex));
-
     }
 
     T normX, c;
-    NDArray qrBlock = qRDeRef({k, rows, k, k + 1});
+    NDArray *qrBlockPtr = qRDeRef({k, rows, k, k + 1});
+    NDArray qrBlock = *qrBlockPtr;
+    delete qrBlockPtr;
+    
     Householder<T>::evalHHmatrixDataI(qrBlock, c, normX);
 
     _coeffs->r<T>(k) = c;
@@ -96,8 +115,14 @@ void HHcolPivQR::_evalData() {
     if (max > maxPivot) maxPivot = max;
 
     if (k < rows && (k + 1) < cols) {
-      NDArray qrBlock2 = qRDeRef({k, rows, k + 1, cols}, true);
-      NDArray tail = qRDeRef({k + 1, rows, k, k + 1}, true);
+      NDArray *qrBlock2Ptr = qRDeRef({k, rows, k + 1, cols}, true);
+      NDArray qrBlock2 = *qrBlock2Ptr;
+      delete qrBlock2Ptr;
+      
+      NDArray *tailPtr = qRDeRef({k + 1, rows, k, k + 1}, true);
+      NDArray tail = *tailPtr;
+      delete tailPtr;
+      
       Householder<T>::mulLeft(qrBlock2, tail, _coeffs->t<T>(k));
     }
 
@@ -109,8 +134,13 @@ void HHcolPivQR::_evalData() {
         T temp2 = temp * normsUpd.t<T>(j) * normsUpd.t<T>(j) / (normsDir.t<T>(j) * normsDir.t<T>(j));
 
         if (temp2 <= threshold2) {
-          if (k + 1 < rows && j < cols)
-            normsDir.r<T>(j) = qRDeRef({k + 1, rows, j, j + 1}).reduceNumber(reduce::Norm2).t<T>(0);
+          if (k + 1 < rows && j < cols) {
+            NDArray *normViewPtr = qRDeRef({k + 1, rows, j, j + 1});
+            auto reduce =  normViewPtr->reduceNumber(reduce::Norm2);
+            normsDir.r<T>(j) = reduce->t<T>(0);
+            delete normViewPtr;
+            delete reduce;
+          }
 
           normsUpd.r<T>(j) = normsDir.t<T>(j);
         } else
@@ -126,8 +156,14 @@ void HHcolPivQR::_evalData() {
   auto permuteRef = *_permut;
   for (int k = 0; k < _diagSize; ++k) {
     int idx = transp.e<int>(k);
-    NDArray temp1 = permuteRef({0, 0, k, k + 1});
-    NDArray temp2 = permuteRef({0, 0, idx, idx + 1});
+    NDArray *temp1Ptr = permuteRef({0, 0, k, k + 1});
+    NDArray temp1 = *temp1Ptr;
+    delete temp1Ptr;
+    
+    NDArray *temp2Ptr = permuteRef({0, 0, idx, idx + 1});
+    NDArray temp2 = *temp2Ptr;
+    delete temp2Ptr;
+    
     temp1.swapUnsafe(temp2);
   }
 }

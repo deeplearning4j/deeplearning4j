@@ -53,7 +53,9 @@ static void batchnormCUDNN(const LaunchContext* context, NDArray* input, NDArray
     paramsStrides = xRank == 4 ? std::vector<int>({iC * stride0, stride0, 1, 1})
                                : std::vector<int>({iC * stride0, stride0, 1, 1, 1});
   } else {
-    paramsShape = std::vector<int>(mean->getShapeAsVector().begin(), mean->getShapeAsVector().end());
+    auto* meanShapePtr = mean->getShapeAsVector();
+    paramsShape = std::vector<int>(meanShapePtr->begin(), meanShapePtr->end());
+    delete meanShapePtr;
     paramsStrides = xRank == 4
                     ? std::vector<int>({static_cast<int>(mean->strideAt(0)), static_cast<int>(mean->strideAt(1)), static_cast<int>(mean->strideAt(2)),
                                         static_cast<int>(mean->strideAt(3))})
@@ -73,6 +75,7 @@ static void batchnormCUDNN(const LaunchContext* context, NDArray* input, NDArray
   cudnnTensorFormat_t format = CUDNN_TENSOR_NCHW;
 
   // input descriptor
+  CudnnTensor x;
     x.set(dataType, xRank, xShape.data(), xStrides.data());
 
   // output descriptor
@@ -134,7 +137,9 @@ static void batchnormBpCUDNN(const LaunchContext* context, NDArray* input, NDArr
     paramsStrides = xRank == 4 ? std::vector<int>({iC * stride0, stride0, 1, 1})
                                : std::vector<int>({iC * stride0, stride0, 1, 1, 1});
   } else {
-    paramsShape = std::vector<int>(mean->getShapeAsVector().begin(), mean->getShapeAsVector().end());
+    auto* meanShapePtr = mean->getShapeAsVector();
+    paramsShape = std::vector<int>(meanShapePtr->begin(), meanShapePtr->end());
+    delete meanShapePtr;
     paramsStrides = xRank == 4
                     ? std::vector<int>({static_cast<int>(mean->strideAt(0)), static_cast<int>(mean->strideAt(1)), static_cast<int>(mean->strideAt(2)),
                                         static_cast<int>(mean->strideAt(3))})
@@ -347,7 +352,9 @@ PLATFORM_CHECK(batchnorm, ENGINE_CUDA) {
   if (axes.size() == 1) {
     req.expectIn(makeInfoVariable(mean->lengthOf(), LENGTH_MSG_INPUT1), {-1, 1});
   } else {
-    auto inputShapeModif = input->getShapeAsVector();  // [dim0,dim1,dim2,dim3] 4D or [dim0,dim1,dim2,dim3,dim4]
+    auto* inputShapeModifPtr = input->getShapeAsVector();
+    std::vector<LongType> inputShapeModif = *inputShapeModifPtr;
+    delete inputShapeModifPtr;
     inputShapeModif[0] = 1;
     // mean [1,dim1,dim2,dim3] 4D or [1,dim1,dim2,dim3,dim4]
     req.expect(
@@ -539,7 +546,9 @@ PLATFORM_CHECK(batchnorm_bp, ENGINE_CUDA) {
     //     isFormatGood = mean->lengthOf() == input->sizeAt(1) || mean->lengthOf() == input->sizeAt(-1);   // mean [C]
     req.expectIn(makeInfoVariable(mean->lengthOf(), LENGTH_MSG_INPUT1), {-1, 1});
   } else {
-    auto inputShapeModif = input->getShapeAsVector();  // [dim0,dim1,dim2,dim3] 4D or [dim0,dim1,dim2,dim3,dim4]
+    auto* inputShapeModifPtr = input->getShapeAsVector();
+    std::vector<LongType> inputShapeModif = *inputShapeModifPtr;
+    delete inputShapeModifPtr;
     inputShapeModif[0] = 1;
     //     isFormatGood = mean->isSameShape(inputShapeModif);    // mean [1,dim1,dim2,dim3] 4D or
     //     [1,dim1,dim2,dim3,dim4]

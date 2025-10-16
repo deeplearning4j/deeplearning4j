@@ -44,11 +44,11 @@ static sd::Status topKFunctor_(NDArray* input, NDArray* values, NDArray* indices
     for (sd::LongType e = 0; e < numOfSubArrs; ++e) {
       auto trial = (*input)(e, dimsToExclude);
       sd::LongType maxPos = 0;
-      T maxVal = trial.e<T>(0);
-      for (sd::LongType pos = 1; pos < trial.lengthOf(); pos++)
-        if (maxVal < trial.e<T>(pos)) {
+      T maxVal = trial->e<T>(0);
+      for (sd::LongType pos = 1; pos < trial->lengthOf(); pos++)
+        if (maxVal < trial->e<T>(pos)) {
           maxPos = pos;
-          maxVal = trial.e<T>(pos);
+          maxVal = trial->e<T>(pos);
         }
       if (indices) indices->p(e, maxPos);  // topIndex;
       if (values) values->p(e, maxVal);
@@ -65,12 +65,12 @@ static sd::Status topKFunctor_(NDArray* input, NDArray* values, NDArray* indices
       NDArray *topIndices = NDArrayFactory::create<sd::LongType>('c', {k}, input->getContext());
       for (sd::LongType pos = 0; pos < k; ++pos) {
         topIndices->r<sd::LongType>(pos) = pos;
-        topValues->r<T>(pos) = trial.t<T>(pos);
+        topValues->r<T>(pos) = trial->t<T>(pos);
       }
       sortedVals->assign(topValues);
       SpecialMethods<T>::sortGeneric(sortedVals, false);
       for (sd::LongType i = static_cast<sd::LongType>(k); i < width; ++i) {
-        T val = trial.e<T>(i);
+        T val = trial->e<T>(i);
         T minTopVal = sortedVals->t<T>(0);
         if (minTopVal < val) {  // value should be inserted to top k
           // only if it is not contained in
@@ -89,13 +89,14 @@ static sd::Status topKFunctor_(NDArray* input, NDArray* values, NDArray* indices
 
           }
         }
+
       }
       if (needSort) {
         SpecialMethods<T>::sortGeneric(topValues,true);
 
         for (sd::LongType j = 0; j < width; j++)
           for (sd::LongType pos = 0; pos < k; ++pos)
-            if (topValues->t<T>(pos) == trial.t<T>(j)) topIndices->r<sd::LongType>(pos) = j;
+            if (topValues->t<T>(pos) == trial->t<T>(j)) topIndices->r<sd::LongType>(pos) = j;
       } else {  // else sort by indices
         std::map<sd::LongType, T> sortValsMap;
         for (sd::LongType e = 0; e < topValues->lengthOf(); ++e) {
@@ -108,14 +109,23 @@ static sd::Status topKFunctor_(NDArray* input, NDArray* values, NDArray* indices
           topValues->r<T>(e) = it->second;
         }
       }
-      if (values) (*values)(e, dimsToExclude).assign(topValues);
-      if (indices) (*indices)(e, dimsToExclude).assign(topIndices);
+      if (values) {
+        auto valuesView = (*values)(e, dimsToExclude);
+        valuesView->assign(topValues);
+        delete valuesView;
+      }
+      if (indices) {
+        auto indicesView = (*indices)(e, dimsToExclude);
+        indicesView->assign(topIndices);
+        delete indicesView;
+      }
 
 
       delete sortedVals;
       delete topValues;
       delete topIndices;
 
+      delete trial;
     }
   }
 

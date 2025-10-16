@@ -35,7 +35,11 @@ CUSTOM_OP_IMPL(reshapeas, 2, 1, false, 0, 0) {
 
   auto z = OUTPUT_VARIABLE(0);
 
-  if (x->reshapei(y->ordering(), y->getShapeAsVector())) {
+  auto* yShape = y->getShapeAsVector();
+  bool reshapeResult = x->reshapei(y->ordering(), *yShape);
+  delete yShape;
+  
+  if (reshapeResult) {
     z->assign(x);
     return Status::OK;
   }

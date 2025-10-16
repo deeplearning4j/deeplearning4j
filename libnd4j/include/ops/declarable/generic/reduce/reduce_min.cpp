@@ -132,9 +132,10 @@ CUSTOM_OP_IMPL(reduce_min_bp, -1, 1, false, 0, 0) {
     auto indicesArr = input->applyIndexReduce(sd::indexreduce::IndexMin, &dimensions);
     auto vec = ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions.size(),dimensions.data());
     helpers::scatterSimple(
-        block.launchContext(), 6, *gradI, *gradO, indicesArr,
+        block.launchContext(), 6, *gradI, *gradO, *indicesArr,
         *vec);  // 6 corresponds to copy operation
     delete vec;
+    delete indicesArr;
   }
 
   return sd::Status::OK;

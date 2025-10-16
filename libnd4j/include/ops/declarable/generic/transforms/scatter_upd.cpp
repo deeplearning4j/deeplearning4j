@@ -54,27 +54,33 @@ OP_IMPL(scatter_upd, 3, 1, true) {
                  "but got %s and %s correspondingly !",
                  ShapeUtils::shapeAsString(indices).c_str(), ShapeUtils::shapeAsString(updates).c_str());
   } else if (inRank == updRank && indices->isVector()) {
-    std::vector<LongType> updShape = updates->getShapeAsVector();
-    std::vector<LongType> inShape = input->getShapeAsVector();
+    auto* updShapeVec = updates->getShapeAsVector();
+    auto* inShapeVec = input->getShapeAsVector();
     std::vector<LongType> expectedUpdShape = {indices->lengthOf()};
-    expectedUpdShape.insert(expectedUpdShape.end(), inShape.begin() + 1, inShape.end());
+    expectedUpdShape.insert(expectedUpdShape.end(), inShapeVec->begin() + 1, inShapeVec->end());
 
-    REQUIRE_TRUE(expectedUpdShape == updShape, 0,
+    REQUIRE_TRUE(expectedUpdShape == *updShapeVec, 0,
                  "SCATTER_UPD OP: wrong shape of updates array, expected is %s, but got %s instead !",
-                 ShapeUtils::shapeAsString(expectedUpdShape).c_str(), ShapeUtils::shapeAsString(updShape).c_str());
+                 ShapeUtils::shapeAsString(expectedUpdShape).c_str(), ShapeUtils::shapeAsString(*updShapeVec).c_str());
+    delete updShapeVec;
+    delete inShapeVec;
   } else {
     REQUIRE_TRUE(updRank == indRank + inRank - 1, 0,
                  "SCATTER_UPD OP: wrong rank of updates array, expected is %i, but got %i instead !",
                  indRank + inRank - 1, updRank);
 
-    std::vector<LongType> updShape = updates->getShapeAsVector();
-    std::vector<LongType> inShape = input->getShapeAsVector();
-    std::vector<LongType> expectedUpdShape = indices->getShapeAsVector();
-    expectedUpdShape.insert(expectedUpdShape.end(), inShape.begin() + 1, inShape.end());
+    auto* updShapeVec = updates->getShapeAsVector();
+    auto* inShapeVec = input->getShapeAsVector();
+    auto* indShapeVec = indices->getShapeAsVector();
+    std::vector<LongType> expectedUpdShape = *indShapeVec;
+    expectedUpdShape.insert(expectedUpdShape.end(), inShapeVec->begin() + 1, inShapeVec->end());
 
-    REQUIRE_TRUE(expectedUpdShape == updShape, 0,
+    REQUIRE_TRUE(expectedUpdShape == *updShapeVec, 0,
                  "SCATTER_UPD OP: wrong shape of updates array, expected is %s, but got %s instead !",
-                 ShapeUtils::shapeAsString(expectedUpdShape).c_str(), ShapeUtils::shapeAsString(updShape).c_str());
+                 ShapeUtils::shapeAsString(expectedUpdShape).c_str(), ShapeUtils::shapeAsString(*updShapeVec).c_str());
+    delete updShapeVec;
+    delete inShapeVec;
+    delete indShapeVec;
   }
 
   if (!indices->isEmpty()) {

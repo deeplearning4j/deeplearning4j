@@ -30,7 +30,7 @@
 // implementation of gated Recurrent Unit cell
 // (cf. https://arxiv.org/abs/1406.1078).
 // Kyunghyun Cho, Bart van Merrienboer, Caglar Gulcehre, Dzmitry Bahdanau, Fethi Bougares, Holger Schwenk, Yoshua Bengio
-// "Learning Phrase Representations using RNN Encoder-Decoder for StatnIntical Machine Translation"
+// "Learning Phrase Representations using RNN Encoder-Decoder for Statistical Machine Translation"
 
 #include <helpers/MmulHelper.h>
 #include <ops/declarable/CustomOperations.h>
@@ -59,49 +59,82 @@ void gruCell(sd::LaunchContext* context, NDArray* x, NDArray* hI, NDArray* W, ND
   // h        current cell output [bS, nOut]
 
   /***************************************************************************************/
-  /************************ THIS IS NOT OPTIMAZED CODE ***********************************/
+  /************************ THIS IS NOT OPTIMIZED CODE ***********************************/
   /** however it is more math-friendly and convenient for backprop formulas derivation) **/
 
   const int bS = x->sizeAt(0);
   const int nIn = x->sizeAt(1);
   const int nOut = hI->sizeAt(1);
 
-  NDArray Wrx = (*W)({0, nIn, 0, nOut});                  // [nIn, nOut]
-  NDArray Wux = (*W)({0, nIn, nOut, 2 * nOut});           // [nIn, nOut]
-  NDArray Wrh = (*W)({nIn, nIn + nOut, 0, nOut});         // [nOut, nOut]
-  NDArray Wuh = (*W)({nIn, nIn + nOut, nOut, 2 * nOut});  // [nOut, nOut]
+  NDArray *Wrx = (*W)({0, nIn, 0, nOut});                  // [nIn, nOut]
+  NDArray *Wux = (*W)({0, nIn, nOut, 2 * nOut});           // [nIn, nOut]
+  NDArray *Wrh = (*W)({nIn, nIn + nOut, 0, nOut});         // [nOut, nOut]
+  NDArray *Wuh = (*W)({nIn, nIn + nOut, nOut, 2 * nOut});  // [nOut, nOut]
 
-  NDArray Wcx = (*Wc)({0, nIn, 0, 0});           // reset cell weights    [nIn, nOut]
-  NDArray Wch = (*Wc)({nIn, nIn + nOut, 0, 0});  // updates cell weights  [nOut, nOut]
+  NDArray *Wcx = (*Wc)({0, nIn, 0, 0});           // reset cell weights    [nIn, nOut]
+  NDArray *Wch = (*Wc)({nIn, nIn + nOut, 0, 0});  // updates cell weights  [nOut, nOut]
 
-  NDArray br = (*b)({0, nOut});         // [nOut]
-  NDArray bu = (*b)({nOut, 2 * nOut});  // [nOut]
+  NDArray *br = (*b)({0, nOut});         // [nOut]
+  NDArray *bu = (*b)({nOut, 2 * nOut});  // [nOut]
 
   // × means matrix multiplication
   // * means element-wise product or so called Hadamard product
 
-  NDArray rAssign = mmul(*x, Wrx) + mmul(*hI, Wrh) +
-                    br;
-  // reset gate
-  r->assign(&rAssign);  // [bS, nIn] × [nIn, nOut] + [bS, nOut] × [nOut, nOut] + [nOut] = [bS, nOut]
+  // r = sigmoid(x × Wrx + hI × Wrh + br)
+  auto xWrx = mmul(*x, *Wrx);
+  auto hIWrh = mmul(*hI, *Wrh);
+  auto* sum1 = *xWrx + *hIWrh;
+  auto* rAssign = (*sum1) + (*br);
+  delete sum1;
+  delete hIWrh;
+  r->assign(rAssign);  // [bS, nIn] × [nIn, nOut] + [bS, nOut] × [nOut, nOut] + [nOut] = [bS, nOut]
+  delete rAssign;
   r->applyTransform(transform::Sigmoid, r);
 
-  // update gate
-  NDArray uAssign = mmul(*x, Wux) + mmul(*hI, Wuh) +
-                    bu;
-  u->assign(&uAssign);  // [bS, nIn] × [nIn, nOut] + [bS, nOut] × [nOut, nOut] + [nOut] = [bS, nOut]
+  // u = sigmoid(x × Wux + hI × Wuh + bu)
+  auto xWux = mmul(*x, *Wux);
+  auto hIWuh = mmul(*hI, *Wuh);
+  auto* sum2 = *xWux + *hIWuh;
+  auto* uAssign = (*sum2) + (*bu);
+  delete sum2;
+  delete xWux;
+  u->assign(uAssign);  // [bS, nIn] × [nIn, nOut] + [bS, nOut] × [nOut, nOut] + [nOut] = [bS, nOut]
+  delete uAssign;
   u->applyTransform(transform::Sigmoid, u);
 
-  NDArray rTimeHi = *r * *hI;
-  // cell gate c = activation(x × Wcx + (r * hlast) × Wch + bc)
-  NDArray cAssign = mmul(*x, Wcx) + mmul(rTimeHi, Wch) +
-                    *bc;
-  c->assign(&cAssign);  // [bS, nIn] × [nIn, nOut] + [bS, nOut] × [nOut, nOut] + [nOut] = [bS, nOut]
+  // c = tanh(x × Wcx + (r * hI) × Wch + bc)
+  auto* rTimesHi = (*r) * (*hI);
+  auto xWcx = mmul(*x, *Wcx);
+  auto rTimesHiWch = mmul(*rTimesHi, *Wch);
+  delete rTimesHi;
+  auto* sum3 = *xWcx + *rTimesHiWch;
+  auto* cAssign = (*sum3) + (*bc);
+  delete sum3;
+  delete xWcx;
+  delete rTimesHiWch;
+  c->assign(cAssign);  // [bS, nIn] × [nIn, nOut] + [bS, nOut] × [nOut, nOut] + [nOut] = [bS, nOut]
+  delete cAssign;
   c->applyTransform(transform::Tanh, c);
 
-  // cell output
-  NDArray hAssign = *u * *hI + (1.f - *u) * *c;
-  h->assign(&hAssign);
+  // h = (1 - u) * c + u * hI
+  auto* uTimesHi = (*u) * (*hI);
+  auto* oneMinusU = 1.f - (*u);
+  auto* oneMinusUTimesC = (*oneMinusU) * (*c);
+  delete oneMinusU;
+  auto* hAssign = (*uTimesHi) + (*oneMinusUTimesC);
+  delete uTimesHi;
+  delete oneMinusUTimesC;
+  h->assign(hAssign);
+  delete hAssign;
+
+  delete Wrx;
+  delete Wux;
+  delete Wrh;
+  delete Wuh;
+  delete Wcx;
+  delete Wch;
+  delete br;
+  delete bu;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -134,8 +167,6 @@ void gruCell(NDArray* x, NDArray* hI, NDArray* Wx, NDArray* Wh, NDArray* b,
   // c = tanh(zc)
   // h = (1-u)*c + u*hI
 
-
-
   const int bS = x->sizeAt(0);
   const int nIn = x->sizeAt(1);
   const int nOut = hI->sizeAt(1);
@@ -147,31 +178,45 @@ void gruCell(NDArray* x, NDArray* hI, NDArray* Wx, NDArray* Wh, NDArray* b,
 
   MmulHelper::mmul(hI, Wh, gates);  // [bS, nOut] × [nOut, 3*nOut] = [bS, 3*nOut]
 
-  NDArray ru = (*gates)({0, 0, 0, 2 * nOut});  // [bS, 2*nOut]
+  NDArray *ru = (*gates)({0, 0, 0, 2 * nOut});  // [bS, 2*nOut]
 
-  NDArray r = (*gates)({0, 0, 0, nOut});             // [bS, nOut]
-  NDArray u = (*gates)({0, 0, nOut, 2 * nOut});      // [bS, nOut]
-  NDArray c = (*gates)({0, 0, 2 * nOut, 3 * nOut});  // [bS, nOut]
+  NDArray *r = (*gates)({0, 0, 0, nOut});             // [bS, nOut]
+  NDArray *u = (*gates)({0, 0, nOut, 2 * nOut});      // [bS, nOut]
+  NDArray *c = (*gates)({0, 0, 2 * nOut, 3 * nOut});  // [bS, nOut]
 
-
+  NDArray *tempView1 = temp({0, 0, 0, 2 * nOut});
+  NDArray *tempView2 = temp({0, 0, 2 * nOut, 3 * nOut});
 
   // reset and update gates
-  ru += temp({0, 0, 0, 2 * nOut});
-  ru.applyTransform(transform::Sigmoid, &ru);
-
+  *ru += *tempView1;
+  ru->applyTransform(transform::Sigmoid, ru);
 
   // cell gate
-  NDArray cAssign = c * r + temp({0, 0, 2 * nOut, 3 * nOut});
-  c.assign(&cAssign);
-  c.applyTransform(transform::Tanh, &c);
+  auto* cTimesR = (*c) * (*r);
+  auto* cAssign = (*cTimesR) + (*tempView2);
+  delete cTimesR;
+  c->assign(cAssign);
+  delete cAssign;
+  c->applyTransform(transform::Tanh, c);
 
-
-  NDArray hAssign = u * *hI + (1.f - u) * c;
-  // cell output
-  h->assign(&hAssign);
+  // h = (1-u)*c + u*hI
+  auto* uTimesHi = (*u) * (*hI);
+  auto* oneMinusU = 1.f - (*u);
+  auto* oneMinusUTimesC = (*oneMinusU) * (*c);
+  delete oneMinusU;
+  auto* hAssign = (*uTimesHi) + (*oneMinusUTimesC);
+  delete uTimesHi;
+  delete oneMinusUTimesC;
+  h->assign(hAssign);
+  delete hAssign;
 
   delete gatesULike;
-
+  delete ru;
+  delete r;
+  delete u;
+  delete c;
+  delete tempView1;
+  delete tempView2;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -232,7 +277,7 @@ void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hLast, NDArray* 
   // × means matrix multiplication
 
   /************************************************************************************************/
-  /******************************* THIS IS NOT OPTIMAZED CODE *************************************/
+  /******************************* THIS IS NOT OPTIMIZED CODE *************************************/
   /*** aim is to have math-readable code in order to keep track of backprop formulas derivation ***/
 
   const int bS = x->sizeAt(0);
@@ -242,184 +287,204 @@ void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hLast, NDArray* 
   NDArray *xT = x->transpose();          // [iS, bS]
   NDArray *hLastT = hLast->transpose();  // [nU, bS]
 
-  NDArray Wrx = (*W)({0, iS, 0, nU});             // [iS, nU]
-  NDArray Wux = (*W)({0, iS, nU, 2 * nU});        // [iS, nU]
-  NDArray Wrh = (*W)({iS, iS + nU, 0, nU});       // [nU, nU]
-  NDArray Wuh = (*W)({iS, iS + nU, nU, 2 * nU});  // [nU, nU]
+  NDArray *Wrx = (*W)({0, iS, 0, nU});             // [iS, nU]
+  NDArray *Wux = (*W)({0, iS, nU, 2 * nU});        // [iS, nU]
+  NDArray *Wrh = (*W)({iS, iS + nU, 0, nU});       // [nU, nU]
+  NDArray *Wuh = (*W)({iS, iS + nU, nU, 2 * nU});  // [nU, nU]
 
-  NDArray Wcx = (*Wc)({0, iS, 0, 0});        // reset cell weights    [iS, nU]
-  NDArray Wch = (*Wc)({iS, iS + nU, 0, 0});  // updates cell weights  [nU, nU]
+  NDArray *Wcx = (*Wc)({0, iS, 0, 0});        // reset cell weights    [iS, nU]
+  NDArray *Wch = (*Wc)({iS, iS + nU, 0, 0});  // updates cell weights  [nU, nU]
 
-  NDArray br = (*b)({0, nU});       // [nU]
-  NDArray bu = (*b)({nU, 2 * nU});  // [nU]
+  NDArray *br = (*b)({0, nU});       // [nU]
+  NDArray *bu = (*b)({nU, 2 * nU});  // [nU]
 
-  NDArray *WrxT = Wrx.transpose();  // [nU, iS]
-  NDArray *WuxT = Wux.transpose();  // [nU, iS]
-  NDArray *WrhT = Wrh.transpose();  // [nU, nU]
-  NDArray *WuhT = Wuh.transpose();  // [nU, nU]
+  NDArray *WrxT = Wrx->transpose();  // [nU, iS]
+  NDArray *WuxT = Wux->transpose();  // [nU, iS]
+  NDArray *WrhT = Wrh->transpose();  // [nU, nU]
+  NDArray *WuhT = Wuh->transpose();  // [nU, nU]
 
-  NDArray *WcxT = Wcx.transpose();  // [nU, iS]
-  NDArray *WchT = Wch.transpose();  // [nU, nU]
+  NDArray *WcxT = Wcx->transpose();  // [nU, iS]
+  NDArray *WchT = Wch->transpose();  // [nU, nU]
 
-  NDArray dLdWrx = (*dLdW)({0, iS, 0, nU});             // [iS, nU]
-  NDArray dLdWux = (*dLdW)({0, iS, nU, 2 * nU});        // [iS, nU]
-  NDArray dLdWrh = (*dLdW)({iS, iS + nU, 0, nU});       // [nU, nU]
-  NDArray dLdWuh = (*dLdW)({iS, iS + nU, nU, 2 * nU});  // [nU, nU]
+  NDArray *dLdWrx = (*dLdW)({0, iS, 0, nU});             // [iS, nU]
+  NDArray *dLdWux = (*dLdW)({0, iS, nU, 2 * nU});        // [iS, nU]
+  NDArray *dLdWrh = (*dLdW)({iS, iS + nU, 0, nU});       // [nU, nU]
+  NDArray *dLdWuh = (*dLdW)({iS, iS + nU, nU, 2 * nU});  // [nU, nU]
 
-  NDArray dLdWcx = (*dLdWc)({0, iS, 0, 0});        // [iS, nU]
-  NDArray dLdWch = (*dLdWc)({iS, iS + nU, 0, 0});  // [nU, nU]
+  NDArray *dLdWcx = (*dLdWc)({0, iS, 0, 0});        // [iS, nU]
+  NDArray *dLdWch = (*dLdWc)({iS, iS + nU, 0, 0});  // [nU, nU]
 
-  NDArray dLdbr = (*dLdb)({0, nU});       // [nU]
-  NDArray dLdbu = (*dLdb)({nU, 2 * nU});  // [nU]
+  NDArray *dLdbr = (*dLdb)({0, nU});       // [nU]
+  NDArray *dLdbu = (*dLdb)({nU, 2 * nU});  // [nU]
 
   // ***** feed forward step ***** //
 
-  // reset gate
-  NDArray r = mmul(*x, Wrx) + mmul(*hLast, Wrh) + br;  // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
+  // r = sigmoid(x × Wrx + hLast × Wrh + br)
+  auto xWrx = mmul(*x, *Wrx);
+  auto hLastWrh = mmul(*hLast, *Wrh);
+  auto* sum1 = *xWrx + *hLastWrh;
+  auto* rTemp = (*sum1) + (*br);
+  delete sum1;
+  NDArray r = *rTemp;  // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
+  delete rTemp;
   r.applyTransform(transform::Sigmoid, &r);
 
-  // update gate
-  NDArray u = mmul(*x, Wux) + mmul(*hLast, Wuh) + bu;  // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
+  // u = sigmoid(x × Wux + hLast × Wuh + bu)
+  auto xWux = mmul(*x, *Wux);
+  auto hLastWuh = mmul(*hLast, *Wuh);
+  auto* sum2 = *xWux + *hLastWuh;
+  auto* uTemp = (*sum2) + (*bu);
+  delete sum2;
+  NDArray u = *uTemp;  // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
+  delete uTemp;
+  delete xWux;
   u.applyTransform(transform::Sigmoid, &u);
 
-  // cell gate c = activation(x×Wcx + (r*hlast)×Wcu + bc)
-  NDArray rTimesHLast2 =r * *hLast;
-  NDArray c =  mmul(*x, Wcx) + mmul(rTimesHLast2, Wch) + *bc;  // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
+  // c = tanh(x × Wcx + (r * hLast) × Wch + bc)
+  auto* rTimesHLast2 = r * (*hLast);
+  auto xWcx = mmul(*x, *Wcx);
+  auto rTimesHLast2Wch = mmul(*rTimesHLast2, *Wch);
+  delete rTimesHLast2;
+  auto* sum3 = *xWcx + *rTimesHLast2Wch;
+  auto* cTemp = (*sum3) + (*bc);
+  delete sum3;
+  delete xWcx;
+  delete rTimesHLast2Wch;
+  NDArray c = *cTemp;  // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
+  delete cTemp;
   c.applyTransform(transform::Tanh, &c);
 
   // h = (1 - u) * c + u * hPrev
 
   // ***** back prop step ***** //
 
-  // notations:
-  // Zr = x × Wrx + hLast × Wrh + br
-  // Zu = x × Wux + hLast × Wuh + bu
-  // Sr = sigmoid(Zr)
-  // Su = sigmoid(Zu)
-  // Zc = x × Wcx + (r * hlast) × Wch + bc
+  auto* hLastMinusC = (*hLast) - c;
+  auto* oneMinusU = 1.f - u;
+  auto* dudZu = u * (*oneMinusU);
+  delete oneMinusU;
+  auto* oneMinusR = 1.f - r;
+  auto* drdZr = r * (*oneMinusR);
+  delete oneMinusR;
+  auto* cSquared = c * c;
+  auto* oneMinusCSquared = 1.f - (*cSquared);
+  delete cSquared;
+  auto dcdZc = *oneMinusCSquared;
+  delete oneMinusCSquared;
+  auto* dLdZc = (*dLdc) * dcdZc;
+  auto* dLdZu = (*dLdu) * (*dudZu);
+  delete dudZu;
+  auto* dLdZr = (*dLdr) * (*drdZr);
+  delete drdZr;
 
-  // dLdx = dLdh * dhdx = dLdh * (dhdu * dudx + dhdc * dcdx) = (dLdh * dhdu) * dudx + (dLdh * dhdc) * dcdx = dLdu * dudx
-  // + dLdc * dcdx
-  //      = dLdx_u + dLdx_c
-  // dLdx_u = dLdu * dudx = dLdu * dudZu * dZudx = |dZudx = ... × WuxT| = (dLdu * dudZu) × WuxT
-  // dLdx_c = dLdc * dcdx = dLdc * dcdZc * (dZcdx + dZcdr * drdx) = dLdc * dcdZc * dZcdx + dLdc * dcdZc * dZcdr * drdx =
-  // dLdx_c0 + dLdx_c1 dLdx_c0 = dLdc * dcdZc * dZcdx = |dZcdx = ... × WcxT| = (dLdc * dcdZc) × WcxT dZcdr = (... *
-  // hLast) × WchT dLdc * dcdZc * dZcdr = dLdr = (dLdc * dcdZc * hLast) × WchT drdx = drdZr * dZrdx dZrdx = ... × WrxT
-  // dLdx_c1 = dLdc * dcdZc * dZcdr * drdx = dLdr * drdx = (dLdr * drdZr) × WrxT
-  // finally dLdx = dLdx_u + dLdx_c0 + dLdx_c1 = (dLdu * dudZu) × WuxT + (dLdc * dcdZc) × WcxT + (dLdr * drdZr) × WrxT
+  NDArray *dhdc = 1.f - u;         // [bS, nU]
+  NDArray dhdu = *hLastMinusC;      // [bS, nU]
+  delete hLastMinusC;
 
-  // dLdhLast    = dLdh * (dhdhLast + dhdu * dudhLast + dhdc * dcdhLast) = dLdh * dhdhLast + dLdu * dudhLast + dLdc *
-  // dcdhLast
-  //             = dLdhLast_h + dLdhLast_u + dLdhLast_c
-  // dLdhLast_h  = dLdh * dhdhLas = dLdh * u
-  // dLdhLast_u  = dLdu * dudhLast = |dudhLast = dudZu * dZudhLast , dZudhLast = ... × WuhT| = (dLdu * dudZu) × WuhT
-  // dLdhLast_c  = dLdc * dcdhLast  = dLdc * (dcdZc * dZcdhLast + dcdZc * dZcdr * drdhLast) =
-  //             = dLdc * dcdZc * dZcdhLast + dLdc * dcdZc * dZcdr * drdhLast =
-  //             = dLdc * dcdZc * dZcdhLast + dLdr * drdhLast = dLdhLast_c0 + dLdhLast_c1
-  // dLdhLast_c0 = dLdc * dcdZc * dZcdhLast = |dZcdhLast = (... * r) × WchT| = (dLdc * dcdZc * r) × WchT
-  // dLdhLast_c1 = dLdr * drdhLast = |drdhLast  = drdZr * dZrdhLast, dZrdhLast = ... × WrhT| = (dLdr * drdZr) × WrhT
-  // finally dLdhLast = dLdhLast_h + dLdhLast_u + dLdhLast_c0 + dLdhLast_c1 =
-  //                  = dLdh * u + (dLdu * dudZu) × WuhT + (dLdc * dcdZc * r) × WchT + (dLdr * drdZr) × WrhT
+  // dLdx = dLdZu × WuxT + dLdZc × WcxT + dLdZr × WrxT
+  auto dLdZuWuxT = mmul(*dLdZu, *WuxT);
+  auto dLdZcWcxT = mmul(*dLdZc, *WcxT);
+  auto dLdZrWrxT = mmul(*dLdZr, *WrxT);
+  auto* temp1 = *dLdZuWuxT + *dLdZcWcxT;
+  auto* dLdxTemp = (*temp1) + *dLdZrWrxT;
+  delete temp1;
 
-  // dLdWrx = dLdh * dhdWrx = (dLdh * dhdc) * dcdWrx = dLdc * dcdZc * dZcdWrx = dLdc * dcdZc * dZcdr * drdWrx =
-  //        = dLdc * dcdZc * dZcdr * drdZr * dZrdWrx = dLdr * drdZr * dZrdWrx
-  // dZrdWrx = xT × ...
-  // finally dLdWrx = xT × (dLdr * drdZr)
+  delete dLdZuWuxT;
+  delete dLdZcWcxT;
+  delete dLdZrWrxT;
+  dLdx->assign(dLdxTemp);  // [bS, iS]
+  delete dLdxTemp;
 
-  // dLdWrh = dLdh * dhdWrh = (dLdh * dhdc) * dcdWrh = dLdc * dcdZc * dZcdWrh = dLdc * dcdZc * dZcdr * drdWrh =
-  //        = dLdc * dcdZc * dZcdr * drdZr * dZrdWrh = dLdr * drdZr * dZrdWrh
-  // dZrdWrh = hLastT × ...
-  // finally dLdWrh = hLastT × (dLdr * drdZr)
+  // dldZTimeR = dLdZc * r
+  auto* dldZTimeR = (*dLdZc) * r;
 
-  // dLdWux = dLdh * dhdWux = (dLdh * dhdu) * dudWux = dLdu * dudZu * dZudWux
-  // dZudWux = xT × ...
-  // dLdu * dudZu * dZudWux = xT × (dLdu * dudZu)
+  // dLdhLast = dLdh * u + dLdZu × WuhT + dldZTimeR × WchT + dLdZr × WrhT
+  auto* dLdhTimesU = (*dLdh) * u;
+  auto dLdZuWuhT = mmul(*dLdZu, *WuhT);
+  auto dldZTimeRWchT = mmul(*dldZTimeR, *WchT);
+  auto dLdZrWrhT = mmul(*dLdZr, *WrhT);
+  auto* temp2 = (*dLdhTimesU) + *dLdZuWuhT;
+  delete dLdhTimesU;
+  delete dLdZuWuhT;
+  auto* temp3 = (*temp2) + *dldZTimeRWchT;
+  delete temp2;
+  delete dldZTimeRWchT;
+  auto* dLdhLastTemp = (*temp3) + *dLdZrWrhT;
+  delete temp3;
+  delete dLdZrWrhT;
+  dLdhLast->assign(dLdhLastTemp);  // [bS, nU]
+  delete dLdhLastTemp;
 
-  // dLdWuh = dLdh * dhdWuh = (dLdh * dhdu) * dudWuh = dLdh * dhdu * dudZu * dZudWuh = dLdu * dudZu * dZudWuh
-  // dZudWuh = hLastT × ...
-  // finally dLdWuh = hLastT × (dLdu * dudZu)
-
-  // dLdWcx = dLdh * dhdWcx = dLdh * dhdc * dcdWcx = (dLdh * dhdc) * dcdZc * dZcdWcx = dLdc * dcdZc * dZcdWcx
-  // dZcdWcx = xT × ...
-  // finally dLdWcx = xT × (dLdc * dcdZc)
-
-  // dLdWch = dLdh * dhdWch = dLdh * dhdc * dcdWch = (dLdh * dhdc) * dcdZc * dZcdWch = dLdc * dcdZc * dZcdWch
-  // dZcdWch = (r*hLast)^T × ...
-  // finally dLdWch = (r*hLast)^T × (dLdc * dcdZc)
-
-  // dLdbr = dLdh * dhdbr = (dLdh * dhdc) * dcdbr = dLdc * dcdbr = dLdc * dcdZc * dZcdbr = dLdc * dcdZc * dZcdr * drdbr
-  // =
-  //       = dLdr * drdZr * dZrdbr
-  // dZrdbr = 1
-  // finally dLdbr = dLdr * drdZr
-
-  // dLdbu = dLdh * dhdbu = (dLdh * dhdu) * dudbu = dLdu * dudZu * dZudbu
-  // dZudbu = 1
-  // finally dLdbu = dLdu * dudZu
-
-  // dLdbc = dLdh * dhdbc = (dLdh * dhdc) * dcdbc = dLdc * dcdZc * dZcdbc
-  // dZcdbc = 1
-  // finally dLdbc = dLdc * dcdZc
-
-  NDArray dhdc = 1.f - u;         // [bS, nU]
-  NDArray dhdu = *hLast - c;      // [bS, nU]
-  NDArray dudZu = u * dhdc;       // [bS, nU]
-  NDArray drdZr = r * (1.f - r);  // [bS, nU]
-  NDArray dcdZc = 1.f - c * c;    // [bS, nU]
-  NDArray dLdZc = *dLdc * dcdZc;  // [bS, nU]
-  NDArray dLdZu = *dLdu * dudZu;  // [bS, nU]
-  NDArray dLdZr = *dLdr * drdZr;  // [bS, nU]
-
-  // NDArray dLdc  = *dLdh * dhdc;                       // [bS, nU]
-  // NDArray dLdu  = *dLdh * dhdu;                       // [bS, nU]
-  // NDArray dLdr  = mmul(dLdc * dcdZc * *hLast, WchT);  // [bS, nU]
-
-  // Calculate dLdx
-  NDArray dLdxTemp = mmul(dLdZu, *WuxT) + mmul(dLdZc, *WcxT) + mmul(dLdZr, *WrxT);
-  dLdx->assign(&dLdxTemp);  // [bS, iS]
-
-  // Calculate dldZTimeR
-  NDArray dldZTimeR = dLdZc * r;
-
-  // Calculate dLdhLast
-  NDArray dLdhLastTemp = *dLdh * u + mmul(dLdZu, *WuhT) + mmul(dldZTimeR, *WchT) + mmul(dLdZr, *WrhT);
-  dLdhLast->assign(&dLdhLastTemp);  // [bS, nU]
-
-  // Calculate dLdWrx
-  NDArray dLdWrxTemp = mmul(*xT, dLdZr);
-  dLdWrx.assign(&dLdWrxTemp);  // [iS, bS] × [bS, nU] = [iS, nU]
-
-  // Calculate dLdWrh
-  NDArray dLdWrhTemp = mmul(*hLastT, dLdZr);
-  dLdWrh.assign(&dLdWrhTemp);  // [nU, bS] × [bS, nU] = [nU, nU]
-
-  // Calculate dLdWux
-  NDArray dLdWuxTemp = mmul(*xT, dLdZu);
-  dLdWux.assign(&dLdWuxTemp);  // [iS, bS] × [bS, nU] = [iS, nU]
-
-  // Calculate dLdWuh
-  NDArray dLdWuhTemp = mmul(*hLastT, dLdZu);
-  dLdWuh.assign(&dLdWuhTemp);  // [nU, bS] × [bS, nU] = [nU, nU]
-
-  // Calculate dLdWcx
-  NDArray dLdWcxTemp = mmul(*xT, dLdZc);
-  dLdWcx.assign(&dLdWcxTemp);  // [iS, bS] × [bS, nU] = [iS, nU]
-
-  // Calculate rTimesHLast and dLdWch
-  NDArray *rTimesHLast = (r * *hLast).transpose();
-  NDArray dLdWchTemp = mmul(*rTimesHLast, dLdZc);
-  dLdWch.assign(&dLdWchTemp);  // [nU, bS] × [bS, nU] = [nU, nU]
-
+  // dLdWrx = xT × dLdZr
+  auto dLdWrxTemp = mmul(*xT, *dLdZr);
+  dLdWrx->assign(dLdWrxTemp);  // [iS, bS] × [bS, nU] = [iS, nU]
+  delete dLdWrxTemp;
+  // dLdWrh = hLastT × dLdZr
+  auto dLdWrhTemp = mmul(*hLastT, *dLdZr);
+  dLdWrh->assign(dLdWrhTemp);  // [nU, bS] × [bS, nU] = [nU, nU]
+  delete dLdWrhTemp;
+  // dLdWux = xT × dLdZu
+  auto dLdWuxTemp = mmul(*xT, *dLdZu);
+  dLdWux->assign(dLdWuxTemp);  // [iS, bS] × [bS, nU] = [iS, nU]
+  delete dLdWuxTemp;
+  // dLdWuh = hLastT × dLdZu
+  auto dLdWuhTemp = mmul(*hLastT, *dLdZu);
+  dLdWuh->assign(dLdWuhTemp);  // [nU, bS] × [bS, nU] = [nU, nU]
+  delete dLdWuhTemp;
+  // dLdWcx = xT × dLdZc
+  auto dLdWcxTemp = mmul(*xT, *dLdZc);
+  dLdWcx->assign(dLdWcxTemp);  // [iS, bS] × [bS, nU] = [iS, nU]
+  delete dLdWcxTemp;
+  // dLdWch = (r * hLast)T × dLdZc
+  auto* rTimesHLast = r * (*hLast);
+  NDArray* rTimesHLastT = rTimesHLast->transpose();
+  delete rTimesHLast;
+  auto dLdWchTemp = mmul(*rTimesHLastT, *dLdZc);
+  dLdWch->assign(dLdWchTemp);  // [nU, bS] × [bS, nU] = [nU, nU]
+  delete dLdWchTemp;
   // Calculate reduction for bias gradients
   std::vector<sd::LongType> zeroVec = {0};
-  NDArray dLdbrTemp = dLdZr.reduceAlongDimension(reduce::Sum, &zeroVec);
-  dLdbr.assign(&dLdbrTemp);  // [nU]
+  auto* dLdbrTemp = dLdZr->reduceAlongDimension(reduce::Sum, &zeroVec);
+  dLdbr->assign(dLdbrTemp);  // [nU]
+  delete dLdbrTemp;
 
-  NDArray dLdbuTemp = dLdZu.reduceAlongDimension(reduce::Sum, &zeroVec);
-  dLdbu.assign(&dLdbuTemp);  // [nU]
+  auto* dLdbuTemp = dLdZu->reduceAlongDimension(reduce::Sum, &zeroVec);
+  dLdbu->assign(dLdbuTemp);  // [nU]
+  delete dLdbuTemp;
 
-  NDArray dLdbcTemp = dLdZc.reduceAlongDimension(reduce::Sum, &zeroVec);
-  dLdbc->assign(&dLdbcTemp);  // [nU]
+  auto* dLdbcTemp = dLdZc->reduceAlongDimension(reduce::Sum, &zeroVec);
+  dLdbc->assign(dLdbcTemp);  // [nU]
+  delete dLdbcTemp;
+
+  delete dhdc;
+  delete dLdZc;
+  delete dLdZu;
+  delete dLdZr;
+  delete dldZTimeR;
+  delete Wrx;
+  delete Wux;
+  delete Wrh;
+  delete Wuh;
+  delete Wcx;
+  delete Wch;
+  delete br;
+  delete bu;
+  delete WrxT;
+  delete WuxT;
+  delete WrhT;
+  delete WuhT;
+  delete WcxT;
+  delete WchT;
+  delete dLdWrx;
+  delete dLdWux;
+  delete dLdWrh;
+  delete dLdWuh;
+  delete dLdWcx;
+  delete dLdWch;
+  delete dLdbr;
+  delete dLdbu;
+  delete xT;
+  delete hLastT;
+  delete rTimesHLastT;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -443,112 +508,112 @@ void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hI, NDArray* Wx,
 
   // 3*nOut means following sequence: reset, update, cell
 
-  // * means element-wnIne product or so called Hadamard product
+  // * means element-wise product or so called Hadamard product
   // × means matrix multiplication
-
-  // formulas:
-  // zr = x × Wxr + hI × Whr + br
-  // zu = x × Wxu + hI × Whu + bu
-  // r = sigmoid(zr)
-  // u = sigmoid(zu)
-  // zc = x × Wxc + (r * hI) × Whc + bc
-  // c = tanh(zc)
-  // h = (1-u)*c + u*hI
-
-  // dLdhI += dLdh;                       [bS, nOut]
-
-  // dhdc = 1 - u                                                             [bS, nOut]
-  // dhdu = -c + hI                                                           [bS, nOut]
-
-  // dcdzc = 1 - c*c;                                                         [bS, nOut]
-  // dudzu = u*(1-u)                                                          [bS, nOut]
-  // drdzr = r(1-r)                                                           [bS, nOut]
-
-  // dzcdr = (...*hI × WhcT)                                                  [bS, nOut]
-
-  // dLdzr = dLdh*dhdc*dcdzc*dzcdr*drdzr = (dLdzc*hI*r(1-r) × WhcT);          [bS, nOut]
-  // dLdzu = dLdh*dhdu*dudzu = dLdh*(hI-c)*u*(1-u)                            [bS, nOut]
-  // dLdzc = dLdh*dhdc*dcdzc = dLdh*(1-u)*(1-c*c)                             [bS, nOut]
-
-  // dLdx  = dLdzr × WxrT + dLdzu × WxuT + dLdzc × WxcT,                      [bs, nOut] × [nOut, nIn] + ... =  [bS,
-  // nIn]
-
-  // dLdhI = dLdzr × WhrT + dLdzu × WhuT + dLdzc × WhcT,                      [bs, nOut] × [nOut, nOut] + ... =  [bS,
-  // nOut]
-
-  // dLdWxr = xT × dLdzr                          [nIn, bS] x [bS, nOut] = [nIn, nOut]
-  // dLdWxu = xT × dLdzu                          [nIn, bS] x [bS, nOut] = [nIn, nOut]
-  // dLdWxc = xT × dLdzc                          [nIn, bS] x [bS, nOut] = [nIn, nOut]
-
-  // dLdWhr = xT × dLdzr                          [nOut, bS] x [bS, nOut] = [nOut, nOut]
-  // dLdWhu = xT × dLdzu                          [nOut, bS] x [bS, nOut] = [nOut, nOut]
-  // dLdWhc = (r*hI)T × dLdzc                     [nOut, bS] x [bS, nOut] = [nOut, nOut]
-
-  // dLdbr = dLdzr.reduce_sum_along_0_axis        [bS, nOut] -> reduce -> [nOut]
-  // dLdbu = dLdzu.reduce_sum_along_0_axis        [bS, nOut] -> reduce -> [nOut]
-  // dLdbc = dLdzc.reduce_sum_along_0_axis        [bS, nOut] -> reduce -> [nOut]
 
   const int nOut = hI->sizeAt(1);
 
   NDArray *gatesULike = gates->ulike();
   NDArray dLdz = *gatesULike;  // [bS, 3*nOut]
 
-  NDArray dLdzru = dLdz({0, 0, 0, 2 * nOut});  // [bS, 2*nOut]
+  NDArray *dLdzru = dLdz({0, 0, 0, 2 * nOut});  // [bS, 2*nOut]
 
-  NDArray dLdzr = dLdz({0, 0, 0, nOut});             // [bS, nOut]
-  NDArray dLdzu = dLdz({0, 0, nOut, 2 * nOut});      // [bS, nOut]
-  NDArray dLdzc = dLdz({0, 0, 2 * nOut, 3 * nOut});  // [bS, nOut]
+  NDArray *dLdzr = dLdz({0, 0, 0, nOut});             // [bS, nOut]
+  NDArray *dLdzu = dLdz({0, 0, nOut, 2 * nOut});      // [bS, nOut]
+  NDArray *dLdzc = dLdz({0, 0, 2 * nOut, 3 * nOut});  // [bS, nOut]
 
-  NDArray r = (*gates)({0, 0, 0, nOut});             // [bS, nOut]
-  NDArray u = (*gates)({0, 0, nOut, 2 * nOut});      // [bS, nOut]
-  NDArray c = (*gates)({0, 0, 2 * nOut, 3 * nOut});  // [bS, nOut]
+  NDArray *r = (*gates)({0, 0, 0, nOut});             // [bS, nOut]
+  NDArray *u = (*gates)({0, 0, nOut, 2 * nOut});      // [bS, nOut]
+  NDArray *c = (*gates)({0, 0, 2 * nOut, 3 * nOut});  // [bS, nOut]
 
-  NDArray *WhcT = (*Wh)({0, 0, 2 * nOut, 3 * nOut}).transpose();
+  NDArray *WhView = (*Wh)({0, 0, 2 * nOut, 3 * nOut});
+  NDArray *WhcT = WhView->transpose();
 
   if (dLdh) *dLdhI += *dLdh;
 
-  NDArray temp1 = 1 - u;  // [bS, nOut]
+  auto* oneMinusU = 1 - (*u);  // [bS, nOut]
 
-  // dLdzc
-  NDArray dLdzcTemp = *dLdhI * temp1 * (1 - c * c);
-  dLdzc.assign(&dLdzcTemp);  // [bS, nOut]
+  // dLdzc = dLdhI * (1-u) * (1-c²)
+  auto* cSquared = (*c) * (*c);
+  auto* oneMinusCSquared = 1.f - (*cSquared);
+  delete cSquared;
+  auto* temp1 = (*dLdhI) * (*oneMinusU);
+  auto* dLdzcTemp = (*temp1) * (*oneMinusCSquared);
+  delete temp1;
+  delete oneMinusCSquared;
+  dLdzc->assign(dLdzcTemp);  // [bS, nOut]
+  delete dLdzcTemp;
 
-  // dLdzu
-  NDArray dLdzuTemp = *dLdhI * (*hI - c) * u * temp1;
-  dLdzu.assign(&dLdzuTemp);  // [bS, nOut]
+  // dLdzu = dLdhI * (hI - c) * u * (1-u)
+  auto* hIMinusC = (*hI) - (*c);
+  auto* uTimesOneMinusU = (*u) * (*oneMinusU);
+  auto* temp2 = (*dLdhI) * (*hIMinusC);
+  auto* dLdzuTemp = (*temp2) * (*uTimesOneMinusU);
+  delete temp2;
+  delete hIMinusC;
+  delete uTimesOneMinusU;
+  dLdzu->assign(dLdzuTemp);  // [bS, nOut]
+  delete dLdzuTemp;
+  delete oneMinusU;
 
-  // dLdzr
-  NDArray temp2 = dLdzc * (*hI) * r * (1 - r);
-  MmulHelper::mmul(&temp2, WhcT, &dLdzr);  // [bS, nOut] x [nOut, nOut] = [bS, nOut]
+  // dLdzr = (dLdzc * hI * r * (1-r)) × WhcT
+  auto* oneMinusR = 1 - (*r);
+  auto* rTimesOneMinusR = (*r) * (*oneMinusR);
+  delete oneMinusR;
+  auto* temp3 = (*dLdzc) * (*hI);
+  auto* temp4 = (*temp3) * (*rTimesOneMinusR);
+  delete temp3;
+  delete rTimesOneMinusR;
+  MmulHelper::mmul(temp4, WhcT, dLdzr);  // [bS, nOut] x [nOut, nOut] = [bS, nOut]
+  delete temp4;
 
-  // dLdx
+  // dLdx = dLdz × WxT
   NDArray *WxT = Wx->transpose();
   MmulHelper::mmul(&dLdz, WxT, dLdx);  // [bS, 3*nOut] x [3*nOut, nIn] = [bS, nIn]
 
+  // dLdWx += xT × dLdz
   NDArray *xT = x->transpose();
-  // dLdWx
-  *dLdWx += mmul(*xT, dLdz);  // [nIn, bS] x [bS, 3*nOut] = [nIn, 3*nOut]
+  auto dLdWxAdd = mmul(*xT, dLdz);
+  *dLdWx += *dLdWxAdd;  // [nIn, bS] x [bS, 3*nOut] = [nIn, 3*nOut]
 
+  delete dLdWxAdd;
+  // dLdb += sum(dLdz, axis=0)
   std::vector<sd::LongType> zeroVec = {0};
-  // dLdb
-  *dLdb += dLdz.reduceAlongDimension(reduce::Sum, &zeroVec);  // [bS, 3*nOut] -> reduce -> [3*nOut];
+  auto* dLdbAdd = dLdz.reduceAlongDimension(reduce::Sum, &zeroVec);
+  *dLdb += (*dLdbAdd);  // [bS, 3*nOut] -> reduce -> [3*nOut];
+  delete dLdbAdd;
 
-  dLdzc *= r;
+  *dLdzc *= (*r);
 
-  // dLdhI
+  // dLdhI = dLdhI * u + dLdz × WhT
   NDArray *WhT = Wh->transpose();
-  NDArray dLdhIAssign = *dLdhI * u + mmul(dLdz, *WhT);
-  dLdhI->assign(&dLdhIAssign);  // [bS, 3*nOut] x [3*nOut, nOut] = [bS, nOut]
+  auto* dLdhIU = (*dLdhI) * (*u);
+  auto mmulResult = mmul(dLdz, *WhT);
+  auto* dLdhIAssign = (*dLdhIU) + *mmulResult;
+  delete dLdhIU;
+  delete mmulResult;
+  dLdhI->assign(dLdhIAssign);  // [bS, 3*nOut] x [3*nOut, nOut] = [bS, nOut]
+  delete dLdhIAssign;
 
+  // dLdWh += hIT × dLdz
   NDArray *hITranspose = hI->transpose();
-  // dLdWr
-  *dLdWh += mmul(*hITranspose, dLdz);  // [nOut, bS] x [bS, 3*nOut] = [nOut, 3*nOut]
-  delete gatesULike;
+  auto dLdWhAdd = mmul(*hITranspose, dLdz);
+  *dLdWh += *dLdWhAdd;  // [nOut, bS] x [bS, 3*nOut] = [nOut, 3*nOut]
+  delete dLdWhAdd;
 
+  delete gatesULike;
+  delete dLdzru;
+  delete dLdzr;
+  delete dLdzu;
+  delete dLdzc;
+  delete r;
+  delete u;
+  delete c;
+  delete WhView;
+  delete WhcT;
   delete hITranspose;
   delete WhT;
   delete xT;
-  delete WhcT;
   delete WxT;
 }
 

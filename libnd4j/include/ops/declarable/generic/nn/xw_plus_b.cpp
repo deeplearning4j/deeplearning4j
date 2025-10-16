@@ -51,7 +51,9 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
   
   if (x->rankOf() > 2) {
     // Save original shape for later
-    originalShape = x->getShapeAsVector();
+    auto* originalShapePtr = x->getShapeAsVector();
+    originalShape = *originalShapePtr;
+    delete originalShapePtr;
     
     // Calculate the 2D shape: flatten all but last dimension
     sd::LongType batchSize = 1;
@@ -222,10 +224,11 @@ CUSTOM_OP_IMPL(xw_plus_b_bp, 4, 3, false, 0, 0) {
 
   auto dLdw = (bTranspose) ? new NDArray(OUTPUT_VARIABLE(1)->transpose()) : OUTPUT_VARIABLE(1);
 
-  // dLdb
+  // dLdb - reduceAlongDimension returns pointer
   std::vector<LongType> dims({0});
-  NDArray assign = dLdz->reduceAlongDimension(reduce::Sum, &dims);
-  dLdb->assign(&assign);
+  auto* assign = dLdz->reduceAlongDimension(reduce::Sum, &dims);
+  dLdb->assign(assign);
+  delete assign;
 
   matmul_bp mmul_bp;
   mmul_bp.execute({x, w, dLdz}, std::vector<NDArray*>{dLdx, dLdw}, {}, {}, {});

@@ -115,7 +115,9 @@ sd::Status LegacyReduceOp::validateAndExecute(Context &block) {
 
       // keepDims processing, for TF compatibility
       if (block.getIArguments()->size() > 0 && block.getIArguments()->at(0) == 1) {
-        std::vector<sd::LongType> newshape(z->getShapeAsVector());
+        auto* newshapePtr = z->getShapeAsVector();
+        std::vector<sd::LongType> newshape = *newshapePtr;
+        delete newshapePtr;
         for (int e = 0; e < axis.size(); e++) {
           auto a = axis.at(e);
           newshape.insert(newshape.begin() + a, 1);

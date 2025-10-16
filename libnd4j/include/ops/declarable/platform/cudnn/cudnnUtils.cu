@@ -42,7 +42,9 @@ std::tuple<std::unique_ptr<NDArray>, std::unique_ptr<NDArray>> checkConv2dCUDNNP
 
   if (!isPHasymm && !isPWasymm) return std::make_tuple(std::move(uNewInput), std::move(uNewGradI));
 
-  std::vector<LongType> newShape = input->getShapeAsVector();
+  auto* newShapePtr = input->getShapeAsVector();
+  std::vector<LongType> newShape = *newShapePtr;
+  delete newShapePtr;
 
   const int iHposition = isNCHW ? 2 : 1;
 
@@ -76,7 +78,9 @@ std::tuple<std::unique_ptr<NDArray>, std::unique_ptr<NDArray>> checkConv3dCUDNNP
   std::unique_ptr<NDArray> uNewInput = {}, uNewGradI = {};
   if (!isPDasymm && !isPHasymm && !isPWasymm) return std::make_tuple(std::move(uNewInput), std::move(uNewGradI));
 
-  std::vector<LongType> newShape = input->getShapeAsVector();
+  auto* newShapePtr = input->getShapeAsVector();
+  std::vector<LongType> newShape = *newShapePtr;
+  delete newShapePtr;
 
   const int iDposition = isNCDHW ? 2 : 1;
 

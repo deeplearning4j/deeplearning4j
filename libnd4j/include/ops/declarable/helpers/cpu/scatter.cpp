@@ -84,9 +84,10 @@ void scatter(sd::LaunchContext* context, pairwise::Ops op, NDArray& indices, NDA
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
         sd::LongType idx = indices.e<sd::LongType>(i);
-        NDArray out = output({idx, idx + 1});
+        NDArray *out = output({idx, idx + 1});
         NDArray updateE = updates.e(i);
-        out.applyPairwiseTransform(op, &updateE);
+        out->applyPairwiseTransform(op, &updateE);
+        delete out;
       }
     };
 
@@ -101,9 +102,11 @@ void scatter(sd::LaunchContext* context, pairwise::Ops op, NDArray& indices, NDA
 
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
-        NDArray outSubArr = output(indices.e<sd::LongType>(i), std::vector<sd::LongType >({0}));
-        NDArray updSubArr = updates(i, dimsToExcludeUpd);
-        outSubArr.applyPairwiseTransform(op, &updSubArr);
+        NDArray *outSubArr = output(indices.e<sd::LongType>(i), std::vector<sd::LongType >({0}));
+        NDArray *updSubArr = updates(i, dimsToExcludeUpd);
+        outSubArr->applyPairwiseTransform(op, updSubArr);
+        delete outSubArr;
+        delete updSubArr;
       }
     };
 
@@ -123,10 +126,11 @@ void scatterND(sd::LaunchContext* context, pairwise::Ops op, NDArray& indices, N
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
         sd::LongType idx = indices.e<sd::LongType>(i);
-        NDArray out = output({idx, idx + 1});
+        NDArray *out = output({idx, idx + 1});
         NDArray updatesE = updates.e(i);
         ExtraArguments *extraArgs = nullptr;
-        out.applyPairwiseTransform(op, &updatesE, extraArgs);
+        out->applyPairwiseTransform(op, &updatesE, extraArgs);
+        delete out;
       }
     };
 
@@ -141,16 +145,19 @@ void scatterND(sd::LaunchContext* context, pairwise::Ops op, NDArray& indices, N
       std::vector<sd::LongType> idxRangeOut(2 * outRank, 0);
 
       for (auto i = start; i < stop; i++) {
-        NDArray indSubArr = indices(i, *dimsToExcludeInd);
+        NDArray *indSubArr = indices(i, *dimsToExcludeInd);
         for (sd::LongType j = 0; j < indLastDim; ++j) {
-          idxRangeOut[2 * j] = indSubArr.e<sd::LongType>(j);
+          idxRangeOut[2 * j] = indSubArr->e<sd::LongType>(j);
           idxRangeOut[2 * j + 1] = idxRangeOut[2 * j] + 1;
         }
 
-        NDArray outSubArr = output(idxRangeOut);
-        NDArray updSubArr = updates(i, dimsToExcludeUpd);
+        NDArray *outSubArr = output(idxRangeOut);
+        NDArray *updSubArr = updates(i, dimsToExcludeUpd);
 
-        outSubArr.applyPairwiseTransform(op, &updSubArr);
+        outSubArr->applyPairwiseTransform(op, updSubArr);
+        delete outSubArr;
+        delete indSubArr;
+        delete updSubArr;
       }
     };
 
@@ -184,8 +191,9 @@ void scatterForLoss(sd::LaunchContext* context, NDArray& indices, NDArray& updat
       for (auto i = start; i < stop; i++) {
         auto subArr = updates(i, *dimsToExclude);
         auto ind = indices.e<sd::LongType>(i);
-        auto curr = subArr.e<sd::LongType>(ind) - 1.;
-        subArr.p(ind,curr);
+        auto curr = subArr->e<sd::LongType>(ind) - 1.;
+        subArr->p(ind,curr);
+        delete subArr;
       }
     };
 

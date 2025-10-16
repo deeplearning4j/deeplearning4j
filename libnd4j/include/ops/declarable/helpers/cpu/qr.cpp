@@ -32,11 +32,15 @@ namespace helpers {
 
 template <typename T>
 NDArray matrixMinor(NDArray& in, sd::LongType col) {
-  NDArray *m = in.ulike();
+  NDArray* m = in.ulike();
   m->setIdentity();
   auto mRef = *m;
-  auto view =  mRef({col, m->rows(), col, m->columns()});
-  view.assign(&in({col, m->rows(), col, m->columns()}));
+  auto view = mRef({col, m->rows(), col, m->columns()});
+  auto inView = in({col, m->rows(), col, m->columns()});
+  view->assign(inView);
+  delete view;
+  delete inView;
+  delete m;
 
   return mRef;
 }
@@ -75,20 +79,36 @@ void qrSingle(NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatricies)
 
     std::vector<sd::LongType> zeroVec = {0};
     auto currentColumn = z({0, 0, k, k + 1});  // retrieve k column from z to x buffer
-    auto norm = currentColumn.reduceAlongDimension(reduce::Norm2,&zeroVec);
-    if (matrix->t<T>(k, k) > T(0.f))  // negate on positive matrix diagonal element
-      norm *= T(-1.f);
-
+    auto *normPtr = currentColumn->reduceAlongDimension(reduce::Norm2,&zeroVec);
+    NDArray norm = *normPtr;
+    delete normPtr;
+    
+    if (matrix->t<T>(k, k) > T(0.f)) {  // negate on positive matrix diagonal element
+      NDArray *negNorm = norm * T(-1.f);
+      norm.assign(negNorm);
+      delete negNorm;
+    }
 
     e.p(k, &norm);
-    e += currentColumn;  //  e += tE; // e[i] = x[i] + a * e[i] for each i from 0 to n - 1
-    auto normE = e.reduceAlongDimension(reduce::Norm2, &zeroVec);
-    e /= normE;
+    NDArray *ePlusColumn = e + (*currentColumn);
+    e.assign(ePlusColumn);
+    delete ePlusColumn;
+    
+    auto *normEPtr = e.reduceAlongDimension(reduce::Norm2, &zeroVec);
+    NDArray *eDivNormE = e / (*normEPtr);
+    e.assign(eDivNormE);
+    delete eDivNormE;
+    delete normEPtr;
+    
     q[k] = vmul<T>(e, M);
     auto qQ = z.ulike();
     MmulHelper::matmul(&q[k], &z, qQ, false, false, 0, 0, qQ);
     z = std::move(*qQ);
+
+    delete currentColumn;
   }
+
+
   resQ->assign(&q[0]);  //
 
   for (sd::LongType i = 1; i < N && i < M - 1; i++) {
@@ -106,8 +126,11 @@ void qrSingle(NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatricies)
     auto resQRef = *resQ;
     auto resRRef = *resR;
     auto resQView = resQRef({0, 0, 0, N});
-    Q->assign(&resQRef({0, 0, 0, N}));
-    R->assign(&resRRef({0, N, 0, 0}));
+    auto resRView = resRRef({0, N, 0, 0});
+    Q->assign(resQView);
+    R->assign(resRView);
+    delete resQView;
+    delete resRView;
   }
 
   delete resQ;

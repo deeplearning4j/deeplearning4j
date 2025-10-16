@@ -68,23 +68,27 @@ CONFIGURABLE_OP_IMPL(softmax_bp, 3, 1, true, 0, 0) {
   // Refactored to minimize temporary allocations and ensure proper cleanup
   gradI->assign(softmaxedOut);
   
-  // Perform operations in-place where possible to avoid unnecessary temporaries
+  // Perform operations with proper pointer management
   std::vector<sd::LongType> dimVector = {dim};
   
-  // Compute gradI * gradO and store in a temporary
-  NDArray temp = *gradI * *gradO;
+  // Compute gradI * gradO - returns pointer
+  auto* temp = (*gradI) * (*gradO);
   
-  // Reduce along dimension - this returns a new NDArray
-  NDArray sumAlongDim = temp.reduceAlongDimension(reduce::Sum, &dimVector, true);
+  // Reduce along dimension - returns pointer
+  auto* sumAlongDim = temp->reduceAlongDimension(reduce::Sum, &dimVector, true);
+  delete temp;
   
-  // Compute gradO - sumAlongDim
-  NDArray diff = *gradO - sumAlongDim;
+  // Compute gradO - sumAlongDim - returns pointer
+  auto* diff = (*gradO) - (*sumAlongDim);
+  delete sumAlongDim;
   
-  // Compute final result: gradI * diff
-  NDArray result = *gradI * diff;
+  // Compute final result: gradI * diff - returns pointer
+  auto* result = (*gradI) * (*diff);
+  delete diff;
   
   // Assign result to output
-  gradI->assign(&result);
+  gradI->assign(result);
+  delete result;
 
   return sd::Status::OK;
 }

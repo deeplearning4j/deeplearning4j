@@ -88,12 +88,18 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     x->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdy);
 
   }else if (x->isScalar()) {  // x is scalar and y is not
-    NDArray dLdxTemp = (*y * *dLdz).reduceNumber(reduce::Sum);
-    dLdx->assign(&dLdxTemp);
+    NDArray *yMulDldz = (*y) * (*dLdz);
+    NDArray *dLdxTemp = yMulDldz->reduceNumber(reduce::Sum);
+    dLdx->assign(dLdxTemp);
+    delete yMulDldz;
+    delete dLdxTemp;
     dLdz->applyScalarArr(scalar::Multiply, x, dLdy);
   } else if (y->isScalar()) {  // y is scalar and x is not
-    NDArray dLdyTemp = (*x * *dLdz).reduceNumber(reduce::Sum);
-    dLdy->assign(&dLdyTemp);
+    NDArray *xMulDldz = (*x) * (*dLdz);
+    NDArray *dLdyTemp = xMulDldz->reduceNumber(reduce::Sum);
+    dLdy->assign(dLdyTemp);
+    delete xMulDldz;
+    delete dLdyTemp;
     dLdz->applyScalarArr(scalar::Multiply, y, dLdx);
   } else if (x->isSameShape(y)) {
     x->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdy);
@@ -103,15 +109,19 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     y->tile(yTiled);
     std::vector<LongType> axesForY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), dLdz->shapeInfo());
 
-    NDArray dLdyTemp = (*x * *dLdz).reduceAlongDimension(reduce::Sum, &axesForY);
-    dLdy->assign(&dLdyTemp);
+    NDArray *xMulDldz = (*x) * (*dLdz);
+    NDArray *dLdyTemp = xMulDldz->reduceAlongDimension(reduce::Sum, &axesForY);
+    dLdy->assign(dLdyTemp);
+    delete xMulDldz;
+    delete dLdyTemp;
     yTiled.applyPairwiseTransform(pairwise::Multiply, dLdz, dLdx);
   } else if (y->isSameShape(dLdz)) {
     auto xTiled = NDArray(dLdz, false, block.launchContext());
     x->tile(xTiled);
     std::vector<LongType> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), dLdz->shapeInfo());
-    NDArray dLdxTemp = (*y * *dLdz).reduceAlongDimension(reduce::Sum, &axesForX);
-    dLdx->assign(&dLdxTemp);    xTiled.applyPairwiseTransform(pairwise::Multiply, dLdz, dLdy);
+    NDArray *dLdxTemp = (*y * *dLdz)->reduceAlongDimension(reduce::Sum, &axesForX);
+    dLdx->assign(dLdxTemp);
+    xTiled.applyPairwiseTransform(pairwise::Multiply, dLdz, dLdy);
   } else {
     auto xTiled = NDArray(dLdz, false, block.launchContext());
     auto yTiled = NDArray(dLdz, false, block.launchContext());
@@ -121,12 +131,15 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     std::vector<LongType> axesForY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), dLdz->shapeInfo());
 
     // For dLdx
-    NDArray dLdxTemp = (*y * *dLdz).reduceAlongDimension(reduce::Sum, &axesForX);
-    dLdx->assign(&dLdxTemp);
+    NDArray *yMulDldz = (*y) * (*dLdz);
+    NDArray *dLdxTemp = yMulDldz->reduceAlongDimension(reduce::Sum, &axesForX);
+    dLdx->assign(dLdxTemp);
+    delete yMulDldz;
+    delete dLdxTemp;
 
     // For dLdy
-    NDArray dLdyTemp = (*x * *dLdz).reduceAlongDimension(reduce::Sum, &axesForY);
-    dLdy->assign(&dLdyTemp);
+    NDArray *dLdyTemp = (*x * *dLdz)->reduceAlongDimension(reduce::Sum, &axesForY);
+    dLdy->assign(dLdyTemp);
   }
 
   return Status::OK;

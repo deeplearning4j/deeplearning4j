@@ -65,8 +65,9 @@ static sd::Status solveFunctor_(sd::LaunchContext* context, NDArray* leftInput, 
   // stage 1: LU decomposition batched
   auto leftOutput = leftInput->ulike();
   auto permuShape = rightInput->getShapeAsVector();
-  permuShape.pop_back();
-  auto permutations = NDArrayFactory::create<sd::LongType>('c', permuShape, context);
+  permuShape->pop_back();
+  std::vector<sd::LongType> &shapeDeRef = *permuShape;
+  auto permutations = NDArrayFactory::create<sd::LongType>('c', shapeDeRef, context);
   helpers::lu(context, leftInput, leftOutput, permutations);
 
 
@@ -99,6 +100,7 @@ static sd::Status solveFunctor_(sd::LaunchContext* context, NDArray* leftInput, 
   helpers::triangularSolveFunctor(context, leftOutput, rightOutput, false, false, output);
 
   delete permutations;
+  delete permuShape;
   return sd::Status::OK;
 }
 

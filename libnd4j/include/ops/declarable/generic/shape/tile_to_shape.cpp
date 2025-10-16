@@ -71,7 +71,8 @@ CUSTOM_OP_IMPL(tile_to_shape_bp, 2, 1, true, 0, -1) {
   // FIX ME: reduceAlongDimension should have a signature with result pass to avoid assigning twice
   if (!axisX.empty()) {
     auto tempRes = epsNext->reduceAlongDimension(reduce::Sum, &axisX);
-    gradX->assign(&tempRes);
+    gradX->assign(tempRes);
+    delete tempRes;
   } else
     gradX->assign(epsNext);
 

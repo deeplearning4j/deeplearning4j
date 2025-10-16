@@ -55,13 +55,16 @@ CONFIGURABLE_OP_IMPL(adjust_contrast, 1, 1, true, 0, 0) {
   std::vector<LongType> axes(input->rankOf() - 1);
   for (size_t i = 0; i < axes.size(); ++i) axes[i] = i;
   // mean as reduction for last dimension set
-  auto mean = input->reduceAlongDimension(reduce::Mean, &axes);
-  auto part1 = (*input - mean);
-  auto part2 = part1 * *factor;
-  auto part3 = part2 + mean;
+  auto* mean = input->reduceAlongDimension(reduce::Mean, &axes);
+  auto* part1 = (*input) - (*mean);
+  auto* part2 = (*part1) * (*factor);
+  delete part1;
+  auto* part3 = (*part2) + (*mean);
+  delete part2;
+  delete mean;
   // this is contrast calculation
-  output->assign(&part3);
-
+  output->assign(part3);
+  delete part3;
 
   return Status::OK;
 }
@@ -87,8 +90,8 @@ CONFIGURABLE_OP_IMPL(adjust_contrast_v2, 1, 1, true, 0, 0) {
   int sizeChannels = sd::math::sd_max<int>(1,size * channels);
   auto batch = input->lengthOf() / sizeChannels;
   std::vector<LongType> shape = {batch, size, channels};
-  auto input3D = input->reshape(input->ordering(), shape);
-  auto output3D = input->reshape(input->ordering(), shape);
+  auto* input3D = input->reshape(input->ordering(), shape);
+  auto* output3D = input->reshape(input->ordering(), shape);
 
   if (block.width() > 1) {
     factor = INPUT_VARIABLE(1);
@@ -100,14 +103,17 @@ CONFIGURABLE_OP_IMPL(adjust_contrast_v2, 1, 1, true, 0, 0) {
 
   std::vector<LongType> axes({1});  // dim 1 of pseudoresult
   // mean as reduction for last dimension set over size (dim 1) of result3D
-  auto mean = input3D->reduceAlongDimension(reduce::Mean, &axes);
+  auto* mean = input3D->reduceAlongDimension(reduce::Mean, &axes);
   // result as (x - mean) * factor + mean
-  auto temp = input3D->ulike();
+  auto* temp = input3D->ulike();
   std::vector<LongType> zeroTwo = {0, 2};
-  input3D->applyBroadcast(broadcast::Subtract,&zeroTwo, &mean, temp);
+  input3D->applyBroadcast(broadcast::Subtract,&zeroTwo, mean, temp);
   temp->applyScalarArr(scalar::Multiply, factor, temp);
-  temp->applyBroadcast(broadcast::Add, &zeroTwo, &mean, output3D);
+  temp->applyBroadcast(broadcast::Add, &zeroTwo, mean, output3D);
   output->assign(output3D);
+  delete temp;
+  delete mean;
+  delete input3D;
   delete output3D;
   return Status::OK;
 }

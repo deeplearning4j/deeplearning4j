@@ -303,8 +303,9 @@ CUSTOM_OP_IMPL(concat_bp, -1, -1, false, 0, 0) {
     }
 
     auto subarray = (*epsilonNext)(indices, true);
-    epsilonChunk->assign(&subarray);
+    epsilonChunk->assign(subarray);
 
+    delete subarray;
     startPos += width;
   }
 

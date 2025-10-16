@@ -304,15 +304,15 @@ bool segmentIndicesValidate(sd::LaunchContext* context, NDArray* indices, NDArra
 }
 
 BUILD_SINGLE_TEMPLATE( void segmentProdFunctor_, (NDArray * input, NDArray* indices, NDArray* output),
-                      SD_NUMERIC_TYPES);
+                       SD_NUMERIC_TYPES);
 BUILD_SINGLE_TEMPLATE( void segmentSumFunctor_, (NDArray * input, NDArray* indices, NDArray* output),
-                      SD_NUMERIC_TYPES);
+                       SD_NUMERIC_TYPES);
 BUILD_SINGLE_TEMPLATE( void segmentMeanFunctor_, (NDArray * input, NDArray* indices, NDArray* output),
-                      SD_NUMERIC_TYPES);
+                       SD_NUMERIC_TYPES);
 BUILD_SINGLE_TEMPLATE( void segmentMinFunctor_, (NDArray * input, NDArray* indices, NDArray* output),
-                      SD_NUMERIC_TYPES);
+                       SD_NUMERIC_TYPES);
 BUILD_SINGLE_TEMPLATE( void segmentMaxFunctor_, (NDArray * input, NDArray* indices, NDArray* output),
-                      SD_NUMERIC_TYPES);
+                       SD_NUMERIC_TYPES);
 // -------------------------------------------------------------------------------------------------------------- //
 // Unsorted segment ops
 // -------------------------------------------------------------------------------------------------------------- //
@@ -382,8 +382,8 @@ void unsortedSegmentMaxFunctor(sd::LaunchContext* context, NDArray* input, NDArr
                         SD_NUMERIC_TYPES);
 }
 BUILD_SINGLE_TEMPLATE( void unsortedSegmentMaxFunctor_,
-                      (NDArray * input, NDArray* indices, sd::LongType numOfClasses, NDArray* output),
-                      SD_NUMERIC_TYPES);
+                       (NDArray * input, NDArray* indices, sd::LongType numOfClasses, NDArray* output),
+                       SD_NUMERIC_TYPES);
 
 template <typename T>
 static void unsortedSegmentMinFunctor_(NDArray* input, NDArray* indices, sd::LongType numOfClasses, NDArray* output) {
@@ -434,8 +434,8 @@ void unsortedSegmentMinFunctor(sd::LaunchContext* context, NDArray* input, NDArr
 }
 
 BUILD_SINGLE_TEMPLATE( void unsortedSegmentMinFunctor_,
-                      (NDArray * input, NDArray* indices, sd::LongType numOfClasses, NDArray* output),
-                      SD_NUMERIC_TYPES);
+                       (NDArray * input, NDArray* indices, sd::LongType numOfClasses, NDArray* output),
+                       SD_NUMERIC_TYPES);
 
 void unsortedSegmentMeanFunctor(sd::LaunchContext* context, NDArray* input, NDArray* indices, sd::LongType numOfClasses,
                                 NDArray* output) {
@@ -553,8 +553,8 @@ void unsortedSegmentProdFunctor(sd::LaunchContext* context, NDArray* input, NDAr
                         SD_NUMERIC_TYPES);
 }
 BUILD_SINGLE_TEMPLATE( void unsortedSegmentProdFunctor_,
-                      (NDArray * input, NDArray* indices, sd::LongType numOfClasses, NDArray* output),
-                      SD_NUMERIC_TYPES);
+                       (NDArray * input, NDArray* indices, sd::LongType numOfClasses, NDArray* output),
+                       SD_NUMERIC_TYPES);
 
 void unsortedSegmentSqrtNFunctor(sd::LaunchContext* context, NDArray* input, NDArray* indices,
                                  sd::LongType numOfClasses, NDArray* output) {
@@ -648,9 +648,9 @@ sd::Status segmentMaxFunctorBP(sd::LaunchContext* context, NDArray* input, NDArr
                         SD_NUMERIC_TYPES);
 }
 BUILD_SINGLE_TEMPLATE( sd::Status segmentMaxFunctorBP_,
-                      (sd::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut,
-                          NDArray* output),
-                      SD_NUMERIC_TYPES);
+                       (sd::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut,
+                           NDArray* output),
+                       SD_NUMERIC_TYPES);
 
 // segmen min
 sd::Status segmentMinFunctorBP(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
@@ -792,8 +792,11 @@ sd::Status segmentProdFunctorBP(sd::LaunchContext* context, NDArray* input, NDAr
       auto currentOut = listOfOutTensors.at(i);
       auto currentGradOut = listOfGradOuts.at(classNum);
       auto currentFFOut = listOfBPTensors.at(classNum);
-      auto assign = (*currentFFOut) * (*currentGradOut) / (*current);
-      currentOut->assign(&assign);
+      auto mul = (*currentFFOut) * (*currentGradOut);
+      auto assign = (*mul) / (*current);
+      currentOut->assign(assign);
+      delete mul;
+      delete assign;
     }
 
   }
@@ -849,9 +852,9 @@ sd::Status unsortedSegmentMaxFunctorBP(sd::LaunchContext* context, NDArray* inpu
                         (context, input, indices, gradOut, numOfClasses, output), SD_NUMERIC_TYPES);
 }
 BUILD_SINGLE_TEMPLATE( sd::Status unsortedSegmentMaxFunctorBP_,
-                      (sd::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut,
-                          sd::LongType numOfClasses, NDArray* output),
-                      SD_NUMERIC_TYPES);
+                       (sd::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut,
+                           sd::LongType numOfClasses, NDArray* output),
+                       SD_NUMERIC_TYPES);
 
 template <typename T>
 static sd::Status unsortedSegmentMinFunctorBP_(sd::LaunchContext* context, NDArray* input, NDArray* indices,
@@ -899,9 +902,9 @@ sd::Status unsortedSegmentMinFunctorBP(sd::LaunchContext* context, NDArray* inpu
                         (context, input, indices, gradOut, numOfClasses, output), SD_NUMERIC_TYPES);
 }
 BUILD_SINGLE_TEMPLATE( sd::Status unsortedSegmentMinFunctorBP_,
-                      (sd::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut,
-                          sd::LongType numOfClasses, NDArray* output),
-                      SD_NUMERIC_TYPES);
+                       (sd::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut,
+                           sd::LongType numOfClasses, NDArray* output),
+                       SD_NUMERIC_TYPES);
 
 sd::Status unsortedSegmentMeanFunctorBP(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                                         sd::LongType numOfClasses, NDArray* output) {
@@ -934,7 +937,8 @@ sd::Status unsortedSegmentMeanFunctorBP(sd::LaunchContext* context, NDArray* inp
       NDArray* currentOut = listOfOutTensors.at(i);
       NDArray* currentGradOut = listOfGradOuts.at(classNum);
       auto assign = *currentGradOut / double(classCount[classNum]);
-      currentOut->assign(&assign);
+      currentOut->assign(assign);
+      delete assign;
     }
 
     delete restDims;
@@ -999,8 +1003,11 @@ sd::Status unsortedSegmentProdFunctorBP(sd::LaunchContext* context, NDArray* inp
       auto currentOut = listOfOutTensors.at(i);
       auto currentGradOut = listOfGradOuts.at(classNum);
       auto currentFFOut = listOfBPTensors.at(classNum);
-     auto assign = (*currentFFOut) * (*currentGradOut) / (*current);
-      currentOut->assign(&assign);
+      auto div = (*currentGradOut) / (*current);
+      auto assign = (*currentFFOut) * *div;
+      currentOut->assign(assign);
+      delete div;
+      delete assign;
     }
 
   }

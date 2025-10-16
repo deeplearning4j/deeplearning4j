@@ -61,7 +61,9 @@ CUSTOM_OP_IMPL(batch_to_space_nd, 3, 1, false, 0, 0) {
 
   const sd::LongType numOfSpatialDims = blockShape->sizeAt(0);
 
-  const auto product = blockShape->reduceNumber(sd::reduce::Prod).e<sd::LongType>(0);
+  auto prod = blockShape->reduceNumber(sd::reduce::Prod);
+  const auto product = prod->e<sd::LongType>(0);
+  delete prod;
   REQUIRE_TRUE(input->sizeAt(0) % product == 0, 0,
                "BatchToSpaceND: first dimension of input array must be divisible by product of blockShape array "
                "elements (= %lld), but got first dimension equal to %i",
@@ -112,7 +114,9 @@ DECLARE_SHAPE_FN(batch_to_space_nd) {
                "BatchToSpaceND: rank of blockShape array must be equal to one, but got %i instead !",
                blockShapeInfo[0]);
 
-  const auto product = INPUT_VARIABLE(1)->reduceNumber(sd::reduce::Prod).e<sd::LongType>(0);
+  auto prod = INPUT_VARIABLE(1)->reduceNumber(sd::reduce::Prod);
+  const auto product = prod->e<sd::LongType>(0);
+  delete prod;
   REQUIRE_TRUE(inputShapeInfo[1] % product == 0, 0,
                "BatchToSpaceND: first dimension of input array must be divisible by product of blockShape array "
                "elements (= %lld), but got first dimension equal to %i",

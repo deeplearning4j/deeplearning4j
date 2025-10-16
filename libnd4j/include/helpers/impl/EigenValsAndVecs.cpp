@@ -109,10 +109,13 @@ void calcPseudoEigenVecs_(NDArray& schurMatrixT, NDArray& schurMatrixU, NDArray&
   const int numOfCols = schurMatrixU.sizeAt(1);
 
   T norm = static_cast<T>(0);
-  for (int j = 0; j < numOfCols; ++j)
-    norm += schurMatrixT({j, j + 1, math::sd_max<LongType>(j - 1, 0), numOfCols})
-        .reduceNumber(reduce::ASum)
-        .template t<T>(0);
+  for (int j = 0; j < numOfCols; ++j) {
+    NDArray *viewPtr = schurMatrixT({j, j + 1, math::sd_max<LongType>(j - 1, 0), numOfCols});
+    auto* reduceResult = viewPtr->reduceNumber(reduce::ASum);
+    norm += reduceResult->template t<T>(0);
+    delete reduceResult;
+    delete viewPtr;
+  }
 
   if (norm == T(0)) return;
 
@@ -129,8 +132,14 @@ void calcPseudoEigenVecs_(NDArray& schurMatrixT, NDArray& schurMatrixU, NDArray&
 
       for (int i = n - 1; i >= 0; i--) {
         T w = schurMatrixT.t<T>(i, i) - p;
-        T r = mmul(schurMatrixT({i, i + 1, l, n + 1}, true), schurMatrixT({l, n + 1, n, n + 1}, true))
-            .template t<T>(0);  // dot
+        
+        NDArray *view1Ptr = schurMatrixT({i, i + 1, l, n + 1}, true);
+        NDArray *view2Ptr = schurMatrixT({l, n + 1, n, n + 1}, true);
+        NDArray *dotResult = mmul(*view1Ptr, *view2Ptr);
+        T r = dotResult->template t<T>(0);
+        delete view1Ptr;
+        delete view2Ptr;
+        delete dotResult;
 
         if (_Vals.t<T>(i, 1) < T(0)) {
           lastw = w;
@@ -156,8 +165,11 @@ void calcPseudoEigenVecs_(NDArray& schurMatrixT, NDArray& schurMatrixU, NDArray&
           }
 
           T t = math::sd_abs<T,T>(schurMatrixT.t<T>(i, n));
-          if ((DataTypeUtils::eps<T>() * t) * t > T(1))
-            schurMatrixT({schurMatrixT.sizeAt(0) - numOfCols + i, -1, n, n + 1}) /= t;
+          if ((DataTypeUtils::eps<T>() * t) * t > T(1)) {
+            NDArray *divViewPtr = schurMatrixT({schurMatrixT.sizeAt(0) - numOfCols + i, -1, n, n + 1});
+            *divViewPtr /= t;
+            delete divViewPtr;
+          }
         }
       }
     } else if (q < T(0) && n > 0) {  // complex
@@ -177,10 +189,21 @@ void calcPseudoEigenVecs_(NDArray& schurMatrixT, NDArray& schurMatrixU, NDArray&
       schurMatrixT.r<T>(n, n) = T(1);
 
       for (int i = n - 2; i >= 0; i--) {
-        T ra = mmul(schurMatrixT({i, i + 1, l, n + 1}, true), schurMatrixT({l, n + 1, n - 1, n}, true))
-            .template t<T>(0);  // dot
-        T sa = mmul(schurMatrixT({i, i + 1, l, n + 1}, true), schurMatrixT({l, n + 1, n, n + 1}, true))
-            .template t<T>(0);  // dot
+        NDArray *raView1Ptr = schurMatrixT({i, i + 1, l, n + 1}, true);
+        NDArray *raView2Ptr = schurMatrixT({l, n + 1, n - 1, n}, true);
+        NDArray *raDotResult = mmul(*raView1Ptr, *raView2Ptr);
+        T ra = raDotResult->template t<T>(0);
+        delete raView1Ptr;
+        delete raView2Ptr;
+        delete raDotResult;
+        
+        NDArray *saView1Ptr = schurMatrixT({i, i + 1, l, n + 1}, true);
+        NDArray *saView2Ptr = schurMatrixT({l, n + 1, n, n + 1}, true);
+        NDArray *saDotResult = mmul(*saView1Ptr, *saView2Ptr);
+        T sa = saDotResult->template t<T>(0);
+        delete saView1Ptr;
+        delete saView2Ptr;
+        delete saDotResult;
 
         T w = schurMatrixT.t<T>(i, i) - p;
 
@@ -219,7 +242,11 @@ void calcPseudoEigenVecs_(NDArray& schurMatrixT, NDArray& schurMatrixU, NDArray&
           }
 
           T t = math::sd_max<T>(math::sd_abs<T,T>(schurMatrixT.t<T>(i, n - 1)), math::sd_abs<T,T>(schurMatrixT.t<T>(i, n)));
-          if ((DataTypeUtils::eps<T>() * t) * t > T(1)) schurMatrixT({i, numOfCols, n - 1, n + 1}) /= t;
+          if ((DataTypeUtils::eps<T>() * t) * t > T(1)) {
+            NDArray *divViewPtr = schurMatrixT({i, numOfCols, n - 1, n + 1});
+            *divViewPtr /= t;
+            delete divViewPtr;
+          }
         }
       }
       n--;
@@ -228,8 +255,16 @@ void calcPseudoEigenVecs_(NDArray& schurMatrixT, NDArray& schurMatrixU, NDArray&
   }
 
   for (int j = numOfCols - 1; j >= 0; j--) {
-    NDArray assign = mmul(schurMatrixU({0, 0, 0, j + 1}, true), schurMatrixT({0, j + 1, j, j + 1}, true));
-    schurMatrixU({0, 0, j, j + 1}, true).assign(&assign);
+    NDArray *uViewPtr = schurMatrixU({0, 0, 0, j + 1}, true);
+    NDArray *tViewPtr = schurMatrixT({0, j + 1, j, j + 1}, true);
+    NDArray *assignResult = mmul(*uViewPtr, *tViewPtr);
+    delete uViewPtr;
+    delete tViewPtr;
+    
+    NDArray *uAssignPtr = schurMatrixU({0, 0, j, j + 1}, true);
+    uAssignPtr->assign(assignResult);
+    delete uAssignPtr;
+    delete assignResult;
   }
 }
 
@@ -250,13 +285,23 @@ void calcEigenVecs_(NDArray& schurMatrixU, NDArray& _Vals, NDArray& _Vecs) {
         j + 1 == numOfCols) {  // real
 
       _Vecs.syncToDevice();
-      NDArray assign = schurMatrixU({0, 0, j, j + 1});
-      _Vecs({0, 0, j, j + 1, 0, 1}).assign(&assign);
-      _Vecs({0, 0, j, j + 1, 1, 2}) = (T)0;
+      NDArray *assignPtr = schurMatrixU({0, 0, j, j + 1});
+      NDArray *vecsViewPtr = _Vecs({0, 0, j, j + 1, 0, 1});
+      vecsViewPtr->assign(assignPtr);
+      delete assignPtr;
+      delete vecsViewPtr;
+      
+      NDArray *vecsView2Ptr = _Vecs({0, 0, j, j + 1, 1, 2});
+      *vecsView2Ptr = (T)0;
+      delete vecsView2Ptr;
 
       // normalize
-      const T norm2 = _Vecs({0, 0, j, j + 1, 0, 1}).reduceNumber(reduce::SquaredNorm).template t<T>(0);
-      if (norm2 > (T)0) _Vecs({0, 0, j, j + 1, 0, 1}) /= math::sd_sqrt<T, T>(norm2);
+      NDArray *norm2ViewPtr = _Vecs({0, 0, j, j + 1, 0, 1});
+      auto* norm2Result = norm2ViewPtr->reduceNumber(reduce::SquaredNorm);
+      const T norm2 = norm2Result->template t<T>(0);
+      delete norm2Result;
+      if (norm2 > (T)0) *norm2ViewPtr /= math::sd_sqrt<T, T>(norm2);
+      delete norm2ViewPtr;
     } else {  // complex
 
       for (int i = 0; i < numOfCols; ++i) {
@@ -266,12 +311,20 @@ void calcEigenVecs_(NDArray& schurMatrixU, NDArray& _Vals, NDArray& _Vecs) {
       }
 
       // normalize
-      T norm2 = _Vecs({0, 0, j, j + 1, 0, 0}).reduceNumber(reduce::SquaredNorm).template t<T>(0);
-      if (norm2 > (T)0) _Vecs({0, 0, j, j + 1, 0, 0}) /= math::sd_sqrt<T, T>(norm2);
+      NDArray *norm2View1Ptr = _Vecs({0, 0, j, j + 1, 0, 0});
+      auto* norm2Result1 = norm2View1Ptr->reduceNumber(reduce::SquaredNorm);
+      T norm2 = norm2Result1->template t<T>(0);
+      delete norm2Result1;
+      if (norm2 > (T)0) *norm2View1Ptr /= math::sd_sqrt<T, T>(norm2);
+      delete norm2View1Ptr;
 
       // normalize
-      norm2 = _Vecs({0, 0, j + 1, j + 2, 0, 0}).reduceNumber(reduce::SquaredNorm).template t<T>(0);
-      if (norm2 > (T)0) _Vecs({0, 0, j + 1, j + 2, 0, 0}) /= math::sd_sqrt<T, T>(norm2);
+      NDArray *norm2View2Ptr = _Vecs({0, 0, j + 1, j + 2, 0, 0});
+      auto* norm2Result2 = norm2View2Ptr->reduceNumber(reduce::SquaredNorm);
+      norm2 = norm2Result2->template t<T>(0);
+      delete norm2Result2;
+      if (norm2 > (T)0) *norm2View2Ptr /= math::sd_sqrt<T, T>(norm2);
+      delete norm2View2Ptr;
 
       ++j;
     }

@@ -122,15 +122,37 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss, 3, 1, false, 0, 1) {
   std::vector<LongType> *reductionIdx = ShapeUtils::evalDimsToExclude(labels->rankOf(),1,zero.data());
 
   auto n = double(labels->sizeAt(1));
-  auto diffs = *predictions - *labels;
+  
+  // Compute diffs = predictions - labels
+  NDArray* diffs_ptr = (*predictions) - (*labels);
+  NDArray diffs = *diffs_ptr;
+  delete diffs_ptr;
 
-  auto sumOfSquares = (diffs * diffs).reduceAlongDimension(reduce::Sum, reductionIdx, true);
+  // Compute sumOfSquares = sum(diffs^2)
+  NDArray* diffsSquared = diffs * diffs;
+  NDArray* sumOfSquares_ptr = diffsSquared->reduceAlongDimension(reduce::Sum, reductionIdx, true);
+  delete diffsSquared;
+  NDArray sumOfSquares = *sumOfSquares_ptr;
+  delete sumOfSquares_ptr;
 
-  auto squareOfSum = diffs.reduceAlongDimension(reduce::Sum, reductionIdx, true);
+  // Compute squareOfSum = (sum(diffs))^2
+  NDArray* squareOfSum_ptr = diffs.reduceAlongDimension(reduce::Sum, reductionIdx, true);
+  NDArray squareOfSum = *squareOfSum_ptr;
+  delete squareOfSum_ptr;
   squareOfSum.applyScalar(scalar::Pow, 2, &squareOfSum);
 
   delete reductionIdx;
-  auto E = ((sumOfSquares * n) - squareOfSum) * (4 / (n * (n - 1)));
+  
+  // Compute E = ((sumOfSquares * n) - squareOfSum) * (4 / (n * (n - 1)))
+  NDArray* sumOfSquaresTimesN = sumOfSquares * n;
+  NDArray* numerator = (*sumOfSquaresTimesN) - squareOfSum;
+  delete sumOfSquaresTimesN;
+  
+  NDArray* E_ptr = (*numerator) * (4 / (n * (n - 1)));
+  delete numerator;
+  
+  NDArray E = *E_ptr;
+  delete E_ptr;
 
   // weights array can be single scalar or has the same rank as labels, and must be broadcastable to labels
   REQUIRE_TRUE(weights->isScalar() || weights->rankOf() == E.rankOf(), 0,
@@ -162,16 +184,24 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss, 3, 1, false, 0, 1) {
       // all elements of weightsBroad array
       NDArray sum;
       sum.setContext(block.launchContext());
-      if (weights->isScalar())
-        sum = (*weights) * E.lengthOf();
-      else
-        sum = weightsBroad->reduceNumber(reduce::Sum);
+      if (weights->isScalar()) {
+        NDArray* weightTimesLen = (*weights) * E.lengthOf();
+        sum = *weightTimesLen;
+        delete weightTimesLen;
+      } else {
+        NDArray* sumPtr = weightsBroad->reduceNumber(reduce::Sum);
+        sum = *sumPtr;
+        delete sumPtr;
+      }
 
       if (sum.e<double>(0) == 0.)
         (*output) = 0.;
       else {
-        NDArray assign = E.reduceNumber(reduce::Sum) / sum;
-        output->assign(&assign);
+        NDArray* eSum = E.reduceNumber(reduce::Sum);
+        NDArray* result = (*eSum) / sum;
+        delete eSum;
+        output->assign(result);
+        delete result;
       }
       break;
     }
@@ -181,14 +211,19 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss, 3, 1, false, 0, 1) {
       if (weights->isScalar()) {
         if (weights->e<double>(0) != 0.) numOfNonZeroWeights = E.lengthOf();
       } else {
-        numOfNonZeroWeights = weightsBroad->reduceNumber(reduce::CountNonZero).e<LongType>(0);
+        NDArray* countNonZero = weightsBroad->reduceNumber(reduce::CountNonZero);
+        numOfNonZeroWeights = countNonZero->e<LongType>(0);
+        delete countNonZero;
       }
 
       if (numOfNonZeroWeights == 0)
         (*output) = 0.;
       else {
-        NDArray assign = E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights);
-        output->assign(&assign);
+        NDArray* eSum = E.reduceNumber(reduce::Sum);
+        NDArray* result = (*eSum) / double(numOfNonZeroWeights);
+        delete eSum;
+        output->assign(result);
+        delete result;
       }
       break;
     }
@@ -268,23 +303,59 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss_grad, 3, 3, false, 0, 1) {
                reductionMode);
 
   auto n = double(labels->sizeAt(1));
-  auto diffs = *predictions - *labels;
+  
+  // Compute diffs = predictions - labels
+  NDArray* diffs_ptr = (*predictions) - (*labels);
+  NDArray diffs = *diffs_ptr;
+  delete diffs_ptr;
+  
   std::vector<LongType> dims2;
   dims2.push_back(0);
   std::vector<LongType> *reductionIdx = ShapeUtils::evalDimsToExclude(labels->rankOf(), 1,dims2.data());
-  auto sumOfSquares = (diffs * diffs).reduceAlongDimension(reduce::Sum, reductionIdx, true);
+  
+  // Compute sumOfSquares
+  NDArray* diffsSquared = diffs * diffs;
+  NDArray* sumOfSquares_ptr = diffsSquared->reduceAlongDimension(reduce::Sum, reductionIdx, true);
+  delete diffsSquared;
+  NDArray sumOfSquares = *sumOfSquares_ptr;
+  delete sumOfSquares_ptr;
 
-  auto squareOfSum = diffs.reduceAlongDimension(reduce::Sum, reductionIdx, true);
+  // Compute squareOfSum
+  NDArray* squareOfSum_ptr = diffs.reduceAlongDimension(reduce::Sum, reductionIdx, true);
+  NDArray squareOfSum = *squareOfSum_ptr;
+  delete squareOfSum_ptr;
   squareOfSum.applyScalar(scalar::Pow, 2, &squareOfSum);
 
-  auto E = ((sumOfSquares * n) - squareOfSum) * (4 / (n * (n - 1)));
+  // Compute E
+  NDArray* sumOfSquaresTimesN = sumOfSquares * n;
+  NDArray* eTerm1 = (*sumOfSquaresTimesN) - squareOfSum;
+  delete sumOfSquaresTimesN;
+  NDArray* E_ptr = (*eTerm1) * (4 / (n * (n - 1)));
+  delete eTerm1;
+  NDArray E = *E_ptr;
+  delete E_ptr;
 
-  auto sumPred = predictions->reduceAlongDimension(reduce::Sum, reductionIdx, true);
-  auto sumLabel = labels->reduceAlongDimension(reduce::Sum, reductionIdx, true);
+  // Compute gradients for predictions
+  NDArray* sumPred_ptr = predictions->reduceAlongDimension(reduce::Sum, reductionIdx, true);
+  NDArray sumPred = *sumPred_ptr;
+  delete sumPred_ptr;
+  
+  NDArray* sumLabel_ptr = labels->reduceAlongDimension(reduce::Sum, reductionIdx, true);
+  NDArray sumLabel = *sumLabel_ptr;
+  delete sumLabel_ptr;
 
   delete reductionIdx;
-  NDArray assign5 = ((diffs * n) - sumPred + sumLabel) * (8 / (n * (n - 1)));
-  dLdp->assign(&assign5);
+  
+  // Compute dLdp = ((diffs * n) - sumPred + sumLabel) * (8 / (n * (n - 1)))
+  NDArray* diffsTimesN = diffs * n;
+  NDArray* term1 = (*diffsTimesN) - sumPred;
+  delete diffsTimesN;
+  NDArray* term2 = (*term1) + sumLabel;
+  delete term1;
+  NDArray* dLdpTemp = (*term2) * (8 / (n * (n - 1)));
+  delete term2;
+  dLdp->assign(dLdpTemp);
+  delete dLdpTemp;
 
   // weights array can be single scalar or has the same rank as labels, and must be broadcastable to labels
   REQUIRE_TRUE(weights->isScalar() || weights->rankOf() == E.rankOf(), 0,
@@ -307,8 +378,9 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss_grad, 3, 3, false, 0, 1) {
       *dLdp *= *weightsBroad;
 
       if (weights->isScalar()) {
-        NDArray assign = E.reduceNumber(reduce::Sum);
-        dLdw->assign(&assign);
+        NDArray* eSum = E.reduceNumber(reduce::Sum);
+        dLdw->assign(eSum);
+        delete eSum;
       } else if (weights != weightsBroad) {
         std::vector<LongType> axesToReduceAlong =
             ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
@@ -322,27 +394,65 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss_grad, 3, 3, false, 0, 1) {
 
       NDArray sum;
       sum.setContext(block.launchContext());
-      if (weights->isScalar())
-        sum = (*weights) * E.lengthOf();
-      else
-        sum = weightsBroad->reduceNumber(reduce::Sum);
+      if (weights->isScalar()) {
+        NDArray* weightTimesLen = (*weights) * E.lengthOf();
+        sum = *weightTimesLen;
+        delete weightTimesLen;
+      } else {
+        NDArray* sumPtr = weightsBroad->reduceNumber(reduce::Sum);
+        sum = *sumPtr;
+        delete sumPtr;
+      }
 
       if (sum.e<double>(0) == 0.) {
         *dLdp = 0.;
         *dLdw = 0.;
       } else {
-        *dLdp *= *weightsBroad / sum;
+        NDArray* weightsDivSum = (*weightsBroad) / sum;
+        *dLdp *= *weightsDivSum;
+        delete weightsDivSum;
 
         if (weights->isScalar())
           *dLdw = 0.;
         else if (weights != weightsBroad) {
           std::vector<LongType> axesToReduceAlong =
               ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
-          ((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum * sum))
-              .reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
+          
+          // Compute (E * sum - (E * weightsBroad).reduceNumber(Sum)) / (sum * sum)
+          NDArray* ETimesSum = E * sum;
+          NDArray* ETimesWeights = E * (*weightsBroad);
+          NDArray* ETimesWeightsSum = ETimesWeights->reduceNumber(reduce::Sum);
+          delete ETimesWeights;
+          
+          NDArray* numerator = (*ETimesSum) - (*ETimesWeightsSum);
+          delete ETimesSum;
+          delete ETimesWeightsSum;
+          
+          NDArray* sumSquared = sum * sum;
+          NDArray* result = (*numerator) / (*sumSquared);
+          delete numerator;
+          delete sumSquared;
+          
+          result->reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
+          delete result;
         } else {
-          NDArray assign = (E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum * sum);
-          dLdw->assign(&assign);
+          // Compute (E * sum - (E * weightsBroad).reduceNumber(Sum)) / (sum * sum)
+          NDArray* ETimesSum = E * sum;
+          NDArray* ETimesWeights = E * (*weightsBroad);
+          NDArray* ETimesWeightsSum = ETimesWeights->reduceNumber(reduce::Sum);
+          delete ETimesWeights;
+          
+          NDArray* numerator = (*ETimesSum) - (*ETimesWeightsSum);
+          delete ETimesSum;
+          delete ETimesWeightsSum;
+          
+          NDArray* sumSquared = sum * sum;
+          NDArray* result = (*numerator) / (*sumSquared);
+          delete numerator;
+          delete sumSquared;
+          
+          dLdw->assign(result);
+          delete result;
         }
       }
       break;
@@ -353,37 +463,49 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss_grad, 3, 3, false, 0, 1) {
       LongType numOfNonZeroWeights = 0;
       if (weights->isScalar()) {
         if (weights->e<double>(0) != 0.) numOfNonZeroWeights = E.lengthOf();
-      } else
-        numOfNonZeroWeights = weightsBroad->reduceNumber(reduce::CountNonZero).e<LongType>(0);
+      } else {
+        NDArray* countNonZero = weightsBroad->reduceNumber(reduce::CountNonZero);
+        numOfNonZeroWeights = countNonZero->e<LongType>(0);
+        delete countNonZero;
+      }
 
       if (numOfNonZeroWeights == 0) {
         *dLdp = 0.;
         *dLdw = 0.;
       } else {
-        auto numOfNonZeroWeightsScalar =
+        auto* numOfNonZeroWeightsScalar =
             NDArrayFactory::create(dLdw->dataType(), numOfNonZeroWeights, block.launchContext());
 
         if (weights->isScalar()) {
-          NDArray assign = E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights);
-          dLdw->assign(&assign);
+          NDArray* eSum = E.reduceNumber(reduce::Sum);
+          NDArray* result = (*eSum) / double(numOfNonZeroWeights);
+          delete eSum;
+          dLdw->assign(result);
+          delete result;
         } else if (weights != weightsBroad) {
           std::vector<LongType> axesToReduceAlong =
               ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
           E.reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
           *dLdw /= *numOfNonZeroWeightsScalar;
         } else {
-          NDArray assign = E / *numOfNonZeroWeightsScalar;
-          dLdw->assign(&assign);
+          NDArray* eDivNum = E / (*numOfNonZeroWeightsScalar);
+          dLdw->assign(eDivNum);
+          delete eDivNum;
         }
-        NDArray temp = *weightsBroad / *numOfNonZeroWeightsScalar;
+        
+        NDArray* weightsDivNum = (*weightsBroad) / (*numOfNonZeroWeightsScalar);
+        NDArray temp = *weightsDivNum;
+        delete weightsDivNum;
         *dLdp *= temp;
+        
         delete numOfNonZeroWeightsScalar;
       }
       break;
     }
   }
-  NDArray assign = -*dLdp;
-  dLdl->assign(&assign);
+  
+  NDArray negDLdp = -(*dLdp);  // unary negation returns value
+  dLdl->assign(&negDLdp);
 
   if (weightsBroad != weights) delete weightsBroad;
 

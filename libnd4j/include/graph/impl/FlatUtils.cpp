@@ -44,7 +44,7 @@ NDArray *FlatUtils::fromFlatArray(const ::graph::FlatArray *flatArray) {
 
   // empty arrays is special case, nothing to restore here
   if (shape::isEmptyConst(newShape)) {
-     delete[] newShape;
+    delete[] newShape;
     return NDArrayFactory::empty_(dtype, nullptr);
   }
   // TODO fix UTF16 and UTF32
@@ -104,8 +104,9 @@ flatbuffers::Offset<::graph::FlatArray> FlatUtils::toFlatArray(flatbuffers::Flat
   auto byteVector = array.asByteVector();
 
   auto fBuffer = builder.CreateVector(byteVector);
-  auto fShape = builder.CreateVector(array.getShapeInfoAsFlatVector());
-
+  auto vec = array.getShapeInfoAsFlatVector();
+  auto fShape = builder.CreateVector(*vec);
+  delete vec;
   auto bo = static_cast<::graph::ByteOrder>(BitwiseUtils::asByteOrder());
 
   return CreateFlatArray(builder, fShape, fBuffer, static_cast<::graph::DType>(array.dataType()), bo);

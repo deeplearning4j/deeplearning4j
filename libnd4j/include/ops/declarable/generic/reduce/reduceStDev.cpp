@@ -144,16 +144,19 @@ CUSTOM_OP_IMPL(reduce_stdev_bp, -1, 1, false, 0, 0) {
   const sd::LongType N = input->lengthOf() / gradOLen;
   const sd::LongType NminusOne = biasCorrected ? N - 1 : N;
 
-  auto mean = input->reduceAlongDimension(reduce::Mean, &dimensions, true);
+  auto* mean = input->reduceAlongDimension(reduce::Mean, &dimensions, true);
 
-  NDArray variance(mean.shapeInfo(), true,
+  NDArray variance(mean->shapeInfo(), true,
                    block.launchContext());  // create empty array with shape matching shape of mean array
   input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, variance, biasCorrected, &dimensions);
 
   sd::ops::divide_no_nan divideNoNan;
-  auto inputMinusMean  = (*input - mean);
-  auto varianceTimesNMinusOne = variance * NminusOne;
-  divideNoNan.execute({&inputMinusMean,&varianceTimesNMinusOne},{gradI});
+  auto* inputMinusMean = (*input) - (*mean);
+  delete mean;
+  auto* varianceTimesNMinusOne = variance * NminusOne;
+  divideNoNan.execute({inputMinusMean, varianceTimesNMinusOne}, {gradI});
+  delete inputMinusMean;
+  delete varianceTimesNMinusOne;
 
   if (!keepDims) {
     auto gradOShapeKeepDims =
@@ -161,16 +164,14 @@ CUSTOM_OP_IMPL(reduce_stdev_bp, -1, 1, false, 0, 0) {
     if (!gradO->isScalar()) {
       std::vector<sd::LongType> shape =  ShapeUtils::pullShapeFromShapeInfo(
           gradOShapeKeepDims);
-      auto reshaped = gradO->reshape(gradO->ordering(),
-                                      shape);
-      *gradI *= *reshaped;  // for example could be something like [a,b] -> [1,a,1,b]
+      auto* reshaped = gradO->reshape(gradO->ordering(), shape);
+      *gradI *= (*reshaped);  // for example could be something like [a,b] -> [1,a,1,b]
       delete reshaped;
     } else {
-      *gradI *= *gradO;  // for example could be something like [a,b] -> [1,a,1,b]
-
+      *gradI *= (*gradO);  // for example could be something like [a,b] -> [1,a,1,b]
     }
   } else {
-    *gradI *= *gradO;  // automatic broadcasting happens here
+    *gradI *= (*gradO);  // automatic broadcasting happens here
   }
   return sd::Status::OK;
 }

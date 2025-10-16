@@ -1,20 +1,20 @@
 /* ******************************************************************************
- *
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- *  See the NOTICE file distributed with this work for additional
- *  information regarding copyright ownership.
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+*
+*
+* This program and the accompanying materials are made available under the
+* terms of the Apache License, Version 2.0 which is available at
+* https://www.apache.org/licenses/LICENSE-2.0.
+*
+*  See the NOTICE file distributed with this work for additional
+*  information regarding copyright ownership.
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+* WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+* License for the specific language governing permissions and limitations
+* under the License.
+*
+* SPDX-License-Identifier: Apache-2.0
+******************************************************************************/
 
 //
 // implementation of operations for Simple Recurrent Unit: arXiv:1709.02755v2 [cs.CL] 12 Sep 2017
@@ -38,7 +38,7 @@ static SD_INLINE NDArray activation(NDArray& arr) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-static SD_INLINE NDArray sigmoid(NDArray& arr) {
+static SD_INLINE NDArray* sigmoid(NDArray& arr) {
   return (const_cast<NDArray&>(arr)).transform(transform::Sigmoid);
 }
 
@@ -55,26 +55,57 @@ void sruCell(sd::LaunchContext* context, NDArray* x, NDArray* c0, NDArray* w, ND
 
   const int inSize = x->sizeAt(1);  // inSize - number of features
 
-  auto z = mmul(*x, *w);  //  [bS x 3*inSize]
+  NDArray *z = mmul(*x, *w);  //  [bS x 3*inSize]
 
   // forget gate = sigmoid(x*Wf + bf)
-  NDArray result = z({0, 0, inSize, 2 * inSize}) + (*b)({0, inSize});
-  auto f = sigmoid(result);
+  NDArray *zView1 = (*z)({0, 0, inSize, 2 * inSize});
+  NDArray *bView1 = (*b)({0, inSize});
+  NDArray *addResult1 = (*zView1) + (*bView1);
+  NDArray *f = sigmoid(*addResult1);
+  delete addResult1;
 
   // reset gate = sigmoid(x*Wr + br)
-  NDArray sigmoidIn = z({0, 0, 2 * inSize, 3 * inSize}) + (*b)({inSize, 2 * inSize});
-  auto r = sigmoid(sigmoidIn);
+  NDArray *zView2 = (*z)({0, 0, 2 * inSize, 3 * inSize});
+  NDArray *bView2 = (*b)({inSize, 2 * inSize});
+  NDArray *addResult2 = (*zView2) + (*bView2);
+  NDArray *r = sigmoid(*addResult2);
+  delete addResult2;
 
   // ◦ means element-wise product or so called Hadamard product
   // current sell state = f◦c0 + (1 - f)◦(x*Wc)
-  auto assignOne = f * (*c0) + (1.f - f) * z({0, 0, 0, inSize});
-  c->assign(&assignOne);
+  NDArray *zView3 = (*z)({0, 0, 0, inSize});
+  NDArray *fMulC0 = (*f) * (*c0);
+  NDArray *oneMinusF = 1.f - (*f);
+  NDArray *oneMinusFMulZ = (*oneMinusF) * (*zView3);
+  NDArray *assignOne = (*fMulC0) + (*oneMinusFMulZ);
+  c->assign(assignOne);
+  delete fMulC0;
+  delete oneMinusFMulZ;
+  delete assignOne;
+  delete oneMinusF;
   // *c = f*(*c0 - z({},{0, inSize})) + z({{},{0, inSize}});
 
   // current cell output = r◦activation(c) + (1 - r)◦x
-  auto assign2 = r * activation(*c) + (1.f - r) * (*x);
-  h->assign(&assign2);
+  NDArray activationC = activation(*c);
+  NDArray *rMulActivation = (*r) * activationC;
+  NDArray *oneMinusR = 1.f - (*r);
+  NDArray *oneMinusRMulX = *oneMinusR * (*x);
+  NDArray *assign2 = (*rMulActivation) + (*oneMinusRMulX);
+  h->assign(assign2);
+  delete rMulActivation;
+  delete oneMinusRMulX;
+  delete assign2;
+  delete oneMinusR;
   // *h = r * (activation<T>(c) - *x) + *x;
+
+  delete z;
+  delete zView1;
+  delete bView1;
+  delete f;
+  delete zView2;
+  delete bView2;
+  delete r;
+  delete zView3;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -88,7 +119,7 @@ void sruTimeLoop(sd::LaunchContext* context, NDArray* x, NDArray* c0, NDArray* w
   // h   cell outputs [bS x inSize x time]
   // c   cell states  [bS x inSize x time]
 
-  auto wT = w->transpose();  // [3*inSize x inSize] -> [inSize x 3*inSize]
+  NDArray *wT = w->transpose();  // [3*inSize x inSize] -> [inSize x 3*inSize]
 
   const int time = x->sizeAt(2);
 
@@ -96,12 +127,16 @@ void sruTimeLoop(sd::LaunchContext* context, NDArray* x, NDArray* c0, NDArray* w
 
   // loop through time steps
   for (int t = 0; t < time; ++t) {
-    auto xt = (*x)({0, 0, 0, 0, t, t + 1});
-    auto ht = (*h)({0, 0, 0, 0, t, t + 1});
-    auto ct = (*c)({0, 0, 0, 0, t, t + 1});
+    NDArray *xt = (*x)({0, 0, 0, 0, t, t + 1});
+    NDArray *ht = (*h)({0, 0, 0, 0, t, t + 1});
+    NDArray *ct = (*c)({0, 0, 0, 0, t, t + 1});
 
-    helpers::sruCell(context, &xt, &ct_1, wT, b, &ht, &ct);
-    ct_1.assign(&ct);
+    helpers::sruCell(context, xt, &ct_1, wT, b, ht, ct);
+    ct_1.assign(ct);
+
+    delete xt;
+    delete ht;
+    delete ct;
   }
 
   delete wT;
@@ -128,14 +163,14 @@ static void sruBI_(NDArray* x, NDArray* w, NDArray* b, NDArray* c0, NDArray* mas
   if (mask) x->applyBroadcast(broadcast::Multiply, &dims2, mask, x);  // apply mask
 
   // U = x * w
-  NDArray wi = mmul(*x, *w);  //  U [time x bS x 6*K]
+  NDArray *wi = mmul(*x, *w);  //  U [time x bS x 6*K]
 
   const sd::LongType d2 = 2 * K;
   const sd::LongType ncols = bS * d2;
   const sd::LongType ncolsWi = 3 * ncols;
 
   T* pI = x->bufferAsT<T>();
-  T* pWi = wi.bufferAsT<T>();
+  T* pWi = wi->bufferAsT<T>();
   T* pBias = const_cast<NDArray*>(b)->bufferAsT<T>();
   T* pInit = const_cast<NDArray*>(c0)->bufferAsT<T>();
   T* pMask = mask ? const_cast<NDArray*>(mask)->bufferAsT<T>() : nullptr;
@@ -185,6 +220,8 @@ static void sruBI_(NDArray* x, NDArray* w, NDArray* b, NDArray* c0, NDArray* mas
   };
 
   samediff::Threads::parallel_tad(func, 0, ncols);
+
+  delete wi;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -215,7 +252,7 @@ static void sruBIBP_(NDArray* x, NDArray* w, NDArray* b, NDArray* c0, NDArray* c
   if (mask) x->applyBroadcast(broadcast::Multiply, &dims2, mask, x);  // apply mask
 
   // U = x * w
-  NDArray wi = mmul(*x, *w);  //  [time x bS x 2*K] * [2*K x 6*K] = [time x bS x 6*K]
+  NDArray *wi = mmul(*x, *w);  //  [time x bS x 2*K] * [2*K x 6*K] = [time x bS x 6*K]
   std::vector<sd::LongType> biasShape = {bS, 4 * K};
   std::vector<sd::LongType> wShape = {time, bS, 6 * K};
   NDArray gradBias(x->ordering(), biasShape, x->dataType(), x->getContext());
@@ -225,7 +262,7 @@ static void sruBIBP_(NDArray* x, NDArray* w, NDArray* b, NDArray* c0, NDArray* c
   const sd::LongType ncols = bS * d2;
   const sd::LongType ncolsWi = 3 * ncols;
   T* pInput = x->bufferAsT<T>();
-  T* pWi = wi.bufferAsT<T>();
+  T* pWi = wi->bufferAsT<T>();
   T* pBias = const_cast<NDArray*>(b)->bufferAsT<T>();
   T* pInit = const_cast<NDArray*>(c0)->bufferAsT<T>();
   T* pMask = mask ? const_cast<NDArray*>(mask)->bufferAsT<T>() : nullptr;
@@ -315,6 +352,8 @@ static void sruBIBP_(NDArray* x, NDArray* w, NDArray* b, NDArray* c0, NDArray* c
   // gradW
   x->permutei({0, 2, 1}, 0, false);                       // [time x bS x 2*K] -> [time x 2*K x bS]
   MmulHelper::mmul(x, &gradWi, gradW, 1., 0.);  // [time x 2*K x bS ] * [time x bS x 6*K] = [time x 2*K x 6*K]
+
+  delete wi;
 }
 
 void sruBI(sd::LaunchContext* context, NDArray* x, NDArray* w, NDArray* b, NDArray* c0,
@@ -328,14 +367,14 @@ void sruBIBP(sd::LaunchContext* context, NDArray* x, NDArray* w, NDArray* b, NDA
                         (x, w, b, c0, ct, inGradC0, inGradH, mask, gradI, gradW, gradB, gradC0), SD_FLOAT_TYPES);
 }
 BUILD_SINGLE_TEMPLATE( void sruBI_,
-                      (NDArray * x, NDArray* w, NDArray* b, NDArray* c0, NDArray* mask,
-                          NDArray* ht, NDArray* ct),
-                      SD_FLOAT_TYPES);
+                       (NDArray * x, NDArray* w, NDArray* b, NDArray* c0, NDArray* mask,
+                           NDArray* ht, NDArray* ct),
+                       SD_FLOAT_TYPES);
 BUILD_SINGLE_TEMPLATE( void sruBIBP_,
-                      (NDArray * x, NDArray* w, NDArray* b, NDArray* c0, NDArray* ct,
-                          NDArray* inGradC0, NDArray* inGradH, NDArray* mask, NDArray* gradI,
-                          NDArray* gradW, NDArray* gradB, NDArray* gradC0),
-                      SD_FLOAT_TYPES);
+                       (NDArray * x, NDArray* w, NDArray* b, NDArray* c0, NDArray* ct,
+                           NDArray* inGradC0, NDArray* inGradH, NDArray* mask, NDArray* gradI,
+                           NDArray* gradW, NDArray* gradB, NDArray* gradC0),
+                       SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

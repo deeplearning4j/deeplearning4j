@@ -233,36 +233,42 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
   NDArray xMinusMean(input);  // empty array with same shape as input
   input->applyBroadcast(sd::broadcast::Subtract, &axes, mean, &xMinusMean);
 
-  // stdInv
-  NDArray stdInv = *variance + epsilon;
-  stdInv.applyTransform(transform::Reciprocal, &stdInv);  // 1 / (variance + epsilon)
-  stdInv.applyTransform(transform::Sqrt, &stdInv);        // 1 / (variance + epsilon)^0.5
+  // stdInv = 1 / (variance + epsilon)^0.5
+  NDArray* stdInv = (*variance) + epsilon;
+  stdInv->applyTransform(transform::Reciprocal, stdInv);  // 1 / (variance + epsilon)
+  stdInv->applyTransform(transform::Sqrt, stdInv);        // 1 / (variance + epsilon)^0.5
 
   // dvdm (use dLdM as storage for dvdm)
   xMinusMean.reduceAlongDimension(sd::reduce::Sum, dLdM, excludedAxes, keepUnitiesInShape);
   *dLdM *= -Ninv;
 
   // g_sum
-  auto gSum = dLdO->reduceAlongDimension(sd::reduce::Sum, excludedAxes, keepUnitiesInShape);
+  auto* gSum = dLdO->reduceAlongDimension(sd::reduce::Sum, excludedAxes, keepUnitiesInShape);
 
   // dLdB
-  if (applyOffset) dLdB->assign(&gSum);
+  if (applyOffset) dLdB->assign(gSum);
 
   // stdInv * (g - g_sum/N) (use dLdI as storage for this expression)
-  gSum *= Ninv;
-  dLdO->applyBroadcast(sd::broadcast::Subtract, &axes, &gSum, dLdI);
+  *gSum *= Ninv;
+  dLdO->applyBroadcast(sd::broadcast::Subtract, &axes, gSum, dLdI);
+  delete gSum;
 
-  dLdI->applyBroadcast(sd::broadcast::Multiply, &axes, &stdInv, dLdI);
+  dLdI->applyBroadcast(sd::broadcast::Multiply, &axes, stdInv, dLdI);
 
   // dLdV <- [g*(x - m)]_sum
-  (xMinusMean * *dLdO).reduceAlongDimension(sd::reduce::Sum, dLdV, excludedAxes, keepUnitiesInShape);
+  auto* xMinusMeanTimesDLdO = xMinusMean * (*dLdO);
+  xMinusMeanTimesDLdO->reduceAlongDimension(sd::reduce::Sum, dLdV, excludedAxes, keepUnitiesInShape);
+  delete xMinusMeanTimesDLdO;
 
   // dLdG
-  *dLdV *= stdInv;
+  *dLdV *= (*stdInv);
   if (applyScale) dLdG->assign(dLdV);
 
   // (2 / N) * dfdv (use dLdV as storage for dfdv)
-  *dLdV *= stdInv * stdInv;  // dLdV*stdInv * stdInv^2
+  // dLdV *= stdInv * stdInv becomes dLdV *= stdInv^2
+  auto* stdInvSquared = (*stdInv) * (*stdInv);
+  *dLdV *= (*stdInvSquared);
+  delete stdInvSquared;
   *dLdV *= -Ninv;            // -0.5f * (2 / N);
 
   // dfdv * (dvdm  + (x - m)) (use xMinusMean as storage for this expression)
@@ -276,7 +282,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
   *dLdM = 0;  // put zeros so far
   *dLdV = 0;  // put zeros so far
 
-
+  delete stdInv;
   delete excludedAxes;
   return sd::Status::OK;
 }

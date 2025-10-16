@@ -72,8 +72,11 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
   NDArray* newLabels = cLabels;
   if (labelsSmoothing != 0.) {
     newLabels = new NDArray(cLabels);
-    NDArray newLabelsTmp = (1.f - labelsSmoothing) * *cLabels + labelsSmoothing / cLabels->sizeAt(1);
-    newLabels->assign(&newLabelsTmp);
+    NDArray* term1 = (1.f - labelsSmoothing) * (*cLabels);
+    NDArray* term2 = (*term1) + (labelsSmoothing / cLabels->sizeAt(1));
+    delete term1;
+    newLabels->assign(term2);
+    delete term2;
   }
 
   // main formula: result = - sum_i(lables_i * log(softmax_i)) - sum over last dimension
@@ -84,11 +87,28 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
   // maxLogit is max among logits_i
 
   std::vector<LongType> dimensions = {-1};
-  NDArray shiftedLogits = *logits - logits->reduceAlongDimension(reduce::Max, &dimensions, true);
-  NDArray logSumExp = shiftedLogits.transform(transform::Exp)
-      .reduceAlongDimension(reduce::Sum, &dimensions, true)
-      .transform(transform::Log);
-  NDArray E = (*newLabels * (logSumExp - shiftedLogits)).reduceAlongDimension(reduce::Sum, &dimensions);
+  NDArray* maxLogits = logits->reduceAlongDimension(reduce::Max, &dimensions, true);
+  NDArray* shiftedLogits_ptr = (*logits) - (*maxLogits);
+  delete maxLogits;
+  NDArray shiftedLogits = *shiftedLogits_ptr;
+  delete shiftedLogits_ptr;
+  
+  NDArray* expShifted = shiftedLogits.transform(transform::Exp);
+  NDArray* sumExp = expShifted->reduceAlongDimension(reduce::Sum, &dimensions, true);
+  delete expShifted;
+  NDArray* logSumExp_ptr = sumExp->transform(transform::Log);
+  delete sumExp;
+  NDArray logSumExp = *logSumExp_ptr;
+  delete logSumExp_ptr;
+  
+  // E = (newLabels * (logSumExp - shiftedLogits)).reduceAlongDimension(Sum)
+  NDArray* diff = logSumExp - shiftedLogits;
+  NDArray* product = (*newLabels) * (*diff);
+  delete diff;
+  NDArray* E_ptr = product->reduceAlongDimension(reduce::Sum, &dimensions);
+  delete product;
+  NDArray E = *E_ptr;
+  delete E_ptr;
 
   // perform weights broadcasting/tile to E if it is necessary
   auto weightsBroad = weights;
@@ -117,14 +137,20 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
       double sum;
       if (weights->isScalar())
         sum = weights->e<double>(0) * E.lengthOf();
-      else
-        sum = weightsBroad->reduceNumber(reduce::Sum).e<double>(0);
+      else {
+        NDArray* sumPtr = weightsBroad->reduceNumber(reduce::Sum);
+        sum = sumPtr->e<double>(0);
+        delete sumPtr;
+      }
 
       if (sum == 0.)
         *output = 0.;
       else {
-        NDArray outputTemp = E.reduceNumber(reduce::Sum) / sum;
-        output->assign(&outputTemp);
+        NDArray* eSum = E.reduceNumber(reduce::Sum);
+        NDArray* result = (*eSum) / sum;
+        delete eSum;
+        output->assign(result);
+        delete result;
       }
       break;
     }
@@ -134,14 +160,19 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
       if (weights->isScalar()) {
         if (weights->e<double>(0) != 0.) numOfNonZeroWeights = E.lengthOf();
       } else {
-        numOfNonZeroWeights = weightsBroad->reduceNumber(reduce::CountNonZero).e<LongType>(0);
+        NDArray* countNonZero = weightsBroad->reduceNumber(reduce::CountNonZero);
+        numOfNonZeroWeights = countNonZero->e<LongType>(0);
+        delete countNonZero;
       }
 
       if (numOfNonZeroWeights == 0)
         *output = 0.;
       else {
-        NDArray outputTemp = E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights);
-        output->assign(&outputTemp);
+        NDArray* eSum = E.reduceNumber(reduce::Sum);
+        NDArray* result = (*eSum) / double(numOfNonZeroWeights);
+        delete eSum;
+        output->assign(result);
+        delete result;
       }
 
       break;
@@ -255,25 +286,65 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
   NDArray* newLabels = cLabels;
   if (labelsSmoothing != 0.) {
     newLabels = new NDArray(labels->shapeInfo(), dLdl->dataType(), false, block.launchContext());
-    NDArray newLabelsTemp = (1.f - labelsSmoothing) * *cLabels + labelsSmoothing / cLabels->sizeAt(1);
-    newLabels->assign(&newLabelsTemp);
+    NDArray* term1 = (1.f - labelsSmoothing) * (*cLabels);
+    NDArray* term2 = (*term1) + (labelsSmoothing / cLabels->sizeAt(1));
+    delete term1;
+    newLabels->assign(term2);
+    delete term2;
   }
 
-  NDArray softmax = (*logits - logits->reduceAlongDimension(reduce::Max, dimensions, true)).transform(transform::Exp);
-  softmax /= softmax.reduceAlongDimension(reduce::Sum, dimensions, true);
+  // Compute softmax
+  NDArray* maxLogits = logits->reduceAlongDimension(reduce::Max, dimensions, true);
+  NDArray* shiftedLogits_ptr = (*logits) - (*maxLogits);
+  delete maxLogits;
+  NDArray* expShifted = shiftedLogits_ptr->transform(transform::Exp);
+  delete shiftedLogits_ptr;
+  NDArray* sumExp = expShifted->reduceAlongDimension(reduce::Sum, dimensions, true);
+  NDArray* softmax_ptr = (*expShifted) / (*sumExp);
+  delete expShifted;
+  delete sumExp;
+  NDArray softmax = *softmax_ptr;
+  delete softmax_ptr;
 
   // dEdp = softmax * sum_i(lables_i) - labels
-  NDArray dLdpTemp = softmax * newLabels->reduceAlongDimension(reduce::Sum, dimensions, true) - *newLabels;
-  dLdp->assign(&dLdpTemp);
+  NDArray* labelSum = newLabels->reduceAlongDimension(reduce::Sum, dimensions, true);
+  NDArray* softmaxTimesLabelSum = softmax * (*labelSum);
+  delete labelSum;
+  NDArray* dLdpTemp_ptr = (*softmaxTimesLabelSum) - (*newLabels);
+  delete softmaxTimesLabelSum;
+  dLdp->assign(dLdpTemp_ptr);
+  delete dLdpTemp_ptr;
+  
   // dEdl = -log(softmax)
-  NDArray assign = -softmax.transform(transform::Log) * (1.f - labelsSmoothing);
-  dLdl->assign(&assign);
+  NDArray* logSoftmax = softmax.transform(transform::Log);
+  NDArray negLogSoftmax = -(*logSoftmax);  // unary negation returns value
+  delete logSoftmax;
+  NDArray* dLdlTemp_ptr = negLogSoftmax * (1.f - labelsSmoothing);
+  dLdl->assign(dLdlTemp_ptr);
+  delete dLdlTemp_ptr;
 
-  NDArray shiftedLogits = *logits - logits->reduceAlongDimension(reduce::Max, dimensions, true);
-  NDArray logSumExp = shiftedLogits.transform(transform::Exp)
-      .reduceAlongDimension(reduce::Sum, dimensions, true)
-      .transform(transform::Log);
-  NDArray E = (*newLabels * (logSumExp - shiftedLogits)).reduceAlongDimension(reduce::Sum, dimensions);
+  // Compute E for gradient calculations
+  NDArray* maxLogits2 = logits->reduceAlongDimension(reduce::Max, dimensions, true);
+  NDArray* shiftedLogits2_ptr = (*logits) - (*maxLogits2);
+  delete maxLogits2;
+  NDArray shiftedLogits = *shiftedLogits2_ptr;
+  delete shiftedLogits2_ptr;
+  
+  NDArray* expShifted2 = shiftedLogits.transform(transform::Exp);
+  NDArray* sumExp2 = expShifted2->reduceAlongDimension(reduce::Sum, dimensions, true);
+  delete expShifted2;
+  NDArray* logSumExp_ptr = sumExp2->transform(transform::Log);
+  delete sumExp2;
+  NDArray logSumExp = *logSumExp_ptr;
+  delete logSumExp_ptr;
+  
+  NDArray* diff = logSumExp - shiftedLogits;
+  NDArray* product = (*newLabels) * (*diff);
+  delete diff;
+  NDArray* E_ptr = product->reduceAlongDimension(reduce::Sum, dimensions);
+  delete product;
+  NDArray E = *E_ptr;
+  delete E_ptr;
 
   // perform weights broadcasting/tile to E if it is necessary
   auto weightsBroad = weights;
@@ -286,8 +357,9 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
     case 1: {  // 1 - "none" and "weighted_sum", output is scalar and equal to sum of all elements of E array
 
       if (weights->isScalar() || weights->lengthOf() == 1) {
-        NDArray assign4 = E.reduceNumber(reduce::Sum);
-        dLdw->assign(&assign4);
+        NDArray* eSum = E.reduceNumber(reduce::Sum);
+        dLdw->assign(eSum);
+        delete eSum;
         *dLdp *= *weights;
         *dLdl *= *weights;
       } else {
@@ -306,11 +378,14 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
     }
     case 2: {  // 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of
       // all elements of weightsBroad array
-      NDArray sum;
+      NDArray* sum_ptr = nullptr;
       if (weights->isScalar())
-        sum = (*weights) * E.lengthOf();
+        sum_ptr = (*weights) * E.lengthOf();
       else
-        sum = weightsBroad->reduceNumber(reduce::Sum);
+        sum_ptr = weightsBroad->reduceNumber(reduce::Sum);
+      
+      NDArray sum = *sum_ptr;
+      delete sum_ptr;
 
       if (sum.e<double>(0) == 0.) {
         *dLdp = 0.;
@@ -318,23 +393,58 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
         *dLdw = 0.;
       } else {
         if (weights->isScalar() || weights->lengthOf() == 1) {
-          NDArray temp = *weights / sum;
+          NDArray* temp_ptr = (*weights) / sum;
+          NDArray temp = *temp_ptr;
+          delete temp_ptr;
           *dLdp *= temp;
           *dLdl *= temp;
           *dLdw = 0.;
         } else {
-          NDArray temp = *weightsBroad / sum;
+          NDArray* temp_ptr = (*weightsBroad) / sum;
+          NDArray temp = *temp_ptr;
+          delete temp_ptr;
           dLdp->applyBroadcast(broadcast::Multiply, dimensions, &temp, dLdp);
           dLdl->applyBroadcast(broadcast::Multiply, dimensions, &temp, dLdl);
 
           if (weights != weightsBroad) {
             std::vector<LongType> axesToReduceAlong =
                 ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
-            ((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum * sum))
-                .reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
+            
+            // Compute (E * sum - (E * weightsBroad).reduceNumber(Sum)) / (sum * sum)
+            NDArray* ETimesSum = E * sum;
+            NDArray* ETimesWeights = E * (*weightsBroad);
+            NDArray* ETimesWeightsSum = ETimesWeights->reduceNumber(reduce::Sum);
+            delete ETimesWeights;
+            
+            NDArray* numerator = (*ETimesSum) - (*ETimesWeightsSum);
+            delete ETimesSum;
+            delete ETimesWeightsSum;
+            
+            NDArray* sumSquared = sum * sum;
+            NDArray* result = (*numerator) / (*sumSquared);
+            delete numerator;
+            delete sumSquared;
+            
+            result->reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
+            delete result;
           } else {
-            NDArray assign2 = (E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum * sum);
-            dLdw->assign(&assign2);
+            // Compute (E * sum - (E * weightsBroad).reduceNumber(Sum)) / (sum * sum)
+            NDArray* ETimesSum = E * sum;
+            NDArray* ETimesWeights = E * (*weightsBroad);
+            NDArray* ETimesWeightsSum = ETimesWeights->reduceNumber(reduce::Sum);
+            delete ETimesWeights;
+            
+            NDArray* numerator = (*ETimesSum) - (*ETimesWeightsSum);
+            delete ETimesSum;
+            delete ETimesWeightsSum;
+            
+            NDArray* sumSquared = sum * sum;
+            NDArray* result = (*numerator) / (*sumSquared);
+            delete numerator;
+            delete sumSquared;
+            
+            dLdw->assign(result);
+            delete result;
           }
         }
       }
@@ -345,8 +455,11 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
       LongType numOfNonZeroWeights = 0;
       if (weights->isScalar()) {
         if (weights->e<double>(0) != 0.) numOfNonZeroWeights = E.lengthOf();
-      } else
-        numOfNonZeroWeights = weightsBroad->reduceNumber(reduce::CountNonZero).e<LongType>(0);
+      } else {
+        NDArray* countNonZero = weightsBroad->reduceNumber(reduce::CountNonZero);
+        numOfNonZeroWeights = countNonZero->e<LongType>(0);
+        delete countNonZero;
+      }
 
       if (numOfNonZeroWeights == 0) {
         *dLdp = 0.;
@@ -354,13 +467,21 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
         *dLdw = 0.;
       } else {
         if (weights->isScalar() || weights->lengthOf() == 1) {
-          NDArray temp = *weights / numOfNonZeroWeights;
+          NDArray* temp_ptr = (*weights) / numOfNonZeroWeights;
+          NDArray temp = *temp_ptr;
+          delete temp_ptr;
           *dLdp *= temp;
           *dLdl *= temp;
-          NDArray assign4 = E.reduceNumber(reduce::Sum) / numOfNonZeroWeights;
-          dLdw->assign(&assign4);
+          
+          NDArray* eSum = E.reduceNumber(reduce::Sum);
+          NDArray* result = (*eSum) / numOfNonZeroWeights;
+          delete eSum;
+          dLdw->assign(result);
+          delete result;
         } else {
-          NDArray temp = *weightsBroad / numOfNonZeroWeights;
+          NDArray* temp_ptr = (*weightsBroad) / numOfNonZeroWeights;
+          NDArray temp = *temp_ptr;
+          delete temp_ptr;
           dLdp->applyBroadcast(broadcast::Multiply, dimensions, &temp, dLdp);
           dLdl->applyBroadcast(broadcast::Multiply, dimensions, &temp, dLdl);
 
@@ -370,8 +491,9 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
             E.reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
             *dLdw /= numOfNonZeroWeights;
           } else {
-            NDArray assign5 = E / numOfNonZeroWeights;
-            dLdw->assign(&assign5);
+            NDArray* eDivNum = E / numOfNonZeroWeights;
+            dLdw->assign(eDivNum);
+            delete eDivNum;
           }
         }
       }

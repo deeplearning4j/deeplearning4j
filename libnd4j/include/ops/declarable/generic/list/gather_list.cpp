@@ -61,10 +61,10 @@ LIST_OP_IMPL(gather_list, 2, 1, 0, -2) {
     indicesList[1] = skipPosition++ + 1;
 
     auto subarray = (*result)(indicesList, true);
-    subarray.assign(array);
+    subarray->assign(array);
+    delete subarray;
   }
 
-  // OVERWRITE_RESULT(result);
   setupResult(result, block);
   return Status::OK;
 }

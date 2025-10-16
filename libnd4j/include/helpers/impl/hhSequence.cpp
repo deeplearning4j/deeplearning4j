@@ -44,11 +44,27 @@ void HHsequence::mulLeft_(NDArray* matrix) {
   NDArray vectorsRef =  *_vectors;
   for (int i = _diagSize - 1; i >= 0; --i) {
     if (_type == 'u') {
-      NDArray block = matrixRef({inRows - rows + _shift + i, inRows, 0, 0}, true);
-      Householder<T>::mulLeft(block, vectorsRef({i + 1 + _shift, rows, i, i + 1}, true), _coeffs->t<T>(i));
+      NDArray *blockPtr = matrixRef({inRows - rows + _shift + i, inRows, 0, 0}, true);
+      NDArray block = *blockPtr;
+      
+      NDArray *vectorPtr = vectorsRef({i + 1 + _shift, rows, i, i + 1}, true);
+      NDArray vector = *vectorPtr;
+      
+      Householder<T>::mulLeft(block, vector, _coeffs->t<T>(i));
+      
+      delete blockPtr;
+      delete vectorPtr;
     } else {
-      NDArray block = matrixRef({inRows - cols + _shift + i, inRows, 0, 0}, true);
-      Householder<T>::mulLeft(block, vectorsRef({i, i + 1, i + 1 + _shift, cols}, true), _coeffs->t<T>(i));
+      NDArray *blockPtr = matrixRef({inRows - cols + _shift + i, inRows, 0, 0}, true);
+      NDArray block = *blockPtr;
+      
+      NDArray *vectorPtr = vectorsRef({i, i + 1, i + 1 + _shift, cols}, true);
+      NDArray vector = *vectorPtr;
+      
+      Householder<T>::mulLeft(block, vector, _coeffs->t<T>(i));
+      
+      delete blockPtr;
+      delete vectorPtr;
     }
   }
 }
@@ -59,9 +75,15 @@ NDArray HHsequence::getTail(const int idx) const {
   NDArray vectorsRef =  *_vectors;
 
   if (_type == 'u') {
-    return vectorsRef({first, -1, idx, idx + 1}, true);
+    NDArray *tailPtr = vectorsRef({first, -1, idx, idx + 1}, true);
+    NDArray tail = *tailPtr;
+    delete tailPtr;
+    return tail;
   } else {
-    return vectorsRef({idx, idx + 1, first, -1}, true);
+    NDArray *tailPtr = vectorsRef({idx, idx + 1, first, -1}, true);
+    NDArray tail = *tailPtr;
+    delete tailPtr;
+    return tail;
   }
 }
 //////////////////////////////////////////////////////////////////////////
@@ -80,10 +102,14 @@ void HHsequence::applyTo_(NDArray* dest) {
   for (int k = _diagSize - 1; k >= 0; --k) {
     int curNum = size - k - _shift;
     if (curNum < 1 || (k + 1 + _shift) >= size) continue;
-    auto block = destRef({dest->sizeAt(0) - curNum, dest->sizeAt(0), dest->sizeAt(1) - curNum, dest->sizeAt(1)}, true);
+    
+    NDArray *blockPtr = destRef({dest->sizeAt(0) - curNum, dest->sizeAt(0), dest->sizeAt(1) - curNum, dest->sizeAt(1)}, true);
+    NDArray block = *blockPtr;
 
     NDArray tailK = getTail(k);
-    Householder<T>::mulLeft(block,tailK , _coeffs->t<T>(k));
+    Householder<T>::mulLeft(block, tailK, _coeffs->t<T>(k));
+    
+    delete blockPtr;
   }
 
   if(originalDest != dest) {

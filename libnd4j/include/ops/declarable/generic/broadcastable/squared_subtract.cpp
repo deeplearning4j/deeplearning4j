@@ -62,57 +62,90 @@ CUSTOM_OP_IMPL(squaredsubtract_bp, 3, 2, false, 0, 0) {
   auto gradY = OUTPUT_VARIABLE(1);
 
 
-  auto ts = NDArrayFactory::create(x->dataType(), 2, block.launchContext());
+  auto* ts = NDArrayFactory::create(x->dataType(), 2, block.launchContext());
 
   if (x->isSameShape(y)) {
     // PWT case case
 
     // X gradient
-    // X gradient
-    NDArray gradXTemp = (*epsNext) * *ts * ((*x) - (*y));
-    gradX->assign(&gradXTemp);
+    auto* diff1 = (*x) - (*y);
+    auto* temp1 = (*ts) * (*diff1);
+    delete diff1;
+    auto* gradXTemp = (*epsNext) * (*temp1);
+    delete temp1;
+    gradX->assign(gradXTemp);
+    delete gradXTemp;
 
     // Y gradient
-    NDArray gradYTemp = (*epsNext) * *ts * ((*y) - (*x));
-    gradY->assign(&gradYTemp);
+    auto* diff2 = (*y) - (*x);
+    auto* temp2 = (*ts) * (*diff2);
+    delete diff2;
+    auto* gradYTemp = (*epsNext) * (*temp2);
+    delete temp2;
+    gradY->assign(gradYTemp);
+    delete gradYTemp;
 
   } else if (y->isScalar()) {
     // scalar case
-    auto tmpX = x->reduceNumber(reduce::Sum);
-    gradY->assign(&tmpX);
+    auto* tmpX = x->reduceNumber(reduce::Sum);
+    gradY->assign(tmpX);
+    delete tmpX;
+    
     // X gradient
-    NDArray gradXTemp = (*epsNext) * *ts * ((*x) - (*y));
-    gradX->assign(&gradXTemp);
+    auto* diff3 = (*x) - (*y);
+    auto* temp3 = (*ts) * (*diff3);
+    delete diff3;
+    auto* gradXTemp = (*epsNext) * (*temp3);
+    delete temp3;
+    gradX->assign(gradXTemp);
+    delete gradXTemp;
   } else {
     // broadcast case
 
-    auto preX = x->dup(x->ordering());
-    auto preY = y->dup(y->ordering());
+    auto* preX = x->dup(x->ordering());
+    auto* preY = y->dup(y->ordering());
 
-    auto targetShape = epsNext->getShapeAsVector();
+    auto* targetShape = epsNext->getShapeAsVector();
 
-    preX->tileToShape(targetShape, *preX);
-    preY->tileToShape(targetShape, *preY);
-
-    auto resX = (*epsNext) * *ts * ((*x) - (*y));
-    preX->assign(&resX);
-    auto resY = (*epsNext) * *ts * ((*y) - (*x));
-    preY->assign(&resY);
+    preX->tileToShape(*targetShape, *preX);
+    preY->tileToShape(*targetShape, *preY);
+    delete targetShape;
+    
+    auto* diff4 = (*x) - (*y);
+    auto* temp4 = (*ts) * (*diff4);
+    delete diff4;
+    auto* resX = (*epsNext) * (*temp4);
+    delete temp4;
+    preX->assign(resX);
+    delete resX;
+    
+    auto* diff5 = (*y) - (*x);
+    auto* temp5 = (*ts) * (*diff5);
+    delete diff5;
+    auto* resY = (*epsNext) * (*temp5);
+    delete temp5;
+    preY->assign(resY);
+    delete resY;
 
     auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
     auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
     if (axisX.size() > 0) {
-      auto sum = preX->reduceAlongDimension(reduce::Sum, &axisX);
-      gradX->assign(&sum);
+      auto* sum = preX->reduceAlongDimension(reduce::Sum, &axisX);
+      gradX->assign(sum);
+      delete sum;
     } else
       gradX->assign(preX);
 
     if (axisY.size() > 0) {
-      auto sum = preY->reduceAlongDimension(reduce::Sum, &axisY);
-      gradY->assign(&sum);
+      auto* sum = preY->reduceAlongDimension(reduce::Sum, &axisY);
+      gradY->assign(sum);
+      delete sum;
     } else
       gradY->assign(preY);
+
+    delete preX;
+    delete preY;
   }
 
   delete ts;

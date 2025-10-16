@@ -1501,12 +1501,14 @@ static void sd_printformatted(std::ostream& os, sd::NDArray &arr, sd::LongType d
     os << "[";
     restCount = ShapeUtils::getNumOfSubArrs(arr.shapeInfo(), {0});
     for (sd::LongType arrIndex = 0; arrIndex < restCount; ++arrIndex) {
-      NDArray subArr = arr(arrIndex, {0});
-      sd_printformatted(os, subArr, depth + 1, limit);
+      NDArray *subArr = arr(arrIndex, {0});
+      sd_printformatted(os, *subArr, depth + 1, limit);
       if (arrIndex < restCount - 1) {
         for (sd::LongType i = 1; i < arr.rankOf(); ++i) os << "\n";
         for (sd::LongType i = 0; i < depth - 2; ++i) os << " ";
       }
+
+      delete subArr;
 
     }
     os << "]";
@@ -1693,54 +1695,54 @@ std::vector<T> NDArray::getBufferAsVector()  {
 BUILD_SINGLE_TEMPLATE(  SD_LIB_EXPORT std::vector, NDArray::getBufferAsVector(), SD_COMMON_TYPES_ALL);
 
 ////////////////////////////////////////////////////////////////////////
-std::vector<int64_t> NDArray::getShapeAsFlatVector()  {
-  std::vector<int64_t> vector(this->rankOf());
-  for (int e = 0; e < this->rankOf(); e++) vector[e] = static_cast<int64_t>(this->sizeAt(e));
+std::vector<int64_t> * NDArray::getShapeAsFlatVector()  {
+  std::vector<int64_t> *vector = new std::vector<int64_t>(this->rankOf());
+  for (int e = 0; e < this->rankOf(); e++) (*vector)[e] = static_cast<int64_t>(this->sizeAt(e));
   return vector;
 }
 
 ////////////////////////////////////////////////////////////////////////
-std::vector<sd::LongType> NDArray::getShapeAsVector()  {
+std::vector<sd::LongType>* NDArray::getShapeAsVector()  {
   std::vector<sd::LongType> *vector = new std::vector<sd::LongType>();
   for (int e = 0; e < this->rankOf(); e++) {
     vector->push_back(this->sizeAt(e));
   }
 
-  return *vector;
+  return vector;
 }
 
-std::vector<sd::LongType> NDArray::getStrideAsVector()  {
+std::vector<sd::LongType>* NDArray::getStrideAsVector()  {
   std::vector<sd::LongType> *vector = new std::vector<sd::LongType>();
   for (int e = 0; e < this->rankOf(); e++) {
     vector->push_back(this->strideAt(e));
   }
 
-  return *vector;
+  return vector;
 }
 
 ////////////////////////////////////////////////////////////////////////
-std::vector<int> NDArray::getShapeAsVectorInt()  {
-  std::vector<int> vector(this->rankOf());
-  for (int e = 0; e < this->rankOf(); e++) vector[e] = static_cast<int>(this->sizeAt(e));
+std::vector<int>* NDArray::getShapeAsVectorInt()  {
+  std::vector<int> *vector = new std::vector<int>(this->rankOf());
+  for (int e = 0; e < this->rankOf(); e++) (*vector)[e] = static_cast<int>(this->sizeAt(e));
 
   return vector;
 }
 
 ////////////////////////////////////////////////////////////////////////
-std::vector<int64_t> NDArray::getShapeInfoAsFlatVector()  {
+std::vector<int64_t>* NDArray::getShapeInfoAsFlatVector()  {
   int magicNumber = shape::shapeInfoLength(this->rankOf());
-  std::vector<int64_t> vector(magicNumber);
+  std::vector<int64_t> *vector = new std::vector<int64_t>(magicNumber);
 
-  for (int e = 0; e < magicNumber; e++) vector[e] = static_cast<int64_t>(_shapeInfo[e]);
+  for (int e = 0; e < magicNumber; e++) (*vector)[e] = static_cast<int64_t>(_shapeInfo[e]);
 
   return vector;
 }
 
 ////////////////////////////////////////////////////////////////////////
-std::vector<sd::LongType> NDArray::getShapeInfoAsVector()  {
+std::vector<sd::LongType>* NDArray::getShapeInfoAsVector()  {
   int magicNumber = shape::shapeInfoLength(this->rankOf());
-  std::vector<sd::LongType> vector(magicNumber);
-  for (int e = 0; e < magicNumber; e++) vector[e] = this->_shapeInfo[e];
+  std::vector<sd::LongType> *vector = new std::vector<sd::LongType>(magicNumber);
+  for (int e = 0; e < magicNumber; e++) (*vector)[e] = this->_shapeInfo[e];
   return vector;
 }
 
@@ -1777,6 +1779,9 @@ std::vector<int8_t> NDArray::asByteVector() {
     return result;
   }
 }
+
+///////////////////////
+
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::linspace(const double start) { linspace(start, 1); }
@@ -1980,21 +1985,31 @@ NDArray NDArray::meanNumber()  {
 bool NDArray::hasNaNs() {
   if (isS()) THROW_EXCEPTION("NDArray::hasNaNs: you can't use this method on String array!");
   void *extraParams = nullptr;
-  return this->reduceNumber(sd::reduce::IsNan, extraParams).e<sd::LongType>(0) > 0;
+  auto ret =  this->reduceNumber(sd::reduce::IsNan, extraParams);
+  auto ret2 = ret->e<sd::LongType>(0) > 0;
+  delete ret;
+  return ret2;
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::hasInfs() {
   if (isS()) THROW_EXCEPTION("NDArray::hasInfs: you can't use this method on String array!");
   void *extraParams = nullptr;
-  return this->reduceNumber(sd::reduce::IsInf, extraParams).e<sd::LongType>(0) > 0;
+  auto ret = this->reduceNumber(sd::reduce::IsInf, extraParams);
+  auto ret2 = ret->e<sd::LongType>(0) > 0;;
+  delete ret;
+  return ret2;
+
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::isFinite() {
   if (isS()) THROW_EXCEPTION("NDArray::isFinite: you can't use this method on String array!");
   void *extraParams = nullptr;
-  return this->reduceNumber(sd::reduce::IsInfOrNan, extraParams).e<sd::LongType>(0) == 0;
+  auto ret =  this->reduceNumber(sd::reduce::IsInfOrNan, extraParams);
+  auto ret2 = ret->e<sd::LongType>(0) == 0;
+  delete ret;
+  return ret2;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2120,7 +2135,7 @@ void *NDArray::bufferWithOffset(sd::LongType offset) {
 
 //////////////////////////////////////////////////////////////////////////
 // eventually method reduces array by excluding its shapes along axes present in dimensions vector
-NDArray NDArray::reduceAlongDimension(sd::reduce::FloatOps op, const std::vector<LongType> *dimensions,
+NDArray *NDArray::reduceAlongDimension(sd::reduce::FloatOps op, const std::vector<LongType> *dimensions,
                                       const bool keepDims)  {
   std::vector<sd::LongType> *copy = new std::vector<sd::LongType>(*dimensions);
 
@@ -2128,50 +2143,50 @@ NDArray NDArray::reduceAlongDimension(sd::reduce::FloatOps op, const std::vector
       'c', copy, *this, isR() ? dataType() : Environment::getInstance().defaultFloatDataType(), keepDims, false,
       getContext()->getWorkspace());
 
-  NDArray result(newShape, true, getContext());
+  NDArray *result = new NDArray(newShape, true, getContext());
 
-  this->reduceAlongDimension(op, &result, copy, keepDims, false);
+  this->reduceAlongDimension(op, result, copy, keepDims, false);
 
   return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::reduceAlongDimension(sd::reduce::SameOps op, const std::vector<LongType> *dimensions,
+NDArray *NDArray::reduceAlongDimension(sd::reduce::SameOps op, const std::vector<LongType> *dimensions,
                                       const bool keepDims)  {
 
   std::vector<sd::LongType> *copy = new std::vector<sd::LongType>(*dimensions);
   auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, false, getContext()->getWorkspace());
-  NDArray result(newShape, true, getContext());
-  reduceAlongDimension(op, &result, copy, keepDims, false);
+  NDArray *result = new NDArray(newShape, true, getContext());
+  reduceAlongDimension(op, result, copy, keepDims, false);
   delete copy;
   return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::reduceAlongDimension(sd::reduce::BoolOps op, const std::vector<LongType> *dimensions,
+NDArray* NDArray::reduceAlongDimension(sd::reduce::BoolOps op, const std::vector<LongType> *dimensions,
                                       const bool keepDims)  {
   std::vector<sd::LongType> *copy = new std::vector<sd::LongType>(*dimensions);
 
   auto newShape =
       ShapeUtils::evalReduceShapeInfo('c', copy, *this, DataType::BOOL, keepDims, false, getContext()->getWorkspace());
 
-  NDArray result(newShape, true, getContext());
-  reduceAlongDimension(op, &result, const_cast<std::vector<sd::LongType> *>(copy), keepDims, false);
+  NDArray *result = new NDArray(newShape, true, getContext());
+  reduceAlongDimension(op, result, const_cast<std::vector<sd::LongType> *>(copy), keepDims, false);
   delete copy;
   return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::reduceAlongDimension(sd::reduce::LongOps op, const std::vector<LongType> *dimensions,
+NDArray* NDArray::reduceAlongDimension(sd::reduce::LongOps op, const std::vector<LongType> *dimensions,
                                       const bool keepDims)  {
   std::vector<sd::LongType> *copy = new std::vector<sd::LongType>(*dimensions);
 
   auto newShape =
       ShapeUtils::evalReduceShapeInfo('c', copy, *this, DataType::INT64, keepDims, false, getContext()->getWorkspace());
 
-  NDArray result(newShape, true, getContext());
+  NDArray *result = new NDArray(newShape, true, getContext());
 
-  reduceAlongDimension(op, &result, copy, keepDims, false);
+  reduceAlongDimension(op, result, copy, keepDims, false);
 
   delete copy;
   return result;
@@ -2179,24 +2194,16 @@ NDArray NDArray::reduceAlongDimension(sd::reduce::LongOps op, const std::vector<
 
 //////////////////////////////////////////////////////////////////////////
 // method reduces array by excluding its shapes along axes present in dimensions vector
-NDArray NDArray::reduceAlongDimension(sd::reduce::FloatOps op, const std::initializer_list<LongType> *dimensions,
+NDArray* NDArray::reduceAlongDimension(sd::reduce::FloatOps op, const std::initializer_list<LongType> *dimensions,
                                       const bool keepDims)  {
-  std::vector<sd::LongType> *vec = new std::vector<sd::LongType>(*dimensions);
-  auto ret = reduceAlongDimension(op, vec, keepDims);
+  std::vector<sd::LongType> inputVec  = *dimensions;
+  auto ret = reduceAlongDimension(op, &inputVec, keepDims);
   return ret;
 
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::reduceAlongDimension(sd::reduce::SameOps op, const std::initializer_list<LongType> *dimensions,
-                                      const bool keepDims)  {
-  std::vector<sd::LongType> *vec = new std::vector<sd::LongType>(*dimensions);
-  auto ret = reduceAlongDimension(op, vec, keepDims);
-  return ret;
-}
-
-//////////////////////////////////////////////////////////////////////////
-NDArray NDArray::reduceAlongDimension(sd::reduce::BoolOps op, const std::initializer_list<LongType> *dimensions,
+NDArray* NDArray::reduceAlongDimension(sd::reduce::SameOps op, const std::initializer_list<LongType> *dimensions,
                                       const bool keepDims)  {
   std::vector<sd::LongType> *vec = new std::vector<sd::LongType>(*dimensions);
   auto ret = reduceAlongDimension(op, vec, keepDims);
@@ -2204,7 +2211,7 @@ NDArray NDArray::reduceAlongDimension(sd::reduce::BoolOps op, const std::initial
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::reduceAlongDimension(sd::reduce::LongOps op, const std::initializer_list<LongType> *dimensions,
+NDArray* NDArray::reduceAlongDimension(sd::reduce::BoolOps op, const std::initializer_list<LongType> *dimensions,
                                       const bool keepDims)  {
   std::vector<sd::LongType> *vec = new std::vector<sd::LongType>(*dimensions);
   auto ret = reduceAlongDimension(op, vec, keepDims);
@@ -2212,63 +2219,71 @@ NDArray NDArray::reduceAlongDimension(sd::reduce::LongOps op, const std::initial
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::reduceNumber(sd::reduce::FloatOps op, void *extraParams)  {
+NDArray *NDArray::reduceAlongDimension(sd::reduce::LongOps op, const std::initializer_list<LongType> *dimensions,
+                                      const bool keepDims)  {
+  std::vector<sd::LongType> *vec = new std::vector<sd::LongType>(*dimensions);
+  auto ret = reduceAlongDimension(op, vec, keepDims);
+  return ret;
+}
+
+//////////////////////////////////////////////////////////////////////////
+NDArray *NDArray::reduceNumber(sd::reduce::FloatOps op, void *extraParams)  {
   if (isS()) THROW_EXCEPTION("NDArray::reduceNumber FloatOps: you can't use this method on String array!");
 
   auto shape = ConstantShapeHelper::getInstance().scalarShapeInfo(DataTypeUtils::pickFloatingType(dataType()));
-  NDArray result(shape, true, this->getContext());
+  NDArray *result = new NDArray(shape, true, this->getContext());
 
-  prepareUse({&result}, {this});
+  prepareUse({result}, {this});
   NativeOpExecutioner::execReduceFloatScalar(getContext(), op, buffer(), shapeInfo(), specialBuffer(),
-                                             specialShapeInfo(), extraParams, result.buffer(), result.shapeInfo(),
-                                             result.specialBuffer(), result.specialShapeInfo());
-  registerUse({&result}, {this});
+                                             specialShapeInfo(), extraParams, result->buffer(), result->shapeInfo(),
+                                             result->specialBuffer(), result->specialShapeInfo());
+  registerUse({result}, {this});
 
   return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::reduceNumber(sd::reduce::SameOps op, void *extraParams)  {
+NDArray *NDArray::reduceNumber(sd::reduce::SameOps op, void *extraParams)  {
   if (isS()) THROW_EXCEPTION("NDArray::reduceNumber SameOps: you can't use this method on String array!");
-  NDArray result(dataType(), getContext());
+  NDArray *result = new NDArray(dataType(), getContext());
 
-  prepareUse({&result}, {this});
+  prepareUse({result}, {this});
   NativeOpExecutioner::execReduceSameScalar(getContext(), op, buffer(), shapeInfo(), specialBuffer(),
-                                            specialShapeInfo(), extraParams, result.buffer(), result.shapeInfo(),
-                                            result.specialBuffer(), result.specialShapeInfo());
-  registerUse({&result}, {this});
+                                            specialShapeInfo(), extraParams, result->buffer(), result->shapeInfo(),
+                                            result->specialBuffer(), result->specialShapeInfo());
+  registerUse({result}, {this});
 
   return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::reduceNumber(sd::reduce::BoolOps op, void *extraParams)  {
+NDArray *NDArray::reduceNumber(sd::reduce::BoolOps op, void *extraParams)  {
   if (isS()) THROW_EXCEPTION("NDArray::reduceNumber BoolOps: you can't use this method on String array!");
 
   auto shape = ConstantShapeHelper::getInstance().scalarShapeInfo(DataType::BOOL);
-  NDArray result(shape, true, this->getContext());
+  NDArray *result = new NDArray(shape, true, this->getContext());
 
-  prepareUse({&result}, {this});
+  prepareUse({result}, {this});
   NativeOpExecutioner::execReduceBoolScalar(getContext(), op, buffer(), shapeInfo(), specialBuffer(),
-                                            specialShapeInfo(), extraParams, result.buffer(), result.shapeInfo(),
-                                            result.specialBuffer(), result.specialShapeInfo());
-  registerUse({&result}, {this});
+                                            specialShapeInfo(), extraParams, result->buffer(), result->shapeInfo(),
+                                            result->specialBuffer(), result->specialShapeInfo());
+  registerUse({result}, {this});
 
   return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::reduceNumber(sd::reduce::LongOps op, void *extraParams)  {
+NDArray *NDArray::reduceNumber(sd::reduce::LongOps op, void *extraParams)  {
   if (isS()) THROW_EXCEPTION("NDArray::reduceNumber LongOps: you can't use this method on String array!");
 
   auto shape = ConstantShapeHelper::getInstance().scalarShapeInfo(DataType::INT64);
-  NDArray result(shape, true, this->getContext());
+  NDArray *result = new NDArray(shape, true, this->getContext());
 
-  prepareUse({&result}, {this});
+  prepareUse({result}, {this});
   NativeOpExecutioner::execReduceLongScalar(getContext(), op, buffer(), shapeInfo(), specialBuffer(),
-                                            specialShapeInfo(), extraParams, result.buffer(), result.shapeInfo(),
-                                            result.specialBuffer(), result.specialShapeInfo());
-  registerUse({&result}, {this});
+                                            specialShapeInfo(), extraParams, result->buffer(), result->shapeInfo(),
+                                            result->specialBuffer(), result->specialShapeInfo());
+  registerUse({result}, {this});
 
   return result;
 }
@@ -2446,8 +2461,8 @@ void NDArray::updateStrides(const char order) { THROW_EXCEPTION("Forbidden metho
 NDArray * NDArray::newShapeNoCopy(const std::vector<sd::LongType> &newShape, const char order) {
   NDArray arr = *this;
   size_t oldnd;
-  std::vector<sd::LongType> *olddims = new std::vector<sd::LongType>(arr.getShapeAsVector());
-  std::vector<sd::LongType> *oldstrides = new std::vector<sd::LongType>(arr.getStrideAsVector());
+  std::vector<sd::LongType> *olddims = arr.getShapeAsVector();
+  std::vector<sd::LongType> *oldstrides =arr.getStrideAsVector();
   sd::LongType np, op, last_stride;
   size_t oi, oj, ok, ni, nj, nk;
   std::vector<sd::LongType> newStrides(newShape.size());
@@ -2708,11 +2723,12 @@ void NDArray::copyDataForAssign(NDArray *thisArray, NDArray *other, const sd::Lo
 // Adjusts shape for assignment without modifying the original array
 const LongType *NDArray::modifyShapeForAssign( NDArray *thisArray,  NDArray *other) {
   if (!shape::shapeEquals(thisArray->shapeInfo(), other->shapeInfo())) {
-    std::vector<sd::LongType> *thisShape = new std::vector<sd::LongType>(thisArray->getShapeAsVector());
+    std::vector<sd::LongType> *thisShape = thisArray->getShapeAsVector();
     auto ret = reshapeShapeInfo(other, other->ordering(), *thisShape);
     delete thisShape;
     return ret;
   }
+
   return other->shapeInfo();
 }
 
@@ -3035,11 +3051,12 @@ BUILD_SINGLE_UNCHAINED_TEMPLATE(  SD_LIB_EXPORT, * NDArray::bufferasTWithOffset(
 template <typename T>
 NDArray * NDArray::asT()  {
   auto nonConst = const_cast<NDArray *>(this);
-  std::vector<sd::LongType> shape = nonConst->getShapeAsVector();
+  std::vector<sd::LongType> *shape = nonConst->getShapeAsVector();
+  std::vector<sd::LongType> shapeCopy = *shape;
   std::vector<sd::LongType> empty = {};
   std::vector<double> zeroVec = {0.};
   auto result = isScalar() ? new NDArray('c', empty, zeroVec, DataTypeUtils::fromT<T>(), this->getContext())
-                           : new NDArray(ordering(), shape, DataTypeUtils::fromT<T>(), this->getContext());
+                           : new NDArray(ordering(), shapeCopy, DataTypeUtils::fromT<T>(), this->getContext());
 
   prepareSpecialUse({result}, {this});
   NativeOpExecutioner::execTransformAny(getContext(), transform::AnyOps::Assign, buffer(), shapeInfo(), specialBuffer(),
@@ -3047,6 +3064,7 @@ NDArray * NDArray::asT()  {
                                         result->specialShapeInfo(), nullptr, false);
   registerSpecialUse({result}, {this});
 
+  delete shape;
   return result;
 }
 BUILD_SINGLE_TEMPLATE(  SD_LIB_EXPORT NDArray * NDArray::asT, (), SD_COMMON_TYPES);
@@ -3126,9 +3144,14 @@ NDArray * NDArray::asS()  {
   DataBuffer *  pBuffer =
       new DataBuffer(offsetsLength + dataLength, dtype, getContext()->getWorkspace(), true);
   auto nonConst = const_cast<NDArray *>(this);
-  std::vector<sd::LongType> shape2 = nonConst->getShapeAsVector();
-  std::vector<sd::LongType> shape = isScalar() ? std::vector<sd::LongType>({1}) : shape2;
-  auto desc = new ShapeDescriptor(dtype, ordering(), shape);
+  std::vector<sd::LongType> *shape2 = nonConst->getShapeAsVector();
+  std::vector<sd::LongType> *shape;
+  if (isScalar()) {
+    shape = new std::vector<sd::LongType>({1});
+  } else {
+    shape = shape2;
+  }
+  auto desc = new ShapeDescriptor(dtype, ordering(), *shape);
   NDArray *res = new NDArray(pBuffer, desc, getContext());
   res->setAttached(getContext()->getWorkspace() != nullptr);
 
@@ -3141,7 +3164,8 @@ NDArray * NDArray::asS()  {
   StringUtils::convertStringsForDifferentDataType<T>(this, res);
 
   registerPrimaryUse({res}, {this});
-
+  delete shape2;
+  delete shape;
   return res;
 }
 ////////////////////////////////////////////////////////////////////////
@@ -3184,12 +3208,10 @@ void NDArray::cast(NDArray &target, DataType dtype) {
 
 ////////////////////////////////////////////////////////////////////////
 // mathematical multiplication of two arrays
-NDArray mmul(NDArray &left, NDArray &right) {
+NDArray *mmul(NDArray &left, NDArray &right) {
   if (left.isS() || right.isS()) THROW_EXCEPTION("mmul friend function: you can't use this function on String array!");
   auto ptr = MmulHelper::mmul(const_cast<NDArray *>(&left), const_cast<NDArray *>(&right), nullptr, 1., 0.);
-  NDArray result(std::move(*ptr));
-  delete ptr;
-  return result;
+  return ptr;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -4085,7 +4107,7 @@ void NDArray::varianceAlongDimension(sd::variance::Ops op, NDArray &target, cons
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray NDArray::varianceAlongDimension(sd::variance::Ops op, const bool biasCorrected,
+NDArray *NDArray::varianceAlongDimension(sd::variance::Ops op, const bool biasCorrected,
                                         const std::vector<LongType> *dimensions)  {
   if (isS()) THROW_EXCEPTION("NDArray::varianceAlongDimension: you can't use this method on String array!");
 
@@ -4094,15 +4116,15 @@ NDArray NDArray::varianceAlongDimension(sd::variance::Ops op, const bool biasCor
 
   auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, DataTypeUtils::pickFloatingType(dataType()), false,
                                                   false, getContext()->getWorkspace());
-  NDArray result(newShape, true, getContext());
+  NDArray *result = new NDArray(newShape, true, getContext());
 
-  this->varianceAlongDimension(op, result, biasCorrected, copy);
+  this->varianceAlongDimension(op, *result, biasCorrected, copy);
   delete copy;
   return result;
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray NDArray::varianceAlongDimension(sd::variance::Ops op, const bool biasCorrected,
+NDArray* NDArray::varianceAlongDimension(sd::variance::Ops op, const bool biasCorrected,
                                         const std::initializer_list<LongType> *dimensions)  {
   std::vector<sd::LongType> *copy = new std::vector<sd::LongType>(*dimensions);
   auto ret = varianceAlongDimension(op, biasCorrected, copy);
@@ -4123,12 +4145,15 @@ void NDArray::varianceAlongDimension(sd::variance::Ops op, NDArray &target, cons
 NDArray * NDArray::dup(const char newOrder, bool forceOriginalBuffer)  {
   if (isEmpty()) return new NDArray(NDArrayFactory::empty(dataType(), getContext()));
   auto nonConst = const_cast<NDArray *>(this);
-  std::vector<sd::LongType> shape = nonConst->getShapeAsVector();
+  std::vector<sd::LongType> *shape = nonConst->getShapeAsVector();
   if(forceOriginalBuffer) {
-    NDArray *result = new NDArray(ordering(), shape, dataType(), getContext());
+    std::vector<sd::LongType> &shapeCopy = *shape;
+
+    NDArray *result = new NDArray(ordering(), shapeCopy, dataType(), getContext());
     DataBuffer *thisBuff = this->getDataBuffer();
     DataBuffer *otherBuff = result->getDataBuffer();
     DataBuffer::memcpy(otherBuff, thisBuff, 0, 0);
+    delete shape;
     return result;
   }
 
@@ -4137,6 +4162,7 @@ NDArray * NDArray::dup(const char newOrder, bool forceOriginalBuffer)  {
   int len = isScalar() ? 1 : lengthOf();
   // for now string arrays require special treatment
   if (isS()) {
+    std::vector<sd::LongType> &shapeCopy = *shape;
     if (dataType() == DataType::UTF8) {
       std::vector<std::string> strings(len);
 
@@ -4147,7 +4173,9 @@ NDArray * NDArray::dup(const char newOrder, bool forceOriginalBuffer)  {
       };
 
       samediff::Threads::parallel_for(func, 0, len, 1);
-      return new NDArray(shape, strings, dataType(), getContext());
+      auto ret = new NDArray(shapeCopy, strings, dataType(), getContext());
+      delete shape;
+      return ret;
     }
     if (dataType() == DataType::UTF16) {
       std::vector<std::u16string> strings(len);
@@ -4159,7 +4187,9 @@ NDArray * NDArray::dup(const char newOrder, bool forceOriginalBuffer)  {
       };
 
       samediff::Threads::parallel_for(func, 0, len, 1);
-      return new NDArray(shape, strings, dataType(), getContext());
+      auto ret =  new NDArray(shapeCopy, strings, dataType(), getContext());
+      delete shape;
+      return ret;
     }
 
     std::vector<std::u32string> strings(len);
@@ -4170,13 +4200,25 @@ NDArray * NDArray::dup(const char newOrder, bool forceOriginalBuffer)  {
     };
 
     samediff::Threads::parallel_for(func, 0,len, 1);
-    return new  NDArray(shape, strings, dataType(), getContext());
+    auto ret =  new  NDArray(shapeCopy, strings, dataType(), getContext());
+    delete shape;
+    return ret;
   }
 
-  std::vector<sd::LongType> shape3 = isScalar() ? std::vector<sd::LongType>({0}) : shape;
-  NDArray *result = new NDArray(order, shape3, dataType(), getContext());
-  result->assign(this);
+  std::vector<sd::LongType> *shape3;
+  if (isScalar()) {
+    shape3 = new std::vector<sd::LongType>({0});
+  } else {
+    shape3 = shape;
+  }
 
+  std::vector<sd::LongType> &otherShape = *shape3;
+  NDArray *result = new NDArray(order, otherShape, dataType(), getContext());
+  result->assign(this);
+  if (isScalar()) {
+    delete shape3;
+  }
+  delete shape;
   return result;
 }
 
@@ -4453,7 +4495,7 @@ BUILD_SINGLE_UNCHAINED_TEMPLATE(  SD_LIB_EXPORT,
                                               sd::LongType),
                                   SD_COMMON_TYPES_ALL);
 
-//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////->///////////////////////////
 NDArray NDArray::e(const sd::LongType i)  {
   const auto offset = getOffset(i);
   NDArray scalar(dataType(), getContext());
@@ -4535,24 +4577,24 @@ void NDArray::applyTransform(sd::transform::BoolOps op, NDArray *target, ExtraAr
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray NDArray::transform(sd::transform::FloatOps op, void *extraParams)  & {
+NDArray* NDArray::transform(sd::transform::FloatOps op, void *extraParams)  & {
   if (isS()) THROW_EXCEPTION("NDArray::transform FloatOps: you can't use this method on String array!");
 
   auto nonConst = const_cast<NDArray *>(this);
-  std::vector<sd::LongType> shape = nonConst->getShapeAsVector();
-  NDArray result(ordering(), shape, DataTypeUtils::pickFloatingType(dataType()), getContext());
+  std::vector<sd::LongType> *shape = nonConst->getShapeAsVector();
+  std::vector<sd::LongType> shapeCopy = *shape;
+  NDArray *result = new NDArray(ordering(), shapeCopy, DataTypeUtils::pickFloatingType(dataType()), getContext());
 
-  NDArray::prepareSpecialUse({&result}, {this});
+  NDArray::prepareSpecialUse({result}, {this});
   NativeOpExecutioner::execTransformFloat(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                          result.buffer(), result.shapeInfo(), result.specialBuffer(),
-                                          result.specialShapeInfo(), extraParams);
-  NDArray::registerSpecialUse({&result}, {this});
-
+                                          result->buffer(), result->shapeInfo(), result->specialBuffer(),
+                                          result->specialShapeInfo(), extraParams);
+  NDArray::registerSpecialUse({result}, {this});
+  delete shape;
   return result;
 }
-
 ////////////////////////////////////////////////////////////////////////
-NDArray NDArray::transform(sd::transform::FloatOps op, void *extraParams) && {
+NDArray* NDArray::transform(sd::transform::FloatOps op, void *extraParams) && {
   if (isS()) THROW_EXCEPTION("NDArray::transform SameOps: you can't use this method on String array!");
 
   NDArray::prepareSpecialUse({this}, {this});
@@ -4560,26 +4602,26 @@ NDArray NDArray::transform(sd::transform::FloatOps op, void *extraParams) && {
                                           buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), extraParams);
   NDArray::registerSpecialUse({this}, {this});
 
-  return std::move(*this);
+  return this;
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray NDArray::transform(sd::transform::SameOps op, void *extraParams)  & {
+NDArray* NDArray::transform(sd::transform::SameOps op, void *extraParams)  & {
   if (isS()) THROW_EXCEPTION("NDArray::transform SameOps: you can't use this method on String array!");
 
-  NDArray result(shapeInfo(), false, getContext());
+  NDArray *result = new NDArray(shapeInfo(), false, getContext());
 
-  NDArray::prepareSpecialUse({&result}, {this});
+  NDArray::prepareSpecialUse({result}, {this});
   NativeOpExecutioner::execTransformSame(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                         result.buffer(), result.shapeInfo(), result.specialBuffer(),
-                                         result.specialShapeInfo(), extraParams, nullptr, nullptr);
-  NDArray::registerSpecialUse({&result}, {this});
+                                         result->buffer(), result->shapeInfo(), result->specialBuffer(),
+                                         result->specialShapeInfo(), extraParams, nullptr, nullptr);
+  NDArray::registerSpecialUse({result}, {this});
 
   return result;
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray NDArray::transform(sd::transform::SameOps op, void *extraParams) && {
+NDArray* NDArray::transform(sd::transform::SameOps op, void *extraParams) && {
   if (isS()) THROW_EXCEPTION("NDArray::transform SameOps: you can't use this method on String array!");
 
   NDArray::prepareSpecialUse({this}, {this});
@@ -4588,26 +4630,26 @@ NDArray NDArray::transform(sd::transform::SameOps op, void *extraParams) && {
                                          nullptr, nullptr);
   NDArray::registerSpecialUse({this}, {this});
 
-  return std::move(*this);
+  return this;
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray NDArray::transform(sd::transform::StrictOps op, void *extraParams)  & {
+NDArray* NDArray::transform(sd::transform::StrictOps op, void *extraParams)  & {
   if (!this->isR()) THROW_EXCEPTION("Source array must have one of FLOAT types");
 
-  NDArray result(shapeInfo(), false, getContext());
+  NDArray *result = new NDArray(shapeInfo(), false, getContext());
 
-  NDArray::prepareSpecialUse({&result}, {this});
+  NDArray::prepareSpecialUse({result}, {this});
   NativeOpExecutioner::execTransformStrict(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                           result.buffer(), result.shapeInfo(), result.specialBuffer(),
-                                           result.specialShapeInfo(), extraParams);
-  NDArray::registerSpecialUse({&result}, {this});
+                                           result->buffer(), result->shapeInfo(), result->specialBuffer(),
+                                           result->specialShapeInfo(), extraParams);
+  NDArray::registerSpecialUse({result}, {this});
 
   return result;
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray NDArray::transform(sd::transform::StrictOps op, void *extraParams) && {
+NDArray* NDArray::transform(sd::transform::StrictOps op, void *extraParams) && {
   if (!this->isR()) THROW_EXCEPTION("Source array must have one of FLOAT types");
 
   NDArray::prepareSpecialUse({this}, {this});
@@ -4615,28 +4657,28 @@ NDArray NDArray::transform(sd::transform::StrictOps op, void *extraParams) && {
                                            buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), extraParams);
   NDArray::registerSpecialUse({this}, {this});
 
-  return std::move(*this);
+  return this;
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray NDArray::transform(sd::transform::BoolOps op, void *extraParams)  & {
+NDArray* NDArray::transform(sd::transform::BoolOps op, void *extraParams)  & {
   if (isS()) THROW_EXCEPTION("NDArray::transform BoolOps: you can't use this method on String array!");
 
   auto nonConst = const_cast<NDArray *>(this);
-  std::vector<sd::LongType> shape = nonConst->getShapeAsVector();
-  NDArray result(ordering(), shape, sd::DataType::BOOL, getContext());
+  std::vector<sd::LongType> *shape = nonConst->getShapeAsVector();
+  NDArray *result = new NDArray(ordering(), *shape, sd::DataType::BOOL, getContext());
 
-  NDArray::prepareSpecialUse({&result}, {this});
+  NDArray::prepareSpecialUse({result}, {this});
   NativeOpExecutioner::execTransformBool(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                         result.buffer(), result.shapeInfo(), result.specialBuffer(),
-                                         result.specialShapeInfo(), extraParams);
-  NDArray::registerSpecialUse({&result}, {this});
-
+                                         result->buffer(), result->shapeInfo(), result->specialBuffer(),
+                                         result->specialShapeInfo(), extraParams);
+  NDArray::registerSpecialUse({result}, {this});
+  delete shape;
   return result;
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray NDArray::transform(sd::transform::BoolOps op, void *extraParams) && {
+NDArray* NDArray::transform(sd::transform::BoolOps op, void *extraParams) && {
   if (isS()) THROW_EXCEPTION("NDArray::transform BoolOps: you can't use this method on String array!");
 
   NDArray::prepareSpecialUse({this}, {this});
@@ -4644,7 +4686,7 @@ NDArray NDArray::transform(sd::transform::BoolOps op, void *extraParams) && {
                                          buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), extraParams);
   NDArray::registerSpecialUse({this}, {this});
 
-  return std::move(*this);
+  return this;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -4873,14 +4915,14 @@ void NDArray::applyIndexReduce(sd::indexreduce::Ops op, NDArray *target, const s
 
 ////////////////////////////////////////////////////////////////////////
 // reduce dimensions in this array relying on index operations
-NDArray NDArray::applyIndexReduce(sd::indexreduce::Ops op, const std::vector<LongType> *dimensions,
+NDArray *NDArray::applyIndexReduce(sd::indexreduce::Ops op, const std::vector<LongType> *dimensions,
                                   const ExtraArguments *extraParams)  {
   const std::vector<sd::LongType> *copy = dimensions;
   auto newShape = ShapeUtils::evalReduceShapeInfo('c', const_cast<std::vector<LongType> *>(copy), *this,
                                                   DataType::INT64, false, false, getContext()->getWorkspace());
-  NDArray result(newShape, true, getContext());
+  NDArray *result = new NDArray(newShape, true, getContext());
 
-  applyIndexReduce(op, &result, const_cast<std::vector<LongType> *>(copy), extraParams);
+  applyIndexReduce(op, result, const_cast<std::vector<LongType> *>(copy), extraParams);
 
   return result;
 }
@@ -5910,7 +5952,7 @@ ResultSet NDArray::allTensorsAlongDimension(const std::vector<LongType> &dimensi
 
 ////////////////////////////////////////////////////////////////////////
 // operator returns sub-array with buffer pointing at this->_buffer + certain offset
-NDArray& NDArray::operator()(const std::vector<sd::LongType> &idx, const bool keepUnitiesInShape,
+NDArray* NDArray::operator()(const std::vector<sd::LongType> &idx, const bool keepUnitiesInShape,
                              const bool isStrided)  {
   if (isEmpty()) THROW_EXCEPTION("NDArray::operator(sub-arrays): array is empty !");
 
@@ -5947,11 +5989,11 @@ NDArray& NDArray::operator()(const std::vector<sd::LongType> &idx, const bool ke
   ShapeDescriptor descriptor(newShapeInfo->primary(), false);
   descriptor.validate();
 
-  return *result;
+  return result;
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray& NDArray::operator()(const sd::LongType subArrIdx,
+NDArray* NDArray::operator()(const sd::LongType subArrIdx,
                              const std::vector<sd::LongType> &dimsToExclude,
                              bool keepUnitiesInShape)  {
   std::vector<sd::LongType> idxRanges(2 * rankOf());
@@ -5979,8 +6021,8 @@ NDArray& NDArray::operator()(const sd::LongType subArrIdx,
     }
   }
 
-  NDArray *ret =  new NDArray((*this)(idxRanges, keepUnitiesInShape));
-  return *ret;
+  NDArray *ret = (*this)(idxRanges, keepUnitiesInShape);
+  return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////

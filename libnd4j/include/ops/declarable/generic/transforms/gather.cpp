@@ -79,20 +79,15 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
     
     const sd::LongType numOfBadIndx = helpers::checkIndices(block.launchContext(), *pIndices, *input, intArgs[0]);
 
-    // Check condition and cleanup before using REQUIRE_TRUE
-    if (numOfBadIndx != 0) {
-      if (ownsIndices) {
-        delete pIndices;
-      }
-      REQUIRE_TRUE(false, 0,
-                   "GATHER OP: please check elements of indices-array, total number of wrong elements is %lld!",
-                   numOfBadIndx);
-    }
-    
-    // Cleanup after successful validation
+    // FIX: Always cleanup before checking condition and potentially throwing
     if (ownsIndices) {
       delete pIndices;
     }
+
+    // Check condition after cleanup
+    REQUIRE_TRUE(numOfBadIndx == 0, 0,
+                 "GATHER OP: please check elements of indices-array, total number of wrong elements is %lld!",
+                 numOfBadIndx);
   }
 
   helpers::gather(block.launchContext(), input, indices, output, intArgs);

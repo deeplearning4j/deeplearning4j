@@ -68,7 +68,8 @@ CUSTOM_OP_IMPL(reversesubtract_bp, 3, 2, false, 0, 0) {
   } else if (y->isScalar()) {
     // scalar case
     auto tmp = epsNext->reduceNumber(reduce::Sum);
-    gradY->assign(&tmp);
+    gradY->assign(tmp);
+    delete tmp;
     epsNext->applyTransform(transform::Neg, gradX);
   } else {
     // broadcastable
@@ -77,14 +78,16 @@ CUSTOM_OP_IMPL(reversesubtract_bp, 3, 2, false, 0, 0) {
 
     if (axisX.size() > 0) {
       auto sum = epsNext->reduceAlongDimension(reduce::Sum, &axisX);
-      sum.applyTransform(transform::Neg, gradX);
+      sum->applyTransform(transform::Neg, gradX);
+      delete sum;
     } else {
       epsNext->applyTransform(transform::Neg, gradX);
     }
 
     if (axisY.size() > 0) {
       auto sum = epsNext->reduceAlongDimension(reduce::Sum, &axisY);
-      gradY->assign(&sum);
+      gradY->assign(sum);
+      delete sum;
     } else {
       gradY->assign(epsNext);
     }

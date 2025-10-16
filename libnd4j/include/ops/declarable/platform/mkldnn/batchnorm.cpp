@@ -320,10 +320,11 @@ static void batchnormBpMKLDNN(NDArray* x, NDArray* mean, NDArray* variance, NDAr
   // add dfdm / N
   xMinusMean.applyBroadcast(sd::broadcast::Add, &axes, &dfdm, &xMinusMean);
   // * gamma
-  auto gamma = (*weights)({0, 1, 0, 0});
-  xMinusMean.applyBroadcast(sd::broadcast::Multiply, &axes, &gamma, &xMinusMean);
+  NDArray *gamma = (*weights)({0, 1, 0, 0});
+  xMinusMean.applyBroadcast(sd::broadcast::Multiply, &axes, gamma, &xMinusMean);
 
   *dLdI += xMinusMean;
+  delete gamma;
 }
 
 PLATFORM_IMPL(batchnorm, ENGINE_CPU) {
@@ -386,16 +387,22 @@ PLATFORM_IMPL(batchnorm, ENGINE_CPU) {
     std::vector<sd::LongType > shape = {2, input->sizeAt(axes[0])};
     weights = new NDArray(input->ordering(),shape , input->dataType());
 
+    NDArray *weightsFirst = (*weights)({0, 1, 0, 0});
+    NDArray *weightsSecond = (*weights)({1, 2, 0, 0});
+
     if (applyScale)
-      (*weights)({0, 1, 0, 0}).assign(gamma);
+      weightsFirst->assign(gamma);
     else {
       sd::LongType scalarVal = 1;
-      (*weights)({0, 1, 0, 0}).assign(scalarVal);
+      weightsFirst->assign(scalarVal);
     }
     if (applyOffset)
-      (*weights)({1, 2, 0, 0}).assign(beta);
+      weightsSecond->assign(beta);
     else
-      (*weights)({1, 2, 0, 0}).assign(0);
+      weightsSecond->assign(0);
+
+    delete weightsFirst;
+    delete weightsSecond;
   }
 
   const bool isNCHW = !(axes[0] == inRank - 1 && inRank > 2);
@@ -532,14 +539,21 @@ PLATFORM_IMPL(batchnorm_bp, ENGINE_CPU) {
     std::vector<sd::LongType> shape =  {2, input->sizeAt(axes[0])};
     weights = new NDArray(input->ordering(),shape, input->dataType());
     dLdW = new NDArray(input->ordering(), shape, input->dataType());
+
+    NDArray *weightsFirst = (*weights)({0, 1, 0, 0});
+    NDArray *weightsSecond = (*weights)({1, 2, 0, 0});
+
     if (applyScale)
-      (*weights)({0, 1, 0, 0}).assign(gamma);
+      weightsFirst->assign(gamma);
     else
-      (*weights)({0, 1, 0, 0}).assign(scalar);
+      weightsFirst->assign(scalar);
     if (applyOffset)
-      (*weights)({1, 2, 0, 0}).assign(beta);
+      weightsSecond->assign(beta);
     else
-      (*weights)({1, 2, 0, 0}).assign(0);
+      weightsSecond->assign(0);
+
+    delete weightsFirst;
+    delete weightsSecond;
   }
 
   const bool isNCHW = !(axes[0] == inRank - 1 && inRank > 2);
@@ -555,12 +569,14 @@ PLATFORM_IMPL(batchnorm_bp, ENGINE_CPU) {
 
   if (applyScale || applyOffset) {
     if (applyScale) {
-      NDArray assign = (*dLdW)({0, 1, 0, 0});
-      dLdG->assign(&assign);
+      NDArray *dLdWFirst = (*dLdW)({0, 1, 0, 0});
+      dLdG->assign(dLdWFirst);
+      delete dLdWFirst;
     }
     if (applyOffset)  {
-      NDArray assign = (*dLdW)({1, 2, 0, 0});
-      dLdB->assign(&assign);
+      NDArray *dLdWSecond = (*dLdW)({1, 2, 0, 0});
+      dLdB->assign(dLdWSecond);
+      delete dLdWSecond;
     }
 
     delete weights;

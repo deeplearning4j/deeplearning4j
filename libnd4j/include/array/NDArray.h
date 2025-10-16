@@ -56,59 +56,59 @@ namespace sd {
 SD_LIB_EXPORT std::ostream& operator<<(std::ostream &os,  NDArray& arr);
 #endif
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
-SD_LIB_EXPORT NDArray operator+(NDArray &arr,  T scalar);
+SD_LIB_EXPORT NDArray* operator+(NDArray &arr,  T scalar);
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
-SD_LIB_EXPORT NDArray operator+(NDArray &&arr,  T scalar);
+SD_LIB_EXPORT NDArray* operator+(NDArray &&arr,  T scalar);
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
-SD_LIB_EXPORT NDArray operator+( T scalar,  NDArray &arr);
+SD_LIB_EXPORT NDArray* operator+( T scalar,  NDArray &arr);
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
-SD_LIB_EXPORT NDArray operator+( T scalar, NDArray &&arr);
+SD_LIB_EXPORT NDArray* operator+( T scalar, NDArray &&arr);
 
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
-SD_LIB_EXPORT NDArray operator-( NDArray &arr,  T scalar);
+SD_LIB_EXPORT NDArray* operator-( NDArray &arr,  T scalar);
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
-SD_LIB_EXPORT NDArray operator-(NDArray &&arr,  T scalar);
+SD_LIB_EXPORT NDArray* operator-(NDArray &&arr,  T scalar);
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
-SD_LIB_EXPORT NDArray operator-( T scalar,  NDArray &arr);
+SD_LIB_EXPORT NDArray* operator-( T scalar,  NDArray &arr);
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
-SD_LIB_EXPORT NDArray operator-( T scalar, NDArray &&arr);
+SD_LIB_EXPORT NDArray* operator-( T scalar, NDArray &&arr);
 
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
-SD_LIB_EXPORT NDArray operator*( NDArray &arr,  T scalar);
+SD_LIB_EXPORT NDArray* operator*( NDArray &arr,  T scalar);
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
-SD_LIB_EXPORT NDArray operator*(NDArray &&arr,  T scalar);
+SD_LIB_EXPORT NDArray* operator*(NDArray &&arr,  T scalar);
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
-SD_LIB_EXPORT NDArray operator*( T scalar,  NDArray &arr);
+SD_LIB_EXPORT NDArray* operator*( T scalar,  NDArray &arr);
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
-SD_LIB_EXPORT NDArray operator*( T scalar, NDArray &&arr);
+SD_LIB_EXPORT NDArray* operator*( T scalar, NDArray &&arr);
 
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
-SD_LIB_EXPORT NDArray operator/( NDArray &arr,  T scalar);
+SD_LIB_EXPORT NDArray* operator/( NDArray &arr,  T scalar);
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
-SD_LIB_EXPORT NDArray operator/(NDArray &&arr,  T scalar);
+SD_LIB_EXPORT NDArray* operator/(NDArray &&arr,  T scalar);
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
-SD_LIB_EXPORT NDArray operator/( T scalar,  NDArray &arr);
+SD_LIB_EXPORT NDArray* operator/( T scalar,  NDArray &arr);
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
-SD_LIB_EXPORT NDArray operator/( T scalar, NDArray &&arr);
+SD_LIB_EXPORT NDArray* operator/( T scalar, NDArray &&arr);
 
 template <typename T1, typename T2,
     typename = typename std::enable_if<std::is_same<NDArray, typename std::decay<T1>::type>::value &&
                                        std::is_same<NDArray, typename std::decay<T2>::type>::value>::type>
-SD_LIB_EXPORT NDArray operator+(T1 &&arr1, T2 &&arr2);
+SD_LIB_EXPORT NDArray* operator+(T1 &&arr1, T2 &&arr2);
 template <typename T1, typename T2,
     typename = typename std::enable_if<std::is_same<NDArray, typename std::decay<T1>::type>::value &&
                                        std::is_same<NDArray, typename std::decay<T2>::type>::value>::type>
-SD_LIB_EXPORT NDArray operator-(T1 &&arr1, T2 &&arr2);
+SD_LIB_EXPORT NDArray* operator-(T1 &&arr1, T2 &&arr2);
 template <typename T1, typename T2,
     typename = typename std::enable_if<std::is_same<NDArray, typename std::decay<T1>::type>::value &&
                                        std::is_same<NDArray, typename std::decay<T2>::type>::value>::type>
-SD_LIB_EXPORT NDArray operator*(T1 &&arr1, T2 &&arr2);
+SD_LIB_EXPORT NDArray* operator*(T1 &&arr1, T2 &&arr2);
 template <typename T1, typename T2,
     typename = typename std::enable_if<std::is_same<NDArray, typename std::decay<T1>::type>::value &&
                                        std::is_same<NDArray, typename std::decay<T2>::type>::value>::type>
-SD_LIB_EXPORT NDArray operator/(T1 &&arr1, T2 &&arr2);
+SD_LIB_EXPORT NDArray* operator/(T1 &&arr1, T2 &&arr2);
 
-SD_LIB_EXPORT NDArray mmul(NDArray &, NDArray &);
+SD_LIB_EXPORT NDArray *mmul(NDArray &, NDArray &);
 
 
 template <typename T, typename Y>
@@ -673,24 +673,24 @@ class SD_LIB_EXPORT NDArray {
    * place of reduced dimensions
    */
 
-  NDArray reduceAlongDimension(reduce::FloatOps op, const std::vector<LongType> *dimensions,
+  NDArray *reduceAlongDimension(sd::reduce::FloatOps op, const std::vector<LongType> *dimensions,
                                const bool keepDims = false);
-  NDArray reduceAlongDimension(reduce::FloatOps op, const std::initializer_list<LongType> *dimensions,
-                               const bool keepDims = false);
-
-  NDArray reduceAlongDimension(reduce::SameOps op, const std::vector<LongType> *dimensions,
-                               const bool keepDims = false);
-  NDArray reduceAlongDimension(reduce::SameOps op, const std::initializer_list<LongType> *dimensions,
+  NDArray* reduceAlongDimension(reduce::FloatOps op, const std::initializer_list<LongType> *dimensions,
                                const bool keepDims = false);
 
-  NDArray reduceAlongDimension(reduce::BoolOps op, const std::vector<LongType> *dimensions,
+  NDArray *reduceAlongDimension(sd::reduce::SameOps op, const std::vector<LongType> *dimensions,
                                const bool keepDims = false);
-  NDArray reduceAlongDimension(reduce::BoolOps op, const std::initializer_list<LongType> *dimensions,
+  NDArray *reduceAlongDimension(reduce::SameOps op, const std::initializer_list<LongType> *dimensions,
                                const bool keepDims = false);
 
-  NDArray reduceAlongDimension(reduce::LongOps op, const std::vector<LongType> *dimensions,
+  NDArray *reduceAlongDimension(reduce::BoolOps op, const std::vector<LongType> *dimensions,
                                const bool keepDims = false);
-  NDArray reduceAlongDimension(reduce::LongOps op, const std::initializer_list<LongType> *dimensions,
+  NDArray *reduceAlongDimension(reduce::BoolOps op, const std::initializer_list<LongType> *dimensions,
+                               const bool keepDims = false);
+
+  NDArray *reduceAlongDimension(reduce::LongOps op, const std::vector<LongType> *dimensions,
+                               const bool keepDims = false);
+  NDArray *reduceAlongDimension(reduce::LongOps op, const std::initializer_list<LongType> *dimensions,
                                const bool keepDims = false);
 
   /**
@@ -720,10 +720,10 @@ class SD_LIB_EXPORT NDArray {
    *  extraParams - extra parameters for operation
    *  returns scalar array
    */
-  NDArray reduceNumber(reduce::FloatOps ops, void *extraParams = nullptr);
-  NDArray reduceNumber(reduce::SameOps ops, void *extraParams = nullptr);
-  NDArray reduceNumber(reduce::BoolOps ops, void *extraParams = nullptr);
-  NDArray reduceNumber(reduce::LongOps ops, void *extraParams = nullptr);
+  NDArray *reduceNumber(reduce::FloatOps ops, void *extraParams = nullptr);
+  NDArray *reduceNumber(reduce::SameOps ops, void *extraParams = nullptr);
+  NDArray *reduceNumber(reduce::BoolOps ops, void *extraParams = nullptr);
+  NDArray *reduceNumber(reduce::LongOps ops, void *extraParams = nullptr);
 
   void reduceNumber(reduce::FloatOps ops, NDArray *target, void *extraParams = nullptr);
   void reduceNumber(reduce::SameOps ops, NDArray *target, void *extraParams = nullptr);
@@ -752,14 +752,14 @@ class SD_LIB_EXPORT NDArray {
    *  apply OpName transformation to this array and store result in new array to be returned
    *  extraParams - extra parameters for operation
    */
-  NDArray transform(transform::FloatOps op, void *extraParams = nullptr)  &;
-  NDArray transform(transform::SameOps op, void *extraParams = nullptr)  &;
-  NDArray transform(transform::BoolOps op, void *extraParams = nullptr)  &;
-  NDArray transform(transform::StrictOps op, void *extraParams = nullptr)  &;
-  NDArray transform(transform::FloatOps op, void *extraParams = nullptr) &&;
-  NDArray transform(transform::SameOps op, void *extraParams = nullptr) &&;
-  NDArray transform(transform::BoolOps op, void *extraParams = nullptr) &&;
-  NDArray transform(transform::StrictOps op, void *extraParams = nullptr) &&;
+  NDArray *transform(transform::FloatOps op, void *extraParams = nullptr)  &;
+  NDArray *transform(transform::SameOps op, void *extraParams = nullptr)  &;
+  NDArray *transform(transform::BoolOps op, void *extraParams = nullptr)  &;
+  NDArray *transform(transform::StrictOps op, void *extraParams = nullptr)  &;
+  NDArray *transform(transform::FloatOps op, void *extraParams = nullptr) &&;
+  NDArray *transform(transform::SameOps op, void *extraParams = nullptr) &&;
+  NDArray *transform(transform::BoolOps op, void *extraParams = nullptr) &&;
+  NDArray *transform(transform::StrictOps op, void *extraParams = nullptr) &&;
 
   /**
    *  apply pairwise OpName transformation based on "this" and "other" arras elements, store result in this array
@@ -890,7 +890,7 @@ class SD_LIB_EXPORT NDArray {
    *  dimensions - vector of dimensions to reduce along
    *  extraArgs - extra parameters for operation
    */
-  NDArray applyIndexReduce(indexreduce::Ops op, const std::vector<LongType> *dimensions,
+  NDArray *applyIndexReduce(sd::indexreduce::Ops op, const std::vector<LongType> *dimensions,
                            const ExtraArguments *extraParams = nullptr);
 
   /**
@@ -932,9 +932,9 @@ class SD_LIB_EXPORT NDArray {
    *  biasCorrected -  if true bias correction will be applied
    *  dimensions - vector of dimensions to calculate variance along
    */
-  NDArray varianceAlongDimension(variance::Ops op, const bool biasCorrected,
+  NDArray *varianceAlongDimension(sd::variance::Ops op, const bool biasCorrected,
                                  const std::vector<LongType> *dimensions);
-  NDArray varianceAlongDimension(variance::Ops op, const bool biasCorrected,
+  NDArray* varianceAlongDimension(variance::Ops op, const bool biasCorrected,
                                  const std::initializer_list<LongType> *dimensions);
 
   void varianceAlongDimension(variance::Ops op, NDArray &target, const bool biasCorrected,
@@ -1031,12 +1031,12 @@ class SD_LIB_EXPORT NDArray {
    */
   template <typename T>
   std::vector<T> getBufferAsVector();
-  std::vector<LongType> getShapeAsVector();
-  std::vector<sd::LongType> getStrideAsVector();
-  std::vector<int> getShapeAsVectorInt();
-  std::vector<LongType> getShapeInfoAsVector();
-  std::vector<int64_t> getShapeInfoAsFlatVector();
-  std::vector<int64_t> getShapeAsFlatVector();
+  std::vector<LongType>* getShapeAsVector();
+  std::vector<sd::LongType>* getStrideAsVector();
+  std::vector<int> * getShapeAsVectorInt();
+  std::vector<LongType>* getShapeInfoAsVector();
+  std::vector<int64_t> *getShapeInfoAsFlatVector();
+  std::vector<int64_t> *getShapeAsFlatVector();
 
   /**
    *  set new order and shape in case of suitable array length (in-place operation)
@@ -1123,7 +1123,7 @@ class SD_LIB_EXPORT NDArray {
    * numbers which correspond to stride between dimStart and dimEnd, so structure of idx is like
    * {dim0Start,dim0End,dim0Stride,    dim1Start,dim1End,dim1Stride, ....}
    */
-  NDArray& operator()(const std::vector<LongType> &idx, const bool keepUnitiesInShape = false,
+  NDArray* operator()(const std::vector<LongType> &idx, const bool keepUnitiesInShape = false,
                       const bool isStrided = false);
 
   /**
@@ -1134,7 +1134,7 @@ class SD_LIB_EXPORT NDArray {
    * zeros (means whole array) will be returned. keepUnitiesInShape - if false then eliminate unities from resulting
    * array shape, for example {1,a,1,b} -> {a,b}
    */
-  NDArray& operator()(const LongType subArrIdx, const std::vector<LongType> &dimsToExclude,
+  NDArray* operator()(const LongType subArrIdx, const std::vector<LongType> &dimsToExclude,
                       bool keepUnitiesInShape = false);
 
   /**
@@ -1218,12 +1218,7 @@ class SD_LIB_EXPORT NDArray {
   >::type>
   void operator/=(const T scalar);
 #endif
-  /**
-   *  friend function which implements mathematical multiplication of two arrays
-   *  left - input array
-   *  right - input array
-   */
-  friend NDArray mmul(NDArray &left, NDArray &right);
+
 
   /**
    *  return vector containing _buffer as flat binary array

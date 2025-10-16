@@ -61,6 +61,8 @@ ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::grap
     ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
     auto constShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(newshape)->primary();
     shapeList->push_back(constShape);
+    // FIX: Clean up newshape after use
+    delete[] newshape;
   } else if (shape::isScalar(x) && shape::isScalar(y)) {
     if (shape::rank(x) >= shape::rank(y)) {
       shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(x)->primary());
@@ -78,6 +80,8 @@ ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::grap
     ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
     auto constShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(newshape)->primary();
     shapeList->push_back(constShape);
+    // FIX: Clean up newshape after use
+    delete[] newshape;
   } else {
     shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(x)->primary());
 

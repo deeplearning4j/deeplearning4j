@@ -708,7 +708,9 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    THROW_EXCEPTION("MmulHelper::mmulNxN: shapes of A and B arrays are not suitable for matrix multiplication !");
  }
  // validation of C array
- std::vector<LongType> cExpectedShape = aRank > bRank ? A->getShapeAsVector() : B->getShapeAsVector();
+ auto* cExpectedShapePtr = aRank > bRank ? A->getShapeAsVector() : B->getShapeAsVector();
+ std::vector<LongType> cExpectedShape = *cExpectedShapePtr;
+ delete cExpectedShapePtr;
  cExpectedShape[cExpectedShape.size() - 2] = A->sizeAt(-2);
  cExpectedShape[cExpectedShape.size() - 1] = B->sizeAt(-1);
 

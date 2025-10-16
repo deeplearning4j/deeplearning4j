@@ -206,9 +206,13 @@ void AttentionHelper::applyAttentionScores(NDArray *scores, NDArray *value, NDAr
     auto paddingMask = booleanNot.evaluate({castedScoresMask}).at(0);
     auto paddingMaskCast = paddingMask->cast(scores->dataType());
     if (attentionLogits->dataType() == BFLOAT16) {
-      *attentionLogits -= 65504 * *paddingMaskCast;
+      auto minus =  65504 * *paddingMaskCast;
+      *attentionLogits -= *minus;
+      delete minus;
     } else {
-      *attentionLogits -= 1.0e9 * *paddingMask;
+      auto minus = 1.0e9 * *paddingMask;
+      *attentionLogits -= *minus;
+      delete minus;
     }
 
     if(paddingMaskCast != paddingMask) {
@@ -285,8 +289,11 @@ void AttentionHelper::dotProductAttentionBpHelper(NDArray *query, NDArray *key, 
   if(mask != nullptr && !mask->isEmpty()) {
     ops::expand_dims expandDims;
     auto maskCast = mask->cast(query->dataType());
-    times = *maskCast * 1e9;
+    auto mask2 = *maskCast * 1e9;
+    times = *mask2;
     dldS *= times;
+    delete mask2;
+    delete maskCast;
 
   }
 

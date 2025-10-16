@@ -53,14 +53,16 @@ CUSTOM_OP_IMPL(bincount, 1, 1, false, 0, 0) {
   if (block.width() == 2) {  // the second argument is weights
     weights = INPUT_VARIABLE(1);
     if (weights->lengthOf() < 1) {
-      std::vector<sd::LongType> currShape = values->getShapeAsVector();
-      weights = NDArrayFactory::create_('c', currShape, values->dataType());
+      auto* valuesShape = values->getShapeAsVector();
+      weights = NDArrayFactory::create_('c', *valuesShape, values->dataType());
+      delete valuesShape;
       int one = 1;
       weights->assign(one);
     } else if (weights->isScalar()) {
       auto value = weights->cast(INT64)->asVectorT<LongType>();
-      std::vector<sd::LongType> currShape = values->getShapeAsVector();
-      weights = NDArrayFactory::create_('c',currShape, values->dataType());
+      auto* valuesShape = values->getShapeAsVector();
+      weights = NDArrayFactory::create_('c', *valuesShape, values->dataType());
+      delete valuesShape;
       weights->assign(value[0]);
     }
 
@@ -84,14 +86,16 @@ CUSTOM_OP_IMPL(bincount, 1, 1, false, 0, 0) {
       maxLength = minLength;
     weights = INPUT_VARIABLE(1);
     if (weights->lengthOf() < 1) {
-      std::vector<sd::LongType> currShape = values->getShapeAsVector();
-      weights = NDArrayFactory::create_('c', currShape, values->dataType());
+      auto* valuesShape = values->getShapeAsVector();
+      weights = NDArrayFactory::create_('c', *valuesShape, values->dataType());
+      delete valuesShape;
       int one = 1;
       weights->assign(one);
     } else if (weights->isScalar()) {
       auto value = weights->asVectorT<LongType>();
-      std::vector<sd::LongType> currShape = values->getShapeAsVector();
-      weights = NDArrayFactory::create_('c', currShape, values->dataType());
+      auto* valuesShape = values->getShapeAsVector();
+      weights = NDArrayFactory::create_('c', *valuesShape, values->dataType());
+      delete valuesShape;
       weights->assign(value[0]);
     }
     REQUIRE_TRUE(values->isSameShape(weights), 0, "bincount: the input and weights shapes should be equals");

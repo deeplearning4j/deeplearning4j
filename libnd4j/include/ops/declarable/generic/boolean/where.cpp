@@ -106,10 +106,10 @@ void performBroadcastedWhere(NDArray* condition, NDArray* x, NDArray* y, NDArray
  // We'll process each element of the output array z
  // and determine the appropriate indices for condition, x, and y based on broadcasting rules
 
- auto zShape = z->getShapeAsVector();
- auto condShape = condition->getShapeAsVector();
- auto xShape = x->getShapeAsVector();
- auto yShape = y->getShapeAsVector();
+ auto* zShape = z->getShapeAsVector();
+ auto* condShape = condition->getShapeAsVector();
+ auto* xShape = x->getShapeAsVector();
+ auto* yShape = y->getShapeAsVector();
 
  // For each element in the output array
  for (LongType i = 0; i < z->lengthOf(); i++) {
@@ -145,9 +145,9 @@ void performBroadcastedWhere(NDArray* condition, NDArray* x, NDArray* y, NDArray
      return linearIndex;
    };
 
-   LongType condIndex = condition->lengthOf() == 1 ? 0 : getLinearIndex(zIndices, condShape, condition);
-   LongType xIndex = x->lengthOf() == 1 ? 0 : getLinearIndex(zIndices, xShape, x);
-   LongType yIndex = y->lengthOf() == 1 ? 0 : getLinearIndex(zIndices, yShape, y);
+   LongType condIndex = condition->lengthOf() == 1 ? 0 : getLinearIndex(zIndices, *condShape, condition);
+   LongType xIndex = x->lengthOf() == 1 ? 0 : getLinearIndex(zIndices, *xShape, x);
+   LongType yIndex = y->lengthOf() == 1 ? 0 : getLinearIndex(zIndices, *yShape, y);
 
    // Apply the where logic
    if (z->isR()) {
@@ -160,6 +160,11 @@ void performBroadcastedWhere(NDArray* condition, NDArray* x, NDArray* y, NDArray
      z->p(i, result);
    }
  }
+
+ delete zShape;
+ delete condShape;
+ delete xShape;
+ delete yShape;
 }
 
 CUSTOM_OP_IMPL(Where, 1, 1, false, 0, 0) {

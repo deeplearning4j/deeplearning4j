@@ -57,9 +57,15 @@ OP_IMPL(scatter_nd_add, 3, 1, true) {
       "true for input arrays, but got instead: updates_rank = %i, indices_rank = %i, last_indices_dimension = %i !",
       updRank, indRank, indLastDim);
 
-  std::vector<LongType> inShape = input->getShapeAsVector();
-  std::vector<LongType> updShape = updates->getShapeAsVector();
-  std::vector<LongType> indShape = indices->getShapeAsVector();
+  auto* inShapePtr = input->getShapeAsVector();
+  std::vector<LongType> inShape = *inShapePtr;
+  delete inShapePtr;
+  auto* updShapePtr = updates->getShapeAsVector();
+  std::vector<LongType> updShape = *updShapePtr;
+  delete updShapePtr;
+  auto* indShapePtr = indices->getShapeAsVector();
+  std::vector<LongType> indShape = *indShapePtr;
+  delete indShapePtr;
   std::vector<LongType> expectedUpdShape(std::begin(indShape), std::end(indShape) - 1);
   if (inRank > indLastDim)
     std::move(std::begin(inShape) + indLastDim, std::end(inShape), std::back_inserter(expectedUpdShape));

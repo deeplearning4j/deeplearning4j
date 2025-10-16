@@ -47,12 +47,18 @@ CONFIGURABLE_OP_IMPL(standardize, 1, 1, true, 0, -2) {
   shape::checkDimensions(input->rankOf(), &axis);
 
   auto means = input->reduceAlongDimension(reduce::Mean, &axis, true);
-  auto stdev = input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, &axis) + 1e-12;
-  stdev.reshapei(means.getShapeAsVector());
-  input->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), &means, output, false);
-  output->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), &stdev, output, false);
+  auto base = input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, &axis);
+  auto stdev = *base  + 1e-12;
+  auto meansShape = means->getShapeAsVector();;
+  std::vector<sd::LongType> meansShapeVec = *meansShape;
+  stdev->reshapei(meansShapeVec);
+  delete meansShape;
+  input->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), means, output, false);
+  output->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), stdev, output, false);
   output->applyScalar(sd::scalar::ReplaceNans, 0, output);
-
+  delete means;
+  delete base;
+  delete stdev;
   return sd::Status::OK;
 }
 
@@ -81,11 +87,17 @@ CUSTOM_OP_IMPL(standardize_bp, 2, 1, false, 0, -2) {
 
   auto means = input->reduceAlongDimension(reduce::Mean, &axis, true);
   auto stdev = input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, &axis);
-  stdev.reshapei(means.getShapeAsVector());
+  auto meansShape = means->getShapeAsVector();;
+  std::vector<sd::LongType> meansShapeVec = *meansShape;
+  stdev->reshapei(meansShapeVec);
+  delete meansShape;
 
-  eps->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), &stdev, output, false);
+  eps->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), stdev, output, false);
 
-  NDArray dldu_sum = -output->reduceAlongDimension(reduce::Sum, &axis, true);
+  delete stdev;
+
+  auto sum = output->reduceAlongDimension(reduce::Sum, &axis, true);
+  NDArray dldu_sum = -(*sum);
 
   NDArray dldx_u(input->shapeInfo(), false, block.launchContext());
   std::vector<NDArray *> meanBpArgs = {input, &dldu_sum};
@@ -99,14 +111,14 @@ CUSTOM_OP_IMPL(standardize_bp, 2, 1, false, 0, -2) {
 
   // (eps * (means - input) / (stdev * stdev))
   NDArray tmp(eps->shapeInfo(), false, block.launchContext());
-  means.applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), input, &tmp, false);
+  means->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), input, &tmp, false);
   tmp.applyPairwiseTransform(sd::pairwise::Multiply, eps, &tmp);
-  stdev.applyPairwiseTransform(sd::pairwise::Multiply, &stdev, &stdev);
-  tmp.applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), &stdev, &tmp, false);
+  stdev->applyPairwiseTransform(sd::pairwise::Multiply, stdev, stdev);
+  tmp.applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), stdev, &tmp, false);
 
   auto dlds_sum = tmp.reduceAlongDimension(reduce::Sum, &axis, true);
   NDArray dldx_s(input->shapeInfo(), false, block.launchContext());
-  std::vector<NDArray *> stdevBpArgs = {input, &dlds_sum};
+  std::vector<NDArray *> stdevBpArgs = {input, dlds_sum};
   std::vector<NDArray *> stdevBpOutput = {&dldx_s};
   std::vector<double> stdevBpTArgs = {};
   std::vector<bool> stdevBpBArgs = {};
@@ -115,7 +127,9 @@ CUSTOM_OP_IMPL(standardize_bp, 2, 1, false, 0, -2) {
   *output += dldx_s;
 
   output->applyScalar(sd::scalar::ReplaceNans, 0, output);
-
+  delete sum;
+  delete means;
+  delete dlds_sum;
   return sd::Status::OK;
 }
 

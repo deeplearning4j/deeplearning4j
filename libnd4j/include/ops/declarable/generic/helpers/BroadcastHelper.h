@@ -72,8 +72,9 @@ class BroadcastHelper {
         }
         return z;
       } else {
-        auto v = y->getShapeAsVector();
-        auto tZ = NDArrayFactory::valueOf(v, y, y->ordering());
+        auto* yShapeVec = y->getShapeAsVector();
+        auto tZ = NDArrayFactory::valueOf(*yShapeVec, y, y->ordering());
+        delete yShapeVec;
         tZ->applyPairwiseTransform(op.p, y, extraArgs);
         // Caller must delete the returned pointer
         return tZ;  // LEAK: tZ is never deleted by caller
@@ -122,8 +123,9 @@ class BroadcastHelper {
         x->applyPairwiseTransform(op.p, y, z, extraArgs);
         return z;
       } else {
-        auto v = y->getShapeAsVector();
-        auto tZ = NDArrayFactory::valueOf(v, y, y->ordering());
+        auto* yShapeVec = y->getShapeAsVector();
+        auto tZ = NDArrayFactory::valueOf(*yShapeVec, y, y->ordering());
+        delete yShapeVec;
         // LEAK: tZ is never deleted by caller
         return tZ;
       }

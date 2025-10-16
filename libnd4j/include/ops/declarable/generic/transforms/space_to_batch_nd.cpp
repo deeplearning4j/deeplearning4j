@@ -72,6 +72,7 @@ CUSTOM_OP_IMPL(space_to_batch_nd, 3, 1, false, 0, 0) {
   else {
     NDArray *inputDup = input->dup(input->ordering());
     helpers::spaceToBatchND(block.launchContext(), *inputDup, *blockShape, *padding, *output);
+    delete inputDup;
   }
   return Status::OK;
 }
@@ -104,9 +105,9 @@ DECLARE_SHAPE_FN(space_to_batch_nd) {
   }
 
   std::vector<LongType> outShape(inputShapeInfo + 1, inputShapeInfo + 1 + inputShapeInfo[0]);
-
-  outShape[0] *= INPUT_VARIABLE(1)->reduceNumber(reduce::Prod).e<LongType>(0);
-
+  auto prod = INPUT_VARIABLE(1)->reduceNumber(reduce::Prod);
+  outShape[0] *= prod->e<LongType>(0);
+  delete prod;
   for (LongType i = 0; i < numOfSpatialDims; ++i)
     outShape[i + 1] =
         (outShape[i + 1] + INPUT_VARIABLE(2)->e<LongType>(i, 0) + INPUT_VARIABLE(2)->e<LongType>(i, 1)) /

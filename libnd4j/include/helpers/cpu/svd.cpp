@@ -145,8 +145,9 @@ void SVD<T>::deflation1(int col1, int shift, int ind, int size) {
   rotation.template r<T>(1, 0) = sin;
 
   if (_calcU) {
-    auto temp = _u({col1, col1 + size + 1, 0, 0}, true);
-    JacobiSVD<T>::mulRotationOnRight(col1, col1 + ind, temp, rotation);
+    NDArray *temp = _u({col1, col1 + size + 1, 0, 0}, true);
+    JacobiSVD<T>::mulRotationOnRight(col1, col1 + ind, *temp, rotation);
+    delete temp;
   } else
     JacobiSVD<T>::mulRotationOnRight(col1, col1 + ind, _u, rotation);
 }
@@ -183,14 +184,16 @@ void SVD<T>::deflation2(int col1U, int col1M, int row1W, int col1W, int ind1, in
   rotation.template r<T>(1, 0) = sin;
 
   if (_calcU) {
-    auto temp = _u({col1U, col1U + size + 1, 0, 0}, true);
-    JacobiSVD<T>::mulRotationOnRight(col1U + ind1, col1U + ind2, temp, rotation);
+    NDArray *temp = _u({col1U, col1U + size + 1, 0, 0}, true);
+    JacobiSVD<T>::mulRotationOnRight(col1U + ind1, col1U + ind2, *temp, rotation);
+    delete temp;
   } else
     JacobiSVD<T>::mulRotationOnRight(col1U + ind1, col1U + ind2, _u, rotation);
 
   if (_calcV) {
-    auto temp = _v({row1W, row1W + size, 0, 0}, true);
-    JacobiSVD<T>::mulRotationOnRight(col1W + ind1, col1W + ind2, temp, rotation);
+    NDArray *temp = _v({row1W, row1W + size, 0, 0}, true);
+    JacobiSVD<T>::mulRotationOnRight(col1W + ind1, col1W + ind2, *temp, rotation);
+    delete temp;
   }
 }
 
@@ -200,18 +203,28 @@ template <typename T>
 void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int shift) {
   const int len = col2 + 1 - col1;
 
-  NDArray colVec0 = _m({col1 + shift, col1 + shift + len, col1 + shift, col1 + shift + 1}, true);
+  NDArray *colVec0Ptr = _m({col1 + shift, col1 + shift + len, col1 + shift, col1 + shift + 1}, true);
+  NDArray colVec0 = *colVec0Ptr;
+  delete colVec0Ptr;
 
-  NDArray diagInterval = _m({col1 + shift, col1 + shift + len, col1 + shift, col1 + shift + len}, true).diagonal('c');
+  NDArray *viewPtr = _m({col1 + shift, col1 + shift + len, col1 + shift, col1 + shift + len}, true);
+  NDArray diagInterval = viewPtr->diagonal('c');
+  delete viewPtr;
 
   const T almostZero = DataTypeUtils::min_positive<T>();
   T maxElem;
   if (len == 1)
     maxElem = math::sd_abs<T,T>(diagInterval.template t<T>(0));
-  else
-    maxElem = diagInterval({1, -1, 0, 0}, true).reduceNumber(reduce::AMax).template t<T>(0);
-  T maxElem0 = colVec0.reduceNumber(reduce::AMax).template t<T>(0);
-
+  else {
+    NDArray *diagIntervalSubPtr = diagInterval({1, -1, 0, 0}, true);
+    auto reduce =  diagIntervalSubPtr->reduceNumber(reduce::AMax);
+    maxElem = reduce->template t<T>(0);
+    delete reduce;
+    delete diagIntervalSubPtr;
+  }
+  auto reduce = colVec0.reduceNumber(reduce::AMax);
+  T maxElem0 = reduce->template t<T>(0);
+ delete reduce;
   T eps = math::sd_max<T>(almostZero, DataTypeUtils::eps<T>() * maxElem);
   T epsBig = (T)8. * DataTypeUtils::eps<T>() * math::sd_max<T>(maxElem0, maxElem);
 
@@ -287,19 +300,25 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
       if (i != 0 && jac != 0) math::sd_swap<T>(colVec0.template r<T>(i), colVec0.template r<T>(jac));
 
       if (_calcU) {
-        auto temp1 = _u({col1, col1 + len + 1, col1 + i, col1 + i + 1});
-        auto temp2 = _u({col1, col1 + len + 1, col1 + jac, col1 + jac + 1});
-        temp1.swapUnsafe(temp2);
+        NDArray *temp1 = _u({col1, col1 + len + 1, col1 + i, col1 + i + 1});
+        NDArray *temp2 = _u({col1, col1 + len + 1, col1 + jac, col1 + jac + 1});
+        temp1->swapUnsafe(*temp2);
+        delete temp1;
+        delete temp2;
       } else {
-        auto temp1 = _u({0, 2, col1 + i, col1 + i + 1});
-        auto temp2 = _u({0, 2, col1 + jac, col1 + jac + 1});
-        temp1.swapUnsafe(temp2);
+        NDArray *temp1 = _u({0, 2, col1 + i, col1 + i + 1});
+        NDArray *temp2 = _u({0, 2, col1 + jac, col1 + jac + 1});
+        temp1->swapUnsafe(*temp2);
+        delete temp1;
+        delete temp2;
       }
 
       if (_calcV) {
-        auto temp1 = _v({row1W, row1W + len, col1W + i, col1W + i + 1});
-        auto temp2 = _v({row1W, row1W + len, col1W + jac, col1W + jac + 1});
-        temp1.swapUnsafe(temp2);
+        NDArray *temp1 = _v({row1W, row1W + len, col1W + i, col1W + i + 1});
+        NDArray *temp2 = _v({row1W, row1W + len, col1W + jac, col1W + jac + 1});
+        temp1->swapUnsafe(*temp2);
+        delete temp1;
+        delete temp2;
       }
 
       const int tI = tInd[i];
@@ -365,9 +384,11 @@ void SVD<T>::calcSingVals(NDArray col0, NDArray& diag, NDArray& permut, NDArray&
     T left = diag.t<T>(k);
     T right;
 
-    if (k == curLen - 1)
-      right = diag.t<T>(curLen - 1) + col0.reduceNumber(reduce::Norm2).t<T>(0);
-    else {
+    if (k == curLen - 1) {
+      auto reduce = col0.reduceNumber(reduce::Norm2);
+      right = diag.t<T>(curLen - 1) + reduce->t<T>(0);
+      delete reduce;
+    } else {
       int l = k + 1;
       while (col0.t<T>(l) == (T)0.f) {
         ++l;
@@ -395,8 +416,8 @@ void SVD<T>::calcSingVals(NDArray col0, NDArray& diag, NDArray& permut, NDArray&
       muCur = -(right - left) * 0.5;
     }
 
-    T fPrev = secularEq(muPrev, col0, diag, permut, diagShifted, shift);
-    T fCur = secularEq(muCur, col0, diag, permut, diagShifted, shift);
+    T fPrev = secularEq(muPrev, col0, diag, permut, *diagShifted, shift);
+    T fCur = secularEq(muCur, col0, diag, permut, *diagShifted, shift);
 
     if (math::sd_abs<T,T>(fPrev) < math::sd_abs<T,T>(fCur)) {
       math::sd_swap<T>(fPrev, fCur);
@@ -411,7 +432,7 @@ void SVD<T>::calcSingVals(NDArray col0, NDArray& diag, NDArray& permut, NDArray&
       T a = (fCur - fPrev) / ((T)1. / muCur - (T)1. / muPrev);
       T jac = fCur - a / muCur;
       T muZero = -a / jac;
-      T fZero = secularEq(muZero, col0, diag, permut, diagShifted, shift);
+      T fZero = secularEq(muZero, col0, diag, permut, *diagShifted, shift);
 
       muPrev = muCur;
       fPrev = fCur;
@@ -437,13 +458,13 @@ void SVD<T>::calcSingVals(NDArray col0, NDArray& diag, NDArray& permut, NDArray&
         rightShifted = -DataTypeUtils::min_positive<T>();
       }
 
-      T fLeft = secularEq(leftShifted, col0, diag, permut, diagShifted, shift);
+      T fLeft = secularEq(leftShifted, col0, diag, permut, *diagShifted, shift);
 
       while (rightShifted - leftShifted >
              (T)2.f * DataTypeUtils::eps<T>() *
              math::sd_max<T>(math::sd_abs<T,T>(leftShifted), math::sd_abs<T,T>(rightShifted))) {
         T midShifted = (leftShifted + rightShifted) / (T)2.;
-        fMid = secularEq(midShifted, col0, diag, permut, diagShifted, shift);
+        fMid = secularEq(midShifted, col0, diag, permut, *diagShifted, shift);
         if (fLeft * fMid < (T)0.)
           rightShifted = midShifted;
         else {
@@ -501,13 +522,17 @@ void SVD<T>::calcSingVecs(NDArray zhat, NDArray& diag, NDArray perm, NDArray& si
   int m = perm.lengthOf();
 
   for (int k = 0; k < n; ++k) {
-    NDArray colU = U({0, 0, k, k + 1});
+    NDArray *colUPtr = U({0, 0, k, k + 1});
+    NDArray colU = *colUPtr;
+    delete colUPtr;
     colU.nullify();
 
     NDArray colV;
 
     if (_calcV) {
-      colV = V({0, 0, k, k + 1});
+      NDArray *colVPtr = V({0, 0, k, k + 1});
+      colV = *colVPtr;
+      delete colVPtr;
       colV.nullify();
     }
 
@@ -522,7 +547,9 @@ void SVD<T>::calcSingVecs(NDArray zhat, NDArray& diag, NDArray perm, NDArray& si
             zhat.t<T>(i) / (((diag.t<T>(i) - shifts.t<T>(k)) - mus.t<T>(k))) / ((diag.t<T>(i) + singVals.t<T>(k)));
       }
       U.template r<T>(n, k) = (T)0;
-      colU /= colU.reduceNumber(reduce::Norm2);
+      auto reduce = colU.reduceNumber(reduce::Norm2);
+      colU /= *reduce;
+      delete reduce;
 
       if (_calcV) {
         for (int l = 1; l < m; ++l) {
@@ -531,12 +558,16 @@ void SVD<T>::calcSingVecs(NDArray zhat, NDArray& diag, NDArray perm, NDArray& si
                                   ((diag.t<T>(i) + singVals.t<T>(k)));
         }
         V.template r<T>(0, k) = (T)-1;
-        colV /= colV.reduceNumber(reduce::Norm2);
+        auto reduce = colV.reduceNumber(reduce::Norm2);
+        colV /= *reduce;
+        delete reduce;
       }
     }
   }
 
-  NDArray colU = U({0, 0, n, n + 1});
+  NDArray *colUPtr = U({0, 0, n, n + 1});
+  NDArray colU = *colUPtr;
+  delete colUPtr;
   colU.nullify();
   colU.template r<T>(n) = (T)1;
 }
@@ -547,9 +578,14 @@ void SVD<T>::calcBlockSVD(int col1, int size, NDArray& U, NDArray& singVals, NDA
 
   const T almostZero = DataTypeUtils::min_positive<T>();
   int end = col1 + size;
-  auto col0 = _m({col1, end, col1, col1 + 1}, true);
-  auto view = _m({col1, end, col1, end}, true);
-  auto diag = view.diagonal('c');
+  NDArray *col0Ptr = _m({col1, end, col1, col1 + 1}, true);
+  NDArray col0 = *col0Ptr;
+  delete col0Ptr;
+  
+  NDArray *viewPtr = _m({col1, end, col1, end}, true);
+  NDArray diag = viewPtr->diagonal('c');
+  delete viewPtr;
+  
   diag.template r<T>(0) = (T)0;
   std::vector<sd::LongType> shape2 = {size, 1};
   std::vector<sd::LongType> shape3 = {size + 1, size + 1};
@@ -583,35 +619,49 @@ void SVD<T>::calcBlockSVD(int col1, int size, NDArray& U, NDArray& singVals, NDA
     if (singVals.t<T>(i) > singVals.t<T>(i + 1)) {
       math::sd_swap<T>(singVals.template r<T>(i), singVals.template r<T>(i + 1));
 
-      auto temp1 = U({0, 0, i, i + 1});
-      auto temp2 = U({0, 0, i + 1, i + 2});
-      temp1.swapUnsafe(temp2);
+      NDArray *temp1 = U({0, 0, i, i + 1});
+      NDArray *temp2 = U({0, 0, i + 1, i + 2});
+      temp1->swapUnsafe(*temp2);
+      delete temp1;
+      delete temp2;
 
       if (_calcV) {
-        auto temp1V = V({0, 0, i, i + 1});
-        auto temp2V = V({0, 0, i + 1, i + 2});
-        temp1V.swapUnsafe(temp2V);
+        NDArray *temp1V = V({0, 0, i, i + 1});
+        NDArray *temp2V = V({0, 0, i + 1, i + 2});
+        temp1V->swapUnsafe(*temp2V);
+        delete temp1V;
+        delete temp2V;
       }
     }
   }
 
-  auto temp1 = singVals({0, curSize, 0, 0});
+  NDArray *temp1Ptr = singVals({0, curSize, 0, 0});
+  NDArray temp1 = *temp1Ptr;
+  delete temp1Ptr;
   for (int e = 0; e < curSize / 2; ++e) math::sd_swap<T>(temp1.template r<T>(e), temp1.template r<T>(curSize - 1 - e));
 
-  auto temp2 = U({0, 0, 0, curSize}, true);
+  NDArray *temp2Ptr = U({0, 0, 0, curSize}, true);
+  NDArray temp2 = *temp2Ptr;
+  delete temp2Ptr;
   for (int i = 0; i < curSize / 2; ++i) {
-    auto temp3 = temp2({0, 0, i, i + 1});
-    auto temp4 = temp2({0, 0, curSize - 1 - i, curSize - i});
-    temp3.swapUnsafe(temp4);
+    NDArray *temp3 = temp2({0, 0, i, i + 1});
+    NDArray *temp4 = temp2({0, 0, curSize - 1 - i, curSize - i});
+    temp3->swapUnsafe(*temp4);
+    delete temp3;
+    delete temp4;
   }
 
 
   if (_calcV) {
-    auto temp2V = V({0, 0, 0, curSize}, true);
+    NDArray *temp2VPtr = V({0, 0, 0, curSize}, true);
+    NDArray temp2V = *temp2VPtr;
+    delete temp2VPtr;
     for (int i = 0; i < curSize / 2; ++i) {
-      auto temp3 = temp2V({0, 0, i, i + 1});
-      auto temp4 = temp2V({0, 0, curSize - 1 - i, curSize - i});
-      temp3.swapUnsafe(temp4);
+      NDArray *temp3 = temp2V({0, 0, i, i + 1});
+      NDArray *temp4 = temp2V({0, 0, curSize - 1 - i, curSize - i});
+      temp3->swapUnsafe(*temp4);
+      delete temp3;
+      delete temp4;
     }
   }
 
@@ -632,21 +682,45 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
   NDArray f(_u.ordering(), fShape, _u.dataType(), _u.getContext());
 
   if (n < _switchSize) {
-    JacobiSVD<T> jac(_m({col1, col1 + n + 1, col1, col1 + n}, true), _calcU, _calcV, _fullUV);
+    NDArray *mViewPtr = _m({col1, col1 + n + 1, col1, col1 + n}, true);
+    JacobiSVD<T> jac(*mViewPtr, _calcU, _calcV, _fullUV);
+    delete mViewPtr;
 
-    if (_calcU)
-      _u({col1, col1 + n + 1, col1, col1 + n + 1}, true).assign(&jac._u);
-    else {
-      _u({0, 1, col1, col1 + n + 1}, true).assign(&jac._u({0, 1, 0, 0}, true));
-      _u({1, 2, col1, col1 + n + 1}, true).assign(&jac._u({n, n + 1, 0, 0}, true));
+    if (_calcU) {
+      NDArray *uViewPtr = _u({col1, col1 + n + 1, col1, col1 + n + 1}, true);
+      uViewPtr->assign(&jac._u);
+      delete uViewPtr;
+    } else {
+      NDArray *uView1Ptr = _u({0, 1, col1, col1 + n + 1}, true);
+      NDArray *jacUView1Ptr = jac._u({0, 1, 0, 0}, true);
+      uView1Ptr->assign(jacUView1Ptr);
+      delete uView1Ptr;
+      delete jacUView1Ptr;
+      
+      NDArray *uView2Ptr = _u({1, 2, col1, col1 + n + 1}, true);
+      NDArray *jacUView2Ptr = jac._u({n, n + 1, 0, 0}, true);
+      uView2Ptr->assign(jacUView2Ptr);
+      delete uView2Ptr;
+      delete jacUView2Ptr;
     }
 
-    if (_calcV) _v({row1W, row1W + n, col1W, col1W + n}, true).assign(&jac._v);
+    if (_calcV) {
+      NDArray *vViewPtr = _v({row1W, row1W + n, col1W, col1W + n}, true);
+      vViewPtr->assign(&jac._v);
+      delete vViewPtr;
+    }
 
-    _m({col1 + shift, col1 + shift + n + 1, col1 + shift, col1 + shift + n}, true).nullify();
+    NDArray *mNullifyPtr = _m({col1 + shift, col1 + shift + n + 1, col1 + shift, col1 + shift + n}, true);
+    mNullifyPtr->nullify();
+    delete mNullifyPtr;
+    
     auto diag = _m.diagonal('c');
-    NDArray first =  diag({col1 + shift, col1 + shift + n, 0, 0}, true);
-    NDArray second = jac._s({0, n, 0, 0}, true);
+    NDArray *firstPtr = diag({col1 + shift, col1 + shift + n, 0, 0}, true);
+    NDArray first = *firstPtr;
+    delete firstPtr;
+    NDArray *secondPtr = jac._s({0, n, 0, 0}, true);
+    NDArray second = *secondPtr;
+    delete secondPtr;
     first.assign(&second);
 
     return;
@@ -671,11 +745,21 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
                            math::sd_abs<T,T>(betaK * phi) * math::sd_abs<T,T>(betaK * phi));
 
   if (_calcU) {
-    l.assign(&_u({col1 + k, col1 + k + 1, col1, col1 + k}, true));
-    f.assign(&_u({col1 + k + 1, col1 + k + 2, col1 + k + 1, col1 + n}, true));
+    NDArray *lAssignPtr = _u({col1 + k, col1 + k + 1, col1, col1 + k}, true);
+    l.assign(lAssignPtr);
+    delete lAssignPtr;
+    
+    NDArray *fAssignPtr = _u({col1 + k + 1, col1 + k + 2, col1 + k + 1, col1 + n}, true);
+    f.assign(fAssignPtr);
+    delete fAssignPtr;
   } else {
-    l.assign(&_u({1, 2, col1, col1 + k}, true));
-    f.assign(&_u({0, 1, col1 + k + 1, col1 + n}, true));
+    NDArray *lAssignPtr = _u({1, 2, col1, col1 + k}, true);
+    l.assign(lAssignPtr);
+    delete lAssignPtr;
+    
+    NDArray *fAssignPtr = _u({0, 1, col1 + k + 1, col1 + n}, true);
+    f.assign(fAssignPtr);
+    delete fAssignPtr;
   }
 
 
@@ -691,22 +775,41 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
 
 
   if (_calcU) {
-    NDArray *q1 = _u({col1, col1 + k + 1, col1 + k, col1 + k + 1}, true).dup();
-    NDArray *q1Ref = q1;
-    NDArray uAssignOne = *q1 * c0;
-    NDArray uAssignTwo = *q1 * (-s0);
-    for (int i = col1 + k - 1; i >= col1; --i)
-      _u({col1, col1 + k + 1, i + 1, i + 2}, true).assign(&_u({col1, col1 + k + 1, i, i + 1}, true));
+    NDArray *q1Ptr = _u({col1, col1 + k + 1, col1 + k, col1 + k + 1}, true);
+    NDArray *q1 = q1Ptr->dup();
+    delete q1Ptr;
+    
+    NDArray *uAssignOne = *q1 * c0;
+    NDArray *uAssignTwo = *q1 * (-s0);
+    for (int i = col1 + k - 1; i >= col1; --i) {
+      NDArray *uSrcPtr = _u({col1, col1 + k + 1, i, i + 1}, true);
+      NDArray *uDstPtr = _u({col1, col1 + k + 1, i + 1, i + 2}, true);
+      uDstPtr->assign(uSrcPtr);
+      delete uSrcPtr;
+      delete uDstPtr;
+    }
 
-    NDArray temp1 = _u({col1 + k + 1, col1 + n + 1, col2 + 1, col2 + 2}, true);
-    NDArray uAssignThree = temp1 * s0;
+    NDArray *temp1Ptr = _u({col1 + k + 1, col1 + n + 1, col2 + 1, col2 + 2}, true);
+    NDArray temp1 = *temp1Ptr;
+    delete temp1Ptr;
+    NDArray *uAssignThree = temp1 * s0;
 
-
-    _u({col1, col1 + k + 1, col1, col1 + 1}, true).assign(&uAssignOne);
-    _u({col1, col1 + k + 1, col2 + 1, col2 + 2}, true).assign(&uAssignTwo);
-    _u({col1 + k + 1, col1 + n + 1, col1, col1 + 1}, true).assign(&uAssignThree);
-
+    NDArray *uAssign1Ptr = _u({col1, col1 + k + 1, col1, col1 + 1}, true);
+    uAssign1Ptr->assign(uAssignOne);
+    delete uAssign1Ptr;
+    
+    NDArray *uAssign2Ptr = _u({col1, col1 + k + 1, col2 + 1, col2 + 2}, true);
+    uAssign2Ptr->assign(uAssignTwo);
+    delete uAssign2Ptr;
+    delete uAssignOne;
+    delete uAssignTwo;
+    
+    NDArray *uAssign3Ptr = _u({col1 + k + 1, col1 + n + 1, col1, col1 + 1}, true);
+    uAssign3Ptr->assign(uAssignThree);
+    delete uAssign3Ptr;
+    delete uAssignThree;
     temp1 *= c0;
+    delete q1;
   } else {
     T q1 = _u.t<T>(0, col1 + k);
 
@@ -716,41 +819,66 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
     _u.template r<T>(0, col2 + 1) = -q1 * s0;
     _u.template r<T>(1, col1) = _u.t<T>(1, col2 + 1) * s0;
     _u.template r<T>(1, col2 + 1) = _u.t<T>(1, col2 + 1) * c0;
-    _u({1, 2, col1 + 1, col1 + k + 1}).nullify();
-    _u({0, 1, col1 + k + 1, col1 + n}).nullify();
+    
+    NDArray *uNullify1Ptr = _u({1, 2, col1 + 1, col1 + k + 1});
+    uNullify1Ptr->nullify();
+    delete uNullify1Ptr;
+    
+    NDArray *uNullify2Ptr = _u({0, 1, col1 + k + 1, col1 + n});
+    uNullify2Ptr->nullify();
+    delete uNullify2Ptr;
   }
 
 
   _m.template r<T>(col1 + shift, col1 + shift) = r0;
 
-  NDArray assignOne = l * alphaK;
-  NDArray assignTwo = f * betaK;
-  _m({col1 + shift + 1, col1 + shift + k + 1, col1 + shift, col1 + shift + 1}, true).assign(&assignOne);
-  _m({col1 + shift + k + 1, col1 + shift + n, col1 + shift, col1 + shift + 1}, true).assign(&assignTwo);
+  NDArray *assignOne = l * alphaK;
+  NDArray *assignTwo = f * betaK;
+  
+  NDArray *mAssign1Ptr = _m({col1 + shift + 1, col1 + shift + k + 1, col1 + shift, col1 + shift + 1}, true);
+  mAssign1Ptr->assign(assignOne);
+  delete mAssign1Ptr;
+  
+  NDArray *mAssign2Ptr = _m({col1 + shift + k + 1, col1 + shift + n, col1 + shift, col1 + shift + 1}, true);
+  mAssign2Ptr->assign(assignTwo);
+  delete mAssign2Ptr;
 
+  delete assignOne;
+  delete assignTwo;
   deflation(col1, col2, k, row1W, col1W, shift);
 
   NDArray UofSVD, VofSVD, singVals;
 
   calcBlockSVD(col1 + shift, n, UofSVD, singVals, VofSVD);
   if (_calcU) {
-    auto temp = _u({col1, col1 + n + 1, col1, col1 + n + 1}, true);
-    NDArray assign2 = mmul(temp, UofSVD);
-    temp.assign(&assign2);
+    NDArray *tempPtr = _u({col1, col1 + n + 1, col1, col1 + n + 1}, true);
+    NDArray temp = *tempPtr;
+    delete tempPtr;
+    NDArray *assign2 = mmul(temp, UofSVD);
+    temp.assign(assign2);
+    delete assign2;
   } else {
-    auto temp = _u({0, 0, col1, col1 + n + 1}, true);
-    NDArray assign2 = mmul(temp, UofSVD);
-    temp.assign(&assign2);
+    NDArray *tempPtr = _u({0, 0, col1, col1 + n + 1}, true);
+    NDArray temp = *tempPtr;
+    delete tempPtr;
+    NDArray *assign2 = mmul(temp, UofSVD);
+    temp.assign(assign2);
+    delete assign2;
   }
 
   if (_calcV) {
-    auto temp = _v({row1W, row1W + n, row1W, row1W + n}, true);
-    NDArray assign2 = mmul(temp, VofSVD);
-    temp.assign(&assign2);
+    NDArray *tempPtr = _v({row1W, row1W + n, row1W, row1W + n}, true);
+    NDArray temp = *tempPtr;
+    delete tempPtr;
+    NDArray *assign2 = mmul(temp, VofSVD);
+    temp.assign(assign2);
+    delete assign2;
   }
 
 
-  auto blockM = _m({col1 + shift, col1 + shift + n, col1 + shift, col1 + shift + n}, true);
+  NDArray *blockMPtr = _m({col1 + shift, col1 + shift + n, col1 + shift, col1 + shift + n}, true);
+  NDArray blockM = *blockMPtr;
+  delete blockMPtr;
   blockM.nullify();
 
   blockM.diagonal('c').assign(&singVals);
@@ -766,7 +894,11 @@ void SVD<T>::exchangeUV(HHsequence& hhU, HHsequence& hhV, NDArray& U, NDArray& V
     temp1.setIdentity();
     _u = temp1;
 
-    _u({0, _diagSize, 0, _diagSize}, true).assign(&V({0, _diagSize, 0, _diagSize}, true));
+    NDArray *uViewPtr = _u({0, _diagSize, 0, _diagSize}, true);
+    NDArray *vViewPtr = V({0, _diagSize, 0, _diagSize}, true);
+    uViewPtr->assign(vViewPtr);
+    delete uViewPtr;
+    delete vViewPtr;
     const_cast<HHsequence&>(hhU).mulLeft(&_u);
   }
 
@@ -777,8 +909,12 @@ void SVD<T>::exchangeUV(HHsequence& hhU, HHsequence& hhV, NDArray& U, NDArray& V
     temp1.setIdentity();
     _v = temp1;
 
-    NDArray assign = U({0, _diagSize, 0, _diagSize}, true);
-    _v({0, _diagSize, 0, _diagSize}, true).assign(&assign);
+    NDArray *assignPtr = U({0, _diagSize, 0, _diagSize}, true);
+    NDArray assign = *assignPtr;
+    delete assignPtr;
+    NDArray *vViewPtr = _v({0, _diagSize, 0, _diagSize}, true);
+    vViewPtr->assign(&assign);
+    delete vViewPtr;
     const_cast<HHsequence&>(hhV).mulLeft(&_v);
   }
 }
@@ -798,8 +934,9 @@ void SVD<T>::evalData(NDArray& matrix) {
     return;
   }
 
-  T scale = matrix.reduceNumber(reduce::AMax).t<T>(0);
-
+  auto reduce = matrix.reduceNumber(reduce::AMax);
+  T scale = reduce->t<T>(0);
+  delete reduce;
   if (scale == (T)0.) scale = 1.;
   NDArray *input = _transp ? matrix.transpose() : new NDArray((matrix / scale));
   BiDiagonalUp biDiag(*input);
@@ -808,9 +945,14 @@ void SVD<T>::evalData(NDArray& matrix) {
   _v.nullify();
 
   NDArray *assign1 = biDiag._HHbidiag.transpose();
-  _m({0, _diagSize, 0, 0}, true).assign(assign1);
+  NDArray *mViewPtr = _m({0, _diagSize, 0, 0}, true);
+  mViewPtr->assign(assign1);
+  delete mViewPtr;
+  delete assign1;
 
-  _m({_m.sizeAt(0) - 1, _m.sizeAt(0), 0, 0}).nullify();
+  NDArray *mNullifyPtr = _m({_m.sizeAt(0) - 1, _m.sizeAt(0), 0, 0});
+  mNullifyPtr->nullify();
+  delete mNullifyPtr;
 
   DivideAndConquer(0, _diagSize - 1, 0, 0, 0);
 
@@ -818,7 +960,9 @@ void SVD<T>::evalData(NDArray& matrix) {
     T a = math::sd_abs<T,T>(_m.t<T>(i, i));
     _s.template r<T>(i) = a * scale;
     if (a < almostZero) {
-      _s({i + 1, _diagSize, 0, 0}).nullify();
+      NDArray *sNullifyPtr = _s({i + 1, _diagSize, 0, 0});
+      sNullifyPtr->nullify();
+      delete sNullifyPtr;
       break;
     } else if (i == _diagSize - 1)
       break;

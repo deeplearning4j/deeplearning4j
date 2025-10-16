@@ -585,6 +585,10 @@ static sd::Pointer _numpyHeaderForNd4j(sd::Pointer data, const sd::Pointer shape
 
   sd::LongType length = shape::prodLong(shape, rank);
   auto npHeader = cnpy::createNpyHeader<T>(npShape, rank, wordSize);
+  
+  // FIX: Clean up npShape after use
+  delete[] npShape;
+  
   char* ret = new char[npHeader.size() + 1];
   int count = 0;
   for (size_t i = 0; i < npHeader.size(); i++) {
@@ -648,6 +652,10 @@ sd::Pointer _numpyFromNd4j(sd::Pointer data, sd::Pointer shapeBuffer, sd::LongTy
 
   sd::LongType length = shape::prodLong(shape, rank);
   auto npHeader = cnpy::createNpyHeader<T>( npShape, rank, wordSize);
+  
+  // FIX: Clean up npShape after use
+  delete[] npShape;
+  
   char* dataChar = reinterpret_cast<char*>(data);
   char* npHeaderData = npHeader.data();
   char* ret = new char[(wordSize * length) + npHeader.size()];
@@ -672,6 +680,10 @@ long _numpyHeaderLength(OpaqueDataBuffer *opaqueDataBuffer,sd::Pointer shapeBuff
   sd::LongType length = shape::prodLong(shape, rank);
   auto npHeader = cnpy::createNpyHeader<T>(npShape, rank, wordSize);
   long ret = npHeader.size();
+  
+  // FIX: Clean up npShape after use
+  delete[] npShape;
+  
   return ret;
 }
 
@@ -688,6 +700,10 @@ long _numpyHeaderLengthWordSize(sd::Pointer shapeBuffer,long wordSize) {
   sd::LongType length = shape::prodLong(shape, rank);
   auto npHeader = cnpy::createNpyHeader<T>(npShape, rank, wordSize);
   long ret = npHeader.size();
+  
+  // FIX: Clean up npShape after use
+  delete[] npShape;
+  
   return ret;
 }
 

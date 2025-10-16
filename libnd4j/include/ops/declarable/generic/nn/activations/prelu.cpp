@@ -43,8 +43,12 @@ CONFIGURABLE_OP_IMPL(prelu, 2, 1, true, 0, 0) {
   const int numSharedAxes = sharedAxes.size();  // can be zero as well
   const LongType inputLen = input->lengthOf();
   const LongType alphaLen = alpha->lengthOf();
-  const std::vector<LongType> inputShape = input->getShapeAsVector();
-  const std::vector<LongType> alphaShape = alpha->getShapeAsVector();
+  auto* inputShapeVec = input->getShapeAsVector();
+  auto* alphaShapeVec = alpha->getShapeAsVector();
+  const std::vector<LongType> inputShape = *inputShapeVec;
+  const std::vector<LongType> alphaShape = *alphaShapeVec;
+  delete inputShapeVec;
+  delete alphaShapeVec;
 
   //***** input validation *****//
   std::vector<LongType> expectedAlphaShape(&inputShape[1], &inputShape[inputRank]);
@@ -67,7 +71,7 @@ CONFIGURABLE_OP_IMPL(prelu, 2, 1, true, 0, 0) {
                  alpha2,
                  output);
 
-  delete alpha2;
+  if(alpha2 != alpha) delete alpha2;
   return Status::OK;
 }
 
@@ -93,8 +97,12 @@ CONFIGURABLE_OP_IMPL(prelu_bp, 3, 2, true, 0, 0) {
   const int numSharedAxes = sharedAxes.size();  // can be zero as well
   const LongType inputLen = input->lengthOf();
   const LongType alphaLen = alpha->lengthOf();
-  const std::vector<LongType> inputShape = input->getShapeAsVector();
-  const std::vector<LongType> alphaShape = alpha->getShapeAsVector();
+  auto* inputShapeVec = input->getShapeAsVector();
+  auto* alphaShapeVec = alpha->getShapeAsVector();
+  const std::vector<LongType> inputShape = *inputShapeVec;
+  const std::vector<LongType> alphaShape = *alphaShapeVec;
+  delete inputShapeVec;
+  delete alphaShapeVec;
 
   //***** input validation *****//
 
@@ -127,16 +135,22 @@ CONFIGURABLE_OP_IMPL(prelu_bp, 3, 2, true, 0, 0) {
                ShapeUtils::shapeAsString(expectedAlphaShape).c_str(), ShapeUtils::shapeAsString(alphaShape).c_str());
   // ***** end of validation ***** //
 
+  NDArray* alphaReshaped = nullptr;
+  NDArray* dLdAReshaped = nullptr;
+  
   if (alphaShape != expectedAlphaShape) {
-    alpha = alpha->reshape(alpha->ordering(), expectedAlphaShape);
-    dLdA = dLdA->reshape(dLdA->ordering(), expectedAlphaShape);
+    alphaReshaped = alpha->reshape(alpha->ordering(), expectedAlphaShape);
+    dLdAReshaped = dLdA->reshape(dLdA->ordering(), expectedAlphaShape);
   }
 
-  helpers::preluBP(block.launchContext(), input, alpha, dLdO, dLdI, dLdA);
+  helpers::preluBP(block.launchContext(), input, 
+                   alphaReshaped != nullptr ? alphaReshaped : alpha, 
+                   dLdO, dLdI, 
+                   dLdAReshaped != nullptr ? dLdAReshaped : dLdA);
 
-  if (alphaShape != expectedAlphaShape) {
-    delete alpha;
-    delete dLdA;
+  if (alphaReshaped != nullptr) {
+    delete alphaReshaped;
+    delete dLdAReshaped;
   }
 
   return Status::OK;

@@ -62,14 +62,19 @@ static void histogram_(void const *xBuffer, sd::LongType const *xShapeInfo, void
 
 void histogramHelper(sd::LaunchContext *context, NDArray &input, NDArray &output) {
   sd::LongType numBins = output.lengthOf();
-  double min_val = input.reduceNumber(reduce::SameOps::Min).e<double>(0);
-  double max_val = input.reduceNumber(reduce::SameOps::Max).e<double>(0);
+  auto min =  input.reduceNumber(reduce::SameOps::Min);
+  auto max = input.reduceNumber(reduce::SameOps::Max);
+  double min_val = min->e<double>(0);
+  double max_val = max->e<double>(0);
   auto inputDType = input.dataType();
   auto outputDType = output.dataType();
   BUILD_DOUBLE_SELECTOR(
       input.dataType(), output.dataType(), histogram_,
       (input.buffer(), input.shapeInfo(), output.buffer(), output.shapeInfo(), numBins, min_val, max_val),
       SD_COMMON_TYPES, SD_INDEXING_TYPES);
+
+  delete min;
+  delete max;
 }
 }  // namespace helpers
 }  // namespace ops

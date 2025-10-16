@@ -129,8 +129,9 @@ CUSTOM_OP_IMPL(tensormmul_bp, 4, 2, false, 0, -1) {
   //scalar case, tile value to be whatever the c value is. common when directly attached to the loss
   if(dC->isScalar()) {
     auto newVec = const_cast<NDArray *>(C);
-    auto newShape = newVec->getShapeAsVector();
-    dC = new NDArray('c',newShape, dC->dataType(), dC->getContext());
+    auto* newShapeVec = newVec->getShapeAsVector();
+    dC = new NDArray('c', *newShapeVec, dC->dataType(), dC->getContext());
+    delete newShapeVec;
   }
 
 

@@ -50,7 +50,9 @@ LIST_OP_IMPL(split_list, 2, 1, 0, -2) {
   REQUIRE_TRUE(sizes->isZ(), 0, "split_list: sizes array must have one of integer types");
   REQUIRE_TRUE(sizes->rankOf() == 1, 0, "split_list: sizes array must be 1D")
 
-  list->shape() = array->getShapeAsVector();
+  auto* arrayShape = array->getShapeAsVector();
+  list->shape() = *arrayShape;
+  delete arrayShape;
 
   // now let's build subarrays
   int cnt = 0;
@@ -71,8 +73,8 @@ LIST_OP_IMPL(split_list, 2, 1, 0, -2) {
 
     auto subarray = (*array)(indices);
 
-    auto status = list->write(e, new NDArray(subarray.dup(array->ordering(), false)));
-
+    auto status = list->write(e, new NDArray(subarray->dup(array->ordering(), false)));
+    delete subarray;
     if (status != Status::OK) return status;
   }
 

@@ -107,8 +107,9 @@ CUSTOM_OP_IMPL(reduce_prod_bp, -1, 1, false, 0, 0) {
   auto gradI = OUTPUT_VARIABLE(0);
 
   if (gradO->lengthOf() == 1) {
-    NDArray assign = input->reduceNumber(sd::reduce::Prod);
-    gradI->assign(&assign);
+    auto* assign = input->reduceNumber(sd::reduce::Prod);
+    gradI->assign(assign);
+    delete assign;
     *gradI /= *input;
     *gradI *= gradO->e(0);
   } else {
@@ -138,8 +139,9 @@ CUSTOM_OP_IMPL(reduce_prod_bp, -1, 1, false, 0, 0) {
 
     // *** calculations *** //
 
-    auto products = input->reduceAlongDimension(reduce::Prod, &dimensions, true);
-    gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), &products, gradI);
+    auto* products = input->reduceAlongDimension(reduce::Prod, &dimensions, true);
+    gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), products, gradI);
+    delete products;
     *gradI /= *input;
 
     if (!keepDims) {
@@ -147,12 +149,11 @@ CUSTOM_OP_IMPL(reduce_prod_bp, -1, 1, false, 0, 0) {
           ShapeUtils::evalReduceShapeInfo(gradO->ordering(), &dimensions, *input, true, false, block.getWorkspace());
       std::vector<sd::LongType> shape =  ShapeUtils::pullShapeFromShapeInfo(
           gradOShapeKeepDims);
-      auto reshaped = gradO->reshape(gradO->ordering(),
-                                     shape);
-      *gradI *= *reshaped;  // for example could be something like [a,b] -> [1,a,1,b]
+      auto* reshaped = gradO->reshape(gradO->ordering(), shape);
+      *gradI *= (*reshaped);  // for example could be something like [a,b] -> [1,a,1,b]
       delete reshaped;
     } else
-      *gradI *= *gradO;
+      *gradI *= (*gradO);
   }
 
   return sd::Status::OK;

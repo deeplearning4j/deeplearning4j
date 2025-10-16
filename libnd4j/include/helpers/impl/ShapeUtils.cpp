@@ -599,7 +599,9 @@ std::vector<LongType> ShapeUtils::evalRepeatShape(LongType axis, const std::vect
     THROW_EXCEPTION(
         "ShapeUtils::evalRepeatShape: size of repeats vector must be 1 or equal to dimension at given axis !");
 
-  std::vector<LongType> outShape = arr.getShapeAsVector();
+  auto* shapeVec = arr.getShapeAsVector();
+  std::vector<LongType> outShape = *shapeVec;
+  delete shapeVec;
 
   if (repeats.size() == 1)
     outShape[axis] *= repeats[0];

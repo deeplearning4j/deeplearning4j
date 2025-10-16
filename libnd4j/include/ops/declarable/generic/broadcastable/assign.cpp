@@ -89,14 +89,16 @@ CUSTOM_OP_IMPL(assign_bp, 3, 2, false, 0, 0) {
     gradY->assign(epsNext);
   } else if (y->isScalar()) {
     auto sum = epsNext->reduceNumber(reduce::Sum);
-    gradY->assign(&sum);
+    gradY->assign(sum);
+    delete sum;
   } else {
     // broadcastable
     auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
     if (axisY.size() > 0) {
       auto sum = epsNext->reduceAlongDimension(reduce::Sum, &axisY);
-      gradY->assign(&sum);
+      gradY->assign(sum);
+      delete sum;
     } else
       gradY->assign(epsNext);
   }

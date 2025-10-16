@@ -1,3 +1,23 @@
+/*
+*  ******************************************************************************
+*  *
+*  *
+*  * This program and the accompanying materials are made available under the
+*  * terms of the Apache License, Version 2.0 which is available at
+*  * https://www.apache.org/licenses/LICENSE-2.0.
+*  *
+*  * See the NOTICE file distributed with this work for additional
+*  * information regarding copyright ownership.
+*  * Unless required by applicable law or agreed to in writing, software
+*  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+*  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+*  * License for the specific language governing permissions and limitations
+*  * under the License.
+*  *
+*  * SPDX-License-Identifier: Apache-2.0
+*  *****************************************************************************
+*/
+
 /**
 * Streamlined implementation of NDArray operators
  */
@@ -11,32 +31,32 @@ namespace sd {
 /////////////////////////////////////////////////////
 // Scalar-Array Operators - Helper Functions
 /////////////////////////////////////////////////////
-SD_LIB_EXPORT NDArray operator+(NDArray& arr1, NDArray& arr2);
-SD_LIB_EXPORT NDArray operator+(NDArray&& arr1, NDArray& arr2);
-SD_LIB_EXPORT NDArray operator+(NDArray& arr1, NDArray&& arr2);
-SD_LIB_EXPORT NDArray operator+(NDArray&& arr1, NDArray&& arr2);
+SD_LIB_EXPORT NDArray* operator+(NDArray& arr1, NDArray& arr2);
+SD_LIB_EXPORT NDArray* operator+(NDArray&& arr1, NDArray& arr2);
+SD_LIB_EXPORT NDArray* operator+(NDArray& arr1, NDArray&& arr2);
+SD_LIB_EXPORT NDArray* operator+(NDArray&& arr1, NDArray&& arr2);
 
 // Subtraction: NDArray - NDArray
-SD_LIB_EXPORT NDArray operator-(NDArray& arr1, NDArray& arr2);
-SD_LIB_EXPORT NDArray operator-(NDArray&& arr1, NDArray& arr2);
-SD_LIB_EXPORT NDArray operator-(NDArray& arr1, NDArray&& arr2);
-SD_LIB_EXPORT NDArray operator-(NDArray&& arr1, NDArray&& arr2);
+SD_LIB_EXPORT NDArray* operator-(NDArray& arr1, NDArray& arr2);
+SD_LIB_EXPORT NDArray* operator-(NDArray&& arr1, NDArray& arr2);
+SD_LIB_EXPORT NDArray* operator-(NDArray& arr1, NDArray&& arr2);
+SD_LIB_EXPORT NDArray* operator-(NDArray&& arr1, NDArray&& arr2);
 
 // Multiplication: NDArray * NDArray
-SD_LIB_EXPORT NDArray operator*(NDArray& arr1, NDArray& arr2);
-SD_LIB_EXPORT NDArray operator*(NDArray&& arr1, NDArray& arr2);
-SD_LIB_EXPORT NDArray operator*(NDArray& arr1, NDArray&& arr2);
-SD_LIB_EXPORT NDArray operator*(NDArray&& arr1, NDArray&& arr2);
+SD_LIB_EXPORT NDArray* operator*(NDArray& arr1, NDArray& arr2);
+SD_LIB_EXPORT NDArray* operator*(NDArray&& arr1, NDArray& arr2);
+SD_LIB_EXPORT NDArray* operator*(NDArray& arr1, NDArray&& arr2);
+SD_LIB_EXPORT NDArray* operator*(NDArray&& arr1, NDArray&& arr2);
 
 // Division: NDArray / NDArray
-SD_LIB_EXPORT NDArray operator/(NDArray& arr1, NDArray& arr2);
-SD_LIB_EXPORT NDArray operator/(NDArray&& arr1, NDArray& arr2);
-SD_LIB_EXPORT NDArray operator/(NDArray& arr1, NDArray&& arr2);
-SD_LIB_EXPORT NDArray operator/(NDArray&& arr1, NDArray&& arr2);
+SD_LIB_EXPORT NDArray* operator/(NDArray& arr1, NDArray& arr2);
+SD_LIB_EXPORT NDArray* operator/(NDArray&& arr1, NDArray& arr2);
+SD_LIB_EXPORT NDArray* operator/(NDArray& arr1, NDArray&& arr2);
+SD_LIB_EXPORT NDArray* operator/(NDArray&& arr1, NDArray&& arr2);
 
 
 template <typename T>
-NDArray scalarArrayOpHelper(NDArray* arr, T scalar, sd::scalar::Ops op, bool inPlace) {
+NDArray* scalarArrayOpHelper(NDArray* arr, T scalar, sd::scalar::Ops op, bool inPlace) {
   if (arr->isS()) {
     std::string errorMessage = "scalarArrayOpHelper: you can't use this method on String array!";
     THROW_EXCEPTION(errorMessage.c_str());
@@ -52,16 +72,16 @@ NDArray scalarArrayOpHelper(NDArray* arr, T scalar, sd::scalar::Ops op, bool inP
                                     tmp->buffer(), tmp->shapeInfo(), tmp->specialBuffer(), tmp->specialShapeInfo(), nullptr);
     NDArray::registerSpecialUse({arr}, {arr, tmp});
     delete tmp;
-    return std::move(*arr);
+    return arr;
   } else {
-    NDArray result(arr->shapeInfo(), DataTypeUtils::pickPairwiseResultType(arr->dataType(), DataTypeUtils::fromT<T>()),
-                   false, arr->getContext());
-    NDArray::prepareSpecialUse({&result}, {arr, tmp});
+    NDArray *result = new NDArray(arr->shapeInfo(), DataTypeUtils::pickPairwiseResultType(arr->dataType(), DataTypeUtils::fromT<T>()),
+                                  false, arr->getContext());
+    NDArray::prepareSpecialUse({result}, {arr, tmp});
     NativeOpExecutioner::execScalar(arr->getContext(), op,
                                     arr->buffer(), arr->shapeInfo(), arr->specialBuffer(), arr->specialShapeInfo(),
-                                    result.buffer(), result.shapeInfo(), result.specialBuffer(), result.specialShapeInfo(),
+                                    result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(),
                                     tmp->buffer(), tmp->shapeInfo(), tmp->specialBuffer(), tmp->specialShapeInfo(), nullptr);
-    NDArray::registerSpecialUse({&result}, {arr, tmp});
+    NDArray::registerSpecialUse({result}, {arr, tmp});
     delete tmp;
     return result;
   }
@@ -71,7 +91,7 @@ NDArray scalarArrayOpHelper(NDArray* arr, T scalar, sd::scalar::Ops op, bool inP
 // Array-Array Operators - Helper Function
 /////////////////////////////////////////////////////
 
-NDArray arrayArrayOpHelper(NDArray* arr1, NDArray* arr2, sd::pairwise::Ops op, bool inPlace) {
+NDArray* arrayArrayOpHelper(NDArray* arr1, NDArray* arr2, sd::pairwise::Ops op, bool inPlace) {
   if (arr1->isS() || arr2->isS()) {
     std::string errorMessage = "arrayArrayOpHelper: you can't use this method on String arrays!";
     THROW_EXCEPTION(errorMessage.c_str());
@@ -108,13 +128,7 @@ NDArray arrayArrayOpHelper(NDArray* arr1, NDArray* arr2, sd::pairwise::Ops op, b
         result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), nullptr);
     NDArray::registerSpecialUse({result}, {arr1, arr2});
 
-    if (!canUseArr1 && !canUseArr2 && result != arr1 && result != arr2) {
-      NDArray res = std::move(*result);
-      delete result;
-      return res;
-    }
-
-    return std::move(*result);
+    return result;
   }
 
   // Broadcast case
@@ -129,10 +143,7 @@ NDArray arrayArrayOpHelper(NDArray* arr1, NDArray* arr2, sd::pairwise::Ops op, b
       THROW_EXCEPTION(errorMessage.c_str());
   }
 
-  NDArray *ret = arr1->applyTrueBroadcast(broadcastOp, arr2);
-  NDArray result = std::move(*ret);
-  delete ret;
-  return result;
+  return arr1->applyTrueBroadcast(broadcastOp, arr2);
 }
 
 /////////////////////////////////////////////////////
@@ -140,32 +151,32 @@ NDArray arrayArrayOpHelper(NDArray* arr1, NDArray* arr2, sd::pairwise::Ops op, b
 /////////////////////////////////////////////////////
 
 template <typename T, typename>
-NDArray operator+(NDArray& arr, T scalar) {
+NDArray* operator+(NDArray& arr, T scalar) {
   return scalarArrayOpHelper(&arr, scalar, sd::scalar::Add, false);
 }
 
 template <typename T, typename>
-NDArray operator+(NDArray&& arr, T scalar) {
+NDArray* operator+(NDArray&& arr, T scalar) {
   return scalarArrayOpHelper(&arr, scalar, sd::scalar::Add, true);
 }
 
 template <typename T, typename>
-NDArray operator+(T scalar, NDArray& arr) {
+NDArray* operator+(T scalar, NDArray& arr) {
   return scalarArrayOpHelper(&arr, scalar, sd::scalar::Add, false);
 }
 
 template <typename T, typename>
-NDArray operator+(T scalar, NDArray&& arr) {
+NDArray* operator+(T scalar, NDArray&& arr) {
   return scalarArrayOpHelper(&arr, scalar, sd::scalar::Add, true);
 }
 
 #define INSTANTIATE_SCALAR_OP(OP, T) \
 EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
     GET_FIRST(T), \
-    template SD_LIB_EXPORT NDArray operator OP<GET_SECOND(T), typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<GET_SECOND(T)>::value>::type>(NDArray& arr, GET_SECOND(T) scalar); \
-    template SD_LIB_EXPORT NDArray operator OP<GET_SECOND(T), typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<GET_SECOND(T)>::value>::type>(NDArray&& arr, GET_SECOND(T) scalar); \
-    template SD_LIB_EXPORT NDArray operator OP<GET_SECOND(T), typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<GET_SECOND(T)>::value>::type>(GET_SECOND(T) scalar, NDArray& arr); \
-    template SD_LIB_EXPORT NDArray operator OP<GET_SECOND(T), typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<GET_SECOND(T)>::value>::type>(GET_SECOND(T) scalar, NDArray&& arr); \
+    template SD_LIB_EXPORT NDArray* operator OP<GET_SECOND(T), typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<GET_SECOND(T)>::value>::type>(NDArray& arr, GET_SECOND(T) scalar); \
+    template SD_LIB_EXPORT NDArray* operator OP<GET_SECOND(T), typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<GET_SECOND(T)>::value>::type>(NDArray&& arr, GET_SECOND(T) scalar); \
+    template SD_LIB_EXPORT NDArray* operator OP<GET_SECOND(T), typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<GET_SECOND(T)>::value>::type>(GET_SECOND(T) scalar, NDArray& arr); \
+    template SD_LIB_EXPORT NDArray* operator OP<GET_SECOND(T), typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<GET_SECOND(T)>::value>::type>(GET_SECOND(T) scalar, NDArray&& arr); \
 ))
 #define INSTANTIATE_ALL_SCALAR_OPS(T) \
  INSTANTIATE_SCALAR_OP(+, T) \
@@ -180,22 +191,22 @@ ITERATE_LIST((SD_NUMERIC_TYPES), INSTANTIATE_ALL_SCALAR_OPS)
 /////////////////////////////////////////////////////
 
 template <typename T, typename>
-NDArray operator-(NDArray& arr, T scalar) {
+NDArray* operator-(NDArray& arr, T scalar) {
   return scalarArrayOpHelper(&arr, scalar, sd::scalar::Subtract, false);
 }
 
 template <typename T, typename>
-NDArray operator-(NDArray&& arr, T scalar) {
+NDArray* operator-(NDArray&& arr, T scalar) {
   return scalarArrayOpHelper(&arr, scalar, sd::scalar::Subtract, true);
 }
 
 template <typename T, typename>
-NDArray operator-(T scalar, NDArray& arr) {
+NDArray* operator-(T scalar, NDArray& arr) {
   return scalarArrayOpHelper(&arr, scalar, sd::scalar::ReverseSubtract, false);
 }
 
 template <typename T, typename>
-NDArray operator-(T scalar, NDArray&& arr) {
+NDArray* operator-(T scalar, NDArray&& arr) {
   return scalarArrayOpHelper(&arr, scalar, sd::scalar::ReverseSubtract, true);
 }
 
@@ -204,22 +215,22 @@ NDArray operator-(T scalar, NDArray&& arr) {
 /////////////////////////////////////////////////////
 
 template <typename T, typename>
-NDArray operator*(NDArray& arr, T scalar) {
+NDArray* operator*(NDArray& arr, T scalar) {
   return scalarArrayOpHelper(&arr, scalar, sd::scalar::Multiply, false);
 }
 
 template <typename T, typename>
-NDArray operator*(NDArray&& arr, T scalar) {
+NDArray* operator*(NDArray&& arr, T scalar) {
   return scalarArrayOpHelper(&arr, scalar, sd::scalar::Multiply, true);
 }
 
 template <typename T, typename>
-NDArray operator*(T scalar, NDArray& arr) {
+NDArray* operator*(T scalar, NDArray& arr) {
   return scalarArrayOpHelper(&arr, scalar, sd::scalar::Multiply, false);
 }
 
 template <typename T, typename>
-NDArray operator*(T scalar, NDArray&& arr) {
+NDArray* operator*(T scalar, NDArray&& arr) {
   return scalarArrayOpHelper(&arr, scalar, sd::scalar::Multiply, true);
 }
 
@@ -228,22 +239,22 @@ NDArray operator*(T scalar, NDArray&& arr) {
 /////////////////////////////////////////////////////
 
 template <typename T, typename>
-NDArray operator/(NDArray& arr, T scalar) {
+NDArray* operator/(NDArray& arr, T scalar) {
   return scalarArrayOpHelper(&arr, scalar, sd::scalar::Divide, false);
 }
 
 template <typename T, typename>
-NDArray operator/(NDArray&& arr, T scalar) {
+NDArray* operator/(NDArray&& arr, T scalar) {
   return scalarArrayOpHelper(&arr, scalar, sd::scalar::Divide, true);
 }
 
 template <typename T, typename>
-NDArray operator/(T scalar, NDArray& arr) {
+NDArray* operator/(T scalar, NDArray& arr) {
   return scalarArrayOpHelper(&arr, scalar, sd::scalar::ReverseDivide, false);
 }
 
 template <typename T, typename>
-NDArray operator/(T scalar, NDArray&& arr) {
+NDArray* operator/(T scalar, NDArray&& arr) {
   return scalarArrayOpHelper(&arr, scalar, sd::scalar::ReverseDivide, true);
 }
 
@@ -252,70 +263,70 @@ NDArray operator/(T scalar, NDArray&& arr) {
 /////////////////////////////////////////////////////
 
 // Addition: NDArray + NDArray
-NDArray operator+(NDArray& arr1, NDArray& arr2) {
+NDArray* operator+(NDArray& arr1, NDArray& arr2) {
   return arrayArrayOpHelper(&arr1, &arr2, sd::pairwise::Add, false);
 }
 
-NDArray operator+(NDArray&& arr1, NDArray& arr2) {
+NDArray* operator+(NDArray&& arr1, NDArray& arr2) {
   return arrayArrayOpHelper(&arr1, &arr2, sd::pairwise::Add, true);
 }
 
-NDArray operator+(NDArray& arr1, NDArray&& arr2) {
+NDArray* operator+(NDArray& arr1, NDArray&& arr2) {
   return arrayArrayOpHelper(&arr1, &arr2, sd::pairwise::Add, true);
 }
 
-NDArray operator+(NDArray&& arr1, NDArray&& arr2) {
+NDArray* operator+(NDArray&& arr1, NDArray&& arr2) {
   return arrayArrayOpHelper(&arr1, &arr2, sd::pairwise::Add, true);
 }
 
 // Subtraction: NDArray - NDArray
-NDArray operator-(NDArray& arr1, NDArray& arr2) {
+NDArray* operator-(NDArray& arr1, NDArray& arr2) {
   return arrayArrayOpHelper(&arr1, &arr2, sd::pairwise::Subtract, false);
 }
 
-NDArray operator-(NDArray&& arr1, NDArray& arr2) {
+NDArray* operator-(NDArray&& arr1, NDArray& arr2) {
   return arrayArrayOpHelper(&arr1, &arr2, sd::pairwise::Subtract, true);
 }
 
-NDArray operator-(NDArray& arr1, NDArray&& arr2) {
+NDArray* operator-(NDArray& arr1, NDArray&& arr2) {
   return arrayArrayOpHelper(&arr1, &arr2, sd::pairwise::Subtract, true);
 }
 
-NDArray operator-(NDArray&& arr1, NDArray&& arr2) {
+NDArray* operator-(NDArray&& arr1, NDArray&& arr2) {
   return arrayArrayOpHelper(&arr1, &arr2, sd::pairwise::Subtract, true);
 }
 
 // Multiplication: NDArray * NDArray
-NDArray operator*(NDArray& arr1, NDArray& arr2) {
+NDArray* operator*(NDArray& arr1, NDArray& arr2) {
   return arrayArrayOpHelper(&arr1, &arr2, sd::pairwise::Multiply, false);
 }
 
-NDArray operator*(NDArray&& arr1, NDArray& arr2) {
+NDArray* operator*(NDArray&& arr1, NDArray& arr2) {
   return arrayArrayOpHelper(&arr1, &arr2, sd::pairwise::Multiply, true);
 }
 
-NDArray operator*(NDArray& arr1, NDArray&& arr2) {
+NDArray* operator*(NDArray& arr1, NDArray&& arr2) {
   return arrayArrayOpHelper(&arr1, &arr2, sd::pairwise::Multiply, true);
 }
 
-NDArray operator*(NDArray&& arr1, NDArray&& arr2) {
+NDArray* operator*(NDArray&& arr1, NDArray&& arr2) {
   return arrayArrayOpHelper(&arr1, &arr2, sd::pairwise::Multiply, true);
 }
 
 // Division: NDArray / NDArray
-NDArray operator/(NDArray& arr1, NDArray& arr2) {
+NDArray* operator/(NDArray& arr1, NDArray& arr2) {
   return arrayArrayOpHelper(&arr1, &arr2, sd::pairwise::Divide, false);
 }
 
-NDArray operator/(NDArray&& arr1, NDArray& arr2) {
+NDArray* operator/(NDArray&& arr1, NDArray& arr2) {
   return arrayArrayOpHelper(&arr1, &arr2, sd::pairwise::Divide, true);
 }
 
-NDArray operator/(NDArray& arr1, NDArray&& arr2) {
+NDArray* operator/(NDArray& arr1, NDArray&& arr2) {
   return arrayArrayOpHelper(&arr1, &arr2, sd::pairwise::Divide, true);
 }
 
-NDArray operator/(NDArray&& arr1, NDArray&& arr2) {
+NDArray* operator/(NDArray&& arr1, NDArray&& arr2) {
   return arrayArrayOpHelper(&arr1, &arr2, sd::pairwise::Divide, true);
 }
 
@@ -489,6 +500,39 @@ void NDArray::operator/=(NDArray&& other) {
   operator/=(other);
 }
 
+/////////////////////////////////////////////////////
+// Pointer-Based Binary Operators (Forward Declarations)
+/////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////
+// Pointer-Scalar Operator Templates (Declarations)
+/////////////////////////////////////////////////////
+
+template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
+SD_LIB_EXPORT NDArray* operator+(NDArray* arr, T scalar);
+
+template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
+SD_LIB_EXPORT NDArray* operator+(T scalar, NDArray* arr);
+
+template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
+SD_LIB_EXPORT NDArray* operator-(NDArray* arr, T scalar);
+
+template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
+SD_LIB_EXPORT NDArray* operator-(T scalar, NDArray* arr);
+
+template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
+SD_LIB_EXPORT NDArray* operator*(NDArray* arr, T scalar);
+
+template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
+SD_LIB_EXPORT NDArray* operator*(T scalar, NDArray* arr);
+
+template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
+SD_LIB_EXPORT NDArray* operator/(NDArray* arr, T scalar);
+
+template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
+SD_LIB_EXPORT NDArray* operator/(T scalar, NDArray* arr);
+
 // Unary negative operator
 NDArray NDArray::operator-() & {
   NDArray result(shapeInfo(), false, getContext());
@@ -515,7 +559,7 @@ NDArray NDArray::operator-() && {
 }
 
 template <typename T1, typename T2, typename>
-NDArray operator-(T1 &&arr1, T2 &&arr2) {
+NDArray* operator-(T1 &&arr1, T2 &&arr2) {
   if (arr1.isS() || arr2.isS())
     THROW_EXCEPTION("operator-(T&& arr1, T&& arr2): you can't use this method on String arrays!");
   if (!Environment::getInstance().isExperimentalBuild() && arr1.dataType() != arr2.dataType() &&
@@ -545,33 +589,24 @@ NDArray operator-(T1 &&arr1, T2 &&arr2) {
         result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), nullptr);
     NDArray::registerSpecialUse({result}, {&arr1, &arr2});
 
-    if (!isArr1Rvalue && !isArr2Rvalue) {
-      NDArray res = std::move(*result);
-      delete result;
-      return res;
-    }
-
-    return std::move(*result);
+    return result;
   }
 
   NDArray* arr1Addr = &arr1;
   NDArray* arr2Addr = &arr2;
-  NDArray *ret =  std::forward<T1>(arr1).applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), arr2Addr);
-  NDArray result = std::move(*ret);
-  delete ret;
-  return result;
+  return std::forward<T1>(arr1).applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), arr2Addr);
 }
 
 
 
-template SD_LIB_EXPORT NDArray operator-<NDArray &, NDArray &, void>(NDArray &arr1, NDArray &arr2);
-template SD_LIB_EXPORT NDArray operator-<NDArray &, NDArray, void>(NDArray &arr1, NDArray &&arr2);
-template SD_LIB_EXPORT NDArray operator-<NDArray, NDArray &, void>(NDArray &&arr1, NDArray &arr2);
-template SD_LIB_EXPORT NDArray operator-<NDArray, NDArray, void>(NDArray &&arr1, NDArray &&arr2);
+template SD_LIB_EXPORT NDArray* operator-<NDArray &, NDArray &, void>(NDArray &arr1, NDArray &arr2);
+template SD_LIB_EXPORT NDArray* operator-<NDArray &, NDArray, void>(NDArray &arr1, NDArray &&arr2);
+template SD_LIB_EXPORT NDArray* operator-<NDArray, NDArray &, void>(NDArray &&arr1, NDArray &arr2);
+template SD_LIB_EXPORT NDArray* operator-<NDArray, NDArray, void>(NDArray &&arr1, NDArray &&arr2);
 
 
 template <typename T1, typename T2, typename>
-NDArray operator*(T1 &&arr1, T2 &&arr2) {
+NDArray* operator*(T1 &&arr1, T2 &&arr2) {
   if (arr1.isS() || arr2.isS()) {
     THROW_EXCEPTION("operator*(T&& arr1, T&& arr2): you can't use this method on String arrays!");
   }
@@ -612,31 +647,22 @@ NDArray operator*(T1 &&arr1, T2 &&arr2) {
         result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), nullptr);
     NDArray::registerSpecialUse({result}, {&arr1, &arr2});
 
-    if (!isArr1Rvalue && !isArr2Rvalue) {
-      NDArray res = std::move(*result);
-      delete result;
-      return res;
-    }
-
-    return std::move(*result);
+    return result;
   }
 
   NDArray* arr1Addr = &arr1;
   NDArray* arr2Addr = &arr2;
-  NDArray *ret =  std::forward<T1>(arr1).applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), arr2Addr);
-  NDArray result = std::move(*ret);
-  delete ret;
-  return result;
+  return std::forward<T1>(arr1).applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), arr2Addr);
 }
-template SD_LIB_EXPORT NDArray operator*<NDArray &, NDArray &, void>(NDArray &arr1, NDArray &arr2);
-template SD_LIB_EXPORT NDArray operator*<NDArray &, NDArray, void>(NDArray &arr1, NDArray &&arr2);
-template SD_LIB_EXPORT NDArray operator*<NDArray, NDArray &, void>(NDArray &&arr1, NDArray &arr2);
-template SD_LIB_EXPORT NDArray operator*<NDArray&&, NDArray &&, void>(NDArray &&arr1, NDArray &&arr2);
-template SD_LIB_EXPORT NDArray sd::operator*<NDArray, NDArray, void>(sd::NDArray&&, sd::NDArray&&);
+template SD_LIB_EXPORT NDArray* operator*<NDArray &, NDArray &, void>(NDArray &arr1, NDArray &arr2);
+template SD_LIB_EXPORT NDArray* operator*<NDArray &, NDArray, void>(NDArray &arr1, NDArray &&arr2);
+template SD_LIB_EXPORT NDArray* operator*<NDArray, NDArray &, void>(NDArray &&arr1, NDArray &arr2);
+template SD_LIB_EXPORT NDArray* operator*<NDArray&&, NDArray &&, void>(NDArray &&arr1, NDArray &&arr2);
+template SD_LIB_EXPORT NDArray* sd::operator*<NDArray, NDArray, void>(sd::NDArray&&, sd::NDArray&&);
 
 
 template <typename T1, typename T2, typename>
-NDArray operator+(T1 &&arr1, T2 &&arr2) {
+NDArray* operator+(T1 &&arr1, T2 &&arr2) {
   if (arr1.isS() || arr2.isS())
     THROW_EXCEPTION("operator+(T&& arr1, T&& arr2): you can't use this method on String arrays!");
   if (arr1.dataType() != arr2.dataType() &&
@@ -677,30 +703,21 @@ NDArray operator+(T1 &&arr1, T2 &&arr2) {
         result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), nullptr);
     NDArray::registerSpecialUse({result}, {&arr1, &arr2});
 
-    if (!isArr1Rvalue && !isArr2Rvalue) {
-      NDArray res = std::move(*result);
-      delete result;
-      return res;
-    }
-
-    return std::move(*result);
+    return result;
   }
 
   NDArray* arr1Addr = &arr1;
   NDArray* arr2Addr = &arr2;
-  NDArray *ret =  std::forward<T1>(arr1).applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), arr2Addr);
-  NDArray result = std::move(*ret);
-  delete ret;
-  return result;
+  return std::forward<T1>(arr1).applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), arr2Addr);
 }
-template SD_LIB_EXPORT NDArray operator+<NDArray &, NDArray &, void>(NDArray &arr1, NDArray &arr2);
-template SD_LIB_EXPORT NDArray operator+<NDArray &, NDArray, void>(NDArray &arr1, NDArray &&arr2);
-template SD_LIB_EXPORT NDArray operator+<NDArray, NDArray &, void>(NDArray &&arr1, NDArray &arr2);
-template SD_LIB_EXPORT NDArray operator+<NDArray, NDArray, void>(NDArray &&arr1, NDArray &&arr2);
+template SD_LIB_EXPORT NDArray* operator+<NDArray &, NDArray &, void>(NDArray &arr1, NDArray &arr2);
+template SD_LIB_EXPORT NDArray* operator+<NDArray &, NDArray, void>(NDArray &arr1, NDArray &&arr2);
+template SD_LIB_EXPORT NDArray* operator+<NDArray, NDArray &, void>(NDArray &&arr1, NDArray &arr2);
+template SD_LIB_EXPORT NDArray* operator+<NDArray, NDArray, void>(NDArray &&arr1, NDArray &&arr2);
 
 
 template <typename T1, typename T2, typename>
-NDArray operator/(T1 &&arr1, T2 &&arr2) {
+NDArray* operator/(T1 &&arr1, T2 &&arr2) {
   if (arr1.isS() || arr2.isS())
     THROW_EXCEPTION("operator/(T&& arr1, T&& arr2): you can't use this method on String arrays!");
   if (!Environment::getInstance().isExperimentalBuild() && arr1.dataType() != arr2.dataType() &&
@@ -730,26 +747,19 @@ NDArray operator/(T1 &&arr1, T2 &&arr2) {
         result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), nullptr);
     NDArray::registerSpecialUse({result}, {&arr1, &arr2});
 
-    if (!isArr1Rvalue && !isArr2Rvalue) {
-      NDArray res = std::move(*result);
-      delete result;
-      return res;
-    }
-
-    return std::move(*result);
+    return result;
   }
 
   NDArray* arr1Addr = &arr1;
   NDArray* arr2Addr = &arr2;
-  NDArray *ret =  std::forward<T1>(arr1).applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), arr2Addr);
-  NDArray result = std::move(*ret);
-  delete ret;
-  return result;
+  return std::forward<T1>(arr1).applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), arr2Addr);
 }
-template SD_LIB_EXPORT NDArray operator/<NDArray &, NDArray &, void>(NDArray &arr1, NDArray &arr2);
-template SD_LIB_EXPORT NDArray operator/<NDArray &, NDArray, void>(NDArray &arr1, NDArray &&arr2);
-template SD_LIB_EXPORT NDArray operator/<NDArray, NDArray &, void>(NDArray &&arr1, NDArray &arr2);
-template SD_LIB_EXPORT NDArray operator/<NDArray&&, NDArray &&, void>(NDArray &&arr1, NDArray &&arr2);
-template SD_LIB_EXPORT NDArray operator/<NDArray, NDArray, void>(sd::NDArray&&, sd::NDArray&&);
+template SD_LIB_EXPORT NDArray* operator/<NDArray &, NDArray &, void>(NDArray &arr1, NDArray &arr2);
+template SD_LIB_EXPORT NDArray* operator/<NDArray &, NDArray, void>(NDArray &arr1, NDArray &&arr2);
+template SD_LIB_EXPORT NDArray* operator/<NDArray, NDArray &, void>(NDArray &&arr1, NDArray &arr2);
+template SD_LIB_EXPORT NDArray* operator/<NDArray&&, NDArray &&, void>(NDArray &&arr1, NDArray &&arr2);
+template SD_LIB_EXPORT NDArray* operator/<NDArray, NDArray, void>(sd::NDArray&&, sd::NDArray&&);
+
+
 
 } // namespace sd

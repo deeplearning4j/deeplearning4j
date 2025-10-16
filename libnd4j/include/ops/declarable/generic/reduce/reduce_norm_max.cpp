@@ -127,22 +127,27 @@ CUSTOM_OP_IMPL(reduce_norm_max_bp, -1, 1, false, 0, 0) {
   *gradI = 0.0;
 
   if (gradO->lengthOf() == 1) {
-    auto indOfAbsMaxElem = input->indexReduceNumber(sd::indexreduce::IndexAbsoluteMax);
+    auto* indOfAbsMaxElem = input->indexReduceNumber(sd::indexreduce::IndexAbsoluteMax);
     const sd::LongType ind = indOfAbsMaxElem->t<sd::LongType>(0);
+    delete indOfAbsMaxElem;
+    
     const int sign = input->e<float>(ind) >= 0 ? 1 : -1;
     auto put = sign * gradO->e(0);
-    gradI->p(ind, &put);
-    delete indOfAbsMaxElem;
-
+    gradI->p(ind, put);
+    delete put;
 
   } else {
     auto indicesArr = input->applyIndexReduce(sd::indexreduce::IndexAbsoluteMax, &dimensions);
-    auto vec = ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions.size(),dimensions.data());
+    auto* vec = ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions.size(), dimensions.data());
     helpers::scatterSimple(
-        block.launchContext(), 6, *gradI, *gradO, indicesArr,
+        block.launchContext(), 6, *gradI, *gradO, *indicesArr,
         *vec);  // 6 corresponds to copy operation
     delete vec;
-    *gradI *= input->transform(sd::transform::Sign);
+   delete indicesArr;
+    
+    auto* signArr = input->transform(sd::transform::Sign);
+    *gradI *= (*signArr);
+    delete signArr;
   }
 
   return sd::Status::OK;

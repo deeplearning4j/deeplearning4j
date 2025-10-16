@@ -34,8 +34,11 @@ CUSTOM_OP_IMPL(l2_loss, 1, 1, false, 0, 0) {
   REQUIRE_TRUE(output->isScalar(), 0, "Rank output should be scalar");
 
   // FIXME: output should be used directly here, to avoid sum
-  input->reduceNumber(reduce::SquaredNorm, output);
-  (*output) /= 2.;
+  auto* result = input->reduceNumber(reduce::SquaredNorm);
+  NDArray* divided = (*result) / 2.;
+  output->assign(divided);
+  delete divided;
+  delete result;
 
   return Status::OK;
 }

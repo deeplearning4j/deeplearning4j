@@ -61,7 +61,9 @@ void BiDiagonalUp::_evalData() {
 
   for (LongType i = 0; i < cols - 1; ++i) {
     // evaluate Householder matrix nullifying columns
-    NDArray column1 = _HHmatrix({i, rows, i, i + 1});
+    NDArray *column1Ptr = _HHmatrix({i, rows, i, i + 1});
+    NDArray column1 = *column1Ptr;
+    delete column1Ptr;
 
     x = _HHmatrix.t<T>(i, i);
     y = _HHbidiag.t<T>(i, i);
@@ -72,13 +74,20 @@ void BiDiagonalUp::_evalData() {
     _HHbidiag.r<T>(i, i) = y;
 
     // multiply corresponding matrix block on householder matrix from the left: P * bottomRightCorner
-    NDArray bottomRightCorner1 = _HHmatrix({i, rows, i + 1, cols}, true);  // {i, cols}
-    Householder<T>::mulLeft(bottomRightCorner1, _HHmatrix({i + 1, rows, i, i + 1}, true), _HHmatrix.t<T>(i, i));
+    NDArray *bottomRightCorner1Ptr = _HHmatrix({i, rows, i + 1, cols}, true);  // {i, cols}
+    NDArray bottomRightCorner1 = *bottomRightCorner1Ptr;
+    delete bottomRightCorner1Ptr;
+    
+    NDArray *hhViewPtr = _HHmatrix({i + 1, rows, i, i + 1}, true);
+    Householder<T>::mulLeft(bottomRightCorner1, *hhViewPtr, _HHmatrix.t<T>(i, i));
+    delete hhViewPtr;
 
     if (i == cols - 2) continue;  // do not apply right multiplying at last iteration
 
     // evaluate Householder matrix nullifying rows
-    NDArray row1 = _HHmatrix({i, i + 1, i + 1, cols});
+    NDArray *row1Ptr = _HHmatrix({i, i + 1, i + 1, cols});
+    NDArray row1 = *row1Ptr;
+    delete row1Ptr;
 
     x = _HHmatrix.t<T>(i, i + 1);
     y = _HHbidiag.t<T>(i, i + 1);
@@ -89,12 +98,18 @@ void BiDiagonalUp::_evalData() {
     _HHbidiag.r<T>(i, i + 1) = y;
 
     // multiply corresponding matrix block on householder matrix from the right: bottomRightCorner * P
-    NDArray bottomRightCorner2 = _HHmatrix({i + 1, rows, i + 1, cols}, true);  // {i, rows}
+    NDArray *bottomRightCorner2Ptr = _HHmatrix({i + 1, rows, i + 1, cols}, true);  // {i, rows}
+    NDArray bottomRightCorner2 = *bottomRightCorner2Ptr;
+    delete bottomRightCorner2Ptr;
 
-    Householder<T>::mulRight(bottomRightCorner2, _HHmatrix({i, i + 1, i + 2, cols}, true), _HHmatrix.t<T>(i, i + 1));
+    NDArray *hhView2Ptr = _HHmatrix({i, i + 1, i + 2, cols}, true);
+    Householder<T>::mulRight(bottomRightCorner2, *hhView2Ptr, _HHmatrix.t<T>(i, i + 1));
+    delete hhView2Ptr;
   }
 
-  NDArray row2 = _HHmatrix({cols - 2, cols - 1, cols - 1, cols});
+  NDArray *row2Ptr = _HHmatrix({cols - 2, cols - 1, cols - 1, cols});
+  NDArray row2 = *row2Ptr;
+  delete row2Ptr;
 
   x = _HHmatrix.t<T>(cols - 2, cols - 1);
   y = _HHbidiag.t<T>(cols - 2, cols - 1);
@@ -104,7 +119,9 @@ void BiDiagonalUp::_evalData() {
   _HHmatrix.r<T>(cols - 2, cols - 1) = x;
   _HHbidiag.r<T>(cols - 2, cols - 1) = y;
 
-  NDArray column2 = _HHmatrix({cols - 1, rows, cols - 1, cols});
+  NDArray *column2Ptr = _HHmatrix({cols - 1, rows, cols - 1, cols});
+  NDArray column2 = *column2Ptr;
+  delete column2Ptr;
 
   x = _HHmatrix.t<T>(cols - 1, cols - 1);
   y = _HHbidiag.t<T>(cols - 1, cols - 1);

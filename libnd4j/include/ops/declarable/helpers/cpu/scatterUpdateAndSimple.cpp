@@ -47,33 +47,39 @@ void scatterUpdate(sd::LaunchContext* context, NDArray& input, NDArray& updates,
     for (auto i = start; i < stop; i++) {
       auto inSubArr = input(indices[i], *dimsToExclude, true);
       auto updSubArr = updates(i, *dimsToExclude, true);
-      if (inSubArr.lengthOf() != updSubArr.lengthOf()) continue;
+      if (inSubArr->lengthOf() != updSubArr->lengthOf())  {
+        delete inSubArr;
+        continue;
+      }
 
       switch (opCode) {
         case 0:
-          inSubArr.applyPairwiseTransform(pairwise::Add, &updSubArr, &inSubArr);
+          inSubArr->applyPairwiseTransform(pairwise::Add, updSubArr, inSubArr);
           break;
         case 1:
-          inSubArr.applyPairwiseTransform(pairwise::Subtract, &updSubArr, &inSubArr);
+          inSubArr->applyPairwiseTransform(pairwise::Subtract, updSubArr, inSubArr);
           break;
         case 2:
-          inSubArr.applyPairwiseTransform(pairwise::Multiply, &updSubArr, &inSubArr);
+          inSubArr->applyPairwiseTransform(pairwise::Multiply, updSubArr, inSubArr);
           break;
         case 3:
-          inSubArr.applyPairwiseTransform(pairwise::Divide, &updSubArr, &inSubArr);
+          inSubArr->applyPairwiseTransform(pairwise::Divide, updSubArr, inSubArr);
           break;
         case 4:
-          inSubArr.applyPairwiseTransform(pairwise::ReverseSubtract, &updSubArr, &inSubArr);
+          inSubArr->applyPairwiseTransform(pairwise::ReverseSubtract, updSubArr, inSubArr);
           break;
         case 5:
-          inSubArr.applyPairwiseTransform(pairwise::ReverseDivide, &updSubArr, &inSubArr);
+          inSubArr->applyPairwiseTransform(pairwise::ReverseDivide, updSubArr, inSubArr);
           break;
         case 6:
-          inSubArr.applyPairwiseTransform(pairwise::CopyPws, &updSubArr, &inSubArr);
+          inSubArr->applyPairwiseTransform(pairwise::CopyPws, updSubArr, inSubArr);
           break;
         default:
           continue;
       }
+
+      delete inSubArr;
+      delete updSubArr;
     }
   };
 
@@ -95,7 +101,7 @@ void scatterSimple(sd::LaunchContext* context, const int opId, NDArray& input, N
         for (auto i = start; i < stop; i++) {
           auto inSubArr = input(i, dimensions);
           auto curr = indices.e(i);
-          inSubArr.p(indices.t<sd::LongType>(i), &curr);
+          inSubArr->p(indices.t<sd::LongType>(i), &curr);
         }
       };
 

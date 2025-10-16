@@ -71,12 +71,16 @@ CUSTOM_OP_IMPL(divide_bp, 3, 2, false, 0, 0) {
     // PWT case case
 
     // X gradient
-    NDArray gradXTemp = (*epsNext) / (*y);
-    gradX->assign(&gradXTemp);
-
+    NDArray *gradXTemp = (*epsNext) / (*y);
+    gradX->assign(gradXTemp);
+    delete gradXTemp;
     // Y gradient
-    NDArray gradYTemp = (*epsNext) * (*x) / ((*y) * (*y));
-    gradY->assign(&gradYTemp);
+    NDArray *numerator = (*epsNext) * (*x);
+    NDArray *denominator = (*y) * (*y);
+    NDArray *gradYTemp = (*numerator) / (*denominator);
+    delete numerator;
+    delete denominator;
+    gradY->assign(gradYTemp);
     gradY->applyTransform(transform::Neg, gradY);
 
   } else if (y->isScalar()) {
@@ -85,8 +89,12 @@ CUSTOM_OP_IMPL(divide_bp, 3, 2, false, 0, 0) {
     auto tmp = epsNext->reduceNumber(reduce::Sum);
     auto tmpX = x->reduceNumber(reduce::Sum);
 
-    NDArray gradYTemp = tmp * tmpX / ((*y) * (*y));
-    gradY->assign(&gradYTemp);
+    NDArray *temp1 = *tmp * *tmpX;
+    NDArray *ySquared = (*y) * (*y);
+    NDArray *gradYTemp = (*temp1) / (*ySquared);
+    delete temp1;
+    delete ySquared;
+    gradY->assign(gradYTemp);
     gradY->applyTransform(transform::Neg, gradY);
 
     epsNext->applyScalarArr(scalar::Divide, y, gradX);
@@ -97,27 +105,34 @@ CUSTOM_OP_IMPL(divide_bp, 3, 2, false, 0, 0) {
 
     NDArray negX(*x);
     x->applyTransform(transform::Neg, &negX);
-    auto preY = *epsNext * negX / ((*y) * (*y));
-
+    NDArray *negXMulEps = (*epsNext) * negX;
+    NDArray *ySquared = (*y) * (*y);
+    auto preY = (*negXMulEps) / (*ySquared);
+    delete negXMulEps;
+    delete ySquared;
     auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
     auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
     if (axisX.size() > 0) {
-      auto sum = preX.reduceAlongDimension(reduce::Sum, &axisX);
-      NDArray gradXTemp = sum;
-      gradX->assign(&gradXTemp);
+      auto sum = preX->reduceAlongDimension(reduce::Sum, &axisX);
+      NDArray *gradXTemp = sum;
+      gradX->assign(gradXTemp);
+      delete sum;
     } else {
-      NDArray gradXTemp = preX;
-      gradX->assign(&gradXTemp);
+      NDArray *gradXTemp = preX;
+      gradX->assign(gradXTemp);
+      delete gradXTemp;
     }
 
     if (axisY.size() > 0) {
-      auto sum = preY.reduceAlongDimension(reduce::Sum, &axisY);
-      NDArray gradYTemp = sum;
-      gradY->assign(&gradYTemp);
+      auto sum = preY->reduceAlongDimension(reduce::Sum, &axisY);
+      NDArray *gradYTemp = sum;
+      gradY->assign(gradYTemp);
+      delete sum;
     } else {
-      NDArray gradYTemp = preY;
-      gradY->assign(&gradYTemp);
+      NDArray *gradYTemp = preY;
+      gradY->assign(gradYTemp);
+      delete gradYTemp;
     }
   }
 

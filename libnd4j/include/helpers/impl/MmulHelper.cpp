@@ -96,11 +96,11 @@ void MmulHelper::computeNewShapesAndAxes(
 ) {
 
 
-  std::vector<LongType> as_shape = as_.getShapeAsVector();
-  std::vector<LongType> bs_shape = bs.getShapeAsVector();
+  std::vector<LongType> *as_shape = as_.getShapeAsVector();
+  std::vector<LongType> *bs_shape = bs.getShapeAsVector();
 
   std::vector<LongType> notin_a;
-  for(size_t k = 0; k < as_shape.size(); ++k) {
+  for(size_t k = 0; k < as_shape->size(); ++k) {
     if(std::find(axes_a.begin(), axes_a.end(), k) == axes_a.end())
       notin_a.push_back(k);
   }
@@ -112,19 +112,19 @@ void MmulHelper::computeNewShapesAndAxes(
   std::copy(axes_a.begin(), axes_a.end(), std::back_inserter(newaxes_a));
 
   LongType N2_a = std::accumulate(axes_a.begin(), axes_a.end(), 1L, [&](LongType product, LongType i){
-    return product * as_shape[i];
+    return product * (*as_shape)[i];
   });
 
   newshape_a.clear();
   newshape_a.push_back(std::accumulate(notin_a.begin(), notin_a.end(), 1L, [&](LongType product, LongType i){
-    return product * as_shape[i];
+    return product * (*as_shape)[i];
   }));
   newshape_a.push_back(N2_a);
 
 
 
   std::vector<LongType> notin_b;
-  for(size_t k = 0; k < bs_shape.size(); ++k) {
+  for(size_t k = 0; k < bs_shape->size(); ++k) {
     if(std::find(axes_b.begin(), axes_b.end(), k) == axes_b.end())
       notin_b.push_back(k);
   }
@@ -137,7 +137,7 @@ void MmulHelper::computeNewShapesAndAxes(
 
 
   LongType N2_b = std::accumulate(axes_b.begin(), axes_b.end(), 1L, [&](LongType product, LongType i){
-    return product * bs_shape[i];
+    return product * (*bs_shape)[i];
   });
 
 
@@ -145,7 +145,7 @@ void MmulHelper::computeNewShapesAndAxes(
   newshape_b.clear();
   newshape_b.push_back(N2_b);
   newshape_b.push_back(std::accumulate(notin_b.begin(), notin_b.end(), 1L, [&](LongType product, LongType i){
-    return product * bs_shape[i];
+    return product * (*bs_shape)[i];
   }));
 
 
@@ -553,13 +553,12 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
     // Copy back result and clean up reshaped output
     if(zT != z) {
       z->dataBuffer()->copyBufferFrom(*zT->dataBuffer(), zT->lengthOf() * zT->sizeOfT());
-      if(!zT->isView()) {
-        delete zT;
-      }
+      delete zT;
+
     }
 
     // Clean up reshaped input
-    if(xReshaped != nullptr && xReshaped != x && !xReshaped->isView()) {
+    if(xReshaped != nullptr && xReshaped != x) {
       delete xReshaped;
     }
 
@@ -578,9 +577,9 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
     std::vector<NDArray*> vC(numOfSubArrs);
 
     for (LongType i = 0; i < numOfSubArrs; ++i) {
-      vA[i] = new NDArray((*xT)(i, dimsToExclude));
-      vB[i] = new NDArray((*yT)(i, dimsToExclude));
-      vC[i] = new NDArray((*zT)(i, dimsToExclude));
+      vA[i] = (*xT)(i, dimsToExclude);
+      vB[i] = (*yT)(i, dimsToExclude);
+      vC[i] = (*zT)(i, dimsToExclude);
     }
 
     NDArray *alphaArr = NDArrayFactory::create<double>('c', {0}, {alpha});

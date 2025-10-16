@@ -47,21 +47,25 @@ CUSTOM_OP_IMPL(reshape, 1, 1, false, 0, -2) {
                "got %i vs %i",
                x->lengthOf(), z->lengthOf());
 
-  if (Environment::getInstance().isDebugAndVerbose()) sd_printv("Reshape: new shape", z->getShapeAsVector());
+  auto* zShapeVec = z->getShapeAsVector();
+  if (Environment::getInstance().isDebugAndVerbose()) sd_printv("Reshape: new shape", *zShapeVec);
   if(z->ordering() != 'c' && z->ordering() != 'f') {
     std::string errorMessage;
     errorMessage += "Reshape: new shape has unknown order: [";
     errorMessage += z->ordering();
     errorMessage += "]";
+    delete zShapeVec;
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
   //only perform assign when we aren't using a view
   if(x->dataBuffer() != z->dataBuffer()) {
-    std::vector<sd::LongType> shape = z->getShapeAsVector();
-    NDArray *reshapedX = x->reshape(z->ordering(), shape,true);
+    NDArray *reshapedX = x->reshape(z->ordering(), *zShapeVec, true);
+    delete zShapeVec;
     z->assign(reshapedX);
     delete reshapedX;
+  } else {
+    delete zShapeVec;
   }
 
   return Status::OK;

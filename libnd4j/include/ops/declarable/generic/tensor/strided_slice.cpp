@@ -519,7 +519,9 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
     }
 
   std::vector<LongType> *indices = new std::vector<sd::LongType>();
-  auto input_shape = x->getShapeAsVector();
+  auto* input_shape_ptr = x->getShapeAsVector();
+  std::vector<LongType> input_shape = *input_shape_ptr;
+  delete input_shape_ptr;
   std::vector<LongType> *final_shape = new std::vector<sd::LongType>();
   bool is_identity;
   bool is_simple_slice;
@@ -761,7 +763,9 @@ CUSTOM_OP_IMPL(strided_slice_bp, 2, 1, false, 0, 5) {
     ++e;
   }
 
-  auto input_shape = x->getShapeAsVector();
+  auto* input_shape_ptr = x->getShapeAsVector();
+  std::vector<LongType> input_shape = *input_shape_ptr;
+  delete input_shape_ptr;
   std::vector<LongType> indices;
   std::vector<LongType> final_shape;
   bool is_identity;
@@ -783,7 +787,8 @@ CUSTOM_OP_IMPL(strided_slice_bp, 2, 1, false, 0, 5) {
     output->p(indices[0], epsNext);
   } else {  // else for other cases
     auto sub = (*output)(indices, true, true);
-    sub.assign(epsNext);
+    sub->assign(epsNext);
+    delete sub;
   }
 
   return Status::OK;

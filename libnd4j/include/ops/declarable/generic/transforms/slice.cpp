@@ -257,8 +257,9 @@ CUSTOM_OP_IMPL(slice_bp, 2, 1, false, 0, -2) {
     indices[2 * e + 1] = start + size;
   }
   auto sub = (*output)(indices, true);
-  sub.assign(epsNext);
+  sub->assign(epsNext);
 
+  delete sub;
   return Status::OK;
 }
 

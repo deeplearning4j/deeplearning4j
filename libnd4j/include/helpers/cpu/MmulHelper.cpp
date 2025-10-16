@@ -457,9 +457,9 @@ NDArray* MmulHelper::dot(NDArray* X, NDArray* Y, sd::NDArray* Z, const double al
 //    [M,K] x [bS,K,N] = [bS,M,N]
 // bS could stand for several axes
 template <typename T1, typename T2, typename T3>
-static void batchedGemm(NDArray* vA, NDArray* vB, NDArray* vC, LongType* aBatchDims,
-                        const LongType* bBatchDims, const LongType* cBatchDims, LongType aMaxis, LongType aKaxis,
-                        LongType bKaxis, LongType bNaxis, LongType cMaxis, LongType cNaxis, const double alpha, const double beta) {
+static void batchedGemm(NDArray* vA, NDArray* vB, NDArray* vC, const sd::LongType* aBatchDims,
+                        const sd::LongType* bBatchDims, const sd::LongType* cBatchDims, sd::LongType aMaxis, sd::LongType aKaxis,
+                        sd::LongType bKaxis, sd::LongType bNaxis, sd::LongType cMaxis, sd::LongType cNaxis, const double alpha, const double beta) {
   T1* A = vA->bufferAsT<T1>();
   T2* B = vB->bufferAsT<T2>();
   T3* C = vC->bufferAsT<T3>();
@@ -576,23 +576,23 @@ NDArray* MmulHelper::mmulNxN( NDArray* A,  NDArray* B, NDArray* C, const double 
     THROW_EXCEPTION(errorMessage.c_str());
   }
   // validation of C array
-  std::vector<sd::LongType> cExpectedShape = aRank > bRank ? A->getShapeAsVector() : B->getShapeAsVector();
-  cExpectedShape[cExpectedShape.size() - 2] = A->sizeAt(-2);
-  cExpectedShape[cExpectedShape.size() - 1] = B->sizeAt(-1);
+  std::vector<sd::LongType> *cExpectedShape = aRank > bRank ? A->getShapeAsVector() : B->getShapeAsVector();
+  (*cExpectedShape)[cExpectedShape->size() - 2] = A->sizeAt(-2);
+  (*cExpectedShape)[cExpectedShape->size() - 1] = B->sizeAt(-1);
 
   if (C != nullptr) {
-    if (!C->isSameShape(cExpectedShape)) {
+    if (!C->isSameShape(*cExpectedShape)) {
       std::string errorMessage = "MmulHelper::mmulNxN: shape of C array is not suitable for AxB matrix multiplication! "
                                  "Expected shape: [";
-      for (size_t i = 0; i < cExpectedShape.size(); ++i) {
-        errorMessage += std::to_string(cExpectedShape[i]);
-        if (i < cExpectedShape.size() - 1) errorMessage += ",";
+      for (size_t i = 0; i < cExpectedShape->size(); ++i) {
+        errorMessage += std::to_string((*cExpectedShape)[i]);
+        if (i < cExpectedShape->size() - 1) errorMessage += ",";
       }
       errorMessage += "], but got: " + shapeToString(C) + ". A shape: " + shapeToString(A) + ", B shape: " + shapeToString(B);
       THROW_EXCEPTION(errorMessage.c_str());
     }
   } else {
-    C = new NDArray(outOrder, cExpectedShape, B->dataType());
+    C = new NDArray(outOrder, *cExpectedShape, B->dataType());
   }
 
   if (C->isEmpty()) return C;

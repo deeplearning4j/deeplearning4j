@@ -326,10 +326,12 @@ static void weightedCrossEntropyWithLogitsFunctor_(NDArray * targets, NDArray * 
   if (weights->isScalar()) {
     input->applyPairwiseLambda<T>(targets, mainRoutineT1, output);
   } else {
-    std::unique_ptr<NDArray> targetVector(new NDArray(*weights));
-    targetVector->applyScalar(scalar::Add, -1.f, targetVector.get());
-
-    *targets = (*targets * *targets) + T(1.f);
+    weights->applyScalar(scalar::Add, -1.f, weights);
+    auto add = (*targets * *targets);
+    auto addOne = (*add) + T(1.f);
+    *targets = *addOne;
+    delete addOne;
+    delete add;
     input->applyTriplewiseLambda<T>(targets, targets,mainRoutineT2, output);
   }
 }

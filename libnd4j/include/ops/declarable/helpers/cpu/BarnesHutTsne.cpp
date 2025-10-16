@@ -182,9 +182,12 @@ bool cell_contains(NDArray* corner, NDArray* width, NDArray* point, sd::LongType
   auto cornerPlusWidth = *corner + *width;
 
   for (sd::LongType i = 0; i < dimension; i++) {
-    if (cornerMinusWidth.e<double>(i) > point->e<double>(i)) return false;
-    if (cornerPlusWidth.e<double>(i) < point->e<double>(i)) return false;
+    if (cornerMinusWidth->e<double>(i) > point->e<double>(i)) return false;
+    if (cornerPlusWidth->e<double>(i) < point->e<double>(i)) return false;
   }
+
+  delete cornerPlusWidth;
+  delete cornerMinusWidth;
 
   return true;
 }

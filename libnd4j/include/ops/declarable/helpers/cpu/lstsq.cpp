@@ -82,8 +82,14 @@ sd::Status leastSquaresSolveFunctor_(sd::LaunchContext* context, NDArray* leftIn
   } else {  // QR decomposition approach
     // Equation for solve Rx = Q^T * b, where A = Q * R, where Q - orthogonal matrix, and R - upper triangular
     // 1. QR decomposition
-    auto qShape = leftInput->getShapeAsVector();
-    auto rShape = leftInput->getShapeAsVector();
+    std::vector<sd::LongType> *qShapePtr = leftInput->getShapeAsVector();
+    std::vector<sd::LongType> qShape = *qShapePtr;
+    delete qShapePtr;
+    
+    std::vector<sd::LongType> *rShapePtr = leftInput->getShapeAsVector();
+    std::vector<sd::LongType> rShape = *rShapePtr;
+    delete rShapePtr;
+    
     qShape[leftInput->rankOf() - 1] = leftInput->sizeAt(-2);
 
     NDArray Q(leftInput->ordering(), qShape, leftInput->dataType(), context);  // = leftInput->ulike();

@@ -166,7 +166,7 @@ static void clipDeriv(const float clipVal, NDArray& c, NDArray& z0, NDArray& z1,
 }
 
 //////////////////////////////////////////////////////////////////////////
-static NDArray tensorAlongTimeBatchDims(NDArray& arr, const int dataFormat, const int t1, const int t2,
+static NDArray *tensorAlongTimeBatchDims(NDArray& arr, const int dataFormat, const int t1, const int t2,
                                         const int b1, const int b2) {
   if (dataFormat == 0 || dataFormat == 3) return arr({t1, t2, b1, b2, 0, 0});  // TNS: [sL, bS, nIn]
 
@@ -245,42 +245,66 @@ void lstmLayerCell(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* hI
 
   const sd::LongType nOut = Wx->sizeAt(-1) / 4;
 
-  auto z = mmul(*x, *Wx) + mmul(*hI, *Wr);  //   [bs, nIn] * [nIn, 4*nOut] + [bs, nOut] * [nOut, 4*nOut] = [bS, 4*nOut]
-  // or [nIn] * [nIn, 4*nOut] + [nOut] * [nOut, 4*nOut] = [4*nOut]
+  NDArray *xMulWx = mmul(*x, *Wx);  // [bs, nIn] * [nIn, 4*nOut] = [bS, 4*nOut] or [nIn] * [nIn, 4*nOut] = [4*nOut]
+  NDArray *hIMulWr = mmul(*hI, *Wr);  // [bs, nOut] * [nOut, 4*nOut] = [bS, 4*nOut] or [nOut] * [nOut, 4*nOut] = [4*nOut]
+  auto* z = (*xMulWx) + (*hIMulWr);
+  delete xMulWx;
+  delete hIMulWr;
 
   // add biases if they are given
-  if (b != nullptr) z += *b;  // broadcast [bS, 4*nOut](or[4*nOut]) + [4*nOut] = [bS, 4*nOut]
+  if (b != nullptr) *z += *b;  // broadcast [bS, 4*nOut](or[4*nOut]) + [4*nOut] = [bS, 4*nOut]
 
-  auto zi = x->rankOf() == 1 ? z({0, nOut}) : z({0, 0, 0, nOut});                // input gate it, [bS, nOut](or[nOut])
-  auto zf = x->rankOf() == 1 ? z({nOut, 2 * nOut}) : z({0, 0, nOut, 2 * nOut});  // forget gate ft, [bS, nOut](or[nOut])
-  auto zg = x->rankOf() == 1 ? z({2 * nOut, 3 * nOut})
-                             : z({0, 0, 2 * nOut, 3 * nOut});  // cell gate c't, [bS, nOut](or[nOut])
-  auto zo = x->rankOf() == 1 ? z({3 * nOut, 4 * nOut})
-                             : z({0, 0, 3 * nOut, 4 * nOut});  // output gate ot, [bS, nOut](or[nOut])
+  auto zi = x->rankOf() == 1 ? (*z)({0, nOut}) : (*z)({0, 0, 0, nOut});                // input gate it, [bS, nOut](or[nOut])
+  auto zf = x->rankOf() == 1 ? (*z)({nOut, 2 * nOut}) : (*z)({0, 0, nOut, 2 * nOut});  // forget gate ft, [bS, nOut](or[nOut])
+  auto zg = x->rankOf() == 1 ? (*z)({2 * nOut, 3 * nOut})
+                             : (*z)({0, 0, 2 * nOut, 3 * nOut});  // cell gate c't, [bS, nOut](or[nOut])
+  auto zo = x->rankOf() == 1 ? (*z)({3 * nOut, 4 * nOut})
+                             : (*z)({0, 0, 3 * nOut, 4 * nOut});  // output gate ot, [bS, nOut](or[nOut])
 
   // peephole connections for input and forget gates
   if (Wp != nullptr) {
-    zi += *cI * (*Wp)({0, nOut});         // broadcast: [bS, nOut] + [bS, nOut] * [nOut] = [bS, nOut](or[nOut])
-    zf += *cI * (*Wp)({nOut, 2 * nOut});  // broadcast: [bS, nOut] + [bS, nOut] * [nOut] = [bS, nOut](or[nOut])
+    NDArray *wpFirst = (*Wp)({0, nOut});
+    NDArray *wpSecond = (*Wp)({nOut, 2 * nOut});
+    NDArray *cIMulWpFirst = (*cI) * (*wpFirst);    // broadcast: [bS, nOut] * [nOut] = [bS, nOut](or[nOut])
+    NDArray *cIMulWpSecond = (*cI) * (*wpSecond);  // broadcast: [bS, nOut] * [nOut] = [bS, nOut](or[nOut])
+    *zi += *cIMulWpFirst;
+    *zf += *cIMulWpSecond;
+    delete cIMulWpFirst;
+    delete cIMulWpSecond;
+    delete wpFirst;
+    delete wpSecond;
   }
 
-  applyActivation(&zi, params[3], params[4], params[5], &zi);  // inplace
-  applyActivation(&zf, params[3], params[4], params[5], &zf);  // inplace
-  applyActivation(&zg, params[6], params[7], params[8], &zg);  // inplace
-  NDArray cAssign = zf * *cI + zi * zg;
-  c->assign(&cAssign);  // [bS, nOut] * [bS, nOut] + [bS, nOut] * [bS, nOut] = [bS, nOut](or[nOut])
+  applyActivation(zi, params[3], params[4], params[5], zi);  // inplace
+  applyActivation(zf, params[3], params[4], params[5], zf);  // inplace
+  applyActivation(zg, params[6], params[7], params[8], zg);  // inplace
+  
+  NDArray *zfMulCI = (*zf) * (*cI);  // [bS, nOut] * [bS, nOut] = [bS, nOut](or[nOut])
+  NDArray *ziMulZg = (*zi) * (*zg);  // [bS, nOut] * [bS, nOut] = [bS, nOut](or[nOut])
+  NDArray *cAssign = (*zfMulCI) + (*ziMulZg);
+  c->assign(cAssign);
+  delete zfMulCI;
+  delete ziMulZg;
+  delete cAssign;
 
   // if clipping value is non-zero then cell state is clipped by this value prior to the cell output activation
   if (params[2] != 0) c->applyScalar(scalar::LstmClip, params[2], c);
 
   // peephole connections for output gate
-  if (Wp != nullptr)
-    zo += *c * (*Wp)({2 * nOut, 3 * nOut});  // broadcast: [bS, nOut] + [bS, nOut] * [nOut] = [bS, nOut](or[nOut])
+  if (Wp != nullptr) {
+    NDArray *wpThird = (*Wp)({2 * nOut, 3 * nOut});
+    NDArray *cMulWpThird = (*c) * (*wpThird);  // broadcast: [bS, nOut] * [nOut] = [bS, nOut](or[nOut])
+    *zo += *cMulWpThird;
+    delete cMulWpThird;
+    delete wpThird;
+  }
 
-  applyActivation(&zo, params[3], params[4], params[5], &zo);
+  applyActivation(zo, params[3], params[4], params[5], zo);
 
   applyActivation(c, params[9], params[10], params[11], h);
-  *h *= zo;  // [bS, nOut] * [bS, nOut](or[nOut])
+  *h *= *zo;  // [bS, nOut] * [bS, nOut](or[nOut])
+  
+  delete z;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -292,10 +316,15 @@ void lstmLayerCell(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* hI
   // a - i, f, g, o
 
   const sd::LongType nOut = Wx->sizeAt(-1) / 4;
-  NDArray zAssign = mmul(*x, *Wx) +
-                    mmul(*hI, *Wr);
-  z->assign(&zAssign);  //   [bs, nIn] * [nIn, 4*nOut] + [bs, nOut] * [nOut, 4*nOut] = [bS, 4*nOut]
-  // or [nIn] * [nIn, 4*nOut] + [nOut] * [nOut, 4*nOut] = [4*nOut]
+  
+  NDArray *xMulWx = mmul(*x, *Wx);  // [bs, nIn] * [nIn, 4*nOut] = [bS, 4*nOut] or [nIn] * [nIn, 4*nOut] = [4*nOut]
+  NDArray *hIMulWr = mmul(*hI, *Wr);  // [bs, nOut] * [nOut, 4*nOut] = [bS, 4*nOut] or [nOut] * [nOut, 4*nOut] = [4*nOut]
+  NDArray *zAssign = (*xMulWx) + (*hIMulWr);
+  z->assign(zAssign);
+  delete xMulWx;
+  delete hIMulWr;
+  delete zAssign;
+  
   // add biases if they are given
   if (b != nullptr) *z += *b;  // broadcast [bS, 4*nOut](or[4*nOut]) + [4*nOut] = [bS, 4*nOut]
 
@@ -317,27 +346,46 @@ void lstmLayerCell(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* hI
 
   // peephole connections for input and forget gates
   if (Wp != nullptr) {
-    zi += *cI * (*Wp)({0, nOut});         // broadcast: [bS, nOut] + [bS, nOut] * [nOut] = [bS, nOut](or[nOut])
-    zf += *cI * (*Wp)({nOut, 2 * nOut});  // broadcast: [bS, nOut] + [bS, nOut] * [nOut] = [bS, nOut](or[nOut])
+    NDArray *wpFirst = (*Wp)({0, nOut});
+    NDArray *wpSecond = (*Wp)({nOut, 2 * nOut});
+    NDArray *cIMulWpFirst = (*cI) * (*wpFirst);    // broadcast: [bS, nOut] * [nOut] = [bS, nOut](or[nOut])
+    NDArray *cIMulWpSecond = (*cI) * (*wpSecond);  // broadcast: [bS, nOut] * [nOut] = [bS, nOut](or[nOut])
+    *zi += *cIMulWpFirst;
+    *zf += *cIMulWpSecond;
+    delete cIMulWpFirst;
+    delete cIMulWpSecond;
+    delete wpFirst;
+    delete wpSecond;
   }
 
-  applyActivation(&zi, params[3], params[4], params[5], &i);
-  applyActivation(&zf, params[3], params[4], params[5], &f);
-  applyActivation(&zg, params[6], params[7], params[8], &g);
-  NDArray cAssign = f * *cI + i * g;
-  c->assign(&cAssign);  // [bS, nOut] * [bS, nOut] + [bS, nOut] * [bS, nOut] = [bS, nOut](or[nOut])
+  applyActivation(zi, params[3], params[4], params[5], i);
+  applyActivation(zf, params[3], params[4], params[5], f);
+  applyActivation(zg, params[6], params[7], params[8], g);
+  
+  NDArray *fMulCI = (*f) * (*cI);  // [bS, nOut] * [bS, nOut] = [bS, nOut](or[nOut])
+  NDArray *iMulG = (*i) * (*g);    // [bS, nOut] * [bS, nOut] = [bS, nOut](or[nOut])
+  NDArray *cAssign = (*fMulCI) + (*iMulG);
+  c->assign(cAssign);
+  delete fMulCI;
+  delete iMulG;
+  delete cAssign;
 
   // if clipping value is non-zero then cell state is clipped by this value prior to the cell output activation
   if (params[2] != 0) c->applyScalar(scalar::LstmClip, params[2], c);
 
   // peephole connections for output gate
-  if (Wp != nullptr)
-    zo += *c * (*Wp)({2 * nOut, 3 * nOut});  // broadcast: [bS, nOut] + [bS, nOut] * [nOut] = [bS, nOut](or[nOut])
+  if (Wp != nullptr) {
+    NDArray *wpThird = (*Wp)({2 * nOut, 3 * nOut});
+    NDArray *cMulWpThird = (*c) * (*wpThird);  // broadcast: [bS, nOut] * [nOut] = [bS, nOut](or[nOut])
+    *zo += *cMulWpThird;
+    delete cMulWpThird;
+    delete wpThird;
+  }
 
-  applyActivation(&zo, params[3], params[4], params[5], &o);
+  applyActivation(zo, params[3], params[4], params[5], o);
 
   applyActivation(c, params[9], params[10], params[11], h);
-  *h *= o;  // [bS, nOut] * [bS, nOut](or[nOut])
+  *h *= *o;  // [bS, nOut] * [bS, nOut](or[nOut])
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -456,75 +504,119 @@ void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* 
   const sd::LongType nOut = Wx->sizeAt(-1) / 4;
   const sd::LongType nIn = x->sizeAt(-1);
 
-  NDArray zi = x->rankOf() == 1 ? (*z)({0, nOut}) : (*z)({0, 0, 0, nOut});  // input gate i, [bS, nOut](or[nOut])
-  NDArray zf =
+  NDArray *zi = x->rankOf() == 1 ? (*z)({0, nOut}) : (*z)({0, 0, 0, nOut});  // input gate i, [bS, nOut](or[nOut])
+  NDArray *zf =
       x->rankOf() == 1 ? (*z)({nOut, 2 * nOut}) : (*z)({0, 0, nOut, 2 * nOut});  // forget gate f, [bS, nOut](or[nOut])
-  NDArray zg = x->rankOf() == 1 ? (*z)({2 * nOut, 3 * nOut})
+  NDArray *zg = x->rankOf() == 1 ? (*z)({2 * nOut, 3 * nOut})
                                 : (*z)({0, 0, 2 * nOut, 3 * nOut});  // cell gate g, [bS, nOut](or[nOut])
-  NDArray zo = x->rankOf() == 1 ? (*z)({3 * nOut, 4 * nOut})
+  NDArray *zo = x->rankOf() == 1 ? (*z)({3 * nOut, 4 * nOut})
                                 : (*z)({0, 0, 3 * nOut, 4 * nOut});  // output gate o, [bS, nOut](or[nOut])
 
-  NDArray i = x->rankOf() == 1 ? (*a)({0, nOut}) : (*a)({0, 0, 0, nOut});  // input gate i, [bS, nOut](or[nOut])
-  NDArray f =
+  NDArray *i = x->rankOf() == 1 ? (*a)({0, nOut}) : (*a)({0, 0, 0, nOut});  // input gate i, [bS, nOut](or[nOut])
+  NDArray *f =
       x->rankOf() == 1 ? (*a)({nOut, 2 * nOut}) : (*a)({0, 0, nOut, 2 * nOut});  // forget gate f, [bS, nOut](or[nOut])
-  NDArray g = x->rankOf() == 1 ? (*a)({2 * nOut, 3 * nOut})
+  NDArray *g = x->rankOf() == 1 ? (*a)({2 * nOut, 3 * nOut})
                                : (*a)({0, 0, 2 * nOut, 3 * nOut});  // cell gate g, [bS, nOut](or[nOut])
-  NDArray o = x->rankOf() == 1 ? (*a)({3 * nOut, 4 * nOut})
+  NDArray *o = x->rankOf() == 1 ? (*a)({3 * nOut, 4 * nOut})
                                : (*a)({0, 0, 3 * nOut, 4 * nOut});  // output gate o, [bS, nOut](or[nOut])
 
   NDArray *zUlike = z->ulike();  // [bS, 4*nOut](or[4*nOut])
   NDArray dLdz = *zUlike;  // [bS, 4*nOut](or[4*nOut])
-  NDArray dLdzi = x->rankOf() == 1 ? dLdz({0, nOut}) : dLdz({0, 0, 0, nOut});
-  NDArray dLdzf = x->rankOf() == 1 ? dLdz({nOut, 2 * nOut}) : dLdz({0, 0, nOut, 2 * nOut});
-  NDArray dLdzg = x->rankOf() == 1 ? dLdz({2 * nOut, 3 * nOut}) : dLdz({0, 0, 2 * nOut, 3 * nOut});
-  NDArray dLdzo = x->rankOf() == 1 ? dLdz({3 * nOut, 4 * nOut}) : dLdz({0, 0, 3 * nOut, 4 * nOut});
+  NDArray *dLdzi = x->rankOf() == 1 ? dLdz({0, nOut}) : dLdz({0, 0, 0, nOut});
+  NDArray *dLdzf = x->rankOf() == 1 ? dLdz({nOut, 2 * nOut}) : dLdz({0, 0, nOut, 2 * nOut});
+  NDArray *dLdzg = x->rankOf() == 1 ? dLdz({2 * nOut, 3 * nOut}) : dLdz({0, 0, 2 * nOut, 3 * nOut});
+  NDArray *dLdzo = x->rankOf() == 1 ? dLdz({3 * nOut, 4 * nOut}) : dLdz({0, 0, 3 * nOut, 4 * nOut});
 
   // dcdzi = dcdi*didzi, [bS, nOut](or[nOut])
-  activationDeriv(&zi, params[3], params[4], params[5], &dLdzi);  // didzi, inplace
-  dLdzi *= g;                                                   // dcdi = g*clipDeriv
+  activationDeriv(zi, params[3], params[4], params[5], dLdzi);  // didzi, inplace
+  NDArray *dLdziMulG = (*dLdzi) * (*g);  // dcdi = g*clipDeriv
+  dLdzi->assign(dLdziMulG);
+  delete dLdziMulG;
 
   // dcdzf = dcdf*dfdzf, [bS, nOut](or[nOut])
-  activationDeriv(&zf, params[3], params[4], params[5], &dLdzf);  // dfdzf, inplace
-  dLdzf *= *cI;                                                 // dcdf = cI*clipDeriv
+  activationDeriv(zf, params[3], params[4], params[5], dLdzf);  // dfdzf, inplace
+  NDArray *dLdzfMulCI = (*dLdzf) * (*cI);  // dcdf = cI*clipDeriv
+  dLdzf->assign(dLdzfMulCI);
+  delete dLdzfMulCI;
 
   // dcdzg = dcde*dedzg, [bS, nOut](or[nOut])
-  activationDeriv(&zg, params[6], params[7], params[8], &dLdzg);  // dgdzg, inplace
-  dLdzg *= i;                                                   // dcdf = i*clipDeriv
+  activationDeriv(zg, params[6], params[7], params[8], dLdzg);  // dgdzg, inplace
+  NDArray *dLdzgMulI = (*dLdzg) * (*i);  // dcdf = i*clipDeriv
+  dLdzg->assign(dLdzgMulI);
+  delete dLdzgMulI;
 
   // dhdzo = dhdo*dodzo = actH(c)*dodzo, [bS, nOut](or[nOut])
-  activationDeriv(&zo, params[3], params[4], params[5], &dLdzo);
-  NDArray *dLdzoUlike = dLdzo.ulike();
+  activationDeriv(zo, params[3], params[4], params[5], dLdzo);
+  NDArray *dLdzoUlike = dLdzo->ulike();
   NDArray temp = *dLdzoUlike;
   applyActivation(c, params[9], params[10], params[11], &temp);  // actH(c), inplace
-  dLdzo *= temp;
+  NDArray *dLdzoMulTemp = (*dLdzo) * temp;
+  dLdzo->assign(dLdzoMulTemp);
+  delete dLdzoMulTemp;
 
   // dcdcI
-  NDArray *dcdcI = f.dup();
+  NDArray *dcdcI = f->dup();
 
   // take into account possible deposit from clipping derivative
-  clipDeriv(params[2], *c, dLdzi, dLdzf, dLdzg, *dcdcI);
+  clipDeriv(params[2], *c, *dLdzi, *dLdzf, *dLdzg, *dcdcI);
 
   // dhdc
   NDArray *cUlike = c->ulike();
   NDArray dhdc = *cUlike;
   activationDeriv(c, params[9], params[10], params[11], &dhdc);  // [bS, nOut]
-  dhdc *= o;
+  NDArray *dhdcMulO = dhdc * (*o);
+  dhdc.assign(dhdcMulO);
+  delete dhdcMulO;
 
   if (Wp) {
-    dhdc += dLdzo * (*Wp)({2 * nOut, 3 * nOut});
-    *dcdcI += dLdzi * (*Wp)({0, nOut}) + dLdzf * (*Wp)({nOut, 2 * nOut});  // broadcast [bS, nOut] * nOut + ...
+    NDArray *wpThird = (*Wp)({2 * nOut, 3 * nOut});
+    NDArray *wpFirst = (*Wp)({0, nOut});
+    NDArray *wpSecond = (*Wp)({nOut, 2 * nOut});
+
+    NDArray *dLdzoMulWpThird = (*dLdzo) * (*wpThird);
+    NDArray *dhdcPlusDLdzoMulWpThird = dhdc + (*dLdzoMulWpThird);
+    dhdc.assign(dhdcPlusDLdzoMulWpThird);
+    delete dLdzoMulWpThird;
+    delete dhdcPlusDLdzoMulWpThird;
+    
+    NDArray *dLdziMulWpFirst = (*dLdzi) * (*wpFirst);    // broadcast [bS, nOut] * nOut
+    NDArray *dLdzfMulWpSecond = (*dLdzf) * (*wpSecond);  // broadcast [bS, nOut] * nOut
+    NDArray *sumTemp = (*dLdziMulWpFirst) + (*dLdzfMulWpSecond);
+    NDArray *dcdcIPlusSumTemp = (*dcdcI) + (*sumTemp);
+    dcdcI->assign(dcdcIPlusSumTemp);
+    delete dLdziMulWpFirst;
+    delete dLdzfMulWpSecond;
+    delete sumTemp;
+    delete dcdcIPlusSumTemp;
+
+    delete wpThird;
+    delete wpFirst;
+    delete wpSecond;
   }
 
   if (dLdh) *dLdhI += *dLdh;
   if (dLdhL) *dLdhI += *dLdhL;
   if (dLdcL) *dLdcI += *dLdcL;
 
-  *dLdcI += *dLdhI * dhdc;
+  NDArray *dLdhIMulDhdc = (*dLdhI) * dhdc;
+  *dLdcI += *dLdhIMulDhdc;
+  delete dLdhIMulDhdc;
 
-  dLdzi *= *dLdcI;  // [bS, nOut](or[nOut])
-  dLdzf *= *dLdcI;  // [bS, nOut](or[nOut])
-  dLdzg *= *dLdcI;  // [bS, nOut](or[nOut])
-  dLdzo *= *dLdhI;  // [bS, nOut](or[nOut])
+  NDArray *dLdziMulDLdcI = (*dLdzi) * (*dLdcI);  // [bS, nOut](or[nOut])
+  dLdzi->assign(dLdziMulDLdcI);
+  delete dLdziMulDLdcI;
+  
+  NDArray *dLdzfMulDLdcI = (*dLdzf) * (*dLdcI);  // [bS, nOut](or[nOut])
+  dLdzf->assign(dLdzfMulDLdcI);
+  delete dLdzfMulDLdcI;
+  
+  NDArray *dLdzgMulDLdcI = (*dLdzg) * (*dLdcI);  // [bS, nOut](or[nOut])
+  dLdzg->assign(dLdzgMulDLdcI);
+  delete dLdzgMulDLdcI;
+  
+  NDArray *dLdzoMulDLdhI = (*dLdzo) * (*dLdhI);  // [bS, nOut](or[nOut])
+  dLdzo->assign(dLdzoMulDLdhI);
+  delete dLdzoMulDLdhI;
 
   // dLdx
   NDArray *WxT = Wx->transpose();
@@ -536,12 +628,14 @@ void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* 
   MmulHelper::mmul(&dLdz, WrT,
                    dLdhI);  // [bS, 4*nOut] x [4*nOut, nOut] (or [4*nOut] x [4*nOut, nOut]) = [bS, nOut] ( or[nOut] )
 
-  NDArray dLdcIAssign = *dLdcI * *dcdcI;
   // dLdcI
-  dLdcI->assign(&dLdcIAssign);  // [bS, nOut](or[nOut])
+  NDArray *dLdcIMulDcdcI = (*dLdcI) * (*dcdcI);
+  dLdcI->assign(dLdcIMulDcdcI);  // [bS, nOut](or[nOut])
+  delete dLdcIMulDcdcI;
 
   delete WxT;
   delete WrT;
+  
   if (x->rankOf() == 1) {
     std::vector<sd::LongType> xShape = {nIn, 1};
     std::vector<sd::LongType> hIShape = {nOut, 1};
@@ -551,20 +645,34 @@ void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* 
     NDArray *dLdzR = dLdz.reshape(dLdz.ordering(), dLdzShape);  // [nOut] -> [1, 4*nOut]
 
     // dLdWx
-    *dLdWx += mmul(*xT, *dLdzR);  // [nIn, 1] x [1, 4*nOut] = [nIn, 4*nOut]
+    NDArray *xTMulDLdzR = mmul(*xT, *dLdzR);  // [nIn, 1] x [1, 4*nOut] = [nIn, 4*nOut]
+    *dLdWx += *xTMulDLdzR;
+    delete xTMulDLdzR;
 
     // dLdWr
-    *dLdWr += mmul(*hIT, *dLdzR);  // [nOut, 1] x [1, 4*nOut] = [nOut, 4*nOut]
+    NDArray *hITMulDLdzR = mmul(*hIT, *dLdzR);  // [nOut, 1] x [1, 4*nOut] = [nOut, 4*nOut]
+    *dLdWr += *hITMulDLdzR;
+    delete hITMulDLdzR;
+
+    delete xT;
+    delete hIT;
+    delete dLdzR;
   } else {
     NDArray *xT = x->transpose();
     NDArray *hIT = hI->transpose();
+    
     // dLdWx
-    *dLdWx += mmul(*xT, dLdz);  // [nIn, bS] x [bS, 4*nOut] = [nIn, 4*nOut]
+    NDArray *xTMulDLdz = mmul(*xT, dLdz);  // [nIn, bS] x [bS, 4*nOut] = [nIn, 4*nOut]
+    *dLdWx += *xTMulDLdz;
+    delete xTMulDLdz;
 
     // dLdWr
-    *dLdWr += mmul(*hIT, dLdz);  // [nOut, bS] x [bS, 4*nOut] = [nOut, 4*nOut]
-     delete xT;
-     delete hIT;
+    NDArray *hITMulDLdz = mmul(*hIT, dLdz);  // [nOut, bS] x [bS, 4*nOut] = [nOut, 4*nOut]
+    *dLdWr += *hITMulDLdz;
+    delete hITMulDLdz;
+
+    delete xT;
+    delete hIT;
   }
 
   // dLdb
@@ -572,32 +680,65 @@ void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* 
     *dLdb += dLdz;  // [4*nOut]
   else if (b) {
     std::vector<sd::LongType> dims = {0};
-    *dLdb += dLdz.reduceAlongDimension(reduce::Sum, &dims);  // [bS, 4*nOut] -> reduce -> [4*nOut];
+    NDArray *dLdzReduced = dLdz.reduceAlongDimension(reduce::Sum, &dims);  // [bS, 4*nOut] -> reduce -> [4*nOut]
+    *dLdb += *dLdzReduced;
+    delete dLdzReduced;
   }
+  
   // dLdWp
   if (Wp && x->rankOf() == 1) {
-    (*dLdWp)({0, nOut}) += std::move(dLdzi) * (*cI);            // [nOut]
-    (*dLdWp)({nOut, 2 * nOut}) += std::move(dLdzf) * (*cI);     // [nOut]
-    (*dLdWp)({2 * nOut, 3 * nOut}) += std::move(dLdzo) * (*c);  // [nOut]
-
+    NDArray *firstOut = (*dLdWp)({0, nOut});
+    NDArray *secondOut = (*dLdWp)({nOut, 2 * nOut});
+    NDArray *thirdOut = (*dLdWp)({2 * nOut, 3 * nOut});
+    
+    NDArray *dLdziMulCI = (*dLdzi) * (*cI);  // [nOut]
+    *firstOut += *dLdziMulCI;
+    delete dLdziMulCI;
+    
+    NDArray *dLdzfMulCI = (*dLdzf) * (*cI);  // [nOut]
+    *secondOut += *dLdzfMulCI;
+    delete dLdzfMulCI;
+    
+    NDArray *dLdzoMulC = (*dLdzo) * (*c);  // [nOut]
+    *thirdOut += *dLdzoMulC;
+    delete dLdzoMulC;
+    
+    delete firstOut;
+    delete secondOut;
+    delete thirdOut;
   } else if (Wp) {
     std::vector<sd::LongType> shape = {nOut};
     NDArray temp2(Wp->ordering(), shape, Wp->dataType(), Wp->getContext());
     std::vector<sd::LongType> dims = {0};
 
-    (std::move(dLdzi) * (*cI)).reduceAlongDimension(reduce::Sum, &temp2, &dims);  // [bS, nOut] -> reduce -> [nOut]
-    (*dLdWp)({0, nOut}) += temp2;
-    (std::move(dLdzf) * (*cI)).reduceAlongDimension(reduce::Sum, &temp2, &dims);  // [bS, nOut] -> reduce -> [nOut]
-    (*dLdWp)({nOut, 2 * nOut}) += temp2;
-    (std::move(dLdzo) * (*c)).reduceAlongDimension(reduce::Sum, &temp2, &dims);  // [bS, nOut] -> reduce -> [nOut]
-    (*dLdWp)({2 * nOut, 3 * nOut}) += temp2;
+    NDArray *firstOut = (*dLdWp)({0, nOut});
+    NDArray *secondOut = (*dLdWp)({nOut, 2 * nOut});
+    NDArray *thirdOut = (*dLdWp)({2 * nOut, 3 * nOut});
 
+    NDArray *dLdziMulCI = (*dLdzi) * (*cI);
+    dLdziMulCI->reduceAlongDimension(reduce::Sum, &temp2, &dims);  // [bS, nOut] -> reduce -> [nOut]
+    *firstOut += temp2;
+    delete dLdziMulCI;
+    
+    NDArray *dLdzfMulCI = (*dLdzf) * (*cI);
+    dLdzfMulCI->reduceAlongDimension(reduce::Sum, &temp2, &dims);  // [bS, nOut] -> reduce -> [nOut]
+    *secondOut += temp2;
+    delete dLdzfMulCI;
+    
+    NDArray *dLdzoMulC = (*dLdzo) * (*c);
+    dLdzoMulC->reduceAlongDimension(reduce::Sum, &temp2, &dims);  // [bS, nOut] -> reduce -> [nOut]
+    *thirdOut += temp2;
+    delete dLdzoMulC;
+
+    delete firstOut;
+    delete secondOut;
+    delete thirdOut;
   }
 
   delete zUlike;
   delete cUlike;
   delete dLdzoUlike;
-
+  delete dcdcI;
 }
 
 
@@ -721,7 +862,7 @@ void lstmLayerTimeLoop(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray
 
           if (limit == 0) {
             tensorAlongTimeBatchDims(*h, dataFormat, 0, 0, e, e + 1)
-                .nullify();  // nullify for given e and whole time range
+                ->nullify();  // nullify for given e and whole time range
 
             if (cL) ctSet->at(e)->nullify();
             if (hL) htSet->at(e)->nullify();
@@ -744,7 +885,7 @@ void lstmLayerTimeLoop(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray
 
           if (limit != sL)
             tensorAlongTimeBatchDims(*h, dataFormat, limit, sL, e, e + 1)
-                .nullify();  // nullify for given e and time range [limit, sL)
+                ->nullify();  // nullify for given e and time range [limit, sL)
         }
       }
     }
@@ -794,7 +935,7 @@ void lstmLayerTimeLoop(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray
 
           if (limit == 0) {
             tensorAlongTimeBatchDims(*h, dataFormat, 0, 0, e, e + 1)
-                .nullify();  // nullify for given e and whole time range
+                ->nullify();  // nullify for given e and whole time range
 
             if (cL) ctSet->at(e)->nullify();
             if (hL) htSet->at(e)->nullify();
@@ -817,7 +958,7 @@ void lstmLayerTimeLoop(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray
 
           if (limit != sL)
             tensorAlongTimeBatchDims(*h, dataFormat, 0, sL - limit, e, e + 1)
-                .nullify();  // nullify for given e and time range [limit, sL)
+                ->nullify();  // nullify for given e and time range [limit, sL)
         }
       }
     } else {  // backward in bidirectional mode
@@ -850,7 +991,7 @@ void lstmLayerTimeLoop(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray
 
           if (limit == 0) {
             tensorAlongTimeBatchDims(*h, dataFormat, 0, 0, e, e + 1)
-                .nullify();  // nullify for given e and whole time range
+                ->nullify();  // nullify for given e and whole time range
 
             if (cL) ctSet->at(e)->nullify();
             if (hL) htSet->at(e)->nullify();
@@ -873,7 +1014,7 @@ void lstmLayerTimeLoop(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray
 
           if (limit != sL)
             tensorAlongTimeBatchDims(*h, dataFormat, limit, sL, e, e + 1)
-                .nullify();  // nullify for given e and time range [limit, sL)
+                ->nullify();  // nullify for given e and time range [limit, sL)
         }
       }
     }
@@ -1030,7 +1171,7 @@ void lstmLayerTimeLoopBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArr
 
         if (limit == 0) {
           tensorAlongTimeBatchDims(*dLdx, dataFormat, 0, 0, e, e + 1)
-              .nullify();  // nullify for given e and whole time range
+              ->nullify();  // nullify for given e and whole time range
           continue;
         }
 
@@ -1062,7 +1203,7 @@ void lstmLayerTimeLoopBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArr
 
         if (limit != sL)
           tensorAlongTimeBatchDims(*dLdx, dataFormat, limit, sL, e, e + 1)
-              .nullify();  // nullify for given e and time range [limit, sL)
+              ->nullify();  // nullify for given e and time range [limit, sL)
       }
 
     }
@@ -1104,7 +1245,7 @@ void lstmLayerTimeLoopBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArr
 
         if (limit == 0) {
           tensorAlongTimeBatchDims(*dLdx, dataFormat, 0, 0, e, e + 1)
-              .nullify();  // nullify for given e and whole time range
+              ->nullify();  // nullify for given e and whole time range
           continue;
         }
 
@@ -1136,7 +1277,7 @@ void lstmLayerTimeLoopBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArr
 
         if (limit != sL)
           tensorAlongTimeBatchDims(*dLdx, dataFormat, 0, sL - limit, e, e + 1)
-              .nullify();  // nullify for given e and time range [limit, sL)
+              ->nullify();  // nullify for given e and time range [limit, sL)
       }
 
 
@@ -1147,18 +1288,24 @@ void lstmLayerTimeLoopBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArr
 
         if (limit == 0) {
           tensorAlongTimeBatchDims(*dLdx, dataFormat, 0, 0, e, e + 1)
-              .nullify();  // nullify for given e and whole time range
+              ->nullify();  // nullify for given e and whole time range
           continue;
         }
 
+        NDArray *hView = h({limit, limit + 1, e, e + 1, 0, 0});
+        NDArray *cView = c({limit, limit + 1, e, e + 1, 0, 0});
+
         if (hI)
-          h({limit, limit + 1, e, e + 1, 0, 0}).assign(hISet->at(e));
+          hView->assign(hISet->at(e));
         else
-          h({limit, limit + 1, e, e + 1, 0, 0}).nullify();
+          hView->nullify();
         if (cI)
-          c({limit, limit + 1, e, e + 1, 0, 0}).assign(cISet->at(e));
+          cView->assign(cISet->at(e));
         else
-          c({limit, limit + 1, e, e + 1, 0, 0}).nullify();
+          cView->nullify();
+
+        delete hView;
+        delete cView;
 
         // ff
         for (int t = limit - 1; t >= 0; --t)
@@ -1179,7 +1326,7 @@ void lstmLayerTimeLoopBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArr
 
         if (limit != sL)
           tensorAlongTimeBatchDims(*dLdx, dataFormat, limit, sL, e, e + 1)
-              .nullify();  // nullify for given e and time range [limit, sL)
+              ->nullify();  // nullify for given e and time range [limit, sL)
       }
 
 

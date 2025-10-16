@@ -41,7 +41,7 @@ void FullPivLU<T>::solve(NDArray &A, NDArray &b, NDArray& x) {
   if (A.sizeAt(1) != x.sizeAt(0))
     THROW_EXCEPTION("FullPivLU::solve: number of A columns must be equal to number of x rows !");
 
-  NDArray * LU = A.dup(A.ordering());
+  NDArray *LU = A.dup(A.ordering());
   NDArray luRef = *LU;
   const int rows = LU->sizeAt(0);
   const int cols = LU->sizeAt(1);
@@ -54,10 +54,12 @@ void FullPivLU<T>::solve(NDArray &A, NDArray &b, NDArray& x) {
   T maxPivot = T(0);
 
   for (int k = 0; k < diagLen; ++k) {
-    NDArray bottomRightCorner = luRef({k, rows, k, cols}, true);
+    NDArray *bottomRightCornerPtr = luRef({k, rows, k, cols}, true);
+    NDArray bottomRightCorner = *bottomRightCornerPtr;
+    delete bottomRightCornerPtr;
+    
     NDArray *indexNum = bottomRightCorner.indexReduceNumber(indexreduce::IndexAbsoluteMax);
-    const int indPivot =
-        static_cast<int>(indexNum->t<LongType>(0));
+    const int indPivot = static_cast<int>(indexNum->t<LongType>(0));
 
     int colPivot = indPivot % (cols - k);
     int rowPivot = indPivot / (cols - k);
@@ -73,6 +75,7 @@ void FullPivLU<T>::solve(NDArray &A, NDArray &b, NDArray& x) {
 
       for (int i = k; i < diagLen; ++i) rowsInds[i] = colsInds[i] = i;
 
+      delete indexNum;
       break;
     }
 
@@ -82,27 +85,41 @@ void FullPivLU<T>::solve(NDArray &A, NDArray &b, NDArray& x) {
     colsInds[k] = colPivot;
 
     if (k != rowPivot) {
-      NDArray row1 = luRef({k, k + 1, 0, 0}, true);
-      NDArray row2 = luRef({rowPivot, rowPivot + 1, 0, 0}, true);
-      row1.swapUnsafe(row2);
+      NDArray *row1Ptr = luRef({k, k + 1, 0, 0}, true);
+      NDArray *row2Ptr = luRef({rowPivot, rowPivot + 1, 0, 0}, true);
+      row1Ptr->swapUnsafe(*row2Ptr);
+      delete row1Ptr;
+      delete row2Ptr;
     }
     if (k != colPivot) {
-      NDArray col1 = luRef({0, 0, k, k + 1}, true);
-      NDArray col2 = luRef({0, 0, colPivot, colPivot + 1}, true);
-      col1.swapUnsafe(col2);
+      NDArray *col1Ptr = luRef({0, 0, k, k + 1}, true);
+      NDArray *col2Ptr = luRef({0, 0, colPivot, colPivot + 1}, true);
+      col1Ptr->swapUnsafe(*col2Ptr);
+      delete col1Ptr;
+      delete col2Ptr;
     }
 
-    if (k < rows - 1) luRef({k + 1, rows, k, k + 1}, true) /= luRef.t<T>(k, k);
+    if (k < rows - 1) {
+      NDArray *divViewPtr = luRef({k + 1, rows, k, k + 1}, true);
+      *divViewPtr /= luRef.t<T>(k, k);
+      delete divViewPtr;
+    }
 
     if (k < diagLen - 1) {
-      NDArray left = luRef({k + 1, rows, k, k + 1}, true);
-      NDArray right = luRef({k, k + 1, k + 1, cols}, true);
-      luRef({k + 1, rows, k + 1, cols}, true) -=
-          mmul(left,right);
+      NDArray *leftPtr = luRef({k + 1, rows, k, k + 1}, true);
+      NDArray *rightPtr = luRef({k, k + 1, k + 1, cols}, true);
+      NDArray *targetPtr = luRef({k + 1, rows, k + 1, cols}, true);
+      NDArray left = *leftPtr;
+      NDArray right = *rightPtr;
+      NDArray *mulResult = mmul(left, right);
+      *targetPtr -= *mulResult;
+      delete mulResult;
+      delete leftPtr;
+      delete rightPtr;
+      delete targetPtr;
     }
 
     delete indexNum;
-
   }
   //***************************************************//
 
@@ -114,6 +131,7 @@ void FullPivLU<T>::solve(NDArray &A, NDArray &b, NDArray& x) {
 
   if (nonZeroPivots2 == 0) {
     x.nullify();
+    delete LU;
     return;
   }
 
@@ -140,27 +158,61 @@ void FullPivLU<T>::solve(NDArray &A, NDArray &b, NDArray& x) {
   NDArray c = *bUlike;
 
   for (int i = 0; i < rows; ++i) {
-    NDArray cAssign = b({rowsPermut2[i], rowsPermut2[i] + 1, 0, 0}, true);
-    c({i, i + 1, 0, 0}, true).assign(&cAssign);
+    NDArray *cAssignPtr = b({rowsPermut2[i], rowsPermut2[i] + 1, 0, 0}, true);
+    NDArray cAssign = *cAssignPtr;
+    delete cAssignPtr;
+    
+    NDArray *cTargetPtr = c({i, i + 1, 0, 0}, true);
+    cTargetPtr->assign(&cAssign);
+    delete cTargetPtr;
   }
-  NDArray cTopRows1 = c({0, diagLen, 0, 0}, true);
+  
+  NDArray *cTopRows1Ptr = c({0, diagLen, 0, 0}, true);
+  NDArray cTopRows1 = *cTopRows1Ptr;
+  delete cTopRows1Ptr;
+  
+  NDArray *luDiagPtr = luRef({0, diagLen, 0, diagLen}, true);
   // TriangularSolver<T>::solve(LU({0,diagLen, 0,diagLen}, true), cTopRows1, true, true, cTopRows1);
-  helpers::triangularSolve2D<T>(nullptr, luRef({0, diagLen, 0, diagLen}, true), cTopRows1, true, true, cTopRows1);
+  helpers::triangularSolve2D<T>(nullptr, *luDiagPtr, cTopRows1, true, true, cTopRows1);
+  delete luDiagPtr;
 
   if (rows > cols) {
-    NDArray left = luRef({cols, -1, 0, 0}, true);
-    NDArray right = c({0, cols, 0, 0}, true);
-    c({cols, -1, 0, 0}, true) -= mmul(left, right);
+    NDArray *leftPtr = luRef({cols, -1, 0, 0}, true);
+    NDArray *rightPtr = c({0, cols, 0, 0}, true);
+    NDArray *targetPtr = c({cols, -1, 0, 0}, true);
+    NDArray left = *leftPtr;
+    NDArray right = *rightPtr;
+    NDArray *mulResult = mmul(left, right);
+    *targetPtr -= *mulResult;
+    delete mulResult;
+    delete leftPtr;
+    delete rightPtr;
+    delete targetPtr;
   }
-  NDArray cTopRows2 = c({0, nonZeroPivots2, 0, 0}, true);
-  helpers::triangularSolve2D<T>(nullptr, luRef({0, nonZeroPivots2, 0, nonZeroPivots2}, true), cTopRows2, false, false,
-                                cTopRows2);
+  
+  NDArray *cTopRows2Ptr = c({0, nonZeroPivots2, 0, 0}, true);
+  NDArray cTopRows2 = *cTopRows2Ptr;
+  delete cTopRows2Ptr;
+  
+  NDArray *luNonZeroPtr = luRef({0, nonZeroPivots2, 0, nonZeroPivots2}, true);
+  helpers::triangularSolve2D<T>(nullptr, *luNonZeroPtr, cTopRows2, false, false, cTopRows2);
+  delete luNonZeroPtr;
 
   for (int i = 0; i < nonZeroPivots2; ++i) {
-    NDArray cAssign = c({i, i + 1, 0, 0}, true);
-    x({colsPermut[i], colsPermut[i] + 1, 0, 0}, true).assign(&cAssign);
+    NDArray *cAssignPtr = c({i, i + 1, 0, 0}, true);
+    NDArray cAssign = *cAssignPtr;
+    delete cAssignPtr;
+    
+    NDArray *xTargetPtr = x({colsPermut[i], colsPermut[i] + 1, 0, 0}, true);
+    xTargetPtr->assign(&cAssign);
+    delete xTargetPtr;
   }
-  for (int i = nonZeroPivots2; i < cols; ++i) x({colsPermut[i], colsPermut[i] + 1, 0, 0}, true).nullify();
+  
+  for (int i = nonZeroPivots2; i < cols; ++i) {
+    NDArray *xNullifyPtr = x({colsPermut[i], colsPermut[i] + 1, 0, 0}, true);
+    xNullifyPtr->nullify();
+    delete xNullifyPtr;
+  }
 
   delete LU;
   delete bUlike;
