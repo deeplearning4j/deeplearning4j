@@ -69,7 +69,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     public static Nd4jEventLog eventLog = new DefaultNd4jEventLog();
 
     protected ProfilingMode profilingMode = ProfilingMode.SCOPE_PANIC;
-
+    protected ProfilerConfig profilerConfig  = ProfilerConfig.builder().build();
     protected AtomicBoolean verbose = new AtomicBoolean(false);
     protected AtomicBoolean debug = new AtomicBoolean(false);
 
@@ -310,31 +310,30 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     public void setProfilingMode(ProfilingMode mode) {
 
         profilingMode = mode;
-        ProfilerConfig config = null;
         switch (profilingMode) {
             case ALL:
-                config = ProfilerConfig.builder().checkWorkspaces(true).checkElapsedTime(true).stackTrace(true).build();
+                this.profilerConfig = ProfilerConfig.builder().checkWorkspaces(true).checkElapsedTime(true).stackTrace(true).build();
                 break;
             case METHODS:
-                config = ProfilerConfig.builder().stackTrace(true).build();
+                this.profilerConfig = ProfilerConfig.builder().stackTrace(true).build();
                 break;
             case OPERATIONS:
-                config = ProfilerConfig.builder().stackTrace(true).checkElapsedTime(true).build();
+                this.profilerConfig = ProfilerConfig.builder().stackTrace(true).checkElapsedTime(true).build();
                 break;
             case SCOPE_PANIC:
-                config = ProfilerConfig.builder().checkWorkspaces(true).build();
+                this.profilerConfig = ProfilerConfig.builder().checkWorkspaces(true).build();
                 break;
             case ANY_PANIC:
-                config = ProfilerConfig.builder().checkForINF(true).checkForNAN(true).build();
+                this.profilerConfig = ProfilerConfig.builder().checkForINF(true).checkForNAN(true).build();
                 break;
             case INF_PANIC:
-                config = ProfilerConfig.builder().checkForINF(true).build();
+                this.profilerConfig = ProfilerConfig.builder().checkForINF(true).build();
                 break;
             case NAN_PANIC:
-                config = ProfilerConfig.builder().checkForNAN(true).build();
+                this.profilerConfig = ProfilerConfig.builder().checkForNAN(true).build();
                 break;
             default:
-                config = ProfilerConfig.builder().build();
+                this.profilerConfig = ProfilerConfig.builder().build();
                 break;
         }
 
@@ -342,7 +341,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public void setProfilingConfig(ProfilerConfig config) {
-
+        this.profilerConfig = config;
     }
 
     @Deprecated
@@ -410,27 +409,26 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
     @Deprecated
     public long profilingHookIn(Op op, DataBuffer... tadBuffers) {
-        switch (profilingMode) {
-            case SCOPE_PANIC:
-                checkForWorkspaces(op, null);
-                return 0L;
-            case DISABLED:
-            default:
-                return 0L;
+        if(profilerConfig != null) {
+            if(profilerConfig.isCheckForINF()) {
+                OpExecutionerUtil.checkForNaN(op.z());
+            } else if(profilerConfig.isCheckForNAN()) {
+                OpExecutionerUtil.checkForNaN(op.z());
+            }
         }
-
+        return 0L;
     }
 
     @Deprecated
     public long profilingHookIn(CustomOp op, OpContext oc) {
-        switch (profilingMode) {
-            case SCOPE_PANIC:
-                checkForWorkspaces(op, oc);
-                return 0L;
-            case DISABLED:
-            default:
-                return 0L;
+        if(profilerConfig != null) {
+            if(profilerConfig.isCheckForINF()) {
+                OpExecutionerUtil.checkForNaN(op,oc);
+            } else if(profilerConfig.isCheckForNAN()) {
+                OpExecutionerUtil.checkForNaN(op,oc);
+            }
         }
+        return 0L;
     }
 
     @Deprecated
@@ -692,6 +690,11 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
                 log.info("Op name: {}; Z shapeInfo: {}; Z values: {}", op.opName(), op.z().shapeInfoJava(), firstX(op.z(), 10));
         }
 
+        if(profilerConfig.isCheckForNAN()) {
+            OpExecutionerUtil.checkForNaN(op.z());
+        } else if(profilerConfig.isCheckForINF()) {
+            OpExecutionerUtil.checkForInf(op.z());
+        }
 
 
         logOpArrayEventsIfNeccessary(op,inArgs ,outArgs, NDArrayEventType.OP_INPUT, NDArrayEventType.OP_OUTPUT);
@@ -707,7 +710,11 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         List<INDArray> inArgs = inputsFromOp(op,oc);
         List<INDArray> outArgs = outputsFromOp(op,oc);
         logCustomOpArrayEventIfNeccessary(inArgs, outArgs,NDArrayEventType.OP_INPUT , NDArrayEventType.OP_OUTPUT);
-
+        if(profilerConfig.isCheckForNAN()) {
+            OpExecutionerUtil.checkForNaN(op,oc);
+        } else if(profilerConfig.isCheckForINF()) {
+            OpExecutionerUtil.checkForInf(op,oc);
+        }
     }
 
     private void logCustomOpArrayEventIfNeccessary(List<INDArray> inArgs, List<INDArray> outArgs, NDArrayEventType inputEvenType, NDArrayEventType outputEventType) {
@@ -1082,6 +1089,8 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
             return calculateOutputShape(op, ctx);
         } catch (Exception e) {
             throw new RuntimeException(e);
+        } finally {
+            clearOpContext();
         }
     }
 

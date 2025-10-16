@@ -391,10 +391,22 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
     @Override
     public void close() {
-        getArraysForThread().values().stream().forEach(input -> input.stream().forEach(arr -> {
-           // if (arr.closeable())
-           //     arr.close();
+        // LEAK FIX: Actually close cached arrays when the manager is closed
+        Table<DataType, String, List<INDArray>> arraysForThread = getArraysForThread();
+        Set<Long> lruCacheForThread = getLruCacheForThread();
+        Map<Long, INDArray> lruCacheValues = getLruCacheValues();
+        
+        arraysForThread.values().stream().forEach(input -> input.stream().forEach(arr -> {
+            if (arr.closeable()) {
+                arr.close();
+            }
         }));
+        
+        // Clear the caches
+        arraysForThread.clear();
+        lruCacheForThread.clear();
+        lruCacheValues.clear();
+        currentCacheSize.set(0);
     }
 
     @Override

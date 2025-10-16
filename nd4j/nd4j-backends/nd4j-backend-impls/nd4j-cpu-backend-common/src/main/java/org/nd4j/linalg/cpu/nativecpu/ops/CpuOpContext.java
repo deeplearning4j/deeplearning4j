@@ -58,9 +58,24 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
 
     @Override
     public void close() {
+        if (closed) {
+            return;
+        }
+        closed = true;
         purge();
         Nd4j.getDeallocatorService().getReferenceMap().remove(this.deallocationId);
+        nativeOps.deleteGraphContext(context);
+    }
 
+    @Override
+    protected void finalize() throws Throwable {
+        try {
+            if (!closed) {
+                close();
+            }
+        } finally {
+            super.finalize();
+        }
     }
 
     @Override

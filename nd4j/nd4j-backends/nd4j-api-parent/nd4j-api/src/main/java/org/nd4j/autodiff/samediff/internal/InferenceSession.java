@@ -77,7 +77,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     protected static final String KERAS_TRAIN_TEST = "keras_learning_phase";
     //freed array ids to track for allocation, sometimes SDValues contain dup arrays that get freed twice.
     //we track the ids to avoid double frees
-    protected  static Set<Long> freedArrays = new LinkedHashSet<>();
+    protected Set<Long> freedArrays = new LinkedHashSet<>();
 
     @Getter
     @Setter
@@ -103,12 +103,19 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     }
 
 
+    @SneakyThrows
     public ExecutionResult output(@NonNull List<String> variables,
                                   Map<String, INDArray> placeholderValues,
                                   Map<String, SDValue> otherPlaceHolderValues,
                                   MultiDataSet batch,
                                   Collection<String> requiredActivations,
                                   List<Listener> listeners, At at) {
+
+        // Clear freed arrays tracking from previous execution
+        freedArrays.clear();
+
+        // Clear DAG cache to prevent unbounded growth with different output sets
+        dagCache.clear();
 
         log.info("Executing forward pass for {} variables", variables.size());
 
@@ -145,6 +152,37 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         }
 
         log.info("Forward pass completed: {} results", filteredResults.size());
+
+        // Mark output dependencies as satisfied so buffers can be released before clearing tracker
+        for (String outputVar : variables) {
+            arrayUseTracker.markSatisfied(new ReqOutputDep(outputVar), true);
+        }
+
+        // Release any arrays that became releasable (will NOT release outputs we're returning)
+        if (arrayUseTracker.hasNewAllSatisfied()) {
+            arrayUseTracker.getNewAllSatisfiedList(); // Just pop them off the queue
+        }
+
+        // Clear array use tracker to prevent stale dependencies from accumulating
+        arrayUseTracker.clear();
+
+        // Close OpContext instances to prevent native memory leak
+        for (OpContext ctx : opContexts.values()) {
+            if (ctx != null) {
+                ctx.close();
+            }
+        }
+        opContexts.clear();
+
+        // Close memory manager to release cached arrays
+        if (mmgr != null) {
+            try {
+                mmgr.close();
+            } catch (Exception e) {
+                log.warn("Error closing memory manager: {}", e.getMessage());
+            }
+        }
+
         return ExecutionResult.builder().valueOutputs(filteredResults).build();
     }
 
@@ -194,6 +232,40 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 if (variableValues.containsKey(outputVar)) {
                     VarId vid = new VarId(outputVar, currentFrame, currentFrameIter, currParentFrame);
                     putNodeValue(variableValues.get(outputVar), vid);
+                }
+            }
+
+            // Mark operation dependency as satisfied in arrayUseTracker
+            Dep opDep = new OpDep(node.getOperationName(), OUTER_FRAME, 0, null);
+            arrayUseTracker.markSatisfied(opDep, true);
+
+            // Release any arrays that are no longer needed
+            if (arrayUseTracker.hasNewAllSatisfied()) {
+                List<SDValue> canClose = arrayUseTracker.getNewAllSatisfiedList();
+                for (SDValue value : canClose) {
+                    if (log.isTraceEnabled()) {
+                        if (value.getSdValueType() == SDValueType.TENSOR) {
+                            INDArray arr = value.getTensorValue();
+                            log.trace("Releasing array after op {}: id={}, shape={}", node.getOperationName(), arr.getId(), Arrays.toString(arr.shape()));
+                        }
+                    }
+
+                    switch(value.getSdValueType()) {
+                        case TENSOR:
+                            if (!freedArrays.contains(value.getTensorValue().getId())) {
+                                mmgr.release(value.getTensorValue());
+                                freedArrays.add(value.getTensorValue().getId());
+                            }
+                            break;
+                        case LIST:
+                            for (INDArray arr : value.getListValue()) {
+                                if (arr != null && !freedArrays.contains(arr.getId())) {
+                                    mmgr.release(arr);
+                                    freedArrays.add(arr.getId());
+                                }
+                            }
+                            break;
+                    }
                 }
             }
         }
@@ -701,9 +773,31 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // Execute the operation
         Nd4j.exec(dynOp, opContext);
 
-        // Store results
+        // Store results and track for deallocation
         for (int i = 0; i < outputArrays.length && i < outputNames.size(); i++) {
-            variableValues.put(outputNames.get(i), SDValue.create(outputArrays[i]));
+            SDValue outputValue = SDValue.create(outputArrays[i]);
+            variableValues.put(outputNames.get(i), outputValue);
+
+            // Add to arrayUseTracker so it can be released when no longer needed
+            String varName = outputNames.get(i);
+            if (allRequired.contains(varName)) {
+                // This is a final output, don't deallocate
+                arrayUseTracker.addDependency(outputValue, new ReqOutputDep(varName));
+            } else {
+                // Check what ops need this array
+                Variable v = sameDiff.getVariables().get(varName);
+                if (v != null && v.getInputsForOp() != null) {
+                    for (String consumerOp : v.getInputsForOp()) {
+                        arrayUseTracker.addDependency(outputValue, new OpDep(consumerOp, OUTER_FRAME, 0, null));
+                    }
+                } else {
+                    // No consumers, can release immediately after this op
+                    if (!freedArrays.contains(outputArrays[i].getId())) {
+                        mmgr.release(outputArrays[i]);
+                        freedArrays.add(outputArrays[i].getId());
+                    }
+                }
+            }
         }
     }
 
@@ -740,9 +834,31 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // Execute the operation
         Nd4j.exec(op, opContext);
 
-        // Store result
+        // Store result and track for deallocation
         if (!outputNames.isEmpty()) {
-            variableValues.put(outputNames.get(0), SDValue.create(outputArray));
+            SDValue outputValue = SDValue.create(outputArray);
+            String varName = outputNames.get(0);
+            variableValues.put(varName, outputValue);
+
+            // Add to arrayUseTracker so it can be released when no longer needed
+            if (allRequired.contains(varName)) {
+                // This is a final output, don't deallocate
+                arrayUseTracker.addDependency(outputValue, new ReqOutputDep(varName));
+            } else {
+                // Check what ops need this array
+                Variable v = sameDiff.getVariables().get(varName);
+                if (v != null && v.getInputsForOp() != null) {
+                    for (String consumerOp : v.getInputsForOp()) {
+                        arrayUseTracker.addDependency(outputValue, new OpDep(consumerOp, OUTER_FRAME, 0, null));
+                    }
+                } else {
+                    // No consumers, can release immediately after this op
+                    if (!freedArrays.contains(outputArray.getId())) {
+                        mmgr.release(outputArray);
+                        freedArrays.add(outputArray.getId());
+                    }
+                }
+            }
         }
     }
 
@@ -881,13 +997,13 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 switch(value.getSdValueType()) {
                     case LIST:
                         for(INDArray arr : value.getListValue())
-                            if(arr != null && !freedArrays.contains(arr.getId()) && sameDiff.isEnableCache()) {
+                            if(arr != null && !freedArrays.contains(arr.getId())) {
                                 mmgr.release(arr);
                                 freedArrays.add(arr.getId());
                             }
                         break;
                     case TENSOR:
-                        if(!freedArrays.contains(value.getTensorValue().getId()) && sameDiff.isEnableCache()) {
+                        if(!freedArrays.contains(value.getTensorValue().getId())) {
                             mmgr.release(value.getTensorValue());
                             freedArrays.add(value.getTensorValue().getId());
                         }
@@ -1103,14 +1219,14 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     switch(value.getSdValueType()) {
                         case TENSOR:
                             if(!freedArrays.contains(value.getTensorValue().getId()) &&
-                                    sameDiff.isEnableCache() && !containsOutput) {
+                                    !containsOutput) {
                                 mmgr.release(value.getTensorValue());
                                 freedArrays.add(value.getTensorValue().getId());
                             }
                             break;
                         case LIST:
                             for(INDArray arr : value.getListValue())
-                                if(arr != null && !freedArrays.contains(arr.getId()) && sameDiff.isEnableCache() && !containsOutput) {
+                                if(arr != null && !freedArrays.contains(arr.getId()) && !containsOutput) {
                                     mmgr.release(arr);
                                     freedArrays.add(arr.getId());
                                 }
@@ -1649,6 +1765,12 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
                 ExecutionResult result = ExecutionResult.createFrom(Arrays.asList("gradientbackwardsmarker"), new INDArray[]{out});
 
+                // Track for deallocation
+                if (!freedArrays.contains(out.getId())) {
+                    mmgr.release(out);
+                    freedArrays.add(out.getId());
+                }
+
                 // Record gradient marker execution
                 if (visualizationEnabled && visualizer != null) {
                     visualizer.recordStep(
@@ -1718,6 +1840,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 INDArray out = mmgr.allocate(false, arr.dataType(), arr.shape());
                 out.assign(arr);
                 ExecutionResult result = ExecutionResult.createFrom(Arrays.asList(n), new INDArray[]{out});
+
+                // Track for deallocation - this is typically an output array
+                arrayUseTracker.addDependency(SDValue.create(out), new ReqOutputDep(n));
 
                 // Record external errors execution
                 if (visualizationEnabled && visualizer != null) {
@@ -1983,84 +2108,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         }
     }
 
-    /**
-     * Execute a single operation using existing InferenceSession infrastructure.
-     * This delegates to the existing doExec method to maintain compatibility.
-     */
-    private void executeOperation(ExecutionNode node,
-                                  Map<String, SDValue> variableValues,
-                                  Set<String> allRequired,
-                                  List<Listener> listeners,
-                                  At at,
-                                  MultiDataSet batch) {
-
-        String opName = node.getOperationName();
-        log.trace("Executing operation: {}", opName);
-
-        try {
-            // Get the operation
-            SameDiffOp sameDiffOp = sameDiff.getOps().get(opName);
-            if (sameDiffOp == null) {
-                throw new IllegalStateException("Operation not found: " + opName);
-            }
-
-            // Prepare inputs (simplified - in practice you'd need proper VarId handling)
-            Set<VarId> opInputs = new HashSet<>();
-            Set<VarId> allIterInputs = new HashSet<>();
-            Set<String> constAndPhInputs = new HashSet<>();
-
-
-
-            // Classify inputs based on corrected DAG information
-            for (String inputVar : node.getInputVariables()) {
-                if (variableValues.containsKey(inputVar)) {
-                    // Variable is available, put in constAndPhInputs
-                    constAndPhInputs.add(inputVar);
-                } else {
-                    // Variable not found - this is the problem
-                    log.warn("Input variable {} not found in variableValues", inputVar);
-                    // Still add it to constAndPhInputs to let getAndParameterizeOp handle it
-                    constAndPhInputs.add(inputVar);
-                }
-            }
-
-            // Create frame iterator (simplified)
-            FrameIter frameIter = new FrameIter(OUTER_FRAME, 0, null);
-
-            // Use existing doExec method to maintain compatibility with memory management, etc.
-            ExecutionResult opResult = doExec(
-                    sameDiffOp.getOp(),
-                    null, // OpContext - will be created in doExec
-                    frameIter,
-                    opInputs,
-                    allIterInputs,
-                    constAndPhInputs,
-                    variableValues // Pass as otherPlaceHolders
-            );
-
-            // Store outputs
-            if (opResult.hasValues()) {
-                Map<String, SDValue> outputs = opResult.getValueOutputs();
-                for (Map.Entry<String, SDValue> entry : outputs.entrySet()) {
-                    variableValues.put(entry.getKey(), entry.getValue());
-                }
-            } else if (opResult.hasSingle()) {
-                // Handle single output case
-                List<String> outputNames = node.getOutputVariables();
-                for (int i = 0; i < outputNames.size() && i < opResult.numResults(); i++) {
-                    INDArray result = opResult.resultAt(i);
-                    if (result != null) {
-                        variableValues.put(outputNames.get(i), SDValue.create(result));
-                    }
-                }
-            }
-
-        } catch (Exception e) {
-            log.error("Failed to execute operation: {}", opName, e);
-            throw new RuntimeException("Operation execution failed: " + opName, e);
-        }
-    }
-// Helper methods for visualization - mimic the output() method approach
+    // Helper methods for visualization - mimic the output() method approach
 
     private List<String> getStepInputsForVisualization(Set<VarId> opInputs, Set<String> constAndPhInputs, Set<VarId> allIterInputs) {
         List<String> stepInputs = new ArrayList<>();

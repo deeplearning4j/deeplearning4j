@@ -103,8 +103,18 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
 
       std::vector<sd::LongType> axesVec = {axis};
       auto dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1, axesVec.data());
+      
+      // Get TAD packs - these are cached and should not be deleted
       auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
       auto tadPackOut = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &dimsOut);
+      
+      // Validate TAD packs before use
+      if (tadPack == nullptr || tadPackOut == nullptr) {
+        if (dimensions) delete dimensions;
+        THROW_EXCEPTION("gather: Failed to create TAD packs");
+      }
+      
+      // Now safe to delete dimensions as TAD helper has made internal copy
       delete dimensions;
 
       auto tadShapeInfo = tadPack->primaryShapeInfo();
@@ -199,8 +209,18 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
 
         std::vector<sd::LongType> axesVec = {axis};
         auto dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1, axesVec.data());
+        
+        // Get TAD packs - these are cached and should not be deleted
         auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
         auto tadPackOut = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
+        
+        // Validate TAD packs before use
+        if (tadPack == nullptr || tadPackOut == nullptr) {
+          if (dimensions) delete dimensions;
+          THROW_EXCEPTION("gather: Failed to create TAD packs");
+        }
+        
+        // Now safe to delete dimensions as TAD helper has made internal copy
         delete dimensions;
 
         auto tadShapeInfo = tadPack->primaryShapeInfo();

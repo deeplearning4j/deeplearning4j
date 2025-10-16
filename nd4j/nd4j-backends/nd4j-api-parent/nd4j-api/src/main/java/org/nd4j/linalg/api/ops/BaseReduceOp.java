@@ -57,7 +57,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
         super(sameDiff, null);
         if (i_v != null) {
             if(dimensions == null || dimensions.length < 1)
-                dimensions = new long[] {Integer.MAX_VALUE};
+                dimensions = new long[] {-1};
 
             this.dimensions = dimensions;
             SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v, this);
@@ -78,7 +78,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
         super(sameDiff,null);
         if (i_v != null) {
             if(dimensions == null || dimensions.length < 1)
-                dimensions = new long[] {Integer.MAX_VALUE};
+                dimensions = new long[] {-1};
 
             this.dimensions = dimensions;
 
@@ -133,7 +133,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
         super(sameDiff, null);
         if (i_v != null) {
             if(dimensions == null || dimensions.length < 1)
-                dimensions = new long[] {Integer.MAX_VALUE};
+                dimensions = new long[] {-1};
 
             SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v, this);
             this.keepDims = keepDims;
@@ -246,7 +246,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         if (!attributesForNode.containsKey("axis") && !hasReductionIndices(nodeDef)) {
-            this.dimensions = new long[] { Integer.MAX_VALUE };
+            this.dimensions = new long[] { -1 };
         }   //Otherwise: dimensions are dynamically set during execution in InferenceSession
 
         if(attributesForNode.containsKey("keep_dims")) {

@@ -1574,6 +1574,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException("Op [" + name + "] execution failed", e);
+        } finally {
+            // Clear ThreadLocal to prevent stale context references
+            clearOpContext();
         }
 
 

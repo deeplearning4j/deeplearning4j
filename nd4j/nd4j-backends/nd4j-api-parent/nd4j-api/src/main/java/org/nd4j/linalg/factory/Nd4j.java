@@ -3163,20 +3163,6 @@ public class Nd4j {
         return rand(ret, min, max, rng);
     }
 
-    /**
-     * Generates a random matrix between min and max
-     *
-     * @param rows    the number of rows of the matrix
-     * @param columns the number of columns in the matrix
-     * @param min     the minimum number
-     * @param max     the maximum number
-     * @param rng     the rng to use
-     * @return a drandom matrix of the specified shape and range
-     */
-    /*public static INDArray rand(int rows, int columns, double min, double max, @NonNull org.nd4j.linalg.api.rng.Random rng) {
-        INDArray ret = createUninitialized(rows, columns);
-        return rand(ret, min, max, rng);
-    }*/
 
     /**
      * Fill the given ndarray with random numbers drawn from a normal distribution

@@ -42,7 +42,7 @@ public class OpExecutionerUtil {
     private OpExecutionerUtil() {}
 
     public static void checkForNaN(INDArray z) {
-        if(z.isEmpty() || !z.dataType().isFPType())
+        if(z == null || z.isEmpty() || !z.dataType().isFPType())
             return;
 
         int match = 0;
@@ -69,7 +69,7 @@ public class OpExecutionerUtil {
     }
 
     public static void checkForInf(INDArray z) {
-        if(z.isEmpty() || !z.dataType().isFPType())
+        if(z == null || z.isEmpty() || !z.dataType().isFPType())
             return;
 
         int match = 0;

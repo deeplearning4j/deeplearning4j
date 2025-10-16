@@ -1,15 +1,17 @@
 package org.nd4j.nativeblas;
 
+import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.deallocation.DeallocatorService;
+import org.nd4j.linalg.api.memory.deallocation.OpaqueNDArrayDeallocator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.nativeblas.OpaqueDataBuffer;
 
 /**
  * OpaqueNDArray is a wrapper class for an opaque representation of an n-dimensional array used in ND4J.
@@ -27,6 +29,10 @@ import org.nd4j.nativeblas.OpaqueDataBuffer;
  * as it directly allocates and deallocates memory in native code.
  * </p>
  *
+ * <p><b>Memory Management:</b> As of this version, OpaqueNDArray is integrated with {@link DeallocatorService}
+ * for reliable memory cleanup. Previously relied on JavaCPP finalizers which were unreliable. Now uses
+ * {@link OpaqueNDArrayDeallocator} for deterministic cleanup.</p>
+ *
  * <p>This class extends {@link org.bytedeco.javacpp.Pointer}.</p>
  *
  * <p>Related classes include {@link OpaqueNDArrayArr}.</p>
@@ -35,35 +41,91 @@ import org.nd4j.nativeblas.OpaqueDataBuffer;
  * @see org.bytedeco.javacpp.Pointer
  * @see OpaqueNDArrayArr
  * @see Nd4j#getNativeOps()
+ * @see OpaqueNDArrayDeallocator
  *
- * @version 1.0
+ * @version 1.1
  * @since 2024.2.1
  */
+@Slf4j
 public class OpaqueNDArray extends Pointer {
+
+    // Track the deallocator for this instance
+    private OpaqueNDArrayDeallocator deallocator;
 
     /**
      * Constructs an OpaqueNDArray from a given Pointer.
      *
      * @param p The Pointer object representing the native memory address.
      */
-    public OpaqueNDArray(Pointer p) { super(p); }
+    public OpaqueNDArray(Pointer p) { 
+        super(p); 
+    }
 
     /**
      * Creates an OpaqueNDArray with given buffers and offset.
      * This method delegates the creation to {@link Nd4j#getNativeOps()}.
      *
+     * <p><b>Memory Management:</b> The created OpaqueNDArray is automatically registered
+     * with {@link DeallocatorService} for cleanup. You can also explicitly call {@link #close()}
+     * for immediate cleanup.</p>
+     *
      * @param shapeInfo The shape information buffer.
      * @param buffer The primary data buffer.
      * @param specialBuffer The special buffer (e.g., for GPU data).
      * @param offset The offset in the buffer.
-     * @return A new OpaqueNDArray.
+     * @return A new OpaqueNDArray registered with DeallocatorService.
      */
     public static OpaqueNDArray create(
             OpaqueDataBuffer shapeInfo,
             OpaqueDataBuffer buffer,
             OpaqueDataBuffer specialBuffer,
             long offset) {
-        return Nd4j.getNativeOps().create(shapeInfo, buffer, specialBuffer, offset).retainReference();
+        
+        OpaqueNDArray array = Nd4j.getNativeOps().create(shapeInfo, buffer, specialBuffer, offset)
+                .retainReference();
+
+        // Register with DeallocatorService for reliable cleanup
+        if (array != null && !array.isNull()) {
+            try {
+                registerWithDeallocatorService(array);
+            } catch (Exception e) {
+                // LEAK FIX: Clean up array if registration fails
+                Nd4j.getNativeOps().deleteNDArray(array);
+                throw e;
+            }
+        }
+
+        return array;
+    }
+
+    /**
+     * Registers this OpaqueNDArray with the DeallocatorService for automatic cleanup.
+     * This replaces reliance on unreliable JavaCPP finalizers.
+     *
+     * @param array The array to register
+     * @throws RuntimeException if registration fails (array must be cleaned up by caller)
+     */
+    private static void registerWithDeallocatorService(OpaqueNDArray array) {
+        try {
+            DeallocatorService service = Nd4j.getDeallocatorService();
+            long uniqueId = service.nextValue();
+            int targetDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            
+            OpaqueNDArrayDeallocator deallocator = new OpaqueNDArrayDeallocator(
+                array, uniqueId, targetDevice
+            );
+            
+            array.deallocator = deallocator;
+            service.pickObject(deallocator);
+            
+            if (log.isTraceEnabled()) {
+                log.trace("Registered OpaqueNDArray {} with DeallocatorService", uniqueId);
+            }
+        } catch (Exception e) {
+            // LEAK FIX: If registration fails, caller must clean up the array
+            log.error("Failed to register OpaqueNDArray with DeallocatorService - array must be manually cleaned", e);
+            throw new RuntimeException("Failed to register array with DeallocatorService", e);
+        }
     }
 
     /**
@@ -171,17 +233,27 @@ public class OpaqueNDArray extends Pointer {
 
     /**
      * Closes the current OpaqueNDArray, releasing any allocated resources.
-     * This method is called automatically on object finalization.
+     * This method provides explicit cleanup and is preferred over waiting for
+     * automatic cleanup via DeallocatorService.
+     *
+     * <p><b>Note:</b> After calling close(), this OpaqueNDArray should not be used.</p>
      */
     @Override
     public void close() {
-        delete(this);
+        if (deallocator != null && !deallocator.isDeallocated()) {
+            deallocator.deallocate();
+        } else {
+            // Fallback if not registered with DeallocatorService
+            delete(this);
+        }
     }
 
-
     /**
-     * Converts an INDArray to an OpaqueNDArray.
-     * This method uses {@link Nd4j#getNativeOps()} to create the OpaqueNDArray.
+     * Converts an INDArray to an OpaqueNDArray without caching.
+     * This method creates a new OpaqueNDArray each time it's called.
+     *
+     * <p><b>Important:</b> The returned OpaqueNDArray should be closed when done
+     * to avoid memory leaks. Use try-with-resources pattern.</p>
      *
      * @param array The INDArray to convert.
      * @return The corresponding OpaqueNDArray.
@@ -197,16 +269,20 @@ public class OpaqueNDArray extends Pointer {
         return create(
                 shapeInfo.opaqueBuffer(),
                 array.isEmpty() ? null : buffer.opaqueBuffer(),
-                array.isEmpty() ? null :buffer.opaqueBuffer(),
+                array.isEmpty() ? null : buffer.opaqueBuffer(),
                 array.offset()
         );
     }
+
     /**
      * Converts an INDArray to an OpaqueNDArray.
-     * This method uses {@link Nd4j#getNativeOps()} to create the OpaqueNDArray.
+     * This method uses caching via {@link INDArray#getOrCreateOpaqueNDArray()}.
+     *
+     * <p><b>Note:</b> The cached OpaqueNDArray will be cleaned up when the INDArray
+     * is closed or garbage collected.</p>
      *
      * @param array The INDArray to convert.
-     * @return The corresponding OpaqueNDArray.
+     * @return The corresponding OpaqueNDArray (may be cached).
      */
     public static OpaqueNDArray fromINDArray(INDArray array) {
         if(array == null) {
@@ -253,7 +329,8 @@ public class OpaqueNDArray extends Pointer {
 
         // Create DataBuffer from the OpaqueNDArray's buffer
         DataType dataType = ArrayOptionsHelper.dataType(extras);
-        DataBuffer buffer = Nd4j.createBuffer(bufferPtr,specialBufferPtr,length,dataType);
+        DataBuffer buffer = Nd4j.createBuffer(bufferPtr, specialBufferPtr, length, dataType);
+        
         // Create INDArray using the descriptor and buffer
         return Nd4j.create(buffer, descriptor);
     }
@@ -303,5 +380,14 @@ public class OpaqueNDArray extends Pointer {
      */
     public long length() {
         return getOpaqueNDArrayLength(this);
+    }
+
+    /**
+     * Gets the deallocator associated with this OpaqueNDArray.
+     * 
+     * @return The deallocator or null if not registered
+     */
+    public OpaqueNDArrayDeallocator getDeallocator() {
+        return deallocator;
     }
 }

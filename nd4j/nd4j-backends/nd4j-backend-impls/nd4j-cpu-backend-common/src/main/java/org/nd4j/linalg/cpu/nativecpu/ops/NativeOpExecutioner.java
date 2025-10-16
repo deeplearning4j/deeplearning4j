@@ -38,7 +38,6 @@ import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
 import org.nd4j.linalg.api.ops.*;
@@ -377,7 +376,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 }
             }
 
-        } else {if (extraz.get() == null)
+        } else {
+            if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
             OpaqueNDArray dims = OpaqueNDArray.fromINDArray(op.dimensions());
 
@@ -988,6 +988,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException("Op [" + name + "] execution failed", e);
+        } finally {
+            // Clear ThreadLocal to prevent stale context references
+            clearOpContext();
         }
 
 

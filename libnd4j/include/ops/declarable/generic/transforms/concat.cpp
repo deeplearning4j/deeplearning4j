@@ -54,10 +54,20 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
 
       if (input->rankOf() == 0) {
         std::vector<sd::LongType> shape = {1};
-        auto vec = new NDArray('c',shape, input->dataType(), block.launchContext());
-        vec->assign(input);
-        nonEmptyArrs.push_back(vec);
-        arrsToDelete.push_back(vec);  // Mark for cleanup
+        NDArray* vec = nullptr;
+        try {
+          vec = new NDArray('c', shape, input->dataType(), block.launchContext());
+          vec->assign(input);
+          nonEmptyArrs.push_back(vec);
+          arrsToDelete.push_back(vec);  // Mark for cleanup
+        } catch (...) {
+          // If allocation fails, clean up what we've created so far
+          if (vec) delete vec;
+          for (auto arr : arrsToDelete) {
+            delete arr;
+          }
+          throw;
+        }
       } else {
         nonEmptyArrs.push_back(input);
       }
@@ -84,39 +94,52 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
   }
 
   // ******** input validation ******** //
-  REQUIRE_TRUE(allOfSameType, 0, "CONCAT op: all of input arrays must have same type !");
-  REQUIRE_TRUE(nonEmptyArrs[0]->dataType() == OUTPUT_VARIABLE(0)->dataType(), 0,
-               "CONCAT op: output array should have the same type as inputs arrays !");
-  REQUIRE_TRUE(0 <= axis && (axis < rank || (axis == 0 && rank == 0)), 0,
-               "CONCAT op: input axis must be in range [0, %i], but got %i instead!", rank - 1, axis);
+  if (!allOfSameType) {
+    for (auto arr : arrsToDelete) delete arr;
+    REQUIRE_TRUE(false, 0, "CONCAT op: all of input arrays must have same type !");
+  }
+  
+  if (nonEmptyArrs[0]->dataType() != OUTPUT_VARIABLE(0)->dataType()) {
+    for (auto arr : arrsToDelete) delete arr;
+    REQUIRE_TRUE(false, 0, "CONCAT op: output array should have the same type as inputs arrays !");
+  }
+  
+  if (!(0 <= axis && (axis < rank || (axis == 0 && rank == 0)))) {
+    for (auto arr : arrsToDelete) delete arr;
+    REQUIRE_TRUE(false, 0, "CONCAT op: input axis must be in range [0, %i], but got %i instead!", rank - 1, axis);
+  }
 
   for (LongType i = 1; i < numOfNonEmptyArrs; ++i) {
-    if(nonEmptyArrs[i]->rankOf() != rank) {
+    if (nonEmptyArrs[i]->rankOf() != rank) {
       std::string error;
-      error += std::string("CONCAT op: array at index: ");
+      error += "CONCAT op: array at index ";
       error += std::to_string(i);
-      error += std::string(" ");
-      error += std::string(&" did not have same rank. Expected rank: " [ rank]);
-      error += std::string(&" but was: " [ nonEmptyArrs[i]->rankOf()]);
+      error += " did not have same rank. Expected rank: ";
+      error += std::to_string(rank);
+      error += " but was: ";
+      error += std::to_string(nonEmptyArrs[i]->rankOf());
       
       // Cleanup before throwing
       for (auto arr : arrsToDelete) delete arr;
-      REQUIRE_TRUE(nonEmptyArrs[i]->rankOf() == rank, 0,error.c_str());
+      REQUIRE_TRUE(false, 0, error.c_str());
     }
 
     for (LongType dim = 0; dim < rank; ++dim) {
       if (dim != axis) {
-        if(nonEmptyArrs[i]->sizeAt(dim) != nonEmptyArrs[0]->sizeAt(dim)) {
+        if (nonEmptyArrs[i]->sizeAt(dim) != nonEmptyArrs[0]->sizeAt(dim)) {
           std::string error;
-          error += std::string("CONCAT op: array at index: ");
+          error += "CONCAT op: array at index ";
           error += std::to_string(i);
-          error += std::string(" ");
-          error += std::string(&" did not have same dimension. Expected dimension : " [ nonEmptyArrs[0]->sizeAt(dim)]);
-          error += std::string(&" but was: " [ nonEmptyArrs[i]->sizeAt(dim)]);
+          error += " did not have same dimension at position ";
+          error += std::to_string(dim);
+          error += ". Expected dimension: ";
+          error += std::to_string(nonEmptyArrs[0]->sizeAt(dim));
+          error += " but was: ";
+          error += std::to_string(nonEmptyArrs[i]->sizeAt(dim));
           
           // Cleanup before throwing
           for (auto arr : arrsToDelete) delete arr;
-          REQUIRE_TRUE(nonEmptyArrs[i]->rankOf() == rank, 0,error.c_str());
+          REQUIRE_TRUE(false, 0, error.c_str());
         }
       }
     }
@@ -128,7 +151,7 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
 
   helpers::concat(block.launchContext(), nonEmptyArrs, *output, axis);
 
-  // FIX: Clean up allocated temporary arrays
+  // Clean up allocated temporary arrays
   for (auto arr : arrsToDelete) {
     delete arr;
   }
@@ -168,7 +191,7 @@ DECLARE_SHAPE_FN(concat) {
 
   for (LongType i = 0; i < numOfInArrs; i++) {
     if (shape::rank(inputShape->at(i)) <= 1) {
-      if(shape::isEmptyConst(inputShape->at(i))) {
+      if (shape::isEmptyConst(inputShape->at(i))) {
         int isScalar = shape::isScalar(inputShape->at(i));
         int len = isScalar ? 1 : shape::length(inputShape->at(i));
         newDim += len;
@@ -179,20 +202,17 @@ DECLARE_SHAPE_FN(concat) {
         newDim += len;
         arrShapes.push_back(ConstantShapeHelper::getInstance().vectorShapeInfo(len, INPUT_VARIABLE(0)->dataType()));
 
-        if(firstNonEmptyShapeIdx < 0)
+        if (firstNonEmptyShapeIdx < 0)
           firstNonEmptyShapeIdx = i;
         numOfNonEmptyArrs++;
-
       }
-
     } else {
-      if(!shape::isEmptyConst(inputShape->at(i))) {
+      if (!shape::isEmptyConst(inputShape->at(i))) {
         numOfNonEmptyArrs++;
-        if(firstNonEmptyShapeIdx < 0)
+        if (firstNonEmptyShapeIdx < 0)
           firstNonEmptyShapeIdx = i;
         auto currShape = shape::shapeOf(inputShape->at(i));
         newDim += currShape[axis];
-
       } else {
         //empty arrays can still have a shape and should be accounted for
         auto currShape = shape::shapeOf(inputShape->at(i));
@@ -203,7 +223,7 @@ DECLARE_SHAPE_FN(concat) {
     }
   }
 
-  if(numOfNonEmptyArrs < 1) {
+  if (numOfNonEmptyArrs < 1) {
     //this case is all empty arrays
     //in this case we need to set the shape to be
     //whatever the number of empty arrays is
@@ -215,12 +235,12 @@ DECLARE_SHAPE_FN(concat) {
     auto currShape = shape::shapeOf(outShapeInfo);
     currShape[axis] = newDim;
     std::vector<LongType> shapeVec;
-    for(int i = 0; i < rank; i++) {
+    for (int i = 0; i < rank; i++) {
       shapeVec.push_back(currShape[i]);
     }
 
     // All inputs are empty arrays -> return empty, mainly for TF import compatibility (no op)
-    auto newShape = ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(INPUT_VARIABLE(0)->dataType(),shapeVec);
+    auto newShape = ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(INPUT_VARIABLE(0)->dataType(), shapeVec);
     delete[] outShapeInfo;
 
     // Clean up allocated vectors
@@ -233,19 +253,16 @@ DECLARE_SHAPE_FN(concat) {
 
   // ******** input validation ******** //
   //axis needs to be flexible between 0 and 1
-  if(axis > 1)
-  REQUIRE_TRUE(0 <= axis && axis < rank, 0, "CONCAT op: input axis must be in range [0, %i], but got %i instead!",
-               rank - 1, axis);
-
-
+  if (axis > 1)
+    REQUIRE_TRUE(0 <= axis && axis < rank, 0, "CONCAT op: input axis must be in range [0, %i], but got %i instead!",
+                 rank - 1, axis);
 
   // ******** end of input validation ******** //
 
-  if(shape::isScalar(arrShapes.at(firstNonEmptyShapeIdx))) {
+  if (shape::isScalar(arrShapes.at(firstNonEmptyShapeIdx))) {
     //concat of scalar should be  a 1d vector
     auto newShape = ConstantShapeHelper::getInstance().vectorShapeInfo(newDim, INPUT_VARIABLE(0)->dataType());
     return SHAPELIST(CONSTANT(newShape));
-
   } else {
     LongType* outShapeInfo(nullptr);
     COPY_SHAPE(arrShapes.at(firstNonEmptyShapeIdx), outShapeInfo);
@@ -270,7 +287,6 @@ DECLARE_SHAPE_FN(concat) {
     delete[] outShapeInfo;
     return SHAPELIST(result);
   }
-
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -296,7 +312,7 @@ CUSTOM_OP_IMPL(concat_bp, -1, -1, false, 0, 0) {
     int width = originalChunk->sizeAt(axis);
 
     for (LongType e2 = 0; e2 < epsilonNext->rankOf(); e2++) {
-      if (e == axis)
+      if (e2 == axis)
         indices[2 * e2 + 1] = (indices[2 * e2] = startPos) + width;
       else
         indices[2 * e2 + 1] = indices[2 * e2] = 0;

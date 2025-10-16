@@ -151,19 +151,22 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
 
         if (extraArgs != null) {
             if (Shape.isZ(dtype) || Shape.isB(dtype)) {
-                long extraz[] = new long[extraArgs.length];
-                for (int i = 0; i < extraArgs.length; i++) {
+                long extraz[] = new long[8];  // Always 8 elements
+                // Fill what we have
+                for (int i = 0; i < Math.min(extraArgs.length, 8); i++) {
                     if (extraArgs[i] instanceof Number) {
                         Number arg = (Number) extraArgs[i];
                         long val = arg.longValue();
                         extraz[i] = val;
                     }
                 }
+                // Rest are already 0 (Java default initialization)
                 extraArgz = Nd4j.getConstantHandler().getConstantBuffer(extraz, dtype);
                 return extraArgz;
             } else if (Shape.isR(dtype)) {
-                double extraz[] = new double[extraArgs.length];
-                for (int i = 0; i < extraArgs.length; i++) {
+                double extraz[] = new double[8];  // Always 8 elements
+                // Fill what we have
+                for (int i = 0; i < Math.min(extraArgs.length, 8); i++) {
                     if (!(extraArgs[i] instanceof Number))
                         continue;
                     Number arg = (Number) extraArgs[i];
@@ -172,6 +175,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                     double val = arg.doubleValue();
                     extraz[i] = val;
                 }
+                // Rest are already 0.0 (Java default initialization)
                 extraArgz = Nd4j.getConstantHandler().getConstantBuffer(extraz, dtype);
                 return extraArgz;
             }
@@ -184,21 +188,12 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     public Buffer extraArgsBuff() {
         if (extraArgs != null) {
             DataBuffer retBuff;
-            if (x.data().dataType() == DataType.FLOAT) {
-                retBuff = Nd4j.createBuffer(new float[extraArgs.length]);
-                for (int i = 0; i < extraArgs.length; i++) {
-                    Number val = (Number) extraArgs[i];
-                    retBuff.put(i, val.floatValue());
-                }
-                return retBuff.asNioFloat();
-            } else {
-                retBuff = Nd4j.createBuffer(new double[extraArgs.length]);
-                for (int i = 0; i < extraArgs.length; i++) {
-                    Number val = (Number) extraArgs[i];
-                    retBuff.put(i, val.doubleValue());
-                }
-                return retBuff.asNioDouble();
+            retBuff = Nd4j.createBuffer(new double[8]);
+            for (int i = 0; i < extraArgs.length; i++) {
+                Number val = (Number) extraArgs[i];
+                retBuff.put(i, val.doubleValue());
             }
+            return retBuff.asNioDouble();
 
 
         }
@@ -699,7 +694,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         }
 
         if (dimensions == null || dimensions.length == 0)
-            dimensions = new long[]{Integer.MAX_VALUE};
+            dimensions = new long[]{-1};
 
         this.dimensionz = Shape.ndArrayDimFromLong(dimensions).detach();
 

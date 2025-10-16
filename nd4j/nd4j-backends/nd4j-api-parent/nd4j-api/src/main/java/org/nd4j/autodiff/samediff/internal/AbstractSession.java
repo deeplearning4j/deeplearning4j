@@ -262,6 +262,30 @@ public abstract class AbstractSession<T, O> {
         dt.clear();
         subgraph.clear();
         subgraphOps.clear();
+        zeroInputOpsInSubgraph.clear();
+
+        // Deallocate arrays before clearing map to prevent memory leak
+        for (SDValue value : nodeValueOutputs.values()) {
+            if (value != null) {
+                switch (value.getSdValueType()) {
+                    case TENSOR:
+                        if (value.getTensorValue() != null && value.getTensorValue().closeable()) {
+                            value.getTensorValue().close();
+                        }
+                        break;
+                    case LIST:
+                        if (value.getListValue() != null) {
+                            for (INDArray arr : value.getListValue()) {
+                                if (arr != null && arr.closeable()) {
+                                    arr.close();
+                                }
+                            }
+                        }
+                        break;
+                }
+            }
+        }
+        nodeValueOutputs.clear();
 
         // Step 1: determine subgraph structure we actually need to execute
         Set<String> userRequestedUnique = new LinkedHashSet<>(variables);
@@ -886,6 +910,12 @@ public abstract class AbstractSession<T, O> {
         // out of workspace, etc) arrays
 
         outValues = postProcessOutputValues(outValues);
+
+        // Clear visualizer state to prevent accumulation
+        if (visualizationEnabled && visualizer != null) {
+            visualizer.clear();
+        }
+
         return ExecutionResult.builder()
                 .valueOutputs(outValues).build();
     }

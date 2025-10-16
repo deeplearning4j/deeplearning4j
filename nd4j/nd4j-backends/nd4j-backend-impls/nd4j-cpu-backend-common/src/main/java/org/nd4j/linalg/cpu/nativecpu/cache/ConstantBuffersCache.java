@@ -49,16 +49,16 @@ public class ConstantBuffersCache extends BasicConstantHandler {
 
     @Override
     public DataBuffer getConstantBuffer(int[] array, DataType dataType) {
-        ArrayDescriptor descriptor = new ArrayDescriptor(array, dataType);
+        ArrayDescriptor descriptor = new ArrayDescriptor(array, DataType.LONG);
 
         if (!buffersCache.containsKey(descriptor)) {
-            DataBuffer buffer = Nd4j.createTypedBufferDetached(array, dataType);
+            DataBuffer buffer = Nd4j.createTypedBufferDetached(array, DataType.LONG);
 
             if (counter.get() < MAX_ENTRIES) {
                 counter.incrementAndGet();
                 buffersCache.put(descriptor, buffer);
 
-                bytes.addAndGet(array.length * Nd4j.sizeOfDataType(dataType));
+                bytes.addAndGet(array.length * Nd4j.sizeOfDataType(DataType.LONG));
                 AllocationsTracker.getInstance().markAllocated(AllocationKind.CONSTANT, 0, array.length * Nd4j.sizeOfDataType(dataType));
             }
             return buffer;
@@ -69,7 +69,7 @@ public class ConstantBuffersCache extends BasicConstantHandler {
 
     @Override
     public DataBuffer getConstantBuffer(boolean[] array, DataType dataType) {
-        ArrayDescriptor descriptor = new ArrayDescriptor(array, dataType);
+        ArrayDescriptor descriptor = new ArrayDescriptor(array, DataType.LONG);
 
         if (!buffersCache.containsKey(descriptor)) {
             DataBuffer buffer = Nd4j.createTypedBufferDetached(array, dataType);
@@ -78,7 +78,7 @@ public class ConstantBuffersCache extends BasicConstantHandler {
                 counter.incrementAndGet();
                 buffersCache.put(descriptor, buffer);
 
-                bytes.addAndGet(array.length * Nd4j.sizeOfDataType(dataType));
+                bytes.addAndGet(array.length * Nd4j.sizeOfDataType(DataType.LONG));
                 AllocationsTracker.getInstance().markAllocated(AllocationKind.CONSTANT, 0, array.length * Nd4j.sizeOfDataType(dataType));
             }
             return buffer;
@@ -89,16 +89,16 @@ public class ConstantBuffersCache extends BasicConstantHandler {
 
     @Override
     public DataBuffer getConstantBuffer(double[] array, DataType dataType) {
-        ArrayDescriptor descriptor = new ArrayDescriptor(array, dataType);
+        ArrayDescriptor descriptor = new ArrayDescriptor(array, DataType.DOUBLE);
 
         if (!buffersCache.containsKey(descriptor)) {
-            DataBuffer buffer = Nd4j.createTypedBufferDetached(array, dataType);
+            DataBuffer buffer = Nd4j.createTypedBufferDetached(array, DataType.DOUBLE);
 
             if (counter.get() < MAX_ENTRIES) {
                 counter.incrementAndGet();
                 buffersCache.put(descriptor, buffer);
 
-                bytes.addAndGet(array.length * Nd4j.sizeOfDataType(dataType));
+                bytes.addAndGet(array.length * Nd4j.sizeOfDataType(DataType.DOUBLE));
                 AllocationsTracker.getInstance().markAllocated(AllocationKind.CONSTANT, 0, array.length * Nd4j.sizeOfDataType(dataType));
             }
             return buffer;
@@ -109,16 +109,16 @@ public class ConstantBuffersCache extends BasicConstantHandler {
 
     @Override
     public DataBuffer getConstantBuffer(float[] array, DataType dataType) {
-        ArrayDescriptor descriptor = new ArrayDescriptor(array, dataType);
+        ArrayDescriptor descriptor = new ArrayDescriptor(array, DataType.LONG);
 
         if (!buffersCache.containsKey(descriptor)) {
-            DataBuffer buffer = Nd4j.createTypedBufferDetached(array, dataType);
+            DataBuffer buffer = Nd4j.createTypedBufferDetached(array, DataType.DOUBLE);
 
             if (counter.get() < MAX_ENTRIES) {
                 counter.incrementAndGet();
                 buffersCache.put(descriptor, buffer);
 
-                bytes.addAndGet(array.length * Nd4j.sizeOfDataType(dataType));
+                bytes.addAndGet(array.length * Nd4j.sizeOfDataType(DataType.LONG));
                 AllocationsTracker.getInstance().markAllocated(AllocationKind.CONSTANT, 0, array.length * Nd4j.sizeOfDataType(dataType));
             }
             return buffer;
@@ -129,16 +129,16 @@ public class ConstantBuffersCache extends BasicConstantHandler {
 
     @Override
     public DataBuffer getConstantBuffer(long[] array, DataType dataType) {
-        ArrayDescriptor descriptor = new ArrayDescriptor(array, dataType);
+        ArrayDescriptor descriptor = new ArrayDescriptor(array, DataType.LONG);
 
         if (!buffersCache.containsKey(descriptor)) {
-            DataBuffer buffer = Nd4j.createTypedBufferDetached(array,dataType);
+            DataBuffer buffer = Nd4j.createTypedBufferDetached(array,DataType.LONG);
 
             if (counter.get() < MAX_ENTRIES) {
                 counter.incrementAndGet();
                 buffersCache.put(descriptor, buffer);
 
-                bytes.addAndGet(array.length * Nd4j.sizeOfDataType(dataType));
+                bytes.addAndGet(array.length * DataType.LONG.width());
                 AllocationsTracker.getInstance().markAllocated(AllocationKind.CONSTANT, 0, array.length * Nd4j.sizeOfDataType(dataType));
             }
             return buffer;

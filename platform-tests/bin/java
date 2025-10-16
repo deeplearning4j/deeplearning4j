@@ -78,6 +78,35 @@ TEST_RUNNER_PREFIX="$TEST_RUNNER_PREFIX --error-limit=no --suppressions=$suppres
 
     java_call="${java_call} -Djava.compiler=none"
 fi
+
+# if test_runner_prefix is not empty and contains "asan" (AddressSanitizer)
+if [[ -n $TEST_RUNNER_PREFIX && $TEST_RUNNER_PREFIX =~ "asan" ]]; then
+    echo "Running with AddressSanitizer (ASAN)"
+    
+    # Find libasan.so
+    libasan_path=$(find /usr/lib* /lib* -name "libasan.so.*" 2>/dev/null | head -n 1)
+    
+    if [[ -z $libasan_path ]]; then
+        echo "ERROR: libasan.so not found. Install with: sudo dnf install libasan (Fedora/RHEL) or sudo apt-get install libasan6 (Ubuntu/Debian)"
+        exit 1
+    fi
+    
+    echo "Found AddressSanitizer library: $libasan_path"
+    
+    # Set up ASAN environment
+    export LD_PRELOAD="$libasan_path"
+    export ASAN_OPTIONS="alloc_dealloc_mismatch=0:detect_leaks=1:new_delete_type_mismatch=0:halt_on_error=0:exitcode=0:report_objects=1:use_stacks=1:use_registers=1:leak_check_at_exit=1:fast_unwind_on_malloc=0:log_path=/tmp/asan.log"
+    
+    echo "ASAN_OPTIONS: $ASAN_OPTIONS"
+    echo "Leak reports will be written to: /tmp/asan.log.<pid>"
+    
+    # Disable JIT compilation for better stack traces
+    java_call="${java_call} -Djava.compiler=none"
+    
+    # Clear TEST_RUNNER_PREFIX since we're using LD_PRELOAD
+    TEST_RUNNER_PREFIX=""
+fi
+
 # if test_runner_prefix is not empty and contains "compute-sanitizer"
 if [[ -n $TEST_RUNNER_PREFIX && $TEST_RUNNER_PREFIX =~ "compute-sanitizer" ]]; then
     TEST_RUNNER_PREFIX="$TEST_RUNNER_PREFIX --error-limit=no --suppressions=$suppression_file --track-origins=yes --keep-stacktraces=alloc-and-free"
@@ -94,4 +123,13 @@ $TEST_RUNNER_PREFIX $java_call "$@"
 # if test_runner_prefix is not empty and contains "valgrind", remove the suppression file
 if [[ -n $TEST_RUNNER_PREFIX && $TEST_RUNNER_PREFIX =~ "valgrind" ]]; then
     rm -f $suppression_file
+fi
+
+# if asan was used, print location of reports
+if [[ -n $LD_PRELOAD && $LD_PRELOAD =~ "asan" ]]; then
+    echo ""
+    echo "====================================================="
+    echo "ASAN leak reports (if any) written to: /tmp/asan.log.*"
+    echo "Use: cat /tmp/asan.log.* to view reports"
+    echo "====================================================="
 fi
