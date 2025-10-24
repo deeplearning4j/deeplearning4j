@@ -516,24 +516,12 @@ SD_HOST_DEVICE SD_INLINE uint16_t sd_abs<uint16_t>(uint16_t value) {
  SD_PRINT_MATH_FUNC("sd_abs<uint16_t>", value, value,uint16_t);
  return value;
 }
-
-template <>
-SD_HOST_DEVICE SD_INLINE unsigned short sd_abs<unsigned short, unsigned short>(unsigned short value) {
- SD_PRINT_MATH_FUNC("sd_abs<unsigned short>", value, value,unsigned short);
- return value;
-}
 #endif // HAS_UINT16
 
 #ifdef HAS_UINT32
 template <>
 SD_HOST_DEVICE SD_INLINE uint32_t sd_abs<uint32_t>(uint32_t value) {
  SD_PRINT_MATH_FUNC("sd_abs<uint32_t>", value, value,uint32_t);
- return value;
-}
-
-template <>
-SD_HOST_DEVICE SD_INLINE unsigned int sd_abs<unsigned int, unsigned int>(unsigned int value) {
- SD_PRINT_MATH_FUNC("sd_abs<unsigned int>", value, value,unsigned int);
  return value;
 }
 #endif // HAS_UINT32
@@ -567,13 +555,6 @@ template <>
 SD_HOST_DEVICE SD_INLINE int16_t sd_abs<int16_t>(int16_t value) {
  int16_t result = value < 0 ? -value : value;
  SD_PRINT_MATH_FUNC("sd_abs<int16_t>", value, result,int16_t);
- return result;
-}
-
-template <>
-SD_HOST_DEVICE SD_INLINE short sd_abs<short, short>(short value) {
- short result = value < 0 ? -value : value;
- SD_PRINT_MATH_FUNC("sd_abs<short>", value, result,short);
  return result;
 }
 #endif // HAS_INT16
@@ -631,13 +612,6 @@ SD_HOST_DEVICE SD_INLINE bool sd_isnan<uint32_t>(uint32_t value) {
   SD_PRINT_MATH_FUNC("sd_isnan<uint32_t>", value, result,uint32_t);
   return result;
 }
-
-template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isnan<unsigned int>(unsigned int value) {
-  bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isnan<unsigned int>", value, result,unsigned int);
-  return result;
-}
 #endif // HAS_UINT32
 
 #ifdef HAS_UINT16
@@ -645,13 +619,6 @@ template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<uint16_t>(uint16_t value) {
   bool result = false;
   SD_PRINT_MATH_FUNC("sd_isnan<uint16_t>", value, result,uint16_t);
-  return result;
-}
-
-template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isnan<unsigned short>(unsigned short value) {
-  bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isnan<unsigned short>", value, result,unsigned short);
   return result;
 }
 #endif // HAS_UINT16
@@ -670,13 +637,6 @@ template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<int16_t>(int16_t value) {
   bool result = false;
   SD_PRINT_MATH_FUNC("sd_isnan<int16_t>", value, result,int16_t);
-  return result;
-}
-
-template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isnan<short>(short value) {
-  bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isnan<short>", value, result,short);
   return result;
 }
 #endif // HAS_INT16
@@ -796,13 +756,6 @@ SD_HOST_DEVICE SD_INLINE bool sd_isinf<uint32_t>(uint32_t value) {
   SD_PRINT_MATH_FUNC("sd_isinf<uint32_t>", value, result,uint32_t);
   return result;
 }
-
-template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isinf<unsigned int>(unsigned int value) {
-  bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<unsigned int>", value, result,unsigned int);
-  return result;
-}
 #endif // HAS_UINT32
 
 #ifdef HAS_UINT16
@@ -810,13 +763,6 @@ template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<uint16_t>(uint16_t value) {
   bool result = false;
   SD_PRINT_MATH_FUNC("sd_isinf<uint16_t>", value, result,uint16_t);
-  return result;
-}
-
-template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isinf<unsigned short>(unsigned short value) {
-  bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<unsigned short>", value, result,unsigned short);
   return result;
 }
 #endif // HAS_UINT16
@@ -828,13 +774,6 @@ SD_HOST_DEVICE SD_INLINE bool sd_isinf<uint8_t>(uint8_t value) {
   SD_PRINT_MATH_FUNC("sd_isinf<uint8_t>", value, result,uint8_t);
   return result;
 }
-
-template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isinf<unsigned short>(unsigned short value) {
-  bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<unsigned short>", value, result,unsigned short);
-  return result;
-}
 #endif // HAS_UINT8
 
 #ifdef HAS_INT16
@@ -842,13 +781,6 @@ template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<int16_t>(int16_t value) {
   bool result = false;
   SD_PRINT_MATH_FUNC("sd_isinf<int16_t>", value, result,int16_t);
-  return result;
-}
-
-template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isinf<short>(short value) {
-  bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<short>", value, result,short);
   return result;
 }
 #endif // HAS_INT16

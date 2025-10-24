@@ -40,7 +40,7 @@ template <typename T>
 bool ConstantHolder::hasBuffer() {
   return hasBuffer(DataTypeUtils::fromT<T>());
 }
-BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT bool ConstantHolder::hasBuffer, (void), SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE(bool ConstantHolder::hasBuffer, (void), SD_COMMON_TYPES);
 
 void ConstantHolder::addBuffer(ConstantDataBuffer& pointer, DataType dataType) { _buffers[dataType] = pointer; }
 
@@ -48,7 +48,7 @@ template <typename T>
 void ConstantHolder::addBuffer(ConstantDataBuffer& pointer) {
   addBuffer(pointer, DataTypeUtils::fromT<T>());
 }
-BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT void ConstantHolder::addBuffer, (ConstantDataBuffer & cb),
+BUILD_SINGLE_TEMPLATE(void ConstantHolder::addBuffer, (ConstantDataBuffer & cb),
                       SD_COMMON_TYPES);
 
 ConstantDataBuffer* ConstantHolder::getConstantDataBuffer(DataType dataType) {
@@ -61,6 +61,6 @@ template <typename T>
 ConstantDataBuffer* ConstantHolder::getConstantDataBuffer() {
   return getConstantDataBuffer(DataTypeUtils::fromT<T>());
 }
-BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT ConstantDataBuffer* ConstantHolder::getConstantDataBuffer, (),
+BUILD_SINGLE_TEMPLATE(ConstantDataBuffer* ConstantHolder::getConstantDataBuffer, (),
                       SD_COMMON_TYPES);
 }  // namespace sd

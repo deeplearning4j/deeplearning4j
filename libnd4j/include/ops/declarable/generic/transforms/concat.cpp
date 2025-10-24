@@ -80,7 +80,10 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
   if (numOfNonEmptyArrs == 0) {
     // Clean up allocated temporary arrays before returning
     for (auto arr : arrsToDelete) {
-      delete arr;
+      if(arr != nullptr) {
+        delete arr;
+
+      }
     }
     // All inputs are empty arrays -> return empty, mainly for TF import compatibility (no op)
     REQUIRE_TRUE(OUTPUT_VARIABLE(0)->isEmpty(), 0, "CONCAT op: If all input variables are empty, output must be empty");

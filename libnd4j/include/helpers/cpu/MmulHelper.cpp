@@ -631,7 +631,8 @@ NDArray* MmulHelper::mmulNxN( NDArray* A,  NDArray* B, NDArray* C, const double 
 
   BUILD_SINGLE_SELECTOR_THRICE(A->dataType(), batchedGemm,
                                (A, B, C, aBatchDims->data(), bBatchDims->data(), cBatchDims->data(), aMaxis, aKaxis,
-                                   bKaxis, bNaxis, cMaxis, cNaxis, alpha, beta),
+                                   bKaxis, bNaxis, cMaxis
+                                , cNaxis, alpha, beta),
                                SD_NUMERIC_TYPES);
 
   if(aBatchDims != nullptr)

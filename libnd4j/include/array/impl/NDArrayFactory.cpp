@@ -129,9 +129,9 @@ template <typename T>
 NDArray* NDArrayFactory::create_(const char order, std::vector<LongType>& shape, LaunchContext* context) {
   return create_(order, shape, DataTypeUtils::fromT<T>(), context);
 }
-BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT NDArray* NDArrayFactory::create_,
+BUILD_SINGLE_TEMPLATE(NDArray* NDArrayFactory::create_,
                       (const char order,  std::vector<sd::LongType>& shape, sd::LaunchContext* context),
-                      SD_COMMON_TYPES_ALL);
+                      SD_COMMON_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -208,7 +208,7 @@ EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
     GET_FIRST(TYPE), \
     template SD_LIB_EXPORT NDArray* NDArrayFactory::create_<GET_SECOND(TYPE)>(const GET_SECOND(TYPE) scalar, sd::LaunchContext* context); \
 ))
-ITERATE_LIST((SD_COMMON_TYPES_ALL), TMPL_INSTANTIATE_CREATE_C)
+ITERATE_LIST((SD_COMMON_TYPES), TMPL_INSTANTIATE_CREATE_C)
 
 #undef TMPL_INSTANTIATE_CREATE_C
 
@@ -233,7 +233,7 @@ EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
     template SD_LIB_EXPORT NDArray* NDArrayFactory::create<GET_SECOND(TYPE)>(DataType type, const GET_SECOND(TYPE) scalar, sd::LaunchContext* context); \
 ))
 
-ITERATE_LIST((SD_COMMON_TYPES_ALL), TMPL_INSTANTIATE_CREATE_D)
+ITERATE_LIST((SD_COMMON_TYPES), TMPL_INSTANTIATE_CREATE_D)
 
 #undef TMPL_INSTANTIATE_CREATE_D
 
@@ -257,7 +257,7 @@ EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
     GET_FIRST(TYPE), \
     template SD_LIB_EXPORT NDArray* NDArrayFactory::create<GET_SECOND(TYPE)>(const GET_SECOND(TYPE) scalar, sd::LaunchContext* context); \
 ))
-ITERATE_LIST((SD_COMMON_TYPES_ALL), TMPL_INSTANTIATE_CREATE_E)
+ITERATE_LIST((SD_COMMON_TYPES), TMPL_INSTANTIATE_CREATE_E)
 #undef TMPL_INSTANTIATE_CREATE_E
 
 ////////////////////////////////////////////////////////////////////////
@@ -274,7 +274,7 @@ EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
                                                         const std::vector<GET_SECOND(TYPE)>& data, sd::LaunchContext* context); \
 ))
 
-ITERATE_LIST((SD_COMMON_TYPES_ALL), TMPL_INSTANTIATE_CREATE_F)
+ITERATE_LIST((SD_COMMON_TYPES), TMPL_INSTANTIATE_CREATE_F)
 
 
 #undef TMPL_INSTANTIATE_CREATE_F
@@ -313,7 +313,7 @@ EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
                                                         const char order, sd::LaunchContext* context); \
 ))
 
-ITERATE_LIST((SD_COMMON_TYPES_ALL), TMPL_INSTANTIATE_VALUEOF)
+ITERATE_LIST((SD_COMMON_TYPES), TMPL_INSTANTIATE_VALUEOF)
 
 
 #undef TMPL_INSTANTIATE_VALUEOF
@@ -369,7 +369,7 @@ EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
                                                        sd::LaunchContext* context); \
 ))
 
-ITERATE_LIST((SD_COMMON_TYPES_ALL), TMPL_INSTANTIATE_VECTOR)
+ITERATE_LIST((SD_COMMON_TYPES), TMPL_INSTANTIATE_VECTOR)
 
 
 
@@ -379,9 +379,9 @@ template <typename T>
 NDArray *NDArrayFactory::create(const char order, const std::vector<LongType>& shape, LaunchContext* context) {
   return create(order, shape, DataTypeUtils::fromT<T>(), context);
 }
-BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT NDArray *NDArrayFactory::create,
+BUILD_SINGLE_TEMPLATE(NDArray *NDArrayFactory::create,
                       (const char order, const std::vector<sd::LongType>& shape, sd::LaunchContext* context),
-                      SD_COMMON_TYPES_ALL);
+                      SD_COMMON_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 NDArray *NDArrayFactory::create(const char order, const std::vector<LongType>& shape, DataType dtype,
@@ -453,8 +453,8 @@ NDArray* NDArrayFactory::empty_(LaunchContext* context) {
 
   return result;
 }
-BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT NDArray* NDArrayFactory::empty_, (sd::LaunchContext * context),
-                      SD_COMMON_TYPES_ALL);
+BUILD_SINGLE_TEMPLATE(NDArray* NDArrayFactory::empty_, (sd::LaunchContext * context),
+                      SD_COMMON_TYPES);
 
 NDArray* NDArrayFactory::empty_(DataType dataType, LaunchContext* context) {
   if (context == nullptr) context = LaunchContext ::defaultContext();
@@ -473,8 +473,8 @@ template <typename T>
 NDArray *NDArrayFactory::empty(LaunchContext* context) {
   return empty(DataTypeUtils::fromT<T>(), context);
 }
-BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT NDArray *NDArrayFactory::empty, (sd::LaunchContext * context),
-                      SD_COMMON_TYPES_ALL);
+BUILD_SINGLE_TEMPLATE(NDArray *NDArrayFactory::empty, (sd::LaunchContext * context),
+                      SD_COMMON_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 SD_LIB_EXPORT NDArray* NDArrayFactory::empty(DataType dataType, LaunchContext* context) {

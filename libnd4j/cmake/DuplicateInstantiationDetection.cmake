@@ -42,8 +42,6 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
             # Use LLD linker for better template folding support
             add_compile_options(-fuse-ld=lld)
             # Linker flags for identical code folding (ICF)
-            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--icf=all -Wl,--gc-sections")
-            set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--icf=all -Wl,--gc-sections")
             message(STATUS "Added desktop Clang template folding with LLD linker")
         endif()
     else()

@@ -244,7 +244,7 @@ function(suggest_type_optimizations current_types target_workload result_var)
         list(APPEND suggestions "Focus on deployment-optimized types")
         list(APPEND suggestions "Optimize for quantized inference patterns")
         list(APPEND suggestions "Remove training-specific combinations")
-        list(APPEND suggestions "Prioritize int8_t, uint8_t, float16, float combinations")
+        list(APPEND suggestions "Prioritize int8_t, UnsignedChar, float16, float combinations")
 
     elseif(target_workload STREQUAL "nlp")
         # Check for string types

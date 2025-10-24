@@ -298,11 +298,11 @@ function(handle_specials_single t1 content_var)
     
     string(APPEND content "namespace sd {\n")
     
-    add_unique_instantiation("template class sd::SpecialMethods<${t1}>;" dedupe_set content)
+    # Instantiate only the specific member functions needed (class instantiation would duplicate these)
     add_unique_instantiation("template void sd::SpecialMethods<${t1}>::concatCpuGeneric(const std::vector<NDArray*>&, NDArray&, const sd::LongType);" dedupe_set content)
     add_unique_instantiation("template void sd::SpecialMethods<${t1}>::sortGeneric(NDArray*, bool);" dedupe_set content)
     add_unique_instantiation("template void sd::SpecialMethods<${t1}>::sortTadGeneric(NDArray*, sd::LongType*, int, bool);" dedupe_set content)
-    
+
     string(APPEND content "}\n")
     set(${content_var} "${content}" PARENT_SCOPE)
 endfunction()
@@ -337,10 +337,9 @@ function(handle_specials_double t1 t2 content_var)
     
     string(APPEND content "namespace sd {\n")
     
-    # Only generate TypeCast for actual conversions
+    # Only generate TypeCast for actual conversions - using sd::LongType as canonical form
     add_unique_instantiation("template void TypeCast::convertGeneric<${t1}, ${t2}>(void**, void*, sd::LongType, void*);" dedupe_set content)
-    add_unique_instantiation("template void TypeCast::convertGeneric<${t1}, ${t2}>(void**, void*, long long, void*);" dedupe_set content)
-    
+
     # DoubleMethods instantiations for sorting operations
     add_unique_instantiation("template void DoubleMethods<${t1}, ${t2}>::sortByKey(sd::NDArray*, sd::NDArray*, bool);" dedupe_set content)
     add_unique_instantiation("template void DoubleMethods<${t1}, ${t2}>::sortByValue(sd::NDArray*, sd::NDArray*, bool);" dedupe_set content)
@@ -366,8 +365,8 @@ function(normalize_to_canonical_type cpp_type canonical_var)
     set(types_uint64  "uint64_t" "unsigned long long" "UnsignedLong")
     set(types_int32   "int32_t" "int" "Int32Type" "signed int" "signed")
     set(types_uint32  "uint32_t" "unsigned int" "unsigned")
-    set(types_int16   "int16_t" "short" "short int" "signed short")
-    set(types_uint16  "uint16_t" "unsigned short")
+    set(types_int16   "int16_t" "short" "short int" "signed short" "signed short int")
+    set(types_uint16  "uint16_t" "unsigned short" "unsigned short int")
     set(types_int8    "int8_t" "signed char" "char" "SignedChar")
     set(types_uint8   "uint8_t" "unsigned char" "UnsignedChar")
     set(types_float16 "float16" "half" "__half")
@@ -405,9 +404,9 @@ function(normalize_to_canonical_type cpp_type canonical_var)
     # =================================
     set(canonical "")
     if(local_cpp_type MATCHES "${patterns_int64}")
-        set(canonical "LongType")
+        set(canonical "sd::LongType")
     elseif(local_cpp_type MATCHES "${patterns_uint64}")
-        set(canonical "uint64_t")
+        set(canonical "sd::UnsignedLong")
     elseif(local_cpp_type MATCHES "${patterns_int32}")
         set(canonical "int32_t")
     elseif(local_cpp_type MATCHES "${patterns_uint32}")
@@ -496,16 +495,8 @@ function(handle_reduce_same t1 content_var is_cuda)
     set(content "${${content_var}}")
     set(dedupe_set "")
     
-    # Normalize type
-    normalize_to_canonical_type("${t1}" norm_t1)
-    
-    # Skip redundant type aliases
-    if(NOT t1 STREQUAL norm_t1)
-        set(${content_var} "${content}" PARENT_SCOPE)
-        return()
-    endif()
-    
-    # Generate instantiations
+    # Generate instantiations for the actual type used (including 'long')
+    # Don't skip aliases because NativeOpExecutioner.cpp uses 'long' explicitly
     if(is_cuda)
         add_unique_instantiation("template void functions::reduce::ReduceSameFunction<${t1}>::execReduce(dim3 launchDims, cudaStream_t* stream, const int opNum, const void* x, const sd::LongType* dXShapeInfo, const sd::LongType* hXShapeInfo, void* extraParams, void* vreductionBuffer, void* z, const sd::LongType* dZShapeInfo, const sd::LongType* hZShapeInfo, const sd::LongType* dims);" dedupe_set content)
         add_unique_instantiation("template void functions::reduce::ReduceSameFunction<${t1}>::execReduceScalar(dim3 launchDims, cudaStream_t* stream, int opNum, const void* x, const sd::LongType* xShapeInfo, const sd::LongType* hXShapeInfo, void* extraParams, void* z, const sd::LongType* zShapeInfo, const sd::LongType* hZShapeInfo, sd::LongType* dimension, sd::LongType dimensionLength, void* reductionBuffer, const sd::LongType* tadOnlyShapeInfo);" dedupe_set content)
@@ -595,44 +586,44 @@ endfunction()
 function(handle_scalar t1 t2 t3 content_var is_cuda)
     set(content "${${content_var}}")
     set(dedupe_set "")
-    
+
     # Normalize types
     normalize_to_canonical_type("${t1}" norm_t1)
     normalize_to_canonical_type("${t2}" norm_t2)
     normalize_to_canonical_type("${t3}" norm_t3)
-    
-    # Skip redundant type alias combinations
-    if(norm_t1 STREQUAL norm_t2 AND norm_t2 STREQUAL norm_t3)
-        if(NOT (t1 STREQUAL t2 AND t2 STREQUAL t3))
-            set(${content_var} "${content}" PARENT_SCOPE)
-            return()
-        endif()
+
+    # Skip any combination where ANY type isn't in its canonical form
+    # This prevents duplicates like (unsigned short int, uint16_t, uint32_t) when (uint16_t, uint16_t, uint32_t) exists
+    if(NOT (t1 STREQUAL norm_t1 AND t2 STREQUAL norm_t2 AND t3 STREQUAL norm_t3))
+        # At least one type is a non-canonical alias - skip to avoid duplicates
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
     endif()
-    
+
     # Map to enum for validation
     map_cpp_to_enum("${norm_t1}" type1_enum)
     map_cpp_to_enum("${norm_t2}" type2_enum)
     map_cpp_to_enum("${norm_t3}" type3_enum)
-    
+
     # Validation
     _internal_srcore_is_valid_pair("${type1_enum}" "${type3_enum}" valid_13)
     _internal_srcore_is_valid_pair("${type2_enum}" "${type3_enum}" valid_23)
     _internal_srcore_is_valid_triple("${type1_enum}" "${type2_enum}" "${type3_enum}" valid_triple)
-    
+
     if(NOT valid_13 OR NOT valid_23 OR NOT valid_triple)
         set(${content_var} "${content}" PARENT_SCOPE)
         return()
     endif()
-    
-    # Generate instantiations
+
+    # Generate instantiations using NORMALIZED types (which are same as originals now due to check above)
     if(is_cuda)
-        add_unique_instantiation("template void functions::scalar::ScalarTransform<${t1}, ${t2}, ${t3}>::executeCudaShaped(dim3& launchDims, cudaStream_t* stream, int opNum, const void *vx, const sd::LongType *xShapeInfo, const sd::LongType *hxShapeInfo, void *vz, const sd::LongType *zShapeInfo, const sd::LongType *hzShapeInfo, const void *vscalar, void *vextraParams);" dedupe_set content)
-        add_unique_instantiation("template void functions::scalar::ScalarTransform<${t1}, ${t2}, ${t3}>::executeCudaAlongDimension(dim3& launchDims, cudaStream_t* stream, int opNum, const void *vx, const sd::LongType *xShapeInfo, void *vz, const sd::LongType *zShapeInfo, const void *vscalars, void *vextraParams, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ);" dedupe_set content)
+        add_unique_instantiation("template void functions::scalar::ScalarTransform<${norm_t1}, ${norm_t2}, ${norm_t3}>::executeCudaShaped(dim3& launchDims, cudaStream_t* stream, int opNum, const void *vx, const sd::LongType *xShapeInfo, const sd::LongType *hxShapeInfo, void *vz, const sd::LongType *zShapeInfo, const sd::LongType *hzShapeInfo, const void *vscalar, void *vextraParams);" dedupe_set content)
+        add_unique_instantiation("template void functions::scalar::ScalarTransform<${norm_t1}, ${norm_t2}, ${norm_t3}>::executeCudaAlongDimension(dim3& launchDims, cudaStream_t* stream, int opNum, const void *vx, const sd::LongType *xShapeInfo, void *vz, const sd::LongType *zShapeInfo, const void *vscalars, void *vextraParams, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ);" dedupe_set content)
     else()
-        add_unique_instantiation("template void functions::scalar::ScalarTransform<${t1}, ${t2}, ${t3}>::transform(int opNum, const void *x, const sd::LongType *xShapeInfo, void *result, const sd::LongType *resultShapeInfo, const void *scalar, void *extraParams, sd::LongType start, sd::LongType stop);" dedupe_set content)
-        add_unique_instantiation("template void functions::scalar::ScalarTransform<${t1}, ${t2}, ${t3}>::transform(int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *z, const sd::LongType *zShapeInfo, const void *scalars, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ, sd::LongType start, sd::LongType stop);" dedupe_set content)
+        add_unique_instantiation("template void functions::scalar::ScalarTransform<${norm_t1}, ${norm_t2}, ${norm_t3}>::transform(int opNum, const void *x, const sd::LongType *xShapeInfo, void *result, const sd::LongType *resultShapeInfo, const void *scalar, void *extraParams, sd::LongType start, sd::LongType stop);" dedupe_set content)
+        add_unique_instantiation("template void functions::scalar::ScalarTransform<${norm_t1}, ${norm_t2}, ${norm_t3}>::transform(int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *z, const sd::LongType *zShapeInfo, const void *scalars, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ, sd::LongType start, sd::LongType stop);" dedupe_set content)
     endif()
-    
+
     set(${content_var} "${content}" PARENT_SCOPE)
 endfunction()
 
@@ -670,17 +661,8 @@ endfunction()
 function(handle_reduce_same t1 content_var is_cuda)
     set(content "${${content_var}}")
     set(dedupe_set "")
-    
-    # Normalize type
-    normalize_to_canonical_type("${t1}" norm_t1)
-    
-    # Skip redundant type aliases
-    if(NOT t1 STREQUAL norm_t1)
-        set(${content_var} "${content}" PARENT_SCOPE)
-        return()
-    endif()
-    
-    # Generate instantiations
+
+    # Generate ONLY for types.h typedefs (sd::LongType, sd::UnsignedLong)
     if(is_cuda)
         add_unique_instantiation("template void functions::reduce::ReduceSameFunction<${t1}>::execReduce(dim3 launchDims, cudaStream_t* stream, const int opNum, const void* x, const sd::LongType* dXShapeInfo, const sd::LongType* hXShapeInfo, void* extraParams, void* vreductionBuffer, void* z, const sd::LongType* dZShapeInfo, const sd::LongType* hZShapeInfo, const sd::LongType* dims);" dedupe_set content)
         add_unique_instantiation("template void functions::reduce::ReduceSameFunction<${t1}>::execReduceScalar(dim3 launchDims, cudaStream_t* stream, int opNum, const void* x, const sd::LongType* xShapeInfo, const sd::LongType* hXShapeInfo, void* extraParams, void* z, const sd::LongType* zShapeInfo, const sd::LongType* hZShapeInfo, sd::LongType* dimension, sd::LongType dimensionLength, void* reductionBuffer, const sd::LongType* tadOnlyShapeInfo);" dedupe_set content)
@@ -690,7 +672,7 @@ function(handle_reduce_same t1 content_var is_cuda)
         add_unique_instantiation("template void functions::reduce::ReduceSameFunction<${t1}>::execScalar(int opNum, void const* x, sd::LongType const* xShapeInfo, void* extraParams, void* z, sd::LongType const* zShapeInfo);" dedupe_set content)
         add_unique_instantiation("template ${t1} functions::reduce::ReduceSameFunction<${t1}>::execScalar(int opNum, const void* x, const sd::LongType* xShapeInfo, void* extraParams);" dedupe_set content)
     endif()
-    
+
     set(${content_var} "${content}" PARENT_SCOPE)
 endfunction()
 
@@ -742,52 +724,46 @@ endfunction()
 function(handle_pairwise t1 t2 t3 content_var is_cuda)
     set(content "${${content_var}}")
     set(dedupe_set "")
-        message(STATUS "DEBUG: handle_pairwise called with t1='${t1}', t2='${t2}', t3='${t3}'")
+    message(STATUS "DEBUG: handle_pairwise called with t1='${t1}', t2='${t2}', t3='${t3}'")
 
     # Normalize types first
     normalize_to_canonical_type("${t1}" norm_t1)
     normalize_to_canonical_type("${t2}" norm_t2)
     normalize_to_canonical_type("${t3}" norm_t3)
     message(STATUS "DEBUG: handle_pairwise normalized: '${norm_t1}', '${norm_t2}', '${norm_t3}'")
-    message(STATUS "DEBUG: handle_pairwise normalized: '${norm_t1}', '${norm_t2}', '${norm_t3}'")
 
-    # Skip if all three are the same after normalization (redundant)
-    if(norm_t1 STREQUAL norm_t2 AND norm_t2 STREQUAL norm_t3)
-        # Same-type operations are valid but check if we need all type variants
-        if(t1 STREQUAL t2 AND t2 STREQUAL t3)
-            # Exact same types - generate
-        else()
-            # Different aliases of same type - skip redundant variants
-            set(${content_var} "${content}" PARENT_SCOPE)
-            return()
-        endif()
+    # Skip any combination where ANY type isn't in its canonical form
+    # This prevents duplicates like (unsigned short int, uint16_t, uint32_t) when (uint16_t, uint16_t, uint32_t) exists
+    if(NOT (t1 STREQUAL norm_t1 AND t2 STREQUAL norm_t2 AND t3 STREQUAL norm_t3))
+        # At least one type is a non-canonical alias - skip to avoid duplicates
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
     endif()
-    
+
     # Map normalized types to enum names for validation
     map_cpp_to_enum("${norm_t1}" type1_enum)
     map_cpp_to_enum("${norm_t2}" type2_enum)
     map_cpp_to_enum("${norm_t3}" type3_enum)
-    
+
     # Validation checks...
     _internal_srcore_is_valid_pair("${type1_enum}" "${type2_enum}" valid_12)
     _internal_srcore_is_valid_pair("${type2_enum}" "${type3_enum}" valid_23)
     _internal_srcore_is_valid_triple("${type1_enum}" "${type2_enum}" "${type3_enum}" valid_123)
-    
+
     if(NOT valid_12 OR NOT valid_23 OR NOT valid_123)
         set(${content_var} "${content}" PARENT_SCOPE)
         return()
     endif()
-    
-    # Generate instantiations
+
+    # Generate instantiations using NORMALIZED types (which are same as originals now due to check above)
     if(is_cuda)
-        add_unique_instantiation("template void functions::pairwise_transforms::PairWiseTransform<${t1}, ${t2}, ${t3}>::executeCudaShaped(dim3& launchDims, cudaStream_t* stream, int opNum, const void *vx, const sd::LongType *xShapeInfo, const void *vy, const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo, void *vextraParams);" dedupe_set content)
+        add_unique_instantiation("template void functions::pairwise_transforms::PairWiseTransform<${norm_t1}, ${norm_t2}, ${norm_t3}>::executeCudaShaped(dim3& launchDims, cudaStream_t* stream, int opNum, const void *vx, const sd::LongType *xShapeInfo, const void *vy, const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo, void *vextraParams);" dedupe_set content)
     else()
-        add_unique_instantiation("template void functions::pairwise_transforms::PairWiseTransform<${t1}, ${t2}, ${t3}>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo, void *extraParams, sd::LongType start, sd::LongType stop);" dedupe_set content)
-        add_unique_instantiation("template void functions::pairwise_transforms::PairWiseTransform<${t1}, ${t2}, ${t3}>::exec(int opNum, const void *x, sd::LongType xStride, const void *y, sd::LongType yStride, void *z, sd::LongType resultStride, void *extraParams, sd::LongType len, sd::LongType start, sd::LongType stop);" dedupe_set content)
+        add_unique_instantiation("template void functions::pairwise_transforms::PairWiseTransform<${norm_t1}, ${norm_t2}, ${norm_t3}>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo, void *extraParams, sd::LongType start, sd::LongType stop);" dedupe_set content)
+        add_unique_instantiation("template void functions::pairwise_transforms::PairWiseTransform<${norm_t1}, ${norm_t2}, ${norm_t3}>::exec(int opNum, const void *x, sd::LongType xStride, const void *y, sd::LongType yStride, void *z, sd::LongType resultStride, void *extraParams, sd::LongType len, sd::LongType start, sd::LongType stop);" dedupe_set content)
     endif()
-    
+
     set(${content_var} "${content}" PARENT_SCOPE)
-    message(STATUS "DEBUG: handle_pairwise normalized: '${norm_t1}', '${norm_t2}', '${norm_t3}'")
 
 endfunction()
 
@@ -799,44 +775,44 @@ endfunction()
 function(handle_scalar t1 t2 t3 content_var is_cuda)
     set(content "${${content_var}}")
     set(dedupe_set "")
-    
+
     # Normalize types
     normalize_to_canonical_type("${t1}" norm_t1)
     normalize_to_canonical_type("${t2}" norm_t2)
     normalize_to_canonical_type("${t3}" norm_t3)
-    
-    # Skip redundant type alias combinations
-    if(norm_t1 STREQUAL norm_t2 AND norm_t2 STREQUAL norm_t3)
-        if(NOT (t1 STREQUAL t2 AND t2 STREQUAL t3))
-            set(${content_var} "${content}" PARENT_SCOPE)
-            return()
-        endif()
+
+    # Skip any combination where ANY type isn't in its canonical form
+    # This prevents duplicates like (unsigned short int, uint16_t, uint32_t) when (uint16_t, uint16_t, uint32_t) exists
+    if(NOT (t1 STREQUAL norm_t1 AND t2 STREQUAL norm_t2 AND t3 STREQUAL norm_t3))
+        # At least one type is a non-canonical alias - skip to avoid duplicates
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
     endif()
-    
+
     # Map to enum for validation
     map_cpp_to_enum("${norm_t1}" type1_enum)
     map_cpp_to_enum("${norm_t2}" type2_enum)
     map_cpp_to_enum("${norm_t3}" type3_enum)
-    
+
     # Validation
     _internal_srcore_is_valid_pair("${type1_enum}" "${type3_enum}" valid_13)
     _internal_srcore_is_valid_pair("${type2_enum}" "${type3_enum}" valid_23)
     _internal_srcore_is_valid_triple("${type1_enum}" "${type2_enum}" "${type3_enum}" valid_triple)
-    
+
     if(NOT valid_13 OR NOT valid_23 OR NOT valid_triple)
         set(${content_var} "${content}" PARENT_SCOPE)
         return()
     endif()
-    
-    # Generate instantiations
+
+    # Generate instantiations using NORMALIZED types (which are same as originals now due to check above)
     if(is_cuda)
-        add_unique_instantiation("template void functions::scalar::ScalarTransform<${t1}, ${t2}, ${t3}>::executeCudaShaped(dim3& launchDims, cudaStream_t* stream, int opNum, const void *vx, const sd::LongType *xShapeInfo, const sd::LongType *hxShapeInfo, void *vz, const sd::LongType *zShapeInfo, const sd::LongType *hzShapeInfo, const void *vscalar, void *vextraParams);" dedupe_set content)
-        add_unique_instantiation("template void functions::scalar::ScalarTransform<${t1}, ${t2}, ${t3}>::executeCudaAlongDimension(dim3& launchDims, cudaStream_t* stream, int opNum, const void *vx, const sd::LongType *xShapeInfo, void *vz, const sd::LongType *zShapeInfo, const void *vscalars, void *vextraParams, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ);" dedupe_set content)
+        add_unique_instantiation("template void functions::scalar::ScalarTransform<${norm_t1}, ${norm_t2}, ${norm_t3}>::executeCudaShaped(dim3& launchDims, cudaStream_t* stream, int opNum, const void *vx, const sd::LongType *xShapeInfo, const sd::LongType *hxShapeInfo, void *vz, const sd::LongType *zShapeInfo, const sd::LongType *hzShapeInfo, const void *vscalar, void *vextraParams);" dedupe_set content)
+        add_unique_instantiation("template void functions::scalar::ScalarTransform<${norm_t1}, ${norm_t2}, ${norm_t3}>::executeCudaAlongDimension(dim3& launchDims, cudaStream_t* stream, int opNum, const void *vx, const sd::LongType *xShapeInfo, void *vz, const sd::LongType *zShapeInfo, const void *vscalars, void *vextraParams, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ);" dedupe_set content)
     else()
-        add_unique_instantiation("template void functions::scalar::ScalarTransform<${t1}, ${t2}, ${t3}>::transform(int opNum, const void *x, const sd::LongType *xShapeInfo, void *result, const sd::LongType *resultShapeInfo, const void *scalar, void *extraParams, sd::LongType start, sd::LongType stop);" dedupe_set content)
-        add_unique_instantiation("template void functions::scalar::ScalarTransform<${t1}, ${t2}, ${t3}>::transform(int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *z, const sd::LongType *zShapeInfo, const void *scalars, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ, sd::LongType start, sd::LongType stop);" dedupe_set content)
+        add_unique_instantiation("template void functions::scalar::ScalarTransform<${norm_t1}, ${norm_t2}, ${norm_t3}>::transform(int opNum, const void *x, const sd::LongType *xShapeInfo, void *result, const sd::LongType *resultShapeInfo, const void *scalar, void *extraParams, sd::LongType start, sd::LongType stop);" dedupe_set content)
+        add_unique_instantiation("template void functions::scalar::ScalarTransform<${norm_t1}, ${norm_t2}, ${norm_t3}>::transform(int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *z, const sd::LongType *zShapeInfo, const void *scalars, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ, sd::LongType start, sd::LongType stop);" dedupe_set content)
     endif()
-    
+
     set(${content_var} "${content}" PARENT_SCOPE)
 endfunction()
 
@@ -847,43 +823,43 @@ endfunction()
 function(handle_broadcast t1 t2 t3 content_var is_cuda)
     set(content "${${content_var}}")
     set(dedupe_set "")
-    
+
     # Normalize types
     normalize_to_canonical_type("${t1}" norm_t1)
     normalize_to_canonical_type("${t2}" norm_t2)
     normalize_to_canonical_type("${t3}" norm_t3)
-    
-    # Skip redundant combinations
-    if(norm_t1 STREQUAL norm_t2 AND norm_t2 STREQUAL norm_t3)
-        if(NOT (t1 STREQUAL t2 AND t2 STREQUAL t3))
-            set(${content_var} "${content}" PARENT_SCOPE)
-            return()
-        endif()
+
+    # Skip any combination where ANY type isn't in its canonical form
+    # This prevents duplicates like (unsigned short int, uint16_t, uint32_t) when (uint16_t, uint16_t, uint32_t) exists
+    if(NOT (t1 STREQUAL norm_t1 AND t2 STREQUAL norm_t2 AND t3 STREQUAL norm_t3))
+        # At least one type is a non-canonical alias - skip to avoid duplicates
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
     endif()
-    
+
     # Map to enum for validation
     map_cpp_to_enum("${norm_t1}" type1_enum)
     map_cpp_to_enum("${norm_t2}" type2_enum)
     map_cpp_to_enum("${norm_t3}" type3_enum)
-    
+
     # Validation
     _internal_srcore_is_valid_triple("${type1_enum}" "${type2_enum}" "${type3_enum}" is_valid)
     if(NOT is_valid)
         set(${content_var} "${content}" PARENT_SCOPE)
         return()
     endif()
-    
-    # Generate instantiations
+
+    # Generate instantiations using NORMALIZED types (which are same as originals now due to check above)
     if(is_cuda)
-        add_unique_instantiation("template void functions::broadcast::Broadcast<${t1}, ${t2}, ${t3}>::execBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets, const sd::LongType *tadOnlyShapeInfoZ, const sd::LongType *tadOffsetsZ);" dedupe_set content)
-        add_unique_instantiation("template void functions::broadcast::Broadcast<${t1}, ${t2}, ${t3}>::execBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo);" dedupe_set content)
-        add_unique_instantiation("template void functions::broadcast::Broadcast<${t1}, ${t2}, ${t3}>::execInverseBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets, const sd::LongType *tadOnlyShapeInfoZ, const sd::LongType *tadOffsetsZ);" dedupe_set content)
+        add_unique_instantiation("template void functions::broadcast::Broadcast<${norm_t1}, ${norm_t2}, ${norm_t3}>::execBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets, const sd::LongType *tadOnlyShapeInfoZ, const sd::LongType *tadOffsetsZ);" dedupe_set content)
+        add_unique_instantiation("template void functions::broadcast::Broadcast<${norm_t1}, ${norm_t2}, ${norm_t3}>::execBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo);" dedupe_set content)
+        add_unique_instantiation("template void functions::broadcast::Broadcast<${norm_t1}, ${norm_t2}, ${norm_t3}>::execInverseBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets, const sd::LongType *tadOnlyShapeInfoZ, const sd::LongType *tadOffsetsZ);" dedupe_set content)
     else()
-        add_unique_instantiation("template void functions::broadcast::Broadcast<${t1}, ${t2}, ${t3}>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetZ, sd::LoopKind::Kind loopKind, sd::LongType start, sd::LongType stop);" dedupe_set content)
-        add_unique_instantiation("template void functions::broadcast::Broadcast<${t1}, ${t2}, ${t3}>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo);" dedupe_set content)
-        add_unique_instantiation("template void functions::broadcast::Broadcast<${t1}, ${t2}, ${t3}>::execInverse(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetZ, sd::LongType start, sd::LongType stop);" dedupe_set content)
+        add_unique_instantiation("template void functions::broadcast::Broadcast<${norm_t1}, ${norm_t2}, ${norm_t3}>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetZ, sd::LoopKind::Kind loopKind, sd::LongType start, sd::LongType stop);" dedupe_set content)
+        add_unique_instantiation("template void functions::broadcast::Broadcast<${norm_t1}, ${norm_t2}, ${norm_t3}>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo);" dedupe_set content)
+        add_unique_instantiation("template void functions::broadcast::Broadcast<${norm_t1}, ${norm_t2}, ${norm_t3}>::execInverse(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetZ, sd::LongType start, sd::LongType stop);" dedupe_set content)
     endif()
-    
+
     set(${content_var} "${content}" PARENT_SCOPE)
 endfunction()
 
@@ -1029,14 +1005,8 @@ function(handle_reduce_bool t1 t2 content_var is_cuda)
         return()
     endif()
     
-    # Normalize t1
+    # Normalize t1 but don't skip aliases - NativeOpExecutioner uses 'long' explicitly
     normalize_to_canonical_type("${t1}" norm_t1)
-    
-    # Skip redundant type aliases
-    if(NOT t1 STREQUAL norm_t1)
-        set(${content_var} "${content}" PARENT_SCOPE)
-        return()
-    endif()
     
     # Map to enum for validation
     map_cpp_to_enum("${norm_t1}" type1_enum)
@@ -1064,36 +1034,45 @@ endfunction()
 function(handle_reduce_long t1 t2 content_var is_cuda)
     set(content "${${content_var}}")
     set(dedupe_set "")
-    
-    # Only process if t2 is a long/int64 type
-    # Check if t2 contains LongType or int64_t variants
-    if(NOT (t2 MATCHES "int64_t" OR t2 MATCHES "LongType" OR t2 MATCHES "long long"))
+
+    # Normalize types to canonical forms for validation
+    normalize_to_canonical_type("${t1}" norm_t1)
+    normalize_to_canonical_type("${t2}" norm_t2)
+
+    # Only process if t2 is a 64-bit integer type (maps to INT64 or UINT64)
+    map_cpp_to_enum("${norm_t2}" type2_enum)
+    if(NOT (type2_enum STREQUAL "INT64" OR type2_enum STREQUAL "UINT64"))
         set(${content_var} "${content}" PARENT_SCOPE)
         return()
     endif()
-    
-    # Normalize t1
-    normalize_to_canonical_type("${t1}" norm_t1)
-    
+
     # Map to enum for validation
     map_cpp_to_enum("${norm_t1}" type1_enum)
-    
-    _internal_srcore_is_valid_pair("${type1_enum}" "INT64" is_valid)
+
+    message(STATUS "DEBUG handle_reduce_long: t1='${t1}' norm_t1='${norm_t1}' type1_enum='${type1_enum}'")
+    message(STATUS "DEBUG handle_reduce_long: t2='${t2}' norm_t2='${norm_t2}' type2_enum='${type2_enum}'")
+
+    _internal_srcore_is_valid_pair("${type1_enum}" "${type2_enum}" is_valid)
+    message(STATUS "DEBUG handle_reduce_long: is_valid='${is_valid}' for pair (${type1_enum}, ${type2_enum})")
+
     if(NOT is_valid)
+        message(STATUS "DEBUG handle_reduce_long: REJECTED pair (${type1_enum}, ${type2_enum})")
         set(${content_var} "${content}" PARENT_SCOPE)
         return()
     endif()
-    
-    # Generate instantiations
+
+    message(STATUS "DEBUG handle_reduce_long: ACCEPTED pair (${type1_enum}, ${type2_enum}), generating instantiations")
+
+    # Generate instantiations using types from types.h (sd::LongType = long long)
+    # Generate ONLY for types.h typedefs (sd::LongType, sd::UnsignedLong)
     if(is_cuda)
         # CUDA reduce_long implementations (if needed)
     else()
-        add_unique_instantiation("template void functions::reduce::ReduceLongFunction<${norm_t1}, LongType>::exec(int, sd::memory::Workspace*, void const*, sd::LongType const*, void*, void*, sd::LongType const*, sd::LongType*);" dedupe_set content)
-        add_unique_instantiation("template void functions::reduce::ReduceLongFunction<${norm_t1}, LongType>::execScalar(int, void const*, sd::LongType const*, void*, void*, sd::LongType const*);" dedupe_set content)
-   add_unique_instantiation("template class sd::ReductionLongLoops<${norm_t1}, LongType>;" dedupe_set content)
-        
-        endif()
-    
+        add_unique_instantiation("template void functions::reduce::ReduceLongFunction<${t1}, ${t2}>::exec(int, sd::memory::Workspace*, void const*, sd::LongType const*, void*, void*, sd::LongType const*, sd::LongType*);" dedupe_set content)
+        add_unique_instantiation("template void functions::reduce::ReduceLongFunction<${t1}, ${t2}>::execScalar(int, void const*, sd::LongType const*, void*, void*, sd::LongType const*);" dedupe_set content)
+        add_unique_instantiation("template class sd::ReductionLongLoops<${t1}, ${t2}>;" dedupe_set content)
+    endif()
+
     set(${content_var} "${content}" PARENT_SCOPE)
 endfunction()
 
@@ -1205,9 +1184,11 @@ function(setup_type_mapping)
             elseif(type STREQUAL "UINT32")
                 set(SRCORE_TYPE_CPP_${idx} "uint32_t;unsigned int;unsigned" PARENT_SCOPE)
             elseif(type STREQUAL "INT64")
-                set(SRCORE_TYPE_CPP_${idx} "int64_t;long long;long;sd::LongType;LongType" PARENT_SCOPE)
+                # Use sd::LongType (long long) from types.h
+                set(SRCORE_TYPE_CPP_${idx} "sd::LongType" PARENT_SCOPE)
             elseif(type STREQUAL "UINT64")
-                set(SRCORE_TYPE_CPP_${idx} "uint64_t;unsigned long long;unsigned long;sd::UnsignedLong;UnsignedLong" PARENT_SCOPE)
+                # Use sd::UnsignedLong (uint64_t) from types.h
+                set(SRCORE_TYPE_CPP_${idx} "sd::UnsignedLong" PARENT_SCOPE)
             elseif(type STREQUAL "FLOAT32")
                 set(SRCORE_TYPE_CPP_${idx} "float" PARENT_SCOPE)
             elseif(type STREQUAL "DOUBLE")
@@ -1231,6 +1212,7 @@ function(setup_type_mapping)
             endif()
             math(EXPR idx "${idx} + 1")
         endforeach()
+
     endif()
 endfunction()
 
@@ -1272,7 +1254,8 @@ function(create_direct_instantiation_file template_file combinations output_dir 
     set(chunk_index 0)
     set(local_generated_sources ${${generated_sources_var}})
     set(total_instantiations 0)
-    
+    set(processed_normalized_combinations "")  # Track normalized combinations to avoid duplicates
+
     foreach(combination ${combinations})
         string(REPLACE "," ";" parts "${combination}")
         list(LENGTH parts parts_count)
@@ -1286,7 +1269,9 @@ function(create_direct_instantiation_file template_file combinations output_dir 
         if(parts_count GREATER_EQUAL 1)
             list(GET parts 0 idx1)
             if(DEFINED SRCORE_TYPE_CPP_${idx1})
-                set(t1 "${SRCORE_TYPE_CPP_${idx1}}")
+                set(raw_t1 "${SRCORE_TYPE_CPP_${idx1}}")
+                # Normalize all types to use typedefs from types.h (sd::LongType, sd::UnsignedLong)
+                normalize_to_canonical_type("${raw_t1}" t1)
                 if(DEFINED SRCORE_IS_STRING_${idx1} AND SRCORE_IS_STRING_${idx1})
                     set(has_string TRUE)
                 endif()
@@ -1295,7 +1280,9 @@ function(create_direct_instantiation_file template_file combinations output_dir 
         if(parts_count GREATER_EQUAL 2)
             list(GET parts 1 idx2)
             if(DEFINED SRCORE_TYPE_CPP_${idx2})
-                set(t2 "${SRCORE_TYPE_CPP_${idx2}}")
+                set(raw_t2 "${SRCORE_TYPE_CPP_${idx2}}")
+                # Normalize all types to use typedefs from types.h (sd::LongType, sd::UnsignedLong)
+                normalize_to_canonical_type("${raw_t2}" t2)
                 if(DEFINED SRCORE_IS_STRING_${idx2} AND SRCORE_IS_STRING_${idx2})
                     set(has_string TRUE)
                 endif()
@@ -1304,7 +1291,9 @@ function(create_direct_instantiation_file template_file combinations output_dir 
         if(parts_count GREATER_EQUAL 3)
             list(GET parts 2 idx3)
             if(DEFINED SRCORE_TYPE_CPP_${idx3})
-                set(t3 "${SRCORE_TYPE_CPP_${idx3}}")
+                set(raw_t3 "${SRCORE_TYPE_CPP_${idx3}}")
+                # Normalize all types to use typedefs from types.h (sd::LongType, sd::UnsignedLong)
+                normalize_to_canonical_type("${raw_t3}" t3)
                 if(DEFINED SRCORE_IS_STRING_${idx3} AND SRCORE_IS_STRING_${idx3})
                     set(has_string TRUE)
                 endif()
@@ -1315,12 +1304,28 @@ function(create_direct_instantiation_file template_file combinations output_dir 
         if(has_string)
             continue()
         endif()
-        
+
         # Skip if we couldn't map the types
         if(NOT t1)
             continue()
         endif()
-        
+
+        # Skip if we've already processed this normalized combination
+        # This prevents duplicates when 'long' and 'int64_t' both normalize to 'int64_t'
+        set(normalized_combo "${t1}")
+        if(t2)
+            set(normalized_combo "${normalized_combo},${t2}")
+        endif()
+        if(t3)
+            set(normalized_combo "${normalized_combo},${t3}")
+        endif()
+
+        list(FIND processed_normalized_combinations "${normalized_combo}" already_processed)
+        if(already_processed GREATER -1)
+            continue()
+        endif()
+        list(APPEND processed_normalized_combinations "${normalized_combo}")
+
         # Dispatch to appropriate handler
         dispatch_to_handler("${template_name}" "${t1}" "${t2}" "${t3}" "${parts_count}" chunk_content ${IS_CUDA_FILE})
         
@@ -1395,43 +1400,43 @@ endfunction()
 function(handle_broadcast t1 t2 t3 content_var is_cuda)
     set(content "${${content_var}}")
     set(dedupe_set "")
-    
+
     # Normalize types
     normalize_to_canonical_type("${t1}" norm_t1)
     normalize_to_canonical_type("${t2}" norm_t2)
     normalize_to_canonical_type("${t3}" norm_t3)
-    
-    # Skip redundant combinations
-    if(norm_t1 STREQUAL norm_t2 AND norm_t2 STREQUAL norm_t3)
-        if(NOT (t1 STREQUAL t2 AND t2 STREQUAL t3))
-            set(${content_var} "${content}" PARENT_SCOPE)
-            return()
-        endif()
+
+    # Skip any combination where ANY type isn't in its canonical form
+    # This prevents duplicates like (unsigned short int, uint16_t, uint32_t) when (uint16_t, uint16_t, uint32_t) exists
+    if(NOT (t1 STREQUAL norm_t1 AND t2 STREQUAL norm_t2 AND t3 STREQUAL norm_t3))
+        # At least one type is a non-canonical alias - skip to avoid duplicates
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
     endif()
-    
+
     # Map to enum for validation
     map_cpp_to_enum("${norm_t1}" type1_enum)
     map_cpp_to_enum("${norm_t2}" type2_enum)
     map_cpp_to_enum("${norm_t3}" type3_enum)
-    
+
     # Validation
     _internal_srcore_is_valid_triple("${type1_enum}" "${type2_enum}" "${type3_enum}" is_valid)
     if(NOT is_valid)
         set(${content_var} "${content}" PARENT_SCOPE)
         return()
     endif()
-    
-    # Generate instantiations
+
+    # Generate instantiations using NORMALIZED types (which are same as originals now due to check above)
     if(is_cuda)
-        add_unique_instantiation("template void functions::broadcast::Broadcast<${t1}, ${t2}, ${t3}>::execBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets, const sd::LongType *tadOnlyShapeInfoZ, const sd::LongType *tadOffsetsZ);" dedupe_set content)
-        add_unique_instantiation("template void functions::broadcast::Broadcast<${t1}, ${t2}, ${t3}>::execBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo);" dedupe_set content)
-        add_unique_instantiation("template void functions::broadcast::Broadcast<${t1}, ${t2}, ${t3}>::execInverseBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets, const sd::LongType *tadOnlyShapeInfoZ, const sd::LongType *tadOffsetsZ);" dedupe_set content)
+        add_unique_instantiation("template void functions::broadcast::Broadcast<${norm_t1}, ${norm_t2}, ${norm_t3}>::execBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets, const sd::LongType *tadOnlyShapeInfoZ, const sd::LongType *tadOffsetsZ);" dedupe_set content)
+        add_unique_instantiation("template void functions::broadcast::Broadcast<${norm_t1}, ${norm_t2}, ${norm_t3}>::execBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo);" dedupe_set content)
+        add_unique_instantiation("template void functions::broadcast::Broadcast<${norm_t1}, ${norm_t2}, ${norm_t3}>::execInverseBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets, const sd::LongType *tadOnlyShapeInfoZ, const sd::LongType *tadOffsetsZ);" dedupe_set content)
     else()
-        add_unique_instantiation("template void functions::broadcast::Broadcast<${t1}, ${t2}, ${t3}>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetZ, sd::LoopKind::Kind loopKind, sd::LongType start, sd::LongType stop);" dedupe_set content)
-        add_unique_instantiation("template void functions::broadcast::Broadcast<${t1}, ${t2}, ${t3}>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo);" dedupe_set content)
-        add_unique_instantiation("template void functions::broadcast::Broadcast<${t1}, ${t2}, ${t3}>::execInverse(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetZ, sd::LongType start, sd::LongType stop);" dedupe_set content)
+        add_unique_instantiation("template void functions::broadcast::Broadcast<${norm_t1}, ${norm_t2}, ${norm_t3}>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetZ, sd::LoopKind::Kind loopKind, sd::LongType start, sd::LongType stop);" dedupe_set content)
+        add_unique_instantiation("template void functions::broadcast::Broadcast<${norm_t1}, ${norm_t2}, ${norm_t3}>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo);" dedupe_set content)
+        add_unique_instantiation("template void functions::broadcast::Broadcast<${norm_t1}, ${norm_t2}, ${norm_t3}>::execInverse(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetZ, sd::LongType start, sd::LongType stop);" dedupe_set content)
     endif()
-    
+
     set(${content_var} "${content}" PARENT_SCOPE)
 endfunction()
 
@@ -1453,7 +1458,7 @@ endfunction()
             set(enum_name "UINT32")
         elseif(cpp_type MATCHES "int64_t|long long|long|LongType|sd::LongType")
             set(enum_name "INT64")
-        elseif(cpp_type MATCHES "uint64_t|unsigned long|UnsignedLong")
+        elseif(cpp_type MATCHES "uint64_t|unsigned long long|unsigned long|UnsignedLong|sd::UnsignedLong")
             set(enum_name "UINT64")
         elseif(cpp_type STREQUAL "float")
             set(enum_name "FLOAT32")
@@ -1682,11 +1687,10 @@ function(dispatch_to_handler template_name t1 t2 t3 parts_count content_var is_c
     elseif(template_name MATCHES ".*reduce_same.*")
         foreach(type IN LISTS t1_list)
             normalize_to_canonical_type("${type}" norm_type)
-            
             set(combo_key "${norm_type}")
             list(FIND template_dedupe_set "${combo_key}" found_idx)
             if(found_idx EQUAL -1)
-                handle_reduce_same("${norm_type}" content ${is_cuda})
+                handle_reduce_same("${type}" content ${is_cuda})
                 list(APPEND template_dedupe_set "${combo_key}")
             endif()
         endforeach()
@@ -1765,7 +1769,6 @@ function(dispatch_to_handler template_name t1 t2 t3 parts_count content_var is_c
             foreach(v2 IN LISTS t2_list)
                 if(v2 STREQUAL "bool")
                     normalize_to_canonical_type("${v1}" norm_v1)
-                    
                     set(combo_key "${norm_v1},bool")
                     list(FIND template_dedupe_set "${combo_key}" found_idx)
                     if(found_idx EQUAL -1)
@@ -1773,7 +1776,7 @@ function(dispatch_to_handler template_name t1 t2 t3 parts_count content_var is_c
                         if(NOT v1_enum STREQUAL "")
                             _internal_srcore_is_valid_pair("${v1_enum}" "BOOL" is_valid)
                             if(is_valid)
-                                handle_reduce_bool("${norm_v1}" "bool" content ${is_cuda})
+                                handle_reduce_bool("${v1}" "bool" content ${is_cuda})
                                 list(APPEND template_dedupe_set "${combo_key}")
                             endif()
                         endif()
@@ -1786,18 +1789,18 @@ elseif(template_name MATCHES ".*reduce_long.*" AND parts_count EQUAL 2)
     foreach(v1 IN LISTS t1_list)
         foreach(v2 IN LISTS t2_list)
             normalize_to_canonical_type("${v2}" norm_v2)
-            if(norm_v2 STREQUAL "LongType" OR norm_v2 STREQUAL "int64_t")
+            if(norm_v2 STREQUAL "sd::LongType" OR norm_v2 STREQUAL "sd::UnsignedLong")
                 normalize_to_canonical_type("${v1}" norm_v1)
-                
                 set(combo_key "${norm_v1},${norm_v2}")
                 list(FIND template_dedupe_set "${combo_key}" found_idx)
                 if(found_idx EQUAL -1)
                     map_cpp_to_enum("${norm_v1}" v1_enum)
-                    map_cpp_to_enum("${norm_v2}" v2_enum)
-                    if(NOT v1_enum STREQUAL "" AND NOT v2_enum STREQUAL "")
-                        _internal_srcore_is_valid_pair("${v1_enum}" "${v2_enum}" is_valid)
-                        if(is_valid)
-                            handle_reduce_long("${norm_v1}" "${norm_v2}" content ${is_cuda})
+                    if(NOT v1_enum STREQUAL "")
+                        # Check if valid pair for either INT64 or UINT64
+                        _internal_srcore_is_valid_pair("${v1_enum}" "INT64" is_valid_int64)
+                        _internal_srcore_is_valid_pair("${v1_enum}" "UINT64" is_valid_uint64)
+                        if(is_valid_int64 OR is_valid_uint64)
+                            handle_reduce_long("${v1}" "${v2}" content ${is_cuda})
                             list(APPEND template_dedupe_set "${combo_key}")
                         endif()
                     endif()

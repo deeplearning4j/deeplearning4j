@@ -526,6 +526,7 @@ CMAKE_ARGUMENTS="${CMAKE_ARGUMENTS:-}"
 PTXAS_INFO="${PTXAS_INFO:-OFF}"
 BUILD_PPSTEP="${BUILD_PPSTEP:-OFF}"
 EXTRACT_INSTANTIATIONS="${EXTRACT_INSTANTIATIONS:-OFF}"
+COMPILER="${COMPILER:-}"
 
 
 # Type validation specific variables
@@ -634,6 +635,11 @@ do
             ;;
         -b|--build-type)
             BUILD="$value"
+            shift # past argument
+            ;;
+        --compiler|-compiler)
+            COMPILER="$value"
+            print_colored "blue" "✓ Compiler set to: $value"
             shift # past argument
             ;;
         -p|--packaging)
@@ -1384,8 +1390,27 @@ pwd
 
 # ----------------------- CMake Configuration -----------------------
 
+# Configure compiler if specified
+COMPILER_ARG=""
+if [ -n "$COMPILER" ]; then
+    case "$COMPILER" in
+        clang|clang++)
+            COMPILER_ARG="-DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++"
+            print_colored "cyan" "Using Clang compiler"
+            ;;
+        gcc|g++)
+            COMPILER_ARG="-DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++"
+            print_colored "cyan" "Using GCC compiler"
+            ;;
+        *)
+            COMPILER_ARG="-DCMAKE_C_COMPILER=$COMPILER -DCMAKE_CXX_COMPILER=${COMPILER}++"
+            print_colored "cyan" "Using custom compiler: $COMPILER"
+            ;;
+    esac
+fi
+
 # Configure CMake
-echo "$CMAKE_COMMAND - -DSD_KEEP_NVCC_OUTPUT=$KEEP_NVCC -DSD_GCC_FUNCTRACE=$FUNC_TRACE $BLAS_ARG $ARCH_ARG $NAME_ARG $OP_OUTPUT_FILE_ARG -DSD_SANITIZERS=${SANITIZERS} -DSD_SANITIZE=${SANITIZE} -DSD_CHECK_VECTORIZATION=${CHECK_VECTORIZATION} $USE_LTO $HELPERS $SHARED_LIBS_ARG $MINIFIER_ARG $OPERATIONS_ARG $DATATYPES_ARG $BUILD_TYPE $PACKAGING_ARG $EXPERIMENTAL_ARG $TESTS_ARG $CUDA_COMPUTE -DOPENBLAS_PATH=$OPENBLAS_PATH -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE ../.."
+echo "$CMAKE_COMMAND - -DSD_KEEP_NVCC_OUTPUT=$KEEP_NVCC -DSD_GCC_FUNCTRACE=$FUNC_TRACE $BLAS_ARG $ARCH_ARG $NAME_ARG $OP_OUTPUT_FILE_ARG -DSD_SANITIZERS=${SANITIZERS} -DSD_SANITIZE=${SANITIZE} -DSD_CHECK_VECTORIZATION=${CHECK_VECTORIZATION} $USE_LTO $HELPERS $SHARED_LIBS_ARG $MINIFIER_ARG $OPERATIONS_ARG $DATATYPES_ARG $BUILD_TYPE $PACKAGING_ARG $EXPERIMENTAL_ARG $TESTS_ARG $CUDA_COMPUTE -DOPENBLAS_PATH=$OPENBLAS_PATH -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE $COMPILER_ARG ../.."
 
 # Handle the PREPROCESS flag first - before any build
 if [ "$PREPROCESS" == "ON" ]; then
@@ -1411,6 +1436,7 @@ if [ "$PREPROCESS" == "ON" ]; then
             -DDEV=FALSE \
             -DCMAKE_NEED_RESPONSE=YES \
             -DMKL_MULTI_THREADED=TRUE \
+            $COMPILER_ARG \
             ../..
     else
         eval "$CMAKE_COMMAND" \
@@ -1433,6 +1459,7 @@ if [ "$PREPROCESS" == "ON" ]; then
             -DDEV=FALSE \
             -DCMAKE_NEED_RESPONSE=YES \
             -DMKL_MULTI_THREADED=TRUE \
+            $COMPILER_ARG \
             ../.. >> "$LOG_OUTPUT" 2>&1
     fi
     echo "Preprocessing complete - exiting"
@@ -1468,6 +1495,7 @@ if [ "$LOG_OUTPUT" == "none" ]; then
         -DDEV=FALSE \
         -DCMAKE_NEED_RESPONSE=YES \
         -DMKL_MULTI_THREADED=TRUE \
+        $COMPILER_ARG \
         ../..
 else
     eval "$CMAKE_COMMAND" \
@@ -1497,6 +1525,7 @@ else
         -DDEV=FALSE \
         -DCMAKE_NEED_RESPONSE=YES \
         -DMKL_MULTI_THREADED=TRUE \
+        $COMPILER_ARG \
         ../.. >> "$LOG_OUTPUT" 2>&1
 fi
 
@@ -1630,6 +1659,7 @@ if [ "$BUILD_PPSTEP" == "ON" ]; then
             "$ARCH_ARG" \
             "$NAME_ARG" \
             -DOPENBLAS_PATH="$OPENBLAS_PATH" \
+            $COMPILER_ARG \
             ../..
     else
         eval "$CMAKE_COMMAND" \
@@ -1638,6 +1668,7 @@ if [ "$BUILD_PPSTEP" == "ON" ]; then
             "$ARCH_ARG" \
             "$NAME_ARG" \
             -DOPENBLAS_PATH="$OPENBLAS_PATH" \
+            $COMPILER_ARG \
             ../.. >> "$LOG_OUTPUT" 2>&1
     fi
     

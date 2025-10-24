@@ -12,15 +12,15 @@ set(INFERENCE_TYPES "int8_t;uint8_t;float16;float;int32_t" CACHE INTERNAL "Types
 set(NLP_TYPES "std::string;float;int32_t;int64_t" CACHE INTERNAL "Types for NLP workloads")
 set(CV_TYPES "uint8_t;float16;float;int32_t" CACHE INTERNAL "Types for computer vision workloads")
 
-# OPTIMIZED: Data pipeline with essential types only (was 6, now 10)
-set(DATA_PIPELINE 
-    "bool;int8_t;uint8_t;int32_t;int64_t;float16;bfloat16;float;double;std::string" 
-    CACHE INTERNAL "Optimized data pipeline with essential types")
+# OPTIMIZED: Data pipeline with essential types only (was 6, now 14)
+set(DATA_PIPELINE
+    "bool;int8_t;uint8_t;int16_t;uint16_t;int32_t;uint32_t;int64_t;uint64_t;float16;bfloat16;float;double;std::string"
+    CACHE INTERNAL "Optimized data pipeline with all integer types")
 
-# OPTIMIZED: Reduced from 16+ types to 10 essential types
-set(STANDARD_ALL_TYPES 
-    "bool;int8_t;uint8_t;int32_t;int64_t;float16;bfloat16;float;double;std::string"
-    CACHE INTERNAL "Optimized all types - removed int16, uint16, uint32, uint64, utf16, utf32")
+# OPTIMIZED: Reduced from 16+ types to 14 essential types (restored integer types needed by batchedGemm)
+set(STANDARD_ALL_TYPES
+    "bool;int8_t;uint8_t;int16_t;uint16_t;int32_t;uint32_t;int64_t;uint64_t;float16;bfloat16;float;double;std::string"
+    CACHE INTERNAL "All types - restored int16, uint16, uint32, uint64 for batchedGemm and other operations")
 
 # Set quantization type profile
 function(set_quantization_type_profile)
@@ -94,7 +94,7 @@ function(set_data_pipeline_type_profile)
 
     message(STATUS "Applied OPTIMIZED data pipeline type profile")
     message(STATUS "Selected types: ${SD_SELECTED_TYPES}")
-    message(STATUS "Removed unnecessary types: int16, uint16, uint32, uint64, utf16, utf32")
+    message(STATUS "Removed unnecessary types: utf16, utf32")
 
     set(SD_ENABLE_STRING_OPERATIONS ON CACHE BOOL "Enable string operations" FORCE)
     set(SD_OPTIMIZE_DATA_LOADING ON CACHE BOOL "Optimize data loading operations" FORCE)
@@ -107,9 +107,9 @@ function(set_standard_all_types_profile)
     set(SD_SELECTED_TYPES ${STANDARD_ALL_TYPES} CACHE STRING "All essential types with semantic filtering" FORCE)
     set(SD_TYPE_PROFILE "standard_all" CACHE STRING "Active type profile" FORCE)
 
-    message(STATUS "Applied OPTIMIZED STANDARD_ALL profile - 10 essential types (was 16+)")
+    message(STATUS "Applied OPTIMIZED STANDARD_ALL profile - 14 essential types (was 16+)")
     message(STATUS "Selected types: ${SD_SELECTED_TYPES}")
-    message(STATUS "Removed types: int16, uint16, uint32, uint64, utf16, utf32")
+    message(STATUS "Removed types: utf16, utf32")
 
     set(SD_ENABLE_STRING_OPERATIONS ON CACHE BOOL "Enable string operations" FORCE)
     set(SD_AGGRESSIVE_SEMANTIC_FILTERING ON CACHE BOOL "Enable aggressive semantic filtering" FORCE)
@@ -416,9 +416,9 @@ function(print_profile_info profile_name)
         message(STATUS "Optimizations: All essential types for ML pipelines")
         message(STATUS "Includes: INT8 quantization, FP16/BF16 mixed precision, UTF8 strings")
     elseif(profile_name STREQUAL "standard_all")
-        message(STATUS "Optimizations: Reduced from 16+ to 10 essential types")
+        message(STATUS "Optimizations: Reduced from 16+ to 14 essential types")
         message(STATUS "Filtering: Aggressive semantic filtering enabled")
-        message(STATUS "Removed: int16, uint16, uint32, uint64, utf16, utf32")
+        message(STATUS "Removed: utf16, utf32")
     endif()
 
     message(STATUS "=== End Profile Information ===")

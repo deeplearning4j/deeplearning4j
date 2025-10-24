@@ -1692,7 +1692,7 @@ std::vector<T> NDArray::getBufferAsVector()  {
   for (sd::LongType e = 0; e < len; e++) vector[e] = this->e<T>(e);
   return vector;
 }
-BUILD_SINGLE_TEMPLATE(  SD_LIB_EXPORT std::vector, NDArray::getBufferAsVector(), SD_COMMON_TYPES_ALL);
+BUILD_SINGLE_TEMPLATE(std::vector, NDArray::getBufferAsVector(), SD_COMMON_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 std::vector<int64_t> * NDArray::getShapeAsFlatVector()  {
@@ -2015,7 +2015,7 @@ bool NDArray::isFinite() {
 //////////////////////////////////////////////////////////////////////////
 
 
-BUILD_DOUBLE_TEMPLATE( SD_LIB_EXPORT  void NDArray::templatedSet,
+BUILD_DOUBLE_TEMPLATE(void NDArray::templatedSet,
                        (void *buffer,  sd::LongType offset,  void *value), SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
 
 
@@ -3067,7 +3067,7 @@ NDArray * NDArray::asT()  {
   delete shape;
   return result;
 }
-BUILD_SINGLE_TEMPLATE(  SD_LIB_EXPORT NDArray * NDArray::asT, (), SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE(NDArray * NDArray::asT, (), SD_COMMON_TYPES);
 void NDArray::checkIfStringArrayAndNotEmpty()  {
   if (!isS()) {
     auto actualType = DataTypeUtils::asString(dataType());
@@ -3819,7 +3819,7 @@ std::vector<T> NDArray::asVectorT() {
 
   return result;
 }
-BUILD_SINGLE_TEMPLATE(  SD_LIB_EXPORT std::vector, NDArray::asVectorT(), SD_COMMON_TYPES_ALL);
+BUILD_SINGLE_TEMPLATE(std::vector, NDArray::asVectorT(), SD_COMMON_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 // set new order and shape in case of suitable array length
@@ -4074,7 +4074,7 @@ void NDArray::templatedDoubleAssign(void *xBuffer,  sd::LongType xOffset,  void 
   x[xOffset] = y[yOffset];
 
 }
-BUILD_DOUBLE_TEMPLATE( SD_LIB_EXPORT void NDArray::templatedDoubleAssign,
+BUILD_DOUBLE_TEMPLATE(void NDArray::templatedDoubleAssign,
                        (void *xBuffer,  sd::LongType xOffset,  void *yBuffer,  sd::LongType yOffset),
                        SD_COMMON_TYPES, SD_COMMON_TYPES);
 
@@ -4768,8 +4768,7 @@ SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::IntOps op, NDArray *scalar, 
                                         ExtraArguments *extraParams)  {
   THROW_EXCEPTION("NDArray::applyScalar<NDArray*> method: do not use me!");
 }
-template SD_LIB_EXPORT void NDArray::applyScalar<float>(sd::scalar::IntOps op,  float scalar, NDArray *target,
-                                                        ExtraArguments *extraParams) ;
+
 #ifdef HAS_FLOAT32
 template SD_LIB_EXPORT void NDArray::applyScalar<float>(sd::scalar::IntOps op,  float scalar, NDArray *target,
                                                         ExtraArguments *extraParams) ;
@@ -5482,7 +5481,7 @@ EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
     GET_FIRST(T), \
     CONCAT(EXPAND_TYPE_APPLY_, GET_SECOND(T))(INSTANTIATE_P_FOR_TYPE) \
 ))
-ITERATE_LIST((SD_COMMON_TYPES_ALL),INSTANTIATE_P_SINGLE);
+ITERATE_LIST((SD_COMMON_TYPES),INSTANTIATE_P_SINGLE);
 
 
 // In NDArray.cpp, wrap the string template instantiations:
@@ -5767,7 +5766,7 @@ void NDArray::templatedAssign(void *xBuffer, sd::LongType xOffset,  void *yBuffe
   if (xBuffer != nullptr && yBuffer != nullptr)
     *(reinterpret_cast<T *>(xBuffer) + xOffset) = *(reinterpret_cast<const T *>(yBuffer) + yOffset);
 }
-BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT void NDArray::templatedAssign,
+BUILD_SINGLE_TEMPLATE(void NDArray::templatedAssign,
                        (void *xBuffer,  sd::LongType xOffset,  void *yBuffer,  sd::LongType yOffset),
                        SD_COMMON_TYPES);
 

@@ -101,15 +101,20 @@ else()
 endif()
 
 # --- NEW: Compiler-specific optimizations for template compilation ---
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     # Reduce template instantiation depth to catch issues earlier
     add_compile_options(-ftemplate-depth=512)
-    
+
     # Enable faster template compilation in GCC 10+
     if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 10.0)
         add_compile_options(-fconcepts-diagnostics-depth=2)
     endif()
-    
+
+    # For development builds, use faster but less optimized compilation
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR SD_FAST_BUILD)
+        add_compile_options(-O0 -fno-inline-functions)
+    endif()
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     # For development builds, use faster but less optimized compilation
     if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR SD_FAST_BUILD)
         add_compile_options(-O0 -fno-inline-functions)

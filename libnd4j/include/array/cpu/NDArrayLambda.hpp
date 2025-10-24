@@ -116,7 +116,7 @@ template SD_LIB_HIDDEN void NDArray::applyTriplewiseLambda(
 #endif
 #if defined(HAS_UINT8)
 template SD_LIB_HIDDEN void NDArray::applyTriplewiseLambda(
-    NDArray* second, NDArray* third, std::function<uint8_t(uint8_t, uint8_t, uint8_t)>& func, NDArray* target);
+    NDArray* second, NDArray* third, std::function<uint8_t(uint8_t, UnsignedChar, UnsignedChar)>& func, NDArray* target);
 #endif
 #if defined(HAS_UINT16)
 template SD_LIB_HIDDEN void NDArray::applyTriplewiseLambda(
@@ -274,9 +274,7 @@ template SD_LIB_HIDDEN void NDArray::applyPairwiseLambda(NDArray* other,
 template SD_LIB_HIDDEN void NDArray::applyPairwiseLambda(NDArray* other,
                                                          std::function<int8_t(int8_t, int8_t)>& func,
                                                          NDArray* target);
-template SD_LIB_HIDDEN void NDArray::applyPairwiseLambda(NDArray* other,
-                                                         std::function<SignedChar(SignedChar, SignedChar)>& func,
-                                                         NDArray* target);
+
 template SD_LIB_HIDDEN void NDArray::applyPairwiseLambda(NDArray* other,
                                                          std::function<char(char, char)>& func,
                                                          NDArray* target);
@@ -535,7 +533,7 @@ template SD_LIB_HIDDEN void NDArray::applyIndexedPairwiseLambda(
 #endif
 #if defined(HAS_UINT8)
 template SD_LIB_HIDDEN void NDArray::applyIndexedPairwiseLambda(
-    NDArray* other, std::function<uint8_t(sd::LongType, uint8_t, uint8_t)>& func, NDArray* target);
+    NDArray* other, std::function<uint8_t(sd::LongType, UnsignedChar, UnsignedChar)>& func, NDArray* target);
 #endif
 #if defined(HAS_UINT16)
 template SD_LIB_HIDDEN void NDArray::applyIndexedPairwiseLambda(
@@ -551,7 +549,7 @@ template SD_LIB_HIDDEN void NDArray::applyIndexedPairwiseLambda(
 #endif
 #if defined(HAS_INT8)
 template SD_LIB_HIDDEN void NDArray::applyIndexedPairwiseLambda(
-    NDArray* other, std::function<int8_t(sd::LongType, int8_t, int8_t)>& func, NDArray* target);
+    NDArray* other, std::function<int8_t(sd::LongType, SignedChar, SignedChar)>& func, NDArray* target);
 #endif
 #if defined(HAS_BOOL)
 template SD_LIB_HIDDEN void NDArray::applyIndexedPairwiseLambda(

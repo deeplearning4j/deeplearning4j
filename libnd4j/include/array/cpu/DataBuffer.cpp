@@ -62,7 +62,7 @@ void DataBuffer::printHostBufferContent(void* buffer, sd::LongType offset, sd::L
   }
   sd_printf("]", 0);
 }
-BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT  void DataBuffer::printHostBufferContent,(void* buffer, sd::LongType offset, sd::LongType length),SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE(void DataBuffer::printHostBufferContent,(void* buffer, sd::LongType offset, sd::LongType length),SD_COMMON_TYPES);
 
 
 

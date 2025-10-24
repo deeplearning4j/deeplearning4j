@@ -2697,7 +2697,7 @@ SD_INLINE void internal_release_host(WW workspace, TT_PTR var) {
 #if defined(SD_ALIGNED_ALLOC)
     free(var);
 #else
-    delete var;
+    delete[] var;
 #endif
   }
 }

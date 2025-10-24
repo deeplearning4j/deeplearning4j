@@ -431,18 +431,8 @@ SD_INLINE SD_HOST_DEVICE int16_t DataTypeUtils::min<int16_t>() {
 }
 
 template <>
-SD_INLINE SD_HOST_DEVICE short int DataTypeUtils::min<short int>() {
-  return (short int)-32768;
-}
-
-template <>
 SD_INLINE SD_HOST_DEVICE int16_t DataTypeUtils::min_positive<int16_t>() {
   return (int16_t)0;
-}
-
-template <>
-SD_INLINE SD_HOST_DEVICE short int DataTypeUtils::min_positive<short int>() {
-  return (short int)0;
 }
 #endif
 
@@ -532,11 +522,6 @@ SD_INLINE SD_HOST_DEVICE uint8_t DataTypeUtils::max<uint8_t>() {
 #ifdef HAS_INT16
 template <>
 SD_INLINE SD_HOST_DEVICE int16_t DataTypeUtils::max<int16_t>() {
-  return 32767;
-}
-
-template <>
-SD_INLINE SD_HOST_DEVICE short int DataTypeUtils::max<short int>() {
   return 32767;
 }
 #endif

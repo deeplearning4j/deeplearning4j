@@ -36,6 +36,7 @@
 #include <types/int8.h>
 #include <types/uint16.h>
 #include <types/uint8.h>
+#include <execution/Threads.h>
 
 #define LOG_NUM_BANKS 4
 #define NUM_BANKS 256
@@ -49,7 +50,17 @@ typedef union {
 class SD_LIB_HIDDEN TypeCast {
  public:
   template <typename S, typename T>
-  static SD_HOST void convertGeneric(Pointer *extras, void *dx, LongType N, void *dz);
+  static SD_INLINE SD_HOST void convertGeneric(Pointer *extras, void *dx, LongType N, void *dz) {
+    auto x = reinterpret_cast<S *>(dx);
+    auto z = reinterpret_cast<T *>(dz);
+
+    auto func = PRAGMA_THREADS_FOR {
+      for (auto i = start; i < stop; i++) {
+        z[i] = static_cast<T>(static_cast<float>(x[i]));
+      }
+    };
+    samediff::Threads::parallel_for(func, 0, N);
+  }
 
   template <typename T>
   static SD_HOST void convertToThreshold(Pointer *extras, void *dx, LongType N, void *dz);

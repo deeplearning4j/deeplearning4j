@@ -102,84 +102,116 @@ function(_internal_srcore_is_valid_pair type1 type2 output_var)
     endif()
 
     # Define strict whitelists based on actual operations that exist
-    
+
     # TypeCast operations (type conversions)
     set(valid_typecast_pairs
-        # Quantization/Dequantization
-        "INT8,FLOAT32"
-        "UINT8,FLOAT32"
-        "FLOAT32,INT8"
-        "FLOAT32,UINT8"
-        
-        # Integer promotions (only necessary ones)
-        "INT8,INT32"
-        "UINT8,INT32"
-        "INT16,INT32"
-        "UINT16,INT32"
-        "INT32,INT64"
-        "UINT32,UINT64"
-        
-        # Float promotions
-        "HALF,FLOAT32"
-        "BFLOAT16,FLOAT32"
-        "FLOAT32,DOUBLE"
-        
-        # Mixed precision format conversions
-        "HALF,BFLOAT16"
-        "BFLOAT16,HALF"
-        
-        # Essential int to float
-        "INT32,FLOAT32"
-        "INT64,DOUBLE"
-        
-        # Same-width mixed signedness
-        "INT8,UINT8"
-        "INT16,UINT16"
-        "INT32,UINT32"
-        "INT64,UINT64"
+            # Quantization/Dequantization
+            "INT8,FLOAT32"
+            "UINT8,FLOAT32"
+            "FLOAT32,INT8"
+            "FLOAT32,UINT8"
+
+            # Integer promotions (only necessary ones)
+            "INT8,INT32"
+            "UINT8,INT32"
+            "INT16,INT32"
+            "UINT16,INT32"
+            "INT32,INT64"
+            "UINT32,UINT64"
+
+            # Float promotions
+            "HALF,FLOAT32"
+            "BFLOAT16,FLOAT32"
+            "FLOAT32,DOUBLE"
+
+            # Mixed precision format conversions
+            "HALF,BFLOAT16"
+            "BFLOAT16,HALF"
+
+            # Essential int to float
+            "INT32,FLOAT32"
+            "INT64,DOUBLE"
+
+            # Same-width mixed signedness
+            "INT8,UINT8"
+            "INT16,UINT16"
+            "INT32,UINT32"
+            "INT64,UINT64"
     )
-    
+
     # DoubleMethods operations (sorting by key/value)
     set(valid_doublemethods_pairs
-        # Sorting operations typically use same types or int indices
-        "INT32,INT32"
-        "INT64,INT64"
-        "FLOAT32,FLOAT32"
-        "DOUBLE,DOUBLE"
-        
-        # Index sorting (int key, any value)
-        "INT32,FLOAT32"
-        "INT32,DOUBLE"
-        "INT64,FLOAT32"
-        "INT64,DOUBLE"
+            # Sorting operations typically use same types or int indices
+            "INT32,INT32"
+            "INT64,INT64"
+            "FLOAT32,FLOAT32"
+            "DOUBLE,DOUBLE"
+
+            # Index sorting (int key, any value)
+            "INT32,FLOAT32"
+            "INT32,DOUBLE"
+            "INT64,FLOAT32"
+            "INT64,DOUBLE"
     )
-    
+
+    # ReduceLong operations (any numeric input -> long output)
+    # Input: SD_NUMERIC_TYPES, Output: SD_LONG_TYPES (INT64, UINT64)
+    set(valid_reducelong_pairs
+            # All numeric types -> INT64
+            "BFLOAT16,INT64"
+            "FLOAT32,INT64"
+            "DOUBLE,INT64"
+            "HALF,INT64"
+            "INT8,INT64"
+            "INT16,INT64"
+            "INT32,INT64"
+            "INT64,INT64"
+            "UINT8,INT64"
+            "UINT16,INT64"
+            "UINT32,INT64"
+            "UINT64,INT64"
+
+            # All numeric types -> UINT64
+            "BFLOAT16,UINT64"
+            "FLOAT32,UINT64"
+            "DOUBLE,UINT64"
+            "HALF,UINT64"
+            "INT8,UINT64"
+            "INT16,UINT64"
+            "INT32,UINT64"
+            "INT64,UINT64"
+            "UINT8,UINT64"
+            "UINT16,UINT64"
+            "UINT32,UINT64"
+            "UINT64,UINT64"
+    )
+
     # Special operations
     set(valid_special_pairs
-        # Bool comparisons (from same type)
-        "BOOL,BOOL"
-        
-        # String operations
-        "UTF8,INT32"
-        "UTF8,INT64"
-        "UTF16,INT32"
-        "UTF16,INT64"
-        "UTF32,INT32"
-        "UTF32,INT64"
-        
-        # Bool with core types only
-        "BOOL,INT32"
-        "BOOL,INT64"
-        "BOOL,FLOAT32"
-        "INT32,BOOL"
-        "INT64,BOOL"
-        "FLOAT32,BOOL"
+            # Bool comparisons (from same type)
+            "BOOL,BOOL"
+
+            # String operations
+            "UTF8,INT32"
+            "UTF8,INT64"
+            "UTF16,INT32"
+            "UTF16,INT64"
+            "UTF32,INT32"
+            "UTF32,INT64"
+
+            # Bool with core types only
+            "BOOL,INT32"
+            "BOOL,INT64"
+            "BOOL,FLOAT32"
+            "INT32,BOOL"
+            "INT64,BOOL"
+            "FLOAT32,BOOL"
     )
-    
+
     # Check if pair is in any whitelist
     set(pair "${type1},${type2}")
     set(reverse "${type2},${type1}")
-    
+
     # Check TypeCast operations
     list(FIND valid_typecast_pairs "${pair}" found_typecast)
     list(FIND valid_typecast_pairs "${reverse}" found_typecast_rev)
@@ -187,7 +219,7 @@ function(_internal_srcore_is_valid_pair type1 type2 output_var)
         set(${output_var} TRUE PARENT_SCOPE)
         return()
     endif()
-    
+
     # Check DoubleMethods operations
     list(FIND valid_doublemethods_pairs "${pair}" found_double)
     list(FIND valid_doublemethods_pairs "${reverse}" found_double_rev)
@@ -195,7 +227,15 @@ function(_internal_srcore_is_valid_pair type1 type2 output_var)
         set(${output_var} TRUE PARENT_SCOPE)
         return()
     endif()
-    
+
+    # Check ReduceLong operations
+    list(FIND valid_reducelong_pairs "${pair}" found_reducelong)
+    list(FIND valid_reducelong_pairs "${reverse}" found_reducelong_rev)
+    if(found_reducelong GREATER_EQUAL 0 OR found_reducelong_rev GREATER_EQUAL 0)
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
     # Check Special operations
     list(FIND valid_special_pairs "${pair}" found_special)
     list(FIND valid_special_pairs "${reverse}" found_special_rev)
@@ -203,9 +243,9 @@ function(_internal_srcore_is_valid_pair type1 type2 output_var)
         set(${output_var} TRUE PARENT_SCOPE)
         return()
     endif()
-    
+
     # HARD BLOCKS - patterns that should never occur
-    
+
     # Block 8-bit types with HALF/BFLOAT16/DOUBLE
     if(type1 MATCHES "INT8|UINT8")
         if(type2 MATCHES "HALF|BFLOAT16|DOUBLE")
@@ -219,7 +259,7 @@ function(_internal_srcore_is_valid_pair type1 type2 output_var)
             return()
         endif()
     endif()
-    
+
     # Block 16-bit types with DOUBLE
     if(type1 MATCHES "INT16|UINT16|HALF|BFLOAT16")
         if(type2 STREQUAL "DOUBLE")
@@ -233,7 +273,7 @@ function(_internal_srcore_is_valid_pair type1 type2 output_var)
             return()
         endif()
     endif()
-    
+
     # Block BOOL with DOUBLE/HALF/BFLOAT16
     if(type1 STREQUAL "BOOL" OR type2 STREQUAL "BOOL")
         if(type1 MATCHES "DOUBLE|HALF|BFLOAT16" OR type2 MATCHES "DOUBLE|HALF|BFLOAT16")
@@ -241,31 +281,31 @@ function(_internal_srcore_is_valid_pair type1 type2 output_var)
             return()
         endif()
     endif()
-    
+
     # Block 8-bit with 64-bit (too large a jump)
     if((type1 MATCHES "INT8|UINT8" AND type2 MATCHES "INT64|UINT64|DOUBLE") OR
-       (type2 MATCHES "INT8|UINT8" AND type1 MATCHES "INT64|UINT64|DOUBLE"))
+    (type2 MATCHES "INT8|UINT8" AND type1 MATCHES "INT64|UINT64|DOUBLE"))
         set(${output_var} FALSE PARENT_SCOPE)
         return()
     endif()
-    
+
     # Block mixed signedness except same width
     set(signed_types "INT8;INT16;INT32;INT64")
     set(unsigned_types "UINT8;UINT16;UINT32;UINT64")
-    
+
     list(FIND signed_types "${type1}" is_signed1)
     list(FIND unsigned_types "${type1}" is_unsigned1)
     list(FIND signed_types "${type2}" is_signed2)
     list(FIND unsigned_types "${type2}" is_unsigned2)
-    
+
     if((is_signed1 GREATER_EQUAL 0 AND is_unsigned2 GREATER_EQUAL 0) OR
-       (is_unsigned1 GREATER_EQUAL 0 AND is_signed2 GREATER_EQUAL 0))
+    (is_unsigned1 GREATER_EQUAL 0 AND is_signed2 GREATER_EQUAL 0))
         # Mixed signedness - already checked in whitelists for same-width
         # If not in whitelist, it's invalid
         set(${output_var} FALSE PARENT_SCOPE)
         return()
     endif()
-    
+
     # Default: invalid - not in any whitelist
     set(${output_var} FALSE PARENT_SCOPE)
 endfunction()
@@ -278,222 +318,222 @@ function(_internal_srcore_is_valid_triple type1 type2 type3 output_var)
         set(${output_var} TRUE PARENT_SCOPE)
         return()
     endif()
-    
+
     # First validate input pairs using the strict pair validation
     _internal_srcore_is_valid_pair("${type1}" "${type2}" pair_valid)
     if(NOT pair_valid)
         set(${output_var} FALSE PARENT_SCOPE)
         return()
     endif()
-    
+
     # Define strict whitelists for triple operations
-    
+
     # Broadcast operations (X,Y,Z where X op Y -> Z)
     set(valid_broadcast_triples
-        # Same type operations
-        "INT8,INT8,INT8"
-        "UINT8,UINT8,UINT8"
-        "INT16,INT16,INT16"
-        "UINT16,UINT16,UINT16"
-        "INT32,INT32,INT32"
-        "UINT32,UINT32,UINT32"
-        "INT64,INT64,INT64"
-        "UINT64,UINT64,UINT64"
-        "FLOAT32,FLOAT32,FLOAT32"
-        "DOUBLE,DOUBLE,DOUBLE"
-        "HALF,HALF,HALF"
-        "BFLOAT16,BFLOAT16,BFLOAT16"
-        
-        # INT8/UINT8 accumulation to INT32
-        "INT8,INT8,INT32"
-        "UINT8,UINT8,INT32"
-        "INT8,UINT8,INT32"
-        "UINT8,INT8,INT32"
-        
-        # INT8/UINT8 to FLOAT32 (dequantization)
-        "INT8,INT8,FLOAT32"
-        "UINT8,UINT8,FLOAT32"
-        "INT8,FLOAT32,FLOAT32"
-        "UINT8,FLOAT32,FLOAT32"
-        "FLOAT32,INT8,FLOAT32"
-        "FLOAT32,UINT8,FLOAT32"
-        
-        # Mixed precision accumulation
-        "HALF,HALF,FLOAT32"
-        "BFLOAT16,BFLOAT16,FLOAT32"
-        "HALF,FLOAT32,FLOAT32"
-        "BFLOAT16,FLOAT32,FLOAT32"
-        "FLOAT32,HALF,FLOAT32"
-        "FLOAT32,BFLOAT16,FLOAT32"
-        
-        # Integer division to float
-        "INT32,INT32,FLOAT32"
-        "INT64,INT64,DOUBLE"
-        
-        # Float accumulation to higher precision
-        "FLOAT32,FLOAT32,DOUBLE"
-        "FLOAT32,DOUBLE,DOUBLE"
-        "DOUBLE,FLOAT32,DOUBLE"
-        
-        # Safe integer promotions
-        "INT16,INT16,INT32"
-        "UINT16,UINT16,UINT32"
-        "INT32,INT32,INT64"
-        "UINT32,UINT32,UINT64"
+            # Same type operations
+            "INT8,INT8,INT8"
+            "UINT8,UINT8,UINT8"
+            "INT16,INT16,INT16"
+            "UINT16,UINT16,UINT16"
+            "INT32,INT32,INT32"
+            "UINT32,UINT32,UINT32"
+            "INT64,INT64,INT64"
+            "UINT64,UINT64,UINT64"
+            "FLOAT32,FLOAT32,FLOAT32"
+            "DOUBLE,DOUBLE,DOUBLE"
+            "HALF,HALF,HALF"
+            "BFLOAT16,BFLOAT16,BFLOAT16"
+
+            # INT8/UINT8 accumulation to INT32
+            "INT8,INT8,INT32"
+            "UINT8,UINT8,INT32"
+            "INT8,UINT8,INT32"
+            "UINT8,INT8,INT32"
+
+            # INT8/UINT8 to FLOAT32 (dequantization)
+            "INT8,INT8,FLOAT32"
+            "UINT8,UINT8,FLOAT32"
+            "INT8,FLOAT32,FLOAT32"
+            "UINT8,FLOAT32,FLOAT32"
+            "FLOAT32,INT8,FLOAT32"
+            "FLOAT32,UINT8,FLOAT32"
+
+            # Mixed precision accumulation
+            "HALF,HALF,FLOAT32"
+            "BFLOAT16,BFLOAT16,FLOAT32"
+            "HALF,FLOAT32,FLOAT32"
+            "BFLOAT16,FLOAT32,FLOAT32"
+            "FLOAT32,HALF,FLOAT32"
+            "FLOAT32,BFLOAT16,FLOAT32"
+
+            # Integer division to float
+            "INT32,INT32,FLOAT32"
+            "INT64,INT64,DOUBLE"
+
+            # Float accumulation to higher precision
+            "FLOAT32,FLOAT32,DOUBLE"
+            "FLOAT32,DOUBLE,DOUBLE"
+            "DOUBLE,FLOAT32,DOUBLE"
+
+            # Safe integer promotions
+            "INT16,INT16,INT32"
+            "UINT16,UINT16,UINT32"
+            "INT32,INT32,INT64"
+            "UINT32,UINT32,UINT64"
     )
-    
+
     # Comparison operations (X,Y,BOOL)
     set(valid_comparison_triples
-        # Same type comparisons
-        "INT8,INT8,BOOL"
-        "UINT8,UINT8,BOOL"
-        "INT16,INT16,BOOL"
-        "UINT16,UINT16,BOOL"
-        "INT32,INT32,BOOL"
-        "UINT32,UINT32,BOOL"
-        "INT64,INT64,BOOL"
-        "UINT64,UINT64,BOOL"
-        "FLOAT32,FLOAT32,BOOL"
-        "DOUBLE,DOUBLE,BOOL"
-        "HALF,HALF,BOOL"
-        "BFLOAT16,BFLOAT16,BOOL"
-        "BOOL,BOOL,BOOL"
-        
-        # Limited mixed comparisons
-        "INT32,FLOAT32,BOOL"
-        "FLOAT32,INT32,BOOL"
-        "HALF,FLOAT32,BOOL"
-        "FLOAT32,HALF,BOOL"
-        "BFLOAT16,FLOAT32,BOOL"
-        "FLOAT32,BFLOAT16,BOOL"
+            # Same type comparisons
+            "INT8,INT8,BOOL"
+            "UINT8,UINT8,BOOL"
+            "INT16,INT16,BOOL"
+            "UINT16,UINT16,BOOL"
+            "INT32,INT32,BOOL"
+            "UINT32,UINT32,BOOL"
+            "INT64,INT64,BOOL"
+            "UINT64,UINT64,BOOL"
+            "FLOAT32,FLOAT32,BOOL"
+            "DOUBLE,DOUBLE,BOOL"
+            "HALF,HALF,BOOL"
+            "BFLOAT16,BFLOAT16,BOOL"
+            "BOOL,BOOL,BOOL"
+
+            # Limited mixed comparisons
+            "INT32,FLOAT32,BOOL"
+            "FLOAT32,INT32,BOOL"
+            "HALF,FLOAT32,BOOL"
+            "FLOAT32,HALF,BOOL"
+            "BFLOAT16,FLOAT32,BOOL"
+            "FLOAT32,BFLOAT16,BOOL"
     )
-    
+
     # Masking operations (X,BOOL,X)
     set(valid_masking_triples
-        "INT32,BOOL,INT32"
-        "INT64,BOOL,INT64"
-        "FLOAT32,BOOL,FLOAT32"
-        "DOUBLE,BOOL,DOUBLE"
-        "HALF,BOOL,HALF"
-        "BFLOAT16,BOOL,BFLOAT16"
+            "INT32,BOOL,INT32"
+            "INT64,BOOL,INT64"
+            "FLOAT32,BOOL,FLOAT32"
+            "DOUBLE,BOOL,DOUBLE"
+            "HALF,BOOL,HALF"
+            "BFLOAT16,BOOL,BFLOAT16"
     )
-    
+
     # Scalar operations (input,scalar,output)
     set(valid_scalar_triples
-        # Same type scalar ops
-        "INT32,INT32,INT32"
-        "INT64,INT64,INT64"
-        "FLOAT32,FLOAT32,FLOAT32"
-        "DOUBLE,DOUBLE,DOUBLE"
-        "HALF,HALF,HALF"
-        "BFLOAT16,BFLOAT16,BFLOAT16"
-        
-        # Mixed scalar operations
-        "FLOAT32,HALF,FLOAT32"
-        "FLOAT32,BFLOAT16,FLOAT32"
-        "HALF,FLOAT32,FLOAT32"
-        "BFLOAT16,FLOAT32,FLOAT32"
-        
-        # Integer scalar with float output
-        "INT32,FLOAT32,FLOAT32"
-        "INT64,DOUBLE,DOUBLE"
+            # Same type scalar ops
+            "INT32,INT32,INT32"
+            "INT64,INT64,INT64"
+            "FLOAT32,FLOAT32,FLOAT32"
+            "DOUBLE,DOUBLE,DOUBLE"
+            "HALF,HALF,HALF"
+            "BFLOAT16,BFLOAT16,BFLOAT16"
+
+            # Mixed scalar operations
+            "FLOAT32,HALF,FLOAT32"
+            "FLOAT32,BFLOAT16,FLOAT32"
+            "HALF,FLOAT32,FLOAT32"
+            "BFLOAT16,FLOAT32,FLOAT32"
+
+            # Integer scalar with float output
+            "INT32,FLOAT32,FLOAT32"
+            "INT64,DOUBLE,DOUBLE"
     )
-    
+
     # PairwiseTransform operations
     set(valid_pairwise_triples
-        # Same type transforms
-        "FLOAT32,FLOAT32,FLOAT32"
-        "DOUBLE,DOUBLE,DOUBLE"
-        "INT32,INT32,INT32"
-        "INT64,INT64,INT64"
-        
-        # Mixed precision pairwise
-        "HALF,HALF,FLOAT32"
-        "BFLOAT16,BFLOAT16,FLOAT32"
-        
-        # Quantization output
-        "FLOAT32,FLOAT32,INT8"
-        "FLOAT32,FLOAT32,UINT8"
-        "FLOAT32,FLOAT32,HALF"
-        "FLOAT32,FLOAT32,BFLOAT16"
-        
-        # INT8 operations
-        "INT8,INT8,INT32"
-        "UINT8,UINT8,INT32"
+            # Same type transforms
+            "FLOAT32,FLOAT32,FLOAT32"
+            "DOUBLE,DOUBLE,DOUBLE"
+            "INT32,INT32,INT32"
+            "INT64,INT64,INT64"
+
+            # Mixed precision pairwise
+            "HALF,HALF,FLOAT32"
+            "BFLOAT16,BFLOAT16,FLOAT32"
+
+            # Quantization output
+            "FLOAT32,FLOAT32,INT8"
+            "FLOAT32,FLOAT32,UINT8"
+            "FLOAT32,FLOAT32,HALF"
+            "FLOAT32,FLOAT32,BFLOAT16"
+
+            # INT8 operations
+            "INT8,INT8,INT32"
+            "UINT8,UINT8,INT32"
     )
-    
+
     # Indexing operations (idx,data,data)
     set(valid_indexing_triples
-        "INT32,FLOAT32,FLOAT32"
-        "INT64,FLOAT32,FLOAT32"
-        "INT32,DOUBLE,DOUBLE"
-        "INT64,DOUBLE,DOUBLE"
-        "INT32,HALF,HALF"
-        "INT64,HALF,HALF"
-        "INT32,BFLOAT16,BFLOAT16"
-        "INT64,BFLOAT16,BFLOAT16"
-        "INT32,INT32,INT32"
-        "INT64,INT64,INT64"
+            "INT32,FLOAT32,FLOAT32"
+            "INT64,FLOAT32,FLOAT32"
+            "INT32,DOUBLE,DOUBLE"
+            "INT64,DOUBLE,DOUBLE"
+            "INT32,HALF,HALF"
+            "INT64,HALF,HALF"
+            "INT32,BFLOAT16,BFLOAT16"
+            "INT64,BFLOAT16,BFLOAT16"
+            "INT32,INT32,INT32"
+            "INT64,INT64,INT64"
     )
-    
+
     # Conditional/ternary operations (BOOL,X,X)
     set(valid_conditional_triples
-        "BOOL,INT32,INT32"
-        "BOOL,INT64,INT64"
-        "BOOL,FLOAT32,FLOAT32"
-        "BOOL,DOUBLE,DOUBLE"
-        "BOOL,HALF,HALF"
-        "BOOL,BFLOAT16,BFLOAT16"
+            "BOOL,INT32,INT32"
+            "BOOL,INT64,INT64"
+            "BOOL,FLOAT32,FLOAT32"
+            "BOOL,DOUBLE,DOUBLE"
+            "BOOL,HALF,HALF"
+            "BOOL,BFLOAT16,BFLOAT16"
     )
-    
+
     # Check if triple is in any whitelist
     set(triple "${type1},${type2},${type3}")
-    
+
     # Check each category
     list(FIND valid_broadcast_triples "${triple}" found_broadcast)
     if(found_broadcast GREATER_EQUAL 0)
         set(${output_var} TRUE PARENT_SCOPE)
         return()
     endif()
-    
+
     list(FIND valid_comparison_triples "${triple}" found_comparison)
     if(found_comparison GREATER_EQUAL 0)
         set(${output_var} TRUE PARENT_SCOPE)
         return()
     endif()
-    
+
     list(FIND valid_masking_triples "${triple}" found_masking)
     if(found_masking GREATER_EQUAL 0)
         set(${output_var} TRUE PARENT_SCOPE)
         return()
     endif()
-    
+
     list(FIND valid_scalar_triples "${triple}" found_scalar)
     if(found_scalar GREATER_EQUAL 0)
         set(${output_var} TRUE PARENT_SCOPE)
         return()
     endif()
-    
+
     list(FIND valid_pairwise_triples "${triple}" found_pairwise)
     if(found_pairwise GREATER_EQUAL 0)
         set(${output_var} TRUE PARENT_SCOPE)
         return()
     endif()
-    
+
     list(FIND valid_indexing_triples "${triple}" found_indexing)
     if(found_indexing GREATER_EQUAL 0)
         set(${output_var} TRUE PARENT_SCOPE)
         return()
     endif()
-    
+
     list(FIND valid_conditional_triples "${triple}" found_conditional)
     if(found_conditional GREATER_EQUAL 0)
         set(${output_var} TRUE PARENT_SCOPE)
         return()
     endif()
-    
+
     # HARD BLOCKS - patterns that should never occur in triples
-    
+
     # Never output to 8-bit unless all inputs are 8-bit
     if(type3 MATCHES "INT8|UINT8")
         if(NOT (type1 MATCHES "INT8|UINT8" AND type2 MATCHES "INT8|UINT8"))
@@ -501,16 +541,16 @@ function(_internal_srcore_is_valid_triple type1 type2 type3 output_var)
             return()
         endif()
     endif()
-    
+
     # Never output DOUBLE from 8/16-bit inputs
     if(type3 STREQUAL "DOUBLE")
         if(type1 MATCHES "INT8|UINT8|INT16|UINT16|HALF|BFLOAT16" OR
-           type2 MATCHES "INT8|UINT8|INT16|UINT16|HALF|BFLOAT16")
+                type2 MATCHES "INT8|UINT8|INT16|UINT16|HALF|BFLOAT16")
             set(${output_var} FALSE PARENT_SCOPE)
             return()
         endif()
     endif()
-    
+
     # Never downcast precision
     if(type3 MATCHES "HALF|BFLOAT16")
         if(type1 STREQUAL "DOUBLE" OR type2 STREQUAL "DOUBLE")
@@ -518,21 +558,21 @@ function(_internal_srcore_is_valid_triple type1 type2 type3 output_var)
             return()
         endif()
     endif()
-    
+
     if(type3 STREQUAL "FLOAT32")
         if(type1 STREQUAL "DOUBLE" OR type2 STREQUAL "DOUBLE")
             set(${output_var} FALSE PARENT_SCOPE)
             return()
         endif()
     endif()
-    
+
     # Block BOOL with precision types except as comparison output
-    if((type1 STREQUAL "BOOL" OR type2 STREQUAL "BOOL") AND 
-       type3 MATCHES "DOUBLE|HALF|BFLOAT16")
+    if((type1 STREQUAL "BOOL" OR type2 STREQUAL "BOOL") AND
+            type3 MATCHES "DOUBLE|HALF|BFLOAT16")
         set(${output_var} FALSE PARENT_SCOPE)
         return()
     endif()
-    
+
     # Default: invalid - not in any whitelist
     set(${output_var} FALSE PARENT_SCOPE)
 endfunction()
@@ -776,16 +816,16 @@ function(is_semantically_valid_combination type1 type2 type3 mode result_var)
     srcore_normalize_type("${type1}" norm_t1)
     srcore_normalize_type("${type2}" norm_t2)
     srcore_normalize_type("${type3}" norm_t3)
-    
+
     # Rule 1: Same type combinations are ALWAYS valid
     if(norm_t1 STREQUAL norm_t2 AND norm_t2 STREQUAL norm_t3)
         set(${result_var} TRUE PARENT_SCOPE)
         return()
     endif()
-    
+
     # Rule 2: Quantization patterns
     if((norm_t1 STREQUAL "int8_t" OR norm_t1 STREQUAL "uint8_t") AND
-       (norm_t2 STREQUAL "int8_t" OR norm_t2 STREQUAL "uint8_t"))
+    (norm_t2 STREQUAL "int8_t" OR norm_t2 STREQUAL "uint8_t"))
         # INT8 accumulation or dequantization
         if(norm_t3 STREQUAL "int32_t" OR norm_t3 STREQUAL "float")
             set(${result_var} TRUE PARENT_SCOPE)
@@ -797,22 +837,22 @@ function(is_semantically_valid_combination type1 type2 type3 mode result_var)
             return()
         endif()
     endif()
-    
+
     # Rule 3: Mixed precision training
     if((norm_t1 STREQUAL "float16" OR norm_t1 STREQUAL "bfloat16") AND
-       (norm_t2 STREQUAL "float16" OR norm_t2 STREQUAL "bfloat16") AND
-       norm_t3 STREQUAL "float")
+    (norm_t2 STREQUAL "float16" OR norm_t2 STREQUAL "bfloat16") AND
+            norm_t3 STREQUAL "float")
         set(${result_var} TRUE PARENT_SCOPE)
         return()
     endif()
-    
+
     # Rule 4: Embedding lookups
     if((norm_t1 STREQUAL "int32_t" OR norm_t1 STREQUAL "int64_t") AND
-       norm_t2 STREQUAL "float" AND norm_t3 STREQUAL "float")
+            norm_t2 STREQUAL "float" AND norm_t3 STREQUAL "float")
         set(${result_var} TRUE PARENT_SCOPE)
         return()
     endif()
-    
+
     # Rule 5: Comparisons producing bool
     if(norm_t3 STREQUAL "bool")
         # Any same-type comparison is valid
@@ -821,27 +861,27 @@ function(is_semantically_valid_combination type1 type2 type3 mode result_var)
             return()
         endif()
     endif()
-    
+
     # Rule 6: Masking operations
     if(norm_t2 STREQUAL "bool" AND norm_t1 STREQUAL norm_t3)
         set(${result_var} TRUE PARENT_SCOPE)
         return()
     endif()
-    
+
     # Rule 7: Block nonsensical patterns
     # Integer operations producing half precision
     if(norm_t1 MATCHES "int" AND norm_t2 MATCHES "int" AND
-       norm_t3 MATCHES "float16|bfloat16")
+            norm_t3 MATCHES "float16|bfloat16")
         set(${result_var} FALSE PARENT_SCOPE)
         return()
     endif()
-    
+
     # Double to half precision (extreme downcast)
     if(norm_t1 STREQUAL "double" AND norm_t3 MATCHES "float16|bfloat16")
         set(${result_var} FALSE PARENT_SCOPE)
         return()
     endif()
-    
+
     # Rule 8: Standard promotions
     if(norm_t1 STREQUAL norm_t2)
         # Integer to float promotion
@@ -855,7 +895,7 @@ function(is_semantically_valid_combination type1 type2 type3 mode result_var)
             return()
         endif()
     endif()
-    
+
     # Default: invalid
     set(${result_var} FALSE PARENT_SCOPE)
 endfunction()
@@ -928,7 +968,7 @@ function(_internal_srcore_discover_selective_types validated_types_list result_i
     set(type_mapping_sd__Int32Type "INT32")
     set(type_mapping_signed "INT32")
     set(type_mapping_signed_int "INT32")
-    
+
     # Critical INT64 mappings - include ALL variations
     set(type_mapping_int64 "INT64")
     set(type_mapping_int64_t "INT64")
@@ -941,7 +981,7 @@ function(_internal_srcore_discover_selective_types validated_types_list result_i
     set(type_mapping_signed_long_int "INT64")
     set(type_mapping_LongType "INT64")
     set(type_mapping_sd__LongType "INT64")
-    
+
     # UINT64 mappings
     set(type_mapping_uint64 "UINT64")
     set(type_mapping_uint64_t "UINT64")
@@ -952,7 +992,7 @@ function(_internal_srcore_discover_selective_types validated_types_list result_i
     set(type_mapping_UnsignedLong "UINT64")
     set(type_mapping_sd__UnsignedLong "UINT64")
     set(type_mapping_size_t "UINT64")
-    
+
     set(type_mapping_bool "BOOL")
     set(type_mapping_float16 "HALF")
     set(type_mapping_half "HALF")
@@ -967,6 +1007,7 @@ function(_internal_srcore_discover_selective_types validated_types_list result_i
     set(type_mapping_unsigned_char "UINT8")
     set(type_mapping_int16 "INT16")
     set(type_mapping_int16_t "INT16")
+    set(type_mapping_Int16Type "INT16")
     set(type_mapping_short "INT16")
     set(type_mapping_short_int "INT16")
     set(type_mapping_signed_short "INT16")
@@ -992,7 +1033,7 @@ function(_internal_srcore_discover_selective_types validated_types_list result_i
         set(type_key "")
         string(REPLACE " " "_" user_type_clean "${user_type}")
         string(REPLACE "::" "__" user_type_clean "${user_type_clean}")
-        
+
         if(DEFINED type_mapping_${user_type_clean})
             set(type_key "${type_mapping_${user_type_clean}}")
         else()
@@ -1017,7 +1058,7 @@ function(_internal_srcore_discover_selective_types validated_types_list result_i
             list(GET tuple_parts 1 cpp_part)
             string(STRIP "${enum_part}" enum_part)
             string(STRIP "${cpp_part}" cpp_part)
-            string(REGEX REPLACE "\\)$" "" cpp_part "${cpp_part}")
+            string(REGEX REGEX "\\)$" "" cpp_part "${cpp_part}")
 
             list(APPEND discovered_enums "${enum_part}")
             list(APPEND discovered_cpp_types "${cpp_part}")
@@ -1055,9 +1096,9 @@ function(_internal_srcore_discover_all_types result_indices_var result_names_var
         else()
             message(FATAL_ERROR "get_profile_type_combinations function not found!")
         endif()
-        
+
         message(STATUS "FORCING profile '${SD_TYPE_PROFILE}' types: ${profile_types}")
-        
+
         # Convert C++ type names to enum names for discovery
         set(all_types "")
         foreach(cpp_type ${profile_types})
@@ -1098,11 +1139,11 @@ function(_internal_srcore_discover_all_types result_indices_var result_names_var
                 message(WARNING "Unknown C++ type in profile: ${cpp_type}")
             endif()
         endforeach()
-        
+
         list(LENGTH all_types mapped_count)
         list(LENGTH profile_types original_count)
         message(STATUS "Profile specified ${original_count} types, mapped to ${mapped_count} enum types")
-        
+
         if(mapped_count EQUAL 0)
             message(FATAL_ERROR "No valid type mappings found for profile '${SD_TYPE_PROFILE}'")
         endif()
@@ -1232,7 +1273,7 @@ function(srcore_emergency_fallback)
     set(UNIFIED_COMBINATIONS_2 "0,0;0,1;1,0;1,1;2,2;3,3" PARENT_SCOPE)
     set(UNIFIED_COMBINATIONS_3 "0,0,0;1,1,1;2,2,2;3,3,3" PARENT_SCOPE)
     set(UNIFIED_TYPE_COUNT 4 PARENT_SCOPE)
-        message(WARNING "Using emergency fallback type configuration")
+    message(WARNING "Using emergency fallback type configuration")
 endfunction()
 
 function(srcore_auto_setup)
@@ -1247,69 +1288,145 @@ function(_internal_srcore_generate_validity_header active_indices type_enums typ
 
     # Helper function to convert enum value to integer
     function(enum_to_int_value enum_value output_var)
-    string(REGEX REPLACE ".*::" "" datatype_name "${enum_value}")
-    
-    # Match exact DataType enum values from the provided header
-    if(datatype_name STREQUAL "INHERIT")
-        set(int_value "0")
-    elseif(datatype_name STREQUAL "BOOL")
-        set(int_value "1")
-    elseif(datatype_name STREQUAL "FLOAT8")
-        set(int_value "2")
-    elseif(datatype_name STREQUAL "HALF")
-        set(int_value "3")
-    elseif(datatype_name STREQUAL "HALF2")
-        set(int_value "4")
-    elseif(datatype_name STREQUAL "FLOAT32")
-        set(int_value "5")
-    elseif(datatype_name STREQUAL "DOUBLE")
-        set(int_value "6")
-    elseif(datatype_name STREQUAL "INT8")
-        set(int_value "7")
-    elseif(datatype_name STREQUAL "INT16")
-        set(int_value "8")
-    elseif(datatype_name STREQUAL "INT32")
-        set(int_value "9")
-    elseif(datatype_name STREQUAL "INT64")
-        set(int_value "10")
-    elseif(datatype_name STREQUAL "UINT8")
-        set(int_value "11")
-    elseif(datatype_name STREQUAL "UINT16")
-        set(int_value "12")
-    elseif(datatype_name STREQUAL "UINT32")
-        set(int_value "13")
-    elseif(datatype_name STREQUAL "UINT64")
-        set(int_value "14")
-    elseif(datatype_name STREQUAL "QINT8")
-        set(int_value "15")
-    elseif(datatype_name STREQUAL "QINT16")
-        set(int_value "16")
-    elseif(datatype_name STREQUAL "BFLOAT16")
-        set(int_value "17")
-    elseif(datatype_name STREQUAL "UTF8")
-        set(int_value "50")
-    elseif(datatype_name STREQUAL "UTF16")
-        set(int_value "51")
-    elseif(datatype_name STREQUAL "UTF32")
-        set(int_value "52")
-    elseif(datatype_name STREQUAL "ANY")
-        set(int_value "100")
-    elseif(datatype_name STREQUAL "AUTO")
-        set(int_value "200")
-    elseif(datatype_name STREQUAL "UNKNOWN")
-        set(int_value "255")
-    else()
-        set(int_value "255")  # Default to UNKNOWN
-            message(WARNING "Unknown DataType enum value: ${datatype_name}")
-    endif()
-    set(${output_var} "${int_value}" PARENT_SCOPE)
-endfunction()
+        string(REGEX REPLACE ".*::" "" datatype_name "${enum_value}")
 
-    # Start building the header content
+        # Match exact DataType enum values from the provided header
+        if(datatype_name STREQUAL "INHERIT")
+            set(int_value "0")
+        elseif(datatype_name STREQUAL "BOOL")
+            set(int_value "1")
+        elseif(datatype_name STREQUAL "FLOAT8")
+            set(int_value "2")
+        elseif(datatype_name STREQUAL "HALF")
+            set(int_value "3")
+        elseif(datatype_name STREQUAL "HALF2")
+            set(int_value "4")
+        elseif(datatype_name STREQUAL "FLOAT32")
+            set(int_value "5")
+        elseif(datatype_name STREQUAL "DOUBLE")
+            set(int_value "6")
+        elseif(datatype_name STREQUAL "INT8")
+            set(int_value "7")
+        elseif(datatype_name STREQUAL "INT16")
+            set(int_value "8")
+        elseif(datatype_name STREQUAL "INT32")
+            set(int_value "9")
+        elseif(datatype_name STREQUAL "INT64")
+            set(int_value "10")
+        elseif(datatype_name STREQUAL "UINT8")
+            set(int_value "11")
+        elseif(datatype_name STREQUAL "UINT16")
+            set(int_value "12")
+        elseif(datatype_name STREQUAL "UINT32")
+            set(int_value "13")
+        elseif(datatype_name STREQUAL "UINT64")
+            set(int_value "14")
+        elseif(datatype_name STREQUAL "QINT8")
+            set(int_value "15")
+        elseif(datatype_name STREQUAL "QINT16")
+            set(int_value "16")
+        elseif(datatype_name STREQUAL "BFLOAT16")
+            set(int_value "17")
+        elseif(datatype_name STREQUAL "UTF8")
+            set(int_value "50")
+        elseif(datatype_name STREQUAL "UTF16")
+            set(int_value "51")
+        elseif(datatype_name STREQUAL "UTF32")
+            set(int_value "52")
+        elseif(datatype_name STREQUAL "ANY")
+            set(int_value "100")
+        elseif(datatype_name STREQUAL "AUTO")
+            set(int_value "200")
+        elseif(datatype_name STREQUAL "UNKNOWN")
+            set(int_value "255")
+        else()
+            set(int_value "255")  # Default to UNKNOWN
+            message(WARNING "Unknown DataType enum value: ${datatype_name}")
+        endif()
+        set(${output_var} "${int_value}" PARENT_SCOPE)
+    endfunction()
+
+    # Define type categories for partitioning
+    set(bool_types "1")
+    set(float_types "3;4;5;6")  # HALF, HALF2, FLOAT32, DOUBLE
+    set(bfloat_types "17")
+    set(int_types "7;8;9;10")   # INT8, INT16, INT32, INT64
+    set(uint_types "11;12;13;14")  # UINT8, UINT16, UINT32, UINT64
+    set(string_types "50;51;52")   # UTF8, UTF16, UTF32
+
+    # Helper function to determine which category a type belongs to
+    function(get_type_category type_num output_var)
+        list(FIND bool_types "${type_num}" idx)
+        if(idx GREATER_EQUAL 0)
+            set(${output_var} "bool" PARENT_SCOPE)
+            return()
+        endif()
+        list(FIND float_types "${type_num}" idx)
+        if(idx GREATER_EQUAL 0)
+            set(${output_var} "float" PARENT_SCOPE)
+            return()
+        endif()
+        list(FIND bfloat_types "${type_num}" idx)
+        if(idx GREATER_EQUAL 0)
+            set(${output_var} "bfloat" PARENT_SCOPE)
+            return()
+        endif()
+        list(FIND int_types "${type_num}" idx)
+        if(idx GREATER_EQUAL 0)
+            set(${output_var} "int" PARENT_SCOPE)
+            return()
+        endif()
+        list(FIND uint_types "${type_num}" idx)
+        if(idx GREATER_EQUAL 0)
+            set(${output_var} "uint" PARENT_SCOPE)
+            return()
+        endif()
+        list(FIND string_types "${type_num}" idx)
+        if(idx GREATER_EQUAL 0)
+            set(${output_var} "string" PARENT_SCOPE)
+            return()
+        endif()
+        set(${output_var} "other" PARENT_SCOPE)
+    endfunction()
+
+    # Initialize separate content for each category
+    set(core_content "")
+    set(bool_content "")
+    set(float_content "")
+    set(bfloat_content "")
+    set(int_content "")
+    set(uint_content "")
+    set(string_content "")
+
+    # Start building core mappings header (always included)
+    string(APPEND core_content "/* AUTOMATICALLY GENERATED - Core Type Mappings */\n")
+    string(APPEND core_content "/* Generated by SelectiveRenderingCore.cmake */\n")
+    string(APPEND core_content "#ifndef SD_SELECTIVE_RENDERING_CORE_H\n")
+    string(APPEND core_content "#define SD_SELECTIVE_RENDERING_CORE_H\n")
+    string(APPEND core_content "// Also define master guard so types.h recognizes selective rendering is active\n")
+    string(APPEND core_content "#define SD_SELECTIVE_RENDERING_H\n\n")
+
+    # Initialize category headers
+    string(APPEND bool_content "/* BOOL type flags */\n#ifndef SD_BOOL_TYPES_H\n#define SD_BOOL_TYPES_H\n\n")
+    string(APPEND float_content "/* FLOAT type flags */\n#ifndef SD_FLOAT_TYPES_H\n#define SD_FLOAT_TYPES_H\n\n")
+    string(APPEND bfloat_content "/* BFLOAT type flags */\n#ifndef SD_BFLOAT_TYPES_H\n#define SD_BFLOAT_TYPES_H\n\n")
+    string(APPEND int_content "/* INT type flags */\n#ifndef SD_INT_TYPES_H\n#define SD_INT_TYPES_H\n\n")
+    string(APPEND uint_content "/* UINT type flags */\n#ifndef SD_UINT_TYPES_H\n#define SD_UINT_TYPES_H\n\n")
+    string(APPEND string_content "/* STRING type flags */\n#ifndef SD_STRING_TYPES_H\n#define SD_STRING_TYPES_H\n\n")
+
+    # Start building the master header content
     set(header_content "/* AUTOMATICALLY GENERATED - Selective Rendering Header */\n")
     string(APPEND header_content "/* Generated by SelectiveRenderingCore.cmake */\n")
     string(APPEND header_content "#ifndef SD_SELECTIVE_RENDERING_H\n")
     string(APPEND header_content "#define SD_SELECTIVE_RENDERING_H\n\n")
+    string(APPEND header_content "// Include all type category headers\n")
+    string(APPEND header_content "#include \"selective_rendering/core.h\"\n")
+    string(APPEND header_content "#include \"selective_rendering/bool_types.h\"\n")
+    string(APPEND header_content "#include \"selective_rendering/float_types.h\"\n")
+    string(APPEND header_content "#include \"selective_rendering/bfloat_types.h\"\n")
+    string(APPEND header_content "#include \"selective_rendering/int_types.h\"\n")
+    string(APPEND header_content "#include \"selective_rendering/uint_types.h\"\n")
+    string(APPEND header_content "#include \"selective_rendering/string_types.h\"\n\n")
 
     # ============================================================================
     # SECTION 1: RAW COMPILATION FLAGS
@@ -1335,17 +1452,33 @@ endfunction()
     endforeach()
 
     # Generate single type compilation flags for ALL possible types
-    string(APPEND header_content "// Single type compilation flags\n")
+    # Append to appropriate category files
     set(all_possible_types "0;1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16;17;50;51;52;100;200;255")
     foreach(type_num IN LISTS all_possible_types)
         list(FIND compiled_type_numbers "${type_num}" found_idx)
+        set(flag_value "0")
         if(found_idx GREATER_EQUAL 0)
-            string(APPEND header_content "#define SD_SINGLE_TYPE_${type_num}_COMPILED 1\n")
-        else()
-            string(APPEND header_content "#define SD_SINGLE_TYPE_${type_num}_COMPILED 0\n")
+            set(flag_value "1")
+        endif()
+
+        # Determine which category this type belongs to
+        get_type_category("${type_num}" category)
+
+        # Append to appropriate category content
+        if(category STREQUAL "bool")
+            string(APPEND bool_content "#define SD_SINGLE_TYPE_${type_num}_COMPILED ${flag_value}\n")
+        elseif(category STREQUAL "float")
+            string(APPEND float_content "#define SD_SINGLE_TYPE_${type_num}_COMPILED ${flag_value}\n")
+        elseif(category STREQUAL "bfloat")
+            string(APPEND bfloat_content "#define SD_SINGLE_TYPE_${type_num}_COMPILED ${flag_value}\n")
+        elseif(category STREQUAL "int")
+            string(APPEND int_content "#define SD_SINGLE_TYPE_${type_num}_COMPILED ${flag_value}\n")
+        elseif(category STREQUAL "uint")
+            string(APPEND uint_content "#define SD_SINGLE_TYPE_${type_num}_COMPILED ${flag_value}\n")
+        elseif(category STREQUAL "string")
+            string(APPEND string_content "#define SD_SINGLE_TYPE_${type_num}_COMPILED ${flag_value}\n")
         endif()
     endforeach()
-    string(APPEND header_content "\n")
 
     # Generate pair type compilation flags
     string(APPEND header_content "// Pair type compilation flags\n")
@@ -1370,21 +1503,48 @@ endfunction()
     endforeach()
 
     # Generate all pair combinations
+    # Append to category files based on which types are involved
     foreach(type1 IN LISTS all_possible_types)
         foreach(type2 IN LISTS all_possible_types)
             set(pair_key "${type1}_${type2}")
             list(FIND all_pair_keys "${pair_key}" found_idx)
+            set(flag_value "0")
             if(found_idx GREATER_EQUAL 0)
-                string(APPEND header_content "#define SD_PAIR_TYPE_${type1}_${type2}_COMPILED 1\n")
+                set(flag_value "1")
+            endif()
+
+            # Get category for first type only - assign pair to exactly one file
+            # This prevents duplicate definitions when multiple headers are included
+            get_type_category("${type1}" cat1)
+
+            # Append to only the category file for the first type
+            if(cat1 STREQUAL "bool")
+                string(APPEND bool_content "#define SD_PAIR_TYPE_${type1}_${type2}_COMPILED ${flag_value}\n")
+            elseif(cat1 STREQUAL "float")
+                string(APPEND float_content "#define SD_PAIR_TYPE_${type1}_${type2}_COMPILED ${flag_value}\n")
+            elseif(cat1 STREQUAL "bfloat")
+                string(APPEND bfloat_content "#define SD_PAIR_TYPE_${type1}_${type2}_COMPILED ${flag_value}\n")
+            elseif(cat1 STREQUAL "int")
+                string(APPEND int_content "#define SD_PAIR_TYPE_${type1}_${type2}_COMPILED ${flag_value}\n")
+            elseif(cat1 STREQUAL "uint")
+                string(APPEND uint_content "#define SD_PAIR_TYPE_${type1}_${type2}_COMPILED ${flag_value}\n")
+            elseif(cat1 STREQUAL "string")
+                string(APPEND string_content "#define SD_PAIR_TYPE_${type1}_${type2}_COMPILED ${flag_value}\n")
             else()
-                string(APPEND header_content "#define SD_PAIR_TYPE_${type1}_${type2}_COMPILED 0\n")
+                # For "other" types, put in core.h
+                string(APPEND core_content "#define SD_PAIR_TYPE_${type1}_${type2}_COMPILED ${flag_value}\n")
             endif()
         endforeach()
     endforeach()
-    string(APPEND header_content "\n")
 
-    # Generate triple type compilation flags
-    string(APPEND header_content "// Triple type compilation flags\n")
+    # Generate triple type compilation flags - append to category files
+    string(APPEND bool_content "\n// Triple type compilation flags (bool-related)\n")
+    string(APPEND float_content "\n// Triple type compilation flags (float-related)\n")
+    string(APPEND bfloat_content "\n// Triple type compilation flags (bfloat-related)\n")
+    string(APPEND int_content "\n// Triple type compilation flags (int-related)\n")
+    string(APPEND uint_content "\n// Triple type compilation flags (uint-related)\n")
+    string(APPEND string_content "\n// Triple type compilation flags (string-related)\n")
+
     set(all_triple_keys "")
 
     # Collect all valid triples from combinations_3
@@ -1408,101 +1568,122 @@ endfunction()
         endif()
     endforeach()
 
-    # Generate all triple combinations
+    # Generate all triple combinations - route to appropriate category files
     foreach(type1 IN LISTS all_possible_types)
         foreach(type2 IN LISTS all_possible_types)
             foreach(type3 IN LISTS all_possible_types)
                 set(triple_key "${type1}_${type2}_${type3}")
                 list(FIND all_triple_keys "${triple_key}" found_idx)
                 if(found_idx GREATER_EQUAL 0)
-                    string(APPEND header_content "#define SD_TRIPLE_TYPE_${type1}_${type2}_${type3}_COMPILED 1\n")
+                    set(flag_value "1")
                 else()
-                    string(APPEND header_content "#define SD_TRIPLE_TYPE_${type1}_${type2}_${type3}_COMPILED 0\n")
+                    set(flag_value "0")
+                endif()
+
+                # Get category for first type only - assign triple to exactly one file
+                # This prevents duplicate definitions when multiple headers are included
+                get_type_category("${type1}" cat1)
+
+                # Append to only the category file for the first type
+                if(cat1 STREQUAL "bool")
+                    string(APPEND bool_content "#define SD_TRIPLE_TYPE_${type1}_${type2}_${type3}_COMPILED ${flag_value}\n")
+                elseif(cat1 STREQUAL "float")
+                    string(APPEND float_content "#define SD_TRIPLE_TYPE_${type1}_${type2}_${type3}_COMPILED ${flag_value}\n")
+                elseif(cat1 STREQUAL "bfloat")
+                    string(APPEND bfloat_content "#define SD_TRIPLE_TYPE_${type1}_${type2}_${type3}_COMPILED ${flag_value}\n")
+                elseif(cat1 STREQUAL "int")
+                    string(APPEND int_content "#define SD_TRIPLE_TYPE_${type1}_${type2}_${type3}_COMPILED ${flag_value}\n")
+                elseif(cat1 STREQUAL "uint")
+                    string(APPEND uint_content "#define SD_TRIPLE_TYPE_${type1}_${type2}_${type3}_COMPILED ${flag_value}\n")
+                elseif(cat1 STREQUAL "string")
+                    string(APPEND string_content "#define SD_TRIPLE_TYPE_${type1}_${type2}_${type3}_COMPILED ${flag_value}\n")
+                else()
+                    # For "other" types, put in core.h
+                    string(APPEND core_content "#define SD_TRIPLE_TYPE_${type1}_${type2}_${type3}_COMPILED ${flag_value}\n")
                 endif()
             endforeach()
         endforeach()
     endforeach()
-    string(APPEND header_content "\n")
 
-   # ============================================================================
+    # ============================================================================
     # SECTION 2: MAPPING TABLES - COMPLETE VERSION
+    # These go into core.h which is always included
     # ============================================================================
 
-    string(APPEND header_content "// ============================================================================\n")
-    string(APPEND header_content "// SECTION 2: MAPPING TABLES\n")
-    string(APPEND header_content "// ============================================================================\n\n")
+    string(APPEND core_content "// ============================================================================\n")
+    string(APPEND core_content "// SECTION 2: MAPPING TABLES\n")
+    string(APPEND core_content "// ============================================================================\n\n")
 
     # Generate enum to number mappings - Complete DataType enum coverage
-    string(APPEND header_content "// DataType enum to number mappings (with namespace handling)\n")
-    string(APPEND header_content "#define SD_ENUM_TO_NUM_INHERIT 0\n")
-    string(APPEND header_content "#define SD_ENUM_TO_NUM_BOOL 1\n")
-    string(APPEND header_content "#define SD_ENUM_TO_NUM_FLOAT8 2\n")
-    string(APPEND header_content "#define SD_ENUM_TO_NUM_HALF 3\n")
-    string(APPEND header_content "#define SD_ENUM_TO_NUM_HALF2 4\n")
-    string(APPEND header_content "#define SD_ENUM_TO_NUM_FLOAT32 5\n")
-    string(APPEND header_content "#define SD_ENUM_TO_NUM_DOUBLE 6\n")
-    string(APPEND header_content "#define SD_ENUM_TO_NUM_INT8 7\n")
-    string(APPEND header_content "#define SD_ENUM_TO_NUM_INT16 8\n")
-    string(APPEND header_content "#define SD_ENUM_TO_NUM_INT32 9\n")
-    string(APPEND header_content "#define SD_ENUM_TO_NUM_INT64 10\n")
-    string(APPEND header_content "#define SD_ENUM_TO_NUM_UINT8 11\n")
-    string(APPEND header_content "#define SD_ENUM_TO_NUM_UINT16 12\n")
-    string(APPEND header_content "#define SD_ENUM_TO_NUM_UINT32 13\n")
-    string(APPEND header_content "#define SD_ENUM_TO_NUM_UINT64 14\n")
-    string(APPEND header_content "#define SD_ENUM_TO_NUM_QINT8 15\n")
-    string(APPEND header_content "#define SD_ENUM_TO_NUM_QINT16 16\n")
-    string(APPEND header_content "#define SD_ENUM_TO_NUM_BFLOAT16 17\n")
-    string(APPEND header_content "#define SD_ENUM_TO_NUM_UTF8 50\n")
-    string(APPEND header_content "#define SD_ENUM_TO_NUM_UTF16 51\n")
-    string(APPEND header_content "#define SD_ENUM_TO_NUM_UTF32 52\n")
-    string(APPEND header_content "#define SD_ENUM_TO_NUM_ANY 100\n")
-    string(APPEND header_content "#define SD_ENUM_TO_NUM_AUTO 200\n")
-    string(APPEND header_content "#define SD_ENUM_TO_NUM_UNKNOWN 255\n")
-    string(APPEND header_content "\n")
+    string(APPEND core_content "// DataType enum to number mappings (with namespace handling)\n")
+    string(APPEND core_content "#define SD_ENUM_TO_NUM_INHERIT 0\n")
+    string(APPEND core_content "#define SD_ENUM_TO_NUM_BOOL 1\n")
+    string(APPEND core_content "#define SD_ENUM_TO_NUM_FLOAT8 2\n")
+    string(APPEND core_content "#define SD_ENUM_TO_NUM_HALF 3\n")
+    string(APPEND core_content "#define SD_ENUM_TO_NUM_HALF2 4\n")
+    string(APPEND core_content "#define SD_ENUM_TO_NUM_FLOAT32 5\n")
+    string(APPEND core_content "#define SD_ENUM_TO_NUM_DOUBLE 6\n")
+    string(APPEND core_content "#define SD_ENUM_TO_NUM_INT8 7\n")
+    string(APPEND core_content "#define SD_ENUM_TO_NUM_INT16 8\n")
+    string(APPEND core_content "#define SD_ENUM_TO_NUM_INT32 9\n")
+    string(APPEND core_content "#define SD_ENUM_TO_NUM_INT64 10\n")
+    string(APPEND core_content "#define SD_ENUM_TO_NUM_UINT8 11\n")
+    string(APPEND core_content "#define SD_ENUM_TO_NUM_UINT16 12\n")
+    string(APPEND core_content "#define SD_ENUM_TO_NUM_UINT32 13\n")
+    string(APPEND core_content "#define SD_ENUM_TO_NUM_UINT64 14\n")
+    string(APPEND core_content "#define SD_ENUM_TO_NUM_QINT8 15\n")
+    string(APPEND core_content "#define SD_ENUM_TO_NUM_QINT16 16\n")
+    string(APPEND core_content "#define SD_ENUM_TO_NUM_BFLOAT16 17\n")
+    string(APPEND core_content "#define SD_ENUM_TO_NUM_UTF8 50\n")
+    string(APPEND core_content "#define SD_ENUM_TO_NUM_UTF16 51\n")
+    string(APPEND core_content "#define SD_ENUM_TO_NUM_UTF32 52\n")
+    string(APPEND core_content "#define SD_ENUM_TO_NUM_ANY 100\n")
+    string(APPEND core_content "#define SD_ENUM_TO_NUM_AUTO 200\n")
+    string(APPEND core_content "#define SD_ENUM_TO_NUM_UNKNOWN 255\n")
+    string(APPEND core_content "\n")
 
     # Generate alias to number mappings
-    string(APPEND header_content "// Constexpr alias to number mappings\n")
-    string(APPEND header_content "#define SD_ALIAS_TO_NUM_INHERIT 0\n")
-    string(APPEND header_content "#define SD_ALIAS_TO_NUM_BOOL 1\n")
-    string(APPEND header_content "#define SD_ALIAS_TO_NUM_FLOAT8 2\n")
-    string(APPEND header_content "#define SD_ALIAS_TO_NUM_HALF 3\n")
-    string(APPEND header_content "#define SD_ALIAS_TO_NUM_HALF2 4\n")
-    string(APPEND header_content "#define SD_ALIAS_TO_NUM_FLOAT32 5\n")
-    string(APPEND header_content "#define SD_ALIAS_TO_NUM_DOUBLE 6\n")
-    string(APPEND header_content "#define SD_ALIAS_TO_NUM_INT8 7\n")
-    string(APPEND header_content "#define SD_ALIAS_TO_NUM_INT16 8\n")
-    string(APPEND header_content "#define SD_ALIAS_TO_NUM_INT32 9\n")
-    string(APPEND header_content "#define SD_ALIAS_TO_NUM_INT64 10\n")
-    string(APPEND header_content "#define SD_ALIAS_TO_NUM_UINT8 11\n")
-    string(APPEND header_content "#define SD_ALIAS_TO_NUM_UINT16 12\n")
-    string(APPEND header_content "#define SD_ALIAS_TO_NUM_UINT32 13\n")
-    string(APPEND header_content "#define SD_ALIAS_TO_NUM_UINT64 14\n")
-    string(APPEND header_content "#define SD_ALIAS_TO_NUM_QINT8 15\n")
-    string(APPEND header_content "#define SD_ALIAS_TO_NUM_QINT16 16\n")
-    string(APPEND header_content "#define SD_ALIAS_TO_NUM_BFLOAT16 17\n")
-    string(APPEND header_content "#define SD_ALIAS_TO_NUM_UTF8 50\n")
-    string(APPEND header_content "#define SD_ALIAS_TO_NUM_UTF16 51\n")
-    string(APPEND header_content "#define SD_ALIAS_TO_NUM_UTF32 52\n")
-    string(APPEND header_content "#define SD_ALIAS_TO_NUM_ANY 100\n")
-    string(APPEND header_content "#define SD_ALIAS_TO_NUM_AUTO 200\n")
-    string(APPEND header_content "#define SD_ALIAS_TO_NUM_UNKNOWN 255\n")
-    string(APPEND header_content "\n")
+    string(APPEND core_content "// Constexpr alias to number mappings\n")
+    string(APPEND core_content "#define SD_ALIAS_TO_NUM_INHERIT 0\n")
+    string(APPEND core_content "#define SD_ALIAS_TO_NUM_BOOL 1\n")
+    string(APPEND core_content "#define SD_ALIAS_TO_NUM_FLOAT8 2\n")
+    string(APPEND core_content "#define SD_ALIAS_TO_NUM_HALF 3\n")
+    string(APPEND core_content "#define SD_ALIAS_TO_NUM_HALF2 4\n")
+    string(APPEND core_content "#define SD_ALIAS_TO_NUM_FLOAT32 5\n")
+    string(APPEND core_content "#define SD_ALIAS_TO_NUM_DOUBLE 6\n")
+    string(APPEND core_content "#define SD_ALIAS_TO_NUM_INT8 7\n")
+    string(APPEND core_content "#define SD_ALIAS_TO_NUM_INT16 8\n")
+    string(APPEND core_content "#define SD_ALIAS_TO_NUM_INT32 9\n")
+    string(APPEND core_content "#define SD_ALIAS_TO_NUM_INT64 10\n")
+    string(APPEND core_content "#define SD_ALIAS_TO_NUM_UINT8 11\n")
+    string(APPEND core_content "#define SD_ALIAS_TO_NUM_UINT16 12\n")
+    string(APPEND core_content "#define SD_ALIAS_TO_NUM_UINT32 13\n")
+    string(APPEND core_content "#define SD_ALIAS_TO_NUM_UINT64 14\n")
+    string(APPEND core_content "#define SD_ALIAS_TO_NUM_QINT8 15\n")
+    string(APPEND core_content "#define SD_ALIAS_TO_NUM_QINT16 16\n")
+    string(APPEND core_content "#define SD_ALIAS_TO_NUM_BFLOAT16 17\n")
+    string(APPEND core_content "#define SD_ALIAS_TO_NUM_UTF8 50\n")
+    string(APPEND core_content "#define SD_ALIAS_TO_NUM_UTF16 51\n")
+    string(APPEND core_content "#define SD_ALIAS_TO_NUM_UTF32 52\n")
+    string(APPEND core_content "#define SD_ALIAS_TO_NUM_ANY 100\n")
+    string(APPEND core_content "#define SD_ALIAS_TO_NUM_AUTO 200\n")
+    string(APPEND core_content "#define SD_ALIAS_TO_NUM_UNKNOWN 255\n")
+    string(APPEND core_content "\n")
 
     # Generate C++ type to number mappings - COMPREHENSIVE LIST
-    string(APPEND header_content "// C++ type name to number mappings\n")
-    
+    string(APPEND core_content "// C++ type name to number mappings\n")
+
     # Build a comprehensive type mapping dictionary
     set(type_mappings "")
     list(APPEND type_mappings "bool:1")
-    list(APPEND type_mappings "float8:2")
     list(APPEND type_mappings "float16:3")
     list(APPEND type_mappings "half:3")
-    list(APPEND type_mappings "half2:4")
     list(APPEND type_mappings "float:5")
     list(APPEND type_mappings "float32:5")
     list(APPEND type_mappings "double:6")
     list(APPEND type_mappings "int8_t:7")
     list(APPEND type_mappings "int16_t:8")
+    list(APPEND type_mappings "Int16Type:8")
     list(APPEND type_mappings "int32_t:9")
     list(APPEND type_mappings "Int32Type:9")
     list(APPEND type_mappings "int:9")
@@ -1513,148 +1694,148 @@ endfunction()
     list(APPEND type_mappings "uint8_t:11")
     list(APPEND type_mappings "unsigned_char:11")
     list(APPEND type_mappings "uint16_t:12")
+    list(APPEND type_mappings "UInt16Type:12")
     list(APPEND type_mappings "unsigned_short:12")
     list(APPEND type_mappings "uint32_t:13")
+    list(APPEND type_mappings "UInt32Type:13")
     list(APPEND type_mappings "unsigned_int:13")
     list(APPEND type_mappings "uint64_t:14")
+    list(APPEND type_mappings "UInt64Type:14")
     list(APPEND type_mappings "UnsignedLong:14")
     list(APPEND type_mappings "unsigned_long:14")
-    list(APPEND type_mappings "qint8:15")
-    list(APPEND type_mappings "qint16:16")
     list(APPEND type_mappings "bfloat16:17")
     list(APPEND type_mappings "bfloat:17")
-    list(APPEND type_mappings "stdstring:50")
-    list(APPEND type_mappings "std_string:50")
-    list(APPEND type_mappings "utf8:50")
-    list(APPEND type_mappings "u16string:51")
-    list(APPEND type_mappings "std_u16string:51")
-    list(APPEND type_mappings "utf16:51")
-    list(APPEND type_mappings "u32string:52")
-    list(APPEND type_mappings "std_u32string:52")
-    list(APPEND type_mappings "utf32:52")
     list(APPEND type_mappings "SignedChar:7")
     list(APPEND type_mappings "UnsignedChar:11")
     list(APPEND type_mappings "signed_char:7")
     list(APPEND type_mappings "unsigned_char:11")
-    
-    # Generate all type to number mappings
+    list(APPEND type_mappings "schar:7")
+    list(APPEND type_mappings "uchar:11")
+    list(APPEND type_mappings "int8:7")
+    list(APPEND type_mappings "uint8:11")
+    list(APPEND type_mappings "int16:8")
+    list(APPEND type_mappings "uint16:12")
+    list(APPEND type_mappings "int32:9")
+    list(APPEND type_mappings "uint32:13")
+    list(APPEND type_mappings "int64:10")
+    list(APPEND type_mappings "uint64:14")
+    list(APPEND type_mappings "short:8")
+    list(APPEND type_mappings "ushort:12")
+    list(APPEND type_mappings "uint:13")
+    list(APPEND type_mappings "longlong:10")
+    list(APPEND type_mappings "ulonglong:14")
+    list(APPEND type_mappings "ulong:14")
+    list(APPEND type_mappings "char:7")
+
+    # Generate all type to number mappings (both SD_TYPE_TO_NUM and SD_ALIAS_TO_NUM for compatibility)
     foreach(mapping IN LISTS type_mappings)
         string(REPLACE ":" ";" mapping_parts "${mapping}")
         list(GET mapping_parts 0 type_name)
         list(GET mapping_parts 1 type_num)
-        string(APPEND header_content "#define SD_TYPE_TO_NUM_${type_name} ${type_num}\n")
+        string(APPEND core_content "#define SD_TYPE_TO_NUM_${type_name} ${type_num}\n")
+        string(APPEND core_content "#define SD_ALIAS_TO_NUM_${type_name} ${type_num}\n")
     endforeach()
-    string(APPEND header_content "\n")
+    string(APPEND core_content "\n")
 
     # ============================================================================
     # SECTION 3: CONDITIONAL COMPILATION MACROS
     # ============================================================================
 
-    string(APPEND header_content "// ============================================================================\n")
-    string(APPEND header_content "// SECTION 3: CONDITIONAL COMPILATION MACROS\n")
-    string(APPEND header_content "// ============================================================================\n\n")
+    # ============================================================================
+    # SECTION 3: REMOVED - SD_IF_* CONDITIONAL COMPILATION MACROS
+    # ============================================================================
+    # NOTE: The SD_IF_* macro generation has been completely removed.
+    #
+    # REASON: These macros consumed 19,344 lines (~96% of selective_rendering.h),
+    # causing Clang 20.1.6 to exceed its source location limit ("ran out of source
+    # locations") when compiling large translation units like NativeOpExecutioner.cpp.
+    #
+    # IMPACT: None. Analysis showed these macros were never used in the codebase.
+    # The code directly checks SD_*_TYPE_*_COMPILED flags via preprocessor conditionals.
+    #
+    # RESULT: selective_rendering.h reduced from 20,152 lines to ~800 lines (96% reduction),
+    # allowing compilation with Clang while maintaining full 14-type support.
+    #
+    # Helper macros (SD_BUILD_*_IF_VALID) are appended separately by
+    # _internal_srcore_append_runtime_dispatch_to_header() around line 2171.
 
-    # Generate SD_IF macros for all type combinations
-    string(APPEND header_content "// Conditional compilation macros for type combinations\n")
-    string(APPEND header_content "// These handle both direct numeric and SD_TYPE_TO_NUM_ prefixed patterns\n\n")
-    
-    # Extract unique type names from the mappings
-    set(all_type_names "")
-    foreach(mapping IN LISTS type_mappings)
-        string(REPLACE ":" ";" mapping_parts "${mapping}")
-        list(GET mapping_parts 0 type_name)
-        list(APPEND all_type_names "${type_name}")
-    endforeach()
-    
-    # Generate pair macros for all type name combinations
-    string(APPEND header_content "// Pair type conditional compilation macros\n")
-    foreach(type1_name IN LISTS all_type_names)
-        # Get numeric value for type1
-        set(type1_num "")
-        foreach(mapping IN LISTS type_mappings)
-            string(REPLACE ":" ";" mapping_parts "${mapping}")
-            list(GET mapping_parts 0 mapped_name)
-            list(GET mapping_parts 1 mapped_num)
-            if(mapped_name STREQUAL type1_name)
-                set(type1_num "${mapped_num}")
-                break()
-            endif()
-        endforeach()
-        
-        if(NOT type1_num STREQUAL "")
-            foreach(type2_num IN LISTS all_possible_types)
-                set(pair_key "${type1_num}_${type2_num}")
-                
-                # Generate the macro for SD_TYPE_TO_NUM_ prefix pattern
-                string(APPEND header_content "#define SD_IF_SD_PAIR_TYPE_SD_TYPE_TO_NUM_${type1_name}_${type2_num}_COMPILED(code)")
-                list(FIND all_pair_keys "${pair_key}" found_idx)
-                if(found_idx GREATER_EQUAL 0)
-                    string(APPEND header_content " code\n")
-                else()
-                    string(APPEND header_content " do {} while(0)\n")
-                endif()
-                
-                # Also generate without the prefix for direct use
-                string(APPEND header_content "#define SD_IF_SD_PAIR_TYPE_${type1_name}_${type2_num}_COMPILED(code)")
-                if(found_idx GREATER_EQUAL 0)
-                    string(APPEND header_content " code\n")
-                else()
-                    string(APPEND header_content " do {} while(0)\n")
-                endif()
-            endforeach()
-        endif()
-    endforeach()
-    string(APPEND header_content "\n")
-    
-    # Generate triple macros for all type name combinations
-    string(APPEND header_content "// Triple type conditional compilation macros\n")
-    foreach(type1_name IN LISTS all_type_names)
-        # Get numeric value for type1
-        set(type1_num "")
-        foreach(mapping IN LISTS type_mappings)
-            string(REPLACE ":" ";" mapping_parts "${mapping}")
-            list(GET mapping_parts 0 mapped_name)
-            list(GET mapping_parts 1 mapped_num)
-            if(mapped_name STREQUAL type1_name)
-                set(type1_num "${mapped_num}")
-                break()
-            endif()
-        endforeach()
-        
-        if(NOT type1_num STREQUAL "")
-            foreach(type2_num IN LISTS all_possible_types)
-                foreach(type3_num IN LISTS all_possible_types)
-                    set(triple_key "${type1_num}_${type2_num}_${type3_num}")
-                    
-                    # Generate the macro for SD_TYPE_TO_NUM_ prefix pattern
-                    string(APPEND header_content "#define SD_IF_SD_TRIPLE_TYPE_SD_TYPE_TO_NUM_${type1_name}_${type2_num}_${type3_num}_COMPILED(code)")
-                    list(FIND all_triple_keys "${triple_key}" found_idx)
-                    if(found_idx GREATER_EQUAL 0)
-                        string(APPEND header_content " code\n")
-                    else()
-                        string(APPEND header_content " do {} while(0)\n")
-                    endif()
-                endforeach()
-            endforeach()
-        endif()
-    endforeach()
-    string(APPEND header_content "\n")
+    # ============================================================================
+    # Write partitioned header files
+    # ============================================================================
+
+    # Create selective_rendering subdirectory
+    get_filename_component(header_dir "${header_file}" DIRECTORY)
+    set(sr_dir "${header_dir}/selective_rendering")
+    file(MAKE_DIRECTORY "${sr_dir}")
+
+    # Close and write core.h (type mappings - always needed)
+    string(APPEND core_content "\n#endif // SD_SELECTIVE_RENDERING_CORE_H\n")
+    file(WRITE "${sr_dir}/core.h" "${core_content}")
+
+    # Close and write bool_types.h
+    string(APPEND bool_content "\n#endif // SD_SELECTIVE_RENDERING_BOOL_TYPES_H\n")
+    file(WRITE "${sr_dir}/bool_types.h" "${bool_content}")
+
+    # Close and write float_types.h
+    string(APPEND float_content "\n#endif // SD_SELECTIVE_RENDERING_FLOAT_TYPES_H\n")
+    file(WRITE "${sr_dir}/float_types.h" "${float_content}")
+
+    # Close and write bfloat_types.h
+    string(APPEND bfloat_content "\n#endif // SD_SELECTIVE_RENDERING_BFLOAT_TYPES_H\n")
+    file(WRITE "${sr_dir}/bfloat_types.h" "${bfloat_content}")
+
+    # Close and write int_types.h
+    string(APPEND int_content "\n#endif // SD_SELECTIVE_RENDERING_INT_TYPES_H\n")
+    file(WRITE "${sr_dir}/int_types.h" "${int_content}")
+
+    # Close and write uint_types.h
+    string(APPEND uint_content "\n#endif // SD_SELECTIVE_RENDERING_UINT_TYPES_H\n")
+    file(WRITE "${sr_dir}/uint_types.h" "${uint_content}")
+
+    # Close and write string_types.h
+    string(APPEND string_content "\n#endif // SD_SELECTIVE_RENDERING_STRING_TYPES_H\n")
+    file(WRITE "${sr_dir}/string_types.h" "${string_content}")
+
+    # Replace header_content with includes to all category headers
+    set(header_content "")
+    string(APPEND header_content "#ifndef SD_SELECTIVE_RENDERING_H\n")
+    string(APPEND header_content "#define SD_SELECTIVE_RENDERING_H\n\n")
+    string(APPEND header_content "// ============================================================================\n")
+    string(APPEND header_content "// Selective Rendering Type System - Partitioned Headers\n")
+    string(APPEND header_content "// ============================================================================\n")
+    string(APPEND header_content "// This master header includes all type category headers.\n")
+    string(APPEND header_content "// Large translation units can include only the specific category headers\n")
+    string(APPEND header_content "// they need to avoid Clang source location limits.\n")
+    string(APPEND header_content "// ============================================================================\n\n")
+    string(APPEND header_content "// Core type mappings (always required)\n")
+    string(APPEND header_content "#include \"selective_rendering/core.h\"\n\n")
+    string(APPEND header_content "// Type category headers\n")
+    string(APPEND header_content "#include \"selective_rendering/bool_types.h\"\n")
+    string(APPEND header_content "#include \"selective_rendering/float_types.h\"\n")
+    string(APPEND header_content "#include \"selective_rendering/bfloat_types.h\"\n")
+    string(APPEND header_content "#include \"selective_rendering/int_types.h\"\n")
+    string(APPEND header_content "#include \"selective_rendering/uint_types.h\"\n")
+    string(APPEND header_content "#include \"selective_rendering/string_types.h\"\n\n")
 
     # Close the header guard
     string(APPEND header_content "#endif // SD_SELECTIVE_RENDERING_H\n")
 
-    # Write the header file
+    # Write the master header file
     file(WRITE "${header_file}" "${header_content}")
 
     # Report generation results
-        list(LENGTH all_triple_keys total_triple_combinations)
-        list(LENGTH all_pair_keys total_pair_combinations)
-        list(LENGTH compiled_type_numbers total_single_types)
-        message(STATUS "Generated selective_rendering.h:")
-        message(STATUS "  - Location: ${header_file}")
-        message(STATUS "  - Single types: ${total_single_types}")
-        message(STATUS "  - Pair combinations: ${total_pair_combinations}")
-        message(STATUS "  - Triple combinations: ${total_triple_combinations}")
+    list(LENGTH all_triple_keys total_triple_combinations)
+    list(LENGTH all_pair_keys total_pair_combinations)
+    list(LENGTH compiled_type_numbers total_single_types)
+    message(STATUS "Generated selective_rendering.h (partitioned):")
+    message(STATUS "  - Master header: ${header_file}")
+    message(STATUS "  - Partitioned headers directory: ${sr_dir}/")
+    message(STATUS "    * core.h (type mappings)")
+    message(STATUS "    * bool_types.h, float_types.h, bfloat_types.h")
+    message(STATUS "    * int_types.h, uint_types.h, string_types.h")
+    message(STATUS "  - Single types: ${total_single_types}")
+    message(STATUS "  - Pair combinations: ${total_pair_combinations}")
+    message(STATUS "  - Triple combinations: ${total_triple_combinations}")
 endfunction()
 
 # ============================================================================
@@ -1664,7 +1845,7 @@ endfunction()
 function(verify_type_compilation_status)
     message(STATUS "")
     message(STATUS "=== Type Compilation Status ===")
-    
+
     # Check active types count
     if(DEFINED UNIFIED_ACTIVE_TYPES)
         list(LENGTH UNIFIED_ACTIVE_TYPES active_count)
@@ -1673,24 +1854,24 @@ function(verify_type_compilation_status)
     else()
         message(WARNING "UNIFIED_ACTIVE_TYPES not defined!")
     endif()
-    
+
     # Check combinations count
     if(DEFINED UNIFIED_COMBINATIONS_2)
         list(LENGTH UNIFIED_COMBINATIONS_2 combo2_count)
         message(STATUS "2-type combinations: ${combo2_count}")
     endif()
-    
+
     if(DEFINED UNIFIED_COMBINATIONS_3)
         list(LENGTH UNIFIED_COMBINATIONS_3 combo3_count)
         message(STATUS "3-type combinations: ${combo3_count}")
     endif()
-    
+
     # Check generated header file exists and has content
     if(EXISTS "${CMAKE_BINARY_DIR}/include/system/selective_rendering.h")
         file(READ "${CMAKE_BINARY_DIR}/include/system/selective_rendering.h" header_content)
         string(LENGTH "${header_content}" header_size)
         message(STATUS "Generated header size: ${header_size} bytes")
-        
+
         # Count how many types are actually compiled (have _COMPILED 1)
         string(REGEX MATCHALL "#define SD_SINGLE_TYPE_[0-9]+_COMPILED 1" compiled_singles "${header_content}")
         list(LENGTH compiled_singles compiled_count)
@@ -1698,7 +1879,7 @@ function(verify_type_compilation_status)
     else()
         message(WARNING "selective_rendering.h not found at expected location!")
     endif()
-    
+
     message(STATUS "==============================")
     message(STATUS "")
 endfunction()
@@ -1738,9 +1919,9 @@ function(setup_selective_rendering_unified)
     set(UNIFIED_COMBINATIONS_3 "${combinations_3}" CACHE INTERNAL "Unified 3-type combinations")
     set(UNIFIED_ACTIVE_TYPES "${SRCORE_ACTIVE_TYPES}" CACHE INTERNAL "Active types for build")
     set(UNIFIED_TYPE_COUNT ${type_count} CACHE INTERNAL "Unified active type count")
-    
+
     _internal_ensure_diagnostics_output()
-    
+
     report_selective_rendering_statistics()
 endfunction()
 
@@ -1748,14 +1929,14 @@ function(setup_selective_rendering_unified_safe)
     if(NOT CMAKE_CROSSCOMPILING AND NOT ANDROID)
         setup_selective_rendering_unified(${ARGN})
         srcore_map_to_legacy_variables()
-  
+
         srcore_generate_diagnostic_report()
-        
+
         _internal_ensure_diagnostics_output()
     else()
         setup_selective_rendering_unified(${ARGN})
         srcore_map_to_legacy_variables()
-        
+
         _internal_ensure_diagnostics_output()
     endif()
 
@@ -1777,7 +1958,7 @@ function(setup_selective_rendering_unified_safe)
     if(NOT DEFINED UNIFIED_COMBINATIONS_3 OR NOT UNIFIED_COMBINATIONS_3)
         srcore_emergency_fallback()
         srcore_map_to_legacy_variables()
-        
+
         # FIX: Ensure diagnostics even for fallback
         _internal_ensure_diagnostics_output()
 
@@ -1798,7 +1979,7 @@ function(setup_selective_rendering_unified_safe)
     if(NOT DEFINED UNIFIED_COMBINATIONS_3 OR NOT UNIFIED_COMBINATIONS_3)
         message(FATAL_ERROR "Unable to establish UNIFIED_COMBINATIONS_3 even with emergency fallback!")
     endif()
-    
+
     # FIX: Add final check for diagnostics status
     check_diagnostics_status()
 endfunction()
@@ -1808,25 +1989,25 @@ function(_internal_ensure_diagnostics_output)
     # Always create the diagnostics output directory
     set(COMBINATION_REPORT_DIR "${CMAKE_BINARY_DIR}/type_combinations")
     file(MAKE_DIRECTORY "${COMBINATION_REPORT_DIR}")
-    
+
     # Set as cache variable for other functions to use
     set(SD_DIAGNOSTICS_DIR "${COMBINATION_REPORT_DIR}" CACHE INTERNAL "Type combinations diagnostics directory")
-    
+
     # Create a timestamp file to mark when the directory was created
     string(TIMESTAMP creation_time "%Y-%m-%d %H:%M:%S")
     file(WRITE "${COMBINATION_REPORT_DIR}/.created" "Directory created: ${creation_time}\n")
-    
+
     # FIX: Add explicit message about creating directory
     message(STATUS "Creating type combinations diagnostics directory: ${COMBINATION_REPORT_DIR}")
-    
+
     # Automatically dump combinations if they exist
     if(DEFINED UNIFIED_COMBINATIONS_2 OR DEFINED UNIFIED_COMBINATIONS_3)
         # Silently dump combinations to disk without console output
         _internal_quiet_dump_combinations("${COMBINATION_REPORT_DIR}")
-        
+
         # FIX: Also call the main dump function for full reports
         dump_type_combinations_to_disk("${COMBINATION_REPORT_DIR}")
-        
+
         message(STATUS "Type combination reports written to: ${COMBINATION_REPORT_DIR}")
     else()
         message(STATUS "No combinations available yet for diagnostic output")
@@ -1836,28 +2017,28 @@ endfunction()
 function(generate_selective_rendering_reports)
     message(STATUS "")
     message(STATUS "=== Generating Selective Rendering Reports ===")
-    
+
     # Ensure diagnostics directory exists
     set(COMBINATION_REPORT_DIR "${CMAKE_BINARY_DIR}/type_combinations")
     file(MAKE_DIRECTORY "${COMBINATION_REPORT_DIR}")
-    
+
     # Check if we have the necessary data
     if(NOT DEFINED UNIFIED_COMBINATIONS_2 AND NOT DEFINED UNIFIED_COMBINATIONS_3)
         message(WARNING "No type combinations available. Run setup_selective_rendering_unified_safe() first.")
         return()
     endif()
-    
+
     # Generate all reports
     dump_type_combinations_to_disk("${COMBINATION_REPORT_DIR}")
     report_selective_rendering_statistics()
-    
+
     # Verify files were created
     file(GLOB report_files "${COMBINATION_REPORT_DIR}/*")
     list(LENGTH report_files num_files)
-    
+
     if(num_files GREATER 0)
         message(STATUS "Successfully generated ${num_files} report files in: ${COMBINATION_REPORT_DIR}")
-        
+
         # List the files
         foreach(report_file ${report_files})
             get_filename_component(filename "${report_file}" NAME)
@@ -1866,7 +2047,7 @@ function(generate_selective_rendering_reports)
     else()
         message(WARNING "No report files were generated!")
     endif()
-    
+
     message(STATUS "===============================================")
     message(STATUS "")
 endfunction()
@@ -2141,7 +2322,7 @@ endfunction()
 # Remove debug function calls to avoid GCC function tracing overhead
 macro(print_status_colored level message)
     # Only output if diagnostics are explicitly enabled
-        message(STATUS "${message}")
+    message(STATUS "${message}")
 endmacro()
 
 function(_internal_srcore_generate_helper_macros output_var)
@@ -2193,9 +2374,9 @@ function(_internal_srcore_append_runtime_dispatch_to_header active_indices type_
 
         file(WRITE "${header_file}" "${new_content}")
 
-            list(LENGTH combinations_3 total_triple_combinations)
-            list(LENGTH combinations_2 total_pair_combinations)
-            message(STATUS "Enhanced selective_rendering.h with runtime dispatch - ${total_pair_combinations} pair dispatches, ${total_triple_combinations} triple dispatches")
+        list(LENGTH combinations_3 total_triple_combinations)
+        list(LENGTH combinations_2 total_pair_combinations)
+        message(STATUS "Enhanced selective_rendering.h with runtime dispatch - ${total_pair_combinations} pair dispatches, ${total_triple_combinations} triple dispatches")
     else()
         message(FATAL_ERROR "Cannot append runtime dispatch - header file does not exist: ${header_file}")
     endif()
@@ -2206,14 +2387,14 @@ function(_internal_ensure_diagnostics_output)
     # Always create the diagnostics output directory
     set(COMBINATION_REPORT_DIR "${CMAKE_BINARY_DIR}/type_combinations")
     file(MAKE_DIRECTORY "${COMBINATION_REPORT_DIR}")
-    
+
     # Set as cache variable for other functions to use
     set(SD_DIAGNOSTICS_DIR "${COMBINATION_REPORT_DIR}" CACHE INTERNAL "Type combinations diagnostics directory")
-    
+
     # Create a timestamp file to mark when the directory was created
     string(TIMESTAMP creation_time "%Y-%m-%d %H:%M:%S")
     file(WRITE "${COMBINATION_REPORT_DIR}/.created" "Directory created: ${creation_time}\n")
-    
+
     # Automatically dump combinations if they exist
     if(DEFINED UNIFIED_COMBINATIONS_2 OR DEFINED UNIFIED_COMBINATIONS_3)
         # Silently dump combinations to disk without console output
@@ -2237,5 +2418,5 @@ function(srcore_enable_runtime_dispatch)
     set(SD_ENABLE_RUNTIME_DISPATCH TRUE PARENT_SCOPE)
     set(SD_ENABLE_RUNTIME_DISPATCH TRUE CACHE BOOL "Enable runtime dispatch macro generation")
 
-        message(STATUS "Runtime dispatch enabled - will generate SD_DISPATCH_*_RUNTIME macros")
+    message(STATUS "Runtime dispatch enabled - will generate SD_DISPATCH_*_RUNTIME macros")
 endfunction()

@@ -171,14 +171,20 @@
 // Statement context expansions (for use in function bodies)
 #define SD_IF_1(...) __VA_ARGS__
 #define SD_IF_0(...) do {} while(0);
+// Fallback for undefined _COMPILED flags (treated as 0/false)
+#define SD_IF_(...) do {} while(0);
 
 // Declaration context expansions (for use at file/namespace scope)
 #define SD_IF_DECL_1(...) __VA_ARGS__
 #define SD_IF_DECL_0(...) /* filtered out */
+// Fallback for undefined _COMPILED flags (treated as 0/false)
+#define SD_IF_DECL_(...) /* filtered out */
 
 // Expression context expansions (for use in expressions)
 #define SD_IF_EXPR_1(...) __VA_ARGS__
 #define SD_IF_EXPR_0(...) ((void)0)
+// Fallback for undefined _COMPILED flags (treated as 0/false)
+#define SD_IF_EXPR_(...) ((void)0)
 
 // Special whitespace-preserving helpers
 #define SD_UNPAREN(...) SD_UNPAREN_IMPL __VA_ARGS__

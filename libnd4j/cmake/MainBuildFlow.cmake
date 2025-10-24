@@ -378,6 +378,12 @@ function(create_and_link_library)
         add_library(${MAIN_LIB_NAME} SHARED $<TARGET_OBJECTS:${OBJECT_LIB_NAME}>)
         set_target_properties(${MAIN_LIB_NAME} PROPERTIES OUTPUT_NAME ${MAIN_LIB_NAME})
 
+        # Add -mcmodel=large for large binaries with sanitizers
+        if(SD_X86_BUILD AND NOT WIN32 AND DEFINED SD_SANITIZERS AND NOT SD_SANITIZERS STREQUAL "")
+            target_link_options(${MAIN_LIB_NAME} PRIVATE "-mcmodel=large")
+            message(STATUS "Applied -mcmodel=large to linker for ${MAIN_LIB_NAME}")
+        endif()
+
         # No CUDA includes needed here, they are handled by the linking function
         target_include_directories(${MAIN_LIB_NAME} PUBLIC
                 "${OPENBLAS_PATH}/include"

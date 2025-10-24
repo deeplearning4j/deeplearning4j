@@ -139,7 +139,7 @@ SD_LIB_EXPORT void cropAndResizeFunctor_(LaunchContext* context, NDArray * image
 }  // namespace sd
 
 
-BUILD_TRIPLE_TEMPLATE( SD_LIB_EXPORT void sd::ops::helpers::cropAndResizeFunctor_,
+BUILD_TRIPLE_TEMPLATE(void sd::ops::helpers::cropAndResizeFunctor_,
                       (sd::LaunchContext * context, NDArray * images, NDArray * boxes, NDArray * indices,
                        NDArray * cropSize, int method, double extrapolationVal, NDArray* crops),
                       SD_NUMERIC_TYPES, SD_FLOAT_TYPES, SD_INTEGER_TYPES);

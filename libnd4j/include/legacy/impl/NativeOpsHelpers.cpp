@@ -198,42 +198,42 @@ void convertTypes(sd::Pointer *extras, int srcTypeInt, sd::Pointer hX, sd::LongT
   if (srcType == sd::DataType::UINT8) {
     #ifdef HAS_FLOAT8
     if (dstType == sd::DataType::FLOAT8) {
-       _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT8, uint8_t, FLOAT8, float8);
+       _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT8, UnsignedChar, FLOAT8, float8);
     } else
     #endif
     #ifdef HAS_INT8
     if (dstType == sd::DataType::INT8) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT8, uint8_t, INT8, int8_t);
+      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT8, UnsignedChar, INT8, int8_t);
     } else
     #endif
     #ifdef HAS_UINT8
     if (dstType == sd::DataType::UINT8) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT8, uint8_t, UINT8, uint8_t);
+      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT8, UnsignedChar, UINT8, uint8_t);
     } else
     #endif
     #ifdef HAS_FLOAT16
     if (dstType == sd::DataType::HALF) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT8, uint8_t, HALF, float16);
+      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT8, UnsignedChar, HALF, float16);
     } else
     #endif
     #ifdef HAS_INT16
     if (dstType == sd::DataType::INT16) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT8, uint8_t, INT16, int16_t);
+      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT8, UnsignedChar, INT16, int16_t);
     } else
     #endif
     #ifdef HAS_UINT16
     if (dstType == sd::DataType::UINT16) {
-       _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT8, uint8_t, UINT16, uint16_t);
+       _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT8, UnsignedChar, UINT16, uint16_t);
     } else
     #endif
     #ifdef HAS_FLOAT32
     if (dstType == sd::DataType::FLOAT32) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT8, uint8_t, FLOAT32, float);
+      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT8, UnsignedChar, FLOAT32, float);
     } else
     #endif
     #ifdef HAS_DOUBLE
     if (dstType == sd::DataType::DOUBLE) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT8, uint8_t, DOUBLE, double);
+      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT8, UnsignedChar, DOUBLE, double);
     } else
     #endif
     {

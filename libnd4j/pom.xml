@@ -109,13 +109,14 @@
         <cpu.core.count></cpu.core.count>
         <libnd4j.preprocess>OFF</libnd4j.preprocess>
         <libnd4j.build.ppstep>OFF</libnd4j.build.ppstep>
-    <libnd4j.extract.instantiations>OFF</libnd4j.extract.instantiations>
+        <libnd4j.extract.instantiations>OFF</libnd4j.extract.instantiations>
         <libnd4j.generate.fix.files>OFF</libnd4j.generate.fix.files>
         <libnd4j.instantiation.report>OFF</libnd4j.instantiation.report>
         <libnd4j.instantiation.verbose>OFF</libnd4j.instantiation.verbose>
         <libnd4j.analyze.templates>OFF</libnd4j.analyze.templates>
-        
- </properties>
+        <libnd4j.compiler></libnd4j.compiler>
+
+    </properties>
 
     <dependencies>
         <dependency>
@@ -555,8 +556,8 @@
                                         <argument>--debug-custom-types</argument>
                                         <argument>${libnd4j.debug.types.custom}</argument>
                                         <argument>--debug-auto-reduce</argument>
-                                         <argument>${libnd4j.debug.auto.reduce}</argument>
-                                         <argument>--ppstep</argument>
+                                        <argument>${libnd4j.debug.auto.reduce}</argument>
+                                        <argument>--ppstep</argument>
                                         <argument>${libnd4j.build.ppstep}</argument>
                                         <argument>--extract-instantiations</argument>
                                         <argument>${libnd4j.extract.instantiations}</argument>
@@ -566,6 +567,8 @@
                                         <argument>${libnd4j.instantiation.report}</argument>
                                         <argument>--instantiation-verbose</argument>
                                         <argument>${libnd4j.instantiation.verbose}</argument>
+                                        <argument>--compiler</argument>
+                                        <argument>${libnd4j.compiler}</argument>
 
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
@@ -717,11 +720,13 @@
                                         <argument>${libnd4j.debug.types.custom}</argument>
                                         <argument>--debug-auto-reduce</argument>
                                         <argument>${libnd4j.debug.auto.reduce}</argument>
-                                       <argument>--ppstep</argument>
+                                        <argument>--ppstep</argument>
                                         <argument>${libnd4j.build.ppstep}</argument>
                                         <argument>--extract-instantiations</argument>
                                         <argument>${libnd4j.extract.instantiations}</argument>
-                                
+                                        <argument>--compiler</argument>
+                                        <argument>${libnd4j.compiler}</argument>
+
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>
