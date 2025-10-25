@@ -30,7 +30,7 @@
 #include <vector>
 #include <config.h>
 
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
 #include <cuda.h>
 #include <cuda_runtime.h>
 

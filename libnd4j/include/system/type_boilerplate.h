@@ -23,6 +23,10 @@
 #ifndef LIBND4J_TYPE_BOILERPLATE_H
 #define LIBND4J_TYPE_BOILERPLATE_H
 
+
+#include "array/DataTypeValidation.h"
+#include <system/type_instantiate_boilerplate.h>
+#include "type_boiler_plate_expansions.h"
 /*
 *
 * Selector Macros:
@@ -56,11 +60,7 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 #define EVALUATING_PASTE(x, ...) PASTE(x, __VA_ARGS__)
 #define EVALUATING_PASTE2(x, ...) PASTE2(x, __VA_ARGS__)
 #define EVALUATING_PASTE3(x, ...) PASTE3(x, __VA_ARGS__)
-#define UNPAREN(x) EVALUATING_PASTE(NOTHING_, EXTRACT x)
-#define UNPAREN2(x) EVALUATING_PASTE2(NOTHING_, EXTRACT x)
-#define UNPAREN3(x) EVALUATING_PASTE3(NOTHING_, EXTRACT x)
-#define EVAL(x) x
-#define EVALX(x) x
+#define UNPAREN_IMPL(...) __VA_ARGS__
 #define EVAL0(...) EVAL1(EVAL1(EVAL1(__VA_ARGS__)))
 #define EVAL1(...) EVAL2(EVAL2(EVAL2(__VA_ARGS__)))
 #define EVAL2(...) EVAL3(EVAL3(EVAL3(__VA_ARGS__)))
@@ -1155,31 +1155,41 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
  EVAL(_EXEC_SELECTOR_T(TEMPLATE_SINGLE_TWICE, NAME, SIGNATURE, TYPES))
 #define BUILD_DOUBLE_TEMPLATE(NAME, SIGNATURE, TYPES_A, TYPES_B) \
  EVAL(_EXEC_DOUBLE_T(RANDOMDOUBLE, NAME, (SIGNATURE), (TYPES_A), TYPES_B))
+
 #define BUILD_SINGLE_SELECTOR(XTYPE, NAME, SIGNATURE, TYPES)                   \
  switch (XTYPE) {                                                             \
    EVAL(_EXEC_SELECTOR_T(SELECTOR_SINGLE, NAME, SIGNATURE, TYPES));           \
    default: {                                                                 \
-     printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__); \
+     auto errorMsg = sd::DataTypeValidation::getDataTypeErrorMessage(         \
+         XTYPE, #NAME);                                                        \
+     printf("[ERROR] %s at %s:%d\n", errorMsg.c_str(), __FILE__, __LINE__);   \
      fflush(stdout);                                                          \
-     THROW_EXCEPTION("bad data type");                               \
+     THROW_EXCEPTION(errorMsg.c_str());                                       \
    }                                                                          \
  }
+
 #define BUILD_SINGLE_SELECTOR_TWICE(XTYPE, NAME, SIGNATURE, TYPES)             \
  switch (XTYPE) {                                                             \
    EVAL(_EXEC_SELECTOR_T(SELECTOR_SINGLE_TWICE, NAME, SIGNATURE, TYPES));     \
    default: {                                                                 \
-     printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__); \
+     auto errorMsg = sd::DataTypeValidation::getDataTypeErrorMessage(         \
+         XTYPE, #NAME "_TWICE");                                               \
+     printf("[ERROR] %s at %s:%d\n", errorMsg.c_str(), __FILE__, __LINE__);   \
      fflush(stdout);                                                          \
-     THROW_EXCEPTION("bad data type");                               \
+     THROW_EXCEPTION(errorMsg.c_str());                                       \
    }                                                                          \
  }
+
+
 #define BUILD_SINGLE_SELECTOR_THRICE(XTYPE, NAME, SIGNATURE, TYPES)            \
  switch (XTYPE) {                                                             \
    EVAL(_EXEC_SELECTOR_T(SELECTOR_SINGLE_THRICE, NAME, SIGNATURE, TYPES));    \
    default: {                                                                 \
-     printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__); \
+     auto errorMsg = sd::DataTypeValidation::getDataTypeErrorMessage(         \
+         XTYPE, #NAME "_THRICE");                                              \
+     printf("[ERROR] %s at %s:%d\n", errorMsg.c_str(), __FILE__, __LINE__);   \
      fflush(stdout);                                                          \
-     THROW_EXCEPTION("bad data type");                               \
+     THROW_EXCEPTION(errorMsg.c_str());                                       \
    }                                                                          \
  }
 
@@ -1187,44 +1197,57 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
  switch (XTYPE) {                                                             \
    EVAL(_EXEC_SELECTOR_T(SELECTOR_PARTIAL_SINGLE, NAME, SIGNATURE, TYPES));   \
    default: {                                                                 \
-     printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__); \
+     auto errorMsg = sd::DataTypeValidation::getDataTypeErrorMessage(         \
+         XTYPE, #NAME "_PARTIAL");                                             \
+     printf("[ERROR] %s at %s:%d\n", errorMsg.c_str(), __FILE__, __LINE__);   \
      fflush(stdout);                                                          \
-     THROW_EXCEPTION("bad data type");                               \
+     THROW_EXCEPTION(errorMsg.c_str());                                       \
    }                                                                          \
  }
 #define BUILD_DOUBLE_SELECTOR(XTYPE, YTYPE, NAME, SIGNATURE, TYPES_A, TYPES_B)                \
  switch (XTYPE) {                                                                            \
    EVAL(_EXEC_SELECTOR_TT_1(SELECTOR_DOUBLE, YTYPE, NAME, (SIGNATURE), (TYPES_B), TYPES_A)); \
    default: {                                                                                \
-     printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__);                \
+     auto errorMsg = sd::DataTypeValidation::getDataTypeErrorMessage(                       \
+         XTYPE, #NAME "_DOUBLE_X");                                                          \
+     printf("[ERROR] %s at %s:%d\n", errorMsg.c_str(), __FILE__, __LINE__);                 \
      fflush(stdout);                                                                         \
-     THROW_EXCEPTION("bad data type");                                              \
+     THROW_EXCEPTION(errorMsg.c_str());                                                     \
    }                                                                                         \
  }
+
+
 #define BUILD_TRIPLE_SELECTOR(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPES_X, TYPES_Y, TYPES_Z)                 \
  switch (XTYPE) {                                                                                             \
    EVAL(_EXEC_SELECTOR_TTT_1(SELECTOR_TRIPLE, YTYPE, ZTYPE, NAME, SIGNATURE, (TYPES_Z), (TYPES_Y), TYPES_X)); \
    default: {                                                                                                 \
-     printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__);                                 \
+     auto errorMsg = sd::DataTypeValidation::getDataTypeErrorMessage(                                        \
+         XTYPE, #NAME "_TRIPLE_X");                                                                           \
+     printf("[ERROR] %s at %s:%d\n", errorMsg.c_str(), __FILE__, __LINE__);                                  \
      fflush(stdout);                                                                                          \
-     THROW_EXCEPTION("bad data type");                                                               \
+     THROW_EXCEPTION(errorMsg.c_str());                                                                      \
    }                                                                                                          \
  }
+
+
 #define BUILD_TRIPLE_TEMPLATE(NAME, SIGNATURE, TYPES_X, TYPES_Y, TYPES_Z) \
  EVAL(_EXEC_TRIPLE_T1(RANDOMTRIPLE, NAME, (SIGNATURE), (TYPES_X), (TYPES_Y), TYPES_Z))
+
 #define BUILD_PAIRWISE_TEMPLATE(NAME, SIGNATURE, TYPES_A) \
  EVAL(_EXEC_DOUBLE_P(RANDOMPAIRWISE, NAME, (SIGNATURE), TYPES_A))
+
+
 #define BUILD_PAIRWISE_SELECTOR(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPES_A, TYPES_B)                      \
  switch (XTYPE) {                                                                                           \
    EVAL(_EXEC_SELECTOR_P_1(SELECTOR_PAIRWISE, XTYPE, YTYPE, ZTYPE, NAME, (SIGNATURE), (TYPES_B), TYPES_A)); \
    default: {                                                                                               \
-     printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__);                               \
+     auto errorMsg = sd::DataTypeValidation::getDataTypeErrorMessage(                                      \
+         XTYPE, #NAME "_PAIRWISE_X");                                                                       \
+     printf("[ERROR] %s at %s:%d\n", errorMsg.c_str(), __FILE__, __LINE__);                                \
      fflush(stdout);                                                                                        \
-     THROW_EXCEPTION("bad data type");                                                             \
+     THROW_EXCEPTION(errorMsg.c_str());                                                                    \
    }                                                                                                        \
  }
-
-
 
 
 // Helper macro to apply a macro to arguments, forcing expansion
@@ -1233,10 +1256,17 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 #define LIST(...) __VA_ARGS__
 
 #define _SELECTOR_DOUBLE_2(NAME, SIGNATURE, TYPE_A, ENUM, TYPE_B) \
- case ENUM: {                                                    \
-   NAME<TYPE_A, TYPE_B> SIGNATURE;                               \
-   break;                                                        \
- };
+    case ENUM: { \
+        SD_IF_PAIR_COMPILED( \
+            SD_CAT(SD_TYPE_TO_NUM_, TYPE_A), \
+            SD_CAT(SD_ENUM_TO_NUM_, ENUM), \
+            NAME<TYPE_A, TYPE_B> SIGNATURE; \
+        ) \
+        break; \
+    };
+
+
+
 #define SELECTOR_DOUBLE_2(NAME, SIGNATURE, TYPE_A, TYPE_B) \
  EVALUATING_PASTE2(_SELECT, OR_DOUBLE_2(NAME, UNPAREN3(SIGNATURE), TYPE_A, UNPAREN3(TYPE_B)))
 
@@ -1245,28 +1275,47 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
    switch (YTYPE) {                                                               \
      EXPAND(DISPATCH_DTYPES2(NAME, SIGNATURE, TYPE_A, __VA_ARGS__));              \
      default: {                                                                   \
-       printf("[ERROR] Unknown dtypeX=%d on %s:%d\n", YTYPE, __FILE__, __LINE__); \
+       auto errorMsg = sd::DataTypeValidation::getDataTypeErrorMessage(          \
+           YTYPE, #NAME "_DOUBLE_Y");                                             \
+       printf("[ERROR] %s at %s:%d\n", errorMsg.c_str(), __FILE__, __LINE__);    \
        fflush(stdout);                                                            \
+       THROW_EXCEPTION(errorMsg.c_str());                                        \
      }                                                                            \
    };                                                                             \
    break;                                                                         \
  };
+
+
+
 #define SELECTOR_DOUBLE(YTYPE, NAME, SIGNATURE, TYPES_B, TYPE_A) \
  EVALUATING_PASTE(_SELECTOR, _DOUBLE(YTYPE, NAME, SIGNATURE, UNPAREN(TYPE_A), UNPAREN(TYPES_B)))
 
 #define _SELECTOR_PAIRWISE_2(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, ENUM, TYPE_B) \
- case ENUM: {                                                                           \
-   if (ZTYPE == YTYPE) {                                                                \
-     NAME<TYPE_A, TYPE_B, TYPE_B> SIGNATURE;                                            \
-   } else if (XTYPE == ZTYPE) {                                                         \
-     NAME<TYPE_A, TYPE_B, TYPE_A> SIGNATURE;                                            \
-   } else {                                                                             \
-     printf("[ERROR] Unknown dtypeX=%d on %s:%d\n", YTYPE, __FILE__, __LINE__);         \
-     fflush(stdout);                                                                    \
-     THROW_EXCEPTION("Unknown Z operand");                                     \
-   };                                                                                   \
-   break;                                                                               \
- };
+    case ENUM: { \
+        if (ZTYPE == YTYPE) { \
+            SD_IF_PAIR_COMPILED( \
+                SD_CAT(SD_TYPE_TO_NUM_, TYPE_A), \
+                SD_CAT(SD_ENUM_TO_NUM_, ENUM), \
+                NAME<TYPE_A, TYPE_B, TYPE_B> SIGNATURE; \
+            ) \
+        } else if (XTYPE == ZTYPE) { \
+            SD_IF_TRIPLE_COMPILED( \
+                SD_CAT(SD_TYPE_TO_NUM_, TYPE_A), \
+                SD_CAT(SD_ENUM_TO_NUM_, ENUM), \
+                SD_CAT(SD_TYPE_TO_NUM_, TYPE_A), \
+                NAME<TYPE_A, TYPE_B, TYPE_A> SIGNATURE; \
+            ) \
+        } else { \
+            auto errorMsg = sd::DataTypeValidation::getDataTypeErrorMessage( \
+                ZTYPE, #NAME "_PAIRWISE_MISMATCH"); \
+            printf("[ERROR] %s at %s:%d\n", errorMsg.c_str(), __FILE__, __LINE__); \
+            fflush(stdout); \
+            THROW_EXCEPTION(errorMsg.c_str()); \
+        } \
+        break; \
+    };
+
+ 
 #define SELECTOR_PAIRWISE_2(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B) \
  EVALUATING_PASTE2(_SELECT, OR_PAIRWISE_2(XTYPE, YTYPE, ZTYPE, NAME, UNPAREN3(SIGNATURE), TYPE_A, UNPAREN3(TYPE_B)))
 #define _SELECTOR_PAIRWISE(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, ENUM, TYPE_A, ...)          \
@@ -1274,94 +1323,141 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
    switch (YTYPE) {                                                                         \
      EXPAND(DISPATCH_PAIRWISE2(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__)); \
      default: {                                                                             \
-       printf("[ERROR] Unknown dtypeX=%d on %s:%d\n", YTYPE, __FILE__, __LINE__);           \
+       auto errorMsg = sd::DataTypeValidation::getDataTypeErrorMessage(                    \
+           YTYPE, #NAME "_PAIRWISE_Y");                                                     \
+       printf("[ERROR] %s at %s:%d\n", errorMsg.c_str(), __FILE__, __LINE__);              \
        fflush(stdout);                                                                      \
+       THROW_EXCEPTION(errorMsg.c_str());                                                  \
      }                                                                                      \
    };                                                                                       \
    break;                                                                                   \
  };
+
 #define SELECTOR_PAIRWISE(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPES_B, TYPE_A) \
  EVALUATING_PASTE(_SELECTOR, _PAIRWISE(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, UNPAREN(TYPE_A), UNPAREN(TYPES_B)))
 
 #define _SELECTOR_TRIPLE_3(NAME, SIGNATURE, TYPE_X, TYPE_Y, ENUM_Z, TYPE_Z) \
- case ENUM_Z: {                                                            \
-   NAME<TYPE_X, TYPE_Y, TYPE_Z> SIGNATURE;                                 \
- }; break;
+    case ENUM_Z: { \
+        SD_IF_TRIPLE_COMPILED( \
+            SD_CAT(SD_TYPE_TO_NUM_, TYPE_X), \
+            SD_CAT(SD_TYPE_TO_NUM_, TYPE_Y), \
+            SD_CAT(SD_ENUM_TO_NUM_, ENUM_Z), \
+            NAME<TYPE_X, TYPE_Y, TYPE_Z> SIGNATURE; \
+        ) \
+        break; \
+    };
+
+
 #define SELECTOR_TRIPLE_3(ZTYPE, NAME, SIGNATURE, TYPE_X, TYPE_Y, TYPE_Z) \
  EVALUATING_PASTE3(_SELECTOR, _TRIPLE_3(NAME, SIGNATURE, TYPE_X, TYPE_Y, UNPAREN3(TYPE_Z)))
+
 #define _SELECTOR_TRIPLE_2(ZTYPE, NAME, SIGNATURE, TYPE_X, ENUM_Y, TYPE_Y, TYPES_Z)         \
  case ENUM_Y: {                                                                            \
    switch (ZTYPE) {                                                                        \
      EXPAND2(DISPATCH_TTYPES3(ZTYPE, NAME, SIGNATURE, TYPE_X, TYPE_Y, UNPAREN3(TYPES_Z))); \
      default: {                                                                            \
-       printf("[ERROR] Unknown dtypeZ=%d on %s:%d\n", ZTYPE, __FILE__, __LINE__);          \
-       ;                                                                                   \
+       auto errorMsg = sd::DataTypeValidation::getDataTypeErrorMessage(                   \
+           ZTYPE, #NAME "_TRIPLE_Z");                                                      \
+       printf("[ERROR] %s at %s:%d\n", errorMsg.c_str(), __FILE__, __LINE__);             \
        fflush(stdout);                                                                     \
+       THROW_EXCEPTION(errorMsg.c_str());                                                 \
      }                                                                                     \
    }                                                                                       \
    break;                                                                                  \
  };
+
 #define SELECTOR_TRIPLE_2(ZTYPE, NAME, SIGNATURE, TYPE_X, TYPES_Z, TYPE_Y) \
  EVALUATING_PASTE2(_SELECTOR, _TRIPLE_2(ZTYPE, NAME, SIGNATURE, TYPE_X, UNPAREN2(TYPE_Y), TYPES_Z))
-#define _SELECTOR_TRIPLE(YTYPE, ZTYPE, NAME, SIGNATURE, ENUM_X, TYPE_X, TYPES_Z, ...) \
+
+ #define _SELECTOR_TRIPLE(YTYPE, ZTYPE, NAME, SIGNATURE, ENUM_X, TYPE_X, TYPES_Z, ...) \
  case ENUM_X: {                                                                      \
    switch (YTYPE) {                                                                  \
      EXPAND(DISPATCH_TTYPES2(ZTYPE, NAME, SIGNATURE, TYPE_X, TYPES_Z, __VA_ARGS__)); \
      default: {                                                                      \
-       printf("[ERROR] Unknown dtypeY=%d on %s:%d\n", YTYPE, __FILE__, __LINE__);    \
-       ;                                                                             \
+       auto errorMsg = sd::DataTypeValidation::getDataTypeErrorMessage(             \
+           YTYPE, #NAME "_TRIPLE_Y");                                                \
+       printf("[ERROR] %s at %s:%d\n", errorMsg.c_str(), __FILE__, __LINE__);       \
        fflush(stdout);                                                               \
+       THROW_EXCEPTION(errorMsg.c_str());                                           \
      }                                                                               \
    }                                                                                 \
    break;                                                                            \
  };
+
 #define SELECTOR_TRIPLE(YTYPE, ZTYPE, NAME, SIGNATURE, TYPES_Z, TYPES_Y, TYPE_X) \
  EVALUATING_PASTE(_SELECTOR, _TRIPLE(YTYPE, ZTYPE, NAME, SIGNATURE, UNPAREN(TYPE_X), TYPES_Z, UNPAREN(TYPES_Y)))
 
 #define _SELECTOR_SINGLE(A, B, C, D) \
- case C: {                          \
-   A<D> B;                          \
-   break;                           \
- };
+    case C: { \
+        EVAL(SD_IF_SINGLE_ALIAS_COMPILED( \
+            C, \
+            A<D> B; \
+        )) \
+        break; \
+    };
+
+
 #define SELECTOR_SINGLE(A, B, C) EVALUATING_PASTE(_SEL, ECTOR_SINGLE(A, B, UNPAREN(C)))
 
 #define _SELECTOR_SINGLE_THRICE(A, B, C, D) \
- case C: {                                 \
-   A<D, D, D> B;                           \
-   break;                                  \
- };
+    case C: { \
+        EVAL(SD_IF_TRIPLE_ALIAS_COMPILED( \
+            C, \
+            C, \
+            C, \
+            A<D, D, D> B; \
+        )) \
+        break; \
+    };
+
+
 #define SELECTOR_SINGLE_THRICE(A, B, C) EVALUATING_PASTE(_SEL, ECTOR_SINGLE_THRICE(A, B, UNPAREN(C)))
 
 #define _SELECTOR_SINGLE_TWICE(A, B, C, D) \
- case C: {                                \
-   A<D, D> B;                             \
-   break;                                 \
- };
+    case C: { \
+        EVAL(SD_IF_PAIR_ALIAS_COMPILED( \
+            C, \
+            C, \
+            A<D, D> B; \
+        )) \
+        break; \
+    };
+
 #define SELECTOR_SINGLE_TWICE(A, B, C) EVALUATING_PASTE(_SEL, ECTOR_SINGLE_TWICE(A, B, UNPAREN(C)))
 
-#define _TEMPLATE_SINGLE_TWICE(A, B, C, D) A<D, D> B;
+
+#define _TEMPLATE_SINGLE_TWICE(TEMPLATE_NAME, SIGNATURE, ENUM, TYPE) \
+    EVAL(SD_IF_PAIR_ALIAS_COMPILED_DECL( \
+        ENUM, \
+        ENUM, \
+         TEMPLATE_NAME<TYPE, TYPE> SIGNATURE; \
+    ))
+
 #define TEMPLATE_SINGLE_TWICE(A, B, C) EVALUATING_PASTE(_TEM, PLATE_SINGLE_TWICE(A, B, UNPAREN(C)))
 
 #define _SELECTOR_PARTIAL_SINGLE(A, B, C, D) \
- case C: {                                  \
-   A D, UNPAREN2(B);                        \
-   break;                                   \
- };
+    case C: { \
+        EVAL(SD_IF_SINGLE_ALIAS_COMPILED( \
+            C, \
+            A D, UNPAREN2(B); \
+        )) \
+        break; \
+    };
+
 #define SELECTOR_PARTIAL_SINGLE(A, B, C) EVALUATING_PASTE(_SEL, ECTOR_PARTIAL_SINGLE(A, B, UNPAREN(C)))
 
-#define _RANDOMSINGLE(A, B, C, D) A<D> B;
-#define _RANDOMSINGLEU(A, B, C, D) A D B;
+
+
+
 #define RANDOMSINGLE(A, B, C) EVALUATING_PASTE(_RAND, OMSINGLE(A, UNPAREN(B), UNPAREN(C)))
 #define RANDOMSINGLEU(A, B, C) EVALUATING_PASTE(_RAND, OMSINGLEU(A, UNPAREN(B), UNPAREN(C)))
 #define RANDOMDOUBLE(A, B, C, D) EXPAND(DISPATCH_DTYPES(A, UNPAREN(B), D, UNPAREN(C)))
 
-#define _RANDOMDOUBLE2(A, B, C, D, E, F) A<F, D> B;
 #define RANDOMDOUBLE2(A, B, C, D) EVALUATING_PASTE(_RAND, OMDOUBLE2(A, B, UNPAREN(C), UNPAREN(D)))
 
-#define _RANDOMPAIRWISE2(A, B, C, D, E) A<B, C, D> E;
+
 #define RANDOMPAIRWISE(A, B, C) EVALUATING_PASTE(_RANDOM, PAIRWISE2(A, UNPAREN(C), UNPAREN(B)))
 
-#define _RANDOMTRIPLE3(A, B, ZN, ZT, YN, YT, XN, XT) A<XT, YT, ZT> B;
 #define RANDOMTRIPLE3(A, B, Z, Y, X) \
  EVALUATING_PASTE(_RANDOM, TRIPLE3(A, UNPAREN(B), UNPAREN(Z), UNPAREN(Y), UNPAREN(X)))
 
@@ -1383,42 +1479,6 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
      sd::DataType::UINT32, sd::DataType::INT64, sd::DataType::UINT64
 #define ALL_FLOATS sd::DataType::HALF, sd::DataType::FLOAT32, sd::DataType::DOUBLE, sd::DataType::BFLOAT16
 
-
-#define EXPAND(...) __VA_ARGS__
-#define CAT(a, b) CAT_IMPL(a, b)
-#define CAT_IMPL(a, b) a##b
-
-#define PP_NARGS(...) PP_NARGS_IMPL(__VA_ARGS__, PP_RSEQ_N())
-#define PP_NARGS_IMPL(...) PP_ARG_N(__VA_ARGS__)
-#define PP_ARG_N(_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,N,...) N
-#define PP_RSEQ_N() 16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0
-
-
-#define GET(n, list) CAT(GET_, n) list
-
-#define GET_0(t1, ...) t1
-#define GET_1(t1, t2, ...) t2
-#define GET_2(t1, t2, t3, ...) t3
-#define GET_3(t1, t2, t3, t4, ...) t4
-#define GET_4(t1, t2, t3, t4, t5, ...) t5
-#define GET_5(t1, t2, t3, t4, t5, t6, ...) t6
-#define GET_6(t1, t2, t3, t4, t5, t6, t7, ...) t7
-#define GET_7(t1, t2, t3, t4, t5, t6, t7, t8, ...) t8
-#define GET_8(t1, t2, t3, t4, t5, t6, t7, t8, t9, ...) t9
-#define GET_9(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, ...) t10
-#define GET_10(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, ...) t11
-#define GET_11(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, ...) t12
-#define GET_12(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, ...) t13
-#define GET_13(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, ...) t14
-#define GET_14(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, ...) t15
-#define GET_15(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, ...) t16
-
-#define GET_FIRST_IMPL(a, b) a
-#define GET_FIRST(tuple) GET_FIRST_IMPL tuple
-
-
-#define GET_SECOND_IMPL(a, b) b
-#define GET_SECOND(tuple) GET_SECOND_IMPL tuple
 
 
 #define PROCESS_COMBINATION(a1, b1, a2, b2,FUNC_NAME,ARGS) \
@@ -1750,7 +1810,6 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 
 #define INSTANT_PROCESS_CLASSCOMBINATION(a1, b1,FUNC_NAME,ARGS) template  FUNC_NAME<GET_SECOND(a1), GET_SECOND(b1)>ARGS;
 #define INSTANT_PROCESS_COMBINATION(a1, b1,FUNC_NAME,ARGS) template void FUNC_NAME<GET_SECOND(a1), GET_SECOND(b1)>ARGS;
-#define INSTANT_PROCESS_COMBINATION_3(a1, b1,c1,FUNC_NAME,ARGS)  template void FUNC_NAME<GET_SECOND(a1),GET_SECOND(b1), GET_SECOND(c1)>ARGS;
 
 #define INSTANT_PROCESS_COMBINATION_CLASS(a1, b1,FUNC_NAME,ARGS) template class FUNC_NAME<GET_SECOND(a1), GET_SECOND(b1)>ARGS;
 #define INSTANT_PROCESS_COMBINATION_CLASS_3(a1, b1,c1,FUNC_NAME,ARGS) extern template class FUNC_NAME<GET_SECOND(a1),GET_SECOND(b1), GET_SECOND(c1)>ARGS;
@@ -1820,6 +1879,64 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
    LOOP_15(CALLBACK, LIST) \
    CALLBACK(GET(15, LIST))
 
+#define LOOP_17(CALLBACK, LIST) \
+   LOOP_16(CALLBACK, LIST) \
+   CALLBACK(GET(16, LIST))
+
+#define LOOP_18(CALLBACK, LIST) \
+   LOOP_17(CALLBACK, LIST) \
+   CALLBACK(GET(17, LIST))
+
+#define LOOP_19(CALLBACK, LIST) \
+   LOOP_18(CALLBACK, LIST) \
+   CALLBACK(GET(18, LIST))
+
+#define LOOP_20(CALLBACK, LIST) \
+   LOOP_19(CALLBACK, LIST) \
+   CALLBACK(GET(19, LIST))
+
+#define LOOP_21(CALLBACK, LIST) \
+   LOOP_20(CALLBACK, LIST) \
+   CALLBACK(GET(20, LIST))
+
+#define LOOP_22(CALLBACK, LIST) \
+   LOOP_21(CALLBACK, LIST) \
+   CALLBACK(GET(21, LIST))
+
+#define LOOP_23(CALLBACK, LIST) \
+   LOOP_22(CALLBACK, LIST) \
+   CALLBACK(GET(22, LIST))
+
+#define LOOP_24(CALLBACK, LIST) \
+   LOOP_23(CALLBACK, LIST) \
+   CALLBACK(GET(23, LIST))
+
+#define LOOP_25(CALLBACK, LIST) \
+   LOOP_24(CALLBACK, LIST) \
+   CALLBACK(GET(24, LIST))
+
+#define LOOP_26(CALLBACK, LIST) \
+   LOOP_25(CALLBACK, LIST) \
+   CALLBACK(GET(25, LIST)) 
+
+#define LOOP_27(CALLBACK, LIST) \
+   LOOP_26(CALLBACK, LIST) \    
+   CALLBACK(GET(26, LIST))
+
+#define LOOP_28(CALLBACK, LIST) \
+   LOOP_27(CALLBACK, LIST) \
+   CALLBACK(GET(27, LIST))
+
+#define LOOP_29(CALLBACK, LIST) \
+   LOOP_28(CALLBACK, LIST) \
+   CALLBACK(GET(28, LIST))
+
+#define LOOP_30(CALLBACK, LIST) \
+   LOOP_29(CALLBACK, LIST) \
+   CALLBACK(GET(29, LIST))
+
+
+
 #define ITERATE_LIST(LIST, CALLBACK) \
    CAT(LOOP_, PP_NARGS(EXPAND LIST))(CALLBACK, LIST)
 
@@ -1831,4 +1948,151 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 
 
 
-#endif  // TESTS_CPU_TYPE_BOILERPLATE_H
+#define STATIC_CAST_VALUE(dataType, sourceValue, targetVariable) \
+  do { \
+    if (!sd::DataTypeValidation::isValidDataType(dataType)) { \
+      auto errorMsg = sd::DataTypeValidation::getDataTypeErrorMessage( \
+          dataType, "STATIC_CAST_VALUE"); \
+      printf("[ERROR] %s at %s:%d\n", errorMsg.c_str(), __FILE__, __LINE__); \
+      fflush(stdout); \
+      THROW_EXCEPTION(errorMsg.c_str()); \
+    } \
+    switch (dataType) { \
+      case sd::DataType::BFLOAT16: { \
+        targetVariable = static_cast<bfloat16>(sourceValue); \
+        break; \
+      } \
+      case sd::DataType::HALF: { \
+        targetVariable = static_cast<float16>(sourceValue); \
+        break; \
+      } \
+      case sd::DataType::FLOAT32: { \
+        targetVariable = static_cast<float>(sourceValue); \
+        break; \
+      } \
+      case sd::DataType::DOUBLE: { \
+        targetVariable = static_cast<double>(sourceValue); \
+        break; \
+      } \
+      case sd::DataType::INT8: { \
+        targetVariable = static_cast<int8_t>(sourceValue); \
+        break; \
+      } \
+      case sd::DataType::INT16: { \
+        targetVariable = static_cast<int16_t>(sourceValue); \
+        break; \
+      } \
+      case sd::DataType::INT32: { \
+        targetVariable = static_cast<int32_t>(sourceValue); \
+        break; \
+      } \
+      case sd::DataType::INT64: { \
+        targetVariable = static_cast<int64_t>(sourceValue); \
+        break; \
+      } \
+      case sd::DataType::UINT8: { \
+        targetVariable = static_cast<uint8_t>(sourceValue); \
+        break; \
+      } \
+      case sd::DataType::UINT16: { \
+        targetVariable = static_cast<uint16_t>(sourceValue); \
+        break; \
+      } \
+      case sd::DataType::UINT32: { \
+        targetVariable = static_cast<uint32_t>(sourceValue); \
+        break; \
+      } \
+      case sd::DataType::UINT64: { \
+        targetVariable = static_cast<uint64_t>(sourceValue); \
+        break; \
+      } \
+      case sd::DataType::BOOL: { \
+        targetVariable = static_cast<bool>(sourceValue); \
+        break; \
+      } \
+      default: { \
+        auto errorMsg = sd::DataTypeValidation::getDataTypeErrorMessage( \
+            dataType, "STATIC_CAST_VALUE_UNSUPPORTED"); \
+        printf("[ERROR] %s at %s:%d\n", errorMsg.c_str(), __FILE__, __LINE__); \
+        fflush(stdout); \
+        THROW_EXCEPTION(errorMsg.c_str()); \
+      } \
+    } \
+  } while(0)
+
+
+// Cast a pointer to a specific type based on DataType enum
+#define STATIC_CAST_POINTER(dataType, sourcePointer, targetPointer) \
+  do { \
+    if (!sd::DataTypeValidation::isValidDataType(dataType)) { \
+      auto errorMsg = sd::DataTypeValidation::getDataTypeErrorMessage( \
+          dataType, "STATIC_CAST_POINTER"); \
+      printf("[ERROR] %s at %s:%d\n", errorMsg.c_str(), __FILE__, __LINE__); \
+      fflush(stdout); \
+      THROW_EXCEPTION(errorMsg.c_str()); \
+    } \
+    switch (dataType) { \
+      case sd::DataType::BFLOAT16: { \
+        targetPointer = static_cast<bfloat16*>(sourcePointer); \
+        break; \
+      } \
+      case sd::DataType::HALF: { \
+        targetPointer = static_cast<float16*>(sourcePointer); \
+        break; \
+      } \
+      case sd::DataType::FLOAT32: { \
+        targetPointer = static_cast<float*>(sourcePointer); \
+        break; \
+      } \
+      case sd::DataType::DOUBLE: { \
+        targetPointer = static_cast<double*>(sourcePointer); \
+        break; \
+      } \
+      case sd::DataType::INT8: { \
+        targetPointer = static_cast<int8_t*>(sourcePointer); \
+        break; \
+      } \
+      case sd::DataType::INT16: { \
+        targetPointer = static_cast<int16_t*>(sourcePointer); \
+        break; \
+      } \
+      case sd::DataType::INT32: { \
+        targetPointer = static_cast<int32_t*>(sourcePointer); \
+        break; \
+      } \
+      case sd::DataType::INT64: { \
+        targetPointer = static_cast<int64_t*>(sourcePointer); \
+        break; \
+      } \
+      case sd::DataType::UINT8: { \
+        targetPointer = static_cast<uint8_t*>(sourcePointer); \
+        break; \
+      } \
+      case sd::DataType::UINT16: { \
+        targetPointer = static_cast<uint16_t*>(sourcePointer); \
+        break; \
+      } \
+      case sd::DataType::UINT32: { \
+        targetPointer = static_cast<uint32_t*>(sourcePointer); \
+        break; \
+      } \
+      case sd::DataType::UINT64: { \
+        targetPointer = static_cast<uint64_t*>(sourcePointer); \
+        break; \
+      } \
+      case sd::DataType::BOOL: { \
+        targetPointer = static_cast<bool*>(sourcePointer); \
+        break; \
+      } \
+      default: { \
+        auto errorMsg = sd::DataTypeValidation::getDataTypeErrorMessage( \
+            dataType, "STATIC_CAST_POINTER_UNSUPPORTED"); \
+        printf("[ERROR] %s at %s:%d\n", errorMsg.c_str(), __FILE__, __LINE__); \
+        fflush(stdout); \
+        THROW_EXCEPTION(errorMsg.c_str()); \
+      } \
+    } \
+  } while(0)
+
+
+#endif  
