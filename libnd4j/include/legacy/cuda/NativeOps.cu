@@ -35,6 +35,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/specials_cuda.h>
 #include <system/buffer.h>
+#include <helpers/ConstantHelper.h>
 
 
 #include <curand.h>
@@ -51,6 +52,7 @@
 #include "../NativeOps.h"
 #include <system/type_boilerplate.h>
 #include <loops/special_kernels.h>
+#include <system/selective_rendering.h>
 #include <execution/LaunchContext.h>
 cudaDeviceProp *deviceProperties;
 cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[64];
@@ -82,7 +84,6 @@ bool supportedP2P = false;
 
 int minThreads = 32;
 
-__constant__ char deviceConstantMemory[65536];
 
 
 
@@ -1487,7 +1488,7 @@ int memcpyConstantAsync(sd::LongType dst, sd::Pointer src, sd::LongType size, in
       kind = cudaMemcpyDeviceToDevice;
     } break;
   }
-  auto dZ = cudaMemcpyToSymbolAsync(deviceConstantMemory, const_cast<const void *>(src), size, dst, kind, *pStream);
+  auto dZ = cudaMemcpyToSymbolAsync(getConstantSpace(), const_cast<const void *>(src), size, dst, kind, *pStream);
   if (dZ != 0) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaMemcpyToSymbolAsync failed");
@@ -1497,15 +1498,7 @@ int memcpyConstantAsync(sd::LongType dst, sd::Pointer src, sd::LongType size, in
 }
 
 sd::Pointer getConstantSpace() {
-  sd::Pointer dConstAddr;
-  cudaError_t dZ = cudaGetSymbolAddress(reinterpret_cast<void **>(&dConstAddr), deviceConstantMemory);
-
-  if (dZ != 0) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaGetSymbolAddress failed");
-  }
-
-  return dConstAddr;
+return sd::ConstantHelper::getInstance().getConstantSpace();
 }
 
 void pullRows(sd::Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray z, sd::LongType n, OpaqueNDArray indexes, sd::LongType dimension) {
@@ -2520,7 +2513,6 @@ void sortTadByKey(sd::Pointer *extraPointers,
 
     // Get the launch dimensions for sorting TADs
     dim3 launchDims = getSortTadDims(numTads);
-
     // Execute the sortTadByKey operation based on data types
     BUILD_DOUBLE_SELECTOR(xType, yType, oesTadGenericKey,
                           (launchDims, stream, x->specialBuffer(),
@@ -2576,13 +2568,11 @@ void sortTadByValue(sd::Pointer *extraPointers,
 
     // Get the launch dimensions for sorting TADs
     dim3 launchDims = getSortTadDims(numTads);
-
     // Execute the sortTadByValue operation based on data types
     BUILD_DOUBLE_SELECTOR(xType, yType, oesTadGenericKey,
                           (launchDims, stream, y->specialBuffer(), dyShapeInfo, x->specialBuffer(), dXShapeInfo,
                               dimensionPtr, dimensionLength, tadPack->platformShapeInfo(), tadPack->platformOffsets(), descending),
                           SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
-
     // Check for CUDA errors after sort execution
     sd::DebugHelper::checkErrorCode(stream, "sortTadByValue(...) failed");
   }
