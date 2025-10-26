@@ -198,5 +198,7 @@ void ReduceSameFunction<X>::exec(int opNum, sd::memory::Workspace *workspace, co
                                  const sd::LongType *zShapeInfo, const sd::LongType *dims) {
   DISPATCH_BY_OPNUM_T(exec, PARAMS(workspace, vx, xShapeInfo, vextraParams, vz, zShapeInfo, dims), REDUCE_SAME_OPS);
 }
+
+
 }  // namespace reduce
 }  // namespace functions

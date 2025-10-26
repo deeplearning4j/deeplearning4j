@@ -51,8 +51,8 @@ void SD_HOST TransformSame<X>::exec(const void *vx, const sd::LongType *xShapeIn
                                                               numThreads);
 }
 
-BUILD_SINGLE_TEMPLATE(template class TransformSame, , SD_NUMERIC_TYPES);
-BUILD_SINGLE_TEMPLATE(template class TransformSame, , SD_BOOL_TYPES);
+BUILD_SINGLE_TEMPLATE( class TransformSame, , SD_NUMERIC_TYPES);
+BUILD_SINGLE_TEMPLATE( class TransformSame, , SD_BOOL_TYPES);
 
 }  // namespace transform
 }  // namespace functions

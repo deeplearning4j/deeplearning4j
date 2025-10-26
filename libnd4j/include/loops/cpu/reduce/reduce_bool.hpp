@@ -191,7 +191,7 @@ void SD_HOST ReduceBoolFunction<X, Z>::exec(sd::memory::Workspace *workspace, co
 template <typename X, typename Y>
 void ReduceBoolFunction<X, Y>::exec(int opNum, sd::memory::Workspace *workspace, const void *vx,
                                     const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
-                                    const sd::LongType *zShapeInfo, const long long int *dims) {
+                                    const sd::LongType *zShapeInfo, const sd::LongType *dims) {
   DISPATCH_BY_OPNUM_TT(exec, PARAMS(workspace, vx, xShapeInfo, vextraParams, vz, zShapeInfo, dims), REDUCE_BOOL_OPS);
 }
 }  // namespace reduce

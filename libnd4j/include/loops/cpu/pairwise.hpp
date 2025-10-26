@@ -28,7 +28,7 @@
 #include <ops/ops.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
-#include <array/ArrayOptions.h>
+#include <array/ArrayOptions.hXX>
 
 using namespace simdOps;
 

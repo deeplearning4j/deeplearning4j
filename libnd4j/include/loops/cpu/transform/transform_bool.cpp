@@ -51,6 +51,6 @@ void SD_HOST TransformBool<X, Z>::exec(const void *vx, const sd::LongType *xShap
                                                               numThreads);
 }
 
-BUILD_DOUBLE_TEMPLATE(template class TransformBool, , SD_COMMON_TYPES, SD_BOOL_TYPES);
+BUILD_DOUBLE_TEMPLATE( class TransformBool, , SD_COMMON_TYPES, SD_BOOL_TYPES);
 }  // namespace transform
 }  // namespace functions
