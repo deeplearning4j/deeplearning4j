@@ -40,7 +40,7 @@ limitations under the License.
 #include <ops/declarable/helpers/image_resize.h>
 
 #include "execution/cuda/LaunchDims.h"
-
+#include <system/selective_rendering.h>
 
 namespace sd {
 namespace ops {
@@ -343,7 +343,7 @@ void resizeImage(LaunchContext* context, NDArray * images, LongType batchSize, L
       SD_NUMERIC_TYPES, SD_FLOAT_TYPES);
 }
 
-BUILD_DOUBLE_TEMPLATE(template void resizeImage_,
+BUILD_DOUBLE_TEMPLATE( void resizeImage_,
                       (sd::LaunchContext * context, NDArray * images, sd::LongType batchSize,
                        sd::LongType inHeight, sd::LongType inWidth, sd::LongType outHeight, sd::LongType outWidth,
                        sd::LongType channels, BilinearInterpolationData* xs_, BilinearInterpolationData* ys_,
@@ -709,7 +709,7 @@ Status resizeBicubicFunctor(LaunchContext* context, NDArray * image, int width, 
   BUILD_SINGLE_SELECTOR(image->dataType(), return resizeBicubicFunctor_,
                         (context, image, width, height, preserveAspectRatio, antialias, output), SD_NUMERIC_TYPES);
 }
-BUILD_SINGLE_TEMPLATE(template sd::Status resizeBicubicFunctor_,
+BUILD_SINGLE_TEMPLATE( sd::Status resizeBicubicFunctor_,
                       (sd::LaunchContext * context, NDArray * image, int width, int height,
                        bool preserveAspectRatio, bool antialias, NDArray* output),
                       SD_NUMERIC_TYPES);
@@ -756,7 +756,6 @@ static SD_KERNEL void resizeAreaKernel(ImageResizerState const* pSt, CachedInter
       auto yScaleCache = cachePool + (batch * pSt->outHeight + y) * pSt->outWidth;
 
       float* output = outputPtr + (batch * pSt->outHeight + y) * pSt->channels * pSt->outWidth;
-      // int k = 0;
       for (LongType i = yStart, k = 0; i < yEnd; ++i, ++k) {
         float scaleY;
         if (i < inY) {
@@ -988,7 +987,7 @@ static SD_KERNEL void cropAndResizeKernel(T const* images, LongType const* image
           }
           int left_x_index = math::p_floor(in_x);
           int right_x_index = math::p_ceil(in_x);
-          T x_lerp = in_x - left_x_index;
+          T x_lerp = static_cast<T>(in_x) - static_cast<T>(left_x_index);
 
           auto start = blockIdx.z * blockDim.x + threadIdx.z;
           auto step = blockDim.z * gridDim.z;
@@ -1092,12 +1091,16 @@ void cropAndResizeFunctor_(LaunchContext* context, NDArray * images, NDArray * b
 void cropAndResizeFunctor(LaunchContext* context, NDArray * images, NDArray * boxes,
                           NDArray * indices, NDArray * cropSize, int method, double extrapolationVal,
                           NDArray* crops) {
+
+auto imagesDType = images->dataType();
+auto boxesDType = boxes->dataType();
+auto indicesDType = indices->dataType();
   BUILD_TRIPLE_SELECTOR(images->dataType(), boxes->dataType(), indices->dataType(), cropAndResizeFunctor_,
                         (context, images, boxes, indices, cropSize, method, extrapolationVal, crops), SD_NUMERIC_TYPES,
                         SD_FLOAT_TYPES, SD_INTEGER_TYPES);
 
 }
-BUILD_TRIPLE_TEMPLATE(template void cropAndResizeFunctor_,
+BUILD_TRIPLE_TEMPLATE( void cropAndResizeFunctor_,
                       (sd::LaunchContext * context, NDArray * images, NDArray * boxes, NDArray * indices,
                        NDArray * cropSize, int method, double extrapolationVal, NDArray* crops),
                       SD_NUMERIC_TYPES, SD_FLOAT_TYPES, SD_INTEGER_TYPES);

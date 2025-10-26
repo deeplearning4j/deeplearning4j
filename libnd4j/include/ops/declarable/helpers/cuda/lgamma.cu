@@ -45,7 +45,7 @@ void lgamma(LaunchContext* context, NDArray* x, NDArray* z) {
   BUILD_SINGLE_SELECTOR(x->dataType(), lgamma_, (x, z), SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void lgamma_, (NDArray * x, NDArray* z), SD_FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE( void lgamma_, (NDArray * x, NDArray* z), SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

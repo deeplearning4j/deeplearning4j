@@ -86,9 +86,9 @@ SD_KERNEL static void addBiasCuda(const void* vx, const LongType* xShapeInfo, co
     LongType yOffsets = coords[channelPosition] * yStride[posOfNonUnityDim];
 
     if (xzAreSame)
-      z[zOffsets] += y[yOffsets];
+      z[zOffsets] += static_cast<X>(y[yOffsets]);
     else
-      z[zOffsets] = x[xOffsets] + y[yOffsets];
+      z[zOffsets] = static_cast<X>(x[xOffsets]) + static_cast<X>(y[yOffsets]);
   }
 }
 

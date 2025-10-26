@@ -188,7 +188,6 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
     THROW_EXCEPTION("batched gemm cuda: this mode is not implemented yet !");
 
   if (status != CUBLAS_STATUS_SUCCESS) {
-    sd_printf("Status was: %d\n",status);
     throw cuda_exception::build("MmulHelper::mmulMxM cuda execution failed !", status);
   }
 

@@ -97,7 +97,7 @@ void diGamma(LaunchContext *context, NDArray&x, NDArray &z) {
   NDArray::registerSpecialUse({&z}, {&x});
 }
 
-BUILD_SINGLE_TEMPLATE(template void diGammaCudaLauncher,
+BUILD_SINGLE_TEMPLATE( void diGammaCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,
                        const cudaStream_t *stream, const void *vx, const sd::LongType *xShapeInfo, void *vz,
                        const sd::LongType *zShapeInfo),

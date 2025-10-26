@@ -138,7 +138,7 @@ void percentile(LaunchContext* context, NDArray& input, NDArray& output, std::ve
   NDArray::registerSpecialUse({&output}, {&input});
 }
 
-BUILD_SINGLE_TEMPLATE(template void _percentile,
+BUILD_SINGLE_TEMPLATE( void _percentile,
                       (sd::LaunchContext * context, NDArray& input, NDArray& output, std::vector<sd::LongType>& axises,
                        const float q, const int interpolation),
                       SD_COMMON_TYPES);

@@ -362,9 +362,9 @@ void rollFunctorLinear(LaunchContext *context, NDArray *input, NDArray *output, 
  output->tickWriteDevice();
 }
 
-BUILD_SINGLE_TEMPLATE(template void rollFunctorLinear_, (NDArray * input, NDArray *output, int shift, bool inplace),
+BUILD_SINGLE_TEMPLATE( void rollFunctorLinear_, (NDArray * input, NDArray *output, int shift, bool inplace),
                      SD_COMMON_TYPES);
-BUILD_SINGLE_TEMPLATE(template void rollFunctorFull_,
+BUILD_SINGLE_TEMPLATE( void rollFunctorFull_,
                      (NDArray * input, NDArray *output, std::vector<sd::LongType> const &shifts, std::vector<sd::LongType> const &axes,
                       bool inplace),
                      SD_COMMON_TYPES);
