@@ -329,6 +329,24 @@ public interface Environment {
      * @param reallyDelete
      */
     void setDeleteSpecial(boolean reallyDelete);
+
+    /**
+     * Returns whether variable origin tracing is enabled for debugging import issues.
+     * When enabled, operations will trace variable resolution attempts to help debug
+     * "unknown array" issues during ONNX graph import.
+     * This defaults to false and should only be enabled for debugging purposes.
+     * @return true if variable tracing is enabled
+     */
+    boolean isVariableTracingEnabled();
+
+    /**
+     * Set whether to enable variable origin tracing for debugging import issues.
+     * When enabled, operations will trace variable resolution attempts which helps
+     * debug "unknown array" issues during ONNX graph import by showing exactly
+     * where variables come from and why they might be missing.
+     * @param enabled true to enable tracing
+     */
+    void setVariableTracingEnabled(boolean enabled);
     
     // CUDA specific methods
     
