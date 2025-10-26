@@ -71,7 +71,7 @@ DECLARE_CUSTOM_OP(to_int64, 1, 1, true, 0, 0);
 #endif
 
 /**
- * This operation casts elements of input array to unsinged int32 data type
+ * This operation casts elements of input array to unsigned int32 data type
  *
  * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
  */

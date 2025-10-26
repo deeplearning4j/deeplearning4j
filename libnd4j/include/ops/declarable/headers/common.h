@@ -33,7 +33,6 @@
 #include <ops/declarable/DeclarableReductionOp.h>
 #include <ops/declarable/LogicOp.h>
 #include <ops/declarable/OpRegistrator.h>
-#include <system/op_boilerplate.h>
 #include <types/float16.h>
 
 #include <memory>
