@@ -34,7 +34,7 @@ void toggle_bits__(LaunchContext* context, NDArray *in, NDArray *out) {
 
   in->applyLambda(lambda, out);
 }
-BUILD_SINGLE_TEMPLATE(template void toggle_bits__, (LaunchContext* context, NDArray* in, NDArray* out), SD_INTEGER_TYPES);
+BUILD_SINGLE_TEMPLATE( void toggle_bits__, (LaunchContext* context, NDArray* in, NDArray* out), SD_INTEGER_TYPES);
 
 void __toggle_bits(LaunchContext *context, NDArray *in, NDArray *out) {
   BUILD_SINGLE_SELECTOR(in->dataType(), toggle_bits__, (context, in, out), SD_INTEGER_TYPES);

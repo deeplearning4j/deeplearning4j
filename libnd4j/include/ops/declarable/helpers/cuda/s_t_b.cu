@@ -85,7 +85,7 @@ static void batchToSpaceCudaLauncher(const int blocksPerGrid, const int threadsP
   batchToSpaceCuda<T>
       <<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, cropBottom, cropLeft);
 }
-BUILD_SINGLE_TEMPLATE(template void batchToSpaceCudaLauncher,
+BUILD_SINGLE_TEMPLATE( void batchToSpaceCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                        const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo, void* vz,
                        const sd::LongType* zShapeInfo, const sd::LongType cropBottom, const sd::LongType cropLeft),
@@ -192,7 +192,7 @@ static void batchToSpaceNDCudaLauncher(const int blocksPerGrid, const int thread
   sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "batchToSpaceNDCuda failed");
 
 }
-BUILD_DOUBLE_TEMPLATE(template void batchToSpaceNDCudaLauncher,
+BUILD_DOUBLE_TEMPLATE( void batchToSpaceNDCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                        const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo, const void* vy,
                        const sd::LongType* yShapeInfo, void* vz, const sd::LongType* zShapeInfo,
@@ -314,7 +314,7 @@ SD_KERNEL static void spaceToBatchCuda(const void* vx, const LongType* xShapeInf
 
     z[zOffset] = x[xOffset];
   } else
-    z[zOffset] = 0.f;
+    z[zOffset] = static_cast<T>(0.f);
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -328,7 +328,7 @@ static void spaceToBatchCudaLauncher(const int blocksPerGrid, const int threadsP
   sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "spaceToBatchCudaLauncher failed");
 
 }
-BUILD_SINGLE_TEMPLATE(template void spaceToBatchCudaLauncher,
+BUILD_SINGLE_TEMPLATE( void spaceToBatchCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                        const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo, void* vz,
                        const sd::LongType* zShapeInfo, const sd::LongType padBottom, const sd::LongType padTop,
@@ -438,7 +438,7 @@ SD_KERNEL static void spaceToBatchNDCuda(const void* vx, const LongType* xShapeI
     if (within)
       z[zOffset] = x[xOffset];
     else
-      z[zOffset] = 0.f;
+      z[zOffset] = static_cast<X>(0.f);
   }
 }
 
@@ -453,7 +453,7 @@ static void spaceToBatchNDCudaLauncher(const int blocksPerGrid, const int thread
   sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "spaceToBatchNDCuda failed");
 
 }
-BUILD_DOUBLE_TEMPLATE(template void spaceToBatchNDCudaLauncher,
+BUILD_DOUBLE_TEMPLATE( void spaceToBatchNDCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                        const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo, const void* vy,
                        const sd::LongType* yShapeInfo, void* vz, const sd::LongType* zShapeInfo,

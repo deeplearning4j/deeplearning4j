@@ -31,7 +31,7 @@
 
 
 #include "helpers/DebugHelper.h"
-
+#include <system/selective_rendering.h>
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -386,6 +386,8 @@ static void segmentProdFunctor_(LaunchContext* context, NDArray* input, NDArray*
 // -------------------------------------------------------------------------------------------------------------- //
 void segmentProdFunctor(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
   NDArray::prepareSpecialUse({output}, {input, indices});
+  auto indicesDType = indices->dataType();
+  auto outputDType = output->dataType();
   BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), segmentProdFunctor_, (context, input, indices, output),
                         SD_NUMERIC_TYPES, SD_INDEXING_TYPES);
   NDArray::registerSpecialUse({output}, {input, indices});
@@ -439,6 +441,8 @@ static void unsortedSegmentProdFunctor_(LaunchContext* context, NDArray* input, 
 void unsortedSegmentProdFunctor(LaunchContext* context, NDArray* input, NDArray* indices, LongType numOfClasses,
                                 NDArray* output) {
   NDArray::prepareSpecialUse({output}, {input, indices});
+  auto indicesDType = indices->dataType();
+  auto outputDType = output->dataType();
   BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), unsortedSegmentProdFunctor_,
                         (context, input, indices, numOfClasses, output), SD_NUMERIC_TYPES, SD_INDEXING_TYPES);
   NDArray::registerSpecialUse({output}, {input, indices});
@@ -782,6 +786,8 @@ Status segmentProdFunctorBP_(LaunchContext* context, NDArray* input, NDArray* in
 Status segmentProdFunctorBP(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                                 NDArray* output) {
   NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
+  auto indicesDType = indices->dataType();
+  auto outputDType = output->dataType();
   BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return segmentProdFunctorBP_,
                         (context, input, indices, gradOut, output), SD_FLOAT_TYPES, SD_INDEXING_TYPES);
   NDArray::registerSpecialUse({output}, {input, indices, gradOut});
@@ -842,6 +848,8 @@ static Status unsortedSegmentProdFunctorBP_(LaunchContext* context, NDArray* inp
 Status unsortedSegmentProdFunctorBP(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                                     LongType numOfClasses, NDArray* output) {
   NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
+  auto indicesDType = indices->dataType();
+  auto outputDType = output->dataType();
   BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentProdFunctorBP_,
                         (context, input, indices, gradOut, numOfClasses, output), SD_FLOAT_TYPES, SD_INDEXING_TYPES);
   NDArray::registerSpecialUse({output}, {input, indices, gradOut});

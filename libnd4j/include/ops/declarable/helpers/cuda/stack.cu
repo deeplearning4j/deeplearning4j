@@ -142,7 +142,7 @@ static void stack_(LaunchContext* context, const std::vector<NDArray*>& inArrs, 
 void stack(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output, const int dim) {
   BUILD_SINGLE_SELECTOR(output.dataType(), stack_, (context, inArrs, output, dim), SD_COMMON_TYPES);
 }
-BUILD_SINGLE_TEMPLATE(template void stack_,
+BUILD_SINGLE_TEMPLATE( void stack_,
                       (LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output,
                           const int dim),
                       SD_COMMON_TYPES);
@@ -260,7 +260,7 @@ static void unstack_(LaunchContext* context, NDArray& input, const std::vector<N
 void unstack(LaunchContext* context, NDArray& input, const std::vector<NDArray*>& outArrs, const int dim) {
   BUILD_SINGLE_SELECTOR(input.dataType(), unstack_, (context, input, outArrs, dim), SD_COMMON_TYPES);
 }
-BUILD_SINGLE_TEMPLATE(template void unstack_,
+BUILD_SINGLE_TEMPLATE( void unstack_,
                       (LaunchContext * context, NDArray& input, const std::vector<NDArray*>& outArrs,
                           const int dim),
                       SD_COMMON_TYPES);

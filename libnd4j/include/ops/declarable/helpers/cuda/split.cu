@@ -121,7 +121,7 @@ SD_HOST static void splitCudaLauncher(const int blocksPerGrid, const int threads
   sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "splitCuda failed");
 
 }
-BUILD_SINGLE_TEMPLATE(template void splitCudaLauncher,
+BUILD_SINGLE_TEMPLATE( void splitCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t* stream, const void* vx,
                        const sd::LongType* xShapeInfo, void* pVz, const sd::LongType* zTadShapeInfo, const sd::LongType axis),
                       SD_COMMON_TYPES);

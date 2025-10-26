@@ -30,7 +30,7 @@
 #include <ops/declarable/helpers/segment_common.h>
 
 #include "helpers/DebugHelper.h"
-
+#include <system/selective_rendering.h>
 
 namespace sd {
 namespace ops {
@@ -223,6 +223,8 @@ static void segmentSumFunctor_(LaunchContext* context, NDArray* input, NDArray* 
 void segmentSumFunctor(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
  NDArray::prepareSpecialUse({output}, {input, indices});
  output->nullify();
+ auto indicesDType = indices->dataType();
+ auto outputDType = input->dataType();
  BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), segmentSumFunctor_, (context, input, indices, output),
                        SD_NUMERIC_TYPES, SD_INDEXING_TYPES);
  NDArray::registerSpecialUse({output}, {input, indices});
@@ -275,6 +277,8 @@ void unsortedSegmentSumFunctor(LaunchContext* context, NDArray* input, NDArray* 
                               NDArray* output) {
  NDArray::prepareSpecialUse({output}, {input, indices});
  output->nullify();
+ auto indicesDType = indices->dataType();
+ auto outputDType = input ->dataType();
  BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), unsortedSegmentSumFunctor_,
                        (context, input, indices, numOfClasses, output), SD_NUMERIC_TYPES, SD_INDEXING_TYPES);
  NDArray::registerSpecialUse({output}, {input, indices});
@@ -442,6 +446,8 @@ Status segmentSumFunctorBP_(LaunchContext* context, NDArray* input, NDArray* ind
 Status segmentSumFunctorBP(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                           NDArray* output) {
  NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
+ auto indicesDType = indices->dataType();
+ auto outputDType = output->dataType();
  BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return segmentSumFunctorBP_,
                        (context, input, indices, gradOut, output), SD_FLOAT_TYPES, SD_INDEXING_TYPES);
  NDArray::registerSpecialUse({output}, {input, indices, gradOut});
@@ -489,9 +495,12 @@ static Status unsortedSegmentSumFunctorBP_(LaunchContext* context, NDArray* inpu
 Status unsortedSegmentSumFunctorBP(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                                   LongType numOfClasses, NDArray* output) {
  NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
+ auto indicesDType = indices->dataType();
+ auto outputDType = output->dataType();
  BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentSumFunctorBP_,
                        (context, input, indices, gradOut, numOfClasses, output), SD_FLOAT_TYPES, SD_INDEXING_TYPES);
  NDArray::registerSpecialUse({output}, {input, indices, gradOut});
+
 }
 
 }  // namespace helpers
