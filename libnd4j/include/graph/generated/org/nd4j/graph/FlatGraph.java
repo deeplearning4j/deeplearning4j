@@ -69,6 +69,11 @@ public final class FlatGraph extends Table {
   public int metadataValuesLength() { int o = __offset(24); return o != 0 ? __vector_len(o) : 0; }
   public StringVector metadataValuesVector() { return metadataValuesVector(new StringVector()); }
   public StringVector metadataValuesVector(StringVector obj) { int o = __offset(24); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
+  public org.nd4j.graph.SameDiffSubInstance subInstances(int j) { return subInstances(new org.nd4j.graph.SameDiffSubInstance(), j); }
+  public org.nd4j.graph.SameDiffSubInstance subInstances(org.nd4j.graph.SameDiffSubInstance obj, int j) { int o = __offset(26); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
+  public int subInstancesLength() { int o = __offset(26); return o != 0 ? __vector_len(o) : 0; }
+  public org.nd4j.graph.SameDiffSubInstance.Vector subInstancesVector() { return subInstancesVector(new org.nd4j.graph.SameDiffSubInstance.Vector()); }
+  public org.nd4j.graph.SameDiffSubInstance.Vector subInstancesVector(org.nd4j.graph.SameDiffSubInstance.Vector obj) { int o = __offset(26); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
 
   public static int createFlatGraph(FlatBufferBuilder builder,
       long id,
@@ -81,9 +86,11 @@ public final class FlatGraph extends Table {
       int trainingConfigOffset,
       int updaterStateOffset,
       int metadataKeysOffset,
-      int metadataValuesOffset) {
-    builder.startTable(11);
+      int metadataValuesOffset,
+      int subInstancesOffset) {
+    builder.startTable(12);
     FlatGraph.addId(builder, id);
+    FlatGraph.addSubInstances(builder, subInstancesOffset);
     FlatGraph.addMetadataValues(builder, metadataValuesOffset);
     FlatGraph.addMetadataKeys(builder, metadataKeysOffset);
     FlatGraph.addUpdaterState(builder, updaterStateOffset);
@@ -97,7 +104,7 @@ public final class FlatGraph extends Table {
     return FlatGraph.endFlatGraph(builder);
   }
 
-  public static void startFlatGraph(FlatBufferBuilder builder) { builder.startTable(11); }
+  public static void startFlatGraph(FlatBufferBuilder builder) { builder.startTable(12); }
   public static void addId(FlatBufferBuilder builder, long id) { builder.addLong(0, id, 0L); }
   public static void addVariables(FlatBufferBuilder builder, int variablesOffset) { builder.addOffset(1, variablesOffset, 0); }
   public static int createVariablesVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
@@ -125,6 +132,9 @@ public final class FlatGraph extends Table {
   public static void addMetadataValues(FlatBufferBuilder builder, int metadataValuesOffset) { builder.addOffset(10, metadataValuesOffset, 0); }
   public static int createMetadataValuesVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
   public static void startMetadataValuesVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
+  public static void addSubInstances(FlatBufferBuilder builder, int subInstancesOffset) { builder.addOffset(11, subInstancesOffset, 0); }
+  public static int createSubInstancesVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
+  public static void startSubInstancesVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
   public static int endFlatGraph(FlatBufferBuilder builder) {
     int o = builder.endTable();
     return o;
