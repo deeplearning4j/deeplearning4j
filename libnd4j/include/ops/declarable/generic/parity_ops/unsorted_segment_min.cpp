@@ -27,10 +27,10 @@ namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(unsorted_segment_min, 2, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
-  auto reshapedInput = *input;
+  auto reshapedInput = input;
 
   auto idxSegments = INPUT_VARIABLE(1);
-  auto reshapedSegments = *idxSegments;
+  auto reshapedSegments = idxSegments;
   if (!idxSegments->isVector() && idxSegments->rankOf() > 1) {
     std::vector<sd::LongType> shape = {idxSegments->lengthOf()};
     reshapedSegments = idxSegments->reshape('c', shape, false);
@@ -38,20 +38,20 @@ CUSTOM_OP_IMPL(unsorted_segment_min, 2, 1, false, 0, 0) {
 
   auto segmentedOutput = OUTPUT_NULLIFIED(0);
   LongType numOfClasses = block.width() == 3 ? INPUT_VARIABLE(2)->e<LongType>(0) : INT_ARG(0);
-  REQUIRE_TRUE(reshapedSegments.isVector(), 0,
+  REQUIRE_TRUE(reshapedSegments->isVector(), 0,
                "unsorted_segment_min: segment indexes array should be a vector, but it rank is %i.",
                idxSegments->rankOf());
-  REQUIRE_TRUE(reshapedSegments.lengthOf() == input->sizeAt(0), 0,
+  REQUIRE_TRUE(reshapedSegments->lengthOf() == input->sizeAt(0), 0,
                "unsorted_segment_min: segment indexes array length should be equal to the input first dimension, but "
                "%ld != %ld.",
-               reshapedSegments.lengthOf(), input->sizeAt(0));
+               reshapedSegments->lengthOf(), input->sizeAt(0));
 
   LongType wrong;
 
-  REQUIRE_TRUE(helpers::unsortedSegmentIndicesValidate(block.launchContext(), &reshapedSegments, numOfClasses, wrong),
+  REQUIRE_TRUE(helpers::unsortedSegmentIndicesValidate(block.launchContext(), reshapedSegments, numOfClasses, wrong),
                0, "unsorted_segment_min: segment indices should be in range [0, %ld), but %ld != %ld", numOfClasses,
                wrong, numOfClasses);
-  helpers::unsortedSegmentMinFunctor(block.launchContext(), &reshapedInput, &reshapedSegments, numOfClasses,
+  helpers::unsortedSegmentMinFunctor(block.launchContext(), reshapedInput, reshapedSegments, numOfClasses,
                                      segmentedOutput);
   return Status::OK;
 }
