@@ -82,7 +82,7 @@ CUSTOM_OP_IMPL(dot_product_attention, 3, -1, false, 0, 2) {
   }
 
   if (mask != nullptr) {
-    NDArray reshapedMask;
+    NDArray *reshapedMask;
     if (weights->rankOf() == 4) {
       std::vector<sd::LongType> shape = {mask->sizeAt(0), 1, mask->sizeAt(1), 1};
       reshapedMask = mask->reshape(mask->ordering(),shape);
@@ -97,8 +97,10 @@ CUSTOM_OP_IMPL(dot_product_attention, 3, -1, false, 0, 2) {
     // before going through the softmax, we effectively push all masked positions to zero after softmax.
     //
     // we are using 1e9 to mean effectively infinity
-    auto applyMask = reshapedMask  * 1e9;
+    auto applyMask = *reshapedMask  * 1e9;
     *weights -= applyMask;
+    delete reshapedMask;
+
   }
 
   int softmaxDim = -2;
@@ -110,6 +112,7 @@ CUSTOM_OP_IMPL(dot_product_attention, 3, -1, false, 0, 2) {
   if (!outputWeights) {
     delete weights;
   }
+
 
   return sd::Status::OK;
 }
@@ -187,7 +190,7 @@ CUSTOM_OP_IMPL(dot_product_attention_bp, 4, 3, false, 0, 1) {
   mmul.execute({keys, queries}, {&preSoftmax}, {}, {1}, {});
 
   if (normalization) preSoftmax /= factor;
-  NDArray reshapedMask;
+  NDArray *reshapedMask;
   if (mask != nullptr && !mask->isEmpty()) {
     if (preSoftmax.rankOf() == 4) {
       std::vector<sd::LongType> shape = {mask->sizeAt(0), 1, mask->sizeAt(1), 1};
@@ -197,8 +200,8 @@ CUSTOM_OP_IMPL(dot_product_attention_bp, 4, 3, false, 0, 1) {
       reshapedMask = mask->reshape(mask->ordering(), shape);
     }
 
-    reshapedMask  *= 1e9;
-    preSoftmax -= reshapedMask;
+    *reshapedMask  *= 1e9;
+    preSoftmax -= *reshapedMask;
   }
 
   int softmaxDim = -2;
@@ -216,9 +219,11 @@ CUSTOM_OP_IMPL(dot_product_attention_bp, 4, 3, false, 0, 1) {
 
   if (normalization) dLds /= factor;
   if(mask != nullptr) {
-    dLds *= reshapedMask;
+    dLds *= *reshapedMask;
   }
   mmul_bp.execute({keys, queries, &dLds}, std::vector<NDArray *>{dLdk, dLdq}, {}, {1}, {});
+
+  delete reshapedMask;
 
   return sd::Status::OK;
 }

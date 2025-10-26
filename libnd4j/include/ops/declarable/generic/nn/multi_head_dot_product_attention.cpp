@@ -267,8 +267,8 @@ CUSTOM_OP_IMPL(multi_head_dot_product_attention_bp, 8, 7, false, 0, 1) {
   auto epsPostReshape = epsPerm.reshape(eps->ordering(), epsShape);
   sd::ops::matmul_bp matmulBp;
   NDArray dLdPreWo(attnResults.shapeInfo(), false, block.launchContext());
-  matmulBp.execute({&attnResults, Wo, &epsPostReshape}, std::vector<NDArray *>{&dLdPreWo, dLdWo}, {}, {}, {});
-
+  matmulBp.execute({&attnResults, Wo, epsPostReshape}, std::vector<NDArray *>{&dLdPreWo, dLdWo}, {}, {}, {});
+  delete epsPostReshape;
   // dLdAttn
   dLdPreWo.reshapei({miniBatchSize, queryCount, numHeads, projectedValues.sizeAt(2)});
   dLdPreWo.permutei({0, 2, 3, 1}, 0, false);
