@@ -30,16 +30,14 @@
 
 #include <loops/random.h>
 
-#include <ops/gemm.h>
 #include <ops/ops.h>
 
 #include <array/NDArray.hXX>
-#include <array/ArrayOptions.hXX>
 
 #include <memory>
 #include <sstream>
 #include <stdexcept>
-
+#include <system/selective_rendering.h>
 namespace sd {
 
 
@@ -154,7 +152,7 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
 
   samediff::Threads::parallel_for(func, 0, zLen);
 }
-BUILD_SINGLE_TEMPLATE(template void NDArray::fillAsTriangular,
+BUILD_SINGLE_TEMPLATE( void NDArray::fillAsTriangular,
                       (const float val, int lower, int upper, NDArray& target, const char direction,const bool includeEdges), SD_COMMON_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
@@ -240,7 +238,7 @@ static void templatedSwap(void* xBuffer, void* yBuffer, const sd::LongType* xSha
 
   samediff::Threads::parallel_for(func, 0, length);
 }
-BUILD_SINGLE_TEMPLATE(template void templatedSwap,
+BUILD_SINGLE_TEMPLATE( void templatedSwap,
                       (void* xBuffer, void* yBuffer, const sd::LongType* xShapeInfo, const sd::LongType* yShapeInfo,
                           sd::LongType length),
                       SD_COMMON_TYPES);
@@ -403,6 +401,8 @@ void NDArray::tile(const std::vector<LongType>& reps, NDArray& target) {
     LongType sourceOffset;
     COORDS2INDEX(shape::rank(shapeInfo()), shape::stride(shapeInfo()), sourceCoords, sourceOffset);
 
+    auto targetDataType = target.dataType();
+    auto selfDType = dataType();
     // Copy the value
     BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign,
                           (target.buffer(), xOffset, buffer(), sourceOffset), SD_COMMON_TYPES, SD_COMMON_TYPES);
@@ -425,6 +425,8 @@ void NDArray::tile(NDArray& target)  {
   if (target.ordering() == 'c' && ews >= 1) {
     for (sd::LongType i = 0; i < targetLen; ++i) {
       auto yOffset = shape::subArrayOffset(i, target.shapeInfo(), shapeInfo());
+      auto targetDataType = target.dataType();
+      auto selfDType = dataType();
       BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign,
                             (target.buffer(), i * ews, buffer(), yOffset), SD_COMMON_TYPES, SD_COMMON_TYPES);
     }
@@ -432,6 +434,8 @@ void NDArray::tile(NDArray& target)  {
     for (sd::LongType i = 0; i < targetLen; ++i) {
       auto xOffset = target.getOffset(i);
       auto yOffset = shape::subArrayOffset(i, target.shapeInfo(), shapeInfo());
+      auto targetDataType = target.dataType();
+      auto selfDType = dataType();
       BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign,
                             (target.buffer(), xOffset, buffer(), yOffset), SD_COMMON_TYPES, SD_COMMON_TYPES);
     }
@@ -510,7 +514,8 @@ void NDArray::repeat(const int axis, const std::vector<LongType>& repeats, NDArr
     THROW_EXCEPTION(
         "NDArray::repeat(const int axis, const std::vector<int>& repeats, NDArray& target) method: wrong shape of "
         "target array!");
-
+  auto targetDataType = target.dataType();
+  auto selfDType = dataType();
   BUILD_DOUBLE_SELECTOR(dataType(), target.dataType(), repeat_, (*this, target, repeats, axis), SD_COMMON_TYPES,
                         SD_COMMON_TYPES);
 }
