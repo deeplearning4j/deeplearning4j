@@ -44,7 +44,7 @@ public class FrameIter {
         return new FrameIter(frame, iteration, (parentFrame == null ? null : parentFrame.clone()));
     }
 
-    public AbstractSession.VarId toVarId(String name) {
-        return new AbstractSession.VarId(name, frame, iteration, parentFrame);
+    public VarId toVarId(String name) {
+        return new VarId(name, frame, iteration, parentFrame);
     }
 }

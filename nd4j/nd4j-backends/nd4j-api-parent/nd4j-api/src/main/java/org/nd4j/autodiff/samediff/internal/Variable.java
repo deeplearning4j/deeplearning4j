@@ -22,6 +22,8 @@ package org.nd4j.autodiff.samediff.internal;
 
 import lombok.*;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
 
 import java.util.List;
 
@@ -40,6 +42,51 @@ public class Variable {
     protected List<String> controlDeps;     //Control dependencies: name of ops that must be available before this variable is considered available for execution
     protected SDVariable gradient;      //Variable corresponding to the gradient of this variable
     protected int variableIndex = -1;
+
+
+    /**
+     * Returns true if this variable's array is ready/available for use
+     */
+    public boolean isArrayReady() {
+        SameDiff sameDiff = variable.getSameDiff();
+        if (variable.isConstant() || variable.getVariableType() == VariableType.VARIABLE) {
+            return sameDiff.arrayAlreadyExistsForVarName(name);
+        }
+        if (variable.isPlaceHolder()) {
+            return sameDiff.arrayAlreadyExistsForVarName(name); // User provided
+        }
+        if (variable.getVariableType() == VariableType.ARRAY) {
+            return sameDiff.arrayAlreadyExistsForVarName(name) ||
+                    (sameDiff.isEagerMode() && sameDiff.getEagerArrays().hasArray(name));
+        }
+        return false;
+    }
+
+
+    /**
+     * Returns true if this variable's array can be computed (all inputs are ready)
+     */
+    public boolean canComputeArray() {
+        if (isArrayReady()) return true;
+        if (variable.getVariableType() != VariableType.ARRAY) return false;
+
+
+        SameDiff sameDiff = variable.getSameDiff();
+        // Check if all inputs are ready
+        if (outputOfOp != null) {
+            SameDiffOp op = sameDiff.getOps().get(outputOfOp);
+            if (op != null && op.getInputsToOp() != null) {
+                for (String input : op.getInputsToOp()) {
+                    Variable inputVar = sameDiff.getVariables().get(input);
+                    if (inputVar == null || !inputVar.isArrayReady()) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+        return false;
+    }
 
     public List<String> getInputsForOp() {
         return inputsForOp;
