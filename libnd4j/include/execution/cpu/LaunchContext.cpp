@@ -25,20 +25,20 @@
 #include <helpers/logger.h>
 #include <thread>
 
-#if defined(SD_IOS_BUILD) || defined(SD_APPLE_BUILD) || defined(SD_ANDROID_BUILD)
+#if SD_IOS_BUILD || SD_APPLE_BUILD || SD_ANDROID_BUILD
 sd::ContextBuffers contextBuffers = sd::ContextBuffers();
 #else
 thread_local sd::ContextBuffers contextBuffers = sd::ContextBuffers();
 #endif
 
-#if defined(HAVE_ONEDNN)
+#if HAVE_ONEDNN
 #include <dnnl.hpp>
 #endif
 
 namespace sd {
 
 LaunchContext::~LaunchContext() {
-#if defined(HAVE_ONEDNN)
+#if HAVE_ONEDNN
   delete reinterpret_cast<dnnl::engine*>(_engine);
 #endif
 }
@@ -52,7 +52,7 @@ LaunchContext::LaunchContext() {
   // default constructor, just to make clang/ranlib happy
   _workspace = nullptr;
   _deviceID = 0;
-#if defined(HAVE_ONEDNN)
+#if HAVE_ONEDNN
   _engine = new dnnl::engine(dnnl::engine::kind::cpu, 0);
 #endif
 }

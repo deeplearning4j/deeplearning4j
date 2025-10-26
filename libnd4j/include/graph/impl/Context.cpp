@@ -205,12 +205,14 @@ Variable *Context::getVariable(int idx) {
       sd_printf("Debug info for node_%i input[%i]; shape: %s; ews: [%i]; order: [%c]; dtype: [%s];\n",
                 this->_nodeId, idx, shape_.c_str(),array->ews(), array->ordering(), type.c_str());
       std::vector<sd::LongType> shapeLen = {array->lengthOf()};
-      NDArray &raveled = array->reshape(array->ordering(), shapeLen);
+      NDArray *raveled = array->reshape(array->ordering(), shapeLen);
       sd_printf("Values: [ ",0);
       for (LongType i = 0; i < maxLen; i++) {
-        auto v2 = raveled.e<float>(i);
+        auto v2 = raveled->e<float>(i);
         sd_printf("%f, ", v2);
       }
+
+      delete raveled;
       sd_printf("]\n",0);
 
     } else {
@@ -549,7 +551,7 @@ void Context::setBArguments(bool *arguments, int numberOfArguments) {
 }
 
 void Context::setCudaContext(Pointer cudaStream, Pointer reductionPointer, Pointer allocationPointer) {
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   _context = new LaunchContext(cudaStream, reductionPointer, allocationPointer);
 
   // FIXME: either pass handle from outside, or make sure outside we use the same handle

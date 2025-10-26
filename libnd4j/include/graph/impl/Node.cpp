@@ -46,13 +46,9 @@
 namespace sd {
 namespace graph {
 void sd::graph::Node::setOuterTime(sd::LongType time) {
-  //            if (hasBlockAttached())
-  //                _block->setOuterTime(time);
 }
 
 void sd::graph::Node::setInnerTime(sd::LongType time) {
-  //            if (hasBlockAttached())
-  //                _block->setInnerTime(time);
 }
 
 void sd::graph::Node::setGraph(sd::graph::Graph* graph) { _graph = graph; }
@@ -229,7 +225,7 @@ Node* Node::asT() {
   node->_dataType = DataTypeUtils::fromT<T>();
   return node;
 }
-BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT Node* Node::asT, (), SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT Node* Node::asT, (), SD_COMMON_TYPES);
 
 sd::graph::Node::Node(sd::ops::DeclarableOp* customOp, int id, std::initializer_list<int> input,
                       std::initializer_list<int> output, std::initializer_list<int> dimensions, float scalar,
