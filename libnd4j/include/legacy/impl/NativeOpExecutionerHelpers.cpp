@@ -20,7 +20,7 @@
 // Created by agibsonccc on 11/6/24.
 //
 #include <legacy/NativeOpExecutioner.h>
-
+#include <system/selective_rendering.h>
 void NativeOpExecutioner::execSort(sd::NDArray *x, bool descending) {
   auto xType = x->dataType();
   BUILD_SINGLE_SELECTOR(xType, sd::SpecialMethods, ::sortGeneric(x, descending), SD_NUMERIC_TYPES);
@@ -29,9 +29,9 @@ void NativeOpExecutioner::execSort(sd::NDArray *x, bool descending) {
  void NativeOpExecutioner::execSort(sd::NDArray *x, sd::LongType *dimension,  sd::LongType dimensionLength,
                      bool descending) {
   auto xType = x->dataType();
-
   BUILD_SINGLE_SELECTOR(
       xType, sd::SpecialMethods,
       ::sortTadGeneric(x, dimension, dimensionLength, descending),
       SD_NUMERIC_TYPES);
 }
+

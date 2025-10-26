@@ -688,13 +688,13 @@ std::vector<char> cnpy::createNpyHeader( const unsigned int *shape, const unsign
   return header;
 }
 
-BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT std::vector<char> cnpy::createNpyHeader,
+BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT std::vector<char> cnpy::createNpyHeader,
                       (const unsigned int *shape, const unsigned int ndims, unsigned int wordSize),
                       SD_COMMON_TYPES);
 
 
 
-BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void cnpy::npy_save,
+BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT void cnpy::npy_save,
                       (std::string fname, const void *data, const unsigned int *shape, const unsigned int ndims,
                           std::string mode),
                       SD_COMMON_TYPES);
