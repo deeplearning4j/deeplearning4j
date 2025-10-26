@@ -49,7 +49,7 @@ template <typename X, typename Y, typename Z>
 class PairWiseTransform {
  public:
 
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
 
   template <typename OpType>
   static SD_HOST void intermediateShaped(dim3 &launchDims, cudaStream_t *stream, const void *vx,

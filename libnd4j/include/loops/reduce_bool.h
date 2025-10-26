@@ -62,7 +62,7 @@ class SD_LIB_HIDDEN ReduceBoolFunction {
   static SD_HOST void intermediateScalar(dim3 launchDims, cudaStream_t *stream, const void *vx,
                                          const sd::LongType *xShapeInfo, const sd::LongType *hXShapeInfo,
                                          void *extraParams, void *vz, const sd::LongType *zShapeInfo,
-                                         const sd::LongType *hZShapeInfo, long long int *dimension,
+                                         const sd::LongType *hZShapeInfo, sd::LongType *dimension,
                                          sd::LongType dimensionLength,
                                          void *reductionBuffer, const sd::LongType *tadOnlyShapeInfo);
 
@@ -106,7 +106,7 @@ class SD_LIB_HIDDEN ReduceBoolFunction {
                          const sd::LongType *zShapeInfo);
 
   static void exec(int opNum, sd::memory::Workspace *workspace, const void *vx, const sd::LongType *xShapeInfo,
-                   void *vextraParams, void *vz, const sd::LongType *zShapeInfo, const long long int *dims);
+                   void *vextraParams, void *vz, const sd::LongType *zShapeInfo, const sd::LongType *dims);
 
   /**
    * Execute on the cpu
@@ -122,7 +122,7 @@ class SD_LIB_HIDDEN ReduceBoolFunction {
 
   template <typename OpType>
   static void SD_HOST exec(sd::memory::Workspace *workspace, const void *vx, const sd::LongType *xShapeInfo,
-                           void *vextraParams, void *vz, const sd::LongType *zShapeInfo, const long long int *dims);
+                           void *vextraParams, void *vz, const sd::LongType *zShapeInfo, const sd::LongType *dims);
 
   /**
    * CPU implementation

@@ -35,7 +35,7 @@ namespace random {
 template <typename X>
 class RandomFunction {
  public:
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   template <typename OpClass>
   static SD_DEVICE void execTransformCuda(sd::Pointer state, const void *x, const sd::LongType *xShapeBuffer,
                                           const void *y, const sd::LongType *yShapeBuffer, void *z,

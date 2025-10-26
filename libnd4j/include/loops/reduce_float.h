@@ -70,7 +70,7 @@ class ReduceFloatFunction {
                                      const sd::LongType *dXShapeInfo, const sd::LongType *hXShapeInfo,
                                      void *extraParams, void *vreductionBuffer, void *vz,
                                      const sd::LongType *dZShapeInfo, const sd::LongType *hZShapeInfo,
-                                     const long long int *dims);
+                                     const sd::LongType *dims);
 
   static SD_HOST void execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, const void *vx,
                                        const sd::LongType *xShapeInfo, const sd::LongType *hXShapeInfo,
@@ -106,7 +106,7 @@ class ReduceFloatFunction {
                          const sd::LongType *zShapeInfo);
 
   static void exec(int opNum, sd::memory::Workspace *workspace, const void *vx, const sd::LongType *xShapeInfo,
-                   void *vextraParams, void *vz, const sd::LongType *zShapeInfo, const long long int *dims);
+                   void *vextraParams, void *vz, const sd::LongType *zShapeInfo, const sd::LongType *dims);
 
   /**
    * Execute on the cpu
@@ -122,7 +122,7 @@ class ReduceFloatFunction {
 
   template <typename OpType>
   static void SD_HOST exec(sd::memory::Workspace *workspace, const void *vx, const sd::LongType *xShapeInfo,
-                           void *extraParams, void *vz, const sd::LongType *zShapeInfo, const long long int *dims);
+                           void *extraParams, void *vz, const sd::LongType *zShapeInfo, const sd::LongType *dims);
 
   /**
    * CPU implementation
