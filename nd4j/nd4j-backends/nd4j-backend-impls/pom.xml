@@ -178,6 +178,9 @@
         </profile>
         <profile>
             <id>cuda</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
             <modules>
                 <module>../../../libnd4j</module>
                 <module>nd4j-cuda</module>
