@@ -245,7 +245,7 @@ void batchnorm(NDArray* input, NDArray* mean, NDArray* variance, NDArray* gamma,
                         SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void batchnorm_,
+BUILD_SINGLE_TEMPLATE( void batchnorm_,
                       (NDArray* input, NDArray* mean, NDArray* variance, NDArray* gamma,
                           NDArray* beta, NDArray* output, const std::vector<sd::LongType>& axes, const double epsilon),
                       SD_FLOAT_TYPES);
