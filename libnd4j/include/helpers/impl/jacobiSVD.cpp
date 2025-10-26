@@ -324,7 +324,7 @@ void JacobiSVD<T>::evalData(NDArray& matrix) {
   }
 
 
-  T maxDiagElem = 0.;
+  T maxDiagElem = static_cast<T>(0.);
   for (int i = 0; i < _diagSize; ++i) {
     T current = math::sd_abs<T,T>(_m.t<T>(i, i));
     if (maxDiagElem < current) maxDiagElem = current;
@@ -404,7 +404,7 @@ void JacobiSVD<T>::evalData(NDArray& matrix) {
 
 }
 
-BUILD_SINGLE_TEMPLATE(template class JacobiSVD, , SD_FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE( class JacobiSVD, , SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

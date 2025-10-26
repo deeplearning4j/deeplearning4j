@@ -94,8 +94,8 @@ void HHsequence::mulLeft(NDArray& matrix) {
   BUILD_SINGLE_SELECTOR(xType, mulLeft_, (matrix), SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void HHsequence::applyTo_, (sd::NDArray & dest), SD_FLOAT_TYPES);
-BUILD_SINGLE_TEMPLATE(template void HHsequence::mulLeft_, (NDArray & matrix), SD_FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE( void HHsequence::applyTo_, (sd::NDArray & dest), SD_FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE( void HHsequence::mulLeft_, (NDArray & matrix), SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

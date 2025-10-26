@@ -37,7 +37,7 @@ void BlasHelper::initializeFunctions(Pointer *functions) {
 
   _hasSgemmBatch = functions[4] != nullptr;
   _hasDgemmBatch = functions[5] != nullptr;
-
+#if !defined(SD_CUDA)
   this->cblasSgemv = (CblasSgemv)functions[0];
   this->cblasDgemv = (CblasDgemv)functions[1];
   this->cblasSgemm = (CblasSgemm)functions[2];
@@ -48,6 +48,7 @@ void BlasHelper::initializeFunctions(Pointer *functions) {
   this->lapackeDgesvd = (LapackeDgesvd)functions[7];
   this->lapackeSgesdd = (LapackeSgesdd)functions[8];
   this->lapackeDgesdd = (LapackeDgesdd)functions[9];
+#endif
 }
 
 void BlasHelper::initializeDeviceFunctions(Pointer *functions) {
@@ -55,270 +56,345 @@ void BlasHelper::initializeDeviceFunctions(Pointer *functions) {
 
 }
 
+#if defined(HAS_FLOAT32)
 template <>
 bool BlasHelper::hasGEMV<float>() {
   if (Environment::getInstance().blasFallback()) return false;
 
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
+#if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
   return true;
 #else
   return _hasSgemv;
 #endif
 }
+#endif
 
+#if defined(HAS_DOUBLE)
 template <>
 bool BlasHelper::hasGEMV<double>() {
   if (Environment::getInstance().blasFallback()) return false;
 
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
+#if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
   return true;
 #else
   return _hasDgemv;
 #endif
 }
+#endif
 
+#if defined(HAS_FLOAT16)
 template <>
 bool BlasHelper::hasGEMV<float16>() {
   return false;
 }
+#endif
 
+#if defined(HAS_BFLOAT16)
 template <>
 bool BlasHelper::hasGEMV<bfloat16>() {
   return false;
 }
+#endif
 
+#if defined(HAS_BOOL)
 template <>
 bool BlasHelper::hasGEMV<bool>() {
   return false;
 }
+#endif
 
+#if defined(HAS_INT32)
 template <>
 bool BlasHelper::hasGEMV<int>() {
   return false;
 }
+#endif
 
+#if defined(HAS_INT8)
 template <>
 bool BlasHelper::hasGEMV<int8_t>() {
   return false;
 }
+#endif
 
+#if defined(HAS_UINT8)
 template <>
 bool BlasHelper::hasGEMV<uint8_t>() {
   return false;
 }
+#endif
 
+#if defined(HAS_INT16)
 template <>
 bool BlasHelper::hasGEMV<int16_t>() {
   return false;
 }
+#endif
 
+#if defined(HAS_LONG)
 template <>
 bool BlasHelper::hasGEMV<LongType>() {
   return false;
 }
+#endif
 
 bool BlasHelper::hasGEMV(const DataType dtype) {
+#if defined(HAS_FLOAT32)
   if (dtype == FLOAT32) {
     if (Environment::getInstance().blasFallback()) return false;
 
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
+#if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
     return true;
 #else
     return _hasSgemv;
 #endif
   }
+#endif
+#if defined(HAS_DOUBLE)
   if (dtype == DOUBLE) {
     if (Environment::getInstance().blasFallback()) return false;
 
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
+#if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
     return true;
 #else
     return _hasDgemv;
 #endif
   }
+#endif
   return false;
 }
 
+#if defined(HAS_FLOAT32)
 template <>
 bool BlasHelper::hasGEMM<float>() {
   if (Environment::getInstance().blasFallback()) return false;
 
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
+#if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
   return true;
 #else
   return _hasSgemm;
 #endif
 }
+#endif
 
+#if defined(HAS_DOUBLE)
 template <>
 bool BlasHelper::hasGEMM<double>() {
   if (Environment::getInstance().blasFallback()) return false;
 
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
+#if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
   return true;
 #else
   return _hasDgemm;
 #endif
 }
+#endif
 
+#if defined(HAS_FLOAT16)
 template <>
 bool BlasHelper::hasGEMM<float16>() {
   return false;
 }
+#endif
 
+#if defined(HAS_BFLOAT16)
 template <>
 bool BlasHelper::hasGEMM<bfloat16>() {
   return false;
 }
+#endif
 
+#if defined(HAS_INT32)
 template <>
 bool BlasHelper::hasGEMM<int>() {
   return false;
 }
+#endif
 
+#if defined(HAS_UINT8)
 template <>
 bool BlasHelper::hasGEMM<uint8_t>() {
   return false;
 }
+#endif
 
+#if defined(HAS_INT8)
 template <>
 bool BlasHelper::hasGEMM<int8_t>() {
   return false;
 }
+#endif
 
+#if defined(HAS_INT16)
 template <>
 bool BlasHelper::hasGEMM<int16_t>() {
   return false;
 }
+#endif
 
+#if defined(HAS_BOOL)
 template <>
 bool BlasHelper::hasGEMM<bool>() {
   return false;
 }
+#endif
 
+#if defined(HAS_LONG)
 template <>
 bool BlasHelper::hasGEMM<LongType>() {
   return false;
 }
+#endif
 
 bool BlasHelper::hasGEMM(const DataType dtype) {
+#if defined(HAS_FLOAT32)
   if (dtype == FLOAT32) {
     if (Environment::getInstance().blasFallback()) return false;
 
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
+#if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
     return true;
 #else
     return _hasSgemm;
 #endif
   }
+#endif
+#if defined(HAS_DOUBLE)
   if (dtype == DOUBLE) {
     if (Environment::getInstance().blasFallback()) return false;
 
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
+#if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
     return true;
 #else
     return _hasDgemm;
 #endif
   }
+#endif
   return false;
 }
 
+#if defined(HAS_FLOAT32)
 template <>
 bool BlasHelper::hasBatchedGEMM<float>() {
   if (Environment::getInstance().blasFallback()) return false;
 
   return _hasSgemmBatch;
 }
+#endif
 
+#if defined(HAS_DOUBLE)
 template <>
 bool BlasHelper::hasBatchedGEMM<double>() {
   if (Environment::getInstance().blasFallback()) return false;
 
   return _hasDgemmBatch;
 }
+#endif
 
+#if defined(HAS_FLOAT16)
 template <>
 bool BlasHelper::hasBatchedGEMM<float16>() {
   return false;
 }
+#endif
 
+#if defined(HAS_BFLOAT16)
 template <>
 bool BlasHelper::hasBatchedGEMM<bfloat16>() {
   return false;
 }
+#endif
 
+#if defined(HAS_LONG)
 template <>
 bool BlasHelper::hasBatchedGEMM<LongType>() {
   return false;
 }
+#endif
 
+#if defined(HAS_INT32)
 template <>
 bool BlasHelper::hasBatchedGEMM<int>() {
   return false;
 }
+#endif
 
+#if defined(HAS_INT8)
 template <>
 bool BlasHelper::hasBatchedGEMM<int8_t>() {
   return false;
 }
+#endif
 
+#if defined(HAS_UINT8)
 template <>
 bool BlasHelper::hasBatchedGEMM<uint8_t>() {
   return false;
 }
+#endif
 
+#if defined(HAS_INT16)
 template <>
 bool BlasHelper::hasBatchedGEMM<int16_t>() {
   return false;
 }
+#endif
 
+#if defined(HAS_BOOL)
 template <>
 bool BlasHelper::hasBatchedGEMM<bool>() {
   return false;
 }
+#endif
 
+#if !defined(SD_CUDA)
+#if defined(HAS_FLOAT32)
 CblasSgemv BlasHelper::sgemv() {
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
+#if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
   return (CblasSgemv)&cblas_sgemv;
 #else
   return this->cblasSgemv;
 #endif
 }
-CblasDgemv BlasHelper::dgemv() {
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
-  return (CblasDgemv)&cblas_dgemv;
-#else
-  return this->cblasDgemv;
-#endif
-}
 
 CblasSgemm BlasHelper::sgemm() {
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
+#if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
   return (CblasSgemm)&cblas_sgemm;
 #else
   return this->cblasSgemm;
 #endif
 }
 
+CblasSgemmBatch BlasHelper::sgemmBatched() { return this->cblasSgemmBatch; }
+
+LapackeSgesvd BlasHelper::sgesvd() { return this->lapackeSgesvd; }
+
+LapackeSgesdd BlasHelper::sgesdd() { return this->lapackeSgesdd; }
+#endif
+
+#if defined(HAS_DOUBLE)
+CblasDgemv BlasHelper::dgemv() {
+#if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
+  return (CblasDgemv)&cblas_dgemv;
+#else
+  return this->cblasDgemv;
+#endif
+}
+
 CblasDgemm BlasHelper::dgemm() {
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
+#if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
   return (CblasDgemm)&cblas_dgemm;
 #else
   return this->cblasDgemm;
 #endif
 }
 
-CblasSgemmBatch BlasHelper::sgemmBatched() { return this->cblasSgemmBatch; }
-
 CblasDgemmBatch BlasHelper::dgemmBatched() { return this->cblasDgemmBatch; }
-
-LapackeSgesvd BlasHelper::sgesvd() { return this->lapackeSgesvd; }
 
 LapackeDgesvd BlasHelper::dgesvd() { return this->lapackeDgesvd; }
 
-LapackeSgesdd BlasHelper::sgesdd() { return this->lapackeSgesdd; }
-
 LapackeDgesdd BlasHelper::dgesdd() { return this->lapackeDgesdd; }
+#endif
+#endif
 
 // destructor
 BlasHelper::~BlasHelper() noexcept {}

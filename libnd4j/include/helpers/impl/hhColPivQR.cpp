@@ -59,8 +59,8 @@ void HHcolPivQR::_evalData() {
   T threshold1 = normScaled * normScaled / (T)rows;
   T threshold2 = math::sd_sqrt<T, T>(DataTypeUtils::eps<T>());
 
-  T nonZeroPivots = _diagSize;
-  T maxPivot = 0.;
+  T nonZeroPivots = static_cast<T>(_diagSize);
+  T maxPivot = static_cast<T>(0.);
 
   for (int k = 0; k < _diagSize; ++k) {
     int biggestColIndex = normsUpd({k, -1}).indexReduceNumber(indexreduce::IndexMax).e<int>(0);
@@ -127,7 +127,7 @@ void HHcolPivQR::_evalData() {
   }
 }
 
-BUILD_SINGLE_TEMPLATE(template void HHcolPivQR::_evalData, (), SD_FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE( void HHcolPivQR::_evalData, (), SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

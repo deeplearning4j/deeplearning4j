@@ -136,7 +136,7 @@ void Householder<T>::mulRight(NDArray& matrix, NDArray& tail, const T coeff) {
   }
 }
 
-BUILD_SINGLE_TEMPLATE(template class Householder, , SD_FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE( class Householder, , SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

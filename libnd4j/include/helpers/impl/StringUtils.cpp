@@ -35,6 +35,7 @@ namespace sd {
 
 void StringUtils::setValueForDifferentDataType(NDArray* arr, LongType idx, NDArray* input, DataType zType) {
   switch(zType) {
+#if HAS_UTF8
     case UTF8: {
       switch(input->dataType()) {
         case UTF8:
@@ -51,6 +52,8 @@ void StringUtils::setValueForDifferentDataType(NDArray* arr, LongType idx, NDArr
       }
       break;
     }
+#endif
+#if HAS_UTF16
     case UTF16: {
       switch(input->dataType()) {
         case UTF8:
@@ -67,6 +70,8 @@ void StringUtils::setValueForDifferentDataType(NDArray* arr, LongType idx, NDArr
       }
       break;
     }
+#endif
+#if HAS_UTF32
     case UTF32: {
       switch(input->dataType()) {
         case UTF8:
@@ -83,6 +88,7 @@ void StringUtils::setValueForDifferentDataType(NDArray* arr, LongType idx, NDArr
       }
       break;
     }
+#endif
     default:
       THROW_EXCEPTION("Unsupported DataType for destination string.");
   }
