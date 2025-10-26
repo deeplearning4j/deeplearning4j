@@ -37,7 +37,6 @@ template <typename T>
 class SD_LIB_EXPORT DataTypeConversions {
  private:
 
-
   template <typename T2>
   static SD_INLINE void rconv(bool isBe, bool canKeep, T *buffer, LongType length, void *src) {
     if (std::is_same<T, T2>::value && canKeep) {
@@ -71,24 +70,43 @@ class SD_LIB_EXPORT DataTypeConversions {
     bool canKeep = (isBe && order == BE) || (!isBe && order == LE);
 
     switch (dataType) {
+#ifdef HAS_BOOL
       case BOOL: {
         DataTypeConversions<T>::template rconv<bool>(isBe, canKeep, buffer, length, src);
       } break;
+#endif
+
+#ifdef HAS_UINT8
       case UINT8: {
         DataTypeConversions<T>::template rconv<uint8_t>(isBe, canKeep, buffer, length, src);
       } break;
+#endif
+
+#ifdef HAS_INT8
       case INT8: {
         DataTypeConversions<T>::template rconv<int8_t>(isBe, canKeep, buffer, length, src);
       } break;
+#endif
+
+#ifdef HAS_INT16
       case INT16: {
         DataTypeConversions<T>::template rconv<int16_t>(isBe, canKeep, buffer, length, src);
       } break;
+#endif
+
+#ifdef HAS_INT32
       case INT32: {
         DataTypeConversions<T>::template rconv<int>(isBe, canKeep, buffer, length, src);
       } break;
+#endif
+
+#ifdef HAS_LONG
       case INT64: {
         DataTypeConversions<T>::template rconv<LongType>(isBe, canKeep, buffer, length, src);
       } break;
+#endif
+
+#ifdef HAS_FLOAT32
       case FLOAT32: {
         if (std::is_same<T, float>::value && canKeep) {
           ops::safe_copy(buffer, static_cast<const float*>(src), static_cast<size_t>(length));
@@ -115,6 +133,9 @@ class SD_LIB_EXPORT DataTypeConversions {
           delete[] tmp;
         }
       } break;
+#endif
+
+#ifdef HAS_DOUBLE
       case DOUBLE: {
         if (std::is_same<T, double>::value && canKeep) {
           ops::safe_copy(buffer, static_cast<const double*>(src), static_cast<size_t>(length));
@@ -141,6 +162,9 @@ class SD_LIB_EXPORT DataTypeConversions {
           delete[] tmp;
         }
       } break;
+#endif
+
+#ifdef HAS_FLOAT16
       case HALF: {
         if (std::is_same<T, float16>::value && canKeep) {
           ops::safe_copy(buffer, static_cast<const float16*>(src), static_cast<size_t>(length));
@@ -167,6 +191,79 @@ class SD_LIB_EXPORT DataTypeConversions {
           delete[] tmp;
         }
       } break;
+#endif
+
+#ifdef HAS_BFLOAT16
+      case BFLOAT16: {
+        if (std::is_same<T, bfloat16>::value && canKeep) {
+          ops::safe_copy(buffer, static_cast<const bfloat16*>(src), static_cast<size_t>(length));
+        } else {
+          auto tmp = new bfloat16[length];
+          ops::safe_copy(tmp, static_cast<const bfloat16*>(src), static_cast<size_t>(length));
+
+#if __GNUC__ <= 4
+          if (!canKeep) {
+            for (sd::LongType e = 0; e < length; e++)
+              buffer[e] = BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
+          } else {
+            TypeCast::convertGeneric<bfloat16, T>(nullptr, tmp, length, buffer);
+          }
+#else
+          auto func = PRAGMA_THREADS_FOR {
+            for (auto e = start; e < stop; e++)
+              buffer[e] = canKeep
+                              ? static_cast<T>(tmp[e])
+                              : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
+          };
+          samediff::Threads::parallel_for(func, 0, length);
+#endif
+          delete[] tmp;
+        }
+      } break;
+#endif
+
+#ifdef HAS_UINT16
+      case UINT16: {
+        DataTypeConversions<T>::template rconv<uint16_t>(isBe, canKeep, buffer, length, src);
+      } break;
+#endif
+
+#ifdef HAS_UINT32
+      case UINT32: {
+        DataTypeConversions<T>::template rconv<uint32_t>(isBe, canKeep, buffer, length, src);
+      } break;
+#endif
+
+#ifdef HAS_UNSIGNEDLONG
+      case UINT64: {
+        DataTypeConversions<T>::template rconv<uint64_t>(isBe, canKeep, buffer, length, src);
+      } break;
+#endif
+
+#ifdef HAS_UTF8
+      case UTF8: {
+        // UTF8 handling would go here if needed
+        sd_print("UTF8 DataType conversion not implemented\n");
+        THROW_EXCEPTION("UTF8 DataType conversion not implemented");
+      } break;
+#endif
+
+#ifdef HAS_UTF16
+      case UTF16: {
+        // UTF16 handling would go here if needed
+        sd_print("UTF16 DataType conversion not implemented\n");
+        THROW_EXCEPTION("UTF16 DataType conversion not implemented");
+      } break;
+#endif
+
+#ifdef HAS_UTF32
+      case UTF32: {
+        // UTF32 handling would go here if needed
+        sd_print("UTF32 DataType conversion not implemented\n");
+        THROW_EXCEPTION("UTF32 DataType conversion not implemented");
+      } break;
+#endif
+
       default: {
         sd_printf("Unsupported DataType requested: [%i]\n", static_cast<int>(dataType));
         THROW_EXCEPTION("Unsupported DataType");

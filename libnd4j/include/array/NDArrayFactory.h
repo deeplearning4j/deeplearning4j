@@ -121,6 +121,7 @@ class SD_LIB_EXPORT NDArrayFactory {
    */
   static NDArray fromNpyFile(const char *fileName);
 
+  #if defined(HAS_UTF8)
   /**
    * This factory create array from utf8 string
    * @return NDArray default dataType UTF8
@@ -134,6 +135,17 @@ class SD_LIB_EXPORT NDArrayFactory {
   static NDArray string(const std::string &string, DataType dtype = UTF8,
                         LaunchContext *context = LaunchContext::defaultContext());
 
+  static NDArray string(std::vector<LongType> &shape, const std::vector<const char *> &strings,
+                        DataType dataType = UTF8, LaunchContext *context = LaunchContext ::defaultContext());
+  static NDArray string(std::vector<LongType> &shape, const std::vector<std::string> &string,
+                        DataType dataType = UTF8, LaunchContext *context = LaunchContext ::defaultContext());
+  static NDArray *string_(std::vector<LongType> &shape, const std::vector<const char *> &strings,
+                          DataType dataType = UTF8, LaunchContext *context = LaunchContext ::defaultContext());
+  static NDArray *string_(std::vector<LongType> &shape, const std::vector<std::string> &string,
+                          DataType dataType = UTF8, LaunchContext *context = LaunchContext ::defaultContext());
+#endif
+
+#if defined(HAS_UTF16)
   /**
    * This factory create array from utf16 string
    * @return NDArray default dataType UTF16
@@ -146,28 +158,6 @@ class SD_LIB_EXPORT NDArrayFactory {
                           LaunchContext *context = LaunchContext::defaultContext());
   static NDArray string(const std::u16string &u16string, DataType dtype = UTF16,
                         LaunchContext *context = LaunchContext::defaultContext());
-
-  /**
-   * This factory create array from utf32 string
-   * @return NDArray default dataType UTF32
-   */
-  static NDArray string(const char32_t *u32string, DataType dtype = UTF32,
-                        LaunchContext *context = LaunchContext::defaultContext());
-  static NDArray *string_(const char32_t *u32string, DataType dtype = UTF32,
-                          LaunchContext *context = LaunchContext::defaultContext());
-  static NDArray *string_(const std::u32string &u32string, DataType dtype = UTF32,
-                          LaunchContext *context = LaunchContext::defaultContext());
-  static NDArray string(const std::u32string &u32string, DataType dtype = UTF32,
-                        LaunchContext *context = LaunchContext::defaultContext());
-
-  static NDArray string(std::vector<LongType> &shape, const std::vector<const char *> &strings,
-                        DataType dataType = UTF8, LaunchContext *context = LaunchContext ::defaultContext());
-  static NDArray string(std::vector<LongType> &shape, const std::vector<std::string> &string,
-                        DataType dataType = UTF8, LaunchContext *context = LaunchContext ::defaultContext());
-  static NDArray *string_(std::vector<LongType> &shape, const std::vector<const char *> &strings,
-                          DataType dataType = UTF8, LaunchContext *context = LaunchContext ::defaultContext());
-  static NDArray *string_(std::vector<LongType> &shape, const std::vector<std::string> &string,
-                          DataType dataType = UTF8, LaunchContext *context = LaunchContext ::defaultContext());
 
   /**
    * This factory create array from vector of utf16 strings
@@ -190,6 +180,21 @@ class SD_LIB_EXPORT NDArrayFactory {
                           DataType dataType = UTF16, LaunchContext *context = LaunchContext::defaultContext());
   static NDArray *string_(std::vector<LongType> &shape, const std::vector<std::u16string> &string,
                           DataType dataType = UTF16, LaunchContext *context = LaunchContext::defaultContext());
+#endif
+
+#if defined(HAS_UTF32)
+  /**
+   * This factory create array from utf32 string
+   * @return NDArray default dataType UTF32
+   */
+  static NDArray string(const char32_t *u32string, DataType dtype = UTF32,
+                        LaunchContext *context = LaunchContext::defaultContext());
+  static NDArray *string_(const char32_t *u32string, DataType dtype = UTF32,
+                          LaunchContext *context = LaunchContext::defaultContext());
+  static NDArray *string_(const std::u32string &u32string, DataType dtype = UTF32,
+                          LaunchContext *context = LaunchContext::defaultContext());
+  static NDArray string(const std::u32string &u32string, DataType dtype = UTF32,
+                        LaunchContext *context = LaunchContext::defaultContext());
 
   /**
    * This factory create array from vector of utf32 strings
@@ -212,6 +217,7 @@ class SD_LIB_EXPORT NDArrayFactory {
                           DataType dataType = UTF32, LaunchContext *context = LaunchContext::defaultContext());
   static NDArray *string_(std::vector<LongType> &shape, const std::vector<std::u32string> &string,
                           DataType dataType = UTF32, LaunchContext *context = LaunchContext::defaultContext());
+#endif
 
 #endif
 };

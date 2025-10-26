@@ -19,7 +19,7 @@
 #ifndef NDARRAY_H
 #define NDARRAY_H
 #pragma  once
-#include <array/ArrayOptions.h>
+#include <array/ArrayOptions.hXX>
 #include <array/ConstantShapeBuffer.h>
 #include <array/DataBuffer.h>
 #include <array/DataType.h>
@@ -348,11 +348,11 @@ class SD_LIB_EXPORT NDArray {
 
 
   // Static helper methods
-  SD_LIB_EXPORT static LongType *reshapeShapeInfo( NDArray *array, char order, const std::vector<sd::LongType>& newShape);
-  SD_LIB_EXPORT static const LongType *modifyShapeForAssign( NDArray *thisArray,  NDArray *other);
-  SD_LIB_EXPORT static void copyDataForAssign(NDArray *thisArray,  NDArray *other, const sd::LongType* otherShapeInfo, bool allowParallelism);
-  SD_LIB_EXPORT static void validateAssign( NDArray *thisArray,  NDArray *other);
-
+  // Static helper methods
+  static LongType *reshapeShapeInfo( NDArray *array, char order, const std::vector<sd::LongType>& newShape);
+  static const LongType *modifyShapeForAssign( NDArray *thisArray,  NDArray *other);
+  static void copyDataForAssign(NDArray *thisArray,  NDArray *other, const sd::LongType* otherShapeInfo, bool allowParallelism);
+  static void validateAssign( NDArray *thisArray,  NDArray *other);
 
 
   /**
@@ -1064,7 +1064,8 @@ class SD_LIB_EXPORT NDArray {
    *
    * if permute have been applied before or there are weird strides, then new buffer is allocated for new array
    */
-  NDArray &reshape(char order, std::vector<sd::LongType> &shape, bool copyToNewBuff = true) &;
+
+  NDArray *reshape(char order, std::vector<sd::LongType> &shape, bool copyToNewBuff = true) &;
   NDArray &reshape(const char order, std::vector<sd::LongType> &shape, const bool copyToNewBuff = true) &&;
 
   /**
@@ -1596,14 +1597,24 @@ bool NDArray::isAttached() { return this->_context->getWorkspace() != nullptr; }
 //this method is used in lieu of constexrp to avoid a dependency on c++ 17
 template <typename T, typename R>
 struct TemplatedGetter {
-  static R get(void  *buffer, LongType index) {
+  static R get(void *buffer, LongType index) {
     if(buffer == nullptr)
       THROW_EXCEPTION("TemplatedGetter: Buffer is nullptr!");
-    auto b = reinterpret_cast<T const *>(buffer);
-    auto v = static_cast<R>(b[index]);
-    return v;
+    
+    if constexpr (std::is_convertible_v<T, R>) {
+      auto b = reinterpret_cast<T const *>(buffer);
+      auto v = static_cast<R>(b[index]);
+      return v;
+    } else {
+      THROW_EXCEPTION("Invalid type conversion in TemplatedGetter");
+    }
   }
 };
+
+
+
+
+#if defined(HAS_BFLOAT16) && defined(HAS_FLOAT16)
 
 template <>
 struct TemplatedGetter<bfloat16, float16> {
@@ -1614,6 +1625,8 @@ struct TemplatedGetter<bfloat16, float16> {
     return v;
   }
 };
+
+#endif
 
 template <typename T, typename R>
 SD_INLINE R NDArray::templatedGet(void  *buffer, LongType index)  {

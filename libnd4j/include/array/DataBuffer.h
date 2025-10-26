@@ -44,7 +44,7 @@ class SD_LIB_EXPORT DataBuffer {
   std::atomic<int> _deviceId;
   std::mutex _deleteMutex;
 #ifndef __JAVACPP_HACK__
-#if defined(__CUDABLAS__)
+#if defined(SD_CUDA)
   mutable std::atomic<LongType> _counter;
   mutable std::atomic<LongType> _writePrimary;
   mutable std::atomic<LongType> _writeSpecial;
