@@ -362,7 +362,7 @@ TEST_F(LegacyOpsTests, PowDerivative_1) {
   ASSERT_TRUE(exp.equalsTo(&x));
 }
 
-#ifndef __CUDABLAS__
+#ifndef SD_CUDA
 TEST_F(LegacyOpsTests, reduce3_1) {
   sd::LongType yShape[2] = {4, 4};
   sd::LongType xShape[1] = {4};
@@ -403,7 +403,7 @@ TEST_F(LegacyOpsTests, Reduce3_2) {
   LaunchContext* context = LaunchContext::defaultContext();
 
   Pointer* extraPointers = nullptr;
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   extraPointers = new Pointer[7]{nullptr,
                                      context->getCudaStream(),
                                      context->getScalarPointer(),
@@ -452,7 +452,7 @@ TEST_F(LegacyOpsTests, Reduce3_4) {
   LaunchContext* context = LaunchContext::defaultContext();
 
   Pointer* extraPointers = nullptr;
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   extraPointers = new Pointer[7]{nullptr,
                                      context->getCudaStream(),
                                      context->getScalarPointer(),
@@ -499,7 +499,7 @@ TEST_F(LegacyOpsTests, Reduce3_5) {
   LaunchContext* context = LaunchContext::defaultContext();
 
   Pointer* extraPointers = nullptr;
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   extraPointers = new Pointer[7]{nullptr,
                                      context->getCudaStream(),
                                      context->getScalarPointer(),
@@ -541,7 +541,7 @@ TEST_F(LegacyOpsTests, test_Reduce3_All_1) {
   LaunchContext* context = LaunchContext::defaultContext();
 
   Pointer* extraPointers = nullptr;
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   extraPointers = new Pointer[7]{nullptr,
                                      context->getCudaStream(),
                                      context->getScalarPointer(),

@@ -35,7 +35,7 @@ class EqualsTest : public NDArrayTests {
   int dimensionLength = 1;
 };
 
-#ifndef __CUDABLAS__
+#ifndef SD_CUDA
 
 TEST_F(EqualsTest, Eps) {
   auto val = sd::NDArrayFactory::create(0.0f);

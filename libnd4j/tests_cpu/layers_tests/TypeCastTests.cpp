@@ -33,7 +33,7 @@ class TypeCastTests : public NDArrayTests {
 };
 
 TEST_F(TypeCastTests, Test_Cast_1) {
-#ifndef __CUDABLAS__
+#ifndef SD_CUDA
   const int limit = 100;
   auto src = new double[limit];
   auto z = new float[limit];
@@ -57,7 +57,7 @@ TEST_F(TypeCastTests, Test_Cast_1) {
 }
 
 TEST_F(TypeCastTests, Test_ConvertDtype_1) {
-#ifndef __CUDABLAS__
+#ifndef SD_CUDA
 
   float src[] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
   float16 dst[5];

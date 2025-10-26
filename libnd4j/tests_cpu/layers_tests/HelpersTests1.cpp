@@ -587,7 +587,7 @@ TEST_F(HelpersTests1, HHcolPivQR_3) {
   ASSERT_TRUE(expPermut.isSameShapeStrict(qr._permut));
 }
 
-#ifndef __CUDABLAS__
+#ifndef SD_CUDA
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test1) {
   auto matrix3 = NDArrayFactory::create<double>(

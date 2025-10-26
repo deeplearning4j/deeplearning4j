@@ -19,7 +19,7 @@
 //
 // Created by raver119 on 13.01.2018.
 //
-#include <array/ArrayOptions.h>
+#include <array/ArrayOptions.hXX>
 #include <array/NDArray.h>
 
 #include "testlayers.h"
