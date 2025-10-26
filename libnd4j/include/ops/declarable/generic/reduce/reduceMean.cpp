@@ -143,8 +143,9 @@ CUSTOM_OP_IMPL(reduce_mean_bp, -2, 1, false, 0, 0) {
 
       std::vector<sd::LongType> shape =  ShapeUtils::pullShapeFromShapeInfo(
           gradOShapeKeepDims);
-      NDArray reshapedGradO = gradO->reshape(gradO->ordering(), shape);
-      *gradI *= reshapedGradO;
+      NDArray *reshapedGradO = gradO->reshape(gradO->ordering(), shape);
+      *gradI *= *reshapedGradO;
+      delete reshapedGradO;
     } else {
       gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), gradO, gradI);
     }
