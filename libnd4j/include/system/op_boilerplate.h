@@ -134,18 +134,12 @@
 
 #define LAUNCH(A, B, C, D) <<<A, B, C, D>>>
 
-#define CONCAT2(A, B) A##B
-#define CONCAT3(A, B, C) A##B##C
+
 
 #define ARGMIX3(A, B, C) A##B##_##C
 #define ARGMIX4(A, B, C, D) A##B##_##C##_##D
 
-#define MIX2(A, B) A##_##B
-#define MIX3(A, B, C) A##_##B##_##C
-#define MIX4(A, B, C, D) A##_##B##_##C##_##D
 
-#define EMPTY()
-#define DEFER(id) id EMPTY()
 #define OBSTRUCT(...) __VA_ARGS__ DEFER(EMPTY)()
 
 #define _EXPAND_OP_CALL(FN, SIG, NUM, TYPE) \
@@ -2263,14 +2257,14 @@
   }                                                                                        \
   EVAL(_EXEC_OPS(_EXPAND_RETURNING_PACKED_OP_CALL, NAME, (SIGNATURE), __VA_ARGS__)) else { \
     printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__);                \
-    return 0;                                                                              \
+    return static_cast<X>(0);                                                                              \
   }
 #define RETURNING_DISPATCH_BY_OPNUM_TT(NAME, SIGNATURE, ...)                                  \
   if (false) {                                                                                \
   }                                                                                           \
   EVAL(_EXEC_OPS(_EXPAND_RETURNING_PACKED_OP_CALL_TT, NAME, (SIGNATURE), __VA_ARGS__)) else { \
     printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__);                   \
-    return 0;                                                                                 \
+    return static_cast<Y>(0);                                                                                 \
   }
 
 #define PARAMS(...) __VA_ARGS__
@@ -2590,7 +2584,7 @@
   else                                                                                               \
     shape::shapeBufferFortran(shape::rank(SRC), sd::ArrayOptions::dataType(SRC), shape::shapeOf(SRC), TGT);
 
-#if defined(__CUDABLAS__)
+#if defined(SD_CUDA)
 
 #if defined(_RELEASE)
 
@@ -2664,23 +2658,32 @@ SD_INLINE TT* internal_alloc_host(WW workSpace, sd::LongType len) {
   TT* var;
   if (workSpace == nullptr) {
 #if defined(SD_ALIGNED_ALLOC)
+    // Allocate aligned memory, ensuring the size is a multiple of the alignment
     var = static_cast<TT*>(
         aligned_alloc(SD_DESIRED_ALIGNMENT,
                       (len * sizeof(TT) + SD_DESIRED_ALIGNMENT - 1) & (-SD_DESIRED_ALIGNMENT)));
 #else
+    // Fallback to standard array allocation
     var = new TT[len];
 #endif
 #if !defined(_RELEASE)
+    // Track memory allocation in non-release builds
     sd::memory::MemoryTracker::getInstance().countIn(sd::memory::MemoryType::HOST, var, len * sizeof(TT));
 #endif
   } else {
+    // Allocate memory from a provided workspace
     var = reinterpret_cast<TT*>(workSpace->allocateBytes(len * sizeof(TT)));
   }
-  if constexpr (std::is_trivially_copyable<TT>::value) {
+
+  // This new condition correctly identifies float16 as a class type.
+  if constexpr (!std::is_class<TT>::value) {
+    // Use memset for fundamental types like float, double, int, etc.
     memset(var, 0, len * sizeof(TT));
   } else {
+    // Use proper value-initialization for class types like float16.
     std::fill_n(var, len, TT());
   }
+
   return var;
 }
 
@@ -2700,19 +2703,6 @@ SD_INLINE void internal_release_host(WW workspace, TT_PTR var) {
 }
 
 
-#ifndef __JAVACPP_HACK__
-
-#if defined(SD_GCC_FUNCTRACE) && !defined(OP_BOILER_PLATE_THROW_EXCEPTIONS)
-#define OP_BOILER_PLATE_THROW_EXCEPTIONS
-#include <exceptions/backward.hpp>
-using namespace backward;
-void throwException(const char* exceptionMessage);
-#else
-void throwException(const char* exceptionMessage);
-
-#endif
-#define THROW_EXCEPTION(exceptionMessage) throwException(exceptionMessage);
-#endif
 
 
 #define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT) VARIABLE = internal_alloc_host<TT>(WORKSPACE, static_cast<sd::LongType>(LENGTH));
@@ -2868,7 +2858,7 @@ using portable_function = std::function<Signature>;
 #define PARAMETRIC_XZ() [&](Parameters & p, ResultSet & x, ResultSet & z)
 #define PARAMETRIC_D() [&](Parameters & p) -> Context*
 
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
 #define checkCudaErrors(ERR)                                        \
   if (ERR != 0) {                                                   \
     THROW_EXCEPTION("CUDA stream synchronization failed"); \
