@@ -44,8 +44,9 @@ static void __where(NDArray &condition, NDArray &output, memory::Workspace *work
     if (condition.e<bool>(offset)) {
       std::vector<sd::LongType> arrShape = {1, condition.rankOf()};
       auto array = NDArrayFactory::create_('c', arrShape, output.dataType(), output.getContext());
-      for (int f = 0; f < condition.rankOf(); f++) array->p(f, (T)coords[f]);
-
+      for (sd::LongType f = 0; f < condition.rankOf(); f++)  {
+        array->p(f, (T)coords[f]);
+      }
       list.write(cnt++, array);
     }
   }
@@ -54,7 +55,7 @@ static void __where(NDArray &condition, NDArray &output, memory::Workspace *work
   output.assign(s);
   delete s;
 }
-BUILD_SINGLE_TEMPLATE(template void __where, (NDArray & condition, NDArray &output, memory::Workspace *workspace),
+BUILD_SINGLE_TEMPLATE( void __where, (NDArray & condition, NDArray &output, memory::Workspace *workspace),
                       SD_COMMON_TYPES);
 
 void _where(sd::LaunchContext *context, NDArray &condition, NDArray &output, memory::Workspace *workspace) {

@@ -37,47 +37,41 @@ SD_LIB_HIDDEN void zeta(LaunchContext* context, NDArray& x, NDArray& q, NDArray&
 // fast implementation, it is based on Euler-Maclaurin summation formula
 template <typename T>
 SD_LIB_HIDDEN SD_HOST_DEVICE T zetaScalar(const T x, const T q) {
-  const T machep = 1.11022302462515654042e-16;
+  const T machep = T(1.11022302462515654042e-16);
 
   // FIXME: @raver119
-  // expansion coeffZetaicients for Euler-Maclaurin summation formula (2k)! / B2k, where B2k are Bernoulli numbers
-  const T coeffZeta[] = {12.0,
-                         -720.0,
-                         30240.0,
-                         -1209600.0,
-                         47900160.0,
-                         -1.8924375803183791606e9,
-                         7.47242496e10,
-                         -2.950130727918164224e12,
-                         1.1646782814350067249e14,
-                         -4.5979787224074726105e15,
-                         1.8152105401943546773e17,
-                         -7.1661652561756670113e18};
+  // expansion coefficients for Euler-Maclaurin summation formula (2k)! / B2k, where B2k are Bernoulli numbers
+  const T coeffZeta[] = {T(12.0),
+                         T(-720.0),
+                         T(30240.0),
+                         T(-1209600.0),
+                         T(47900160.0),
+                         T(-1.8924375803183791606e9),
+                         T(7.47242496e10),
+                         T(-2.950130727918164224e12),
+                         T(1.1646782814350067249e14),
+                         T(-4.5979787224074726105e15),
+                         T(1.8152105401943546773e17),
+                         T(-7.1661652561756670113e18)};
 
-  // if (x <= (T)1.)
-  //     throw("zeta function: x must be > 1 !");
-
-  // if (q <= (T)0.)
-  //     throw("zeta function: q must be > 0 !");
-
-  T a, b(0.), k, s, t, w;
+  T a, b = T(0.0), k, s, t, w;
 
   s = math::sd_pow<T, T, T>(q, -x);
   a = q;
   int i = 0;
 
-  while (i < 9 || a <= (T)9.) {
+  while (i < 9 || a <= T(9.0)) {
     i += 1;
-    a += (T)1.0;
+    a += T(1.0);
     b = math::sd_pow<T, T, T>(a, -x);
     s += b;
-    if (math::sd_abs<double,double>(b / s) < (T)machep) return s;
+    if (math::sd_abs<T,T>(b / s) < machep) return s;
   }
 
   w = a;
-  s += b * (w / (x - (T)1.) - (T)0.5);
-  a = (T)1.;
-  k = (T)0.;
+  s += b * (w / (x - T(1.0)) - T(0.5));
+  a = T(1.0);
+  k = T(0.0);
 
   for (i = 0; i < 12; ++i) {
     a *= x + k;
@@ -86,12 +80,12 @@ SD_LIB_HIDDEN SD_HOST_DEVICE T zetaScalar(const T x, const T q) {
     s += t;
     t = math::sd_abs<T,T>(t / s);
 
-    if (t < (T)machep) return s;
+    if (t < machep) return s;
 
-    k += (T)1.f;
+    k += T(1.0);
     a *= x + k;
     b /= w;
-    k += (T)1.f;
+    k += T(1.0);
   }
 
   return s;

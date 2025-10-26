@@ -36,9 +36,9 @@ void mindistance_(const void *vinput, const void *vlow, const void *vhigh, int32
   auto high = reinterpret_cast<const T *>(vhigh);
   auto output = reinterpret_cast<T *>(vout);
 
-  T res = 0.0f;
-  T po = 2.f;
-  T o = 1.f;
+  T res = static_cast<T>(0.0f);
+  T po = static_cast<T>(2.f);
+  T o = static_cast<T>(1.f);
   for (auto e = 0; e < length; e++) {
     T p = input[e];
     T l = low[e];
@@ -51,8 +51,9 @@ void mindistance_(const void *vinput, const void *vlow, const void *vhigh, int32
     }
   }
 
-  output[0] = math::sd_pow<T, T, T>(res, (T)0.5f);
+  output[0] = math::sd_pow<T, T, T>(res, static_cast<T>(0.5f));
 }
+
 
 void knn_mindistance(NDArray&input, NDArray&lowest, NDArray&highest, NDArray &output) {
   NDArray::preparePrimaryUse({&output}, {&input, &lowest, &highest});

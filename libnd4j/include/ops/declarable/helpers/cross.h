@@ -62,9 +62,9 @@ void SD_INLINE _crossBatched(LaunchContext *context, NDArray *a, NDArray *b, NDA
   auto b_ = b->reshape(b->ordering(), reshape);
   auto o_ = o->reshape(o->ordering(),reshape, false);
 
-  auto tadsA = a_.allTensorsAlongDimension({1});
-  auto tadsB = b_.allTensorsAlongDimension({1});
-  auto tadsO = o_.allTensorsAlongDimension({1});
+  auto tadsA = a_->allTensorsAlongDimension({1});
+  auto tadsB = b_->allTensorsAlongDimension({1});
+  auto tadsO = o_->allTensorsAlongDimension({1});
 
   int tads = tadsA.size();
 
@@ -79,6 +79,10 @@ void SD_INLINE _crossBatched(LaunchContext *context, NDArray *a, NDArray *b, NDA
   };
 
   samediff::Threads::parallel_tad(func, 0, tads);
+
+  delete a_;
+  delete b_;
+  delete o_;
 }
 
 void weightedCrossEntropyWithLogitsFunctor(LaunchContext *context, NDArray *targets, NDArray *input,
