@@ -24,7 +24,7 @@
 #if defined(SD_FLOAT_TYPES_GEN) && defined(SD_FLOAT_TYPES_@FL_TYPE_INDEX@)
 namespace sd {
   
-    BUILD_DOUBLE_TEMPLATE(template class SD_LIB_HIDDEN ReductionFloatLoops, , SD_COMMON_TYPES, SD_FLOAT_TYPES_@FL_TYPE_INDEX@);
+    BUILD_DOUBLE_TEMPLATE( class SD_LIB_HIDDEN ReductionFloatLoops, , SD_COMMON_TYPES, SD_FLOAT_TYPES_@FL_TYPE_INDEX@);
 }
 #endif
 

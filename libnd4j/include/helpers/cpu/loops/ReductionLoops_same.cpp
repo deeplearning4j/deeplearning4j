@@ -49,5 +49,5 @@ void ReductionSameLoops<X>::wrapper(int opNum, sd::memory::Workspace *workspace,
 #endif
 }
 
-BUILD_SINGLE_TEMPLATE(template class ReductionSameLoops, , SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE( class ReductionSameLoops, , SD_COMMON_TYPES);
 }  // namespace sd
