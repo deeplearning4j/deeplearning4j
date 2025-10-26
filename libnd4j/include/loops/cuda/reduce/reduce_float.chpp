@@ -62,7 +62,7 @@ SD_KERNEL void simpleScalar(
     void* extraParams,
     void* z,
     const sd::LongType* zShapeInfo,
-    long long int* dimension,
+    sd::LongType* dimension,
     long long int dimensionLength,
     void* reductionBuffer,
     const sd::LongType* tadOnlyShapeInfo) {
@@ -452,7 +452,7 @@ SD_HOST void ReduceFloatFunction<X,Y>::execReduceScalar(
     void* z,
     const sd::LongType* dZShapeInfo,
     const sd::LongType* hZShapeInfo,
-    long long int* dimension,
+    sd::LongType* dimension,
     long long int dimensionLength,
     void* reductionBuffer,
     const sd::LongType* tadOnlyShapeInfo) {

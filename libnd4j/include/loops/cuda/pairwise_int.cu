@@ -155,7 +155,7 @@ void PairWiseIntTransform<X>::executeCudaShaped(
       "PairWiseIntTransform executeCudaShaped(...) failed");
 }
 
-BUILD_SINGLE_TEMPLATE(template class PairWiseIntTransform, , SD_INTEGER_TYPES);
+BUILD_SINGLE_TEMPLATE( class PairWiseIntTransform, , SD_INTEGER_TYPES);
 
 }  // namespace pairwise_transforms
 }  // namespace functions

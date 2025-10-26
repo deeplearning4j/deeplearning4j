@@ -67,7 +67,7 @@ SD_HOST void TransformBool<X, Y>::executeTransformShaped(
    void* z,
    const sd::LongType* zShape,
    long long int zRank,
-   long long int* allocationPointer,
+   sd::LongType* allocationPointer,
    void* reductionPointer,
    const sd::LongType* tadShapeInfo,
    const sd::LongType* tadOffsets)
@@ -104,7 +104,14 @@ SD_DEVICE void TransformBool<X, Z>::transformCuda(
 
  // Check for special operations
  if (OpType::requiresSpecial) {
-   OpType::execSpecialCuda(x, xShapeInfo, z, zShapeInfo, params, allocationPointer, reductionPointer, tadShapeInfo,
+   OpType::execSpecialCuda(x,
+                           xShapeInfo,
+                           z,
+                           zShapeInfo,
+                           params,
+                           allocationPointer,
+                           reductionPointer,
+                           tadShapeInfo,
                            tadOffsets);
    return;
  }
@@ -197,7 +204,7 @@ SD_HOST void TransformBool<X, Z>::intermediateShaped(
 
 ////////////////////////////////////////////////////////////////////////////////
 // Macro to instantiate templates for TransformBool with common and bool types
-BUILD_DOUBLE_TEMPLATE(template class TransformBool, , SD_COMMON_TYPES, SD_BOOL_TYPES);
+BUILD_DOUBLE_TEMPLATE( class TransformBool, , SD_COMMON_TYPES, SD_BOOL_TYPES);
 
 }  // namespace transform
 }  // namespace functions

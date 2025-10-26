@@ -91,7 +91,7 @@
   }
 
   BUILD_SINGLE_TEMPLATE(
-      template void flattenKernelGeneric,
+       void flattenKernelGeneric,
       (dim3 & launchDims,
        cudaStream_t* stream,
        sd::Pointer* extraPointers,

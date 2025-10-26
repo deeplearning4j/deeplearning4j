@@ -380,7 +380,7 @@ __host__ void ScalarIntTransform<X>::executeCudaAlongDimension(
   sd::DebugHelper::checkErrorCode(stream, "ScalarIntTransform executeCudaAlongDimension(...) failed");
 }
 
-BUILD_SINGLE_TEMPLATE(template class ScalarIntTransform, , SD_INTEGER_TYPES);
+BUILD_SINGLE_TEMPLATE( class ScalarIntTransform, , SD_INTEGER_TYPES);
 
 }  // namespace scalar
 }  // namespace functions

@@ -103,7 +103,7 @@
 
   // We build specialized versions of tileKernel for all SD_COMMON_TYPES
   BUILD_SINGLE_TEMPLATE(
-      template SD_KERNEL void tileKernel,
+       SD_KERNEL void tileKernel,
       (void const* inputBuffer,
        sd::LongType const* inputShape,
        void* outputBuffer,
@@ -127,7 +127,7 @@
   }
 
   BUILD_SINGLE_TEMPLATE(
-      template void tileKernelH,
+       void tileKernelH,
       (void const* inputBuffer,
        sd::LongType const* inputShape,
        void* outputBuffer,
@@ -214,7 +214,7 @@
   }
 
   BUILD_SINGLE_TEMPLATE_TWICE(
-      template SD_KERNEL void tileKernelDouble,
+       SD_KERNEL void tileKernelDouble,
       (void const* inputBuffer,
        sd::LongType const* inputShape,
        void* outputBuffer,
@@ -239,7 +239,7 @@
   }
 
   BUILD_SINGLE_TEMPLATE_TWICE(
-      template void tileKernelHH,
+       void tileKernelHH,
       (void const* inputBuffer,
        sd::LongType const* inputShape,
        void* outputBuffer,

@@ -90,7 +90,7 @@ SD_HOST void averagingKernelGeneric(dim3 &launchDims, cudaStream_t *stream, void
   DebugHelper::checkErrorCode(stream, "averaging(...) failed");
 }
 
-BUILD_SINGLE_TEMPLATE(template void averagingKernelGeneric,
+BUILD_SINGLE_TEMPLATE( void averagingKernelGeneric,
                       (dim3 & launchDims, cudaStream_t *stream, void **vdx, void *vdz, int n, sd::LongType length,
                        bool propagate),
                       SD_COMMON_TYPES);

@@ -356,7 +356,7 @@ __host__ void ScalarBoolTransform<X, Y>::executeCudaAlongDimension(
      SCALAR_BOOL_OPS);
 }
 
-BUILD_DOUBLE_TEMPLATE(template class ScalarBoolTransform, , SD_COMMON_TYPES, SD_BOOL_TYPES);
+BUILD_DOUBLE_TEMPLATE( class ScalarBoolTransform, , SD_COMMON_TYPES, SD_BOOL_TYPES);
 
 }  // namespace scalar
 }  // namespace functions

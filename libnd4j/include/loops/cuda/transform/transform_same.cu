@@ -32,7 +32,7 @@ using namespace simdOps;
 template <typename X, typename OpType>
 SD_KERNEL void transformSameSimple(const void *x, const sd::LongType *xShapeInfo, long long int xRank, void *params, void *z,
                                   const sd::LongType *zShapeInfo, long long int zRank,
-                                  long long int *allocationPointer,
+                                  sd::LongType *allocationPointer,
                                   void *reductionPointer, const sd::LongType *tadShapeInfo,
                                   const sd::LongType *tadOffsets) {
  functions::transform::TransformSame<X>::template transformCuda<OpType>(
@@ -131,6 +131,6 @@ SD_HOST void TransformSame<X>::intermediateShaped(dim3 launchDims, cudaStream_t 
  sd::DebugHelper::checkErrorCode(stream, "transformSame(...) failed");
 }
 
-BUILD_SINGLE_TEMPLATE(template class TransformSame, , SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE( class TransformSame, , SD_COMMON_TYPES);
 }  // namespace transform
 }  // namespace functions

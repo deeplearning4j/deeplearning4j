@@ -141,7 +141,7 @@ SD_DEVICE void SummaryStatsReduce<X, Z>::transform(void * vx, sd::LongType * xSh
   Z startingVal = startingValue(dx);
 
   SummaryStatsData<X> val;
-  val.initWithValue(startingVal);
+  val.initWithValue(static_cast<X>(startingVal));
   val.n = 0;
   sPartials[threadIdx.x] = val;
 
@@ -150,7 +150,7 @@ SD_DEVICE void SummaryStatsReduce<X, Z>::transform(void * vx, sd::LongType * xSh
   __shared__ volatile int resultLength;
 
   SummaryStatsData<X> reduction;
-  reduction.initWithValue(0.0);
+  reduction.initWithValue(static_cast<X>(0.0));
   reduction.n = 0;
 
   if (threadIdx.x == 0) {
@@ -193,7 +193,7 @@ SD_DEVICE void SummaryStatsReduce<X, Z>::transform(void * vx, sd::LongType * xSh
     for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
       auto tadOffsetForBlock = tadOffsets[r];
 
-      val.initWithValue(startingVal);
+      val.initWithValue(static_cast<X>(startingVal));
       val.n = 0;
       sPartials[threadIdx.x] = val;
 
@@ -264,7 +264,7 @@ SD_DEVICE void SummaryStatsReduce<X, Z>::transform(void * vx, sd::LongType * xSh
         Z startingVal = startingValue(dx);
 
         SummaryStatsData<X> val;
-        val.initWithValue(startingVal);
+        val.initWithValue(static_cast<X>(startingVal));
         val.n = 0;
         sPartials[threadIdx.x] = val;
 
@@ -358,7 +358,6 @@ SD_HOST void SummaryStatsReduce<X, Z>::execSummaryStatsReduce(
   DEBUG_KERNEL(stream, opNum);
 }
 
-BUILD_DOUBLE_TEMPLATE(template class SummaryStatsReduce, , SD_COMMON_TYPES, SD_FLOAT_TYPES);
+BUILD_DOUBLE_TEMPLATE( class SummaryStatsReduce, , SD_COMMON_TYPES, SD_FLOAT_TYPES);
 
-}
 }
