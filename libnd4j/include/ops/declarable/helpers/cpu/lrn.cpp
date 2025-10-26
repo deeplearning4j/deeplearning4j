@@ -66,7 +66,7 @@ static sd::Status lrnFunctor_(sd::graph::Context& block, NDArray* input, NDArray
         const T* x = inBuff + inTadOffsets[i];
         T* y = outBuff + outTadOffsets[i];
 
-        T prev = 0;
+        T prev = static_cast<T>(0);
 
         // calculate squared sum of elements per each j-th element range [j - depth, j + depth + 1]
         // we store each squared sum in corresponding element of y array
@@ -101,7 +101,7 @@ static sd::Status lrnFunctor_(sd::graph::Context& block, NDArray* input, NDArray
         const T* x = inBuff + inTadOffsets[i];
         T* y = outBuff + outTadOffsets[i];
 
-        T prev = 0;
+        T prev = static_cast<T>(0);
 
         // calculate squared sum of elements per each j-th element range [j - depth, j + depth + 1]
         // we store each squared sum in corresponding element of y array
@@ -135,7 +135,7 @@ static sd::Status lrnFunctor_(sd::graph::Context& block, NDArray* input, NDArray
   return sd::Status::OK;
 }
 
-BUILD_SINGLE_TEMPLATE(template sd::Status lrnFunctor_,
+BUILD_SINGLE_TEMPLATE( sd::Status lrnFunctor_,
                       (sd::graph::Context & block, NDArray* input, NDArray* output, int depth, float bias, float alpha,
                        float beta),
                       SD_FLOAT_TYPES);
@@ -207,7 +207,7 @@ static void lrnBP_(NDArray& input, NDArray& gradO, NDArray& gradI, const int dep
 
         Y* factor = new Y[tadLen];
 
-        Y prev = 0;
+        Y prev = static_cast<Y>(0);
         // second loop calculates derivatives using information gained in first loop above
         for (sd::LongType j = 0; j < tadLen; ++j) {
           const sd::LongType begin = sd::math::sd_max<int>(0, j - depth);
@@ -272,7 +272,7 @@ static void lrnBP_(NDArray& input, NDArray& gradO, NDArray& gradI, const int dep
 
         Y* factor = new Y[tadLen];
 
-        Y prev = 0;
+        Y prev = static_cast<Y>(0);
         // second loop calculates derivatives using information gained in first loop above
         for (sd::LongType j = 0; j < tadLen; ++j) {
           const sd::LongType begin = sd::math::sd_max<int>(0, j - depth);

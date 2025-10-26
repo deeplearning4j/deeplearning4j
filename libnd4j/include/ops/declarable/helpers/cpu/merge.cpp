@@ -167,12 +167,12 @@ void mergeMaxBp(sd::LaunchContext* context, const std::vector<NDArray*>& inArrs,
 template <typename T>
 static void mergeAvg_(const std::vector<NDArray*>& inArrs, NDArray& output) {
   const sd::LongType numArgs = inArrs.size();
-  const T factor = 1.f / numArgs;
+  const T factor = static_cast<T>(1.f / numArgs);
   auto x = inArrs[0];
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto e = start; e < stop; e++) {
-      T sum = 0.;
+      T sum = static_cast<T>(0);
       for (sd::LongType i = 0; i < numArgs; i++) {
         T v = inArrs[i]->e<T>(e);
         sum += v;

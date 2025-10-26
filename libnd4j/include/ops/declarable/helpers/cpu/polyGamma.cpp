@@ -48,16 +48,9 @@ static SD_INLINE T getFactorial(const int n) {
 // (-1)^{n+1} * n! * zeta(n+1, x)
 template <typename T>
 static SD_INLINE T polyGammaScalar(sd::LaunchContext* context, const int n, const T x) {
-  // if (n < 0)
-  //     throw("polyGamma function: n must be >= 0 !");
-
-  // if (x <= (T)0.)
-  //     throw("polyGamma function: x must be > 0 !");
-
   int sign = (n + 1) % 2 ? -1 : 1;
-  // T factorial = (T)std::tgamma(n + 1);
-
-  return sign * getFactorial<T>(n) * zetaScalar<T>((T)(n + 1), x);
+  T zeta = zetaScalar<T>(T(n + 1), x);
+  return T(sign) * getFactorial<T>(n) * zeta;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -83,7 +76,7 @@ void polyGamma(sd::LaunchContext* context, NDArray& n, NDArray& x, NDArray& outp
   BUILD_SINGLE_SELECTOR(x.dataType(), polyGamma_, (context, n, x, output), SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void polyGamma_,
+BUILD_SINGLE_TEMPLATE( void polyGamma_,
                       (sd::LaunchContext * context, NDArray& n, NDArray& x, NDArray& output),
                       SD_FLOAT_TYPES);
 

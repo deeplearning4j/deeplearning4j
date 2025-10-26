@@ -42,7 +42,7 @@ void sequenceMask(sd::LaunchContext* context, NDArray* input, NDArray* output, i
                         SD_INTEGER_TYPES, SD_COMMON_TYPES_EXTENDED);
 }
 
-BUILD_DOUBLE_TEMPLATE(template void sequenceMask_, (NDArray * input, NDArray* output, int maxIndex), SD_INTEGER_TYPES,
+BUILD_DOUBLE_TEMPLATE( void sequenceMask_, (NDArray * input, NDArray* output, int maxIndex), SD_INTEGER_TYPES,
                       SD_COMMON_TYPES_EXTENDED);
 }  // namespace helpers
 }  // namespace ops

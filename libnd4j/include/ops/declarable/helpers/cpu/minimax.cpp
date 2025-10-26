@@ -158,9 +158,9 @@ void maximumBPFunctor(LaunchContext* context, NDArray* x, NDArray* y, NDArray* e
                       NDArray* gradY) {
   BUILD_SINGLE_SELECTOR(x->dataType(), maximumBPFunctor_, (context, x, y, epsNext, gradX, gradY), SD_NUMERIC_TYPES);
 }
-BUILD_SINGLE_TEMPLATE(template void minimumBPFunctor_,
+BUILD_SINGLE_TEMPLATE( void minimumBPFunctor_,
                       (LaunchContext* context, NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY), SD_NUMERIC_TYPES);
-BUILD_SINGLE_TEMPLATE(template void maximumBPFunctor_,
+BUILD_SINGLE_TEMPLATE( void maximumBPFunctor_,
                       (LaunchContext* context, NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY), SD_NUMERIC_TYPES);
 
 }  // namespace helpers

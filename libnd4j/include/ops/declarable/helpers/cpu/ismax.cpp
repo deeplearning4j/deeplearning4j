@@ -36,7 +36,7 @@ static void ismax_(NDArray* input, NDArray* output, const std::vector<LongType>&
     int dimensionsLength = dimensions.size();
     int length = input->lengthOf();
     if (!dimensions.empty() && (input->shapeOf())[dimensions[0]] == 1) {
-      for (int i = 0; i < length; i++) output->p<Z>(i, 1);
+      for (int i = 0; i < length; i++) output->p<Z>(i, static_cast<Z>(1));
     } else {
       int maxIdx = 0;
       auto currMax = input->e<X>(0);
@@ -46,7 +46,7 @@ static void ismax_(NDArray* input, NDArray* output, const std::vector<LongType>&
             currMax = input->e<X>(i);
             maxIdx = i;
           }
-          output->p<Z>(i, 0);
+          output->p<Z>(i, static_cast<Z>(0));
         }
       } else {
         {
@@ -58,7 +58,7 @@ static void ismax_(NDArray* input, NDArray* output, const std::vector<LongType>&
               currMaxLocal = input->e<X>(i);
               maxIdxLocal = i;
             }
-            output->p<Z>(i, 0);
+            output->p<Z>(i, static_cast<Z>(0));
           }
 
           PRAGMA_OMP_CRITICAL {
@@ -69,7 +69,7 @@ static void ismax_(NDArray* input, NDArray* output, const std::vector<LongType>&
           }
         }
       }
-      output->p<Z>(maxIdx, 1);
+      output->p<Z>(maxIdx, static_cast<Z>(1));
     }
   } else {
     int dimensionsLength = dimensions.size();

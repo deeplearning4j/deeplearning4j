@@ -280,7 +280,7 @@ void mirrorPad(sd::LaunchContext* context, NDArray& input, NDArray& paddings, ND
   BUILD_SINGLE_SELECTOR(input.dataType(), mirrorPad_, (input, paddings, output, mode), SD_COMMON_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void mirrorPad_,
+BUILD_SINGLE_TEMPLATE( void mirrorPad_,
                       (NDArray& input, NDArray& paddings, NDArray& output, const int mode),
                       SD_COMMON_TYPES);
 

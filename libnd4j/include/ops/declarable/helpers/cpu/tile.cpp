@@ -65,7 +65,7 @@ void tileBP(LaunchContext* context, NDArray gradO /*input*/, NDArray& gradI /*ou
   BUILD_SINGLE_SELECTOR(gradI.dataType(), tileBP_, (gradO, gradI, reps), SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void tileBP_,
+BUILD_SINGLE_TEMPLATE( void tileBP_,
                       (NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<sd::LongType> reps),
                       SD_FLOAT_TYPES);
 

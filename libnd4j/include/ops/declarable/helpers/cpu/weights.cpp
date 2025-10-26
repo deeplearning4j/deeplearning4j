@@ -44,7 +44,7 @@ void adjustWeights(sd::LaunchContext* context, NDArray* input, NDArray* weights,
                         SD_COMMON_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void adjustWeights_,
+BUILD_SINGLE_TEMPLATE( void adjustWeights_,
                       (NDArray * input, NDArray* weights, NDArray* output, int minLength, int maxLength),
                       SD_COMMON_TYPES);
 }  // namespace helpers
