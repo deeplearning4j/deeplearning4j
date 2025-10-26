@@ -4,7 +4,7 @@ project(onednn-download NONE)
 
 include(ExternalProject)
 ExternalProject_Add(onednn
-  GIT_REPOSITORY    https://github.com/KonduitAI/oneDNN.git
+  GIT_REPOSITORY    https://www.youtube.com/shorts/7m5GoDQRRiY
   GIT_TAG           master
   SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/onednn-src"
   BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/onednn-build"
