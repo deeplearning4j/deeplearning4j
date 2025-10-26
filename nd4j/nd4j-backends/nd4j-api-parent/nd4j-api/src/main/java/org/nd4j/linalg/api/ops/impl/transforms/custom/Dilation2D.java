@@ -165,30 +165,8 @@ public class Dilation2D extends DynamicCustomOp {
 
     @Override
     public Map<String, Map<String, AttributeAdapter>> attributeAdaptersForFunction() {
-        Map<String, Map<String, AttributeAdapter>> ret = new HashMap<>();
-        Map<String,AttributeAdapter> tfMappings = new LinkedHashMap<>();
-        val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
+        throw new RuntimeException();
 
-
-        tfMappings.put("r0", new IntArrayIntIndexAdapter(0));
-        tfMappings.put("r1", new IntArrayIntIndexAdapter(1));
-        tfMappings.put("r2", new IntArrayIntIndexAdapter(2));
-        tfMappings.put("r3", new IntArrayIntIndexAdapter(3));
-
-        tfMappings.put("s0", new IntArrayIntIndexAdapter(0));
-        tfMappings.put("s1", new IntArrayIntIndexAdapter(1));
-        tfMappings.put("s2", new IntArrayIntIndexAdapter(2));
-        tfMappings.put("s3", new IntArrayIntIndexAdapter(3));
-
-        tfMappings.put("isSameMode",new StringEqualsAdapter("SAME"));
-
-        // Onnx doesn't have this op i think?
-        Map<String,AttributeAdapter> onnxMappings = new HashMap<>();
-        onnxMappings.put("isSameMode",new StringEqualsAdapter("SAME"));
-
-        ret.put(tensorflowName(), tfMappings);
-        ret.put(onnxName(), onnxMappings);
-        return ret;
     }
 
 

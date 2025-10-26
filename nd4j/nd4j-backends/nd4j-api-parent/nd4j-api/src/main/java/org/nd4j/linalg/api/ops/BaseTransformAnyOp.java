@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -112,9 +113,9 @@ public abstract class BaseTransformAnyOp extends BaseTransformOp implements Tran
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         //Transform any: for the purposes of samediff datatype calculation, treat as same in/out
         Preconditions.checkState(dataTypes != null && dataTypes.size() >= 1, "Expected at least 1 input datatype for %s, got input %s", getClass(), dataTypes);
-        return dataTypes;
+        return Arrays.asList(dataTypes.get(0));
     }
 }
