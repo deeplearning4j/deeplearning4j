@@ -74,9 +74,12 @@ jobs:
         with:
           java-version: 11
           distribution: 'temurin'
-          server-id: 'central'
-          server-username: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
-          server-password: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+          server-id: ${{ github.event.inputs.serverId }}
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+          cache: 'maven'
         
         
 
@@ -84,13 +87,13 @@ jobs:
       - name: Build on  linux-x86_64
         shell: bash
         env:
-          MAVEN_GPG_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           DEBIAN_FRONTEND: noninteractive
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_TO: central
           MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
           PERFORM_RELEASE: ${{ github.event.inputs.deployToReleaseStaging }}
           RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
@@ -115,7 +118,7 @@ jobs:
           protoc --version
           sudo apt-get autoremove
           sudo apt-get clean
-          command="mvn   -Possrh -pl !:nd4j-native,!libnd4j,!:nd4j-native-preset,!:nd4j-native-platform  -DskipTestResourceEnforcement=true -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu --batch-mode deploy -DskipTests"
+          command="mvn   -Possrh -pl !:blas-lapack-generator,!:libnd4j-gen  -DskipTestResourceEnforcement=true -Djavacpp.platform=linux-x86_64 --batch-mode deploy -DskipTests"
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     echo "Performing release"
                     bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
@@ -124,7 +127,6 @@ jobs:
                        eval "$command"
           fi
 
-          bash ./change-spark-versions.sh 3.1.2
 
           if [ "$PERFORM_RELEASE" == 1 ]; then
                         echo "Performing release"
