@@ -70,8 +70,8 @@ CUSTOM_OP_IMPL(resize_area, 1, 1, false, 0, -2) {
 
   auto source =
       inRank == 4
-          ? image->reshape(image->ordering(), imageShape1)
-          : image->reshape(image->ordering(), imageShape2);
+      ? image->reshape(image->ordering(), imageShape1)
+      : image->reshape(image->ordering(), imageShape2);
 
 
   std::vector<sd::LongType> outputShape1 = {output->sizeAt(0), output->sizeAt(1), output->sizeAt(2),output->sizeAt(3)};
@@ -79,11 +79,14 @@ CUSTOM_OP_IMPL(resize_area, 1, 1, false, 0, -2) {
 
   auto target =
       inRank == 4
-          ? output->reshape(output->ordering(),
-                            outputShape1, false)
-          : output->reshape(output->ordering(), outputShape2, false);
+      ? output->reshape(output->ordering(),
+                        outputShape1, false)
+      : output->reshape(output->ordering(), outputShape2, false);
 
-  return helpers::resizeAreaFunctor(block.launchContext(), &source, width, height, alignCorners, &target);
+  auto ret =  helpers::resizeAreaFunctor(block.launchContext(), source, width, height, alignCorners, target);
+  delete source;
+  delete target;
+  return ret;
 }
 
 DECLARE_SHAPE_FN(resize_area) {

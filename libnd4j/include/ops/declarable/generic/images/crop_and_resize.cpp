@@ -86,12 +86,10 @@ DECLARE_SHAPE_FN(crop_and_resize) {
 DECLARE_TYPES(crop_and_resize) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
-          //                    ->setAllowedInputTypes(1, {ALL_FLOATS})
       ->setAllowedInputTypes(1, {ALL_INTS, ALL_FLOATS})
       ->setAllowedInputTypes(2, {ALL_INTS})
       ->setAllowedInputTypes(3, {ALL_INTS})
       ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});  // as TF
-  //                    ->setAllowedOutputTypes({ALL_FLOATS});
 }
 }  // namespace ops
 }  // namespace sd

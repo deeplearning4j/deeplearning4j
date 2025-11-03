@@ -77,10 +77,10 @@ CUSTOM_OP_IMPL(resize_nearest_neighbor, 1, 1, false, 0, -2) {
 
   std::vector<sd::LongType> imageShape = {image->sizeAt(0), image->sizeAt(1), image->sizeAt(2)};
   auto source = inRank == 4
-                    ? *image
+                    ? image
                     : image->reshape(image->ordering(), imageShape);
   std::vector<sd::LongType> outputShape = {1, output->sizeAt(0), output->sizeAt(1),output->sizeAt(2)};
-  auto target = inRank == 4 ? *output
+  auto target = inRank == 4 ? output
                             : output->reshape(output->ordering(),
                                               outputShape, false);
 
@@ -92,8 +92,12 @@ CUSTOM_OP_IMPL(resize_nearest_neighbor, 1, 1, false, 0, -2) {
                                                        ? helpers::CoordinateTransformationMode::HALF_PIXEL_NN
                                                        : helpers::CoordinateTransformationMode::ASYMMETRIC;
 
-  return resizeNeighborFunctor(block.launchContext(), inRank == 4 ? image : &source, width, height, coorMode,
-                                        nearestMode, alignCorners, inRank == 4 ? output : &target);
+  auto ret =  resizeNeighborFunctor(block.launchContext(), inRank == 4 ? image : source, width, height, coorMode,
+                                        nearestMode, alignCorners, inRank == 4 ? output : target);
+  delete source;
+  delete target;
+  return ret;
+
 }
 
 DECLARE_SHAPE_FN(resize_nearest_neighbor) {
