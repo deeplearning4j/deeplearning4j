@@ -68,7 +68,7 @@ class SD_LIB_HIDDEN ReduceSameFunction {
   static SD_HOST void intermediateScalar(dim3 launchDims, cudaStream_t *stream, void const *vx,
                                          sd::LongType const *xShapeInfo, sd::LongType const *hXShapeInfo,
                                          void *extraParams, void *vz, sd::LongType const *zShapeInfo,
-                                         sd::LongType const *hZShapeInfo, long long int *dimension,
+                                         sd::LongType const *hZShapeInfo, sd::LongType *dimension,
                                          sd::LongType dimensionLength,
                                          void *reductionBuffer, sd::LongType const *tadOnlyShapeInfo);
 
@@ -77,19 +77,19 @@ class SD_LIB_HIDDEN ReduceSameFunction {
                                      const sd::LongType *dXShapeInfo, const sd::LongType *hXShapeInfo,
                                      void *extraParams, void *reductionBuffer, void *vz,
                                      const sd::LongType *dZShapeInfo, const sd::LongType *hZShapeInfo,
-                                     const long long int *dims);
+                                     const sd::LongType *dims);
 
   static SD_HOST void execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, void const *vx,
                                        sd::LongType const *xShapeInfo, sd::LongType const *hXShapeInfo,
                                        void *extraParams, void *vz, sd::LongType const *zShapeInfo,
-                                       sd::LongType const *hZShapeInfo, long long int *dimension,
+                                       sd::LongType const *hZShapeInfo, sd::LongType *dimension,
                                        sd::LongType dimensionLength,
                                        void *reductionBuffer, sd::LongType const *tadOnlyShapeInfo);
 
   static SD_HOST void execReduce(dim3 launchDims, cudaStream_t *stream, const int opNum, const void *vx,
                                    const sd::LongType *dXShapeInfo, const sd::LongType *hXShapeInfo, void *extraParams,
                                    void *reductionBuffer, void *vz, const sd::LongType *dZShapeInfo,
-                                   const sd::LongType *hZShapeInfo, const long long int *dims);
+                                   const sd::LongType *hZShapeInfo, const sd::LongType *dims);
 #else
 
   /**
