@@ -43,7 +43,7 @@ void diagFunctor(sd::LaunchContext* context, NDArray* input, NDArray* output) {
   BUILD_SINGLE_SELECTOR(xType, _diagFunctor, (input, output), SD_COMMON_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void _diagFunctor, (NDArray* input, NDArray* output);, SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE( void _diagFunctor, (NDArray* input, NDArray* output);, SD_COMMON_TYPES);
 
 void diagPartFunctor(sd::LaunchContext* context, NDArray * input, NDArray* output) {
   const int outLen = output->lengthOf();

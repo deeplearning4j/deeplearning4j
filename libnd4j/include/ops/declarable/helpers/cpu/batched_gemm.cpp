@@ -73,6 +73,9 @@ static void bgemm_( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std
                     NDArray *alphas,  NDArray *betas, int transA, int transB, int M, int N, int K,
                     int lda,  int ldb,  int ldc) {
   int batchSize = vA.size();
+
+
+  
   if (BlasHelper::getInstance().hasBatchedGEMM<T>() || !Environment::getInstance().isEnableBlas()) {
     auto arr = vA.at(0);
     CBLAS_TRANSPOSE *tA, *tB;
@@ -148,7 +151,7 @@ static void bgemm_( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std
         auto beta = betas->isScalar() ? betas->e<T>(0) : betas->e<T>(p);
         for (int m = 0; m < M; m++) {
           for (int n = 0; n < N; n++) {
-            T c_mnp = 0;
+            T c_mnp = static_cast<T>(0);
             PRAGMA_OMP_SIMD
             for (int k = 0; k < K; k++) {
               c_mnp += A[tA == CblasNoTrans ? (m + k * lda) : (m * lda + k)] *
@@ -173,7 +176,7 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
                         SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void bgemm_,
+BUILD_SINGLE_TEMPLATE( void bgemm_,
                       ( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector<NDArray *> &vC,
                           NDArray *alphas,  NDArray *betas, int transA, int transB, int M, int N, int K,
                           int lda,  int ldb,  int ldc),
