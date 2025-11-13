@@ -23,7 +23,15 @@ set(CUSTOMOPS_GENERIC_SOURCES "" CACHE INTERNAL "Template-generated source files
 set(CHUNK_TARGET_INSTANTIATIONS "5" CACHE STRING "Target template instantiations per chunk file (1-20)")
 set(CHUNK_MAX_INSTANTIATIONS "10" CACHE STRING "Maximum template instantiations per chunk file")
 set(USE_MULTI_PASS_GENERATION "ON" CACHE STRING "Use multi-pass generation (ON/OFF/AUTO)")
-set(MULTI_PASS_CHUNK_SIZE "20" CACHE STRING "Chunk size for direct instantiation files")
+
+# Reduce chunk size for call tracing builds to prevent OOM during compilation
+# Lifecycle tracking headers make each instantiation much more memory-intensive
+if(SD_GCC_FUNCTRACE)
+    set(MULTI_PASS_CHUNK_SIZE "5" CACHE STRING "Chunk size for direct instantiation files (reduced for call tracing)")
+    message(STATUS "⚠️  MULTI_PASS_CHUNK_SIZE reduced to 5 for call tracing build (prevents OOM)")
+else()
+    set(MULTI_PASS_CHUNK_SIZE "20" CACHE STRING "Chunk size for direct instantiation files")
+endif()
 
 # Enable selective rendering diagnostics in debug builds
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -201,36 +209,29 @@ endfunction()
 # ============================================================================
 
 function(configure_memory_chunking)
-    if(NOT CHUNK_TARGET_INSTANTIATIONS_SET)
+    # CLEAN BUILD FIX: Chunking configuration is now set in Options.cmake based on build flags
+    # This eliminates the need for CACHE FORCE which only worked for incremental builds
+    # For clean builds, the correct values are set FROM THE START in Options.cmake
+
+    # This function now only handles:
+    # 1. Validation of the configured values
+    # 2. AUTO mode for USE_MULTI_PASS_GENERATION
+
+    # Validate chunking configuration
+    message(STATUS "📊 Using chunking configuration: CHUNK_TARGET=${CHUNK_TARGET_INSTANTIATIONS}, MULTI_PASS=${MULTI_PASS_CHUNK_SIZE}")
+
+    # Handle USE_MULTI_PASS_GENERATION AUTO mode
+    if(USE_MULTI_PASS_GENERATION STREQUAL "AUTO")
         cmake_host_system_information(RESULT AVAILABLE_MEMORY QUERY AVAILABLE_PHYSICAL_MEMORY)
-        if(AVAILABLE_MEMORY LESS 4000)
-            set(CHUNK_TARGET_INSTANTIATIONS 3 PARENT_SCOPE)
-            set(MULTI_PASS_CHUNK_SIZE 25 PARENT_SCOPE)
-            message(STATUS "Low memory detected: Conservative chunking (chunks=3, direct=25)")
-        elseif(AVAILABLE_MEMORY LESS 8000)
-            set(CHUNK_TARGET_INSTANTIATIONS 6 PARENT_SCOPE)
-            set(MULTI_PASS_CHUNK_SIZE 35 PARENT_SCOPE)
-            message(STATUS "Medium memory detected: Moderate chunking (chunks=6, direct=35)")
-        elseif(AVAILABLE_MEMORY LESS 16000)
-            set(CHUNK_TARGET_INSTANTIATIONS 10 PARENT_SCOPE)
-            set(MULTI_PASS_CHUNK_SIZE 50 PARENT_SCOPE)
-            message(STATUS "High memory detected: Balanced chunking (chunks=10, direct=50)")
+        if(AVAILABLE_MEMORY LESS 3000 OR DEFINED ENV{CI})
+            set(USE_MULTI_PASS_GENERATION ON CACHE STRING "Use multi-pass generation" FORCE)
+            message(STATUS "Auto-detected low memory/CI: enabling multi-pass")
         else()
-            set(CHUNK_TARGET_INSTANTIATIONS 12 PARENT_SCOPE)
-            set(MULTI_PASS_CHUNK_SIZE 60 PARENT_SCOPE)
-            message(STATUS "Very high memory detected: Optimized chunking (chunks=12, direct=60)")
-        endif()
-        set(CHUNK_TARGET_INSTANTIATIONS_SET TRUE CACHE INTERNAL "Memory auto-detection completed")
-        
-        if(USE_MULTI_PASS_GENERATION STREQUAL "AUTO")
-            if(AVAILABLE_MEMORY LESS 3000 OR DEFINED ENV{CI})
-                set(USE_MULTI_PASS_GENERATION ON PARENT_SCOPE)
-                message(STATUS "Auto-detected low memory/CI: enabling multi-pass")
-            else()
-                set(USE_MULTI_PASS_GENERATION OFF PARENT_SCOPE)
-            endif()
+            set(USE_MULTI_PASS_GENERATION OFF CACHE STRING "Use multi-pass generation" FORCE)
         endif()
     endif()
+
+    set(CHUNK_TARGET_INSTANTIATIONS_SET TRUE CACHE INTERNAL "Memory auto-detection completed")
 endfunction()
 
 # ============================================================================
@@ -1234,15 +1235,16 @@ function(create_direct_instantiation_file template_file combinations output_dir 
     
     # Build file header
     set(file_header "")
+
     foreach(inc ${includes})
         string(APPEND file_header "${inc}\n")
     endforeach()
-    
+
     # Add extra includes for type conversions
     if(template_name MATCHES ".*specials_double.*")
         string(APPEND file_header "#include <loops/type_conversions.h>\n")
     endif()
-    
+
     string(APPEND file_header "\n// Direct instantiations - comprehensive type variant generation\n\n")
 
     # Setup type mapping
@@ -1337,6 +1339,7 @@ function(create_direct_instantiation_file template_file combinations output_dir 
             set(chunk_file "${output_dir}/${template_name}_direct_${chunk_index}.${file_extension}")
             file(WRITE "${chunk_file}" "${chunk_content}")
             list(APPEND local_generated_sources "${chunk_file}")
+
             set(chunk_content "${file_header}")
             set(instantiation_count 0)
             math(EXPR chunk_index "${chunk_index} + 1")
@@ -1345,11 +1348,17 @@ function(create_direct_instantiation_file template_file combinations output_dir 
     
     # Write remaining content
     if(instantiation_count GREATER 0)
-        set(chunk_file "${output_dir}/${template_name}_direct_final.${file_extension}")
+        # If call tracing is enabled, don't create huge "_final" files
+        # Instead, write them as regular chunks to prevent relocation overflow
+        if(SD_GCC_FUNCTRACE)
+            set(chunk_file "${output_dir}/${template_name}_direct_${chunk_index}.${file_extension}")
+        else()
+            set(chunk_file "${output_dir}/${template_name}_direct_final.${file_extension}")
+        endif()
         file(WRITE "${chunk_file}" "${chunk_content}")
         list(APPEND local_generated_sources "${chunk_file}")
     endif()
-    
+
     set(${generated_sources_var} ${local_generated_sources} PARENT_SCOPE)
     
     if(IS_CUDA_FILE)

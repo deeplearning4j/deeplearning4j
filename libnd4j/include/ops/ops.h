@@ -2468,22 +2468,22 @@ class MatchCondition {
       Z *reductionBuffer, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets) {}
 #endif
 
-  // Core reduction operation methods - these use Z* parameters
+  // Core reduction operation methods - these use X* parameters for reduce_long
   SD_HOST_DEVICE SD_INLINE static Z startingValue(const X* input) { return static_cast<Z>(0); }
-  SD_HOST_DEVICE SD_INLINE static InterType merge(InterType old, InterType opOutput, Z* extraParams) { return old + opOutput; }
-  SD_HOST_DEVICE SD_INLINE static InterType update(InterType old, InterType opOutput, Z* extraParams) { return old + opOutput; }
-  SD_HOST_DEVICE SD_INLINE static Z postProcess(InterType reduction, sd::LongType n, Z* extraParams) { return static_cast<Z>(reduction); }
+  SD_HOST_DEVICE SD_INLINE static InterType merge(InterType old, InterType opOutput, X* extraParams) { return old + opOutput; }
+  SD_HOST_DEVICE SD_INLINE static InterType update(InterType old, InterType opOutput, X* extraParams) { return old + opOutput; }
+  SD_HOST_DEVICE SD_INLINE static Z postProcess(InterType reduction, sd::LongType n, X* extraParams) { return static_cast<Z>(reduction); }
 
-  // Core op methods - these use Z* parameters
-  static SD_HOST_DEVICE SD_INLINE InterType op(X d1, Z* extraParams) {
+  // Core op methods - these use X* parameters for reduce_long to preserve comparison value types
+  static SD_HOST_DEVICE SD_INLINE InterType op(X d1, X* extraParams) {
     if (extraParams == nullptr) return static_cast<InterType>(0);
-    X compare = static_cast<X>(extraParams[0]);
-    X eps = static_cast<X>(extraParams[1]);
+    X compare = extraParams[0];
+    X eps = extraParams[1];
     auto mode = static_cast<int>(extraParams[2]);
     return static_cast<InterType>(op_logic(d1, compare, eps, mode));
   }
 
-  static SD_HOST_DEVICE SD_INLINE InterType op(X d1, X d2, Z* extraParams) {
+  static SD_HOST_DEVICE SD_INLINE InterType op(X d1, X d2, X* extraParams) {
     if (extraParams == nullptr) {
       // If no extraParams, use d2 as compare value, default eps=0, mode=0 (equals)
       return static_cast<InterType>(op_logic(d1, d2, static_cast<X>(0), 0));
@@ -2491,7 +2491,7 @@ class MatchCondition {
 
     // Use d2 as comparison value, extraParams for eps and mode
     X compare = d2;
-    X eps = static_cast<X>(extraParams[0]);
+    X eps = extraParams[0];
     auto mode = static_cast<int>(extraParams[1]);
     return static_cast<InterType>(op_logic(d1, compare, eps, mode));
   }

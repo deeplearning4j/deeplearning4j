@@ -484,7 +484,11 @@ fi
 
 [[ -z ${MAKEJ:-} ]] && MAKEJ=4
 
-export MAKE_COMMAND="make -j${MAKEJ}"
+# Add load average limiting to prevent memory exhaustion
+# -l flag: only start new job if load average < limit
+# Load limit = 75% of available cores (24 for 32 cores)
+LOAD_LIMIT=$(($(nproc) * 3 / 4))
+export MAKE_COMMAND="make -j${MAKEJ} -l${LOAD_LIMIT}"
 export MAKE_ARGUMENTS=
 echo eval $CMAKE_COMMAND
 
@@ -526,7 +530,9 @@ CMAKE_ARGUMENTS="${CMAKE_ARGUMENTS:-}"
 PTXAS_INFO="${PTXAS_INFO:-OFF}"
 BUILD_PPSTEP="${BUILD_PPSTEP:-OFF}"
 EXTRACT_INSTANTIATIONS="${EXTRACT_INSTANTIATIONS:-OFF}"
+CMAKE_ONLY="${CMAKE_ONLY:-OFF}"
 COMPILER="${COMPILER:-}"
+BUILD_WITH_JAVA="${BUILD_WITH_JAVA:-ON}"
 
 
 # Type validation specific variables
@@ -733,6 +739,11 @@ do
             ;;
         --ppstep|--build-ppstep)
             BUILD_PPSTEP="$value"
+            shift # past argument
+            ;;
+        --cmake-only|--configure-only)
+            CMAKE_ONLY="$value"
+            print_colored "blue" "✓ CMake-only mode enabled - will exit after configuration"
             shift # past argument
             ;;
         --default)
@@ -1424,6 +1435,7 @@ if [ "$PREPROCESS" == "ON" ]; then
             "$NAME_ARG" \
             "$OP_OUTPUT_FILE_ARG" \
             -DSD_SANITIZE="${SANITIZE}" \
+            -DSD_BUILD_WITH_JAVA="${BUILD_WITH_JAVA}" \
             "$USE_LTO" \
             "$HELPERS" \
             "$SHARED_LIBS_ARG" \
@@ -1447,6 +1459,7 @@ if [ "$PREPROCESS" == "ON" ]; then
             "$NAME_ARG" \
             "$OP_OUTPUT_FILE_ARG" \
             -DSD_SANITIZE="${SANITIZE}" \
+            -DSD_BUILD_WITH_JAVA="${BUILD_WITH_JAVA}" \
             "$USE_LTO" \
             "$HELPERS" \
             "$SHARED_LIBS_ARG" \
@@ -1481,6 +1494,7 @@ if [ "$LOG_OUTPUT" == "none" ]; then
         "$OP_OUTPUT_FILE_ARG" \
         -DSD_SANITIZE="${SANITIZE}" \
         -DSD_CHECK_VECTORIZATION="${CHECK_VECTORIZATION}" \
+        -DSD_BUILD_WITH_JAVA="${BUILD_WITH_JAVA}" \
         "$USE_LTO" \
         "$HELPERS" \
         "$SHARED_LIBS_ARG" \
@@ -1511,6 +1525,7 @@ else
         "$OP_OUTPUT_FILE_ARG" \
         -DSD_SANITIZE="${SANITIZE}" \
         -DSD_CHECK_VECTORIZATION="${CHECK_VECTORIZATION}" \
+        -DSD_BUILD_WITH_JAVA="${BUILD_WITH_JAVA}" \
         "$USE_LTO" \
         "$HELPERS" \
         "$SHARED_LIBS_ARG" \
@@ -1560,6 +1575,23 @@ if [[ "$EXTRACT_INSTANTIATIONS" == "ON" ]]; then
     exit 0
 fi
 
+# Exit if cmake-only mode is enabled
+if [ "$CMAKE_ONLY" == "ON" ]; then
+    print_colored "green" "✅ CMake configuration completed - exiting without build"
+    print_colored "cyan" "=== CMAKE CONFIGURATION SUMMARY ==="
+    print_colored "cyan" "Build directory: $(pwd)"
+    print_colored "cyan" "To inspect CMake cache: cmake -L"
+    print_colored "cyan" "To inspect specific values: cmake -LA | grep <pattern>"
+    print_colored "cyan" "To run build manually: $MAKE_COMMAND"
+    echo
+    print_colored "yellow" "NEXT STEPS FOR SMOKE TEST:"
+    print_colored "yellow" "1. Check CMake cache: cd blasbuild/${CHIP} && cmake -LA"
+    print_colored "yellow" "2. Verify type configuration: grep 'SD_TYPES_LIST\\|SD_SELECTIVE_TYPES' CMakeCache.txt"
+    print_colored "yellow" "3. Check selective rendering: cat include/system/selective_rendering.h | head -50"
+    print_colored "yellow" "4. If values look correct, run build: cd ../.. && ./buildnativeoperations.sh"
+    echo
+    exit 0
+fi
 
 
 # =============================================================================

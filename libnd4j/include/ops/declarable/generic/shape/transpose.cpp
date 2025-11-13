@@ -53,7 +53,10 @@ CUSTOM_OP_IMPL(transpose, 1, 1, false, 0, 0) {
   if (permutationVector.size() == 0) {
     NDArray *t = x->transpose();
     z->assign(t);
-    delete t;
+    // FIXED: transpose() returns a view - only delete if not a view
+    if (t != nullptr && !t->isView()) {
+      delete t;
+    }
     if (castedPermute != nullptr) delete castedPermute;
     return Status::OK;
   }

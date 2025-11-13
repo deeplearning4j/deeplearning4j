@@ -788,7 +788,10 @@ CUSTOM_OP_IMPL(strided_slice_bp, 2, 1, false, 0, 5) {
   } else {  // else for other cases
     auto sub = (*output)(indices, true, true);
     sub->assign(epsNext);
-    delete sub;
+    // FIXED: operator() returns a view - only delete if not a view
+    if (sub != nullptr && !sub->isView()) {
+      delete sub;
+    }
   }
 
   return Status::OK;

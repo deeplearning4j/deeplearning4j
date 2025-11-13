@@ -5666,6 +5666,33 @@ public class Nd4j {
     }
 
     /**
+     * Clear the TAD (Tensor Along Dimension) cache to free memory.
+     * <p>
+     * The TAD cache stores dimension-based tensor slices to avoid recomputation.
+     * During long-running operations or when processing multiple graphs, this cache
+     * can accumulate significant memory. Call this method periodically to release
+     * cached TAD packs that are no longer needed.
+     * </p>
+     * <p>
+     * This is safe to call at any time. It will clear all cached TAD packs for all devices.
+     * The cache will be repopulated automatically as needed for subsequent operations.
+     * </p>
+     * <p>
+     * <b>Recommended usage:</b> Call after completing a batch of inferences or after
+     * processing a SameDiff graph to prevent memory accumulation.
+     * </p>
+     *
+     * @since 1.0.0-SNAPSHOT
+     */
+    public static void clearTADCache() {
+        try {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().clearTADCache();
+        } catch (Exception e) {
+            log.warn("Failed to clear TAD cache", e);
+        }
+    }
+
+    /**
      * This method returns WorkspaceManager implementation to be used within this JVM process
      *
      * @return WorkspaceManager

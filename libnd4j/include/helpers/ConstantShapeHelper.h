@@ -49,7 +49,7 @@ class SD_LIB_EXPORT ConstantShapeHelper {
                                                                LongType* minShapeInfo,
                                                                memory::Workspace* workspace = nullptr,
                                                                const std::vector<LongType>& dimensions = {});
-  ConstantShapeBuffer* createShapeInfoWithNoUnitiesForReduce( LongType* maxShapeInfo,
+  ConstantShapeBuffer* createShapeInfoWithNoUnitiesForReduce( const LongType* maxShapeInfo,
                                                               const std::vector<LongType>* dimsWithUnities,
                                                               memory::Workspace* workspace = nullptr);
 
@@ -136,6 +136,51 @@ class SD_LIB_EXPORT ConstantShapeHelper {
   LongType* emptyShapeInfoWithShape(const DataType dataType, std::vector<LongType>& shape);
   ConstantShapeBuffer* createConstBuffFromExisting(sd::LongType* shapeInfo);
   ConstantShapeBuffer* createSubArrShapeInfo(LongType* shapeInfo, LongType* dims, LongType rank);
+
+  /**
+   * Clears all cached shape buffers to prevent memory leaks.
+   * This is called during application shutdown to free accumulated cache memory.
+   */
+  void clearCache();
+
+  /**
+   * Get the total number of cached shape entries.
+   *
+   * @return Total number of cached shape buffers across all stripes
+   */
+  LongType getCachedEntries() const;
+
+  /**
+   * Get the total memory used by cached shape buffers in bytes.
+   * This includes the shape_info buffer sizes across all cached entries.
+   *
+   * @return Total memory used in bytes
+   */
+  LongType getCachedBytes() const;
+
+  /**
+   * Get the peak number of entries that were cached simultaneously.
+   *
+   * @return Peak number of cached entries
+   */
+  LongType getPeakCachedEntries() const;
+
+  /**
+   * Get the peak memory usage by cached shape buffers in bytes.
+   *
+   * @return Peak memory usage in bytes
+   */
+  LongType getPeakCachedBytes() const;
+
+  /**
+   * Generate a human-readable string representation of the shape cache.
+   * Shows the trie structure with cached shape buffers for debugging.
+   *
+   * @param maxDepth Maximum depth to traverse (default: 10, -1 for unlimited)
+   * @param maxEntries Maximum number of entries to show (default: 100, -1 for unlimited)
+   * @return String representation of the cache
+   */
+  std::string toString(int maxDepth = 10, int maxEntries = 100) const;
 };
 }  // namespace sd
 

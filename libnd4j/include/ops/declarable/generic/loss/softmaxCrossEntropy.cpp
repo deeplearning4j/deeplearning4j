@@ -68,7 +68,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 
   // If label_smoothing is nonzero, smooth the labels towards 1/num_classes: new_onehot_labels = onehot_labels * (1 -
   // label_smoothing) + label_smoothing / num_classes num_classes = labels->sizeAt(1)
-  NDArray* cLabels = new NDArray(labels->cast(weights->dataType()));
+  NDArray* cLabels = labels->cast(weights->dataType());  // cast() already returns NDArray*
   NDArray* newLabels = cLabels;
   if (labelsSmoothing != 0.) {
     newLabels = new NDArray(cLabels);
@@ -282,7 +282,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
 
   // If label_smoothing is nonzero, smooth the labels towards 1/num_classes: new_onehot_labels = onehot_labels * (1 -
   // label_smoothing) + label_smoothing / num_classes num_classes = labels->sizeAt(1)
-  NDArray* cLabels = new NDArray(labels->cast(weights->dataType()));
+  NDArray* cLabels = labels->cast(weights->dataType());  // cast() already returns NDArray*
   NDArray* newLabels = cLabels;
   if (labelsSmoothing != 0.) {
     newLabels = new NDArray(labels->shapeInfo(), dLdl->dataType(), false, block.launchContext());

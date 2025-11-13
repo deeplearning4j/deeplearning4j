@@ -340,7 +340,7 @@ void _printHostBuffer(DataBuffer* buffer, long offset) {
 }
 void DataBuffer::printHostDevice(long offset) {
   auto xType = getDataType();
-  BUILD_SINGLE_SELECTOR(xType, _printHostBuffer,(this,offset),SD_COMMON_TYPES_ALL);
+  BUILD_SINGLE_SELECTOR(xType, _printHostBuffer,(this,offset),SD_COMMON_TYPES);
 
 }
 
@@ -355,7 +355,7 @@ void* DataBuffer::primaryAtOffset(const LongType offset) {
 }
 
 #define PRIMARYOFFSET(T) template void* DataBuffer::primaryAtOffset<GET_SECOND(T)>(const LongType offset);
-ITERATE_LIST((SD_COMMON_TYPES_ALL),PRIMARYOFFSET)
+ITERATE_LIST((SD_COMMON_TYPES),PRIMARYOFFSET)
 
 template <typename T>
 void* DataBuffer::specialAtOffset(const LongType offset) {
@@ -366,5 +366,5 @@ void* DataBuffer::specialAtOffset(const LongType offset) {
 }
 
 #define SPECIALOFFSET(T) template void* DataBuffer::specialAtOffset<GET_SECOND(T)>(const LongType offset);
-ITERATE_LIST((SD_COMMON_TYPES_ALL),SPECIALOFFSET)
+ITERATE_LIST((SD_COMMON_TYPES),SPECIALOFFSET)
 }  // namespace sd

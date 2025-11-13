@@ -46,7 +46,15 @@ CUSTOM_OP_IMPL(sufficient_statistics, 2, 3, false, 0, 0) {
   dataCount->assign(count);
   if (block.numT() > 0) {
     auto shift = OUTPUT_VARIABLE(3);
-    shift->assign(T_ARG(0));
+#ifdef HAS_DOUBLE
+    double shiftValue = static_cast<double>(T_ARG(0));
+    shift->assign(shiftValue);
+#elif defined(HAS_FLOAT32)
+    float shiftValue = static_cast<float>(T_ARG(0));
+    shift->assign(shiftValue);
+#else
+#error "No floating-point type available for sufficient_statistics operation"
+#endif
   }
 
   delete count;

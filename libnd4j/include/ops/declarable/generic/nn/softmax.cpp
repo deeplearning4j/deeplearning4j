@@ -77,10 +77,13 @@ CONFIGURABLE_OP_IMPL(softmax_bp, 3, 1, true, 0, 0) {
   // Reduce along dimension - returns pointer
   auto* sumAlongDim = temp->reduceAlongDimension(reduce::Sum, &dimVector, true);
   delete temp;
-  
+
   // Compute gradO - sumAlongDim - returns pointer
   auto* diff = (*gradO) - (*sumAlongDim);
-  delete sumAlongDim;
+  // FIXED: Add defensive check - reduceAlongDimension may return view
+  if (sumAlongDim != nullptr && !sumAlongDim->isView()) {
+    delete sumAlongDim;
+  }
   
   // Compute final result: gradI * diff - returns pointer
   auto* result = (*gradI) * (*diff);

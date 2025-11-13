@@ -70,7 +70,7 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
   //----- calculation of output -----//
   auto ctx = block.launchContext();
 
-
+  NDArray *inputNchw = nullptr;  // Track NHWC permutation for cleanup
   NDArray *zeroVal =  NDArrayFactory::create(0.f, input->getContext());
   if (isNCHW) {
     helpers::im2col(*ctx, *input, *colP, kH, kW, sH, sW, pH, pW, dH, dW,
@@ -78,12 +78,14 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
   } else {
     std::vector<sd::LongType> permute = {0, 3, 1, 2};
     // For NHWC, we need to permute the input to NCHW before im2col
-    NDArray* inputNchw = input->permute(permute, false,false);
+    inputNchw = input->permute(permute, false,false);
     helpers::im2col(*ctx, *inputNchw, *colP, kH, kW, sH, sW, pH, pW, dH, dW,
                     *zeroVal);
   }
 
   delete zeroVal;
+  delete colPFrom;  // View wrapper from permute - no longer needed
+  delete col;       // Original col array - no longer needed
   block.pushIntermediateResult(colP);
 
   std::vector<sd::LongType> shape = {bS * oH * oW, kH * kW * iC};
@@ -99,18 +101,35 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
   NDArray *reshapedWAddr = reshapedW;
   MmulHelper::matmul(colpPReshapedAddr, reshapedWAddr, &mmulResult, false, false, 1.0, 0.0);
 
+  // Clean up after matmul
+  delete colReshaped;
+  delete weightsPermuted;
+  delete reshapedW;
+
   std::vector<sd::LongType>lastShape = {oH,oW,bS,oC};
   NDArray *reshaped = mmulResult.reshape('f', lastShape, false);
   std::vector<sd::LongType> permute2 = {2,3,1,0};
   NDArray *permuted = reshaped->permute(permute2, false, false);
 
+  // Clean up reshaped after permute
+  delete reshaped;
+
   // Reshape and copy result to output
   if (isNCHW) {
     output->assign(permuted);
+    delete permuted;
   } else {
     std::vector<sd::LongType> perm3 = {0,2,3,1};
+    NDArray *oldPermuted = permuted;  // Save old pointer before reassignment
     permuted = permuted->permute(perm3, false, false);
     output->assign(permuted);
+    delete oldPermuted;  // Delete the first permutation
+    delete permuted;     // Delete the second permutation
+  }
+
+  // Clean up NHWC permutation if it was created
+  if (inputNchw != nullptr) {
+    delete inputNchw;
   }
 
   //----- add biases if required -----//

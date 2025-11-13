@@ -119,8 +119,12 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     auto xTiled = NDArray(dLdz, false, block.launchContext());
     x->tile(xTiled);
     std::vector<LongType> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), dLdz->shapeInfo());
-    NDArray *dLdxTemp = (*y * *dLdz)->reduceAlongDimension(reduce::Sum, &axesForX);
+    // FIXED: Clean up intermediate result from operator*
+    NDArray *yMulDldz = (*y) * (*dLdz);
+    NDArray *dLdxTemp = yMulDldz->reduceAlongDimension(reduce::Sum, &axesForX);
     dLdx->assign(dLdxTemp);
+    delete yMulDldz;
+    delete dLdxTemp;
     xTiled.applyPairwiseTransform(pairwise::Multiply, dLdz, dLdy);
   } else {
     auto xTiled = NDArray(dLdz, false, block.launchContext());
@@ -138,8 +142,12 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     delete dLdxTemp;
 
     // For dLdy
-    NDArray *dLdyTemp = (*x * *dLdz)->reduceAlongDimension(reduce::Sum, &axesForY);
+    // FIXED: Clean up intermediate result from operator*
+    NDArray *xMulDldz = (*x) * (*dLdz);
+    NDArray *dLdyTemp = xMulDldz->reduceAlongDimension(reduce::Sum, &axesForY);
     dLdy->assign(dLdyTemp);
+    delete xMulDldz;
+    delete dLdyTemp;
   }
 
   return Status::OK;

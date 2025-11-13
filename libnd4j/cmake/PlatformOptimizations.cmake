@@ -65,11 +65,13 @@ endfunction()
 
 # Function to configure memory model based on architecture
 function(configure_memory_model)
-    # Use large memory model (required for template scale) - FIXED: Only for x86-64, not ARM
+    # Memory model is now configured in CompilerFlags.cmake to avoid conflicts
+    # (Sanitizer builds use -mcmodel=large, non-sanitizer builds use -mcmodel=medium)
     if(SD_X86_BUILD AND NOT WIN32)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=medium -fPIC" PARENT_SCOPE)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcmodel=medium" PARENT_SCOPE)
-        message(STATUS "Applied large memory model for x86-64 architecture")
+        # Removed: -mcmodel setting now in CompilerFlags.cmake only
+        # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=medium -fPIC" PARENT_SCOPE)
+        # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcmodel=medium" PARENT_SCOPE)
+        message(STATUS "Memory model configuration deferred to CompilerFlags.cmake")
     else()
         if(SD_ARM_BUILD OR SD_ANDROID_BUILD)
             message(STATUS "Skipping large memory model for ARM/Android architecture (not supported)")

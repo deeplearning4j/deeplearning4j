@@ -143,9 +143,11 @@ static NDArray lup_(LaunchContext* context, NDArray* input, NDArray* compound, N
   const sd::LongType rowNum = input->rows();
   const sd::LongType columnNum = input->columns();
 
-  NDArray *determinant = NDArrayFactory::create<T>(static_cast<T>(1.f), context);
-  NDArray compoundMatrix = *input;                   // copy
-  NDArray permutationMatrix(input, false, context);  // has same shape as input and contiguous strides
+  // FIXED: Use stack allocation instead of heap to avoid memory leak
+  NDArray determinant(DataTypeUtils::fromT<T>(), context, true);  // scalar initialized to 0
+  determinant.p<T>(0, static_cast<T>(1.f));                       // set value to 1
+  NDArray compoundMatrix = *input;                                // copy
+  NDArray permutationMatrix(input, false, context);               // has same shape as input and contiguous strides
   permutationMatrix.setIdentity();
 
   T pivotValue;  // = T(0.0);
@@ -177,11 +179,10 @@ static NDArray lup_(LaunchContext* context, NDArray* input, NDArray* compound, N
   }
 
   for (sd::LongType e = 0; e < rowNum; e++) {
-    *determinant *= compoundMatrix.e<T>(e, e);
+    determinant.p<T>(0, determinant.e<T>(0) * compoundMatrix.e<T>(e, e));
   }
   if (swapCount % 2)  {
-    NDArray &deReffed = *determinant;
-    deReffed = -deReffed;
+    determinant.p<T>(0, -determinant.e<T>(0));
   }
   if (compound != nullptr) compound->assign(&compoundMatrix);
   if (permutation != nullptr) {
@@ -199,7 +200,7 @@ static NDArray lup_(LaunchContext* context, NDArray* input, NDArray* compound, N
       permutation->assign(permutaionVector);
     }
   }
-  return *determinant;
+  return determinant;  // FIXED: Return stack-allocated object instead of dereferencing pointer
 }
 
 BUILD_DOUBLE_TEMPLATE( NDArray lup_,
@@ -284,6 +285,7 @@ static void doolitleLU(LaunchContext* context, NDArray* compound, sd::LongType r
       compound->r<T>(k, i) = (input->t<T>(k, i) - sum) / compound->t<T>(i, i);
     }
   }
+  delete input;  // Clean up duped array
 }
 
 template <typename T, typename I>
@@ -612,6 +614,7 @@ sd::Status logdetFunctor_(LaunchContext* context, NDArray* input, NDArray* outpu
     for (sd::LongType i = 0; i < n; ++i)
       output->r<T>(e) += sd::math::sd_log<T, T>(sd::math::sd_pow<T, T, T>(matrices.at(e)->t<T>(i, i), T(2)));
   }
+  delete tempOutput;  // Clean up duped array
   return sd::Status::OK;
 }
 

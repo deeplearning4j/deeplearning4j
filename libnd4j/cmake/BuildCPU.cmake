@@ -65,6 +65,7 @@ target_link_libraries(${SD_LIBRARY_NAME} PUBLIC
         ${ARMCOMPUTE_LIBRARIES}
         ${OPENBLAS_LIBRARIES}
         ${BLAS_LIBRARIES}
+        ${JVM_LIBRARY}
         flatbuffers_interface
 )
 

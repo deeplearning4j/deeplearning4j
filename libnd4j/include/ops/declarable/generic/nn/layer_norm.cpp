@@ -61,7 +61,13 @@ CONFIGURABLE_OP_IMPL(layer_norm, 2, 1, false, 0, -1) {
   std::vector<NDArray *> outputs = {output};
   std::vector<double> targs = {};
   std::vector<bool> bargs = {};
-  standardizeOp.execute(inputs, outputs, targs, longAxis, bargs);
+  auto status = standardizeOp.execute(inputs, outputs, targs, longAxis, bargs);
+  if (status != sd::Status::OK) {
+    std::string errorMessage;
+    errorMessage += "LAYER_NORM OP: standardize operation failed with status ";
+    errorMessage += std::to_string(static_cast<int>(status));
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
 
   std::vector<sd::LongType> dimcVec = {dimC};
   output->applyBroadcast(sd::broadcast::Multiply, &dimcVec, gain, output);
@@ -116,7 +122,13 @@ CUSTOM_OP_IMPL(layer_norm_bp, 3, -1, false, 0, -1) {
   std::vector<double> targs = {};
   std::vector<bool> bargs = {};
 
-  standardizeOp.execute(inputs, outputs, targs, longAxis, bargs);
+  auto status = standardizeOp.execute(inputs, outputs, targs, longAxis, bargs);
+  if (status != sd::Status::OK) {
+    std::string errorMessage;
+    errorMessage += "LAYER_NORM_BP OP: standardize operation failed with status ";
+    errorMessage += std::to_string(static_cast<int>(status));
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
   standardized.applyPairwiseTransform(sd::pairwise::Multiply, eps, &standardized);
   std::vector<sd::LongType> dimCVector = {dimC};
   auto vec = ShapeUtils::evalDimsToExclude(input->rankOf(),1,dimCVector.data());
@@ -130,7 +142,14 @@ CUSTOM_OP_IMPL(layer_norm_bp, 3, -1, false, 0, -1) {
   auto dLdx_tmp = dLdx->dup();
   std::vector<NDArray *> standardizeBpArgs = {input, dLdx_tmp};
   std::vector<NDArray *> standardizeBpOut = {dLdx};
-  standardizeBp.execute(standardizeBpArgs, standardizeBpOut, targs, longAxis, bargs);
+  status = standardizeBp.execute(standardizeBpArgs, standardizeBpOut, targs, longAxis, bargs);
+  if (status != sd::Status::OK) {
+    delete dLdx_tmp;
+    std::string errorMessage;
+    errorMessage += "LAYER_NORM_BP OP: standardize_bp operation failed with status ";
+    errorMessage += std::to_string(static_cast<int>(status));
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
 
   delete dLdx_tmp;
 

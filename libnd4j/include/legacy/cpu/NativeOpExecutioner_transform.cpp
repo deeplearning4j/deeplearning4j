@@ -34,7 +34,7 @@ void NativeOpExecutioner::execTransformFloat(sd::LaunchContext *lc, int opNum, c
   auto func = PRAGMA_THREADS_DO {
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat,
                           ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads),
-                          SD_COMMON_TYPES_ALL, SD_FLOAT_TYPES);
+                          SD_COMMON_TYPES, SD_FLOAT_TYPES);
   };
 
   samediff::Threads::parallel_do(
@@ -53,7 +53,7 @@ void NativeOpExecutioner::execTransformBool(sd::LaunchContext *lc, int opNum, co
   auto func = PRAGMA_THREADS_DO {
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformBool,
                           ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads),
-                          SD_COMMON_TYPES_ALL, SD_BOOL_TYPES);
+                          SD_COMMON_TYPES, SD_BOOL_TYPES);
   };
 
   samediff::Threads::parallel_do(
@@ -103,7 +103,7 @@ void NativeOpExecutioner::execTransformSame(sd::LaunchContext *lc, int opNum, co
   auto func = PRAGMA_THREADS_DO {
     BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformSame,
                           ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads),
-                          SD_COMMON_TYPES_ALL);
+                          SD_COMMON_TYPES);
   };
 
   samediff::Threads::parallel_do(

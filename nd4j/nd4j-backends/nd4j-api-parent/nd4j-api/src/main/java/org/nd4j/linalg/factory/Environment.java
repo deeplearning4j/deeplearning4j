@@ -302,6 +302,136 @@ public interface Environment {
      */
     void setFuncTraceForAllocate(boolean reallyTrace);
 
+    /**
+     * Returns whether NDArray lifecycle tracking is enabled.
+     * When enabled (and libnd4j is compiled with SD_GCC_FUNCTRACE), tracks all NDArray
+     * allocations and deallocations with stack traces for leak detection.
+     * Automatically generates flamegraphs and leak reports at program exit.
+     *
+     * @return true if lifecycle tracking is enabled
+     */
+    boolean isLifecycleTracking();
+
+    /**
+     * Enable or disable NDArray lifecycle tracking.
+     * Requires libnd4j to be compiled with SD_GCC_FUNCTRACE.
+     * When enabled, tracks allocations/deallocations and generates leak reports.
+     *
+     * @param enabled true to enable tracking
+     */
+    void setLifecycleTracking(boolean enabled);
+
+    /**
+     * Returns whether view wrapper tracking is enabled.
+     * Views share the underlying buffer but create new NDArray objects.
+     * Tracking views can help identify wrapper leaks.
+     *
+     * @return true if view tracking is enabled
+     */
+    boolean isTrackViews();
+
+    /**
+     * Enable or disable tracking of view wrappers.
+     *
+     * @param track true to track views
+     */
+    void setTrackViews(boolean track);
+
+    /**
+     * Returns whether deletion stack trace tracking is enabled.
+     * Useful for analyzing where deallocations happen and generating deletion flamegraphs.
+     *
+     * @return true if deletion tracking is enabled
+     */
+    boolean isTrackDeletions();
+
+    /**
+     * Enable or disable deletion stack trace tracking.
+     *
+     * @param track true to track deletions
+     */
+    void setTrackDeletions(boolean track);
+
+    /**
+     * Returns the stack trace depth for lifecycle tracking.
+     * Deeper stacks provide more context but use more memory.
+     *
+     * @return stack depth (1-64), default 32
+     */
+    int getStackDepth();
+
+    /**
+     * Set the stack trace depth for allocation/deallocation tracking.
+     *
+     * @param depth stack depth (1-64)
+     */
+    void setStackDepth(int depth);
+
+    /**
+     * Returns the periodic report interval in seconds.
+     * The lifecycle tracker prints statistics to stderr at this interval.
+     *
+     * @return interval in seconds, default 300 (5 minutes)
+     */
+    int getReportInterval();
+
+    /**
+     * Set the periodic report interval.
+     *
+     * @param seconds interval in seconds
+     */
+    void setReportInterval(int seconds);
+
+    /**
+     * Returns the maximum number of deletion records to keep in history.
+     * Used for generating deletion flamegraphs.
+     *
+     * @return maximum deletion records, default 10000
+     */
+    long getMaxDeletionHistory();
+
+    /**
+     * Set the maximum deletion history size.
+     *
+     * @param max maximum records
+     */
+    void setMaxDeletionHistory(long max);
+
+    /**
+     * Returns whether periodic file-based snapshots are enabled.
+     * When enabled, lifecycle tracker writes timestamped snapshot files
+     * (not just stderr output) at each report interval.
+     * Files are named: ndarray_snapshot_pid<PID>_<timestamp>_<sequence>.txt
+     *
+     * @return true if file snapshots are enabled
+     */
+    boolean isSnapshotFiles();
+
+    /**
+     * Enable or disable periodic file-based snapshots.
+     * When enabled, snapshots are written to SD_LIFECYCLE_LOG_DIR (or /tmp if not set).
+     *
+     * @param enabled true to enable file snapshots
+     */
+    void setSnapshotFiles(boolean enabled);
+
+    /**
+     * Returns whether operation name tracking is enabled.
+     * When enabled, tracks which operations (Conv2D, MatMul, etc.) are leaking.
+     * Reports show top 20 leaking operations by memory.
+     *
+     * @return true if operation tracking is enabled
+     */
+    boolean isTrackOperations();
+
+    /**
+     * Enable or disable operation name tracking.
+     * Useful for identifying which operations contribute most to leaks.
+     *
+     * @param enabled true to enable operation tracking
+     */
+    void setTrackOperations(boolean enabled);
+
 
     /**
      * This method returns whether to delete cpu side (host side in gpu terms)

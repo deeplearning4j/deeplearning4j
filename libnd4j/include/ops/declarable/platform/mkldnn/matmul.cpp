@@ -60,24 +60,24 @@ static void matmulMKLDNN(NDArray* x, NDArray* y, NDArray* z, const bool transX, 
     permut[rank - 1] = rank - 2;
   }
 
-  NDArray* xT = (transX && xRank > 1) ? new NDArray(x->permute(permut, false, false)) : x;
-  NDArray* yT = (transY && yRank > 1) ? new NDArray(y->permute(permut, false, false)) : y;
+  NDArray* xT = (transX && xRank > 1) ? x->permute(permut, false, false) : x;  // permute() already returns NDArray*
+  NDArray* yT = (transY && yRank > 1) ? y->permute(permut, false, false) : y;
 
 
   std::vector<sd::LongType> shapeOne =  {xT->lengthOf() / (xT->sizeAt(-2) * xT->sizeAt(-1)),
                                         xT->sizeAt(-2), xT->sizeAt(-1)};
   NDArray* xTR =
       xRank <= 3 ? xT
-                 : new NDArray(xT->reshape(xT->ordering(),shapeOne));
+                 : xT->reshape(xT->ordering(),shapeOne);  // reshape() already returns NDArray*
  std::vector<sd::LongType> shapeTwo =  {yT->lengthOf() / (yT->sizeAt(-2) * yT->sizeAt(-1)),
                                         yT->sizeAt(-2), yT->sizeAt(-1)};
   NDArray* yTR =
       xRank <= 3 ? yT
-                 : new NDArray(yT->reshape(yT->ordering(),shapeTwo));
+                 : yT->reshape(yT->ordering(),shapeTwo);  // reshape() already returns NDArray*
   std::vector<sd::LongType> shapeThree = {z->lengthOf() / (z->sizeAt(-2) * z->sizeAt(-1)),
                                           z->sizeAt(-2), z->sizeAt(-1)};
   NDArray* zR = xRank <= 3 ? z
-                           : new NDArray(z->reshape(z->ordering(), shapeThree) /*, false*/);
+                           : z->reshape(z->ordering(), shapeThree);  // reshape() already returns NDArray*
 
   // [M,K] x [K,N] = [M,N]
   const sd::LongType M = (xRank > 1) ? xTR->sizeAt(-2) : 1;

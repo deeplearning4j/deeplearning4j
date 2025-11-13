@@ -42,7 +42,18 @@ public class NDNN {
    */
   public INDArray cReLU(INDArray x) {
     NDValidation.validateNumerical("CReLU", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CReLU(x))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CReLU(x));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -68,7 +79,18 @@ public class NDNN {
     NDValidation.validateNumerical("batchNorm", "gamma", gamma);
     NDValidation.validateNumerical("batchNorm", "beta", beta);
     Preconditions.checkArgument(axis.length >= 1, "axis has incorrect size/length. Expected: axis.length >= 1, got %s", axis.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.BatchNorm(input, mean, variance, gamma, beta, epsilon, axis))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.BatchNorm(input, mean, variance, gamma, beta, epsilon, axis));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -83,7 +105,18 @@ public class NDNN {
   public INDArray biasAdd(INDArray input, INDArray bias, boolean nchw) {
     NDValidation.validateNumerical("biasAdd", "input", input);
     NDValidation.validateNumerical("biasAdd", "bias", bias);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd(input, bias, nchw))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd(input, bias, nchw));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -123,7 +156,18 @@ public class NDNN {
     NDValidation.validateNumerical("dotProductAttention", "keys", keys);
     NDValidation.validateNumerical("dotProductAttention", "values", values);
     NDValidation.validateNumerical("dotProductAttention", "mask", mask);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttention(queries, keys, values, mask, scaled, false))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttention(queries, keys, values, mask, scaled, false));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -165,7 +209,18 @@ public class NDNN {
     NDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
     NDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
     NDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(queries, values, keys, queryMask, valueMask, scaleFactor, dropoutProbability, useCausalMask, training))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(queries, values, keys, queryMask, valueMask, scaleFactor, dropoutProbability, useCausalMask, training));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -179,7 +234,18 @@ public class NDNN {
    */
   public INDArray dropout(INDArray input, boolean inverted, int seed, double probabilityValue) {
     NDValidation.validateNumerical("dropout", "input", input);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.random.impl.CustomDropOut(input, inverted, seed, probabilityValue))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.random.impl.CustomDropOut(input, inverted, seed, probabilityValue));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -192,7 +258,18 @@ public class NDNN {
    */
   public INDArray dropout(INDArray input, boolean inverted, double probabilityValue) {
     NDValidation.validateNumerical("dropout", "input", input);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.random.impl.CustomDropOut(input, inverted, 0, probabilityValue))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.random.impl.CustomDropOut(input, inverted, 0, probabilityValue));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -208,7 +285,18 @@ public class NDNN {
    */
   public INDArray elu(INDArray x) {
     NDValidation.validateNumerical("elu", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.ELU(x))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.ELU(x));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -281,7 +369,18 @@ public class NDNN {
     NDValidation.validateNumerical("layerNorm", "gain", gain);
     NDValidation.validateNumerical("layerNorm", "bias", bias);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNorm(input, gain, bias, channelsFirst, dimensions))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNorm(input, gain, bias, channelsFirst, dimensions));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -300,7 +399,18 @@ public class NDNN {
     NDValidation.validateNumerical("layerNorm", "input", input);
     NDValidation.validateNumerical("layerNorm", "gain", gain);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNorm(input, gain, null, channelsFirst, dimensions))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNorm(input, gain, null, channelsFirst, dimensions));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -347,7 +457,18 @@ public class NDNN {
     NDValidation.validateNumerical("linear", "input", input);
     NDValidation.validateNumerical("linear", "weights", weights);
     NDValidation.validateNumerical("linear", "bias", bias);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB(input, weights, bias, transposeA, transposeB, transposeC))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB(input, weights, bias, transposeA, transposeB, transposeC));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -363,7 +484,18 @@ public class NDNN {
     NDValidation.validateNumerical("linear", "input", input);
     NDValidation.validateNumerical("linear", "weights", weights);
     NDValidation.validateNumerical("linear", "bias", bias);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB(input, weights, bias, false, false, false))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB(input, weights, bias, false, false, false));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -385,7 +517,18 @@ public class NDNN {
    */
   public INDArray logSoftmax(INDArray x) {
     NDValidation.validateNumerical("logSoftmax", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LogSoftMax(x))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LogSoftMax(x));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -397,7 +540,18 @@ public class NDNN {
    */
   public INDArray logSoftmax(INDArray x, int dimension) {
     NDValidation.validateNumerical("logSoftmax", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LogSoftMax(x, dimension))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LogSoftMax(x, dimension));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -434,7 +588,18 @@ public class NDNN {
     NDValidation.validateNumerical("multiHeadDotProductAttention", "Wv", Wv);
     NDValidation.validateNumerical("multiHeadDotProductAttention", "Wo", Wo);
     NDValidation.validateNumerical("multiHeadDotProductAttention", "mask", mask);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MultiHeadDotProductAttention(queries, keys, values, Wq, Wk, Wv, Wo, mask, scaled, false))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MultiHeadDotProductAttention(queries, keys, values, Wq, Wk, Wv, Wo, mask, scaled, false));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -449,7 +614,18 @@ public class NDNN {
   public INDArray pad(INDArray input, INDArray padding, PadMode PadMode, double constant) {
     NDValidation.validateNumerical("pad", "input", input);
     NDValidation.validateNumerical("pad", "padding", padding);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.Pad(input, padding, PadMode, constant))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.Pad(input, padding, PadMode, constant));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -463,7 +639,18 @@ public class NDNN {
   public INDArray pad(INDArray input, INDArray padding, double constant) {
     NDValidation.validateNumerical("pad", "input", input);
     NDValidation.validateNumerical("pad", "padding", padding);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.Pad(input, padding, PadMode.CONSTANT, constant))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.Pad(input, padding, PadMode.CONSTANT, constant));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -498,7 +685,18 @@ public class NDNN {
     NDValidation.validateNumerical("prelu", "input", input);
     NDValidation.validateNumerical("prelu", "alpha", alpha);
     Preconditions.checkArgument(sharedAxes.length >= 1, "sharedAxes has incorrect size/length. Expected: sharedAxes.length >= 1, got %s", sharedAxes.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.PRelu(input, alpha, sharedAxes))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.PRelu(input, alpha, sharedAxes));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -540,7 +738,18 @@ public class NDNN {
     NDValidation.validateNumerical("reluLayer", "input", input);
     NDValidation.validateNumerical("reluLayer", "weights", weights);
     NDValidation.validateNumerical("reluLayer", "bias", bias);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.ReluLayer(input, weights, bias))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.ReluLayer(input, weights, bias));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -578,7 +787,18 @@ public class NDNN {
   public INDArray sigmoidDerivative(INDArray x, INDArray wrt) {
     NDValidation.validateNumerical("sigmoidDerivative", "x", x);
     NDValidation.validateNumerical("sigmoidDerivative", "wrt", wrt);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative(x, wrt))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative(x, wrt));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -590,7 +810,18 @@ public class NDNN {
    */
   public INDArray softmax(INDArray x, int dimension) {
     NDValidation.validateNumerical("softmax", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax(x, dimension))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax(x, dimension));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -601,7 +832,18 @@ public class NDNN {
    */
   public INDArray softmax(INDArray x) {
     NDValidation.validateNumerical("softmax", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax(x, -1))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax(x, -1));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**

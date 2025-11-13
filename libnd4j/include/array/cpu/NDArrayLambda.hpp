@@ -95,9 +95,6 @@ template SD_LIB_HIDDEN void NDArray::applyTriplewiseLambda(
 template SD_LIB_HIDDEN void NDArray::applyTriplewiseLambda(
     NDArray* second, NDArray* third, std::function<sd::LongType(sd::LongType, sd::LongType, sd::LongType)>& func,
     NDArray* target);
-    template SD_LIB_HIDDEN void NDArray::applyTriplewiseLambda(
-    NDArray* second, NDArray* third, std::function<long(long, long, long)>& func,
-    NDArray* target);
 #endif
 #if defined(HAS_INT32)
 template SD_LIB_HIDDEN void NDArray::applyTriplewiseLambda(NDArray* second, NDArray* third,
@@ -128,9 +125,9 @@ template SD_LIB_HIDDEN void NDArray::applyTriplewiseLambda(
     NDArray* second, NDArray* third, std::function<uint32_t(uint32_t, uint32_t, uint32_t)>& func,
     NDArray* target);
 #endif
-#if defined(HAS_UINT64)
+#if defined(HAS_UNSIGNEDLONG)
 template SD_LIB_HIDDEN void NDArray::applyTriplewiseLambda(
-    NDArray* second, NDArray* third, std::function<uint64_t(uint64_t, uint64_t, uint64_t)>& func,
+    NDArray* second, NDArray* third, std::function<sd::UnsignedLong(sd::UnsignedLong, sd::UnsignedLong, sd::UnsignedLong)>& func,
     NDArray* target);
 #endif
 
@@ -238,8 +235,6 @@ template SD_LIB_HIDDEN void NDArray::applyPairwiseLambda(NDArray* other,
 #if defined(HAS_INT64)
 template SD_LIB_HIDDEN void NDArray::applyPairwiseLambda(
     NDArray* other, std::function<sd::LongType(sd::LongType, sd::LongType)>& func, NDArray* target);
-template SD_LIB_HIDDEN void NDArray::applyPairwiseLambda(
-    NDArray* other, std::function<long(long, long)>& func, NDArray* target);
 #endif
 #if defined(HAS_INT32)
 template SD_LIB_HIDDEN void NDArray::applyPairwiseLambda(NDArray* other, std::function<int(int, int)>& func,
@@ -267,7 +262,7 @@ template SD_LIB_HIDDEN void NDArray::applyPairwiseLambda(NDArray* other,
 #endif
 #if defined(HAS_UNSIGNEDLONG)
 template SD_LIB_HIDDEN void NDArray::applyPairwiseLambda(NDArray* other,
-                                                         std::function<uint64_t(uint64_t, uint64_t)>& func,
+                                                         std::function<sd::UnsignedLong(sd::UnsignedLong, sd::UnsignedLong)>& func,
                                                          NDArray* target);
 #endif
 #if defined(HAS_INT8)
@@ -351,7 +346,7 @@ template SD_LIB_HIDDEN void NDArray::applyLambda(std::function<uint16_t(uint16_t
 template SD_LIB_HIDDEN void NDArray::applyLambda(std::function<uint32_t(uint32_t)>& func, NDArray* target);
 #endif
 #if defined(HAS_UNSIGNEDLONG)
-template SD_LIB_HIDDEN void NDArray::applyLambda(std::function<uint64_t(uint64_t)>& func, NDArray* target);
+template SD_LIB_HIDDEN void NDArray::applyLambda(std::function<sd::UnsignedLong(sd::UnsignedLong)>& func, NDArray* target);
 #endif
 #if defined(HAS_INT8)
 template SD_LIB_HIDDEN void NDArray::applyLambda(std::function<int8_t(int8_t)>& func, NDArray* target);
@@ -445,7 +440,7 @@ template SD_LIB_HIDDEN void NDArray::applyIndexedLambda(std::function<uint32_t(s
                                                         NDArray* target);
 #endif
 #if defined(HAS_UNSIGNEDLONG)
-template SD_LIB_HIDDEN void NDArray::applyIndexedLambda(std::function<uint64_t(sd::LongType, uint64_t)>& func,
+template SD_LIB_HIDDEN void NDArray::applyIndexedLambda(std::function<sd::UnsignedLong(sd::LongType, sd::UnsignedLong)>& func,
                                                         NDArray* target);
 #endif
 #if defined(HAS_INT8)
@@ -545,7 +540,7 @@ template SD_LIB_HIDDEN void NDArray::applyIndexedPairwiseLambda(
 #endif
 #if defined(HAS_UNSIGNEDLONG)
 template SD_LIB_HIDDEN void NDArray::applyIndexedPairwiseLambda(
-    NDArray* other, std::function<uint64_t(sd::LongType, uint64_t, uint64_t)>& func, NDArray* target);
+    NDArray* other, std::function<sd::UnsignedLong(sd::LongType, sd::UnsignedLong, sd::UnsignedLong)>& func, NDArray* target);
 #endif
 #if defined(HAS_INT8)
 template SD_LIB_HIDDEN void NDArray::applyIndexedPairwiseLambda(

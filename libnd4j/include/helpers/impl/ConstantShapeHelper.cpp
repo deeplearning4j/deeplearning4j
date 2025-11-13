@@ -388,7 +388,7 @@ ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcast
  return ret;
 }
 
-ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithNoUnitiesForReduce(sd::LongType* maxShapeInfo,
+ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithNoUnitiesForReduce(const sd::LongType* maxShapeInfo,
                                                                                const std::vector<LongType>* dimsWithUnities,
                                                                                sd::memory::Workspace* workspace) {
  sd::LongType* newShapeInfo = nullptr;
@@ -409,7 +409,30 @@ ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithNoUnitiesForReduce(
  return ret;
 }
 
+void ConstantShapeHelper::clearCache() {
+ std::lock_guard<std::mutex> lock(_mutex);
+ _shapeTrie.clearCache();
+}
 
+LongType ConstantShapeHelper::getCachedEntries() const {
+ return _shapeTrie.getCachedEntries();
+}
+
+LongType ConstantShapeHelper::getCachedBytes() const {
+ return _shapeTrie.getCachedBytes();
+}
+
+LongType ConstantShapeHelper::getPeakCachedEntries() const {
+ return _shapeTrie.getPeakCachedEntries();
+}
+
+LongType ConstantShapeHelper::getPeakCachedBytes() const {
+ return _shapeTrie.getPeakCachedBytes();
+}
+
+std::string ConstantShapeHelper::toString(int maxDepth, int maxEntries) const {
+ return _shapeTrie.toString(maxDepth, maxEntries);
+}
 
 } // namespace sd
 

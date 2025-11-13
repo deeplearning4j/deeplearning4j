@@ -44,7 +44,10 @@ CUSTOM_OP_IMPL(permute, 1, 1, true, 0, -2) {
   if (block.width() == 1 && block.getIArguments()->size() == 0) {
     NDArray *t = x->transpose();
     z->assign(t);
-    delete t;
+    // FIXED: transpose() returns a view - only delete if not a view
+    if (t != nullptr && !t->isView()) {
+      delete t;
+    }
     return Status::OK;
   }
 

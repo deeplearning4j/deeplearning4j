@@ -40,7 +40,7 @@ Variable *Variable::asT() {
   result->setName(&this->_name);
   result->setIndex(this->_index);
 
-  if (this->_ndarray != nullptr) result->setNDArray(new NDArray(this->_ndarray->template asT<N>()));
+  if (this->_ndarray != nullptr) result->setNDArray(this->_ndarray->template asT<N>());  // asT() already returns NDArray*
 
   // FIXME: add support for ArrayList
   if (this->_list != nullptr) {

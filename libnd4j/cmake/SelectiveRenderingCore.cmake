@@ -8,6 +8,29 @@
 # Include the reporting functions
 include(SelectiveRenderingReports)
 
+# ============================================================================
+# HELPER FUNCTION: Write file only if content changed (preserves mtime for PCH)
+# ============================================================================
+function(_srcore_write_if_different filepath content)
+    set(should_write TRUE)
+
+    # Check if file already exists
+    if(EXISTS "${filepath}")
+        # Read existing content
+        file(READ "${filepath}" existing_content)
+
+        # Compare content
+        if("${existing_content}" STREQUAL "${content}")
+            set(should_write FALSE)
+        endif()
+    endif()
+
+    # Only write if content changed or file doesn't exist
+    if(should_write)
+        file(WRITE "${filepath}" "${content}")
+    endif()
+endfunction()
+
 # Export type validation results for use by SelectiveRenderingCore
 function(export_validated_types_for_selective_rendering)
     if(SD_TYPES_LIST_COUNT GREATER 0)
@@ -95,485 +118,556 @@ endfunction()
 
 # SelectiveRenderingCore.cmake - Validation Functions
 function(_internal_srcore_is_valid_pair type1 type2 output_var)
-    # Same type pairs are always valid
-    if(type1 STREQUAL type2)
-        set(${output_var} TRUE PARENT_SCOPE)
-        return()
-    endif()
-
-    # Define strict whitelists based on actual operations that exist
-
-    # TypeCast operations (type conversions)
-    set(valid_typecast_pairs
-            # Quantization/Dequantization
-            "INT8,FLOAT32"
-            "UINT8,FLOAT32"
-            "FLOAT32,INT8"
-            "FLOAT32,UINT8"
-
-            # Integer promotions (only necessary ones)
-            "INT8,INT32"
-            "UINT8,INT32"
-            "INT16,INT32"
-            "UINT16,INT32"
-            "INT32,INT64"
-            "UINT32,UINT64"
-
-            # Float promotions
-            "HALF,FLOAT32"
-            "BFLOAT16,FLOAT32"
-            "FLOAT32,DOUBLE"
-
-            # Mixed precision format conversions
-            "HALF,BFLOAT16"
-            "BFLOAT16,HALF"
-
-            # Essential int to float
-            "INT32,FLOAT32"
-            "INT64,DOUBLE"
-
-            # Same-width mixed signedness
-            "INT8,UINT8"
-            "INT16,UINT16"
-            "INT32,UINT32"
-            "INT64,UINT64"
-    )
-
-    # DoubleMethods operations (sorting by key/value)
-    set(valid_doublemethods_pairs
-            # Sorting operations typically use same types or int indices
-            "INT32,INT32"
-            "INT64,INT64"
-            "FLOAT32,FLOAT32"
-            "DOUBLE,DOUBLE"
-
-            # Index sorting (int key, any value)
-            "INT32,FLOAT32"
-            "INT32,DOUBLE"
-            "INT64,FLOAT32"
-            "INT64,DOUBLE"
-    )
-
-    # ReduceLong operations (any numeric input -> long output)
-    # Input: SD_NUMERIC_TYPES, Output: SD_LONG_TYPES (INT64, UINT64)
-    set(valid_reducelong_pairs
-            # All numeric types -> INT64
-            "BFLOAT16,INT64"
-            "FLOAT32,INT64"
-            "DOUBLE,INT64"
-            "HALF,INT64"
-            "INT8,INT64"
-            "INT16,INT64"
-            "INT32,INT64"
-            "INT64,INT64"
-            "UINT8,INT64"
-            "UINT16,INT64"
-            "UINT32,INT64"
-            "UINT64,INT64"
-
-            # All numeric types -> UINT64
-            "BFLOAT16,UINT64"
-            "FLOAT32,UINT64"
-            "DOUBLE,UINT64"
-            "HALF,UINT64"
-            "INT8,UINT64"
-            "INT16,UINT64"
-            "INT32,UINT64"
-            "INT64,UINT64"
-            "UINT8,UINT64"
-            "UINT16,UINT64"
-            "UINT32,UINT64"
-            "UINT64,UINT64"
-    )
-
-    # Special operations
-    set(valid_special_pairs
-            # Bool comparisons (from same type)
-            "BOOL,BOOL"
-
-            # String operations
-            "UTF8,INT32"
-            "UTF8,INT64"
-            "UTF16,INT32"
-            "UTF16,INT64"
-            "UTF32,INT32"
-            "UTF32,INT64"
-
-            # Bool with core types only
-            "BOOL,INT32"
-            "BOOL,INT64"
-            "BOOL,FLOAT32"
-            "INT32,BOOL"
-            "INT64,BOOL"
-            "FLOAT32,BOOL"
-    )
-
-    # Check if pair is in any whitelist
-    set(pair "${type1},${type2}")
-    set(reverse "${type2},${type1}")
-
-    # Check TypeCast operations
-    list(FIND valid_typecast_pairs "${pair}" found_typecast)
-    list(FIND valid_typecast_pairs "${reverse}" found_typecast_rev)
-    if(found_typecast GREATER_EQUAL 0 OR found_typecast_rev GREATER_EQUAL 0)
-        set(${output_var} TRUE PARENT_SCOPE)
-        return()
-    endif()
-
-    # Check DoubleMethods operations
-    list(FIND valid_doublemethods_pairs "${pair}" found_double)
-    list(FIND valid_doublemethods_pairs "${reverse}" found_double_rev)
-    if(found_double GREATER_EQUAL 0 OR found_double_rev GREATER_EQUAL 0)
-        set(${output_var} TRUE PARENT_SCOPE)
-        return()
-    endif()
-
-    # Check ReduceLong operations
-    list(FIND valid_reducelong_pairs "${pair}" found_reducelong)
-    list(FIND valid_reducelong_pairs "${reverse}" found_reducelong_rev)
-    if(found_reducelong GREATER_EQUAL 0 OR found_reducelong_rev GREATER_EQUAL 0)
-        set(${output_var} TRUE PARENT_SCOPE)
-        return()
-    endif()
-
-    # Check Special operations
-    list(FIND valid_special_pairs "${pair}" found_special)
-    list(FIND valid_special_pairs "${reverse}" found_special_rev)
-    if(found_special GREATER_EQUAL 0 OR found_special_rev GREATER_EQUAL 0)
-        set(${output_var} TRUE PARENT_SCOPE)
-        return()
-    endif()
-
-    # HARD BLOCKS - patterns that should never occur
-
-    # Block 8-bit types with HALF/BFLOAT16/DOUBLE
-    if(type1 MATCHES "INT8|UINT8")
-        if(type2 MATCHES "HALF|BFLOAT16|DOUBLE")
-            set(${output_var} FALSE PARENT_SCOPE)
-            return()
-        endif()
-    endif()
-    if(type2 MATCHES "INT8|UINT8")
-        if(type1 MATCHES "HALF|BFLOAT16|DOUBLE")
-            set(${output_var} FALSE PARENT_SCOPE)
-            return()
-        endif()
-    endif()
-
-    # Block 16-bit types with DOUBLE
-    if(type1 MATCHES "INT16|UINT16|HALF|BFLOAT16")
-        if(type2 STREQUAL "DOUBLE")
-            set(${output_var} FALSE PARENT_SCOPE)
-            return()
-        endif()
-    endif()
-    if(type2 MATCHES "INT16|UINT16|HALF|BFLOAT16")
-        if(type1 STREQUAL "DOUBLE")
-            set(${output_var} FALSE PARENT_SCOPE)
-            return()
-        endif()
-    endif()
-
-    # Block BOOL with DOUBLE/HALF/BFLOAT16
-    if(type1 STREQUAL "BOOL" OR type2 STREQUAL "BOOL")
-        if(type1 MATCHES "DOUBLE|HALF|BFLOAT16" OR type2 MATCHES "DOUBLE|HALF|BFLOAT16")
-            set(${output_var} FALSE PARENT_SCOPE)
-            return()
-        endif()
-    endif()
-
-    # Block 8-bit with 64-bit (too large a jump)
-    if((type1 MATCHES "INT8|UINT8" AND type2 MATCHES "INT64|UINT64|DOUBLE") OR
-    (type2 MATCHES "INT8|UINT8" AND type1 MATCHES "INT64|UINT64|DOUBLE"))
-        set(${output_var} FALSE PARENT_SCOPE)
-        return()
-    endif()
-
-    # Block mixed signedness except same width
-    set(signed_types "INT8;INT16;INT32;INT64")
-    set(unsigned_types "UINT8;UINT16;UINT32;UINT64")
-
-    list(FIND signed_types "${type1}" is_signed1)
-    list(FIND unsigned_types "${type1}" is_unsigned1)
-    list(FIND signed_types "${type2}" is_signed2)
-    list(FIND unsigned_types "${type2}" is_unsigned2)
-
-    if((is_signed1 GREATER_EQUAL 0 AND is_unsigned2 GREATER_EQUAL 0) OR
-    (is_unsigned1 GREATER_EQUAL 0 AND is_signed2 GREATER_EQUAL 0))
-        # Mixed signedness - already checked in whitelists for same-width
-        # If not in whitelist, it's invalid
-        set(${output_var} FALSE PARENT_SCOPE)
-        return()
-    endif()
-
-    # Default: invalid - not in any whitelist
-    set(${output_var} FALSE PARENT_SCOPE)
+    # SIMPLIFIED: Accept all pairs - selective rendering headers control actual compilation
+    # The SD_PAIR_TYPE_*_*_COMPILED flags in generated headers determine what gets built
+    # This function just generates the candidate list; actual filtering happens at compile time
+    set(${output_var} TRUE PARENT_SCOPE)
 endfunction()
 
 
 # SelectiveRenderingCore.cmake - Triple Validation Function
 function(_internal_srcore_is_valid_triple type1 type2 type3 output_var)
-    # Same type triples are always valid
+    # SEMANTIC FILTERING: Filter invalid type combinations while preserving all valid ones
+    #
+    # Previous approach (accept ALL) generated 2,197 combinations including many invalid ones:
+    # - bool × bool → float (arithmetic on bools producing floats doesn't make sense)
+    # - Excessive uint16/32/64 combinations (59% of combinations, rarely used)
+    #
+    # Filtering strategy (incremental):
+    # - Phase 1: Filter bool × bool → numeric (13 combinations)
+    # - Phase 2: Filter rare × rare → rare (cross-type) (64 combinations)
+    #
+    # Valid combination patterns:
+    # 1. Same-type operations: (X, X, X)
+    # 2. Type promotion within category: (smaller, larger, larger)
+    # 3. Comparison operations: (any, any, bool)
+    # 4. Type conversion/casting: (any, any, any) with restrictions
+    # 5. Bool masking: (bool, numeric, numeric)
+    # 6. Rare types with common types: (rare, common, any) and (common, rare, any)
+
+    # Get type categories
+    _internal_srcore_is_type_floating("${type1}" t1_is_float)
+    _internal_srcore_is_type_floating("${type2}" t2_is_float)
+    _internal_srcore_is_type_floating("${type3}" t3_is_float)
+
+    _internal_srcore_is_type_integer("${type1}" t1_is_int)
+    _internal_srcore_is_type_integer("${type2}" t2_is_int)
+    _internal_srcore_is_type_integer("${type3}" t3_is_int)
+
+    set(t1_is_bool FALSE)
+    set(t2_is_bool FALSE)
+    set(t3_is_bool FALSE)
+    if(type1 STREQUAL "BOOL")
+        set(t1_is_bool TRUE)
+    endif()
+    if(type2 STREQUAL "BOOL")
+        set(t2_is_bool TRUE)
+    endif()
+    if(type3 STREQUAL "BOOL")
+        set(t3_is_bool TRUE)
+    endif()
+
+    # Check if types are rare types (rarely used in ML workloads)
+    # Rare types: UINT16, UINT32, UINT64, INT16
+    set(rare_types "UINT16;UINT32;UINT64;INT16")
+
+    set(t1_is_rare FALSE)
+    set(t2_is_rare FALSE)
+    set(t3_is_rare FALSE)
+
+    list(FIND rare_types "${type1}" t1_rare_idx)
+    if(t1_rare_idx GREATER_EQUAL 0)
+        set(t1_is_rare TRUE)
+    endif()
+
+    list(FIND rare_types "${type2}" t2_rare_idx)
+    if(t2_rare_idx GREATER_EQUAL 0)
+        set(t2_is_rare TRUE)
+    endif()
+
+    list(FIND rare_types "${type3}" t3_rare_idx)
+    if(t3_rare_idx GREATER_EQUAL 0)
+        set(t3_is_rare TRUE)
+    endif()
+
+    # Rule 1: Same-type operations are always valid (X, X, X)
     if(type1 STREQUAL type2 AND type2 STREQUAL type3)
         set(${output_var} TRUE PARENT_SCOPE)
         return()
     endif()
 
-    # First validate input pairs using the strict pair validation
-    _internal_srcore_is_valid_pair("${type1}" "${type2}" pair_valid)
-    if(NOT pair_valid)
+    # Rule 2: Comparison operations (any, any, bool) are usually valid
+    # This covers ==, !=, <, >, <=, >= operations
+    # However, filter cross-rare-type comparisons (both inputs different rare types)
+    if(t3_is_bool)
+        # If comparing two different rare types, filter it
+        # Examples: (UINT16, UINT32, bool), (INT16, UINT64, bool)
+        # These cross-rare-type comparisons are genuinely rare in practice
+        if(t1_is_rare AND t2_is_rare AND NOT type1 STREQUAL type2)
+            set(${output_var} FALSE PARENT_SCOPE)
+            return()
+        endif()
+        # All other comparisons are valid
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 3: Filter INVALID bool arithmetic combinations
+    # bool × bool → numeric doesn't make semantic sense (what is bool + bool → float?)
+    if(t1_is_bool AND t2_is_bool AND NOT t3_is_bool)
         set(${output_var} FALSE PARENT_SCOPE)
         return()
     endif()
 
-    # Define strict whitelists for triple operations
+    # Rule 4: Filter RARE × RARE cross-type combinations
+    # Strategy 4: Conservative rare-type filtering (Phase 3 optimization)
+    #
+    # Rare types (UINT16, UINT32, UINT64, INT16) are rarely used in ML workloads:
+    # - Actual code usage: ~88 lines across entire codebase
+    # - UINT32/UINT64 not in test suite
+    # - 54% of instantiations use these types, but <1% of operations code
+    #
+    # Filter combinations where INPUTS are different rare types:
+    #   - uint32 × int16 → int32 (different rare inputs)
+    #   - uint16 × uint32 → float32 (different rare inputs)
+    #   - int16 × uint64 → bool (different rare inputs, even though output is bool)
+    #
+    # Preserve:
+    #   - Same-type rare operations: uint32 × uint32 → uint32 (already handled by Rule 1)
+    #   - Same rare inputs: uint32 × uint32 → int32 (same rare inputs, different output OK)
+    #   - Rare with common types: uint32 × int32 → any (one input is common)
+    #   - Common with rare: int32 × uint16 → any (one input is common)
+    #
+    # This filtering eliminates ~180 additional combinations with no semantic meaning,
+    # saving ~2.7GB total and achieving ~7% reduction with minimal risk.
+    #
+    # IMPORTANT: This must come BEFORE the permissive category-based rules (Rule 5, 6)
+    # to prevent them from accepting these cross-rare-type combinations.
 
-    # Broadcast operations (X,Y,Z where X op Y -> Z)
-    set(valid_broadcast_triples
-            # Same type operations
-            "INT8,INT8,INT8"
-            "UINT8,UINT8,UINT8"
-            "INT16,INT16,INT16"
-            "UINT16,UINT16,UINT16"
-            "INT32,INT32,INT32"
-            "UINT32,UINT32,UINT32"
-            "INT64,INT64,INT64"
-            "UINT64,UINT64,UINT64"
-            "FLOAT32,FLOAT32,FLOAT32"
-            "DOUBLE,DOUBLE,DOUBLE"
-            "HALF,HALF,HALF"
-            "BFLOAT16,BFLOAT16,BFLOAT16"
-
-            # INT8/UINT8 accumulation to INT32
-            "INT8,INT8,INT32"
-            "UINT8,UINT8,INT32"
-            "INT8,UINT8,INT32"
-            "UINT8,INT8,INT32"
-
-            # INT8/UINT8 to FLOAT32 (dequantization)
-            "INT8,INT8,FLOAT32"
-            "UINT8,UINT8,FLOAT32"
-            "INT8,FLOAT32,FLOAT32"
-            "UINT8,FLOAT32,FLOAT32"
-            "FLOAT32,INT8,FLOAT32"
-            "FLOAT32,UINT8,FLOAT32"
-
-            # Mixed precision accumulation
-            "HALF,HALF,FLOAT32"
-            "BFLOAT16,BFLOAT16,FLOAT32"
-            "HALF,FLOAT32,FLOAT32"
-            "BFLOAT16,FLOAT32,FLOAT32"
-            "FLOAT32,HALF,FLOAT32"
-            "FLOAT32,BFLOAT16,FLOAT32"
-
-            # Integer division to float
-            "INT32,INT32,FLOAT32"
-            "INT64,INT64,DOUBLE"
-
-            # Float accumulation to higher precision
-            "FLOAT32,FLOAT32,DOUBLE"
-            "FLOAT32,DOUBLE,DOUBLE"
-            "DOUBLE,FLOAT32,DOUBLE"
-
-            # Safe integer promotions
-            "INT16,INT16,INT32"
-            "UINT16,UINT16,UINT32"
-            "INT32,INT32,INT64"
-            "UINT32,UINT32,UINT64"
-    )
-
-    # Comparison operations (X,Y,BOOL)
-    set(valid_comparison_triples
-            # Same type comparisons
-            "INT8,INT8,BOOL"
-            "UINT8,UINT8,BOOL"
-            "INT16,INT16,BOOL"
-            "UINT16,UINT16,BOOL"
-            "INT32,INT32,BOOL"
-            "UINT32,UINT32,BOOL"
-            "INT64,INT64,BOOL"
-            "UINT64,UINT64,BOOL"
-            "FLOAT32,FLOAT32,BOOL"
-            "DOUBLE,DOUBLE,BOOL"
-            "HALF,HALF,BOOL"
-            "BFLOAT16,BFLOAT16,BOOL"
-            "BOOL,BOOL,BOOL"
-
-            # Limited mixed comparisons
-            "INT32,FLOAT32,BOOL"
-            "FLOAT32,INT32,BOOL"
-            "HALF,FLOAT32,BOOL"
-            "FLOAT32,HALF,BOOL"
-            "BFLOAT16,FLOAT32,BOOL"
-            "FLOAT32,BFLOAT16,BOOL"
-    )
-
-    # Masking operations (X,BOOL,X)
-    set(valid_masking_triples
-            "INT32,BOOL,INT32"
-            "INT64,BOOL,INT64"
-            "FLOAT32,BOOL,FLOAT32"
-            "DOUBLE,BOOL,DOUBLE"
-            "HALF,BOOL,HALF"
-            "BFLOAT16,BOOL,BFLOAT16"
-    )
-
-    # Scalar operations (input,scalar,output)
-    set(valid_scalar_triples
-            # Same type scalar ops
-            "INT32,INT32,INT32"
-            "INT64,INT64,INT64"
-            "FLOAT32,FLOAT32,FLOAT32"
-            "DOUBLE,DOUBLE,DOUBLE"
-            "HALF,HALF,HALF"
-            "BFLOAT16,BFLOAT16,BFLOAT16"
-
-            # Mixed scalar operations
-            "FLOAT32,HALF,FLOAT32"
-            "FLOAT32,BFLOAT16,FLOAT32"
-            "HALF,FLOAT32,FLOAT32"
-            "BFLOAT16,FLOAT32,FLOAT32"
-
-            # Integer scalar with float output
-            "INT32,FLOAT32,FLOAT32"
-            "INT64,DOUBLE,DOUBLE"
-    )
-
-    # PairwiseTransform operations
-    set(valid_pairwise_triples
-            # Same type transforms
-            "FLOAT32,FLOAT32,FLOAT32"
-            "DOUBLE,DOUBLE,DOUBLE"
-            "INT32,INT32,INT32"
-            "INT64,INT64,INT64"
-
-            # Mixed precision pairwise
-            "HALF,HALF,FLOAT32"
-            "BFLOAT16,BFLOAT16,FLOAT32"
-
-            # Quantization output
-            "FLOAT32,FLOAT32,INT8"
-            "FLOAT32,FLOAT32,UINT8"
-            "FLOAT32,FLOAT32,HALF"
-            "FLOAT32,FLOAT32,BFLOAT16"
-
-            # INT8 operations
-            "INT8,INT8,INT32"
-            "UINT8,UINT8,INT32"
-    )
-
-    # Indexing operations (idx,data,data)
-    set(valid_indexing_triples
-            "INT32,FLOAT32,FLOAT32"
-            "INT64,FLOAT32,FLOAT32"
-            "INT32,DOUBLE,DOUBLE"
-            "INT64,DOUBLE,DOUBLE"
-            "INT32,HALF,HALF"
-            "INT64,HALF,HALF"
-            "INT32,BFLOAT16,BFLOAT16"
-            "INT64,BFLOAT16,BFLOAT16"
-            "INT32,INT32,INT32"
-            "INT64,INT64,INT64"
-    )
-
-    # Conditional/ternary operations (BOOL,X,X)
-    set(valid_conditional_triples
-            "BOOL,INT32,INT32"
-            "BOOL,INT64,INT64"
-            "BOOL,FLOAT32,FLOAT32"
-            "BOOL,DOUBLE,DOUBLE"
-            "BOOL,HALF,HALF"
-            "BOOL,BFLOAT16,BFLOAT16"
-    )
-
-    # Check if triple is in any whitelist
-    set(triple "${type1},${type2},${type3}")
-
-    # Check each category
-    list(FIND valid_broadcast_triples "${triple}" found_broadcast)
-    if(found_broadcast GREATER_EQUAL 0)
-        set(${output_var} TRUE PARENT_SCOPE)
-        return()
+    # Check if both inputs are rare types
+    if(t1_is_rare AND t2_is_rare)
+        # Both inputs are rare types
+        # Only allow if they're the SAME rare type (regardless of output)
+        if(NOT type1 STREQUAL type2)
+            # Different rare types in inputs - filter this combination
+            # Examples: uint32 × int16 → any, uint16 × uint32 → any
+            set(${output_var} FALSE PARENT_SCOPE)
+            return()
+        endif()
+        # If type1 == type2 (same rare type), continue to check other rules
+        # Examples allowed: uint32 × uint32 → uint32, uint32 × uint32 → int32
     endif()
 
-    list(FIND valid_comparison_triples "${triple}" found_comparison)
-    if(found_comparison GREATER_EQUAL 0)
-        set(${output_var} TRUE PARENT_SCOPE)
-        return()
+    # Rule 4b: Filter float-rare type mixing (except comparisons which output bool)
+    # Float arrays combined with rare integer types are uncommon in ML workloads
+    # This rule filters combinations like:
+    #   - (float, uint16, uint16) - float with rare int, rare int output
+    #   - (uint16, float, uint16) - rare int with float, rare int output
+    #   - (double, int16, int16) - float with rare int, rare int output
+    # But preserves:
+    #   - (float, uint16, bool) - comparison operations (already handled by Rule 2)
+    #   - (float, uint16, float) - output matches float input (handled by Rule 7)
+    #
+    # This eliminates ~50-80 combinations with semantically unusual patterns
+    if(NOT t3_is_bool)
+        if((t1_is_float AND t2_is_rare) OR (t1_is_rare AND t2_is_float))
+            # One input is float, other is rare int, output is NOT bool
+            # Check if output is the rare type - this pattern is semantically unusual
+            if((t1_is_rare AND type1 STREQUAL type3) OR (t2_is_rare AND type2 STREQUAL type3))
+                # Output matches the rare type - filter this unusual pattern
+                # Examples: (float, uint16, uint16), (uint16, double, uint16)
+                set(${output_var} FALSE PARENT_SCOPE)
+                return()
+            endif()
+            # If output matches float input, allow it (will be caught by Rule 7)
+        endif()
     endif()
 
-    list(FIND valid_masking_triples "${triple}" found_masking)
-    if(found_masking GREATER_EQUAL 0)
-        set(${output_var} TRUE PARENT_SCOPE)
-        return()
-    endif()
-
-    list(FIND valid_scalar_triples "${triple}" found_scalar)
-    if(found_scalar GREATER_EQUAL 0)
-        set(${output_var} TRUE PARENT_SCOPE)
-        return()
-    endif()
-
-    list(FIND valid_pairwise_triples "${triple}" found_pairwise)
-    if(found_pairwise GREATER_EQUAL 0)
-        set(${output_var} TRUE PARENT_SCOPE)
-        return()
-    endif()
-
-    list(FIND valid_indexing_triples "${triple}" found_indexing)
-    if(found_indexing GREATER_EQUAL 0)
-        set(${output_var} TRUE PARENT_SCOPE)
-        return()
-    endif()
-
-    list(FIND valid_conditional_triples "${triple}" found_conditional)
-    if(found_conditional GREATER_EQUAL 0)
-        set(${output_var} TRUE PARENT_SCOPE)
-        return()
-    endif()
-
-    # HARD BLOCKS - patterns that should never occur in triples
-
-    # Never output to 8-bit unless all inputs are 8-bit
-    if(type3 MATCHES "INT8|UINT8")
-        if(NOT (type1 MATCHES "INT8|UINT8" AND type2 MATCHES "INT8|UINT8"))
+    # Rule 5: Bool masking operations - RESTRICTED to same-type masking
+    # These support operations like: bool_mask ? float_x : float_y -> float_result
+    # AGGRESSIVE FILTER: Only allow when output type matches the numeric input type
+    # - Allow: (bool, float, float) - mask ? float : float -> float
+    # - Allow: (float, bool, float) - float ? mask : float -> float
+    # - Filter: (bool, int8, float) - nonsensical cross-type masking
+    # - Filter: (bool, float, double) - unnecessary precision change
+    if(t1_is_bool AND NOT t2_is_bool AND NOT t3_is_bool)
+        # (bool, numeric, output) - only allow if output matches numeric
+        if(type2 STREQUAL type3)
+            set(${output_var} TRUE PARENT_SCOPE)
+            return()
+        else()
+            # Cross-type bool masking - filter it
             set(${output_var} FALSE PARENT_SCOPE)
             return()
         endif()
     endif()
 
-    # Never output DOUBLE from 8/16-bit inputs
-    if(type3 STREQUAL "DOUBLE")
-        if(type1 MATCHES "INT8|UINT8|INT16|UINT16|HALF|BFLOAT16" OR
-                type2 MATCHES "INT8|UINT8|INT16|UINT16|HALF|BFLOAT16")
+    if(NOT t1_is_bool AND t2_is_bool AND NOT t3_is_bool)
+        # (numeric, bool, output) - only allow if output matches numeric
+        if(type1 STREQUAL type3)
+            set(${output_var} TRUE PARENT_SCOPE)
+            return()
+        else()
+            # Cross-type bool masking - filter it
             set(${output_var} FALSE PARENT_SCOPE)
             return()
         endif()
     endif()
 
-    # Never downcast precision
-    if(type3 MATCHES "HALF|BFLOAT16")
-        if(type1 STREQUAL "DOUBLE" OR type2 STREQUAL "DOUBLE")
+    # Rule 6: Type promotion - inputs match, output different (X, X, Y)
+    # Examples: float+float→double (accumulation), int32+int32→int64 (overflow protection)
+    if(type1 STREQUAL type2 AND NOT type2 STREQUAL type3)
+        # Both inputs same type, output different
+        # This is valid for type promotion operations
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 7: Output matches one input (preserves type)
+    # Examples: float+int→float, int+float→float, float+double→double
+    if(type1 STREQUAL type3 OR type2 STREQUAL type3)
+        # Output matches at least one input
+        # This is valid for operations that preserve one input's type
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 8: Filter ALL other three-way type mixing
+    # If we reach here, all three types are different AND none of the above rules matched
+    # Examples of what we filter:
+    # - (bfloat16, double, float) - three different float precisions
+    # - (int8, float, int32) - completely unrelated types
+    # - (float16, int32, double) - random type mixing
+    #
+    # Combined filtering summary:
+    # - Rule 8 base: ~912 combinations (51.3%)
+    # - Rule 2 refinement: ~20-30 cross-rare-type comparisons (~1-2%)
+    # - Rule 4b float-rare filtering: ~50-80 combinations (~2-3%)
+    # Total: ~980-1,020 combinations filtered (~55-58% reduction)
+    set(${output_var} FALSE PARENT_SCOPE)
+endfunction()
+
+# Scalar-specific validation function
+# ScalarTransform<ArrayType, ScalarType, OutputType>
+# Semantics: array op scalar -> output
+function(_internal_srcore_is_valid_scalar_triple array_type scalar_type output_type output_var)
+    # Get type categories for array
+    _internal_srcore_is_type_floating("${array_type}" arr_is_float)
+    _internal_srcore_is_type_integer("${array_type}" arr_is_int)
+    set(arr_is_bool FALSE)
+    if(array_type STREQUAL "BOOL")
+        set(arr_is_bool TRUE)
+    endif()
+
+    # Get type categories for scalar
+    _internal_srcore_is_type_floating("${scalar_type}" scal_is_float)
+    _internal_srcore_is_type_integer("${scalar_type}" scal_is_int)
+    set(scal_is_bool FALSE)
+    if(scalar_type STREQUAL "BOOL")
+        set(scal_is_bool TRUE)
+    endif()
+
+    # Get type categories for output
+    _internal_srcore_is_type_floating("${output_type}" out_is_float)
+    _internal_srcore_is_type_integer("${output_type}" out_is_int)
+    set(out_is_bool FALSE)
+    if(output_type STREQUAL "BOOL")
+        set(out_is_bool TRUE)
+    endif()
+
+    # Rule 1: Same type throughout (X, X, X) - always valid
+    if(array_type STREQUAL scalar_type AND scalar_type STREQUAL output_type)
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 2: Comparison operations (X, Y, bool) - always valid
+    if(out_is_bool)
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 3: Scalar type promotion (X, Y, Y) - output matches scalar type
+    # Common pattern: float_array + double_scalar -> double_output
+    if(scalar_type STREQUAL output_type)
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 4: Array type preservation (X, Y, X) - output matches array type
+    # Less common but valid: double_array + float_scalar -> double_output
+    if(array_type STREQUAL output_type)
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 4b: Bitwise operations with integer types
+    # Pattern: (IntType, IntType, DifferentIntType) where array and scalar match
+    # Common for bit manipulation: rotate/shift operations that may produce different size outputs
+    # Example: (UINT64, UINT64, UINT32) for rotate operations
+    if(arr_is_int AND scal_is_int AND out_is_int AND array_type STREQUAL scalar_type)
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 4c: Float type conversion operations
+    # Pattern: (FloatX, FloatX, FloatY) where array and scalar match but output is different float type
+    # Common for type conversions: (float, float, double), (bfloat16, bfloat16, float), etc.
+    # Example: ScalarTransform<float, float, double> for accumulation with higher precision
+    if(arr_is_float AND scal_is_float AND out_is_float AND array_type STREQUAL scalar_type)
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 4d: Float-to-integer type casting operations
+    # Pattern: (FloatX, FloatX, IntY) where array and scalar match (both float) but output is integer
+    # Common for casting operations: (float, float, int32), (double, double, int64), etc.
+    # Example: ScalarTransform<bfloat16, bfloat16, Int32Type> for cast-to-int operations
+    if(arr_is_float AND scal_is_float AND out_is_int AND array_type STREQUAL scalar_type)
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 4e: Integer-to-float type casting operations
+    # Pattern: (IntX, IntX, FloatY) where array and scalar match (both integer) but output is float
+    # Common for casting operations: (int32, int32, float), (int64, int64, double), etc.
+    # Example: ScalarTransform<Int32Type, Int32Type, float> for cast-to-float operations
+    if(arr_is_int AND scal_is_int AND out_is_float AND array_type STREQUAL scalar_type)
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 5: Filter ALL other 3-way type mixing
+    # Examples of what we filter:
+    # - (float, uint32, int8) - completely nonsensical
+    # - (double, bfloat16, float16) - random type conversions
+    # - (int32, float, int8) - none of the types match
+    #
+    # This eliminates ~1,200 nonsensical combinations (67% reduction)
+    # Note: After adding Rules 4d and 4e, the reduction is lower (~60%) due to allowing cross-type casting
+    set(${output_var} FALSE PARENT_SCOPE)
+endfunction()
+
+# Broadcast-specific validation function
+# Broadcast<Array1Type, Array2Type, OutputType>
+# Semantics: array1 op array2 -> output
+function(_internal_srcore_is_valid_broadcast_triple array1_type array2_type output_type output_var)
+    # Get type categories for array1
+    _internal_srcore_is_type_floating("${array1_type}" arr1_is_float)
+    _internal_srcore_is_type_integer("${array1_type}" arr1_is_int)
+    set(arr1_is_bool FALSE)
+    if(array1_type STREQUAL "BOOL")
+        set(arr1_is_bool TRUE)
+    endif()
+
+    # Get type categories for array2
+    _internal_srcore_is_type_floating("${array2_type}" arr2_is_float)
+    _internal_srcore_is_type_integer("${array2_type}" arr2_is_int)
+    set(arr2_is_bool FALSE)
+    if(array2_type STREQUAL "BOOL")
+        set(arr2_is_bool TRUE)
+    endif()
+
+    # Get type categories for output
+    _internal_srcore_is_type_floating("${output_type}" out_is_float)
+    _internal_srcore_is_type_integer("${output_type}" out_is_int)
+    set(out_is_bool FALSE)
+    if(output_type STREQUAL "BOOL")
+        set(out_is_bool TRUE)
+    endif()
+
+    # Rule 1: Same type throughout (X, X, X) - always valid
+    if(array1_type STREQUAL array2_type AND array2_type STREQUAL output_type)
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 2: Comparison operations (X, Y, bool) - always valid
+    if(out_is_bool)
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 2b: Bool masking operations - RESTRICTED to same-type masking
+    # These support operations like: bool_array ? numeric_x : numeric_y -> numeric_result
+    # AGGRESSIVE FILTER: Only allow when output type matches the numeric input type
+    # - Allow: (bool, float, float) - bool_mask broadcast numeric -> numeric
+    # - Allow: (float, bool, float) - numeric broadcast bool_mask -> numeric
+    # - Filter: (bool, int8, float) - nonsensical cross-type masking
+    # - Filter: (bool, float, double) - unnecessary precision change
+    if(arr1_is_bool AND NOT arr2_is_bool AND NOT out_is_bool)
+        # (bool, numeric, output) - only allow if output matches numeric array
+        if(array2_type STREQUAL output_type)
+            set(${output_var} TRUE PARENT_SCOPE)
+            return()
+        else()
+            # Cross-type bool masking - filter it
             set(${output_var} FALSE PARENT_SCOPE)
             return()
         endif()
     endif()
 
-    if(type3 STREQUAL "FLOAT32")
-        if(type1 STREQUAL "DOUBLE" OR type2 STREQUAL "DOUBLE")
+    if(NOT arr1_is_bool AND arr2_is_bool AND NOT out_is_bool)
+        # (numeric, bool, output) - only allow if output matches numeric array
+        if(array1_type STREQUAL output_type)
+            set(${output_var} TRUE PARENT_SCOPE)
+            return()
+        else()
+            # Cross-type bool masking - filter it
             set(${output_var} FALSE PARENT_SCOPE)
             return()
         endif()
     endif()
 
-    # Block BOOL with precision types except as comparison output
-    if((type1 STREQUAL "BOOL" OR type2 STREQUAL "BOOL") AND
-            type3 MATCHES "DOUBLE|HALF|BFLOAT16")
+    # Rule 3: Type promotion (X, X, Y) - both inputs same, output is promoted type
+    # Common pattern: int32_array + int32_array -> int64_output
+    if(array1_type STREQUAL array2_type)
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 4: Output matches first input (X, Y, X)
+    # Common in broadcasts: keep first array's type
+    if(array1_type STREQUAL output_type)
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 5: Output matches second input (X, Y, Y)
+    # Common in broadcasts: keep second array's type
+    if(array2_type STREQUAL output_type)
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 6: Filter ALL other 3-way type mixing
+    # Examples of what we filter:
+    # - (float, uint32, int8) - all three different, completely nonsensical
+    # - (double, bfloat16, float16) - random type conversions
+    # - (int32, float, int64) - none of the types match
+    #
+    # Combined with Rule 2b bool masking restrictions:
+    # This eliminates ~1,300-1,350 nonsensical combinations (~73-76% reduction)
+    set(${output_var} FALSE PARENT_SCOPE)
+endfunction()
+
+# ============================================================================
+# REDUCE3 VALIDATION (Distance/Similarity Operations)
+# ============================================================================
+# Reduce3<InputType, OutputType> - operations like cosine similarity, euclidean distance
+# InputType: the array elements being compared/measured
+# OutputType: the result type (typically float for precision)
+#
+# Semantic rules:
+# - Output should be same type as input OR a float type (for precision)
+# - Float input → int output is nonsensical (losing precision on distance)
+# - Cross-type int combinations rarely make sense (e.g., int8 → uint32)
+
+function(_internal_srcore_is_valid_reduce3_pair input_type output_type output_var)
+    # Get type categories
+    _internal_srcore_is_type_floating("${input_type}" input_is_float)
+    _internal_srcore_is_type_floating("${output_type}" output_is_float)
+    _internal_srcore_is_type_integer("${input_type}" input_is_int)
+    _internal_srcore_is_type_integer("${output_type}" output_is_int)
+
+    # Rule 1: Same type is always valid (preserves precision)
+    if(input_type STREQUAL output_type)
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 2: Integer input → float output is valid (precision preserved)
+    if(input_is_int AND output_is_float)
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 3: Float input → float output is valid (allow ALL float-to-float conversions)
+    # Changed from precision-preserving only to support all cross-type float operations
+    # Needed for operations like: Reduce3<double, float>, Reduce3<float, bfloat16>, etc.
+    if(input_is_float AND output_is_float)
+        # Allow all float-to-float type pairs (including precision loss)
+        # The operation semantics may require flexibility in output type
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 4: Filter all other combinations
+    # - Float → int (losing precision on distance measure)
+    # - Cross-type int combinations (e.g., int8 → uint32)
+    # - Lower precision float output (e.g., double → float16)
+    set(${output_var} FALSE PARENT_SCOPE)
+endfunction()
+
+# ============================================================================
+# INDEXREDUCE VALIDATION (ArgMax/ArgMin Operations)
+# ============================================================================
+# IndexReduce<InputType, IndexType> - find indices of max/min values
+# InputType: the array elements being searched
+# IndexType: MUST be int64_t (indices are always 64-bit)
+#
+# Semantic rules:
+# - IndexType should ALWAYS be INT64 (sd::LongType)
+# - Any other index type is nonsensical (indices must be 64-bit signed)
+
+function(_internal_srcore_is_valid_indexreduce_pair input_type index_type output_var)
+    # IndexType MUST be INT64
+    if(index_type STREQUAL "INT64")
+        set(${output_var} TRUE PARENT_SCOPE)
+    else()
+        # Filter all non-INT64 index types
+        set(${output_var} FALSE PARENT_SCOPE)
+    endif()
+endfunction()
+
+# ============================================================================
+# REDUCE_FLOAT VALIDATION (Reductions with Float Output)
+# ============================================================================
+# ReduceFloatFunction<InputType, OutputType> - sum, mean, variance, std
+# InputType: any numeric type
+# OutputType: MUST be float type (for precision)
+#
+# Semantic rules:
+# - Output must be float type (already enforced in TemplateProcessing.cmake)
+# - Output precision should be >= input precision
+# - Float → lower precision float is nonsensical (e.g., double → float16)
+
+function(_internal_srcore_is_valid_reduce_float_pair input_type output_type output_var)
+    # Get type categories
+    _internal_srcore_is_type_floating("${input_type}" input_is_float)
+    _internal_srcore_is_type_floating("${output_type}" output_is_float)
+    _internal_srcore_is_type_integer("${input_type}" input_is_int)
+
+    # Output MUST be float (already checked in TemplateProcessing.cmake, but double-check)
+    if(NOT output_is_float)
         set(${output_var} FALSE PARENT_SCOPE)
         return()
     endif()
 
-    # Default: invalid - not in any whitelist
+    # Rule 1: Same type is always valid
+    if(input_type STREQUAL output_type)
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 2: Integer input → any float output is valid
+    if(input_is_int)
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 3: Float input → any float output (including precision changes)
+    # NOTE: Originally filtered downcasts, but runtime shows these ARE needed
+    # for operations that explicitly request different output precision.
+    # Examples: ReduceFloatFunction<double, float>, <float, double>, etc.
+    if(input_is_float)
+        # Allow ALL float-to-float combinations (upcast, downcast, or same)
+        # The operation implementation handles precision conversion correctly
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Filter all other combinations
     set(${output_var} FALSE PARENT_SCOPE)
 endfunction()
 
@@ -648,28 +742,13 @@ function(_internal_srcore_generate_combinations active_indices type_names profil
     list(LENGTH combinations_2 accepted_2)
     list(LENGTH combinations_3 accepted_3_before_profile)
 
-    # Apply profile-based limits if specified
-    if(DEFINED profile AND NOT profile STREQUAL "")
-        list(LENGTH combinations_3 current_count)
-        set(max_combinations 0)
-
-        if(profile STREQUAL "minimal")
-            set(max_combinations 50)
-        elseif(profile STREQUAL "quantization")
-            set(max_combinations 100)
-        elseif(profile STREQUAL "inference" OR profile STREQUAL "ESSENTIAL")
-            set(max_combinations 250)
-        elseif(profile STREQUAL "training")
-            set(max_combinations 350)
-        else()
-            set(max_combinations 500)
-        endif()
-
-        if(current_count GREATER max_combinations)
-            list(SUBLIST combinations_3 0 ${max_combinations} combinations_3)
-            message(STATUS "  Profile '${profile}' limit: ${current_count} -> ${max_combinations} combinations")
-        endif()
-    endif()
+    # MODIFIED: Profile-based limiting DISABLED for full matrix generation
+    # Previous code limited combinations to 50-500 based on profile, causing
+    # runtime undefined symbol errors. Now generating ALL combinations.
+    #
+    # if(DEFINED profile AND NOT profile STREQUAL "")
+    #     ... profile limiting code disabled ...
+    # endif()
 
     # Get final count
     list(LENGTH combinations_3 accepted_3)
@@ -786,8 +865,18 @@ function(srcore_normalize_type input_type output_var)
         set(normalized_type "int64_t")
     elseif(normalized_type STREQUAL "int")
         set(normalized_type "int32_t")
+    elseif(normalized_type STREQUAL "SignedChar")
+        set(normalized_type "int8_t")
+    elseif(normalized_type STREQUAL "UnsignedChar")
+        set(normalized_type "uint8_t")
+    elseif(normalized_type STREQUAL "Int16Type")
+        set(normalized_type "int16_t")
+    elseif(normalized_type STREQUAL "UInt16Type")
+        set(normalized_type "uint16_t")
     elseif(normalized_type STREQUAL "Int32Type")
         set(normalized_type "int32_t")
+    elseif(normalized_type STREQUAL "UInt32Type")
+        set(normalized_type "uint32_t")
     elseif(normalized_type STREQUAL "bfloat")
         set(normalized_type "bfloat16")
     elseif(normalized_type STREQUAL "qint8")
@@ -947,14 +1036,12 @@ function(_internal_srcore_discover_selective_types validated_types_list result_i
 
     file(READ "${types_header}" types_content)
 
-    # Get the types from the active profile
-    if(DEFINED SD_TYPE_PROFILE)
-        get_profile_type_combinations("${SD_TYPE_PROFILE}" profile_types)
-        set(types_to_discover "${profile_types}")
-    else()
-        # Use the validated types list directly
-        set(types_to_discover "${validated_types_list}")
-    endif()
+    # FIXED: When called with selective types, ALWAYS use the validated_types_list
+    # The profile should only be used by _internal_srcore_discover_all_types()
+    # This function is called when SRCORE_USE_SELECTIVE_TYPES=TRUE, meaning the
+    # user explicitly provided a type list (e.g., via -Dlibnd4j.datatypes=...).
+    # Using the profile here would override the user's explicit choice!
+    set(types_to_discover "${validated_types_list}")
 
     # Enhanced type mapping to handle C++ type names to enum names
     # Include ALL possible long type variations
@@ -1058,7 +1145,7 @@ function(_internal_srcore_discover_selective_types validated_types_list result_i
             list(GET tuple_parts 1 cpp_part)
             string(STRIP "${enum_part}" enum_part)
             string(STRIP "${cpp_part}" cpp_part)
-            string(REGEX REGEX "\\)$" "" cpp_part "${cpp_part}")
+            string(REGEX REPLACE "\\)$" "" cpp_part "${cpp_part}")
 
             list(APPEND discovered_enums "${enum_part}")
             list(APPEND discovered_cpp_types "${cpp_part}")
@@ -1242,6 +1329,275 @@ function(srcore_generate_combinations active_indices profile result_2_var result
     set(${result_3_var} "${combinations_3}" PARENT_SCOPE)
 endfunction()
 
+function(srcore_generate_javacpp_header combinations_2 combinations_3 output_dir type_cpp_types active_indices)
+    # Generate JavaCPP-compatible header that declares only valid template instantiations
+    # This ensures JavaCPP generates JNI bindings ONLY for combinations that CMake builds
+
+    set(javacpp_header_file "${output_dir}/javacpp_instantiations.h")
+    set(javacpp_content "")
+
+    string(APPEND javacpp_content "/* AUTOMATICALLY GENERATED - JavaCPP Template Instantiation Declarations */\n")
+    string(APPEND javacpp_content "/* This header limits JavaCPP to generate JNI bindings only for valid type combinations */\n")
+    string(APPEND javacpp_content "/* Generated by SelectiveRenderingCore.cmake */\n\n")
+    string(APPEND javacpp_content "#ifndef SD_JAVACPP_INSTANTIATIONS_H\n")
+    string(APPEND javacpp_content "#define SD_JAVACPP_INSTANTIATIONS_H\n\n")
+
+    # Include all transform headers
+    string(APPEND javacpp_content "// Transform headers\n")
+    string(APPEND javacpp_content "#include <loops/scalar_transform.h>\n")
+    string(APPEND javacpp_content "#include <loops/scalar_bool.h>\n")
+    string(APPEND javacpp_content "#include <loops/scalar_int.h>\n")
+    string(APPEND javacpp_content "#include <loops/pairwise_transform.h>\n")
+    string(APPEND javacpp_content "#include <loops/pairwise_bool.h>\n")
+    string(APPEND javacpp_content "#include <loops/pairwise_int.h>\n")
+    string(APPEND javacpp_content "#include <loops/broadcasting.h>\n")
+    string(APPEND javacpp_content "#include <loops/broadcasting_bool.h>\n")
+    string(APPEND javacpp_content "#include <loops/broadcasting_int.h>\n")
+    string(APPEND javacpp_content "#include <loops/transform_any.h>\n")
+    string(APPEND javacpp_content "#include <loops/transform_bool.h>\n")
+    string(APPEND javacpp_content "#include <loops/transform_float.h>\n")
+    string(APPEND javacpp_content "#include <loops/transform_same.h>\n")
+    string(APPEND javacpp_content "#include <loops/transform_strict.h>\n")
+    string(APPEND javacpp_content "#include <loops/reduce_float.h>\n")
+    string(APPEND javacpp_content "#include <loops/reduce_same.h>\n")
+    string(APPEND javacpp_content "#include <loops/reduce_bool.h>\n")
+    string(APPEND javacpp_content "#include <loops/reduce_long.h>\n")
+    string(APPEND javacpp_content "#include <loops/reduce3.h>\n")
+    string(APPEND javacpp_content "#include <loops/indexreduce.h>\n")
+    string(APPEND javacpp_content "#include <loops/summarystatsreduce.h>\n\n")
+
+    string(APPEND javacpp_content "// Forward declarations of valid template instantiations\n")
+    string(APPEND javacpp_content "// JavaCPP will only generate JNI bindings for these combinations\n\n")
+    string(APPEND javacpp_content "namespace functions {\n\n")
+
+    # Triple-type transforms (X,Y,Z)
+    string(APPEND javacpp_content "// ===== TRIPLE-TYPE TRANSFORMS (X,Y,Z) =====\n\n")
+
+    # ScalarTransform
+    string(APPEND javacpp_content "namespace scalar {\n")
+    foreach(triple IN LISTS combinations_3)
+        string(REPLACE "," ";" triple_list "${triple}")
+        list(GET triple_list 0 t1)
+        list(GET triple_list 1 t2)
+        list(GET triple_list 2 t3)
+        list(GET type_cpp_types ${t1} cpp_type1)
+        list(GET type_cpp_types ${t2} cpp_type2)
+        list(GET type_cpp_types ${t3} cpp_type3)
+        string(APPEND javacpp_content "template class ScalarTransform<${cpp_type1}, ${cpp_type2}, ${cpp_type3}>;\n")
+    endforeach()
+    string(APPEND javacpp_content "} // namespace scalar\n\n")
+
+    # ScalarBoolTransform
+    string(APPEND javacpp_content "namespace scalar {\n")
+    foreach(triple IN LISTS combinations_3)
+        string(REPLACE "," ";" triple_list "${triple}")
+        list(GET triple_list 0 t1)
+        list(GET triple_list 1 t2)
+        list(GET triple_list 2 t3)
+        list(GET type_cpp_types ${t1} cpp_type1)
+        list(GET type_cpp_types ${t2} cpp_type2)
+        list(GET type_cpp_types ${t3} cpp_type3)
+        string(APPEND javacpp_content "template class ScalarBoolTransform<${cpp_type1}, ${cpp_type2}, ${cpp_type3}>;\n")
+    endforeach()
+    string(APPEND javacpp_content "} // namespace scalar\n\n")
+
+    # ScalarIntTransform
+    string(APPEND javacpp_content "namespace scalar {\n")
+    foreach(triple IN LISTS combinations_3)
+        string(REPLACE "," ";" triple_list "${triple}")
+        list(GET triple_list 0 t1)
+        list(GET triple_list 1 t2)
+        list(GET triple_list 2 t3)
+        list(GET type_cpp_types ${t1} cpp_type1)
+        list(GET type_cpp_types ${t2} cpp_type2)
+        list(GET type_cpp_types ${t3} cpp_type3)
+        string(APPEND javacpp_content "template class ScalarIntTransform<${cpp_type1}, ${cpp_type2}, ${cpp_type3}>;\n")
+    endforeach()
+    string(APPEND javacpp_content "} // namespace scalar\n\n")
+
+    # PairWiseTransform
+    string(APPEND javacpp_content "namespace pairwise_transforms {\n")
+    foreach(triple IN LISTS combinations_3)
+        string(REPLACE "," ";" triple_list "${triple}")
+        list(GET triple_list 0 t1)
+        list(GET triple_list 1 t2)
+        list(GET triple_list 2 t3)
+        list(GET type_cpp_types ${t1} cpp_type1)
+        list(GET type_cpp_types ${t2} cpp_type2)
+        list(GET type_cpp_types ${t3} cpp_type3)
+        string(APPEND javacpp_content "template class PairWiseTransform<${cpp_type1}, ${cpp_type2}, ${cpp_type3}>;\n")
+    endforeach()
+    string(APPEND javacpp_content "} // namespace pairwise_transforms\n\n")
+
+    # PairWiseBoolTransform
+    string(APPEND javacpp_content "namespace pairwise_transforms {\n")
+    foreach(triple IN LISTS combinations_3)
+        string(REPLACE "," ";" triple_list "${triple}")
+        list(GET triple_list 0 t1)
+        list(GET triple_list 1 t2)
+        list(GET triple_list 2 t3)
+        list(GET type_cpp_types ${t1} cpp_type1)
+        list(GET type_cpp_types ${t2} cpp_type2)
+        list(GET type_cpp_types ${t3} cpp_type3)
+        string(APPEND javacpp_content "template class PairWiseBoolTransform<${cpp_type1}, ${cpp_type2}, ${cpp_type3}>;\n")
+    endforeach()
+    string(APPEND javacpp_content "} // namespace pairwise_transforms\n\n")
+
+    # PairWiseIntTransform
+    string(APPEND javacpp_content "namespace pairwise_transforms {\n")
+    foreach(triple IN LISTS combinations_3)
+        string(REPLACE "," ";" triple_list "${triple}")
+        list(GET triple_list 0 t1)
+        list(GET triple_list 1 t2)
+        list(GET triple_list 2 t3)
+        list(GET type_cpp_types ${t1} cpp_type1)
+        list(GET type_cpp_types ${t2} cpp_type2)
+        list(GET type_cpp_types ${t3} cpp_type3)
+        string(APPEND javacpp_content "template class PairWiseIntTransform<${cpp_type1}, ${cpp_type2}, ${cpp_type3}>;\n")
+    endforeach()
+    string(APPEND javacpp_content "} // namespace pairwise_transforms\n\n")
+
+    # Broadcast
+    string(APPEND javacpp_content "namespace broadcast {\n")
+    foreach(triple IN LISTS combinations_3)
+        string(REPLACE "," ";" triple_list "${triple}")
+        list(GET triple_list 0 t1)
+        list(GET triple_list 1 t2)
+        list(GET triple_list 2 t3)
+        list(GET type_cpp_types ${t1} cpp_type1)
+        list(GET type_cpp_types ${t2} cpp_type2)
+        list(GET type_cpp_types ${t3} cpp_type3)
+        string(APPEND javacpp_content "template class Broadcast<${cpp_type1}, ${cpp_type2}, ${cpp_type3}>;\n")
+    endforeach()
+    string(APPEND javacpp_content "} // namespace broadcast\n\n")
+
+    # BroadcastBool
+    string(APPEND javacpp_content "namespace broadcast {\n")
+    foreach(triple IN LISTS combinations_3)
+        string(REPLACE "," ";" triple_list "${triple}")
+        list(GET triple_list 0 t1)
+        list(GET triple_list 1 t2)
+        list(GET triple_list 2 t3)
+        list(GET type_cpp_types ${t1} cpp_type1)
+        list(GET type_cpp_types ${t2} cpp_type2)
+        list(GET type_cpp_types ${t3} cpp_type3)
+        string(APPEND javacpp_content "template class BroadcastBool<${cpp_type1}, ${cpp_type2}, ${cpp_type3}>;\n")
+    endforeach()
+    string(APPEND javacpp_content "} // namespace broadcast\n\n")
+
+    # BroadcastInt
+    string(APPEND javacpp_content "namespace broadcast {\n")
+    foreach(triple IN LISTS combinations_3)
+        string(REPLACE "," ";" triple_list "${triple}")
+        list(GET triple_list 0 t1)
+        list(GET triple_list 1 t2)
+        list(GET triple_list 2 t3)
+        list(GET type_cpp_types ${t1} cpp_type1)
+        list(GET type_cpp_types ${t2} cpp_type2)
+        list(GET type_cpp_types ${t3} cpp_type3)
+        string(APPEND javacpp_content "template class BroadcastInt<${cpp_type1}, ${cpp_type2}, ${cpp_type3}>;\n")
+    endforeach()
+    string(APPEND javacpp_content "} // namespace broadcast\n\n")
+
+    # Pair-type transforms (X,Z)
+    string(APPEND javacpp_content "// ===== PAIR-TYPE TRANSFORMS (X,Z) =====\n\n")
+
+    foreach(pair IN LISTS combinations_2)
+        string(REPLACE "," ";" pair_list "${pair}")
+        list(GET pair_list 0 t1)
+        list(GET pair_list 1 t2)
+        list(GET type_cpp_types ${t1} cpp_type1)
+        list(GET type_cpp_types ${t2} cpp_type2)
+
+        string(APPEND javacpp_content "namespace transform {\n")
+        string(APPEND javacpp_content "template class TransformAny<${cpp_type1}, ${cpp_type2}>;\n")
+        string(APPEND javacpp_content "template class TransformBool<${cpp_type1}, ${cpp_type2}>;\n")
+        string(APPEND javacpp_content "template class TransformFloat<${cpp_type1}, ${cpp_type2}>;\n")
+        string(APPEND javacpp_content "template class TransformSame<${cpp_type1}, ${cpp_type2}>;\n")
+        string(APPEND javacpp_content "template class TransformStrict<${cpp_type1}, ${cpp_type2}>;\n")
+        string(APPEND javacpp_content "} // namespace transform\n\n")
+    endforeach()
+
+    # Reduce operations (X,Z)
+    string(APPEND javacpp_content "// ===== REDUCE OPERATIONS (X,Z) =====\n\n")
+
+    foreach(pair IN LISTS combinations_2)
+        string(REPLACE "," ";" pair_list "${pair}")
+        list(GET pair_list 0 t1)
+        list(GET pair_list 1 t2)
+        list(GET type_cpp_types ${t1} cpp_type1)
+        list(GET type_cpp_types ${t2} cpp_type2)
+
+        string(APPEND javacpp_content "namespace reduce {\n")
+        string(APPEND javacpp_content "template class ReduceFloatFunction<${cpp_type1}, ${cpp_type2}>;\n")
+        string(APPEND javacpp_content "template class ReduceSameFunction<${cpp_type1}, ${cpp_type2}>;\n")
+        string(APPEND javacpp_content "template class ReduceBoolFunction<${cpp_type1}, ${cpp_type2}>;\n")
+        string(APPEND javacpp_content "template class ReduceLongFunction<${cpp_type1}, ${cpp_type2}>;\n")
+        string(APPEND javacpp_content "} // namespace reduce\n\n")
+    endforeach()
+
+    # Reduce3 (X,Z)
+    string(APPEND javacpp_content "namespace reduce {\n")
+    foreach(pair IN LISTS combinations_2)
+        string(REPLACE "," ";" pair_list "${pair}")
+        list(GET pair_list 0 t1)
+        list(GET pair_list 1 t2)
+        list(GET type_cpp_types ${t1} cpp_type1)
+        list(GET type_cpp_types ${t2} cpp_type2)
+        string(APPEND javacpp_content "template class Reduce3<${cpp_type1}, ${cpp_type2}>;\n")
+    endforeach()
+    string(APPEND javacpp_content "} // namespace reduce\n\n")
+
+    # IndexReduce (X,Z)
+    string(APPEND javacpp_content "namespace indexreduce {\n")
+    foreach(pair IN LISTS combinations_2)
+        string(REPLACE "," ";" pair_list "${pair}")
+        list(GET pair_list 0 t1)
+        list(GET pair_list 1 t2)
+        list(GET type_cpp_types ${t1} cpp_type1)
+        list(GET type_cpp_types ${t2} cpp_type2)
+        string(APPEND javacpp_content "template class IndexReduce<${cpp_type1}, ${cpp_type2}>;\n")
+    endforeach()
+    string(APPEND javacpp_content "} // namespace indexreduce\n\n")
+
+    # SummaryStatsReduce (X,Z)
+    string(APPEND javacpp_content "namespace summarystats {\n")
+    foreach(pair IN LISTS combinations_2)
+        string(REPLACE "," ";" pair_list "${pair}")
+        list(GET pair_list 0 t1)
+        list(GET pair_list 1 t2)
+        list(GET type_cpp_types ${t1} cpp_type1)
+        list(GET type_cpp_types ${t2} cpp_type2)
+        string(APPEND javacpp_content "template class SummaryStatsReduce<${cpp_type1}, ${cpp_type2}>;\n")
+    endforeach()
+    string(APPEND javacpp_content "} // namespace summarystats\n\n")
+
+    # Single-type transforms (X)
+    string(APPEND javacpp_content "// ===== SINGLE-TYPE OPERATIONS (X) =====\n\n")
+
+    foreach(idx IN LISTS active_indices)
+        list(GET type_cpp_types ${idx} cpp_type)
+        string(APPEND javacpp_content "namespace random {\n")
+        string(APPEND javacpp_content "template class RandomFunction<${cpp_type}>;\n")
+        string(APPEND javacpp_content "} // namespace random\n\n")
+    endforeach()
+
+    string(APPEND javacpp_content "} // namespace functions\n\n")
+    string(APPEND javacpp_content "#endif // SD_JAVACPP_INSTANTIATIONS_H\n")
+
+    file(WRITE "${javacpp_header_file}" "${javacpp_content}")
+
+    list(LENGTH combinations_2 total_pairs)
+    list(LENGTH combinations_3 total_triples)
+    list(LENGTH active_indices total_singles)
+    message(STATUS "Generated JavaCPP instantiations header:")
+    message(STATUS "  - File: ${javacpp_header_file}")
+    message(STATUS "  - Single-type combinations: ${total_singles}")
+    message(STATUS "  - Pair combinations: ${total_pairs}")
+    message(STATUS "  - Triple combinations: ${total_triples}")
+    message(STATUS "  - This ensures JavaCPP only generates JNI bindings for valid combinations")
+endfunction()
+
 function(srcore_generate_headers active_indices combinations_2 combinations_3 output_dir type_enums type_cpp_types)
     # Generate the base validity header
     _internal_srcore_generate_validity_header("${active_indices}" "${type_enums}" "${type_cpp_types}" "${combinations_2}" "${combinations_3}" "${output_dir}")
@@ -1250,6 +1606,9 @@ function(srcore_generate_headers active_indices combinations_2 combinations_3 ou
 
     # Also enhance the main selective_rendering.h with runtime dispatch
     srcore_generate_enhanced_header("${active_indices}" "${combinations_2}" "${combinations_3}" "${output_dir}" "${type_enums}" "${type_cpp_types}")
+
+    # Generate JavaCPP compatibility header with ALL transform types
+    srcore_generate_javacpp_header("${combinations_2}" "${combinations_3}" "${output_dir}" "${type_cpp_types}" "${active_indices}")
 endfunction()
 
 function(srcore_validate_output active_indices combinations_2 combinations_3)
@@ -1436,17 +1795,62 @@ function(_internal_srcore_generate_validity_header active_indices type_enums typ
     string(APPEND header_content "// SECTION 1: RAW COMPILATION FLAGS\n")
     string(APPEND header_content "// ============================================================================\n\n")
 
-    # Collect all compiled type numbers
+    # Collect all compiled type numbers from ACTUAL combinations, not from type_enums
+    # This ensures SD_*_COMPILED flags match what was actually instantiated
     list(LENGTH type_enums num_types)
     set(compiled_type_numbers "")
 
-    foreach(i RANGE 0 ${num_types})
+    # Extract types from combinations_2
+    foreach(combo IN LISTS combinations_2)
+        string(REPLACE "," ";" parts "${combo}")
+        list(GET parts 0 i)
+        list(GET parts 1 j)
         if(i LESS ${num_types})
-            list(GET type_enums ${i} enum_value)
-            enum_to_int_value("${enum_value}" int_value)
-            list(FIND compiled_type_numbers "${int_value}" found_idx)
+            list(GET type_enums ${i} enum_i)
+            enum_to_int_value("${enum_i}" int_i)
+            list(FIND compiled_type_numbers "${int_i}" found_idx)
             if(found_idx EQUAL -1)
-                list(APPEND compiled_type_numbers "${int_value}")
+                list(APPEND compiled_type_numbers "${int_i}")
+            endif()
+        endif()
+        if(j LESS ${num_types})
+            list(GET type_enums ${j} enum_j)
+            enum_to_int_value("${enum_j}" int_j)
+            list(FIND compiled_type_numbers "${int_j}" found_idx)
+            if(found_idx EQUAL -1)
+                list(APPEND compiled_type_numbers "${int_j}")
+            endif()
+        endif()
+    endforeach()
+
+    # Extract types from combinations_3
+    foreach(combo IN LISTS combinations_3)
+        string(REPLACE "," ";" parts "${combo}")
+        list(GET parts 0 i)
+        list(GET parts 1 j)
+        list(GET parts 2 k)
+        if(i LESS ${num_types})
+            list(GET type_enums ${i} enum_i)
+            enum_to_int_value("${enum_i}" int_i)
+            list(FIND compiled_type_numbers "${int_i}" found_idx)
+            if(found_idx EQUAL -1)
+                list(APPEND compiled_type_numbers "${int_i}")
+            endif()
+        endif()
+        if(j LESS ${num_types})
+            list(GET type_enums ${j} enum_j)
+            enum_to_int_value("${enum_j}" int_j)
+            list(FIND compiled_type_numbers "${int_j}" found_idx)
+            if(found_idx EQUAL -1)
+                list(APPEND compiled_type_numbers "${int_j}")
+            endif()
+        endif()
+        if(k LESS ${num_types})
+            list(GET type_enums ${k} enum_k)
+            enum_to_int_value("${enum_k}" int_k)
+            list(FIND compiled_type_numbers "${int_k}" found_idx)
+            if(found_idx EQUAL -1)
+                list(APPEND compiled_type_numbers "${int_k}")
             endif()
         endif()
     endforeach()
@@ -1705,6 +2109,7 @@ function(_internal_srcore_generate_validity_header active_indices type_enums typ
     list(APPEND type_mappings "unsigned_long:14")
     list(APPEND type_mappings "bfloat16:17")
     list(APPEND type_mappings "bfloat:17")
+    list(APPEND type_mappings "stdstring:50")
     list(APPEND type_mappings "SignedChar:7")
     list(APPEND type_mappings "UnsignedChar:11")
     list(APPEND type_mappings "signed_char:7")
@@ -1734,6 +2139,50 @@ function(_internal_srcore_generate_validity_header active_indices type_enums typ
         list(GET mapping_parts 1 type_num)
         string(APPEND core_content "#define SD_TYPE_TO_NUM_${type_name} ${type_num}\n")
         string(APPEND core_content "#define SD_ALIAS_TO_NUM_${type_name} ${type_num}\n")
+    endforeach()
+    string(APPEND core_content "\n")
+
+    # ============================================================================
+    # SECTION 2.5: HAS_* FEATURE DETECTION MACROS
+    # ============================================================================
+    string(APPEND core_content "// HAS_* macros for DataTypeUtils.h scalarTypesForNDarray trait\n")
+    string(APPEND core_content "// These indicate which types are compiled in selective rendering mode\n")
+
+    # Map type names to HAS_* macro names
+    set(HAS_MACRO_MAPPINGS "")
+    list(APPEND HAS_MACRO_MAPPINGS "bool:BOOL")
+    list(APPEND HAS_MACRO_MAPPINGS "float16:FLOAT16")
+    list(APPEND HAS_MACRO_MAPPINGS "bfloat16:BFLOAT16")
+    list(APPEND HAS_MACRO_MAPPINGS "float32:FLOAT32")
+    list(APPEND HAS_MACRO_MAPPINGS "double:DOUBLE")
+    list(APPEND HAS_MACRO_MAPPINGS "int8:INT8")
+    list(APPEND HAS_MACRO_MAPPINGS "int16:INT16")
+    list(APPEND HAS_MACRO_MAPPINGS "int32:INT32")
+    list(APPEND HAS_MACRO_MAPPINGS "int64:INT64")
+    list(APPEND HAS_MACRO_MAPPINGS "uint8:UINT8")
+    list(APPEND HAS_MACRO_MAPPINGS "uint16:UINT16")
+    list(APPEND HAS_MACRO_MAPPINGS "uint32:UINT32")
+    list(APPEND HAS_MACRO_MAPPINGS "uint64:UNSIGNEDLONG")
+    list(APPEND HAS_MACRO_MAPPINGS "utf8:UTF8")
+    list(APPEND HAS_MACRO_MAPPINGS "utf16:UTF16")
+    list(APPEND HAS_MACRO_MAPPINGS "utf32:UTF32")
+
+    # Generate HAS_* macros for enabled types
+    foreach(type_name IN LISTS SD_TYPES_LIST)
+        # Convert type name to lowercase for matching
+        string(TOLOWER "${type_name}" type_lower)
+
+        # Find matching HAS_* macro name
+        foreach(mapping IN LISTS HAS_MACRO_MAPPINGS)
+            string(REPLACE ":" ";" mapping_parts "${mapping}")
+            list(GET mapping_parts 0 map_type)
+            list(GET mapping_parts 1 map_macro)
+
+            if("${type_lower}" STREQUAL "${map_type}")
+                string(APPEND core_content "#define HAS_${map_macro} 1\n")
+                break()
+            endif()
+        endforeach()
     endforeach()
     string(APPEND core_content "\n")
 
@@ -1770,31 +2219,31 @@ function(_internal_srcore_generate_validity_header active_indices type_enums typ
 
     # Close and write core.h (type mappings - always needed)
     string(APPEND core_content "\n#endif // SD_SELECTIVE_RENDERING_CORE_H\n")
-    file(WRITE "${sr_dir}/core.h" "${core_content}")
+    _srcore_write_if_different("${sr_dir}/core.h" "${core_content}")
 
     # Close and write bool_types.h
     string(APPEND bool_content "\n#endif // SD_SELECTIVE_RENDERING_BOOL_TYPES_H\n")
-    file(WRITE "${sr_dir}/bool_types.h" "${bool_content}")
+    _srcore_write_if_different("${sr_dir}/bool_types.h" "${bool_content}")
 
     # Close and write float_types.h
     string(APPEND float_content "\n#endif // SD_SELECTIVE_RENDERING_FLOAT_TYPES_H\n")
-    file(WRITE "${sr_dir}/float_types.h" "${float_content}")
+    _srcore_write_if_different("${sr_dir}/float_types.h" "${float_content}")
 
     # Close and write bfloat_types.h
     string(APPEND bfloat_content "\n#endif // SD_SELECTIVE_RENDERING_BFLOAT_TYPES_H\n")
-    file(WRITE "${sr_dir}/bfloat_types.h" "${bfloat_content}")
+    _srcore_write_if_different("${sr_dir}/bfloat_types.h" "${bfloat_content}")
 
     # Close and write int_types.h
     string(APPEND int_content "\n#endif // SD_SELECTIVE_RENDERING_INT_TYPES_H\n")
-    file(WRITE "${sr_dir}/int_types.h" "${int_content}")
+    _srcore_write_if_different("${sr_dir}/int_types.h" "${int_content}")
 
     # Close and write uint_types.h
     string(APPEND uint_content "\n#endif // SD_SELECTIVE_RENDERING_UINT_TYPES_H\n")
-    file(WRITE "${sr_dir}/uint_types.h" "${uint_content}")
+    _srcore_write_if_different("${sr_dir}/uint_types.h" "${uint_content}")
 
     # Close and write string_types.h
     string(APPEND string_content "\n#endif // SD_SELECTIVE_RENDERING_STRING_TYPES_H\n")
-    file(WRITE "${sr_dir}/string_types.h" "${string_content}")
+    _srcore_write_if_different("${sr_dir}/string_types.h" "${string_content}")
 
     # Replace header_content with includes to all category headers
     set(header_content "")
@@ -1821,7 +2270,7 @@ function(_internal_srcore_generate_validity_header active_indices type_enums typ
     string(APPEND header_content "#endif // SD_SELECTIVE_RENDERING_H\n")
 
     # Write the master header file
-    file(WRITE "${header_file}" "${header_content}")
+    _srcore_write_if_different("${header_file}" "${header_content}")
 
     # Report generation results
     list(LENGTH all_triple_keys total_triple_combinations)

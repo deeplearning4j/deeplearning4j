@@ -485,13 +485,6 @@ SD_HOST_DEVICE SD_INLINE sd::LongType sd_abs<sd::LongType, sd::LongType>(sd::Lon
  SD_PRINT_MATH_FUNC("sd_abs<sd::LongType>", value, result,sd::LongType);
  return result;
 }
-
-template <>
-SD_HOST_DEVICE SD_INLINE long sd_abs<long, long>(long value) {
- long result = labs(value);
- SD_PRINT_MATH_FUNC("sd_abs<long>", value, result,long);
- return result;
-}
 #endif // HAS_LONG
 
 #ifdef HAS_BOOL
@@ -529,9 +522,11 @@ SD_HOST_DEVICE SD_INLINE uint32_t sd_abs<uint32_t>(uint32_t value) {
 #ifdef HAS_UINT64
 template <>
 SD_HOST_DEVICE SD_INLINE sd::UnsignedLong sd_abs<sd::UnsignedLong>(sd::UnsignedLong value) {
- SD_PRINT_MATH_FUNC("sd_abs<sd::UnsignedLong>", value, value,sd::UnsignedLong);
+ SD_PRINT_MATH_FUNC("sd_abs<sd::UnsignedLong>", value, value, sd::UnsignedLong);
  return value;
 }
+
+
 #endif
 
 #ifdef HAS_INT8
@@ -675,24 +670,18 @@ SD_HOST_DEVICE SD_INLINE bool sd_isnan<sd::LongType>(sd::LongType value) {
   return result;
 }
 
-template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isnan<long>(long value) {
-  bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isnan<long>", value, result,long);
-  return result;
-}
 #endif // HAS_LONG
 
 #ifdef HAS_UINT64
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<sd::UnsignedLong>(sd::UnsignedLong value) {
   bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isnan<sd::UnsignedLong>", value, result,sd::UnsignedLong);
+  SD_PRINT_MATH_FUNC("sd_isnan<sd::UnsignedLong>", value, result, sd::UnsignedLong);
   return result;
 }
 
 
-#endif // HAS_UNSIGNEDLONG
+#endif // HAS_UINT64
 
 // sd_isinf specializations with HAS_* guards
 
@@ -818,23 +807,16 @@ SD_HOST_DEVICE SD_INLINE bool sd_isinf<sd::LongType>(sd::LongType value) {
   return result;
 }
 
-template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isinf<long>(long value) {
-  bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<long>", value, result,long);
-  return result;
-}
-
-
 #endif // HAS_LONG
 
 #ifdef HAS_UINT64
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<sd::UnsignedLong>(sd::UnsignedLong value) {
   bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<sd::UnsignedLong>", value, result,sd::UnsignedLong);
+  SD_PRINT_MATH_FUNC("sd_isinf<sd::UnsignedLong>", value, result, sd::UnsignedLong);
   return result;
 }
+
 
 #endif // HAS_UINT64
 

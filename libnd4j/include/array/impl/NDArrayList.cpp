@@ -45,7 +45,7 @@ NDArrayList::~NDArrayList() {
   _chunks.clear();
 }
 
-NDArray* NDArrayList::read(int idx) { return new NDArray(readRaw(idx)->dup()); }
+NDArray* NDArrayList::read(int idx) { return readRaw(idx)->dup(); }  // dup() already returns NDArray*
 
 sd::DataType NDArrayList::dataType() { return _dtype; }
 
@@ -252,7 +252,7 @@ NDArrayList* NDArrayList::clone() {
   list->_elements.store(_elements.load());
 
   for (auto const& v : _chunks) {
-    list->_chunks[v.first] = new NDArray(v.second->dup());
+    list->_chunks[v.first] = v.second->dup();  // dup() already returns NDArray*
   }
 
   return list;

@@ -41,8 +41,38 @@ import java.util.List;
 @Slf4j
 public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
+    /**
+     * Helper method to safely close existing scalarValue before creating a new one.
+     * This prevents DataBuffer memory leaks.
+     */
+    protected void closeScalarValue() {
+        if (this.scalarValue != null) {
+            try {
+                if (this.scalarValue.data() != null) {
+                    this.scalarValue.data().close();
+                }
+                this.scalarValue.close();
+            } catch (Exception e) {
+                // Ignore close errors
+            }
+            this.scalarValue = null;
+        }
+    }
+
+    /**
+     * Public cleanup method to release scalar value resources when operation is no longer needed.
+     * This helps prevent DataBuffer memory leaks from cached scalar values.
+     */
+    public void closeScalar() {
+        closeScalarValue();
+    }
+
     public BaseScalarOp() {
-        this.scalarValue = Nd4j.scalar(0.f);
+        closeScalarValue();
+        // Don't allocate scalar during no-arg construction - this is used for prototype instances
+        // cached in DifferentialFunctionClassHolder.OP_NAME_MAP which persist for JVM lifetime.
+        // Scalar will be lazily allocated when actually needed via scalar() method.
+        this.scalarValue = null;
     }
 
     public BaseScalarOp(INDArray x, INDArray y, INDArray z, Number num) {
@@ -50,6 +80,7 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
         if (x.isCompressed())
             Nd4j.getCompressor().decompressi(x);
 
+        closeScalarValue();
         this.scalarValue = Nd4j.scalar(x.dataType(), num);
 
     }
@@ -59,6 +90,7 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
         if (x.isCompressed())
             Nd4j.getCompressor().decompressi(x);
 
+        closeScalarValue();
         this.scalarValue = Nd4j.scalar(x.dataType(), num);
 
 
@@ -68,6 +100,7 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
         if (x.isCompressed())
             Nd4j.getCompressor().decompressi(x);
 
+        closeScalarValue();
         this.scalarValue = Nd4j.scalar(x.dataType(), set);
 
     }
@@ -89,6 +122,7 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
                         boolean inPlace,
                         Object[] extraArgs) {
         super(sameDiff,inPlace,extraArgs);
+        closeScalarValue();
         this.scalarValue = Nd4j.scalar(i_v.dataType(), scalar);
         this.xVertexId = i_v.name();
         sameDiff.addArgsFor(new String[]{xVertexId},this);
@@ -130,7 +164,8 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
         }
 
         val aT = arg().dataType();
-        val sT = scalarValue.dataType();
+        // Handle null scalarValue (can happen for prototype instances in OP_NAME_MAP)
+        val sT = (scalarValue != null) ? scalarValue.dataType() : aT;
 
         LongShapeDescriptor desc = x.isEmpty() ? LongShapeDescriptor.fromShape(x.shape(),Shape.pickPairwiseDataType(aT, sT)) :
                 LongShapeDescriptor.fromShape(s, Shape.pickPairwiseDataType(aT, sT));
@@ -145,11 +180,13 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
     @Override
     public void setScalar(Number scalar) {
+        closeScalarValue();
         this.scalarValue = Nd4j.scalar(x.dataType(), scalar);
     }
 
     @Override
     public void setScalar(INDArray scalar){
+        closeScalarValue();
         this.scalarValue = scalar;
     }
 

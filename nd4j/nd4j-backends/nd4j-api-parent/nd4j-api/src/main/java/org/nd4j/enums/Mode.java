@@ -26,9 +26,19 @@ package org.nd4j.enums;
  * padding mode: CONSTANT, REFLECT, SYMMETRIC
  */
 public enum Mode {
-  CONSTANT,
+  CONSTANT(0),
 
-  REFLECT,
+  REFLECT(1),
 
-  SYMMETRIC
+  SYMMETRIC(2);
+
+  private final int methodIndex;
+
+  Mode(int index) {
+    this.methodIndex = index;
+  }
+
+  public int methodIndex() {
+    return methodIndex;
+  }
 }

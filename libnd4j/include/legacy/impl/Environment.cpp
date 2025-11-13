@@ -170,6 +170,100 @@ Environment::Environment() {
    _blasFallback = true;
  }
 
+ // NDArray lifecycle tracking configuration (only effective when SD_GCC_FUNCTRACE is defined)
+#if defined(SD_GCC_FUNCTRACE)
+ // Check if lifecycle tracking should be disabled
+ const char *lifecycle_tracking = std::getenv("SD_LIFECYCLE_TRACKING");
+ if (lifecycle_tracking != nullptr) {
+   std::string val(lifecycle_tracking);
+   if (val == "0" || val == "false" || val == "FALSE") {
+     _lifecycleTracking.store(false);
+   }
+ }
+
+ // Track views by default, but allow override
+ const char *track_views = std::getenv("SD_TRACK_VIEWS");
+ if (track_views != nullptr) {
+   std::string val(track_views);
+   if (val == "0" || val == "false" || val == "FALSE") {
+     _trackViews.store(false);
+   }
+ }
+
+ // Track deletions by default, but allow override
+ const char *track_deletions = std::getenv("SD_TRACK_DELETIONS");
+ if (track_deletions != nullptr) {
+   std::string val(track_deletions);
+   if (val == "0" || val == "false" || val == "FALSE") {
+     _trackDeletions.store(false);
+   }
+ }
+
+ // Stack depth for traces (default 32)
+ const char *stack_depth = std::getenv("SD_STACK_DEPTH");
+ if (stack_depth != nullptr) {
+   try {
+     std::string val(stack_depth);
+     int depth = std::stoi(val);
+     if (depth > 0) {
+       _stackDepth.store(depth);
+     }
+   } catch (std::invalid_argument &e) {
+     // keep default
+   } catch (std::out_of_range &e) {
+     // keep default
+   }
+ }
+
+ // Report interval in seconds (default 300 = 5 minutes)
+ const char *report_interval = std::getenv("SD_REPORT_INTERVAL");
+ if (report_interval != nullptr) {
+   try {
+     std::string val(report_interval);
+     int interval = std::stoi(val);
+     if (interval > 0) {
+       _reportInterval.store(interval);
+     }
+   } catch (std::invalid_argument &e) {
+     // keep default
+   } catch (std::out_of_range &e) {
+     // keep default
+   }
+ }
+
+ // Max deletion history (default 10000)
+ const char *max_deletion_history = std::getenv("SD_MAX_DELETION_HISTORY");
+ if (max_deletion_history != nullptr) {
+   try {
+     std::string val(max_deletion_history);
+     size_t max_hist = std::stoul(val);
+     _maxDeletionHistory.store(max_hist);
+   } catch (std::invalid_argument &e) {
+     // keep default
+   } catch (std::out_of_range &e) {
+     // keep default
+   }
+ }
+
+ // Snapshot files - write periodic file snapshots (default off)
+ const char *snapshot_files = std::getenv("SD_LIFECYCLE_SNAPSHOT_FILES");
+ if (snapshot_files != nullptr) {
+   std::string val(snapshot_files);
+   if (val == "1" || val == "true" || val == "TRUE") {
+     _snapshotFiles.store(true);
+   }
+ }
+
+ // Track operations - enable operation name tracking (default off)
+ const char *track_operations = std::getenv("SD_LIFECYCLE_TRACK_OPERATIONS");
+ if (track_operations != nullptr) {
+   std::string val(track_operations);
+   if (val == "1" || val == "true" || val == "TRUE") {
+     _trackOperations.store(true);
+   }
+ }
+#endif
+
 #ifdef SD_CUDA
  int devCnt = 0;
  cudaGetDeviceCount(&devCnt);
@@ -993,4 +1087,45 @@ void Environment::setCudaDeviceSchedule(int schedule) {
  void Environment::setFuncTracePrintAllocate(bool reallyPrint) { this->funcTracePrintAllocate = reallyPrint; }
 
  void Environment::setFuncTracePrintDeallocate(bool reallyPrint) { this->funcTracePrintDeallocate = reallyPrint; }
+
+ // NDArray lifecycle tracking getters/setters
+ bool Environment::isLifecycleTracking() { return _lifecycleTracking.load(); }
+
+ void Environment::setLifecycleTracking(bool enabled) { _lifecycleTracking.store(enabled); }
+
+ bool Environment::isTrackViews() { return _trackViews.load(); }
+
+ void Environment::setTrackViews(bool track) { _trackViews.store(track); }
+
+ bool Environment::isTrackDeletions() { return _trackDeletions.load(); }
+
+ void Environment::setTrackDeletions(bool track) { _trackDeletions.store(track); }
+
+ int Environment::getStackDepth() { return _stackDepth.load(); }
+
+ void Environment::setStackDepth(int depth) {
+   if (depth > 0) {
+     _stackDepth.store(depth);
+   }
+ }
+
+ int Environment::getReportInterval() { return _reportInterval.load(); }
+
+ void Environment::setReportInterval(int seconds) {
+   if (seconds > 0) {
+     _reportInterval.store(seconds);
+   }
+ }
+
+ size_t Environment::getMaxDeletionHistory() { return _maxDeletionHistory.load(); }
+
+ void Environment::setMaxDeletionHistory(size_t max) { _maxDeletionHistory.store(max); }
+
+ bool Environment::isSnapshotFiles() { return _snapshotFiles.load(); }
+
+ void Environment::setSnapshotFiles(bool enabled) { _snapshotFiles.store(enabled); }
+
+ bool Environment::isTrackOperations() { return _trackOperations.load(); }
+
+ void Environment::setTrackOperations(bool enabled) { _trackOperations.store(enabled); }
 }

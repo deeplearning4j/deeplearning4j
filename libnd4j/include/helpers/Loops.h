@@ -68,7 +68,7 @@ class SD_LIB_HIDDEN ReductionBoolLoops : public ReductionLoops<X, Z, X> {
 };
 
 template <typename X, typename Z>
-class  ReductionLongLoops : public ReductionLoops<X, Z, X> {
+class SD_LIB_HIDDEN ReductionLongLoops : public ReductionLoops<X, Z, X> {
  public:
   static void wrapper(int opNum, memory::Workspace* workspace, const X* x, const LongType* xShapeInfo, Z* z,
                       const LongType* zShapeInfo, const LongType* dims, X* extraParams);
@@ -1338,5 +1338,10 @@ void Reduction3Loops<X, Z>::loopReduce3All(const X* x, const LongType* xShapeInf
 }
 
 }  // namespace sd
+
+// Include implementation for ReductionLongLoops to make innerloopReduce visible for inlining
+#ifdef SD_LOOPS_INLINED
+#include <helpers/cpu/loops/ReductionLoops_long.cpp>
+#endif
 
 #endif  // LIBND4J_LOOPS_H

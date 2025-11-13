@@ -69,7 +69,7 @@ sd::LongType checkIndices_(NDArray& indices, NDArray& output, const int axis) {
 
 ///////////////////////////////////////////////////////////////////
 sd::LongType checkIndices(sd::LaunchContext* context, NDArray& indices, NDArray& output, const int axis) {
-  BUILD_SINGLE_SELECTOR(indices.dataType(), return checkIndices_, (indices, output, axis), SD_INDEXING_TYPES);
+  BUILD_SINGLE_SELECTOR(indices.dataType(), return checkIndices_, (indices, output, axis), SD_INTEGER_TYPES);
 }
 
 ///////////////////////////////////////////////////////////////////

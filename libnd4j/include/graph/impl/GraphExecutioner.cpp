@@ -138,7 +138,7 @@ Status GraphExecutioner::executeFlatNode(Graph *graph, Node *node, VariableSpace
         // if we're not using symbolic lookup - we'll use sequential approach then
         auto p = node->input()->at(cnt);
         auto array = variableSpace->getVariable(p)->getNDArray();
-        auto vr = new NDArray(array->dup(array->ordering()));
+        auto vr = array->dup(array->ordering());  // dup() already returns NDArray*
         v->setNDArray(vr);
       }
 

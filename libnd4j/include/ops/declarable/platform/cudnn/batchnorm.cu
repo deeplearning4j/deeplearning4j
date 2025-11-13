@@ -276,8 +276,8 @@ PLATFORM_IMPL(batchnorm, ENGINE_CUDA) {
   if (needPermut) {  // if NHWC
     std::vector<LongType> perm =
         inRank == 4 ? std::vector<LongType>({0, 3, 1, 2}) : std::vector<LongType>({0, 4, 1, 2, 3});  // NHWC -> NCHW
-    tmpInput.reset(new NDArray(input->permute(perm)));
-    tmpOutput.reset(new NDArray(output->permute(perm)));
+    tmpInput.reset(input->permute(perm));  // permute() already returns NDArray*
+    tmpOutput.reset(output->permute(perm));
     input = tmpInput.get();
     output = tmpOutput.get();
   }
@@ -451,9 +451,9 @@ PLATFORM_IMPL(batchnorm_bp, ENGINE_CUDA) {
   if (needPermut) {  // if NHWC
     std::vector<LongType> perm =
         inRank == 4 ? std::vector<LongType>({0, 3, 1, 2}) : std::vector<LongType>({0, 4, 1, 2, 3});  // NHWC -> NCHW
-    tmpInput.reset(new NDArray(input->permute(perm)));
-    tmpGradO.reset(new NDArray(gradO->permute(perm)));
-    tmpGradI.reset(new NDArray(gradI->permute(perm)));
+    tmpInput.reset(input->permute(perm));  // permute() already returns NDArray*
+    tmpGradO.reset(gradO->permute(perm));
+    tmpGradI.reset(gradI->permute(perm));
     input = tmpInput.get();
     gradO = tmpGradO.get();
     gradI = tmpGradI.get();

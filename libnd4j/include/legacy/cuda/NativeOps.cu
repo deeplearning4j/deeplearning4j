@@ -250,7 +250,7 @@ void printDeviceBuffer(OpaqueDataBuffer *buffer, sd::LongType offset) {
   }
 
   auto xType = buffer->dataBuffer()->getDataType();
-  BUILD_SINGLE_SELECTOR(xType, _printHostBuffer,(buffer,offset),SD_COMMON_TYPES_ALL);
+  BUILD_SINGLE_SELECTOR(xType, _printHostBuffer,(buffer,offset),SD_COMMON_TYPES);
 
 
 }
@@ -275,7 +275,7 @@ void printDeviceBuffer(OpaqueDataBuffer *buffer) {
   } else {
     sd_printf("Device pointer address: none\n",0);
   }
-  BUILD_SINGLE_SELECTOR(xType, _printDeviceBuffer,(buffer),SD_COMMON_TYPES_ALL);
+  BUILD_SINGLE_SELECTOR(xType, _printDeviceBuffer,(buffer),SD_COMMON_TYPES);
 
 
   if(buffer->primary() != nullptr) {

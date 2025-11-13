@@ -104,4 +104,28 @@ TadPack* ConstantTadHelper::tadForDimensions(LongType* originalShape, LongType* 
   }
 }
 
+void ConstantTadHelper::clearCache() {
+  _trie.clear();
+}
+
+LongType ConstantTadHelper::getCachedEntries() const {
+  return _trie.getCachedEntries();
+}
+
+LongType ConstantTadHelper::getCachedBytes() const {
+  return _trie.getCachedBytes();
+}
+
+LongType ConstantTadHelper::getPeakCachedEntries() const {
+  return _trie.getPeakCachedEntries();
+}
+
+LongType ConstantTadHelper::getPeakCachedBytes() const {
+  return _trie.getPeakCachedBytes();
+}
+
+std::string ConstantTadHelper::toString(int maxDepth, int maxEntries) const {
+  return _trie.toString(maxDepth, maxEntries);
+}
+
 } // namespace sd

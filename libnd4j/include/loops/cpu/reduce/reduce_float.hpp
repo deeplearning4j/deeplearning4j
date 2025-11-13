@@ -289,14 +289,14 @@ void SD_HOST ReduceFloatFunction<X, Z>::exec(sd::memory::Workspace *workspace, c
 }
 
 
-template <typename X, typename Y>
-Y ReduceFloatFunction<X, Y>::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo,
+template <typename X, typename Z>
+Z ReduceFloatFunction<X, Z>::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo,
                                         void *extraParams) {
   RETURNING_DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams), REDUCE_FLOAT_OPS);
 }
 
-template <typename X, typename Y>
-void ReduceFloatFunction<X, Y>::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo,
+template <typename X, typename Z>
+void ReduceFloatFunction<X, Z>::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo,
                                            void *extraParams, void *z, const sd::LongType *zShapeInfo) {
   DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo), REDUCE_FLOAT_OPS);
 }
@@ -368,8 +368,8 @@ Z SD_HOST ReduceFloatFunction<X, Z>::execScalar(const void *vx, sd::LongType xEw
   return SafeTypeUtils::safeCast<InterType, Z>(OpType::postProcess(intermediate[0], length, compatibleExtraParams));
 }
 
-template <typename X, typename Y>
-void ReduceFloatFunction<X, Y>::exec(int opNum, sd::memory::Workspace *workspace, const void *vx,
+template <typename X, typename Z>
+void ReduceFloatFunction<X, Z>::exec(int opNum, sd::memory::Workspace *workspace, const void *vx,
                                      const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
                                      const sd::LongType *zShapeInfo, const sd::LongType *dims) {
   DISPATCH_BY_OPNUM_TT(exec, PARAMS(workspace, vx, xShapeInfo, vextraParams, vz, zShapeInfo, dims), REDUCE_FLOAT_OPS);

@@ -58,6 +58,50 @@ class SD_LIB_EXPORT ConstantTadHelper {
 
   TadPack *tadForDimensions(LongType *originalShape, LongType dimension);
   TadPack *tadForDimensions(LongType *originalShape, std::vector<LongType> *dimensions);
+
+  /**
+   * Clear all cached TAD packs to prevent memory leaks during testing
+   */
+  void clearCache();
+
+  /**
+   * Get the total number of cached TAD pack entries.
+   *
+   * @return Total number of cached TAD packs across all stripes
+   */
+  LongType getCachedEntries() const;
+
+  /**
+   * Get the total memory used by cached TAD packs in bytes.
+   * This includes both shape_info and offset buffer sizes.
+   *
+   * @return Total memory used in bytes
+   */
+  LongType getCachedBytes() const;
+
+  /**
+   * Get the peak number of TAD pack entries that were cached simultaneously.
+   *
+   * @return Peak number of cached TAD packs
+   */
+  LongType getPeakCachedEntries() const;
+
+  /**
+   * Get the peak memory usage by cached TAD packs in bytes.
+   *
+   * @return Peak memory usage in bytes
+   */
+  LongType getPeakCachedBytes() const;
+
+  /**
+   * Generate a human-readable string representation of the TAD cache.
+   * Shows the trie structure with cached TAD packs for debugging.
+   *
+   * @param maxDepth Maximum depth to traverse (default: 10, -1 for unlimited)
+   * @param maxEntries Maximum number of entries to show (default: 100, -1 for unlimited)
+   * @return String representation of the cache
+   */
+  std::string toString(int maxDepth = 10, int maxEntries = 100) const;
 };
 }  // namespace sd
 

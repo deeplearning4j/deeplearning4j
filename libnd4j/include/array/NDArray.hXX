@@ -50,7 +50,30 @@
 #include <helpers/reshapeNoCopy.h>
 #include <array/NDArrayHelpers.hXX>
 #include "ArrayOptions.hXX"
+
+#if defined(SD_GCC_FUNCTRACE)
+#include <array/NDArrayLifecycleTracker.h>
+#endif
+
 namespace sd {
+
+// Macro to record NDArray allocation in lifecycle tracker
+#if defined(SD_GCC_FUNCTRACE)
+#define RECORD_NDARRAY_ALLOCATION() \
+  do { \
+    if (!isEmpty() && _shapeInfo != nullptr) { \
+      std::vector<sd::LongType> shape_vec; \
+      for (int i = 0; i < rankOf(); i++) { \
+        shape_vec.push_back(sizeAt(i)); \
+      } \
+      size_t size_bytes = lengthOf() * sizeOfT(); \
+      array::NDArrayLifecycleTracker::getInstance().recordAllocation( \
+        this, size_bytes, this->dataType(), shape_vec, this->isView()); \
+    } \
+  } while(0)
+#else
+#define RECORD_NDARRAY_ALLOCATION() do {} while(0)
+#endif
 
 #ifdef HAS_UTF8
 template <>
@@ -288,6 +311,8 @@ NDArray::NDArray(NDArray &other) {
   }
 
   _offset = other._offset;
+
+  RECORD_NDARRAY_ALLOCATION();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -329,6 +354,8 @@ NDArray::NDArray(const char order, std::vector<sd::LongType> &shape, sd::DataTyp
   _buffer =
       new DataBuffer(len * DataTypeUtils::sizeOf(dtype), dtype, getContext()->getWorkspace());
   _buffer->setToZeroBuffers();
+
+  RECORD_NDARRAY_ALLOCATION();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -383,6 +410,7 @@ NDArray::NDArray(char order, std::vector<LongType> &shape,  std::vector<double> 
   }
   tickWriteHost();
   syncToDevice();
+  RECORD_NDARRAY_ALLOCATION();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -420,6 +448,7 @@ NDArray::NDArray(NDArray *other, const bool copyStrides, sd::LaunchContext *cont
                              false,false,
                              getContext()->getWorkspace());
   }
+  RECORD_NDARRAY_ALLOCATION();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -445,6 +474,7 @@ NDArray::NDArray(void *buffer, char order, std::vector<LongType> &shape, DataTyp
   int len = isScalar() ? 1 : lengthOf();
   _buffer = new DataBuffer(buffer, len * sizeOfT(), dataType(), isBuffAlloc,
                            getContext()->getWorkspace());
+  RECORD_NDARRAY_ALLOCATION();
 }
 
 NDArray::NDArray(void *buffer, const char order, const std::vector<sd::LongType> &shape, sd::DataType dtype,
@@ -468,6 +498,7 @@ NDArray::NDArray(void *buffer, const char order, const std::vector<sd::LongType>
   int len = isScalar() ? 1 : lengthOf();
   _buffer = new DataBuffer(buffer, len * sizeOfT(), dataType(), isBuffAlloc,
                            getContext()->getWorkspace());
+  RECORD_NDARRAY_ALLOCATION();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -521,6 +552,7 @@ NDArray::NDArray(sd::LongType *shapeInfo, const sd::DataType dtype, const bool c
 
     if (nullify) _buffer->setToZeroBuffers();
   }
+  RECORD_NDARRAY_ALLOCATION();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -554,6 +586,7 @@ NDArray::NDArray(sd::DataType dtype, sd::LaunchContext *context, const bool isSc
     this->_shapeInfo = constDesc;
     this->_shapeInfoD = nullptr;
   }
+  RECORD_NDARRAY_ALLOCATION();
 }
 //////////////////////////////////////////////////////////////////////////
 // move constructor
@@ -566,16 +599,31 @@ NDArray::NDArray(NDArray &&other) noexcept {
 
   _buffer = other._buffer;
   _shapeInfoBuffer = other._shapeInfoBuffer;
-  if(other._shapeInfo == nullptr) {
-    THROW_EXCEPTION("NDArray::NDArray(NDArray &&other) - other._shapeInfo is nullptr");
+
+  // Handle moving from already-moved objects: recover _shapeInfo from _shapeInfoBuffer if needed
+  // This allows moving from moved-from objects without throwing exceptions
+  if(other._shapeInfo == nullptr && _shapeInfoBuffer != nullptr) {
+    // Recover shape info from buffer - this handles already-moved objects
+    _shapeInfo = _shapeInfoBuffer->primary();
+    _shapeInfoD = _shapeInfoBuffer->special();
+    // Validate that recovery succeeded
+    if (_shapeInfo == nullptr) {
+      THROW_EXCEPTION("NDArray::NDArray(NDArray &&other) - _shapeInfoBuffer->primary() returned nullptr");
+    }
+  } else if(other._shapeInfo != nullptr) {
+    // Normal case: other has valid _shapeInfo
+    _shapeInfo = other._shapeInfo;
+    _shapeInfoD = other._shapeInfoD;
+  } else {
+    // Both other._shapeInfo and _shapeInfoBuffer are null - this is an error
+    THROW_EXCEPTION("NDArray::NDArray(NDArray &&other) - other has neither _shapeInfo nor _shapeInfoBuffer");
   }
 
-  _shapeInfo = other._shapeInfo;
-  _shapeInfoD = other._shapeInfoD;
   _context = other._context;
   _length = other._length;
 
-  other._buffer = new DataBuffer();
+  other._buffer = nullptr;
+  other._shapeInfoBuffer = nullptr;
   other._shapeInfo = other._shapeInfoD = nullptr;
   other._length = 0;
 
@@ -583,6 +631,7 @@ NDArray::NDArray(NDArray &&other) noexcept {
   creationTrace = StackTrace();
   creationTrace.load_here();
 #endif
+  RECORD_NDARRAY_ALLOCATION();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -602,6 +651,7 @@ NDArray::NDArray(sd::LaunchContext *context) {
   creationTrace = StackTrace();
   creationTrace.load_here();
 #endif
+  RECORD_NDARRAY_ALLOCATION();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -618,6 +668,7 @@ NDArray::NDArray(sd::LongType *shapeInfo, const bool copyStrides, sd::LaunchCont
   creationTrace.load_here();
 #endif
 
+  RECORD_NDARRAY_ALLOCATION();
 }
 
 #ifndef __JAVACPP_HACK__
@@ -630,6 +681,11 @@ NDArray::~NDArray() {
     sd_print("NDArray::~NDArray() - destructor printing creation trace:\n");
     fflush(stdout);
   }
+
+#if defined(SD_GCC_FUNCTRACE)
+  // Record deallocation in lifecycle tracker
+  array::NDArrayLifecycleTracker::getInstance().recordDeallocation(this);
+#endif
 
   if(this->_buffer != nullptr && this->_shapeInfo != nullptr  && !this->isView() && ! this->isEmpty()) {
     delete this->_buffer;
@@ -668,6 +724,7 @@ NDArray::NDArray(DataBuffer *  buffer, const char order, const std::vector<sd::L
   this->_shapeInfo = constShapeInfo->primary();
   this->_shapeInfoD = constShapeInfo->special();
   _buffer = buffer;
+  RECORD_NDARRAY_ALLOCATION();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -712,6 +769,7 @@ NDArray::NDArray(DataBuffer *buffer,
   if(buffer == nullptr) {
     _length = 0;
   }
+  RECORD_NDARRAY_ALLOCATION();
 }
 
 NDArray::NDArray(DataBuffer *buffer, ShapeDescriptor *descriptor, sd::LaunchContext *context,
@@ -736,6 +794,7 @@ NDArray::NDArray(DataBuffer *buffer, ShapeDescriptor *descriptor, sd::LaunchCont
   _buffer = buffer;
   _length = shape::length(_shapeInfo);
 
+  RECORD_NDARRAY_ALLOCATION();
 }
 
 
@@ -773,6 +832,7 @@ NDArray::NDArray(void *buffer, sd::LongType *shapeInfo, sd::LaunchContext *conte
     _buffer = new DataBuffer(buffer, len * sizeOfT(), dataType(), isBuffAlloc,
                              getContext()->getWorkspace());
   }
+  RECORD_NDARRAY_ALLOCATION();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -801,6 +861,7 @@ NDArray::NDArray(void *buffer, void *bufferD, sd::LongType *shapeInfo, sd::Launc
                            _context == nullptr ? nullptr : getContext()->getWorkspace());
 
 
+  RECORD_NDARRAY_ALLOCATION();
 }
 //////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(DataBuffer *buffer, char order, std::vector<LongType> &shape, LaunchContext *context) {
@@ -823,6 +884,7 @@ NDArray::NDArray(DataBuffer *buffer, char order, std::vector<LongType> &shape, L
   _shapeInfoD = constDesc->special();
   _buffer = buffer;
 
+  RECORD_NDARRAY_ALLOCATION();
 }
 /////////////////////////////////////////////////////////////////////////
 // u16 string constructors
@@ -879,6 +941,7 @@ NDArray::NDArray(const std::u16string &u16string, sd::DataType dtype, sd::Launch
 
   tickWriteHost();
   syncToDevice();
+  RECORD_NDARRAY_ALLOCATION();
 }
 #endif
 #ifdef HAS_UTF32
@@ -934,6 +997,7 @@ NDArray::NDArray(const std::u32string &u32string, sd::DataType dtype, sd::Launch
 
   tickWriteHost();
   syncToDevice();
+  RECORD_NDARRAY_ALLOCATION();
 }
 #endif // HAS_UTF32
 
@@ -992,6 +1056,7 @@ NDArray::NDArray(const std::string &str, sd::DataType dtype, sd::LaunchContext *
 
   tickWriteHost();
   syncToDevice();
+  RECORD_NDARRAY_ALLOCATION();
 }
 
 #endif
@@ -1077,6 +1142,7 @@ NDArray::NDArray(std::vector<LongType> &shape, const std::vector<const char *> &
 
   tickWriteHost();
   syncToDevice();
+  RECORD_NDARRAY_ALLOCATION();
 }
 /////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(std::vector<sd::LongType> &shape, const std::vector<std::string> &string, const sd::DataType dataType, sd::LaunchContext *context) {
@@ -1141,6 +1207,7 @@ NDArray::NDArray(std::vector<sd::LongType> &shape, const std::vector<std::string
   samediff::Threads::parallel_for(func, 0, len, 1);
   tickWriteHost();
   syncToDevice();
+  RECORD_NDARRAY_ALLOCATION();
 }
 /////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(std::vector<LongType> &shape, const std::vector<std::u16string> &string, DataType dtype,
@@ -1208,6 +1275,7 @@ NDArray::NDArray(std::vector<LongType> &shape, const std::vector<std::u16string>
 
   tickWriteHost();
   syncToDevice();
+  RECORD_NDARRAY_ALLOCATION();
 }
 /////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(std::vector<LongType> &shape, const std::vector<const char16_t *> &strings, DataType dtype,
@@ -1278,6 +1346,7 @@ NDArray::NDArray(std::vector<LongType> &shape, const std::vector<const char16_t 
 
   tickWriteHost();
   syncToDevice();
+  RECORD_NDARRAY_ALLOCATION();
 }
 /////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(std::vector<sd::LongType> &shape, const std::vector<std::u32string> &string, sd::DataType dtype,
@@ -1345,6 +1414,7 @@ NDArray::NDArray(std::vector<sd::LongType> &shape, const std::vector<std::u32str
 
   tickWriteHost();
   syncToDevice();
+  RECORD_NDARRAY_ALLOCATION();
 }
 /////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(std::vector<LongType> &shape, const std::vector<const char32_t *> &strings, DataType dtype,
@@ -1415,6 +1485,7 @@ NDArray::NDArray(std::vector<LongType> &shape, const std::vector<const char32_t 
 
   tickWriteHost();
   syncToDevice();
+  RECORD_NDARRAY_ALLOCATION();
 }
 
 
@@ -1692,7 +1763,7 @@ std::vector<T> NDArray::getBufferAsVector()  {
   for (sd::LongType e = 0; e < len; e++) vector[e] = this->e<T>(e);
   return vector;
 }
-BUILD_SINGLE_TEMPLATE(std::vector, NDArray::getBufferAsVector(), SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE(std::vector, NDArray::getBufferAsVector(), SD_COMMON_TYPES_ALL);
 
 ////////////////////////////////////////////////////////////////////////
 std::vector<int64_t> * NDArray::getShapeAsFlatVector()  {
@@ -1820,17 +1891,33 @@ NDArray &NDArray::operator=(NDArray &&other) noexcept {
   }
   if (this == &other) return *this;
 
-  if(other._shapeInfo == nullptr) {
-    THROW_EXCEPTION("NDArray::operator= - trying to move from empty NDArray");
+  _buffer = other._buffer;
+  _shapeInfoBuffer = other._shapeInfoBuffer;
+
+  // Handle moving from already-moved objects: recover _shapeInfo from _shapeInfoBuffer if needed
+  // This allows moving from moved-from objects without throwing exceptions
+  if(other._shapeInfo == nullptr && _shapeInfoBuffer != nullptr) {
+    // Recover shape info from buffer - this handles already-moved objects
+    _shapeInfo = _shapeInfoBuffer->primary();
+    _shapeInfoD = _shapeInfoBuffer->special();
+    // Validate that recovery succeeded
+    if (_shapeInfo == nullptr) {
+      THROW_EXCEPTION("NDArray::operator=(NDArray &&other) - _shapeInfoBuffer->primary() returned nullptr");
+    }
+  } else if(other._shapeInfo != nullptr) {
+    // Normal case: other has valid _shapeInfo
+    _shapeInfo = other._shapeInfo;
+    _shapeInfoD = other._shapeInfoD;
+  } else {
+    // Both other._shapeInfo and _shapeInfoBuffer are null - this is an error
+    THROW_EXCEPTION("NDArray::operator= - trying to move from invalid NDArray (no shape info available)");
   }
 
-  _buffer = other._buffer;
-  _shapeInfo = other._shapeInfo;
-  _shapeInfoD = other._shapeInfoD;
   _context = other._context;
   _length = other._length;
 
   other._buffer = nullptr;
+  other._shapeInfoBuffer = nullptr;
   other._shapeInfo = other._shapeInfoD = nullptr;
   other._length = 0;
 
@@ -1855,7 +1942,7 @@ EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
     template NDArray &NDArray::operator=(GET_SECOND(T) scalar); \
 ))
 
-ITERATE_LIST((SD_COMMON_TYPES),OPERATOR_TEMPLATE)
+ITERATE_LIST((SD_COMMON_TYPES_ALL),OPERATOR_TEMPLATE)
 
 
 
@@ -2016,7 +2103,7 @@ bool NDArray::isFinite() {
 
 
 BUILD_DOUBLE_TEMPLATE(void NDArray::templatedSet,
-                       (void *buffer,  sd::LongType offset,  void *value), SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
+                       (void *buffer,  sd::LongType offset,  void *value), SD_COMMON_TYPES_ALL, SD_COMMON_TYPES_ALL);
 
 
 template <typename T, typename Y, typename>
@@ -2128,6 +2215,15 @@ void *NDArray::specialBufferWithOffset(sd::LongType offset) {
                                                          : nullptr);
 }
 
+//////////////////////////////////////////////////////////////////////////
+// Note: This method is used with primary() (host side/cpu). Use specialBuffer() for device side buffers.
+// Moved from inline in NDArray.h to avoid requiring selective_rendering.h in the header file.
+void *NDArray::buffer() {
+  BUILD_SINGLE_SELECTOR(dataType(), return _bufferWithOffset, (offset(),getDataBuffer()),SD_COMMON_TYPES_ALL);
+  return nullptr;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void *NDArray::bufferWithOffset(sd::LongType offset) {
   return const_cast<int8_t *>(buffer() != nullptr ? static_cast<const int8_t *>(buffer()) + (offset * sizeOfT())
                                                   : nullptr);
@@ -3020,7 +3116,7 @@ T *NDArray::specialBufferasTWithOffset(LongType offset) {
   return reinterpret_cast<T *>(specialBufferWithOffset(offset));
 }
 
-BUILD_SINGLE_UNCHAINED_TEMPLATE(  SD_LIB_EXPORT, *NDArray::specialBufferasTWithOffset(LongType), SD_COMMON_TYPES);
+BUILD_SINGLE_UNCHAINED_TEMPLATE(  SD_LIB_EXPORT, *NDArray::specialBufferasTWithOffset(LongType), SD_COMMON_TYPES_ALL);
 
 
 template <typename T>
@@ -3067,7 +3163,7 @@ NDArray * NDArray::asT()  {
   delete shape;
   return result;
 }
-BUILD_SINGLE_TEMPLATE(NDArray * NDArray::asT, (), SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE(NDArray * NDArray::asT, (), SD_COMMON_TYPES_ALL);
 void NDArray::checkIfStringArrayAndNotEmpty()  {
   if (!isS()) {
     auto actualType = DataTypeUtils::asString(dataType());
@@ -3179,10 +3275,10 @@ NDArray* NDArray::asT(DataType dtype)  {
   if (isS()) {
     BUILD_SINGLE_SELECTOR(dtype, return asS, (), SD_STRING_TYPES);
   } else {
-    BUILD_SINGLE_SELECTOR(dtype, return asT, (), SD_COMMON_TYPES);
+    BUILD_SINGLE_SELECTOR(dtype, return asT, (), SD_COMMON_TYPES_ALL);
   }
 #else
-  BUILD_SINGLE_SELECTOR(dtype, return asT, (), SD_COMMON_TYPES);
+  BUILD_SINGLE_SELECTOR(dtype, return asT, (), SD_COMMON_TYPES_ALL);
 #endif
 
 }
@@ -3819,7 +3915,7 @@ std::vector<T> NDArray::asVectorT() {
 
   return result;
 }
-BUILD_SINGLE_TEMPLATE(std::vector, NDArray::asVectorT(), SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE(std::vector, NDArray::asVectorT(), SD_COMMON_TYPES_ALL);
 
 //////////////////////////////////////////////////////////////////////////
 // set new order and shape in case of suitable array length
@@ -3996,11 +4092,11 @@ void NDArray::nullify() {
 
 template <typename T, typename Y, typename>
 void NDArray::templatedSet(void *buffer, LongType xOffset, DataType dtype, void *value) {
-  BUILD_SINGLE_PARTIAL_SELECTOR(dtype, templatedSet<, T>(buffer, xOffset, value), SD_NUMERIC_TYPES);
+  BUILD_SINGLE_PARTIAL_SELECTOR(dtype, templatedSet<, T>(buffer, xOffset, value), SD_COMMON_TYPES_ALL);
 }
 BUILD_DOUBLE_TEMPLATE(  void NDArray::templatedSet,
                         (void *buffer, LongType xOffset, DataType dtype, void *value),
-                        SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
+                        SD_COMMON_TYPES_ALL, SD_COMMON_TYPES_ALL);
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::applyPairwiseTransform(pairwise::Ops op, NDArray *other, NDArray *target,
@@ -4076,7 +4172,7 @@ void NDArray::templatedDoubleAssign(void *xBuffer,  sd::LongType xOffset,  void 
 }
 BUILD_DOUBLE_TEMPLATE(void NDArray::templatedDoubleAssign,
                        (void *xBuffer,  sd::LongType xOffset,  void *yBuffer,  sd::LongType yOffset),
-                       SD_COMMON_TYPES, SD_COMMON_TYPES);
+                       SD_COMMON_TYPES_ALL, SD_COMMON_TYPES_ALL);
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::varianceAlongDimension(sd::variance::Ops op, NDArray &target, const bool biasCorrected,
@@ -5249,7 +5345,7 @@ void NDArray::p(const sd::LongType i, const sd::LongType j, const T value) {
   auto xOffset = i * strideAt(0) + j * strideAt(1);
 
   NDArray::preparePrimaryUse({this}, {}, true);
-  BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->buffer(), xOffset, p), SD_COMMON_TYPES);
+  BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->buffer(), xOffset, p), SD_COMMON_TYPES_ALL);
   NDArray::registerPrimaryUse({this}, {});
 }
 
@@ -5272,7 +5368,7 @@ void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k
   auto xOffset = i * strideAt(0) + j * strideAt(1) + k * strideAt(2);
 
   NDArray::preparePrimaryUse({this}, {}, true);
-  BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->buffer(), xOffset, p), SD_COMMON_TYPES);
+  BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->buffer(), xOffset, p), SD_COMMON_TYPES_ALL);
   NDArray::registerPrimaryUse({this}, {});
 }
 #if HAS_BOOL
@@ -5296,7 +5392,7 @@ void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k
   auto xOffset = i * strideAt(0) + j * strideAt(1) + k * strideAt(2) + l * strideAt(3);
 
   NDArray::preparePrimaryUse({this}, {}, true);
-  BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->buffer(), xOffset, p), SD_COMMON_TYPES);
+  BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->buffer(), xOffset, p), SD_COMMON_TYPES_ALL);
   NDArray::registerPrimaryUse({this}, {});
 }
 
@@ -5481,7 +5577,7 @@ EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
     GET_FIRST(T), \
     CONCAT(EXPAND_TYPE_APPLY_, GET_SECOND(T))(INSTANTIATE_P_FOR_TYPE) \
 ))
-ITERATE_LIST((SD_COMMON_TYPES),INSTANTIATE_P_SINGLE);
+ITERATE_LIST((SD_COMMON_TYPES_ALL),INSTANTIATE_P_SINGLE);
 
 
 // In NDArray.cpp, wrap the string template instantiations:
@@ -5768,7 +5864,7 @@ void NDArray::templatedAssign(void *xBuffer, sd::LongType xOffset,  void *yBuffe
 }
 BUILD_SINGLE_TEMPLATE(void NDArray::templatedAssign,
                        (void *xBuffer,  sd::LongType xOffset,  void *yBuffer,  sd::LongType yOffset),
-                       SD_COMMON_TYPES);
+                       SD_COMMON_TYPES_ALL);
 
 //////////////////////////////////////////////////////////////////////////
 

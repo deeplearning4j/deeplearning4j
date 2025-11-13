@@ -362,7 +362,7 @@ NDArray* MmulHelper::mmulMxV( NDArray* A, NDArray* X, sd::NDArray* Y, const doub
     bool aNcont = N == 1 || A->strideAt(1) == 1;
 
     if (!aMcont && !aNcont) {
-      pA = new NDArray(A->dup('f', false));
+      pA = A->dup('f', false);  // dup() already returns NDArray*, no need for new
       aMcont = true;
     }
     const CBLAS_ORDER blasOrder = aMcont ? CblasColMajor : CblasRowMajor;

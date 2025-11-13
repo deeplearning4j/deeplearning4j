@@ -86,23 +86,23 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
   std::vector<NDArray*> toDelete;
 
   for (int i = 0; i < bS; ++i) {
-      pA[i] = new NDArray(vA[i]->dup('f'));
+      pA[i] = vA[i]->dup('f');  // dup() already returns NDArray*
       toDelete.emplace_back(pA[i]);
 
 
-      pB[i] = new NDArray(vB[i]->dup('f'));
+      pB[i] = vB[i]->dup('f');  // dup() already returns NDArray*
       toDelete.emplace_back(pB[i]);
 
-      pC[i] = new NDArray(vC[i]->dup('f'));
+      pC[i] = vC[i]->dup('f');  // dup() already returns NDArray*
       toDelete.emplace_back(pC[i]);
 
 
     if (pC[i]->ordering() != 'f') {
       auto temp = pA[i];
       std::vector<sd::LongType> permute = {1,0};
-      pA[i] = new NDArray(pB[i]->permute(permute, false, false));
-      pB[i] = new NDArray(temp->permute(permute, false, false));
-      pC[i] = new NDArray(pC[i]->permute(permute, false, false));
+      pA[i] = pB[i]->permute(permute, false, false);  // permute() already returns NDArray*
+      pB[i] = temp->permute(permute, false, false);
+      pC[i] = pC[i]->permute(permute, false, false);
       toDelete.push_back(pA[i]);
       toDelete.push_back(pB[i]);
       toDelete.push_back(pC[i]);

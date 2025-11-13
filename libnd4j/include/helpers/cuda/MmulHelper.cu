@@ -600,7 +600,7 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
    bool aNcont = N == 1 || A->strideAt(1) == 1;
 
    if (!aMcont && !aNcont) {
-     pA = new NDArray(A->dup('f'));
+     pA = A->dup('f');  // dup() already returns NDArray*, no need for new
      aMcont = true;
    }
 

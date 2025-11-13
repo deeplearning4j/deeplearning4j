@@ -47,7 +47,18 @@ public class NDLoss {
     NDValidation.validateNumerical("absoluteDifference", "label", label);
     NDValidation.validateNumerical("absoluteDifference", "predictions", predictions);
     NDValidation.validateNumerical("absoluteDifference", "weights", weights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.AbsoluteDifferenceLoss(label, predictions, weights, lossReduce))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.AbsoluteDifferenceLoss(label, predictions, weights, lossReduce));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -62,7 +73,18 @@ public class NDLoss {
     NDValidation.validateNumerical("absoluteDifference", "label", label);
     NDValidation.validateNumerical("absoluteDifference", "predictions", predictions);
     NDValidation.validateNumerical("absoluteDifference", "weights", weights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.AbsoluteDifferenceLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.AbsoluteDifferenceLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -84,7 +106,18 @@ public class NDLoss {
     NDValidation.validateNumerical("cosineDistance", "label", label);
     NDValidation.validateNumerical("cosineDistance", "predictions", predictions);
     NDValidation.validateNumerical("cosineDistance", "weights", weights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.CosineDistanceLoss(label, predictions, weights, lossReduce, dimension))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.CosineDistanceLoss(label, predictions, weights, lossReduce, dimension));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -105,7 +138,18 @@ public class NDLoss {
     NDValidation.validateNumerical("cosineDistance", "label", label);
     NDValidation.validateNumerical("cosineDistance", "predictions", predictions);
     NDValidation.validateNumerical("cosineDistance", "weights", weights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.CosineDistanceLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, dimension))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.CosineDistanceLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, dimension));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -125,7 +169,18 @@ public class NDLoss {
     NDValidation.validateNumerical("ctcLoss", "logitInput", logitInput);
     NDValidation.validateNumerical("ctcLoss", "targetLabelLengths", targetLabelLengths);
     NDValidation.validateNumerical("ctcLoss", "logitInputLengths", logitInputLengths);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.CtcLoss(targetLabels, logitInput, targetLabelLengths, logitInputLengths, blankIndex))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.CtcLoss(targetLabels, logitInput, targetLabelLengths, logitInputLengths, blankIndex));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -144,7 +199,18 @@ public class NDLoss {
     NDValidation.validateNumerical("ctcLoss", "logitInput", logitInput);
     NDValidation.validateNumerical("ctcLoss", "targetLabelLengths", targetLabelLengths);
     NDValidation.validateNumerical("ctcLoss", "logitInputLengths", logitInputLengths);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.CtcLoss(targetLabels, logitInput, targetLabelLengths, logitInputLengths, 0))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.CtcLoss(targetLabels, logitInput, targetLabelLengths, logitInputLengths, 0));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -163,7 +229,18 @@ public class NDLoss {
     NDValidation.validateNumerical("hingeLoss", "label", label);
     NDValidation.validateNumerical("hingeLoss", "predictions", predictions);
     NDValidation.validateNumerical("hingeLoss", "weights", weights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.HingeLoss(label, predictions, weights, lossReduce))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.HingeLoss(label, predictions, weights, lossReduce));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -180,7 +257,18 @@ public class NDLoss {
     NDValidation.validateNumerical("hingeLoss", "label", label);
     NDValidation.validateNumerical("hingeLoss", "predictions", predictions);
     NDValidation.validateNumerical("hingeLoss", "weights", weights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.HingeLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.HingeLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -204,7 +292,18 @@ public class NDLoss {
     NDValidation.validateNumerical("huberLoss", "label", label);
     NDValidation.validateNumerical("huberLoss", "predictions", predictions);
     NDValidation.validateNumerical("huberLoss", "weights", weights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.HuberLoss(label, predictions, weights, lossReduce, delta))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.HuberLoss(label, predictions, weights, lossReduce, delta));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -226,7 +325,18 @@ public class NDLoss {
     NDValidation.validateNumerical("huberLoss", "label", label);
     NDValidation.validateNumerical("huberLoss", "predictions", predictions);
     NDValidation.validateNumerical("huberLoss", "weights", weights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.HuberLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, delta))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.HuberLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, delta));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -237,7 +347,18 @@ public class NDLoss {
    */
   public INDArray l2Loss(INDArray var) {
     NDValidation.validateNumerical("l2Loss", "var", var);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.L2Loss(var))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.L2Loss(var));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -256,7 +377,18 @@ public class NDLoss {
     NDValidation.validateNumerical("logLoss", "label", label);
     NDValidation.validateNumerical("logLoss", "predictions", predictions);
     NDValidation.validateNumerical("logLoss", "weights", weights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.LogLoss(label, predictions, weights, lossReduce, epsilon))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.LogLoss(label, predictions, weights, lossReduce, epsilon));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -270,7 +402,18 @@ public class NDLoss {
   public INDArray logLoss(INDArray label, INDArray predictions) {
     NDValidation.validateNumerical("logLoss", "label", label);
     NDValidation.validateNumerical("logLoss", "predictions", predictions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.LogLoss(label, predictions, null, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, 0.0))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.LogLoss(label, predictions, null, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, 0.0));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -289,7 +432,18 @@ public class NDLoss {
     NDValidation.validateNumerical("logPoisson", "label", label);
     NDValidation.validateNumerical("logPoisson", "predictions", predictions);
     NDValidation.validateNumerical("logPoisson", "weights", weights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.LogPoissonLoss(label, predictions, weights, lossReduce, full))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.LogPoissonLoss(label, predictions, weights, lossReduce, full));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -306,7 +460,18 @@ public class NDLoss {
     NDValidation.validateNumerical("logPoisson", "label", label);
     NDValidation.validateNumerical("logPoisson", "predictions", predictions);
     NDValidation.validateNumerical("logPoisson", "weights", weights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.LogPoissonLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, full))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.LogPoissonLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, full));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -326,7 +491,18 @@ public class NDLoss {
     NDValidation.validateNumerical("meanPairwiseSquaredError", "label", label);
     NDValidation.validateNumerical("meanPairwiseSquaredError", "predictions", predictions);
     NDValidation.validateNumerical("meanPairwiseSquaredError", "weights", weights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.MeanPairwiseSquaredErrorLoss(label, predictions, weights, lossReduce))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.MeanPairwiseSquaredErrorLoss(label, predictions, weights, lossReduce));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -344,7 +520,18 @@ public class NDLoss {
     NDValidation.validateNumerical("meanPairwiseSquaredError", "label", label);
     NDValidation.validateNumerical("meanPairwiseSquaredError", "predictions", predictions);
     NDValidation.validateNumerical("meanPairwiseSquaredError", "weights", weights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.MeanPairwiseSquaredErrorLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.MeanPairwiseSquaredErrorLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -363,7 +550,18 @@ public class NDLoss {
     NDValidation.validateNumerical("meanSquaredError", "label", label);
     NDValidation.validateNumerical("meanSquaredError", "predictions", predictions);
     NDValidation.validateNumerical("meanSquaredError", "weights", weights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.MeanSquaredErrorLoss(label, predictions, weights, lossReduce))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.MeanSquaredErrorLoss(label, predictions, weights, lossReduce));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -380,7 +578,18 @@ public class NDLoss {
     NDValidation.validateNumerical("meanSquaredError", "label", label);
     NDValidation.validateNumerical("meanSquaredError", "predictions", predictions);
     NDValidation.validateNumerical("meanSquaredError", "weights", weights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.MeanSquaredErrorLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.MeanSquaredErrorLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -409,7 +618,18 @@ public class NDLoss {
     NDValidation.validateNumerical("sigmoidCrossEntropy", "label", label);
     NDValidation.validateNumerical("sigmoidCrossEntropy", "predictionLogits", predictionLogits);
     NDValidation.validateNumerical("sigmoidCrossEntropy", "weights", weights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.SigmoidCrossEntropyLoss(label, predictionLogits, weights, lossReduce, labelSmoothing))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.SigmoidCrossEntropyLoss(label, predictionLogits, weights, lossReduce, labelSmoothing));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -435,7 +655,18 @@ public class NDLoss {
     NDValidation.validateNumerical("sigmoidCrossEntropy", "label", label);
     NDValidation.validateNumerical("sigmoidCrossEntropy", "predictionLogits", predictionLogits);
     NDValidation.validateNumerical("sigmoidCrossEntropy", "weights", weights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.SigmoidCrossEntropyLoss(label, predictionLogits, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, 0.0))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.SigmoidCrossEntropyLoss(label, predictionLogits, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, 0.0));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -462,7 +693,18 @@ public class NDLoss {
     NDValidation.validateNumerical("softmaxCrossEntropy", "oneHotLabels", oneHotLabels);
     NDValidation.validateNumerical("softmaxCrossEntropy", "logitPredictions", logitPredictions);
     NDValidation.validateNumerical("softmaxCrossEntropy", "weights", weights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss(oneHotLabels, logitPredictions, weights, lossReduce, labelSmoothing))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss(oneHotLabels, logitPredictions, weights, lossReduce, labelSmoothing));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -487,7 +729,18 @@ public class NDLoss {
     NDValidation.validateNumerical("softmaxCrossEntropy", "oneHotLabels", oneHotLabels);
     NDValidation.validateNumerical("softmaxCrossEntropy", "logitPredictions", logitPredictions);
     NDValidation.validateNumerical("softmaxCrossEntropy", "weights", weights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss(oneHotLabels, logitPredictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, 0.0))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss(oneHotLabels, logitPredictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, 0.0));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -502,6 +755,17 @@ public class NDLoss {
   public INDArray sparseSoftmaxCrossEntropy(INDArray logits, INDArray labels) {
     NDValidation.validateNumerical("sparseSoftmaxCrossEntropy", "logits", logits);
     NDValidation.validateInteger("sparseSoftmaxCrossEntropy", "labels", labels);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.SparseSoftmaxCrossEntropyLossWithLogits(logits, labels))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.SparseSoftmaxCrossEntropyLossWithLogits(logits, labels));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 }

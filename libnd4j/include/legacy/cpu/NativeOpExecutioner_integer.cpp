@@ -5,7 +5,7 @@
  ******************************************************************************/
 
 // Selective rendering - MUST be included before types.h to define HAS_* flags
-// Note: DataTypeUtils.h->logger.h uses SD_COMMON_TYPES_ALL, so we need all core types
+// Note: DataTypeUtils.h->logger.h uses SD_COMMON_TYPES, so we need all core types
 #include <system/selective_rendering/core.h>
 #include <system/selective_rendering/bool_types.h>
 #include <system/selective_rendering/float_types.h>
@@ -108,29 +108,7 @@ void NativeOpExecutioner::execInverseBroadcastInt(
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execPairwiseIntTransform(sd::LaunchContext *lc, int opNum, const void *hX,
-                                                   const sd::LongType *hXShapeInfo, const void *dX,
-                                                   const sd::LongType *dXShapeInfo, const void *hY,
-                                                   const sd::LongType *hYShapeInfo, const void *dY,
-                                                   const sd::LongType *dYShapeInfo, void *hZ,
-                                                   const sd::LongType *hZShapeInfo, void *dZ,
-                                                   const sd::LongType *dZShapeInfo, void *extraParams) {
-  auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
-  auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
-  auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-  auto func = PRAGMA_THREADS_FOR {
-    BUILD_SINGLE_SELECTOR(xType, functions::pairwise_transforms::PairWiseIntTransform,
-                          ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, extraParams, start, stop),
-                          SD_INTEGER_TYPES);
-  };
-
-  auto zLen = shape::length(hZShapeInfo);
-
-  samediff::Threads::parallel_for(
-      func, 0, zLen, 1,
-      sd::math::sd_max<int>(1, sd::math::sd_min<int>(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
-}
-
+// execPairwiseIntTransform moved to NativeOpExecutioner_pairwise_int.cpp
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execScalarInt(sd::LaunchContext *lc, int opNum, const void *hX,
                                         const sd::LongType *hXShapeInfo, const void *dX,
@@ -172,38 +150,4 @@ void NativeOpExecutioner::execScalarInt(sd::LaunchContext *lc, int opNum, const 
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execScalarInt(
-    sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo, const void *dX,
-    const sd::LongType *dXShapeInfo, void *extraParams, void *hZ, const sd::LongType *hZShapeInfo, void *dZ,
-    const sd::LongType *dZShapeInfo, const void *hScalars, const sd::LongType *hScalarShapeInfo, const void *dScalars,
-    const sd::LongType *dScalarShapeInfo,
-    sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo,
-    const sd::LongType *tadOffsets, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ) {
-  auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
-  auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
-  auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-
-  if (!sd::DataTypeUtils::isZ(zType)) {
-    std::string errorMessage;
-    errorMessage += "NativeOpExecutioner::execScalarInt requires result type to be an integer type";
-    errorMessage += "X data type: ";
-    errorMessage += sd::DataTypeUtils::asString(xType);
-    errorMessage += ", Y data type: ";
-    errorMessage += sd::DataTypeUtils::asString(yType);
-    errorMessage += ", Z data type: ";
-    errorMessage += sd::DataTypeUtils::asString(zType);
-    THROW_EXCEPTION(errorMessage.c_str());
-
-  }
-  auto func = PRAGMA_THREADS_FOR {
-    BUILD_SINGLE_SELECTOR(
-        xType, functions::scalar::ScalarIntTransform,
-        ::transform(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, hScalars, dimension, dimensionLength,
-                    tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ, start, stop),
-        SD_INTEGER_TYPES);
-  };
-
-  auto yLen = shape::length(hScalarShapeInfo);
-  samediff::Threads::parallel_tad(func, 0, yLen, 1,
-                                  sd::math::sd_min<int>(yLen, sd::Environment::getInstance().maxMasterThreads()));
-}
+// TAD execScalarInt moved to NativeOpExecutioner_scalar_tad_ints.cpp

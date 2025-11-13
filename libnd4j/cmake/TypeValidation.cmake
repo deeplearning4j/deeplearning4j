@@ -491,6 +491,8 @@ set(ALL_SUPPORTED_TYPES
         "int64" "uint64" "float16" "bfloat16" "float32" "double"
         "float" "half" "long" "unsignedlong" "int" "bfloat" "float64"
         "utf8" "utf16" "utf32"
+        # String normalized forms (from srcore_normalize_type)
+        "std::string" "std::u16string" "std::u32string"
         # Quantization aliases
         "qint8" "quint8" "qint16" "quint16"
 )

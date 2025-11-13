@@ -115,24 +115,20 @@ CUSTOM_OP_IMPL(divide_bp, 3, 2, false, 0, 0) {
 
     if (axisX.size() > 0) {
       auto sum = preX->reduceAlongDimension(reduce::Sum, &axisX);
-      NDArray *gradXTemp = sum;
-      gradX->assign(gradXTemp);
+      gradX->assign(sum);
       delete sum;
     } else {
-      NDArray *gradXTemp = preX;
-      gradX->assign(gradXTemp);
-      delete gradXTemp;
+      // FIXED: preX is stack-allocated from operator/, don't delete
+      gradX->assign(preX);
     }
 
     if (axisY.size() > 0) {
       auto sum = preY->reduceAlongDimension(reduce::Sum, &axisY);
-      NDArray *gradYTemp = sum;
-      gradY->assign(gradYTemp);
+      gradY->assign(sum);
       delete sum;
     } else {
-      NDArray *gradYTemp = preY;
-      gradY->assign(gradYTemp);
-      delete gradYTemp;
+      // FIXED: preY is stack-allocated from operator/, don't delete
+      gradY->assign(preY);
     }
   }
 

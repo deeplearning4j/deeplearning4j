@@ -205,6 +205,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             throw new RuntimeException(errorMessage.toString());
         }
         profilingConfigurableHookOut(op, oc, st);
+
+        // Clear TAD and Shape caches to prevent memory leaks (matches CUDA backend pattern)
+        // IndexAccumulation operations use TAD heavily and must clean up cached TAD packs
+        Nd4j.getExecutioner().commit();
+
         return getZ(op, oc);
     }
 
@@ -335,6 +340,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 } catch (Throwable t) {
                     String str = opInfoString(op, Optional.of(dimension));
                     StringBuilder errorMessage = new StringBuilder();
+                    errorMessage.append(Nd4j.getNativeOps().lastErrorMessage());
+
                     DifferentialFunction differentialFunction = (DifferentialFunction) op;
                     errorMessage.append("Native AccumulationOp execution (double) failed: " + str +  t);
                     errorMessage.append(differentialFunction.debugInfo());
@@ -355,6 +362,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 } catch (Throwable t) {
                     String str = opInfoString(op, Optional.of(dimension));
                     StringBuilder errorMessage = new StringBuilder();
+                    errorMessage.append(Nd4j.getNativeOps().lastErrorMessage());
                     DifferentialFunction differentialFunction = (DifferentialFunction) op;
                     errorMessage.append("Native AccumulationOp execution (double) failed: " + str +  t);
                     errorMessage.append(differentialFunction.debugInfo());
@@ -369,6 +377,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 } catch (Throwable t) {
                     String str = opInfoString(op, Optional.of(dimension));
                     StringBuilder errorMessage = new StringBuilder();
+                    errorMessage.append(Nd4j.getNativeOps().lastErrorMessage());
+
                     DifferentialFunction differentialFunction = (DifferentialFunction) op;
                     errorMessage.append("Native AccumulationOp execution (double) failed: " + str +  t);
                     errorMessage.append(differentialFunction.debugInfo());
@@ -426,6 +436,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (Nd4j.getNativeOps().lastErrorCode() != 0) {
             String str = opInfoString(op, Optional.of(dimension));
             StringBuilder errorMessage = new StringBuilder();
+            errorMessage.append(Nd4j.getNativeOps().lastErrorMessage());
+
             DifferentialFunction differentialFunction = (DifferentialFunction) op;
             errorMessage.append("Native AccumulationOp execution (double) failed: " + str);
             errorMessage.append(differentialFunction.debugInfo());
@@ -433,6 +445,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             throw new RuntimeException(errorMessage.toString());
         }
         profilingConfigurableHookOut(op, oc, st);
+
+        // Clear TAD and Shape caches to prevent memory leaks (matches CUDA backend pattern)
+        // TAD packs accumulate during reduce operations and must be cleaned up
+        Nd4j.getExecutioner().commit();
+
         return getZ(op, oc);
     }
 
@@ -701,6 +718,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
         profilingConfigurableHookOut(op, oc, st);
+
+        // Clear TAD and Shape caches to prevent memory leaks (matches CUDA backend pattern)
+        // Scalar operations can create temporary buffers that accumulate in caches
+        Nd4j.getExecutioner().commit();
     }
 
     public INDArray exec(BroadcastOp op) {
@@ -795,6 +816,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             throw new RuntimeException(errorMessage.toString());
         }
         profilingConfigurableHookOut(op,oc,st);
+
+        // Clear TAD and Shape caches to prevent memory leaks (matches CUDA backend pattern)
+        // Broadcast operations use TAD for dimension-wise operations
+        Nd4j.getExecutioner().commit();
+
         return z;
     }
 

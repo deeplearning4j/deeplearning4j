@@ -175,9 +175,9 @@
 namespace sd {
 
 using Pointer = void*;
-using LongType = long long;
-using UnsignedLong = unsigned long long;
-using Unsigned = unsigned int;
+using LongType = int64_t;
+using UnsignedLong = uint64_t;
+using Unsigned = uint32_t;
 
 
 

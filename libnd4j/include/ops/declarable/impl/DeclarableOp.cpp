@@ -429,15 +429,33 @@ bool sd::ops::DeclarableOp::allocateResult(Context &block, sd::LongType *shape) 
   if (var->getNDArray() == nullptr) {
     auto shapeInfo = ConstantShapeHelper::getInstance().bufferForShapeInfo(__shape)->primary();
     RELEASE(__shape, workspace);
-    DataBuffer * buffer = new DataBuffer(len * sizeof(int8_t), ArrayOptions::dataType(shapeInfo), workspace);
-    var->setNDArray(new NDArray(buffer, shapeInfo, block.launchContext()));
+    DataBuffer * buffer = nullptr;
+    try {
+      buffer = new DataBuffer(len * sizeof(int8_t), ArrayOptions::dataType(shapeInfo), workspace);
+      var->setNDArray(new NDArray(buffer, shapeInfo, block.launchContext()));
+    } catch (...) {
+      // Clean up buffer if NDArray construction fails
+      if (buffer != nullptr) {
+        delete buffer;
+      }
+      throw;
+    }
   } else if (var->getNDArray()->lengthOf() != len) {
     // if length not match - lets reallocate array
     delete var->getNDArray();
     auto shapeInfo = ConstantShapeHelper::getInstance().bufferForShapeInfo(__shape)->primary();
-    DataBuffer * buffer =
-        new DataBuffer(len * sizeof(int8_t), ArrayOptions::dataType(shapeInfo), workspace);
-    var->setNDArray(new NDArray(buffer, shapeInfo, block.launchContext()));
+    DataBuffer * buffer = nullptr;
+    try {
+      buffer = new DataBuffer(len * sizeof(int8_t), ArrayOptions::dataType(shapeInfo), workspace);
+      var->setNDArray(new NDArray(buffer, shapeInfo, block.launchContext()));
+    } catch (...) {
+      // Clean up buffer if NDArray construction fails
+      if (buffer != nullptr) {
+        delete buffer;
+      }
+      RELEASE(__shape, workspace);
+      throw;
+    }
     RELEASE(__shape, workspace);
   } else {
     RELEASE(__shape, workspace);

@@ -651,4 +651,66 @@ public class CudaEnvironment implements Environment {
         }
         return 0; // Success
     }
+
+    // Lifecycle tracking methods (delegated to native Environment)
+
+    @Override
+    public boolean isLifecycleTracking() {
+        return e.isLifecycleTracking();
+    }
+
+    @Override
+    public void setLifecycleTracking(boolean enabled) {
+        e.setLifecycleTracking(enabled);
+    }
+
+    @Override
+    public boolean isTrackViews() {
+        return e.isTrackViews();
+    }
+
+    @Override
+    public void setTrackViews(boolean track) {
+        e.setTrackViews(track);
+    }
+
+    @Override
+    public boolean isTrackDeletions() {
+        return e.isTrackDeletions();
+    }
+
+    @Override
+    public void setTrackDeletions(boolean track) {
+        e.setTrackDeletions(track);
+    }
+
+    @Override
+    public int getStackDepth() {
+        return e.getStackDepth();
+    }
+
+    @Override
+    public void setStackDepth(int depth) {
+        e.setStackDepth(depth);
+    }
+
+    @Override
+    public int getReportInterval() {
+        return e.getReportInterval();
+    }
+
+    @Override
+    public void setReportInterval(int seconds) {
+        e.setReportInterval(seconds);
+    }
+
+    @Override
+    public long getMaxDeletionHistory() {
+        return e.getMaxDeletionHistory();
+    }
+
+    @Override
+    public void setMaxDeletionHistory(long max) {
+        e.setMaxDeletionHistory(max);
+    }
 }

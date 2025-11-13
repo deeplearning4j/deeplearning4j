@@ -738,6 +738,32 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         x = null;
         y = null;
         z = null;
+        // Clean up dimensions array to prevent leak
+        if (dimensionz != null) {
+            try {
+                if (dimensionz.data() != null) {
+                    dimensionz.data().close();
+                }
+                dimensionz.close();
+            } catch (Exception e) {
+                // Ignore close errors
+            } finally {
+                dimensionz = null;
+            }
+        }
+        // Clean up scalarValue to prevent DataBuffer leak (inherited from DifferentialFunction)
+        if (scalarValue != null) {
+            try {
+                if (scalarValue.data() != null) {
+                    scalarValue.data().close();
+                }
+                scalarValue.close();
+            } catch (Exception e) {
+                // Ignore close errors
+            } finally {
+                scalarValue = null;
+            }
+        }
     }
 
     @Override

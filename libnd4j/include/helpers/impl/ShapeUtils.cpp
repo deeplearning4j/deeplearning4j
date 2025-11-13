@@ -704,9 +704,20 @@ bool ShapeUtils::evalBroadcastShapeInfo(NDArray& x, NDArray& y, const bool evalM
 bool ShapeUtils::evalBroadcastShapeInfo( LongType* max,  LongType* min, const bool evalMinMax,
                                          LongType*& resultShapeInfo, memory::Workspace* workspace) {
 
-  // Scalars can be broadcast with anything
-  if (shape::isScalar(max) || shape::isScalar(min))
+  // Scalars can be broadcast with anything - result shape is the non-scalar
+  if (shape::isScalar(max) || shape::isScalar(min)) {
+    if (shape::isScalar(max) && shape::isScalar(min)) {
+      // Both scalars - use max
+      resultShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(max);
+    } else if (shape::isScalar(max)) {
+      // max is scalar, min is not - result is min's shape
+      resultShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(min);
+    } else {
+      // min is scalar, max is not - result is max's shape
+      resultShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(max);
+    }
     return true;
+  }
   // Handle empty arrays early - if either input has a dimension of size 0, result should be empty
   bool maxEmpty = shape::isEmptyConst(max);
   bool minEmpty = shape::isEmptyConst(min);
@@ -734,7 +745,16 @@ bool ShapeUtils::evalBroadcastShapeInfo( LongType* max,  LongType* min, const bo
   }
 
   // check whether broadcast operation is possible for input arrays
-  if (!areShapesBroadcastable(max, min)) return false;
+  if (!areShapesBroadcastable(max, min)) {
+    std::string errorMessage;
+    errorMessage += "ShapeUtils::evalBroadcastShapeInfo: shapes are not broadcastable!\n";
+    errorMessage += "Shape 1: ";
+    errorMessage += ShapeUtils::shapeAsString(max);
+    errorMessage += "\nShape 2: ";
+    errorMessage += ShapeUtils::shapeAsString(min);
+    errorMessage += "\n";
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
 
   auto maxShapeInfo = max;
   auto minShapeInfo = min;
@@ -758,17 +778,19 @@ bool ShapeUtils::evalBroadcastShapeInfo( LongType* max,  LongType* min, const bo
   memcpy(tmpShapeInfo, maxShapeInfo, shape::shapeInfoByteLength(maxRank));
 
   // Handle dimension broadcasting - dimension size 0 should be preserved (empty arrays)
+  // Compare dimensions from right to left (broadcasting semantics)
   for (LongType i = 0; i < minRank; ++i) {
-    LongType maxDim = maxShapeInfo[maxRank - i];
-    LongType minDim = minShapeInfo[minRank - i];
+    // Get dimensions from the end: -1 means last dim, -2 means second-to-last, etc.
+    LongType maxDim = shape::sizeAt(maxShapeInfo, -1 - i);
+    LongType minDim = shape::sizeAt(minShapeInfo, -1 - i);
 
     // If either dimension is 0, result should be 0 (empty array)
     if (maxDim == 0 || minDim == 0) {
-      tmpShapeInfo[maxRank - i] = 0;
+      tmpShapeInfo[1 + maxRank - 1 - i] = 0;
     }
       // Otherwise follow standard broadcasting rules
     else if (maxDim < minDim) {
-      tmpShapeInfo[maxRank - i] = minDim;
+      tmpShapeInfo[1 + maxRank - 1 - i] = minDim;
     }
   }
 

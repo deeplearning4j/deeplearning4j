@@ -247,7 +247,7 @@ endfunction()
 function(configure_cpu_linking main_target_name)
     target_link_libraries(${main_target_name} PUBLIC
             ${ONEDNN} ${ARMCOMPUTE_LIBRARIES} ${OPENBLAS_LIBRARIES}
-            ${BLAS_LIBRARIES} flatbuffers_interface)
+            ${BLAS_LIBRARIES} ${JVM_LIBRARY} flatbuffers_interface)
 
     # Add debug libraries when SD_GCC_FUNCTRACE is enabled
     if(SD_GCC_FUNCTRACE)
@@ -277,7 +277,7 @@ function(configure_cuda_linking main_target_name)
     # Modern CMake uses imported targets which handle all necessary dependencies.
     # Linking against CUDA::toolkit automatically adds include directories,
     # runtime libraries, and all other required flags.
-    target_link_libraries(${main_target_name} PUBLIC CUDA::toolkit)
+    target_link_libraries(${main_target_name} PUBLIC CUDA::toolkit ${JVM_LIBRARY})
 
     # If cuDNN was found, link against its imported target
     if(HAVE_CUDNN AND TARGET CUDNN::cudnn)
@@ -372,17 +372,36 @@ function(create_and_link_library)
 
         message(STATUS "🔧 Applying type definitions to OBJECT library: ${OBJECT_LIB_NAME}")
         setup_type_definitions_for_target(${OBJECT_LIB_NAME})
+
+        # Enable precompiled headers for large commonly-included headers
+        # This significantly speeds up incremental builds when these headers change
+        # DISABLED when SD_GCC_FUNCTRACE is ON due to massive memory usage from lifecycle tracking headers
+        if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.16" AND NOT SD_GCC_FUNCTRACE)
+            message(STATUS "🚀 Enabling precompiled headers for ${OBJECT_LIB_NAME}")
+            target_precompile_headers(${OBJECT_LIB_NAME} PRIVATE
+                <system/op_boilerplate.h>
+                <system/type_boilerplate.h>
+            )
+            message(STATUS "✅ Precompiled headers enabled for op_boilerplate.h and type_boilerplate.h")
+        elseif(SD_GCC_FUNCTRACE)
+            message(STATUS "⚠️ Precompiled headers DISABLED for call tracing build (reduces memory usage)")
+        else()
+            message(STATUS "⚠️ CMake 3.16+ required for precompiled headers (current: ${CMAKE_VERSION})")
+        endif()
     endif()
 
     if(NOT TARGET ${MAIN_LIB_NAME})
         add_library(${MAIN_LIB_NAME} SHARED $<TARGET_OBJECTS:${OBJECT_LIB_NAME}>)
         set_target_properties(${MAIN_LIB_NAME} PROPERTIES OUTPUT_NAME ${MAIN_LIB_NAME})
 
-        # Add -mcmodel=large for large binaries with sanitizers
-        if(SD_X86_BUILD AND NOT WIN32 AND DEFINED SD_SANITIZERS AND NOT SD_SANITIZERS STREQUAL "")
-            target_link_options(${MAIN_LIB_NAME} PRIVATE "-mcmodel=large")
-            message(STATUS "Applied -mcmodel=large to linker for ${MAIN_LIB_NAME}")
-        endif()
+        # Code model configuration is now centralized in CompilerFlags.cmake to avoid conflicts
+        # (CMAKE_SHARED_LINKER_FLAGS is set there with -mcmodel=large for sanitizer builds)
+        # Removed: target_link_options setting to prevent duplicate -mcmodel flags in link command
+        # if(SD_X86_BUILD AND NOT WIN32 AND DEFINED SD_SANITIZERS AND NOT SD_SANITIZERS STREQUAL "")
+        #     target_link_options(${MAIN_LIB_NAME} PRIVATE "-mcmodel=large")
+        #     message(STATUS "Applied -mcmodel=large to linker for ${MAIN_LIB_NAME}")
+        # endif()
+        message(STATUS "Code model configuration deferred to CompilerFlags.cmake (via CMAKE_SHARED_LINKER_FLAGS)")
 
         # No CUDA includes needed here, they are handled by the linking function
         target_include_directories(${MAIN_LIB_NAME} PUBLIC
@@ -535,7 +554,76 @@ message(STATUS "Dependencies initialization complete.")
 
 message(STATUS "🔧 Helper Configuration: ONEDNN=${HAVE_ONEDNN}, ARMCOMPUTE=${HAVE_ARMCOMPUTE}, CUDNN=${HAVE_CUDNN}")
 
-# --- Generate config.h AFTER setting all variables ---
+# --- Build TYPE_DEFINES string before generating config.h ---
+# This ensures config.h has all HAS_* macros defined from the start
+set(TYPE_DEFINES "")
+
+# Check if we're in selective types mode
+if(DEFINED SD_TYPES_LIST AND NOT SD_TYPES_LIST STREQUAL "")
+    # Selective types mode - export only enabled types
+    # The HAS_* macros were already set by apply_type_definitions_to_target
+    # We need to capture them and add to TYPE_DEFINES
+
+    # Get all HAS_* definitions that were set
+    get_directory_property(COMPILE_DEFS COMPILE_DEFINITIONS)
+
+    # Sort definitions to ensure deterministic order
+    # This prevents config.h from changing during build-time CMake reconfiguration
+    set(HAS_DEFS_LIST "")
+    foreach(def IN LISTS COMPILE_DEFS)
+        if(def MATCHES "^HAS_")
+            list(APPEND HAS_DEFS_LIST "${def}")
+        endif()
+    endforeach()
+
+    # Sort alphabetically for consistent output
+    list(SORT HAS_DEFS_LIST)
+
+    # Build TYPE_DEFINES string with sorted definitions
+    foreach(def IN LISTS HAS_DEFS_LIST)
+        string(APPEND TYPE_DEFINES "#define ${def}\n")
+    endforeach()
+else()
+    # All types mode - define all HAS_* macros
+    string(APPEND TYPE_DEFINES "#define HAS_BOOL 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_FLOAT 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_FLOAT32 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_DOUBLE 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_FLOAT64 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_FLOAT16 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_HALF 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_BFLOAT16 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_BFLOAT 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_FLOAT8 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_HALF2 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_INT8 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_INT8_T 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_INT16 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_INT16_T 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_INT32 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_INT32_T 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_INT 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_INT64 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_INT64_T 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_LONG 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UINT8 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UINT8_T 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UINT16 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UINT16_T 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UINT32 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UINT32_T 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UINT64 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UINT64_T 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UNSIGNEDLONG 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UTF8 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_STD_STRING 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UTF16 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_STD_U16STRING 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UTF32 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_STD_U32STRING 1\n")
+endif()
+
+# --- Generate config.h AFTER setting all variables including TYPE_DEFINES ---
 configure_file(
         "${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in"
         "${CMAKE_CURRENT_BINARY_DIR}/include/config.h")
@@ -708,26 +796,28 @@ if(SD_EXTRACT_INSTANTIATIONS)
     return()
 endif()
 
-target_precompile_headers(${SD_LIBRARY_NAME} PRIVATE
-        <vector>
-        <memory>
-        <algorithm>
-        <functional>
-        <cstring>
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/system/op_boilerplate.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/system/type_boilerplate.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/system/type_boiler_plate_expansioons.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/array/DataType.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/array/NDArray.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/array/NDArray.hXX"
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/types/types.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/math/platformmath.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/math/templatemath.h"
-
-
-)
-
-
+# Precompiled headers DISABLED when SD_GCC_FUNCTRACE is ON due to massive memory usage
+if(NOT SD_GCC_FUNCTRACE)
+    target_precompile_headers(${SD_LIBRARY_NAME} PRIVATE
+            <vector>
+            <memory>
+            <algorithm>
+            <functional>
+            <cstring>
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/system/op_boilerplate.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/system/type_boilerplate.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/system/type_boiler_plate_expansioons.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/array/DataType.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/array/NDArray.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/array/NDArray.hXX"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/types/types.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/math/platformmath.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/math/templatemath.h"
+    )
+    message(STATUS "✅ Precompiled headers enabled for main library")
+else()
+    message(STATUS "⚠️ Precompiled headers DISABLED for call tracing build (reduces memory usage)")
+endif()
 
 include(PostBuild)
 

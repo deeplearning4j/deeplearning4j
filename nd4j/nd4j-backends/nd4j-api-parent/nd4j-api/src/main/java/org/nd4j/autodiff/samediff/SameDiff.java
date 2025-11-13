@@ -3083,16 +3083,12 @@ public class SameDiff extends SDBaseOps {
                 activeListeners,
                 outputs);
 
-        if(ret.getOutputs() != null) {
-            ret.getOutputs().values().forEach(arr -> {
-                if(arr.isPresent())
-                    arr.get().setCloseable(false);
-            });
-        }
+        // Note: TAD cache is already cleared in InferenceSession.output()'s finally block.
+        // This additional clearing serves as a safety net for alternative execution paths.
+        org.nd4j.linalg.factory.Nd4j.clearTADCache();
 
-        if(ret.getValueOutputs() != null) {
-            ret.getValueOutputs().values().forEach(value ->   value.setCloseable(false));
-        }
+        // Output arrays should be closeable - users are responsible for closing them after use
+        // Removed setCloseable(false) to prevent memory leaks
 
         for (Listener l : activeListeners) {
             l.operationEnd(this, operation);
@@ -8081,6 +8077,15 @@ public class SameDiff extends SDBaseOps {
             List<INDArray> outputArrays = new ArrayList<>();
             for (DataBuffer desc : outputDescs) {
                 outputArrays.add(Nd4j.createFromDescriptor(desc));
+            }
+
+            // Close shape descriptors after creating arrays to prevent leak
+            for (DataBuffer desc : outputDescs) {
+                try {
+                    desc.close();
+                } catch (Exception e) {
+                    // Ignore close errors
+                }
             }
 
             // Set outputs and execute

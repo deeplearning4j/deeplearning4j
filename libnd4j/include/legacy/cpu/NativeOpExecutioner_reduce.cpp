@@ -72,10 +72,25 @@ void NativeOpExecutioner::execReduceLong(sd::LaunchContext *lc, int opNum, const
                                          sd::LongType *dimension, sd::LongType dimensionLength) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
+
+  // Explicit double handling for REDUCE_LONG dimensional operations
+  // BUILD_DOUBLE_SELECTOR may not generate cases for double->long conversions in some build configurations
+  if (xType == sd::DataType::DOUBLE) {
+    if (zType == sd::DataType::INT64) {
+      functions::reduce::ReduceLongFunction<double, sd::LongType>::exec(
+          opNum, lc ? lc->getWorkspace() : nullptr, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension);
+      return;
+    } else if (zType == sd::DataType::UINT64) {
+      functions::reduce::ReduceLongFunction<double, sd::UnsignedLong>::exec(
+          opNum, lc ? lc->getWorkspace() : nullptr, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension);
+      return;
+    }
+  }
+
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::reduce::ReduceLongFunction,
       ::exec(opNum, lc ? lc->getWorkspace() : nullptr, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension),
-      SD_NUMERIC_TYPES, SD_LONG_TYPES);
+      SD_COMMON_TYPES, SD_LONG_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -123,6 +138,21 @@ void NativeOpExecutioner::execReduceLongScalar(sd::LaunchContext *lc, int opNum,
                                                const sd::LongType *dZShapeInfo) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
+
+  // Explicit double handling for REDUCE_LONG scalar operations
+  // BUILD_DOUBLE_SELECTOR may not generate cases for double->long conversions in some build configurations
+  if (xType == sd::DataType::DOUBLE) {
+    if (zType == sd::DataType::INT64) {
+      functions::reduce::ReduceLongFunction<double, sd::LongType>::execScalar(
+          opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo);
+      return;
+    } else if (zType == sd::DataType::UINT64) {
+      functions::reduce::ReduceLongFunction<double, sd::UnsignedLong>::execScalar(
+          opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo);
+      return;
+    }
+  }
+
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction,
                         ::execScalar(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo), SD_COMMON_TYPES,
                         SD_LONG_TYPES);

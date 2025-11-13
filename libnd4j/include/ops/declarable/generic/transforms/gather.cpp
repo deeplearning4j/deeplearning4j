@@ -79,9 +79,10 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
     
     const sd::LongType numOfBadIndx = helpers::checkIndices(block.launchContext(), *pIndices, *input, intArgs[0]);
 
-    // FIX: Always cleanup before checking condition and potentially throwing
+    // FIXED: Cleanup BEFORE checking condition (REQUIRE_TRUE can throw)
     if (ownsIndices) {
       delete pIndices;
+      pIndices = nullptr;
     }
 
     // Check condition after cleanup

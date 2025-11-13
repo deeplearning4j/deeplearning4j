@@ -1775,6 +1775,21 @@ SD_INLINE SD_HOST_DEVICE T _rotate_left(T value, T shift);
 template <typename T>
 SD_INLINE SD_HOST_DEVICE T _rotate_right(T value, T shift);
 
+// Bool specializations (rotation of a single bit is a no-op)
+#ifdef HAS_BOOL
+template <>
+SD_INLINE SD_HOST_DEVICE bool _rotate_left(bool value, bool shift) {
+  SD_PRINT_MATH_FUNC("_rotate_left<bool>", value, value, bool);
+  return value;
+}
+
+template <>
+SD_INLINE SD_HOST_DEVICE bool _rotate_right(bool value, bool shift) {
+  SD_PRINT_MATH_FUNC("_rotate_right<bool>", value, value, bool);
+  return value;
+}
+#endif
+
 #ifdef HAS_INT8
 template <>
 SD_INLINE SD_HOST_DEVICE int8_t _rotate_left(int8_t value, int8_t shift) {
@@ -1916,23 +1931,9 @@ SD_INLINE SD_HOST_DEVICE sd::LongType _rotate_left(sd::LongType value, sd::LongT
 }
 
 template <>
-SD_INLINE SD_HOST_DEVICE long _rotate_left(long value, long shift) {
- long result = value << shift | value >> (64 - shift);
- SD_PRINT_MATH_FUNC("_rotate_left<long>", value, result,long);
- return result;
-}
-
-template <>
 SD_INLINE SD_HOST_DEVICE sd::LongType _rotate_right(sd::LongType value, sd::LongType shift) {
  sd::LongType result = value >> shift | value << (64 - shift);
  SD_PRINT_MATH_FUNC("_rotate_right<sd::LongType>", value, result,sd::LongType);
- return result;
-}
-
-template <>
-SD_INLINE SD_HOST_DEVICE long _rotate_right(long value, long shift) {
- long result = value >> shift | value << (64 - shift);
- SD_PRINT_MATH_FUNC("_rotate_right<long>", value, result,long);
  return result;
 }
 #endif
@@ -1971,6 +1972,20 @@ SD_INLINE SD_HOST_DEVICE unsigned long _rotate_right(unsigned long value, unsign
  return result;
 }
 
+// Add specializations for unsigned long long (sd::UnsignedLong typedef)
+template <>
+SD_INLINE SD_HOST_DEVICE unsigned long long _rotate_left(unsigned long long value, unsigned long long shift) {
+ unsigned long long result = value << shift | value >> (64 - shift);
+ SD_PRINT_MATH_FUNC("_rotate_left<unsigned long long>", value, result, unsigned long long);
+ return result;
+}
+
+template <>
+SD_INLINE SD_HOST_DEVICE unsigned long long _rotate_right(unsigned long long value, unsigned long long shift) {
+ unsigned long long result = value >> shift | value << (64 - shift);
+ SD_PRINT_MATH_FUNC("_rotate_right<unsigned long long>", value, result, unsigned long long);
+ return result;
+}
 
 #endif
 

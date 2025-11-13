@@ -73,7 +73,7 @@ LIST_OP_IMPL(split_list, 2, 1, 0, -2) {
 
     auto subarray = (*array)(indices);
 
-    auto status = list->write(e, new NDArray(subarray->dup(array->ordering(), false)));
+    auto status = list->write(e, subarray->dup(array->ordering(), false));  // dup() already returns NDArray*
     delete subarray;
     if (status != Status::OK) return status;
   }

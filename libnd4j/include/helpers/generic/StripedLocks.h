@@ -40,9 +40,11 @@ namespace generic {
 #if SD_HAS_SHARED_MUTEX
 #define MUTEX_TYPE std::shared_mutex
 #define SHARED_LOCK_TYPE std::shared_lock
+#define EXCLUSIVE_LOCK_TYPE std::unique_lock
 #else
 #define MUTEX_TYPE std::mutex
 #define SHARED_LOCK_TYPE std::lock_guard
+#define EXCLUSIVE_LOCK_TYPE std::lock_guard
 #endif
 
 template<size_t NUM_STRIPES = 32>

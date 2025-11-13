@@ -40,19 +40,12 @@ void SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, const sd::Long
   auto x = reinterpret_cast<const X *>(vx);
   auto z = reinterpret_cast<Z *>(vz);
 
-  Z* compatibleExtraParams = nullptr;
-  Z convertedParams[8] = {0};
-
-  if (vextraParams != nullptr) {
-    auto originalParams = reinterpret_cast<sd::LongType*>(vextraParams);
-    for (int i = 0; i < 8; ++i) {
-      convertedParams[i] = static_cast<Z>(originalParams[i]);
-    }
-    compatibleExtraParams = convertedParams;
-  }
+  // For reduce_long operations like MatchCondition, extraParams contain comparison values
+  // (e.g., compare value, epsilon) that must remain in input type X, not be converted to Z.
+  // Converting double→LongType would truncate 0.5→0, breaking comparisons.
+  auto compatibleExtraParams = reinterpret_cast<X*>(vextraParams);
 
   const sd::LongType length = shape::length(xShapeInfo);
-  shape::printShapeInfo(xShapeInfo);
 
   if (shape::isEmptyConst(xShapeInfo)) {
     z[0] = static_cast<Z>(OpType::startingValue(x));
@@ -107,16 +100,10 @@ Z SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, const sd::LongTyp
   auto x = reinterpret_cast<const X *>(vx);
 
 
-  Z* compatibleExtraParams = nullptr;
-  Z convertedParams[8] = {0};
-
-  if (vextraParams != nullptr) {
-    auto originalParams = reinterpret_cast<sd::LongType*>(vextraParams);
-    for (int i = 0; i < 8; ++i) {
-      convertedParams[i] = static_cast<Z>(originalParams[i]);
-    }
-    compatibleExtraParams = convertedParams;
-  }
+  // For reduce_long operations like MatchCondition, extraParams contain comparison values
+  // (e.g., compare value, epsilon) that must remain in input type X, not be converted to Z.
+  // Converting double→LongType would truncate 0.5→0, breaking comparisons.
+  auto compatibleExtraParams = reinterpret_cast<X*>(vextraParams);
 
   const sd::LongType length = shape::length(xShapeInfo);
 
@@ -141,14 +128,14 @@ Z SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, const sd::LongTyp
   return result;
 }
 
-template <typename X, typename Y>
-Y ReduceLongFunction<X, Y>::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo,
+template <typename X, typename Z>
+Z ReduceLongFunction<X, Z>::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo,
                                        void *extraParams) {
   RETURNING_DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams), REDUCE_LONG_OPS);
 }
 
-template <typename X, typename Y>
-void ReduceLongFunction<X, Y>::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo,
+template <typename X, typename Z>
+void ReduceLongFunction<X, Z>::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo,
                                           void *extraParams, void *z, const sd::LongType *zShapeInfo) {
   DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo), REDUCE_LONG_OPS);
 }
@@ -169,16 +156,10 @@ Z SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, sd::LongType xEws
   auto x = reinterpret_cast<const X *>(vx);
 
 
-  Z* compatibleExtraParams = nullptr;
-  Z convertedParams[8] = {0};
-
-  if (vextraParams != nullptr) {
-    auto originalParams = reinterpret_cast<sd::LongType*>(vextraParams);
-    for (int i = 0; i < 8; ++i) {
-      convertedParams[i] = static_cast<Z>(originalParams[i]);
-    }
-    compatibleExtraParams = convertedParams;
-  }
+  // For reduce_long operations like MatchCondition, extraParams contain comparison values
+  // (e.g., compare value, epsilon) that must remain in input type X, not be converted to Z.
+  // Converting double→LongType would truncate 0.5→0, breaking comparisons.
+  auto compatibleExtraParams = reinterpret_cast<X*>(vextraParams);
 
   int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
   typename OpType::InterType intermediate[64];
@@ -218,7 +199,11 @@ void SD_HOST ReduceLongFunction<X, Z>::exec(sd::memory::Workspace *workspace, co
                                             const sd::LongType *zShapeInfo, const sd::LongType *dims) {
   const X *x = reinterpret_cast<const X *>(vx);
   Z *z = reinterpret_cast<Z *>(vz);
-  sd::LongType *extraParams = reinterpret_cast<sd::LongType *>(vextraParams);
+
+  // For reduce_long operations like MatchCondition, extraParams contain comparison values
+  // (e.g., compare value, epsilon) that must remain in input type X, not be converted to Z.
+  // Converting double→LongType would corrupt the comparison values.
+  auto compatibleExtraParams = reinterpret_cast<X*>(vextraParams);
 
   const int xRank = shape::rank(xShapeInfo);
   const int zRank = shape::rank(zShapeInfo);
@@ -233,22 +218,24 @@ void SD_HOST ReduceLongFunction<X, Z>::exec(sd::memory::Workspace *workspace, co
   }
 
   if (shape::length(zShapeInfo) == 1) {
-    z[0] = execScalar<OpType>(x, xShapeInfo, extraParams);
+    z[0] = execScalar<OpType>(x, xShapeInfo, vextraParams);
     return;
   }
 
   if (OpType::requiresSpecialAccumulation) {
-    OpType::execSpecial(x, xShapeInfo, extraParams, z, zShapeInfo, const_cast<sd::LongType *>(dims) + zRank,
+    // For execSpecial, use original LongType* extraParams as expected by that API
+    auto originalParams = reinterpret_cast<sd::LongType *>(vextraParams);
+    OpType::execSpecial(x, xShapeInfo, originalParams, z, zShapeInfo, const_cast<sd::LongType *>(dims) + zRank,
                         xRank - zRank, nullptr, nullptr);
     return;
   }
-  // Call ReductionLongLoops with proper Z* type - pass extraParams as X* since that's what ReductionLongLoops expects
-  sd::ReductionLongLoops<X, Z>::template innerloopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, reinterpret_cast<X*>(extraParams));
-  
+  // Call ReductionLongLoops with properly typed X* extraParams
+  sd::ReductionLongLoops<X, Z>::template innerloopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, compatibleExtraParams);
+
 }
 
-template <typename X, typename Y>
-void ReduceLongFunction<X, Y>::exec(const int opNum, sd::memory::Workspace *workspace, const void *vx,
+template <typename X, typename Z>
+void ReduceLongFunction<X, Z>::exec(const int opNum, sd::memory::Workspace *workspace, const void *vx,
                                     const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
                                     const sd::LongType *zShapeInfo,  sd::LongType *dims) {
 

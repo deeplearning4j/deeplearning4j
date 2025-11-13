@@ -48,7 +48,36 @@ public class OpExecutionerUtil {
         int match = 0;
         if (!z.isScalar()) {
             MatchCondition condition = new MatchCondition(z, Conditions.isNan());
-            match = Nd4j.getExecutioner().exec(condition).getInt(0);
+            INDArray result = null;
+            try {
+                result = Nd4j.getExecutioner().exec(condition);
+                match = result.getInt(0);
+            } finally {
+                // Clean up result array
+                if (result != null) {
+                    try {
+                        if (result.data() != null) {
+                            result.data().close();
+                        }
+                        result.close();
+                    } catch (Exception e) {
+                        // Ignore close errors
+                    }
+                }
+                // Clean up MatchCondition's internal dimensions array
+                // CRITICAL: Must explicitly close dimensions array and its DataBuffer
+                // clearArrays() alone is not sufficient - causes DataBuffer leaks
+                if (condition.dimensions() != null) {
+                    try {
+                        if (condition.dimensions().data() != null) {
+                            condition.dimensions().data().close();
+                        }
+                        condition.dimensions().close();
+                    } catch (Exception e) {
+                        // Ignore close errors
+                    }
+                }
+            }
         } else {
             if (z.data().dataType() == DataType.DOUBLE) {
                 if (Double.isNaN(z.getDouble(0)))
@@ -75,7 +104,35 @@ public class OpExecutionerUtil {
         int match = 0;
         if (!z.isScalar()) {
             MatchCondition condition = new MatchCondition(z, Conditions.isInfinite());
-            match = Nd4j.getExecutioner().exec(condition).getInt(0);
+            INDArray result = null;
+            try {
+                result = Nd4j.getExecutioner().exec(condition);
+                match = result.getInt(0);
+            } finally {
+                // Clean up result array AND its data buffer
+                if (result != null) {
+                    try {
+                        // Close data buffer first
+                        if (result.data() != null) {
+                            result.data().close();
+                        }
+                        result.close();
+                    } catch (Exception e) {
+                        // Ignore close errors
+                    }
+                }
+                // Clean up MatchCondition's internal dimensionz array
+                if (condition.dimensions() != null) {
+                    try {
+                        if (condition.dimensions().data() != null) {
+                            condition.dimensions().data().close();
+                        }
+                        condition.dimensions().close();
+                    } catch (Exception e) {
+                        // Ignore close errors
+                    }
+                }
+            }
         } else {
             if (z.data().dataType() == DataType.DOUBLE) {
                 if (Double.isInfinite(z.getDouble(0)))

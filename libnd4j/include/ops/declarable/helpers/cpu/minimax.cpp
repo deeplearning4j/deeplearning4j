@@ -84,13 +84,13 @@ static void minimumBPFunctor_(LaunchContext* context, NDArray* x, NDArray* y, ND
    if (axisY.size() > 0) {
      auto sum = preY->reduceAlongDimension(reduce::Sum, &axisY);
      gradY->assign(sum);
-     delete targetShape;
-
+     delete sum;
    } else
      gradY->assign(preY);
 
    delete targetShape;
-
+   delete preX;  // Clean up duped array
+   delete preY;  // Clean up duped array
  }
 
 }
@@ -156,6 +156,9 @@ void maximumBPFunctor_(LaunchContext* context, NDArray* x, NDArray* y, NDArray* 
      delete sum;
    } else
      gradY->assign(preY);
+
+   delete preX;  // Clean up duped array
+   delete preY;  // Clean up duped array
  }
 
 }

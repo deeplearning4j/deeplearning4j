@@ -430,7 +430,7 @@ static void svdBatched(LaunchContext* context, NDArray* A, NDArray* S, NDArray* 
     }
 
     if (pV->ordering() == 'c') {
-      pV = new NDArray(V->dup('f'));
+      pV = V->dup('f');  // dup() already returns NDArray*
       toDelete.push_back(pV);
     }
   }

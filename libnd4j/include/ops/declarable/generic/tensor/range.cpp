@@ -170,16 +170,28 @@ DECLARE_SHAPE_FN(range) {
     } else if (isZ) {
       LongType start(0), limit, delta(1);
 
-      if (numInArrs == 1)
-        limit = INPUT_VARIABLE(0)->cast(INT64)->e<LongType>(0);
-      else if (numInArrs == 2) {
-        start = INPUT_VARIABLE(0)->cast(INT64)->e<LongType>(0);
-        limit = INPUT_VARIABLE(1)->cast(INT64)->e<LongType>(0);
+      // FIXED: Clean up allocated casted arrays
+      if (numInArrs == 1) {
+        NDArray* casted = INPUT_VARIABLE(0)->cast(INT64);
+        limit = casted->e<LongType>(0);
+        delete casted;
+      } else if (numInArrs == 2) {
+        NDArray* casted0 = INPUT_VARIABLE(0)->cast(INT64);
+        NDArray* casted1 = INPUT_VARIABLE(1)->cast(INT64);
+        start = casted0->e<LongType>(0);
+        limit = casted1->e<LongType>(0);
+        delete casted0;
+        delete casted1;
       } else {
-        start = INPUT_VARIABLE(0)->cast(INT64)->e<LongType>(0);
-        limit = INPUT_VARIABLE(1)->cast(INT64)->e<LongType>(0);
-        delta = INPUT_VARIABLE(2)->cast(INT64)->e<LongType>(0);
-
+        NDArray* casted0 = INPUT_VARIABLE(0)->cast(INT64);
+        NDArray* casted1 = INPUT_VARIABLE(1)->cast(INT64);
+        NDArray* casted2 = INPUT_VARIABLE(2)->cast(INT64);
+        start = casted0->e<LongType>(0);
+        limit = casted1->e<LongType>(0);
+        delta = casted2->e<LongType>(0);
+        delete casted0;
+        delete casted1;
+        delete casted2;
       }
 
       if (limit == start) {

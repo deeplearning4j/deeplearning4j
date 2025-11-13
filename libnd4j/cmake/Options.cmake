@@ -64,10 +64,48 @@ set(SD_MAX_TEMPLATE_COMBINATIONS "1000" CACHE STRING "Maximum template combinati
 
 # --- NEW: Template Chunking Configuration ---
 # These control how template instantiations are split across files
-set(CHUNK_TARGET_INSTANTIATIONS "2" CACHE STRING "Target template instantiations per chunk file (higher = fewer files, more memory)")
+# CRITICAL FOR CLEAN BUILDS: Set correct defaults based on build flags FROM THE START
+# TLS relocation overflow is caused by TOO MANY FILES, not large files
+# Solution: Use larger chunks with call tracing to minimize file count
+
+# Detect build configuration and set appropriate defaults
+if(DEFINED SD_GCC_FUNCTRACE AND SD_GCC_FUNCTRACE)
+    # Call tracing enabled - need larger chunks to avoid TLS overflow
+    if((DEFINED SD_SANITIZE AND SD_SANITIZE) OR (DEFINED SD_SANITIZERS AND NOT SD_SANITIZERS STREQUAL ""))
+        # Call tracing + Sanitizers: Extreme bloat, need very large chunks
+        set(CHUNK_TARGET_INSTANTIATIONS "30" CACHE STRING "Large chunks for call tracing + sanitizers")
+        set(MULTI_PASS_CHUNK_SIZE "70" CACHE STRING "Large direct chunks for call tracing + sanitizers")
+        message(STATUS "⚠️  Call tracing + Sanitizers: Using large chunks (30/70) to minimize file count")
+    else()
+        # Call tracing only: Moderate bloat, need large chunks
+        set(CHUNK_TARGET_INSTANTIATIONS "40" CACHE STRING "Large chunks for call tracing")
+        set(MULTI_PASS_CHUNK_SIZE "100" CACHE STRING "Large direct chunks for call tracing")
+        message(STATUS "🔍 Call tracing: Using large chunks (40/100) to minimize file count")
+    endif()
+elseif((DEFINED SD_SANITIZE AND SD_SANITIZE) OR (DEFINED SD_SANITIZERS AND NOT SD_SANITIZERS STREQUAL ""))
+    # Sanitizers only: Some bloat, use moderate chunks
+    set(CHUNK_TARGET_INSTANTIATIONS "6" CACHE STRING "Moderate chunks for sanitizers")
+    set(MULTI_PASS_CHUNK_SIZE "8" CACHE STRING "Moderate direct chunks for sanitizers")
+else()
+    # Normal builds: Use memory-based defaults
+    cmake_host_system_information(RESULT AVAILABLE_MEMORY QUERY AVAILABLE_PHYSICAL_MEMORY)
+    if(AVAILABLE_MEMORY LESS 4000)
+        set(CHUNK_TARGET_INSTANTIATIONS "3" CACHE STRING "Conservative chunks for low memory")
+        set(MULTI_PASS_CHUNK_SIZE "25" CACHE STRING "Conservative direct chunks")
+    elseif(AVAILABLE_MEMORY LESS 8000)
+        set(CHUNK_TARGET_INSTANTIATIONS "6" CACHE STRING "Moderate chunks for medium memory")
+        set(MULTI_PASS_CHUNK_SIZE "35" CACHE STRING "Moderate direct chunks")
+    elseif(AVAILABLE_MEMORY LESS 16000)
+        set(CHUNK_TARGET_INSTANTIATIONS "10" CACHE STRING "Balanced chunks for high memory")
+        set(MULTI_PASS_CHUNK_SIZE "50" CACHE STRING "Balanced direct chunks")
+    else()
+        set(CHUNK_TARGET_INSTANTIATIONS "12" CACHE STRING "Optimized chunks for very high memory")
+        set(MULTI_PASS_CHUNK_SIZE "60" CACHE STRING "Optimized direct chunks")
+    endif()
+endif()
+
 set(CHUNK_MAX_INSTANTIATIONS "3" CACHE STRING "Maximum template instantiations per chunk file")
 set(USE_MULTI_PASS_GENERATION "OFF" CACHE STRING "Use multi-pass generation (ON/OFF/AUTO)")
-set(MULTI_PASS_CHUNK_SIZE "5" CACHE STRING "Chunk size for direct instantiation files")
 
 # --- NEW: Type Selection for Fast Builds ---
 if(SD_FAST_BUILD)
@@ -101,10 +139,16 @@ else()
 endif()
 
 # --- NEW: Compiler-specific optimizations for template compilation ---
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    # Reduce template instantiation depth to catch issues earlier
+# Template depth: 512 for release (faster compilation), 1024 for debug (deeper nesting support)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    add_compile_options(-ftemplate-depth=1024)
+    message(STATUS "Using template depth 1024 for ${CMAKE_BUILD_TYPE} build")
+else()
     add_compile_options(-ftemplate-depth=512)
+    message(STATUS "Using template depth 512 for ${CMAKE_BUILD_TYPE} build")
+endif()
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     # Enable faster template compilation in GCC 10+
     if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 10.0)
         add_compile_options(-fconcepts-diagnostics-depth=2)

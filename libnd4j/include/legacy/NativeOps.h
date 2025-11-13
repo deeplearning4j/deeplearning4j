@@ -473,7 +473,227 @@ SD_LIB_EXPORT OpaqueDataBuffer  * intermediateResultDataAt(int index, OpaqueCont
 SD_LIB_EXPORT const sd::LongType * intermediateResultShapeInfoAt(int index, OpaqueContext *contextPointer);
 SD_LIB_EXPORT const char *lastErrorMessage();
 SD_LIB_EXPORT int lastErrorCode();
+SD_LIB_EXPORT void triggerLeakCheck();
+SD_LIB_EXPORT void enableNDArrayTracking();
+SD_LIB_EXPORT void disableNDArrayTracking();
+SD_LIB_EXPORT void enableDataBufferTracking();
+SD_LIB_EXPORT void disableDataBufferTracking();
+SD_LIB_EXPORT void enableTADCacheTracking();
+SD_LIB_EXPORT void disableTADCacheTracking();
+SD_LIB_EXPORT void enableShapeCacheTracking();
+SD_LIB_EXPORT void disableShapeCacheTracking();
+SD_LIB_EXPORT void enableOpContextTracking();
+SD_LIB_EXPORT void disableOpContextTracking();
 
+/**
+ * Clear all cached TAD packs to prevent memory leaks during testing.
+ * This frees all TadPack objects stored in the TAD cache.
+ */
+SD_LIB_EXPORT void clearTADCache();
+
+/**
+ * Clears all cached shape buffers.
+ * This frees all ConstantShapeBuffer objects stored in the shape cache.
+ * Called during application shutdown to prevent memory leaks.
+ */
+SD_LIB_EXPORT void clearShapeCache();
+
+/**
+ * Get the total number of cached shape buffer entries.
+ * @return Total number of cached shape buffers across all stripes
+ */
+SD_LIB_EXPORT sd::LongType getShapeCachedEntries();
+
+/**
+ * Get the total memory used by cached shape buffers in bytes.
+ * @return Total memory used in bytes
+ */
+SD_LIB_EXPORT sd::LongType getShapeCachedBytes();
+
+/**
+ * Get the peak number of shape entries that were cached simultaneously.
+ * @return Peak number of cached shape buffers
+ */
+SD_LIB_EXPORT sd::LongType getShapePeakCachedEntries();
+
+/**
+ * Get the peak memory usage by cached shape buffers in bytes.
+ * @return Peak memory usage in bytes
+ */
+SD_LIB_EXPORT sd::LongType getShapePeakCachedBytes();
+
+/**
+ * Get the total number of cached TAD pack entries.
+ * @return Total number of cached TAD packs across all stripes
+ */
+SD_LIB_EXPORT sd::LongType getTADCachedEntries();
+
+/**
+ * Get the total memory used by cached TAD packs in bytes.
+ * This includes both shape_info and offset buffer sizes.
+ * @return Total memory used in bytes
+ */
+SD_LIB_EXPORT sd::LongType getTADCachedBytes();
+
+/**
+ * Get the peak number of TAD pack entries that were cached simultaneously.
+ * @return Peak number of cached TAD packs
+ */
+SD_LIB_EXPORT sd::LongType getTADPeakCachedEntries();
+
+/**
+ * Get the peak memory usage by cached TAD packs in bytes.
+ * @return Peak memory usage in bytes
+ */
+SD_LIB_EXPORT sd::LongType getTADPeakCachedBytes();
+
+/**
+ * Get a string representation of the shape cache for debugging.
+ * The returned string must be freed by the caller using freeString().
+ *
+ * @param maxDepth Maximum depth to traverse (default: 10, -1 for unlimited)
+ * @param maxEntries Maximum number of entries to show (default: 100, -1 for unlimited)
+ * @return String representation of the shape cache
+ */
+SD_LIB_EXPORT const char* getShapeCacheString(int maxDepth, int maxEntries);
+
+/**
+ * Get a string representation of the TAD cache for debugging.
+ * The returned string must be freed by the caller using freeString().
+ *
+ * @param maxDepth Maximum depth to traverse (default: 10, -1 for unlimited)
+ * @param maxEntries Maximum number of entries to show (default: 100, -1 for unlimited)
+ * @return String representation of the TAD cache
+ */
+SD_LIB_EXPORT const char* getTADCacheString(int maxDepth, int maxEntries);
+
+/**
+ * Free a string returned by native code.
+ * @param ptr String pointer to free
+ */
+SD_LIB_EXPORT void freeString(const char* ptr);
+
+// Lifecycle tracking API (enabled only with SD_GCC_FUNCTRACE)
+#if defined(SD_GCC_FUNCTRACE)
+
+/**
+ * Checks operation counter and automatically clears TAD/Shape caches periodically.
+ * Called internally from operation execution entry points to prevent cache accumulation
+ * during testing. Configurable via SD_CACHE_CLEANUP_INTERVAL and SD_AUTO_CACHE_CLEANUP
+ * environment variables.
+ */
+void checkAndCleanupCaches();
+
+/**
+ * Returns NDArray lifecycle statistics as a JSON string.
+ * The returned string must be freed by the caller using freeString().
+ *
+ * JSON format:
+ * {
+ *   "total_allocations": <count>,
+ *   "total_deallocations": <count>,
+ *   "current_live": <count>,
+ *   "peak_live": <count>,
+ *   "current_bytes": <bytes>,
+ *   "peak_bytes": <bytes>,
+ *   "double_frees": <count>
+ * }
+ */
+SD_LIB_EXPORT const char* getNDArrayLifecycleStats();
+
+/**
+ * Returns DataBuffer lifecycle statistics as a JSON string.
+ * The returned string must be freed by the caller using freeString().
+ *
+ * JSON format:
+ * {
+ *   "primary": {
+ *     "total_allocations": <count>,
+ *     "total_deallocations": <count>,
+ *     "current_live": <count>,
+ *     "current_bytes": <bytes>,
+ *     "peak_bytes": <bytes>
+ *   },
+ *   "special": {
+ *     "total_allocations": <count>,
+ *     "total_deallocations": <count>,
+ *     "current_live": <count>,
+ *     "current_bytes": <bytes>,
+ *     "peak_bytes": <bytes>
+ *   },
+ *   "double_frees": <count>
+ * }
+ */
+SD_LIB_EXPORT const char* getDataBufferLifecycleStats();
+
+/**
+ * Generates a flamegraph SVG file for NDArray allocations.
+ * @param outputPath Path where the SVG file should be written
+ */
+SD_LIB_EXPORT void generateNDArrayAllocationFlamegraph(const char* outputPath);
+
+/**
+ * Generates a flamegraph SVG file for NDArray deallocations.
+ * @param outputPath Path where the SVG file should be written
+ */
+SD_LIB_EXPORT void generateNDArrayDeallocationFlamegraph(const char* outputPath);
+
+/**
+ * Generates a flamegraph SVG file for DataBuffer allocations.
+ * @param outputPath Path where the SVG file should be written
+ * @param bufferType 0 = PRIMARY (host), 1 = SPECIAL (device)
+ */
+SD_LIB_EXPORT void generateDataBufferAllocationFlamegraph(const char* outputPath, int bufferType);
+
+/**
+ * Generates a flamegraph SVG file for DataBuffer deallocations.
+ * @param outputPath Path where the SVG file should be written
+ * @param bufferType 0 = PRIMARY (host), 1 = SPECIAL (device)
+ */
+SD_LIB_EXPORT void generateDataBufferDeallocationFlamegraph(const char* outputPath, int bufferType);
+
+/**
+ * Generates a detailed leak report showing all currently live allocations.
+ * @param outputPath Path where the report file should be written
+ */
+SD_LIB_EXPORT void generateLifecycleLeakReport(const char* outputPath);
+
+/**
+ * Generates a comprehensive leak source analysis report combining data from ALL lifecycle trackers.
+ *
+ * This function analyzes undeleted allocations across all 5 lifecycle trackers:
+ * - NDArrayLifecycleTracker
+ * - DataBufferLifecycleTracker
+ * - TADCacheLifecycleTracker
+ * - ShapeCacheLifecycleTracker
+ * - OpContextLifecycleTracker
+ *
+ * For each allocation source (Java method or C++ function), the report shows:
+ * - Total number of undeleted allocations
+ * - Breakdown by object type (NDArray, DataBuffer, TAD, Shape, OpContext)
+ * - Total bytes leaked
+ * - Example stack traces (both Java and C++)
+ *
+ * Results are sorted by total leak count, making it easy to identify the top leak sources.
+ *
+ * @param outputDir Directory where report files should be written (e.g., "./leak_reports")
+ *                  If NULL or empty, uses current directory.
+ *
+ * Output files generated:
+ * - comprehensive_leak_report.txt - Detailed report with top 50 leak sources
+ * - Console output shows top 20 leak sources summary
+ *
+ * Example usage from Java:
+ *   Nd4j.getNativeOps().generateComprehensiveLeakAnalysis("./leak_reports");
+ */
+SD_LIB_EXPORT void generateComprehensiveLeakAnalysis(const char* outputDir);
+
+/**
+ * Frees a string allocated by the lifecycle tracking API.
+ * @param str String to free (from getNDArrayLifecycleStats or getDataBufferLifecycleStats)
+ */
+SD_LIB_EXPORT void freeString(const char* str);
+#endif // SD_GCC_FUNCTRACE
 
 
 #endif // NATIVEOPS_H

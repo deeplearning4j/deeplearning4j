@@ -359,6 +359,13 @@ SD_INLINE SD_HOST_DEVICE uint16_t DataTypeUtils::min_positive<uint16_t>() {
 }
 #endif
 
+#ifdef HAS_UINT32
+template <>
+SD_INLINE SD_HOST_DEVICE uint32_t DataTypeUtils::min_positive<uint32_t>() {
+  return (uint32_t)0;
+}
+#endif
+
 #ifdef HAS_BOOL
 template <>
 SD_INLINE SD_HOST_DEVICE bool DataTypeUtils::min<bool>() {
@@ -380,16 +387,6 @@ SD_INLINE SD_HOST_DEVICE LongType DataTypeUtils::min<LongType>() {
 template <>
 SD_INLINE SD_HOST_DEVICE LongType DataTypeUtils::min_positive<LongType>() {
   return (LongType)0;
-}
-
-template <>
-SD_INLINE SD_HOST_DEVICE long DataTypeUtils::min<long>() {
-  return std::numeric_limits<long>::min();
-}
-
-template <>
-SD_INLINE SD_HOST_DEVICE long DataTypeUtils::min_positive<long>() {
-  return 0L;
 }
 #endif
 

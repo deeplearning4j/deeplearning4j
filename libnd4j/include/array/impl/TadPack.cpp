@@ -24,6 +24,10 @@
 #include <helpers/shape.h>
 #include <system/Environment.h>
 
+#if defined(SD_GCC_FUNCTRACE)
+#include <array/TADCacheLifecycleTracker.h>
+#endif
+
 namespace sd {
 TadPack::TadPack( ConstantShapeBuffer *shapes,
                   ConstantOffsetsBuffer *offets, LongType numTads,
@@ -41,22 +45,49 @@ TadPack::TadPack( ConstantShapeBuffer *shapes,
 
   computeHash();
 
+#if defined(SD_GCC_FUNCTRACE)
+  // Track TAD cache allocation
+  size_t shape_info_bytes = 0;
+  size_t offsets_bytes = 0;
+
+  if (_tadShape != nullptr && _tadShape->primary() != nullptr) {
+    shape_info_bytes = shape::shapeInfoByteLength(_tadShape->primary());
+  }
+
+  if (_tadOffsets != nullptr && _tadOffsets->primary() != nullptr) {
+    offsets_bytes = _numTads * sizeof(LongType);
+  }
+
+  std::vector<LongType> dims;
+  if (_dimensions != nullptr) {
+    dims.assign(_dimensions, _dimensions + _dimensionsLength);
+  }
+
+  sd::array::TADCacheLifecycleTracker::getInstance().recordAllocation(
+      this, _numTads, shape_info_bytes, offsets_bytes, dims);
+#endif
+
 }
 
 TadPack::~TadPack() {
+#if defined(SD_GCC_FUNCTRACE)
+  // Track TAD cache deallocation before cleanup
+  sd::array::TADCacheLifecycleTracker::getInstance().recordDeallocation(this);
+#endif
+
   // Clean up dimensions array that was allocated in constructor
   if (_dimensions != nullptr) {
     delete[] _dimensions;
     _dimensions = nullptr;
   }
-  
+
   // Clean up TAD offsets buffer if we own it
   // This is owned when transferred via releaseOffsets() from TadCalculator
   if (_tadOffsets != nullptr) {
     delete _tadOffsets;
     _tadOffsets = nullptr;
   }
-  
+
   // DON'T delete _tadShape - it comes from ConstantShapeHelper cache
 }
 

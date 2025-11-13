@@ -39,8 +39,8 @@ using namespace simdOps;
 namespace functions {
 namespace transform {
 
-template <typename X, typename Y>
-void TransformAny<X, Y>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, void *z,
+template <typename X, typename Z>
+void TransformAny<X, Z>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, void *z,
                               const sd::LongType *zShapeInfo, void *extraParams, sd::LongType threadId,
                               sd::LongType numThreads) {
   DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, z, zShapeInfo, extraParams, threadId, numThreads),
@@ -61,9 +61,13 @@ void SD_HOST TransformAny<X, Z>::exec(const void *vx, const sd::LongType *xShape
                                                               numThreads);
 }
 
-BUILD_DOUBLE_TEMPLATE( class TransformAny, , SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
-
-
+BUILD_DOUBLE_TEMPLATE(class TransformAny, , SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
+// Also instantiate numeric types -> bool for comparison operations
+BUILD_DOUBLE_TEMPLATE(class TransformAny, , SD_NUMERIC_TYPES, SD_BOOL_TYPES);
+// And bool -> numeric types for casting operations
+BUILD_DOUBLE_TEMPLATE(class TransformAny, , SD_BOOL_TYPES, SD_NUMERIC_TYPES);
+// And bool -> bool for boolean operations
+BUILD_DOUBLE_TEMPLATE(class TransformAny, , SD_BOOL_TYPES, SD_BOOL_TYPES);
 
 }  // namespace transform
 }  // namespace functions

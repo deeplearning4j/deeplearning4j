@@ -26,6 +26,7 @@
 
 #include "array/DataTypeValidation.h"
 #include <system/type_instantiate_boilerplate.h>
+#include <system/selective_rendering.h>
 #include "type_boiler_plate_expansions.h"
 /*
 *

@@ -48,7 +48,7 @@
         <libnd4j.types.show.impact>true</libnd4j.types.show.impact>
 
         <!-- Debug type configuration -->
-        <libnd4j.debug.types.profile>MINIMAL_INDEXING</libnd4j.debug.types.profile>
+        <libnd4j.debug.types.profile></libnd4j.debug.types.profile>
         <libnd4j.debug.types.custom></libnd4j.debug.types.custom>
         <libnd4j.debug.auto.reduce>false</libnd4j.debug.auto.reduce>
 
@@ -114,7 +114,11 @@
         <libnd4j.instantiation.report>OFF</libnd4j.instantiation.report>
         <libnd4j.instantiation.verbose>OFF</libnd4j.instantiation.verbose>
         <libnd4j.analyze.templates>OFF</libnd4j.analyze.templates>
+        <libnd4j.cmake.only>OFF</libnd4j.cmake.only>
         <libnd4j.compiler></libnd4j.compiler>
+
+        <!-- JNI Configuration for Java stack trace capture in lifecycle tracking -->
+        <libnd4j.build.with.java>ON</libnd4j.build.with.java>
 
     </properties>
 
@@ -505,6 +509,9 @@
 
                                 <configuration>
                                     <skip>${libnd4j.cuda.compile.skip}</skip>
+                                    <environmentVariables>
+                                        <BUILD_WITH_JAVA>${libnd4j.build.with.java}</BUILD_WITH_JAVA>
+                                    </environmentVariables>
                                     <buildCommand>
                                         <program>${libnd4j.buildprogram}</program>
                                         <argument>buildnativeoperations.sh</argument>
@@ -567,6 +574,8 @@
                                         <argument>${libnd4j.instantiation.report}</argument>
                                         <argument>--instantiation-verbose</argument>
                                         <argument>${libnd4j.instantiation.verbose}</argument>
+                                        <argument>--cmake-only</argument>
+                                        <argument>${libnd4j.cmake.only}</argument>
                                         <argument>--compiler</argument>
                                         <argument>${libnd4j.compiler}</argument>
 
@@ -662,6 +671,9 @@
                                 </goals>
                                 <configuration>
                                     <skip>${libnd4j.cpu.compile.skip}</skip>
+                                    <environmentVariables>
+                                        <BUILD_WITH_JAVA>${libnd4j.build.with.java}</BUILD_WITH_JAVA>
+                                    </environmentVariables>
                                     <buildCommand>
                                         <program>${libnd4j.buildprogram}</program>
                                         <argument>buildnativeoperations.sh</argument>
@@ -724,6 +736,8 @@
                                         <argument>${libnd4j.build.ppstep}</argument>
                                         <argument>--extract-instantiations</argument>
                                         <argument>${libnd4j.extract.instantiations}</argument>
+                                        <argument>--cmake-only</argument>
+                                        <argument>${libnd4j.cmake.only}</argument>
                                         <argument>--compiler</argument>
                                         <argument>${libnd4j.compiler}</argument>
 

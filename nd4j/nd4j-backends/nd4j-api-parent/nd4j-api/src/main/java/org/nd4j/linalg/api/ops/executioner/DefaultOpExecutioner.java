@@ -873,7 +873,10 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public void commit() {
-        // no-op
+        // DO NOT clear caches here - NDArrays hold raw pointers to cached shape buffers
+        // Clearing while operations are running causes use-after-free bugs
+        // Caches should only be cleared at true lifecycle boundaries (shutdown, between tests)
+        // See: execReduceLong2 null shapeInfo error - root cause was premature cache clearing
     }
 
     @Override

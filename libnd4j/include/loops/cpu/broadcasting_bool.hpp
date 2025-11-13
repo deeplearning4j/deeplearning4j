@@ -32,8 +32,8 @@ using namespace simdOps;
 namespace functions {
 namespace broadcast {
 
-template <typename X, typename Y>
-void BroadcastBool<X, Y>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
+template <typename X, typename Z>
+void BroadcastBool<X, Z>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                                const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo,
                                void *extraParams, sd::LongType *dimension, sd::LongType dimensionLength,
                                const sd::LongType *xTadShapeInfo, const sd::LongType *xTadOffset,
@@ -45,15 +45,15 @@ void BroadcastBool<X, Y>::exec(int opNum, const void *x, const sd::LongType *xSh
                        BROADCAST_BOOL_OPS);
 }
 
-template <typename X, typename Y>
-void BroadcastBool<X, Y>::exec(const int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
+template <typename X, typename Z>
+void BroadcastBool<X, Z>::exec(const int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                                const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo,
                                void *extraParams) {
   DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams), BROADCAST_BOOL_OPS);
 }
 
-template <typename X, typename Y>
-void BroadcastBool<X, Y>::execInverse(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
+template <typename X, typename Z>
+void BroadcastBool<X, Z>::execInverse(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                                       const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo,
                                       void *extraParams, sd::LongType *dimension, sd::LongType dimensionLength,
                                       const sd::LongType *xTadShapeInfo, const sd::LongType *xTadOffset,

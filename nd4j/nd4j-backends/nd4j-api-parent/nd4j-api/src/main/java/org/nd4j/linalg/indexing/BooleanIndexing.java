@@ -54,13 +54,31 @@ public class BooleanIndexing {
      */
     public static boolean and(final INDArray n, final Condition cond) {
         if (cond instanceof BaseCondition) {
-            long val = (long) Nd4j.getExecutioner().exec(new MatchCondition(n, cond)).getDouble(0);
-
-            if (val == n.length())
-                return true;
-            else
-                return false;
-
+            MatchCondition condition = new MatchCondition(n, cond);
+            INDArray result = null;
+            try {
+                result = Nd4j.getExecutioner().exec(condition);
+                long val = (long) result.getDouble(0);
+                return val == n.length();
+            } finally {
+                // Clean up result array
+                if (result != null) {
+                    try {
+                        if (result.data() != null) {
+                            result.data().close();
+                        }
+                        result.close();
+                    } catch (Exception e) {
+                        // Ignore close errors
+                    }
+                }
+                // Clean up MatchCondition operation (closes internal dimensionz array)
+                try {
+                    condition.clearArrays();
+                } catch (Exception e) {
+                    // Ignore errors
+                }
+            }
         } else {
             throw new RuntimeException("Can only execute BaseCondition conditions using this method");
         }
@@ -79,19 +97,40 @@ public class BooleanIndexing {
             throw new UnsupportedOperationException("Only static Conditions are supported");
 
         MatchCondition op = new MatchCondition(n, condition, dimension);
-        INDArray arr = Nd4j.getExecutioner().exec(op);
-        boolean[] result = new boolean[(int) arr.length()];
+        INDArray arr = null;
+        try {
+            arr = Nd4j.getExecutioner().exec(op);
+            boolean[] result = new boolean[(int) arr.length()];
 
-        long tadLength = Shape.getTADLength(n.shape(), dimension);
+            long tadLength = Shape.getTADLength(n.shape(), dimension);
 
-        for (int i = 0; i < arr.length(); i++) {
-            if (arr.getDouble(i) == tadLength)
-                result[i] = true;
-            else
-                result[i] = false;
+            for (int i = 0; i < arr.length(); i++) {
+                if (arr.getDouble(i) == tadLength)
+                    result[i] = true;
+                else
+                    result[i] = false;
+            }
+
+            return result;
+        } finally {
+            // Clean up result array
+            if (arr != null) {
+                try {
+                    if (arr.data() != null) {
+                        arr.data().close();
+                    }
+                    arr.close();
+                } catch (Exception e) {
+                    // Ignore close errors
+                }
+            }
+            // Clean up MatchCondition operation (closes internal dimensionz array)
+            try {
+                op.clearArrays();
+            } catch (Exception e) {
+                // Ignore errors
+            }
         }
-
-        return result;
     }
 
 
@@ -108,18 +147,39 @@ public class BooleanIndexing {
             throw new UnsupportedOperationException("Only static Conditions are supported");
 
         MatchCondition op = new MatchCondition(n, condition, dimension);
-        INDArray arr = Nd4j.getExecutioner().exec(op);
+        INDArray arr = null;
+        try {
+            arr = Nd4j.getExecutioner().exec(op);
 
-        boolean[] result = new boolean[(int) arr.length()];
+            boolean[] result = new boolean[(int) arr.length()];
 
-        for (int i = 0; i < arr.length(); i++) {
-            if (arr.getDouble(i) > 0)
-                result[i] = true;
-            else
-                result[i] = false;
+            for (int i = 0; i < arr.length(); i++) {
+                if (arr.getDouble(i) > 0)
+                    result[i] = true;
+                else
+                    result[i] = false;
+            }
+
+            return result;
+        } finally {
+            // Clean up result array
+            if (arr != null) {
+                try {
+                    if (arr.data() != null) {
+                        arr.data().close();
+                    }
+                    arr.close();
+                } catch (Exception e) {
+                    // Ignore close errors
+                }
+            }
+            // Clean up MatchCondition operation (closes internal dimensionz array)
+            try {
+                op.clearArrays();
+            } catch (Exception e) {
+                // Ignore errors
+            }
         }
-
-        return result;
     }
 
     /**
@@ -131,13 +191,31 @@ public class BooleanIndexing {
      */
     public static boolean or(final INDArray n, final Condition cond) {
         if (cond instanceof BaseCondition) {
-            long val = (long) Nd4j.getExecutioner().exec(new MatchCondition(n, cond)).getDouble(0);
-
-            if (val > 0)
-                return true;
-            else
-                return false;
-
+            MatchCondition condition = new MatchCondition(n, cond);
+            INDArray result = null;
+            try {
+                result = Nd4j.getExecutioner().exec(condition);
+                long val = (long) result.getDouble(0);
+                return val > 0;
+            } finally {
+                // Clean up result array
+                if (result != null) {
+                    try {
+                        if (result.data() != null) {
+                            result.data().close();
+                        }
+                        result.close();
+                    } catch (Exception e) {
+                        // Ignore close errors
+                    }
+                }
+                // Clean up MatchCondition operation (closes internal dimensionz array)
+                try {
+                    condition.clearArrays();
+                } catch (Exception e) {
+                    // Ignore errors
+                }
+            }
         } else {
             throw new RuntimeException("Can only execute BaseCondition conditions using this method");
         }

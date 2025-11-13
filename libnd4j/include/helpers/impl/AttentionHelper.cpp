@@ -92,7 +92,7 @@ NDArray *AttentionHelper::computeCasualMask(NDArray *query, NDArray *value, bool
     int assignVal = 1;
     ones->assign(assignVal);
     auto lower = matrixBandPart.evaluate({ones},{},{-1,0});
-    auto ret = new NDArray(lower.at(0)->cast(BOOL));
+    auto ret = lower.at(0)->cast(BOOL);
     delete ones;
     return ret;
 
@@ -132,28 +132,28 @@ NDArray *AttentionHelper::computeAttentionMask(NDArray *query, NDArray *value, N
   auto newAxis = NDIndexUtils::createNewAxis();
 
   if (internalQueryMask != nullptr && !internalQueryMask->isEmpty()) {
-    internalQueryMask = new NDArray(queryMask->cast(BOOL));
+    internalQueryMask = queryMask->cast(BOOL);
     if (autoMask != nullptr && !autoMask->isEmpty()) {
       autoMask = createView.evaluate({internalQueryMask, all, all, newAxis}).at(0);
     }
   }
 
   if (valueMask != nullptr && !valueMask->isEmpty()) {
-    internalValueMask = new NDArray(valueMask->cast(BOOL));
+    internalValueMask = valueMask->cast(BOOL);
     auto mask = createView.evaluate({internalValueMask, all, newAxis, all}).at(0);
     if (autoMask == nullptr || autoMask->isEmpty()) {
       autoMask = mask;
     } else {
-      autoMask = new NDArray(booleanAnd.evaluate({autoMask, mask}).at(0));
+      autoMask = booleanAnd.evaluate({autoMask, mask}).at(0);
     }
   }
 
   if (useCausalMask) {
     auto mask = computeCasualMask(query, value, false);
     if (autoMask == nullptr) {
-      autoMask = new NDArray(mask);
+      autoMask = mask;
     } else {
-      autoMask = new NDArray(booleanAnd.evaluate({autoMask, mask}).at(0));
+      autoMask = booleanAnd.evaluate({autoMask, mask}).at(0);
     }
   }
 
@@ -161,7 +161,7 @@ NDArray *AttentionHelper::computeAttentionMask(NDArray *query, NDArray *value, N
     if (attentionMask == nullptr || attentionMask->isEmpty()) {
       return autoMask;
     } else {
-      auto ret = new NDArray(booleanAnd.evaluate({attentionMask, autoMask}).at(0));
+      auto ret = booleanAnd.evaluate({attentionMask, autoMask}).at(0);
       return ret;
     }
   }
@@ -496,7 +496,7 @@ void AttentionHelper::multiHeadProjectBp(NDArray *input, NDArray *projectionMatr
   dLdInputPrep.permutei({1, 0, 2}, false, false);
   dLdInput->assign(&dLdInputPrep);
 
-  delete inputPrep;
+  delete epsReshaped;
   delete projectionPrep;
 
 }

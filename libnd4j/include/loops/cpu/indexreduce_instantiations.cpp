@@ -78,9 +78,9 @@
 #endif
 
 #ifdef HAS_UNSIGNEDLONG
-#define CONDITIONAL_INSTANTIATE_uint64_t(MACRO_CALL) MACRO_CALL((UINT64, uint64_t))
+#define CONDITIONAL_INSTANTIATE_unsignedlong(MACRO_CALL) MACRO_CALL((UINT64, unsigned long long))
 #else
-#define CONDITIONAL_INSTANTIATE_uint64_t(MACRO_CALL)
+#define CONDITIONAL_INSTANTIATE_unsignedlong(MACRO_CALL)
 #endif
 
 #ifdef HAS_BOOL

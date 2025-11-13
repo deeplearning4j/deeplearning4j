@@ -155,12 +155,14 @@ class SD_LIB_EXPORT TadTrieNode {
    }
 
    // Not found, create new child
-#ifndef __JAVACPP_HACK__
+   // NOTE: Removed #ifndef __JAVACPP_HACK__ guard to fix TAD cache memory leak
+   // The guard was preventing proper ownership chain when JavaCPP is used (production mode)
+   // Without this, child nodes were never added to _children vector, preventing automatic
+   // cleanup when parent nodes are destroyed, causing 100% TAD pack leak rate
    auto newNode = std::make_unique<TadTrieNode>(value, level, isDimension, shapeRank);
    newNode->_nodeHash = childHash;
    auto* ptr = newNode.get();
    _children.push_back(std::move(newNode));
-#endif
    return ptr;
  }
 
@@ -184,7 +186,11 @@ class SD_LIB_EXPORT TadTrieNode {
 
  // Enhanced TadPack setter with signature caching
  void setPack(TadPack* pack) {
-   if (!pack) return;
+   // Allow nullptr to clear pack pointer (fixes double-delete in cache clearing)
+   if (!pack) {
+     _tadPack = nullptr;
+     return;
+   }
 
    // Use atomic compare-and-swap for thread safety
    TadPack* expectedNull = nullptr;
@@ -225,16 +231,33 @@ private:
  mutable std::array<MUTEX_TYPE, NUM_STRIPES> _mutexes = {};
  std::array<std::atomic<int>, NUM_STRIPES> _stripeCounts = {};
 
+ // Cache statistics tracking
+ mutable std::atomic<LongType> _current_entries{0};
+ mutable std::atomic<LongType> _current_bytes{0};
+ mutable std::atomic<LongType> _peak_entries{0};
+ mutable std::atomic<LongType> _peak_bytes{0};
+
+ // Internal helper to recursively count entries and bytes in a subtrie
+ void countEntriesAndBytes(const TadTrieNode* node, LongType& entries, LongType& bytes) const;
+
 public:
  // Constructor
  DirectTadTrie() {
-#ifndef __JAVACPP_HACK__
+   // NOTE: Removed #ifndef __JAVACPP_HACK__ guard to fix TAD cache memory leak
+   // Without proper initialization, roots remain nullptr causing crashes
+   // or preventing proper cache management
    for (size_t i = 0; i < NUM_STRIPES; i++) {
      _roots[i] = std::make_unique<TadTrieNode>(0, 0, false);
      // Make sure mutexes are properly initialized
      new (&_mutexes[i]) MUTEX_TYPE();  // Explicit initialization
    }
-#endif
+ }
+
+ // Destructor - clean up all cached TAD packs on singleton destruction
+ ~DirectTadTrie() {
+   // Clear all TAD packs to prevent memory leaks
+   // This is called when the ConstantTadHelper singleton is destroyed on JVM shutdown
+   clear();
  }
 
  // Delete copy constructor and assignment
@@ -284,6 +307,57 @@ public:
  std::vector<LongType> sortDimensions(const std::vector<LongType>& dimensions) const;
  const TadTrieNode* findChild(const TadTrieNode* node, LongType value, int level, bool isDimension, int shapeRank) const;
  TadPack* insert(std::vector<LongType>& dimensions, LongType* originalShape);
+
+ /**
+  * Clear all cached TAD packs to prevent memory leaks during testing.
+  * This recreates the root nodes, which will delete all child nodes and their TadPacks.
+  */
+ void clear();
+
+ /**
+  * Get the total number of cached TAD pack entries.
+  *
+  * @return Total number of cached TAD packs across all stripes
+  */
+ LongType getCachedEntries() const;
+
+ /**
+  * Get the total memory used by cached TAD packs in bytes.
+  * This includes both shape_info and offset buffer sizes.
+  *
+  * @return Total memory used in bytes
+  */
+ LongType getCachedBytes() const;
+
+ /**
+  * Get the peak number of TAD pack entries that were cached simultaneously.
+  *
+  * @return Peak number of cached TAD packs
+  */
+ LongType getPeakCachedEntries() const;
+
+ /**
+  * Get the peak memory usage by cached TAD packs in bytes.
+  *
+  * @return Peak memory usage in bytes
+  */
+ LongType getPeakCachedBytes() const;
+
+ /**
+  * Generate a human-readable string representation of the trie structure.
+  * Shows the hierarchy of nodes and cached TAD packs for debugging.
+  *
+  * @param maxDepth Maximum depth to traverse (default: 10, -1 for unlimited)
+  * @param maxEntries Maximum number of entries to show (default: 100, -1 for unlimited)
+  * @return String representation of the trie
+  */
+ std::string toString(int maxDepth = 10, int maxEntries = 100) const;
+
+private:
+ // Internal helper to build string representation recursively
+ void buildStringRepresentation(const TadTrieNode* node, std::stringstream& ss,
+                                const std::string& indent, int currentDepth,
+                                int maxDepth, int& entriesShown, int maxEntries) const;
 };
 
 }  // namespace sd

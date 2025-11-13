@@ -107,9 +107,23 @@ class SD_LIB_EXPORT DirectShapeTrie {
   std::array<ShapeTrieNode*, NUM_STRIPES> *_roots;
   std::array<MUTEX_TYPE*, NUM_STRIPES> *_mutexes = nullptr;
 
+  // Cache statistics tracking
+  mutable std::atomic<LongType> _current_entries{0};
+  mutable std::atomic<LongType> _current_bytes{0};
+  mutable std::atomic<LongType> _peak_entries{0};
+  mutable std::atomic<LongType> _peak_bytes{0};
+
   // Helper method to create a fallback buffer when trie insertion fails
   // Always returns a valid shape buffer or throws an exception
   ConstantShapeBuffer* createFallbackBuffer(const LongType* shapeInfo, int rank);
+
+  // Internal helper to recursively count entries and bytes in a subtrie
+  void countEntriesAndBytes(const ShapeTrieNode* node, LongType& entries, LongType& bytes) const;
+
+  // Internal helper to build string representation recursively
+  void buildStringRepresentation(const ShapeTrieNode* node, std::stringstream& ss,
+                                 const std::string& indent, int currentDepth,
+                                 int maxDepth, int& entriesShown, int maxEntries) const;
 
  public:
   // Constructor
@@ -174,6 +188,48 @@ class SD_LIB_EXPORT DirectShapeTrie {
 
   // Calculate a unique shape signature for additional validation
   int calculateShapeSignature(const LongType* shapeInfo) const;
+
+  // Clear all cached shape buffers
+  void clearCache();
+
+  /**
+   * Get the total number of cached shape entries.
+   *
+   * @return Total number of cached shape buffers across all stripes
+   */
+  LongType getCachedEntries() const;
+
+  /**
+   * Get the total memory used by cached shape buffers in bytes.
+   * This includes the shape_info buffer sizes across all cached entries.
+   *
+   * @return Total memory used in bytes
+   */
+  LongType getCachedBytes() const;
+
+  /**
+   * Get the peak number of entries that were cached simultaneously.
+   *
+   * @return Peak number of cached entries
+   */
+  LongType getPeakCachedEntries() const;
+
+  /**
+   * Get the peak memory usage by cached shape buffers in bytes.
+   *
+   * @return Peak memory usage in bytes
+   */
+  LongType getPeakCachedBytes() const;
+
+  /**
+   * Generate a human-readable string representation of the trie structure.
+   * Shows the hierarchy of nodes and cached shape buffers for debugging.
+   *
+   * @param maxDepth Maximum depth to traverse (default: 10, -1 for unlimited)
+   * @param maxEntries Maximum number of entries to show (default: 100, -1 for unlimited)
+   * @return String representation of the trie
+   */
+  std::string toString(int maxDepth = 10, int maxEntries = 100) const;
 };
 
 }  // namespace sd

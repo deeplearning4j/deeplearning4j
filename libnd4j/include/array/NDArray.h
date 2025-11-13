@@ -181,7 +181,6 @@ class SD_LIB_EXPORT NDArray {
 
   LongType *_shapeInfo = nullptr;
   LongType *_shapeInfoD = nullptr;
-
   /**
    *  pointer on device launch context (with all data needed there).
    */
@@ -505,7 +504,7 @@ class SD_LIB_EXPORT NDArray {
   /**
    *   returns host buffer
    */
-  SD_INLINE void *buffer();
+  void *buffer();
 
   /**
    *   returns buffer offset (offset is the same for host and device buffers)
@@ -545,8 +544,9 @@ class SD_LIB_EXPORT NDArray {
 
   /**
    *   returns _shapeInfo
+   *   If _shapeInfo is nullptr, attempts to reacquire from ConstantShapeHelper
    */
-  SD_INLINE LongType *shapeInfo();
+  LongType *shapeInfo();
 
 
   /**
@@ -565,7 +565,7 @@ class SD_LIB_EXPORT NDArray {
   /**
    *  if _shapeInfoD==nullptr return _shapeInfo, else return _shapeInfoD
    */
-  SD_INLINE LongType *specialShapeInfo();
+  LongType *specialShapeInfo();
 
 
   /**
@@ -1628,24 +1628,39 @@ SD_INLINE R NDArray::templatedGet(void  *buffer, LongType index)  {
 }
 
 //////////////////////////////////////////////////////////////////////////
-char NDArray::ordering()  { return shape::order(_shapeInfo); }
+char NDArray::ordering()  { return shape::order(shapeInfo()); }
 
 //////////////////////////////////////////////////////////////////////////
-bool NDArray::isView()  { return shape::isViewConst(_shapeInfo); }
+bool NDArray::isView()  { return shape::isViewConst(shapeInfo()); }
 
 //////////////////////////////////////////////////////////////////////////
-LongType *NDArray::shapeOf()  { return shape::shapeOf(_shapeInfo); }
+LongType *NDArray::shapeOf()  { return shape::shapeOf(shapeInfo()); }
 
 //////////////////////////////////////////////////////////////////////////
-LongType *NDArray::stridesOf()  { return shape::stride(_shapeInfo); }
+LongType *NDArray::stridesOf()  { return shape::stride(shapeInfo()); }
 
 //////////////////////////////////////////////////////////////////////////
-int NDArray::rankOf()  { return shape::rank(_shapeInfo); }
+int NDArray::rankOf()  {
+  // shapeInfo() has recovery logic and fail-fast checks - use it instead of direct _shapeInfo access
+  const sd::LongType* shInfo = this->shapeInfo();
+
+  // CRITICAL: Defensive null check even though shapeInfo() should never return nullptr.
+  // Previous crashes show that in rare cases (exception handling issues, compiler optimization,
+  // or JNI boundary conditions), nullptr can still get through. This provides defense-in-depth
+  // to prevent SIGSEGV in shape::rank() which directly dereferences the pointer.
+  if (shInfo == nullptr) {
+    THROW_EXCEPTION("NDArray::rankOf() - shapeInfo() returned nullptr. "
+                    "This indicates a critical error in NDArray state.");
+  }
+
+  return shape::rank(shInfo);
+}
 
 //////////////////////////////////////////////////////////////////////////
 LongType NDArray::lengthOf() {
   if(_length < 1) {
-    this->_length = shape::length(this->_shapeInfo);
+    // shapeInfo() has recovery logic - use it instead of direct _shapeInfo access
+    this->_length = shape::length(this->shapeInfo());
   }
   return _length;
 }
@@ -1680,7 +1695,8 @@ size_t NDArray::sizeOfT()  { return DataTypeUtils::sizeOfElement(dataType()); }
 LongType NDArray::ews()  {
   if (this->isEmpty() || this->rankOf() == 0) return 1;
 
-  return shape::elementWiseStride(_shapeInfo);
+  // shapeInfo() has recovery logic - use it instead of direct _shapeInfo access
+  return shape::elementWiseStride(shapeInfo());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1697,40 +1713,48 @@ bool NDArray::nonNull()  {
 bool NDArray::isMatrix()  {
   if (isEmpty()) return false;
 
-  return 0 != shape::isMatrix(this->_shapeInfo);
+  // shapeInfo() has recovery logic - use it instead of direct _shapeInfo access
+  return 0 != shape::isMatrix(this->shapeInfo());
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::isVector()  {
   if (isEmpty()) return false;
   if (rankOf() == 1) return true;
-  return !isScalar() && shape::isVector(this->_shapeInfo);
+  // shapeInfo() has recovery logic - use it instead of direct _shapeInfo access
+  return !isScalar() && shape::isVector(this->shapeInfo());
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::isColumnVector()  {
   if (isEmpty()) return false;
 
-  return !isScalar() && shape::isColumnVector(this->_shapeInfo);
+  // shapeInfo() has recovery logic - use it instead of direct _shapeInfo access
+  return !isScalar() && shape::isColumnVector(this->shapeInfo());
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::isRowVector()  {
   if (isEmpty()) return false;
 
+  // shapeInfo() has recovery logic - use it instead of direct _shapeInfo access
   // 1D edge case
-  if (shape::rank(this->_shapeInfo) == 1) return true;
+  if (shape::rank(this->shapeInfo()) == 1) return true;
 
-  return !isScalar() && shape::isRowVector(this->_shapeInfo);
+  return !isScalar() && shape::isRowVector(this->shapeInfo());
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::isCommonVector(LongType &posOfNonUnityDim)  {
-  return shape::isCommonVector(_shapeInfo, posOfNonUnityDim);
+  // shapeInfo() has recovery logic - use it instead of direct _shapeInfo access
+  return shape::isCommonVector(shapeInfo(), posOfNonUnityDim);
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool NDArray::isScalar()  { return 0 != shape::isScalar(this->_shapeInfo); }
+bool NDArray::isScalar()  {
+  // shapeInfo() has recovery logic - use it instead of direct _shapeInfo access
+  return 0 != shape::isScalar(this->shapeInfo());
+}
 
 //////////////////////////////////////////////////////////////////////////
 LongType SD_INLINE NDArray::memoryFootprint() {
@@ -1781,24 +1805,27 @@ bool NDArray::areSameShapeAndType(NDArray &other)  {
 // still the definition of inline function must be in header file
 
 bool NDArray::isSameShapeStrict(NDArray &other)  {
-  return shape::equalsStrict(_shapeInfo, other._shapeInfo);
+  // Use shapeInfo() accessor to ensure valid pointers
+  return shape::equalsStrict(this->shapeInfo(), other.shapeInfo());
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::isEmpty()  {
-  if (this->_shapeInfo == nullptr) THROW_EXCEPTION("NDArray::isEmpty() - shapeInfo is nullptr!");
-  if(this->_shapeInfo[0] > SD_MAX_RANK || this->_shapeInfo[0] < 0) {
+  // Use shapeInfo() accessor which has recovery logic and fail-fast validation
+  const sd::LongType* shInfo = this->shapeInfo();
+
+  if(shInfo[0] > SD_MAX_RANK || shInfo[0] < 0) {
     std::string errorMessage;
     errorMessage += "NDArray::isEmpty() - rank of array is out of range! Shape info could have been deallocated. ";
     errorMessage += "Rank: ";
-    errorMessage += std::to_string(this->_shapeInfo[0]);
+    errorMessage += std::to_string(shInfo[0]);
     errorMessage += " Max rank: ";
     errorMessage += std::to_string(SD_MAX_RANK);
     errorMessage += " Min rank: ";
     errorMessage += std::to_string(0);
     THROW_EXCEPTION(errorMessage.c_str());
   }
-  bool baseEmpty =  ArrayOptions::hasPropertyBitSet(this->_shapeInfo, ARRAY_EMPTY);
+  bool baseEmpty =  ArrayOptions::hasPropertyBitSet(shInfo, ARRAY_EMPTY);
   return baseEmpty;
 }
 
@@ -1975,14 +2002,39 @@ void * _bufferWithOffset(LongType offset,DataBuffer *buffer) {
   return reinterpret_cast<void *>(buffer->primaryAtOffset<T>(offset));
 }
 
-//note this is meant to be used with primary() (host side/cpu) use specialBuffer() for device side buffers
-void *NDArray::buffer() {
-  BUILD_SINGLE_SELECTOR(dataType(), return _bufferWithOffset, (offset(),getDataBuffer()),SD_COMMON_TYPES);
-  return nullptr;
-}
+// Moved to NDArray.hXX - removed inline definition to avoid requiring selective_rendering.h in header
 
 //////////////////////////////////////////////////////////////////////////
-LongType *NDArray::shapeInfo()  { return _shapeInfo; }
+// CRITICAL: Must be SD_INLINE to avoid multiple definition errors across translation units.
+// The function is defined in a header, so it must be marked inline to comply with ODR (One Definition Rule).
+// Exception handling works correctly with inline functions - the inline keyword doesn't affect exception semantics.
+SD_INLINE LongType *NDArray::shapeInfo()  {
+  // CRITICAL FIX: Always refresh from buffer if available to prevent dangling pointers.
+  // Even if _shapeInfo is non-null, it might point to freed memory (use-after-free).
+  // This can happen if shape buffers are deleted/moved while NDArray still holds raw pointer.
+  // By always getting a fresh pointer from the buffer, we ensure we never return dangling pointers.
+  if (_shapeInfoBuffer != nullptr) {
+    _shapeInfo = _shapeInfoBuffer->primary();
+    _shapeInfoD = _shapeInfoBuffer->special();
+  }
+
+  // If we still have nullptr after refresh attempt, this is a fatal error.
+  // Fail fast with clear diagnostic information rather than returning nullptr
+  // and causing cryptic errors downstream (e.g., in execReduceLong2, shape::rank()).
+  if (_shapeInfo == nullptr) {
+    // Set error context for debugging
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    const char* msg = (_shapeInfoBuffer == nullptr) ?
+      "NDArray::shapeInfo() - both _shapeInfo and _shapeInfoBuffer are nullptr" :
+      "NDArray::shapeInfo() - _shapeInfoBuffer->primary() returned nullptr";
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(msg);
+
+    // Throw exception - this MUST stop execution as returning nullptr would cause crashes
+    THROW_EXCEPTION(msg);
+  }
+
+  return _shapeInfo;
+}
 
 
 
@@ -1999,8 +2051,26 @@ DataBuffer NDArray::shapeInfoDataBuffer()   {
 
 
 ////////////////////////////////////////////////////////////////////////
-LongType *NDArray::specialShapeInfo()  {
-  if (_shapeInfoD == nullptr) return _shapeInfo;
+SD_INLINE LongType *NDArray::specialShapeInfo()  {
+  // Always refresh from buffer to prevent dangling pointers (same as shapeInfo() does)
+  if (_shapeInfoBuffer != nullptr) {
+    _shapeInfo = _shapeInfoBuffer->primary();
+    _shapeInfoD = _shapeInfoBuffer->special();
+  }
+
+  // If special shape info is nullptr, try to use primary. If both are nullptr, throw exception.
+  if (_shapeInfoD == nullptr) {
+    if (_shapeInfo != nullptr) {
+      return _shapeInfo;
+    } else {
+      // Both are nullptr - this is a fatal error
+      const char* msg = "NDArray::specialShapeInfo() - both _shapeInfo and _shapeInfoD are nullptr";
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(msg);
+      THROW_EXCEPTION(msg);
+    }
+  }
+
   // FIXME: this should be fixed once CUDA backend added
   return _shapeInfoD;
 }

@@ -27,6 +27,10 @@
 #include <helpers/logger.h>
 #include <memory/MemoryCounter.h>
 
+#if defined(SD_GCC_FUNCTRACE)
+#include <array/DataBufferLifecycleTracker.h>
+#endif
+
 namespace sd {
 ///// IMPLEMENTATION OF COMMON METHODS /////
 
@@ -428,6 +432,13 @@ void DataBuffer::allocatePrimary() {
 
       memory::MemoryCounter::getInstance().countIn(memory::MemoryType::HOST, getLenInBytes());
     }
+
+#if defined(SD_GCC_FUNCTRACE)
+    // Record allocation in lifecycle tracker
+    array::DataBufferLifecycleTracker::getInstance().recordAllocation(
+        _primaryBuffer, getLenInBytes(), getDataType(),
+        array::BufferType::PRIMARY, this, _workspace != nullptr);
+#endif
   }
 }
 
@@ -447,6 +458,11 @@ void DataBuffer::deletePrimary() {
     auto p = reinterpret_cast<int8_t*>(_primaryBuffer);
 
     if(Environment::getInstance().isDeletePrimary()) {
+#if defined(SD_GCC_FUNCTRACE)
+      // Record deallocation before releasing memory
+      array::DataBufferLifecycleTracker::getInstance().recordDeallocation(
+          _primaryBuffer, array::BufferType::PRIMARY);
+#endif
       RELEASE(p, _workspace);
       _primaryBuffer = nullptr;
     }

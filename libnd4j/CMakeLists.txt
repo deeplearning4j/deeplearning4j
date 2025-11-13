@@ -90,6 +90,9 @@ get_directory_property(COMPILE_DEFS COMPILE_DEFINITIONS)
 message(STATUS "Some compile definitions: ${COMPILE_DEFS}")
 message(STATUS "==============================")
 
+# Include JNI configuration BEFORE MainBuildFlow so JVM_LIBRARY is available for linking
+include(cmake/JNIConfiguration.cmake)
+
 include(cmake/MainBuildFlow.cmake)
 
 if(SD_CUDA)

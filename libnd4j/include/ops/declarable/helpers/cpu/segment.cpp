@@ -177,6 +177,7 @@ static void segmentMeanFunctor_(NDArray* input, NDArray* indices, NDArray* outpu
       }
       meanV->applyScalar(scalar::Divide, count, meanT);
     }
+    delete meanV;  // Clean up duped array
   }
 }
 
@@ -638,6 +639,7 @@ sd::Status segmentMaxFunctorBP_(sd::LaunchContext* context, NDArray* input, NDAr
 
     samediff::Threads::parallel_tad(func, 0, indices->lengthOf());
   }
+  delete tempRes;  // Clean up duped array
 
   return sd::Status::OK;
 }
@@ -694,6 +696,7 @@ sd::Status segmentMinFunctorBP(sd::LaunchContext* context, NDArray* input, NDArr
 
     samediff::Threads::parallel_tad(func, 0, indices->lengthOf());
   }
+  delete tempRes;  // Clean up duped array
   return sd::Status::OK;
 }
 
@@ -798,8 +801,9 @@ sd::Status segmentProdFunctorBP(sd::LaunchContext* context, NDArray* input, NDAr
       delete mul;
       delete assign;
     }
-
+    delete restDims;  // Clean up allocated vector
   }
+  delete tempRes;  // Clean up duped array
 
   return sd::Status::OK;
 }
@@ -842,6 +846,7 @@ static sd::Status unsortedSegmentMaxFunctorBP_(sd::LaunchContext* context, NDArr
 
     delete restDims;
   }
+  delete tempRes;  // Clean up duped array
 
   return sd::Status::OK;
 }
@@ -890,8 +895,9 @@ static sd::Status unsortedSegmentMinFunctorBP_(sd::LaunchContext* context, NDArr
           currentOut->r<T>(e) = currentGradOut->t<T>(e);
       }
     }
-
+    delete restDims;  // Clean up allocated vector
   }
+  delete tempRes;  // Clean up duped array
 
   return sd::Status::OK;
 }
@@ -1009,8 +1015,9 @@ sd::Status unsortedSegmentProdFunctorBP(sd::LaunchContext* context, NDArray* inp
       delete div;
       delete assign;
     }
-
+    delete restDims;  // Clean up allocated vector
   }
+  delete tempRes;  // Clean up duped array
 
   return sd::Status::OK;
 }

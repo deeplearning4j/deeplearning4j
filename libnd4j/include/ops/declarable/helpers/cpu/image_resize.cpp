@@ -555,7 +555,7 @@ static void resizeArea(ImageResizerState const& st, std::vector<CachedInterpolat
         };
         ScaleCache<T>* yCachesPtr = yCaches.data();
         sd::LongType yCachesSize = yCaches.size();
-        for (auto i = yStart, k = 0LL; i < yEnd; ++i, ++k) {
+        for (auto i = yStart, k = sd::LongType(0); i < yEnd; ++i, ++k) {
           ScaleCache<T> scaleCache;
           if (i < inY) {
             scaleCache.yScale = (i + 1 > inY1 ? st.heightScale : i + 1 - inY);

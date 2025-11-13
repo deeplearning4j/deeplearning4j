@@ -436,4 +436,212 @@ public interface NativeOps {
  org.nd4j.nativeblas.OpaqueLaunchContext defaultLaunchContext();
  String buildInfo();
  boolean isFuncTrace();
+
+ /**
+  * Triggers LeakSanitizer to perform a leak check immediately.
+  * Only functional when libnd4j is built with ASAN/LSAN enabled.
+  * No-op when built without sanitizers.
+  */
+ void triggerLeakCheck();
+
+ /**
+  * Enables NDArray lifecycle tracking (allocation/deallocation monitoring).
+  */
+ void enableNDArrayTracking();
+
+ /**
+  * Disables NDArray lifecycle tracking.
+  */
+ void disableNDArrayTracking();
+
+ /**
+  * Enables DataBuffer lifecycle tracking.
+  */
+ void enableDataBufferTracking();
+
+ /**
+  * Disables DataBuffer lifecycle tracking.
+  */
+ void disableDataBufferTracking();
+
+ /**
+  * Enables TADCache lifecycle tracking.
+  */
+ void enableTADCacheTracking();
+
+ /**
+  * Disables TADCache lifecycle tracking.
+  */
+ void disableTADCacheTracking();
+
+ /**
+  * Enables ShapeCache lifecycle tracking.
+  */
+ void enableShapeCacheTracking();
+
+ /**
+  * Disables ShapeCache lifecycle tracking.
+  */
+ void disableShapeCacheTracking();
+
+ /**
+  * Enables OpContext lifecycle tracking.
+  */
+ void enableOpContextTracking();
+
+ /**
+  * Disables OpContext lifecycle tracking.
+  */
+ void disableOpContextTracking();
+
+ /**
+  * Generates a comprehensive leak source analysis report combining data from ALL lifecycle trackers.
+  * <p>
+  * This method analyzes undeleted allocations across all 5 lifecycle trackers:
+  * <ul>
+  *   <li>NDArrayLifecycleTracker</li>
+  *   <li>DataBufferLifecycleTracker</li>
+  *   <li>TADCacheLifecycleTracker</li>
+  *   <li>ShapeCacheLifecycleTracker</li>
+  *   <li>OpContextLifecycleTracker</li>
+  * </ul>
+  * <p>
+  * For each allocation source (Java method or C++ function), the report shows:
+  * <ul>
+  *   <li>Total number of undeleted allocations</li>
+  *   <li>Breakdown by object type (NDArray, DataBuffer, TAD, Shape, OpContext)</li>
+  *   <li>Total bytes leaked</li>
+  *   <li>Example stack traces (both Java and C++)</li>
+  * </ul>
+  * <p>
+  * Results are sorted by total leak count, making it easy to identify the top leak sources.
+  *
+  * @param outputDir Directory where report files should be written (e.g., "./leak_reports").
+  *                  If null or empty, uses current directory.
+  *
+  * <p>Output files generated:</p>
+  * <ul>
+  *   <li>comprehensive_leak_report.txt - Detailed report with top 50 leak sources</li>
+  *   <li>Console output shows top 20 leak sources summary</li>
+  * </ul>
+  *
+  * <p>Example usage:</p>
+  * <pre>{@code
+  * // Enable tracking
+  * Nd4j.getNativeOps().enableNDArrayTracking();
+  * Nd4j.getNativeOps().enableDataBufferTracking();
+  * Nd4j.getNativeOps().enableTADCacheTracking();
+  * Nd4j.getNativeOps().enableShapeCacheTracking();
+  * Nd4j.getNativeOps().enableOpContextTracking();
+  *
+  * // Run workload
+  * runYourWorkload();
+  *
+  * // Generate analysis
+  * Nd4j.getNativeOps().generateComprehensiveLeakAnalysis("./leak_reports");
+  * }</pre>
+  *
+  * @see #enableNDArrayTracking()
+  * @see #enableDataBufferTracking()
+  */
+ void generateComprehensiveLeakAnalysis(String outputDir);
+
+ /**
+  * Clears all cached TAD packs to prevent memory leaks.
+  * This is particularly useful when running memory leak tests or
+  * during application shutdown to free accumulated cache memory.
+  */
+ void clearTADCache();
+
+ /**
+  * Clears all cached shape buffers to prevent memory leaks.
+  * This is called during application shutdown to free accumulated cache memory.
+  */
+ void clearShapeCache();
+
+ /**
+  * Get the total number of cached shape buffer entries.
+  *
+  * @return Total number of cached shape buffers across all stripes
+  */
+ long getShapeCachedEntries();
+
+ /**
+  * Get the total memory used by cached shape buffers in bytes.
+  *
+  * @return Total memory used in bytes
+  */
+ long getShapeCachedBytes();
+
+ /**
+  * Get the peak number of shape entries that were cached simultaneously.
+  *
+  * @return Peak number of cached shape buffers
+  */
+ long getShapePeakCachedEntries();
+
+ /**
+  * Get the peak memory usage by cached shape buffers in bytes.
+  *
+  * @return Peak memory usage in bytes
+  */
+ long getShapePeakCachedBytes();
+
+ /**
+  * Get the total number of cached TAD pack entries.
+  *
+  * @return Total number of cached TAD packs across all stripes
+  */
+ long getTADCachedEntries();
+
+ /**
+  * Get the total memory used by cached TAD packs in bytes.
+  * This includes both shape_info and offset buffer sizes.
+  *
+  * @return Total memory used in bytes
+  */
+ long getTADCachedBytes();
+
+ /**
+  * Get the peak number of TAD pack entries that were cached simultaneously.
+  *
+  * @return Peak number of cached TAD packs
+  */
+ long getTADPeakCachedEntries();
+
+ /**
+  * Get the peak memory usage by cached TAD packs in bytes.
+  *
+  * @return Peak memory usage in bytes
+  */
+ long getTADPeakCachedBytes();
+
+ /**
+  * Get a string representation of the shape cache for debugging.
+  * Shows the trie structure with cached shape buffers.
+  * The returned string must be freed using freeString().
+  *
+  * @param maxDepth Maximum depth to traverse (default: 10, -1 for unlimited)
+  * @param maxEntries Maximum number of entries to show (default: 100, -1 for unlimited)
+  * @return Pointer to string representation of the shape cache
+  */
+ Pointer getShapeCacheString(int maxDepth, int maxEntries);
+
+ /**
+  * Get a string representation of the TAD cache for debugging.
+  * Shows the trie structure with cached TAD packs.
+  * The returned string must be freed using freeString().
+  *
+  * @param maxDepth Maximum depth to traverse (default: 10, -1 for unlimited)
+  * @param maxEntries Maximum number of entries to show (default: 100, -1 for unlimited)
+  * @return Pointer to string representation of the TAD cache
+  */
+ Pointer getTADCacheString(int maxDepth, int maxEntries);
+
+ /**
+  * Free a string returned by native code.
+  *
+  * @param ptr String pointer to free
+  */
+ void freeString(Pointer ptr);
 }

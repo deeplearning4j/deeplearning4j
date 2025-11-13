@@ -196,21 +196,21 @@ CUSTOM_OP_IMPL(matmul_bp, 3, 2, false, 0, -2) {
   if (eps->isScalar()) {
     if (x->isVector() && y->isVector()) {
       if (x->isRowVector() && y->isRowVector()) {
-        double ySum = y->sumNumber().e<double>(0);
+        float ySum = y->sumNumber().e<float>(0);
         NDArray *dldxTemp = (*eps) * ySum;
         dldx->assign(dldxTemp);
         delete dldxTemp;
-        
-        double xSum = x->sumNumber().e<double>(0);
+
+        float xSum = x->sumNumber().e<float>(0);
         NDArray *dldyTemp = (*eps) * xSum;
         dldy->assign(dldyTemp);
         delete dldyTemp;
       } else if (x->isColumnVector() && y->isColumnVector()) {
-        double ySum = y->sumNumber().e<double>(0);
+        float ySum = y->sumNumber().e<float>(0);
         NDArray *dldxTemp = (*eps) * ySum;
         dldx->assign(dldxTemp);
         delete dldxTemp;
-        double xSum = x->sumNumber().e<double>(0);
+        float xSum = x->sumNumber().e<float>(0);
         NDArray *dldyTemp = (*eps) * xSum;
         dldy->assign(dldyTemp);
         delete dldyTemp;
@@ -224,12 +224,12 @@ CUSTOM_OP_IMPL(matmul_bp, 3, 2, false, 0, -2) {
       }
     } else {
       // assign all ones to shape as baseline
-      auto alphaBetaBase = 1.0;
-      if (alpha > 0.0) {
+      auto alphaBetaBase = 1.0f;
+      if (alpha > 0.0f) {
         alphaBetaBase *= alpha;
       }
 
-      if (beta > 0.0) {
+      if (beta > 0.0f) {
         alphaBetaBase += beta;
       }
 
@@ -254,13 +254,14 @@ CUSTOM_OP_IMPL(matmul_bp, 3, 2, false, 0, -2) {
       // execute proper multiplication: rows for first input, columns for second
       dldx->mulRowVector(ySumRow, dldx);
       dldy->muliColumnVector(xSumRow);
-      
-      // FIX: Clean up allocated reshape results
+
+      // FIXED: Proper cleanup - delete each allocated array once, add missing cleanup
       delete xSumRow;
+      delete xSumScaled;
+      delete xSum;
       delete ySumRow;
-      delete ySum;
       delete ySumScaled;
-      delete ySumRow;
+      delete ySum;
     }
 
     return Status::OK;

@@ -102,6 +102,29 @@ public class NativeOpsHolder {
                deviceNativeOps = ReflectionUtils.newInstance(nativeOpsClass);
                initOps();
 
+               // Add shutdown hook to clear caches and prevent memory leaks
+               Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                   try {
+                       // Operation registry cleanup happens automatically via JVM shutdown
+                       // No explicit cleanup needed for singleton prototype instances
+
+                       if (deviceNativeOps != null) {
+                           // Clear TAD cache
+                           deviceNativeOps.clearTADCache();
+                           if (log.isDebugEnabled()) {
+                               log.debug("TAD cache cleared during shutdown");
+                           }
+
+                           // Clear shape cache
+                           deviceNativeOps.clearShapeCache();
+                           if (log.isDebugEnabled()) {
+                               log.debug("Shape cache cleared during shutdown");
+                           }
+                       }
+                   } catch (Exception e) {
+                       log.warn("Error clearing caches during shutdown", e);
+                   }
+               }, "ND4J-Cache-Cleanup"));
 
            }
 

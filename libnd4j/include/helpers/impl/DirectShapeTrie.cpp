@@ -25,8 +25,14 @@
 
 #include <atomic>
 #include <memory>
+#include <sstream>
+#include <string>
 
 #include "helpers/ShapeBufferCreatorHelper.h"
+
+#if defined(SD_GCC_FUNCTRACE)
+#include <array/ShapeCacheLifecycleTracker.h>
+#endif
 
 namespace sd {
 
@@ -296,6 +302,11 @@ ConstantShapeBuffer* DirectShapeTrie::createFallbackBuffer(const LongType* shape
     THROW_EXCEPTION(msg.c_str());
   }
 
+#if defined(SD_GCC_FUNCTRACE)
+  // Track shape cache allocation
+  sd::array::ShapeCacheLifecycleTracker::getInstance().recordAllocation(shapeCopy);
+#endif
+
   return buffer;
 }
 
@@ -520,6 +531,11 @@ ConstantShapeBuffer* DirectShapeTrie::insert(const LongType* shapeInfo, size_t s
       auto hPtr = new PointerWrapper(shapeCopy, deallocator);
       auto buffer = new ConstantShapeBuffer(hPtr);
 
+#if defined(SD_GCC_FUNCTRACE)
+      // Track shape cache allocation
+      sd::array::ShapeCacheLifecycleTracker::getInstance().recordAllocation(shapeCopy);
+#endif
+
       current->setBuffer(buffer);
       return buffer;
     } catch (const std::exception& e) {
@@ -533,6 +549,233 @@ ConstantShapeBuffer* DirectShapeTrie::insert(const LongType* shapeInfo, size_t s
   }
 
   return current->buffer();
+}
+
+void DirectShapeTrie::clearCache() {
+  if (_roots == nullptr || _mutexes == nullptr) {
+    return;
+  }
+
+  // Clear each stripe
+  for (size_t i = 0; i < NUM_STRIPES; i++) {
+    MUTEX_TYPE* mutex = (*_mutexes)[i];
+    if (mutex == nullptr) continue;
+
+    // Lock this stripe
+    std::lock_guard<MUTEX_TYPE> lock(*mutex);
+
+    // Delete the old root node (destructor recursively cleans up all children and buffers)
+    ShapeTrieNode* oldRoot = (*_roots)[i];
+    if (oldRoot != nullptr) {
+      delete oldRoot;
+    }
+
+    // Create a new empty root node
+    (*_roots)[i] = new ShapeTrieNode(0, 0, false);
+  }
+
+  // Reset current counters (but preserve peak values for diagnostics)
+  _current_entries.store(0);
+  _current_bytes.store(0);
+}
+
+void DirectShapeTrie::countEntriesAndBytes(const ShapeTrieNode* node, LongType& entries, LongType& bytes) const {
+  if (node == nullptr) return;
+
+  // If this node has a buffer, count it
+  ConstantShapeBuffer* buffer = node->buffer();
+  if (buffer != nullptr) {
+    entries++;
+    // Calculate buffer size: shapeInfo length is stored at index 0
+    const LongType* shapeInfo = buffer->primary();
+    if (shapeInfo != nullptr) {
+      LongType bufferLength = shape::shapeInfoLength(shapeInfo);
+      bytes += bufferLength * sizeof(LongType);
+    }
+  }
+
+  // Recursively count children
+  const std::vector<ShapeTrieNode*>& children = node->children();
+  for (const auto* child : children) {
+    countEntriesAndBytes(child, entries, bytes);
+  }
+}
+
+LongType DirectShapeTrie::getCachedEntries() const {
+  LongType total_entries = 0;
+  LongType total_bytes = 0;
+
+  if (_roots == nullptr || _mutexes == nullptr) {
+    return 0;
+  }
+
+  // Count entries across all stripes
+  for (size_t i = 0; i < NUM_STRIPES; i++) {
+    MUTEX_TYPE* mutex = (*_mutexes)[i];
+    if (mutex == nullptr) continue;
+
+    // Lock this stripe for reading
+    std::lock_guard<MUTEX_TYPE> lock(*mutex);
+
+    ShapeTrieNode* root = (*_roots)[i];
+    if (root != nullptr) {
+      countEntriesAndBytes(root, total_entries, total_bytes);
+    }
+  }
+
+  // Update current counters
+  _current_entries.store(total_entries);
+  _current_bytes.store(total_bytes);
+
+  // Update peak if current exceeds it
+  LongType current_peak = _peak_entries.load();
+  while (total_entries > current_peak) {
+    if (_peak_entries.compare_exchange_weak(current_peak, total_entries)) {
+      break;
+    }
+  }
+
+  current_peak = _peak_bytes.load();
+  while (total_bytes > current_peak) {
+    if (_peak_bytes.compare_exchange_weak(current_peak, total_bytes)) {
+      break;
+    }
+  }
+
+  return total_entries;
+}
+
+LongType DirectShapeTrie::getCachedBytes() const {
+  // getCachedEntries() updates both entries and bytes
+  getCachedEntries();
+  return _current_bytes.load();
+}
+
+LongType DirectShapeTrie::getPeakCachedEntries() const {
+  return _peak_entries.load();
+}
+
+LongType DirectShapeTrie::getPeakCachedBytes() const {
+  return _peak_bytes.load();
+}
+
+void DirectShapeTrie::buildStringRepresentation(const ShapeTrieNode* node, std::stringstream& ss,
+                                                const std::string& indent, int currentDepth,
+                                                int maxDepth, int& entriesShown, int maxEntries) const {
+  if (node == nullptr) return;
+  if (maxDepth != -1 && currentDepth > maxDepth) return;
+  if (maxEntries != -1 && entriesShown >= maxEntries) return;
+
+  // Check if this node has a buffer
+  ConstantShapeBuffer* buffer = node->buffer();
+  if (buffer != nullptr) {
+    const LongType* shapeInfo = buffer->primary();
+    if (shapeInfo != nullptr) {
+      entriesShown++;
+
+      // Display node info
+      ss << indent << "Node[level=" << node->level()
+         << ", value=" << node->value()
+         << ", isShape=" << (node->isShape() ? "true" : "false")
+         << "]\n";
+
+      // Display shape info details
+      int rank = shape::rank(shapeInfo);
+      ss << indent << "  Shape: rank=" << rank << ", order=" << shape::order(shapeInfo)
+         << ", dtype=" << DataTypeUtils::asString(ArrayOptions::dataType(shapeInfo)) << "\n";
+
+      // Display shape dimensions
+      ss << indent << "  Dims: [";
+      const LongType* dims = shape::shapeOf(shapeInfo);
+      for (int i = 0; i < rank; i++) {
+        if (i > 0) ss << ", ";
+        ss << dims[i];
+      }
+      ss << "]\n";
+
+      // Display strides
+      ss << indent << "  Strides: [";
+      const LongType* strides = shape::stride(shapeInfo);
+      for (int i = 0; i < rank; i++) {
+        if (i > 0) ss << ", ";
+        ss << strides[i];
+      }
+      ss << "]\n";
+
+      // Display total elements and buffer size
+      LongType length = shape::length(shapeInfo);
+      LongType bufferLength = shape::shapeInfoLength(shapeInfo);
+      ss << indent << "  Elements: " << length
+         << ", Buffer size: " << (bufferLength * sizeof(LongType)) << " bytes\n";
+
+      if (maxEntries != -1 && entriesShown >= maxEntries) {
+        ss << indent << "  ... (max entries reached)\n";
+        return;
+      }
+    }
+  }
+
+  // Recursively process children
+  const std::vector<ShapeTrieNode*>& children = node->children();
+  if (!children.empty() && (maxDepth == -1 || currentDepth < maxDepth)) {
+    for (const auto* child : children) {
+      if (maxEntries != -1 && entriesShown >= maxEntries) break;
+      buildStringRepresentation(child, ss, indent + "  ", currentDepth + 1,
+                               maxDepth, entriesShown, maxEntries);
+    }
+  }
+}
+
+std::string DirectShapeTrie::toString(int maxDepth, int maxEntries) const {
+  std::stringstream ss;
+
+  if (_roots == nullptr || _mutexes == nullptr) {
+    ss << "DirectShapeTrie: [UNINITIALIZED]\n";
+    return ss.str();
+  }
+
+  // Get current statistics
+  LongType totalEntries = getCachedEntries();
+  LongType totalBytes = getCachedBytes();
+  LongType peakEntries = getPeakCachedEntries();
+  LongType peakBytes = getPeakCachedBytes();
+
+  // Header
+  ss << "DirectShapeTrie [" << NUM_STRIPES << " stripes]\n";
+  ss << "Current: " << totalEntries << " entries, " << totalBytes << " bytes\n";
+  ss << "Peak: " << peakEntries << " entries, " << peakBytes << " bytes\n";
+  ss << "Showing: max depth=" << (maxDepth == -1 ? "unlimited" : std::to_string(maxDepth))
+     << ", max entries=" << (maxEntries == -1 ? "unlimited" : std::to_string(maxEntries)) << "\n";
+  ss << "---\n";
+
+  int entriesShown = 0;
+
+  // Traverse each stripe
+  for (size_t i = 0; i < NUM_STRIPES; i++) {
+    MUTEX_TYPE* mutex = (*_mutexes)[i];
+    if (mutex == nullptr) continue;
+
+    // Lock this stripe for reading
+    std::lock_guard<MUTEX_TYPE> lock(*mutex);
+
+    ShapeTrieNode* root = (*_roots)[i];
+    if (root != nullptr && !root->children().empty()) {
+      ss << "Stripe " << i << ":\n";
+      buildStringRepresentation(root, ss, "  ", 0, maxDepth, entriesShown, maxEntries);
+
+      if (maxEntries != -1 && entriesShown >= maxEntries) {
+        ss << "... (max entries limit reached, " << (totalEntries - entriesShown)
+           << " more entries not shown)\n";
+        break;
+      }
+    }
+  }
+
+  if (entriesShown == 0) {
+    ss << "(Cache is empty)\n";
+  }
+
+  return ss.str();
 }
 
 }  // namespace sd

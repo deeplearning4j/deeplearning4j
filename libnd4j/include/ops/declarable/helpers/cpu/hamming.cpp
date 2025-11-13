@@ -96,7 +96,7 @@ static void _hamming(LaunchContext *context, NDArray &x, NDArray &y, NDArray &z)
 void hamming(LaunchContext *context, NDArray &x, NDArray &y, NDArray &output) {
   auto xDType = x.dataType();
   auto outputDType = output.dataType();
-  BUILD_DOUBLE_SELECTOR(x.dataType(), output.dataType(), _hamming, (context, x, y, output), SD_INTEGER_TYPES, SD_INDEXING_TYPES);
+  BUILD_DOUBLE_SELECTOR(x.dataType(), output.dataType(), _hamming, (context, x, y, output), SD_INTEGER_TYPES, SD_INTEGER_TYPES);
 }
 }  // namespace helpers
 }  // namespace ops

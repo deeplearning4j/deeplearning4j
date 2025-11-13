@@ -74,19 +74,39 @@ public class Transforms {
      * @return the cosine similarities between the 2 arrays
      */
     public static double cosineSim(@NonNull INDArray d1, @NonNull INDArray d2) {
-        return Nd4j.getExecutioner().exec(new CosineSimilarity(d1, d2)).getDouble(0);
+        INDArray result = Nd4j.getExecutioner().exec(new CosineSimilarity(d1, d2));
+        try {
+            return result.getDouble(0);
+        } finally {
+            result.close();
+        }
     }
 
     public static double cosineDistance(@NonNull INDArray d1, @NonNull INDArray d2) {
-        return Nd4j.getExecutioner().exec(new CosineDistance(d1, d2)).getDouble(0);
+        INDArray result = Nd4j.getExecutioner().exec(new CosineDistance(d1, d2));
+        try {
+            return result.getDouble(0);
+        } finally {
+            result.close();
+        }
     }
 
     public static double hammingDistance(@NonNull INDArray d1, @NonNull INDArray d2) {
-        return Nd4j.getExecutioner().exec(new HammingDistance(d1, d2)).getDouble(0);
+        INDArray result = Nd4j.getExecutioner().exec(new HammingDistance(d1, d2));
+        try {
+            return result.getDouble(0);
+        } finally {
+            result.close();
+        }
     }
 
     public static double jaccardDistance(@NonNull INDArray d1, @NonNull INDArray d2) {
-        return Nd4j.getExecutioner().exec(new JaccardDistance(d1, d2)).getDouble(0);
+        INDArray result = Nd4j.getExecutioner().exec(new JaccardDistance(d1, d2));
+        try {
+            return result.getDouble(0);
+        } finally {
+            result.close();
+        }
     }
 
     public static INDArray allCosineSimilarities(@NonNull INDArray d1, @NonNull INDArray d2, long... dimensions) {

@@ -48,7 +48,13 @@ CONFIGURABLE_OP_IMPL(adjust_contrast, 1, 1, true, 0, 0) {
     factor = INPUT_VARIABLE(1);
   else {
     factor = new NDArray(output->dataType(), block.launchContext());
-    factor->p(0, T_ARG(0));
+#ifdef HAS_DOUBLE
+    factor->p(0, static_cast<double>(T_ARG(0)));
+#elif defined(HAS_FLOAT32)
+    factor->p(0, static_cast<float>(T_ARG(0)));
+#else
+#error "No floating-point type available for adjust_contrast operation"
+#endif
   }
 
   // fill up axes vector first
@@ -98,7 +104,13 @@ CONFIGURABLE_OP_IMPL(adjust_contrast_v2, 1, 1, true, 0, 0) {
   }
   else {
     factor = new NDArray(output->dataType(), block.launchContext());
-    factor->p(0, T_ARG(0));
+#ifdef HAS_DOUBLE
+    factor->p(0, static_cast<double>(T_ARG(0)));
+#elif defined(HAS_FLOAT32)
+    factor->p(0, static_cast<float>(T_ARG(0)));
+#else
+#error "No floating-point type available for adjust_contrast_v2 operation"
+#endif
   }
 
   std::vector<LongType> axes({1});  // dim 1 of pseudoresult

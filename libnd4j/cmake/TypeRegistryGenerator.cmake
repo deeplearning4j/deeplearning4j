@@ -28,6 +28,10 @@ struct cublasHandle_t {};
 SD_COMMON_TYPES
 ===END_SD_COMMON_TYPES===
 
+===BEGIN_SD_COMMON_TYPES_ALL===
+SD_COMMON_TYPES_ALL
+===END_SD_COMMON_TYPES_ALL===
+
 ===BEGIN_SD_FLOAT_TYPES===
 SD_FLOAT_TYPES
 ===END_SD_FLOAT_TYPES===
@@ -94,7 +98,7 @@ SD_STRING_TYPES
         message(STATUS "✅ Macro extraction succeeded")
 
         # Extract macros
-        set(macro_names "SD_COMMON_TYPES" "SD_FLOAT_TYPES" "SD_INTEGER_TYPES" "SD_NUMERIC_TYPES"
+        set(macro_names "SD_COMMON_TYPES" "SD_COMMON_TYPES_ALL" "SD_FLOAT_TYPES" "SD_INTEGER_TYPES" "SD_NUMERIC_TYPES"
                 "SD_LONG_TYPES" "SD_COMMON_TYPES_PART_0" "SD_COMMON_TYPES_PART_1" "SD_COMMON_TYPES_PART_2" "SD_STRING_TYPES")
 
         set(found_macros 0)

@@ -115,31 +115,32 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
     // Calculate final output shape
     std::vector<sd::LongType> outputShape = originalShape;
     outputShape[outputShape.size() - 1] = bTranspose ? w->sizeAt(0) : w->sizeAt(1);
-    
+
     // Reshape z back to original dimensions
     auto zFinal = z->reshape('c', outputShape);
     OUTPUT_VARIABLE(0)->assign(zFinal);
-    delete zFinal;
+    // Only delete if reshape created a new array (not a view)
+    if (zFinal != nullptr && !zFinal->isView()) {
+      delete zFinal;
+    }
   }
 
   // Cleanup
-  if (xReshaped != nullptr) {
+  if (xReshaped != nullptr && !xReshaped->isView()) {
     delete xReshaped;
   }
-  if (zReshaped != nullptr) {
+  if (zReshaped != nullptr && !zReshaped->isView()) {
     delete zReshaped;
   }
-  if(deleteBias) {
+  if (deleteBias && b != nullptr && !b->isView()) {
     delete b;
   }
-  if (bTranspose) {
-    delete w;
-  }
+  // Transpose views are managed by parent arrays - no deletion needed
   if (aTranspose && xReshaped == nullptr) {
-    delete x;
+    // x is a transpose view, managed by INPUT_VARIABLE(0)
   }
   if (cTranspose && zReshaped == nullptr) {
-    delete z;
+    // z is a transpose view, managed by OUTPUT_VARIABLE(0)
   }
   
   return Status::OK;
@@ -204,13 +205,13 @@ CUSTOM_OP_IMPL(xw_plus_b_bp, 4, 3, false, 0, 0) {
 
   bool aTranspose = (block.getIArguments()->size() > 0 ? INT_ARG(0) == 1 : false);
   bool bTranspose = (block.getIArguments()->size() > 1 ? INT_ARG(1) == 1 : false);
-  auto x = aTranspose ? new NDArray(INPUT_VARIABLE(0)->transpose()) : INPUT_VARIABLE(0);
+  auto x = aTranspose ? INPUT_VARIABLE(0)->transpose() : INPUT_VARIABLE(0);  // transpose() already returns NDArray*
   auto b = INPUT_VARIABLE(2);
   auto dLdz = INPUT_VARIABLE(3);
 
   if (x->isEmpty() || INPUT_VARIABLE(1)->isEmpty() || b->isEmpty() || dLdz->isEmpty()) return Status::OK;
 
-  auto w = bTranspose ? new NDArray(INPUT_VARIABLE(1)->transpose()) : INPUT_VARIABLE(1);
+  auto w = bTranspose ? INPUT_VARIABLE(1)->transpose() : INPUT_VARIABLE(1);  // transpose() already returns NDArray*
 
   REQUIRE_TRUE(x->rankOf() == 2, 0, "xw_plus_b BP: Input x array should have rank equal 2, but got instead %i!",
                x->rankOf());
@@ -219,10 +220,10 @@ CUSTOM_OP_IMPL(xw_plus_b_bp, 4, 3, false, 0, 0) {
   REQUIRE_TRUE(dLdz->rankOf() == 2, 0, "xw_plus_b BP: Output array should have rank equal 2, but got instead %i!",
                dLdz->rankOf());
 
-  auto dLdx = aTranspose ? new NDArray(OUTPUT_VARIABLE(0)->transpose()) : OUTPUT_VARIABLE(0);
+  auto dLdx = aTranspose ? OUTPUT_VARIABLE(0)->transpose() : OUTPUT_VARIABLE(0);  // transpose() already returns NDArray*
   auto dLdb = OUTPUT_VARIABLE(2);
 
-  auto dLdw = (bTranspose) ? new NDArray(OUTPUT_VARIABLE(1)->transpose()) : OUTPUT_VARIABLE(1);
+  auto dLdw = (bTranspose) ? OUTPUT_VARIABLE(1)->transpose() : OUTPUT_VARIABLE(1);  // transpose() already returns NDArray*
 
   // dLdb - reduceAlongDimension returns pointer
   std::vector<LongType> dims({0});
@@ -233,15 +234,12 @@ CUSTOM_OP_IMPL(xw_plus_b_bp, 4, 3, false, 0, 0) {
   matmul_bp mmul_bp;
   mmul_bp.execute({x, w, dLdz}, std::vector<NDArray*>{dLdx, dLdw}, {}, {}, {});
 
-  if(aTranspose) {
-    delete x;
-    delete dLdx;
-  }
-
-  if (bTranspose) {
-    delete w;
-    delete dLdw;
-  }
+  // Transpose views are managed by parent arrays - no deletion needed
+  // x is from INPUT_VARIABLE(0)->transpose() if aTranspose
+  // w is from INPUT_VARIABLE(1)->transpose() if bTranspose
+  // dLdx is from OUTPUT_VARIABLE(0)->transpose() if aTranspose
+  // dLdw is from OUTPUT_VARIABLE(1)->transpose() if bTranspose
+  // All are views managed by their parent arrays
 
   return Status::OK;
 }

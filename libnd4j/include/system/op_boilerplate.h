@@ -69,8 +69,9 @@
 #ifndef OP_BOILERPLATE_HH
 #define OP_BOILERPLATE_HH
 
+#include <config.h>  // Required for HAS_* type availability macros
 #include <exceptions/allocation_exception.h>
-#include <memory/MemoryTracker.h>
+#include <map>
 #include <stdlib.h>
 #include <string.h>
 #include <system/common.h>
@@ -149,7 +150,7 @@
   };
 #define _EXPAND_OP_CALL_TT(FN, SIG, NUM, TYPE) \
   case NUM: {                                  \
-    FN<TYPE<X, Y>> SIG;                        \
+    FN<TYPE<X, Z>> SIG;                        \
     break;                                     \
   };
 #define _EXPAND_OP_CALL_TTT(FN, SIG, NUM, TYPE) \
@@ -163,7 +164,7 @@
   }
 #define _EXPAND_RETURNING_OP_CALL_TT(FN, SIG, NUM, TYPE) \
   else if (opNum == NUM) {                               \
-    return FN<TYPE<X, Y>> SIG;                           \
+    return FN<TYPE<X, Z>> SIG;                           \
   }
 #define _EXPAND_PACKED_OP_CALL(FN, SIG, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _OP_CALL(FN, SIG, UNPAREN(OPNUM_PAIR)))
 #define _EXPAND_PACKED_OP_CALL_TT(FN, SIG, OPNUM_PAIR) \
@@ -2264,7 +2265,7 @@
   }                                                                                           \
   EVAL(_EXEC_OPS(_EXPAND_RETURNING_PACKED_OP_CALL_TT, NAME, (SIGNATURE), __VA_ARGS__)) else { \
     printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__);                   \
-    return static_cast<Y>(0);                                                                                 \
+    return static_cast<Z>(0);                                                                                 \
   }
 
 #define PARAMS(...) __VA_ARGS__
@@ -2622,7 +2623,6 @@
                                                                                                                       \
     /* Allocation with proper error handling */                                                                       \
     checkCudaErrors(cudaMalloc(reinterpret_cast<void**>(&VARIABLE), allocSize));                          \
-    sd::memory::MemoryTracker::getInstance().countIn(sd::memory::MemoryType::DEVICE, VARIABLE, allocSize);          \
                                                                                                               \
   } else {                                                                                                            \
     /* Using workspace allocator */                                                                                   \
@@ -2632,7 +2632,6 @@
 #define RELEASE_SPECIAL(VARIABLE, WORKSPACE)                                         \
   if (VARIABLE != nullptr) {                                                         \
     if (WORKSPACE == nullptr) {                                                      \
-      sd::memory::MemoryTracker::getInstance().countOut(VARIABLE);                   \
       auto erc_##VARIABLE = cudaFree(reinterpret_cast<void*>(VARIABLE));             \
       if (erc_##VARIABLE != 0) {                                                     \
         throw cuda_exception::build("[DEVICE] deallocation failed", erc_##VARIABLE); \
@@ -2666,10 +2665,6 @@ SD_INLINE TT* internal_alloc_host(WW workSpace, sd::LongType len) {
     // Fallback to standard array allocation
     var = new TT[len];
 #endif
-#if !defined(_RELEASE)
-    // Track memory allocation in non-release builds
-    sd::memory::MemoryTracker::getInstance().countIn(sd::memory::MemoryType::HOST, var, len * sizeof(TT));
-#endif
   } else {
     // Allocate memory from a provided workspace
     var = reinterpret_cast<TT*>(workSpace->allocateBytes(len * sizeof(TT)));
@@ -2691,9 +2686,6 @@ SD_INLINE TT* internal_alloc_host(WW workSpace, sd::LongType len) {
 template <typename TT_PTR, typename WW>
 SD_INLINE void internal_release_host(WW workspace, TT_PTR var) {
   if (workspace == nullptr) {
-#if !defined(_RELEASE)
-    sd::memory::MemoryTracker::getInstance().countOut(var);
-#endif
 #if defined(SD_ALIGNED_ALLOC)
     free(var);
 #else

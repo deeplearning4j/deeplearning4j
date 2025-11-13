@@ -23,6 +23,10 @@
 #include <graph/Context.h>
 #include <helpers/ShapeUtils.h>
 
+#if defined(SD_GCC_FUNCTRACE)
+#include <graph/OpContextLifecycleTracker.h>
+#endif
+
 namespace sd {
 namespace graph {
 Context::Context(ContextPrototype *prototype, VariableSpace *variableSpace) {
@@ -62,6 +66,15 @@ Context::Context(ContextPrototype *prototype, VariableSpace *variableSpace) {
 
   if (variableSpace != nullptr && variableSpace->launchContext()->getWorkspace() != nullptr)
     this->_workspace = variableSpace->launchContext()->getWorkspace();
+
+#if defined(SD_GCC_FUNCTRACE)
+  // Track OpContext allocation
+  OpContextLifecycleTracker::getInstance().recordAllocation(
+      this, _nodeId,
+      _fastpath_in.size(), _fastpath_out.size(),
+      _intermediateResults.size(), _handles.size(),
+      _workspace != nullptr, isFastPath());
+#endif
 }
 DataType Context::dataType(int index) {
   if(numD() < 1) {
@@ -100,6 +113,15 @@ Context::Context(int nodeId, VariableSpace *variableSpace) {
 
   if (variableSpace != nullptr && variableSpace->launchContext()->getWorkspace() != nullptr)
     this->_workspace = variableSpace->launchContext()->getWorkspace();
+
+#if defined(SD_GCC_FUNCTRACE)
+  // Track OpContext allocation
+  OpContextLifecycleTracker::getInstance().recordAllocation(
+      this, _nodeId,
+      _fastpath_in.size(), _fastpath_out.size(),
+      _intermediateResults.size(), _handles.size(),
+      _workspace != nullptr, isFastPath());
+#endif
 }
 
 Context::Context(int nodeId, VariableSpace *variableSpace, bool isInplace) : Context(nodeId, variableSpace) {
@@ -107,10 +129,25 @@ Context::Context(int nodeId, VariableSpace *variableSpace, bool isInplace) : Con
 }
 
 Context::~Context() {
+#if defined(SD_GCC_FUNCTRACE)
+  // Track OpContext deallocation before cleanup
+  OpContextLifecycleTracker::getInstance().recordDeallocation(this);
+#endif
+
   this->_iArgs.clear();
   this->_tArgs.clear();
   this->_inputs.clear();
+
+  // CRITICAL FIX: Delete NDArray pointers in fastpath vectors before clearing
+  // This matches the cleanup pattern for _intermediateResults and _handles
+  for (auto v : _fastpath_in) {
+    if (v != nullptr) delete v;
+  }
   this->_fastpath_in.clear();
+
+  for (auto v : _fastpath_out) {
+    if (v != nullptr) delete v;
+  }
   this->_fastpath_out.clear();
 
   // Clean up intermediate results
@@ -646,7 +683,10 @@ void Context::clearFastPath() {
   _fastpath_in.clear();
   _fastpath_out.clear();
 
-
+  // Delete arrays in _handles before clearing (fixes memory leak)
+  for (auto v : _handles) {
+    if (v != nullptr) delete v;
+  }
   _handles.clear();
 }
 
