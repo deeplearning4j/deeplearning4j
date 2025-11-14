@@ -28,6 +28,12 @@
 #include <system/common.h>
 
 #include <array/NDArray.h>
+#include <string>
+#ifndef  __JAVACPP_HACK__
+#if defined(SD_GCC_FUNCTRACE)
+#include <exceptions/backward.hpp>
+#endif
+#endif
 #ifndef __JAVACPP_HACK__
 namespace sd {
 class SD_LIB_EXPORT TadPack {
@@ -39,6 +45,12 @@ class SD_LIB_EXPORT TadPack {
   LongType* _dimensions = nullptr;
   LongType _dimensionsLength = 0;
   size_t _packHash = 0;  // Cache the hash for quick comparison
+
+#ifndef  __JAVACPP_HACK__
+#if defined(SD_GCC_FUNCTRACE)
+  backward::StackTrace _stackTrace;
+#endif
+#endif
 
  public:
   explicit TadPack( ConstantShapeBuffer *shapes,
@@ -120,6 +132,12 @@ class SD_LIB_EXPORT TadPack {
 
   void print(const char* msg);
   bool operator==( TadPack& other);
+
+  /**
+   * Get the stack trace as a formatted string.
+   * Returns empty string if functrace is not enabled.
+   */
+  std::string getStackTraceAsString() const;
 };
 }  // namespace sd
 

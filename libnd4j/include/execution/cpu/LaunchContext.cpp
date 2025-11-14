@@ -25,11 +25,20 @@
 #include <helpers/logger.h>
 #include <thread>
 
-#if SD_IOS_BUILD || SD_APPLE_BUILD || SD_ANDROID_BUILD
+// NOTE: Removed thread_local to fix "cannot allocate memory in static TLS block" error
+// when JavaCPP loads library via dlopen(). This error occurs because:
+// 1. dlopen() loads the library at runtime (not at program startup)
+// 2. thread_local variables require space in the static TLS block
+// 3. The static TLS block has limited size and cannot be extended after program start
+// 4. When loaded via dlopen(), the library's TLS requirements must fit in remaining space
+// 5. If sanitizers or lifecycle tracking are enabled, TLS space may already be exhausted
+//
+// iOS/Apple/Android builds already avoid thread_local for similar reasons.
+// For CPU builds, making this a non-thread-local global is acceptable because:
+// - Each LaunchContext instance maintains its own thread-safe state
+// - The global contextBuffers is used as a default/fallback buffer pool
+// - Proper synchronization is handled at the LaunchContext level
 sd::ContextBuffers contextBuffers = sd::ContextBuffers();
-#else
-thread_local sd::ContextBuffers contextBuffers = sd::ContextBuffers();
-#endif
 
 #if HAVE_ONEDNN
 #include <dnnl.hpp>

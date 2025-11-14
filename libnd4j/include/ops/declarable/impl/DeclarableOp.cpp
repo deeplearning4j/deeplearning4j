@@ -27,12 +27,115 @@
 #include <helpers/StringUtils.h>
 #include <ops/declarable/DeclarableOp.h>
 #include <ops/declarable/OpRegistrator.h>
+#include <array/DataTypeUtils.h>
 
 #include <cstdarg>
-
+#include <sstream>
 
 namespace sd {
 namespace ops {
+
+/**
+ * Helper function to dump all stack traces for arrays and shape info in a Context.
+ * This is called when an exception occurs during op execution to aid in debugging.
+ */
+static std::string dumpContextStackTraces(Context* block, const char* opName) {
+  std::ostringstream oss;
+
+  oss << "\n========================================\n";
+  oss << "Exception in op: " << (opName ? opName : "unknown") << "\n";
+  oss << "ALLOCATION STACK TRACES:\n";
+  oss << "========================================\n\n";
+
+#if defined(SD_GCC_FUNCTRACE) && !defined(__JAVACPP_HACK__)
+  // Dump input array stack traces WITH ACTUAL ALLOCATION STACK TRACES
+  oss << "INPUT ARRAYS:\n";
+  oss << "-------------\n";
+  for (int i = 0; i < block->width(); i++) {
+    try {
+      NDArray* input = block->array(i);
+      if (input != nullptr) {
+        oss << "\nInput " << i << ":\n";
+        oss << "  Shape: " << ShapeUtils::shapeAsString(input) << "\n";
+        oss << "  Data type: " << DataTypeUtils::asString(input->dataType()) << "\n";
+
+        // Get the actual allocation stack trace from the NDArray's ConstantShapeBuffer
+        oss << "\n  ALLOCATION STACK TRACE:\n";
+        std::string stackTrace = input->getConstantShapeBuffer()->getStackTraceAsString();
+        if (!stackTrace.empty()) {
+          oss << stackTrace;
+        } else {
+          oss << "  (No stack trace available)\n";
+        }
+        oss << "\n";
+      }
+    } catch (const std::exception& e) {
+      oss << "Input " << i << ": Error accessing array - " << e.what() << "\n\n";
+    }
+  }
+
+  // Dump output array stack traces WITH ACTUAL ALLOCATION STACK TRACES
+  oss << "\nOUTPUT ARRAYS:\n";
+  oss << "--------------\n";
+  for (int i = 0; i < block->outputWidth(); i++) {
+    try {
+      NDArray* output = block->outputArray(i);
+      if (output != nullptr) {
+        oss << "\nOutput " << i << ":\n";
+        oss << "  Shape: " << ShapeUtils::shapeAsString(output) << "\n";
+        oss << "  Data type: " << DataTypeUtils::asString(output->dataType()) << "\n";
+
+        // Get the actual allocation stack trace from the NDArray's ConstantShapeBuffer
+        oss << "\n  ALLOCATION STACK TRACE:\n";
+        std::string stackTrace = output->getConstantShapeBuffer()->getStackTraceAsString();
+        if (!stackTrace.empty()) {
+          oss << stackTrace;
+        } else {
+          oss << "  (No stack trace available)\n";
+        }
+        oss << "\n";
+      }
+    } catch (const std::exception& e) {
+      oss << "Output " << i << ": Error accessing array - " << e.what() << "\n\n";
+    }
+  }
+#else
+  oss << "Functrace not enabled - no stack traces available\n";
+  oss << "\nINPUT ARRAYS (basic info only):\n";
+  oss << "-------------\n";
+  for (int i = 0; i < block->width(); i++) {
+    try {
+      NDArray* input = block->array(i);
+      if (input != nullptr) {
+        oss << "Input " << i << ": ";
+        oss << "Shape: " << ShapeUtils::shapeAsString(input) << ", ";
+        oss << "Type: " << DataTypeUtils::asString(input->dataType()) << "\n";
+      }
+    } catch (const std::exception& e) {
+      oss << "Input " << i << ": Error - " << e.what() << "\n";
+    }
+  }
+
+  oss << "\nOUTPUT ARRAYS (basic info only):\n";
+  oss << "--------------\n";
+  for (int i = 0; i < block->outputWidth(); i++) {
+    try {
+      NDArray* output = block->outputArray(i);
+      if (output != nullptr) {
+        oss << "Output " << i << ": ";
+        oss << "Shape: " << ShapeUtils::shapeAsString(output) << ", ";
+        oss << "Type: " << DataTypeUtils::asString(output->dataType()) << "\n";
+      }
+    } catch (const std::exception& e) {
+      oss << "Output " << i << ": Error - " << e.what() << "\n";
+    }
+  }
+#endif
+
+  oss << "========================================\n";
+  return oss.str();
+}
+
 ErrorResult conditionHelper(const char *file, int line, int condition, int argNumber, const char *format, ...) {
   if (!condition) {
     va_list args;
@@ -767,20 +870,44 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
   sd::Status status;
   bool hasHelper = false;
 
-  // platform helpers use might be forbidden for various reasons, so we'll check it out first
-  if (block->helpersAllowed() && sd::Environment::getInstance().helpersAllowed()) {
-    // if we have platform-specific helper for this op - invoke it
-    if (OpRegistrator::getInstance().hasHelper(this->getOpHash(), block->engine())) {
-      auto helper = OpRegistrator::getInstance().getPlatformHelper(this->getOpHash(), block->engine());
-      if (helper->isUsable(*block)) {
-        status = helper->invokeHelper(*block);
-        hasHelper = true;
+  // Wrap execution in try-catch to dump stack traces on exceptions
+  try {
+    // platform helpers use might be forbidden for various reasons, so we'll check it out first
+    if (block->helpersAllowed() && sd::Environment::getInstance().helpersAllowed()) {
+      // if we have platform-specific helper for this op - invoke it
+      if (OpRegistrator::getInstance().hasHelper(this->getOpHash(), block->engine())) {
+        auto helper = OpRegistrator::getInstance().getPlatformHelper(this->getOpHash(), block->engine());
+        if (helper->isUsable(*block)) {
+          status = helper->invokeHelper(*block);
+          hasHelper = true;
+        }
       }
     }
+
+    if (!hasHelper) status = this->validateAndExecute(*block);
+
+  } catch (const std::exception& e) {
+    // Dump stack traces for all arrays and shape buffers in the context
+    std::string stackTraceDump = dumpContextStackTraces(block, this->getOpName()->c_str());
+
+    // Create enhanced error message with stack traces
+    std::string enhancedError;
+    enhancedError += "Exception during op execution: ";
+    enhancedError += e.what();
+    enhancedError += stackTraceDump;
+
+    // Re-throw with enhanced message
+    THROW_EXCEPTION(enhancedError.c_str());
+  } catch (...) {
+    // Catch any other exceptions
+    std::string stackTraceDump = dumpContextStackTraces(block, this->getOpName()->c_str());
+
+    std::string enhancedError;
+    enhancedError += "Unknown exception during op execution";
+    enhancedError += stackTraceDump;
+
+    THROW_EXCEPTION(enhancedError.c_str());
   }
-
-
-  if (!hasHelper) status = this->validateAndExecute(*block);
   // optionally saving execution time
   if (Environment::getInstance().isProfiling()) {
     timeEnd = std::chrono::system_clock::now();

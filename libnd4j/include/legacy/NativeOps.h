@@ -146,6 +146,15 @@ SD_LIB_EXPORT sd::LongType const *getSpecialOffsets(OpaqueTadPack *pack);
 SD_LIB_EXPORT sd::LongType getNumberOfTads(OpaqueTadPack *pack);
 SD_LIB_EXPORT int getShapeInfoLength(OpaqueTadPack *pack);
 
+/**
+ * Get the stack trace for a TadPack as a string.
+ * Returns the allocation stack trace if functrace is enabled, empty string otherwise.
+ * This is useful for debugging TAD cache lifecycle issues.
+ *
+ * @param pack The TadPack to get the stack trace from
+ * @return C-string containing the formatted stack trace (caller must NOT free this)
+ */
+SD_LIB_EXPORT const char* getTadPackStackTrace(OpaqueTadPack *pack);
 
 SD_LIB_EXPORT OpaqueTadPack *tadOnlyShapeInfo(OpaqueDataBuffer *hXShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength);
 SD_LIB_EXPORT OpaqueConstantDataBuffer constantBufferLong(sd::DataType dtype, sd::LongType  *data, int length);
@@ -335,6 +344,17 @@ SD_LIB_EXPORT sd::LongType getConstantDataBufferLength(OpaqueConstantDataBuffer 
 SD_LIB_EXPORT sd::LongType getConstantDataBufferSizeOf(OpaqueConstantDataBuffer dbf) ;
 SD_LIB_EXPORT sd::Pointer getConstantShapeBufferPrimary(OpaqueConstantShapeBuffer dbf) ;
 SD_LIB_EXPORT sd::Pointer getConstantShapeBufferSpecial(OpaqueConstantShapeBuffer dbf) ;
+
+/**
+ * Get the stack trace for a ConstantShapeBuffer as a string.
+ * Returns the allocation stack trace if functrace is enabled, empty string otherwise.
+ * This is useful for debugging shape buffer lifecycle issues.
+ *
+ * @param buffer The ConstantShapeBuffer to get the stack trace from
+ * @return C-string containing the formatted stack trace (caller must NOT free this)
+ */
+SD_LIB_EXPORT const char* getConstantShapeBufferStackTrace(OpaqueConstantShapeBuffer buffer);
+
 SD_LIB_EXPORT void markGraphContextInplace(OpaqueContext *ptr, bool reallyInplace) ;
 SD_LIB_EXPORT OpaqueNDArray getOutputArrayNative(OpaqueContext* ptr, int idx) ;
 SD_LIB_EXPORT OpaqueNDArray getInputArrayNative(OpaqueContext* ptr, int idx) ;

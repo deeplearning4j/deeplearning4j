@@ -116,6 +116,8 @@
         <libnd4j.analyze.templates>OFF</libnd4j.analyze.templates>
         <libnd4j.cmake.only>OFF</libnd4j.cmake.only>
         <libnd4j.compiler></libnd4j.compiler>
+        <libnd4j.link.only>OFF</libnd4j.link.only>
+        <libnd4j.dry.run>OFF</libnd4j.dry.run>
 
         <!-- JNI Configuration for Java stack trace capture in lifecycle tracking -->
         <libnd4j.build.with.java>ON</libnd4j.build.with.java>
@@ -578,6 +580,10 @@
                                         <argument>${libnd4j.cmake.only}</argument>
                                         <argument>--compiler</argument>
                                         <argument>${libnd4j.compiler}</argument>
+                                        <argument>--link-only</argument>
+                                        <argument>${libnd4j.link.only}</argument>
+                                        <argument>--dry-run</argument>
+                                        <argument>${libnd4j.dry.run}</argument>
 
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
@@ -740,6 +746,10 @@
                                         <argument>${libnd4j.cmake.only}</argument>
                                         <argument>--compiler</argument>
                                         <argument>${libnd4j.compiler}</argument>
+                                        <argument>--link-only</argument>
+                                        <argument>${libnd4j.link.only}</argument>
+                                        <argument>--dry-run</argument>
+                                        <argument>${libnd4j.dry.run}</argument>
 
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>

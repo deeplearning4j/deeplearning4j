@@ -292,7 +292,7 @@ SD_LIB_HIDDEN void reduceExec32(const X* x, const LongType* xShapeInfo, Z* z, co
   const LongType xStrd2 = shape::strideAt(xShapeInfo, dims[2]);
 
 
-  thread_local Z convertedParams[8] = {0};
+  Z convertedParams[8] = {0};
   Z* compatibleExtraParams = nullptr;
 
   if (extraParams != nullptr) {
@@ -366,7 +366,7 @@ SD_LIB_HIDDEN void reduceExec41(const X* x,
 
   const LongType tadLen = static_cast<LongType>(xAxis1 * xAxis2 * xAxis3);
 
-  thread_local Z convertedParams[8] = {0};
+  Z convertedParams[8] = {0};
   Z* compatibleExtraParams = nullptr;
 
   if (extraParams != nullptr) {
@@ -461,7 +461,7 @@ SD_LIB_HIDDEN void reduceExec42(const X* x, const LongType* xShapeInfo, Z* z, co
 
   LongType xRank = shape::rank(xShapeInfo);
 
-  thread_local Z convertedParams[8] = {0};
+  Z convertedParams[8] = {0};
   Z* compatibleExtraParams = nullptr;
 
   if (extraParams != nullptr) {
@@ -543,7 +543,7 @@ SD_LIB_HIDDEN void reduceExec43(const X* x, const LongType* xShapeInfo, Z* z, co
   const LongType xStrd3 = shape::strideAt(xShapeInfo, dims[3]);
   LongType xRank = shape::rank(xShapeInfo);
 
-  thread_local Z convertedParams[8] = {0};
+  Z convertedParams[8] = {0};
   Z* compatibleExtraParams = nullptr;
 
   if (extraParams != nullptr) {
@@ -618,7 +618,7 @@ SD_LIB_HIDDEN void reduceExec51(const X* x, const LongType* xShapeInfo, Z* z, co
 
   LongType xRank = shape::rank(xShapeInfo);
 
-  thread_local Z convertedParams[8] = {0};
+  Z convertedParams[8] = {0};
   Z* compatibleExtraParams = nullptr;
 
   if (extraParams != nullptr) {
@@ -730,7 +730,7 @@ SD_LIB_HIDDEN void reduceExec52(const X* x, const LongType* xShapeInfo, Z* z, co
 
   LongType xRank = shape::rank(xShapeInfo);
 
-  thread_local Z convertedParams[8] = {0};
+  Z convertedParams[8] = {0};
   Z* compatibleExtraParams = nullptr;
 
   if (extraParams != nullptr) {
@@ -830,7 +830,7 @@ SD_LIB_HIDDEN void reduceExec53(const X* x, const LongType* xShapeInfo, Z* z, co
 
   LongType xRank = shape::rank(xShapeInfo);
 
-  thread_local Z convertedParams[8] = {0};
+  Z convertedParams[8] = {0};
   Z* compatibleExtraParams = nullptr;
 
   if (extraParams != nullptr) {
@@ -916,7 +916,7 @@ SD_LIB_HIDDEN void reduceExec54(const X* x, const LongType* xShapeInfo, Z* z, co
 
   LongType xRank = shape::rank(xShapeInfo);
 
-  thread_local Z convertedParams[8] = {0};
+  Z convertedParams[8] = {0};
   Z* compatibleExtraParams = nullptr;
 
   if (extraParams != nullptr) {
@@ -1000,7 +1000,7 @@ SD_LIB_HIDDEN void reduceDefault(memory::Workspace* workspace, const X* x, const
 
   LongType xRank = shape::rank(xShapeInfo);
 
-  thread_local Z convertedParams[8] = {0};
+  Z convertedParams[8] = {0};
   Z* compatibleExtraParams = nullptr;
 
   if (extraParams != nullptr) {

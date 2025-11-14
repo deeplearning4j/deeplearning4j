@@ -516,4 +516,46 @@ SD_LIB_EXPORT void disableShapeCacheTracking() {}
 SD_LIB_EXPORT void enableOpContextTracking() {}
 SD_LIB_EXPORT void disableOpContextTracking() {}
 
+// Stub implementations for lifecycle query and generation functions
+// These return empty/null values when tracking is not compiled in
+SD_LIB_EXPORT void checkAndCleanupCaches() {
+    // No-op when tracking is disabled
+}
+
+SD_LIB_EXPORT const char* getNDArrayLifecycleStats() {
+    // Return empty JSON object when tracking is disabled
+    static const char* empty_stats = "{}";
+    return empty_stats;
+}
+
+SD_LIB_EXPORT const char* getDataBufferLifecycleStats() {
+    // Return empty JSON object when tracking is disabled
+    static const char* empty_stats = "{}";
+    return empty_stats;
+}
+
+SD_LIB_EXPORT void generateNDArrayAllocationFlamegraph(const char* outputPath) {
+    // No-op when tracking is disabled
+}
+
+SD_LIB_EXPORT void generateNDArrayDeallocationFlamegraph(const char* outputPath) {
+    // No-op when tracking is disabled
+}
+
+SD_LIB_EXPORT void generateDataBufferAllocationFlamegraph(const char* outputPath, int bufferType) {
+    // No-op when tracking is disabled
+}
+
+SD_LIB_EXPORT void generateDataBufferDeallocationFlamegraph(const char* outputPath, int bufferType) {
+    // No-op when tracking is disabled
+}
+
+SD_LIB_EXPORT void generateLifecycleLeakReport(const char* outputPath) {
+    // No-op when tracking is disabled
+}
+
+SD_LIB_EXPORT void generateComprehensiveLeakAnalysis(const char* outputDir) {
+    // No-op when tracking is disabled
+}
+
 #endif // SD_GCC_FUNCTRACE

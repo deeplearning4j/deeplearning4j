@@ -118,9 +118,116 @@ endfunction()
 
 # SelectiveRenderingCore.cmake - Validation Functions
 function(_internal_srcore_is_valid_pair type1 type2 output_var)
-    # SIMPLIFIED: Accept all pairs - selective rendering headers control actual compilation
-    # The SD_PAIR_TYPE_*_*_COMPILED flags in generated headers determine what gets built
-    # This function just generates the candidate list; actual filtering happens at compile time
+    # 2-TYPE COMBINATION FILTERING FOR FUNCTRACE BUILDS
+    #
+    # Background: Functrace builds create ~3.3GB binaries (vs ~200MB normal) due to
+    # instrumentation overhead on every template instantiation. With 196 2-type
+    # combinations (14×14 with no filtering), the binary exceeds 2GB relocation limit.
+    #
+    # Solution: Filter rare/exotic type conversions while preserving commonly used ones.
+    # This reduces binary size without impacting model execution.
+    #
+    # Filtering Strategy:
+    # 1. KEEP: Same-type operations (X→X)
+    # 2. KEEP: Common numeric conversions (float↔double, int32↔int64)
+    # 3. KEEP: Numeric↔bool conversions (for comparisons)
+    # 4. FILTER: Rare integer cross-conversions (uint16↔uint32, int16↔uint64)
+    # 5. FILTER: Exotic combinations (bool↔float16, uint8↔bfloat16)
+    # 6. FILTER: String type conversions (rarely used in hot paths)
+
+    # Rule 1: Same-type operations always valid
+    if(type1 STREQUAL type2)
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Get type categories
+    _internal_srcore_is_type_floating("${type1}" t1_is_float)
+    _internal_srcore_is_type_floating("${type2}" t2_is_float)
+    _internal_srcore_is_type_integer("${type1}" t1_is_int)
+    _internal_srcore_is_type_integer("${type2}" t2_is_int)
+
+    set(t1_is_bool FALSE)
+    set(t2_is_bool FALSE)
+    if(type1 STREQUAL "BOOL")
+        set(t1_is_bool TRUE)
+    endif()
+    if(type2 STREQUAL "BOOL")
+        set(t2_is_bool TRUE)
+    endif()
+
+    # Check if types are "rare" (uint16, uint32, uint64, int16)
+    set(rare_types "UINT16;UINT32;UINT64;INT16")
+    list(FIND rare_types "${type1}" t1_rare_idx)
+    list(FIND rare_types "${type2}" t2_rare_idx)
+    set(t1_is_rare FALSE)
+    set(t2_is_rare FALSE)
+    if(t1_rare_idx GREATER_EQUAL 0)
+        set(t1_is_rare TRUE)
+    endif()
+    if(t2_rare_idx GREATER_EQUAL 0)
+        set(t2_is_rare TRUE)
+    endif()
+
+    # Check if types are exotic floats (float16, bfloat16)
+    set(exotic_float_types "HALF;BFLOAT16")
+    list(FIND exotic_float_types "${type1}" t1_exotic_idx)
+    list(FIND exotic_float_types "${type2}" t2_exotic_idx)
+    set(t1_is_exotic FALSE)
+    set(t2_is_exotic FALSE)
+    if(t1_exotic_idx GREATER_EQUAL 0)
+        set(t1_is_exotic TRUE)
+    endif()
+    if(t2_exotic_idx GREATER_EQUAL 0)
+        set(t2_is_exotic TRUE)
+    endif()
+
+    # Rule 2: Filter string type conversions (rarely used)
+    if(type1 MATCHES "UTF8" OR type2 MATCHES "UTF8")
+        set(${output_var} FALSE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 3: Filter rare×rare cross-type conversions
+    # Examples: uint16↔uint32, int16↔uint64
+    # These are rarely used in ML workloads
+    if(t1_is_rare AND t2_is_rare)
+        # Both are rare types and already filtered out same-type by Rule 1
+        set(${output_var} FALSE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 4: DISABLED - bool↔exotic float conversions ARE needed
+    # Session #320 filtered these but they're required by NativeOpExecutioner
+    # Examples that failed linking: ScalarTransform<bfloat16, float16, bool>
+    # if((t1_is_bool AND t2_is_exotic) OR (t1_is_exotic AND t2_is_bool))
+    #     set(${output_var} FALSE PARENT_SCOPE)
+    #     return()
+    # endif()
+
+    # Rule 5: DISABLED - exotic float×rare integer combinations ARE needed
+    # Session #320 filtered these but they're required by PairWiseTransform
+    # Examples that failed linking: PairWiseTransform<bfloat16, *, short/uint16/uint64>
+    # if((t1_is_exotic AND t2_is_rare) OR (t1_is_rare AND t2_is_exotic))
+    #     set(${output_var} FALSE PARENT_SCOPE)
+    #     return()
+    # endif()
+
+    # Rule 6: DISABLED - exotic float cross-conversions ARE needed
+    # Session #320 filtered these but they're required by NativeOpExecutioner
+    # Examples that failed linking: PairWiseTransform<bfloat16, *, float16>
+    # if(t1_is_exotic AND t2_is_exotic)
+    #     # Both exotic and different types (same-type filtered by Rule 1)
+    #     set(${output_var} FALSE PARENT_SCOPE)
+    #     return()
+    # endif()
+
+    # All other combinations are valid:
+    # - Common numeric conversions (float↔double, int32↔int64)
+    # - Numeric↔bool (comparisons and masks)
+    # - Integer promotions (int8→int32, uint8→uint32)
+    # - Rare types with common types (uint16↔int32, int16↔float)
+    # - Exotic floats with common types (float16↔float, bfloat16↔double)
     set(${output_var} TRUE PARENT_SCOPE)
 endfunction()
 
@@ -254,8 +361,27 @@ function(_internal_srcore_is_valid_triple type1 type2 type3 output_var)
             set(${output_var} FALSE PARENT_SCOPE)
             return()
         endif()
-        # If type1 == type2 (same rare type), continue to check other rules
-        # Examples allowed: uint32 × uint32 → uint32, uint32 × uint32 → int32
+
+        # Strategy 5: Filter rare×rare→rare (same inputs, rare output)
+        # Even when inputs are the same rare type, outputting another rare type is uncommon
+        # This typically indicates unnecessary type conversions
+        # Examples to filter:
+        #   - uint32 × uint32 → uint16 (rare inputs → rare output)
+        #   - uint32 × uint32 → uint64 (rare inputs → rare output)
+        #   - int16 × int16 → int8 (rare inputs → rare output)
+        # Examples to KEEP:
+        #   - uint32 × uint32 → uint32 (same type operation - handled by Rule 1)
+        #   - uint32 × uint32 → int32 (rare → common output)
+        #   - uint32 × uint32 → float32 (rare → common output)
+        #   - uint32 × uint32 → bool (comparison - handled by Rule 2)
+        if(t3_is_rare AND NOT type1 STREQUAL type3)
+            # Rare inputs, different rare output - filter
+            # Keep only if output equals input type (Rule 1 handles this)
+            set(${output_var} FALSE PARENT_SCOPE)
+            return()
+        endif()
+        # If type1 == type2 == type3 (all same), Rule 1 already allowed it
+        # If type1 == type2 and type3 is common, continue to other rules
     endif()
 
     # Rule 4b: Filter float-rare type mixing (except comparisons which output bool)

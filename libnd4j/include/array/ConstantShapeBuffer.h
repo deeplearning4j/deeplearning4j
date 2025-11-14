@@ -29,6 +29,7 @@
 #include <system/common.h>
 
 #include <memory>
+#include <string>
 #ifndef  __JAVACPP_HACK__
 #if defined(SD_GCC_FUNCTRACE)
 #include <exceptions/backward.hpp>
@@ -55,6 +56,12 @@ class SD_LIB_EXPORT ConstantShapeBuffer {
   LongType *primary() ;
   LongType *special() ;
   LongType *platform() ;
+
+  /**
+   * Get the stack trace as a formatted string.
+   * Returns empty string if functrace is not enabled.
+   */
+  std::string getStackTraceAsString() const;
 };
 
 

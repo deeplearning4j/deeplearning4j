@@ -37,6 +37,12 @@ set(PROCESSED_TEMPLATE_FILES "" CACHE INTERNAL "Processed template files")
 
 # --- Debug and Trace Options ---
 option(SD_GCC_FUNCTRACE "Use call traces" OFF)
+
+# Enable compile_commands.json for functrace builds (helps with validation)
+if(SD_GCC_FUNCTRACE)
+    set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL "Export compile commands for validation" FORCE)
+endif()
+
 option(PRINT_INDICES "Print indices" OFF)
 option(PRINT_MATH "Print math operations" OFF)
 option(SD_PTXAS "Enable ptxas verbose output" OFF)

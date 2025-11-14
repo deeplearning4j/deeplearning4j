@@ -152,8 +152,13 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
         String platform = properties.getProperty("platform");
         List<String> preloads = properties.get("platform.preload");
         List<String> resources = properties.get("platform.preloadresource");
-        boolean funcTrace = System.getProperty("libnd4j.calltrace","OFF").equalsIgnoreCase("ON");
-        System.out.println("Functrace on: " + funcTrace);
+
+        // Maven properties are passed via System.getProperty during JavaCPP execution
+        String calltraceProperty = System.getProperty("libnd4j.calltrace", "OFF");
+        boolean funcTrace = calltraceProperty.equalsIgnoreCase("ON");
+
+        System.out.println("JavaCPP init (CUDA) - Functrace: " + (funcTrace ? "ENABLED" : "DISABLED") +
+                          " (property: " + calltraceProperty + ")");
         // Only apply this at load time since we don't want to copy the CUDA libraries here
         if (!Loader.isLoadLibraries()) {
             return;
@@ -182,8 +187,15 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
     @Override
     public void map(InfoMap infoMap) {
         //whether to include the SD_GCC_FUNCTRACE definition in the build. Not needed if we're not enabling the profiler.
-        boolean funcTrace = System.getProperty("libnd4j.calltrace","OFF").equalsIgnoreCase("ON");
-        System.out.println("Functrace on: " + funcTrace);
+        // Maven properties are passed via System.getProperty during JavaCPP execution
+        String calltraceProperty = System.getProperty("libnd4j.calltrace", "OFF");
+        boolean funcTrace = calltraceProperty.equalsIgnoreCase("ON");
+
+        System.out.println("==============================================");
+        System.out.println("JavaCPP Preset (CUDA) - Functrace Configuration:");
+        System.out.println("  libnd4j.calltrace property: " + calltraceProperty);
+        System.out.println("  SD_GCC_FUNCTRACE will be: " + (funcTrace ? "DEFINED" : "UNDEFINED"));
+        System.out.println("==============================================");
         infoMap.put(new Info("thread_local", "SD_LIB_EXPORT", "SD_INLINE", "CUBLASWINAPI",
                         "SD_HOST", "SD_DEVICE", "SD_KERNEL", "SD_HOST_DEVICE", "SD_ALL_OPS", "NOT_EXCLUDED").cppTypes().annotations())
                 .put(new Info("NativeOps.h", "build_info.h").objectify())

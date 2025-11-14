@@ -391,7 +391,36 @@ NDArray *Context::getNDArray(int idx) { return array(idx); }
 NDArray *Context::outputArray(int idx) {
   // we check for fastpath first
   if (!_fastpath_out.empty() && _fastpath_out.size() > static_cast<size_t>(idx)) {
-    return _fastpath_out[idx];
+    NDArray* result = _fastpath_out[idx];
+
+    // Validate the output NDArray to catch memory corruption early
+    if (result != nullptr) {
+      const sd::LongType* shInfo = result->shapeInfo();
+      if (shInfo == nullptr) {
+        std::string errorMessage;
+        errorMessage += "Context::outputArray(";
+        errorMessage += std::to_string(idx);
+        errorMessage += "): NDArray has null shapeInfo. This indicates severe memory corruption or use-after-free.";
+        THROW_EXCEPTION(errorMessage.c_str());
+      }
+
+      sd::LongType rank = shInfo[0];
+      if (rank < 0 || rank > 32) {
+        std::string errorMessage;
+        errorMessage += "Context::outputArray(";
+        errorMessage += std::to_string(idx);
+        errorMessage += "): NDArray has corrupted rank: ";
+        errorMessage += std::to_string(rank);
+        errorMessage += " (expected 0-32). This likely indicates:\n";
+        errorMessage += "  1. Memory corruption in the output NDArray\n";
+        errorMessage += "  2. Use-after-free (accessing deallocated memory)\n";
+        errorMessage += "  3. Uninitialized output buffer allocation failure\n";
+        errorMessage += "  4. JNI marshalling error from Java layer";
+        THROW_EXCEPTION(errorMessage.c_str());
+      }
+    }
+
+    return result;
   }
 
   std::string errorMessage;
@@ -409,10 +438,69 @@ NDArray *Context::outputArray(int idx) {
 NDArray *Context::array(int idx) {
   // we check for fastpath first
   if (!_fastpath_in.empty() && _fastpath_in.size() > static_cast<size_t>(idx)) {
-    return _fastpath_in[idx];
+    NDArray* result = _fastpath_in[idx];
+
+    // Validate the NDArray to catch memory corruption early
+    if (result != nullptr) {
+      const sd::LongType* shInfo = result->shapeInfo();
+      if (shInfo == nullptr) {
+        std::string errorMessage;
+        errorMessage += "Context::array(";
+        errorMessage += std::to_string(idx);
+        errorMessage += "): NDArray has null shapeInfo. This indicates severe memory corruption or use-after-free.";
+        THROW_EXCEPTION(errorMessage.c_str());
+      }
+
+      // Check if rank is valid (should be 0-32, not a memory address)
+      sd::LongType rank = shInfo[0];
+      if (rank < 0 || rank > 32) {
+        std::string errorMessage;
+        errorMessage += "Context::array(";
+        errorMessage += std::to_string(idx);
+        errorMessage += "): NDArray has corrupted rank: ";
+        errorMessage += std::to_string(rank);
+        errorMessage += " (expected 0-32). This likely indicates:\n";
+        errorMessage += "  1. Memory corruption in the NDArray\n";
+        errorMessage += "  2. Use-after-free (accessing deallocated memory)\n";
+        errorMessage += "  3. Uninitialized NDArray from failed operation\n";
+        errorMessage += "  4. JNI marshalling error from Java layer";
+        THROW_EXCEPTION(errorMessage.c_str());
+      }
+    }
+
+    return result;
   }
   // if no luck for fastpath - return whatever is available
-  return getVariable(idx)->getNDArray();
+  NDArray* result = getVariable(idx)->getNDArray();
+
+  // Validate the NDArray from variable path as well
+  if (result != nullptr) {
+    const sd::LongType* shInfo = result->shapeInfo();
+    if (shInfo == nullptr) {
+      std::string errorMessage;
+      errorMessage += "Context::array(";
+      errorMessage += std::to_string(idx);
+      errorMessage += "): NDArray from variable has null shapeInfo. This indicates severe memory corruption or use-after-free.";
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+
+    sd::LongType rank = shInfo[0];
+    if (rank < 0 || rank > 32) {
+      std::string errorMessage;
+      errorMessage += "Context::array(";
+      errorMessage += std::to_string(idx);
+      errorMessage += "): NDArray from variable has corrupted rank: ";
+      errorMessage += std::to_string(rank);
+      errorMessage += " (expected 0-32). This likely indicates:\n";
+      errorMessage += "  1. Memory corruption in the NDArray\n";
+      errorMessage += "  2. Use-after-free (accessing deallocated memory)\n";
+      errorMessage += "  3. Uninitialized NDArray from failed operation\n";
+      errorMessage += "  4. JNI marshalling error from Java layer";
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+  }
+
+  return result;
 }
 
 memory::Workspace *Context::fWorkspace() { return workspace(); }

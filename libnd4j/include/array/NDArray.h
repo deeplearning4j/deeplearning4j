@@ -2033,6 +2033,28 @@ SD_INLINE LongType *NDArray::shapeInfo()  {
     THROW_EXCEPTION(msg);
   }
 
+  // CRITICAL FIX: Validate rank BEFORE returning shapeInfo.
+  // If the memory is corrupted/uninitialized, shapeInfo[0] (rank) will contain garbage.
+  // This prevents "Rank is too high: <pointer_value>" errors in ArrayOptions::extra().
+  // Detecting corruption HERE with a clear error message is better than crashing later
+  // with confusing errors in shapeInfoLength() or other downstream code.
+  sd::LongType rank = _shapeInfo[0];
+  if (rank < 0 || rank > SD_MAX_RANK) {
+    std::string errorMessage;
+    errorMessage += "NDArray::shapeInfo() - shapeInfo contains invalid rank: ";
+    errorMessage += std::to_string(rank);
+    errorMessage += " (expected 0-";
+    errorMessage += std::to_string(SD_MAX_RANK);
+    errorMessage += "). ";
+    errorMessage += "This indicates memory corruption, use-after-free, or uninitialized shapeInfo buffer.";
+
+    // Set error context
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(errorMessage.c_str());
+
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
   return _shapeInfo;
 }
 
@@ -2059,9 +2081,10 @@ SD_INLINE LongType *NDArray::specialShapeInfo()  {
   }
 
   // If special shape info is nullptr, try to use primary. If both are nullptr, throw exception.
+  LongType* shapeInfoToReturn = nullptr;
   if (_shapeInfoD == nullptr) {
     if (_shapeInfo != nullptr) {
-      return _shapeInfo;
+      shapeInfoToReturn = _shapeInfo;
     } else {
       // Both are nullptr - this is a fatal error
       const char* msg = "NDArray::specialShapeInfo() - both _shapeInfo and _shapeInfoD are nullptr";
@@ -2069,10 +2092,30 @@ SD_INLINE LongType *NDArray::specialShapeInfo()  {
       sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(msg);
       THROW_EXCEPTION(msg);
     }
+  } else {
+    shapeInfoToReturn = _shapeInfoD;
+  }
+
+  // CRITICAL FIX: Validate rank BEFORE returning shapeInfo (same validation as shapeInfo()).
+  // Prevents "Rank is too high: <pointer_value>" errors from corrupted/uninitialized memory.
+  sd::LongType rank = shapeInfoToReturn[0];
+  if (rank < 0 || rank > SD_MAX_RANK) {
+    std::string errorMessage;
+    errorMessage += "NDArray::specialShapeInfo() - shapeInfo contains invalid rank: ";
+    errorMessage += std::to_string(rank);
+    errorMessage += " (expected 0-";
+    errorMessage += std::to_string(SD_MAX_RANK);
+    errorMessage += "). ";
+    errorMessage += "This indicates memory corruption, use-after-free, or uninitialized shapeInfo buffer.";
+
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(errorMessage.c_str());
+
+    THROW_EXCEPTION(errorMessage.c_str());
   }
 
   // FIXME: this should be fixed once CUDA backend added
-  return _shapeInfoD;
+  return shapeInfoToReturn;
 }
 
 ////////////////////////////////////////////////////////////////////////

@@ -57,6 +57,7 @@
     </scm>
 
     <modules>
+        <module>libnd4j</module>
         <module>nd4j</module>
         <module>datavec</module>
         <module>deeplearning4j</module>

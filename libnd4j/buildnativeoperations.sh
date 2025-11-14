@@ -18,6 +18,21 @@
 #  * SPDX-License-Identifier: Apache-2.0
 #  ******************************************************************************/
 #
+# PREFLIGHT CHECK OPTIONS:
+#   --dry-run              Run preflight checks and CMake configuration, then exit
+#                          Validates prerequisites, configuration, and binary size
+#
+# BUILD MODE OPTIONS:
+#   --cmake-only ON        Run CMake configuration only, skip build
+#   --link-only ON         Skip compilation, only relink (requires prior build)
+#
+# EXAMPLES:
+#   # Validate build configuration before building
+#   ./buildnativeoperations.sh --dry-run -a cpu -c ON --compiler clang
+#
+#   # Normal build
+#   ./buildnativeoperations.sh -a cpu -c ON --compiler clang -j 14
+#
 set -eu
 
 # cd to the directory containing this script
@@ -531,6 +546,7 @@ PTXAS_INFO="${PTXAS_INFO:-OFF}"
 BUILD_PPSTEP="${BUILD_PPSTEP:-OFF}"
 EXTRACT_INSTANTIATIONS="${EXTRACT_INSTANTIATIONS:-OFF}"
 CMAKE_ONLY="${CMAKE_ONLY:-OFF}"
+LINK_ONLY="${LINK_ONLY:-OFF}"
 COMPILER="${COMPILER:-}"
 BUILD_WITH_JAVA="${BUILD_WITH_JAVA:-ON}"
 
@@ -744,6 +760,24 @@ do
         --cmake-only|--configure-only)
             CMAKE_ONLY="$value"
             print_colored "blue" "✓ CMake-only mode enabled - will exit after configuration"
+            shift # past argument
+            ;;
+        --link-only)
+            LINK_ONLY="$value"
+            print_colored "blue" "✓ Link-only mode enabled - will skip compilation and only relink"
+            shift # past argument
+            ;;
+        --dry-run)
+            # Handle both "--dry-run" (no value) and "--dry-run ON" (with value)
+            if [[ "$value" == "ON" ]] || [[ "$value" == "OFF" ]]; then
+                DRY_RUN="$value"
+                shift # past argument
+            else
+                DRY_RUN="ON"
+            fi
+            if [ "$DRY_RUN" == "ON" ]; then
+                print_colored "blue" "✓ Dry-run mode enabled - will run preflight checks and CMake, then exit"
+            fi
             shift # past argument
             ;;
         --default)
@@ -1396,6 +1430,7 @@ echo PRINT_INDICES       = "$PRINT_INDICES"
 echo PRINT_MATH          = "$PRINT_MATH"
 echo PREPROCESS          = "$PREPROCESS"
 echo BUILD_PPSTEP        = "$BUILD_PPSTEP"
+echo MAKEJ               = "$MAKEJ"
 mkbuilddir
 pwd
 
@@ -1479,6 +1514,28 @@ if [ "$PREPROCESS" == "ON" ]; then
     exit 0
 fi
 
+# For dry-run mode: Clear cache before cmake runs, then set CMAKE_ONLY to exit after cmake
+if [ "$DRY_RUN" == "ON" ]; then
+    print_colored "blue" "=========================================="
+    print_colored "blue" "DRY RUN MODE - CMake Configuration Only"
+    print_colored "blue" "=========================================="
+    echo
+
+    # Clear CMake cache to ensure fresh configuration
+    BLASBUILD_DIR="$DIR/blasbuild/${CHIP}"
+    if [ -d "$BLASBUILD_DIR" ]; then
+        print_colored "yellow" "Clearing CMake cache for fresh configuration..."
+        rm -rf "$BLASBUILD_DIR/CMakeCache.txt" "$BLASBUILD_DIR/CMakeFiles"
+        print_colored "green" "✅ Cache cleared"
+        echo
+    fi
+
+    print_colored "cyan" "CMake will now configure the build..."
+    echo
+
+    # Set CMAKE_ONLY to exit after CMake completes (and run validation then)
+    CMAKE_ONLY="ON"
+fi
 # Normal build path
 if [ "$LOG_OUTPUT" == "none" ]; then
     eval "$CMAKE_COMMAND" \
@@ -1575,7 +1632,11 @@ if [[ "$EXTRACT_INSTANTIATIONS" == "ON" ]]; then
     exit 0
 fi
 
-# Exit if cmake-only mode is enabled
+
+# IMPORTANT: CMake invocations happen below (lines ~1465-1550)
+# The CMAKE_ONLY check must come AFTER those invocations
+
+# Exit if cmake-only mode is enabled (this runs AFTER cmake completes)
 if [ "$CMAKE_ONLY" == "ON" ]; then
     print_colored "green" "✅ CMake configuration completed - exiting without build"
     print_colored "cyan" "=== CMAKE CONFIGURATION SUMMARY ==="
@@ -1584,11 +1645,34 @@ if [ "$CMAKE_ONLY" == "ON" ]; then
     print_colored "cyan" "To inspect specific values: cmake -LA | grep <pattern>"
     print_colored "cyan" "To run build manually: $MAKE_COMMAND"
     echo
-    print_colored "yellow" "NEXT STEPS FOR SMOKE TEST:"
-    print_colored "yellow" "1. Check CMake cache: cd blasbuild/${CHIP} && cmake -LA"
-    print_colored "yellow" "2. Verify type configuration: grep 'SD_TYPES_LIST\\|SD_SELECTIVE_TYPES' CMakeCache.txt"
-    print_colored "yellow" "3. Check selective rendering: cat include/system/selective_rendering.h | head -50"
-    print_colored "yellow" "4. If values look correct, run build: cd ../.. && ./buildnativeoperations.sh"
+
+    # If this was a dry-run, run post-cmake validation
+    if [ "$DRY_RUN" == "ON" ] && [ -d "$DIR/preflight-checks" ] && [ -x "$DIR/preflight-checks/validate_build_config.sh" ]; then
+        echo
+        print_colored "blue" "=========================================="
+        print_colored "blue" "Running Post-CMake Validation"
+        print_colored "blue" "=========================================="
+        echo
+
+        cd "$DIR/preflight-checks"
+        if ./validate_build_config.sh --stage cmake --chip "$CHIP"; then
+            print_colored "green" "✅ Configuration validation passed"
+            echo
+            print_colored "cyan" "Build configuration is ready!"
+            print_colored "cyan" "To start the actual build, run:"
+            print_colored "cyan" "  ./buildnativeoperations.sh <same-arguments-without-dry-run>"
+        else
+            print_colored "red" "❌ Configuration validation failed"
+            print_colored "yellow" "Fix the issues above before building"
+            exit 1
+        fi
+    else
+        print_colored "yellow" "NEXT STEPS FOR SMOKE TEST:"
+        print_colored "yellow" "1. Check CMake cache: cd blasbuild/${CHIP} && cmake -LA"
+        print_colored "yellow" "2. Verify type configuration: grep 'SD_TYPES_LIST\\|SD_SELECTIVE_TYPES' CMakeCache.txt"
+        print_colored "yellow" "3. Check selective rendering: cat include/system/selective_rendering.h | head -50"
+        print_colored "yellow" "4. If values look correct, run build: cd ../.. && ./buildnativeoperations.sh"
+    fi
     echo
     exit 0
 fi
@@ -1720,11 +1804,76 @@ if [ "$BUILD_PPSTEP" == "ON" ]; then
 fi
 
 
-# Determine script location
-if [ "$LOG_OUTPUT" == "none" ]; then
-    eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" && cd ../../..
+# Link-only mode: skip compilation, only relink
+if [ "$LINK_ONLY" == "ON" ]; then
+    print_colored "cyan" "═══════════════════════════════════════════════════════════"
+    print_colored "cyan" "LINK-ONLY MODE: Skipping compilation, relinking only"
+    print_colored "cyan" "═══════════════════════════════════════════════════════════"
+
+    # Check if build directory and objects exist
+    if [ ! -d "blasbuild/$CHIP" ]; then
+        print_colored "red" "❌ ERROR: Build directory blasbuild/$CHIP does not exist"
+        print_colored "yellow" "   You must run a full build first before using --link-only"
+        exit 1
+    fi
+
+    cd blasbuild/$CHIP
+
+    # Check if object files exist
+    OBJ_COUNT=$(find . -name "*.o" 2>/dev/null | wc -l)
+    if [ "$OBJ_COUNT" -eq 0 ]; then
+        print_colored "red" "❌ ERROR: No object files found in blasbuild/$CHIP"
+        print_colored "yellow" "   You must run a full build first before using --link-only"
+        cd ../..
+        exit 1
+    fi
+
+    print_colored "green" "✓ Found $OBJ_COUNT compiled object files"
+    print_colored "cyan" "Building library target only (no compilation)..."
+
+    # Determine the library target name based on chip type
+    if [ "$CHIP" == "cpu" ]; then
+        LINK_TARGET="nd4jcpu"
+    elif [ "$CHIP" == "cuda" ]; then
+        LINK_TARGET="nd4jcuda"
+    else
+        LINK_TARGET="nd4j${CHIP}"
+    fi
+
+    print_colored "cyan" "Linking target: $LINK_TARGET"
+
+    # Run make with the specific target (CMake will skip up-to-date compilation)
+    if [ "$LOG_OUTPUT" == "none" ]; then
+        eval "$MAKE_COMMAND" "$LINK_TARGET" && cd ../../..
+    else
+        eval "$MAKE_COMMAND" "$LINK_TARGET" >> "$LOG_OUTPUT" 2>&1 && cd ../../..
+    fi
+
+    LINK_EXIT_CODE=$?
+
+    if [ $LINK_EXIT_CODE -eq 0 ]; then
+        print_colored "green" "═══════════════════════════════════════════════════════════"
+        print_colored "green" "✅ LINK-ONLY BUILD COMPLETE"
+        print_colored "green" "═══════════════════════════════════════════════════════════"
+        print_colored "cyan" "Library: blasbuild/$CHIP/lib${LINK_TARGET}.so"
+        print_colored "yellow" "Note: Only linking was performed. No source files were recompiled."
+    else
+        print_colored "red" "═══════════════════════════════════════════════════════════"
+        print_colored "red" "❌ LINK FAILED (exit code: $LINK_EXIT_CODE)"
+        print_colored "red" "═══════════════════════════════════════════════════════════"
+        exit $LINK_EXIT_CODE
+    fi
+
+    # Continue with post-build steps (flatc copy if needed)
+    # Don't exit here - let the script continue to the flatc section
 else
-    eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" >> "$LOG_OUTPUT" 2>&1 && cd ../../..
+    # Normal build mode: full compilation and linking
+    # Determine script location
+    if [ "$LOG_OUTPUT" == "none" ]; then
+        eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" && cd ../../..
+    else
+        eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" >> "$LOG_OUTPUT" 2>&1 && cd ../../..
+    fi
 fi
 
 # Determine script location

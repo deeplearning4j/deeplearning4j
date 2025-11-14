@@ -194,8 +194,15 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
     @Override
     public void map(InfoMap infoMap) {
         //whether to include the SD_GCC_FUNCTRACE definition in the build. Not needed if we're not enabling the profiler.
-        boolean funcTrace = System.getProperty("libnd4j.calltrace","OFF").equalsIgnoreCase("ON");
-        System.out.println("Func trace: " + funcTrace);
+        // Maven properties are passed via System.getProperty during JavaCPP execution
+        String calltraceProperty = System.getProperty("libnd4j.calltrace", "OFF");
+        boolean funcTrace = calltraceProperty.equalsIgnoreCase("ON");
+
+        System.out.println("==============================================");
+        System.out.println("JavaCPP Preset - Functrace Configuration:");
+        System.out.println("  libnd4j.calltrace property: " + calltraceProperty);
+        System.out.println("  SD_GCC_FUNCTRACE will be: " + (funcTrace ? "DEFINED" : "UNDEFINED"));
+        System.out.println("==============================================");
         infoMap.put(new Info("thread_local", "SD_LIB_EXPORT", "SD_INLINE", "CUBLASWINAPI",
                         "SD_HOST", "SD_DEVICE", "SD_KERNEL", "SD_HOST_DEVICE", "SD_ALL_OPS", "NOT_EXCLUDED", "DEFAULT_ENGINE").cppTypes().annotations())
                 .put(new Info("openblas_config.h", "cblas.h", "lapacke_config.h", "lapacke_mangling.h", "lapack.h", "lapacke.h", "lapacke_utils.h").skip())

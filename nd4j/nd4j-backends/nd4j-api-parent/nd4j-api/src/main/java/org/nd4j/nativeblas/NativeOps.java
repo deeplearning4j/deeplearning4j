@@ -185,6 +185,17 @@ public interface NativeOps {
  LongPointer getPrimaryOffsets(OpaqueTadPack pack);
  LongPointer getSpecialShapeInfo(OpaqueTadPack pack) ;
  LongPointer getSpecialOffsets(OpaqueTadPack pack);
+
+ /**
+  * Get the stack trace for a TadPack as a string.
+  * Returns the allocation stack trace if functrace is enabled, empty string otherwise.
+  * This is useful for debugging TAD cache lifecycle issues.
+  *
+  * @param pack The TadPack to get the stack trace from
+  * @return String containing the formatted stack trace
+  */
+ String getTadPackStackTrace(OpaqueTadPack pack);
+
  OpaqueTadPack tadOnlyShapeInfo(OpaqueDataBuffer hXShapeInfo, LongPointer dimension, long dimensionLength);
  void checkP2P();
  void enableP2P(boolean enable);
@@ -307,6 +318,17 @@ public interface NativeOps {
  long getConstantDataBufferSizeOf(org.nd4j.nativeblas.OpaqueConstantDataBuffer dbf);
  Pointer getConstantShapeBufferPrimary(org.nd4j.nativeblas.OpaqueConstantShapeBuffer dbf);
  Pointer getConstantShapeBufferSpecial(org.nd4j.nativeblas.OpaqueConstantShapeBuffer dbf);
+
+ /**
+  * Get the stack trace for a ConstantShapeBuffer as a string.
+  * Returns the allocation stack trace if functrace is enabled, empty string otherwise.
+  * This is useful for debugging shape buffer lifecycle issues.
+  *
+  * @param buffer The ConstantShapeBuffer to get the stack trace from
+  * @return String containing the formatted stack trace
+  */
+ String getConstantShapeBufferStackTrace(org.nd4j.nativeblas.OpaqueConstantShapeBuffer buffer);
+
  void markGraphContextInplace(OpaqueContext ptr, boolean reallyInplace);
  org.nd4j.nativeblas.OpaqueNDArray getOutputArrayNative(org.nd4j.nativeblas.OpaqueContext ptr, int idx);
  org.nd4j.nativeblas.OpaqueNDArray getInputArrayNative(org.nd4j.nativeblas.OpaqueContext ptr, int idx);
@@ -623,9 +645,9 @@ public interface NativeOps {
   *
   * @param maxDepth Maximum depth to traverse (default: 10, -1 for unlimited)
   * @param maxEntries Maximum number of entries to show (default: 100, -1 for unlimited)
-  * @return Pointer to string representation of the shape cache
+  * @return String representation of the shape cache
   */
- Pointer getShapeCacheString(int maxDepth, int maxEntries);
+ String getShapeCacheString(int maxDepth, int maxEntries);
 
  /**
   * Get a string representation of the TAD cache for debugging.
@@ -634,14 +656,14 @@ public interface NativeOps {
   *
   * @param maxDepth Maximum depth to traverse (default: 10, -1 for unlimited)
   * @param maxEntries Maximum number of entries to show (default: 100, -1 for unlimited)
-  * @return Pointer to string representation of the TAD cache
+  * @return String representation of the TAD cache
   */
- Pointer getTADCacheString(int maxDepth, int maxEntries);
+ String getTADCacheString(int maxDepth, int maxEntries);
 
  /**
   * Free a string returned by native code.
   *
   * @param ptr String pointer to free
   */
- void freeString(Pointer ptr);
+ void freeString(String ptr);
 }

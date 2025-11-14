@@ -333,6 +333,19 @@ sd::LongType getNumberOfTads(sd::TadPack *pack) { return pack->numberOfTads(); }
 
 int getShapeInfoLength(sd::TadPack *pack) { return pack->shapeInfoLength(); }
 
+const char* getTadPackStackTrace(OpaqueTadPack *pack) {
+  if (pack == nullptr) {
+    return "TadPack is null";
+  }
+
+  // Get the stack trace as a string and cache it
+  // We use a thread-local static to avoid memory management issues
+  thread_local static std::string cachedTrace;
+  cachedTrace = pack->getStackTraceAsString();
+
+  return cachedTrace.c_str();
+}
+
 
 sd::TadPack *tadOnlyShapeInfo(OpaqueDataBuffer *hXShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength) {
   try {

@@ -17,18 +17,50 @@
 
 # TemplateProcessing.cmake - Complete Rewrite with Comprehensive Type Handling
 # This version generates ALL type variants to prevent undefined references
+#
+# ═══════════════════════════════════════════════════════════════
+# BINARY SIZE WARNING: Template instantiations create MASSIVE binaries
+# ═══════════════════════════════════════════════════════════════
+#
+# MEASURED SIZES:
+# - Normal build (no functrace): ~200MB
+# - Functrace build (SD_GCC_FUNCTRACE=ON): ~3.3GB (!)
+#
+# ROOT CAUSE: Template instantiations for ALL type combinations
+# - Each operation × each type combination = thousands of instantiations
+# - With debug symbols + functrace: exceeds 2GB relocation limit
+#
+# HOW TO REDUCE BINARY SIZE:
+# 1. **Disable functrace**: -Dlibnd4j.calltrace=OFF (90% reduction)
+# 2. **Reduce types**: Use -Dlibnd4j.datatypes="float32;double;int32;int64"
+# 3. **Split files**: Chunk sizes below control file splitting
+# 4. **Selective rendering**: Enable SD_SELECTIVE_TYPES in types.h
+#
+# For debugging without functrace: Use GDB with core dumps (see docs)
+# ═══════════════════════════════════════════════════════════════
 
 set(CUSTOMOPS_GENERIC_SOURCES "" CACHE INTERNAL "Template-generated source files")
 
-set(CHUNK_TARGET_INSTANTIATIONS "5" CACHE STRING "Target template instantiations per chunk file (1-20)")
-set(CHUNK_MAX_INSTANTIATIONS "10" CACHE STRING "Maximum template instantiations per chunk file")
+# Balanced chunk sizes for functrace - practical memory usage without extreme slowdown
+# FORCE to override cached values, but use REASONABLE sizes for practical build times
+# NOTE: Even with these settings, functrace builds create ~3GB binaries
+if(SD_GCC_FUNCTRACE)
+    set(CHUNK_TARGET_INSTANTIATIONS "8" CACHE STRING "Target template instantiations per chunk file (FORCED for functrace)" FORCE)
+    set(CHUNK_MAX_INSTANTIATIONS "12" CACHE STRING "Maximum template instantiations per chunk file (FORCED for functrace)" FORCE)
+    message(STATUS "⚖️  FORCED CHUNK_TARGET_INSTANTIATIONS=8 for functrace (balanced for 20min builds)")
+    message(STATUS "⚠️  WARNING: Functrace builds create ~3GB binaries (may exceed linker limits)")
+else()
+    set(CHUNK_TARGET_INSTANTIATIONS "5" CACHE STRING "Target template instantiations per chunk file (1-20)")
+    set(CHUNK_MAX_INSTANTIATIONS "10" CACHE STRING "Maximum template instantiations per chunk file")
+endif()
+
 set(USE_MULTI_PASS_GENERATION "ON" CACHE STRING "Use multi-pass generation (ON/OFF/AUTO)")
 
-# Reduce chunk size for call tracing builds to prevent OOM during compilation
-# Lifecycle tracking headers make each instantiation much more memory-intensive
+# Balanced chunk size for call tracing - memory efficient but practical
 if(SD_GCC_FUNCTRACE)
-    set(MULTI_PASS_CHUNK_SIZE "5" CACHE STRING "Chunk size for direct instantiation files (reduced for call tracing)")
-    message(STATUS "⚠️  MULTI_PASS_CHUNK_SIZE reduced to 5 for call tracing build (prevents OOM)")
+    set(MULTI_PASS_CHUNK_SIZE "5" CACHE STRING "Chunk size for direct instantiation files (FORCED balanced)" FORCE)
+    message(STATUS "⚖️  FORCED MULTI_PASS_CHUNK_SIZE=5 for call tracing build (balanced: ~200-250MB per file)")
+    message(STATUS "   This should complete in ~20 minutes like previous builds")
 else()
     set(MULTI_PASS_CHUNK_SIZE "20" CACHE STRING "Chunk size for direct instantiation files")
 endif()

@@ -545,6 +545,19 @@ sd::Pointer getConstantShapeBufferPrimary(OpaqueConstantShapeBuffer dbf) { retur
 
 sd::Pointer getConstantShapeBufferSpecial(OpaqueConstantShapeBuffer dbf) { return const_cast<sd::LongType *>(dbf->special()); }
 
+const char* getConstantShapeBufferStackTrace(OpaqueConstantShapeBuffer buffer) {
+  if (buffer == nullptr) {
+    return "ConstantShapeBuffer is null";
+  }
+
+  // Get the stack trace as a string and cache it
+  // We use a thread-local static to avoid memory management issues
+  thread_local static std::string cachedTrace;
+  cachedTrace = buffer->getStackTraceAsString();
+
+  return cachedTrace.c_str();
+}
+
 Context *createGraphContext(int nodeId) { return new Context(nodeId); }
 
 OpaqueRandomGenerator getGraphContextRandomGenerator(Context *ptr) { return &ptr->randomGenerator(); }

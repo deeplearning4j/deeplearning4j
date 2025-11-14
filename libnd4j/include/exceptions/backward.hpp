@@ -20,7 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#define BACKWARD_HAS_LIBUNWIND 1
+// Use libdw instead of libunwind to avoid linker issues
+// libdw is more commonly available and provides similar functionality
+#define BACKWARD_HAS_LIBUNWIND 0
 // - apt-get install libdw-dev ...
 // - g++/clang++ -ldw ...
 #define BACKWARD_HAS_DW 1

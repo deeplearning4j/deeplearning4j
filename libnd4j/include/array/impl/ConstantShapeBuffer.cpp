@@ -22,6 +22,7 @@
 // @author raver119@gmail.com
 //
 #include <array/ConstantShapeBuffer.h>
+#include <sstream>
 
 namespace sd {
 ConstantShapeBuffer::ConstantShapeBuffer( PointerWrapper* primary)
@@ -78,6 +79,27 @@ LongType *ConstantShapeBuffer::platform()  {
 #else
   return primary();
 #endif  // CUDABLAS
+}
+
+std::string ConstantShapeBuffer::getStackTraceAsString() const {
+#if defined(SD_GCC_FUNCTRACE) && !defined(__JAVACPP_HACK__)
+  // Use backward::Printer to format the stack trace into a string
+  std::ostringstream oss;
+  backward::Printer p;
+  p.snippet = false;  // Don't include source code snippets
+  p.address = true;   // Include addresses
+  p.object = false;   // Don't include object file info
+  p.color_mode = backward::ColorMode::never;  // No ANSI colors in string
+
+  // Print to our string stream (we need to cast away const to use st)
+  // This is safe since print doesn't modify the StackTrace
+  backward::StackTrace& mutable_st = const_cast<backward::StackTrace&>(st);
+  p.print(mutable_st, oss);
+
+  return oss.str();
+#else
+  return "";  // Return empty string when functrace is not enabled
+#endif
 }
 
 }  // namespace sd
