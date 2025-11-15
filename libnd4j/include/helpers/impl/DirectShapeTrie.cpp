@@ -778,4 +778,38 @@ std::string DirectShapeTrie::toString(int maxDepth, int maxEntries) const {
   return ss.str();
 }
 
+void DirectShapeTrie::getCachedPointers(std::unordered_set<void*>& out_pointers) const {
+  if (_roots == nullptr || _mutexes == nullptr) {
+    return;
+  }
+
+  // Traverse all stripes and collect ConstantShapeBuffer pointers
+  for (size_t i = 0; i < NUM_STRIPES; i++) {
+    MUTEX_TYPE* mutex = (*_mutexes)[i];
+    if (mutex == nullptr) continue;
+
+    std::lock_guard<MUTEX_TYPE> lock(*mutex);
+
+    ShapeTrieNode* root = (*_roots)[i];
+    if (root != nullptr) {
+      collectCachedPointers(root, out_pointers);
+    }
+  }
+}
+
+void DirectShapeTrie::collectCachedPointers(const ShapeTrieNode* node, std::unordered_set<void*>& out_pointers) const {
+  if (node == nullptr) return;
+
+  // If this node has a ConstantShapeBuffer, add it to the set
+  ConstantShapeBuffer* buffer = node->buffer();
+  if (buffer != nullptr) {
+    out_pointers.insert(buffer);
+  }
+
+  // Recursively collect from all children
+  for (const auto* child : node->children()) {
+    collectCachedPointers(child, out_pointers);
+  }
+}
+
 }  // namespace sd

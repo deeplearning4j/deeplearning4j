@@ -24,6 +24,7 @@
 #include <array>
 #include <atomic>
 #include <memory>
+#include <unordered_set>
 #include <vector>
 #include "./generic/StripedLocks.h"
 namespace sd {
@@ -230,6 +231,18 @@ class SD_LIB_EXPORT DirectShapeTrie {
    * @return String representation of the trie
    */
   std::string toString(int maxDepth = 10, int maxEntries = 100) const;
+
+  /**
+   * Get all ConstantShapeBuffer pointers currently in the cache.
+   * This is used by lifecycle tracking to distinguish cached entries from real leaks.
+   *
+   * @param out_pointers Set to fill with pointers to all cached ConstantShapeBuffer objects
+   */
+  void getCachedPointers(std::unordered_set<void*>& out_pointers) const;
+
+ private:
+  // Internal helper to collect ConstantShapeBuffer pointers recursively
+  void collectCachedPointers(const ShapeTrieNode* node, std::unordered_set<void*>& out_pointers) const;
 };
 
 }  // namespace sd

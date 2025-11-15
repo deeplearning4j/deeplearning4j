@@ -593,16 +593,19 @@ SD_LIB_EXPORT const char* getTADCacheString(int maxDepth, int maxEntries);
  */
 SD_LIB_EXPORT void freeString(const char* ptr);
 
-// Lifecycle tracking API (enabled only with SD_GCC_FUNCTRACE)
-#if defined(SD_GCC_FUNCTRACE)
-
 /**
  * Checks operation counter and automatically clears TAD/Shape caches periodically.
  * Called internally from operation execution entry points to prevent cache accumulation
  * during testing. Configurable via SD_CACHE_CLEANUP_INTERVAL and SD_AUTO_CACHE_CLEANUP
  * environment variables.
+ *
+ * Note: This function is available regardless of SD_GCC_FUNCTRACE build flag.
+ * When SD_GCC_FUNCTRACE is disabled, it becomes a no-op stub.
  */
 void checkAndCleanupCaches();
+
+// Lifecycle tracking API (enabled only with SD_GCC_FUNCTRACE)
+#if defined(SD_GCC_FUNCTRACE)
 
 /**
  * Returns NDArray lifecycle statistics as a JSON string.
@@ -707,6 +710,40 @@ SD_LIB_EXPORT void generateLifecycleLeakReport(const char* outputPath);
  *   Nd4j.getNativeOps().generateComprehensiveLeakAnalysis("./leak_reports");
  */
 SD_LIB_EXPORT void generateComprehensiveLeakAnalysis(const char* outputDir);
+
+/**
+ * Generate temporal leak analysis report showing leak velocity over time windows.
+ *
+ * @param outputPath Path to output file
+ * @param windowCount Number of time windows to analyze (default: 10)
+ * @param windowDurationSec Duration of each window in seconds (default: 30.0)
+ */
+SD_LIB_EXPORT void generateNDArrayTemporalLeakReport(const char* outputPath, int windowCount, double windowDurationSec);
+SD_LIB_EXPORT void generateTADCacheTemporalLeakReport(const char* outputPath, int windowCount, double windowDurationSec);
+
+/**
+ * Capture a snapshot of current leak state for differential analysis.
+ *
+ * @return Snapshot ID (use with generateSnapshotDiff)
+ */
+SD_LIB_EXPORT sd::LongType captureNDArrayLeakSnapshot();
+SD_LIB_EXPORT sd::LongType captureTADCacheLeakSnapshot();
+
+/**
+ * Generate differential report comparing two snapshots.
+ *
+ * @param snapshot1 First snapshot ID
+ * @param snapshot2 Second snapshot ID
+ * @param outputPath Path to output file
+ */
+SD_LIB_EXPORT void generateNDArraySnapshotDiff(sd::LongType snapshot1, sd::LongType snapshot2, const char* outputPath);
+SD_LIB_EXPORT void generateTADCacheSnapshotDiff(sd::LongType snapshot1, sd::LongType snapshot2, const char* outputPath);
+
+/**
+ * Clear all stored snapshots to free memory.
+ */
+SD_LIB_EXPORT void clearNDArraySnapshots();
+SD_LIB_EXPORT void clearTADCacheSnapshots();
 
 /**
  * Frees a string allocated by the lifecycle tracking API.

@@ -28,6 +28,7 @@
 #include <system/op_boilerplate.h>
 #include "DirectShapeTrie.h"
 #include <mutex>
+#include <unordered_set>
 
 namespace sd {
 
@@ -181,6 +182,14 @@ class SD_LIB_EXPORT ConstantShapeHelper {
    * @return String representation of the cache
    */
   std::string toString(int maxDepth = 10, int maxEntries = 100) const;
+
+  /**
+   * Get all ConstantShapeBuffer pointers currently in the cache.
+   * This is used by lifecycle tracking to distinguish cached entries from real leaks.
+   *
+   * @param out_pointers Set to fill with pointers to all cached ConstantShapeBuffer objects
+   */
+  void getCachedPointers(std::unordered_set<void*>& out_pointers) const;
 };
 }  // namespace sd
 

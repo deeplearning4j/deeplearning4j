@@ -97,11 +97,31 @@ TadPack* ConstantTadHelper::tadForDimensions(LongType* originalShape, LongType* 
   std::vector<LongType> dims(dimensions, dimensions + dimLength);
 
   // Single attempt pattern - no double locking
+  TadPack* result = nullptr;
   try {
-    return _trie.getOrCreate(dims, originalShape);
+    result = _trie.getOrCreate(dims, originalShape);
   } catch (const std::exception& e) {
     THROW_EXCEPTION("Failed to create or retrieve TAD pack");
   }
+
+  // CRITICAL: DO NOT call checkAndCleanupCaches() here!
+  //
+  // ROOT CAUSE OF 135 MB TAD CACHE LEAK (Session #385 analysis):
+  // Previous Session #384 added checkAndCleanupCaches() here, but this causes use-after-free:
+  //
+  // 1. We get or create a TAD pack above (line 106)
+  // 2. If we call checkAndCleanupCaches() here, it may trigger clearTADCache()
+  // 3. clearTADCache() deletes ALL cached TAD packs, including the one we just got!
+  // 4. We return a pointer to DELETED memory
+  // 5. Caller uses deleted TAD pack → CRASH or corruption
+  //
+  // The cleanup MUST happen at the NativeOps layer AFTER operations complete,
+  // not during TAD pack retrieval while they're still in use.
+  // NativeOps.cpp already has checkAndCleanupCaches() calls after each operation.
+  //
+  // Removed checkAndCleanupCaches() call to fix the leak and prevent use-after-free.
+
+  return result;
 }
 
 void ConstantTadHelper::clearCache() {
@@ -126,6 +146,10 @@ LongType ConstantTadHelper::getPeakCachedBytes() const {
 
 std::string ConstantTadHelper::toString(int maxDepth, int maxEntries) const {
   return _trie.toString(maxDepth, maxEntries);
+}
+
+void ConstantTadHelper::getCachedPointers(std::unordered_set<void*>& out_pointers) const {
+  _trie.getCachedPointers(out_pointers);
 }
 
 } // namespace sd

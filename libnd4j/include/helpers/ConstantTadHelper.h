@@ -28,6 +28,7 @@
 
 #include <map>
 #include <mutex>
+#include <unordered_set>
 #include <vector>
 
 namespace sd {
@@ -102,6 +103,14 @@ class SD_LIB_EXPORT ConstantTadHelper {
    * @return String representation of the cache
    */
   std::string toString(int maxDepth = 10, int maxEntries = 100) const;
+
+  /**
+   * Get all TadPack pointers currently in the cache.
+   * This is used by lifecycle tracking to distinguish cached entries from real leaks.
+   *
+   * @param out_pointers Set to fill with pointers to all cached TadPack objects
+   */
+  void getCachedPointers(std::unordered_set<void*>& out_pointers) const;
 };
 }  // namespace sd
 

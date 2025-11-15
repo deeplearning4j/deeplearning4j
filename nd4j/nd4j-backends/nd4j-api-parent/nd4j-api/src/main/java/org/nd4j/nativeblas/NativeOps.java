@@ -660,6 +660,18 @@ public interface NativeOps {
   */
  String getTADCacheString(int maxDepth, int maxEntries);
 
+ // NEW: Temporal leak analysis
+ void generateNDArrayTemporalLeakReport(String outputPath, int windowCount, double windowDurationSec);
+ void generateTADCacheTemporalLeakReport(String outputPath, int windowCount, double windowDurationSec);
+
+ // NEW: Snapshot differential analysis
+ long captureNDArrayLeakSnapshot();
+ long captureTADCacheLeakSnapshot();
+ void generateNDArraySnapshotDiff(long snapshot1, long snapshot2, String outputPath);
+ void generateTADCacheSnapshotDiff(long snapshot1, long snapshot2, String outputPath);
+ void clearNDArraySnapshots();
+ void clearTADCacheSnapshots();
+
  /**
   * Free a string returned by native code.
   *

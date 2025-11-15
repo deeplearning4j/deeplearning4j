@@ -434,6 +434,10 @@ std::string ConstantShapeHelper::toString(int maxDepth, int maxEntries) const {
  return _shapeTrie.toString(maxDepth, maxEntries);
 }
 
+void ConstantShapeHelper::getCachedPointers(std::unordered_set<void*>& out_pointers) const {
+ _shapeTrie.getCachedPointers(out_pointers);
+}
+
 } // namespace sd
 
 

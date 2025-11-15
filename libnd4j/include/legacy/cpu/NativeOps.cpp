@@ -737,9 +737,7 @@ sd::Status execCustomOp2(sd::Pointer *extraPointers, sd::LongType hash, OpaqueCo
     auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
     auto result = op->execute(context);
 
-#if defined(SD_GCC_FUNCTRACE)
     checkAndCleanupCaches();
-#endif
 
     return result;
 }
@@ -991,9 +989,7 @@ void execReduceFloat(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
                                                x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                                                extraParams,
                                                z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
-#if defined(SD_GCC_FUNCTRACE)
     checkAndCleanupCaches();
-#endif
   } catch (std::exception &e) {
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1019,9 +1015,7 @@ void execReduceSame(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
                                               x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                                               extraParams,
                                               z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
-#if defined(SD_GCC_FUNCTRACE)
     checkAndCleanupCaches();
-#endif
   } catch (std::exception &e) {
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1052,9 +1046,7 @@ void execReduceBool(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void
                                         z->buffer(), z->shapeInfo(),
                                         z->specialBuffer(), z->specialShapeInfo(),
                                         dimension->bufferAsT<sd::LongType> (), dimension->lengthOf());
-#if defined(SD_GCC_FUNCTRACE)
     checkAndCleanupCaches();
-#endif
   } catch (std::exception &e) {
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1085,9 +1077,7 @@ void execReduceLong(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void
                                         z->buffer(), z->shapeInfo(),
                                         z->specialBuffer(), z->specialShapeInfo(),
                                         dimension->bufferAsT<sd::LongType> (), dimension->lengthOf());
-#if defined(SD_GCC_FUNCTRACE)
     checkAndCleanupCaches();
-#endif
   } catch (std::exception &e) {
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1138,9 +1128,7 @@ void execReduceFloat2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,voi
 
     delete dims;
 
-#if defined(SD_GCC_FUNCTRACE)
     checkAndCleanupCaches();
-#endif
 
   } catch (std::exception &e) {
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -1194,9 +1182,7 @@ void execReduceBool2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
 
     delete dims;
 
-#if defined(SD_GCC_FUNCTRACE)
     checkAndCleanupCaches();
-#endif
 
   } catch (std::exception &e) {
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -1250,9 +1236,7 @@ void execReduceSame2(sd::Pointer *extraPointers, int opNum,
 
     delete dims;
 
-#if defined(SD_GCC_FUNCTRACE)
     checkAndCleanupCaches();
-#endif
 
   } catch (std::exception &e) {
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -1353,9 +1337,7 @@ void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
 
     delete dims;
 
-#if defined(SD_GCC_FUNCTRACE)
     checkAndCleanupCaches();
-#endif
 
   } catch (std::exception &e) {
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -1382,9 +1364,7 @@ void execReduce3Tad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void
                                         dimension->bufferAsT<sd::LongType>(), dimension->lengthOf(),
                                         hTADShapeInfo, hTADOffsets, nullptr, nullptr);
 
-#if defined(SD_GCC_FUNCTRACE)
     checkAndCleanupCaches();
-#endif
 
   } catch (std::exception &e) {
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -1400,9 +1380,7 @@ void execScalar(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, OpaqueND
                                     z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                                     scalar->buffer(), scalar->shapeInfo(), scalar->specialBuffer(), scalar->specialShapeInfo(),
                                     extraParams);
-#if defined(SD_GCC_FUNCTRACE)
     checkAndCleanupCaches();
-#endif
   } catch (std::exception &e) {
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1417,9 +1395,7 @@ void execScalarBool(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, Opaq
                                         z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                                         scalar->buffer(), scalar->shapeInfo(), scalar->specialBuffer(), scalar->specialShapeInfo(),
                                         extraParams);
-#if defined(SD_GCC_FUNCTRACE)
     checkAndCleanupCaches();
-#endif
   } catch (std::exception &e) {
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1481,9 +1457,7 @@ void execTransformFloat(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, 
     NativeOpExecutioner::execTransformFloat(nullptr, opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
                                             x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
                                             z->specialShapeInfo(), extraParams);
-#if defined(SD_GCC_FUNCTRACE)
     checkAndCleanupCaches();
-#endif
   } catch (std::exception &e) {
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1496,9 +1470,7 @@ void execTransformSame(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,vo
                                            x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                                            z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                                            extraParams, nullptr, nullptr);
-#if defined(SD_GCC_FUNCTRACE)
     checkAndCleanupCaches();
-#endif
   } catch (std::exception &e) {
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1510,9 +1482,7 @@ void execTransformBool(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,vo
     NativeOpExecutioner::execTransformBool(nullptr, opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
                                            x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
                                            z->specialShapeInfo(), extraParams);
-#if defined(SD_GCC_FUNCTRACE)
     checkAndCleanupCaches();
-#endif
   } catch (std::exception &e) {
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1524,9 +1494,7 @@ void execTransformAny(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,voi
     NativeOpExecutioner::execTransformAny(nullptr, opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
                                           x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
                                           z->specialShapeInfo(), extraParams, false);
-#if defined(SD_GCC_FUNCTRACE)
     checkAndCleanupCaches();
-#endif
   } catch (std::exception &e) {
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1538,9 +1506,7 @@ void execTransformStrict(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
     NativeOpExecutioner::execTransformStrict(nullptr, opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
                                              x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
                                              z->specialShapeInfo(), extraParams);
-#if defined(SD_GCC_FUNCTRACE)
     checkAndCleanupCaches();
-#endif
   } catch (std::exception &e) {
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());

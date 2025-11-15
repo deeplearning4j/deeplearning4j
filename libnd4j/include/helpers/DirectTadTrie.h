@@ -24,6 +24,7 @@
 #include <array>
 #include <atomic>
 #include <memory>
+#include <unordered_set>
 #include "./generic/StripedLocks.h"
 
 #include <vector>
@@ -353,11 +354,22 @@ public:
   */
  std::string toString(int maxDepth = 10, int maxEntries = 100) const;
 
+ /**
+  * Get all TadPack pointers currently in the cache.
+  * This is used by lifecycle tracking to distinguish cached entries from real leaks.
+  *
+  * @param out_pointers Set to fill with pointers to all cached TadPack objects
+  */
+ void getCachedPointers(std::unordered_set<void*>& out_pointers) const;
+
 private:
  // Internal helper to build string representation recursively
  void buildStringRepresentation(const TadTrieNode* node, std::stringstream& ss,
                                 const std::string& indent, int currentDepth,
                                 int maxDepth, int& entriesShown, int maxEntries) const;
+
+ // Internal helper to collect TadPack pointers recursively
+ void collectCachedPointers(const TadTrieNode* node, std::unordered_set<void*>& out_pointers) const;
 };
 
 }  // namespace sd

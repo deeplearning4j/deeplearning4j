@@ -38,31 +38,43 @@
 // If built with MSAN, this will be a no-op
 
 /**
- * Triggers LeakSanitizer to perform a leak check immediately.
+ * Triggers leak checking and clears caches.
  * This allows checking for leaks at any point during execution,
  * not just at program exit.
  *
- * CRITICAL: Clears TAD and Shape caches BEFORE checking for leaks
+ * CRITICAL: ALWAYS clears TAD and Shape caches BEFORE checking for leaks
  * to prevent false positives from legitimate cached data.
+ *
+ * This is essential for both:
+ * 1. Sanitizer-based leak detection (ASAN/LSAN)
+ * 2. Custom lifecycle tracking (TADCacheLifecycleTracker, etc.)
  *
  * Cleanup sequence (matches MainApplication.java shutdown handler):
  * 1. Clear TAD cache (frees cached TadPack objects)
  * 2. Clear Shape cache (frees cached shape info)
- * 3. Trigger leak check
+ * 3. Trigger leak check (if sanitizers are enabled)
  *
- * When built without sanitizers, this is a no-op.
  * Safe to call from Java via JNI.
  */
 SD_LIB_EXPORT void triggerLeakCheck() {
-#ifdef HAS_LEAK_SANITIZER
-    // Clear caches before leak check to prevent false positives
-    // These caches contain legitimate data that should not be reported as leaks
+    // CRITICAL FIX: Cache clearing must happen UNCONDITIONALLY,
+    // not just when HAS_LEAK_SANITIZER is defined.
+    //
+    // WHY: Custom lifecycle tracking (TADCacheLifecycleTracker) is used
+    // even when building with MSan (Memory Sanitizer), which doesn't define
+    // HAS_LEAK_SANITIZER. But lifecycle tracking still needs caches cleared
+    // before reporting to avoid false positives.
+    //
+    // TAD and Shape caches contain legitimate data structures that persist
+    // across operations for performance. They are NOT memory leaks.
     clearTADCache();
     clearShapeCache();
 
-    // Now check for actual leaks
+#ifdef HAS_LEAK_SANITIZER
+    // Additionally trigger sanitizer leak check if available
     __lsan_do_leak_check();
 #else
-    // No-op when not built with ASAN/LSAN
+    // No sanitizer leak check, but cache clearing still happened above
+    // This ensures custom lifecycle tracking doesn't report false positives
 #endif
 }

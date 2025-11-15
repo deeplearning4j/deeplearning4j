@@ -24,6 +24,7 @@
 #include <atomic>
 #include <sstream>
 #include <string>
+#include <unordered_set>
 
 #include "array/TadCalculator.h"
 
@@ -257,20 +258,29 @@ const TadTrieNode* DirectTadTrie::findChild(const TadTrieNode* node, LongType va
 
 // Helper function to recursively delete TadPacks from a node and its children
 // This ensures TadPack destructors are called, which triggers recordDeallocation()
-static void deleteTadPacksRecursive(TadTrieNode* node) {
+static void deleteTadPacksRecursive(TadTrieNode* node, int& deletedCount) {
   if (!node) return;
 
   // First, recursively delete from all children
   const auto& children = node->children();
   for (const auto& child : children) {
-    deleteTadPacksRecursive(child.get());
+    deleteTadPacksRecursive(child.get(), deletedCount);
   }
 
   // Then delete this node's TadPack if it exists
   // We need to manually delete and clear to ensure destructor is called
   TadPack* pack = node->pack();
   if (pack) {
+    // Count and log deletion for verification
+    deletedCount++;
+    // DEBUG: Log TAD pack deletion with detailed info
+    sd_printf("DirectTadTrie: Deleting TadPack %p (count: %d)\n", pack, deletedCount);
+
+    // Explicitly call delete to trigger TadPack destructor
+    // The destructor SHOULD call TADCacheLifecycleTracker::recordDeallocation()
+    // if SD_GCC_FUNCTRACE is defined during compilation
     delete pack;
+
     // CRITICAL: Clear the pointer to prevent double-delete in node destructor
     // When roots are recreated, node destructors will be called and must not
     // attempt to delete the same TadPack again
@@ -283,18 +293,41 @@ void DirectTadTrie::clear() {
   // NOTE: Removed #ifndef __JAVACPP_HACK__ guard to fix TAD cache memory leak
   // The guard was preventing cache cleanup when JavaCPP is used (production mode)
   // This caused indefinite accumulation of TADPack objects despite clearTADCache() calls
+
+  // CRITICAL: Use fprintf to stderr for unconditional logging (not sd_printf)
+  fprintf(stderr, "[DirectTadTrie::clear()] ENTRY: Clearing %zu stripes\n", NUM_STRIPES);
+  fflush(stderr);
+
+  int totalDeleted = 0;
   for (size_t i = 0; i < NUM_STRIPES; i++) {
     // Use exclusive lock for write operation (clearing the cache)
     EXCLUSIVE_LOCK_TYPE<MUTEX_TYPE> lock(_mutexes[i]);
 
     // CRITICAL FIX: Explicitly delete all TadPacks before recreating roots
     // This ensures TadPack destructors are called, which invokes recordDeallocation()
-    // for proper lifecycle tracking. Simply recreating roots relies on unique_ptr
-    // cascade deletion, which may not work correctly during shutdown.
-    deleteTadPacksRecursive(_roots[i].get());
+    // for proper lifecycle tracking.
+    //
+    // IMPORTANT: We CANNOT rely on unique_ptr cascade deletion because:
+    // 1. TadTrieNode destructor deletes _tadPack only if SD_GCC_FUNCTRACE is defined
+    // 2. Functrace may be auto-disabled during build, causing guards to evaluate false
+    // 3. Even if guards pass, destructor might not run if roots are replaced before going out of scope
+    //
+    // By explicitly calling deleteTadPacksRecursive() BEFORE replacing roots,
+    // we guarantee that:
+    // - All TadPack objects are explicitly deleted via delete operator
+    // - Their destructors run and call recordDeallocation() (if tracking enabled)
+    // - Pointers are cleared to nullptr to prevent double-delete in node destructors
+    int deletedCount = 0;
+    deleteTadPacksRecursive(_roots[i].get(), deletedCount);
+    totalDeleted += deletedCount;
+
+    fprintf(stderr, "[DirectTadTrie::clear()] Stripe %zu: Deleted %d TadPacks\n", i, deletedCount);
+    fflush(stderr);
 
     // Recreate the root node - this will delete the old tree structure
-    // (nodes are already cleaned of TadPacks above)
+    // (nodes are already cleaned of TadPacks above via deleteTadPacksRecursive)
+    // The old root's unique_ptr goes out of scope here, triggering node destructor cascade
+    // But TadPacks are already deleted and nulled out, so no double-delete occurs
     _roots[i] = std::make_unique<TadTrieNode>(0, 0, false);
     _stripeCounts[i].store(0);
   }
@@ -302,6 +335,10 @@ void DirectTadTrie::clear() {
   // Reset current counters (but preserve peak values for diagnostics)
   _current_entries.store(0);
   _current_bytes.store(0);
+
+  // CRITICAL: Log completion with total count
+  fprintf(stderr, "[DirectTadTrie::clear()] EXIT: Deleted %d total TadPacks across all stripes\n", totalDeleted);
+  fflush(stderr);
 }
 
 void DirectTadTrie::countEntriesAndBytes(const TadTrieNode* node, LongType& entries, LongType& bytes) const {
@@ -509,6 +546,33 @@ std::string DirectTadTrie::toString(int maxDepth, int maxEntries) const {
   }
 
   return ss.str();
+}
+
+void DirectTadTrie::getCachedPointers(std::unordered_set<void*>& out_pointers) const {
+  // Traverse all stripes and collect TadPack pointers
+  for (size_t i = 0; i < NUM_STRIPES; i++) {
+    SHARED_LOCK_TYPE<MUTEX_TYPE> lock(_mutexes[i]);
+
+    const TadTrieNode* root = _roots[i].get();
+    if (root != nullptr) {
+      collectCachedPointers(root, out_pointers);
+    }
+  }
+}
+
+void DirectTadTrie::collectCachedPointers(const TadTrieNode* node, std::unordered_set<void*>& out_pointers) const {
+  if (node == nullptr) return;
+
+  // If this node has a TadPack, add it to the set
+  TadPack* pack = node->pack();
+  if (pack != nullptr) {
+    out_pointers.insert(pack);
+  }
+
+  // Recursively collect from all children
+  for (const auto& child : node->children()) {
+    collectCachedPointers(child.get(), out_pointers);
+  }
 }
 
 }  // namespace sd
