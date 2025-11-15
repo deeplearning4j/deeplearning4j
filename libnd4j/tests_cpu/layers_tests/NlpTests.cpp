@@ -316,7 +316,7 @@ TEST_F(NlpTests, test_sg_ns_batch_1) {
 }
 
 TEST_F(NlpTests, test_cbow_hs_batch_1) {
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   return;
 #endif
 

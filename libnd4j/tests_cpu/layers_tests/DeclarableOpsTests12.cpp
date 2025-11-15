@@ -717,7 +717,7 @@ TEST_F(DeclarableOpsTests12, pullRows_1) {
 
   Pointer nativeStart[2];
 
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   nativeStart[1] = (x.getContext()->getCudaStream());
 #endif
   OpaqueDataBuffer xBuf(x.dataBuffer());
@@ -749,7 +749,7 @@ TEST_F(DeclarableOpsTests12, pullRows_2) {
   auto zTadPack = ConstantTadHelper::getInstance().tadForDimensions(z.shapeInfo(), &dims);
 
   Pointer nativeStart[2];
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   nativeStart[1] = (x.getContext()->getCudaStream());
 #endif
   OpaqueDataBuffer xBuf(x.dataBuffer());
