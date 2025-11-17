@@ -2009,39 +2009,37 @@ void * _bufferWithOffset(LongType offset,DataBuffer *buffer) {
 // The function is defined in a header, so it must be marked inline to comply with ODR (One Definition Rule).
 // Exception handling works correctly with inline functions - the inline keyword doesn't affect exception semantics.
 SD_INLINE LongType *NDArray::shapeInfo()  {
-  // CRITICAL FIX: Always refresh from buffer if available to prevent dangling pointers.
-  // Even if _shapeInfo is non-null, it might point to freed memory (use-after-free).
-  // This can happen if shape buffers are deleted/moved while NDArray still holds raw pointer.
-  // By always getting a fresh pointer from the buffer, we ensure we never return dangling pointers.
-  if (_shapeInfoBuffer != nullptr) {
-    _shapeInfo = _shapeInfoBuffer->primary();
-    _shapeInfoD = _shapeInfoBuffer->special();
+  // Refresh cached pointers if we still own a ConstantShapeBuffer descriptor.
+  // This keeps _shapeInfo in sync with the descriptor and prevents use-after-free
+  // in cases where _shapeInfo was invalidated (e.g., constructor set it to nullptr).
+  ConstantShapeBuffer* buffer = _shapeInfoBuffer;
+  if (buffer != nullptr) {
+    LongType* refreshed = buffer->primary();
+    if (refreshed == nullptr) {
+      const char* msg = "NDArray::shapeInfo() - _shapeInfoBuffer->primary() returned nullptr";
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(msg);
+      THROW_EXCEPTION(msg);
+    }
+    _shapeInfo = refreshed;
+#ifdef SD_CUDA
+    _shapeInfoD = buffer->special();
+#endif
   }
 
-  // If we still have nullptr after refresh attempt, this is a fatal error.
-  // Fail fast with clear diagnostic information rather than returning nullptr
-  // and causing cryptic errors downstream (e.g., in execReduceLong2, shape::rank()).
+  // Fail fast if NDArray is uninitialized
   if (_shapeInfo == nullptr) {
-    // Set error context for debugging
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    const char* msg = (_shapeInfoBuffer == nullptr) ?
-      "NDArray::shapeInfo() - both _shapeInfo and _shapeInfoBuffer are nullptr" :
-      "NDArray::shapeInfo() - _shapeInfoBuffer->primary() returned nullptr";
+    const char* msg = "NDArray::shapeInfo() - _shapeInfo is nullptr (uninitialized NDArray)";
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(msg);
-
-    // Throw exception - this MUST stop execution as returning nullptr would cause crashes
     THROW_EXCEPTION(msg);
   }
 
-  // CRITICAL FIX: Validate rank BEFORE returning shapeInfo.
-  // If the memory is corrupted/uninitialized, shapeInfo[0] (rank) will contain garbage.
-  // This prevents "Rank is too high: <pointer_value>" errors in ArrayOptions::extra().
-  // Detecting corruption HERE with a clear error message is better than crashing later
-  // with confusing errors in shapeInfoLength() or other downstream code.
+  // Validate rank to detect corrupted shape info
   sd::LongType rank = _shapeInfo[0];
   if (rank < 0 || rank > SD_MAX_RANK) {
     std::string errorMessage;
-    errorMessage += "NDArray::shapeInfo() - shapeInfo contains invalid rank: ";
+    errorMessage += "NDArray::shapeInfo() - invalid rank: ";
     errorMessage += std::to_string(rank);
     errorMessage += " (expected 0-";
     errorMessage += std::to_string(SD_MAX_RANK);
@@ -2063,10 +2061,10 @@ SD_INLINE LongType *NDArray::shapeInfo()  {
 ConstantShapeBuffer * NDArray::shapeInfoConstBuffer()   { return _shapeInfoBuffer; }
 
 DataBuffer NDArray::shapeInfoDataBuffer()   {
-  auto primary = _shapeInfoBuffer->primary();
-  auto voidPointer = const_cast<LongType *>(primary);
+  const LongType* validatedShape = this->shapeInfo();
+  auto voidPointer = const_cast<LongType *>(validatedShape);
   auto void2 = reinterpret_cast<void *>(voidPointer);
-  DataBuffer ret(void2, INT64, shape::shapeInfoByteLength(_shapeInfo[0]));
+  DataBuffer ret(void2, INT64, shape::shapeInfoByteLength(validatedShape[0]));
   return ret;
 
 }
@@ -2074,10 +2072,13 @@ DataBuffer NDArray::shapeInfoDataBuffer()   {
 
 ////////////////////////////////////////////////////////////////////////
 SD_INLINE LongType *NDArray::specialShapeInfo()  {
-  // Always refresh from buffer to prevent dangling pointers (same as shapeInfo() does)
-  if (_shapeInfoBuffer != nullptr) {
-    _shapeInfo = _shapeInfoBuffer->primary();
-    _shapeInfoD = _shapeInfoBuffer->special();
+  // Keep special buffer pointer synchronized with ConstantShapeBuffer when available.
+  ConstantShapeBuffer* buffer = _shapeInfoBuffer;
+  if (buffer != nullptr) {
+    LongType* specialPtr = buffer->special();
+    if (specialPtr != nullptr) {
+      _shapeInfoD = specialPtr;
+    }
   }
 
   // If special shape info is nullptr, try to use primary. If both are nullptr, throw exception.
@@ -2087,7 +2088,7 @@ SD_INLINE LongType *NDArray::specialShapeInfo()  {
       shapeInfoToReturn = _shapeInfo;
     } else {
       // Both are nullptr - this is a fatal error
-      const char* msg = "NDArray::specialShapeInfo() - both _shapeInfo and _shapeInfoD are nullptr";
+      const char* msg = "NDArray::specialShapeInfo() - NDArray is uninitialized (both _shapeInfo and _shapeInfoD are nullptr)";
       sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
       sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(msg);
       THROW_EXCEPTION(msg);

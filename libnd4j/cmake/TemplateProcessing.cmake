@@ -41,28 +41,79 @@
 
 set(CUSTOMOPS_GENERIC_SOURCES "" CACHE INTERNAL "Template-generated source files")
 
-# Balanced chunk sizes for functrace - practical memory usage without extreme slowdown
-# FORCE to override cached values, but use REASONABLE sizes for practical build times
-# NOTE: Even with these settings, functrace builds create ~3GB binaries
-if(SD_GCC_FUNCTRACE)
-    set(CHUNK_TARGET_INSTANTIATIONS "8" CACHE STRING "Target template instantiations per chunk file (FORCED for functrace)" FORCE)
-    set(CHUNK_MAX_INSTANTIATIONS "12" CACHE STRING "Maximum template instantiations per chunk file (FORCED for functrace)" FORCE)
-    message(STATUS "⚖️  FORCED CHUNK_TARGET_INSTANTIATIONS=8 for functrace (balanced for 20min builds)")
-    message(STATUS "⚠️  WARNING: Functrace builds create ~3GB binaries (may exceed linker limits)")
-else()
-    set(CHUNK_TARGET_INSTANTIATIONS "5" CACHE STRING "Target template instantiations per chunk file (1-20)")
-    set(CHUNK_MAX_INSTANTIATIONS "10" CACHE STRING "Maximum template instantiations per chunk file")
-endif()
-
+# Chunk sizing for functrace builds: adapt chunk sizes so total compile memory is roughly 60% of
+# system RAM, even when high parallelism (buildthreads ~14) is used.
 set(USE_MULTI_PASS_GENERATION "ON" CACHE STRING "Use multi-pass generation (ON/OFF/AUTO)")
 
-# Balanced chunk size for call tracing - memory efficient but practical
 if(SD_GCC_FUNCTRACE)
-    set(MULTI_PASS_CHUNK_SIZE "5" CACHE STRING "Chunk size for direct instantiation files (FORCED balanced)" FORCE)
-    message(STATUS "⚖️  FORCED MULTI_PASS_CHUNK_SIZE=5 for call tracing build (balanced: ~200-250MB per file)")
-    message(STATUS "   This should complete in ~20 minutes like previous builds")
+    set(_functrace_jobs 0)
+    if(DEFINED CMAKE_BUILD_PARALLEL_LEVEL AND NOT CMAKE_BUILD_PARALLEL_LEVEL STREQUAL "")
+        set(_functrace_jobs ${CMAKE_BUILD_PARALLEL_LEVEL})
+    elseif(DEFINED SD_PARALLEL_COMPILE_JOBS AND NOT SD_PARALLEL_COMPILE_JOBS STREQUAL "0")
+        set(_functrace_jobs ${SD_PARALLEL_COMPILE_JOBS})
+    endif()
+    if(_functrace_jobs LESS 1)
+        include(ProcessorCount)
+        ProcessorCount(_functrace_detected_jobs)
+        if(_functrace_detected_jobs GREATER 0)
+            set(_functrace_jobs ${_functrace_detected_jobs})
+        else()
+            set(_functrace_jobs 4)
+        endif()
+    endif()
+
+    cmake_host_system_information(RESULT _functrace_total_kb QUERY TOTAL_PHYSICAL_MEMORY)
+    if(_functrace_total_kb)
+        math(EXPR _functrace_total_mb "${_functrace_total_kb} / 1024")
+    else()
+        set(_functrace_total_mb 0)
+    endif()
+    if(_functrace_total_mb LESS 1024)
+        set(_functrace_total_mb 1024)
+    endif()
+
+    # 60% of RAM reserved for compile (rest free for OS, JVM, etc.)
+    math(EXPR _functrace_budget_mb "${_functrace_total_mb} * 3 / 5")
+    math(EXPR _per_job_mb "${_functrace_budget_mb} / ${_functrace_jobs}")
+    if(_per_job_mb LESS 512)
+        set(_per_job_mb 512)
+    endif()
+
+    # Empirical: chunk target 8 → ~225MB, so ~28MB per instantiation slot.
+    math(EXPR _chunk_target "${_per_job_mb} / 28")
+    if(_chunk_target LESS 6)
+        set(_chunk_target 6)
+    elseif(_chunk_target GREATER 48)
+        set(_chunk_target 48)
+    endif()
+
+    # Direct instantiation chunks are smaller (~0.65 ratio) to smooth memory spikes.
+    math(EXPR _direct_chunk "${_chunk_target} * 13 / 20")
+    if(_direct_chunk LESS 4)
+        set(_direct_chunk 4)
+    endif()
+    if(_direct_chunk GREATER _chunk_target)
+        set(_direct_chunk ${_chunk_target})
+    endif()
+
+    set(CHUNK_TARGET_INSTANTIATIONS "${_chunk_target}" CACHE STRING "Adaptive chunk size for functrace builds" FORCE)
+    set(MULTI_PASS_CHUNK_SIZE "${_direct_chunk}" CACHE STRING "Adaptive direct chunk size for functrace builds" FORCE)
+    if(NOT DEFINED CHUNK_MAX_INSTANTIATIONS OR CHUNK_MAX_INSTANTIATIONS LESS CHUNK_TARGET_INSTANTIATIONS)
+        set(CHUNK_MAX_INSTANTIATIONS "${CHUNK_TARGET_INSTANTIATIONS}" CACHE STRING "Maximum template instantiations per chunk file (aligned with target)" FORCE)
+    endif()
+
+    message(STATUS "Functrace chunk sizing: target=${CHUNK_TARGET_INSTANTIATIONS}, direct=${MULTI_PASS_CHUNK_SIZE}, jobs=${_functrace_jobs}, per-job-limit≈${_per_job_mb}MB (60% of ${_functrace_total_mb}MB)")
+    message(STATUS "⚠️  WARNING: Functrace builds still create ~3GB binaries (may exceed linker limits)")
 else()
-    set(MULTI_PASS_CHUNK_SIZE "20" CACHE STRING "Chunk size for direct instantiation files")
+    if(NOT DEFINED CHUNK_TARGET_INSTANTIATIONS)
+        set(CHUNK_TARGET_INSTANTIATIONS "5" CACHE STRING "Target template instantiations per chunk file (1-20)")
+    endif()
+    if(NOT DEFINED CHUNK_MAX_INSTANTIATIONS)
+        set(CHUNK_MAX_INSTANTIATIONS "10" CACHE STRING "Maximum template instantiations per chunk file")
+    endif()
+    if(NOT DEFINED MULTI_PASS_CHUNK_SIZE)
+        set(MULTI_PASS_CHUNK_SIZE "20" CACHE STRING "Chunk size for direct instantiation files")
+    endif()
 endif()
 
 # Enable selective rendering diagnostics in debug builds

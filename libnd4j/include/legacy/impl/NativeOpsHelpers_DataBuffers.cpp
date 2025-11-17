@@ -52,6 +52,7 @@
 #include <errno.h>
 #include <ops/declarable/CustomOperations.h>
 #include <sys/types.h>
+#include <unordered_map>
 
 
 extern bool experimentalSupport; // Defined in NativeOpsHelpers_Arrays.cpp
@@ -65,6 +66,14 @@ static std::mutex g_opaqueArrayMutex;
 static std::atomic<size_t> g_dataBufferCount{0};
 static std::atomic<size_t> g_dataBufferBytes{0};
 static std::mutex g_dataBufferMutex;
+
+// TadPack lifetime registry - CRITICAL FIX for use-after-free bug
+// Keeps shared_ptr<TadPack> alive for TadPacks returned to Java
+// Without this, when ConstantTadHelper::tadForDimensions() returns shared_ptr<TadPack>,
+// but tadOnlyShapeInfo() returns raw TadPack*, the local shared_ptr goes out of scope
+// and TadPack can be deleted while Java still holds the raw pointer → SIGSEGV
+std::unordered_map<sd::TadPack*, std::shared_ptr<sd::TadPack>> g_tadPackRegistry;
+std::mutex g_tadPackMutex;
 
 #include <execution/Threads.h>
 #include <graph/Context.h>
@@ -376,9 +385,30 @@ sd::TadPack *tadOnlyShapeInfo(OpaqueDataBuffer *hXShapeInfo, sd::LongType *dimen
 
 
 
+    // CRITICAL FIX: tadForDimensions() returns shared_ptr<TadPack>, but this function returns TadPack*
+    // If we just return pack.get(), the local shared_ptr goes out of scope and TadPack can be deleted
+    // when cache evicts it, leaving Java with a dangling pointer → SIGSEGV
+    //
+    // Solution: Store the shared_ptr in a global registry to keep the TadPack alive.
+    // The shared_ptr is removed from registry when Java explicitly releases it, or when
+    // the cache is explicitly cleared.
     auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(
         shapeFromCache, dimension, dimensionLength);
-    return pack;
+
+    if (!pack) {
+      THROW_EXCEPTION("tadOnlyShapeInfo: Failed to create TadPack!");
+    }
+
+    // Get raw pointer BEFORE storing in registry
+    sd::TadPack* rawPtr = pack.get();
+
+    // Store shared_ptr in registry to keep TadPack alive
+    {
+      std::lock_guard<std::mutex> lock(g_tadPackMutex);
+      g_tadPackRegistry[rawPtr] = pack;
+    }
+
+    return rawPtr;
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -387,6 +417,13 @@ sd::TadPack *tadOnlyShapeInfo(OpaqueDataBuffer *hXShapeInfo, sd::LongType *dimen
 
   return nullptr;
 
+}
+
+// Helper function to clear the TadPack registry
+// This should be called when explicitly clearing caches to prevent memory leaks
+void clearTadPackRegistry() {
+  std::lock_guard<std::mutex> lock(g_tadPackMutex);
+  g_tadPackRegistry.clear();
 }
 
 

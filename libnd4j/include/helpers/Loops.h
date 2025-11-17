@@ -1185,7 +1185,7 @@ void Reduction3Loops<X, Z>::loopReduce3(const X* x, const LongType* xShapeInfo, 
   const LongType yLen = shape::length(yShapeInfo);
 
   const LongType *xTadShapeInfo = nullptr, *yTadShapeInfo = nullptr, *xTadOffsets = nullptr, *yTadOffsets = nullptr;
-  TadPack *tadPackX, *tadPackY;
+  std::shared_ptr<TadPack> tadPackX, tadPackY;
   std::vector<LongType> zeroOffsets;
 
   if (xLen == yLen) {

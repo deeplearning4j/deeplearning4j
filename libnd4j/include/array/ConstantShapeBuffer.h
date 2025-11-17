@@ -28,6 +28,7 @@
 #include <array/PointerWrapper.h>
 #include <system/common.h>
 
+#include <atomic>
 #include <memory>
 #include <string>
 #ifndef  __JAVACPP_HACK__
@@ -41,6 +42,7 @@ class SD_LIB_EXPORT ConstantShapeBuffer {
  private:
   PointerWrapper* _primaryShapeInfo;
   PointerWrapper*  _specialShapeInfo;
+  std::atomic<int> _refCount;
 
 
  public:
@@ -62,6 +64,24 @@ class SD_LIB_EXPORT ConstantShapeBuffer {
    * Returns empty string if functrace is not enabled.
    */
   std::string getStackTraceAsString() const;
+
+  /**
+   * Manual reference counting for safe cross-JNI ownership.
+   * Increments reference count - call when handing out a pointer.
+   */
+  void addRef();
+
+  /**
+   * Manual reference counting for safe cross-JNI ownership.
+   * Decrements reference count and deletes when reaching zero.
+   * Call when done with a pointer (e.g., in deleteConstantShapeBuffer).
+   */
+  void release();
+
+  /**
+   * Get current reference count (for debugging).
+   */
+  int getRefCount() const;
 };
 
 

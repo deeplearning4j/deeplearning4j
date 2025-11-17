@@ -53,7 +53,8 @@ namespace sd {
 
 class SD_LIB_EXPORT LaunchContext {
  private:
-  static std::vector<std::shared_ptr<LaunchContext>> _contexts;
+  // contexts live for the lifetime of the process to avoid static tear-down races
+  static std::vector<std::shared_ptr<LaunchContext>>* _contexts;
   static std::mutex _mutex;
 
   static SD_MAP_IMPL<int, std::mutex*> _deviceMutexes;

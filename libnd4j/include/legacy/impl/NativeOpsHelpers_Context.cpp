@@ -260,10 +260,16 @@ void inspectArray(sd::Pointer *extraPointers, sd::Pointer buffer, sd::LongType *
 
 
 
-void deleteConstantShapeBuffer(OpaqueConstantShapeBuffer *ptr) { }
+void deleteConstantShapeBuffer(OpaqueConstantShapeBuffer *ptr) {
+  if (ptr != nullptr && *ptr != nullptr) {
+    (*ptr)->release();  // Decrement refcount, delete when reaching zero
+  }
+}
 
 void deleteConstantDataBuffer(OpaqueConstantDataBuffer *ptr) {
-  delete ptr;
+  if (ptr != nullptr && *ptr != nullptr) {
+    delete *ptr;
+  }
 }
 
 OpaqueConstantShapeBuffer cacheAndStoreShapeBuffer(sd::LongType *shapeInfo) {

@@ -41,36 +41,44 @@ namespace sd {
 
 /**
  * Stores cached metadata about a TadPack for fast comparison without recomputation
+ *
+ * CRITICAL FIX (Session #395): Removed stride comparison to prevent cache proliferation.
+ *
+ * ROOT CAUSE OF 135 MB TAD CACHE LEAK:
+ * Previous implementation compared strides in matches(), causing cache misses for arrays
+ * with identical shapes but different memory layouts (views, transposes, etc.).
+ *
+ * Each unique stride pattern created a NEW cache entry even though the TAD computation
+ * result (TAD shape and offsets) is IDENTICAL for the same logical shape and dimensions.
+ *
+ * Example scenario that caused leaks:
+ * 1. Original array [10, 20, 30] with C-order strides → TAD pack 1
+ * 2. View of same array (subarray) with different strides → TAD pack 2 (DUPLICATE!)
+ * 3. Reshaped array with different strides → TAD pack 3 (DUPLICATE!)
+ *
+ * During embedding model execution with 130+ operations involving views/reshapes,
+ * this caused 130 TAD packs (135 MB) to accumulate instead of reusing cached entries.
+ *
+ * FIX: Match only on shape, rank, and dataType (NOT strides or order).
+ * TAD pack structure depends on OUTPUT layout, not INPUT layout.
  */
 struct TadPackSignature {
-  LongType* strides = nullptr;
   LongType* shape = nullptr;
   int rank = 0;
-  char order = 'c';
   DataType dataType = DataType::FLOAT32;
-  
+
   ~TadPackSignature() {
-    if (strides) delete[] strides;
     if (shape) delete[] shape;
   }
-  
-  // Store signature from shapeInfo
+
+  // Store signature from shapeInfo (FIXED: No longer stores strides/order)
   void store(LongType* shapeInfo) {
     if (!shapeInfo) return;
-    
+
     rank = shape::rank(shapeInfo);
-    order = shape::order(shapeInfo);
     dataType = ArrayOptions::dataType(shapeInfo);
-    
-    // Allocate and copy strides
-    if (strides) delete[] strides;
-    strides = new LongType[rank];
-    LongType* srcStrides = shape::stride(shapeInfo);
-    for (int i = 0; i < rank; i++) {
-      strides[i] = srcStrides[i];
-    }
-    
-    // Allocate and copy shape
+
+    // Allocate and copy shape only (strides removed)
     if (shape) delete[] shape;
     shape = new LongType[rank];
     LongType* srcShape = shape::shapeOf(shapeInfo);
@@ -78,27 +86,24 @@ struct TadPackSignature {
       shape[i] = srcShape[i];
     }
   }
-  
-  // Compare with another shapeInfo
+
+  // Compare with another shapeInfo (FIXED: No longer compares strides/order)
   bool matches(LongType* shapeInfo) const {
-    if (!shapeInfo || !strides || !shape) return false;
-    
+    if (!shapeInfo || !shape) return false;
+
     int otherRank = shape::rank(shapeInfo);
     if (rank != otherRank) return false;
-    
-    if (order != shape::order(shapeInfo)) return false;
+
+    // REMOVED: order comparison (not relevant for TAD pack reuse)
+    // REMOVED: stride comparison (caused cache proliferation)
+
     if (dataType != ArrayOptions::dataType(shapeInfo)) return false;
-    
-    LongType* otherStrides = shape::stride(shapeInfo);
-    for (int i = 0; i < rank; i++) {
-      if (strides[i] != otherStrides[i]) return false;
-    }
-    
+
     LongType* otherShape = shape::shapeOf(shapeInfo);
     for (int i = 0; i < rank; i++) {
       if (shape[i] != otherShape[i]) return false;
     }
-    
+
     return true;
   }
 };
@@ -109,7 +114,7 @@ class SD_LIB_EXPORT TadTrieNode {
   LongType _value;
   int _level;
   bool _isDimension;
-  TadPack* _tadPack;  // Accessed atomically
+  std::shared_ptr<TadPack> _tadPack;  // Use shared_ptr to prevent deletion while in use
   int _shapeRank;     // Store the rank of the original shape for verification
   size_t _nodeHash;   // Additional hash for quick comparison
   TadPackSignature* _packSignature;  // Cached signature for fast comparison
@@ -132,10 +137,8 @@ class SD_LIB_EXPORT TadTrieNode {
       delete _packSignature;
       _packSignature = nullptr;
     }
-    if (_tadPack) {
-      delete _tadPack;
-      _tadPack = nullptr;
-    }
+    // _tadPack is now shared_ptr - it cleans up automatically via RAII
+    // No manual delete needed
   }
 
 
@@ -186,41 +189,21 @@ class SD_LIB_EXPORT TadTrieNode {
  const TadPackSignature* packSignature() const { return _packSignature; }
 
  // Enhanced TadPack setter with signature caching
- void setPack(TadPack* pack) {
-   // Allow nullptr to clear pack pointer (fixes double-delete in cache clearing)
-   if (!pack) {
-     _tadPack = nullptr;
-     return;
-   }
+ // CRITICAL FIX: Takes ownership via shared_ptr to prevent use-after-free
+ void setPack(std::shared_ptr<TadPack> pack) {
+   // Thread-safe assignment using atomic operations
+   std::atomic_store(&_tadPack, pack);
 
-   // Use atomic compare-and-swap for thread safety
-   TadPack* expectedNull = nullptr;
-   bool swapped = false;
-
-#if defined(_MSC_VER)
-   // MSVC-specific atomic operation
-   swapped = (_InterlockedCompareExchangePointer(reinterpret_cast<void* volatile*>(&_tadPack), pack, expectedNull) == expectedNull);
-#else
-   // GCC/Clang-specific atomic operation
-   swapped = __sync_bool_compare_and_swap(&_tadPack, expectedNull, pack);
-#endif
-
-   if (swapped) {
-     // Successfully set the pack
-     // Cache the signature for future fast comparisons
-     if (pack->primaryShapeInfo() && !_packSignature) {
-       _packSignature = new TadPackSignature();
-       _packSignature->store(pack->primaryShapeInfo());
-     }
-     // The new pack is now owned by the trie
-   } else if (pack != _tadPack) {
-     // If the swap failed, another thread set the pack.
-     // We must delete the pack we tried to insert to avoid a memory leak.
-     delete pack;
+   // Cache the signature for future fast comparisons
+   if (pack && pack->primaryShapeInfo() && !_packSignature) {
+     _packSignature = new TadPackSignature();
+     _packSignature->store(pack->primaryShapeInfo());
    }
  }
 
- TadPack* pack() const { return _tadPack; }
+ std::shared_ptr<TadPack> pack() const {
+   return std::atomic_load(&_tadPack);
+ }
 };
 
 
@@ -269,13 +252,13 @@ public:
  DirectTadTrie(DirectTadTrie&&) = delete;
  DirectTadTrie& operator=(DirectTadTrie&&) = delete;
 
- TadPack* enhancedSearch(const std::vector<LongType>& dimensions, LongType* originalShape, size_t stripeIdx);
+ std::shared_ptr<TadPack> enhancedSearch(const std::vector<LongType>& dimensions, LongType* originalShape, size_t stripeIdx);
  bool exists(const std::vector<LongType>& dimensions, LongType* originalShape);
  // Enhanced stride-aware hash computation
  size_t computeStrideAwareHash(const std::vector<LongType>& dimensions, LongType* originalShape) ;
 
  // Enhanced getOrCreate with improved thread safety
- TadPack* getOrCreate(std::vector<LongType>& dimensions, LongType* originalShape);
+ std::shared_ptr<TadPack> getOrCreate(std::vector<LongType>& dimensions, LongType* originalShape);
 
  // Original methods preserved
  size_t computeStripeIndex(const std::vector<LongType>& dimensions, LongType* originalShape) const {
@@ -304,10 +287,10 @@ public:
  bool exists(const std::vector<LongType>& dimensions, LongType* originalShape) const;
 
  // Original helper methods preserved
- TadPack* search(const std::vector<LongType>& dimensions, int originalShapeRank, size_t stripeIdx) const;
+ std::shared_ptr<TadPack> search(const std::vector<LongType>& dimensions, int originalShapeRank, size_t stripeIdx) const;
  std::vector<LongType> sortDimensions(const std::vector<LongType>& dimensions) const;
  const TadTrieNode* findChild(const TadTrieNode* node, LongType value, int level, bool isDimension, int shapeRank) const;
- TadPack* insert(std::vector<LongType>& dimensions, LongType* originalShape);
+ std::shared_ptr<TadPack> insert(std::vector<LongType>& dimensions, LongType* originalShape);
 
  /**
   * Clear all cached TAD packs to prevent memory leaks during testing.

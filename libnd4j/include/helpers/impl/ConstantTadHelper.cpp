@@ -26,18 +26,18 @@ ConstantTadHelper& ConstantTadHelper::getInstance() {
   return instance;
 }
 
-TadPack* ConstantTadHelper::tadForDimensions(LongType* originalShape, LongType dimension) {
+std::shared_ptr<TadPack> ConstantTadHelper::tadForDimensions(LongType* originalShape, LongType dimension) {
   return tadForDimensions(originalShape, &dimension, 1);
 }
 
-TadPack* ConstantTadHelper::tadForDimensions(LongType* originalShape, std::vector<LongType>* dimensions) {
+std::shared_ptr<TadPack> ConstantTadHelper::tadForDimensions(LongType* originalShape, std::vector<LongType>* dimensions) {
   if (dimensions == nullptr) {
     THROW_EXCEPTION("Dimensions vector is null");
   }
   return tadForDimensions(originalShape, const_cast<LongType*>(dimensions->data()), dimensions->size());
 }
 
-TadPack* ConstantTadHelper::tadForDimensions(TadDescriptor* descriptor) {
+std::shared_ptr<TadPack> ConstantTadHelper::tadForDimensions(TadDescriptor* descriptor) {
   if (descriptor == nullptr) {
     THROW_EXCEPTION("TadDescriptor is null");
   }
@@ -45,7 +45,7 @@ TadPack* ConstantTadHelper::tadForDimensions(TadDescriptor* descriptor) {
                           descriptor->axis().size());
 }
 
-TadPack* ConstantTadHelper::tadForDimensions(LongType* originalShape, LongType* dimensions, LongType dimLength) {
+std::shared_ptr<TadPack> ConstantTadHelper::tadForDimensions(LongType* originalShape, LongType* dimensions, LongType dimLength) {
   if (originalShape == nullptr) {
     THROW_EXCEPTION("Original shape is null");
   }
@@ -96,31 +96,17 @@ TadPack* ConstantTadHelper::tadForDimensions(LongType* originalShape, LongType* 
   // Create non-temporary vector to satisfy the reference requirement
   std::vector<LongType> dims(dimensions, dimensions + dimLength);
 
-  // Single attempt pattern - no double locking
-  TadPack* result = nullptr;
+  // CRITICAL FIX: Returns shared_ptr<TadPack> to prevent use-after-free
+  // The shared_ptr keeps the TadPack alive even if the cache tries to clear it
+  std::shared_ptr<TadPack> result = nullptr;
   try {
     result = _trie.getOrCreate(dims, originalShape);
   } catch (const std::exception& e) {
     THROW_EXCEPTION("Failed to create or retrieve TAD pack");
   }
 
-  // CRITICAL: DO NOT call checkAndCleanupCaches() here!
-  //
-  // ROOT CAUSE OF 135 MB TAD CACHE LEAK (Session #385 analysis):
-  // Previous Session #384 added checkAndCleanupCaches() here, but this causes use-after-free:
-  //
-  // 1. We get or create a TAD pack above (line 106)
-  // 2. If we call checkAndCleanupCaches() here, it may trigger clearTADCache()
-  // 3. clearTADCache() deletes ALL cached TAD packs, including the one we just got!
-  // 4. We return a pointer to DELETED memory
-  // 5. Caller uses deleted TAD pack → CRASH or corruption
-  //
-  // The cleanup MUST happen at the NativeOps layer AFTER operations complete,
-  // not during TAD pack retrieval while they're still in use.
-  // NativeOps.cpp already has checkAndCleanupCaches() calls after each operation.
-  //
-  // Removed checkAndCleanupCaches() call to fix the leak and prevent use-after-free.
-
+  // DO NOT call checkAndCleanupCaches() here - would delete the pack we just created!
+  // Cleanup happens at NativeOps layer AFTER operations complete.
   return result;
 }
 

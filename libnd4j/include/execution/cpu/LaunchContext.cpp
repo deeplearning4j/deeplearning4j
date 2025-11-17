@@ -52,7 +52,8 @@ LaunchContext::~LaunchContext() {
 #endif
 }
 
-std::vector<std::shared_ptr<LaunchContext>> LaunchContext::_contexts = std::vector<std::shared_ptr<LaunchContext>>();
+std::vector<std::shared_ptr<LaunchContext>>* LaunchContext::_contexts =
+    new std::vector<std::shared_ptr<LaunchContext>>();  // intentionally leaked to survive JVM shutdown
 SD_MAP_IMPL<int, std::mutex*> LaunchContext::_deviceMutexes;
 std::mutex LaunchContext::_mutex;
 
@@ -76,11 +77,12 @@ LaunchContext* LaunchContext::defaultContext() {
     // synchronous block goes here
     std::lock_guard<std::mutex> lock(_lock);
     // TODO: we need it to be device-aware, but only once we add NUMA support for cpu
-    if (LaunchContext::_contexts.empty()) LaunchContext::_contexts.emplace_back(std::make_shared<LaunchContext>());
+    if (LaunchContext::_contexts->empty())
+      LaunchContext::_contexts->emplace_back(std::make_shared<LaunchContext>());
   }
 
   // return context for current device
-  return LaunchContext::_contexts[0].get();
+  return LaunchContext::_contexts->at(0).get();
 }
 
 std::mutex* LaunchContext::deviceMutex() { return &_mutex; }

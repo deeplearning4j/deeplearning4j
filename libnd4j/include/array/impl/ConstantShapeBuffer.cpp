@@ -33,7 +33,7 @@ ConstantShapeBuffer::ConstantShapeBuffer( PointerWrapper* primary)
 #endif
 
 }
-ConstantShapeBuffer::ConstantShapeBuffer() {
+ConstantShapeBuffer::ConstantShapeBuffer() : _refCount(1) {
   _primaryShapeInfo = nullptr;
   _specialShapeInfo = nullptr;
 }
@@ -48,7 +48,7 @@ ConstantShapeBuffer::~ConstantShapeBuffer() {
 }
 
 ConstantShapeBuffer::ConstantShapeBuffer( PointerWrapper* primary,
-                                          PointerWrapper* special) {
+                                          PointerWrapper* special) : _refCount(1) {
   _primaryShapeInfo = primary;
   _specialShapeInfo = special;
 #if defined(SD_GCC_FUNCTRACE)
@@ -100,6 +100,22 @@ std::string ConstantShapeBuffer::getStackTraceAsString() const {
 #else
   return "";  // Return empty string when functrace is not enabled
 #endif
+}
+
+void ConstantShapeBuffer::addRef() {
+  _refCount.fetch_add(1, std::memory_order_relaxed);
+}
+
+void ConstantShapeBuffer::release() {
+  int oldCount = _refCount.fetch_sub(1, std::memory_order_acq_rel);
+  if (oldCount == 1) {
+    // Last reference released, safe to delete
+    delete this;
+  }
+}
+
+int ConstantShapeBuffer::getRefCount() const {
+  return _refCount.load(std::memory_order_relaxed);
 }
 
 }  // namespace sd

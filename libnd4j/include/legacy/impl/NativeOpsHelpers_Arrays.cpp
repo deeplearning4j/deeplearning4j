@@ -52,9 +52,15 @@
 #include <errno.h>
 #include <ops/declarable/CustomOperations.h>
 #include <sys/types.h>
+#include <unordered_map>
+#include <memory>
 
 
 bool experimentalSupport = false;
+
+// External reference to TadPack registry (defined in NativeOpsHelpers_DataBuffers.cpp)
+extern std::unordered_map<sd::TadPack*, std::shared_ptr<sd::TadPack>> g_tadPackRegistry;
+extern std::mutex g_tadPackMutex;
 
 // OpaqueNDArray allocation tracking
 static std::atomic<size_t> g_opaqueArrayCount{0};
@@ -518,7 +524,25 @@ int estimateThreshold(sd::Pointer *extraPointers, sd::Pointer hX, sd::LongType c
 
 
 void deleteTadPack(sd::TadPack *ptr) {
-  delete ptr;
+  if (!ptr) return;
+
+  // CRITICAL FIX: Remove from registry before deletion
+  // The registry holds a shared_ptr<TadPack> to keep TadPacks alive while Java uses them
+  // When Java is done and calls deleteTadPack, we remove it from the registry
+  // This decrements the shared_ptr refcount, and if it reaches 0, the TadPack is deleted
+  {
+    std::lock_guard<std::mutex> lock(g_tadPackMutex);
+    auto it = g_tadPackRegistry.find(ptr);
+    if (it != g_tadPackRegistry.end()) {
+      // Found in registry - erase it (this decrements refcount)
+      g_tadPackRegistry.erase(it);
+      // DON'T delete ptr manually - shared_ptr destructor will handle it when refcount reaches 0
+    } else {
+      // Not in registry - this might be a TadPack created without going through tadOnlyShapeInfo
+      // Or it's already been removed from registry. Safe to delete directly.
+      delete ptr;
+    }
+  }
 }
 
 

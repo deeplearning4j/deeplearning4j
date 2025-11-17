@@ -52,13 +52,13 @@ class SD_LIB_EXPORT ConstantTadHelper {
    * @return
    */
 
-  TadPack *tadForDimensions(LongType *originalShape, LongType *dimensions, LongType dimLength);
-  TadPack *tadForDimensions(ShapeDescriptor &descriptor, std::vector<LongType> &dimensions,
+  std::shared_ptr<TadPack> tadForDimensions(LongType *originalShape, LongType *dimensions, LongType dimLength);
+  std::shared_ptr<TadPack> tadForDimensions(ShapeDescriptor &descriptor, std::vector<LongType> &dimensions,
                            const bool keepUnitiesInShape = false);
-  TadPack *tadForDimensions(TadDescriptor *descriptor);
+  std::shared_ptr<TadPack> tadForDimensions(TadDescriptor *descriptor);
 
-  TadPack *tadForDimensions(LongType *originalShape, LongType dimension);
-  TadPack *tadForDimensions(LongType *originalShape, std::vector<LongType> *dimensions);
+  std::shared_ptr<TadPack> tadForDimensions(LongType *originalShape, LongType dimension);
+  std::shared_ptr<TadPack> tadForDimensions(LongType *originalShape, std::vector<LongType> *dimensions);
 
   /**
    * Clear all cached TAD packs to prevent memory leaks during testing

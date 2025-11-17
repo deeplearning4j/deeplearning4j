@@ -56,9 +56,10 @@ class SD_LIB_EXPORT ShapeTrieNode {
     }
     _children.clear();
 
-    // Delete buffer if it exists
+    // Release buffer reference if it exists
+    // Uses manual reference counting to prevent premature deletion
     if (_buffer != nullptr) {
-      delete _buffer;
+      _buffer->release();
       _buffer = nullptr;
     }
   }

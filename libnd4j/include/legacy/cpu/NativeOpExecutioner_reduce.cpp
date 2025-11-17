@@ -196,7 +196,7 @@ void NativeOpExecutioner::execReduce3(sd::LaunchContext *lc, int opNum, const vo
   const auto xLen = shape::length(hXShapeInfo);
   const auto yLen = shape::length(hYShapeInfo);
 
-  sd::TadPack *tadPack;
+  std::shared_ptr<sd::TadPack> tadPack;
   sd::LongType *castedConst = const_cast<sd::LongType *>(hXShapeInfo);
   sd::LongType *hYShapeInfoNonConst = const_cast<sd::LongType *>(hYShapeInfo);
   if (xLen == yLen) {
@@ -256,7 +256,7 @@ void NativeOpExecutioner::execReduce3TAD(sd::LaunchContext *lc, int opNum, const
   const auto xLen = shape::length(hXShapeInfo);
   const auto yLen = shape::length(hYShapeInfo);
 
-  sd::TadPack *tadPack;
+  std::shared_ptr<sd::TadPack> tadPack;
   sd::LongType *castedConst = const_cast<sd::LongType *>(hXShapeInfo);
   sd::LongType *hYShapeInfoNonConst = const_cast<sd::LongType *>(hYShapeInfo);
   if (xLen == yLen) {

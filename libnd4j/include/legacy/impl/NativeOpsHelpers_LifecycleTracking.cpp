@@ -43,8 +43,308 @@ namespace analysis {
 #include <cstring>
 #include <atomic>
 #include <cstdlib>
+#include <thread>
+#include <csignal>
+#include <unistd.h>
+#include <fcntl.h>
+#include <filesystem>
+#include <chrono>
+#include <ctime>
+#include <fstream>
+#include <array>
+#include <vector>
+#include <sched.h>
+#include <iostream>
+#ifndef _WIN32
+#include <pthread.h>
+#endif
+#ifdef __linux__
+#include <sys/syscall.h>
+#endif
 
 using namespace sd::array;
+
+#if defined(SD_GCC_FUNCTRACE)
+namespace {
+
+#ifndef _WIN32
+struct CrashEvent {
+    int signal;
+    void* faultAddress;
+    long crashingThreadId;
+};
+
+constexpr int kCrashSignals[] = { SIGSEGV, SIGBUS, SIGILL, SIGFPE, SIGABRT };
+
+class LifecycleCrashHandler {
+public:
+    static LifecycleCrashHandler& instance() {
+        static LifecycleCrashHandler handler;
+        return handler;
+    }
+
+    void ensureInitialized() {
+        bool expected = false;
+        if (!_initialized.compare_exchange_strong(expected, true)) {
+            return;
+        }
+
+        if (::pipe(_signalPipe) != 0) {
+            std::cerr << "[sd-crash] Failed to create crash notification pipe" << std::endl;
+            _initialized.store(false);
+            return;
+        }
+
+        _worker = std::thread(&LifecycleCrashHandler::workerLoop, this);
+        _worker.detach();
+
+        setupAltStack();
+        installHandlers();
+        _ready.store(true, std::memory_order_release);
+    }
+
+private:
+    LifecycleCrashHandler() {
+        _signalPipe[0] = -1;
+        _signalPipe[1] = -1;
+        _dumpComplete.store(true);
+    }
+
+    void setupAltStack() {
+        const size_t altStackSize = determineAltStackSize();
+        _altStackStorage.assign(altStackSize, 0);
+        stack_t ss;
+        ss.ss_sp = _altStackStorage.data();
+        ss.ss_size = _altStackStorage.size();
+        ss.ss_flags = 0;
+        if (sigaltstack(&ss, &_previousAltStack) == 0) {
+            _altStackInstalled = true;
+        }
+    }
+
+    void installHandlers() {
+        struct sigaction sa;
+        std::memset(&sa, 0, sizeof(sa));
+        sa.sa_sigaction = &LifecycleCrashHandler::signalHandler;
+        sigemptyset(&sa.sa_mask);
+        sa.sa_flags = SA_SIGINFO | SA_ONSTACK;
+
+        for (size_t i = 0; i < kSignalCount; ++i) {
+            if (sigaction(kCrashSignals[i], &sa, &_oldHandlers[i]) != 0) {
+                std::cerr << "[sd-crash] Failed to install handler for signal "
+                          << kCrashSignals[i] << std::endl;
+            }
+        }
+        _handlersInstalled = true;
+    }
+
+    static void signalHandler(int signo, siginfo_t* info, void* /*ucontext*/) {
+        LifecycleCrashHandler::instance().handleSignal(signo, info);
+    }
+
+    void handleSignal(int signo, siginfo_t* info) {
+        if (!_ready.load(std::memory_order_acquire)) {
+            restoreAndReraise(signo);
+            return;
+        }
+
+        if (_handling.exchange(true, std::memory_order_acq_rel)) {
+            restoreAndReraise(signo);
+            return;
+        }
+
+        CrashEvent event{};
+        event.signal = signo;
+        event.faultAddress = info ? info->si_addr : nullptr;
+        event.crashingThreadId = currentThreadId();
+
+        _dumpComplete.store(false, std::memory_order_release);
+
+        ssize_t wrote = ::write(_signalPipe[1], &event, sizeof(event));
+        if (wrote != sizeof(event)) {
+            _handling.store(false, std::memory_order_release);
+            restoreAndReraise(signo);
+            return;
+        }
+
+        while (!_dumpComplete.load(std::memory_order_acquire)) {
+            sched_yield();
+        }
+
+        _handling.store(false, std::memory_order_release);
+        restoreAndReraise(signo);
+    }
+
+    void restoreAndReraise(int signo) {
+        restoreOriginal(signo);
+        ::raise(signo);
+    }
+
+    void restoreOriginal(int signo) {
+        if (!_handlersInstalled) return;
+        for (size_t i = 0; i < kSignalCount; ++i) {
+            if (kCrashSignals[i] == signo) {
+                sigaction(signo, &_oldHandlers[i], nullptr);
+                break;
+            }
+        }
+    }
+
+    void workerLoop() {
+        while (true) {
+            CrashEvent event{};
+            ssize_t rd = ::read(_signalPipe[0], &event, sizeof(event));
+            if (rd == sizeof(event)) {
+                dumpCrash(event);
+                _dumpComplete.store(true, std::memory_order_release);
+            }
+        }
+    }
+
+    void dumpCrash(const CrashEvent &event) {
+        std::string path = buildCrashFilePath();
+        std::ofstream out(path, std::ios::out | std::ios::trunc);
+        if (!out.is_open()) {
+            std::cerr << "[sd-crash] Failed to open crash log at " << path << std::endl;
+            return;
+        }
+
+        auto now = std::chrono::system_clock::now();
+        std::time_t now_time = std::chrono::system_clock::to_time_t(now);
+        std::tm time_buf;
+        localtime_r(&now_time, &time_buf);
+
+        out << "============================================\n";
+        out << "  ND4J Native Crash Report\n";
+        out << "============================================\n";
+        out << "Timestamp: " << std::put_time(&time_buf, "%Y-%m-%d %H:%M:%S") << "\n";
+        out << "PID:       " << getpid() << "\n";
+        out << "Thread:    " << event.crashingThreadId << "\n";
+        out << "Signal:    " << event.signal << " (" << signalName(event.signal) << ")\n";
+        out << "Address:   " << event.faultAddress << "\n\n";
+
+        bool matched = false;
+        matched |= NDArrayLifecycleTracker::getInstance().logAllocationForPointer(event.faultAddress, out);
+        matched |= DataBufferLifecycleTracker::getInstance().logAllocationForAddress(event.faultAddress, out);
+        matched |= ShapeCacheLifecycleTracker::getInstance().logShapeForAddress(event.faultAddress, out);
+        matched |= TADCacheLifecycleTracker::getInstance().logTADForAddress(event.faultAddress, out);
+
+        if (!matched) {
+            out << "No tracked allocation matched the faulting address.\n";
+        }
+
+        out << "\n=== NDArray Snapshot ===\n";
+        NDArrayLifecycleTracker::getInstance().printStatistics(out);
+        NDArrayLifecycleTracker::getInstance().printCurrentLeaks(out);
+
+        out << "\n=== DataBuffer Snapshot ===\n";
+        DataBufferLifecycleTracker::getInstance().printStatistics(out);
+        DataBufferLifecycleTracker::getInstance().printCurrentLeaks(out);
+
+        out << "\n=== Shape Cache Snapshot ===\n";
+        ShapeCacheLifecycleTracker::getInstance().printStatistics(out);
+        ShapeCacheLifecycleTracker::getInstance().printCurrentLeaks(out);
+
+        out << "\n=== TAD Cache Snapshot ===\n";
+        TADCacheLifecycleTracker::getInstance().printStatistics(out);
+        TADCacheLifecycleTracker::getInstance().printCurrentLeaks(out);
+
+        out.close();
+        std::cerr << "[sd-crash] Crash dump written to " << path << std::endl;
+    }
+
+    std::string buildCrashFilePath() {
+        namespace fs = std::filesystem;
+        std::error_code ec;
+        fs::path cwd = fs::current_path(ec);
+        if (ec) {
+            cwd = ".";
+        }
+
+        std::string base = "sd_crash_pid" + std::to_string(getpid());
+        fs::path candidate = cwd / (base + ".log");
+        int suffix = 1;
+        while (fs::exists(candidate, ec)) {
+            candidate = cwd / (base + "_" + std::to_string(suffix++) + ".log");
+        }
+        return candidate.string();
+    }
+
+    static const char* signalName(int signo) {
+        switch (signo) {
+            case SIGSEGV: return "SIGSEGV";
+            case SIGBUS:  return "SIGBUS";
+            case SIGILL:  return "SIGILL";
+            case SIGFPE:  return "SIGFPE";
+            case SIGABRT: return "SIGABRT";
+            default:      return "UNKNOWN";
+        }
+    }
+
+    static long currentThreadId() {
+#if defined(__linux__)
+        return static_cast<long>(::syscall(SYS_gettid));
+#else
+        return static_cast<long>(reinterpret_cast<intptr_t>(pthread_self()));
+#endif
+    }
+
+    static constexpr size_t kSignalCount = sizeof(kCrashSignals) / sizeof(int);
+    std::atomic<bool> _initialized{false};
+    std::atomic<bool> _ready{false};
+    std::atomic<bool> _handling{false};
+    std::atomic<bool> _dumpComplete{true};
+    int _signalPipe[2];
+    std::thread _worker;
+    std::array<struct sigaction, kSignalCount> _oldHandlers{};
+    bool _handlersInstalled{false};
+    stack_t _previousAltStack{};
+    bool _altStackInstalled{false};
+    std::vector<uint8_t> _altStackStorage;
+
+    static size_t determineAltStackSize() {
+        long baseSize = 0;
+#if defined(SIGSTKSZ)
+        baseSize = SIGSTKSZ;
+#endif
+#if defined(MINSIGSTKSZ)
+        long minSize = MINSIGSTKSZ;
+#else
+        long minSize = 64 * 1024;  // 64KB fallback when platform doesn't define MINSIGSTKSZ
+#endif
+
+        if (baseSize < minSize) {
+            baseSize = minSize;
+        }
+        if (baseSize <= 0) {
+            baseSize = minSize;
+        }
+
+        return static_cast<size_t>(baseSize) * 4;
+    }
+};
+
+#else
+class LifecycleCrashHandler {
+public:
+    static LifecycleCrashHandler& instance() {
+        static LifecycleCrashHandler handler;
+        return handler;
+    }
+    void ensureInitialized() {}
+};
+#endif
+
+struct CrashHandlerAutoInit {
+    CrashHandlerAutoInit() {
+        LifecycleCrashHandler::instance().ensureInitialized();
+    }
+};
+
+static CrashHandlerAutoInit gCrashHandlerAutoInit;
+
+}  // namespace
+#endif
 
 // AUTO CACHE CLEANUP: Moved outside #if defined(SD_GCC_FUNCTRACE) guard
 // NOTE: The duplicate namespace block with g_operation_counter and helper functions
@@ -336,6 +636,8 @@ SD_LIB_EXPORT void disableOpContextTracking() {
 #include <atomic>
 #include <cstdlib>
 #include <cstring>
+#include <thread>
+#include <chrono>
 
 namespace {
     // Operation counter for automatic cache cleanup
@@ -350,12 +652,15 @@ namespace {
                 interval = std::atoll(env_val);
             }
             if (interval == 0) {
-                // Use 10 for all cases (reduced from 100 to fix 135 MB TAD cache leak)
-                // Previous interval=100 was too large for leak tests (~130 operations)
-                // causing packs from operations 101-130 to remain in cache
-                // interval=10 ensures cleanup happens frequently enough for testing
-                // while still being conservative for production use
-                interval = 10;
+                // Default: cleanup every 100 operations
+                // Too aggressive cleanup (interval=1) causes use-after-free:
+                // - Operation gets TadPack from cache
+                // - Operation completes and calls checkAndCleanupCaches()
+                // - Cache is cleared immediately (interval=1)
+                // - TadPack is deleted while operation still using it
+                // - SIGSEGV when accessing deleted PointerWrapper
+                // Interval of 100 provides good balance between memory and safety
+                interval = 100;
             }
         }
         return interval;
@@ -382,39 +687,16 @@ SD_LIB_EXPORT void clearTADCache();
 SD_LIB_EXPORT void clearShapeCache();
 
 /**
- * Auto-cleanup function - NOW ALWAYS AVAILABLE (not just with SD_GCC_FUNCTRACE)
- *
- * CRITICAL FIX FOR 135 MB TAD CACHE LEAK:
- * Previous implementation was inside #if defined(SD_GCC_FUNCTRACE) block,
- * which meant cleanup only worked in functrace builds. TAD caches accumulate
- * in ALL builds, so cleanup must be available regardless of tracking.
- *
- * Called from: execCustomOp2, execReduce*, execTransform*, execScalar*, etc.
+ * Automatic cache cleanup called after operations.
+ * Clears TAD cache at configurable intervals to prevent accumulation.
+ * Available in all builds (not just with SD_GCC_FUNCTRACE).
  */
 SD_LIB_EXPORT void checkAndCleanupCaches() {
-    if (!isAutoCleanupEnabledNoCache()) {
-        return;  // Auto-cleanup disabled
-    }
-
-    // Post-increment: get new value AFTER incrementing
-    // This ensures cleanup happens at operations 10, 20, 30, etc. (not 11, 21, 31)
     uint64_t count = g_operation_counter_nocache.fetch_add(1, std::memory_order_relaxed) + 1;
     uint64_t interval = getCleanupIntervalNoCache();
 
-    // Clear caches at interval boundaries
     if ((count % interval) == 0) {
-        // CRITICAL: Use fprintf to stderr for unconditional logging
-        // sd_printf may be disabled/redirected, but stderr always works
-        fprintf(stderr, "[TADCache] Operation %llu: Triggering cleanup (interval=%llu)\n",
-                (unsigned long long)count, (unsigned long long)interval);
-        fflush(stderr);
-
-        clearTADCache();        // ENABLED - clears TAD cache every N operations
-
-        fprintf(stderr, "[TADCache] Operation %llu: Cleanup completed\n",
-                (unsigned long long)count);
-        fflush(stderr);
-        // clearShapeCache();   // KEEP DISABLED - shape info has wider usage than TAD
+        clearTADCache();
     }
 }
 
@@ -426,6 +708,23 @@ SD_LIB_EXPORT void checkAndCleanupCaches() {
 SD_LIB_EXPORT void clearTADCache() {
     sd::ConstantTadHelper::getInstance().clearCache();
 }
+
+// Register atexit handler to clear TAD cache at shutdown
+// This ensures cache is empty when application exits, preventing false leak reports
+namespace {
+    void clearTADCacheAtShutdown() {
+        clearTADCache();
+    }
+
+    struct ShutdownCleanupRegistrar {
+        ShutdownCleanupRegistrar() {
+            std::atexit(clearTADCacheAtShutdown);
+        }
+    };
+
+    static ShutdownCleanupRegistrar g_shutdown_cleanup_registrar;
+}
+
 
 /**
  * Clears all cached shape buffers to prevent memory leaks.
@@ -464,17 +763,31 @@ SD_LIB_EXPORT sd::LongType getShapePeakCachedBytes() {
 }
 
 /**
- * Get the total number of cached TAD pack entries.
+ * Get count of live TAD packs for leak detection.
+ * When tracking enabled: returns actual live count from lifecycle tracker
+ * When tracking disabled: returns cache size as fallback
  */
 SD_LIB_EXPORT sd::LongType getTADCachedEntries() {
+#if defined(SD_GCC_FUNCTRACE) && !defined(__JAVACPP_HACK__)
+    auto stats = sd::array::TADCacheLifecycleTracker::getInstance().getStats();
+    return static_cast<sd::LongType>(stats.current_live);
+#else
     return sd::ConstantTadHelper::getInstance().getCachedEntries();
+#endif
 }
 
 /**
- * Get the total memory used by cached TAD packs in bytes.
+ * Get total memory used by live TAD packs for leak detection.
+ * When tracking enabled: returns actual live bytes from lifecycle tracker
+ * When tracking disabled: returns cache bytes as fallback
  */
 SD_LIB_EXPORT sd::LongType getTADCachedBytes() {
+#if defined(SD_GCC_FUNCTRACE) && !defined(__JAVACPP_HACK__)
+    auto stats = sd::array::TADCacheLifecycleTracker::getInstance().getStats();
+    return static_cast<sd::LongType>(stats.current_bytes);
+#else
     return sd::ConstantTadHelper::getInstance().getCachedBytes();
+#endif
 }
 
 /**

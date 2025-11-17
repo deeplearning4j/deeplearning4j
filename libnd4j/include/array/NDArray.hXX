@@ -284,6 +284,11 @@ NDArray::NDArray(NDArray &other) {
     if(shapeInfo == nullptr) {
       THROW_EXCEPTION("NDArray::NDArray(NDArray &other) copy constructor - shapeInfo is nullptr");
     }
+    // CRITICAL: Store the buffer pointer so destructor can call release()
+    // Session #432 added reference counting, #434 made cache call addRef() on return,
+    // but copy constructor was discarding the buffer pointer, causing memory leaks.
+    // Now we store it so the destructor can properly decrement refcount.
+    _shapeInfoBuffer = shapeInfo;
     _shapeInfo = shapeInfo->primary();
     _shapeInfoD = shapeInfo->special();
   } else {
@@ -297,7 +302,11 @@ NDArray::NDArray(NDArray &other) {
       THROW_EXCEPTION("NDArray::NDArray(NDArray &other) copy constructor - other shapeInfo is nullptr");
     }
 
-
+    // For const views, share the buffer reference with proper refcounting
+    _shapeInfoBuffer = other._shapeInfoBuffer;
+    if (_shapeInfoBuffer != nullptr) {
+      _shapeInfoBuffer->addRef();
+    }
     _shapeInfo = other._shapeInfo;
     _shapeInfoD = other._shapeInfoD;
   }
@@ -435,6 +444,8 @@ NDArray::NDArray(NDArray *other, const bool copyStrides, sd::LaunchContext *cont
     auto newDesc = ShapeBuilders::createShapeInfo(other->dataType(), other->ordering(), other->rankOf(),
                                                   other->shapeOf(), getContext()->getWorkspace(), false);
     auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(newDesc);
+    // CRITICAL FIX: Store the buffer pointer for proper reference counting
+    _shapeInfoBuffer = constDesc;
     _shapeInfo = constDesc->primary();
     _shapeInfoD = constDesc->special();
 
@@ -469,6 +480,8 @@ NDArray::NDArray(void *buffer, char order, std::vector<LongType> &shape, DataTyp
   _isAttached = getContext()->getWorkspace() != nullptr;
   auto desc = ShapeBuilders::createShapeInfo(dtype, order, shape);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
+  // CRITICAL FIX: Store the buffer pointer for proper reference counting
+  _shapeInfoBuffer = constDesc;
   _shapeInfo = constDesc->primary();
   _shapeInfoD = constDesc->special();
   int len = isScalar() ? 1 : lengthOf();
@@ -493,6 +506,8 @@ NDArray::NDArray(void *buffer, const char order, const std::vector<sd::LongType>
   auto constDesc = isView ?
     ConstantShapeHelper::getInstance().bufferForShapeInfoWithView(desc) :
     ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
+  // CRITICAL FIX: Store the buffer pointer for proper reference counting
+  _shapeInfoBuffer = constDesc;
   _shapeInfo = constDesc->primary();
   _shapeInfoD = constDesc->special();
   int len = isScalar() ? 1 : lengthOf();
@@ -529,6 +544,11 @@ NDArray::NDArray(sd::LongType *shapeInfo, const sd::DataType dtype, const bool c
 
   if (copyStrides) {
     auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
+    // CRITICAL FIX: Store the buffer pointer for proper reference counting
+    // Previous sessions (#432-437) added reference counting to ConstantShapeBuffer,
+    // but this constructor was never updated to store the buffer pointer.
+    // This caused _shapeInfoBuffer to remain nullptr, breaking destructor cleanup.
+    _shapeInfoBuffer = constDesc;
     _shapeInfo = constDesc->primary();
     _shapeInfoD = constDesc->special();
   } else {
@@ -541,6 +561,8 @@ NDArray::NDArray(sd::LongType *shapeInfo, const sd::DataType dtype, const bool c
     auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
     if(desc[0] < 0 || desc[0] > SD_MAX_RANK)
       THROW_EXCEPTION("NDArray constructor: rank of NDArray can't exceed 32 or be < 0 !");
+    // CRITICAL FIX: Store the buffer pointer for proper reference counting
+    _shapeInfoBuffer = constDesc;
     _shapeInfo = constDesc->primary();
     _shapeInfoD = constDesc->special();
   }
@@ -573,6 +595,8 @@ NDArray::NDArray(sd::DataType dtype, sd::LaunchContext *context, const bool isSc
     _length = 1;
     auto desc = ShapeBuilders::createScalarShapeInfo(dtype, getContext()->getWorkspace());
     auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
+    // CRITICAL FIX: Store the buffer pointer for proper reference counting
+    this->_shapeInfoBuffer = constDesc;
     this->_shapeInfo = constDesc->primary();
     if(dataType() == DataType::UNKNOWN) {
       THROW_EXCEPTION("Unable to create array for unknown data type.");
@@ -582,6 +606,8 @@ NDArray::NDArray(sd::DataType dtype, sd::LaunchContext *context, const bool isSc
     this->_buffer = new DataBuffer(1 * sizeOfT(), dtype, getContext()->getWorkspace(),true);
     this->_buffer->setToZeroBuffers();
   } else {
+    // Note: emptyShapeInfo returns raw pointer, not ConstantShapeBuffer*
+    // This is a different pattern - raw pointer from static storage
     auto constDesc = ConstantShapeHelper::getInstance().emptyShapeInfo(dtype);
     this->_shapeInfo = constDesc;
     this->_shapeInfoD = nullptr;
@@ -600,24 +626,16 @@ NDArray::NDArray(NDArray &&other) noexcept {
   _buffer = other._buffer;
   _shapeInfoBuffer = other._shapeInfoBuffer;
 
-  // Handle moving from already-moved objects: recover _shapeInfo from _shapeInfoBuffer if needed
-  // This allows moving from moved-from objects without throwing exceptions
-  if(other._shapeInfo == nullptr && _shapeInfoBuffer != nullptr) {
-    // Recover shape info from buffer - this handles already-moved objects
-    _shapeInfo = _shapeInfoBuffer->primary();
-    _shapeInfoD = _shapeInfoBuffer->special();
-    // Validate that recovery succeeded
-    if (_shapeInfo == nullptr) {
-      THROW_EXCEPTION("NDArray::NDArray(NDArray &&other) - _shapeInfoBuffer->primary() returned nullptr");
-    }
-  } else if(other._shapeInfo != nullptr) {
-    // Normal case: other has valid _shapeInfo
-    _shapeInfo = other._shapeInfo;
-    _shapeInfoD = other._shapeInfoD;
-  } else {
-    // Both other._shapeInfo and _shapeInfoBuffer are null - this is an error
-    THROW_EXCEPTION("NDArray::NDArray(NDArray &&other) - other has neither _shapeInfo nor _shapeInfoBuffer");
-  }
+  // CRITICAL: Do NOT call methods on _shapeInfoBuffer - it might be deleted!
+  // Just move the raw pointers as-is. Even if other._shapeInfo is nullptr
+  // (moved-from state), we should preserve that state.
+  // Calling _shapeInfoBuffer->primary() is dangerous because:
+  // 1. Checking != nullptr doesn't protect against deleted objects (dangling pointer)
+  // 2. The buffer's refcount might have hit zero and been deleted
+  // 3. Another thread could delete it between the check and the call
+  // See session #437 for why "refresh" logic was removed from shapeInfo()
+  _shapeInfo = other._shapeInfo;
+  _shapeInfoD = other._shapeInfoD;
 
   _context = other._context;
   _length = other._length;
@@ -691,11 +709,25 @@ NDArray::~NDArray() {
     delete this->_buffer;
   }
 
+  // CRITICAL: Clear pointers BEFORE releasing buffer to prevent access to deleted objects
+  // If we call release() while _shapeInfoBuffer is still set, another thread could
+  // call shapeInfo() and try to access the buffer between release() and clearing the pointer.
+  // By clearing first, any access will see nullptr and throw instead of accessing freed memory.
+  ConstantShapeBuffer* bufferToRelease = this->_shapeInfoBuffer;
+
+  // Clear all shape-related pointers immediately
   this->_shapeInfo = nullptr;
+  this->_shapeInfoD = nullptr;
+  this->_shapeInfoBuffer = nullptr;
+
+  // Clear other pointers
   this->_buffer = nullptr;
   this->_context = nullptr;
-  this->_shapeInfoBuffer = nullptr;
-  this->_shapeInfoBuffer = nullptr;
+
+  // NOW safe to release the buffer (might delete it)
+  if (bufferToRelease != nullptr) {
+    bufferToRelease->release();
+  }
 
 
 
@@ -721,6 +753,8 @@ NDArray::NDArray(DataBuffer *  buffer, const char order, const std::vector<sd::L
   _isAttached = getContext()->getWorkspace() != nullptr;
   auto newDesc = ShapeBuilders::createShapeInfo(dtype, order, shape.size(), shape.data(), getContext()->getWorkspace(), false);
   auto constShapeInfo = ConstantShapeHelper::getInstance().bufferForShapeInfo(newDesc);
+  // CRITICAL FIX: Store the buffer pointer for proper reference counting
+  this->_shapeInfoBuffer = constShapeInfo;
   this->_shapeInfo = constShapeInfo->primary();
   this->_shapeInfoD = constShapeInfo->special();
   _buffer = buffer;
@@ -789,6 +823,8 @@ NDArray::NDArray(DataBuffer *buffer, ShapeDescriptor *descriptor, sd::LaunchCont
   }
 
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor->toShapeInfo());
+  // CRITICAL FIX: Store the buffer pointer for proper reference counting
+  _shapeInfoBuffer = constDesc;
   _shapeInfo = constDesc->primary();
   _shapeInfoD = constDesc->special();
   _buffer = buffer;
@@ -821,6 +857,8 @@ NDArray::NDArray(void *buffer, sd::LongType *shapeInfo, sd::LaunchContext *conte
   _context = context;
   _isAttached = getContext()->getWorkspace() != nullptr;
   auto constShapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
+  // CRITICAL FIX: Store the buffer pointer for proper reference counting
+  this->_shapeInfoBuffer = constShapeBuffer;
   this->_shapeInfo = constShapeBuffer->primary();
   this->_shapeInfoD = constShapeBuffer->special();
 
@@ -855,6 +893,8 @@ NDArray::NDArray(void *buffer, void *bufferD, sd::LongType *shapeInfo, sd::Launc
   _context = context;
   _length = shape::length(shapeInfo);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
+  // CRITICAL FIX: Store the buffer pointer for proper reference counting
+  _shapeInfoBuffer = constDesc;
   _shapeInfo = constDesc->primary();
   _shapeInfoD = constDesc->special();
   _buffer = new DataBuffer(buffer,bufferD, _length * sizeOfT(), dataType(), isBuffAlloc, isBuffDAlloc,
@@ -880,6 +920,8 @@ NDArray::NDArray(DataBuffer *buffer, char order, std::vector<LongType> &shape, L
 
   auto desc = ShapeBuilders::createShapeInfo(buffer->getDataType(), order, shape);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
+  // CRITICAL FIX: Store the buffer pointer for proper reference counting
+  _shapeInfoBuffer = constDesc;
   _shapeInfo = constDesc->primary();
   _shapeInfoD = constDesc->special();
   _buffer = buffer;
@@ -1643,7 +1685,7 @@ std::ostream& NDArray::operator<<(std::ostream &os) {
 // assignment operator
 NDArray &NDArray::operator=(NDArray &other) {
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
-    sd_print("NDArray &NDArray::operator=(NDArray &other) - move assignment operator\n");
+    sd_print("NDArray &NDArray::operator=(NDArray &other) - copy assignment operator\n");
     fflush(stdout);
   }
 
@@ -1656,10 +1698,22 @@ NDArray &NDArray::operator=(NDArray &other) {
       this->assign(&other);
     }
   } else {
+    // CRITICAL: Release old shape buffer before acquiring new one
+    // Without this, we leak the old buffer's reference
+    if (_shapeInfoBuffer != nullptr) {
+      _shapeInfoBuffer->release();
+      _shapeInfoBuffer = nullptr;
+    }
+
     _context = other._context;
     auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(other.shapeInfo());
+
+    // CRITICAL: Store the buffer pointer for proper reference counting
+    // bufferForShapeInfo() already called addRef() via DirectShapeTrie::getOrCreate()
+    _shapeInfoBuffer = constDesc;
     _shapeInfo = constDesc->primary();
     _shapeInfoD = constDesc->special();
+
     if (!other.isEmpty()) {
       if (_buffer != nullptr && !this->isView()) {
         delete _buffer;
@@ -1875,6 +1929,12 @@ void NDArray::streamline(char o) {
   NativeOpExecutioner::execTransformSame(getContext(), transform::Copy, buffer(), shapeInfo(), specialBuffer(),
                                          specialShapeInfo(), newBuffer->primary(), shapeBuffer->primary(),
                                          newBuffer->special(), shapeBuffer->special(), nullptr, nullptr, nullptr);
+  // CRITICAL: Release old shape buffer before assigning new one
+  // Session #432 added reference counting but this method was leaking old buffers.
+  if (_shapeInfoBuffer != nullptr) {
+    _shapeInfoBuffer->release();
+  }
+  _shapeInfoBuffer = shapeBuffer;
   _shapeInfo = shapeBuffer->primary();
   _shapeInfoD = shapeBuffer->special();
   _buffer = newBuffer;
@@ -1891,27 +1951,25 @@ NDArray &NDArray::operator=(NDArray &&other) noexcept {
   }
   if (this == &other) return *this;
 
+  // CRITICAL: Release old buffer before taking ownership of new one
+  // Without this, we leak the old buffer's reference when reassigning.
+  if (_shapeInfoBuffer != nullptr) {
+    _shapeInfoBuffer->release();
+  }
+
   _buffer = other._buffer;
   _shapeInfoBuffer = other._shapeInfoBuffer;
 
-  // Handle moving from already-moved objects: recover _shapeInfo from _shapeInfoBuffer if needed
-  // This allows moving from moved-from objects without throwing exceptions
-  if(other._shapeInfo == nullptr && _shapeInfoBuffer != nullptr) {
-    // Recover shape info from buffer - this handles already-moved objects
-    _shapeInfo = _shapeInfoBuffer->primary();
-    _shapeInfoD = _shapeInfoBuffer->special();
-    // Validate that recovery succeeded
-    if (_shapeInfo == nullptr) {
-      THROW_EXCEPTION("NDArray::operator=(NDArray &&other) - _shapeInfoBuffer->primary() returned nullptr");
-    }
-  } else if(other._shapeInfo != nullptr) {
-    // Normal case: other has valid _shapeInfo
-    _shapeInfo = other._shapeInfo;
-    _shapeInfoD = other._shapeInfoD;
-  } else {
-    // Both other._shapeInfo and _shapeInfoBuffer are null - this is an error
-    THROW_EXCEPTION("NDArray::operator= - trying to move from invalid NDArray (no shape info available)");
-  }
+  // CRITICAL: Do NOT call methods on _shapeInfoBuffer - it might be deleted!
+  // Just move the raw pointers as-is. Even if other._shapeInfo is nullptr
+  // (moved-from state), we should preserve that state.
+  // Calling _shapeInfoBuffer->primary() is dangerous because:
+  // 1. Checking != nullptr doesn't protect against deleted objects (dangling pointer)
+  // 2. The buffer's refcount might have hit zero and been deleted
+  // 3. Another thread could delete it between the check and the call
+  // See session #437 for why "refresh" logic was removed from shapeInfo()
+  _shapeInfo = other._shapeInfo;
+  _shapeInfoD = other._shapeInfoD;
 
   _context = other._context;
   _length = other._length;
@@ -6142,6 +6200,10 @@ void NDArray::getSubArrShapeAndOffsets(const std::vector<LongType> &dimsToExclud
 void NDArray::setShapeInfo(sd::LongType *shapeInfo) {
   if (shapeInfo != nullptr) {
     auto shapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
+    // CRITICAL: Release old buffer before assigning new one
+    if (_shapeInfoBuffer != nullptr) {
+      _shapeInfoBuffer->release();
+    }
     _shapeInfoBuffer = shapeBuffer;
     _shapeInfo = shapeBuffer->primary();
     if(!shape::shapeEquals(_shapeInfo, shapeBuffer->primary())) {
@@ -6172,6 +6234,10 @@ void NDArray::setShapeInfo(ShapeDescriptor *descriptor) {
   }
 
   auto shapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor->toShapeInfo());
+  // CRITICAL: Release old buffer before assigning new one
+  if (_shapeInfoBuffer != nullptr) {
+    _shapeInfoBuffer->release();
+  }
   _shapeInfoBuffer = shapeBuffer;
   _shapeInfo = shapeBuffer->primary();
   if(!shape::shapeEquals(_shapeInfo, descriptor->toShapeInfo())) {
@@ -6193,16 +6259,37 @@ void NDArray::setShapeInfo(ShapeDescriptor *descriptor) {
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::setShapeInfo(const ConstantShapeBuffer *shapeBuffer) {
-  _shapeInfoBuffer = const_cast<ConstantShapeBuffer *>(shapeBuffer);
-  _shapeInfo = _shapeInfoBuffer->primary();
-#ifdef SD_CUDA
-  _shapeInfoD = _shapeInfoBuffer->special();
-#endif
+  // CRITICAL: Release old buffer before assigning new one
+  // This method was missing reference counting (unlike other setShapeInfo overloads),
+  // causing memory leaks (old buffer never released) and use-after-free bugs
+  // (new buffer not addRef'd, so gets deleted while NDArray still uses it).
+  if (_shapeInfoBuffer != nullptr) {
+    _shapeInfoBuffer->release();
+  }
 
-  if (ArrayOptions::arrayType(_shapeInfo) == ArrayType::EMPTY)
+  // Take ownership of new buffer and increment its refcount
+  _shapeInfoBuffer = const_cast<ConstantShapeBuffer *>(shapeBuffer);
+  if (_shapeInfoBuffer != nullptr) {
+    _shapeInfoBuffer->addRef();  // Increment refcount for our reference
+    _shapeInfo = _shapeInfoBuffer->primary();
+#ifdef SD_CUDA
+    _shapeInfoD = _shapeInfoBuffer->special();
+#endif
+  } else {
+    // If buffer is nullptr, clear shape info pointers
+    _shapeInfo = nullptr;
+    _shapeInfoD = nullptr;
+  }
+
+  // Update length based on new shape info
+  if (_shapeInfo != nullptr) {
+    if (ArrayOptions::arrayType(_shapeInfo) == ArrayType::EMPTY)
+      _length = 0;
+    else
+      _length = shape::length(_shapeInfo);
+  } else {
     _length = 0;
-  else
-    _length = shape::length(_shapeInfo);
+  }
 
 }
 

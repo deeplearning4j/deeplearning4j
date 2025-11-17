@@ -307,6 +307,8 @@ ConstantShapeBuffer* DirectShapeTrie::createFallbackBuffer(const LongType* shape
   sd::array::ShapeCacheLifecycleTracker::getInstance().recordAllocation(shapeCopy);
 #endif
 
+  // Fallback buffer is NOT cached, so refCount stays at 1 (caller owns it)
+  // Caller will call deleteConstantShapeBuffer() which calls release()
   return buffer;
 }
 
@@ -340,6 +342,7 @@ ConstantShapeBuffer* DirectShapeTrie::getOrCreate(const LongType* shapeInfo) {
     ConstantShapeBuffer* existing = search(shapeInfo, stripeIdx);
     if (existing != nullptr) {
       if (shapeInfoEqual(existing->primary(), shapeInfo)) {
+        existing->addRef();  // Increment refcount before returning cached buffer
         return existing;
       }
     }
@@ -352,6 +355,7 @@ ConstantShapeBuffer* DirectShapeTrie::getOrCreate(const LongType* shapeInfo) {
   ConstantShapeBuffer* existing = search(shapeInfo, stripeIdx);
   if (existing != nullptr) {
     if (shapeInfoEqual(existing->primary(), shapeInfo)) {
+      existing->addRef();  // Increment refcount before returning cached buffer
       return existing;
     }
   }
@@ -419,6 +423,7 @@ ConstantShapeBuffer* DirectShapeTrie::getOrCreate(const LongType* shapeInfo) {
   // Check if another thread has already created the buffer
   if (ConstantShapeBuffer* nodeBuffer = current->buffer()) {
     if (shapeInfoEqual(nodeBuffer->primary(), shapeInfo)) {
+      nodeBuffer->addRef();  // Increment refcount before returning cached buffer
       return nodeBuffer;
     }
   }
@@ -439,9 +444,13 @@ ConstantShapeBuffer* DirectShapeTrie::getOrCreate(const LongType* shapeInfo) {
   // Return the buffer from the node (could be the one we just set or a pre-existing one)
   ConstantShapeBuffer* resultBuffer = current->buffer();
   if (resultBuffer == nullptr) {
+    // Rare case: setBuffer failed to store, return the buffer we created
+    // Caller owns it with refCount=1 (no addRef needed)
     return buffer;
   }
 
+  // Buffer is now cached, increment refcount for the caller
+  resultBuffer->addRef();
   return resultBuffer;
 }
 
@@ -537,6 +546,9 @@ ConstantShapeBuffer* DirectShapeTrie::insert(const LongType* shapeInfo, size_t s
 #endif
 
       current->setBuffer(buffer);
+      // Buffer is now cached (trie owns it with refCount=1)
+      // Increment refcount so caller also has a reference
+      buffer->addRef();
       return buffer;
     } catch (const std::exception& e) {
       std::string msg = "Shape buffer creation failed: ";
@@ -548,7 +560,11 @@ ConstantShapeBuffer* DirectShapeTrie::insert(const LongType* shapeInfo, size_t s
     }
   }
 
-  return current->buffer();
+  ConstantShapeBuffer* result = current->buffer();
+  if (result != nullptr) {
+    result->addRef();  // Increment refcount before returning cached buffer
+  }
+  return result;
 }
 
 void DirectShapeTrie::clearCache() {

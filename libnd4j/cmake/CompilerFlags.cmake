@@ -544,72 +544,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND SD_GCC_FUNCTRACE AND NOT SD_SANITI
     # EARLY FAILURE DETECTION
     # ═══════════════════════════════════════════════════════════════
 
-    if(NOT SD_FUNCTRACE_ALLOW_RELOCATION_ERRORS)
-        message(WARNING "
-═══════════════════════════════════════════════════════════════
-⚠️  FUNCTRACE AUTOMATICALLY DISABLED - PLATFORM LIMITATION
-═══════════════════════════════════════════════════════════════
-
-Functrace builds create 3.3GB binaries that EXCEED the ±2GB limit
-of PC-relative addressing (R_X86_64_PC32, R_X86_64_REX_GOTPCRELX).
-
-ROOT CAUSE:
-- Functrace instrumentation adds ~3GB of tracing code
-- System libraries (libunwind, crt*.o, libc) use PC-relative relocations
-- These libraries are PRECOMPILED and cannot handle >2GB binaries
-- Result: Link fails due to binary size exceeding PC-relative addressing range (±2GB)
-
-HISTORICAL FAILURE RATE: 99% (99 out of 100 functrace builds fail)
-
-THIS IS A PLATFORM LIMITATION, NOT A CODE BUG.
-
-SOLUTION: Automatically disabling functrace and continuing build.
-
-═══════════════════════════════════════════════════════════════
-ALTERNATIVE DEBUGGING OPTIONS:
-═══════════════════════════════════════════════════════════════
-
-1. ✅ USE SANITIZERS (for memory leak detection):
-   mvn clean install -Dlibnd4j.sanitize=ON -Dlibnd4j.sanitizers=leak
-
-2. ✅ USE GDB WITH CORE DUMPS (for crash debugging):
-   Build with: -Dlibnd4j.build=debug
-   Run with: ulimit -c unlimited
-   Debug with: gdb /path/to/binary core.12345
-
-3. ⚠️  TO FORCE FUNCTRACE ANYWAY (will likely fail at link stage):
-   Add to build command: -DSD_FUNCTRACE_ALLOW_RELOCATION_ERRORS=ON
-
-═══════════════════════════════════════════════════════════════
-")
-        # Disable functrace for this build
-        set(SD_GCC_FUNCTRACE OFF)
-        message(STATUS "✅ Functrace disabled - build will continue without instrumentation")
-
-        # CRITICAL FIX (Session #332): After disabling functrace, fix code model mismatch
-        # ROOT CAUSE: Compiler flags were set to -mcmodel=large at line 123 (when functrace was ON)
-        # But after disabling functrace here, linker flags are never set (we skip both normal and functrace-enabled blocks)
-        # RESULT: Compiler uses large code model, linker has no code model = MISMATCH
-        # This causes "relocation truncated to fit" errors (90% of relocation errors per prompt)
-        #
-        # SOLUTION: Reset code model to medium and set matching linker flags
-        if(SD_X86_BUILD AND NOT WIN32)
-            # Remove -mcmodel=large from compiler flags (was set at line 123)
-            string(REPLACE " -mcmodel=large" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-            string(REPLACE " -mcmodel=large" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-
-            # Add -mcmodel=medium for normal builds (functrace now disabled)
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=medium")
-            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcmodel=medium")
-
-            # Set linker flags to match (same as lines 516-517 for normal builds)
-            set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -mcmodel=medium -Wl,--no-undefined")
-            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mcmodel=medium -Wl,--no-undefined")
-
-            message(STATUS "🔧 Fixed code model mismatch: Reset compiler and linker to -mcmodel=medium")
-            message(STATUS "   This resolves code model consistency issue after functrace auto-disable")
-        endif()
-    else()
         message(STATUS "⚠️  SD_GCC_FUNCTRACE enabled - binary will be ~3GB")
         message(STATUS "⚠️  WARNING: High risk of relocation errors with precompiled system libraries")
 
@@ -681,6 +615,13 @@ ALTERNATIVE DEBUGGING OPTIONS:
 
         message(STATUS "✅ Using Clang compiler-rt for compilation (exception handling)")
         message(STATUS "✅ Linking libunwind.a directly (bypasses precompiled crtbegin.o)")
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        # With GCC, -finstrument-functions pulls in gprof startup code (__gmon_start__)
+        # which is not needed and causes undefined symbol errors if not using -pg.
+        # Linking with -lnopg provides a dummy implementation of these symbols.
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -lnopg")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lnopg")
+        message(STATUS "✅ Applying -lnopg linker flag for GCC functrace to resolve __gmon_start__")
     endif()
 
     # Apply large code model to match compiler
@@ -690,7 +631,6 @@ ALTERNATIVE DEBUGGING OPTIONS:
         message(STATUS "Applied large code model for functrace ONLY (binary size: ~3GB)")
         message(STATUS "Applied linker memory optimizations for functrace ONLY (--no-keep-memory, --reduce-memory-overheads)")
     endif()
-    endif() # End of else block (functrace enabled path)
 elseif(SD_SANITIZE)
     message(STATUS "ℹ️  Skipping --no-undefined for sanitizer build (sanitizer runtime symbols resolved at runtime)")
 endif()
@@ -712,30 +652,30 @@ if(SD_GCC_FUNCTRACE)
 
     # Add comprehensive debug flags
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        # Debug flags without function instrumentation (disabled due to TLS relocation overflow)
+        # Debug flags with function instrumentation
         # MEMORY OPTIMIZATION: Use -gline-tables-only instead of -ggdb3
         # CRITICAL FIX: Explicitly force global-dynamic TLS model for dlopen() compatibility
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gline-tables-only -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -fno-threadsafe-statics -ftls-model=global-dynamic")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gline-tables-only -finstrument-functions -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -fno-threadsafe-statics -ftls-model=global-dynamic")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gline-tables-only -fno-omit-frame-pointer -ftls-model=global-dynamic")
-        message(STATUS "Applied memory-optimized debug flags for GCC (instrumentation disabled):")
+        message(STATUS "Applied memory-optimized debug flags for GCC (instrumentation enabled):")
         message(STATUS "  - gline-tables-only for 40-60% memory reduction vs ggdb3")
         message(STATUS "  - disabled thread-safe static guards")
-        message(STATUS "  - disabled function instrumentation (prevents TLS overflow)")
+        message(STATUS "  - enabled function instrumentation")
 
         # Override any conflicting optimization
         string(REGEX REPLACE "-O[0-9s]" "-O0" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
         string(REGEX REPLACE "-O[0-9s]" "-O0" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        # Debug flags without function instrumentation (disabled due to TLS relocation overflow)
+        # Debug flags with function instrumentation
         # MEMORY OPTIMIZATION: Use -gline-tables-only instead of -ggdb3
         # CRITICAL FIX: Explicitly force global-dynamic TLS model for dlopen() compatibility
         # AGGRESSIVE MEMORY: Disable inline tracking and macro debug info
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gline-tables-only -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -fno-threadsafe-statics -ftls-model=global-dynamic -fno-standalone-debug")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gline-tables-only -finstrument-functions -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -fno-threadsafe-statics -ftls-model=global-dynamic -fno-standalone-debug")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gline-tables-only -fno-omit-frame-pointer -ftls-model=global-dynamic -fno-standalone-debug")
-        message(STATUS "Applied memory-optimized debug flags for Clang (instrumentation disabled):")
+        message(STATUS "Applied memory-optimized debug flags for Clang (instrumentation enabled):")
         message(STATUS "  - gline-tables-only for 40-60% memory reduction vs ggdb3")
         message(STATUS "  - disabled thread-safe static guards")
-        message(STATUS "  - disabled function instrumentation (prevents TLS overflow)")
+        message(STATUS "  - enabled function instrumentation")
 
         # Override any conflicting optimization
         string(REGEX REPLACE "-O[0-9s]" "-O0" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
@@ -752,8 +692,8 @@ if(SD_GCC_FUNCTRACE)
     # Add the compiler definition
     add_compile_definitions(SD_GCC_FUNCTRACE=ON)
 
-    # Function instrumentation has been disabled globally (above) to prevent TLS relocation overflow
-    message(STATUS "ℹ️  Function instrumentation disabled globally - no per-file configuration needed")
+    # Enable function instrumentation
+    message(STATUS "ℹ️  Function instrumentation enabled. This will significantly increase binary size.")
 endif()
 
 # --- Flag Deduplication ---

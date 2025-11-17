@@ -117,9 +117,22 @@ TadPack::~TadPack() {
   fflush(stderr);
 #else
   // Lifecycle tracking disabled - either SD_GCC_FUNCTRACE not defined OR __JAVACPP_HACK__ is defined
+  // Note: Can't use defined() in runtime expressions, so we compute the values via preprocessor
+  #ifdef SD_GCC_FUNCTRACE
+    const int functrace_enabled = 1;
+  #else
+    const int functrace_enabled = 0;
+  #endif
+
+  #ifdef __JAVACPP_HACK__
+    const int javacpp_hack_enabled = 1;
+  #else
+    const int javacpp_hack_enabled = 0;
+  #endif
+
   fprintf(stderr, "[TadPack::~TadPack()] Lifecycle tracking disabled (SD_GCC_FUNCTRACE=%d, __JAVACPP_HACK__=%d)\n",
-          defined(SD_GCC_FUNCTRACE) ? 1 : 0,
-          defined(__JAVACPP_HACK__) ? 1 : 0);
+          functrace_enabled,
+          javacpp_hack_enabled);
   fflush(stderr);
 #endif
 

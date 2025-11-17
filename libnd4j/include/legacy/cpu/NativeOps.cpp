@@ -24,6 +24,7 @@
 
 #include <exceptions/allocation_exception.h>
 #include <fcntl.h>
+#include <array/DataTypeUtils.h>
 #include <graph/GraphExecutioner.h>
 #include <graph/GraphHolder.h>
 #include <helpers/BlasHelper.h>
@@ -1279,10 +1280,6 @@ void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
     const sd::LongType *zShapeInfoD = z->specialShapeInfo();
     const sd::LongType zLength = z->lengthOf();
 
-    const sd::LongType *dimensionShapeInfoH = dimension->shapeInfo();
-    void *dimensionBuffer = dimension->buffer();
-
-    // Now validate the cached pointers (not calling the methods again)
     if (xShapeInfoH == nullptr) {
       sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
       sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceLong2: input array x has null shapeInfo");
@@ -1293,24 +1290,51 @@ void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
       sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceLong2: output array z has null shapeInfo");
       return;
     }
-    if (dimensionShapeInfoH == nullptr) {
+
+    void *dimensionBuffer = dimension->buffer();
+    sd::DataBuffer *dimensionDb = dimension->getDataBuffer();
+    if (dimensionBuffer == nullptr || dimensionDb == nullptr) {
       sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceLong2: dimension array has null shapeInfo");
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceLong2: dimension array has null buffer");
       return;
     }
 
     const sd::LongType xRank = shape::rank(xShapeInfoH);
-    const sd::LongType dimensionLength = shape::length(dimensionShapeInfoH);  // Use cached shapeInfo
+    const sd::DataType dimType = dimension->dataType();
+    if (dimType != sd::DataType::INT32 && dimType != sd::DataType::INT64) {
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      std::string err = "execReduceLong2: unsupported dimension buffer data type: ";
+      err += sd::DataTypeUtils::asString(dimType);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(err.c_str());
+      return;
+    }
 
-    // Extract dimension values from cached buffer to avoid repeated calls to dimension->e()
+    const sd::LongType dimensionLength =
+        static_cast<sd::LongType>(dimensionDb->getLenInBytes() / sd::DataTypeUtils::sizeOf(dimType));
+
+    // Extract dimension values directly from the raw buffer. Do not rely on dimension->shapeInfo()
+    // because some callers mutate or free the dimension shape buffer once the NDArray is created.
     std::vector<sd::LongType> dimensions(dimensionLength);
-    auto dimensionData = reinterpret_cast<sd::LongType*>(dimensionBuffer);
-    for(sd::LongType i = 0; i < dimensionLength; i++) {
-      sd::LongType curr = dimensionData[i];
-      if(curr < 0) {
-        curr += xRank;
+    if (dimensionLength > 0) {
+      if (dimType == sd::DataType::INT32) {
+        auto dimensionData = reinterpret_cast<int *>(dimensionBuffer);
+        for (sd::LongType i = 0; i < dimensionLength; i++) {
+          sd::LongType curr = static_cast<sd::LongType>(dimensionData[i]);
+          if (curr < 0) {
+            curr += xRank;
+          }
+          dimensions[i] = curr;
+        }
+      } else {
+        auto dimensionData = reinterpret_cast<sd::LongType *>(dimensionBuffer);
+        for (sd::LongType i = 0; i < dimensionLength; i++) {
+          sd::LongType curr = dimensionData[i];
+          if (curr < 0) {
+            curr += xRank;
+          }
+          dimensions[i] = curr;
+        }
       }
-      dimensions[i] = curr;
     }
 
     // Validate output shape matches expected dimensions after reduction
