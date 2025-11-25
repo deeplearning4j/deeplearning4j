@@ -2760,7 +2760,7 @@ SD_INLINE void internal_release_host(WW workspace, TT_PTR var) {
 
 #define CHECK_ALLOC(PTR, MSG, BYTES)                   \
   if (PTR == nullptr) {                                \
-    throw sd::allocation_exception::build(MSG, BYTES); \
+    THROW_EXCEPTION(sd::allocation_exception::build(MSG, BYTES).what()); \
   };
 
 

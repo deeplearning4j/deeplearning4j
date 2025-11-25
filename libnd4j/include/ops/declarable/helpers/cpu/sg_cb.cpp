@@ -399,7 +399,7 @@ class AlignedAllocator
       ptr = nullptr;
 #endif
     if (!ptr)
-      throw std::bad_alloc();
+      THROW_EXCEPTION("Memory allocation failed (std::bad_alloc)");
     return static_cast<pointer>(ptr);
   }
 

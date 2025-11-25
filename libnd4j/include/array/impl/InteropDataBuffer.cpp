@@ -34,10 +34,8 @@ InteropDataBuffer::InteropDataBuffer(InteropDataBuffer* dataBuffer, uint64_t len
   _dataBuffer = dataBuffer->dataBuffer();
   _dataType = dataBuffer->_dataType;
 
-  // CRITICAL FIX: Initialize cached length in bytes (length is in ELEMENTS, must convert to bytes)
   _cachedLenInBytes = length * DataTypeUtils::sizeOf(_dataType);
 
-  // CRITICAL FIX: Mark as non-owner since this is a VIEW of another buffer
   owner = false;
 }
 

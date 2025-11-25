@@ -33,11 +33,14 @@ ConstantShapeBuffer::ConstantShapeBuffer( PointerWrapper* primary)
 #endif
 
 }
-ConstantShapeBuffer::ConstantShapeBuffer() : _refCount(1) {
+ConstantShapeBuffer::ConstantShapeBuffer() : _magic(MAGIC_VALID), _refCount(1) {
   _primaryShapeInfo = nullptr;
   _specialShapeInfo = nullptr;
 }
 ConstantShapeBuffer::~ConstantShapeBuffer() {
+  // Clear magic number first to mark as invalid during destruction
+  _magic = 0;
+
   if(_primaryShapeInfo != nullptr)
     delete _primaryShapeInfo;
   _primaryShapeInfo = nullptr;
@@ -48,7 +51,7 @@ ConstantShapeBuffer::~ConstantShapeBuffer() {
 }
 
 ConstantShapeBuffer::ConstantShapeBuffer( PointerWrapper* primary,
-                                          PointerWrapper* special) : _refCount(1) {
+                                          PointerWrapper* special) : _magic(MAGIC_VALID), _refCount(1) {
   _primaryShapeInfo = primary;
   _specialShapeInfo = special;
 #if defined(SD_GCC_FUNCTRACE)
@@ -107,11 +110,13 @@ void ConstantShapeBuffer::addRef() {
 }
 
 void ConstantShapeBuffer::release() {
-  int oldCount = _refCount.fetch_sub(1, std::memory_order_acq_rel);
-  if (oldCount == 1) {
-    // Last reference released, safe to delete
-    delete this;
-  }
+  // Decrement refcount - buffer stays in cache even when refcount reaches baseline
+  // The cache owns these buffers and is responsible for their lifecycle
+  // Don't delete when refcount reaches 1 - that means cache is the only owner
+  _refCount.fetch_sub(1, std::memory_order_acq_rel);
+
+  // NOTE: Buffers are deleted only when the cache itself is cleared/destroyed,
+  // not when temporary users release their references
 }
 
 int ConstantShapeBuffer::getRefCount() const {

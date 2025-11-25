@@ -29,7 +29,10 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 
-BiDiagonalUp::BiDiagonalUp(NDArray& matrix) {
+BiDiagonalUp::BiDiagonalUp(NDArray& matrix)
+    : _HHmatrix(matrix.dataType(), matrix.getContext(), true),
+      _HHbidiag(matrix.dataType(), matrix.getContext(), true),
+      _hhCoeffs(matrix.dataType(), matrix.getContext(), true) {
       // input validation
   if (matrix.rankOf() != 2 || matrix.isScalar())
     THROW_EXCEPTION("ops::helpers::biDiagonalizeUp constructor: input array must be 2D matrix !");
@@ -165,8 +168,8 @@ HHsequence BiDiagonalUp::makeHHsequence_(const char type) {
 HHsequence BiDiagonalUp::makeHHsequence(const char type) {
   auto xType = _HHmatrix.dataType();
   BUILD_SINGLE_SELECTOR(xType, return makeHHsequence_, (type);, SD_FLOAT_TYPES);
-  NDArray dummy = NDArray();
-  return HHsequence(&dummy, &dummy, 'u');
+  // This should never be reached - BUILD_SINGLE_SELECTOR covers all SD_FLOAT_TYPES
+  THROW_EXCEPTION("BiDiagonalUp::makeHHsequence: unsupported data type");
 }
 
 BUILD_SINGLE_TEMPLATE( void BiDiagonalUp::_evalData, (), SD_FLOAT_TYPES);

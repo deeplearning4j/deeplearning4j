@@ -55,6 +55,7 @@
 #include <graph/Context.h>
 #include <graph/ResultWrapper.h>
 #include <helpers/ConstantTadHelper.h>
+#include <helpers/ConstantShapeHelper.h>
 #include <helpers/DebugHelper.h>
 
 #include <ops/declarable/OpRegistrator.h>
@@ -130,6 +131,7 @@ void execBroadcastBool(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,Op
  * @param hZShapeInfo
  */
 void execReduce3(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void *extraParams,OpaqueNDArray y, OpaqueNDArray z) {
+  #ifdef __cpp_exceptions
   try {
     auto dbX = x->dataBuffer();
     auto dbY = y->dataBuffer();
@@ -150,6 +152,23 @@ void execReduce3(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void *e
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    auto dbX = x->dataBuffer();
+    auto dbY = y->dataBuffer();
+    auto dbZ = z->dataBuffer();
+
+    x->preparePrimaryUse({z}, {x,y});
+    NativeOpExecutioner::execReduce3(nullptr, opNum, dbX != nullptr ? x->buffer() : nullptr,
+                                     x->shapeInfo(), dbX != nullptr ? dbX->special() : nullptr,
+                                     x->specialShapeInfo(),
+                                     extraParams, y->buffer(),
+                                     y->shapeInfo(), y->specialBuffer(),
+                                     y->specialShapeInfo(),
+                                     dbZ != nullptr ? dbZ->primary() : nullptr, z->shapeInfo(),
+                                     dbZ != nullptr ? z->specialBuffer() : nullptr,
+                                     z->specialShapeInfo());
+    x->registerPrimaryUse({z}, {x,y});
+  #endif
 }
 /**
  *
@@ -161,6 +180,7 @@ void execReduce3(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void *e
  * @param hYShapeInfo
  */
 void execReduce3Scalar(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,  void *extraParams ,OpaqueNDArray y, OpaqueNDArray z) {
+  #ifdef __cpp_exceptions
   try {
     auto dbX = x->dataBuffer();
     auto dbY = y->dataBuffer();
@@ -180,6 +200,22 @@ void execReduce3Scalar(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,  
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    auto dbX = x->dataBuffer();
+    auto dbY = y->dataBuffer();
+    auto dbZ = z->dataBuffer();
+
+    x->preparePrimaryUse({z}, {x, y});
+    NativeOpExecutioner::execReduce3Scalar(nullptr, opNum, dbX != nullptr ? x->buffer() : nullptr,
+                                           x->shapeInfo(),
+                                           dbX != nullptr ? x->specialBuffer() : nullptr, x->specialShapeInfo(),
+                                           extraParams, y->buffer(), y->shapeInfo(),
+                                           dbY->special(), y->specialShapeInfo(),
+                                           dbZ != nullptr ? z->buffer() : nullptr,
+                                           z->shapeInfo(), dbZ != nullptr ? dbZ->special() : nullptr,
+                                           z->specialShapeInfo());
+    x->registerPrimaryUse({z}, {x, y});
+  #endif
 }
 
 
@@ -193,6 +229,28 @@ bool isBlasVersionMatches(int major, int minor, int build) { return true; }
  * Since we'll use this from java, jni compiler would like to have method no matter what.
  */
 void initializeDevicesAndFunctions() {}
+
+/**
+ * Initialize the shape cache early to prevent race conditions during static initialization.
+ * This ensures ConstantShapeHelper and its internal DirectShapeTrie are fully initialized
+ * before any multi-threaded access occurs.
+ *
+ * Safe to call multiple times - subsequent calls are no-ops.
+ */
+void initializeShapeCache() {
+  sd::ConstantShapeHelper::getInstance();
+}
+
+/**
+ * Initialize the TAD (Tensor-Along-Dimension) cache early to prevent race conditions.
+ * This ensures ConstantTadHelper and its internal DirectTadTrie are fully initialized
+ * before any multi-threaded access occurs.
+ *
+ * Safe to call multiple times - subsequent calls are no-ops.
+ */
+void initializeTadCache() {
+  sd::ConstantTadHelper::getInstance();
+}
 
 void initializeFunctions(sd::Pointer *functions) { sd::BlasHelper::getInstance().initializeFunctions(functions); }
 
@@ -386,6 +444,7 @@ void pullRowsGeneric(OpaqueNDArray vx, OpaqueNDArray vz, const int n, OpaqueNDAr
   samediff::Threads::parallel_tad(func, 0, n, 1, _threads);
 }
 void tryPointer(sd::Pointer extra, sd::Pointer p, int len) {
+  #ifdef __cpp_exceptions
   try {
     auto buf = reinterpret_cast<int8_t *>(p);
     int cnt = 0;
@@ -394,6 +453,11 @@ void tryPointer(sd::Pointer extra, sd::Pointer p, int len) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    auto buf = reinterpret_cast<int8_t *>(p);
+    int cnt = 0;
+    for (int i = 0; i < len; i++) cnt += buf[cnt];
+  #endif
 }
 
 void pullRows(sd::Pointer *extraPointers,
@@ -402,6 +466,7 @@ void pullRows(sd::Pointer *extraPointers,
               sd::LongType n,
               OpaqueNDArray indexes,
               sd::LongType dimension) {
+  #ifdef __cpp_exceptions
   try {
     auto xType = sd::ArrayOptions::dataType(x->shapeInfo());
 
@@ -410,6 +475,11 @@ void pullRows(sd::Pointer *extraPointers,
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    auto xType = sd::ArrayOptions::dataType(x->shapeInfo());
+
+    BUILD_SINGLE_SELECTOR(xType, pullRowsGeneric, (x, z, n, indexes, dimension), SD_COMMON_TYPES);
+  #endif
 }
 template <typename T>
 void tearGeneric(void *vx, sd::LongType const *hXShapeInfo, sd::Pointer *targets, sd::LongType const *hZShapeInfo,
@@ -455,6 +525,7 @@ void tearGeneric(void *vx, sd::LongType const *hXShapeInfo, sd::Pointer *targets
 void tear(sd::Pointer *extraPointers, OpaqueDataBuffer *dbX, sd::LongType const *hXShapeInfo,
           sd::LongType const *dXShapeInfo, sd::Pointer *targets, sd::LongType const *hZShapeInfo,
           sd::LongType const *tadShapeInfo, sd::LongType const *tadOffsets) {
+  #ifdef __cpp_exceptions
   try {
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
 
@@ -465,6 +536,13 @@ void tear(sd::Pointer *extraPointers, OpaqueDataBuffer *dbX, sd::LongType const 
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
+
+    BUILD_SINGLE_SELECTOR(xType, tearGeneric,
+                          (dbX != nullptr ? dbX->primary() : nullptr, hXShapeInfo, targets, hZShapeInfo, tadShapeInfo, tadOffsets),
+                          SD_COMMON_TYPES);
+  #endif
 }
 
 
@@ -575,6 +653,7 @@ void shuffle(sd::Pointer *extras,
              int N,
              OpaqueNDArray dimension,
              OpaqueNDArray shuffleMap) {
+  #ifdef __cpp_exceptions
   try {
     auto dimensionData = reinterpret_cast<sd::LongType *>(dimension->buffer());
     auto dimensionLength = shape::length(dimension->shapeInfo());
@@ -586,6 +665,14 @@ void shuffle(sd::Pointer *extras,
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    auto dimensionData = reinterpret_cast<sd::LongType *>(dimension->buffer());
+    auto dimensionLength = shape::length(dimension->shapeInfo());
+
+    auto xType = sd::ArrayOptions::dataType(x[0]->shapeInfo());
+
+    BUILD_SINGLE_SELECTOR(xType, shuffleGeneric, (x, z, N, reinterpret_cast<int *>(shuffleMap->buffer()), dimensionData, dimensionLength), SD_COMMON_TYPES);
+  #endif
 }
 
 bool isExperimentalEnabled() { return sd::Environment::getInstance().isExperimentalBuild(); }
@@ -602,6 +689,7 @@ char *name;
 bool nameSet = false;
 
 const char *getDeviceName(int deviceId) {
+  #ifdef __cpp_exceptions
   try {
     if (!nameSet) {
       name = reinterpret_cast<char *>(malloc(256 * sizeof(char)));
@@ -618,6 +706,19 @@ const char *getDeviceName(int deviceId) {
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    if (!nameSet) {
+      name = reinterpret_cast<char *>(malloc(256 * sizeof(char)));
+
+      CHECK_ALLOC(name, "Failed to allocate new string buffer", 256);
+
+      std::memset(name, 0, 256 * sizeof(char));
+      nameSet = true;
+
+      // TODO: provide proper CPU model name here
+      sprintf(name, "x86-compatible CPU");
+    }
+  #endif
 
   return name;
 }
@@ -626,6 +727,7 @@ const char *getDeviceName(int deviceId) {
 
 void execRandom(sd::Pointer *extraPointers, int opNum, sd::Pointer state, OpaqueDataBuffer *dbZ,
                 const sd::LongType *hZShapeInfo, const sd::LongType *dZShapeInfo, void *extraArguments) {
+  #ifdef __cpp_exceptions
   try {
     OpaqueDataBuffer::preparePrimaryUse({dbZ}, {});
     NativeOpExecutioner::execRandom(nullptr, opNum, state, dbZ != nullptr ? dbZ->primary() : nullptr, hZShapeInfo, dbZ != nullptr ? dbZ->special() : nullptr, dZShapeInfo,
@@ -635,12 +737,19 @@ void execRandom(sd::Pointer *extraPointers, int opNum, sd::Pointer state, Opaque
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {});
+    NativeOpExecutioner::execRandom(nullptr, opNum, state, dbZ != nullptr ? dbZ->primary() : nullptr, hZShapeInfo, dbZ != nullptr ? dbZ->special() : nullptr, dZShapeInfo,
+                                    extraArguments);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {});
+  #endif
 }
 
 void execRandom3(sd::Pointer *extraPointers, int opNum, sd::Pointer state, OpaqueDataBuffer *dbX,
                  const sd::LongType *hXShapeInfo, const sd::LongType *dXShapeInfo, OpaqueDataBuffer *dbY,
                  const sd::LongType *hYShapeInfo, const sd::LongType *dYShapeInfo, OpaqueDataBuffer *dbZ,
                  const sd::LongType *hZShapeInfo, const sd::LongType *dZShapeInfo, void *extraArguments) {
+  #ifdef __cpp_exceptions
   try {
     OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX, dbY});
     NativeOpExecutioner::execRandom(nullptr, opNum, state, dbX != nullptr ? dbX->primary() : nullptr, hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr, dXShapeInfo,
@@ -651,11 +760,19 @@ void execRandom3(sd::Pointer *extraPointers, int opNum, sd::Pointer state, Opaqu
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX, dbY});
+    NativeOpExecutioner::execRandom(nullptr, opNum, state, dbX != nullptr ? dbX->primary() : nullptr, hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr, dXShapeInfo,
+                                    dbY->primary(), hYShapeInfo, dbY->special(), dYShapeInfo, dbZ != nullptr ? dbZ->primary() : nullptr,
+                                    hZShapeInfo, dbZ != nullptr ? dbZ->special() : nullptr, dZShapeInfo, extraArguments);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX, dbY});
+  #endif
 }
 
 void execRandom2(sd::Pointer *extraPointers, int opNum, sd::Pointer state, OpaqueDataBuffer *dbX,
                  const sd::LongType *hXShapeInfo, const sd::LongType *dXShapeInfo, OpaqueDataBuffer *dbZ,
                  const sd::LongType *hZShapeInfo, const sd::LongType *dZShapeInfo, void *extraArguments) {
+  #ifdef __cpp_exceptions
   try {
     OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execRandom(nullptr, opNum, state, dbX != nullptr ? dbX->primary() : nullptr, hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr, dXShapeInfo,
@@ -665,9 +782,16 @@ void execRandom2(sd::Pointer *extraPointers, int opNum, sd::Pointer state, Opaqu
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
+    NativeOpExecutioner::execRandom(nullptr, opNum, state, dbX != nullptr ? dbX->primary() : nullptr, hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr, dXShapeInfo,
+                                    dbZ != nullptr ? dbZ->primary() : nullptr, hZShapeInfo, dbZ != nullptr ? dbZ->special() : nullptr, dZShapeInfo, extraArguments);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
+  #endif
 }
 
 sd::Pointer initRandom(sd::Pointer *extraPointers, long seed, long bufferSize, sd::Pointer ptrToBuffer) {
+  #ifdef __cpp_exceptions
   try {
     auto generator = new sd::graph::RandomGenerator(seed, seed);
 
@@ -677,6 +801,11 @@ sd::Pointer initRandom(sd::Pointer *extraPointers, long seed, long bufferSize, s
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
     THROW_EXCEPTION(e.what());
   }
+  #else
+    auto generator = new sd::graph::RandomGenerator(seed, seed);
+
+    return (sd::Pointer)generator;
+  #endif
 }
 
 void refreshBuffer(sd::Pointer *extraPointers, long seed, sd::Pointer ptrRandom) {
@@ -717,12 +846,16 @@ int lengthForShapeBufferPointer(sd::Pointer buffer) {
 sd::Pointer pointerForAddress(sd::LongType address) { return reinterpret_cast<sd::Pointer>(address); }
 
 void sort(sd::Pointer *extraPointers, OpaqueNDArray x, bool descending) {
+  #ifdef __cpp_exceptions
   try {
     NativeOpExecutioner::execSort(x, descending);
   } catch (std::exception &e) {
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    NativeOpExecutioner::execSort(x, descending);
+  #endif
 }
 
 void sortTad(sd::Pointer *extraPointers, OpaqueNDArray  x,
@@ -820,6 +953,7 @@ void saveNpy(std::string fname, const OpaqueDataBuffer *data, const unsigned int
 
 
 void sortByKey(sd::Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray y,bool descending) {
+  #ifdef __cpp_exceptions
   try {
     auto xType = x->dataType();
     auto yType = y->dataType();
@@ -829,9 +963,16 @@ void sortByKey(sd::Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray y,bool
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    auto xType = x->dataType();
+    auto yType = y->dataType();
+    BUILD_DOUBLE_SELECTOR(xType, yType, sd::DoubleMethods, ::sortByKey(x, y, descending),
+                          SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
+  #endif
 }
 
 void sortByValue(sd::Pointer *extraPointers, OpaqueNDArray x,OpaqueNDArray y, bool descending) {
+  #ifdef __cpp_exceptions
   try {
     auto xType = x->dataType();
     auto yType = y->dataType();
@@ -841,10 +982,17 @@ void sortByValue(sd::Pointer *extraPointers, OpaqueNDArray x,OpaqueNDArray y, bo
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    auto xType = x->dataType();
+    auto yType = y->dataType();
+    BUILD_DOUBLE_SELECTOR(xType, yType, sd::DoubleMethods, ::sortByValue(x, y, descending),
+                          SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
+  #endif
 }
 
 void sortTadByKey(sd::Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray y,
                   OpaqueNDArray dimension, bool descending) {
+  #ifdef __cpp_exceptions
   try {
     auto xType = x->dataType();
     auto yType = y->dataType();
@@ -855,9 +1003,17 @@ void sortTadByKey(sd::Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray y,
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    auto xType = x->dataType();
+    auto yType = y->dataType();
+    auto dimensionLength = dimension->lengthOf();
+    BUILD_DOUBLE_SELECTOR(xType, yType, sd::DoubleMethods, ::sortTadByValue(x, y, dimension, descending), SD_NUMERIC_TYPES,
+                          SD_NUMERIC_TYPES);
+  #endif
 }
 void sortTadByValue(sd::Pointer *extraPointers, OpaqueNDArray x,
                     OpaqueNDArray y,OpaqueNDArray dimension, bool descending) {
+  #ifdef __cpp_exceptions
   try {
     auto xType = x->dataType();
     auto yType = y->dataType();
@@ -868,11 +1024,19 @@ void sortTadByValue(sd::Pointer *extraPointers, OpaqueNDArray x,
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    auto xType = x->dataType();
+    auto yType = y->dataType();
+    auto dimensionLength = dimension->lengthOf();
+    BUILD_DOUBLE_SELECTOR(xType, yType, sd::DoubleMethods, ::sortTadByValue(x, y, dimension, descending), SD_NUMERIC_TYPES,
+                          SD_NUMERIC_TYPES);
+  #endif
 }
 
 
 void execIndexReduceScalar(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,void *extraParams,
                            OpaqueNDArray z) {
+  #ifdef __cpp_exceptions
   try {
     NativeOpExecutioner::execIndexReduceScalar(nullptr, opNum,
                                                x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
@@ -882,12 +1046,19 @@ void execIndexReduceScalar(sd::Pointer *extraPointers, int opNum, OpaqueNDArray 
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    NativeOpExecutioner::execIndexReduceScalar(nullptr, opNum,
+                                               x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                               extraParams,
+                                               z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
+  #endif
 }
 
 void execIndexReduce(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
                      void *extraParams,
                      OpaqueNDArray z, OpaqueNDArray dimension
 ) {
+  #ifdef __cpp_exceptions
   try {
     auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
                                                                      dimension->bufferAsT<sd::LongType>(),
@@ -907,10 +1078,27 @@ void execIndexReduce(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
+                                                                     dimension->bufferAsT<sd::LongType>(),
+                                                                     dimension->lengthOf());
+
+    auto hTADShapeInfo = tadPack->primaryShapeInfo();
+    auto hTADOffsets = tadPack->primaryOffsets();
+
+    NativeOpExecutioner::execIndexReduce(nullptr, opNum,
+                                         x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                         extraParams,
+                                         z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                         dimension->bufferAsT<sd::LongType>(), dimension->lengthOf(),
+                                         hTADShapeInfo, hTADOffsets);
+
+  #endif
 }
 
 void execBroadcast(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, OpaqueNDArray y,
                    OpaqueNDArray z,void *extraInfo, OpaqueNDArray dimension) {
+  #ifdef __cpp_exceptions
   try {
     auto tadPackX = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
                                                                       dimension->bufferAsT<sd::LongType>(),
@@ -943,10 +1131,40 @@ void execBroadcast(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, Opaqu
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    auto tadPackX = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
+                                                                      dimension->bufferAsT<sd::LongType>(),
+                                                                      dimension->lengthOf());
+    auto tadPackZ = sd::ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(),
+                                                                      dimension->bufferAsT<sd::LongType>(),
+                                                                      dimension->lengthOf());
+
+#if defined(PRINT_INDICES)
+    printf("broadcast exec tad full x\n");
+    shape::printShapeInfo(x->shapeInfo());
+    printf("broadcast exec tad full y\n");
+    shape::printShapeInfo(y->shapeInfo());
+    printf("broadcast exec tad full z\n");
+    shape::printShapeInfo(z->shapeInfo());
+#endif
+    auto hTADShapeInfo = tadPackX->primaryShapeInfo();
+    auto hTADOffsets = tadPackX->primaryOffsets();
+    auto hTADShapeInfoZ = tadPackZ->primaryShapeInfo();
+    auto hTADOffsetsZ = tadPackZ->primaryOffsets();
+
+    NativeOpExecutioner::execBroadcast(nullptr, opNum,
+                                       x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                       y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
+                                       z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                       dimension->bufferAsT<sd::LongType>(), dimension->lengthOf(),
+                                       hTADShapeInfo, hTADOffsets, hTADShapeInfoZ, hTADOffsetsZ);
+
+  #endif
 }
 
 void execPairwiseTransform(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, OpaqueNDArray y,
                            OpaqueNDArray z, void *extraParams) {
+  #ifdef __cpp_exceptions
   try {
     /**
      * TODO: look in to offsets here as left over change from ndarrays being available?
@@ -969,10 +1187,30 @@ void execPairwiseTransform(sd::Pointer *extraPointers, int opNum, OpaqueNDArray 
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    /**
+     * TODO: look in to offsets here as left over change from ndarrays being available?
+     */
+    NativeOpExecutioner::execPairwiseTransform(nullptr, opNum,
+                                               x->bufferWithOffset(x->offset()),
+                                               x->shapeInfo(),
+                                               x->specialBufferWithOffset(x->offset()),
+                                               x->specialShapeInfo(),
+                                               y->bufferWithOffset(y->offset()),
+                                               y->shapeInfo(),
+                                               y->specialBufferWithOffset(y->offset()),
+                                               y->specialShapeInfo(),
+                                               z->bufferWithOffset(z->offset()),
+                                               z->shapeInfo(),
+                                               const_cast<void *>(z->specialBufferWithOffset(z->offset())),
+                                               z->specialShapeInfo(),
+                                               extraParams);
+  #endif
 }
 
 void execReduceFloat(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
                      void *extraParams, OpaqueNDArray z) {
+  #ifdef __cpp_exceptions
   try {
     // Validate input pointers to prevent segfault
     if (x == nullptr || z == nullptr) {
@@ -995,10 +1233,30 @@ void execReduceFloat(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    // Validate input pointers to prevent segfault
+    if (x == nullptr || z == nullptr) {
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceFloat: null pointer in input parameters");
+      return;
+    }
+    if (x->shapeInfo() == nullptr || z->shapeInfo() == nullptr) {
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceFloat: null shapeInfo in input arrays");
+      return;
+    }
+
+    NativeOpExecutioner::execReduceFloatScalar(nullptr, opNum,
+                                               x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                               extraParams,
+                                               z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
+    checkAndCleanupCaches();
+  #endif
 }
 
 void execReduceSame(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
                     void *extraParams,OpaqueNDArray z) {
+  #ifdef __cpp_exceptions
   try {
     // Validate input pointers to prevent segfault
     if (x == nullptr || z == nullptr) {
@@ -1021,10 +1279,30 @@ void execReduceSame(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    // Validate input pointers to prevent segfault
+    if (x == nullptr || z == nullptr) {
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceSame: null pointer in input parameters");
+      return;
+    }
+    if (x->shapeInfo() == nullptr || z->shapeInfo() == nullptr) {
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceSame: null shapeInfo in input arrays");
+      return;
+    }
+
+    NativeOpExecutioner::execReduceSameScalar(nullptr, opNum,
+                                              x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                              extraParams,
+                                              z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
+    checkAndCleanupCaches();
+  #endif
 }
 
 void execReduceBool(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void *extraParams,
                     OpaqueNDArray z, OpaqueNDArray dimension) {
+  #ifdef __cpp_exceptions
   try {
     // Validate input pointers to prevent segfault
     if (x == nullptr || z == nullptr || dimension == nullptr) {
@@ -1052,10 +1330,35 @@ void execReduceBool(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    // Validate input pointers to prevent segfault
+    if (x == nullptr || z == nullptr || dimension == nullptr) {
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceBool: null pointer in input parameters");
+      return;
+    }
+    if (x->shapeInfo() == nullptr || z->shapeInfo() == nullptr || dimension->shapeInfo() == nullptr) {
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceBool: null shapeInfo in input arrays");
+      return;
+    }
+
+    // Removed unused TAD pack creation that was causing cache bloat and memory leaks
+    // The NativeOpExecutioner::execReduceBool handles TAD operations internally
+    NativeOpExecutioner::execReduceBool(nullptr, opNum,
+                                        x->buffer(), x->shapeInfo(),
+                                        x->specialBuffer(), x->specialShapeInfo(),
+                                        extraParams,
+                                        z->buffer(), z->shapeInfo(),
+                                        z->specialBuffer(), z->specialShapeInfo(),
+                                        dimension->bufferAsT<sd::LongType> (), dimension->lengthOf());
+    checkAndCleanupCaches();
+  #endif
 }
 
 void execReduceLong(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void *extraParams,
                     OpaqueNDArray z, OpaqueNDArray dimension) {
+  #ifdef __cpp_exceptions
   try {
     // Validate input pointers to prevent segfault
     if (x == nullptr || z == nullptr || dimension == nullptr) {
@@ -1083,10 +1386,35 @@ void execReduceLong(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    // Validate input pointers to prevent segfault
+    if (x == nullptr || z == nullptr || dimension == nullptr) {
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceLong: null pointer in input parameters");
+      return;
+    }
+    if (x->shapeInfo() == nullptr || z->shapeInfo() == nullptr || dimension->shapeInfo() == nullptr) {
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceLong: null shapeInfo in input arrays");
+      return;
+    }
+
+    // Removed unused TAD pack creation that was causing cache bloat and memory leaks
+    // The NativeOpExecutioner::execReduceLong handles TAD operations internally
+    NativeOpExecutioner::execReduceLong(nullptr, opNum,
+                                        x->buffer(), x->shapeInfo(),
+                                        x->specialBuffer(), x->specialShapeInfo(),
+                                        extraParams,
+                                        z->buffer(), z->shapeInfo(),
+                                        z->specialBuffer(), z->specialShapeInfo(),
+                                        dimension->bufferAsT<sd::LongType> (), dimension->lengthOf());
+    checkAndCleanupCaches();
+  #endif
 }
 
 void execReduceFloat2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,void *extraParams,
                       OpaqueNDArray z, OpaqueNDArray dimension) {
+  #ifdef __cpp_exceptions
   try {
     // Validate input pointers to prevent segfault
     if (x == nullptr || z == nullptr || dimension == nullptr) {
@@ -1135,11 +1463,57 @@ void execReduceFloat2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,voi
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    // Validate input pointers to prevent segfault
+    if (x == nullptr || z == nullptr || dimension == nullptr) {
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceFloat2: null pointer in input parameters");
+      return;
+    }
+    if (x->shapeInfo() == nullptr || z->shapeInfo() == nullptr || dimension->shapeInfo() == nullptr) {
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceFloat2: null shapeInfo in input arrays");
+      return;
+    }
+
+    std::vector<sd::LongType>  dimensions(dimension->lengthOf());
+    for(sd::LongType i = 0; i < dimension->lengthOf(); i++) {
+      sd::LongType curr = dimension->e<sd::LongType>(i);
+      if(curr < 0) {
+        curr += x->rankOf();
+      }
+      dimensions[i] = curr;
+    }
+    const sd::LongType *zShapeInfoH = z->shapeInfo();
+    const sd::LongType *zShapeInfoD = z->specialShapeInfo();
+
+    if (shape::rank(x->shapeInfo()) - dimension->lengthOf() != shape::rank(z->shapeInfo()) && z->lengthOf() != 1) {
+      auto zPack = sd::ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(z->shapeInfo(), &dimensions);
+      zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
+      zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
+    }
+
+    std::vector<sd::LongType> *dims = (z->lengthOf() != 1) ?
+                                  sd::ShapeUtils::evalDimsForReduceOp(shape::rank(x->shapeInfo()), &dimensions) :
+                                  new std::vector<sd::LongType>();
+
+    NativeOpExecutioner::execReduceFloat(nullptr, opNum,
+                                         x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                         extraParams,
+                                         z->buffer(), zShapeInfoH, z->specialBuffer(), zShapeInfoD,
+                                         dims->data(), dims->size());
+
+    delete dims;
+
+    checkAndCleanupCaches();
+
+  #endif
 }
 
 void execReduceBool2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
                      void *extraParams,
                      OpaqueNDArray z, OpaqueNDArray dimension) {
+  #ifdef __cpp_exceptions
   try {
     // Validate input pointers to prevent segfault
     if (x == nullptr || z == nullptr || dimension == nullptr) {
@@ -1189,11 +1563,58 @@ void execReduceBool2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    // Validate input pointers to prevent segfault
+    if (x == nullptr || z == nullptr || dimension == nullptr) {
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceBool2: null pointer in input parameters");
+      return;
+    }
+    if (x->shapeInfo() == nullptr || z->shapeInfo() == nullptr || dimension->shapeInfo() == nullptr) {
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceBool2: null shapeInfo in input arrays");
+      return;
+    }
+
+    std::vector<sd::LongType> dimensions(dimension->lengthOf());
+    for(sd::LongType i = 0; i < dimension->lengthOf(); i++) {
+      sd::LongType curr = dimension->e<sd::LongType>(i);
+      if(curr < 0) {
+        curr += x->rankOf();
+      }
+      dimensions[i] = curr;
+    }
+
+    const sd::LongType *zShapeInfoH = z->shapeInfo();
+    const sd::LongType *zShapeInfoD = z->specialShapeInfo();
+
+    if (shape::rank(x->shapeInfo()) - dimension->lengthOf() != shape::rank(z->shapeInfo())) {
+      auto zPack = sd::ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(z->shapeInfo(), &dimensions);
+      zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
+      zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
+    }
+
+    std::vector<sd::LongType> *dims = (z->lengthOf() != 1) ?
+                                  sd::ShapeUtils::evalDimsForReduceOp(shape::rank(x->shapeInfo()), &dimensions) :
+                                  new std::vector<sd::LongType>();
+
+    NativeOpExecutioner::execReduceBool(nullptr, opNum,
+                                        x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                        extraParams,
+                                        z->buffer(), zShapeInfoH, z->specialBuffer(), zShapeInfoD,
+                                        dims->data(), dims->size());
+
+    delete dims;
+
+    checkAndCleanupCaches();
+
+  #endif
 }
 
 void execReduceSame2(sd::Pointer *extraPointers, int opNum,
                      OpaqueNDArray x,void *extraParams,
                      OpaqueNDArray z, OpaqueNDArray dimension) {
+  #ifdef __cpp_exceptions
   try {
     // Validate input pointers to prevent segfault
     if (x == nullptr || z == nullptr || dimension == nullptr) {
@@ -1243,11 +1664,58 @@ void execReduceSame2(sd::Pointer *extraPointers, int opNum,
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    // Validate input pointers to prevent segfault
+    if (x == nullptr || z == nullptr || dimension == nullptr) {
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceSame2: null pointer in input parameters");
+      return;
+    }
+    if (x->shapeInfo() == nullptr || z->shapeInfo() == nullptr || dimension->shapeInfo() == nullptr) {
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceSame2: null shapeInfo in input arrays");
+      return;
+    }
+
+    std::vector<sd::LongType> dimensions(dimension->lengthOf());
+    for(sd::LongType i = 0; i < dimension->lengthOf(); i++) {
+      sd::LongType curr = dimension->e<sd::LongType>(i);
+      if(curr < 0) {
+        curr += x->rankOf();
+      }
+      dimensions[i] = curr;
+    }
+
+    const sd::LongType *zShapeInfoH = z->shapeInfo();
+    const sd::LongType *zShapeInfoD = z->specialShapeInfo();
+
+    if (shape::rank(x->shapeInfo()) - dimension->lengthOf() != shape::rank(z->shapeInfo()) && z->lengthOf() != 1) {
+      auto zPack = sd::ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(z->shapeInfo(), &dimensions);
+      zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
+      zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
+    }
+
+    std::vector<sd::LongType> *dims = (z->lengthOf() != 1) ?
+                                  sd::ShapeUtils::evalDimsForReduceOp(shape::rank(x->shapeInfo()), &dimensions) :
+                                  new std::vector<sd::LongType>();
+
+    NativeOpExecutioner::execReduceSame(nullptr, opNum,
+                                        x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                        extraParams,
+                                        z->buffer(), zShapeInfoH, z->specialBuffer(), zShapeInfoD,
+                                        dims->data(), dims->size());
+
+    delete dims;
+
+    checkAndCleanupCaches();
+
+  #endif
 }
 
 void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
                      void *extraParams,
                      OpaqueNDArray z, OpaqueNDArray dimension) {
+  #ifdef __cpp_exceptions
   try {
     // Validate input pointers to prevent segfault
     if (x == nullptr) {
@@ -1266,7 +1734,6 @@ void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
       return;
     }
 
-    // CRITICAL FIX: Cache pointers FIRST before validation to prevent TOCTOU race condition.
     // If we validate first (call shapeInfo()), then cache later (call shapeInfo() again),
     // the pointer could become invalid between the two calls, causing SIGSEGV.
     // By caching once and validating the cached value, we ensure consistency.
@@ -1367,11 +1834,127 @@ void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    // Validate input pointers to prevent segfault
+    if (x == nullptr) {
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceLong2: input array x is null");
+      return;
+    }
+    if (z == nullptr) {
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceLong2: output array z is null");
+      return;
+    }
+    if (dimension == nullptr) {
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceLong2: dimension array is null");
+      return;
+    }
+
+    // If we validate first (call shapeInfo()), then cache later (call shapeInfo() again),
+    // the pointer could become invalid between the two calls, causing SIGSEGV.
+    // By caching once and validating the cached value, we ensure consistency.
+    const sd::LongType *xShapeInfoH = x->shapeInfo();
+    const sd::LongType *xShapeInfoD = x->specialShapeInfo();
+    void *xBuffer = x->buffer();
+    void *xSpecialBuffer = x->specialBuffer();
+
+    void *zBuffer = z->buffer();
+    const sd::LongType *zShapeInfoH = z->shapeInfo();
+    const sd::LongType *zShapeInfoD = z->specialShapeInfo();
+    const sd::LongType zLength = z->lengthOf();
+
+    if (xShapeInfoH == nullptr) {
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceLong2: input array x has null shapeInfo");
+      return;
+    }
+    if (zShapeInfoH == nullptr) {
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceLong2: output array z has null shapeInfo");
+      return;
+    }
+
+    void *dimensionBuffer = dimension->buffer();
+    sd::DataBuffer *dimensionDb = dimension->getDataBuffer();
+    if (dimensionBuffer == nullptr || dimensionDb == nullptr) {
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceLong2: dimension array has null buffer");
+      return;
+    }
+
+    const sd::LongType xRank = shape::rank(xShapeInfoH);
+    const sd::DataType dimType = dimension->dataType();
+    if (dimType != sd::DataType::INT32 && dimType != sd::DataType::INT64) {
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      std::string err = "execReduceLong2: unsupported dimension buffer data type: ";
+      err += sd::DataTypeUtils::asString(dimType);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(err.c_str());
+      return;
+    }
+
+    const sd::LongType dimensionLength =
+        static_cast<sd::LongType>(dimensionDb->getLenInBytes() / sd::DataTypeUtils::sizeOf(dimType));
+
+    // Extract dimension values directly from the raw buffer. Do not rely on dimension->shapeInfo()
+    // because some callers mutate or free the dimension shape buffer once the NDArray is created.
+    std::vector<sd::LongType> dimensions(dimensionLength);
+    if (dimensionLength > 0) {
+      if (dimType == sd::DataType::INT32) {
+        auto dimensionData = reinterpret_cast<int *>(dimensionBuffer);
+        for (sd::LongType i = 0; i < dimensionLength; i++) {
+          sd::LongType curr = static_cast<sd::LongType>(dimensionData[i]);
+          if (curr < 0) {
+            curr += xRank;
+          }
+          dimensions[i] = curr;
+        }
+      } else {
+        auto dimensionData = reinterpret_cast<sd::LongType *>(dimensionBuffer);
+        for (sd::LongType i = 0; i < dimensionLength; i++) {
+          sd::LongType curr = dimensionData[i];
+          if (curr < 0) {
+            curr += xRank;
+          }
+          dimensions[i] = curr;
+        }
+      }
+    }
+
+    // Validate output shape matches expected dimensions after reduction
+    // If ranks don't match, this indicates a shape mismatch from the calling layer
+    // DO NOT attempt to reshape - the buffer and shape must match
+    if (shape::rank(xShapeInfoH) - dimensionLength != shape::rank(zShapeInfoH) && zLength != 1) {
+      std::string errorMsg = "execReduceLong2: Output shape rank mismatch. ";
+      errorMsg += "Input rank: " + std::to_string(shape::rank(xShapeInfoH));
+      errorMsg += ", reduction dimensions: " + std::to_string(dimensionLength);
+      errorMsg += ", expected output rank: " + std::to_string(shape::rank(xShapeInfoH) - dimensionLength);
+      errorMsg += ", but got output rank: " + std::to_string(shape::rank(zShapeInfoH));
+      THROW_EXCEPTION(errorMsg.c_str());
+    }
+
+    std::vector<sd::LongType> *dims = (zLength != 1) ?
+                                  sd::ShapeUtils::evalDimsForReduceOp(shape::rank(xShapeInfoH), &dimensions) :
+                                  new std::vector<sd::LongType>();
+
+    NativeOpExecutioner::execReduceLong(nullptr, opNum,
+                                        xBuffer, xShapeInfoH, xSpecialBuffer, xShapeInfoD,
+                                        extraParams,
+                                        zBuffer, zShapeInfoH, nullptr, nullptr,
+                                        dims->data(), dims->size());
+
+    delete dims;
+
+    checkAndCleanupCaches();
+
+  #endif
 }
 
 
 void execReduce3Tad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void *extraParams,OpaqueNDArray y,
                     OpaqueNDArray z, OpaqueNDArray dimension) {
+  #ifdef __cpp_exceptions
   try {
     auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
                                                                      dimension->bufferAsT<sd::LongType>(),
@@ -1394,10 +1977,30 @@ void execReduce3Tad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
+                                                                     dimension->bufferAsT<sd::LongType>(),
+                                                                     dimension->lengthOf());
+
+    auto hTADShapeInfo = tadPack->primaryShapeInfo();
+    auto hTADOffsets = tadPack->primaryOffsets();
+
+    NativeOpExecutioner::execReduce3TAD(nullptr, opNum,
+                                        x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                        extraParams,
+                                        y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
+                                        z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                        dimension->bufferAsT<sd::LongType>(), dimension->lengthOf(),
+                                        hTADShapeInfo, hTADOffsets, nullptr, nullptr);
+
+    checkAndCleanupCaches();
+
+  #endif
 }
 
 void execScalar(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, OpaqueNDArray z,
                 OpaqueNDArray scalar, void *extraParams) {
+  #ifdef __cpp_exceptions
   try {
     NativeOpExecutioner::execScalar(nullptr, opNum,
                                     x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
@@ -1409,10 +2012,19 @@ void execScalar(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, OpaqueND
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    NativeOpExecutioner::execScalar(nullptr, opNum,
+                                    x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                    z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                    scalar->buffer(), scalar->shapeInfo(), scalar->specialBuffer(), scalar->specialShapeInfo(),
+                                    extraParams);
+    checkAndCleanupCaches();
+  #endif
 }
 
 void execScalarBool(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, OpaqueNDArray z,
                     OpaqueNDArray scalar, void *extraParams) {
+  #ifdef __cpp_exceptions
   try {
     NativeOpExecutioner::execScalarBool(nullptr, opNum,
                                         x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
@@ -1424,11 +2036,20 @@ void execScalarBool(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, Opaq
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    NativeOpExecutioner::execScalarBool(nullptr, opNum,
+                                        x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                        z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                        scalar->buffer(), scalar->shapeInfo(), scalar->specialBuffer(), scalar->specialShapeInfo(),
+                                        extraParams);
+    checkAndCleanupCaches();
+  #endif
 }
 
 void execSummaryStatsScalar(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
                             void *extraParams,
                             OpaqueNDArray z,  bool biasCorrected) {
+  #ifdef __cpp_exceptions
   try {
     NativeOpExecutioner::execSummaryStatsScalar(nullptr, opNum,
                                                 x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
@@ -1439,10 +2060,18 @@ void execSummaryStatsScalar(sd::Pointer *extraPointers, int opNum, OpaqueNDArray
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    NativeOpExecutioner::execSummaryStatsScalar(nullptr, opNum,
+                                                x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                                extraParams,
+                                                z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                                biasCorrected);
+  #endif
 }
 
 void execSummaryStats(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
                       OpaqueNDArray z, void *extraParams, bool biasCorrected) {
+  #ifdef __cpp_exceptions
   try {
     NativeOpExecutioner::execSummaryStats(nullptr, opNum,
                                           x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
@@ -1453,11 +2082,19 @@ void execSummaryStats(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    NativeOpExecutioner::execSummaryStats(nullptr, opNum,
+                                          x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                          extraParams,
+                                          z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                          biasCorrected);
+  #endif
 }
 
 void execSummaryStatsTad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
                          void *extraParams,OpaqueNDArray z, OpaqueNDArray dimension,
                          bool biasCorrected) {
+  #ifdef __cpp_exceptions
   try {
     auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
                                                                      dimension->shapeOf(),
@@ -1474,9 +2111,23 @@ void execSummaryStatsTad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
+                                                                     dimension->shapeOf(),
+                                                                     dimension->lengthOf());
+
+    NativeOpExecutioner::execSummaryStats(nullptr, opNum,
+                                          x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                          extraParams,
+                                          z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                          dimension->bufferAsT<sd::LongType>(), dimension->lengthOf(),
+                                          tadPack->primaryShapeInfo(), tadPack->primaryOffsets(),
+                                          biasCorrected);
+  #endif
 }
 
 void execTransformFloat(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,  void *extraParams,OpaqueNDArray z) {
+  #ifdef __cpp_exceptions
   try {
     NativeOpExecutioner::execTransformFloat(nullptr, opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
                                             x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
@@ -1486,9 +2137,16 @@ void execTransformFloat(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, 
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    NativeOpExecutioner::execTransformFloat(nullptr, opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
+                                            x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
+                                            z->specialShapeInfo(), extraParams);
+    checkAndCleanupCaches();
+  #endif
 }
 
 void execTransformSame(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,void *extraParams, OpaqueNDArray z) {
+  #ifdef __cpp_exceptions
   try {
     NativeOpExecutioner::execTransformSame(nullptr, opNum,
                                            x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
@@ -1499,9 +2157,17 @@ void execTransformSame(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,vo
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    NativeOpExecutioner::execTransformSame(nullptr, opNum,
+                                           x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                           z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                           extraParams, nullptr, nullptr);
+    checkAndCleanupCaches();
+  #endif
 }
 
 void execTransformBool(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,void *extraParams, OpaqueNDArray z) {
+  #ifdef __cpp_exceptions
   try {
     NativeOpExecutioner::execTransformBool(nullptr, opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
                                            x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
@@ -1511,9 +2177,16 @@ void execTransformBool(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,vo
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    NativeOpExecutioner::execTransformBool(nullptr, opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
+                                           x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
+                                           z->specialShapeInfo(), extraParams);
+    checkAndCleanupCaches();
+  #endif
 }
 
 void execTransformAny(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,void *extraParams, OpaqueNDArray z) {
+  #ifdef __cpp_exceptions
   try {
     NativeOpExecutioner::execTransformAny(nullptr, opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
                                           x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
@@ -1523,9 +2196,16 @@ void execTransformAny(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,voi
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    NativeOpExecutioner::execTransformAny(nullptr, opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
+                                          x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
+                                          z->specialShapeInfo(), extraParams, false);
+    checkAndCleanupCaches();
+  #endif
 }
 
 void execTransformStrict(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,void *extraParams, OpaqueNDArray z) {
+  #ifdef __cpp_exceptions
   try {
     NativeOpExecutioner::execTransformStrict(nullptr, opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
                                              x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
@@ -1535,9 +2215,16 @@ void execTransformStrict(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    NativeOpExecutioner::execTransformStrict(nullptr, opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
+                                             x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
+                                             z->specialShapeInfo(), extraParams);
+    checkAndCleanupCaches();
+  #endif
 }
 
 void execReduce3All(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, OpaqueNDArray y, OpaqueNDArray z, OpaqueNDArray dimension, void *extraParams) {
+  #ifdef __cpp_exceptions
   try {
     NativeOpExecutioner::execReduce3All(nullptr, opNum,
                                         x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
@@ -1550,10 +2237,20 @@ void execReduce3All(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, Opaq
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    NativeOpExecutioner::execReduce3All(nullptr, opNum,
+                                        x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                        extraParams,
+                                        y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
+                                        z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                        dimension->bufferAsT<sd::LongType>(), dimension->lengthOf(),
+                                        nullptr, nullptr, nullptr, nullptr);
+  #endif
 }
 
 void execRandom(sd::Pointer *extraPointers, int opNum, sd::Pointer state, OpaqueNDArray z,
                 void *extraArguments) {
+  #ifdef __cpp_exceptions
   try {
     NativeOpExecutioner::execRandom(nullptr, opNum, state,
                                     z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
@@ -1562,10 +2259,16 @@ void execRandom(sd::Pointer *extraPointers, int opNum, sd::Pointer state, Opaque
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    NativeOpExecutioner::execRandom(nullptr, opNum, state,
+                                    z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                    extraArguments);
+  #endif
 }
 
 void execRandom3(sd::Pointer *extraPointers, int opNum, sd::Pointer state, OpaqueNDArray x, OpaqueNDArray y, OpaqueNDArray z,
                  void *extraArguments) {
+  #ifdef __cpp_exceptions
   try {
     NativeOpExecutioner::execRandom(nullptr, opNum, state,
                                     x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
@@ -1576,10 +2279,18 @@ void execRandom3(sd::Pointer *extraPointers, int opNum, sd::Pointer state, Opaqu
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    NativeOpExecutioner::execRandom(nullptr, opNum, state,
+                                    x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                    y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
+                                    z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                    extraArguments);
+  #endif
 }
 
 void execScalarTad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, OpaqueNDArray z,
                    OpaqueNDArray scalar,void *extraParams, OpaqueNDArray dimension) {
+  #ifdef __cpp_exceptions
   try {
     auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
                                                                      dimension->bufferAsT<sd::LongType>(),
@@ -1597,10 +2308,25 @@ void execScalarTad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, Opaqu
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
+                                                                     dimension->bufferAsT<sd::LongType>(),
+                                                                     dimension->lengthOf());
+
+    NativeOpExecutioner::execScalar(nullptr, opNum,
+                                    x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                    extraParams,
+                                    z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                    scalar->buffer(), scalar->shapeInfo(), scalar->specialBuffer(), scalar->specialShapeInfo(),
+                                    dimension->bufferAsT<sd::LongType>(), dimension->lengthOf(),
+                                    tadPack->primaryShapeInfo(), tadPack->primaryOffsets(),
+                                    tadPack->primaryShapeInfo(), tadPack->primaryOffsets());
+  #endif
 }
 
 void execScalarBoolTad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, OpaqueNDArray z,
                        OpaqueNDArray scalar, void *extraParams,OpaqueNDArray dimension) {
+  #ifdef __cpp_exceptions
   try {
     auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
                                                                      dimension->bufferAsT<sd::LongType>(),
@@ -1618,11 +2344,26 @@ void execScalarBoolTad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, O
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
+                                                                     dimension->bufferAsT<sd::LongType>(),
+                                                                     dimension->lengthOf());
+
+    NativeOpExecutioner::execScalarBool(nullptr, opNum,
+                                        x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                        extraParams,
+                                        z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                        scalar->buffer(), scalar->shapeInfo(), scalar->specialBuffer(), scalar->specialShapeInfo(),
+                                        dimension->bufferAsT<sd::LongType>(), dimension->lengthOf(),
+                                        tadPack->primaryShapeInfo(), tadPack->primaryOffsets(),
+                                        tadPack->primaryShapeInfo(), tadPack->primaryOffsets());
+  #endif
 }
 
 
 void execPairwiseTransformBool(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, OpaqueNDArray y,
                                void *extraParams,OpaqueNDArray z) {
+  #ifdef __cpp_exceptions
   try {
     NativeOpExecutioner::execPairwiseBoolTransform(nullptr, opNum,
                                                    x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
@@ -1633,6 +2374,13 @@ void execPairwiseTransformBool(sd::Pointer *extraPointers, int opNum, OpaqueNDAr
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    NativeOpExecutioner::execPairwiseBoolTransform(nullptr, opNum,
+                                                   x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                                   y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
+                                                   z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                                   extraParams);
+  #endif
 }
 
 
@@ -1640,6 +2388,7 @@ void execPairwiseTransformBool(sd::Pointer *extraPointers, int opNum, OpaqueNDAr
 
 void execRandom2(sd::Pointer *extraPointers, int opNum, sd::Pointer state,
                  OpaqueNDArray x, OpaqueNDArray z, void *extraArguments) {
+  #ifdef __cpp_exceptions
   try {
     NativeOpExecutioner::execRandom(nullptr, opNum, state,
                                     x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
@@ -1649,6 +2398,12 @@ void execRandom2(sd::Pointer *extraPointers, int opNum, sd::Pointer state,
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+  #else
+    NativeOpExecutioner::execRandom(nullptr, opNum, state,
+                                    x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                    z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                    extraArguments);
+  #endif
 }
 
 

@@ -72,25 +72,29 @@ if(SD_GCC_FUNCTRACE)
         set(_functrace_total_mb 1024)
     endif()
 
-    # 60% of RAM reserved for compile (rest free for OS, JVM, etc.)
-    math(EXPR _functrace_budget_mb "${_functrace_total_mb} * 3 / 5")
+    # PERFORMANCE OPTIMIZATION: Use 75% of RAM for faster builds (increased from 60%)
+    # Assumes system has adequate swap if needed
+    math(EXPR _functrace_budget_mb "${_functrace_total_mb} * 3 / 4")
     math(EXPR _per_job_mb "${_functrace_budget_mb} / ${_functrace_jobs}")
     if(_per_job_mb LESS 512)
         set(_per_job_mb 512)
     endif()
 
     # Empirical: chunk target 8 → ~225MB, so ~28MB per instantiation slot.
+    # PERFORMANCE OPTIMIZATION: Increase chunk sizes to reduce file count
+    # OLD: Limited to 6-48 per chunk
+    # NEW: Allow up to 96 per chunk for faster builds (fewer files = less overhead)
     math(EXPR _chunk_target "${_per_job_mb} / 28")
-    if(_chunk_target LESS 6)
-        set(_chunk_target 6)
-    elseif(_chunk_target GREATER 48)
-        set(_chunk_target 48)
+    if(_chunk_target LESS 12)
+        set(_chunk_target 12)  # Increased from 6
+    elseif(_chunk_target GREATER 96)
+        set(_chunk_target 96)  # Increased from 48
     endif()
 
-    # Direct instantiation chunks are smaller (~0.65 ratio) to smooth memory spikes.
+    # Direct instantiation chunks - also increased
     math(EXPR _direct_chunk "${_chunk_target} * 13 / 20")
-    if(_direct_chunk LESS 4)
-        set(_direct_chunk 4)
+    if(_direct_chunk LESS 8)
+        set(_direct_chunk 8)  # Increased from 4
     endif()
     if(_direct_chunk GREATER _chunk_target)
         set(_direct_chunk ${_chunk_target})

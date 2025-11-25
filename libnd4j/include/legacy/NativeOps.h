@@ -224,6 +224,33 @@ SD_LIB_EXPORT void enableP2P(bool enable) ;
 SD_LIB_EXPORT bool isP2PAvailable() ;
 SD_LIB_EXPORT void initializeDevicesAndFunctions() ;
 SD_LIB_EXPORT void initializeFunctions(sd::Pointer *functions) ;
+
+/**
+ * Initialize the shape cache eagerly during early JVM startup.
+ * This prevents race conditions during static initialization when multiple threads
+ * try to create NDArrays concurrently before the shape cache is fully initialized.
+ *
+ * This should be called from Nd4j initialization before any class loading
+ * that might create NDArrays (like DifferentialFunctionClassHolder).
+ *
+ * Safe to call multiple times - subsequent calls are no-ops.
+ */
+SD_LIB_EXPORT void initializeShapeCache() ;
+
+/**
+ * Initialize the TAD (Tensor-Along-Dimension) cache early to prevent race conditions.
+ *
+ * This forces initialization of DirectTadTrie in a controlled, single-threaded context.
+ * This prevents race conditions during static initialization when multiple threads
+ * try to create TAD packs concurrently before the TAD cache is fully initialized.
+ *
+ * This should be called from Nd4j initialization before any class loading
+ * that might create TAD operations.
+ *
+ * Safe to call multiple times - subsequent calls are no-ops.
+ */
+SD_LIB_EXPORT void initializeTadCache() ;
+
 SD_LIB_EXPORT sd::Pointer mallocHost(sd::LongType memorySize, int flags) ;
 SD_LIB_EXPORT sd::Pointer mallocDevice(sd::LongType memorySize, int deviceId, int flags) ;
 SD_LIB_EXPORT int freeHost(sd::Pointer pointer) ;
@@ -506,6 +533,81 @@ SD_LIB_EXPORT void enableOpContextTracking();
 SD_LIB_EXPORT void disableOpContextTracking();
 
 /**
+ * Enable operation execution logging for crash detection.
+ * When enabled (and SD_GCC_FUNCTRACE is defined), all operation executions
+ * are logged to a file with full unified C++/Java stack traces.
+ * The log file survives crashes and can be used for post-mortem debugging.
+ *
+ * Log files are located at: /tmp/nd4j_op_execution_<PID>.log
+ * (or $SD_OP_LOG_DIR if set)
+ *
+ * NOTE: Only available when built with -Dlibnd4j.calltrace=ON
+ */
+SD_LIB_EXPORT void enableOpExecutionLogging();
+
+/**
+ * Disable operation execution logging.
+ * No-op if SD_GCC_FUNCTRACE is not defined.
+ */
+SD_LIB_EXPORT void disableOpExecutionLogging();
+
+/**
+ * Check if operation execution logging is currently enabled.
+ * @return true if logging is enabled, false otherwise
+ */
+SD_LIB_EXPORT bool isOpExecutionLoggingEnabled();
+
+/**
+ * Get the current operation execution log file path.
+ * Returns empty string if logging is not enabled or not available.
+ *
+ * @return C-string containing the log file path (caller must NOT free this)
+ */
+SD_LIB_EXPORT const char* getOpExecutionLogPath();
+
+/**
+ * Get the current operation execution log contents as a string.
+ * Useful for retrieving recent execution history for debugging.
+ *
+ * @param maxBytes Maximum bytes to read (0 = read entire file)
+ * @param fromEnd If true, read from end of file (most recent entries)
+ * @return C-string containing the log contents (caller must NOT free this)
+ */
+SD_LIB_EXPORT const char* getOpExecutionLogContents(size_t maxBytes, bool fromEnd);
+
+/**
+ * Force a flush of the operation execution log to disk.
+ * The logger flushes after each operation by default, but this
+ * can be called manually for explicit checkpointing.
+ */
+SD_LIB_EXPORT void dumpOpExecutionLog();
+
+/**
+ * Manually dump current state to the operation execution log.
+ * Useful for checkpointing at specific points in code.
+ *
+ * @param message Optional message to include in the dump
+ */
+SD_LIB_EXPORT void dumpOpExecutionState(const char* message);
+
+// ═══════════════════════════════════════════════════════════════
+// Allocation Logging API (SD_GCC_FUNCTRACE only)
+// Similar to OpExecutionLogging, but focuses on tracking NDArray
+// and OpContext allocations for understanding memory growth patterns
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Get the current allocation log file path.
+ * Allocation logging is always active in functrace builds (SD_GCC_FUNCTRACE).
+ * Returns empty string if functrace is not enabled.
+ *
+ * Log file location: /tmp/nd4j_allocations_<PID>.log (configurable via SD_ALLOCATION_LOG_DIR)
+ *
+ * @return C-string containing the log file path (caller must NOT free this)
+ */
+SD_LIB_EXPORT const char* getAllocationLogPath();
+
+/**
  * Clear all cached TAD packs to prevent memory leaks during testing.
  * This frees all TadPack objects stored in the TAD cache.
  */
@@ -602,10 +704,25 @@ SD_LIB_EXPORT void freeString(const char* ptr);
  * Note: This function is available regardless of SD_GCC_FUNCTRACE build flag.
  * When SD_GCC_FUNCTRACE is disabled, it becomes a no-op stub.
  */
-void checkAndCleanupCaches();
+SD_LIB_EXPORT void checkAndCleanupCaches();
 
 // Lifecycle tracking API (enabled only with SD_GCC_FUNCTRACE)
 #if defined(SD_GCC_FUNCTRACE)
+
+/**
+ * Initializes lifecycle crash handlers to capture crash dumps.
+ *
+ * This must be called after JVM is fully initialized to ensure
+ * the crash handler properly chains to JVM's hs_err generation.
+ *
+ * If called during library load (too early), the crash handler will capture
+ * SIG_DFL instead of JVM's crash handler, preventing hs_err file generation.
+ *
+ * Safe to call multiple times - only initializes once.
+ *
+ * Recommended: Call from Java after NativeOpsHolder initialization.
+ */
+SD_LIB_EXPORT void initializeLifecycleCrashHandlers();
 
 /**
  * Returns NDArray lifecycle statistics as a JSON string.

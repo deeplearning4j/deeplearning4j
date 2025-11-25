@@ -56,10 +56,21 @@ class SD_LIB_EXPORT ShapeTrieNode {
     }
     _children.clear();
 
-    // Release buffer reference if it exists
-    // Uses manual reference counting to prevent premature deletion
+    // CRITICAL FIX: Respect reference counting before deleting buffers!
+    // The buffer should ONLY be deleted if refcount == 1 (cache is the only owner).
+    // If refcount > 1, other NDArrays still hold references - deleting would create
+    // dangling pointers that cause SIGSEGV crashes when accessed later.
+    //
+    // This is especially important during JVM shutdown where static destruction order
+    // is unpredictable and NDArrays may outlive the cache singleton.
     if (_buffer != nullptr) {
-      _buffer->release();
+      int refCount = _buffer->getRefCount();
+      if (refCount <= 1) {
+        // Only cache owns it - safe to delete
+        delete _buffer;
+      }
+      // If refCount > 1, intentionally leak to prevent use-after-free crashes.
+      // This is the correct behavior for cache cleanup with external references.
       _buffer = nullptr;
     }
   }

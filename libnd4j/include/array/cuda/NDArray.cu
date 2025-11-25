@@ -49,7 +49,6 @@
 #include <system/selective_rendering.h>
 #include "execution/cuda/LaunchDims.h"
 
-
 namespace sd {
 
 
@@ -609,12 +608,23 @@ void NDArray::repeat(const int axis, const std::vector<LongType>& repeats, NDArr
 
 ////////////////////////////////////////////////////////////////////////
 void* NDArray::specialBuffer() {
-  if (_buffer->special() == nullptr) {
+  if (_buffer == nullptr) {
+    THROW_EXCEPTION("NDArray::specialBuffer(): _buffer is nullptr - array not properly initialized");
+  }
+
+  void* specialBuf = _buffer->special();
+
+  if (specialBuf == nullptr) {
     syncToDevice();
     tickReadHost();
+    specialBuf = _buffer->special();
+    if (specialBuf == nullptr) {
+      THROW_EXCEPTION("NDArray::specialBuffer(): _buffer->special() returned nullptr even after syncToDevice - buffer not allocated");
+    }
   }
+
   // FIXME: this should be fixed once CUDA backend added
-  return static_cast<int8_t*>(_buffer->special()) + (offset() * sizeOfT());
+  return static_cast<int8_t*>(specialBuf) + (offset() * sizeOfT());
 }
 
 

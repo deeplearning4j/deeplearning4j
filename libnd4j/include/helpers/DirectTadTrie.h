@@ -40,27 +40,8 @@ namespace sd {
 #ifndef __JAVACPP_HACK__
 
 /**
- * Stores cached metadata about a TadPack for fast comparison without recomputation
- *
- * CRITICAL FIX (Session #395): Removed stride comparison to prevent cache proliferation.
- *
- * ROOT CAUSE OF 135 MB TAD CACHE LEAK:
- * Previous implementation compared strides in matches(), causing cache misses for arrays
- * with identical shapes but different memory layouts (views, transposes, etc.).
- *
- * Each unique stride pattern created a NEW cache entry even though the TAD computation
- * result (TAD shape and offsets) is IDENTICAL for the same logical shape and dimensions.
- *
- * Example scenario that caused leaks:
- * 1. Original array [10, 20, 30] with C-order strides → TAD pack 1
- * 2. View of same array (subarray) with different strides → TAD pack 2 (DUPLICATE!)
- * 3. Reshaped array with different strides → TAD pack 3 (DUPLICATE!)
- *
- * During embedding model execution with 130+ operations involving views/reshapes,
- * this caused 130 TAD packs (135 MB) to accumulate instead of reusing cached entries.
- *
- * FIX: Match only on shape, rank, and dataType (NOT strides or order).
- * TAD pack structure depends on OUTPUT layout, not INPUT layout.
+ * Stores cached metadata about a TadPack for fast comparison without recomputation.
+ * Matches only on shape, rank, and dataType (not strides or order).
  */
 struct TadPackSignature {
   LongType* shape = nullptr;
@@ -94,8 +75,6 @@ struct TadPackSignature {
     int otherRank = shape::rank(shapeInfo);
     if (rank != otherRank) return false;
 
-    // REMOVED: order comparison (not relevant for TAD pack reuse)
-    // REMOVED: stride comparison (caused cache proliferation)
 
     if (dataType != ArrayOptions::dataType(shapeInfo)) return false;
 
@@ -189,7 +168,6 @@ class SD_LIB_EXPORT TadTrieNode {
  const TadPackSignature* packSignature() const { return _packSignature; }
 
  // Enhanced TadPack setter with signature caching
- // CRITICAL FIX: Takes ownership via shared_ptr to prevent use-after-free
  void setPack(std::shared_ptr<TadPack> pack) {
    // Thread-safe assignment using atomic operations
    std::atomic_store(&_tadPack, pack);

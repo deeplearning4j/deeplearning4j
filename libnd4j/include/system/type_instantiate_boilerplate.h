@@ -167,7 +167,6 @@
 // SECTION 3: CONDITIONAL EXPANSION PRIMITIVES (VARIADIC)
 // ============================================================================
 
-// CRITICAL: Using variadic macros to preserve whitespace
 // Statement context expansions (for use in function bodies)
 #define SD_IF_1(...) __VA_ARGS__
 #define SD_IF_0(...) do {} while(0);

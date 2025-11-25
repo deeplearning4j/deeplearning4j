@@ -182,27 +182,24 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss, 3, 1, false, 0, 1) {
     }
     case 2: {  // 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of
       // all elements of weightsBroad array
-      NDArray sum;
-      sum.setContext(block.launchContext());
+      NDArray* sumPtr = nullptr;
       if (weights->isScalar()) {
         NDArray* weightTimesLen = (*weights) * E.lengthOf();
-        sum = *weightTimesLen;
-        delete weightTimesLen;
+        sumPtr = weightTimesLen;
       } else {
-        NDArray* sumPtr = weightsBroad->reduceNumber(reduce::Sum);
-        sum = *sumPtr;
-        delete sumPtr;
+        sumPtr = weightsBroad->reduceNumber(reduce::Sum);
       }
 
-      if (sum.e<double>(0) == 0.)
+      if (sumPtr->e<double>(0) == 0.) {
         (*output) = 0.;
-      else {
+      } else {
         NDArray* eSum = E.reduceNumber(reduce::Sum);
-        NDArray* result = (*eSum) / sum;
+        NDArray* result = (*eSum) / (*sumPtr);
         delete eSum;
         output->assign(result);
         delete result;
       }
+      delete sumPtr;
       break;
     }
     case 3: {  // 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of E
@@ -392,23 +389,19 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss_grad, 3, 3, false, 0, 1) {
     case 2: {  // 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of
       // all elements of weightsBroad array
 
-      NDArray sum;
-      sum.setContext(block.launchContext());
+      NDArray* sum = nullptr;
       if (weights->isScalar()) {
         NDArray* weightTimesLen = (*weights) * E.lengthOf();
-        sum = *weightTimesLen;
-        delete weightTimesLen;
+        sum = weightTimesLen;
       } else {
-        NDArray* sumPtr = weightsBroad->reduceNumber(reduce::Sum);
-        sum = *sumPtr;
-        delete sumPtr;
+        sum = weightsBroad->reduceNumber(reduce::Sum);
       }
 
-      if (sum.e<double>(0) == 0.) {
+      if (sum->e<double>(0) == 0.) {
         *dLdp = 0.;
         *dLdw = 0.;
       } else {
-        NDArray* weightsDivSum = (*weightsBroad) / sum;
+        NDArray* weightsDivSum = (*weightsBroad) / (*sum);
         *dLdp *= *weightsDivSum;
         delete weightsDivSum;
 
@@ -417,44 +410,45 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss_grad, 3, 3, false, 0, 1) {
         else if (weights != weightsBroad) {
           std::vector<LongType> axesToReduceAlong =
               ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
-          
+
           // Compute (E * sum - (E * weightsBroad).reduceNumber(Sum)) / (sum * sum)
-          NDArray* ETimesSum = E * sum;
+          NDArray* ETimesSum = E * (*sum);
           NDArray* ETimesWeights = E * (*weightsBroad);
           NDArray* ETimesWeightsSum = ETimesWeights->reduceNumber(reduce::Sum);
           delete ETimesWeights;
-          
+
           NDArray* numerator = (*ETimesSum) - (*ETimesWeightsSum);
           delete ETimesSum;
           delete ETimesWeightsSum;
-          
-          NDArray* sumSquared = sum * sum;
+
+          NDArray* sumSquared = (*sum) * (*sum);
           NDArray* result = (*numerator) / (*sumSquared);
           delete numerator;
           delete sumSquared;
-          
+
           result->reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
           delete result;
         } else {
           // Compute (E * sum - (E * weightsBroad).reduceNumber(Sum)) / (sum * sum)
-          NDArray* ETimesSum = E * sum;
+          NDArray* ETimesSum = E * (*sum);
           NDArray* ETimesWeights = E * (*weightsBroad);
           NDArray* ETimesWeightsSum = ETimesWeights->reduceNumber(reduce::Sum);
           delete ETimesWeights;
-          
+
           NDArray* numerator = (*ETimesSum) - (*ETimesWeightsSum);
           delete ETimesSum;
           delete ETimesWeightsSum;
-          
-          NDArray* sumSquared = sum * sum;
+
+          NDArray* sumSquared = (*sum) * (*sum);
           NDArray* result = (*numerator) / (*sumSquared);
           delete numerator;
           delete sumSquared;
-          
+
           dLdw->assign(result);
           delete result;
         }
       }
+      delete sum;
       break;
     }
     case 3: {  // 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of E

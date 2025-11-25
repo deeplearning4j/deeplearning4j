@@ -8366,7 +8366,6 @@ public class SameDiff extends SDBaseOps {
                     return true;
                 }
 
-                // CRITICAL: Don't recurse into producing operation during readiness check
                 // This prevents infinite loops and premature execution
                 return false;
 

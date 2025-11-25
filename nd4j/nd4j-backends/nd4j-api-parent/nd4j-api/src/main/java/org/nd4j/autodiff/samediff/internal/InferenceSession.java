@@ -185,7 +185,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 }
             }
         } finally {
-            // CRITICAL: Clear TAD cache in finally block to ensure cleanup even if exceptions occur
             // TAD packs accumulate during operation execution and MUST be cleared after EVERY inference
             // Without this finally block, exceptions would prevent cache clearing, causing unbounded memory growth
             org.nd4j.linalg.factory.Nd4j.clearTADCache();

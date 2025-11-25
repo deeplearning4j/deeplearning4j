@@ -258,6 +258,7 @@ sd::Pointer numpyFromNd4j(sd::Pointer data, sd::Pointer shapeBuffer, sd::LongTyp
 
 
 sd::Pointer shapeBufferForNumpy(sd::Pointer npyArray) {
+#ifdef __cpp_exceptions
   try {
     cnpy::NpyArray arr = cnpy::loadNpyFromPointer(reinterpret_cast<char *>(npyArray));
     unsigned int shapeSize = arr.shape.size();
@@ -286,9 +287,36 @@ sd::Pointer shapeBufferForNumpy(sd::Pointer npyArray) {
     return (sd::Pointer)(sd::ConstantShapeHelper::getInstance().createFromExisting(
         shapeBuffer));  // TO DO: this can lead to unpleasant crash sometimes
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    safeSetErrorContext(1, e.what());
     return nullptr;
   }
+#else
+  cnpy::NpyArray arr = cnpy::loadNpyFromPointer(reinterpret_cast<char *>(npyArray));
+  unsigned int shapeSize = arr.shape.size();
+  std::vector<sd::LongType> shape(shapeSize);
+  bool _empty = false;
+  for (unsigned int i = 0; i < shapeSize; i++) {
+    shape[i] = arr.shape[i];
+
+    if (arr.shape[i] == 0) _empty = true;
+  }
+
+  auto dtype = cnpy::dataTypeFromHeader(reinterpret_cast<char *>(npyArray));
+
+  sd::LongType *shapeBuffer;
+  if (shape.size() == 1 && shape[0] == 0) {
+    // scalar case
+    shapeBuffer = sd::ShapeBuilders::createScalarShapeInfo(dtype);
+  } else if (_empty) {
+    if (shapeSize > 0)
+      shapeBuffer = sd::ShapeBuilders::emptyShapeInfo(dtype, arr.fortranOrder ? 'f' : 'c', shape);
+    else
+      shapeBuffer = sd::ShapeBuilders::emptyShapeInfo(dtype);
+  } else {
+    shapeBuffer = sd::ShapeBuilders::createShapeInfo(dtype, arr.fortranOrder ? 'f' : 'c', shape);
+  }
+  return (sd::Pointer)(sd::ConstantShapeHelper::getInstance().createFromExisting(
+      shapeBuffer));  // TO DO: this can lead to unpleasant crash sometimes
+#endif
 }
 

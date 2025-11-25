@@ -30,7 +30,11 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-SVD<T>::SVD(NDArray& matrix, const int switchSize, const bool calcU, const bool calcV, const bool fullUV) {
+SVD<T>::SVD(NDArray& matrix, const int switchSize, const bool calcU, const bool calcV, const bool fullUV)
+    : _m(matrix.dataType(), matrix.getContext(), true),
+      _s(matrix.dataType(), matrix.getContext(), true),
+      _u(matrix.dataType(), matrix.getContext(), true),
+      _v(matrix.dataType(), matrix.getContext(), true) {
   if (matrix.rankOf() != 2 || matrix.isScalar())
     THROW_EXCEPTION("ops::helpers::SVD constructor: input array must be 2D matrix !");
 
@@ -74,7 +78,11 @@ SVD<T>::SVD(NDArray& matrix, const int switchSize, const bool calcU, const bool 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 SVD<T>::SVD(NDArray& matrix, const int switchSize, const bool calcU, const bool calcV, const bool fullUV,
-            const char t) {
+            const char t)
+    : _m(matrix.dataType(), matrix.getContext(), true),
+      _s(matrix.dataType(), matrix.getContext(), true),
+      _u(matrix.dataType(), matrix.getContext(), true),
+      _v(matrix.dataType(), matrix.getContext(), true) {
   if (matrix.rankOf() != 2 || matrix.isScalar())
     THROW_EXCEPTION("ops::helpers::SVD constructor: input array must be 2D matrix !");
 
@@ -527,7 +535,8 @@ void SVD<T>::calcSingVecs(NDArray zhat, NDArray& diag, NDArray perm, NDArray& si
     delete colUPtr;
     colU.nullify();
 
-    NDArray colV;
+    // Initialize colV as a scalar placeholder (will be reassigned if _calcV is true)
+    NDArray colV(_m.dataType(), _m.getContext(), true);
 
     if (_calcV) {
       NDArray *colVPtr = V({0, 0, k, k + 1});
@@ -847,7 +856,10 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
   delete assignTwo;
   deflation(col1, col2, k, row1W, col1W, shift);
 
-  NDArray UofSVD, VofSVD, singVals;
+  // Initialize as scalar placeholders (will be reassigned by calcBlockSVD)
+  NDArray UofSVD(_u.dataType(), _u.getContext(), true);
+  NDArray VofSVD(_v.dataType(), _v.getContext(), true);
+  NDArray singVals(_m.dataType(), _m.getContext(), true);
 
   calcBlockSVD(col1 + shift, n, UofSVD, singVals, VofSVD);
   if (_calcU) {

@@ -285,7 +285,8 @@ void AttentionHelper::dotProductAttentionBpHelper(NDArray *query, NDArray *key, 
     dldS *= scale;
   }
 
-  NDArray times;
+  // Initialize times as a scalar placeholder (will be reassigned if mask is present)
+  NDArray times(query->dataType(), query->getContext(), true);
   if(mask != nullptr && !mask->isEmpty()) {
     ops::expand_dims expandDims;
     auto maskCast = mask->cast(query->dataType());

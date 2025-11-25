@@ -67,7 +67,7 @@ void qrSingle(NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatricies)
   sd::LongType N = matrix->sizeAt(-1);
   auto resQ = fullMatricies ? Q->ulike() : new NDArray(NDArrayFactory::create<T>(matrix->ordering(), {M, M}, Q->getContext()));
   auto resR = fullMatricies ? R->ulike() : matrix->ulike();
-  std::vector<NDArray> q(M);
+  std::vector<NDArray*> q(M, nullptr);
 
   std::vector<sd::LongType> mShape = {M};
   NDArray z = *matrix;
@@ -100,20 +100,20 @@ void qrSingle(NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatricies)
     delete eDivNormE;
     delete normEPtr;
     
-    q[k] = vmul<T>(e, M);
+    q[k] = new NDArray(vmul<T>(e, M));
     auto qQ = z.ulike();
-    MmulHelper::matmul(&q[k], &z, qQ, false, false, 0, 0, qQ);
+    MmulHelper::matmul(q[k], &z, qQ, false, false, 0, 0, qQ);
     z = std::move(*qQ);
 
     delete currentColumn;
   }
 
 
-  resQ->assign(&q[0]);  //
+  resQ->assign(q[0]);  //
 
   for (sd::LongType i = 1; i < N && i < M - 1; i++) {
     auto tempResQ = resQ;
-    MmulHelper::matmul(&q[i], resQ, tempResQ, false, false, 0, 0, tempResQ);  // use mmulMxM?
+    MmulHelper::matmul(q[i], resQ, tempResQ, false, false, 0, 0, tempResQ);  // use mmulMxM?
     resQ = std::move(tempResQ);
   }
   MmulHelper::matmul(resQ, matrix, resR, false, false, 0, 0, resR);
@@ -131,6 +131,13 @@ void qrSingle(NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatricies)
     R->assign(resRView);
     delete resQView;
     delete resRView;
+  }
+
+  // Clean up allocated NDArrays in q vector
+  for (sd::LongType i = 0; i < M; i++) {
+    if (q[i] != nullptr) {
+      delete q[i];
+    }
   }
 
   delete resQ;

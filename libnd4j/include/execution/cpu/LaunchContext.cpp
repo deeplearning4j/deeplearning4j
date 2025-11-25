@@ -48,12 +48,29 @@ namespace sd {
 
 LaunchContext::~LaunchContext() {
 #if HAVE_ONEDNN
-  delete reinterpret_cast<dnnl::engine*>(_engine);
+  // Intentionally NOT deleting _engine to avoid use-after-free during shutdown
+  // The LaunchContext objects are kept alive in a function-local static vector (contexts())
+  // to survive JVM shutdown. Deleting _engine here causes crashes because
+  // OneDNN's static cleanup may have already run, making the engine invalid.
+  // This is safe because LaunchContext instances are never destroyed during
+  // normal operation - only during process exit when memory cleanup doesn't matter.
+  // delete reinterpret_cast<dnnl::engine*>(_engine);
 #endif
 }
 
-std::vector<std::shared_ptr<LaunchContext>>* LaunchContext::_contexts =
-    new std::vector<std::shared_ptr<LaunchContext>>();  // intentionally leaked to survive JVM shutdown
+// This avoids static destruction order crashes during JVM shutdown
+// CRITICAL FIX: Use pointer to prevent static destructor from running.
+// The vector is intentionally leaked to avoid crashes during shutdown when:
+// 1. An exception is thrown that references LaunchContext
+// 2. JVM shuts down and runs static destructors
+// 3. The vector's destructor tries to destroy shared_ptrs while they're still in use
+// This is safe because LaunchContexts are only created during initialization and
+// process exit cleans up all memory anyway.
+std::vector<std::shared_ptr<LaunchContext>>& LaunchContext::contexts() {
+  static std::vector<std::shared_ptr<LaunchContext>>* _contexts = new std::vector<std::shared_ptr<LaunchContext>>();
+  return *_contexts;
+}
+
 SD_MAP_IMPL<int, std::mutex*> LaunchContext::_deviceMutexes;
 std::mutex LaunchContext::_mutex;
 
@@ -77,12 +94,12 @@ LaunchContext* LaunchContext::defaultContext() {
     // synchronous block goes here
     std::lock_guard<std::mutex> lock(_lock);
     // TODO: we need it to be device-aware, but only once we add NUMA support for cpu
-    if (LaunchContext::_contexts->empty())
-      LaunchContext::_contexts->emplace_back(std::make_shared<LaunchContext>());
+    if (LaunchContext::contexts().empty())
+      LaunchContext::contexts().emplace_back(std::make_shared<LaunchContext>());
   }
 
   // return context for current device
-  return LaunchContext::_contexts->at(0).get();
+  return LaunchContext::contexts().at(0).get();
 }
 
 std::mutex* LaunchContext::deviceMutex() { return &_mutex; }

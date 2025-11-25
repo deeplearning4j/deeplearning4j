@@ -2,7 +2,6 @@
 # Configures compiler and linker flags for optimization and correctness.
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    # CRITICAL: -fno-plt is incompatible with large binaries using -mcmodel=large
     # When sanitizers or lifecycle tracking are enabled, we use large code model which can cause PLT overflow
     # Skip -fno-plt for these builds to avoid "PC-relative offset overflow" linker errors
     if(NOT ((DEFINED SD_SANITIZERS AND NOT SD_SANITIZERS STREQUAL "") OR SD_GCC_FUNCTRACE))
@@ -18,7 +17,6 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
     #This is to avoid jemalloc crashes where c++ uses sized deallocations
     add_compile_options(-fno-sized-deallocation)
 
-    # CRITICAL FIX for "cannot allocate memory in static TLS block" error with dlopen()
     # JavaCPP loads our library via dlopen() at runtime, not at program startup
     # Libraries loaded via dlopen() with static TLS (initial-exec model) can exhaust the static TLS block
     # Solution: Force global-dynamic TLS model for ALL thread-local storage
@@ -50,7 +48,6 @@ endif()
 # Template depth limits - standardized based on build type
 # Release builds: 512 (sufficient for production, faster compilation)
 # Debug builds: 1024 (deeper nesting for development)
-# NOTE: Actual values set in Options.cmake based on build type
 
 # GCC-specific error limiting
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -83,7 +80,6 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         # Reduce DWARF debug info overhead (keep line tables only)
         add_compile_options(-fdebug-info-for-profiling)
 
-        # NOTE: Removed unsupported LLVM flags for Clang 20+
         # These flags don't exist: -hot-cold-split, -reduce-array-computations, -enable-loop-distribute
 
         # Disable expensive optimizations during compilation to save memory
@@ -115,17 +111,19 @@ if(SD_USE_LTO)
 endif()
 
 # --- Memory Model for large binaries ---
-# Note: With sanitizers or lifecycle tracking enabled, we need large model to avoid PLT entry overflow
-# Lifecycle tracking (SD_GCC_FUNCTRACE) adds significant instrumentation code, increasing binary size
-# Without these features, medium model is sufficient
+# CRITICAL: -mcmodel=large is INCOMPATIBLE with system CRT libraries (crtbeginS.o, crti.o)
+# System libraries are compiled with -mcmodel=small and cannot be linked into -mcmodel=large binaries
+# This causes "relocation truncated to fit: R_X86_64_PC32" errors (see session #959, #1008)
+# SOLUTION: Use -mcmodel=medium for both sanitizers AND functrace builds
+# Medium model: Code can be anywhere, data/GOT in lowest 2GB (compatible with system libraries)
 if(SD_X86_BUILD AND NOT WIN32)
     if(SD_SANITIZE OR SD_GCC_FUNCTRACE)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=large -fPIC")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcmodel=large")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=medium -fPIC")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcmodel=medium")
         if(SD_SANITIZE)
-            message(STATUS "Applied large memory model for x86-64 architecture (sanitizers enabled)")
+            message(STATUS "Applied medium memory model for x86-64 architecture (sanitizers enabled)")
         elseif(SD_GCC_FUNCTRACE)
-            message(STATUS "Applied large memory model for x86-64 architecture (lifecycle tracking enabled)")
+            message(STATUS "Applied medium memory model for x86-64 architecture (lifecycle tracking enabled)")
         endif()
     else()
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=medium -fPIC")
@@ -151,19 +149,17 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
         # Merge identical constants to reduce object file size
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmerge-all-constants")
 
-        # Use non-unique section names (reduces ELF section overhead)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-unique-section-names")
-
-        # For Clang: limit AST memory retention
+        # Use non-unique section names (reduces ELF section overhead) - Clang only
         if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-unique-section-names")
             # Don't keep full AST in memory during code generation
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xclang -discard-value-names")
         endif()
 
         message(STATUS "⚡ Applied memory-reduction compiler flags for functrace ONLY:")
         message(STATUS "   - fmerge-all-constants (reduce duplication)")
-        message(STATUS "   - fno-unique-section-names (reduce ELF overhead)")
         if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+            message(STATUS "   - fno-unique-section-names (reduce ELF overhead, Clang only)")
             message(STATUS "   - discard-value-names (reduce AST retention)")
         endif()
     endif()
@@ -237,7 +233,7 @@ if(SD_SANITIZE)
     # For large binaries with MSan: must use large code model
     # Use LLD linker for better memory handling (gold OOMs on 23GB+ builds)
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        # MEMORY OPTIMIZATION: Use -gline-tables-only instead of full debug info
+        # MEMORY OPTIMIZATION: Use -gline-tables-only instead of full debug info (Clang-specific)
         # This reduces memory by 40-60% for template-heavy code while maintaining stack traces
         set(SANITIZE_FLAGS " -fPIC -fsanitize=${SD_SANITIZERS} -fno-sanitize-recover=all -fuse-ld=gold -gline-tables-only")
 
@@ -245,7 +241,6 @@ if(SD_SANITIZE)
         if(SD_SANITIZERS MATCHES "memory")
             set(SANITIZE_FLAGS "${SANITIZE_FLAGS} -fsanitize-ignorelist=${CMAKE_CURRENT_SOURCE_DIR}/msan_ignorelist.txt")
 
-            # CRITICAL FIX for "cannot allocate memory in static TLS block" with dlopen()
             # Disable origin tracking to reduce MSan's static TLS usage
             # - Origin tracking uses significant TLS to track uninitialized memory sources
             # - With dlopen() (JavaCPP's loading method), static TLS space is limited
@@ -253,7 +248,6 @@ if(SD_SANITIZE)
             # - MSan will still detect uninitialized memory, just without origin traces
             set(SANITIZE_FLAGS "${SANITIZE_FLAGS} -fsanitize-memory-track-origins=0")
 
-            # CRITICAL FIX: Statically link MSan runtime instead of dynamic linking
             # - Dynamic linking: libnd4jcpu.so depends on libclang_rt.msan.so (separate .so with static TLS)
             # - Static linking: MSan runtime code embedded in libnd4jcpu.so (TLS becomes part of our library)
             # - Combined with global-dynamic TLS model, this eliminates static TLS block exhaustion
@@ -265,7 +259,6 @@ if(SD_SANITIZE)
             message(STATUS "Enabled static MSan runtime linking to eliminate separate TLS allocation")
         endif()
 
-        # CRITICAL FIX for "cannot allocate memory in static TLS block" error
         # Explicitly force global-dynamic TLS model for dlopen() compatibility
         # - global-dynamic: Uses __tls_get_addr() for dynamic TLS allocation
         # - Works with libraries loaded via dlopen() (JavaCPP's method)
@@ -276,9 +269,9 @@ if(SD_SANITIZE)
 
         # Additional memory optimizations for template-heavy instantiation files
         set(SANITIZE_FLAGS "${SANITIZE_FLAGS} -fmerge-all-constants")
-        set(SANITIZE_FLAGS "${SANITIZE_FLAGS} -fno-unique-section-names")
+        set(SANITIZE_FLAGS "${SANITIZE_FLAGS} -fno-unique-section-names")  # Clang-specific
 
-        message(STATUS "Applied memory-optimized sanitizer flags (-gline-tables-only)")
+        message(STATUS "Applied memory-optimized sanitizer flags (-gline-tables-only, Clang-specific)")
     else()
         set(SANITIZE_FLAGS " -Wall -Wextra -fPIC -fsanitize=${SD_SANITIZERS} -fno-sanitize-recover=all")
     endif()
@@ -287,7 +280,6 @@ if(SD_SANITIZE)
     # Gold linker handles MSan's TLS correctly for shared libraries (LLD has issues)
     set(SANITIZE_LINK_FLAGS "-fsanitize=${SD_SANITIZERS} -fuse-ld=gold")
 
-    # CRITICAL: Pass code model to linker to match compiler flags
     # Without this, linker uses wrong relocation types → "relocation truncated to fit" errors
     if(SD_X86_BUILD AND NOT WIN32)
         if(DEFINED SD_SANITIZERS AND NOT SD_SANITIZERS STREQUAL "")
@@ -337,10 +329,8 @@ if(SD_SANITIZE)
             endif()
             set(SANITIZE_LINK_FLAGS "${SANITIZE_LINK_FLAGS} -Wl,--icf=safe")
 
-            # NOTE: --hash-size is NOT supported by GNU gold linker (only by GNU ld/bfd)
             # Gold uses its own internal hash table optimization that cannot be configured
 
-            # Enable multi-threaded linking with gold (CRITICAL for performance + memory)
             # Gold by default is single-threaded. Multi-threading speeds up linking 2-4x
             # and can reduce peak memory by spreading work across time
             cmake_host_system_information(RESULT NUM_CORES QUERY NUMBER_OF_PHYSICAL_CORES)
@@ -371,7 +361,6 @@ if(SD_SANITIZE)
             set(SANITIZE_LINK_FLAGS "${SANITIZE_LINK_FLAGS} -Wl,--icf=all")
 
             # For very large builds (23GB+ object files), reduce memory usage
-            # NOTE: --no-map-whole-files is gold-specific, NOT supported by lld
             set(SANITIZE_LINK_FLAGS "${SANITIZE_LINK_FLAGS} -Wl,--gc-sections")
 
             # LLD has built-in threading, configure job count
@@ -455,7 +444,6 @@ if(SD_SANITIZE)
                 message(STATUS "Using static MSan runtime (via -static-libsan) for gold linker (${SANITIZER_ARCH})")
             endif()
 
-            # CRITICAL: LeakSanitizer also needs explicit runtime linking for JNI usage
             # -fsanitize=leak uses the ASAN runtime (there's no separate LSAN .so)
             # For shared libraries loaded by JVM/JNI, the sanitizer runtime MUST be
             # dynamically linked, not statically linked. Without this, the sanitizer
@@ -503,14 +491,12 @@ endif()
 
 # --- Strict Linker Flags to Catch Undefined Symbols Early ---
 # This helps catch missing template specializations at link time instead of runtime
-# CRITICAL: This MUST be enabled for ALL builds to prevent shipping binaries with undefined symbols
 # EXCEPTION: Do NOT use --no-undefined with sanitizers, as they require runtime symbol resolution
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT SD_SANITIZE AND NOT SD_GCC_FUNCTRACE)
     message(STATUS "⚠️  ENFORCING strict linker flags - build will FAIL on ANY undefined symbols")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-undefined")
 
-    # CRITICAL: Add code model to linker flags to match compiler flags
     # Without this, linker uses wrong relocation types → "relocation truncated to fit" errors
     if(SD_X86_BUILD AND NOT WIN32)
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -mcmodel=medium")
@@ -518,118 +504,75 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT SD_SANITIZE AND NOT SD_GCC_FUNCTRA
         message(STATUS "Applied medium code model to linker flags (matches compiler -mcmodel=medium)")
     endif()
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND SD_GCC_FUNCTRACE AND NOT SD_SANITIZE)
-    # ═══════════════════════════════════════════════════════════════
-    # CRITICAL: SD_GCC_FUNCTRACE builds create 3.3GB binaries
-    # ═══════════════════════════════════════════════════════════════
     #
-    # ROOT CAUSE: Template instantiations generate massive amounts of code
-    # - Measured binary size: 3.3GB (exceeds 2GB relocation limit)
-    # - Historical failure rate: 99% (35 OOM kills, 21 relocation errors out of 100 builds)
-    #
-    # PREVIOUS FAILED APPROACHES (Sessions #240-329):
-    # - Switching linkers (gold/LLD/BFD) - ALL fail with >2GB binaries
-    # - Static linking libstdc++ - Makes problem WORSE (cp-demangle.o overflow)
-    # - Session #326: Using --rtlib=compiler-rt → clang_rt.crtbegin.o relocation errors
-    # - Session #329: Linking libunwind.a directly → UnwindLevel1.c relocation errors
-    #
-    # FUNDAMENTAL LIMITATION:
-    # - PC-relative addressing (R_X86_64_PC32, R_X86_64_REX_GOTPCRELX) has ±2GB range
-    # - System libraries (libunwind.a, crt*.o, libc startup) are PRECOMPILED with PC-relative addressing
-    # - These CANNOT be linked into binaries >2GB without recompiling them with -mcmodel=large
-    # - 3.3GB binary EXCEEDS the hardware/ABI addressing limit
     #
     # THIS IS A PLATFORM LIMITATION, NOT A CODE BUG
     #
-    # ═══════════════════════════════════════════════════════════════
-    # EARLY FAILURE DETECTION
-    # ═══════════════════════════════════════════════════════════════
 
         message(STATUS "⚠️  SD_GCC_FUNCTRACE enabled - binary will be ~3GB")
         message(STATUS "⚠️  WARNING: High risk of relocation errors with precompiled system libraries")
 
-    # Use standard linker flags - no special hacks
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-undefined")
 
-    # Memory optimizations for linking large binaries (functrace ONLY)
+    # Aggressive size reduction for functrace builds
+    add_compile_options(-ffunction-sections -fdata-sections)
+    add_compile_options(-fvisibility=hidden -fvisibility-inlines-hidden)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections,--as-needed")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections,--as-needed")
+
+    # Memory optimizations for linking large binaries
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-keep-memory")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--reduce-memory-overheads")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--hash-size=31")
 
-    # CRITICAL FIX (Session #328): Clang's crtbegin.o ALSO has relocation issues
-    # - Session #326 tried --rtlib=compiler-rt --unwindlib=libunwind
-    # - But clang_rt.crtbegin.o is ALSO precompiled and can't handle 3GB binaries!
-    # - Error: "relocation truncated to fit" from clang_rt.crtbegin.o
-    #
-    # ROOT CAUSE: 3.3GB binaries exceed PC-relative addressing limits (2GB)
-    # - BOTH GCC's crtbeginS.o AND Clang's crtbegin.o are precompiled
-    # - BOTH fail with "relocation truncated to fit" errors
-    # - NO precompiled C runtime can handle binaries this large
-    #
-    # SOLUTION: Don't use --rtlib/--unwindlib at LINK stage
-    # - Keep flags for COMPILATION (needed for exception handling code generation)
-    # - But REMOVE from linker (avoids pulling in precompiled crtbegin.o)
-    # - Explicitly link libunwind.a and compiler-rt builtins as object files
-    # - This bypasses the precompiled runtime objects that cause relocation errors
+    # NOTE: We use compiler-rt for runtime builtins but NOT libunwind for exception handling
+    # (Session #1045 fix: libunwind conflicts with JVM's libgcc_s, causing _Unwind_SetGR crashes)
+    # The system's libgcc_s handles exception unwinding, which is compatible with JVM
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        # Compile-time flags: Tell compiler to generate code for libunwind
+        # CRITICAL FIX: Do NOT use --unwindlib=libunwind for JNI libraries!
+        #
+        # Problem (discovered in session #1045):
+        # - When --unwindlib=libunwind is used, Clang generates code assuming LLVM's libunwind ABI
+        # - We also statically link libunwind.a
+        # - BUT: At runtime, the JVM has libgcc_s.so loaded (for its own exception handling)
+        # - Due to dynamic symbol interposition, _Unwind* symbols from libgcc_s.so override
+        #   our statically linked libunwind symbols
+        # - Result: ABI mismatch between exception context format → CRASH in _Unwind_SetGR
+        #
+        # The crash manifests as: SIGSEGV in _Unwind_SetGR+0x3e trying to write to read-only
+        # memory in libnd4jcpu.so during exception handling
+        #
+        # Solution: Use the system's default exception handling (libgcc_s), which is
+        # compatible with the JVM environment. Keep compiler-rt only for builtins.
+        #
+        # Use compiler-rt for runtime builtins (math, etc.) but NOT for exception handling
         add_compile_options(--rtlib=compiler-rt)
-        add_compile_options(--unwindlib=libunwind)
+        # REMOVED: add_compile_options(--unwindlib=libunwind)
+        # Let the system use libgcc_s for exception unwinding - compatible with JVM
 
-        # DON'T add --rtlib/--unwindlib to linker flags!
-        # This would pull in precompiled crtbegin.o → relocation errors
-
-        # Get LLVM library directory
-        execute_process(
-            COMMAND ${CMAKE_CXX_COMPILER} --print-resource-dir
-            OUTPUT_VARIABLE CLANG_RESOURCE_DIR
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-        )
-
-        # Construct path to libunwind.a
-        get_filename_component(CLANG_LIB_DIR "${CLANG_RESOURCE_DIR}/../.." ABSOLUTE)
-        set(LLVM_LIBUNWIND_PATH "${CLANG_LIB_DIR}/libunwind.a")
-
-        if(EXISTS "${LLVM_LIBUNWIND_PATH}")
-            # Add libunwind.a as an object file (not via -lunwind which searches dynamically)
-            link_libraries("${LLVM_LIBUNWIND_PATH}")
-            message(STATUS "✅ Explicitly linking LLVM libunwind.a: ${LLVM_LIBUNWIND_PATH}")
-        else()
-            message(WARNING "⚠️  LLVM libunwind.a not found at: ${LLVM_LIBUNWIND_PATH}")
-            message(WARNING "     Trying alternative path...")
-
-            # Try alternative: use --print-file-name
-            execute_process(
-                COMMAND ${CMAKE_CXX_COMPILER} --print-file-name=libunwind.a
-                OUTPUT_VARIABLE LLVM_LIBUNWIND_ALT
-                OUTPUT_STRIP_TRAILING_WHITESPACE
-            )
-
-            if(EXISTS "${LLVM_LIBUNWIND_ALT}")
-                link_libraries("${LLVM_LIBUNWIND_ALT}")
-                message(STATUS "✅ Found libunwind.a via alternative path: ${LLVM_LIBUNWIND_ALT}")
-            else()
-                message(FATAL_ERROR "❌ Cannot find LLVM libunwind.a - backward-cpp will have unresolved symbols")
-            endif()
-        endif()
-
-        message(STATUS "✅ Using Clang compiler-rt for compilation (exception handling)")
-        message(STATUS "✅ Linking libunwind.a directly (bypasses precompiled crtbegin.o)")
+        message(STATUS "✅ Using Clang compiler-rt for runtime builtins")
+        message(STATUS "✅ Using system libgcc_s for exception handling (JNI/JVM compatible)")
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        # With GCC, -finstrument-functions pulls in gprof startup code (__gmon_start__)
-        # which is not needed and causes undefined symbol errors if not using -pg.
-        # Linking with -lnopg provides a dummy implementation of these symbols.
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -lnopg")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lnopg")
-        message(STATUS "✅ Applying -lnopg linker flag for GCC functrace to resolve __gmon_start__")
+        # With GCC, -finstrument-functions may pull in gprof startup code (__gmon_start__)
+        # but this symbol is weakly defined and doesn't cause actual linker errors.
+        # No special linker flags needed - GCC runtime handles this correctly.
+        message(STATUS "✅ Using GCC with functrace (no special profiling symbols needed)")
     endif()
 
-    # Apply large code model to match compiler
+    # Apply medium code model to match compiler (CRITICAL: large model incompatible with system CRT)
     if(SD_X86_BUILD AND NOT WIN32)
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -mcmodel=large")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mcmodel=large")
-        message(STATUS "Applied large code model for functrace ONLY (binary size: ~3GB)")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -mcmodel=medium")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mcmodel=medium")
+        # Allow text relocations as escape hatch if binary is still too large
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,notext")
+        # Disable linker relaxation to prevent GOTPCREL relocation failures (required for medium code model)
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-relax")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-relax")
+        message(STATUS "Applied medium code model for functrace ONLY (binary size: ~3GB)")
         message(STATUS "Applied linker memory optimizations for functrace ONLY (--no-keep-memory, --reduce-memory-overheads)")
+        message(STATUS "Added -Wl,-z,notext to allow text relocations if needed")
+        message(STATUS "Added -Wl,--no-relax to prevent GOT relocation issues with medium code model")
     endif()
 elseif(SD_SANITIZE)
     message(STATUS "ℹ️  Skipping --no-undefined for sanitizer build (sanitizer runtime symbols resolved at runtime)")
@@ -641,24 +584,31 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 if(SD_GCC_FUNCTRACE)
     message(STATUS "✅ Applying SD_GCC_FUNCTRACE debug flags for line number information")
 
-    # MEMORY OPTIMIZATION: Use -gline-tables-only instead of -ggdb3
+    # MEMORY OPTIMIZATION: Use minimal debug info instead of full debug info
     # This reduces compilation memory usage by 40-60% while maintaining stack traces
-    # -gline-tables-only provides: file names, line numbers, function names (sufficient for debugging)
-    # -ggdb3 provides: all of above + variable info, inline info, macro info (causes memory explosion with templates)
-    set(CMAKE_CXX_FLAGS_RELEASE "-O0 -gline-tables-only -fPIC -DNDEBUG")
-    set(CMAKE_CXX_FLAGS_DEBUG "-O0 -gline-tables-only -fPIC")
-    set(CMAKE_C_FLAGS_RELEASE "-O0 -gline-tables-only -fPIC -DNDEBUG")
-    set(CMAKE_C_FLAGS_DEBUG "-O0 -gline-tables-only -fPIC")
+    # Clang: -gline-tables-only provides file names, line numbers, function names
+    # GCC: -g1 provides minimal debug info (line numbers and functions only)
+    # Full debug info (-ggdb3) causes memory explosion with templates
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        set(CMAKE_CXX_FLAGS_RELEASE "-O0 -gline-tables-only -fPIC -DNDEBUG")
+        set(CMAKE_CXX_FLAGS_DEBUG "-O0 -gline-tables-only -fPIC")
+        set(CMAKE_C_FLAGS_RELEASE "-O0 -gline-tables-only -fPIC -DNDEBUG")
+        set(CMAKE_C_FLAGS_DEBUG "-O0 -gline-tables-only -fPIC")
+    else()
+        set(CMAKE_CXX_FLAGS_RELEASE "-O0 -g1 -fPIC -DNDEBUG")
+        set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g1 -fPIC")
+        set(CMAKE_C_FLAGS_RELEASE "-O0 -g1 -fPIC -DNDEBUG")
+        set(CMAKE_C_FLAGS_DEBUG "-O0 -g1 -fPIC")
+    endif()
 
     # Add comprehensive debug flags
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         # Debug flags with function instrumentation
-        # MEMORY OPTIMIZATION: Use -gline-tables-only instead of -ggdb3
-        # CRITICAL FIX: Explicitly force global-dynamic TLS model for dlopen() compatibility
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gline-tables-only -finstrument-functions -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -fno-threadsafe-statics -ftls-model=global-dynamic")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gline-tables-only -fno-omit-frame-pointer -ftls-model=global-dynamic")
+        # MEMORY OPTIMIZATION: Use -g1 (minimal debug info) instead of -ggdb3
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g1 -finstrument-functions -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -fno-threadsafe-statics -ftls-model=global-dynamic")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g1 -fno-omit-frame-pointer -ftls-model=global-dynamic")
         message(STATUS "Applied memory-optimized debug flags for GCC (instrumentation enabled):")
-        message(STATUS "  - gline-tables-only for 40-60% memory reduction vs ggdb3")
+        message(STATUS "  - g1 (minimal debug info) for 40-60% memory reduction vs ggdb3")
         message(STATUS "  - disabled thread-safe static guards")
         message(STATUS "  - enabled function instrumentation")
 
@@ -667,13 +617,12 @@ if(SD_GCC_FUNCTRACE)
         string(REGEX REPLACE "-O[0-9s]" "-O0" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         # Debug flags with function instrumentation
-        # MEMORY OPTIMIZATION: Use -gline-tables-only instead of -ggdb3
-        # CRITICAL FIX: Explicitly force global-dynamic TLS model for dlopen() compatibility
+        # MEMORY OPTIMIZATION: Use -gline-tables-only instead of -ggdb3 (Clang-specific flag)
         # AGGRESSIVE MEMORY: Disable inline tracking and macro debug info
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gline-tables-only -finstrument-functions -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -fno-threadsafe-statics -ftls-model=global-dynamic -fno-standalone-debug")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gline-tables-only -fno-omit-frame-pointer -ftls-model=global-dynamic -fno-standalone-debug")
         message(STATUS "Applied memory-optimized debug flags for Clang (instrumentation enabled):")
-        message(STATUS "  - gline-tables-only for 40-60% memory reduction vs ggdb3")
+        message(STATUS "  - gline-tables-only (Clang-specific) for 40-60% memory reduction vs ggdb3")
         message(STATUS "  - disabled thread-safe static guards")
         message(STATUS "  - enabled function instrumentation")
 
@@ -701,7 +650,6 @@ endif()
 # This ensures cleaner build logs and prevents potential flag conflicts
 
 # Helper function to deduplicate flags in a space-separated string
-# IMPORTANT: Preserves multi-word flags like "--param ggc-min-expand=100"
 function(deduplicate_flags FLAG_VAR)
     # Get the original flags
     set(original_flags "${${FLAG_VAR}}")

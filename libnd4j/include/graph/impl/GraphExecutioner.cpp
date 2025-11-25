@@ -626,11 +626,11 @@ flatbuffers::Offset<::graph::FlatResult> GraphExecutioner::execute(Graph *graph,
   if (Environment::getInstance().isDebugAndVerbose()) graph->printOut();
 
   auto status = execute(graph);
-  if (status != Status::OK) throw graph_execution_exception(request->id());
+  if (status != Status::OK) THROW_EXCEPTION(graph_execution_exception(request->id()).what());
 
   auto outputs = graph->fetchOutputs();
 
-  if (outputs->size() == 0) throw no_results_exception(request->id());
+  if (outputs->size() == 0) THROW_EXCEPTION(no_results_exception(request->id()).what());
 
   for (auto v : *outputs) {
     result.emplace_back(v);

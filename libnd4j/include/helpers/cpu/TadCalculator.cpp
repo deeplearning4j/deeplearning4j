@@ -54,7 +54,7 @@ void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
     for (LongType i = 0; i < totalElements; ++i) {
       offsets[i] = i;
     }
-    
+
     _tadShape = scalarShapeBuffer;
     _tadOffsets = new ConstantOffsetsBuffer(oPtr);
     _numTads = totalElements;

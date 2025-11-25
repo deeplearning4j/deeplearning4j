@@ -51,19 +51,19 @@ SD_LIB_EXPORT const char *getDetailedTypeConfig();
 #include <vector>
 
 // Generate proper error message for missing types
-std::string generateMissingTypeError(const std::string& missingType, const std::string& context = "");
+SD_LIB_EXPORT std::string generateMissingTypeError(const std::string& missingType, const std::string& context = "");
 
 // Generate error message for operations with missing types
 // Generate error message for operations with missing types
-std::string generateTypeMismatchError(const std::string& operation,
+SD_LIB_EXPORT std::string generateTypeMismatchError(const std::string& operation,
                                       const std::vector<std::string>& requiredTypes,
                                       const std::string& context = "");
 // Get detailed type configuration for debugging
-std::string getDetailedTypeConfiguration();
+SD_LIB_EXPORT std::string getDetailedTypeConfiguration();
 
 // Helper functions
-std::string toLowerCase(const std::string& str);
-std::string typeToScriptFormat(const std::string& typeName);
+SD_LIB_EXPORT std::string toLowerCase(const std::string& str);
+SD_LIB_EXPORT std::string typeToScriptFormat(const std::string& typeName);
 
 #endif
 

@@ -563,9 +563,11 @@ NDArray* operator-(T1 &&arr1, T2 &&arr2) {
   if (arr1.isS() || arr2.isS())
     THROW_EXCEPTION("operator-(T&& arr1, T&& arr2): you can't use this method on String arrays!");
   if (!Environment::getInstance().isExperimentalBuild() && arr1.dataType() != arr2.dataType() &&
-      (arr1.dataType() != DataType::BOOL || arr2.dataType() != BOOL))
-    throw sd::datatype_exception::build("operator-(T&& arr1, T&& arr2): Cannot multiply different types",
-                                        arr1.dataType(), arr2.dataType());
+      (arr1.dataType() != DataType::BOOL || arr2.dataType() != BOOL)) {
+    // Always throw exception - never use _exit(1) which kills the entire process
+    THROW_EXCEPTION(sd::datatype_exception::build("operator-(T&& arr1, T&& arr2): Cannot subtract different types",
+                                        arr1.dataType(), arr2.dataType()).what());
+  }
 
   PointersManager pointersManager(arr1.getContext(), "operator-(T&& arr1, T&& arr2)");
 
@@ -721,9 +723,11 @@ NDArray* operator/(T1 &&arr1, T2 &&arr2) {
   if (arr1.isS() || arr2.isS())
     THROW_EXCEPTION("operator/(T&& arr1, T&& arr2): you can't use this method on String arrays!");
   if (!Environment::getInstance().isExperimentalBuild() && arr1.dataType() != arr2.dataType() &&
-      (arr1.dataType() != DataType::BOOL || arr2.dataType() != BOOL))
-    throw sd::datatype_exception::build("operator/(T&& arr1, T&& arr2): Cannot multiply different types",
-                                        arr1.dataType(), arr2.dataType());
+      (arr1.dataType() != DataType::BOOL || arr2.dataType() != BOOL)) {
+    // Always throw exception - never use _exit(1) which kills the entire process
+    THROW_EXCEPTION(sd::datatype_exception::build("operator/(T&& arr1, T&& arr2): Cannot divide different types",
+                                        arr1.dataType(), arr2.dataType()).what());
+  }
 
   PointersManager pointersManager(arr1.getContext(), "operator/(T&& arr1, T&& arr2)");
 

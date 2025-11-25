@@ -36,6 +36,11 @@ ConstantOffsetsBuffer::ConstantOffsetsBuffer(const std::shared_ptr<PointerWrappe
   _specialOffsets = special;
 }
 
+ConstantOffsetsBuffer::ConstantOffsetsBuffer() {
+  _magic = MAGIC_VALID;  // Mark default-constructed objects as valid
+  // shared_ptr members are automatically initialized to nullptr
+}
+
 ConstantOffsetsBuffer::~ConstantOffsetsBuffer() {
   _magic = 0xDEADBEEF;  // Mark as destroyed - helps detect use-after-free
 }

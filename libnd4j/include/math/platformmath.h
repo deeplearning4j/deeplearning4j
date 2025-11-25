@@ -110,8 +110,8 @@ SD_INLINE SD_HOST void sd_print_math2(const char* func_name, T input1, T input2,
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
-  printf("%s<%s>: input1 = %f, input2 = %f, output = %f\n",
-         typeid(T).name(),func_name, static_cast<double>(input1), static_cast<double>(input2), static_cast<double>(output));
+  printf("%s<T>: input1 = %f, input2 = %f, output = %f\n",
+         func_name, static_cast<double>(input1), static_cast<double>(input2), static_cast<double>(output));
   fflush(stdout);
 }
 
@@ -202,8 +202,8 @@ SD_INLINE SD_HOST void sd_print_math(const char* func_name, T input, T output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
-  printf("%s<%s>: input = %f, output = %f\n",
-         func_name, typeid(T).name(),
+  printf("%s<T>: input = %f, output = %f\n",
+         func_name,
          static_cast<double>(input), static_cast<double>(output));
   fflush(stdout);
 }

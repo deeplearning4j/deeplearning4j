@@ -117,7 +117,11 @@ LongType* ShapeBuilders::createShapeInfo(const DataType dataType, const char ord
     shapeInfo[shape::shapeInfoLength(rank) - 1] = order;
   }
 
+  // The 'extras' parameter may not have data type flags set, which would cause
+  // ArrayOptions::dataType() to return UNKNOWN, triggering validation errors.
+  // We must call setDataType() AFTER setExtra() to ensure the data type is correct.
   ArrayOptions::setExtra(shapeInfo, extras);
+  ArrayOptions::setDataType(shapeInfo, dataType);  // Ensure data type is set from the dataType parameter
   shape::setOrder(shapeInfo, order);
   return shapeInfo;
 }

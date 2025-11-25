@@ -391,7 +391,6 @@
 // for template instantiation purposes, even though they have the same size.
 // JavaCPP and platform-specific code may request these raw types directly, so we need instantiations for both.
 // NOTE: Using PlatformUInt64 alias (defined above) instead of raw 'unsigned long' to avoid macro expansion issues
-// CRITICAL: On __LP64__ systems (Linux x86-64), uint64_t IS typedef'd to unsigned long, so including
 // both TTYPE_UINT64 (which is uint64_t) and TTYPE_PLATFORM_UINT64 (which is unsigned long) creates
 // duplicate template instantiations. Only include TTYPE_PLATFORM_UINT64 on non-__LP64__ systems where
 // uint64_t is unsigned long long and we need unsigned long separately.
@@ -663,6 +662,27 @@
 #undef HAS_UTF8
 #undef HAS_UTF16
 #undef HAS_UTF32
+
+// Undefine all TTYPE_* macros before redefining them
+#undef TTYPE_BOOL
+#undef TTYPE_HALF
+#undef TTYPE_FLOAT32
+#undef TTYPE_DOUBLE
+#undef TTYPE_INT8
+#undef TTYPE_INT16
+#undef TTYPE_INT32
+#undef TTYPE_INT64
+#undef TTYPE_UINT8
+#undef TTYPE_UINT16
+#undef TTYPE_UINT32
+#undef TTYPE_UINT64
+#undef TTYPE_BFLOAT
+#undef TTYPE_BFLOAT16
+#undef TTYPE_UTF8
+#undef TTYPE_UTF16
+#undef TTYPE_UTF32
+#undef TTYPE_PLATFORM_UINT64
+#undef TTYPE_PLATFORM_UINT32
 
 // Redefine based on SD_SINGLE_TYPE_*_COMPILED flags
 // NOTE: TTYPE_* macros MUST be defined here, after HAS_* redefinitions, not before

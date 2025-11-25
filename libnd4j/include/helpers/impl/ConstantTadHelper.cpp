@@ -96,7 +96,6 @@ std::shared_ptr<TadPack> ConstantTadHelper::tadForDimensions(LongType* originalS
   // Create non-temporary vector to satisfy the reference requirement
   std::vector<LongType> dims(dimensions, dimensions + dimLength);
 
-  // CRITICAL FIX: Returns shared_ptr<TadPack> to prevent use-after-free
   // The shared_ptr keeps the TadPack alive even if the cache tries to clear it
   std::shared_ptr<TadPack> result = nullptr;
   try {

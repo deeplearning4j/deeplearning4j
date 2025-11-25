@@ -9,7 +9,6 @@ function(apply_android_x86_64_plt_fixes target_name)
         return()
     endif()
 
-    # Additional target-specific compiler flags (all verified) - FIXED: Only for GCC/Clang
     if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         target_compile_options(${target_name} PRIVATE
                 -ffunction-sections
@@ -83,7 +82,6 @@ endfunction()
 
 # Function to apply memory optimization during compilation
 function(configure_compilation_memory_optimization)
-    # Memory optimization during compilation - FIXED: Only apply to GCC
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=100 --param ggc-min-heapsize=131072" PARENT_SCOPE)
         message(STATUS "Applied GCC memory optimization flags")
@@ -192,7 +190,6 @@ function(configure_architecture_tuning)
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmmx -msse -msse2 -msse3 -msse4.1 -msse4.2 -mavx -mavx2 -mfma -mf16c -mavx512f -mavx512vl -mavx512bw -mavx512dq -mavx512cd -mbmi -mbmi2 -mprefetchwt1 -mclflushopt -mxsavec -mxsaves -DSD_F16C=true -DF_AVX512=true" PARENT_SCOPE)
         endif()
 
-        # FIXED: Only set architecture flags if we have valid values
         if(NOT WIN32 AND NOT SD_CUDA)
             if(DEFINED SD_ARCH AND NOT SD_ARCH STREQUAL "" AND DEFINED ARCH_TYPE AND NOT ARCH_TYPE STREQUAL "")
                 set(ARCH_TUNE "-march=${SD_ARCH} -mtune=${ARCH_TYPE}" PARENT_SCOPE)
@@ -249,14 +246,13 @@ function(apply_compiler_specific_flags ARCH_TUNE)
                 set(CMAKE_CXX_EXTENSIONS OFF PARENT_SCOPE)
             endif()
 
-            # Compiler flags (no linker libraries here)
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-backtrace-limit=0 -gno-record-gcc-switches -ftrack-macro-expansion=0 -fstack-protector -fstack-protector-all -Wall -Wextra -Wno-return-type -Wno-error=int-in-bool-context -Wno-unused-variable -Wno-error=implicit-fallthrough -Wno-return-type -Wno-unused-parameter -Wno-error=unknown-pragmas -ggdb3 -pthread -MT -Bsymbolic -rdynamic -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -finstrument-functions -O0 -fPIC" PARENT_SCOPE)
 
-            # Linker libraries (separate from compiler flags)
-            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread -lbfd -lunwind -ldw -ldl -lelf" PARENT_SCOPE)
-            set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -lpthread -lbfd -lunwind -ldw -ldl -lelf" PARENT_SCOPE)
+            # Session #1045 FIX: Removed -lunwind - conflicts with JVM's libgcc_s causing _Unwind_SetGR crashes
+            # Use system libgcc_s for exception handling (JVM compatible)
+            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread -lbfd -ldw -ldl -lelf" PARENT_SCOPE)
+            set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -lpthread -lbfd -ldw -ldl -lelf" PARENT_SCOPE)
 
-            # Add the compiler definition
             add_compile_definitions(SD_GCC_FUNCTRACE=ON)
         endif()
     endif()

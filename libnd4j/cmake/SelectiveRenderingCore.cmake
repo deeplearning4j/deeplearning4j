@@ -1,5 +1,4 @@
 # ============================================================================
-# SelectiveRenderingCore.cmake (v20 - Production Optimized) - FIXED
 #
 # Optimized version with debug profiles removed for production builds.
 # Conditional diagnostics only when explicitly enabled via SD_ENABLE_DIAGNOSTICS.
@@ -198,7 +197,6 @@ function(_internal_srcore_is_valid_pair type1 type2 output_var)
     endif()
 
     # Rule 4: DISABLED - bool↔exotic float conversions ARE needed
-    # Session #320 filtered these but they're required by NativeOpExecutioner
     # Examples that failed linking: ScalarTransform<bfloat16, float16, bool>
     # if((t1_is_bool AND t2_is_exotic) OR (t1_is_exotic AND t2_is_bool))
     #     set(${output_var} FALSE PARENT_SCOPE)
@@ -206,7 +204,6 @@ function(_internal_srcore_is_valid_pair type1 type2 output_var)
     # endif()
 
     # Rule 5: DISABLED - exotic float×rare integer combinations ARE needed
-    # Session #320 filtered these but they're required by PairWiseTransform
     # Examples that failed linking: PairWiseTransform<bfloat16, *, short/uint16/uint64>
     # if((t1_is_exotic AND t2_is_rare) OR (t1_is_rare AND t2_is_exotic))
     #     set(${output_var} FALSE PARENT_SCOPE)
@@ -214,7 +211,6 @@ function(_internal_srcore_is_valid_pair type1 type2 output_var)
     # endif()
 
     # Rule 6: DISABLED - exotic float cross-conversions ARE needed
-    # Session #320 filtered these but they're required by NativeOpExecutioner
     # Examples that failed linking: PairWiseTransform<bfloat16, *, float16>
     # if(t1_is_exotic AND t2_is_exotic)
     #     # Both exotic and different types (same-type filtered by Rule 1)
@@ -348,7 +344,6 @@ function(_internal_srcore_is_valid_triple type1 type2 type3 output_var)
     # This filtering eliminates ~180 additional combinations with no semantic meaning,
     # saving ~2.7GB total and achieving ~7% reduction with minimal risk.
     #
-    # IMPORTANT: This must come BEFORE the permissive category-based rules (Rule 5, 6)
     # to prevent them from accepting these cross-rare-type combinations.
 
     # Check if both inputs are rare types
@@ -783,7 +778,6 @@ function(_internal_srcore_is_valid_reduce_float_pair input_type output_type outp
     endif()
 
     # Rule 3: Float input → any float output (including precision changes)
-    # NOTE: Originally filtered downcasts, but runtime shows these ARE needed
     # for operations that explicitly request different output precision.
     # Examples: ReduceFloatFunction<double, float>, <float, double>, etc.
     if(input_is_float)
@@ -1162,7 +1156,6 @@ function(_internal_srcore_discover_selective_types validated_types_list result_i
 
     file(READ "${types_header}" types_content)
 
-    # FIXED: When called with selective types, ALWAYS use the validated_types_list
     # The profile should only be used by _internal_srcore_discover_all_types()
     # This function is called when SRCORE_USE_SELECTIVE_TYPES=TRUE, meaning the
     # user explicitly provided a type list (e.g., via -Dlibnd4j.datatypes=...).
@@ -2319,7 +2312,6 @@ function(_internal_srcore_generate_validity_header active_indices type_enums typ
     # ============================================================================
     # SECTION 3: REMOVED - SD_IF_* CONDITIONAL COMPILATION MACROS
     # ============================================================================
-    # NOTE: The SD_IF_* macro generation has been completely removed.
     #
     # REASON: These macros consumed 19,344 lines (~96% of selective_rendering.h),
     # causing Clang 20.1.6 to exceed its source location limit ("ran out of source

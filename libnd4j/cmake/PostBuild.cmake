@@ -282,7 +282,6 @@ if(SD_PREPROCESS)
         endif()
     endforeach()
 
-    # Build definition flags - CRITICAL: Add the same definitions as main build
     set(defs_flags "")
     
     # Add basic platform definitions
@@ -294,7 +293,6 @@ if(SD_PREPROCESS)
         string(APPEND defs_flags " -DHAVE_OPENBLAS=1")
     endif()
 
-    # CRITICAL: Add operation definitions that define NOT_EXCLUDED macro
     if(SD_ALL_OPS OR "${SD_OPS_LIST}" STREQUAL "")
         string(APPEND defs_flags " -DSD_ALL_OPS=1")
         # When SD_ALL_OPS=1, NOT_EXCLUDED should evaluate to 1 for all ops

@@ -105,7 +105,16 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const Lo
   fillStrides();
 
 #if defined(SD_GCC_FUNCTRACE)
+  // - backward-cpp's backtrace() is NOT safe during very early JVM initialization
+#ifdef __cpp_exceptions
+  try {
+    this->st.load_here();
+  } catch (...) {
+    // Stack trace capture failed - st will remain empty (size() == 0)
+  }
+#else
   this->st.load_here();
+#endif
 #endif
 
 
@@ -155,7 +164,16 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const Lo
   }
 
 #if defined(SD_GCC_FUNCTRACE)
+  // - backward-cpp's backtrace() is NOT safe during very early JVM initialization
+#ifdef __cpp_exceptions
+  try {
+    this->st.load_here();
+  } catch (...) {
+    // Stack trace capture failed - st will remain empty (size() == 0)
+  }
+#else
   this->st.load_here();
+#endif
 #endif
 }
 
@@ -198,7 +216,16 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
     THROW_EXCEPTION("Shape descriptor created with invalid data type");
   }
 #if defined(SD_GCC_FUNCTRACE)
+  // - backward-cpp's backtrace() is NOT safe during very early JVM initialization
+#ifdef __cpp_exceptions
+  try {
+    this->st.load_here();
+  } catch (...) {
+    // Stack trace capture failed - st will remain empty (size() == 0)
+  }
+#else
   this->st.load_here();
+#endif
 #endif
 }
 
@@ -212,7 +239,16 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
     THROW_EXCEPTION("Shape descriptor created with invalid data type");
   }
 #if defined(SD_GCC_FUNCTRACE)
+  // - backward-cpp's backtrace() is NOT safe during very early JVM initialization
+#ifdef __cpp_exceptions
+  try {
+    this->st.load_here();
+  } catch (...) {
+    // Stack trace capture failed - st will remain empty (size() == 0)
+  }
+#else
   this->st.load_here();
+#endif
 #endif
 }
 
@@ -226,7 +262,16 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const LongType length)
   }
 
 #if defined(SD_GCC_FUNCTRACE)
+  // - backward-cpp's backtrace() is NOT safe during very early JVM initialization
+#ifdef __cpp_exceptions
+  try {
+    this->st.load_here();
+  } catch (...) {
+    // Stack trace capture failed - st will remain empty (size() == 0)
+  }
+#else
   this->st.load_here();
+#endif
 #endif
 }
 
@@ -371,7 +416,16 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, bool validateDataTyp
   }
 
 #if defined(SD_GCC_FUNCTRACE)
+  // - backward-cpp's backtrace() is NOT safe during very early JVM initialization
+#ifdef __cpp_exceptions
+  try {
+    this->st.load_here();
+  } catch (...) {
+    // Stack trace capture failed - st will remain empty (size() == 0)
+  }
+#else
   this->st.load_here();
+#endif
 #endif
 
 }
@@ -395,7 +449,16 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, const DataType dtype
   }
 
 #if defined(SD_GCC_FUNCTRACE)
+  // - backward-cpp's backtrace() is NOT safe during very early JVM initialization
+#ifdef __cpp_exceptions
+  try {
+    this->st.load_here();
+  } catch (...) {
+    // Stack trace capture failed - st will remain empty (size() == 0)
+  }
+#else
   this->st.load_here();
+#endif
 #endif
 }
 
@@ -406,7 +469,16 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, const LongType *dtyp
   }
 
 #if defined(SD_GCC_FUNCTRACE)
+  // - backward-cpp's backtrace() is NOT safe during very early JVM initialization
+#ifdef __cpp_exceptions
+  try {
+    this->st.load_here();
+  } catch (...) {
+    // Stack trace capture failed - st will remain empty (size() == 0)
+  }
+#else
   this->st.load_here();
+#endif
 #endif
 }
 
@@ -420,7 +492,16 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, const LongType *dtyp
 
 
 #if defined(SD_GCC_FUNCTRACE)
+  // - backward-cpp's backtrace() is NOT safe during very early JVM initialization
+#ifdef __cpp_exceptions
+  try {
+    this->st.load_here();
+  } catch (...) {
+    // Stack trace capture failed - st will remain empty (size() == 0)
+  }
+#else
   this->st.load_here();
+#endif
 #endif
 }
 
@@ -472,8 +553,17 @@ LongType ShapeDescriptor::allocLength() const {
 
 void ShapeDescriptor::collectStoreStackTrace() {
 #if defined(SD_GCC_FUNCTRACE)
+  // - backward-cpp's backtrace() is NOT safe during very early JVM initialization
   this->storeStackTrace = backward::StackTrace();
+#ifdef __cpp_exceptions
+  try {
+    this->storeStackTrace.load_here(32);
+  } catch (...) {
+    // Stack trace capture failed - storeStackTrace will remain empty (size() == 0)
+  }
+#else
   this->storeStackTrace.load_here(32);
+#endif
 #endif
 }
 
@@ -576,7 +666,16 @@ ShapeDescriptor::ShapeDescriptor(const ShapeDescriptor &other) {
   this->ownsShapeStrides = false;
   _paddedAllocSize = other._paddedAllocSize;
 #if defined(SD_GCC_FUNCTRACE)
+  // - backward-cpp's backtrace() is NOT safe during very early JVM initialization
+#ifdef __cpp_exceptions
+  try {
+    this->st.load_here();
+  } catch (...) {
+    // Stack trace capture failed - st will remain empty (size() == 0)
+  }
+#else
   this->st.load_here();
+#endif
 #endif
 }
 
@@ -590,7 +689,16 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
   _shape_strides = new LongType [2 * rank2];
   this->ownsShapeStrides = true;
 #if defined(SD_GCC_FUNCTRACE)
+  // - backward-cpp's backtrace() is NOT safe during very early JVM initialization
+#ifdef __cpp_exceptions
+  try {
+    this->st.load_here();
+  } catch (...) {
+    // Stack trace capture failed - st will remain empty (size() == 0)
+  }
+#else
   this->st.load_here();
+#endif
 #endif
   auto _shape = _shape_strides;
   auto _strides = _shape_strides + rank2;

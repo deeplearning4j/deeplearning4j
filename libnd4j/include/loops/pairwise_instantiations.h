@@ -295,6 +295,8 @@
     template name<GET_SECOND_ARG tuple1, GET_SECOND_ARG tuple2>suffix
 
 // Special callback for promotion
+// Undefine first to avoid redefinition warning if type_promote.h was included
+#undef CALLBACK_INSTANTIATE_PROMOTE
 #define CALLBACK_INSTANTIATE_PROMOTE(tuple1, tuple2, name, suffix, end) \
     template void functions::pairwise_transforms::PairWiseTransform<GET_SECOND_ARG tuple1, GET_SECOND_ARG tuple2, \
         typename TypePromotion<GET_SECOND_ARG tuple1, GET_SECOND_ARG tuple2>::type>::exec( \

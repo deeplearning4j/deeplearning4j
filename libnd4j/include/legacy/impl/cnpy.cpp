@@ -46,6 +46,7 @@ char cnpy::BigEndianTest() {
  * @param t
  * @return
  */
+#ifdef __cpp_rtti
 char cnpy::mapType(const std::type_info &t) {
   if (t == typeid(float)) return 'f';
   if (t == typeid(double)) return 'f';
@@ -73,6 +74,7 @@ char cnpy::mapType(const std::type_info &t) {
   else
     return '?';
 }
+#endif
 
 template <typename T>
 char cnpy::mapType() {

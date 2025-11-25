@@ -249,9 +249,12 @@ void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo
  auto yTadShapeShapeInfo = yTadShapeInfo;
  auto tadOffsets = yTadOffset;
 
+ // When shared_ptr goes out of scope, it deletes the TadPack and invalidates pointers!
+ std::shared_ptr<sd::TadPack> tadPack = nullptr;
+
  if (yTadShapeInfo == nullptr || tadOffsets == nullptr) {
-   auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType*>(yShapeInfo), dimension,
-                                                                        dimensionLength);
+   tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType*>(yShapeInfo), dimension,
+                                                                   dimensionLength);
    yTadShapeShapeInfo = tadPack->primaryShapeInfo();
    tadOffsets = tadPack->primaryOffsets();
  }
@@ -552,35 +555,42 @@ static void execDefault(const X *x, const sd::LongType *xShapeInfo, const X *y, 
   const sd::LongType xRank = shape::rank(xShapeInfo);
   const sd::LongType yRank = shape::rank(yShapeInfo);
   const sd::LongType zRank = shape::rank(zShapeInfo);
-
-  auto xStride = shape::stride(xShapeInfo);
-  auto yStride = shape::stride(yShapeInfo);
-  auto zStride = shape::stride(zShapeInfo);
-
-  auto zShape = shape::shapeOf(zShapeInfo);
   const sd::LongType zLen = shape::length(zShapeInfo);
 
   const bool xzSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);
   const bool yzSameOffsets = shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo);
+
+  // C-style arrays CANNOT be captured by value in lambdas - they decay to pointers
+  // that point to stack memory. std::array CAN be captured by value, ensuring each
+  // parallel thread gets its own copy of the data with guaranteed lifetime.
+  std::array<sd::LongType, SD_MAX_RANK> xStrideLocal;
+  std::array<sd::LongType, SD_MAX_RANK> yStrideLocal;
+  std::array<sd::LongType, SD_MAX_RANK> zStrideLocal;
+  std::array<sd::LongType, SD_MAX_RANK> zShapeLocal;
+
+  std::memcpy(xStrideLocal.data(), shape::stride(xShapeInfo), xRank * sizeof(sd::LongType));
+  std::memcpy(yStrideLocal.data(), shape::stride(yShapeInfo), yRank * sizeof(sd::LongType));
+  std::memcpy(zStrideLocal.data(), shape::stride(zShapeInfo), zRank * sizeof(sd::LongType));
+  std::memcpy(zShapeLocal.data(), shape::shapeOf(zShapeInfo), zRank * sizeof(sd::LongType));
 
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK];
     sd::LongType xOffset, yOffset, zOffset;
 
     for (auto i = start; i < stop; ++i) {
-      INDEX2COORDS(i, zRank, zShape, coords);
-      COORDS2INDEX(zRank, zStride, coords, zOffset);
+      INDEX2COORDS(i, zRank, zShapeLocal.data(), coords);
+      COORDS2INDEX(zRank, zStrideLocal.data(), coords, zOffset);
 
       if (xzSameOffsets) {
         xOffset = zOffset;
       } else {
-        COORDS2INDEX(xRank, xStride, coords, xOffset);
+        COORDS2INDEX(xRank, xStrideLocal.data(), coords, xOffset);
       }
 
       if (yzSameOffsets) {
         yOffset = zOffset;
       } else {
-        COORDS2INDEX(yRank, yStride, coords, yOffset);
+        COORDS2INDEX(yRank, yStrideLocal.data(), coords, yOffset);
       }
       z[zOffset] = OpType::op(x[xOffset], y[yOffset]);
     }

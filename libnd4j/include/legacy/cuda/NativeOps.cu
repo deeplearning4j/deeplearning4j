@@ -36,6 +36,8 @@
 #include <ops/specials_cuda.h>
 #include <system/buffer.h>
 #include <helpers/ConstantHelper.h>
+#include <helpers/ConstantShapeHelper.h>
+#include <helpers/ConstantTadHelper.h>
 
 
 #include <curand.h>
@@ -1100,6 +1102,28 @@ void initializeDevicesAndFunctions() {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+}
+
+/**
+ * Initialize the shape cache early to prevent race conditions during static initialization.
+ * This ensures ConstantShapeHelper and its internal DirectShapeTrie are fully initialized
+ * before any multi-threaded access occurs.
+ *
+ * Safe to call multiple times - subsequent calls are no-ops.
+ */
+void initializeShapeCache() {
+  sd::ConstantShapeHelper::getInstance();
+}
+
+/**
+ * Initialize the TAD (Tensor-Along-Dimension) cache early to prevent race conditions.
+ * This ensures ConstantTadHelper and its internal DirectTadTrie are fully initialized
+ * before any multi-threaded access occurs.
+ *
+ * Safe to call multiple times - subsequent calls are no-ops.
+ */
+void initializeTadCache() {
+  sd::ConstantTadHelper::getInstance();
 }
 
 void initializeFunctions(sd::Pointer *functions) { sd::BlasHelper::getInstance().initializeDeviceFunctions(functions);

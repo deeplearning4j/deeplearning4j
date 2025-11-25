@@ -292,7 +292,6 @@ void DirectTadTrie::clear() {
     // Use exclusive lock for write operation (clearing the cache)
     EXCLUSIVE_LOCK_TYPE<MUTEX_TYPE> lock(_mutexes[i]);
 
-    // CRITICAL FIX: Explicitly delete all TadPacks before recreating roots
     // This ensures TadPack destructors are called, which invokes recordDeallocation()
     // for proper lifecycle tracking.
     //

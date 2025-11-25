@@ -21,6 +21,7 @@
 //
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/convolutions.h>
+#include <stdexcept>
 
 namespace sd {
 namespace ops {
@@ -303,11 +304,11 @@ static void pooling3dBP_(sd::graph::Context& block, NDArray& input, NDArray& gra
 
     samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1);
   } else {
-    sd_printf(
-        "ConvolutionUtils::pooling3dBP: pooling mode argument can take three values only: 0, 1, 2, but got %i instead "
-        "!\n",
+    char errorMsg[512];
+    snprintf(errorMsg, sizeof(errorMsg),
+        "ConvolutionUtils::pooling3dBP: pooling mode argument can take three values only: 0, 1, 2, but got %i instead!",
         poolingMode);
-    throw "";
+    THROW_EXCEPTION(errorMsg);
   }
 }
 

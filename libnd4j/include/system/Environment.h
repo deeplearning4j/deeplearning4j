@@ -54,7 +54,9 @@ class SD_LIB_EXPORT Environment {
   std::atomic<bool> funcTracePrintAllocate;
 
   // NDArray lifecycle tracking fields
-  std::atomic<bool> _lifecycleTracking{true};
+  // Prevents backward-cpp crashes during early JVM initialization
+  // Can be enabled via SD_LIFECYCLE_TRACKING=1 env var after JVM is ready
+  std::atomic<bool> _lifecycleTracking{false};
   std::atomic<bool> _trackViews{true};
   std::atomic<bool> _trackDeletions{true};
   std::atomic<int> _stackDepth{32};

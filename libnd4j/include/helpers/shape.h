@@ -524,7 +524,7 @@ SD_LIB_EXPORT SD_HOST_DEVICE void maxIndToMinInd(sd::LongType *maxIdxs, sd::Long
 SD_INLINE SD_HOST SD_LIB_EXPORT sd::LongType tensorsAlongDimension(const sd::LongType* shapeInfo, sd::LongType* dimensions, sd::LongType dimensionLength) {
   // Guard against null or empty dimensions
   if (dimensions == nullptr || dimensionLength == 0)
-    throw std::invalid_argument("Invalid input: dimensions not specified (null or length 0)");
+    THROW_EXCEPTION("Invalid input: dimensions not specified (null or length 0)");
 
   const sd::LongType rank = shape::rank(shapeInfo);
 
@@ -553,7 +553,7 @@ SD_INLINE SD_HOST SD_LIB_EXPORT sd::LongType tensorsAlongDimension(const sd::Lon
   sd::LongType numTensors = length / tensorLen;
 
   if(numTensors >= SD_MAX_INT)
-    throw std::invalid_argument("Tensors along dimension cannot be >= Integer.MAX_VALUE");
+    THROW_EXCEPTION("Tensors along dimension cannot be >= Integer.MAX_VALUE");
 
   return numTensors;
 }
@@ -3234,8 +3234,11 @@ SD_LIB_EXPORT SD_INLINE SD_HOST bool reshapeC(const sd::LongType *oldShapeInfo, 
   // Set ews and order
   shape::checkStridesEwsAndOrder(newShapeInfo);
 
-  sd::ArrayOptions::setDataType(newShapeInfo, oldDt);
+  // setExtra() overwrites the entire extra field, so if we call setDataType() first,
+  // the data type flags will be lost when setExtra() overwrites them.
+  // The correct order is: setExtra() first (copies all flags from old), then setDataType() to ensure correct type.
   sd::ArrayOptions::setExtra(newShapeInfo, sd::ArrayOptions::extra(oldShapeInfo));
+  sd::ArrayOptions::setDataType(newShapeInfo, oldDt);
 
   return true;
 }

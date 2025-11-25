@@ -248,7 +248,7 @@ LongType StringUtils::countSubarrays(const void* haystack, LongType haystackLeng
 
 LongType StringUtils::byteLength(NDArray& array) {
   if (!array.isS())
-    throw datatype_exception::build("StringUtils::byteLength expects one of String types;", array.dataType());
+    THROW_EXCEPTION(datatype_exception::build("StringUtils::byteLength expects one of String types;", array.dataType()).what());
 
   auto buffer = array.bufferAsT<LongType>();
   return buffer[array.lengthOf()];

@@ -29,7 +29,11 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-JacobiSVD<T>::JacobiSVD(NDArray& matrix, const bool calcU, const bool calcV, const bool fullUV) {
+JacobiSVD<T>::JacobiSVD(NDArray& matrix, const bool calcU, const bool calcV, const bool fullUV)
+    : _m(matrix.dataType(), matrix.getContext(), true),
+      _s(matrix.dataType(), matrix.getContext(), true),
+      _u(matrix.dataType(), matrix.getContext(), true),
+      _v(matrix.dataType(), matrix.getContext(), true) {
   if (matrix.rankOf() != 2 || matrix.isScalar())
     THROW_EXCEPTION("ops::helpers::JacobiSVD constructor: input array must be 2D matrix !");
 

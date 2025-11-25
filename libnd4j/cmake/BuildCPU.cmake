@@ -25,6 +25,14 @@ file(GLOB_RECURSE LOOPS_SOURCES ./include/loops/*.cpp ./include/loops/*.h)
 set(ALL_SOURCES "")
 set(STATIC_SOURCES_TO_CHECK ${BLAS_SOURCES} ${PERF_SOURCES} ${EXCEPTIONS_SOURCES} ${EXEC_SOURCES} ${TYPES_SOURCES} ${ARRAY_SOURCES} ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${CUSTOMOPS_HELPERS_IMPL_SOURCES} ${CUSTOMOPS_HELPERS_CPU_SOURCES} ${OPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES} ${LEGACY_SOURCES} ${LOOPS_SOURCES})
 
+# Add PLT wrapper functions for functrace builds (GCC and Clang)
+# Required for --wrap=atexit and --wrap=at_quick_exit linker flags
+# These wrappers avoid PLT relocations in >2GB binaries
+if(SD_GCC_FUNCTRACE)
+    list(APPEND STATIC_SOURCES_TO_CHECK ./include/platform/noplt_libc_stubs.c)
+    message(STATUS "✅ Added noplt_libc_stubs.c for functrace build (provides __wrap_atexit and __wrap_at_quick_exit)")
+endif()
+
 if(HAVE_ONEDNN)
     file(GLOB_RECURSE CUSTOMOPS_ONEDNN_SOURCES ./include/ops/declarable/platform/mkldnn/*.cpp ./include/ops/declarable/platform/mkldnn/mkldnnUtils.h)
     list(APPEND STATIC_SOURCES_TO_CHECK ${CUSTOMOPS_ONEDNN_SOURCES})

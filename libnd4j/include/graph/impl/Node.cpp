@@ -709,7 +709,7 @@ Node* Node::clone() {
     if (!_isDeductable)
       clone->_customOp = _customOp;
     else {
-      auto c = dynamic_cast<sd::ops::LegacyOp*>(_customOp);
+      auto c = static_cast<sd::ops::LegacyOp*>(_customOp);
       clone->_customOp = c->clone();
     }
 

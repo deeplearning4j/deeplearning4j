@@ -169,7 +169,7 @@ class StripedLocks {
 
   void lockStripe(size_t stripe, bool exclusive = false) const {
     if (stripe >= NUM_STRIPES) {
-      throw std::out_of_range("Invalid stripe index");
+      THROW_EXCEPTION("Invalid stripe index");
     }
 
     if (!acquireLockWithTimeout(stripe, exclusive, MAX_RETRIES)) {
@@ -185,7 +185,7 @@ class StripedLocks {
 
   void unlockStripe(size_t stripe, bool exclusive = false) const {
     if (stripe >= NUM_STRIPES) {
-      throw std::out_of_range("Invalid stripe index");
+      THROW_EXCEPTION("Invalid stripe index");
     }
     _stripeCounts[stripe].fetch_sub(1, std::memory_order_relaxed);
 

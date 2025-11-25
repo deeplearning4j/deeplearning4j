@@ -36,6 +36,12 @@ namespace sd {
 
 class SD_LIB_EXPORT DataBuffer {
  private:
+  // Magic number for validity checking (pattern from DirectShapeTrie validation)
+  // Set in constructor, cleared in destructor, checked before use
+  // Helps detect use-after-free and corrupted pointers
+  static constexpr uint32_t MAGIC_NUMBER = 0xDA7ABF01;  // "DA7ABF01" (DataBuffer v01)
+  uint32_t _magicNumber = MAGIC_NUMBER;
+
   void *_primaryBuffer = nullptr;
   void *_specialBuffer = nullptr;
   LongType _lenInBytes = 0;
@@ -126,6 +132,15 @@ class SD_LIB_EXPORT DataBuffer {
   void *special();
   void printAllocationTrace();
 
+  /**
+   * Validate that this DataBuffer object is in a sane state.
+   * Following DirectShapeTrie validation pattern: check magic number, closed flag, etc.
+   * Throws exception with detailed message if validation fails.
+   * Call this before accessing any member in methods that might be called
+   * on dangling/corrupted pointers (like special(), primary(), etc.)
+   */
+  void validateIntegrity() const;
+
   void allocatePrimary();
   void allocateSpecial();
 
@@ -148,7 +163,6 @@ class SD_LIB_EXPORT DataBuffer {
   SD_INLINE T *specialAsT();
 
   void markConstant(bool reallyConstant);
-
 
   void syncToPrimary(const LaunchContext *context, const bool forceSync = false);
   void syncToSpecial(const bool forceSync = false);
@@ -175,6 +189,12 @@ class SD_LIB_EXPORT DataBuffer {
   void printPrimaryAllocationStackTraces();
   void printSpecialAllocationTraces();
   DataBuffer  dup();
+
+  /**
+   * Helper method to format creation stack trace as string for error messages.
+   * Returns formatted stack trace if SD_GCC_FUNCTRACE is enabled, empty string otherwise.
+   */
+  std::string getCreationTraceAsString() const;
   void printHostDevice(long offset);
   static void memcpy(DataBuffer *dst, DataBuffer *src, sd::LongType startingOffset, sd::LongType dstOffset);
   /**

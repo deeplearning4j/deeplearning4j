@@ -55,6 +55,7 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
       if (input->rankOf() == 0) {
         std::vector<sd::LongType> shape = {1};
         NDArray* vec = nullptr;
+#ifdef __cpp_exceptions
         try {
           vec = new NDArray('c', shape, input->dataType(), block.launchContext());
           vec->assign(input);
@@ -68,6 +69,12 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
           }
           throw;
         }
+#else
+        vec = new NDArray('c', shape, input->dataType(), block.launchContext());
+        vec->assign(input);
+        nonEmptyArrs.push_back(vec);
+        arrsToDelete.push_back(vec);  // Mark for cleanup
+#endif
       } else {
         nonEmptyArrs.push_back(input);
       }

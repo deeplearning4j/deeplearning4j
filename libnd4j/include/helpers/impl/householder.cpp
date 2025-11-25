@@ -43,13 +43,11 @@ void Householder<T>::evalHHmatrixData(NDArray& x, NDArray& tail, T& coeff, T& no
 
   const auto xLen = x.lengthOf();
 
-  NDArray *xTailPtr = xLen > 1 ? x({1, -1}) : nullptr;
-  NDArray xTail = xTailPtr != nullptr ? *xTailPtr : NDArray();
-  if (xTailPtr != nullptr) delete xTailPtr;
+  NDArray *xTail = xLen > 1 ? x({1, -1}) : nullptr;
 
   T tailXnorm;
   if (xLen > 1) {
-    auto* tailNormPtr = xTail.reduceNumber(reduce::SquaredNorm);
+    auto* tailNormPtr = xTail->reduceNumber(reduce::SquaredNorm);
     tailXnorm = tailNormPtr->t<T>(0);
     delete tailNormPtr;
   } else {
@@ -69,10 +67,12 @@ void Householder<T>::evalHHmatrixData(NDArray& x, NDArray& tail, T& coeff, T& no
 
     coeff = (normX - xFirstElem) / normX;
     T divisor = xFirstElem - normX;
-    NDArray *tailAssign = xTail / divisor;
+    NDArray *tailAssign = (*xTail) / divisor;
     tail.assign(tailAssign);
     delete tailAssign;
   }
+
+  if (xTail != nullptr) delete xTail;
 }
 
 //////////////////////////////////////////////////////////////////////////

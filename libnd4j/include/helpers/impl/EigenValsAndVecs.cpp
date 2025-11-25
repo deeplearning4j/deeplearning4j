@@ -28,7 +28,9 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-EigenValsAndVecs<T>::EigenValsAndVecs(NDArray& matrix) {
+EigenValsAndVecs<T>::EigenValsAndVecs(NDArray& matrix)
+    : _Vals(matrix.dataType(), matrix.getContext(), true),
+      _Vecs(matrix.dataType(), matrix.getContext(), true) {
   if (matrix.rankOf() != 2)
     THROW_EXCEPTION("ops::helpers::EigenValsAndVecs constructor: input matrix must be 2D !");
 

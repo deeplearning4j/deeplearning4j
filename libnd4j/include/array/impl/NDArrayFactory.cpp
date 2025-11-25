@@ -710,9 +710,8 @@ NDArray* NDArrayFactory::string_(std::vector<LongType>& shape,
 /////////////////////////////////////////////////////////////////////////
 NDArray* NDArrayFactory::string_(std::vector<LongType>& shape, const std::vector<std::u32string>& string,
                                  DataType dataType, LaunchContext* context) {
-  auto res = new NDArray();
-  *res = NDArray(shape, string, dataType, context);
-  return res;
+  // Default constructor was deleted to prevent uninitialized NDArrays (nullptr _shapeInfo)
+  return new NDArray(shape, string, dataType, context);
 }
 /////////////////////////////////////////////////////////////////////////
 NDArray * NDArrayFactory::string(std::vector<LongType>& shape, const std::vector<std::u32string>& string,

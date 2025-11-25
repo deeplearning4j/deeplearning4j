@@ -40,6 +40,8 @@ namespace sd {
 
 class SD_LIB_EXPORT ConstantShapeBuffer {
  private:
+  static constexpr uint32_t MAGIC_VALID = 0x58A9EB0F;  // Magic number for validity check
+  uint32_t _magic;  // Validity marker to detect use-after-free/garbage pointers
   PointerWrapper* _primaryShapeInfo;
   PointerWrapper*  _specialShapeInfo;
   std::atomic<int> _refCount;
@@ -50,6 +52,12 @@ class SD_LIB_EXPORT ConstantShapeBuffer {
   ConstantShapeBuffer( PointerWrapper* primary, PointerWrapper* special);
   ConstantShapeBuffer();
   ~ConstantShapeBuffer();
+
+  /**
+   * Check if this buffer is valid (not garbage/use-after-free).
+   * Uses magic number validation.
+   */
+  inline bool isValid() const { return _magic == MAGIC_VALID; }
 #ifndef  __JAVACPP_HACK__
 #if defined(SD_GCC_FUNCTRACE)
   backward::StackTrace st;

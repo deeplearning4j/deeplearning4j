@@ -88,12 +88,16 @@ inline bool evaluateCondition(NDArray* condition, int index) {
    default:
      // Fallback: try to interpret as int32 and check if non-zero
 #if defined(HAS_INT32)
+#ifdef __cpp_exceptions
      try {
        return condition->e<int32_t>(index) != 0;
      } catch (...) {
        // Last resort: assume false to maintain safe behavior
        return false;
      }
+#else
+     return condition->e<int32_t>(index) != 0;
+#endif
 #else
      // If INT32 is not available, return false as safe default
      return false;

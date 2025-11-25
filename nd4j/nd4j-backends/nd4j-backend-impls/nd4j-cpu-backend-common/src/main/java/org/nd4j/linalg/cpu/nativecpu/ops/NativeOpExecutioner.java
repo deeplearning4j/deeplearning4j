@@ -123,6 +123,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
 
         profilingConfigurableHookOut(op,opContext,start);
+        // Periodic TAD cache cleanup to prevent memory leaks
+        Nd4j.getNativeOps().checkAndCleanupCaches();
         return op.z();
     }
 
@@ -208,7 +210,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         // Clear TAD and Shape caches to prevent memory leaks (matches CUDA backend pattern)
         // IndexAccumulation operations use TAD heavily and must clean up cached TAD packs
-        Nd4j.getExecutioner().commit();
+        Nd4j.getNativeOps().checkAndCleanupCaches();
 
         return getZ(op, oc);
     }
@@ -260,6 +262,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         if (x.isVector() && x.length() == ArrayUtil.prod(retShape) && ArrayUtil.prodLong(retShape) > 1 && y == null) {
             profilingConfigurableHookOut(op, oc, st);
+            // Periodic TAD cache cleanup to prevent memory leaks
+            Nd4j.getNativeOps().checkAndCleanupCaches();
             return op.noOp();
         }
 
@@ -448,7 +452,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         // Clear TAD and Shape caches to prevent memory leaks (matches CUDA backend pattern)
         // TAD packs accumulate during reduce operations and must be cleaned up
-        Nd4j.getExecutioner().commit();
+        Nd4j.getNativeOps().checkAndCleanupCaches();
 
         return getZ(op, oc);
     }
@@ -559,6 +563,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             throw new RuntimeException(errorMessage.toString());
         }
         profilingConfigurableHookOut(op, oc, st);
+        // Periodic TAD cache cleanup to prevent memory leaks
+        Nd4j.getNativeOps().checkAndCleanupCaches();
         return getZ(op, oc);
     }
 
@@ -721,7 +727,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         // Clear TAD and Shape caches to prevent memory leaks (matches CUDA backend pattern)
         // Scalar operations can create temporary buffers that accumulate in caches
-        Nd4j.getExecutioner().commit();
+        Nd4j.getNativeOps().checkAndCleanupCaches();
     }
 
     public INDArray exec(BroadcastOp op) {
@@ -819,7 +825,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         // Clear TAD and Shape caches to prevent memory leaks (matches CUDA backend pattern)
         // Broadcast operations use TAD for dimension-wise operations
-        Nd4j.getExecutioner().commit();
+        Nd4j.getNativeOps().checkAndCleanupCaches();
 
         return z;
     }
@@ -1007,6 +1013,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             // pulling states back
             Nd4j.getRandom().setStates(states.getFirst(), states.getSecond());
             profilingConfigurableHookOut(op,context,start);
+            // Periodic TAD cache cleanup to prevent memory leaks
+            Nd4j.getNativeOps().checkAndCleanupCaches();
 
             return result;
         } catch (ND4JOpProfilerException e) {
@@ -1134,6 +1142,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             throw e;
         } finally {
             profilingConfigurableHookOut(op, context, st);
+            // Periodic TAD cache cleanup to prevent memory leaks
+            Nd4j.getNativeOps().checkAndCleanupCaches();
         }
     }
 

@@ -42,17 +42,34 @@ public class OpExecutionerUtil {
     private OpExecutionerUtil() {}
 
     public static void checkForNaN(INDArray z) {
-        if(z == null || z.isEmpty() || !z.dataType().isFPType())
+        if(z == null || z.isEmpty() || !z.dataType().isFPType() || z.wasClosed())
             return;
 
         int match = 0;
         if (!z.isScalar()) {
             MatchCondition condition = new MatchCondition(z, Conditions.isNan());
             INDArray result = null;
+
+            // The exec(condition) call below will trigger profilingConfigurableHookOut(),
+            // which would call checkForNaN() again, creating infinite recursion.
+            // Save current profiler state, disable checking, execute, then restore.
+            OpProfiler profiler = Nd4j.getExecutioner().getProfiler();
+            boolean wasCheckingNaN = profiler != null && profiler.getConfig().isCheckForNAN();
+            boolean wasCheckingInf = profiler != null && profiler.getConfig().isCheckForINF();
+            if (profiler != null) {
+                profiler.getConfig().setCheckForNAN(false);
+                profiler.getConfig().setCheckForINF(false);
+            }
+
             try {
                 result = Nd4j.getExecutioner().exec(condition);
                 match = result.getInt(0);
             } finally {
+                // Restore profiler state FIRST, before cleanup
+                if (profiler != null) {
+                    profiler.getConfig().setCheckForNAN(wasCheckingNaN);
+                    profiler.getConfig().setCheckForINF(wasCheckingInf);
+                }
                 // Clean up result array
                 if (result != null) {
                     try {
@@ -65,7 +82,6 @@ public class OpExecutionerUtil {
                     }
                 }
                 // Clean up MatchCondition's internal dimensions array
-                // CRITICAL: Must explicitly close dimensions array and its DataBuffer
                 // clearArrays() alone is not sufficient - causes DataBuffer leaks
                 if (condition.dimensions() != null) {
                     try {
@@ -98,17 +114,34 @@ public class OpExecutionerUtil {
     }
 
     public static void checkForInf(INDArray z) {
-        if(z == null || z.isEmpty() || !z.dataType().isFPType())
+        if(z == null || z.isEmpty() || !z.dataType().isFPType() || z.wasClosed())
             return;
 
         int match = 0;
         if (!z.isScalar()) {
             MatchCondition condition = new MatchCondition(z, Conditions.isInfinite());
             INDArray result = null;
+
+            // The exec(condition) call below will trigger profilingConfigurableHookOut(),
+            // which would call checkForInf() again, creating infinite recursion.
+            // Save current profiler state, disable checking, execute, then restore.
+            OpProfiler profiler = Nd4j.getExecutioner().getProfiler();
+            boolean wasCheckingNaN = profiler != null && profiler.getConfig().isCheckForNAN();
+            boolean wasCheckingInf = profiler != null && profiler.getConfig().isCheckForINF();
+            if (profiler != null) {
+                profiler.getConfig().setCheckForNAN(false);
+                profiler.getConfig().setCheckForINF(false);
+            }
+
             try {
                 result = Nd4j.getExecutioner().exec(condition);
                 match = result.getInt(0);
             } finally {
+                // Restore profiler state FIRST, before cleanup
+                if (profiler != null) {
+                    profiler.getConfig().setCheckForNAN(wasCheckingNaN);
+                    profiler.getConfig().setCheckForINF(wasCheckingInf);
+                }
                 // Clean up result array AND its data buffer
                 if (result != null) {
                     try {

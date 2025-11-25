@@ -36,7 +36,9 @@ void PrimaryPointerDeallocator::release(void *ptr) {
       reinterpret_cast<LongType*>(ptr));
 #endif
 
-  delete reinterpret_cast<int8_t *>(ptr);
+  // Root cause of SIGSEGV crashes: shape buffers are allocated with new[] but were being
+  // freed with delete (single-object), causing heap corruption and undefined behavior.
+  delete[] reinterpret_cast<int8_t *>(ptr);
 }
 
 }  // namespace sd

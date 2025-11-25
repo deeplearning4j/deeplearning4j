@@ -156,7 +156,6 @@ OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer *shapeInfo,
 
   sd::LongType* shapeInfoCast = reinterpret_cast<sd::LongType*>(shapeInfo->primary());
 
-  // CRITICAL FIX: Validate that primary() returned a valid pointer before using it.
   // If primary() returns nullptr, the NDArray constructor will fail with undefined behavior
   // when it tries to call shape::length(nullptr) and other shape functions.
   // This check provides clear error message at the source rather than cryptic failures downstream.
@@ -276,6 +275,7 @@ void setTADThreshold(int num) {
 
 
 sd::Status registerGraph(sd::Pointer *extraPointers, sd::LongType  graphId, sd::Pointer flatBufferPointer) {
+#ifdef __cpp_exceptions
   try {
     auto graph = sd::graph::GraphExecutioner::importFromFlatPointer(flatBufferPointer);
 
@@ -283,10 +283,16 @@ sd::Status registerGraph(sd::Pointer *extraPointers, sd::LongType  graphId, sd::
 
     return sd::Status::OK;
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    safeSetErrorContext(1, e.what());
     return sd::Status::BAD_INPUT;
   }
+#else
+  auto graph = sd::graph::GraphExecutioner::importFromFlatPointer(flatBufferPointer);
+
+  GraphHolder::getInstance().registerGraph(graphId, graph);
+
+  return sd::Status::OK;
+#endif
 }
 
 static VariablesSet *executeStoredGraphT(sd::Pointer *extraPointers, sd::LongType  graphId, sd::Pointer *inputBuffers,
@@ -339,13 +345,16 @@ static VariablesSet *executeStoredGraphT(sd::Pointer *extraPointers, sd::LongTyp
 
 VariablesSet *executeStoredGraph(sd::Pointer *extraPointers, sd::LongType  graphId, sd::Pointer *inputBuffers, sd::Pointer *inputShapes,
                                  int *inputIndices, int numInputs) {
+#ifdef __cpp_exceptions
   try {
     return executeStoredGraphT(extraPointers, graphId, inputBuffers, inputShapes, inputIndices, numInputs);
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    safeSetErrorContext(1, e.what());
     return nullptr;
   }
+#else
+  return executeStoredGraphT(extraPointers, graphId, inputBuffers, inputShapes, inputIndices, numInputs);
+#endif
 }
 
 sd::LongType  getVariablesSetSize(OpaqueVariablesSet *set) { return set->size(); }
@@ -365,15 +374,20 @@ sd::LongType  const *getVariableShape(Variable *variable) { return variable->get
 void *getVariableBuffer(Variable *variable) { return variable->getNDArray()->buffer(); }
 
 sd::Status unregisterGraph(sd::Pointer *extraPointers, sd::LongType  graphId) {
+#ifdef __cpp_exceptions
   try {
     GraphHolder::getInstance().dropGraphAny(graphId);
 
     return sd::Status::OK;
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    safeSetErrorContext(1, e.what());
     return sd::Status::BAD_INPUT;
   }
+#else
+  GraphHolder::getInstance().dropGraphAny(graphId);
+
+  return sd::Status::OK;
+#endif
 }
 
 void deletePointerArray(sd::Pointer pointer) {
@@ -508,15 +522,20 @@ SD_INLINE int estimateThresholdGeneric(sd::Pointer *extraPointers, sd::Pointer h
 
 int estimateThreshold(sd::Pointer *extraPointers, sd::Pointer hX, sd::LongType const *hXShapeInfo, int N,
                       float threshold) {
+#ifdef __cpp_exceptions
   try {
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
 
     BUILD_SINGLE_SELECTOR(xType, return estimateThresholdGeneric, (extraPointers, hX, N, threshold), SD_FLOAT_TYPES);
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    safeSetErrorContext(1, e.what());
     return 0;
   }
+#else
+  auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
+
+  BUILD_SINGLE_SELECTOR(xType, return estimateThresholdGeneric, (extraPointers, hX, N, threshold), SD_FLOAT_TYPES);
+#endif
 
   return 0;
 }
@@ -526,7 +545,6 @@ int estimateThreshold(sd::Pointer *extraPointers, sd::Pointer hX, sd::LongType c
 void deleteTadPack(sd::TadPack *ptr) {
   if (!ptr) return;
 
-  // CRITICAL FIX: Remove from registry before deletion
   // The registry holds a shared_ptr<TadPack> to keep TadPacks alive while Java uses them
   // When Java is done and calls deleteTadPack, we remove it from the registry
   // This decrements the shared_ptr refcount, and if it reaches 0, the TadPack is deleted
@@ -574,9 +592,18 @@ const char* getConstantShapeBufferStackTrace(OpaqueConstantShapeBuffer buffer) {
     return "ConstantShapeBuffer is null";
   }
 
-  // Get the stack trace as a string and cache it
-  // We use a thread-local static to avoid memory management issues
-  thread_local static std::string cachedTrace;
+  //
+  // ROOT CAUSE: thread_local uses R_X86_64_GOTPC32_TLSDESC relocations which have ±2GB limit
+  // When SD_GCC_FUNCTRACE is enabled, binary size exceeds 2GB → TLS relocations fail
+  //
+  // SOLUTION: Use regular static instead of thread_local
+  // - Eliminates all TLS relocations from this function
+  // - Trade-off: Not thread-safe (acceptable for debugging function)
+  // - If called concurrently by multiple threads, traces may interleave (rare edge case)
+  //
+  // This is fundamentally different from Sessions #159-164 which tried linker workarounds
+  // Those approaches CAN'T work - TLS relocations are architectural limitation
+  static std::string cachedTrace;
   cachedTrace = buffer->getStackTraceAsString();
 
   return cachedTrace.c_str();
@@ -634,13 +661,16 @@ void deleteGraphContext(Context *ptr) {
 }
 
 OpaqueRandomGenerator createRandomGenerator(sd::LongType rootSeed, sd::LongType nodeSeed) {
+#ifdef __cpp_exceptions
   try {
     return new RandomGenerator(rootSeed, nodeSeed);
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    safeSetErrorContext(1, e.what());
     return nullptr;
   }
+#else
+  return new RandomGenerator(rootSeed, nodeSeed);
+#endif
 }
 
 sd::LongType getRandomGeneratorRootState(OpaqueRandomGenerator ptr) { return ptr->rootState(); }

@@ -1057,7 +1057,7 @@ public class DifferentialFunctionClassHolder {
      * This should be called before leak checking to ensure scalar INDArrays created during
      * initialization are properly closed.
      *
-     * CRITICAL: This closes the scalar INDArrays held by BaseScalarOp instances.
+     * This closes the scalar INDArrays held by BaseScalarOp instances.
      * These scalars are created during initInstance() and persist for the application lifetime.
      * Calling this method frees them before leak detection.
      */

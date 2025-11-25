@@ -120,11 +120,14 @@ void IndexReduce<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, voi
  auto tadOnlyShapeInfo = tadShapeInfo;
  auto tadOffsets = tadOffset;
 
+ // When shared_ptr goes out of scope, it deletes the TadPack and invalidates pointers!
+ std::shared_ptr<sd::TadPack> tadPack = nullptr;
+
  if (tadOnlyShapeInfo == nullptr || tadOffsets == nullptr) {
    if (dimensionLength < 1) return;
 
-   auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType*>(xShapeInfo), dimension,
-                                                                        dimensionLength);
+   tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType*>(xShapeInfo), dimension,
+                                                                   dimensionLength);
    tadOnlyShapeInfo = tadPack->primaryShapeInfo();
    tadOffsets = tadPack->primaryOffsets();
  }

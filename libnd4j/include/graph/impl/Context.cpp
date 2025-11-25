@@ -138,24 +138,22 @@ Context::~Context() {
   this->_tArgs.clear();
   this->_inputs.clear();
 
-  // CRITICAL FIX: Delete NDArray pointers in fastpath vectors before clearing
-  // This matches the cleanup pattern for _intermediateResults and _handles
-  for (auto v : _fastpath_in) {
-    if (v != nullptr) delete v;
-  }
+  // IMPORTANT: Do NOT delete arrays in _fastpath_in and _fastpath_out!
+  // These are BORROWED pointers - the Context does not own them.
+  // The caller (e.g., DeclarableOp::execute) owns these arrays and is
+  // responsible for their lifecycle. Deleting them here causes use-after-free
+  // bugs when operations call sub-operations (e.g., layer_norm calling standardize).
+  // Only _handles contains arrays explicitly marked as owned by this Context.
   this->_fastpath_in.clear();
-
-  for (auto v : _fastpath_out) {
-    if (v != nullptr) delete v;
-  }
   this->_fastpath_out.clear();
 
-  // Clean up intermediate results
+  // Clean up intermediate results - these ARE owned by the Context
   for (auto v : _intermediateResults) {
     if (v != nullptr) delete v;
   }
   _intermediateResults.clear();
 
+  // Clean up handles - these are arrays explicitly marked as removable/owned
   for (auto v : _handles) delete v;
 
   if (_context != nullptr) delete _context;
@@ -283,6 +281,7 @@ Variable *Context::variable(int node, int idx) {
 }
 
 Variable *Context::variable(std::pair<int, int> &p) {
+#ifdef __cpp_exceptions
   try {
     return _variableSpace->getVariable(p);
   } catch (std::exception &e) {
@@ -297,6 +296,9 @@ Variable *Context::variable(std::pair<int, int> &p) {
     errorMessage += "\n";
     THROW_EXCEPTION(errorMessage.c_str());
   }
+#else
+  return _variableSpace->getVariable(p);
+#endif
 
   return nullptr;
 }

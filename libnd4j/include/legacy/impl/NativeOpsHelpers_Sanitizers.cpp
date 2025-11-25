@@ -42,12 +42,8 @@
  * This allows checking for leaks at any point during execution,
  * not just at program exit.
  *
- * CRITICAL: ALWAYS clears TAD and Shape caches BEFORE checking for leaks
+ * Always clears TAD and Shape caches before checking for leaks
  * to prevent false positives from legitimate cached data.
- *
- * This is essential for both:
- * 1. Sanitizer-based leak detection (ASAN/LSAN)
- * 2. Custom lifecycle tracking (TADCacheLifecycleTracker, etc.)
  *
  * Cleanup sequence (matches MainApplication.java shutdown handler):
  * 1. Clear TAD cache (frees cached TadPack objects)
@@ -57,7 +53,6 @@
  * Safe to call from Java via JNI.
  */
 SD_LIB_EXPORT void triggerLeakCheck() {
-    // CRITICAL FIX: Cache clearing must happen UNCONDITIONALLY,
     // not just when HAS_LEAK_SANITIZER is defined.
     //
     // WHY: Custom lifecycle tracking (TADCacheLifecycleTracker) is used

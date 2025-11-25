@@ -202,6 +202,37 @@ public interface NativeOps {
  boolean isP2PAvailable();
  void initializeDevicesAndFunctions();
  void initializeFunctions(PointerPointer functions);
+
+ /**
+  * Initialize the shape cache eagerly during early JVM startup.
+  * This prevents race conditions during static initialization when multiple threads
+  * try to create NDArrays concurrently before the shape cache is fully initialized.
+  * <p>
+  * This should be called from Nd4j initialization BEFORE any class loading
+  * that might create NDArrays (like DifferentialFunctionClassHolder).
+  * </p>
+  * <p>
+  * Safe to call multiple times - subsequent calls are no-ops.
+  * </p>
+  */
+ void initializeShapeCache();
+
+ /**
+  * Initialize the TAD (Tensor-Along-Dimension) cache early to prevent race conditions.
+  * <p>
+  * This forces initialization of DirectTadTrie in a controlled, single-threaded context.
+  * This prevents race conditions during static initialization when multiple threads
+  * try to create TAD operations concurrently before the TAD cache is fully initialized.
+  * </p>
+  * <p>
+  * This should be called from Nd4j initialization BEFORE any class loading
+  * that might create TAD operations.
+  * </p>
+  * <p>
+  * Safe to call multiple times - subsequent calls are no-ops.
+  * </p>
+  */
+ void initializeTadCache();
  Pointer mallocHost(long memorySize, int flags);
  Pointer mallocDevice(long memorySize, int deviceId, int flags);
  int freeHost(Pointer pointer);
@@ -467,6 +498,33 @@ public interface NativeOps {
  void triggerLeakCheck();
 
  /**
+  * Initializes lifecycle crash handlers to capture crash dumps.
+  * <p>
+  * This must be called AFTER JVM is fully initialized to ensure
+  * the crash handler properly chains to JVM's hs_err generation.
+  * </p>
+  * <p>
+  * This fixes the signal handler installation race condition where crash handlers
+  * were being installed during library load (too early), capturing SIG_DFL instead
+  * of JVM's actual crash handler. This prevented hs_err file generation.
+  * </p>
+  * <p>
+  * After this fix, crashes will generate BOTH:
+  * <ul>
+  * <li>sd_crash_*.log - Lifecycle tracker dump (NDArray allocations, etc.)</li>
+  * <li>hs_err_pid*.log - JVM crash dump (full stack trace, thread info, etc.)</li>
+  * </ul>
+  * </p>
+  * <p>
+  * Safe to call multiple times - only initializes once.
+  * </p>
+  * <p>
+  * NOTE: Only available when built with {@code -Dlibnd4j.calltrace=ON}. No-op otherwise.
+  * </p>
+  */
+ void initializeLifecycleCrashHandlers();
+
+ /**
   * Enables NDArray lifecycle tracking (allocation/deallocation monitoring).
   */
  void enableNDArrayTracking();
@@ -515,6 +573,105 @@ public interface NativeOps {
   * Disables OpContext lifecycle tracking.
   */
  void disableOpContextTracking();
+
+ /**
+  * Enables operation execution logging for crash detection.
+  * <p>
+  * When enabled (and libnd4j is built with -Dlibnd4j.calltrace=ON), all operation executions
+  * are logged to a file with full unified C++/Java stack traces. The log file survives crashes
+  * and can be used for post-mortem debugging.
+  * </p>
+  * <p>
+  * Log files are located at: {@code /tmp/nd4j_op_execution_<PID>.log}
+  * (or {@code $SD_OP_LOG_DIR} if set)
+  * </p>
+  * <p>
+  * NOTE: Only available when built with {@code -Dlibnd4j.calltrace=ON}. No-op otherwise.
+  * </p>
+  *
+  * @see #disableOpExecutionLogging()
+  * @see #getOpExecutionLogPath()
+  * @see #getOpExecutionLogContents(long, boolean)
+  */
+ void enableOpExecutionLogging();
+
+ /**
+  * Disables operation execution logging.
+  * <p>
+  * No-op if SD_GCC_FUNCTRACE is not defined.
+  * </p>
+  *
+  * @see #enableOpExecutionLogging()
+  */
+ void disableOpExecutionLogging();
+
+ /**
+  * Check if operation execution logging is currently enabled.
+  *
+  * @return true if logging is enabled, false otherwise
+  */
+ boolean isOpExecutionLoggingEnabled();
+
+ /**
+  * Get the current operation execution log file path.
+  * <p>
+  * Returns empty string if logging is not enabled or not available.
+  * </p>
+  *
+  * @return String containing the log file path
+  */
+ String getOpExecutionLogPath();
+
+ /**
+  * Get the current operation execution log contents as a string.
+  * <p>
+  * Useful for retrieving recent execution history for debugging.
+  * </p>
+  *
+  * @param maxBytes Maximum bytes to read (0 = read entire file)
+  * @param fromEnd If true, read from end of file (most recent entries)
+  * @return String containing the log contents (empty if logging not enabled)
+  */
+ String getOpExecutionLogContents(long maxBytes, boolean fromEnd);
+
+ /**
+  * Force a flush of the operation execution log to disk.
+  * <p>
+  * The logger flushes after each operation by default, but this
+  * can be called manually for explicit checkpointing.
+  * </p>
+  */
+ void dumpOpExecutionLog();
+
+ /**
+  * Manually dump current state to the operation execution log.
+  * <p>
+  * Useful for checkpointing at specific points in code.
+  * </p>
+  *
+  * @param message Optional message to include in the dump (can be null)
+  */
+ void dumpOpExecutionState(String message);
+
+ // ═══════════════════════════════════════════════════════════════
+ // Allocation Logging API (SD_GCC_FUNCTRACE only)
+ // Similar to OpExecutionLogging, but focuses on tracking NDArray
+ // and OpContext allocations for understanding memory growth patterns
+ // ═══════════════════════════════════════════════════════════════
+
+ /**
+  * Get the current allocation log file path.
+  * <p>
+  * Allocation logging is always active in functrace builds (SD_GCC_FUNCTRACE).
+  * Returns empty string if functrace is not enabled.
+  * </p>
+  * <p>
+  * Log file location: /tmp/nd4j_allocations_&lt;PID&gt;.log (configurable via SD_ALLOCATION_LOG_DIR)
+  * </p>
+  *
+  * @return String containing the log file path
+  */
+ String getAllocationLogPath();
 
  /**
   * Generates a comprehensive leak source analysis report combining data from ALL lifecycle trackers.
@@ -659,6 +816,12 @@ public interface NativeOps {
   * @return String representation of the TAD cache
   */
  String getTADCacheString(int maxDepth, int maxEntries);
+
+ /**
+  * Check and cleanup caches at configurable intervals.
+  * Called after operations to prevent cache accumulation.
+  */
+ void checkAndCleanupCaches();
 
  // NEW: Temporal leak analysis
  void generateNDArrayTemporalLeakReport(String outputPath, int windowCount, double windowDurationSec);

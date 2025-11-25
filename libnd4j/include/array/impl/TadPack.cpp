@@ -75,14 +75,12 @@ TadPack::TadPack( ConstantShapeBuffer *shapes,
 }
 
 TadPack::~TadPack() {
-  // CRITICAL: Use fprintf to stderr for unconditional logging
   fprintf(stderr, "[TadPack::~TadPack()] ENTRY: Destructor called for %p\n", this);
   fflush(stderr);
 
 #if defined(SD_GCC_FUNCTRACE) && !defined(__JAVACPP_HACK__)
   // Track TAD cache deallocation before cleanup
   //
-  // CRITICAL FIX (Session #386): RESTORED __JAVACPP_HACK__ guard to destructor for PERFECT SYMMETRY
   //
   // ROOT CAUSE OF 135MB TAD CACHE LEAK:
   // The constructor guard is:

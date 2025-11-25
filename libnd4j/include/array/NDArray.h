@@ -45,6 +45,7 @@
 #include <functional>
 #include <initializer_list>
 #include <memory>
+#include <mutex>
 #include <types/float16.h>
 #include <types/bfloat16.h>
 #include <iostream>
@@ -166,11 +167,17 @@ class SD_LIB_EXPORT NDArray {
  protected:
 
   /**
-   *  pointer on DataBuffer buffers in cpu/device memory
+   *  NDArray's DataBuffer pointer - ownership tracked by _ownsBuffer flag
+   *  Shape info is managed by the cache (ConstantShapeHelper)
    */
-  DataBuffer *_buffer = nullptr;
+  DataBuffer* _buffer = nullptr;
 
-
+  /**
+   *  Tracks whether this NDArray owns its DataBuffer and should delete it
+   *  - true: NDArray created the buffer, will delete it in destructor
+   *  - false: NDArray is a view/wrapper, won't delete (e.g., Java-owned buffers)
+   */
+  bool _ownsBuffer = false;
 
   /**
    *  contains shape info:  matrix rank, numbers of elements per each dimension, dimensions strides,
@@ -1577,6 +1584,12 @@ class SD_LIB_EXPORT NDArray {
 #endif
 #ifndef __JAVACPP_HACK__
   void printBufferDebug(const char *msg, LongType offset, LongType limit);
+
+  // Helper method to format creation trace as string
+  std::string getCreationTraceAsString() const;
+
+  // Validate ConstantShapeBuffer and get primary pointer safely
+  LongType* validateAndGetPrimary(ConstantShapeBuffer* buffer, const char* context);
 #endif
 };
 
@@ -1644,7 +1657,6 @@ int NDArray::rankOf()  {
   // shapeInfo() has recovery logic and fail-fast checks - use it instead of direct _shapeInfo access
   const sd::LongType* shInfo = this->shapeInfo();
 
-  // CRITICAL: Defensive null check even though shapeInfo() should never return nullptr.
   // Previous crashes show that in rare cases (exception handling issues, compiler optimization,
   // or JNI boundary conditions), nullptr can still get through. This provides defense-in-depth
   // to prevent SIGSEGV in shape::rank() which directly dereferences the pointer.
@@ -1777,9 +1789,28 @@ bool NDArray::isSameShape(const std::vector<LongType> &shape)  {
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::isSameShape(NDArray *other)  {
-  if (this->isEmpty() != other->isEmpty()) return false;
+  // Safety: check for null/invalid pointer
+  if (other == nullptr) return false;
 
-  return isSameShape(std::vector<LongType>(other->_shapeInfo + 1, other->_shapeInfo + 1 + other->_shapeInfo[0]));
+  // Check if both arrays are empty - empty arrays are always same shape
+  bool thisEmpty = this->isEmpty();
+  bool otherEmpty = other->isEmpty();
+
+  if (thisEmpty != otherEmpty) return false;
+  if (thisEmpty && otherEmpty) return true;  // Both empty = same shape
+
+  // Use shapeInfo() accessor instead of raw _shapeInfo to allow fallback logic
+  // shapeInfo() returns valid fallback shape even when _shapeInfo is nullptr
+  const sd::LongType* thisShape = this->shapeInfo();
+  const sd::LongType* otherShape = other->shapeInfo();
+
+  // If both have valid shapes (even fallback), compare them
+  if (thisShape != nullptr && otherShape != nullptr) {
+    return shape::equalsStrict(thisShape, otherShape);
+  }
+
+  // Both shapes are invalid (extremely rare)
+  return false;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1854,10 +1885,11 @@ bool NDArray::operator!=(NDArray &other)  {
 
 //////////////////////////////////////////////////////////////////////////
 DataType NDArray::dataType()  {
-  if(_shapeInfo == nullptr) {
-    THROW_EXCEPTION("NDArray::dataType: shapeInfo is nullptr!");
-  }
-  return ArrayOptions::dataType(_shapeInfo);
+  // CRITICAL: Use shapeInfo() accessor instead of direct _shapeInfo access
+  // shapeInfo() has refresh logic that updates _shapeInfo from _shapeInfoBuffer if needed
+  // and throws informative errors if the array is truly uninitialized.
+  // Direct _shapeInfo access can fail if the pointer needs refreshing.
+  return ArrayOptions::dataType(this->shapeInfo());
 }
 
 
@@ -1999,13 +2031,30 @@ DataBuffer * NDArray::dataBuffer() { return _buffer; }
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 void * _bufferWithOffset(LongType offset,DataBuffer *buffer) {
-  return reinterpret_cast<void *>(buffer->primaryAtOffset<T>(offset));
+  if (buffer == nullptr) {
+    THROW_EXCEPTION("NDArray::_bufferWithOffset: DataBuffer is nullptr - array not properly initialized");
+  }
+
+  // Get the buffer pointer from DataBuffer
+  void* ptr = buffer->primaryAtOffset<T>(offset);
+
+  // This hides the real bug! Instead of silently propagating nullptr (which causes SIGSEGV in native kernels),
+  // throw a clear exception to expose the root cause: an NDArray is being used without a valid data buffer.
+  if (ptr == nullptr) {
+    std::string msg = "NDArray::_bufferWithOffset: primaryAtOffset returned nullptr - "
+                      "array buffer is not allocated. This indicates the NDArray was created "
+                      "improperly or its buffer was freed while still in use. "
+                      "Offset: " + std::to_string(offset) + ", "
+                      "Buffer length: " + std::to_string(buffer->getLenInBytes()) + " bytes";
+    THROW_EXCEPTION(msg.c_str());
+  }
+
+  return ptr;
 }
 
 // Moved to NDArray.hXX - removed inline definition to avoid requiring selective_rendering.h in header
 
 //////////////////////////////////////////////////////////////////////////
-// CRITICAL: Must be SD_INLINE to avoid multiple definition errors across translation units.
 // The function is defined in a header, so it must be marked inline to comply with ODR (One Definition Rule).
 // Exception handling works correctly with inline functions - the inline keyword doesn't affect exception semantics.
 SD_INLINE LongType *NDArray::shapeInfo()  {
@@ -2014,11 +2063,17 @@ SD_INLINE LongType *NDArray::shapeInfo()  {
   // in cases where _shapeInfo was invalidated (e.g., constructor set it to nullptr).
   ConstantShapeBuffer* buffer = _shapeInfoBuffer;
   if (buffer != nullptr) {
+    // NOTE: We intentionally DO NOT call buffer->isValid() here anymore.
+    // The isValid() check was added in session #1055 to detect use-after-free,
+    // but it CANNOT safely detect garbage pointers - calling ANY method on a
+    // garbage pointer (including isValid()) causes SIGSEGV before we can detect it.
+    // The isValid() check only works for freed-but-zeroed memory, not random garbage.
+    // Session #1056: Removed isValid() check to prevent crash IN the validation itself.
     LongType* refreshed = buffer->primary();
     if (refreshed == nullptr) {
+      // CRITICAL: Just throw without setting error context to avoid
+      // static initialization/destruction order issues with LaunchContext
       const char* msg = "NDArray::shapeInfo() - _shapeInfoBuffer->primary() returned nullptr";
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(msg);
       THROW_EXCEPTION(msg);
     }
     _shapeInfo = refreshed;
@@ -2028,10 +2083,10 @@ SD_INLINE LongType *NDArray::shapeInfo()  {
   }
 
   // Fail fast if NDArray is uninitialized
+  // CRITICAL: Just throw without setting error context to avoid
+  // static initialization/destruction order issues with LaunchContext
   if (_shapeInfo == nullptr) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     const char* msg = "NDArray::shapeInfo() - _shapeInfo is nullptr (uninitialized NDArray)";
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(msg);
     THROW_EXCEPTION(msg);
   }
 
@@ -2046,10 +2101,8 @@ SD_INLINE LongType *NDArray::shapeInfo()  {
     errorMessage += "). ";
     errorMessage += "This indicates memory corruption, use-after-free, or uninitialized shapeInfo buffer.";
 
-    // Set error context
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(errorMessage.c_str());
-
+    // CRITICAL: Just throw without setting error context to avoid
+    // static initialization/destruction order issues with LaunchContext
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
@@ -2088,16 +2141,15 @@ SD_INLINE LongType *NDArray::specialShapeInfo()  {
       shapeInfoToReturn = _shapeInfo;
     } else {
       // Both are nullptr - this is a fatal error
+      // CRITICAL: Just throw without setting error context to avoid
+      // static initialization/destruction order issues with LaunchContext
       const char* msg = "NDArray::specialShapeInfo() - NDArray is uninitialized (both _shapeInfo and _shapeInfoD are nullptr)";
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(msg);
       THROW_EXCEPTION(msg);
     }
   } else {
     shapeInfoToReturn = _shapeInfoD;
   }
 
-  // CRITICAL FIX: Validate rank BEFORE returning shapeInfo (same validation as shapeInfo()).
   // Prevents "Rank is too high: <pointer_value>" errors from corrupted/uninitialized memory.
   sd::LongType rank = shapeInfoToReturn[0];
   if (rank < 0 || rank > SD_MAX_RANK) {
@@ -2109,9 +2161,8 @@ SD_INLINE LongType *NDArray::specialShapeInfo()  {
     errorMessage += "). ";
     errorMessage += "This indicates memory corruption, use-after-free, or uninitialized shapeInfo buffer.";
 
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(errorMessage.c_str());
-
+    // CRITICAL: Just throw without setting error context to avoid
+    // static initialization/destruction order issues with LaunchContext
     THROW_EXCEPTION(errorMessage.c_str());
   }
 

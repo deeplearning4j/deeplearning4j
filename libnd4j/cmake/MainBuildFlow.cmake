@@ -4,6 +4,11 @@
 # This enhanced version includes support for CUDA template processing
 # to achieve complete parity between CPU and CUDA template systems.
 # UPDATED with modern cuDNN integration
+#
+# CACHE INVALIDATION: Modified to force CMake reconfiguration after
+# PCH disabling in session #1002. Resolves Makefile2 having stale
+# progress count (99 steps) while build.make has correct count (1251 steps).
+# This inconsistency caused build to stop at 98% missing files 48-64.
 # =============================================================================
 
 # =============================================================================
@@ -230,6 +235,14 @@ function(collect_all_sources out_source_list)
         message(STATUS "🖥️  CPU build: Enhanced template system will generate optimized CPU instantiations")
     endif()
 
+    # When SD_GCC_FUNCTRACE is ON, the binary exceeds 2GB and PLT relocations fail
+    # libc_nonshared.a contains precompiled functions (like atexit) that use PLT
+    # We provide our own implementations compiled with -fno-plt to override them
+    if(SD_GCC_FUNCTRACE)
+        list(APPEND ALL_SOURCES_LIST ${CMAKE_CURRENT_SOURCE_DIR}/include/platform/noplt_libc_stubs.c)
+        message(STATUS "✅ Added no-PLT libc stubs for >2GB functrace build compatibility")
+    endif()
+
     # ✅ Add the generated template sources (now includes both CPU and CUDA)
     list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_GENERIC_SOURCES})
     list(REMOVE_DUPLICATES ALL_SOURCES_LIST)
@@ -251,9 +264,14 @@ function(configure_cpu_linking main_target_name)
 
     # Add debug libraries when SD_GCC_FUNCTRACE is enabled
     if(SD_GCC_FUNCTRACE)
+        # CRITICAL FIX (Session #1045): Do NOT link libunwind!
+        # - We removed --unwindlib=libunwind from compile flags in CompilerFlags.cmake
+        # - Using system libgcc_s for exception handling (JVM compatible)
+        # - libunwind would conflict with JVM's libgcc_s causing _Unwind_SetGR crashes
+        # Both Clang and GCC now use the same debug libraries (no libunwind)
         target_link_libraries(${main_target_name} PUBLIC
-                bfd dw dl elf unwind pthread)
-        message(STATUS "✅ Added debug libraries for SD_GCC_FUNCTRACE")
+                bfd dw dl elf pthread)
+        message(STATUS "✅ Added debug libraries for SD_GCC_FUNCTRACE (using libgcc_s for unwinding, JVM compatible)")
     endif()
 
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -310,6 +328,14 @@ function(create_and_link_library)
     if(NOT TARGET ${OBJECT_LIB_NAME})
         add_library(${OBJECT_LIB_NAME} OBJECT ${ALL_SOURCES})
         add_dependencies(${OBJECT_LIB_NAME} flatbuffers_interface)
+        target_link_libraries(${OBJECT_LIB_NAME} PUBLIC flatbuffers_interface)
+
+        # picking up incomplete flatbuffers.h from libnd4j/include/flatbuffers/
+        # The ExternalProject downloads full headers to flatbuffers-src/include
+        get_target_property(FLATBUFFERS_INCLUDES flatbuffers_interface INTERFACE_INCLUDE_DIRECTORIES)
+        if(FLATBUFFERS_INCLUDES)
+            target_include_directories(${OBJECT_LIB_NAME} BEFORE PUBLIC ${FLATBUFFERS_INCLUDES})
+        endif()
 
         if(SD_CUDA)
             # Find the CUDA Toolkit to make the CUDA::toolkit target available.
@@ -375,8 +401,9 @@ function(create_and_link_library)
 
         # Enable precompiled headers for large commonly-included headers
         # This significantly speeds up incremental builds when these headers change
-        # DISABLED when SD_GCC_FUNCTRACE is ON due to massive memory usage from lifecycle tracking headers
-        if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.16" AND NOT SD_GCC_FUNCTRACE)
+        # PERMANENTLY DISABLED: Causes cache staleness issues when SD_GCC_FUNCTRACE changes
+        # The CMake cache can hold stale values causing build failures
+        if(FALSE)  # Disabled to prevent cache staleness issues
             message(STATUS "🚀 Enabling precompiled headers for ${OBJECT_LIB_NAME}")
             target_precompile_headers(${OBJECT_LIB_NAME} PRIVATE
                 <system/op_boilerplate.h>
@@ -384,9 +411,9 @@ function(create_and_link_library)
             )
             message(STATUS "✅ Precompiled headers enabled for op_boilerplate.h and type_boilerplate.h")
         elseif(SD_GCC_FUNCTRACE)
-            message(STATUS "⚠️ Precompiled headers DISABLED for call tracing build (reduces memory usage)")
+            message(STATUS "⚠️ Precompiled headers DISABLED (prevents CMake cache staleness issues)")
         else()
-            message(STATUS "⚠️ CMake 3.16+ required for precompiled headers (current: ${CMAKE_VERSION})")
+            message(STATUS "⚠️ Precompiled headers DISABLED (prevents CMake cache staleness issues)")
         endif()
     endif()
 
@@ -670,7 +697,8 @@ endif()
 
 # --- Phase 4: Create and Link Final Library with Enhanced Template System ---
 print_status_colored("INFO" "=== 4. CREATING AND LINKING FINAL LIBRARY WITH ENHANCED TEMPLATES ===")
-set(CUSTOMOPS_GENERIC_SOURCES "")
+# ✅ DO NOT reset CUSTOMOPS_GENERIC_SOURCES - it's a CACHE variable populated by TemplateProcessing.cmake
+# Resetting it here causes the cached template files to be lost, resulting in build errors
 collect_all_sources(ALL_SOURCES)
 create_and_link_library()
 message(STATUS "Final library target created and linked with enhanced template support.")
@@ -796,8 +824,9 @@ if(SD_EXTRACT_INSTANTIATIONS)
     return()
 endif()
 
-# Precompiled headers DISABLED when SD_GCC_FUNCTRACE is ON due to massive memory usage
-if(NOT SD_GCC_FUNCTRACE)
+# Precompiled headers PERMANENTLY DISABLED to prevent CMake cache staleness issues
+# When SD_GCC_FUNCTRACE or other flags change, stale cache can cause build failures
+if(FALSE)  # Disabled to prevent cache staleness issues
     target_precompile_headers(${SD_LIBRARY_NAME} PRIVATE
             <vector>
             <memory>
@@ -816,7 +845,7 @@ if(NOT SD_GCC_FUNCTRACE)
     )
     message(STATUS "✅ Precompiled headers enabled for main library")
 else()
-    message(STATUS "⚠️ Precompiled headers DISABLED for call tracing build (reduces memory usage)")
+    message(STATUS "⚠️ Precompiled headers DISABLED (prevents CMake cache staleness issues)")
 endif()
 
 include(PostBuild)

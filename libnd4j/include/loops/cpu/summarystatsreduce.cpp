@@ -119,6 +119,7 @@ void SummaryStatsReduce<X, Z>::exec(bool biasCorrected,  void *vx,  sd::LongType
 
  if (dimensionLength < 1) return;
 
+ // When shared_ptr goes out of scope, it deletes the TadPack and invalidates pointers!
  auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType*>(xShapeInfo), dimension, dimensionLength);
  if (resultLength == 1 || dimensionLength == shape::rank(xShapeInfo) || tadPack->numberOfTads() == 1) {
    z[0] = execScalar<OpType>(biasCorrected, x, xShapeInfo, extraParams);

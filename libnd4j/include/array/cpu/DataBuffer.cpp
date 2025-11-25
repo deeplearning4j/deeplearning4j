@@ -350,6 +350,8 @@ void DataBuffer::showCounters(const char* msg1, const char* msg2) {
 }
 template <typename T>
 void* DataBuffer::primaryAtOffset(const LongType offset) {
+  if(_primaryBuffer == nullptr)
+    return nullptr;
   T *type = reinterpret_cast<T*>(_primaryBuffer);
   return reinterpret_cast<void *>(type + offset);
 }

@@ -26,6 +26,7 @@
 #include <execution/AffinityManager.h>
 #include <helpers/logger.h>
 #include <memory/MemoryCounter.h>
+#include <sstream>
 
 #if defined(SD_GCC_FUNCTRACE)
 #include <array/DataBufferLifecycleTracker.h>
@@ -50,11 +51,15 @@ DataBuffer::DataBuffer() {
   _isOwnerSpecial = false;
   _deviceId = AffinityManager::currentDeviceId();
 #if defined(SD_GCC_FUNCTRACE)
-  if(Environment::getInstance().isFuncTracePrintAllocate()) {
-    creationStackTrace = new StackTrace();
-    creationStackTrace->load_here();
-  }
-
+  // - Stack trace capture via backward-cpp's backtrace() is NOT safe during early JVM initialization
+  // - The JVM's memory mappings and signal handlers aren't fully set up yet
+  // - This causes SIGSEGV crashes at addresses like 0x7f647edc2000 inside glibc internals
+  // - Session #953's try-catch doesn't work when C++ exceptions are disabled (common for performance)
+  // - DataBufferLifecycleTracker already captures stack traces separately for leak detection
+  // - The creationStackTrace was redundant and only used for constructor error messages
+  // - Solution: Leave creationStackTrace as nullptr (getCreationTraceAsString() handles this gracefully)
+  // - This eliminates crashes while preserving all leak detection functionality
+  creationStackTrace = nullptr;
 #endif
   setCountersToZero();
 }
@@ -82,11 +87,15 @@ DataBuffer::DataBuffer(const DataBuffer& other) {
   _specialBuffer = other._specialBuffer;
 
 #if defined(SD_GCC_FUNCTRACE)
-  if(Environment::getInstance().isFuncTracePrintAllocate()) {
-    creationStackTrace = new StackTrace();
-    creationStackTrace->load_here();
-  }
-
+  // - Stack trace capture via backward-cpp's backtrace() is NOT safe during early JVM initialization
+  // - The JVM's memory mappings and signal handlers aren't fully set up yet
+  // - This causes SIGSEGV crashes at addresses like 0x7f647edc2000 inside glibc internals
+  // - Session #953's try-catch doesn't work when C++ exceptions are disabled (common for performance)
+  // - DataBufferLifecycleTracker already captures stack traces separately for leak detection
+  // - The creationStackTrace was redundant and only used for constructor error messages
+  // - Solution: Leave creationStackTrace as nullptr (getCreationTraceAsString() handles this gracefully)
+  // - This eliminates crashes while preserving all leak detection functionality
+  creationStackTrace = nullptr;
 #endif
 
   _deviceId.store(other._deviceId.load());
@@ -117,11 +126,15 @@ DataBuffer::DataBuffer(void* primary, void* special, const size_t lenInBytes, co
   _isOwnerSpecial = isOwnerSpecial;
   _deviceId = AffinityManager::currentDeviceId();
 #if defined(SD_GCC_FUNCTRACE)
-  if(Environment::getInstance().isFuncTracePrintAllocate()) {
-    creationStackTrace = new StackTrace();
-    creationStackTrace->load_here();
-  }
-
+  // - Stack trace capture via backward-cpp's backtrace() is NOT safe during early JVM initialization
+  // - The JVM's memory mappings and signal handlers aren't fully set up yet
+  // - This causes SIGSEGV crashes at addresses like 0x7f647edc2000 inside glibc internals
+  // - Session #953's try-catch doesn't work when C++ exceptions are disabled (common for performance)
+  // - DataBufferLifecycleTracker already captures stack traces separately for leak detection
+  // - The creationStackTrace was redundant and only used for constructor error messages
+  // - Solution: Leave creationStackTrace as nullptr (getCreationTraceAsString() handles this gracefully)
+  // - This eliminates crashes while preserving all leak detection functionality
+  creationStackTrace = nullptr;
 #endif
   setCountersToZero();
 
@@ -150,11 +163,15 @@ DataBuffer::DataBuffer(void* primary, const size_t lenInBytes, const DataType da
     syncToSpecial(true);
 
 #if defined(SD_GCC_FUNCTRACE)
-  if(Environment::getInstance().isFuncTracePrintAllocate()) {
-    creationStackTrace = new StackTrace();
-    creationStackTrace->load_here();
-  }
-
+  // - Stack trace capture via backward-cpp's backtrace() is NOT safe during early JVM initialization
+  // - The JVM's memory mappings and signal handlers aren't fully set up yet
+  // - This causes SIGSEGV crashes at addresses like 0x7f647edc2000 inside glibc internals
+  // - Session #953's try-catch doesn't work when C++ exceptions are disabled (common for performance)
+  // - DataBufferLifecycleTracker already captures stack traces separately for leak detection
+  // - The creationStackTrace was redundant and only used for constructor error messages
+  // - Solution: Leave creationStackTrace as nullptr (getCreationTraceAsString() handles this gracefully)
+  // - This eliminates crashes while preserving all leak detection functionality
+  creationStackTrace = nullptr;
 #endif
 }
 
@@ -170,9 +187,30 @@ DataBuffer::DataBuffer(const void* hostBuffer, const DataType dataType, const si
     printf("DataBuffer::DataBuffer(const void* hostBuffer, const DataType dataType, const size_t lenInBytes, memory::Workspace* workspace) constructor\n");
     fflush(stdout);
   }
-  if (hostBuffer == nullptr)
+  if (hostBuffer == nullptr) {
+#if defined(SD_GCC_FUNCTRACE)
+    std::string traceInfo = getCreationTraceAsString();
+    std::string errorMsg = "DataBuffer constructor: can't be initialized with nullptr host buffer !";
+    if (!traceInfo.empty()) {
+      errorMsg += "\n\nDataBuffer allocation trace:\n" + traceInfo;
+    }
+    THROW_EXCEPTION(errorMsg.c_str());
+#else
     THROW_EXCEPTION("DataBuffer constructor: can't be initialized with nullptr host buffer !");
-  if (lenInBytes == 0) THROW_EXCEPTION("DataBuffer constructor: can't be initialized with zero length !");
+#endif
+  }
+  if (lenInBytes == 0) {
+#if defined(SD_GCC_FUNCTRACE)
+    std::string traceInfo = getCreationTraceAsString();
+    std::string errorMsg = "DataBuffer constructor: can't be initialized with zero length !";
+    if (!traceInfo.empty()) {
+      errorMsg += "\n\nDataBuffer allocation trace:\n" + traceInfo;
+    }
+    THROW_EXCEPTION(errorMsg.c_str());
+#else
+    THROW_EXCEPTION("DataBuffer constructor: can't be initialized with zero length !");
+#endif
+  }
 
   _primaryBuffer = nullptr;
   _specialBuffer = nullptr;
@@ -189,11 +227,15 @@ DataBuffer::DataBuffer(const void* hostBuffer, const DataType dataType, const si
   copyBufferFromHost(hostBuffer, lenInBytes);
 
 #if defined(SD_GCC_FUNCTRACE)
-  if(Environment::getInstance().isFuncTracePrintAllocate()) {
-    creationStackTrace = new StackTrace();
-    creationStackTrace->load_here();
-  }
-
+  // - Stack trace capture via backward-cpp's backtrace() is NOT safe during early JVM initialization
+  // - The JVM's memory mappings and signal handlers aren't fully set up yet
+  // - This causes SIGSEGV crashes at addresses like 0x7f647edc2000 inside glibc internals
+  // - Session #953's try-catch doesn't work when C++ exceptions are disabled (common for performance)
+  // - DataBufferLifecycleTracker already captures stack traces separately for leak detection
+  // - The creationStackTrace was redundant and only used for constructor error messages
+  // - Solution: Leave creationStackTrace as nullptr (getCreationTraceAsString() handles this gracefully)
+  // - This eliminates crashes while preserving all leak detection functionality
+  creationStackTrace = nullptr;
 #endif
 }
 
@@ -229,11 +271,15 @@ DataBuffer::DataBuffer(const sd::LongType lenInBytes, const DataType dataType, m
   writeSpecial();
 
 #if defined(SD_GCC_FUNCTRACE)
-  if(Environment::getInstance().isFuncTracePrintAllocate()) {
-    creationStackTrace = new StackTrace();
-    creationStackTrace->load_here();
-  }
-
+  // - Stack trace capture via backward-cpp's backtrace() is NOT safe during early JVM initialization
+  // - The JVM's memory mappings and signal handlers aren't fully set up yet
+  // - This causes SIGSEGV crashes at addresses like 0x7f647edc2000 inside glibc internals
+  // - Session #953's try-catch doesn't work when C++ exceptions are disabled (common for performance)
+  // - DataBufferLifecycleTracker already captures stack traces separately for leak detection
+  // - The creationStackTrace was redundant and only used for constructor error messages
+  // - Solution: Leave creationStackTrace as nullptr (getCreationTraceAsString() handles this gracefully)
+  // - This eliminates crashes while preserving all leak detection functionality
+  creationStackTrace = nullptr;
 #endif
 
 }
@@ -274,11 +320,15 @@ DataBuffer::DataBuffer(DataBuffer&& other) {
   other._lenInBytes = 0;
 
 #if defined(SD_GCC_FUNCTRACE)
-  if(Environment::getInstance().isFuncTracePrintAllocate()) {
-    creationStackTrace = new StackTrace();
-    creationStackTrace->load_here();
-  }
-
+  // - Stack trace capture via backward-cpp's backtrace() is NOT safe during early JVM initialization
+  // - The JVM's memory mappings and signal handlers aren't fully set up yet
+  // - This causes SIGSEGV crashes at addresses like 0x7f647edc2000 inside glibc internals
+  // - Session #953's try-catch doesn't work when C++ exceptions are disabled (common for performance)
+  // - DataBufferLifecycleTracker already captures stack traces separately for leak detection
+  // - The creationStackTrace was redundant and only used for constructor error messages
+  // - Solution: Leave creationStackTrace as nullptr (getCreationTraceAsString() handles this gracefully)
+  // - This eliminates crashes while preserving all leak detection functionality
+  creationStackTrace = nullptr;
 #endif
 }
 
@@ -303,11 +353,15 @@ DataBuffer& DataBuffer::operator=(const DataBuffer& other) {
   allocateBuffers();
   copyBufferFrom(other);
 #if defined(SD_GCC_FUNCTRACE)
-  if(Environment::getInstance().isFuncTracePrintAllocate()) {
-    creationStackTrace = new StackTrace();
-    creationStackTrace->load_here();
-  }
-
+  // - Stack trace capture via backward-cpp's backtrace() is NOT safe during early JVM initialization
+  // - The JVM's memory mappings and signal handlers aren't fully set up yet
+  // - This causes SIGSEGV crashes at addresses like 0x7f647edc2000 inside glibc internals
+  // - Session #953's try-catch doesn't work when C++ exceptions are disabled (common for performance)
+  // - DataBufferLifecycleTracker already captures stack traces separately for leak detection
+  // - The creationStackTrace was redundant and only used for constructor error messages
+  // - Solution: Leave creationStackTrace as nullptr (getCreationTraceAsString() handles this gracefully)
+  // - This eliminates crashes while preserving all leak detection functionality
+  creationStackTrace = nullptr;
 #endif
   return *this;
 }
@@ -351,11 +405,15 @@ DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept {
   other.setAllocFlags(false, false);
   other._lenInBytes = 0;
 #if defined(SD_GCC_FUNCTRACE)
-  if(Environment::getInstance().isFuncTracePrintAllocate()) {
-    creationStackTrace = new StackTrace();
-    creationStackTrace->load_here();
-  }
-
+  // - Stack trace capture via backward-cpp's backtrace() is NOT safe during early JVM initialization
+  // - The JVM's memory mappings and signal handlers aren't fully set up yet
+  // - This causes SIGSEGV crashes at addresses like 0x7f647edc2000 inside glibc internals
+  // - Session #953's try-catch doesn't work when C++ exceptions are disabled (common for performance)
+  // - DataBufferLifecycleTracker already captures stack traces separately for leak detection
+  // - The creationStackTrace was redundant and only used for constructor error messages
+  // - Solution: Leave creationStackTrace as nullptr (getCreationTraceAsString() handles this gracefully)
+  // - This eliminates crashes while preserving all leak detection functionality
+  creationStackTrace = nullptr;
 #endif
   return *this;
 }
@@ -364,11 +422,65 @@ DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept {
 void DataBuffer::markConstant(bool reallyConstant) {
   isConstant = reallyConstant;
 }
-////////////////////////////////////////////////////////////////////////
-void* DataBuffer::primary() { return _primaryBuffer; }
 
 ////////////////////////////////////////////////////////////////////////
-void* DataBuffer::special() { return _specialBuffer; }
+// Validation method following DirectShapeTrie pattern
+// Checks for use-after-free, corrupted pointers, and invalid state
+void DataBuffer::validateIntegrity() const {
+  // Check magic number first - if wrong, pointer is dangling/corrupted
+  if (_magicNumber != MAGIC_NUMBER) {
+    // Magic number doesn't match - this is a freed/corrupted DataBuffer!
+    std::stringstream ss;
+    ss << "DataBuffer integrity check FAILED!\n";
+    ss << "  Expected magic number: 0x" << std::hex << MAGIC_NUMBER << "\n";
+    ss << "  Actual magic number: 0x" << std::hex << _magicNumber << "\n";
+    ss << "  Likely causes:\n";
+    ss << "    1. Use-after-free: DataBuffer was deleted but pointer still used\n";
+    ss << "    2. Corrupted pointer: Pointer points to invalid memory\n";
+    ss << "    3. Uninitialized memory: DataBuffer was never properly constructed\n";
+    ss << "  This indicates a SERIOUS BUG in buffer lifecycle management!\n";
+    ss << "  Check where this DataBuffer pointer came from and ensure it's still valid.\n";
+    THROW_EXCEPTION(ss.str().c_str());
+  }
+
+  // Check if buffer has been closed
+  if (closed) {
+    std::stringstream ss;
+    ss << "DataBuffer integrity check FAILED!\n";
+    ss << "  Buffer has been closed (freed) but is still being accessed\n";
+    ss << "  Magic number is valid (0x" << std::hex << _magicNumber << ") but closed flag is true\n";
+    ss << "  This indicates use-after-close: buffer was explicitly closed but pointer retained\n";
+    THROW_EXCEPTION(ss.str().c_str());
+  }
+
+  // Sanity check data type
+  if (_dataType == DataType::UNKNOWN) {
+    std::stringstream ss;
+    ss << "DataBuffer integrity check FAILED!\n";
+    ss << "  DataType is UNKNOWN - buffer was not properly initialized\n";
+    THROW_EXCEPTION(ss.str().c_str());
+  }
+
+  // Sanity check length (negative or excessively large values indicate corruption)
+  if (_lenInBytes < 0 || _lenInBytes > (1LL << 40)) {  // 1TB limit
+    std::stringstream ss;
+    ss << "DataBuffer integrity check FAILED!\n";
+    ss << "  Length is invalid: " << _lenInBytes << " bytes\n";
+    ss << "  Valid range is 0 to " << (1LL << 40) << " bytes (1TB)\n";
+    ss << "  This indicates memory corruption\n";
+    THROW_EXCEPTION(ss.str().c_str());
+  }
+}
+
+////////////////////////////////////////////////////////////////////////
+void* DataBuffer::primary() {
+  return _primaryBuffer;
+}
+
+////////////////////////////////////////////////////////////////////////
+void* DataBuffer::special() {
+  return _specialBuffer;
+}
 
 ////////////////////////////////////////////////////////////////////////
 DataType DataBuffer::getDataType() { return _dataType; }
@@ -395,11 +507,11 @@ size_t DataBuffer::getNumElements()   {
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::allocatePrimary() {
 #if defined(SD_GCC_FUNCTRACE)
-  if(Environment::getInstance().isFuncTracePrintAllocate()) {
-    allocationStackTracePrimary = new StackTrace();
-    allocationStackTracePrimary->load_here();
+  // DataBufferLifecycleTracker already captures allocations for leak detection
+  if(allocationStackTracePrimary != nullptr) {
+    delete allocationStackTracePrimary;
+    allocationStackTracePrimary = nullptr;
   }
-
 #endif
   if (_primaryBuffer == nullptr) {
     auto deviceId = AffinityManager::currentDeviceId();
@@ -408,15 +520,15 @@ void DataBuffer::allocatePrimary() {
       if (Environment::getInstance().isCPU()) {
         // on cpu backend we validate against device 0 for now
         if (!memory::MemoryCounter::getInstance().validate(getLenInBytes()))
-          throw allocation_exception::build("Requested amount exceeds HOST device limits",
+          THROW_EXCEPTION(allocation_exception::build("Requested amount exceeds HOST device limits",
                                             memory::MemoryCounter::getInstance().deviceLimit(deviceId),
-                                            getLenInBytes());
+                                            getLenInBytes()).what());
       } else {
         // in heterogenuous mode we validate against device group
         if (!memory::MemoryCounter::getInstance().validateGroup(memory::MemoryType::HOST, getLenInBytes()))
-          throw allocation_exception::build(
+          THROW_EXCEPTION(allocation_exception::build(
               "Requested amount exceeds HOST group limits",
-              memory::MemoryCounter::getInstance().groupLimit(memory::MemoryType::HOST), getLenInBytes());
+              memory::MemoryCounter::getInstance().groupLimit(memory::MemoryType::HOST), getLenInBytes()).what());
       }
     }
 
@@ -519,18 +631,21 @@ void DataBuffer::deleteBuffers() {
 }
 
 ////////////////////////////////////////////////////////////////////////
-DataBuffer::~DataBuffer() { deleteBuffers(); }
+DataBuffer::~DataBuffer() {
+  // Clear magic number to detect use-after-free
+  // If anyone tries to use this buffer after destruction, validateIntegrity() will catch it
+  _magicNumber = 0xDEADBEEF;
+  deleteBuffers();
+}
+
 
 void DataBuffer::setPrimaryBuffer(void* buffer, size_t length) {
   std::lock_guard<std::mutex> lock(_deleteMutex);
 #if defined(SD_GCC_FUNCTRACE)
-  if(Environment::getInstance().isFuncTracePrintAllocate()) {
-    if(allocationStackTracePrimary != nullptr) {
-      delete allocationStackTracePrimary;
-      allocationStackTracePrimary = nullptr;
-    }
-    allocationStackTracePrimary = new StackTrace();
-    allocationStackTracePrimary->load_here();
+  // DataBufferLifecycleTracker already captures allocations for leak detection
+  if(allocationStackTracePrimary != nullptr) {
+    delete allocationStackTracePrimary;
+    allocationStackTracePrimary = nullptr;
   }
 #endif
   _primaryBuffer = buffer;
@@ -541,13 +656,10 @@ void DataBuffer::setPrimaryBuffer(void* buffer, size_t length) {
 void DataBuffer::setSpecialBuffer(void* buffer, size_t length) {
   std::lock_guard<std::mutex> lock(_deleteMutex);
 #if defined(SD_GCC_FUNCTRACE)
-  if(Environment::getInstance().isFuncTracePrintAllocate()) {
-    if(allocationStackTraceSpecial != nullptr) {
-      delete allocationStackTraceSpecial;
-      allocationStackTraceSpecial = nullptr;
-    }
-    allocationStackTraceSpecial = new StackTrace();
-    allocationStackTraceSpecial->load_here();
+  // DataBufferLifecycleTracker already captures allocations for leak detection
+  if(allocationStackTraceSpecial != nullptr) {
+    delete allocationStackTraceSpecial;
+    allocationStackTraceSpecial = nullptr;
   }
 #endif
   this->setSpecial(buffer, false);
@@ -581,6 +693,43 @@ void DataBuffer::printAllocationTrace() {
 #endif
 }
 
+std::string DataBuffer::getCreationTraceAsString() const {
+#if defined(SD_GCC_FUNCTRACE)
+  if (creationStackTrace == nullptr || creationStackTrace->size() == 0) {
+    return "";
+  }
+
+  std::ostringstream oss;
+  backward::TraceResolver resolver;
+  resolver.load_stacktrace(*creationStackTrace);
+
+  for (size_t i = 0; i < creationStackTrace->size(); ++i) {
+    const backward::ResolvedTrace &trace = resolver.resolve((*creationStackTrace)[i]);
+
+    // Format: #frame function_name at source_file:line
+    oss << "#" << i << " ";
+
+    if (!trace.object_function.empty()) {
+      oss << trace.object_function;
+    } else {
+      oss << "???";
+    }
+
+    if (!trace.source.filename.empty()) {
+      oss << " at " << trace.source.filename;
+      if (trace.source.line > 0) {
+        oss << ":" << trace.source.line;
+      }
+    }
+
+    oss << "\n";
+  }
+
+  return oss.str();
+#else
+  return "";
+#endif
+}
 
 int DataBuffer::deviceId() const { return _deviceId.load(); }
 

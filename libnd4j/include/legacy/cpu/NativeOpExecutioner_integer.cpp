@@ -36,10 +36,10 @@ void NativeOpExecutioner::execBroadcastInt(
 
 
   if (xType != yType || xType != zType)
-    throw sd::datatype_exception::build("NativeOpExecutioner::execBroadcastInt", zType, xType, yType);
+    THROW_EXCEPTION(sd::datatype_exception::build("NativeOpExecutioner::execBroadcastInt", zType, xType, yType).what());
 
   if (!sd::DataTypeUtils::isZ(zType))
-    throw sd::datatype_exception::build("NativeOpExecutioner::execBroadcastInt requires integer data type", zType);
+    THROW_EXCEPTION(sd::datatype_exception::build("NativeOpExecutioner::execBroadcastInt requires integer data type", zType).what());
   auto func = PRAGMA_THREADS_FOR {
     BUILD_SINGLE_SELECTOR(xType, functions::broadcast::BroadcastInt,
                           ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength,
@@ -67,10 +67,10 @@ void NativeOpExecutioner::execBroadcastInt(sd::LaunchContext *lc, const int opNu
 
 
   if (xType != yType || xType != zType)
-    throw sd::datatype_exception::build("NativeOpExecutioner::execBroadcastInt", zType, xType, yType);
+    THROW_EXCEPTION(sd::datatype_exception::build("NativeOpExecutioner::execBroadcastInt", zType, xType, yType).what());
 
   if (!sd::DataTypeUtils::isZ(zType))
-    throw sd::datatype_exception::build("NativeOpExecutioner::execBroadcastInt requires integer data type", zType);
+    THROW_EXCEPTION(sd::datatype_exception::build("NativeOpExecutioner::execBroadcastInt requires integer data type", zType).what());
   BUILD_SINGLE_SELECTOR(xType, functions::broadcast::BroadcastInt,
                         ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo), SD_INTEGER_TYPES);
 }
@@ -87,11 +87,11 @@ void NativeOpExecutioner::execInverseBroadcastInt(
 
 
   if (xType != yType || xType != zType)
-    throw sd::datatype_exception::build("NativeOpExecutioner::execInverseBroadcastInt", zType, xType, yType);
+    THROW_EXCEPTION(sd::datatype_exception::build("NativeOpExecutioner::execInverseBroadcastInt", zType, xType, yType).what());
 
   if (!sd::DataTypeUtils::isZ(zType))
-    throw sd::datatype_exception::build("NativeOpExecutioner::execInverseBroadcastInt requires integer data type",
-                                        zType);
+    THROW_EXCEPTION(sd::datatype_exception::build("NativeOpExecutioner::execInverseBroadcastInt requires integer data type",
+                                        zType).what());
   auto func = PRAGMA_THREADS_FOR {
     BUILD_SINGLE_SELECTOR(
         xType, functions::broadcast::BroadcastInt,

@@ -1545,6 +1545,7 @@ if [ "$LOG_OUTPUT" == "none" ]; then
         -DSD_GCC_FUNCTRACE="$FUNC_TRACE" \
         -DSD_PTXAS="$PTXAS_INFO" \
         -DSD_EXTRACT_INSTANTIATIONS="$EXTRACT_INSTANTIATIONS" \
+        -DSD_PARALLEL_COMPILE_JOBS="${MAKEJ}" \
         "$BLAS_ARG" \
         "$ARCH_ARG" \
         "$NAME_ARG" \
@@ -1576,6 +1577,7 @@ else
         -DSD_GCC_FUNCTRACE="$FUNC_TRACE" \
         -DSD_PTXAS="$PTXAS_INFO" \
         -DSD_EXTRACT_INSTANTIATIONS="$EXTRACT_INSTANTIATIONS" \
+        -DSD_PARALLEL_COMPILE_JOBS="${MAKEJ}" \
         "$BLAS_ARG" \
         "$ARCH_ARG" \
         "$NAME_ARG" \

@@ -1676,7 +1676,8 @@ DECLARE_INTEGER_ONLY_BINARY_TEMPLATE_OP(CyclicShiftLeft, sd::math::sd_rotl<X>(d1
 DECLARE_INTEGER_ONLY_BINARY_TEMPLATE_OP(CyclicShiftRight, sd::math::sd_rotr<X>(d1, d2))
 
 
-
+// Undefine before redefining with improved SFINAE-based constraint
+#undef DECLARE_INTEGER_ONLY_BINARY_TEMPLATE_OP
 
 #define DECLARE_INTEGER_ONLY_BINARY_TEMPLATE_OP(OP_NAME, OPERATION)                                       \
   template <typename X, typename = typename std::enable_if<std::is_integral<X>::value>::type>             \

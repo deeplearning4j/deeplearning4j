@@ -38,6 +38,8 @@ namespace analysis {
 #include <array/TADCacheLifecycleTracker.h>
 #include <array/ShapeCacheLifecycleTracker.h>
 #include <graph/OpContextLifecycleTracker.h>
+#include <ops/declarable/OpExecutionLogger.h>
+#include <array/AllocationLogger.h>
 #include <sstream>
 #include <iomanip>
 #include <cstring>
@@ -127,7 +129,7 @@ private:
         std::memset(&sa, 0, sizeof(sa));
         sa.sa_sigaction = &LifecycleCrashHandler::signalHandler;
         sigemptyset(&sa.sa_mask);
-        sa.sa_flags = SA_SIGINFO | SA_ONSTACK;
+        sa.sa_flags = SA_SIGINFO | SA_ONSTACK | SA_NODEFER;
 
         for (size_t i = 0; i < kSignalCount; ++i) {
             if (sigaction(kCrashSignals[i], &sa, &_oldHandlers[i]) != 0) {
@@ -138,18 +140,18 @@ private:
         _handlersInstalled = true;
     }
 
-    static void signalHandler(int signo, siginfo_t* info, void* /*ucontext*/) {
-        LifecycleCrashHandler::instance().handleSignal(signo, info);
+    static void signalHandler(int signo, siginfo_t* info, void* ucontext) {
+        LifecycleCrashHandler::instance().handleSignal(signo, info, ucontext);
     }
 
-    void handleSignal(int signo, siginfo_t* info) {
+    void handleSignal(int signo, siginfo_t* info, void* ucontext) {
         if (!_ready.load(std::memory_order_acquire)) {
-            restoreAndReraise(signo);
+            restoreAndReraise(signo, info, ucontext);
             return;
         }
 
         if (_handling.exchange(true, std::memory_order_acq_rel)) {
-            restoreAndReraise(signo);
+            restoreAndReraise(signo, info, ucontext);
             return;
         }
 
@@ -158,25 +160,90 @@ private:
         event.faultAddress = info ? info->si_addr : nullptr;
         event.crashingThreadId = currentThreadId();
 
-        _dumpComplete.store(false, std::memory_order_release);
-
         ssize_t wrote = ::write(_signalPipe[1], &event, sizeof(event));
         if (wrote != sizeof(event)) {
-            _handling.store(false, std::memory_order_release);
-            restoreAndReraise(signo);
+            // If write fails, just continue - better to let JVM handle it than hang
+            std::cerr << "[sd-crash] Failed to notify dump worker thread\n";
+        }
+
+        // Reset handling flag and immediately chain to JVM handler
+        // The dump will happen asynchronously in the worker thread
+        _handling.store(false, std::memory_order_release);
+        restoreAndReraise(signo, info, ucontext);
+    }
+
+    void restoreAndReraise(int signo, siginfo_t* info, void* ucontext) {
+        if (!_handlersInstalled) {
+            // No old handler to call, just raise the signal
+            ::raise(signo);
             return;
         }
 
-        while (!_dumpComplete.load(std::memory_order_acquire)) {
-            sched_yield();
+        // Find and call the old handler for this signal
+        for (size_t i = 0; i < kSignalCount; ++i) {
+            if (kCrashSignals[i] == signo) {
+                struct sigaction& oldHandler = _oldHandlers[i];
+
+#ifdef __cpp_exceptions
+                try {
+                    if (oldHandler.sa_flags & SA_SIGINFO) {
+                        // Old handler is a sigaction-style handler (takes siginfo_t and ucontext)
+                        if (oldHandler.sa_sigaction != nullptr &&
+                            oldHandler.sa_sigaction != (void (*)(int, siginfo_t*, void*))SIG_DFL &&
+                            oldHandler.sa_sigaction != (void (*)(int, siginfo_t*, void*))SIG_IGN) {
+                            // Call the original handler with the ORIGINAL siginfo and ucontext
+                            // This preserves si_code, si_addr, and all other signal information
+                            oldHandler.sa_sigaction(signo, info, ucontext);
+                            return;
+                        }
+                    } else {
+                        // Old handler is a simple signal handler (only takes signal number)
+                        if (oldHandler.sa_handler != SIG_DFL && oldHandler.sa_handler != SIG_IGN) {
+                            oldHandler.sa_handler(signo);
+                            return;
+                        }
+                    }
+                } catch (const std::exception& e) {
+                    // Old handler threw an exception - log it and convert to signal
+                    std::cerr << "[sd-crash] Exception from old signal handler for signal " << signo
+                              << ": " << e.what() << std::endl;
+                    std::cerr << "[sd-crash] Converting exception to signal termination" << std::endl;
+                    // Fall through to restore and raise
+                } catch (...) {
+                    // Unknown exception from old handler
+                    std::cerr << "[sd-crash] Unknown exception from old signal handler for signal " << signo << std::endl;
+                    std::cerr << "[sd-crash] Converting exception to signal termination" << std::endl;
+                    // Fall through to restore and raise
+                }
+#else
+                if (oldHandler.sa_flags & SA_SIGINFO) {
+                    // Old handler is a sigaction-style handler (takes siginfo_t and ucontext)
+                    if (oldHandler.sa_sigaction != nullptr &&
+                        oldHandler.sa_sigaction != (void (*)(int, siginfo_t*, void*))SIG_DFL &&
+                        oldHandler.sa_sigaction != (void (*)(int, siginfo_t*, void*))SIG_IGN) {
+                        // Call the original handler with the ORIGINAL siginfo and ucontext
+                        // This preserves si_code, si_addr, and all other signal information
+                        oldHandler.sa_sigaction(signo, info, ucontext);
+                        return;
+                    }
+                } else {
+                    // Old handler is a simple signal handler (only takes signal number)
+                    if (oldHandler.sa_handler != SIG_DFL && oldHandler.sa_handler != SIG_IGN) {
+                        oldHandler.sa_handler(signo);
+                        return;
+                    }
+                }
+#endif
+
+                // If we get here, the old handler was SIG_DFL or SIG_IGN, or threw an exception
+                // Restore it and raise the signal (this is safe since it's the default handler)
+                sigaction(signo, &oldHandler, nullptr);
+                ::raise(signo);
+                return;
+            }
         }
 
-        _handling.store(false, std::memory_order_release);
-        restoreAndReraise(signo);
-    }
-
-    void restoreAndReraise(int signo) {
-        restoreOriginal(signo);
+        // Signal not found in our list - just raise it
         ::raise(signo);
     }
 
@@ -224,30 +291,166 @@ private:
         out << "Address:   " << event.faultAddress << "\n\n";
 
         bool matched = false;
+
+        // NDArray allocation lookup
+#ifdef __cpp_exceptions
+        try {
+            matched |= NDArrayLifecycleTracker::getInstance().logAllocationForPointer(event.faultAddress, out);
+        } catch (const std::exception& e) {
+            out << "[sd-crash] NDArray logAllocationForPointer failed: " << e.what() << "\n";
+        } catch (...) {
+            out << "[sd-crash] NDArray logAllocationForPointer failed: unknown exception\n";
+        }
+#else
         matched |= NDArrayLifecycleTracker::getInstance().logAllocationForPointer(event.faultAddress, out);
+#endif
+
+        // DataBuffer allocation lookup
+#ifdef __cpp_exceptions
+        try {
+            matched |= DataBufferLifecycleTracker::getInstance().logAllocationForAddress(event.faultAddress, out);
+        } catch (const std::exception& e) {
+            out << "[sd-crash] DataBuffer logAllocationForAddress failed: " << e.what() << "\n";
+        } catch (...) {
+            out << "[sd-crash] DataBuffer logAllocationForAddress failed: unknown exception\n";
+        }
+#else
         matched |= DataBufferLifecycleTracker::getInstance().logAllocationForAddress(event.faultAddress, out);
+#endif
+
+        // ShapeCache allocation lookup
+#ifdef __cpp_exceptions
+        try {
+            matched |= ShapeCacheLifecycleTracker::getInstance().logShapeForAddress(event.faultAddress, out);
+        } catch (const std::exception& e) {
+            out << "[sd-crash] ShapeCache logShapeForAddress failed: " << e.what() << "\n";
+        } catch (...) {
+            out << "[sd-crash] ShapeCache logShapeForAddress failed: unknown exception\n";
+        }
+#else
         matched |= ShapeCacheLifecycleTracker::getInstance().logShapeForAddress(event.faultAddress, out);
+#endif
+
+        // TADCache allocation lookup
+#ifdef __cpp_exceptions
+        try {
+            matched |= TADCacheLifecycleTracker::getInstance().logTADForAddress(event.faultAddress, out);
+        } catch (const std::exception& e) {
+            out << "[sd-crash] TADCache logTADForAddress failed: " << e.what() << "\n";
+        } catch (...) {
+            out << "[sd-crash] TADCache logTADForAddress failed: unknown exception\n";
+        }
+#else
         matched |= TADCacheLifecycleTracker::getInstance().logTADForAddress(event.faultAddress, out);
+#endif
 
         if (!matched) {
             out << "No tracked allocation matched the faulting address.\n";
         }
 
+        // NDArray statistics and leaks
         out << "\n=== NDArray Snapshot ===\n";
+#ifdef __cpp_exceptions
+        try {
+            NDArrayLifecycleTracker::getInstance().printStatistics(out);
+        } catch (const std::exception& e) {
+            out << "[sd-crash] NDArray printStatistics failed: " << e.what() << "\n";
+        } catch (...) {
+            out << "[sd-crash] NDArray printStatistics failed: unknown exception\n";
+        }
+#else
         NDArrayLifecycleTracker::getInstance().printStatistics(out);
+#endif
+
+#ifdef __cpp_exceptions
+        try {
+            NDArrayLifecycleTracker::getInstance().printCurrentLeaks(out);
+        } catch (const std::exception& e) {
+            out << "[sd-crash] NDArray printCurrentLeaks failed: " << e.what() << "\n";
+        } catch (...) {
+            out << "[sd-crash] NDArray printCurrentLeaks failed: unknown exception\n";
+        }
+#else
         NDArrayLifecycleTracker::getInstance().printCurrentLeaks(out);
+#endif
 
+        // DataBuffer statistics and leaks
         out << "\n=== DataBuffer Snapshot ===\n";
+#ifdef __cpp_exceptions
+        try {
+            DataBufferLifecycleTracker::getInstance().printStatistics(out);
+        } catch (const std::exception& e) {
+            out << "[sd-crash] DataBuffer printStatistics failed: " << e.what() << "\n";
+        } catch (...) {
+            out << "[sd-crash] DataBuffer printStatistics failed: unknown exception\n";
+        }
+#else
         DataBufferLifecycleTracker::getInstance().printStatistics(out);
+#endif
+
+#ifdef __cpp_exceptions
+        try {
+            DataBufferLifecycleTracker::getInstance().printCurrentLeaks(out);
+        } catch (const std::exception& e) {
+            out << "[sd-crash] DataBuffer printCurrentLeaks failed: " << e.what() << "\n";
+        } catch (...) {
+            out << "[sd-crash] DataBuffer printCurrentLeaks failed: unknown exception\n";
+        }
+#else
         DataBufferLifecycleTracker::getInstance().printCurrentLeaks(out);
+#endif
 
+        // ShapeCache statistics and leaks
         out << "\n=== Shape Cache Snapshot ===\n";
+#ifdef __cpp_exceptions
+        try {
+            ShapeCacheLifecycleTracker::getInstance().printStatistics(out);
+        } catch (const std::exception& e) {
+            out << "[sd-crash] ShapeCache printStatistics failed: " << e.what() << "\n";
+        } catch (...) {
+            out << "[sd-crash] ShapeCache printStatistics failed: unknown exception\n";
+        }
+#else
         ShapeCacheLifecycleTracker::getInstance().printStatistics(out);
-        ShapeCacheLifecycleTracker::getInstance().printCurrentLeaks(out);
+#endif
 
+#ifdef __cpp_exceptions
+        try {
+            ShapeCacheLifecycleTracker::getInstance().printCurrentLeaks(out);
+        } catch (const std::exception& e) {
+            out << "[sd-crash] ShapeCache printCurrentLeaks failed: " << e.what() << "\n";
+        } catch (...) {
+            out << "[sd-crash] ShapeCache printCurrentLeaks failed: unknown exception\n";
+        }
+#else
+        ShapeCacheLifecycleTracker::getInstance().printCurrentLeaks(out);
+#endif
+
+        // TADCache statistics and leaks
         out << "\n=== TAD Cache Snapshot ===\n";
+#ifdef __cpp_exceptions
+        try {
+            TADCacheLifecycleTracker::getInstance().printStatistics(out);
+        } catch (const std::exception& e) {
+            out << "[sd-crash] TADCache printStatistics failed: " << e.what() << "\n";
+        } catch (...) {
+            out << "[sd-crash] TADCache printStatistics failed: unknown exception\n";
+        }
+#else
         TADCacheLifecycleTracker::getInstance().printStatistics(out);
+#endif
+
+#ifdef __cpp_exceptions
+        try {
+            TADCacheLifecycleTracker::getInstance().printCurrentLeaks(out);
+        } catch (const std::exception& e) {
+            out << "[sd-crash] TADCache printCurrentLeaks failed: " << e.what() << "\n";
+        } catch (...) {
+            out << "[sd-crash] TADCache printCurrentLeaks failed: unknown exception\n";
+        }
+#else
         TADCacheLifecycleTracker::getInstance().printCurrentLeaks(out);
+#endif
 
         out.close();
         std::cerr << "[sd-crash] Crash dump written to " << path << std::endl;
@@ -335,34 +538,36 @@ public:
 };
 #endif
 
-struct CrashHandlerAutoInit {
-    CrashHandlerAutoInit() {
-        LifecycleCrashHandler::instance().ensureInitialized();
-    }
-};
-
-static CrashHandlerAutoInit gCrashHandlerAutoInit;
-
 }  // namespace
 #endif
 
-// AUTO CACHE CLEANUP: Moved outside #if defined(SD_GCC_FUNCTRACE) guard
-// NOTE: The duplicate namespace block with g_operation_counter and helper functions
-// has been removed. The implementation now uses the "_nocache" versions defined
-// outside the SD_GCC_FUNCTRACE guard (see around line 424) to ensure cleanup works
-// in all builds, not just functrace builds.
-
-// NOTE: checkAndCleanupCaches() has been moved OUTSIDE the #if defined(SD_GCC_FUNCTRACE) guard
-// to ensure it's available in all builds (see implementation around line 478).
-// Previous duplicate implementation here has been removed to fix linker symbol conflict.
-//
-// Forward declarations for cache clearing functions (implementations are outside this guard)
+// Forward declarations for cache clearing functions
 SD_LIB_EXPORT void clearTADCache();
 SD_LIB_EXPORT void clearShapeCache();
 SD_LIB_EXPORT void checkAndCleanupCaches();
 
 // Include comprehensive leak analysis implementation
 #include "../generate_leak_analysis.cpp"
+
+/**
+ * Initializes lifecycle crash handlers AFTER JVM is fully initialized.
+ *
+ * This fixes the signal handler installation race condition where the lifecycle
+ * tracker was installing handlers during library load (too early), capturing
+ * SIG_DFL instead of JVM's actual crash handler. This prevented hs_err file
+ * generation.
+ *
+ * Now the crash handlers are installed on-demand from Java code after JVM
+ * initialization is complete, ensuring they properly chain to JVM's hs_err
+ * generation.
+ *
+ * Safe to call multiple times - only initializes once.
+ */
+void initializeLifecycleCrashHandlers() {
+#ifndef _WIN32
+    LifecycleCrashHandler::instance().ensureInitialized();
+#endif
+}
 
 /**
  * Converts NDArray lifecycle statistics to JSON format.
@@ -626,6 +831,155 @@ SD_LIB_EXPORT void disableOpContextTracking() {
     sd::graph::OpContextLifecycleTracker::getInstance().setEnabled(false);
 }
 
+/**
+ * Enables operation execution logging for crash detection.
+ * When enabled, all operation executions are logged to a file with
+ * full unified C++/Java stack traces.
+ */
+SD_LIB_EXPORT void enableOpExecutionLogging() {
+    sd::ops::OpExecutionLogger::getInstance().enable();
+}
+
+/**
+ * Disables operation execution logging.
+ */
+SD_LIB_EXPORT void disableOpExecutionLogging() {
+    sd::ops::OpExecutionLogger::getInstance().disable();
+}
+
+/**
+ * Check if operation execution logging is currently enabled.
+ */
+SD_LIB_EXPORT bool isOpExecutionLoggingEnabled() {
+    return sd::ops::OpExecutionLogger::getInstance().isEnabled();
+}
+
+// Static storage for returned strings (to avoid dangling pointers)
+namespace {
+    thread_local std::string g_opLogPath;
+    thread_local std::string g_opLogContents;
+}
+
+/**
+ * Get the current operation execution log file path.
+ */
+SD_LIB_EXPORT const char* getOpExecutionLogPath() {
+    g_opLogPath = sd::ops::OpExecutionLogger::getInstance().getLogPath();
+    return g_opLogPath.c_str();
+}
+
+/**
+ * Get the current operation execution log contents as a string.
+ */
+SD_LIB_EXPORT const char* getOpExecutionLogContents(size_t maxBytes, bool fromEnd) {
+    g_opLogContents = sd::ops::OpExecutionLogger::getInstance().getLogContents(maxBytes, fromEnd);
+    return g_opLogContents.c_str();
+}
+
+/**
+ * Force a flush of the operation execution log to disk.
+ */
+SD_LIB_EXPORT void dumpOpExecutionLog() {
+    sd::ops::OpExecutionLogger::getInstance().flush();
+}
+
+/**
+ * Manually dump current state to the operation execution log.
+ */
+SD_LIB_EXPORT void dumpOpExecutionState(const char* message) {
+    std::string msg = message ? message : "";
+    sd::ops::OpExecutionLogger::getInstance().dumpCurrentState(msg);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Allocation Logging Implementation (SD_GCC_FUNCTRACE)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Get the current allocation log file path.
+ * Allocation logging is always active in functrace builds.
+ */
+SD_LIB_EXPORT const char* getAllocationLogPath() {
+    // Thread-local static to avoid dangling pointer
+    thread_local static std::string g_allocLogPath;
+    g_allocLogPath = sd::array::AllocationLogger::getInstance().getLogPath();
+    return g_allocLogPath.c_str();
+}
+
+/**
+ * Generates a temporal leak report for NDArray allocations over time.
+ */
+SD_LIB_EXPORT void generateNDArrayTemporalLeakReport(const char* outputPath, int windowCount, double windowDurationSec) {
+    if (outputPath == nullptr) {
+        return;
+    }
+    std::string path(outputPath);
+    NDArrayLifecycleTracker::getInstance().generateTemporalLeakReport(path, windowCount, windowDurationSec);
+}
+
+/**
+ * Generates a temporal leak report for TAD cache allocations over time.
+ */
+SD_LIB_EXPORT void generateTADCacheTemporalLeakReport(const char* outputPath, int windowCount, double windowDurationSec) {
+    if (outputPath == nullptr) {
+        return;
+    }
+    std::string path(outputPath);
+    TADCacheLifecycleTracker::getInstance().generateTemporalLeakReport(path, windowCount, windowDurationSec);
+}
+
+/**
+ * Captures a snapshot of current NDArray allocations.
+ * Returns a snapshot ID that can be used with generateNDArraySnapshotDiff.
+ */
+SD_LIB_EXPORT sd::LongType captureNDArrayLeakSnapshot() {
+    return NDArrayLifecycleTracker::getInstance().captureLeakSnapshot();
+}
+
+/**
+ * Captures a snapshot of current TAD cache allocations.
+ * Returns a snapshot ID that can be used with generateTADCacheSnapshotDiff.
+ */
+SD_LIB_EXPORT sd::LongType captureTADCacheLeakSnapshot() {
+    return TADCacheLifecycleTracker::getInstance().captureLeakSnapshot();
+}
+
+/**
+ * Generates a diff report between two NDArray allocation snapshots.
+ */
+SD_LIB_EXPORT void generateNDArraySnapshotDiff(sd::LongType snapshot1, sd::LongType snapshot2, const char* outputPath) {
+    if (outputPath == nullptr) {
+        return;
+    }
+    std::string path(outputPath);
+    NDArrayLifecycleTracker::getInstance().generateSnapshotDiff(snapshot1, snapshot2, path);
+}
+
+/**
+ * Generates a diff report between two TAD cache allocation snapshots.
+ */
+SD_LIB_EXPORT void generateTADCacheSnapshotDiff(sd::LongType snapshot1, sd::LongType snapshot2, const char* outputPath) {
+    if (outputPath == nullptr) {
+        return;
+    }
+    std::string path(outputPath);
+    TADCacheLifecycleTracker::getInstance().generateSnapshotDiff(snapshot1, snapshot2, path);
+}
+
+/**
+ * Clears all stored NDArray allocation snapshots to free memory.
+ */
+SD_LIB_EXPORT void clearNDArraySnapshots() {
+    NDArrayLifecycleTracker::getInstance().clearSnapshots();
+}
+
+/**
+ * Clears all stored TAD cache allocation snapshots to free memory.
+ */
+SD_LIB_EXPORT void clearTADCacheSnapshots() {
+    TADCacheLifecycleTracker::getInstance().clearSnapshots();
+}
+
 #endif // SD_GCC_FUNCTRACE
 
 // AUTO CACHE CLEANUP - MOVED OUTSIDE SD_GCC_FUNCTRACE GUARD
@@ -836,9 +1190,10 @@ SD_LIB_EXPORT void freeString(const char* ptr) {
 }
 
 #if !defined(SD_GCC_FUNCTRACE)
-// When SD_GCC_FUNCTRACE is not defined - lifecycle tracking disabled
 
-// When SD_GCC_FUNCTRACE is not defined, trackers don't exist, so these are no-ops
+// Stub implementations when SD_GCC_FUNCTRACE is not defined
+// These provide no-op fallbacks for all lifecycle tracking functions
+
 SD_LIB_EXPORT void enableNDArrayTracking() {}
 SD_LIB_EXPORT void disableNDArrayTracking() {}
 SD_LIB_EXPORT void enableDataBufferTracking() {}
@@ -850,54 +1205,46 @@ SD_LIB_EXPORT void disableShapeCacheTracking() {}
 SD_LIB_EXPORT void enableOpContextTracking() {}
 SD_LIB_EXPORT void disableOpContextTracking() {}
 
-// Stub implementations for lifecycle query and generation functions
-// These return empty/null values when tracking is not compiled in
-// NOTE: checkAndCleanupCaches() is now always available (moved outside #ifdef block)
-// to ensure TAD cache cleanup works in all builds, not just functrace builds.
+// OpExecutionLogger stubs
+SD_LIB_EXPORT void enableOpExecutionLogging() {}
+SD_LIB_EXPORT void disableOpExecutionLogging() {}
+SD_LIB_EXPORT bool isOpExecutionLoggingEnabled() { return false; }
+SD_LIB_EXPORT const char* getOpExecutionLogPath() {
+    static const char* empty = "";
+    return empty;
+}
+SD_LIB_EXPORT const char* getOpExecutionLogContents(size_t maxBytes, bool fromEnd) {
+    static const char* empty = "";
+    return empty;
+}
+SD_LIB_EXPORT void dumpOpExecutionLog() {}
+SD_LIB_EXPORT void dumpOpExecutionState(const char* message) {}
+
+// AllocationLogger stub
+SD_LIB_EXPORT const char* getAllocationLogPath() {
+    static const char* empty = "";
+    return empty;
+}
 
 SD_LIB_EXPORT const char* getNDArrayLifecycleStats() {
-    // Return empty JSON object when tracking is disabled
     static const char* empty_stats = "{}";
     return empty_stats;
 }
 
 SD_LIB_EXPORT const char* getDataBufferLifecycleStats() {
-    // Return empty JSON object when tracking is disabled
     static const char* empty_stats = "{}";
     return empty_stats;
 }
 
-SD_LIB_EXPORT void generateNDArrayAllocationFlamegraph(const char* outputPath) {
-    // No-op when tracking is disabled
-}
+SD_LIB_EXPORT void generateNDArrayAllocationFlamegraph(const char* outputPath) {}
+SD_LIB_EXPORT void generateNDArrayDeallocationFlamegraph(const char* outputPath) {}
+SD_LIB_EXPORT void generateDataBufferAllocationFlamegraph(const char* outputPath, int bufferType) {}
+SD_LIB_EXPORT void generateDataBufferDeallocationFlamegraph(const char* outputPath, int bufferType) {}
+SD_LIB_EXPORT void generateLifecycleLeakReport(const char* outputPath) {}
+SD_LIB_EXPORT void generateComprehensiveLeakAnalysis(const char* outputDir) {}
 
-SD_LIB_EXPORT void generateNDArrayDeallocationFlamegraph(const char* outputPath) {
-    // No-op when tracking is disabled
-}
-
-SD_LIB_EXPORT void generateDataBufferAllocationFlamegraph(const char* outputPath, int bufferType) {
-    // No-op when tracking is disabled
-}
-
-SD_LIB_EXPORT void generateDataBufferDeallocationFlamegraph(const char* outputPath, int bufferType) {
-    // No-op when tracking is disabled
-}
-
-SD_LIB_EXPORT void generateLifecycleLeakReport(const char* outputPath) {
-    // No-op when tracking is disabled
-}
-
-SD_LIB_EXPORT void generateComprehensiveLeakAnalysis(const char* outputDir) {
-    // No-op when tracking is disabled
-}
-
-SD_LIB_EXPORT void generateNDArrayTemporalLeakReport(const char* outputPath, int windowCount, double windowDurationSec) {
-    // No-op when tracking is disabled
-}
-
-SD_LIB_EXPORT void generateTADCacheTemporalLeakReport(const char* outputPath, int windowCount, double windowDurationSec) {
-    // No-op when tracking is disabled
-}
+SD_LIB_EXPORT void generateNDArrayTemporalLeakReport(const char* outputPath, int windowCount, double windowDurationSec) {}
+SD_LIB_EXPORT void generateTADCacheTemporalLeakReport(const char* outputPath, int windowCount, double windowDurationSec) {}
 
 SD_LIB_EXPORT sd::LongType captureNDArrayLeakSnapshot() {
     return 0;
@@ -907,20 +1254,10 @@ SD_LIB_EXPORT sd::LongType captureTADCacheLeakSnapshot() {
     return 0;
 }
 
-SD_LIB_EXPORT void generateNDArraySnapshotDiff(sd::LongType snapshot1, sd::LongType snapshot2, const char* outputPath) {
-    // No-op when tracking is disabled
-}
+SD_LIB_EXPORT void generateNDArraySnapshotDiff(sd::LongType snapshot1, sd::LongType snapshot2, const char* outputPath) {}
+SD_LIB_EXPORT void generateTADCacheSnapshotDiff(sd::LongType snapshot1, sd::LongType snapshot2, const char* outputPath) {}
 
-SD_LIB_EXPORT void generateTADCacheSnapshotDiff(sd::LongType snapshot1, sd::LongType snapshot2, const char* outputPath) {
-    // No-op when tracking is disabled
-}
+SD_LIB_EXPORT void clearNDArraySnapshots() {}
+SD_LIB_EXPORT void clearTADCacheSnapshots() {}
 
-SD_LIB_EXPORT void clearNDArraySnapshots() {
-    // No-op when tracking is disabled
-}
-
-SD_LIB_EXPORT void clearTADCacheSnapshots() {
-    // No-op when tracking is disabled
-}
-
-#endif // SD_GCC_FUNCTRACE
+#endif // !defined(SD_GCC_FUNCTRACE)

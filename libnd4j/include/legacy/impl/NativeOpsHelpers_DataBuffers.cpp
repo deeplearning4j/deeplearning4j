@@ -67,8 +67,7 @@ static std::atomic<size_t> g_dataBufferCount{0};
 static std::atomic<size_t> g_dataBufferBytes{0};
 static std::mutex g_dataBufferMutex;
 
-// TadPack lifetime registry - CRITICAL FIX for use-after-free bug
-// Keeps shared_ptr<TadPack> alive for TadPacks returned to Java
+// TadPack lifetime registry - keeps shared_ptr<TadPack> alive for TadPacks returned to Java
 // Without this, when ConstantTadHelper::tadForDimensions() returns shared_ptr<TadPack>,
 // but tadOnlyShapeInfo() returns raw TadPack*, the local shared_ptr goes out of scope
 // and TadPack can be deleted while Java still holds the raw pointer → SIGSEGV
@@ -347,9 +346,18 @@ const char* getTadPackStackTrace(OpaqueTadPack *pack) {
     return "TadPack is null";
   }
 
-  // Get the stack trace as a string and cache it
-  // We use a thread-local static to avoid memory management issues
-  thread_local static std::string cachedTrace;
+  //
+  // ROOT CAUSE: thread_local uses R_X86_64_GOTPC32_TLSDESC relocations which have ±2GB limit
+  // When SD_GCC_FUNCTRACE is enabled, binary size exceeds 2GB → TLS relocations fail
+  //
+  // SOLUTION: Use regular static instead of thread_local
+  // - Eliminates all TLS relocations from this function
+  // - Trade-off: Not thread-safe (acceptable for debugging function)
+  // - If called concurrently by multiple threads, traces may interleave (rare edge case)
+  //
+  // This is fundamentally different from Sessions #159-164 which tried linker workarounds
+  // Those approaches CAN'T work - TLS relocations are architectural limitation
+  static std::string cachedTrace;
   cachedTrace = pack->getStackTraceAsString();
 
   return cachedTrace.c_str();
@@ -357,6 +365,7 @@ const char* getTadPackStackTrace(OpaqueTadPack *pack) {
 
 
 sd::TadPack *tadOnlyShapeInfo(OpaqueDataBuffer *hXShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength) {
+#ifdef __cpp_exceptions
   try {
     if(hXShapeInfo->primary() == nullptr) {
       THROW_EXCEPTION("tadOnlyShapeInfo: hXShapeInfo->primary() is nullptr!");
@@ -385,7 +394,6 @@ sd::TadPack *tadOnlyShapeInfo(OpaqueDataBuffer *hXShapeInfo, sd::LongType *dimen
 
 
 
-    // CRITICAL FIX: tadForDimensions() returns shared_ptr<TadPack>, but this function returns TadPack*
     // If we just return pack.get(), the local shared_ptr goes out of scope and TadPack can be deleted
     // when cache evicts it, leaving Java with a dangling pointer → SIGSEGV
     //
@@ -410,10 +418,64 @@ sd::TadPack *tadOnlyShapeInfo(OpaqueDataBuffer *hXShapeInfo, sd::LongType *dimen
 
     return rawPtr;
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    safeSetErrorContext(1, e.what());
     THROW_EXCEPTION(e.what());
   }
+#else
+  if(hXShapeInfo->primary() == nullptr) {
+    safeSetErrorContext(1, "tadOnlyShapeInfo: hXShapeInfo->primary() is nullptr!");
+    return nullptr;
+  }
+
+  auto buffPrim = reinterpret_cast<sd::LongType *>(hXShapeInfo->primary());
+  auto shapeFromCache = sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(buffPrim)->primary();
+  auto rankVal = shapeFromCache[0];
+  if(rankVal == 0) {
+    //detect when the shape buffer values are unset.
+    auto len = shape::shapeInfoLength(rankVal);
+    //min number of values in a shape info buffer
+    bool allZero = true;
+    for(int i = 0; i < len; i++) {
+      if(buffPrim[i] != 0) {
+        allZero = false;
+        break;
+      }
+    }
+
+    if(allZero) {
+      safeSetErrorContext(1, "Found shape buffer with all zero values. Values likely unset.");
+      return nullptr;
+    }
+  }
+
+
+
+
+  // If we just return pack.get(), the local shared_ptr goes out of scope and TadPack can be deleted
+  // when cache evicts it, leaving Java with a dangling pointer → SIGSEGV
+  //
+  // Solution: Store the shared_ptr in a global registry to keep the TadPack alive.
+  // The shared_ptr is removed from registry when Java explicitly releases it, or when
+  // the cache is explicitly cleared.
+  auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(
+      shapeFromCache, dimension, dimensionLength);
+
+  if (!pack) {
+    safeSetErrorContext(1, "tadOnlyShapeInfo: Failed to create TadPack!");
+    return nullptr;
+  }
+
+  // Get raw pointer BEFORE storing in registry
+  sd::TadPack* rawPtr = pack.get();
+
+  // Store shared_ptr in registry to keep TadPack alive
+  {
+    std::lock_guard<std::mutex> lock(g_tadPackMutex);
+    g_tadPackRegistry[rawPtr] = pack;
+  }
+
+  return rawPtr;
+#endif
 
   return nullptr;
 
@@ -444,6 +506,7 @@ OpaqueDataBuffer *dbAllocateDataBuffer(sd::LongType elements, int dataType, bool
 }
 
 OpaqueDataBuffer *allocateDataBuffer(sd::LongType elements, int dataType, bool allocateBoth) {
+#ifdef __cpp_exceptions
   try {
     auto dtype = sd::DataTypeUtils::fromInt(dataType);
     sd::LongType totalElementSize = elements == 0 ? sd::DataTypeUtils::sizeOf(dtype) : elements * sd::DataTypeUtils::sizeOf(dtype);
@@ -463,10 +526,28 @@ OpaqueDataBuffer *allocateDataBuffer(sd::LongType elements, int dataType, bool a
 
     return buffer;
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    safeSetErrorContext(1, e.what());
     return nullptr;
   }
+#else
+  auto dtype = sd::DataTypeUtils::fromInt(dataType);
+  sd::LongType totalElementSize = elements == 0 ? sd::DataTypeUtils::sizeOf(dtype) : elements * sd::DataTypeUtils::sizeOf(dtype);
+  auto buffer = new sd::InteropDataBuffer(totalElementSize, dtype, allocateBoth);
+
+  // Track allocation
+  if (buffer != nullptr) {
+    size_t bytes = totalElementSize;
+    g_dataBufferCount.fetch_add(1, std::memory_order_relaxed);
+    g_dataBufferBytes.fetch_add(bytes, std::memory_order_relaxed);
+
+    if(sd::Environment::getInstance().isVerbose()) {
+      sd_printf("allocateDataBuffer: allocated buffer at %p, count=%zu, total_bytes=%zu, this_bytes=%zu\n",
+                buffer, g_dataBufferCount.load(), g_dataBufferBytes.load(), bytes);
+    }
+  }
+
+  return buffer;
+#endif
 }
 
 OpaqueDataBuffer *dbCreateExternalDataBuffer(sd::LongType elements, int dataType, sd::Pointer primary, sd::Pointer special) {
@@ -528,14 +609,21 @@ void dbAllocateSpecialBuffer(OpaqueDataBuffer *dataBuffer) {
 }
 
 void dbExpandBuffer(OpaqueDataBuffer *dataBuffer, sd::LongType elements) {
+#ifdef __cpp_exceptions
   try {
     if(dataBuffer == nullptr)
       THROW_EXCEPTION("dbExpandBuffer: dataBuffer is null");
     dataBuffer->dataBuffer()->expand(elements * sd::DataTypeUtils::sizeOf(dataBuffer->dataBuffer()->getDataType()));
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    safeSetErrorContext(1, e.what());
   }
+#else
+  if(dataBuffer == nullptr) {
+    safeSetErrorContext(1, "dbExpandBuffer: dataBuffer is null");
+    return;
+  }
+  dataBuffer->dataBuffer()->expand(elements * sd::DataTypeUtils::sizeOf(dataBuffer->dataBuffer()->getDataType()));
+#endif
 }
 
 OpaqueDataBuffer *dbCreateView(OpaqueDataBuffer *dataBuffer, sd::LongType length) {

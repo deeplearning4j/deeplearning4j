@@ -70,7 +70,6 @@ set(SD_MAX_TEMPLATE_COMBINATIONS "1000" CACHE STRING "Maximum template combinati
 
 # --- NEW: Template Chunking Configuration ---
 # These control how template instantiations are split across files
-# CRITICAL FOR CLEAN BUILDS: Set correct defaults based on build flags FROM THE START
 # TLS relocation overflow is caused by TOO MANY FILES, not large files
 # Solution: Use larger chunks with call tracing to minimize file count
 
@@ -78,35 +77,43 @@ set(SD_MAX_TEMPLATE_COMBINATIONS "1000" CACHE STRING "Maximum template combinati
 if(DEFINED SD_GCC_FUNCTRACE AND SD_GCC_FUNCTRACE)
     # Call tracing enabled - need larger chunks to avoid TLS overflow
     if((DEFINED SD_SANITIZE AND SD_SANITIZE) OR (DEFINED SD_SANITIZERS AND NOT SD_SANITIZERS STREQUAL ""))
-        # Call tracing + Sanitizers: Extreme bloat, need very large chunks
-        set(CHUNK_TARGET_INSTANTIATIONS "30" CACHE STRING "Large chunks for call tracing + sanitizers")
-        set(MULTI_PASS_CHUNK_SIZE "70" CACHE STRING "Large direct chunks for call tracing + sanitizers")
-        message(STATUS "⚠️  Call tracing + Sanitizers: Using large chunks (30/70) to minimize file count")
+        # Call tracing + Sanitizers: Compromise between speed and RAM
+        # Larger than sanitizers-only (prevents TLS overflow) but not too large (prevents OOM)
+        set(CHUNK_TARGET_INSTANTIATIONS "30" CACHE STRING "Balanced chunks for call tracing + sanitizers" FORCE)
+        set(MULTI_PASS_CHUNK_SIZE "70" CACHE STRING "Balanced direct chunks for call tracing + sanitizers" FORCE)
+        message(STATUS "⚠️  Call tracing + Sanitizers: Using balanced chunks (30/70) - prevents TLS overflow and OOM")
     else()
-        # Call tracing only: Moderate bloat, need large chunks
-        set(CHUNK_TARGET_INSTANTIATIONS "40" CACHE STRING "Large chunks for call tracing")
-        set(MULTI_PASS_CHUNK_SIZE "100" CACHE STRING "Large direct chunks for call tracing")
-        message(STATUS "🔍 Call tracing: Using large chunks (40/100) to minimize file count")
+        # Call tracing only: Very large chunks for maximum speed (no RAM constraints without sanitizers)
+        # Functrace adds minimal memory overhead, so we can use much larger chunks than normal builds
+        # Larger chunks = fewer files = faster linking + less TLS overhead
+        set(CHUNK_TARGET_INSTANTIATIONS "80" CACHE STRING "Very large chunks for call tracing only" FORCE)
+        set(MULTI_PASS_CHUNK_SIZE "200" CACHE STRING "Very large direct chunks for call tracing only" FORCE)
+        message(STATUS "🔍 Call tracing only: Using very large chunks (80/200) for maximum build speed")
     endif()
 elseif((DEFINED SD_SANITIZE AND SD_SANITIZE) OR (DEFINED SD_SANITIZERS AND NOT SD_SANITIZERS STREQUAL ""))
-    # Sanitizers only: Some bloat, use moderate chunks
-    set(CHUNK_TARGET_INSTANTIATIONS "6" CACHE STRING "Moderate chunks for sanitizers")
-    set(MULTI_PASS_CHUNK_SIZE "8" CACHE STRING "Moderate direct chunks for sanitizers")
+    # Sanitizers only: Small chunks to prevent OOM (sanitizer builds use massive RAM per file)
+    set(CHUNK_TARGET_INSTANTIATIONS "6" CACHE STRING "Small chunks for sanitizers (prevents OOM)" FORCE)
+    set(MULTI_PASS_CHUNK_SIZE "8" CACHE STRING "Small direct chunks for sanitizers (prevents OOM)" FORCE)
+    message(STATUS "⚠️  Sanitizers: Using small chunks (6/8) to prevent out-of-memory during compilation")
 else()
-    # Normal builds: Use memory-based defaults
+    # Normal builds: Use memory-based defaults (no special instrumentation)
     cmake_host_system_information(RESULT AVAILABLE_MEMORY QUERY AVAILABLE_PHYSICAL_MEMORY)
     if(AVAILABLE_MEMORY LESS 4000)
-        set(CHUNK_TARGET_INSTANTIATIONS "3" CACHE STRING "Conservative chunks for low memory")
-        set(MULTI_PASS_CHUNK_SIZE "25" CACHE STRING "Conservative direct chunks")
+        set(CHUNK_TARGET_INSTANTIATIONS "3" CACHE STRING "Conservative chunks for low memory" FORCE)
+        set(MULTI_PASS_CHUNK_SIZE "25" CACHE STRING "Conservative direct chunks" FORCE)
+        message(STATUS "💾 Low memory detected: Using small chunks (3/25)")
     elseif(AVAILABLE_MEMORY LESS 8000)
-        set(CHUNK_TARGET_INSTANTIATIONS "6" CACHE STRING "Moderate chunks for medium memory")
-        set(MULTI_PASS_CHUNK_SIZE "35" CACHE STRING "Moderate direct chunks")
+        set(CHUNK_TARGET_INSTANTIATIONS "6" CACHE STRING "Moderate chunks for medium memory" FORCE)
+        set(MULTI_PASS_CHUNK_SIZE "35" CACHE STRING "Moderate direct chunks" FORCE)
+        message(STATUS "💾 Medium memory detected: Using moderate chunks (6/35)")
     elseif(AVAILABLE_MEMORY LESS 16000)
-        set(CHUNK_TARGET_INSTANTIATIONS "10" CACHE STRING "Balanced chunks for high memory")
-        set(MULTI_PASS_CHUNK_SIZE "50" CACHE STRING "Balanced direct chunks")
+        set(CHUNK_TARGET_INSTANTIATIONS "10" CACHE STRING "Balanced chunks for high memory" FORCE)
+        set(MULTI_PASS_CHUNK_SIZE "50" CACHE STRING "Balanced direct chunks" FORCE)
+        message(STATUS "💾 High memory detected: Using balanced chunks (10/50)")
     else()
-        set(CHUNK_TARGET_INSTANTIATIONS "12" CACHE STRING "Optimized chunks for very high memory")
-        set(MULTI_PASS_CHUNK_SIZE "60" CACHE STRING "Optimized direct chunks")
+        set(CHUNK_TARGET_INSTANTIATIONS "12" CACHE STRING "Optimized chunks for very high memory" FORCE)
+        set(MULTI_PASS_CHUNK_SIZE "60" CACHE STRING "Optimized direct chunks" FORCE)
+        message(STATUS "💾 Very high memory detected: Using large chunks (12/60)")
     endif()
 endif()
 

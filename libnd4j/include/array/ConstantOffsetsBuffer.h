@@ -42,7 +42,7 @@ class SD_LIB_EXPORT ConstantOffsetsBuffer {
  public:
   ConstantOffsetsBuffer(const std::shared_ptr<PointerWrapper> &primary);
   ConstantOffsetsBuffer(const std::shared_ptr<PointerWrapper> &primary, const std::shared_ptr<PointerWrapper> &special);
-  ConstantOffsetsBuffer() = default;
+  ConstantOffsetsBuffer();  // Default constructor - sets magic number
   ~ConstantOffsetsBuffer();  // Need custom destructor to clear magic
 
   inline bool isValid() const { return _magic == MAGIC_VALID; }
