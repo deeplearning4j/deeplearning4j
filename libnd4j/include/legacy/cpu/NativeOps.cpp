@@ -49,6 +49,8 @@
 #endif
 #include <errno.h>
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/OpExecutionLogger.h>
+#include <graph/OpContextLifecycleTracker.h>
 #include <sys/types.h>
 
 #include <execution/Threads.h>
@@ -869,7 +871,21 @@ void sortTad(sd::Pointer *extraPointers, OpaqueNDArray  x,
 
 sd::Status execCustomOp2(sd::Pointer *extraPointers, sd::LongType hash, OpaqueContext *context) {
     auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
+
+#if defined(SD_GCC_FUNCTRACE)
+    // Set op name BEFORE execute() so allocations during execution are tagged
+    if (op->getOpName() != nullptr) {
+        sd::ops::OpExecutionLogger::setCurrentOpName(*op->getOpName());
+        // Also update the already-tracked context with the op name
+        sd::graph::OpContextLifecycleTracker::getInstance().updateContextOpName(context, *op->getOpName());
+    }
+#endif
+
     auto result = op->execute(context);
+
+#if defined(SD_GCC_FUNCTRACE)
+    sd::ops::OpExecutionLogger::clearCurrentOpName();
+#endif
 
     checkAndCleanupCaches();
 

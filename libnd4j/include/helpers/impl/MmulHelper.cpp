@@ -250,7 +250,7 @@ void MmulHelper::tensorDot(NDArray* a, NDArray* b, NDArray* c,
   std::vector<LongType> requiredCshape = {aPR->sizeAt(0), bPR->sizeAt(1)};
 
 
-  NDArray* cPR = cP->isSameShape(requiredCshape) ? cP : new NDArray(cP->reshape(cP->ordering(), requiredCshape, false));
+  NDArray* cPR = cP->isSameShape(requiredCshape) ? cP : cP->reshape(cP->ordering(), requiredCshape, false);
   NDArray *ret = mmul(aPR, bPR, cPR, 1.0, 0.0);
 
   if (c != ret) {  // this means both permute and reshape have been performed on c, cP
@@ -436,10 +436,13 @@ NDArray* MmulHelper::mmul(NDArray* A, NDArray* B, NDArray* C, const double alpha
     std::vector<sd::LongType> cShape = {1, C->lengthOf()};
 
 
-    NDArray* A2 = new NDArray(A->reshape(A->ordering(),aShape));                       // A{M} -> A2{1,M}
-    NDArray* C2 = C ? new NDArray(C->reshape(C->ordering(), cShape, false)) : nullptr;  // C{N} -> C2{1,N}
+    NDArray* A2 = A->reshape(A->ordering(), aShape);                       // A{M} -> A2{1,M}
+    NDArray* C2 = C ? C->reshape(C->ordering(), cShape, false) : nullptr;  // C{N} -> C2{1,N}
     auto result = mmulMxM(A2, B, C2, alpha, beta, outOrder);                                        // result{1,N}
 
+    // Cleanup reshaped arrays
+    if (A2 != A) delete A2;
+    if (C2 != nullptr && C2 != C) delete C2;
 
     if (!C) {
       result->reshapei({result->lengthOf()});  // result{1,N} -> result{N}
@@ -554,12 +557,13 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
     if(zT != z) {
       z->dataBuffer()->copyBufferFrom(*zT->dataBuffer(), zT->lengthOf() * zT->sizeOfT());
       delete zT;
-
+      zT = z;  // Reset to original to prevent double-free at end of function
     }
 
     // Clean up reshaped input
     if(xReshaped != nullptr && xReshaped != x) {
       delete xReshaped;
+      xT = x;  // Reset to original to prevent double-free at end of function
     }
 
   } else {
@@ -595,7 +599,7 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
     bool transXResolve = transX == 1;
     bool transYResolve = transY == 1;
     if(!resolveTranspose(*vA[0], *vB[0], transXResolve, transYResolve)) {
-      // Batch dimensions do not match
+      // Build error message before cleanup (uses vA/vB/vC)
       std::string errorMessage;
       errorMessage = "NDArrayFactory::matmul static method: batch dimensions do not match";
       errorMessage += "x shape: ";
@@ -605,8 +609,20 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
       errorMessage += " ! \n";
       errorMessage += "z shape: ";
       errorMessage += ShapeUtils::shapeAsString(vC[0]).c_str();
-      THROW_EXCEPTION(errorMessage.c_str());
 
+      // CRITICAL: Clean up allocated arrays before throwing exception to prevent memory leaks
+      delete alphaArr;
+      delete betaArr;
+      for (LongType i = 0; i < numOfSubArrs; ++i) {
+        delete vA[i];
+        delete vB[i];
+        delete vC[i];
+      }
+      // Clean up permuted arrays
+      if (xT != x && xT != nullptr) delete xT;
+      if (yT != y && yT != nullptr) delete yT;
+
+      THROW_EXCEPTION(errorMessage.c_str());
     }
 
     ops::helpers::bgemm(vA, vB, vC, alphaArr, betaArr, transXResolve ? 1 : 0, transYResolve ? 1 : 0, M, N, K, lda, ldb, ldc);

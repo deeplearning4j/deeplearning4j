@@ -269,11 +269,7 @@ static void deleteTadPacksRecursive(TadTrieNode* node, int& deletedCount) {
   // shared_ptr will handle deletion automatically when we reset it
   auto pack = node->pack();
   if (pack) {
-    // Count and log deletion for verification
     deletedCount++;
-    // DEBUG: Log TAD pack deletion with detailed info
-    sd_printf("DirectTadTrie: Deleting TadPack %p (count: %d)\n", pack.get(), deletedCount);
-
     // Clear the shared_ptr to trigger TadPack destructor
     // The destructor will call TADCacheLifecycleTracker::recordDeallocation()
     // if SD_GCC_FUNCTRACE is defined during compilation

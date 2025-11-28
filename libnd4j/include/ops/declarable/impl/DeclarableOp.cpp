@@ -897,6 +897,8 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
   // Note: Java stack trace would be captured via Context if available
   std::string javaStackTrace = "";  // TODO: Get from Context if Java side sets it
   OpExecutionLogger::getInstance().logOpStart(this->getOpName()->c_str(), block, javaStackTrace);
+  // Set current op name for lifecycle trackers to capture
+  OpExecutionLogger::setCurrentOpName(*this->getOpName());
 #endif
 
   // Wrap execution in try-catch to dump stack traces on exceptions
@@ -923,12 +925,16 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
     } else {
       OpExecutionLogger::getInstance().logOpFailure(this->getOpName()->c_str(), block, "Operation returned non-OK status");
     }
+    // Clear current op name after operation completes
+    OpExecutionLogger::clearCurrentOpName();
 #endif
 
   } catch (const std::exception& e) {
 #if defined(SD_GCC_FUNCTRACE)
     // Log operation failure
     OpExecutionLogger::getInstance().logOpFailure(this->getOpName()->c_str(), block, e.what());
+    // Clear current op name on failure
+    OpExecutionLogger::clearCurrentOpName();
 #endif
 
     // Dump stack traces for all arrays and shape buffers in the context
@@ -946,6 +952,8 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
 #if defined(SD_GCC_FUNCTRACE)
     // Log operation failure
     OpExecutionLogger::getInstance().logOpFailure(this->getOpName()->c_str(), block, "Unknown exception");
+    // Clear current op name on failure
+    OpExecutionLogger::clearCurrentOpName();
 #endif
 
     // Catch any other exceptions
@@ -979,6 +987,8 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
   } else {
     OpExecutionLogger::getInstance().logOpFailure(this->getOpName()->c_str(), block, "Operation returned non-OK status");
   }
+  // Clear current op name after operation completes
+  OpExecutionLogger::clearCurrentOpName();
 #endif
 #endif
   // optionally saving execution time

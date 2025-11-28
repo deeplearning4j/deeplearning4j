@@ -25,6 +25,10 @@
 #include "execution/Threads.h"
 #include "helpers/OpTracker.h"
 
+#if defined(SD_GCC_FUNCTRACE)
+#include <array/DataBufferLifecycleTracker.h>
+#endif
+
 #include <exceptions/allocation_exception.h>
 #include <fcntl.h>
 #include <graph/GraphExecutioner.h>
@@ -718,14 +722,30 @@ void dbClose(OpaqueDataBuffer *dataBuffer) {
               dataBuffer, g_dataBufferCount.load(), g_dataBufferBytes.load(), bytes);
   }
 
-  // Do NOT call db->close() - if this InteropDataBuffer wraps a DataBuffer that was owned
-  // by an NDArray, that DataBuffer may already be freed. The NDArray destructor will have
-  // already called close() on its DataBuffer. Calling it again causes use-after-free.
-  // Just update tracking and mark as closed.
+#if defined(SD_GCC_FUNCTRACE)
+  // Record deallocation using cached pointers (safe even if DataBuffer is freed)
+  if(dataBuffer->_cachedPrimaryPtr != nullptr) {
+    sd::array::DataBufferLifecycleTracker::getInstance().recordDeallocation(
+        dataBuffer->_cachedPrimaryPtr, sd::array::BufferType::PRIMARY);
+  }
+  if(dataBuffer->_cachedSpecialPtr != nullptr) {
+    sd::array::DataBufferLifecycleTracker::getInstance().recordDeallocation(
+        dataBuffer->_cachedSpecialPtr, sd::array::BufferType::SPECIAL);
+  }
+#endif
 
-  // Mark as closed and invalidate pointer after freeing
+  // Get the DataBuffer before marking closed
+  sd::DataBuffer* db = dataBuffer->getDataBufferDirect();
+
+  // Mark as closed and invalidate pointer BEFORE deleting to prevent concurrent access
   dataBuffer->_closed = true;
   dataBuffer->invalidateDataBuffer();
+
+  // Delete the DataBuffer if we have one and we own it
+  // This is safe because we passed the isOwner() check above
+  if(db != nullptr) {
+    delete db;
+  }
 }
 
 int dbDeviceId(OpaqueDataBuffer *dataBuffer) {

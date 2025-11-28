@@ -40,6 +40,8 @@ class SD_LIB_EXPORT InteropDataBuffer {
   DataType _dataType = DataType::UNKNOWN;
  public:
   size_t _cachedLenInBytes = 0;
+  void* _cachedPrimaryPtr = nullptr;  // Cached for deallocation tracking
+  void* _cachedSpecialPtr = nullptr;  // Cached for deallocation tracking
   bool _closed = false;
   bool isConstant = false;
 

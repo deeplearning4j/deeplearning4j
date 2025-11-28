@@ -595,7 +595,7 @@
                 <activeByDefault>false</activeByDefault>
                 <property>
                     <name>backend.artifactId</name>
-                    <value>nd4j-cuda-12.3</value>
+                    <value>nd4j-cuda</value>
                 </property>
             </activation>
             <properties>
@@ -622,7 +622,7 @@
                 </dependency>
                 <dependency>
                     <groupId>org.eclipse.deeplearning4j</groupId>
-                    <artifactId>nd4j-cuda-12.3</artifactId>
+                    <artifactId>nd4j-cuda</artifactId>
                     <version>${dl4j.version}</version>
                     <classifier>${platform.classifier}</classifier>
                 </dependency>

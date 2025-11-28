@@ -496,18 +496,26 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                 List<DataBuffer> longShapeDescriptors;
                 longShapeDescriptors = Nd4j.getExecutioner().calculateOutputShape(this);
 
-
-                if(!longShapeDescriptors.isEmpty())
-                    for(int i = 0; i < longShapeDescriptors.size(); i++) {
-                        // Use non-executing array check instead of getArr()
-                        if(sameDiff.arrayAlreadyExistsForVarName(outputVariables[i].name())) {
-                            addOutputArgument(sameDiff.getArrForVarName(outputVariables[i].name()));
-                        } else {
-                            //not yet computed
-                            INDArray arr = Nd4j.createFromDescriptor(longShapeDescriptors.get(i));
-                            addOutputArgument(arr);
+                try {
+                    if(!longShapeDescriptors.isEmpty())
+                        for(int i = 0; i < longShapeDescriptors.size(); i++) {
+                            // Use non-executing array check instead of getArr()
+                            if(sameDiff.arrayAlreadyExistsForVarName(outputVariables[i].name())) {
+                                addOutputArgument(sameDiff.getArrForVarName(outputVariables[i].name()));
+                            } else {
+                                //not yet computed
+                                INDArray arr = Nd4j.createFromDescriptor(longShapeDescriptors.get(i));
+                                addOutputArgument(arr);
+                            }
+                        }
+                } finally {
+                    // Clean up shape buffers to prevent memory leak
+                    for (DataBuffer db : longShapeDescriptors) {
+                        if (db != null) {
+                            db.close();
                         }
                     }
+                }
 
                 try(OpContext ctx = Nd4j.getExecutioner().buildContext()) {
                     ctx.setIArguments(iArguments);
@@ -620,12 +628,22 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
             // Most importantly: try to calculate output shape
             // This is where the "Dimensions array is null" error would occur
+            List<DataBuffer> shapes = null;
             try {
-                List<DataBuffer> shapes = calculateOutputShape();
+                shapes = calculateOutputShape();
                 return shapes != null && !shapes.isEmpty();
             } catch (Exception e) {
                 // If shape calculation fails, the op is not ready
                 return false;
+            } finally {
+                // Clean up shape buffers to prevent memory leak
+                if (shapes != null) {
+                    for (DataBuffer db : shapes) {
+                        if (db != null) {
+                            db.close();
+                        }
+                    }
+                }
             }
 
         } catch (Exception e) {

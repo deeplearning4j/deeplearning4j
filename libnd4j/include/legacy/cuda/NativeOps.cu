@@ -33,6 +33,8 @@
 #include <loops/scalar.h>
 #include <loops/transform_any.h>
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/OpExecutionLogger.h>
+#include <graph/OpContextLifecycleTracker.h>
 #include <ops/specials_cuda.h>
 #include <system/buffer.h>
 #include <helpers/ConstantHelper.h>
@@ -100,6 +102,15 @@ sd::Status execCustomOp2(sd::Pointer *extraPointers, sd::LongType  hash, Context
       throw std::invalid_argument("Operation not found for the given hash.");
     }
 
+#if defined(SD_GCC_FUNCTRACE)
+    // Set op name BEFORE execute() so allocations during execution are tagged
+    if (op->getOpName() != nullptr) {
+        sd::ops::OpExecutionLogger::setCurrentOpName(*op->getOpName());
+        // Also update the already-tracked context with the op name
+        sd::graph::OpContextLifecycleTracker::getInstance().updateContextOpName(opContext, *op->getOpName());
+    }
+#endif
+
     // Execute the custom operation with the provided context
     auto result = op->execute(opContext);
 
@@ -122,9 +133,16 @@ sd::Status execCustomOp2(sd::Pointer *extraPointers, sd::LongType  hash, Context
       if (!v->isEmpty()) v->syncToDevice();
     }
 
+#if defined(SD_GCC_FUNCTRACE)
+    sd::ops::OpExecutionLogger::clearCurrentOpName();
+#endif
+
     return result;
   }
   catch (std::exception &e) {
+#if defined(SD_GCC_FUNCTRACE)
+    sd::ops::OpExecutionLogger::clearCurrentOpName();
+#endif
     // Handle exceptions by setting error codes and messages
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());

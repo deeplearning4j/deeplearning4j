@@ -48,50 +48,18 @@ public class OpExecutionerUtil {
         int match = 0;
         if (!z.isScalar()) {
             MatchCondition condition = new MatchCondition(z, Conditions.isNan());
-            INDArray result = null;
-
-            // The exec(condition) call below will trigger profilingConfigurableHookOut(),
-            // which would call checkForNaN() again, creating infinite recursion.
-            // Save current profiler state, disable checking, execute, then restore.
-            OpProfiler profiler = Nd4j.getExecutioner().getProfiler();
-            boolean wasCheckingNaN = profiler != null && profiler.getConfig().isCheckForNAN();
-            boolean wasCheckingInf = profiler != null && profiler.getConfig().isCheckForINF();
-            if (profiler != null) {
-                profiler.getConfig().setCheckForNAN(false);
-                profiler.getConfig().setCheckForINF(false);
-            }
-
+            INDArray result = Nd4j.getExecutioner().exec(condition);
             try {
-                result = Nd4j.getExecutioner().exec(condition);
                 match = result.getInt(0);
             } finally {
-                // Restore profiler state FIRST, before cleanup
-                if (profiler != null) {
-                    profiler.getConfig().setCheckForNAN(wasCheckingNaN);
-                    profiler.getConfig().setCheckForINF(wasCheckingInf);
+                // Clean up the result array to prevent OpaqueNDArray leak
+                if (result != null && result.closeable()) {
+                    result.close();
                 }
-                // Clean up result array
-                if (result != null) {
-                    try {
-                        if (result.data() != null) {
-                            result.data().close();
-                        }
-                        result.close();
-                    } catch (Exception e) {
-                        // Ignore close errors
-                    }
-                }
-                // Clean up MatchCondition's internal dimensions array
-                // clearArrays() alone is not sufficient - causes DataBuffer leaks
-                if (condition.dimensions() != null) {
-                    try {
-                        if (condition.dimensions().data() != null) {
-                            condition.dimensions().data().close();
-                        }
-                        condition.dimensions().close();
-                    } catch (Exception e) {
-                        // Ignore close errors
-                    }
+                // Clean up the condition's internal dimension array
+                INDArray dims = condition.dimensions();
+                if (dims != null && dims.closeable()) {
+                    dims.close();
                 }
             }
         } else {
@@ -120,50 +88,18 @@ public class OpExecutionerUtil {
         int match = 0;
         if (!z.isScalar()) {
             MatchCondition condition = new MatchCondition(z, Conditions.isInfinite());
-            INDArray result = null;
-
-            // The exec(condition) call below will trigger profilingConfigurableHookOut(),
-            // which would call checkForInf() again, creating infinite recursion.
-            // Save current profiler state, disable checking, execute, then restore.
-            OpProfiler profiler = Nd4j.getExecutioner().getProfiler();
-            boolean wasCheckingNaN = profiler != null && profiler.getConfig().isCheckForNAN();
-            boolean wasCheckingInf = profiler != null && profiler.getConfig().isCheckForINF();
-            if (profiler != null) {
-                profiler.getConfig().setCheckForNAN(false);
-                profiler.getConfig().setCheckForINF(false);
-            }
-
+            INDArray result = Nd4j.getExecutioner().exec(condition);
             try {
-                result = Nd4j.getExecutioner().exec(condition);
                 match = result.getInt(0);
             } finally {
-                // Restore profiler state FIRST, before cleanup
-                if (profiler != null) {
-                    profiler.getConfig().setCheckForNAN(wasCheckingNaN);
-                    profiler.getConfig().setCheckForINF(wasCheckingInf);
+                // Clean up the result array to prevent OpaqueNDArray leak
+                if (result != null && result.closeable()) {
+                    result.close();
                 }
-                // Clean up result array AND its data buffer
-                if (result != null) {
-                    try {
-                        // Close data buffer first
-                        if (result.data() != null) {
-                            result.data().close();
-                        }
-                        result.close();
-                    } catch (Exception e) {
-                        // Ignore close errors
-                    }
-                }
-                // Clean up MatchCondition's internal dimensionz array
-                if (condition.dimensions() != null) {
-                    try {
-                        if (condition.dimensions().data() != null) {
-                            condition.dimensions().data().close();
-                        }
-                        condition.dimensions().close();
-                    } catch (Exception e) {
-                        // Ignore close errors
-                    }
+                // Clean up the condition's internal dimension array
+                INDArray dims = condition.dimensions();
+                if (dims != null && dims.closeable()) {
+                    dims.close();
                 }
             }
         } else {

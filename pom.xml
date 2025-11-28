@@ -372,7 +372,7 @@
                             <module>
                                 <artifact>
                                     <groupId>org.eclipse.deeplearning4j</groupId>
-                                    <artifactId>nd4j-cuda-12.3</artifactId>
+                                    <artifactId>nd4j-cuda</artifactId>
                                     <version>${project.version}</version>
                                 </artifact>
                                 <moduleInfo>

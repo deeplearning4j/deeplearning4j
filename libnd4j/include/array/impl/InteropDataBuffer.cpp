@@ -35,6 +35,11 @@ InteropDataBuffer::InteropDataBuffer(InteropDataBuffer* dataBuffer, uint64_t len
   _dataType = dataBuffer->_dataType;
 
   _cachedLenInBytes = length * DataTypeUtils::sizeOf(_dataType);
+  // Cache pointers for deallocation tracking
+  if (_dataBuffer != nullptr) {
+    _cachedPrimaryPtr = _dataBuffer->primary();
+    _cachedSpecialPtr = _dataBuffer->special();
+  }
 
   owner = false;
 }
@@ -48,6 +53,11 @@ InteropDataBuffer::InteropDataBuffer(DataBuffer * databuffer) {
   }
   // Cache the size to avoid accessing freed memory later
   _cachedLenInBytes = databuffer != nullptr ? databuffer->getLenInBytes() : 0;
+  // Cache pointers for deallocation tracking
+  if (databuffer != nullptr) {
+    _cachedPrimaryPtr = databuffer->primary();
+    _cachedSpecialPtr = databuffer->special();
+  }
   // When wrapping an existing DataBuffer, we don't own it by default
   owner = false;
 }
@@ -69,7 +79,9 @@ InteropDataBuffer::InteropDataBuffer(size_t lenInBytes, DataType dtype, bool all
     _dataBuffer = new DataBuffer(lenInBytes, dtype, nullptr, allocateBoth);
     this->_dataType = dtype;
     this->markOwner(true);
-
+    // Cache pointers for deallocation tracking
+    _cachedPrimaryPtr = _dataBuffer->primary();
+    _cachedSpecialPtr = _dataBuffer->special();
   }
 }
 
@@ -132,6 +144,8 @@ void InteropDataBuffer::setSpecial(void* ptr, size_t length) {
   if(_closed)
     return;  // Silently ignore if buffer was already closed
   _dataBuffer->setSpecialBuffer(ptr, length);
+  // Update cached pointer
+  _cachedSpecialPtr = ptr;
 }
 
 void InteropDataBuffer::setPrimary(void* ptr, size_t length) {
@@ -140,6 +154,8 @@ void InteropDataBuffer::setPrimary(void* ptr, size_t length) {
   if(_closed)
     return;  // Silently ignore if buffer was already closed
   _dataBuffer->setPrimaryBuffer(ptr, length);
+  // Update cached pointer
+  _cachedPrimaryPtr = ptr;
 }
 
 void InteropDataBuffer::setDeviceId(int deviceId) {

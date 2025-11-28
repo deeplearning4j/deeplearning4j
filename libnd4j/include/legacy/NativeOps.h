@@ -706,8 +706,9 @@ SD_LIB_EXPORT void freeString(const char* ptr);
  */
 SD_LIB_EXPORT void checkAndCleanupCaches();
 
-// Lifecycle tracking API (enabled only with SD_GCC_FUNCTRACE)
-#if defined(SD_GCC_FUNCTRACE)
+// Lifecycle tracking API
+// NOTE: These functions are always declared but only fully functional with SD_GCC_FUNCTRACE.
+// When SD_GCC_FUNCTRACE is not defined, stub implementations provide no-op behavior.
 
 /**
  * Initializes lifecycle crash handlers to capture crash dumps.
@@ -721,6 +722,8 @@ SD_LIB_EXPORT void checkAndCleanupCaches();
  * Safe to call multiple times - only initializes once.
  *
  * Recommended: Call from Java after NativeOpsHolder initialization.
+ *
+ * NOTE: No-op when SD_GCC_FUNCTRACE is not defined.
  */
 SD_LIB_EXPORT void initializeLifecycleCrashHandlers();
 
@@ -738,6 +741,8 @@ SD_LIB_EXPORT void initializeLifecycleCrashHandlers();
  *   "peak_bytes": <bytes>,
  *   "double_frees": <count>
  * }
+ *
+ * NOTE: Returns empty JSON "{}" when SD_GCC_FUNCTRACE is not defined.
  */
 SD_LIB_EXPORT const char* getNDArrayLifecycleStats();
 
@@ -763,18 +768,24 @@ SD_LIB_EXPORT const char* getNDArrayLifecycleStats();
  *   },
  *   "double_frees": <count>
  * }
+ *
+ * NOTE: Returns empty JSON "{}" when SD_GCC_FUNCTRACE is not defined.
  */
 SD_LIB_EXPORT const char* getDataBufferLifecycleStats();
 
 /**
  * Generates a flamegraph SVG file for NDArray allocations.
  * @param outputPath Path where the SVG file should be written
+ *
+ * NOTE: No-op when SD_GCC_FUNCTRACE is not defined.
  */
 SD_LIB_EXPORT void generateNDArrayAllocationFlamegraph(const char* outputPath);
 
 /**
  * Generates a flamegraph SVG file for NDArray deallocations.
  * @param outputPath Path where the SVG file should be written
+ *
+ * NOTE: No-op when SD_GCC_FUNCTRACE is not defined.
  */
 SD_LIB_EXPORT void generateNDArrayDeallocationFlamegraph(const char* outputPath);
 
@@ -782,6 +793,8 @@ SD_LIB_EXPORT void generateNDArrayDeallocationFlamegraph(const char* outputPath)
  * Generates a flamegraph SVG file for DataBuffer allocations.
  * @param outputPath Path where the SVG file should be written
  * @param bufferType 0 = PRIMARY (host), 1 = SPECIAL (device)
+ *
+ * NOTE: No-op when SD_GCC_FUNCTRACE is not defined.
  */
 SD_LIB_EXPORT void generateDataBufferAllocationFlamegraph(const char* outputPath, int bufferType);
 
@@ -789,12 +802,16 @@ SD_LIB_EXPORT void generateDataBufferAllocationFlamegraph(const char* outputPath
  * Generates a flamegraph SVG file for DataBuffer deallocations.
  * @param outputPath Path where the SVG file should be written
  * @param bufferType 0 = PRIMARY (host), 1 = SPECIAL (device)
+ *
+ * NOTE: No-op when SD_GCC_FUNCTRACE is not defined.
  */
 SD_LIB_EXPORT void generateDataBufferDeallocationFlamegraph(const char* outputPath, int bufferType);
 
 /**
  * Generates a detailed leak report showing all currently live allocations.
  * @param outputPath Path where the report file should be written
+ *
+ * NOTE: No-op when SD_GCC_FUNCTRACE is not defined.
  */
 SD_LIB_EXPORT void generateLifecycleLeakReport(const char* outputPath);
 
@@ -825,6 +842,8 @@ SD_LIB_EXPORT void generateLifecycleLeakReport(const char* outputPath);
  *
  * Example usage from Java:
  *   Nd4j.getNativeOps().generateComprehensiveLeakAnalysis("./leak_reports");
+ *
+ * NOTE: No-op when SD_GCC_FUNCTRACE is not defined.
  */
 SD_LIB_EXPORT void generateComprehensiveLeakAnalysis(const char* outputDir);
 
@@ -834,6 +853,8 @@ SD_LIB_EXPORT void generateComprehensiveLeakAnalysis(const char* outputDir);
  * @param outputPath Path to output file
  * @param windowCount Number of time windows to analyze (default: 10)
  * @param windowDurationSec Duration of each window in seconds (default: 30.0)
+ *
+ * NOTE: No-op when SD_GCC_FUNCTRACE is not defined.
  */
 SD_LIB_EXPORT void generateNDArrayTemporalLeakReport(const char* outputPath, int windowCount, double windowDurationSec);
 SD_LIB_EXPORT void generateTADCacheTemporalLeakReport(const char* outputPath, int windowCount, double windowDurationSec);
@@ -842,6 +863,8 @@ SD_LIB_EXPORT void generateTADCacheTemporalLeakReport(const char* outputPath, in
  * Capture a snapshot of current leak state for differential analysis.
  *
  * @return Snapshot ID (use with generateSnapshotDiff)
+ *
+ * NOTE: Returns 0 when SD_GCC_FUNCTRACE is not defined.
  */
 SD_LIB_EXPORT sd::LongType captureNDArrayLeakSnapshot();
 SD_LIB_EXPORT sd::LongType captureTADCacheLeakSnapshot();
@@ -852,22 +875,19 @@ SD_LIB_EXPORT sd::LongType captureTADCacheLeakSnapshot();
  * @param snapshot1 First snapshot ID
  * @param snapshot2 Second snapshot ID
  * @param outputPath Path to output file
+ *
+ * NOTE: No-op when SD_GCC_FUNCTRACE is not defined.
  */
 SD_LIB_EXPORT void generateNDArraySnapshotDiff(sd::LongType snapshot1, sd::LongType snapshot2, const char* outputPath);
 SD_LIB_EXPORT void generateTADCacheSnapshotDiff(sd::LongType snapshot1, sd::LongType snapshot2, const char* outputPath);
 
 /**
  * Clear all stored snapshots to free memory.
+ *
+ * NOTE: No-op when SD_GCC_FUNCTRACE is not defined.
  */
 SD_LIB_EXPORT void clearNDArraySnapshots();
 SD_LIB_EXPORT void clearTADCacheSnapshots();
-
-/**
- * Frees a string allocated by the lifecycle tracking API.
- * @param str String to free (from getNDArrayLifecycleStats or getDataBufferLifecycleStats)
- */
-SD_LIB_EXPORT void freeString(const char* str);
-#endif // SD_GCC_FUNCTRACE
 
 
 #endif // NATIVEOPS_H
