@@ -738,32 +738,18 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         x = null;
         y = null;
         z = null;
-        // Clean up dimensions array to prevent leak
-        if (dimensionz != null) {
-            try {
-                if (dimensionz.data() != null) {
-                    dimensionz.data().close();
-                }
-                dimensionz.close();
-            } catch (Exception e) {
-                // Ignore close errors
-            } finally {
-                dimensionz = null;
-            }
-        }
-        // Clean up scalarValue to prevent DataBuffer leak (inherited from DifferentialFunction)
-        if (scalarValue != null) {
-            try {
-                if (scalarValue.data() != null) {
-                    scalarValue.data().close();
-                }
-                scalarValue.close();
-            } catch (Exception e) {
-                // Ignore close errors
-            } finally {
-                scalarValue = null;
-            }
-        }
+        // NOTE: Do NOT clean up dimensionz here!
+        // dimensionz is part of the op's definition - it's created by defineDimensions() which is
+        // called in BaseReduceOp CONSTRUCTORS (lines 71, 96, 146, 186, 256, 283), not during execution.
+        // Ops are reused across inference sessions (stored in sameDiff.getOps()), so clearing
+        // dimensionz breaks reduce operations on subsequent invocations.
+        // This was causing NaN values in outputs because dimensionz was null for reduce ops.
+
+        // NOTE: Do NOT clean up scalarValue here!
+        // scalarValue is part of the op's definition (set during construction) and is needed
+        // for execution. Ops are reused across inference sessions (stored in sameDiff.getOps()),
+        // so clearing scalarValue breaks scalar operations on subsequent invocations.
+        // This was causing "Pointer address of argument 4 is NULL" errors for set_scalar ops.
     }
 
     @Override

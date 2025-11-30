@@ -496,23 +496,35 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                 List<DataBuffer> longShapeDescriptors;
                 longShapeDescriptors = Nd4j.getExecutioner().calculateOutputShape(this);
 
+                // Track which shape buffers are NOT used for array creation (and thus can be closed)
+                // Shape buffers that ARE used for createFromDescriptor become OWNED by the array
+                // and must NOT be closed here - the array will manage their lifecycle
+                java.util.Set<Integer> usedIndices = new java.util.HashSet<>();
                 try {
                     if(!longShapeDescriptors.isEmpty())
                         for(int i = 0; i < longShapeDescriptors.size(); i++) {
                             // Use non-executing array check instead of getArr()
                             if(sameDiff.arrayAlreadyExistsForVarName(outputVariables[i].name())) {
                                 addOutputArgument(sameDiff.getArrForVarName(outputVariables[i].name()));
+                                // Shape buffer NOT used - can be closed
                             } else {
                                 //not yet computed
+                                // CRITICAL: The shape buffer becomes OWNED by the array via setShapeInfoDataBuffer()
+                                // DO NOT close it - the array manages the buffer's lifecycle
                                 INDArray arr = Nd4j.createFromDescriptor(longShapeDescriptors.get(i));
                                 addOutputArgument(arr);
+                                usedIndices.add(i);  // Mark as used - do NOT close
                             }
                         }
                 } finally {
-                    // Clean up shape buffers to prevent memory leak
-                    for (DataBuffer db : longShapeDescriptors) {
-                        if (db != null) {
-                            db.close();
+                    // Only close shape buffers that were NOT used to create arrays
+                    // Shape buffers that WERE used are now owned by their respective arrays
+                    for (int i = 0; i < longShapeDescriptors.size(); i++) {
+                        if (!usedIndices.contains(i)) {
+                            DataBuffer db = longShapeDescriptors.get(i);
+                            if (db != null) {
+                                db.close();
+                            }
                         }
                     }
                 }

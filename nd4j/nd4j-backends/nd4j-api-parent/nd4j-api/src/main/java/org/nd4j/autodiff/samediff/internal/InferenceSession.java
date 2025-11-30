@@ -103,6 +103,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     }
 
 
+    @Override
     @SneakyThrows
     public ExecutionResult output(@NonNull List<String> variables,
                                   Map<String, INDArray> placeholderValues,
@@ -171,16 +172,23 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             // CRITICAL: All cleanup MUST be in finally block to prevent memory leaks on exceptions
 
             // Close OpContext instances to prevent native memory leak
-            for (OpContext ctx : opContexts.values()) {
-                if (ctx != null) {
-                    try {
-                        ctx.close();
-                    } catch (Exception e) {
-                        log.warn("Error closing OpContext: {}", e.getMessage());
+            // Wrap in additional try-catch to ensure opContexts.clear() runs even if iteration fails
+            try {
+                for (OpContext ctx : opContexts.values()) {
+                    if (ctx != null) {
+                        try {
+                            ctx.close();
+                        } catch (Exception e) {
+                            log.warn("Error closing OpContext: {}", e.getMessage());
+                        }
                     }
                 }
+            } catch (Exception e) {
+                log.warn("Error iterating OpContexts for cleanup: {}", e.getMessage());
+            } finally {
+                // Always clear the map, even if iteration failed
+                opContexts.clear();
             }
-            opContexts.clear();
 
             // Close memory manager to release cached arrays
             if (mmgr != null) {
@@ -677,7 +685,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         SameDiffOp sameDiffOp = sameDiff.getOps().get(opName);
         DifferentialFunction op = sameDiffOp.getOp();
 
-        // Create OpContext for the operation
+        // Create OpContext for the operation - store in map for batch cleanup
+        // CRITICAL: Do NOT use try-with-resources here! The OpContext must remain open
+        // until ALL operations in the graph complete, because subsequent operations may
+        // use arrays that depend on this OpContext's native resources. Closing early
+        // causes "Pointer address of argument X is NULL" errors.
         OpContext opContext = opContexts.get(opName);
         if (opContext == null) {
             opContext = Nd4j.getExecutioner().buildContext();
@@ -733,7 +745,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             opContext.setInputArrays(inputArrays);
         }
 
-        // Hanle different operation types
+        // Handle different operation types
         if (op instanceof CustomOp) {
             executeCustomOp((CustomOp) op, opContext, node, variableValues, allRequired);
         } else if (op instanceof Op) {
@@ -741,6 +753,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         } else {
             throw new UnsupportedOperationException("Unsupported operation type: " + op.getClass().getName());
         }
+        // NOTE: opContext cleanup happens in output() finally block via opContexts.clear()
     }
 
     private void executeCustomOp(CustomOp customOp, OpContext opContext, ExecutionNode node,
@@ -850,7 +863,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         INDArray outputArray = null;
 
         try {
-            // Allocate output array
+            // Allocate output array - the shapeBuffer is OWNED by outputArray after allocation
+            // We must NOT close it as it's the array's shape descriptor
             DataBuffer shapeBuffer = outputShape.get(0);
             boolean isOutput = !outputNames.isEmpty() && allRequired.contains(outputNames.get(0));
             outputArray = mmgr.allocateFromDescriptor(isOutput, shapeBuffer);
@@ -860,8 +874,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             // Execute the operation
             Nd4j.exec(op, opContext);
         } finally {
-            // Clean up shape buffers to prevent memory leak
-            for (DataBuffer db : outputShape) {
+            // Clean up shape buffers EXCEPT the first one which is now owned by outputArray
+            // The output array's shape buffer will be cleaned up when the array is released
+            for (int i = 1; i < outputShape.size(); i++) {
+                DataBuffer db = outputShape.get(i);
                 if (db != null) {
                     db.close();
                 }
@@ -1759,8 +1775,13 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     switch(sdValue.getSdValueType()) {
                         case TENSOR:
                             Assign c = (Assign) op;
-                            Nd4j.exec(c, opContext);
-                            result = ExecutionResult.createFrom(c,opContext);
+                            try {
+                                Nd4j.exec(c, opContext);
+                                result = ExecutionResult.createFrom(c,opContext);
+                            } finally {
+                                // LEAK FIX: Clean up Assign operation's internal arrays
+                                ((DifferentialFunction) c).clearArrays();
+                            }
                             break;
                         case LIST:
                             result = ExecutionResult.createValue(op.outputVariablesNames()[0], sdValue1);
@@ -2029,8 +2050,17 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 executionStatus = "SUCCESS";
                 detailedStatus = String.format("CustomOp: %s", c.opName());
 
-                Nd4j.exec(c, opContext);
-                ExecutionResult result = ExecutionResult.createFrom((DifferentialFunction) c,opContext);
+                ExecutionResult result;
+                try {
+                    Nd4j.exec(c, opContext);
+                    // CRITICAL: createFrom MUST be called BEFORE clearArrays() so result
+                    // can read the operation's output arrays before they're nullified
+                    result = ExecutionResult.createFrom((DifferentialFunction) c,opContext);
+                } finally {
+                    // LEAK FIX: Clean up operation's internal arrays to prevent memory leaks
+                    // This must happen AFTER createFrom() captures the results
+                    ((DifferentialFunction) c).clearArrays();
+                }
 
                 // Record custom op execution
                 if (visualizationEnabled && visualizer != null) {
@@ -2052,8 +2082,17 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 executionStatus = "SUCCESS";
                 detailedStatus = String.format("Op: %s", o.opName());
 
-                Nd4j.exec(o, opContext);
-                ExecutionResult result = ExecutionResult.createFrom((DifferentialFunction)o,opContext);
+                ExecutionResult result;
+                try {
+                    Nd4j.exec(o, opContext);
+                    // CRITICAL: createFrom MUST be called BEFORE clearArrays() so result
+                    // can read the operation's output arrays before they're nullified
+                    result = ExecutionResult.createFrom((DifferentialFunction)o,opContext);
+                } finally {
+                    // LEAK FIX: Clean up operation's internal arrays (dimensionz, scalarValue, etc.)
+                    // This must happen AFTER createFrom() captures the results
+                    ((DifferentialFunction) o).clearArrays();
+                }
 
                 // Record op execution
                 if (visualizationEnabled && visualizer != null) {
@@ -2400,13 +2439,17 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     .toArray(new INDArray[0]));
             List<DataBuffer> shape = c.calculateOutputShape();
             try {
+                // shape.get(0) is OWNED by the output array after allocation - don't close it
                 INDArray out = mmgr.allocateFromDescriptor(false, shape.get(0));
                 c.setOutputArgument(0, out);
                 Nd4j.exec(c);
                 return ExecutionResult.createFrom(tArr.getVariable(),out);
             } finally {
-                // Clean up shape buffers to prevent memory leak
-                for (DataBuffer db : shape) {
+                // LEAK FIX: Clean up Concat operation's internal arrays
+                c.clearArrays();
+                // Clean up shape buffers EXCEPT index 0 which is owned by the output array
+                for (int i = 1; i < shape.size(); i++) {
+                    DataBuffer db = shape.get(i);
                     if (db != null) {
                         db.close();
                     }
@@ -2454,13 +2497,17 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         .toArray(new INDArray[0]), null, 0);
                 List<DataBuffer> shape = s.calculateOutputShape();
                 try {
+                    // shape.get(0) is OWNED by the output array after allocation - don't close it
                     INDArray out = mmgr.allocateFromDescriptor(false, shape.get(0));
                     s.setOutputArgument(0, out);
                     Nd4j.exec(s);
                     return ExecutionResult.createFrom(tArr.getVariable(),out);
                 } finally {
-                    // Clean up shape buffers to prevent memory leak
-                    for (DataBuffer db : shape) {
+                    // LEAK FIX: Clean up Stack operation's internal arrays
+                    s.clearArrays();
+                    // Clean up shape buffers EXCEPT index 0 which is owned by the output array
+                    for (int i = 1; i < shape.size(); i++) {
+                        DataBuffer db = shape.get(i);
                         if (db != null) {
                             db.close();
                         }
@@ -2788,8 +2835,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 String[] outNames = df.outputVariablesNames();
                 Preconditions.checkState(outNames.length == outShape.size(), "Error in operation shape calculation for op \"%s\": Got %s op output shapes for an operation" +
                         " with %s outputs (number of shapes and outputs must be equal)", df.opName(), outShape.size(), outNames.length);
-                // Track newly created buffers for cleanup
-                List<DataBuffer> createdBuffers = new ArrayList<>();
                 try {
                     for (int i = 0; i < outShape.size(); i++) {
                         DataBuffer reqShape = outShape.get(i);
@@ -2804,8 +2849,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
                         //Always allocate new output array, rely on memory manager for efficient memory management and array reuse etc
                         boolean isOutput = allReqVariables.contains(outNames[i]);
+                        // Note: the shape buffer created here is OWNED by the output array allocated below
+                        // Do NOT close it - the INDArray owns and manages the shape buffer's lifecycle
                         DataBuffer newShapeBuffer = Nd4j.createBuffer(asJava);
-                        createdBuffers.add(newShapeBuffer);
                         INDArray out = mmgr.allocateFromDescriptor(false, newShapeBuffer);
                         if(Shape.isEmpty(asJava) && !out.isEmpty()) {
                             throw new IllegalStateException("Output shape was empty, but created array was not.");
@@ -2815,13 +2861,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     }
                 } finally {
                     // Clean up original shape buffers from calculateOutputShape
+                    // These are temporary buffers returned by calculateOutputShape() that we've already
+                    // extracted the shape info from. The output arrays use NEW buffers created above.
                     for (DataBuffer db : outShape) {
-                        if (db != null) {
-                            db.close();
-                        }
-                    }
-                    // Clean up newly created shape buffers
-                    for (DataBuffer db : createdBuffers) {
                         if (db != null) {
                             db.close();
                         }
@@ -2882,18 +2924,12 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             } else {
                 List<DataBuffer> outputShape = ((BaseOp) op).calculateOutputShape(oc);
                 Preconditions.checkState(outputShape != null && outputShape.size() == 1, "Could not calculate output shape for op: %s", op.getClass());
-                try {
-                    DataBuffer lsd = outputShape.get(0);
-                    INDArray z = mmgr.allocateFromDescriptor(isOutput, lsd);
-                    oc.setOutputArray(0, z);
-                } finally {
-                    // Clean up shape buffers to prevent memory leak
-                    for (DataBuffer db : outputShape) {
-                        if (db != null) {
-                            db.close();
-                        }
-                    }
-                }
+                // Note: outputShape.get(0) (stored as lsd) is OWNED by the output array after allocation
+                // We must NOT close it as it becomes the array's shape descriptor
+                DataBuffer lsd = outputShape.get(0);
+                INDArray z = mmgr.allocateFromDescriptor(isOutput, lsd);
+                oc.setOutputArray(0, z);
+                // Since size == 1, no other buffers to clean up
             }
         }
 
