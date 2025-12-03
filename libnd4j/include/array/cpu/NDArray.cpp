@@ -73,7 +73,7 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
 
   if (!isSameShape(target) &&
       !(rankOf() == 1 && target.rankOf() == 2 && sizeAt(0) == target.sizeAt(0) && sizeAt(0) == target.sizeAt(1)))
-    throw std::string("NDArray::fillArrayAsTriangular method: wrong shape of target array !");
+    THROW_EXCEPTION("NDArray::fillArrayAsTriangular method: wrong shape of target array !");
 
   const T value = static_cast<T>(val);
   const auto x = reinterpret_cast<const T*>(buffer());
@@ -311,9 +311,18 @@ template void NDArray::printCurrentBuffer<sd::LongType>(const bool host, const c
 
 ////////////////////////////////////////////////////////////////////////
 void* NDArray::specialBuffer() {
-  if (!_buffer->special()) return nullptr;
-  // FIXME: this should be fixed once CUDA backend added
-  return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
+  if (_buffer == nullptr) {
+    THROW_EXCEPTION("NDArray::specialBuffer(): _buffer is nullptr - array not properly initialized");
+  }
+
+  void* specialBuf = _buffer->special();
+
+  // On CPU, special buffer is nullptr (only used for GPU/CUDA) - this is expected and normal
+  if (specialBuf == nullptr) {
+    return nullptr;
+  }
+
+  return static_cast<int8_t*>(specialBuf) + (_offset * sizeOfT());
 }
 
 
