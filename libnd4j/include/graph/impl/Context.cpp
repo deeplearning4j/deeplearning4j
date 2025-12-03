@@ -23,6 +23,10 @@
 #include <graph/Context.h>
 #include <helpers/ShapeUtils.h>
 
+#if defined(SD_GCC_FUNCTRACE)
+#include <graph/OpContextLifecycleTracker.h>
+#endif
+
 namespace sd {
 namespace graph {
 Context::Context(ContextPrototype *prototype, VariableSpace *variableSpace) {
@@ -62,6 +66,15 @@ Context::Context(ContextPrototype *prototype, VariableSpace *variableSpace) {
 
   if (variableSpace != nullptr && variableSpace->launchContext()->getWorkspace() != nullptr)
     this->_workspace = variableSpace->launchContext()->getWorkspace();
+
+#if defined(SD_GCC_FUNCTRACE)
+  // Track OpContext allocation
+  OpContextLifecycleTracker::getInstance().recordAllocation(
+      this, _nodeId,
+      _fastpath_in.size(), _fastpath_out.size(),
+      _intermediateResults.size(), _handles.size(),
+      _workspace != nullptr, isFastPath());
+#endif
 }
 DataType Context::dataType(int index) {
   if(numD() < 1) {
@@ -100,6 +113,15 @@ Context::Context(int nodeId, VariableSpace *variableSpace) {
 
   if (variableSpace != nullptr && variableSpace->launchContext()->getWorkspace() != nullptr)
     this->_workspace = variableSpace->launchContext()->getWorkspace();
+
+#if defined(SD_GCC_FUNCTRACE)
+  // Track OpContext allocation
+  OpContextLifecycleTracker::getInstance().recordAllocation(
+      this, _nodeId,
+      _fastpath_in.size(), _fastpath_out.size(),
+      _intermediateResults.size(), _handles.size(),
+      _workspace != nullptr, isFastPath());
+#endif
 }
 
 Context::Context(int nodeId, VariableSpace *variableSpace, bool isInplace) : Context(nodeId, variableSpace) {
@@ -107,12 +129,31 @@ Context::Context(int nodeId, VariableSpace *variableSpace, bool isInplace) : Con
 }
 
 Context::~Context() {
+#if defined(SD_GCC_FUNCTRACE)
+  // Track OpContext deallocation before cleanup
+  OpContextLifecycleTracker::getInstance().recordDeallocation(this);
+#endif
+
   this->_iArgs.clear();
   this->_tArgs.clear();
   this->_inputs.clear();
+
+  // IMPORTANT: Do NOT delete arrays in _fastpath_in and _fastpath_out!
+  // These are BORROWED pointers - the Context does not own them.
+  // The caller (e.g., DeclarableOp::execute) owns these arrays and is
+  // responsible for their lifecycle. Deleting them here causes use-after-free
+  // bugs when operations call sub-operations (e.g., layer_norm calling standardize).
+  // Only _handles contains arrays explicitly marked as owned by this Context.
   this->_fastpath_in.clear();
   this->_fastpath_out.clear();
 
+  // Clean up intermediate results - these ARE owned by the Context
+  for (auto v : _intermediateResults) {
+    if (v != nullptr) delete v;
+  }
+  _intermediateResults.clear();
+
+  // Clean up handles - these are arrays explicitly marked as removable/owned
   for (auto v : _handles) delete v;
 
   if (_context != nullptr) delete _context;
@@ -157,15 +198,35 @@ random::RandomBuffer *Context::getRNG() { return _rng; }
 void Context::setRNG(random::RandomBuffer *rng) { _rng = rng; }
 
 
-Stash *Context::getStash() { return _variableSpace->getStash(); }
+Stash *Context::getStash() {
+  if (_variableSpace == nullptr) {
+    THROW_EXCEPTION("Context::getStash: VariableSpace is null. Context was not properly initialized.");
+  }
+  return _variableSpace->getStash();
+}
 
-void Context::trackList(NDArrayList *list) { _variableSpace->trackList(list); }
+void Context::trackList(NDArrayList *list) {
+  if (_variableSpace == nullptr) {
+    THROW_EXCEPTION("Context::trackList: VariableSpace is null. Context was not properly initialized.");
+  }
+  _variableSpace->trackList(list);
+}
 
-int Context::getBranch() { return _variableSpace->flowPath()->branch(this->nodeId()); }
+int Context::getBranch() {
+  if (_variableSpace == nullptr) {
+    THROW_EXCEPTION("Context::getBranch: VariableSpace is null. Context was not properly initialized.");
+  }
+  if (_variableSpace->flowPath() == nullptr) {
+    return 0;  // Default branch when no flow path is set
+  }
+  return _variableSpace->flowPath()->branch(this->nodeId());
+}
 
 void Context::setBranch(int branch) {
   //_branch = branch;
-  if (_variableSpace->flowPath() != nullptr) _variableSpace->flowPath()->markBranch(this->nodeId(), branch);
+  if (_variableSpace != nullptr && _variableSpace->flowPath() != nullptr) {
+    _variableSpace->flowPath()->markBranch(this->nodeId(), branch);
+  }
 }
 
 LongType Context::getOuterTime() { return this->_executionTime.first; }
@@ -240,6 +301,20 @@ Variable *Context::variable(int node, int idx) {
 }
 
 Variable *Context::variable(std::pair<int, int> &p) {
+  // CRITICAL: Check for null variableSpace to prevent SIGSEGV
+  if (_variableSpace == nullptr) {
+    std::string errorMessage;
+    errorMessage += "Node ";
+    errorMessage += std::to_string(this->_nodeId);
+    errorMessage += "; VariableSpace is null when trying to get variable: [";
+    errorMessage += std::to_string(p.first);
+    errorMessage += ":";
+    errorMessage += std::to_string(p.second);
+    errorMessage += "]. This usually means the Context was not properly initialized or fastpath was expected but failed.";
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
+#ifdef __cpp_exceptions
   try {
     return _variableSpace->getVariable(p);
   } catch (std::exception &e) {
@@ -254,6 +329,9 @@ Variable *Context::variable(std::pair<int, int> &p) {
     errorMessage += "\n";
     THROW_EXCEPTION(errorMessage.c_str());
   }
+#else
+  return _variableSpace->getVariable(p);
+#endif
 
   return nullptr;
 }
@@ -296,6 +374,9 @@ void Context::pushNDArrayListToVariableSpace(int nodeId, int index, NDArrayList 
 
 void Context::pushNDArrayListToVariableSpace(std::pair<int, int> &pair, NDArrayList *list, bool track) {
   sd_debug("Pre push variable list\n",0);
+  if (_variableSpace == nullptr) {
+    THROW_EXCEPTION("Context::pushNDArrayListToVariableSpace: VariableSpace is null. Context was not properly initialized.");
+  }
   if (!_variableSpace->hasVariable(pair)) {
     sd_debug("Context::pushNDArrayListToVariableSpace: Pre create variable when none exists\n",0);
     auto var = new Variable(nullptr, nullptr, pair.first, pair.second);
@@ -348,7 +429,36 @@ NDArray *Context::getNDArray(int idx) { return array(idx); }
 NDArray *Context::outputArray(int idx) {
   // we check for fastpath first
   if (!_fastpath_out.empty() && _fastpath_out.size() > static_cast<size_t>(idx)) {
-    return _fastpath_out[idx];
+    NDArray* result = _fastpath_out[idx];
+
+    // Validate the output NDArray to catch memory corruption early
+    if (result != nullptr) {
+      const sd::LongType* shInfo = result->shapeInfo();
+      if (shInfo == nullptr) {
+        std::string errorMessage;
+        errorMessage += "Context::outputArray(";
+        errorMessage += std::to_string(idx);
+        errorMessage += "): NDArray has null shapeInfo. This indicates severe memory corruption or use-after-free.";
+        THROW_EXCEPTION(errorMessage.c_str());
+      }
+
+      sd::LongType rank = shInfo[0];
+      if (rank < 0 || rank > 32) {
+        std::string errorMessage;
+        errorMessage += "Context::outputArray(";
+        errorMessage += std::to_string(idx);
+        errorMessage += "): NDArray has corrupted rank: ";
+        errorMessage += std::to_string(rank);
+        errorMessage += " (expected 0-32). This likely indicates:\n";
+        errorMessage += "  1. Memory corruption in the output NDArray\n";
+        errorMessage += "  2. Use-after-free (accessing deallocated memory)\n";
+        errorMessage += "  3. Uninitialized output buffer allocation failure\n";
+        errorMessage += "  4. JNI marshalling error from Java layer";
+        THROW_EXCEPTION(errorMessage.c_str());
+      }
+    }
+
+    return result;
   }
 
   std::string errorMessage;
@@ -366,10 +476,89 @@ NDArray *Context::outputArray(int idx) {
 NDArray *Context::array(int idx) {
   // we check for fastpath first
   if (!_fastpath_in.empty() && _fastpath_in.size() > static_cast<size_t>(idx)) {
-    return _fastpath_in[idx];
+    NDArray* result = _fastpath_in[idx];
+
+    // Validate the NDArray to catch memory corruption early
+    if (result != nullptr) {
+      const sd::LongType* shInfo = result->shapeInfo();
+      if (shInfo == nullptr) {
+        std::string errorMessage;
+        errorMessage += "Context::array(";
+        errorMessage += std::to_string(idx);
+        errorMessage += "): NDArray has null shapeInfo. This indicates severe memory corruption or use-after-free.";
+        THROW_EXCEPTION(errorMessage.c_str());
+      }
+
+      // Check if rank is valid (should be 0-32, not a memory address)
+      sd::LongType rank = shInfo[0];
+      if (rank < 0 || rank > 32) {
+        std::string errorMessage;
+        errorMessage += "Context::array(";
+        errorMessage += std::to_string(idx);
+        errorMessage += "): NDArray has corrupted rank: ";
+        errorMessage += std::to_string(rank);
+        errorMessage += " (expected 0-32). This likely indicates:\n";
+        errorMessage += "  1. Memory corruption in the NDArray\n";
+        errorMessage += "  2. Use-after-free (accessing deallocated memory)\n";
+        errorMessage += "  3. Uninitialized NDArray from failed operation\n";
+        errorMessage += "  4. JNI marshalling error from Java layer";
+        THROW_EXCEPTION(errorMessage.c_str());
+      }
+    }
+
+    return result;
   }
+
+  // CRITICAL: Check if we're in fastpath mode with insufficient inputs
+  // When using fastpath (from OpContext/Java), _variableSpace is null by design.
+  // If the operation expects more inputs than were provided via setInputArrays(),
+  // we must throw an informative error instead of crashing in getVariable().
+  if (!_fastpath_in.empty() && _variableSpace == nullptr) {
+    // Fastpath has some inputs but not enough for the requested index
+    std::string errorMessage;
+    errorMessage += "Context::array(";
+    errorMessage += std::to_string(idx);
+    errorMessage += "): Input index out of bounds. Fastpath has ";
+    errorMessage += std::to_string(_fastpath_in.size());
+    errorMessage += " input array(s), but input at index ";
+    errorMessage += std::to_string(idx);
+    errorMessage += " was requested.\n";
+    errorMessage += "This typically means the operation expects more inputs than were provided.\n";
+    errorMessage += "For variable-input operations (like concat), ensure all input arrays are set via setInputArrays().";
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
   // if no luck for fastpath - return whatever is available
-  return getVariable(idx)->getNDArray();
+  NDArray* result = getVariable(idx)->getNDArray();
+
+  // Validate the NDArray from variable path as well
+  if (result != nullptr) {
+    const sd::LongType* shInfo = result->shapeInfo();
+    if (shInfo == nullptr) {
+      std::string errorMessage;
+      errorMessage += "Context::array(";
+      errorMessage += std::to_string(idx);
+      errorMessage += "): NDArray from variable has null shapeInfo. This indicates severe memory corruption or use-after-free.";
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+
+    sd::LongType rank = shInfo[0];
+    if (rank < 0 || rank > 32) {
+      std::string errorMessage;
+      errorMessage += "Context::array(";
+      errorMessage += std::to_string(idx);
+      errorMessage += "): NDArray from variable has corrupted rank: ";
+      errorMessage += std::to_string(rank);
+      errorMessage += " (expected 0-32). This likely indicates:\n";
+      errorMessage += "  1. Memory corruption in the NDArray\n";
+      errorMessage += "  2. Use-after-free (accessing deallocated memory)\n";
+      errorMessage += "  3. Uninitialized NDArray from failed operation\n";
+      errorMessage += "  4. JNI marshalling error from Java layer";
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+  }
+
+  return result;
 }
 
 memory::Workspace *Context::fWorkspace() { return workspace(); }
@@ -400,6 +589,15 @@ unsigned long Context::width() {
 }
 
 void Context::setInputArray(int index, NDArray *array, bool removable) {
+  // Check for null array FIRST before any dereference
+  if (array == nullptr) {
+    std::string errorMessage;
+    errorMessage += std::string("Context::setInputArray: Array at index ");
+    errorMessage += std::to_string(index);
+    errorMessage += std::string(" is null!");
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
   if(array->shapeInfo() == nullptr) {
     std::string errorMessage;
     errorMessage += std::string("Array at index ");
@@ -430,7 +628,26 @@ void Context::setInputArray(int index, NDArray *array, bool removable) {
 
 
 void Context::setOutputArray(int index, NDArray *array, bool removable) {
+  // Check for null array FIRST before any dereference
+  if (array == nullptr) {
+    std::string errorMessage;
+    errorMessage += std::string("Context::setOutputArray: Array at index ");
+    errorMessage += std::to_string(index);
+    errorMessage += std::string(" is null!");
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
   if (_fastpath_out.size() < static_cast<size_t>(index + 1)) _fastpath_out.resize(index + 1);
+
+  // Check for null shapeInfo before accessing it
+  if (array->shapeInfo() == nullptr) {
+    std::string errorMessage;
+    errorMessage += std::string("Context::setOutputArray: Array at index ");
+    errorMessage += std::to_string(index);
+    errorMessage += std::string(" has a null shape buffer!");
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
   if(array->dataType() != ArrayOptions::dataType(array->shapeInfo())) {
     std::string errorMessage;
     errorMessage += std::string("Array at index ");
@@ -640,7 +857,10 @@ void Context::clearFastPath() {
   _fastpath_in.clear();
   _fastpath_out.clear();
 
-
+  // Delete arrays in _handles before clearing (fixes memory leak)
+  for (auto v : _handles) {
+    if (v != nullptr) delete v;
+  }
   _handles.clear();
 }
 

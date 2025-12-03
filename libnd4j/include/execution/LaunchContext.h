@@ -53,7 +53,12 @@ namespace sd {
 
 class SD_LIB_EXPORT LaunchContext {
  private:
-  static std::vector<std::shared_ptr<LaunchContext>> _contexts;
+  // Previous implementation used heap-allocated pointer which caused crashes during JVM shutdown:
+  // - The vector* was allocated with new and "intentionally leaked"
+  // - But C++ static destruction still tried to destruct it, causing SIGSEGV
+  // - This SIGSEGV triggered signal handler which called abort(), resulting in SIGABRT
+  // Function-local static has well-defined destruction order and avoids this crash
+  static std::vector<LaunchContext*>& contexts();
   static std::mutex _mutex;
 
   static SD_MAP_IMPL<int, std::mutex*> _deviceMutexes;
