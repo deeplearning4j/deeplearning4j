@@ -4,12 +4,19 @@
 # This enhanced version includes support for CUDA template processing
 # to achieve complete parity between CPU and CUDA template systems.
 # UPDATED with modern cuDNN integration
+#
+# CACHE INVALIDATION: Modified to force CMake reconfiguration after
+# PCH disabling in session #1002. Resolves Makefile2 having stale
+# progress count (99 steps) while build.make has correct count (1251 steps).
+# This inconsistency caused build to stop at 98% missing files 48-64.
 # =============================================================================
 
 # =============================================================================
 # SECTION 1: HELPER FUNCTION DEFINITIONS
 # All functions are defined first to ensure they are available when called.
 # =============================================================================
+
+
 
 # --- Helper for colored status messages ---
 function(print_status_colored type message)
@@ -228,6 +235,14 @@ function(collect_all_sources out_source_list)
         message(STATUS "🖥️  CPU build: Enhanced template system will generate optimized CPU instantiations")
     endif()
 
+    # When SD_GCC_FUNCTRACE is ON, the binary exceeds 2GB and PLT relocations fail
+    # libc_nonshared.a contains precompiled functions (like atexit) that use PLT
+    # We provide our own implementations compiled with -fno-plt to override them
+    if(SD_GCC_FUNCTRACE)
+        list(APPEND ALL_SOURCES_LIST ${CMAKE_CURRENT_SOURCE_DIR}/include/platform/noplt_libc_stubs.c)
+        message(STATUS "✅ Added no-PLT libc stubs for >2GB functrace build compatibility")
+    endif()
+
     # ✅ Add the generated template sources (now includes both CPU and CUDA)
     list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_GENERIC_SOURCES})
     list(REMOVE_DUPLICATES ALL_SOURCES_LIST)
@@ -245,13 +260,18 @@ endfunction()
 function(configure_cpu_linking main_target_name)
     target_link_libraries(${main_target_name} PUBLIC
             ${ONEDNN} ${ARMCOMPUTE_LIBRARIES} ${OPENBLAS_LIBRARIES}
-            ${BLAS_LIBRARIES} flatbuffers_interface)
+            ${BLAS_LIBRARIES} ${JVM_LIBRARY} flatbuffers_interface)
 
     # Add debug libraries when SD_GCC_FUNCTRACE is enabled
     if(SD_GCC_FUNCTRACE)
+        # CRITICAL FIX (Session #1045): Do NOT link libunwind!
+        # - We removed --unwindlib=libunwind from compile flags in CompilerFlags.cmake
+        # - Using system libgcc_s for exception handling (JVM compatible)
+        # - libunwind would conflict with JVM's libgcc_s causing _Unwind_SetGR crashes
+        # Both Clang and GCC now use the same debug libraries (no libunwind)
         target_link_libraries(${main_target_name} PUBLIC
-                bfd dw dl elf unwind pthread)
-        message(STATUS "✅ Added debug libraries for SD_GCC_FUNCTRACE")
+                bfd dw dl elf pthread)
+        message(STATUS "✅ Added debug libraries for SD_GCC_FUNCTRACE (using libgcc_s for unwinding, JVM compatible)")
     endif()
 
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -275,7 +295,7 @@ function(configure_cuda_linking main_target_name)
     # Modern CMake uses imported targets which handle all necessary dependencies.
     # Linking against CUDA::toolkit automatically adds include directories,
     # runtime libraries, and all other required flags.
-    target_link_libraries(${main_target_name} PUBLIC CUDA::toolkit)
+    target_link_libraries(${main_target_name} PUBLIC CUDA::toolkit ${JVM_LIBRARY})
 
     # If cuDNN was found, link against its imported target
     if(HAVE_CUDNN AND TARGET CUDNN::cudnn)
@@ -308,6 +328,14 @@ function(create_and_link_library)
     if(NOT TARGET ${OBJECT_LIB_NAME})
         add_library(${OBJECT_LIB_NAME} OBJECT ${ALL_SOURCES})
         add_dependencies(${OBJECT_LIB_NAME} flatbuffers_interface)
+        target_link_libraries(${OBJECT_LIB_NAME} PUBLIC flatbuffers_interface)
+
+        # picking up incomplete flatbuffers.h from libnd4j/include/flatbuffers/
+        # The ExternalProject downloads full headers to flatbuffers-src/include
+        get_target_property(FLATBUFFERS_INCLUDES flatbuffers_interface INTERFACE_INCLUDE_DIRECTORIES)
+        if(FLATBUFFERS_INCLUDES)
+            target_include_directories(${OBJECT_LIB_NAME} BEFORE PUBLIC ${FLATBUFFERS_INCLUDES})
+        endif()
 
         if(SD_CUDA)
             # Find the CUDA Toolkit to make the CUDA::toolkit target available.
@@ -370,11 +398,37 @@ function(create_and_link_library)
 
         message(STATUS "🔧 Applying type definitions to OBJECT library: ${OBJECT_LIB_NAME}")
         setup_type_definitions_for_target(${OBJECT_LIB_NAME})
+
+        # Enable precompiled headers for large commonly-included headers
+        # This significantly speeds up incremental builds when these headers change
+        # PERMANENTLY DISABLED: Causes cache staleness issues when SD_GCC_FUNCTRACE changes
+        # The CMake cache can hold stale values causing build failures
+        if(FALSE)  # Disabled to prevent cache staleness issues
+            message(STATUS "🚀 Enabling precompiled headers for ${OBJECT_LIB_NAME}")
+            target_precompile_headers(${OBJECT_LIB_NAME} PRIVATE
+                <system/op_boilerplate.h>
+                <system/type_boilerplate.h>
+            )
+            message(STATUS "✅ Precompiled headers enabled for op_boilerplate.h and type_boilerplate.h")
+        elseif(SD_GCC_FUNCTRACE)
+            message(STATUS "⚠️ Precompiled headers DISABLED (prevents CMake cache staleness issues)")
+        else()
+            message(STATUS "⚠️ Precompiled headers DISABLED (prevents CMake cache staleness issues)")
+        endif()
     endif()
 
     if(NOT TARGET ${MAIN_LIB_NAME})
         add_library(${MAIN_LIB_NAME} SHARED $<TARGET_OBJECTS:${OBJECT_LIB_NAME}>)
         set_target_properties(${MAIN_LIB_NAME} PROPERTIES OUTPUT_NAME ${MAIN_LIB_NAME})
+
+        # Code model configuration is now centralized in CompilerFlags.cmake to avoid conflicts
+        # (CMAKE_SHARED_LINKER_FLAGS is set there with -mcmodel=large for sanitizer builds)
+        # Removed: target_link_options setting to prevent duplicate -mcmodel flags in link command
+        # if(SD_X86_BUILD AND NOT WIN32 AND DEFINED SD_SANITIZERS AND NOT SD_SANITIZERS STREQUAL "")
+        #     target_link_options(${MAIN_LIB_NAME} PRIVATE "-mcmodel=large")
+        #     message(STATUS "Applied -mcmodel=large to linker for ${MAIN_LIB_NAME}")
+        # endif()
+        message(STATUS "Code model configuration deferred to CompilerFlags.cmake (via CMAKE_SHARED_LINKER_FLAGS)")
 
         # No CUDA includes needed here, they are handled by the linking function
         target_include_directories(${MAIN_LIB_NAME} PUBLIC
@@ -527,7 +581,76 @@ message(STATUS "Dependencies initialization complete.")
 
 message(STATUS "🔧 Helper Configuration: ONEDNN=${HAVE_ONEDNN}, ARMCOMPUTE=${HAVE_ARMCOMPUTE}, CUDNN=${HAVE_CUDNN}")
 
-# --- Generate config.h AFTER setting all variables ---
+# --- Build TYPE_DEFINES string before generating config.h ---
+# This ensures config.h has all HAS_* macros defined from the start
+set(TYPE_DEFINES "")
+
+# Check if we're in selective types mode
+if(DEFINED SD_TYPES_LIST AND NOT SD_TYPES_LIST STREQUAL "")
+    # Selective types mode - export only enabled types
+    # The HAS_* macros were already set by apply_type_definitions_to_target
+    # We need to capture them and add to TYPE_DEFINES
+
+    # Get all HAS_* definitions that were set
+    get_directory_property(COMPILE_DEFS COMPILE_DEFINITIONS)
+
+    # Sort definitions to ensure deterministic order
+    # This prevents config.h from changing during build-time CMake reconfiguration
+    set(HAS_DEFS_LIST "")
+    foreach(def IN LISTS COMPILE_DEFS)
+        if(def MATCHES "^HAS_")
+            list(APPEND HAS_DEFS_LIST "${def}")
+        endif()
+    endforeach()
+
+    # Sort alphabetically for consistent output
+    list(SORT HAS_DEFS_LIST)
+
+    # Build TYPE_DEFINES string with sorted definitions
+    foreach(def IN LISTS HAS_DEFS_LIST)
+        string(APPEND TYPE_DEFINES "#define ${def}\n")
+    endforeach()
+else()
+    # All types mode - define all HAS_* macros
+    string(APPEND TYPE_DEFINES "#define HAS_BOOL 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_FLOAT 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_FLOAT32 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_DOUBLE 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_FLOAT64 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_FLOAT16 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_HALF 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_BFLOAT16 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_BFLOAT 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_FLOAT8 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_HALF2 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_INT8 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_INT8_T 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_INT16 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_INT16_T 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_INT32 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_INT32_T 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_INT 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_INT64 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_INT64_T 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_LONG 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UINT8 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UINT8_T 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UINT16 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UINT16_T 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UINT32 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UINT32_T 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UINT64 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UINT64_T 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UNSIGNEDLONG 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UTF8 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_STD_STRING 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UTF16 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_STD_U16STRING 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UTF32 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_STD_U32STRING 1\n")
+endif()
+
+# --- Generate config.h AFTER setting all variables including TYPE_DEFINES ---
 configure_file(
         "${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in"
         "${CMAKE_CURRENT_BINARY_DIR}/include/config.h")
@@ -574,7 +697,8 @@ endif()
 
 # --- Phase 4: Create and Link Final Library with Enhanced Template System ---
 print_status_colored("INFO" "=== 4. CREATING AND LINKING FINAL LIBRARY WITH ENHANCED TEMPLATES ===")
-set(CUSTOMOPS_GENERIC_SOURCES "")
+# ✅ DO NOT reset CUSTOMOPS_GENERIC_SOURCES - it's a CACHE variable populated by TemplateProcessing.cmake
+# Resetting it here causes the cached template files to be lost, resulting in build errors
 collect_all_sources(ALL_SOURCES)
 create_and_link_library()
 message(STATUS "Final library target created and linked with enhanced template support.")
@@ -698,6 +822,30 @@ if(SD_EXTRACT_INSTANTIATIONS)
     include(ExtractInstantiations)
     # ExtractInstantiations.cmake will handle everything and exit
     return()
+endif()
+
+# Precompiled headers PERMANENTLY DISABLED to prevent CMake cache staleness issues
+# When SD_GCC_FUNCTRACE or other flags change, stale cache can cause build failures
+if(FALSE)  # Disabled to prevent cache staleness issues
+    target_precompile_headers(${SD_LIBRARY_NAME} PRIVATE
+            <vector>
+            <memory>
+            <algorithm>
+            <functional>
+            <cstring>
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/system/op_boilerplate.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/system/type_boilerplate.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/system/type_boiler_plate_expansioons.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/array/DataType.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/array/NDArray.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/array/NDArray.hXX"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/types/types.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/math/platformmath.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/math/templatemath.h"
+    )
+    message(STATUS "✅ Precompiled headers enabled for main library")
+else()
+    message(STATUS "⚠️ Precompiled headers DISABLED (prevents CMake cache staleness issues)")
 endif()
 
 include(PostBuild)

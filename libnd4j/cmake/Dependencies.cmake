@@ -255,14 +255,16 @@ function(setup_flatbuffers)
                 DEPENDS           flatbuffers_host
         )
 
+        # DO NOT use include_directories() - use target_include_directories on flatbuffers_interface instead
         # Set up include directories and library
-        include_directories("${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-target-src/include")
+        # include_directories("${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-target-src/include")
         set(FLATBUFFERS_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-target-build/libflatbuffers.a")
         set(FLATBUFFERS_SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-target-src")
 
         # Create interface library for target
         add_library(flatbuffers_interface INTERFACE)
         target_link_libraries(flatbuffers_interface INTERFACE ${FLATBUFFERS_LIBRARY})
+        target_include_directories(flatbuffers_interface INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-target-src/include")
         add_dependencies(flatbuffers_interface flatbuffers_target)
 
         # Check if flatbuffers.h already exists
@@ -318,7 +320,8 @@ function(setup_flatbuffers)
                 "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/libflatbuffers.a"
         )
 
-        include_directories("${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src/include")
+        # DO NOT use include_directories() - use target_include_directories on flatbuffers_interface instead
+        # include_directories("${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src/include")
         set(FLATBUFFERS_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/libflatbuffers.a")
         set(FLATBUFFERS_SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src")
 
@@ -368,6 +371,7 @@ function(setup_flatbuffers)
         # Create interface library
         add_library(flatbuffers_interface INTERFACE)
         target_link_libraries(flatbuffers_interface INTERFACE ${FLATBUFFERS_LIBRARY})
+        target_include_directories(flatbuffers_interface INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src/include")
         add_dependencies(flatbuffers_interface flatbuffers_external)
     endif()
 

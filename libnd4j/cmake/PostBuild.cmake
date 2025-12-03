@@ -1,8 +1,172 @@
 # cmake/PostBuild.cmake
 # Configures optional post-build targets like tests and analysis tools.
 
+# ============================================================================
+# HELPER FUNCTION: Write file only if content changed (preserves mtime for PCH)
+# This prevents PCH invalidation during builds when config.h content is identical
+# ============================================================================
+function(_postbuild_write_if_different filepath content)
+    set(should_write TRUE)
+
+    # Check if file already exists
+    if(EXISTS "${filepath}")
+        # Read existing content
+        file(READ "${filepath}" existing_content)
+
+        # Compare content
+        if("${existing_content}" STREQUAL "${content}")
+            set(should_write FALSE)
+        endif()
+    endif()
+
+    # Only write if content changed or file doesn't exist
+    if(should_write)
+        file(WRITE "${filepath}" "${content}")
+    endif()
+endfunction()
+
 # --- Configuration file ---
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/config.h)
+# Build TYPE_DEFINES string from current type configuration
+# This ensures JavaCPP sees the same type availability as the CMake build
+set(TYPE_DEFINES "")
+
+# Check if we're in selective types mode
+if(DEFINED SD_TYPES_LIST AND NOT SD_TYPES_LIST STREQUAL "")
+    # Selective types mode - export only enabled types
+    # The HAS_* macros were already set by apply_type_definitions_to_target
+    # We need to capture them and add to TYPE_DEFINES
+
+    # Get all HAS_* definitions that were set
+    get_directory_property(COMPILE_DEFS COMPILE_DEFINITIONS)
+    foreach(def IN LISTS COMPILE_DEFS)
+        if(def MATCHES "^HAS_")
+            string(APPEND TYPE_DEFINES "#define ${def}\n")
+        endif()
+    endforeach()
+else()
+    # All types mode - define all HAS_* macros
+    string(APPEND TYPE_DEFINES "#define HAS_BOOL 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_FLOAT 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_FLOAT32 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_DOUBLE 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_FLOAT64 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_FLOAT16 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_HALF 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_BFLOAT16 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_BFLOAT 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_FLOAT8 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_HALF2 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_INT8 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_INT8_T 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_INT16 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_INT16_T 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_INT32 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_INT32_T 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_INT 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_INT64 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_INT64_T 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_LONG 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UINT8 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UINT8_T 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UINT16 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UINT16_T 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UINT32 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UINT32_T 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UINT64 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UINT64_T 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UNSIGNEDLONG 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UTF8 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_STD_STRING 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UTF16 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_STD_U16STRING 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_UTF32 1\n")
+    string(APPEND TYPE_DEFINES "#define HAS_STD_U32STRING 1\n")
+endif()
+
+# Generate config.h with write-if-different to preserve PCH
+# This prevents PCH invalidation during the build when content hasn't changed
+set(CONFIG_H_IN "${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in")
+set(CONFIG_H_OUT "${CMAKE_CURRENT_BINARY_DIR}/include/config.h")
+
+# Read the template
+file(READ "${CONFIG_H_IN}" CONFIG_H_CONTENT)
+
+# Perform variable substitutions (mimics configure_file behavior)
+# Handle cmakedefine01 directives
+if(HAVE_ONEDNN)
+    string(REPLACE "#cmakedefine01 HAVE_ONEDNN" "#define HAVE_ONEDNN 1" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+else()
+    string(REPLACE "#cmakedefine01 HAVE_ONEDNN" "#define HAVE_ONEDNN 0" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+endif()
+
+if(HAVE_ARMCOMPUTE)
+    string(REPLACE "#cmakedefine01 HAVE_ARMCOMPUTE" "#define HAVE_ARMCOMPUTE 1" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+else()
+    string(REPLACE "#cmakedefine01 HAVE_ARMCOMPUTE" "#define HAVE_ARMCOMPUTE 0" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+endif()
+
+if(HAVE_CUDNN)
+    string(REPLACE "#cmakedefine01 HAVE_CUDNN" "#define HAVE_CUDNN 1" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+else()
+    string(REPLACE "#cmakedefine01 HAVE_CUDNN" "#define HAVE_CUDNN 0" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+endif()
+
+if(HAVE_OPENBLAS)
+    string(REPLACE "#cmakedefine01 HAVE_OPENBLAS" "#define HAVE_OPENBLAS 1" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+else()
+    string(REPLACE "#cmakedefine01 HAVE_OPENBLAS" "#define HAVE_OPENBLAS 0" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+endif()
+
+if(HAVE_FLATBUFFERS)
+    string(REPLACE "#cmakedefine01 HAVE_FLATBUFFERS" "#define HAVE_FLATBUFFERS 1" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+else()
+    string(REPLACE "#cmakedefine01 HAVE_FLATBUFFERS" "#define HAVE_FLATBUFFERS 0" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+endif()
+
+if(SD_SELECTIVE_TYPES)
+    string(REPLACE "#cmakedefine01 SD_SELECTIVE_TYPES" "#define SD_SELECTIVE_TYPES 1" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+else()
+    string(REPLACE "#cmakedefine01 SD_SELECTIVE_TYPES" "#define SD_SELECTIVE_TYPES 0" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+endif()
+
+# Handle @VAR@ substitutions
+if(DEFINED SD_LIBRARY_NAME)
+    string(REPLACE "@SD_LIBRARY_NAME@" "${SD_LIBRARY_NAME}" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+else()
+    # Remove the line if variable not defined
+    string(REGEX REPLACE "#cmakedefine SD_LIBRARY_NAME[^\n]*\n" "" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+endif()
+
+if(DEFINED ONEDNN_PATH)
+    string(REPLACE "@ONEDNN_PATH@" "${ONEDNN_PATH}" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+else()
+    string(REGEX REPLACE "#cmakedefine ONEDNN_PATH[^\n]*\n" "" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+endif()
+
+if(DEFINED OPENBLAS_PATH)
+    string(REPLACE "@OPENBLAS_PATH@" "${OPENBLAS_PATH}" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+else()
+    string(REGEX REPLACE "#cmakedefine OPENBLAS_PATH[^\n]*\n" "" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+endif()
+
+if(DEFINED FLATBUFFERS_PATH)
+    string(REPLACE "@FLATBUFFERS_PATH@" "${FLATBUFFERS_PATH}" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+else()
+    string(REGEX REPLACE "#cmakedefine FLATBUFFERS_PATH[^\n]*\n" "" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+endif()
+
+if(DEFINED DEFAULT_ENGINE)
+    string(REPLACE "@DEFAULT_ENGINE@" "${DEFAULT_ENGINE}" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+else()
+    string(REGEX REPLACE "#cmakedefine DEFAULT_ENGINE[^\n]*\n" "" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+endif()
+
+# Substitute TYPE_DEFINES
+string(REPLACE "@TYPE_DEFINES@" "${TYPE_DEFINES}" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+
+# Write config.h only if content changed (preserves mtime for PCH)
+_postbuild_write_if_different("${CONFIG_H_OUT}" "${CONFIG_H_CONTENT}")
+
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
@@ -118,7 +282,6 @@ if(SD_PREPROCESS)
         endif()
     endforeach()
 
-    # Build definition flags - CRITICAL: Add the same definitions as main build
     set(defs_flags "")
     
     # Add basic platform definitions
@@ -130,7 +293,6 @@ if(SD_PREPROCESS)
         string(APPEND defs_flags " -DHAVE_OPENBLAS=1")
     endif()
 
-    # CRITICAL: Add operation definitions that define NOT_EXCLUDED macro
     if(SD_ALL_OPS OR "${SD_OPS_LIST}" STREQUAL "")
         string(APPEND defs_flags " -DSD_ALL_OPS=1")
         # When SD_ALL_OPS=1, NOT_EXCLUDED should evaluate to 1 for all ops

@@ -362,7 +362,6 @@ function(configure_cuda_linking main_target_name)
     # Setup modern cuDNN detection
     setup_modern_cudnn()
 
-    # CRITICAL: Explicitly add CUDA include directories to the target
     # This ensures cuda.h and other CUDA headers are found
     if(CUDA_INCLUDE_DIRS)
         target_include_directories(${main_target_name} PUBLIC ${CUDA_INCLUDE_DIRS})
