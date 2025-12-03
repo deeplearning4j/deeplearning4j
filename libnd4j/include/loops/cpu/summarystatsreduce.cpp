@@ -32,21 +32,21 @@ using namespace simdOps;
 namespace functions {
 namespace summarystats {
 
-template <typename X, typename Y>
-Y SummaryStatsReduce<X, Y>::execScalar(const int opNum, const bool biasCorrected,  void *x,
+template <typename X, typename Z>
+Z SummaryStatsReduce<X, Z>::execScalar(const int opNum, const bool biasCorrected,  void *x,
                                        sd::LongType *xShapeInfo, void *extraParams) {
  RETURNING_DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(biasCorrected, x, xShapeInfo, extraParams), SUMMARY_STATS_OPS);
 }
 
-template <typename X, typename Y>
-void SummaryStatsReduce<X, Y>::execScalar(const int opNum, const bool biasCorrected,  void *x,
+template <typename X, typename Z>
+void SummaryStatsReduce<X, Z>::execScalar(const int opNum, const bool biasCorrected,  void *x,
                                           sd::LongType *xShapeInfo, void *extraParams, void *z,
                                           sd::LongType *zShapeInfo) {
  DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(biasCorrected, x, xShapeInfo, extraParams, z, zShapeInfo), SUMMARY_STATS_OPS);
 }
 
-template <typename X, typename Y>
-void SummaryStatsReduce<X, Y>::exec(int opNum, bool biasCorrected,  void *x,
+template <typename X, typename Z>
+void SummaryStatsReduce<X, Z>::exec(int opNum, bool biasCorrected,  void *x,
                                     sd::LongType *xShapeInfo, void *extraParams, void *z,
                                     sd::LongType *zShapeInfo,
                                    sd::LongType *dimension, sd::LongType dimensionLength) {
@@ -119,6 +119,7 @@ void SummaryStatsReduce<X, Z>::exec(bool biasCorrected,  void *vx,  sd::LongType
 
  if (dimensionLength < 1) return;
 
+ // When shared_ptr goes out of scope, it deletes the TadPack and invalidates pointers!
  auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType*>(xShapeInfo), dimension, dimensionLength);
  if (resultLength == 1 || dimensionLength == shape::rank(xShapeInfo) || tadPack->numberOfTads() == 1) {
    z[0] = execScalar<OpType>(biasCorrected, x, xShapeInfo, extraParams);
