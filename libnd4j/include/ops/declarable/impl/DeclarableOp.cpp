@@ -27,12 +27,127 @@
 #include <helpers/StringUtils.h>
 #include <ops/declarable/DeclarableOp.h>
 #include <ops/declarable/OpRegistrator.h>
+#include <array/DataTypeUtils.h>
+
+#if defined(SD_GCC_FUNCTRACE)
+#include <ops/declarable/OpExecutionLogger.h>
+#endif
 
 #include <cstdarg>
-
+#include <sstream>
 
 namespace sd {
 namespace ops {
+
+/**
+ * Helper function to dump all stack traces for arrays and shape info in a Context.
+ * This is called when an exception occurs during op execution to aid in debugging.
+ */
+static std::string dumpContextStackTraces(Context* block, const char* opName) {
+  std::ostringstream oss;
+
+  oss << "\n========================================\n";
+  oss << "Exception in op: " << (opName ? opName : "unknown") << "\n";
+  oss << "ALLOCATION STACK TRACES:\n";
+  oss << "========================================\n\n";
+
+#if defined(SD_GCC_FUNCTRACE) && !defined(__JAVACPP_HACK__)
+  // Dump input array stack traces WITH ACTUAL ALLOCATION STACK TRACES
+  oss << "INPUT ARRAYS:\n";
+  oss << "-------------\n";
+  for (int i = 0; i < block->width(); i++) {
+#ifdef __cpp_exceptions
+    try {
+      NDArray* input = block->array(i);
+      if (input != nullptr) {
+        oss << "\nInput " << i << ":\n";
+        oss << "  Shape: " << ShapeUtils::shapeAsString(input) << "\n";
+        oss << "  Data type: " << DataTypeUtils::asString(input->dataType()) << "\n";
+
+        // Get the actual allocation stack trace from the NDArray's ConstantShapeBuffer
+        oss << "\n  ALLOCATION STACK TRACE:\n";
+        std::string stackTrace = input->shapeInfoConstBuffer()->getStackTraceAsString();
+        if (!stackTrace.empty()) {
+          oss << stackTrace;
+        } else {
+          oss << "  (No stack trace available)\n";
+        }
+        oss << "\n";
+      }
+    } catch (const std::exception& e) {
+      oss << "Input " << i << ": Error accessing array - " << e.what() << "\n\n";
+    }
+#else
+    NDArray* input = block->array(i);
+    if (input != nullptr) {
+      oss << "\nInput " << i << ":\n";
+      oss << "  Shape: " << ShapeUtils::shapeAsString(input) << "\n";
+      oss << "  Data type: " << DataTypeUtils::asString(input->dataType()) << "\n";
+
+      // Get the actual allocation stack trace from the NDArray's ConstantShapeBuffer
+      oss << "\n  ALLOCATION STACK TRACE:\n";
+      std::string stackTrace = input->shapeInfoConstBuffer()->getStackTraceAsString();
+      if (!stackTrace.empty()) {
+        oss << stackTrace;
+      } else {
+        oss << "  (No stack trace available)\n";
+      }
+      oss << "\n";
+    }
+#endif
+  }
+
+  // Dump output array info - CRASH-SAFE: output arrays may have garbage pointers during error handling
+  // DO NOT call outputArray() or shapeInfo() on outputs - they may crash on garbage _shapeInfoBuffer
+  // Only log pointer addresses which is safe even for corrupted arrays
+  oss << "\nOUTPUT ARRAYS (pointer addresses only - crash-safe during error handling):\n";
+  oss << "--------------\n";
+  auto& outVec = block->fastpath_out();
+  for (size_t i = 0; i < outVec.size(); i++) {
+    NDArray* output = outVec[i];
+    oss << "Output " << i << ": ptr=" << (void*)output << "\n";
+  }
+#else
+  oss << "Functrace not enabled - no stack traces available\n";
+  oss << "\nINPUT ARRAYS (basic info only):\n";
+  oss << "-------------\n";
+  for (int i = 0; i < block->width(); i++) {
+#ifdef __cpp_exceptions
+    try {
+      NDArray* input = block->array(i);
+      if (input != nullptr) {
+        oss << "Input " << i << ": ";
+        oss << "Shape: " << ShapeUtils::shapeAsString(input) << ", ";
+        oss << "Type: " << DataTypeUtils::asString(input->dataType()) << "\n";
+      }
+    } catch (const std::exception& e) {
+      oss << "Input " << i << ": Error - " << e.what() << "\n";
+    }
+#else
+    NDArray* input = block->array(i);
+    if (input != nullptr) {
+      oss << "Input " << i << ": ";
+      oss << "Shape: " << ShapeUtils::shapeAsString(input) << ", ";
+      oss << "Type: " << DataTypeUtils::asString(input->dataType()) << "\n";
+    }
+#endif
+  }
+
+  // Output arrays - CRASH-SAFE: only log pointer addresses
+  // DO NOT call outputArray() or shapeInfo() - they may crash on garbage _shapeInfoBuffer
+  oss << "\nOUTPUT ARRAYS (pointer addresses only - crash-safe during error handling):\n";
+  oss << "--------------\n";
+  auto& outVec2 = block->fastpath_out();
+  for (size_t i = 0; i < outVec2.size(); i++) {
+    NDArray* output = outVec2[i];
+    oss << "Output " << i << ": ptr=" << (void*)output << "\n";
+  }
+#endif
+
+  oss << "========================================\n";
+  return oss.str();
+}
+
 ErrorResult conditionHelper(const char *file, int line, int condition, int argNumber, const char *format, ...) {
   if (!condition) {
     va_list args;
@@ -234,7 +349,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
           NDArray *array = var->getNDArray();
           var->markRemovable(false);
           if (array == nullptr)
-            throw unresolved_input_exception::build("OP PREPARE OUTPUTS: Variable wasn't resolved prior shape calculation", p);
+            THROW_EXCEPTION(unresolved_input_exception::build("OP PREPARE OUTPUTS: Variable wasn't resolved prior shape calculation", p).what());
 
           inSha.push_back(array->shapeInfo());
 
@@ -347,7 +462,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
 
           if (shape::isEmptyConst(out) != shape::isEmptyConst(shape)) {
             sd_printf("OP PREPARE OUTPUTS: First array empty: %d Second shape empty: %d\n", shape::isEmptyConst(out), shape::isEmptyConst(shape));
-
+            delete outSha;
             THROW_EXCEPTION("OP PREPARE OUTPUTS: Expected vs provided shapes mismatch");
           }
 
@@ -355,7 +470,8 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
           if (ArrayOptions::dataType(out) != ArrayOptions::dataType(shape)) {
             std::string msg =
                 "Provided array [" + StringUtils::valueToString<int>(pair.second) + "] has unexpected data type";
-            throw sd::datatype_exception::build(msg, ArrayOptions::dataType(out), ArrayOptions::dataType(shape));
+            delete outSha;
+            THROW_EXCEPTION(sd::datatype_exception::build(msg, ArrayOptions::dataType(out), ArrayOptions::dataType(shape)).what());
           }
         }
       } else {
@@ -427,15 +543,48 @@ bool sd::ops::DeclarableOp::allocateResult(Context &block, sd::LongType *shape) 
   // if that's first run - we probably have nothing here
   if (var->getNDArray() == nullptr) {
     auto shapeInfo = ConstantShapeHelper::getInstance().bufferForShapeInfo(__shape)->primary();
-    DataBuffer * buffer = new DataBuffer(len * sizeof(int8_t), ArrayOptions::dataType(shapeInfo), workspace);
+    RELEASE(__shape, workspace);
+    DataBuffer * buffer = nullptr;
+#ifdef __cpp_exceptions
+    try {
+      buffer = new DataBuffer(len * sizeof(int8_t), ArrayOptions::dataType(shapeInfo), workspace);
+      var->setNDArray(new NDArray(buffer, shapeInfo, block.launchContext()));
+    } catch (...) {
+      // Clean up buffer if NDArray construction fails
+      if (buffer != nullptr) {
+        delete buffer;
+      }
+      throw;
+    }
+#else
+    buffer = new DataBuffer(len * sizeof(int8_t), ArrayOptions::dataType(shapeInfo), workspace);
     var->setNDArray(new NDArray(buffer, shapeInfo, block.launchContext()));
+#endif
   } else if (var->getNDArray()->lengthOf() != len) {
     // if length not match - lets reallocate array
     delete var->getNDArray();
     auto shapeInfo = ConstantShapeHelper::getInstance().bufferForShapeInfo(__shape)->primary();
-    DataBuffer * buffer =
-        new DataBuffer(len * sizeof(int8_t), ArrayOptions::dataType(shapeInfo), workspace);
-    var->setNDArray(new NDArray(buffer, shapeInfo, block.launchContext()));}
+    DataBuffer * buffer = nullptr;
+#ifdef __cpp_exceptions
+    try {
+      buffer = new DataBuffer(len * sizeof(int8_t), ArrayOptions::dataType(shapeInfo), workspace);
+      var->setNDArray(new NDArray(buffer, shapeInfo, block.launchContext()));
+    } catch (...) {
+      // Clean up buffer if NDArray construction fails
+      if (buffer != nullptr) {
+        delete buffer;
+      }
+      RELEASE(__shape, workspace);
+      throw;
+    }
+#else
+    buffer = new DataBuffer(len * sizeof(int8_t), ArrayOptions::dataType(shapeInfo), workspace);
+    var->setNDArray(new NDArray(buffer, shapeInfo, block.launchContext()));
+#endif
+    RELEASE(__shape, workspace);
+  } else {
+    RELEASE(__shape, workspace);
+  }
 
   return true;
 }
@@ -743,6 +892,80 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
   sd::Status status;
   bool hasHelper = false;
 
+#if defined(SD_GCC_FUNCTRACE)
+  // Log operation start before execution
+  // Note: Java stack trace would be captured via Context if available
+  std::string javaStackTrace = "";  // TODO: Get from Context if Java side sets it
+  OpExecutionLogger::getInstance().logOpStart(this->getOpName()->c_str(), block, javaStackTrace);
+  // Set current op name for lifecycle trackers to capture
+  OpExecutionLogger::setCurrentOpName(*this->getOpName());
+#endif
+
+  // Wrap execution in try-catch to dump stack traces on exceptions
+#ifdef __cpp_exceptions
+  try {
+    // platform helpers use might be forbidden for various reasons, so we'll check it out first
+    if (block->helpersAllowed() && sd::Environment::getInstance().helpersAllowed()) {
+      // if we have platform-specific helper for this op - invoke it
+      if (OpRegistrator::getInstance().hasHelper(this->getOpHash(), block->engine())) {
+        auto helper = OpRegistrator::getInstance().getPlatformHelper(this->getOpHash(), block->engine());
+        if (helper->isUsable(*block)) {
+          status = helper->invokeHelper(*block);
+          hasHelper = true;
+        }
+      }
+    }
+
+    if (!hasHelper) status = this->validateAndExecute(*block);
+
+#if defined(SD_GCC_FUNCTRACE)
+    // Log successful execution
+    if (status == sd::Status::OK) {
+      OpExecutionLogger::getInstance().logOpSuccess(this->getOpName()->c_str(), block);
+    } else {
+      OpExecutionLogger::getInstance().logOpFailure(this->getOpName()->c_str(), block, "Operation returned non-OK status");
+    }
+    // Clear current op name after operation completes
+    OpExecutionLogger::clearCurrentOpName();
+#endif
+
+  } catch (const std::exception& e) {
+#if defined(SD_GCC_FUNCTRACE)
+    // Log operation failure
+    OpExecutionLogger::getInstance().logOpFailure(this->getOpName()->c_str(), block, e.what());
+    // Clear current op name on failure
+    OpExecutionLogger::clearCurrentOpName();
+#endif
+
+    // Dump stack traces for all arrays and shape buffers in the context
+    std::string stackTraceDump = dumpContextStackTraces(block, this->getOpName()->c_str());
+
+    // Create enhanced error message with stack traces
+    std::string enhancedError;
+    enhancedError += "Exception during op execution: ";
+    enhancedError += e.what();
+    enhancedError += stackTraceDump;
+
+    // Re-throw with enhanced message
+    THROW_EXCEPTION(enhancedError.c_str());
+  } catch (...) {
+#if defined(SD_GCC_FUNCTRACE)
+    // Log operation failure
+    OpExecutionLogger::getInstance().logOpFailure(this->getOpName()->c_str(), block, "Unknown exception");
+    // Clear current op name on failure
+    OpExecutionLogger::clearCurrentOpName();
+#endif
+
+    // Catch any other exceptions
+    std::string stackTraceDump = dumpContextStackTraces(block, this->getOpName()->c_str());
+
+    std::string enhancedError;
+    enhancedError += "Unknown exception during op execution";
+    enhancedError += stackTraceDump;
+
+    THROW_EXCEPTION(enhancedError.c_str());
+  }
+#else
   // platform helpers use might be forbidden for various reasons, so we'll check it out first
   if (block->helpersAllowed() && sd::Environment::getInstance().helpersAllowed()) {
     // if we have platform-specific helper for this op - invoke it
@@ -755,8 +978,19 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
     }
   }
 
-
   if (!hasHelper) status = this->validateAndExecute(*block);
+
+#if defined(SD_GCC_FUNCTRACE)
+  // Log result (no exceptions in this path)
+  if (status == sd::Status::OK) {
+    OpExecutionLogger::getInstance().logOpSuccess(this->getOpName()->c_str(), block);
+  } else {
+    OpExecutionLogger::getInstance().logOpFailure(this->getOpName()->c_str(), block, "Operation returned non-OK status");
+  }
+  // Clear current op name after operation completes
+  OpExecutionLogger::clearCurrentOpName();
+#endif
+#endif
   // optionally saving execution time
   if (Environment::getInstance().isProfiling()) {
     timeEnd = std::chrono::system_clock::now();
