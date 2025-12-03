@@ -56,7 +56,14 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
 
     // Keep parent arrays alive to prevent use-after-free
     private INDArray[] parentArrays;
-    
+
+    // CRITICAL: Keep OpaqueNDArray instances alive to prevent use-after-free!
+    // The PointerPointer only stores raw native pointers. Without this field,
+    // the OpaqueNDArray Java objects become GC-eligible immediately after createFrom()
+    // returns. When GC runs, DeallocatorService deletes the native sd::NDArray* objects
+    // that the PointerPointer's raw pointers still reference -> heap corruption!
+    private OpaqueNDArray[] opaqueArrays;
+
     // Track the deallocator for this instance
     private OpaqueNDArrayArrDeallocator deallocator;
 
@@ -107,15 +114,26 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
             throw new IllegalArgumentException("Cannot create OpaqueNDArrayArr from null or empty array");
         }
 
-        // Convert INDArrays to OpaqueNDArrays (using cached instances)
+        // Convert INDArrays to OpaqueNDArrays using CACHED instances.
+        // CRITICAL: We use fromINDArray() (cached) instead of fromINDArrayUncached() because:
+        // 1. Uncached instances are independently registered with DeallocatorService
+        // 2. OpaqueNDArrayArrDeallocator also tries to close them, causing double-registration
+        // 3. This creates complex timing issues and potential heap corruption
+        //
+        // The original concern (parent INDArray being closed causing dangling pointers) is
+        // addressed by storing parent references in parentArrays field below. As long as
+        // this OpaqueNDArrayArr is alive, the parent INDArrays are kept alive, and their
+        // cached OpaqueNDArrays remain valid.
         OpaqueNDArray[] inputs = Arrays.stream(array)
                 .map(OpaqueNDArray::fromINDArray)
                 .toArray(OpaqueNDArray[]::new);
-        
-        // Create the OpaqueNDArrayArr
-        OpaqueNDArrayArr inputsOpaque = (OpaqueNDArrayArr) new OpaqueNDArrayArr().capacity(inputs.length);
-        inputsOpaque.put(inputs);
-        
+
+        // Create the OpaqueNDArrayArr using the constructor that properly handles native memory
+        OpaqueNDArrayArr inputsOpaque = new OpaqueNDArrayArr(inputs);
+
+        // Store OpaqueNDArray references for access (these are cached and managed by parent INDArrays)
+        inputsOpaque.opaqueArrays = inputs;
+
         // Store parent references to keep them alive
         inputsOpaque.parentArrays = array.clone(); // Clone to prevent external modification
         
@@ -166,10 +184,14 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
      */
     @Override
     public void close() {
-        if (deallocator != null && !deallocator.isDeallocated()) {
-            deallocator.deallocate();
+        if (deallocator != null) {
+            // Only deallocate if not already done - prevents double-free
+            if (!deallocator.isDeallocated()) {
+                deallocator.deallocate();
+            }
+            // If deallocator exists but is already deallocated, do nothing - already cleaned up
         } else {
-            // Fallback cleanup if not registered with DeallocatorService
+            // Fallback cleanup ONLY if not registered with DeallocatorService at all
             if (log.isTraceEnabled()) {
                 log.trace("Fallback cleanup for unregistered OpaqueNDArrayArr");
             }
@@ -177,7 +199,10 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
                 deallocate();
                 setNull();
             }
+            // Clear references to allow GC, but do NOT close the OpaqueNDArrays!
+            // They are CACHED instances managed by their parent INDArrays.
             parentArrays = null;
+            opaqueArrays = null;
         }
     }
 
@@ -192,10 +217,27 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
 
     /**
      * Gets the parent INDArrays being kept alive by this OpaqueNDArrayArr.
-     * 
+     *
      * @return The parent arrays or null if deallocated
      */
     public INDArray[] getParentArrays() {
         return parentArrays;
+    }
+
+    /**
+     * Gets the OpaqueNDArray instances being kept alive by this OpaqueNDArrayArr.
+     * These are the uncached OpaqueNDArray instances created from parent INDArrays.
+     *
+     * @return The OpaqueNDArray arrays or null if deallocated
+     */
+    public OpaqueNDArray[] getOpaqueArrays() {
+        return opaqueArrays;
+    }
+
+    /**
+     * Clears the opaqueArrays reference (used by deallocator after closing them).
+     */
+    public void clearOpaqueArrays() {
+        opaqueArrays = null;
     }
 }

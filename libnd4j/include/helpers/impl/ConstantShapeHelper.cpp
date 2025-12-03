@@ -39,6 +39,11 @@ ConstantShapeHelper& ConstantShapeHelper::getInstance() {
  return instance;
 }
 
+void ConstantShapeHelper::initializeEarly() {
+  ConstantShapeHelper& instance = getInstance();
+  instance._shapeTrie.waitForInitialization();
+}
+
 ConstantShapeBuffer* ConstantShapeHelper::createConstBuffFromExisting(sd::LongType* shapeInfo) {
  auto result = bufferForShapeInfo(shapeInfo);
  return result;
@@ -439,5 +444,4 @@ void ConstantShapeHelper::getCachedPointers(std::unordered_set<void*>& out_point
 }
 
 } // namespace sd
-
 

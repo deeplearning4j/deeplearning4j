@@ -32,9 +32,9 @@ thread_local sd::ContextBuffers contextBuffers = sd::ContextBuffers();
 namespace sd {
 
 // This avoids static destruction order crashes during JVM shutdown
-std::vector<std::shared_ptr<LaunchContext>>& LaunchContext::contexts() {
-  static std::vector<std::shared_ptr<LaunchContext>> _contexts;
-  return _contexts;
+std::vector<LaunchContext*>& LaunchContext::contexts() {
+  static std::vector<LaunchContext*>* _contexts = new std::vector<LaunchContext*>();
+  return *_contexts;
 }
 
 std::mutex LaunchContext::_mutex;
@@ -95,7 +95,7 @@ LaunchContext* LaunchContext::defaultContext() {
 
         AffinityManager::setCurrentNativeDevice(e);
 
-        contexts().at(e) = std::make_shared<LaunchContext>();
+        contexts().at(e) = new LaunchContext();
       }
 
       // don't forget to restore device back again
@@ -104,7 +104,7 @@ LaunchContext* LaunchContext::defaultContext() {
   }
 
   // return context for current device
-  return contexts().at(deviceId).get();
+  return contexts().at(deviceId);
 }
 
 void* LaunchContext::getReductionPointer() const { return contextBuffers.reductionBuffer(); };

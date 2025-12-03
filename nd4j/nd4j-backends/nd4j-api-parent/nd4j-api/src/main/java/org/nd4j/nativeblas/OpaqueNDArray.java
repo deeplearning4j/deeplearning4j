@@ -80,7 +80,10 @@ public class OpaqueNDArray extends Pointer {
             OpaqueDataBuffer buffer,
             OpaqueDataBuffer specialBuffer,
             long offset) {
-        
+
+        // Capture Java stack trace BEFORE calling native - this gives us the full call path
+        String javaStackTrace = captureJavaStackTrace();
+
         OpaqueNDArray array = Nd4j.getNativeOps().create(shapeInfo, buffer, specialBuffer, offset)
                 .retainReference();
 
@@ -88,6 +91,10 @@ public class OpaqueNDArray extends Pointer {
         if (array != null && !array.isNull()) {
             try {
                 registerWithDeallocatorService(array);
+                // Update the allocation record with the full Java stack trace captured from Java side
+                if (javaStackTrace != null && !javaStackTrace.isEmpty()) {
+                    Nd4j.getNativeOps().updateAllocationJavaStackTrace(array, javaStackTrace);
+                }
             } catch (Exception e) {
                 // LEAK FIX: Clean up array if registration fails
                 Nd4j.getNativeOps().deleteNDArray(array);
@@ -96,6 +103,20 @@ public class OpaqueNDArray extends Pointer {
         }
 
         return array;
+    }
+
+    /**
+     * Captures the current Java stack trace as a string.
+     * This is called from Java side to get the full stack trace before JNI boundary.
+     */
+    private static String captureJavaStackTrace() {
+        StringBuilder sb = new StringBuilder();
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        // Skip first 2 frames (getStackTrace and captureJavaStackTrace)
+        for (int i = 2; i < stackTrace.length && i < 64; i++) {
+            sb.append("  at ").append(stackTrace[i].toString()).append("\n");
+        }
+        return sb.toString();
     }
 
     /**
@@ -240,10 +261,15 @@ public class OpaqueNDArray extends Pointer {
      */
     @Override
     public void close() {
-        if (deallocator != null && !deallocator.isDeallocated()) {
-            deallocator.deallocate();
+        if (deallocator != null) {
+            // Only deallocate if not already done - prevents double-free
+            if (!deallocator.isDeallocated()) {
+                deallocator.deallocate();
+            }
+            // If deallocator exists but is already deallocated, do nothing
         } else {
-            // Fallback if not registered with DeallocatorService
+            // Fallback ONLY if not registered with DeallocatorService at all
+            // This should only happen for OpaqueNDArrays created without registration
             delete(this);
         }
     }

@@ -118,7 +118,10 @@ DECLARE_SHAPE_FN(range) {
   const int numTArgs = block.getTArguments()->size();
   const int numIArgs = block.getIArguments()->size();
   LongType steps = 0;
-  DataType dataType = block.numD() ? D_ARG(0) : INPUT_VARIABLE(0)->dataType();
+  // FIXED: Don't access INPUT_VARIABLE(0) when there are no input arrays!
+  // Range can be called with T_args or I_args instead of input arrays.
+  // Each branch below will set the correct dataType based on the input mode.
+  DataType dataType = block.numD() ? D_ARG(0) : (numInArrs > 0 ? INPUT_VARIABLE(0)->dataType() : Environment::getInstance().defaultFloatDataType());
 
   if (numInArrs > 0) {
     auto isR = INPUT_VARIABLE(0)->isR();

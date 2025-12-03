@@ -61,9 +61,28 @@ class SD_LIB_EXPORT ConstantTadHelper {
   std::shared_ptr<TadPack> tadForDimensions(LongType *originalShape, std::vector<LongType> *dimensions);
 
   /**
-   * Clear all cached TAD packs to prevent memory leaks during testing
+   * Clear all cached TAD packs to prevent memory leaks during testing.
+   * NOTE: Will return early without action if setShutdownInProgress(true) was called.
    */
   void clearCache();
+
+  /**
+   * Mark that shutdown is in progress.
+   * When true, clearCache() will skip tree traversal to avoid SIGSEGV from corrupted memory
+   * during JVM/static destruction.
+   * @param inProgress true to mark shutdown in progress, false otherwise
+   */
+  void setShutdownInProgress(bool inProgress) {
+    _trie.setShutdownInProgress(inProgress);
+  }
+
+  /**
+   * Check if shutdown is in progress.
+   * @return true if shutdown is marked as in progress
+   */
+  bool isShutdownInProgress() const {
+    return _trie.isShutdownInProgress();
+  }
 
   /**
    * Get the total number of cached TAD pack entries.

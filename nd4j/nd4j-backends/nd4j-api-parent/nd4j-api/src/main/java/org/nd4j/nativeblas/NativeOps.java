@@ -729,8 +729,29 @@ public interface NativeOps {
   * Clears all cached TAD packs to prevent memory leaks.
   * This is particularly useful when running memory leak tests or
   * during application shutdown to free accumulated cache memory.
+  * NOTE: Will return early without action if setTADCacheShutdownInProgress(true) was called.
   */
  void clearTADCache();
+
+ /**
+  * Marks that shutdown is in progress.
+  * CRITICAL: Call this early in JVM shutdown (e.g., from a shutdown hook)
+  * to prevent SIGSEGV crashes during cache cleanup.
+  *
+  * During JVM/static destruction, memory allocators may have been destroyed,
+  * leaving corrupted pointers in cached data structures. Setting this flag
+  * causes clearTADCache() and similar functions to skip tree traversal,
+  * letting the OS safely reclaim memory at process exit instead.
+  *
+  * @param inProgress true to mark shutdown in progress, false otherwise
+  */
+ void setTADCacheShutdownInProgress(boolean inProgress);
+
+ /**
+  * Check if TAD cache shutdown is in progress.
+  * @return true if shutdown is marked as in progress
+  */
+ boolean isTADCacheShutdownInProgress();
 
  /**
   * Clears all cached shape buffers to prevent memory leaks.
@@ -835,10 +856,121 @@ public interface NativeOps {
  void clearNDArraySnapshots();
  void clearTADCacheSnapshots();
 
+ // ===============================
+ // DeallocatorService Lifecycle Tracking
+ // Records Java-side deallocation statistics from DeallocatorService
+ // to be merged with C++ lifecycle trackers in UnifiedMemoryReporter
+ // ===============================
+
+ /**
+  * Records a snapshot of DeallocatorService statistics for integration with C++ lifecycle tracking.
+  * <p>
+  * This method is called by the Java DeallocatorService to push its time-series
+  * tracking data to the C++ DeallocatorServiceLifecycleTracker, which is then
+  * merged into the UnifiedMemoryReporter.
+  * </p>
+  * <p>
+  * Only functional when built with SD_GCC_FUNCTRACE. No-op otherwise.
+  * </p>
+  *
+  * @param totalAllocations Total number of allocations tracked
+  * @param totalDeallocations Total number of deallocations tracked
+  * @param totalBytesAllocated Total bytes allocated
+  * @param totalBytesDeallocated Total bytes deallocated
+  * @param peakLiveCount Peak number of live objects observed
+  * @param peakBytes Peak bytes in use observed
+  */
+ void recordDeallocatorServiceSnapshot(long totalAllocations, long totalDeallocations,
+                                       long totalBytesAllocated, long totalBytesDeallocated,
+                                       long peakLiveCount, long peakBytes);
+
+ /**
+  * Enables DeallocatorService lifecycle tracking on the C++ side.
+  * <p>
+  * When enabled, the DeallocatorServiceLifecycleTracker will store snapshots
+  * pushed from Java and include them in UnifiedMemoryReporter output.
+  * </p>
+  */
+ void enableDeallocatorServiceTracking();
+
+ /**
+  * Disables DeallocatorService lifecycle tracking on the C++ side.
+  */
+ void disableDeallocatorServiceTracking();
+
+ /**
+  * Checks if DeallocatorService tracking is enabled.
+  *
+  * @return true if tracking is enabled
+  */
+ boolean isDeallocatorServiceTrackingEnabled();
+
+ /**
+  * Gets the current live count from DeallocatorService tracker.
+  *
+  * @return current live count (allocations - deallocations)
+  */
+ long getDeallocatorServiceLiveCount();
+
+ /**
+  * Gets the current bytes in use from DeallocatorService tracker.
+  *
+  * @return current bytes in use (allocated - deallocated)
+  */
+ long getDeallocatorServiceBytesInUse();
+
  /**
   * Free a string returned by native code.
   *
   * @param ptr String pointer to free
   */
  void freeString(String ptr);
+
+ // ===============================
+ // Allocation Context for Lifecycle Tracking
+ // Allows Java code to tag allocations with operation names
+ // ===============================
+
+ /**
+  * Set the current allocation context (operation name) for lifecycle tracking.
+  * <p>
+  * This allows tagging native memory allocations with the operation that triggered them,
+  * providing much better granularity in leak reports. For example, instead of seeing
+  * "720 leaks from data_buffer_alloc", you'll see "50 leaks from Sum", "30 leaks from Mean", etc.
+  * </p>
+  * <p>
+  * The context is thread-local, so each thread can have its own context.
+  * Call {@link #clearAllocationContext()} when the operation is complete.
+  * </p>
+  * <p>
+  * Only functional when built with SD_GCC_FUNCTRACE. No-op otherwise.
+  * </p>
+  *
+  * @param opName The operation name to associate with allocations (e.g., "Sum", "Mean", "Concat")
+  */
+ void setAllocationContext(String opName);
+
+ /**
+  * Clear the current allocation context for this thread.
+  * <p>
+  * Call this after op creation/execution to stop tagging allocations with the operation name.
+  * </p>
+  */
+ void clearAllocationContext();
+
+ /**
+  * Update the Java stack trace for an existing NDArray allocation record.
+  * <p>
+  * This is called from Java after creating an OpaqueNDArray to provide the full Java stack trace
+  * captured before the JNI boundary. This gives much better context than capturing the stack
+  * trace from within native code.
+  * </p>
+  * <p>
+  * Only functional when built with SD_GCC_FUNCTRACE. No-op otherwise.
+  * </p>
+  *
+  * @param array The OpaqueNDArray whose allocation record should be updated
+  * @param javaStackTrace The full Java stack trace as a string
+  */
+ void updateAllocationJavaStackTrace(OpaqueNDArray array, String javaStackTrace);
 }

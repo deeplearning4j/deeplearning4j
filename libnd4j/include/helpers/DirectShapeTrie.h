@@ -120,6 +120,10 @@ class SD_LIB_EXPORT DirectShapeTrie {
   std::array<ShapeTrieNode*, NUM_STRIPES> *_roots;
   std::array<MUTEX_TYPE*, NUM_STRIPES> *_mutexes = nullptr;
 
+  // Initialization guards to prevent partially-constructed state from leaking
+  std::atomic<bool> _initialization_complete{false};
+  std::atomic<bool> _initialization_in_progress{false};
+
   // Cache statistics tracking
   mutable std::atomic<LongType> _current_entries{0};
   mutable std::atomic<LongType> _current_bytes{0};
@@ -141,6 +145,7 @@ class SD_LIB_EXPORT DirectShapeTrie {
  public:
   // Constructor
   DirectShapeTrie() {
+    _initialization_in_progress.store(true, std::memory_order_release);
     _roots = new std::array<ShapeTrieNode*, NUM_STRIPES>();
     _mutexes = new std::array<MUTEX_TYPE*, NUM_STRIPES>();
 
@@ -151,6 +156,8 @@ class SD_LIB_EXPORT DirectShapeTrie {
     }
 
     ShapeBufferPlatformHelper::initialize();
+    _initialization_in_progress.store(false, std::memory_order_release);
+    _initialization_complete.store(true, std::memory_order_release);
   }
 
   // Delete copy constructor and assignment
@@ -189,6 +196,9 @@ class SD_LIB_EXPORT DirectShapeTrie {
 
   // Check if a shape info already exists in the trie
   bool exists(const LongType* shapeInfo) const;
+
+  // Wait until constructor finishes allocating internal state.
+  void waitForInitialization() const;
 
   // Helper methods
   size_t computeHash(const LongType* shapeInfo) const;

@@ -429,10 +429,14 @@ public class OpaqueDataBuffer extends Pointer {
             explicitlyClosed = true;
         }
 
-        if (deallocator != null && !deallocator.isDeallocated()) {
-            deallocator.deallocate();
+        if (deallocator != null) {
+            // Only deallocate if not already done - prevents double-free
+            if (!deallocator.isDeallocated()) {
+                deallocator.deallocate();
+            }
+            // If deallocator exists but is already deallocated, do nothing
         } else {
-            // Fallback if not registered with DeallocatorService
+            // Fallback ONLY if not registered with DeallocatorService at all
             printAllocationTraceIfNeeded();
             if(Nd4j.getEnvironment().isFuncTracePrintDeallocate()) {
                 System.out.println("Java side deallocation current trace: \n " + currentTrace());

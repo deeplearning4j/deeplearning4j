@@ -108,7 +108,7 @@ import org.nd4j.common.tools.PropertyParser;
 import org.nd4j.common.config.ND4JClassLoading;
 
 @Slf4j
-public class SameDiff extends SDBaseOps {
+public class SameDiff extends SDBaseOps implements AutoCloseable {
     protected static final String GRAD_FN_KEY = "grad";
 
     //Fields for graph structure and execution
@@ -3839,6 +3839,80 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
+     * Close all OpContexts in all cached InferenceSessions and clear the sessions map.
+     * This prevents native memory leaks from OpContext objects when sessions are cleared.
+     */
+    private void closeAllSessions() {
+        // Copy sessions to avoid ConcurrentModificationException during iteration
+        java.util.List<InferenceSession> sessionList;
+        try {
+            sessionList = new java.util.ArrayList<>(sessions.values());
+        } catch (Exception e) {
+            log.warn("Error getting session list for cleanup: {}", e.getMessage());
+            sessions.clear();
+            return;
+        }
+
+        for (InferenceSession session : sessionList) {
+            if (session != null) {
+                try {
+                    Map<String, OpContext> opContexts = session.getOpContexts();
+                    if (opContexts != null) {
+                        // Copy to avoid ConcurrentModificationException
+                        java.util.List<OpContext> contextList;
+                        try {
+                            contextList = new java.util.ArrayList<>(opContexts.values());
+                        } catch (Exception e) {
+                            log.warn("Error getting OpContext list for session cleanup: {}", e.getMessage());
+                            continue;
+                        }
+
+                        for (OpContext ctx : contextList) {
+                            if (ctx != null) {
+                                try {
+                                    ctx.close();
+                                } catch (Exception e) {
+                                    log.warn("Error closing OpContext during session cleanup: {}", e.getMessage());
+                                }
+                            }
+                        }
+                        opContexts.clear();
+                    }
+                } catch (Exception e) {
+                    log.warn("Error cleaning up session: {}", e.getMessage());
+                }
+            }
+        }
+        sessions.clear();
+    }
+
+    /**
+     * Closes this SameDiff instance, releasing all native resources.
+     * This includes:
+     * <ul>
+     *   <li>All OpContexts cached in InferenceSessions</li>
+     *   <li>All InferenceSessions</li>
+     * </ul>
+     *
+     * <p>This method should be called when the SameDiff model is no longer needed
+     * to prevent native memory leaks. It is safe to call multiple times.</p>
+     *
+     * <p><b>Usage:</b></p>
+     * <pre>{@code
+     * try (SameDiff sd = SameDiff.load(modelFile, true)) {
+     *     Map<String, INDArray> output = sd.output(placeholders, outputName);
+     *     // use output...
+     * }
+     * // Resources automatically released
+     * }</pre>
+     */
+    @Override
+    public void close() {
+        log.debug("Closing SameDiff instance");
+        closeAllSessions();
+    }
+
+    /**
      * Convert all the specified variables to constants. This is equivalent to "freezing" the variables so that their values
      * won't be changed by further training.<br>
      * This can only be done for variables and placeholders, not ARRAY type variables (which are usually network activations).
@@ -3878,7 +3952,7 @@ public class SameDiff extends SDBaseOps {
         }
 
         //Remove all sessions in case they have any cached arrays/state
-        sessions.clear();
+        closeAllSessions();
 
         //If gradient function has been defined, remove it (so it will be recreated later)
         if(recreateGradFunction)
@@ -3978,7 +4052,7 @@ public class SameDiff extends SDBaseOps {
         }
 
         //Remove all sessions in case they have any cached arrays/state
-        sessions.clear();
+        closeAllSessions();
 
         //If gradient function has been defined, remove it (so it will be recreated later)
         sameDiffFunctionInstances.remove(GRAD_FN_KEY);
@@ -4090,7 +4164,7 @@ public class SameDiff extends SDBaseOps {
         }
 
         if (anyChanged) {
-            sessions.clear();
+            closeAllSessions();
 
             //Recalculate datatypes of outputs, and dynamically update them
             Set<String> allSeenOps = new HashSet<>();

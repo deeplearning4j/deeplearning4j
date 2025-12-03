@@ -96,9 +96,23 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     /**
      * Clears the context injected
      * with {@link #injectNewContext()} ()}
+     *
+     * IMPORTANT: This method now properly closes the OpContext before removing it
+     * from the ThreadLocal to prevent native memory leaks. Previously, the context
+     * was only removed from ThreadLocal without closing, which could leak native
+     * memory if callers forgot to explicitly close the context.
      */
     @Override
     public void clearOpContext() {
+        OpContext ctx = nextOpContext.get();
+        if (ctx != null) {
+            try {
+                ctx.close();
+            } catch (Exception e) {
+                // Log but don't throw - we still want to remove from ThreadLocal
+                log.warn("Error closing OpContext in clearOpContext(): {}", e.getMessage());
+            }
+        }
         nextOpContext.remove();
     }
 
@@ -690,10 +704,11 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
                 log.info("Op name: {}; Z shapeInfo: {}; Z values: {}", op.opName(), op.z().shapeInfoJava(), firstX(op.z(), 10));
         }
 
+        // Use the enhanced check methods that provide detailed diagnostic context
         if(profilerConfig.isCheckForNAN()) {
-            OpExecutionerUtil.checkForNaN(op.z());
+            OpExecutionerUtil.checkForNaN(op, oc);
         } else if(profilerConfig.isCheckForINF()) {
-            OpExecutionerUtil.checkForInf(op.z());
+            OpExecutionerUtil.checkForInf(op, oc);
         }
 
 
@@ -706,7 +721,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     }
 
     public void profilingConfigurableHookOut(CustomOp op, OpContext oc, long timeStart) {
-        Nd4j.getDeallocatorService().toggleDeallocationBlock(true);
+        Nd4j.getDeallocatorService().toggleDeallocationBlock(false);
         List<INDArray> inArgs = inputsFromOp(op,oc);
         List<INDArray> outArgs = outputsFromOp(op,oc);
         logCustomOpArrayEventIfNeccessary(inArgs, outArgs,NDArrayEventType.OP_INPUT , NDArrayEventType.OP_OUTPUT);
@@ -1087,12 +1102,19 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public List<DataBuffer> calculateOutputShape(@NonNull CustomOp op) {
+        String name = op.opName();
+        // Set allocation context BEFORE any native calls so allocations are tagged with op name
+        if (name != null) {
+            Nd4j.getNativeOps().setAllocationContext(name);
+        }
         try(OpContext ctx = buildContext()) {
             op.setupOpContextFromCustomOp(ctx);
             return calculateOutputShape(op, ctx);
         } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {
+            // Clear allocation context after shape calculation
+            Nd4j.getNativeOps().clearAllocationContext();
             clearOpContext();
         }
     }

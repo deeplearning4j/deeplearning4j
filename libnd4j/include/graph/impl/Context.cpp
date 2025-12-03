@@ -198,15 +198,35 @@ random::RandomBuffer *Context::getRNG() { return _rng; }
 void Context::setRNG(random::RandomBuffer *rng) { _rng = rng; }
 
 
-Stash *Context::getStash() { return _variableSpace->getStash(); }
+Stash *Context::getStash() {
+  if (_variableSpace == nullptr) {
+    THROW_EXCEPTION("Context::getStash: VariableSpace is null. Context was not properly initialized.");
+  }
+  return _variableSpace->getStash();
+}
 
-void Context::trackList(NDArrayList *list) { _variableSpace->trackList(list); }
+void Context::trackList(NDArrayList *list) {
+  if (_variableSpace == nullptr) {
+    THROW_EXCEPTION("Context::trackList: VariableSpace is null. Context was not properly initialized.");
+  }
+  _variableSpace->trackList(list);
+}
 
-int Context::getBranch() { return _variableSpace->flowPath()->branch(this->nodeId()); }
+int Context::getBranch() {
+  if (_variableSpace == nullptr) {
+    THROW_EXCEPTION("Context::getBranch: VariableSpace is null. Context was not properly initialized.");
+  }
+  if (_variableSpace->flowPath() == nullptr) {
+    return 0;  // Default branch when no flow path is set
+  }
+  return _variableSpace->flowPath()->branch(this->nodeId());
+}
 
 void Context::setBranch(int branch) {
   //_branch = branch;
-  if (_variableSpace->flowPath() != nullptr) _variableSpace->flowPath()->markBranch(this->nodeId(), branch);
+  if (_variableSpace != nullptr && _variableSpace->flowPath() != nullptr) {
+    _variableSpace->flowPath()->markBranch(this->nodeId(), branch);
+  }
 }
 
 LongType Context::getOuterTime() { return this->_executionTime.first; }
@@ -281,6 +301,19 @@ Variable *Context::variable(int node, int idx) {
 }
 
 Variable *Context::variable(std::pair<int, int> &p) {
+  // CRITICAL: Check for null variableSpace to prevent SIGSEGV
+  if (_variableSpace == nullptr) {
+    std::string errorMessage;
+    errorMessage += "Node ";
+    errorMessage += std::to_string(this->_nodeId);
+    errorMessage += "; VariableSpace is null when trying to get variable: [";
+    errorMessage += std::to_string(p.first);
+    errorMessage += ":";
+    errorMessage += std::to_string(p.second);
+    errorMessage += "]. This usually means the Context was not properly initialized or fastpath was expected but failed.";
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
 #ifdef __cpp_exceptions
   try {
     return _variableSpace->getVariable(p);
@@ -341,6 +374,9 @@ void Context::pushNDArrayListToVariableSpace(int nodeId, int index, NDArrayList 
 
 void Context::pushNDArrayListToVariableSpace(std::pair<int, int> &pair, NDArrayList *list, bool track) {
   sd_debug("Pre push variable list\n",0);
+  if (_variableSpace == nullptr) {
+    THROW_EXCEPTION("Context::pushNDArrayListToVariableSpace: VariableSpace is null. Context was not properly initialized.");
+  }
   if (!_variableSpace->hasVariable(pair)) {
     sd_debug("Context::pushNDArrayListToVariableSpace: Pre create variable when none exists\n",0);
     auto var = new Variable(nullptr, nullptr, pair.first, pair.second);
@@ -472,6 +508,26 @@ NDArray *Context::array(int idx) {
 
     return result;
   }
+
+  // CRITICAL: Check if we're in fastpath mode with insufficient inputs
+  // When using fastpath (from OpContext/Java), _variableSpace is null by design.
+  // If the operation expects more inputs than were provided via setInputArrays(),
+  // we must throw an informative error instead of crashing in getVariable().
+  if (!_fastpath_in.empty() && _variableSpace == nullptr) {
+    // Fastpath has some inputs but not enough for the requested index
+    std::string errorMessage;
+    errorMessage += "Context::array(";
+    errorMessage += std::to_string(idx);
+    errorMessage += "): Input index out of bounds. Fastpath has ";
+    errorMessage += std::to_string(_fastpath_in.size());
+    errorMessage += " input array(s), but input at index ";
+    errorMessage += std::to_string(idx);
+    errorMessage += " was requested.\n";
+    errorMessage += "This typically means the operation expects more inputs than were provided.\n";
+    errorMessage += "For variable-input operations (like concat), ensure all input arrays are set via setInputArrays().";
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
   // if no luck for fastpath - return whatever is available
   NDArray* result = getVariable(idx)->getNDArray();
 
@@ -533,6 +589,15 @@ unsigned long Context::width() {
 }
 
 void Context::setInputArray(int index, NDArray *array, bool removable) {
+  // Check for null array FIRST before any dereference
+  if (array == nullptr) {
+    std::string errorMessage;
+    errorMessage += std::string("Context::setInputArray: Array at index ");
+    errorMessage += std::to_string(index);
+    errorMessage += std::string(" is null!");
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
   if(array->shapeInfo() == nullptr) {
     std::string errorMessage;
     errorMessage += std::string("Array at index ");
@@ -563,7 +628,26 @@ void Context::setInputArray(int index, NDArray *array, bool removable) {
 
 
 void Context::setOutputArray(int index, NDArray *array, bool removable) {
+  // Check for null array FIRST before any dereference
+  if (array == nullptr) {
+    std::string errorMessage;
+    errorMessage += std::string("Context::setOutputArray: Array at index ");
+    errorMessage += std::to_string(index);
+    errorMessage += std::string(" is null!");
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
   if (_fastpath_out.size() < static_cast<size_t>(index + 1)) _fastpath_out.resize(index + 1);
+
+  // Check for null shapeInfo before accessing it
+  if (array->shapeInfo() == nullptr) {
+    std::string errorMessage;
+    errorMessage += std::string("Context::setOutputArray: Array at index ");
+    errorMessage += std::to_string(index);
+    errorMessage += std::string(" has a null shape buffer!");
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
   if(array->dataType() != ArrayOptions::dataType(array->shapeInfo())) {
     std::string errorMessage;
     errorMessage += std::string("Array at index ");

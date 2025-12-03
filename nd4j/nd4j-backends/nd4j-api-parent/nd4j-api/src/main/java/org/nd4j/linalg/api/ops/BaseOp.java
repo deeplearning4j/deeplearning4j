@@ -696,7 +696,19 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         if (dimensions == null || dimensions.length == 0)
             dimensions = new long[]{-1};
 
-        this.dimensionz = Shape.ndArrayDimFromLong(dimensions).detach();
+        // Set allocation context so lifecycle tracking can associate
+        // this allocation with the specific operation being constructed
+        String opName = opName();
+        if (opName != null) {
+            Nd4j.getNativeOps().setAllocationContext(opName);
+        }
+        try {
+            this.dimensionz = Shape.ndArrayDimFromLong(dimensions).detach();
+        } finally {
+            if (opName != null) {
+                Nd4j.getNativeOps().clearAllocationContext();
+            }
+        }
 
     }
 

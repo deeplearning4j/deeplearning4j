@@ -698,6 +698,20 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
         // Prepare inputs
         String[] argNames = op.argNames();
+        if (argNames == null || argNames.length == 0) {
+            // Safety check: if no input names are available but the operation requires inputs,
+            // throw an exception to prevent native code crashes from null/uninitialized pointers.
+            if (op instanceof CustomOp) {
+                CustomOpDescriptor desc = ((CustomOp) op).getDescriptor();
+                // getNumInputs() returns -1 for variadic, 0 for no inputs required, >0 for fixed number
+                if (desc != null && desc.getNumInputs() > 0) {
+                    throw new IllegalStateException("Operation " + opName + " (" + op.opName() +
+                            ") has no registered input variable names, but descriptor requires " +
+                            desc.getNumInputs() + " inputs. This indicates an improperly constructed operation. " +
+                            "Ensure all required inputs are connected before execution.");
+                }
+            }
+        }
         if (argNames != null && argNames.length > 0) {
             INDArray[] inputArrays = new INDArray[argNames.length];
 
@@ -746,12 +760,19 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         }
 
         // Handle different operation types
-        if (op instanceof CustomOp) {
-            executeCustomOp((CustomOp) op, opContext, node, variableValues, allRequired);
-        } else if (op instanceof Op) {
-            executeStandardOp((Op) op, opContext, node, variableValues, allRequired);
-        } else {
-            throw new UnsupportedOperationException("Unsupported operation type: " + op.getClass().getName());
+        try {
+            if (op instanceof CustomOp) {
+                executeCustomOp((CustomOp) op, opContext, node, variableValues, allRequired);
+            } else if (op instanceof Op) {
+                executeStandardOp((Op) op, opContext, node, variableValues, allRequired);
+            } else {
+                throw new UnsupportedOperationException("Unsupported operation type: " + op.getClass().getName());
+            }
+        } finally {
+            // Clear OpaqueNDArray cache from input arrays to prevent memory leaks
+            // The OpaqueNDArrays were created during setInputArrays() and are no longer needed
+            // after op execution. They can be recreated on demand if needed again.
+            clearOpaqueNDArraysFromOpContext(opContext);
         }
         // NOTE: opContext cleanup happens in output() finally block via opContexts.clear()
     }
@@ -761,8 +782,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
         DynamicCustomOp dynOp = (DynamicCustomOp) customOp;
 
-        // Set op arguments
-        opContext.setInputArrays(customOp.inputArguments());
+        // Set op arguments (NOT input arrays - they are already set by executeRegularOperation)
+        // CRITICAL: Do NOT call opContext.setInputArrays(customOp.inputArguments()) here!
+        // customOp.inputArguments() returns stale arrays from graph import/construction,
+        // NOT the arrays from the current execution context. The correct inputs were
+        // already set by executeRegularOperation via opContext.setInputArrays(inputArrays).
         opContext.setIArguments(dynOp.iArgs());
         opContext.setTArguments(dynOp.tArgs());
         opContext.setDArguments(dynOp.dArgs());
@@ -798,9 +822,15 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             opContext.setOutputArrays(outputArrays);
         } finally {
             // Clean up shape buffers to prevent memory leak
+            // CRITICAL: Check wasClosed() before calling close() to avoid IllegalStateException
+            // if buffer was already released by deallocator or another cleanup path
             for (DataBuffer db : outShape) {
-                if (db != null) {
-                    db.close();
+                if (db != null && !db.wasClosed()) {
+                    try {
+                        db.close();
+                    } catch (Exception e) {
+                        log.trace("Error closing shape buffer: {}", e.getMessage());
+                    }
                 }
             }
         }
@@ -876,10 +906,16 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         } finally {
             // Clean up shape buffers EXCEPT the first one which is now owned by outputArray
             // The output array's shape buffer will be cleaned up when the array is released
+            // CRITICAL: Check wasClosed() before calling close() to avoid IllegalStateException
+            // if buffer was already released by deallocator or another cleanup path
             for (int i = 1; i < outputShape.size(); i++) {
                 DataBuffer db = outputShape.get(i);
-                if (db != null) {
-                    db.close();
+                if (db != null && !db.wasClosed()) {
+                    try {
+                        db.close();
+                    } catch (Exception e) {
+                        log.trace("Error closing shape buffer: {}", e.getMessage());
+                    }
                 }
             }
         }
@@ -2448,10 +2484,15 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 // LEAK FIX: Clean up Concat operation's internal arrays
                 c.clearArrays();
                 // Clean up shape buffers EXCEPT index 0 which is owned by the output array
+                // CRITICAL: Check wasClosed() before calling close() to avoid IllegalStateException
                 for (int i = 1; i < shape.size(); i++) {
                     DataBuffer db = shape.get(i);
-                    if (db != null) {
-                        db.close();
+                    if (db != null && !db.wasClosed()) {
+                        try {
+                            db.close();
+                        } catch (Exception e) {
+                            log.trace("Error closing shape buffer: {}", e.getMessage());
+                        }
                     }
                 }
             }
@@ -2506,10 +2547,15 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     // LEAK FIX: Clean up Stack operation's internal arrays
                     s.clearArrays();
                     // Clean up shape buffers EXCEPT index 0 which is owned by the output array
+                    // CRITICAL: Check wasClosed() before calling close() to avoid IllegalStateException
                     for (int i = 1; i < shape.size(); i++) {
                         DataBuffer db = shape.get(i);
-                        if (db != null) {
-                            db.close();
+                        if (db != null && !db.wasClosed()) {
+                            try {
+                                db.close();
+                            } catch (Exception e) {
+                                log.trace("Error closing shape buffer: {}", e.getMessage());
+                            }
                         }
                     }
                 }
@@ -2863,9 +2909,14 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     // Clean up original shape buffers from calculateOutputShape
                     // These are temporary buffers returned by calculateOutputShape() that we've already
                     // extracted the shape info from. The output arrays use NEW buffers created above.
+                    // CRITICAL: Check wasClosed() before calling close() to avoid IllegalStateException
                     for (DataBuffer db : outShape) {
-                        if (db != null) {
-                            db.close();
+                        if (db != null && !db.wasClosed()) {
+                            try {
+                                db.close();
+                            } catch (Exception e) {
+                                log.trace("Error closing shape buffer: {}", e.getMessage());
+                            }
                         }
                     }
                 }
@@ -2946,6 +2997,41 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             VarId inVarId = lookup(n, opInputs, allIterInputs, false);
             Preconditions.checkState(inVarId != null, "Could not find array for variable %s", sdv.name());
             return getTensorFromOutputs(inVarId);
+        }
+    }
+
+    /**
+     * Clears the cached OpaqueNDArray from all input and output arrays in the OpContext.
+     * This prevents memory leaks by releasing native memory associated with OpaqueNDArrays
+     * that were created during op execution but are no longer needed.
+     *
+     * The OpaqueNDArrays will be recreated on demand if needed again.
+     *
+     * @param opContext The OpContext containing arrays to clean up
+     */
+    private void clearOpaqueNDArraysFromOpContext(OpContext opContext) {
+        if (opContext == null) {
+            return;
+        }
+
+        // Clear from input arrays
+        List<INDArray> inputs = opContext.getInputArrays();
+        if (inputs != null) {
+            for (INDArray arr : inputs) {
+                if (arr != null && !arr.wasClosed()) {
+                    arr.clearOpaqueNDArray();
+                }
+            }
+        }
+
+        // Clear from output arrays
+        List<INDArray> outputs = opContext.getOutputArrays();
+        if (outputs != null) {
+            for (INDArray arr : outputs) {
+                if (arr != null && !arr.wasClosed()) {
+                    arr.clearOpaqueNDArray();
+                }
+            }
         }
     }
 

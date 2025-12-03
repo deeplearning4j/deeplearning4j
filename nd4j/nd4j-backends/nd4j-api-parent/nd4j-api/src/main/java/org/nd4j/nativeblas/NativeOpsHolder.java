@@ -102,29 +102,26 @@ public class NativeOpsHolder {
                deviceNativeOps = ReflectionUtils.newInstance(nativeOpsClass);
                initOps();
 
-               // Add shutdown hook to clear caches and prevent memory leaks
+               // Register shutdown hook to set the shutdown flag EARLY.
+               // This prevents SIGSEGV crashes if any code accidentally calls
+               // clearTADCache() during JVM shutdown (e.g., finalizers, GC, or other hooks).
+               //
+               // NOTE: We ONLY set the shutdown flag here - we do NOT clear the caches!
+               // During JVM shutdown, memory allocators may have been destroyed,
+               // causing corrupted pointers in the cache tries. The OS will reclaim
+               // all memory when the process exits anyway.
+               //
+               // For explicit cleanup during runtime (e.g., testing), call:
+               //   Nd4j.clearTADCache() and Nd4j.clearShapeCache() directly.
                Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                    try {
-                       // Operation registry cleanup happens automatically via JVM shutdown
-                       // No explicit cleanup needed for singleton prototype instances
-
-                       if (deviceNativeOps != null) {
-                           // Clear TAD cache
-                           deviceNativeOps.clearTADCache();
-                           if (log.isDebugEnabled()) {
-                               log.debug("TAD cache cleared during shutdown");
-                           }
-
-                           // Clear shape cache
-                           deviceNativeOps.clearShapeCache();
-                           if (log.isDebugEnabled()) {
-                               log.debug("Shape cache cleared during shutdown");
-                           }
-                       }
-                   } catch (Exception e) {
-                       log.warn("Error clearing caches during shutdown", e);
+                       // Set the shutdown flag - this makes clearTADCache() safe to call
+                       // (it will return early without traversing potentially corrupted memory)
+                       deviceNativeOps.setTADCacheShutdownInProgress(true);
+                   } catch (Throwable t) {
+                       // Ignore errors during shutdown - we're just trying to be safe
                    }
-               }, "ND4J-Cache-Cleanup"));
+               }, "ND4J-Shutdown-Flag"));
 
            }
 

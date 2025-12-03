@@ -1233,6 +1233,9 @@ if [ -z "$PACKAGING" ]; then
     PACKAGING="none"
 fi
 
+SOURCE_PATH="$DIR"
+BUILD_DIR="$DIR/blasbuild/$CHIP"
+
 export CMAKE_COMMAND="$CMAKE_COMMAND -DSD_SANITIZE=$SANITIZE -DSD_SANITIZERS=$SANITIZERS"
 
 if [ "$CHIP_EXTENSION" == "avx512" ] || [ "$ARCH" == "avx512" ]; then
@@ -1372,10 +1375,11 @@ fi
 mkbuilddir() {
     if [ "$CLEAN" == "true" ]; then
         echo "Removing blasbuild"
-        rm -Rf blasbuild
+        rm -Rf "$DIR/blasbuild"
     fi
-    mkdir -p "blasbuild/$CHIP"
-    cd "blasbuild/$CHIP"
+
+    mkdir -p "$BUILD_DIR"
+    cd "$BUILD_DIR"
 }
 
 HELPERS=""
@@ -1456,7 +1460,7 @@ if [ -n "$COMPILER" ]; then
 fi
 
 # Configure CMake
-echo "$CMAKE_COMMAND - -DSD_KEEP_NVCC_OUTPUT=$KEEP_NVCC -DSD_GCC_FUNCTRACE=$FUNC_TRACE $BLAS_ARG $ARCH_ARG $NAME_ARG $OP_OUTPUT_FILE_ARG -DSD_SANITIZERS=${SANITIZERS} -DSD_SANITIZE=${SANITIZE} -DSD_CHECK_VECTORIZATION=${CHECK_VECTORIZATION} $USE_LTO $HELPERS $SHARED_LIBS_ARG $MINIFIER_ARG $OPERATIONS_ARG $DATATYPES_ARG $BUILD_TYPE $PACKAGING_ARG $EXPERIMENTAL_ARG $TESTS_ARG $CUDA_COMPUTE -DOPENBLAS_PATH=$OPENBLAS_PATH -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE $COMPILER_ARG ../.."
+echo "$CMAKE_COMMAND - -DSD_KEEP_NVCC_OUTPUT=$KEEP_NVCC -DSD_GCC_FUNCTRACE=$FUNC_TRACE $BLAS_ARG $ARCH_ARG $NAME_ARG $OP_OUTPUT_FILE_ARG -DSD_SANITIZERS=${SANITIZERS} -DSD_SANITIZE=${SANITIZE} -DSD_CHECK_VECTORIZATION=${CHECK_VECTORIZATION} $USE_LTO $HELPERS $SHARED_LIBS_ARG $MINIFIER_ARG $OPERATIONS_ARG $DATATYPES_ARG $BUILD_TYPE $PACKAGING_ARG $EXPERIMENTAL_ARG $TESTS_ARG $CUDA_COMPUTE -DOPENBLAS_PATH=$OPENBLAS_PATH -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE $COMPILER_ARG $SOURCE_PATH"
 
 # Handle the PREPROCESS flag first - before any build
 if [ "$PREPROCESS" == "ON" ]; then
@@ -1484,7 +1488,7 @@ if [ "$PREPROCESS" == "ON" ]; then
             -DCMAKE_NEED_RESPONSE=YES \
             -DMKL_MULTI_THREADED=TRUE \
             $COMPILER_ARG \
-            ../..
+            "$SOURCE_PATH"
     else
         eval "$CMAKE_COMMAND" \
             -DSD_PREPROCESS=ON \
@@ -1508,7 +1512,7 @@ if [ "$PREPROCESS" == "ON" ]; then
             -DCMAKE_NEED_RESPONSE=YES \
             -DMKL_MULTI_THREADED=TRUE \
             $COMPILER_ARG \
-            ../.. >> "$LOG_OUTPUT" 2>&1
+            "$SOURCE_PATH" >> "$LOG_OUTPUT" 2>&1
     fi
     echo "Preprocessing complete - exiting"
     exit 0
@@ -1568,7 +1572,7 @@ if [ "$LOG_OUTPUT" == "none" ]; then
         -DCMAKE_NEED_RESPONSE=YES \
         -DMKL_MULTI_THREADED=TRUE \
         $COMPILER_ARG \
-        ../..
+        "$SOURCE_PATH"
 else
     eval "$CMAKE_COMMAND" \
         -DPRINT_MATH="$PRINT_MATH" \
@@ -1600,7 +1604,7 @@ else
         -DCMAKE_NEED_RESPONSE=YES \
         -DMKL_MULTI_THREADED=TRUE \
         $COMPILER_ARG \
-        ../.. >> "$LOG_OUTPUT" 2>&1
+        "$SOURCE_PATH" >> "$LOG_OUTPUT" 2>&1
 fi
 
 
@@ -1778,7 +1782,7 @@ if [ "$BUILD_PPSTEP" == "ON" ]; then
             "$NAME_ARG" \
             -DOPENBLAS_PATH="$OPENBLAS_PATH" \
             $COMPILER_ARG \
-            ../..
+            "$SOURCE_PATH"
     else
         eval "$CMAKE_COMMAND" \
             -DBUILD_PPSTEP=ON \
@@ -1787,7 +1791,7 @@ if [ "$BUILD_PPSTEP" == "ON" ]; then
             "$NAME_ARG" \
             -DOPENBLAS_PATH="$OPENBLAS_PATH" \
             $COMPILER_ARG \
-            ../.. >> "$LOG_OUTPUT" 2>&1
+            "$SOURCE_PATH" >> "$LOG_OUTPUT" 2>&1
     fi
     
     # Build ppstep

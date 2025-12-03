@@ -4203,19 +4203,30 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         op.addIArgument(dimension); //Native op: last iarg is dimension
 
         List<DataBuffer> shapeList = op.calculateOutputShape();
-        DataBuffer l = shapeList.get(0);
-        INDArray out = Nd4j.createFromDescriptor(l);
-        // Close shape buffers after use to prevent leak
-        for (DataBuffer shapeBuffer : shapeList) {
-            try {
-                shapeBuffer.close();
-            } catch (Exception e) {
-                // Ignore close errors
+        INDArray out = null;
+        boolean firstBufferUsed = false;
+        try {
+            DataBuffer l = shapeList.get(0);
+            out = Nd4j.createFromDescriptor(l);
+            firstBufferUsed = true;  // First buffer is now owned by out array
+            op.addOutputArgument(out);
+            Nd4j.exec(op);
+            return out;
+        } finally {
+            // Clean up UNUSED shape buffers to prevent memory leak
+            // IMPORTANT: First buffer is owned by 'out' array if allocation succeeded - do NOT close it!
+            int startIndex = firstBufferUsed ? 1 : 0;
+            for (int i = startIndex; i < shapeList.size(); i++) {
+                DataBuffer shapeBuffer = shapeList.get(i);
+                if (shapeBuffer != null) {
+                    try {
+                        shapeBuffer.close();
+                    } catch (Exception e) {
+                        // Ignore close errors
+                    }
+                }
             }
         }
-        op.addOutputArgument(out);
-        Nd4j.exec(op);
-        return out;
     }
 
     @Override
@@ -6378,6 +6389,24 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
+    public void clearOpaqueNDArray() {
+        // Close the OpaqueNDArray BEFORE nulling the reference.
+        // This ensures the native sd::NDArray* is deleted while the data buffer is still valid.
+        // The OpaqueNDArrayDeallocator has double-free protection (synchronized block + deallocated flag)
+        // so calling close() here is safe even if DeallocatorService tries to clean up later.
+        //
+        // CRITICAL: We MUST close before the data buffer is closed!
+        // If we just null the reference, the OpaqueNDArray still exists in DeallocatorService
+        // with pointers to the data buffer. When we close data buffer and DeallocatorService
+        // later cleans up, it may try to access freed memory, causing heap corruption
+        // ("malloc(): invalid size (unsorted)").
+        if (opaqueNDArray != null) {
+            opaqueNDArray.close();
+            opaqueNDArray = null;
+        }
+    }
+
+    @Override
     public void close() {
         // empty arrays have no buffer at all
         if (released || isEmpty() || !closeable())
@@ -6397,9 +6426,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                     .build());
         }
 
-        if(opaqueNDArray != null) {
-            opaqueNDArray.close();
-        }
+        // CRITICAL ORDER: Close OpaqueNDArray BEFORE data buffer!
+        // The OpaqueNDArray holds native pointers to the data buffer.
+        // If we close data first, those pointers become dangling.
+        clearOpaqueNDArray();
         data.close();
 
         released = true;

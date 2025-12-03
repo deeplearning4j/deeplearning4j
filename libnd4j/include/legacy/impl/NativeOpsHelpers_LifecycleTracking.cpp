@@ -37,6 +37,7 @@ namespace analysis {
 #include <array/DataBufferLifecycleTracker.h>
 #include <array/TADCacheLifecycleTracker.h>
 #include <array/ShapeCacheLifecycleTracker.h>
+#include <array/DeallocatorServiceLifecycleTracker.h>
 #include <graph/OpContextLifecycleTracker.h>
 #include <ops/declarable/OpExecutionLogger.h>
 #include <array/AllocationLogger.h>
@@ -980,6 +981,99 @@ SD_LIB_EXPORT void clearTADCacheSnapshots() {
     TADCacheLifecycleTracker::getInstance().clearSnapshots();
 }
 
+/**
+ * Set the current allocation context (operation name) for lifecycle tracking.
+ * This allows Java code to tag allocations with the operation that triggered them,
+ * providing much better granularity in leak reports than stack trace analysis alone.
+ */
+SD_LIB_EXPORT void setAllocationContext(const char* opName) {
+    if (opName != nullptr) {
+        sd::ops::OpExecutionLogger::setCurrentOpName(std::string(opName));
+    }
+}
+
+/**
+ * Clear the current allocation context for this thread.
+ */
+SD_LIB_EXPORT void clearAllocationContext() {
+    sd::ops::OpExecutionLogger::clearCurrentOpName();
+}
+
+/**
+ * Update the Java stack trace for an existing NDArray allocation record.
+ * This is called from Java after creating an OpaqueNDArray to provide the full Java stack trace
+ * captured before the JNI boundary.
+ */
+SD_LIB_EXPORT void updateAllocationJavaStackTrace(OpaqueNDArray array, const char* javaStackTrace) {
+    if (array == nullptr || javaStackTrace == nullptr) return;
+
+    // Get the NDArray pointer from the opaque wrapper
+    void* ndarray_ptr = static_cast<void*>(array);
+
+    // Update the allocation record in the tracker
+    NDArrayLifecycleTracker::getInstance().updateJavaStackTrace(ndarray_ptr, std::string(javaStackTrace));
+}
+
+// ===============================
+// DeallocatorService Lifecycle Tracking
+// These functions receive data from Java DeallocatorService
+// ===============================
+
+/**
+ * Record a snapshot of DeallocatorService statistics from Java.
+ */
+SD_LIB_EXPORT void recordDeallocatorServiceSnapshot(
+    sd::LongType totalAllocations, sd::LongType totalDeallocations,
+    sd::LongType totalBytesAllocated, sd::LongType totalBytesDeallocated,
+    sd::LongType peakLiveCount, sd::LongType peakBytes) {
+
+    DeallocatorServiceLifecycleTracker::getInstance().recordSnapshot(
+        static_cast<uint64_t>(totalAllocations),
+        static_cast<uint64_t>(totalDeallocations),
+        static_cast<uint64_t>(totalBytesAllocated),
+        static_cast<uint64_t>(totalBytesDeallocated),
+        static_cast<uint64_t>(peakLiveCount),
+        static_cast<uint64_t>(peakBytes)
+    );
+}
+
+/**
+ * Enable DeallocatorService lifecycle tracking.
+ */
+SD_LIB_EXPORT void enableDeallocatorServiceTracking() {
+    DeallocatorServiceLifecycleTracker::getInstance().enable();
+}
+
+/**
+ * Disable DeallocatorService lifecycle tracking.
+ */
+SD_LIB_EXPORT void disableDeallocatorServiceTracking() {
+    DeallocatorServiceLifecycleTracker::getInstance().disable();
+}
+
+/**
+ * Check if DeallocatorService tracking is enabled.
+ */
+SD_LIB_EXPORT bool isDeallocatorServiceTrackingEnabled() {
+    return DeallocatorServiceLifecycleTracker::getInstance().isEnabled();
+}
+
+/**
+ * Get current live count from DeallocatorService tracker.
+ */
+SD_LIB_EXPORT sd::LongType getDeallocatorServiceLiveCount() {
+    return static_cast<sd::LongType>(
+        DeallocatorServiceLifecycleTracker::getInstance().getCurrentLiveCount());
+}
+
+/**
+ * Get current bytes in use from DeallocatorService tracker.
+ */
+SD_LIB_EXPORT sd::LongType getDeallocatorServiceBytesInUse() {
+    return static_cast<sd::LongType>(
+        DeallocatorServiceLifecycleTracker::getInstance().getCurrentBytesInUse());
+}
+
 #endif // SD_GCC_FUNCTRACE
 
 // AUTO CACHE CLEANUP - MOVED OUTSIDE SD_GCC_FUNCTRACE GUARD
@@ -1063,21 +1157,49 @@ SD_LIB_EXPORT void clearTADCache() {
     sd::ConstantTadHelper::getInstance().clearCache();
 }
 
-// Register atexit handler to clear TAD cache at shutdown
-// This ensures cache is empty when application exits, preventing false leak reports
-namespace {
-    void clearTADCacheAtShutdown() {
-        clearTADCache();
-    }
-
-    struct ShutdownCleanupRegistrar {
-        ShutdownCleanupRegistrar() {
-            std::atexit(clearTADCacheAtShutdown);
-        }
-    };
-
-    static ShutdownCleanupRegistrar g_shutdown_cleanup_registrar;
+/**
+ * Marks that shutdown is in progress.
+ * CRITICAL: Call this early in JVM shutdown (e.g., from a shutdown hook)
+ * to prevent SIGSEGV crashes during cache cleanup.
+ *
+ * During JVM/static destruction, memory allocators may have been destroyed,
+ * leaving corrupted pointers in cached data structures. Setting this flag
+ * causes clearTADCache() and similar functions to skip tree traversal,
+ * letting the OS safely reclaim memory at process exit instead.
+ *
+ * @param inProgress true to mark shutdown in progress, false otherwise
+ */
+SD_LIB_EXPORT void setTADCacheShutdownInProgress(bool inProgress) {
+    sd::ConstantTadHelper::getInstance().setShutdownInProgress(inProgress);
 }
+
+/**
+ * Check if TAD cache shutdown is in progress.
+ * @return true if shutdown is marked as in progress
+ */
+SD_LIB_EXPORT bool isTADCacheShutdownInProgress() {
+    return sd::ConstantTadHelper::getInstance().isShutdownInProgress();
+}
+
+// NOTE: DO NOT register atexit handler to clear TAD cache at shutdown!
+// During JVM/static destruction, the order of destruction is undefined.
+// Memory allocators and other infrastructure may have already been destroyed,
+// causing corrupted pointers in the trie. Traversing the tree in this state
+// causes SIGSEGV crashes (e.g., in deleteTadPacksRecursive).
+//
+// The OS will reclaim all memory when the process exits anyway, so explicit
+// cleanup during shutdown is unnecessary and dangerous.
+//
+// For explicit cleanup during runtime (e.g., testing), call clearTADCache() directly.
+//
+// Previous code that caused SIGSEGV crashes during shutdown (REMOVED):
+// namespace {
+//     void clearTADCacheAtShutdown() { clearTADCache(); }
+//     struct ShutdownCleanupRegistrar {
+//         ShutdownCleanupRegistrar() { std::atexit(clearTADCacheAtShutdown); }
+//     };
+//     static ShutdownCleanupRegistrar g_shutdown_cleanup_registrar;
+// }
 
 
 /**
@@ -1298,5 +1420,22 @@ SD_LIB_EXPORT void generateTADCacheSnapshotDiff(sd::LongType snapshot1, sd::Long
 
 SD_LIB_EXPORT void clearNDArraySnapshots() {}
 SD_LIB_EXPORT void clearTADCacheSnapshots() {}
+
+// DeallocatorService Lifecycle Tracking stubs
+SD_LIB_EXPORT void recordDeallocatorServiceSnapshot(
+    sd::LongType totalAllocations, sd::LongType totalDeallocations,
+    sd::LongType totalBytesAllocated, sd::LongType totalBytesDeallocated,
+    sd::LongType peakLiveCount, sd::LongType peakBytes) {}
+
+SD_LIB_EXPORT void enableDeallocatorServiceTracking() {}
+SD_LIB_EXPORT void disableDeallocatorServiceTracking() {}
+SD_LIB_EXPORT bool isDeallocatorServiceTrackingEnabled() { return false; }
+SD_LIB_EXPORT sd::LongType getDeallocatorServiceLiveCount() { return 0; }
+SD_LIB_EXPORT sd::LongType getDeallocatorServiceBytesInUse() { return 0; }
+
+// Allocation context stubs (no-op without functrace)
+SD_LIB_EXPORT void setAllocationContext(const char* opName) {}
+SD_LIB_EXPORT void clearAllocationContext() {}
+SD_LIB_EXPORT void updateAllocationJavaStackTrace(OpaqueNDArray array, const char* javaStackTrace) {}
 
 #endif // !defined(SD_GCC_FUNCTRACE)

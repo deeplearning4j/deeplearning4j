@@ -1554,6 +1554,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     @Override
     public  INDArray[] exec(@NonNull CustomOp op) {
         val name = op.opName();
+        // Set allocation context BEFORE any native calls so allocations are tagged with op name
+        if (name != null) {
+            Nd4j.getNativeOps().setAllocationContext(name);
+        }
         try (val context = buildContext()) {
             op.setupOpContextFromCustomOp(context);
             boolean shapeOverride = op.initializeOutputs(context);
@@ -1575,6 +1579,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         } catch (Exception e) {
             throw new RuntimeException("Op [" + name + "] execution failed", e);
         } finally {
+            // Clear allocation context after op execution
+            Nd4j.getNativeOps().clearAllocationContext();
             // Clear ThreadLocal to prevent stale context references
             clearOpContext();
         }

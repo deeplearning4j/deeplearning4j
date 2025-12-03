@@ -859,9 +859,25 @@ public class Nd4j {
                 .build();
 
         List<DataBuffer> l = op.calculateOutputShape();
-        INDArray out = Nd4j.createFromDescriptor(l.get(0));
-        op.addOutputArgument(out);
-        Nd4j.exec(op);
+        INDArray out = null;
+        boolean firstBufferUsed = false;
+        try {
+            // First buffer is OWNED by the created array (stored as its shape info)
+            out = Nd4j.createFromDescriptor(l.get(0));
+            firstBufferUsed = true;
+            op.addOutputArgument(out);
+            Nd4j.exec(op);
+        } finally {
+            // Clean up shape buffers to prevent memory leak
+            // First buffer is owned by 'out' array if allocation succeeded
+            int startIndex = firstBufferUsed ? 1 : 0;
+            for (int i = startIndex; i < l.size(); i++) {
+                DataBuffer db = l.get(i);
+                if (db != null) {
+                    db.close();
+                }
+            }
+        }
 
         return out;
     }
@@ -5473,6 +5489,13 @@ public class Nd4j {
                 OP_EXECUTIONER_INSTANCE.printEnvironmentInformation();
             }
 
+            // Force early native shape cache initialization before any NDArray allocations occur
+            try {
+                NativeOpsHolder.getInstance().getDeviceNativeOps().initializeShapeCache();
+            } catch (Throwable t) {
+                log.warn("Unable to initialize native shape cache early; continuing with lazy init", t);
+            }
+
 
             DifferentialFunctionClassHolder.initInstance();
 
@@ -5851,22 +5874,36 @@ public class Nd4j {
         outShapes = Nd4j.getExecutioner().calculateOutputShape(o);
         INDArray[] outputs = new INDArray[outShapes.size()];
 
-        long rank = outShapes.get(0).getLong(0);
-        if(x == null && (outShapes.get(0) == null || rank == 0L || rank == 0L)) {
-            //Empty: no conditions match
-            for( int i = 0 ; i < outputs.length; i++) {
-                outputs[i]  = Nd4j.empty();
+        // Track how many shape buffers were successfully used by output arrays
+        int buffersUsed = 0;
+        try {
+            long rank = outShapes.get(0).getLong(0);
+            if(x == null && (outShapes.get(0) == null || rank == 0L || rank == 0L)) {
+                //Empty: no conditions match - shape buffers NOT used by arrays
+                for( int i = 0 ; i < outputs.length; i++) {
+                    outputs[i]  = Nd4j.empty();
+                }
+                return outputs;
             }
+
+            for(int i = 0; i < outputs.length; i++) {
+                outputs[i] = Nd4j.createFromDescriptor(outShapes.get(i));
+                buffersUsed++;  // Track successful usage
+            }
+            op.addOutputs(outputs);
+
+            Nd4j.getExecutioner().execAndReturn(op.build());
             return outputs;
+        } finally {
+            // Clean up unused shape buffers to prevent memory leak
+            // Buffers that were used by createFromDescriptor are owned by the output arrays
+            for (int i = buffersUsed; i < outShapes.size(); i++) {
+                DataBuffer db = outShapes.get(i);
+                if (db != null) {
+                    db.close();
+                }
+            }
         }
-
-        for(int i = 0; i < outputs.length; i++) {
-            outputs[i] = Nd4j.createFromDescriptor(outShapes.get(i));
-        }
-        op.addOutputs(outputs);
-
-        Nd4j.getExecutioner().execAndReturn(op.build());
-        return outputs;
     }
 
 

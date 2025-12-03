@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.nativeblas.OpaqueNDArray;
 import org.nd4j.nativeblas.OpaqueNDArrayArr;
 
 /**
@@ -88,18 +89,24 @@ public class OpaqueNDArrayArrDeallocator implements Deallocatable, Deallocator {
             }
 
             try {
-                if (arrayArr != null && !arrayArr.isNull()) {
+                if (arrayArr != null) {
                     if (log.isTraceEnabled()) {
-                        log.trace("Deallocating OpaqueNDArrayArr with uniqueId: {} (parent count: {})", 
+                        log.trace("Deallocating OpaqueNDArrayArr with uniqueId: {} (parent count: {})",
                                 uniqueId, parentArrays != null ? parentArrays.length : 0);
                     }
-                    
-                    // Note: OpaqueNDArrayArr is a PointerPointer, it doesn't own the individual
-                    // OpaqueNDArray pointers (those are owned by parent INDArrays).
-                    // We just need to release our reference and let the parent arrays be GC'd.
-                    // The PointerPointer itself will be cleaned up by JavaCPP.
-                    arrayArr.deallocate();
-                    arrayArr.setNull();
+
+                    // Deallocate the PointerPointer's native memory
+                    // NOTE: We do NOT close the individual OpaqueNDArrays because they are CACHED
+                    // instances managed by their parent INDArrays. The parent INDArrays are kept
+                    // alive by parentArrays field, and their cached OpaqueNDArrays will be cleaned
+                    // up when the INDArrays themselves are closed/garbage collected.
+                    if (!arrayArr.isNull()) {
+                        arrayArr.deallocate();
+                        arrayArr.setNull();
+                    }
+
+                    // Clear the opaqueArrays reference to allow GC (but don't close them!)
+                    arrayArr.clearOpaqueArrays();
                 }
             } catch (Exception e) {
                 log.error("Error deallocating OpaqueNDArrayArr with uniqueId: " + uniqueId, e);

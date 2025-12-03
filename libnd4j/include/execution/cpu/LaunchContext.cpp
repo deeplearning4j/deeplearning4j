@@ -63,11 +63,11 @@ LaunchContext::~LaunchContext() {
 // The vector is intentionally leaked to avoid crashes during shutdown when:
 // 1. An exception is thrown that references LaunchContext
 // 2. JVM shuts down and runs static destructors
-// 3. The vector's destructor tries to destroy shared_ptrs while they're still in use
+// 3. The vector's destructor tries to destroy stored contexts while they're still in use
 // This is safe because LaunchContexts are only created during initialization and
 // process exit cleans up all memory anyway.
-std::vector<std::shared_ptr<LaunchContext>>& LaunchContext::contexts() {
-  static std::vector<std::shared_ptr<LaunchContext>>* _contexts = new std::vector<std::shared_ptr<LaunchContext>>();
+std::vector<LaunchContext*>& LaunchContext::contexts() {
+  static std::vector<LaunchContext*>* _contexts = new std::vector<LaunchContext*>();
   return *_contexts;
 }
 
@@ -95,11 +95,11 @@ LaunchContext* LaunchContext::defaultContext() {
     std::lock_guard<std::mutex> lock(_lock);
     // TODO: we need it to be device-aware, but only once we add NUMA support for cpu
     if (LaunchContext::contexts().empty())
-      LaunchContext::contexts().emplace_back(std::make_shared<LaunchContext>());
+      LaunchContext::contexts().emplace_back(new LaunchContext());
   }
 
   // return context for current device
-  return LaunchContext::contexts().at(0).get();
+  return LaunchContext::contexts().at(0);
 }
 
 std::mutex* LaunchContext::deviceMutex() { return &_mutex; }

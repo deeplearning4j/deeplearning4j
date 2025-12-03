@@ -608,10 +608,60 @@ SD_LIB_EXPORT void dumpOpExecutionState(const char* message);
 SD_LIB_EXPORT const char* getAllocationLogPath();
 
 /**
+ * Set the current allocation context (operation name) for lifecycle tracking.
+ * This is used to associate memory allocations with the operation that triggered them.
+ * The context is thread-local, so each thread can have its own context.
+ *
+ * Call this before creating ops/arrays to tag allocations with the op name.
+ * Call clearAllocationContext() when done.
+ *
+ * @param opName The operation name to associate with allocations (e.g., "Sum", "Mean", "Concat")
+ */
+SD_LIB_EXPORT void setAllocationContext(const char* opName);
+
+/**
+ * Clear the current allocation context for this thread.
+ * Call this after op creation/execution to stop tagging allocations.
+ */
+SD_LIB_EXPORT void clearAllocationContext();
+
+/**
+ * Update the Java stack trace for an existing NDArray allocation record.
+ * This is called from Java after creating an OpaqueNDArray to provide the full Java stack trace
+ * captured before the JNI boundary. This gives much better context than capturing the stack
+ * trace from within native code.
+ *
+ * @param array The OpaqueNDArray whose allocation record should be updated
+ * @param javaStackTrace The full Java stack trace as a string
+ */
+SD_LIB_EXPORT void updateAllocationJavaStackTrace(OpaqueNDArray array, const char* javaStackTrace);
+
+/**
  * Clear all cached TAD packs to prevent memory leaks during testing.
  * This frees all TadPack objects stored in the TAD cache.
+ * NOTE: Will return early without action if setTADCacheShutdownInProgress(true) was called.
  */
 SD_LIB_EXPORT void clearTADCache();
+
+/**
+ * Marks that shutdown is in progress.
+ * CRITICAL: Call this early in JVM shutdown (e.g., from a shutdown hook)
+ * to prevent SIGSEGV crashes during cache cleanup.
+ *
+ * During JVM/static destruction, memory allocators may have been destroyed,
+ * leaving corrupted pointers in cached data structures. Setting this flag
+ * causes clearTADCache() and similar functions to skip tree traversal,
+ * letting the OS safely reclaim memory at process exit instead.
+ *
+ * @param inProgress true to mark shutdown in progress, false otherwise
+ */
+SD_LIB_EXPORT void setTADCacheShutdownInProgress(bool inProgress);
+
+/**
+ * Check if TAD cache shutdown is in progress.
+ * @return true if shutdown is marked as in progress
+ */
+SD_LIB_EXPORT bool isTADCacheShutdownInProgress();
 
 /**
  * Clears all cached shape buffers.
@@ -889,5 +939,69 @@ SD_LIB_EXPORT void generateTADCacheSnapshotDiff(sd::LongType snapshot1, sd::Long
 SD_LIB_EXPORT void clearNDArraySnapshots();
 SD_LIB_EXPORT void clearTADCacheSnapshots();
 
+// ===============================
+// DeallocatorService Lifecycle Tracking
+// Records Java-side deallocation statistics from DeallocatorService
+// to be merged with C++ lifecycle trackers in UnifiedMemoryReporter
+// ===============================
+
+/**
+ * Records a snapshot of DeallocatorService statistics from Java.
+ * Called by Java DeallocatorService to push its time-series tracking data.
+ *
+ * @param totalAllocations Total number of allocations tracked
+ * @param totalDeallocations Total number of deallocations tracked
+ * @param totalBytesAllocated Total bytes allocated
+ * @param totalBytesDeallocated Total bytes deallocated
+ * @param peakLiveCount Peak number of live objects observed
+ * @param peakBytes Peak bytes in use observed
+ *
+ * NOTE: No-op when SD_GCC_FUNCTRACE is not defined.
+ */
+SD_LIB_EXPORT void recordDeallocatorServiceSnapshot(
+    sd::LongType totalAllocations, sd::LongType totalDeallocations,
+    sd::LongType totalBytesAllocated, sd::LongType totalBytesDeallocated,
+    sd::LongType peakLiveCount, sd::LongType peakBytes);
+
+/**
+ * Enables DeallocatorService lifecycle tracking on the C++ side.
+ *
+ * NOTE: No-op when SD_GCC_FUNCTRACE is not defined.
+ */
+SD_LIB_EXPORT void enableDeallocatorServiceTracking();
+
+/**
+ * Disables DeallocatorService lifecycle tracking on the C++ side.
+ *
+ * NOTE: No-op when SD_GCC_FUNCTRACE is not defined.
+ */
+SD_LIB_EXPORT void disableDeallocatorServiceTracking();
+
+/**
+ * Checks if DeallocatorService tracking is enabled.
+ *
+ * @return true if tracking is enabled
+ *
+ * NOTE: Always returns false when SD_GCC_FUNCTRACE is not defined.
+ */
+SD_LIB_EXPORT bool isDeallocatorServiceTrackingEnabled();
+
+/**
+ * Gets the current live count from DeallocatorService tracker.
+ *
+ * @return current live count (allocations - deallocations)
+ *
+ * NOTE: Returns 0 when SD_GCC_FUNCTRACE is not defined.
+ */
+SD_LIB_EXPORT sd::LongType getDeallocatorServiceLiveCount();
+
+/**
+ * Gets the current bytes in use from DeallocatorService tracker.
+ *
+ * @return current bytes in use (allocated - deallocated)
+ *
+ * NOTE: Returns 0 when SD_GCC_FUNCTRACE is not defined.
+ */
+SD_LIB_EXPORT sd::LongType getDeallocatorServiceBytesInUse();
 
 #endif // NATIVEOPS_H

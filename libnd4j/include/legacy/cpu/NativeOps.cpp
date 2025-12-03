@@ -240,7 +240,7 @@ void initializeDevicesAndFunctions() {}
  * Safe to call multiple times - subsequent calls are no-ops.
  */
 void initializeShapeCache() {
-  sd::ConstantShapeHelper::getInstance();
+  sd::ConstantShapeHelper::initializeEarly();
 }
 
 /**

@@ -24,9 +24,11 @@
 #include <system/common.h>
 
 #include <atomic>
+#include <chrono>
 #include <memory>
 #include <sstream>
 #include <string>
+#include <thread>
 
 #include "helpers/ShapeBufferCreatorHelper.h"
 
@@ -35,6 +37,27 @@
 #endif
 
 namespace sd {
+
+void DirectShapeTrie::waitForInitialization() const {
+  if (_initialization_complete.load(std::memory_order_acquire)) {
+    return;
+  }
+
+  int attempts = 0;
+  while (_initialization_in_progress.load(std::memory_order_acquire)) {
+    if (attempts < 10) {
+      std::this_thread::yield();
+    } else {
+      auto delay = std::chrono::microseconds(std::min<int>(500, attempts * 10));
+      std::this_thread::sleep_for(delay);
+    }
+    attempts++;
+  }
+
+  if (!_initialization_complete.load(std::memory_order_acquire)) {
+    THROW_EXCEPTION("DirectShapeTrie initialization did not complete before use");
+  }
+}
 
 void ShapeTrieNode::setBuffer(ConstantShapeBuffer* buf) {
   if (!buf) return;  // Nothing to do if buffer is null
@@ -314,6 +337,8 @@ ConstantShapeBuffer* DirectShapeTrie::createFallbackBuffer(const LongType* shape
 
 // Updated getOrCreate method to ensure it always creates a shape buffer
 ConstantShapeBuffer* DirectShapeTrie::getOrCreate(const LongType* shapeInfo) {
+  waitForInitialization();
+
   if (!shapeInfo) {
     std::string msg = "Null shapeInfo passed to getOrCreate";
     THROW_EXCEPTION(msg.c_str());
@@ -455,6 +480,8 @@ ConstantShapeBuffer* DirectShapeTrie::getOrCreate(const LongType* shapeInfo) {
 }
 
 bool DirectShapeTrie::exists(const LongType* shapeInfo) const {
+  waitForInitialization();
+
   validateShapeInfo(shapeInfo);
   size_t stripeIdx = getStripeIndex(shapeInfo);
 
@@ -568,6 +595,8 @@ ConstantShapeBuffer* DirectShapeTrie::insert(const LongType* shapeInfo, size_t s
 }
 
 void DirectShapeTrie::clearCache() {
+  waitForInitialization();
+
   if (_roots == nullptr || _mutexes == nullptr) {
     return;
   }
@@ -618,6 +647,8 @@ void DirectShapeTrie::countEntriesAndBytes(const ShapeTrieNode* node, LongType& 
 }
 
 LongType DirectShapeTrie::getCachedEntries() const {
+  waitForInitialization();
+
   LongType total_entries = 0;
   LongType total_bytes = 0;
 
@@ -743,6 +774,8 @@ void DirectShapeTrie::buildStringRepresentation(const ShapeTrieNode* node, std::
 }
 
 std::string DirectShapeTrie::toString(int maxDepth, int maxEntries) const {
+  waitForInitialization();
+
   std::stringstream ss;
 
   if (_roots == nullptr || _mutexes == nullptr) {
@@ -795,6 +828,8 @@ std::string DirectShapeTrie::toString(int maxDepth, int maxEntries) const {
 }
 
 void DirectShapeTrie::getCachedPointers(std::unordered_set<void*>& out_pointers) const {
+  waitForInitialization();
+
   if (_roots == nullptr || _mutexes == nullptr) {
     return;
   }
@@ -816,10 +851,11 @@ void DirectShapeTrie::getCachedPointers(std::unordered_set<void*>& out_pointers)
 void DirectShapeTrie::collectCachedPointers(const ShapeTrieNode* node, std::unordered_set<void*>& out_pointers) const {
   if (node == nullptr) return;
 
-  // If this node has a ConstantShapeBuffer, add it to the set
+  // If this node has a ConstantShapeBuffer, add its primary pointer (LongType* shape_info) to the set
+  // This is what ShapeCacheLifecycleTracker uses to track allocations
   ConstantShapeBuffer* buffer = node->buffer();
-  if (buffer != nullptr) {
-    out_pointers.insert(buffer);
+  if (buffer != nullptr && buffer->primary() != nullptr) {
+    out_pointers.insert(buffer->primary());
   }
 
   // Recursively collect from all children

@@ -35,11 +35,17 @@ namespace sd {
 class SD_LIB_EXPORT ConstantShapeHelper {
  private:
   std::mutex _mutex;
-  DirectShapeTrie _shapeTrie;
+ DirectShapeTrie _shapeTrie;
 
   ConstantShapeHelper();
 
  public:
+  /**
+   * Ensure the internal DirectShapeTrie is fully constructed before use.
+   * Safe to call multiple times; subsequent calls are no-ops.
+   */
+  static void initializeEarly();
+
   static ConstantShapeHelper& getInstance();
 
   ~ConstantShapeHelper();

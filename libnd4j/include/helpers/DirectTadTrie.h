@@ -193,6 +193,10 @@ private:
  mutable std::array<MUTEX_TYPE, NUM_STRIPES> _mutexes = {};
  std::array<std::atomic<int>, NUM_STRIPES> _stripeCounts = {};
 
+ // Shutdown guard to prevent crash during JVM shutdown
+ // When set to true, clear() will skip trie traversal to avoid SIGSEGV
+ std::atomic<bool> _shutdownInProgress{false};
+
  // Cache statistics tracking
  mutable std::atomic<LongType> _current_entries{0};
  mutable std::atomic<LongType> _current_bytes{0};
@@ -215,12 +219,17 @@ public:
    }
  }
 
- // Destructor - clean up all cached TAD packs on singleton destruction
- ~DirectTadTrie() {
-   // Clear all TAD packs to prevent memory leaks
-   // This is called when the ConstantTadHelper singleton is destroyed on JVM shutdown
-   clear();
- }
+ // Destructor - DO NOT call clear() here!
+ // During JVM shutdown / static destruction, the order of destruction is undefined.
+ // Memory allocators and other infrastructure may have already been destroyed,
+ // causing corrupted pointers in the trie. Traversing the tree in this state
+ // causes SIGSEGV crashes (e.g., in deleteTadPacksRecursive).
+ //
+ // The OS will reclaim all memory when the process exits anyway, so explicit
+ // cleanup during shutdown is unnecessary and dangerous.
+ //
+ // For explicit cleanup during runtime (e.g., testing), use clear() directly.
+ ~DirectTadTrie() = default;
 
  // Delete copy constructor and assignment
  DirectTadTrie(const DirectTadTrie&) = delete;
@@ -273,8 +282,27 @@ public:
  /**
   * Clear all cached TAD packs to prevent memory leaks during testing.
   * This recreates the root nodes, which will delete all child nodes and their TadPacks.
+  * NOTE: Will return early without action if setShutdownInProgress(true) was called.
   */
  void clear();
+
+ /**
+  * Mark that shutdown is in progress.
+  * When true, clear() will skip tree traversal to avoid SIGSEGV from corrupted memory
+  * during JVM/static destruction.
+  * @param inProgress true to mark shutdown in progress, false otherwise
+  */
+ void setShutdownInProgress(bool inProgress) {
+   _shutdownInProgress.store(inProgress, std::memory_order_release);
+ }
+
+ /**
+  * Check if shutdown is in progress.
+  * @return true if shutdown is marked as in progress
+  */
+ bool isShutdownInProgress() const {
+   return _shutdownInProgress.load(std::memory_order_acquire);
+ }
 
  /**
   * Get the total number of cached TAD pack entries.

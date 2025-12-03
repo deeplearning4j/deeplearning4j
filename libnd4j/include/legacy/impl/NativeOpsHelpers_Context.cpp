@@ -21,6 +21,7 @@
 #include <helpers/ConstantTadHelper.h>
 #include <legacy/NativeOps.h>
 #include <ops/declarable/OpRegistrator.h>
+#include <ops/declarable/OpExecutionLogger.h>
 
 #include "execution/Threads.h"
 #include "helpers/OpTracker.h"
@@ -189,6 +190,8 @@ void setGraphContextInputArray(OpaqueContext* ptr,int index,OpaqueNDArray arr) {
 //to make the typedef work properly.
 void setGraphContextOutputArraysArr(OpaqueContext* ptr, int numArrays,OpaqueNDArrayArr *arr) {
   if (arr == nullptr) THROW_EXCEPTION("setGraphContextOutputArraysArr: Input arrays were null!");
+  if (ptr == nullptr) THROW_EXCEPTION("setGraphContextOutputArraysArr: Context was null!");
+
   for (int i = 0; i < numArrays; i++) {
     if (arr[i] == nullptr) {
       std::string errorMessage;
@@ -197,9 +200,19 @@ void setGraphContextOutputArraysArr(OpaqueContext* ptr, int numArrays,OpaqueNDAr
       errorMessage += " was null!";
       THROW_EXCEPTION(errorMessage.c_str());
     }
-    for (int j = 0; j < numArrays; j++) {
-      ptr->setOutputArray(j, *arr[j], false);
+
+    // Dereference the OpaqueNDArrayArr to get the OpaqueNDArray (NDArray*)
+    sd::NDArray* ndarray = *arr[i];
+    if (ndarray == nullptr) {
+      std::string errorMessage;
+      errorMessage += "setGraphContextOutputArraysArr: Dereferenced NDArray at index ";
+      errorMessage += std::to_string(i);
+      errorMessage += " was null!";
+      THROW_EXCEPTION(errorMessage.c_str());
     }
+
+    // Set the output array at the correct index (was using wrong loop variable before)
+    ptr->setOutputArray(i, ndarray, false);
   }
 }
 
@@ -380,29 +393,59 @@ OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType
 #ifdef __cpp_exceptions
   try {
     auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
+
+#if defined(SD_GCC_FUNCTRACE)
+    // Set op name BEFORE calculateOutputShape so shape allocations are tagged
+    if (op->getOpName() != nullptr) {
+        sd::ops::OpExecutionLogger::setCurrentOpName(*op->getOpName());
+    }
+#endif
+
     sd::ShapeList inShapes;
 
     for (size_t e = 0; e < context->width(); e++) {
       if (context->array(e) == nullptr) {
         std::string errorMessage = "Input array at index " + std::to_string(e) + " was null!";
+#if defined(SD_GCC_FUNCTRACE)
+        sd::ops::OpExecutionLogger::clearCurrentOpName();
+#endif
         THROW_EXCEPTION(errorMessage.c_str());
       }
       inShapes.push_back(context->array(e)->shapeInfo());
     }
 
     auto shapeList = op->calculateOutputShape(&inShapes, *context);
+
+#if defined(SD_GCC_FUNCTRACE)
+    sd::ops::OpExecutionLogger::clearCurrentOpName();
+#endif
+
     return shapeList;
   } catch (std::exception &e) {
+#if defined(SD_GCC_FUNCTRACE)
+    sd::ops::OpExecutionLogger::clearCurrentOpName();
+#endif
     safeSetErrorContext(1, e.what());
     return nullptr;
   }
 #else
   auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
+
+#if defined(SD_GCC_FUNCTRACE)
+  // Set op name BEFORE calculateOutputShape so shape allocations are tagged
+  if (op->getOpName() != nullptr) {
+      sd::ops::OpExecutionLogger::setCurrentOpName(*op->getOpName());
+  }
+#endif
+
   sd::ShapeList inShapes;
 
   for (size_t e = 0; e < context->width(); e++) {
     if (context->array(e) == nullptr) {
       std::string errorMessage = "Input array at index " + std::to_string(e) + " was null!";
+#if defined(SD_GCC_FUNCTRACE)
+      sd::ops::OpExecutionLogger::clearCurrentOpName();
+#endif
       safeSetErrorContext(1, errorMessage.c_str());
       return nullptr;
     }
@@ -410,6 +453,11 @@ OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType
   }
 
   auto shapeList = op->calculateOutputShape(&inShapes, *context);
+
+#if defined(SD_GCC_FUNCTRACE)
+  sd::ops::OpExecutionLogger::clearCurrentOpName();
+#endif
+
   return shapeList;
 #endif
 }

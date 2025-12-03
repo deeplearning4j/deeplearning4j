@@ -625,7 +625,11 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
       THROW_EXCEPTION(errorMessage.c_str());
     }
 
-    ops::helpers::bgemm(vA, vB, vC, alphaArr, betaArr, transXResolve ? 1 : 0, transYResolve ? 1 : 0, M, N, K, lda, ldb, ldc);
+    // Use correct CBLAS transpose constants: 111=CblasNoTrans, 112=CblasTrans
+    // Passing 0/1 instead causes "illegal value" errors in SGEMM_BATCH which produce NaN outputs
+    int transABlas = transXResolve ? 112 : 111;
+    int transBBlas = transYResolve ? 112 : 111;
+    ops::helpers::bgemm(vA, vB, vC, alphaArr, betaArr, transABlas, transBBlas, M, N, K, lda, ldb, ldc);
     delete alphaArr;
     delete betaArr;
 

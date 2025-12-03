@@ -349,6 +349,9 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
             if (array.closeable()) {
                 array.close();
             }
+            // CRITICAL FIX: Must return after closing UTF8 arrays!
+            // Previously fell through to add closed array to LRU cache, causing double-free
+            return;
         } else if (currentCacheSize.get() + thisBytes > maxCacheBytes.get()) {
             if (thisBytes > maxCacheBytes.get()) {
 
@@ -383,10 +386,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
             // OK to cache
             cacheArray(array);
         }
-
-        // Store in LRU cache for "last used" removal if we exceed cache size
-        lruCacheForThread.add(array.getId());
-        lruCacheValues.put(array.getId(), array);
+        // NOTE: Removed duplicate LRU cache additions - cacheArray() already handles this
     }
 
     private void cacheArray(INDArray array) {

@@ -278,6 +278,14 @@ static void deleteTadPacksRecursive(TadTrieNode* node, int& deletedCount) {
 }
 
 void DirectTadTrie::clear() {
+  // CRITICAL: Skip cleanup during shutdown to avoid SIGSEGV from corrupted memory
+  // During JVM/static destruction, memory allocators may have been destroyed,
+  // leaving corrupted pointers in the trie. Traversing the tree in this state
+  // causes crashes in deleteTadPacksRecursive.
+  if (_shutdownInProgress.load(std::memory_order_acquire)) {
+    return;  // Let the OS reclaim memory at exit - this is safe
+  }
+
   // Clear all stripes
   // NOTE: Removed #ifndef __JAVACPP_HACK__ guard to fix TAD cache memory leak
   // The guard was preventing cache cleanup when JavaCPP is used (production mode)

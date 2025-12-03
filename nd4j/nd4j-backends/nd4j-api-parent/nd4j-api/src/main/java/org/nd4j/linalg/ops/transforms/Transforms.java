@@ -146,10 +146,24 @@ public class Transforms {
     public static INDArray cross(INDArray x, INDArray y) {
         Cross c = new Cross(x, y, null);
         List<DataBuffer> shape = c.calculateOutputShape();
-        INDArray out = Nd4j.create(shape.get(0));
-        c.addOutputArgument(out);
-        Nd4j.getExecutioner().exec(c);
-        return out;
+        INDArray out = null;
+        boolean firstBufferUsed = false;
+        try {
+            out = Nd4j.create(shape.get(0));
+            firstBufferUsed = true;
+            c.addOutputArgument(out);
+            Nd4j.getExecutioner().exec(c);
+            return out;
+        } finally {
+            // Clean up unused shape buffers to prevent memory leak
+            int startIndex = firstBufferUsed ? 1 : 0;
+            for (int i = startIndex; i < shape.size(); i++) {
+                DataBuffer db = shape.get(i);
+                if (db != null) {
+                    db.close();
+                }
+            }
+        }
     }
 
     /**

@@ -619,10 +619,13 @@ void markGraphContextInplace(Context *ptr, bool reallyInplace) { ptr->markInplac
 //note here for javacpp mapping we have to use this odd type alias as a pointer
 //to make the typedef work properly.
 void setGraphContextInputArraysArr(OpaqueContext* ptr, int numArrays,OpaqueNDArrayArr *arr) {
-  if(arr == nullptr)
+  if (arr == nullptr)
     THROW_EXCEPTION("setGraphContextInputArraysArr: Input arrays were null!");
+  if (ptr == nullptr)
+    THROW_EXCEPTION("setGraphContextInputArraysArr: Context was null!");
+
   for (int i = 0; i < numArrays; i++) {
-    if(arr[i] == nullptr) {
+    if (arr[i] == nullptr) {
       std::string errorMessage;
       errorMessage += "setGraphContextInputArraysArr: Input array at index ";
       errorMessage += std::to_string(i);
@@ -630,8 +633,17 @@ void setGraphContextInputArraysArr(OpaqueContext* ptr, int numArrays,OpaqueNDArr
       THROW_EXCEPTION(errorMessage.c_str());
     }
 
-    OpaqueNDArray &ref = *arr[i];
-    ptr->setInputArray(i, ref, false);
+    // Dereference the OpaqueNDArrayArr to get the OpaqueNDArray (NDArray*)
+    sd::NDArray* ndarray = *arr[i];
+    if (ndarray == nullptr) {
+      std::string errorMessage;
+      errorMessage += "setGraphContextInputArraysArr: Dereferenced NDArray at index ";
+      errorMessage += std::to_string(i);
+      errorMessage += " was null!";
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+
+    ptr->setInputArray(i, ndarray, false);
   }
 }
 
