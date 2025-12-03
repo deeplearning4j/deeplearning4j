@@ -67,7 +67,7 @@ inline bool evaluateCondition(NDArray* condition, int index) {
 #endif
 #if defined(HAS_UNSIGNEDLONG)
    case DataType::UINT64:
-     return condition->e<uint64_t>(index) != 0;
+     return condition->e<sd::UnsignedLong>(index) != 0;
 #endif
 #if defined(HAS_FLOAT16)
    case DataType::HALF:
@@ -88,12 +88,16 @@ inline bool evaluateCondition(NDArray* condition, int index) {
    default:
      // Fallback: try to interpret as int32 and check if non-zero
 #if defined(HAS_INT32)
+#ifdef __cpp_exceptions
      try {
        return condition->e<int32_t>(index) != 0;
      } catch (...) {
        // Last resort: assume false to maintain safe behavior
        return false;
      }
+#else
+     return condition->e<int32_t>(index) != 0;
+#endif
 #else
      // If INT32 is not available, return false as safe default
      return false;
@@ -106,10 +110,10 @@ void performBroadcastedWhere(NDArray* condition, NDArray* x, NDArray* y, NDArray
  // We'll process each element of the output array z
  // and determine the appropriate indices for condition, x, and y based on broadcasting rules
 
- auto zShape = z->getShapeAsVector();
- auto condShape = condition->getShapeAsVector();
- auto xShape = x->getShapeAsVector();
- auto yShape = y->getShapeAsVector();
+ auto* zShape = z->getShapeAsVector();
+ auto* condShape = condition->getShapeAsVector();
+ auto* xShape = x->getShapeAsVector();
+ auto* yShape = y->getShapeAsVector();
 
  // For each element in the output array
  for (LongType i = 0; i < z->lengthOf(); i++) {
@@ -145,21 +149,33 @@ void performBroadcastedWhere(NDArray* condition, NDArray* x, NDArray* y, NDArray
      return linearIndex;
    };
 
-   LongType condIndex = condition->lengthOf() == 1 ? 0 : getLinearIndex(zIndices, condShape, condition);
-   LongType xIndex = x->lengthOf() == 1 ? 0 : getLinearIndex(zIndices, xShape, x);
-   LongType yIndex = y->lengthOf() == 1 ? 0 : getLinearIndex(zIndices, yShape, y);
+   LongType condIndex = condition->lengthOf() == 1 ? 0 : getLinearIndex(zIndices, *condShape, condition);
+   LongType xIndex = x->lengthOf() == 1 ? 0 : getLinearIndex(zIndices, *xShape, x);
+   LongType yIndex = y->lengthOf() == 1 ? 0 : getLinearIndex(zIndices, *yShape, y);
 
    // Apply the where logic
    if (z->isR()) {
+#ifdef HAS_DOUBLE
      auto result = evaluateCondition(condition, condIndex) ?
                                                            x->e<double>(xIndex) : y->e<double>(yIndex);
+#elif defined(HAS_FLOAT32)
+     auto result = evaluateCondition(condition, condIndex) ?
+                                                           x->e<float>(xIndex) : y->e<float>(yIndex);
+#else
+#error "No floating-point type available for where operation"
+#endif
      z->p(i, result);
-   } else {
+   } else{
      auto result = evaluateCondition(condition, condIndex) ?
                                                            x->e<LongType>(xIndex) : y->e<LongType>(yIndex);
      z->p(i, result);
    }
  }
+
+ delete zShape;
+ delete condShape;
+ delete xShape;
+ delete yShape;
 }
 
 CUSTOM_OP_IMPL(Where, 1, 1, false, 0, 0) {
@@ -181,7 +197,13 @@ CUSTOM_OP_IMPL(Where, 1, 1, false, 0, 0) {
      // FIXME: for perf it might be better to issue memcpy here, and fill only mismatched values from either X or Y
      for (int e = 0; e < condition->lengthOf(); e++) {
        if (z->isR()) {
+#ifdef HAS_DOUBLE
          auto r = !evaluateCondition(condition, e) ? y->e<double>(e) : x->e<double>(e);
+#elif defined(HAS_FLOAT32)
+         auto r = !evaluateCondition(condition, e) ? y->e<float>(e) : x->e<float>(e);
+#else
+#error "No floating-point type available for where operation"
+#endif
          z->p(e, r);
        } else {
          auto r = !evaluateCondition(condition, e) ? y->e<LongType>(e) : x->e<LongType>(e);
@@ -290,6 +312,7 @@ DECLARE_SHAPE_FN(Where) {
 #endif
 
      theNewShape = CONSTANT(newShape);
+     RELEASE(newShape, block.getWorkspace());
    } else {
 #if defined(HAS_LONG)
      theNewShape = ConstantShapeHelper::getInstance().emptyShapeInfo(INT64);
