@@ -493,6 +493,8 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                 }
 
                 //override output variables to ensure data types, shapes and output arrays are properly computed
+                // NOTE: Shape buffers returned by calculateOutputShape() are CACHED by ConstantShapeHelper
+                // and must NOT be closed here - they are shared across operations
                 List<DataBuffer> longShapeDescriptors;
                 longShapeDescriptors = Nd4j.getExecutioner().calculateOutputShape(this);
 
@@ -620,6 +622,8 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
             // Most importantly: try to calculate output shape
             // This is where the "Dimensions array is null" error would occur
+            // NOTE: Shape buffers returned by calculateOutputShape() are CACHED by ConstantShapeHelper
+            // and must NOT be closed here - they are shared across operations
             try {
                 List<DataBuffer> shapes = calculateOutputShape();
                 return shapes != null && !shapes.isEmpty();
