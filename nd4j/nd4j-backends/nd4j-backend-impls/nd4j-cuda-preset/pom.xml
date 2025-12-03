@@ -31,7 +31,7 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>nd4j-cuda-12.3-preset</artifactId>
+    <artifactId>nd4j-cuda-preset</artifactId>
 
     <name>nd4j-cuda-preset</name>
 
