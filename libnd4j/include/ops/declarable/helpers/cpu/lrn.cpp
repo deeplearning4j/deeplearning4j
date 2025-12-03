@@ -35,9 +35,9 @@ static sd::Status lrnFunctor_(sd::graph::Context& block, NDArray* input, NDArray
 
   const int rank = input->rankOf();
 
-  TadPack *inTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(),
+  auto inTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(),
                                                                              rank - 1);
-  TadPack *outTadPack;
+  std::shared_ptr<TadPack> outTadPack;
 
   if (shape::haveSameShapeAndStrides(input->shapeInfo(), output->shapeInfo()))
     outTadPack = inTadPack;
@@ -152,9 +152,9 @@ static void lrnBP_(NDArray& input, NDArray& gradO, NDArray& gradI, const int dep
                    const float alpha, const float beta) {
   const int rank = input.rankOf();
 
-  TadPack *inTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(),
+  auto inTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(),
                                                                              rank - 1);
-  TadPack *gradITadPack;
+  std::shared_ptr<TadPack> gradITadPack;
 
   if (shape::haveSameShapeAndStrides(input.shapeInfo(), gradI.shapeInfo()))
     gradITadPack = inTadPack;
