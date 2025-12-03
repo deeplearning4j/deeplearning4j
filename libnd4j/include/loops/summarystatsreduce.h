@@ -231,7 +231,7 @@ class SummaryStatsReduce {
   template <typename OpType>
   static SD_DEVICE void transform(void * dx, sd::LongType * xShapeInfo, void* extraParams, void* vz,
                                   sd::LongType * zShapeInfo, sd::LongType* dimension,
-                                  long long int dimensionLength,
+                                  sd::LongType dimensionLength,
                                   int postProcessOrNot, sd::LongType* allocationBuffer, void* reductionBuffer,
                                   sd::LongType * tadOnlyShapeInfo, sd::LongType * tadOffsets);
 
@@ -261,7 +261,7 @@ class SummaryStatsReduce {
 
   static void exec(int opNum, bool biasCorrected,  void *x,  sd::LongType *xShapeInfo, void *extraParams,
                    void *vz,  sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension,
-                   long long int dimensionLength);
+                   sd::LongType dimensionLength);
 
   template <typename OpType>
   static Z execScalar(bool biasCorrected,  void *x,  sd::LongType *xShapeInfo, void *extraParams);

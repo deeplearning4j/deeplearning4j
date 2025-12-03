@@ -163,7 +163,7 @@ class  Reduce3 {
 
   static void exec(int opNum, const void *vx, const sd::LongType *xShapeInfo, void *extraParamsVals, const void *vy,
                    const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo, sd::LongType *dimension,
-                   long long int dimensionLength, sd::LongType start, sd::LongType stop);
+                   sd::LongType dimensionLength, sd::LongType start, sd::LongType stop);
 
   static void exec(int opNum, const void *vx, const sd::LongType *xShapeInfo, void *extraParamsVals, const void *vy,
                    const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo, sd::LongType *dimension,
