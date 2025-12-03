@@ -170,13 +170,28 @@ public abstract class DifferentialFunction {
 
 
     protected void recordCreation() {
-        if(Nd4j.getEnvironment().isDebug() || Nd4j.getEnvironment().isVerbose() ||
-        Nd4j.getEnvironment().isFuncTracePrintJavaOnly()) {
-            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-            this.creationLocation = StackTraceUtils.pointOfInvocation(stackTrace);
-            this.creationPointofOrigin = StackTraceUtils.pointOfOrigin(stackTrace);
-            this.sameDiffCalls = StackTraceUtils.callsFromClass(stackTrace, SameDiff.class.getName());
-            creationCallStack = stackTrace;
+        // Guard against circular initialization: DifferentialFunctionClassHolder.initInstance()
+        // is called during Nd4j initialization before the backend is fully set up.
+        //
+        // while Nd4j class is being initialized causes circular dependency issues and crashes.
+        //
+        // Instead, we use try-catch to safely handle the case where Nd4j is not yet initialized.
+        // If Nd4j.getEnvironment() throws any exception (NoClassDefFoundError, NullPointerException,
+        // ExceptionInInitializerError, etc.), it means Nd4j is not ready, so we skip recording.
+        try {
+            if(Nd4j.getEnvironment().isDebug() || Nd4j.getEnvironment().isVerbose() ||
+            Nd4j.getEnvironment().isFuncTracePrintJavaOnly()) {
+                StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+                this.creationLocation = StackTraceUtils.pointOfInvocation(stackTrace);
+                this.creationPointofOrigin = StackTraceUtils.pointOfOrigin(stackTrace);
+                this.sameDiffCalls = StackTraceUtils.callsFromClass(stackTrace, SameDiff.class.getName());
+                creationCallStack = stackTrace;
+            }
+        } catch (Throwable t) {
+            // Nd4j is not fully initialized yet - skip recording.
+            // This is expected during DifferentialFunctionClassHolder.initInstance() which
+            // happens during Nd4j static initialization.
+            return;
         }
     }
 
