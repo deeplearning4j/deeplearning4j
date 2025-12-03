@@ -175,9 +175,9 @@
 namespace sd {
 
 using Pointer = void*;
-using LongType = long long;
+using LongType = int64_t;
 using UnsignedLong = uint64_t;
-using Unsigned = unsigned int;
+using Unsigned = uint32_t;
 
 
 
@@ -243,11 +243,12 @@ struct ErrorResult {
 #if defined(SD_GCC_FUNCTRACE)
 #include <exceptions/backward.hpp>
 using namespace backward;
-void throwException(const char* exceptionMessage);
-#else
-void throwException(const char* exceptionMessage);
-
 #endif
+
+// Exception handling functions (exported for JavaCPP visibility)
+SD_LIB_EXPORT void throwException(const char* exceptionMessage);
+SD_LIB_EXPORT void safeSetErrorContext(int errorCode, const char* errorMessage);
+
 #define THROW_EXCEPTION(exceptionMessage) throwException(exceptionMessage);
 #endif
 
