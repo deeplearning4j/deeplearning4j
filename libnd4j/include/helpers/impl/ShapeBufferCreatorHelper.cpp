@@ -19,6 +19,7 @@
  */
 
 #include <helpers/ShapeBufferCreatorHelper.h>
+#include <helpers/ShapeBufferPlatformHelper.h>
 #include <helpers/cpu/CpuShapeBufferCreator.h>
 #include <stdexcept>
 
@@ -28,12 +29,24 @@ namespace sd {
 ShapeBufferCreator* ShapeBufferCreatorHelper::currentCreator_ = nullptr;
 
 ShapeBufferCreator& ShapeBufferCreatorHelper::getCurrentCreator() {
+    // This prevents SIGSEGV crash when getCurrentCreator() is called before initialization
+    if (currentCreator_ == nullptr) {
+        // Trigger platform initialization which will call setCurrentCreator()
+        ShapeBufferPlatformHelper::initialize();
+
+        // Double-check after initialization attempt
+        if (currentCreator_ == nullptr) {
+            THROW_EXCEPTION("FATAL: ShapeBufferCreator not initialized! "
+                          "ShapeBufferPlatformHelper::initialize() failed to set currentCreator_. "
+                          "This indicates a critical initialization order bug.");
+        }
+    }
     return *currentCreator_;
 }
 
 void ShapeBufferCreatorHelper::setCurrentCreator(ShapeBufferCreator* creator) {
     if (creator == nullptr) {
-        throw std::invalid_argument("ShapeBufferCreator cannot be null");
+        THROW_EXCEPTION("ShapeBufferCreator cannot be null");
     }
     currentCreator_ = creator;
 }
