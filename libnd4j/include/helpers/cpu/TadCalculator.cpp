@@ -8,7 +8,14 @@ namespace sd {
 TadCalculator::TadCalculator(LongType* originalShape)
     : _originalShape(originalShape), _numTads(0), _tadShape(nullptr), _tadOffsets(nullptr) {}
 
-TadCalculator::~TadCalculator() {}
+TadCalculator::~TadCalculator() {
+  // Only delete _tadOffsets if we still own it (hasn't been released)
+  if (_tadOffsets != nullptr) {
+    delete _tadOffsets;
+    _tadOffsets = nullptr;
+  }
+  // _tadShape comes from ConstantShapeHelper cache - DON'T delete
+}
 
 void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
   if (!_originalShape) {
@@ -47,7 +54,7 @@ void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
     for (LongType i = 0; i < totalElements; ++i) {
       offsets[i] = i;
     }
-    
+
     _tadShape = scalarShapeBuffer;
     _tadOffsets = new ConstantOffsetsBuffer(oPtr);
     _numTads = totalElements;
