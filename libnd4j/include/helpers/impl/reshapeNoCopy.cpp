@@ -130,11 +130,13 @@ bool reshapeNoAlloc(const sd::LongType* inShape,
 
   shape::setShape(outShape, const_cast<sd::LongType*>(newShape.data()));
   shape::setStride(outShape, newStrides.data());
-  
-  // NOTE: Data type was already set at the beginning of the function
-  // No need to set it again here
-  
+
+  // Set order first
   shape::setOrder(outShape, order);
+
+  // Data type was set early (lines 28-32) but we set it again here as a defensive measure
+  // to ensure it's preserved even if other shape operations modified the extra field
+  ArrayOptions::setDataType(outShape, ArrayOptions::dataType(inShape));
 
   return true;
 }

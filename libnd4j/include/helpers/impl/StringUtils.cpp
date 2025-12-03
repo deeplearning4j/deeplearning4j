@@ -105,15 +105,15 @@ void StringUtils::broadcastStringAssign(NDArray* x, NDArray* z) {
   std::vector<LongType> zeroVec = {0};
   std::vector<LongType> *restDims = ShapeUtils::evalDimsToExclude(x->rankOf(), 1, zeroVec.data());
 
-  auto xTensors = xCasted.allTensorsAlongDimension(*restDims);
+  auto xTensors = xCasted->allTensorsAlongDimension(*restDims);
   auto zTensors = z->allTensorsAlongDimension(*restDims);
 
   delete restDims;
 
-  if (xCasted.isScalar()) {
+  if (xCasted->isScalar()) {
     for (int e = 0; e < zTensors.size(); e++) {
       for (int f = 0; f < zTensors.at(e)->lengthOf(); f++) {
-        setValueForDifferentDataType(zTensors.at(e), f, &xCasted, zType);
+        setValueForDifferentDataType(zTensors.at(e), f, xCasted, zType);
       }
     }
   } else {
@@ -248,7 +248,7 @@ LongType StringUtils::countSubarrays(const void* haystack, LongType haystackLeng
 
 LongType StringUtils::byteLength(NDArray& array) {
   if (!array.isS())
-    throw datatype_exception::build("StringUtils::byteLength expects one of String types;", array.dataType());
+    THROW_EXCEPTION(datatype_exception::build("StringUtils::byteLength expects one of String types;", array.dataType()).what());
 
   auto buffer = array.bufferAsT<LongType>();
   return buffer[array.lengthOf()];
