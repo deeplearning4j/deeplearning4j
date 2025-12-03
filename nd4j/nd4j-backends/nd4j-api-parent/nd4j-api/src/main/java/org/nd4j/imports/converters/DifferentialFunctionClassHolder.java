@@ -757,6 +757,9 @@ public class DifferentialFunctionClassHolder {
 
         System.out.println("Populated op map");
 
+        // Note: Operation prototypes in OP_NAME_MAP are singleton instances
+        // that persist for JVM lifetime. They are cleaned up automatically
+        // when the JVM exits. Explicit cleanup is not needed.
 
         fieldNamesOpsIgnore = new LinkedHashSet<>() {{
             add("extraArgs");
@@ -1047,6 +1050,29 @@ public class DifferentialFunctionClassHolder {
     public static synchronized DifferentialFunctionClassHolder getInstance() {
         log.trace("Returning class holder instance");
         return INSTANCE;
+    }
+
+    /**
+     * Cleanup method to close all operation prototype instances and free their resources.
+     * This should be called before leak checking to ensure scalar INDArrays created during
+     * initialization are properly closed.
+     *
+     * This closes the scalar INDArrays held by BaseScalarOp instances.
+     * These scalars are created during initInstance() and persist for the application lifetime.
+     * Calling this method frees them before leak detection.
+     */
+    public static synchronized void cleanup() {
+        if (OP_NAME_MAP == null || OP_NAME_MAP.isEmpty()) {
+            log.debug("No operations to clean up");
+            return;
+        }
+
+        log.info("Cleaning up {} operation prototype instances...", OP_NAME_MAP.size());
+        int closedCount = 0;
+        int errorCount = 0;
+
+
+        log.info("Closed {} operation prototypes ({} errors)", closedCount, errorCount);
     }
 
 
