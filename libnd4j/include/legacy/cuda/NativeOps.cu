@@ -33,9 +33,13 @@
 #include <loops/scalar.h>
 #include <loops/transform_any.h>
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/OpExecutionLogger.h>
+#include <graph/OpContextLifecycleTracker.h>
 #include <ops/specials_cuda.h>
 #include <system/buffer.h>
 #include <helpers/ConstantHelper.h>
+#include <helpers/ConstantShapeHelper.h>
+#include <helpers/ConstantTadHelper.h>
 
 
 #include <curand.h>
@@ -98,6 +102,15 @@ sd::Status execCustomOp2(sd::Pointer *extraPointers, sd::LongType  hash, Context
       throw std::invalid_argument("Operation not found for the given hash.");
     }
 
+#if defined(SD_GCC_FUNCTRACE)
+    // Set op name BEFORE execute() so allocations during execution are tagged
+    if (op->getOpName() != nullptr) {
+        sd::ops::OpExecutionLogger::setCurrentOpName(*op->getOpName());
+        // Also update the already-tracked context with the op name
+        sd::graph::OpContextLifecycleTracker::getInstance().updateContextOpName(opContext, *op->getOpName());
+    }
+#endif
+
     // Execute the custom operation with the provided context
     auto result = op->execute(opContext);
 
@@ -120,9 +133,16 @@ sd::Status execCustomOp2(sd::Pointer *extraPointers, sd::LongType  hash, Context
       if (!v->isEmpty()) v->syncToDevice();
     }
 
+#if defined(SD_GCC_FUNCTRACE)
+    sd::ops::OpExecutionLogger::clearCurrentOpName();
+#endif
+
     return result;
   }
   catch (std::exception &e) {
+#if defined(SD_GCC_FUNCTRACE)
+    sd::ops::OpExecutionLogger::clearCurrentOpName();
+#endif
     // Handle exceptions by setting error codes and messages
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -250,7 +270,7 @@ void printDeviceBuffer(OpaqueDataBuffer *buffer, sd::LongType offset) {
   }
 
   auto xType = buffer->dataBuffer()->getDataType();
-  BUILD_SINGLE_SELECTOR(xType, _printHostBuffer,(buffer,offset),SD_COMMON_TYPES_ALL);
+  BUILD_SINGLE_SELECTOR(xType, _printHostBuffer,(buffer,offset),SD_COMMON_TYPES);
 
 
 }
@@ -275,7 +295,7 @@ void printDeviceBuffer(OpaqueDataBuffer *buffer) {
   } else {
     sd_printf("Device pointer address: none\n",0);
   }
-  BUILD_SINGLE_SELECTOR(xType, _printDeviceBuffer,(buffer),SD_COMMON_TYPES_ALL);
+  BUILD_SINGLE_SELECTOR(xType, _printDeviceBuffer,(buffer),SD_COMMON_TYPES);
 
 
   if(buffer->primary() != nullptr) {
@@ -1100,6 +1120,28 @@ void initializeDevicesAndFunctions() {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
+}
+
+/**
+ * Initialize the shape cache early to prevent race conditions during static initialization.
+ * This ensures ConstantShapeHelper and its internal DirectShapeTrie are fully initialized
+ * before any multi-threaded access occurs.
+ *
+ * Safe to call multiple times - subsequent calls are no-ops.
+ */
+void initializeShapeCache() {
+  sd::ConstantShapeHelper::getInstance();
+}
+
+/**
+ * Initialize the TAD (Tensor-Along-Dimension) cache early to prevent race conditions.
+ * This ensures ConstantTadHelper and its internal DirectTadTrie are fully initialized
+ * before any multi-threaded access occurs.
+ *
+ * Safe to call multiple times - subsequent calls are no-ops.
+ */
+void initializeTadCache() {
+  sd::ConstantTadHelper::getInstance();
 }
 
 void initializeFunctions(sd::Pointer *functions) { sd::BlasHelper::getInstance().initializeDeviceFunctions(functions);
