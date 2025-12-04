@@ -53,7 +53,7 @@ static void ismax_(LaunchContext* context, NDArray* input, NDArray* output,
      * In case of vector-input for IsMax, it just turns into IndexReduce call + subsequent filler call
      */
     auto indexMax = input->applyIndexReduce(indexreduce::IndexMax, &dimensions);
-    auto targetIdx = indexMax.e<LongType>(0);
+    auto targetIdx = indexMax->e<LongType>(0);
 
     dim3 launchDims = getLaunchDims("ismaxFill");
     BUILD_SINGLE_SELECTOR(
@@ -63,6 +63,7 @@ static void ismax_(LaunchContext* context, NDArray* input, NDArray* output,
         SD_COMMON_TYPES);
     manager.synchronize();
 
+    delete indexMax;
   } else {
     LongType* hostYShapeInfo = nullptr;
     LongType* hostTShapeInfo = nullptr;
@@ -82,12 +83,14 @@ static void ismax_(LaunchContext* context, NDArray* input, NDArray* output,
     // at this point, all IMax indexes are gathered, and we execute filler
     BUILD_SINGLE_SELECTOR(
         zType, fillDimensionalIsMaxGeneric,
-        (launchDims, stream, indexMaxArr.specialBuffer(), output->specialBuffer(),
+        (launchDims, stream, indexMaxArr->specialBuffer(), output->specialBuffer(),
          const_cast<sd::LongType *>(output->specialShapeInfo()),
          const_cast<sd::LongType *>(packZ->specialShapeInfo()),
          dimension, dimensionLength, const_cast<sd::LongType *>(packZ->specialOffsets())),
         SD_COMMON_TYPES);
     manager.synchronize();
+
+    delete indexMaxArr;
   }
 }
 

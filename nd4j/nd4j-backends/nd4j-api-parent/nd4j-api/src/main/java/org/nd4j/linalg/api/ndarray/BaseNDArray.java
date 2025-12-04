@@ -6432,6 +6432,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         clearOpaqueNDArray();
         data.close();
 
+        // CRITICAL: Close shape info buffer if it's not a cached constant
+        // Shape buffers from DirectShapeInfoProvider are cached and marked constant up to MAX_ENTRIES (1000).
+        // After that, uncached shape buffers are returned that need to be deallocated to prevent memory leaks.
+        if (shapeInfoDataBuffer != null && shapeInfoDataBuffer.closeable()) {
+            try {
+                shapeInfoDataBuffer.close();
+            } catch (Exception e) {
+                // Ignore - may already be closed or shared
+            }
+        }
+
         released = true;
     }
 

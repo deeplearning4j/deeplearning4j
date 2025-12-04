@@ -547,8 +547,8 @@ SD_LIB_EXPORT void clearTADCache();
 SD_LIB_EXPORT void clearShapeCache();
 SD_LIB_EXPORT void checkAndCleanupCaches();
 
-// Include comprehensive leak analysis implementation
-#include "../../../generate_leak_analysis.cpp"
+// Note: ComprehensiveLeakAnalyzer is forward declared but not yet implemented
+// The friend declarations in lifecycle tracker classes allow for future extension
 
 /**
  * Initializes lifecycle crash handlers AFTER JVM is fully initialized.
@@ -578,12 +578,12 @@ const char* getNDArrayLifecycleStats() {
 
     std::ostringstream json;
     json << "{\n";
-    json << "  \"total_allocations\": " << stats.total_allocs << ",\n";
-    json << "  \"total_deallocations\": " << stats.total_deallocs << ",\n";
-    json << "  \"current_live\": " << stats.current_live << ",\n";
-    json << "  \"current_bytes\": " << stats.current_bytes << ",\n";
-    json << "  \"peak_bytes\": " << stats.peak_bytes << ",\n";
-    json << "  \"double_frees\": " << stats.double_frees << "\n";
+    json << "  \"total_allocations\": " << stats.totalAllocations << ",\n";
+    json << "  \"total_deallocations\": " << stats.totalDeallocations << ",\n";
+    json << "  \"current_live\": " << stats.currentLive << ",\n";
+    json << "  \"total_bytes_allocated\": " << stats.totalBytesAllocated << ",\n";
+    json << "  \"total_bytes_deallocated\": " << stats.totalBytesDeallocated << ",\n";
+    json << "  \"peak_live\": " << stats.peakLive << "\n";
     json << "}";
 
     std::string result = json.str();
@@ -594,27 +594,19 @@ const char* getNDArrayLifecycleStats() {
 
 /**
  * Converts DataBuffer lifecycle statistics to JSON format.
+ * Note: DataBufferStats is a unified structure, not separated by buffer type.
  */
 const char* getDataBufferLifecycleStats() {
     auto stats = DataBufferLifecycleTracker::getInstance().getStats();
 
     std::ostringstream json;
     json << "{\n";
-    json << "  \"primary\": {\n";
-    json << "    \"total_allocations\": " << stats.total_primary_allocs << ",\n";
-    json << "    \"total_deallocations\": " << stats.total_primary_deallocs << ",\n";
-    json << "    \"current_live\": " << stats.current_live_primary << ",\n";
-    json << "    \"current_bytes\": " << stats.current_primary_bytes << ",\n";
-    json << "    \"peak_bytes\": " << stats.peak_primary_bytes << "\n";
-    json << "  },\n";
-    json << "  \"special\": {\n";
-    json << "    \"total_allocations\": " << stats.total_special_allocs << ",\n";
-    json << "    \"total_deallocations\": " << stats.total_special_deallocs << ",\n";
-    json << "    \"current_live\": " << stats.current_live_special << ",\n";
-    json << "    \"current_bytes\": " << stats.current_special_bytes << ",\n";
-    json << "    \"peak_bytes\": " << stats.peak_special_bytes << "\n";
-    json << "  },\n";
-    json << "  \"double_frees\": " << stats.double_frees << "\n";
+    json << "  \"total_allocations\": " << stats.totalAllocations << ",\n";
+    json << "  \"total_deallocations\": " << stats.totalDeallocations << ",\n";
+    json << "  \"current_live\": " << stats.currentLive << ",\n";
+    json << "  \"peak_live\": " << stats.peakLive << ",\n";
+    json << "  \"total_bytes_allocated\": " << stats.totalBytesAllocated << ",\n";
+    json << "  \"total_bytes_deallocated\": " << stats.totalBytesDeallocated << "\n";
     json << "}";
 
     std::string result = json.str();
@@ -657,7 +649,7 @@ void generateDataBufferAllocationFlamegraph(const char* outputPath, int bufferTy
 
     std::string path(outputPath);
     BufferType type = (bufferType == 0) ? BufferType::PRIMARY : BufferType::SPECIAL;
-    DataBufferLifecycleTracker::getInstance().generateFlamegraph(path, type);
+    DataBufferLifecycleTracker::getInstance().generateFlamegraph(path, static_cast<int>(type));
 }
 
 /**
@@ -670,7 +662,7 @@ void generateDataBufferDeallocationFlamegraph(const char* outputPath, int buffer
 
     std::string path(outputPath);
     BufferType type = (bufferType == 0) ? BufferType::PRIMARY : BufferType::SPECIAL;
-    DataBufferLifecycleTracker::getInstance().generateDeletionFlamegraph(path, type);
+    DataBufferLifecycleTracker::getInstance().generateDeletionFlamegraph(path, static_cast<int>(type));
 }
 
 /**
@@ -701,29 +693,22 @@ void generateLifecycleLeakReport(const char* outputPath) {
         // NDArray statistics
         auto ndarray_stats = NDArrayLifecycleTracker::getInstance().getStats();
         combined << "NDArray Statistics:\n";
-        combined << "  Total Allocations:   " << ndarray_stats.total_allocs << "\n";
-        combined << "  Total Deallocations: " << ndarray_stats.total_deallocs << "\n";
-        combined << "  Current Live:        " << ndarray_stats.current_live << "\n";
-        combined << "  Current Bytes:       " << ndarray_stats.current_bytes << "\n";
-        combined << "  Peak Bytes:          " << ndarray_stats.peak_bytes << "\n";
-        combined << "  Double Frees:        " << ndarray_stats.double_frees << "\n\n";
+        combined << "  Total Allocations:        " << ndarray_stats.totalAllocations << "\n";
+        combined << "  Total Deallocations:      " << ndarray_stats.totalDeallocations << "\n";
+        combined << "  Current Live:             " << ndarray_stats.currentLive << "\n";
+        combined << "  Peak Live:                " << ndarray_stats.peakLive << "\n";
+        combined << "  Total Bytes Allocated:    " << ndarray_stats.totalBytesAllocated << "\n";
+        combined << "  Total Bytes Deallocated:  " << ndarray_stats.totalBytesDeallocated << "\n\n";
 
         // DataBuffer statistics
         auto databuffer_stats = DataBufferLifecycleTracker::getInstance().getStats();
         combined << "DataBuffer Statistics:\n";
-        combined << "  PRIMARY (Host) Memory:\n";
-        combined << "    Total Allocations:   " << databuffer_stats.total_primary_allocs << "\n";
-        combined << "    Total Deallocations: " << databuffer_stats.total_primary_deallocs << "\n";
-        combined << "    Current Live:        " << databuffer_stats.current_live_primary << "\n";
-        combined << "    Current Bytes:       " << databuffer_stats.current_primary_bytes << "\n";
-        combined << "    Peak Bytes:          " << databuffer_stats.peak_primary_bytes << "\n";
-        combined << "  SPECIAL (Device) Memory:\n";
-        combined << "    Total Allocations:   " << databuffer_stats.total_special_allocs << "\n";
-        combined << "    Total Deallocations: " << databuffer_stats.total_special_deallocs << "\n";
-        combined << "    Current Live:        " << databuffer_stats.current_live_special << "\n";
-        combined << "    Current Bytes:       " << databuffer_stats.current_special_bytes << "\n";
-        combined << "    Peak Bytes:          " << databuffer_stats.peak_special_bytes << "\n";
-        combined << "  Double Frees:          " << databuffer_stats.double_frees << "\n\n";
+        combined << "  Total Allocations:        " << databuffer_stats.totalAllocations << "\n";
+        combined << "  Total Deallocations:      " << databuffer_stats.totalDeallocations << "\n";
+        combined << "  Current Live:             " << databuffer_stats.currentLive << "\n";
+        combined << "  Peak Live:                " << databuffer_stats.peakLive << "\n";
+        combined << "  Total Bytes Allocated:    " << databuffer_stats.totalBytesAllocated << "\n";
+        combined << "  Total Bytes Deallocated:  " << databuffer_stats.totalBytesDeallocated << "\n\n";
 
         combined << "See detailed reports:\n";
         combined << "  " << ndarray_report << "\n";
@@ -735,6 +720,7 @@ void generateLifecycleLeakReport(const char* outputPath) {
 
 /**
  * Generates a comprehensive leak source analysis combining ALL lifecycle trackers.
+ * This is a stub implementation that currently just calls generateLifecycleLeakReport.
  */
 void generateComprehensiveLeakAnalysis(const char* outputDir) {
     if (outputDir == nullptr) {
@@ -742,7 +728,8 @@ void generateComprehensiveLeakAnalysis(const char* outputDir) {
     }
 
     std::string dir(outputDir);
-    runComprehensiveLeakAnalysis(dir.c_str());
+    std::string reportPath = dir + "/comprehensive_leak_report.txt";
+    generateLifecycleLeakReport(reportPath.c_str());
 }
 
 #endif // SD_GCC_FUNCTRACE

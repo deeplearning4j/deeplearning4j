@@ -143,9 +143,8 @@ public class OpExecutionerUtil {
         if (z != null && !(op instanceof MatchCondition)) {
             int match = countNaN(z);
             if (match > 0) {
-                NaNInfDiagnosticInfo diagnosticInfo = NaNInfDiagnosticInfo.fromOp(
-                        op, oc, NaNInfDiagnosticInfo.IssueType.NAN, match);
-                throw new ND4JOpProfilerException(diagnosticInfo.toDetailedMessage());
+                String opName = op.opName() != null ? op.opName() : op.getClass().getSimpleName();
+                throw new ND4JOpProfilerException("P.A.N.I.C.! Op [" + opName + "] output contains " + match + " NaN value(s)");
             }
         }
     }
@@ -155,9 +154,8 @@ public class OpExecutionerUtil {
         if (z != null && !(op instanceof MatchCondition) && !(op instanceof CompareAndSet) && !(op instanceof CompareAndReplace)) {
             int match = countInf(z);
             if (match > 0) {
-                NaNInfDiagnosticInfo diagnosticInfo = NaNInfDiagnosticInfo.fromOp(
-                        op, oc, NaNInfDiagnosticInfo.IssueType.INF, match);
-                throw new ND4JOpProfilerException(diagnosticInfo.toDetailedMessage());
+                String opName = op.opName() != null ? op.opName() : op.getClass().getSimpleName();
+                throw new ND4JOpProfilerException("P.A.N.I.C.! Op [" + opName + "] output contains " + match + " Inf value(s)");
             }
         }
     }
@@ -165,15 +163,14 @@ public class OpExecutionerUtil {
     public static void checkForInf(CustomOp op, OpContext oc) {
         List<INDArray> inArgs = oc != null ? oc.getInputArrays() : op.inputArguments();
         List<INDArray> outArgs = oc != null ? oc.getOutputArrays() : op.outputArguments();
+        String opName = op.opName() != null ? op.opName() : op.getClass().getSimpleName();
 
         // Check inputs first (to provide context about whether issue originated earlier)
         for (int i = 0; i < inArgs.size(); i++) {
             INDArray input = inArgs.get(i);
             int match = countInf(input);
             if (match > 0) {
-                NaNInfDiagnosticInfo diagnosticInfo = NaNInfDiagnosticInfo.fromCustomOp(
-                        op, oc, NaNInfDiagnosticInfo.IssueType.INF, match, i, true);
-                throw new ND4JOpProfilerException(diagnosticInfo.toDetailedMessage());
+                throw new ND4JOpProfilerException("P.A.N.I.C.! Op [" + opName + "] input[" + i + "] contains " + match + " Inf value(s)");
             }
         }
 
@@ -182,9 +179,7 @@ public class OpExecutionerUtil {
             INDArray output = outArgs.get(i);
             int match = countInf(output);
             if (match > 0) {
-                NaNInfDiagnosticInfo diagnosticInfo = NaNInfDiagnosticInfo.fromCustomOp(
-                        op, oc, NaNInfDiagnosticInfo.IssueType.INF, match, i, false);
-                throw new ND4JOpProfilerException(diagnosticInfo.toDetailedMessage());
+                throw new ND4JOpProfilerException("P.A.N.I.C.! Op [" + opName + "] output[" + i + "] contains " + match + " Inf value(s)");
             }
         }
     }
@@ -193,15 +188,14 @@ public class OpExecutionerUtil {
     public static void checkForNaN(CustomOp op, OpContext oc) {
         List<INDArray> inArgs = oc != null ? oc.getInputArrays() : op.inputArguments();
         List<INDArray> outArgs = oc != null ? oc.getOutputArrays() : op.outputArguments();
+        String opName = op.opName() != null ? op.opName() : op.getClass().getSimpleName();
 
         // Check inputs first (to provide context about whether issue originated earlier)
         for (int i = 0; i < inArgs.size(); i++) {
             INDArray input = inArgs.get(i);
             int match = countNaN(input);
             if (match > 0) {
-                NaNInfDiagnosticInfo diagnosticInfo = NaNInfDiagnosticInfo.fromCustomOp(
-                        op, oc, NaNInfDiagnosticInfo.IssueType.NAN, match, i, true);
-                throw new ND4JOpProfilerException(diagnosticInfo.toDetailedMessage());
+                throw new ND4JOpProfilerException("P.A.N.I.C.! Op [" + opName + "] input[" + i + "] contains " + match + " NaN value(s)");
             }
         }
 
@@ -210,9 +204,7 @@ public class OpExecutionerUtil {
             INDArray output = outArgs.get(i);
             int match = countNaN(output);
             if (match > 0) {
-                NaNInfDiagnosticInfo diagnosticInfo = NaNInfDiagnosticInfo.fromCustomOp(
-                        op, oc, NaNInfDiagnosticInfo.IssueType.NAN, match, i, false);
-                throw new ND4JOpProfilerException(diagnosticInfo.toDetailedMessage());
+                throw new ND4JOpProfilerException("P.A.N.I.C.! Op [" + opName + "] output[" + i + "] contains " + match + " NaN value(s)");
             }
         }
     }
