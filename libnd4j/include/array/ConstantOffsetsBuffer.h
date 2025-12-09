@@ -34,14 +34,18 @@ namespace sd {
 
 class SD_LIB_EXPORT ConstantOffsetsBuffer {
  private:
+  static constexpr uint32_t MAGIC_VALID = 0xC0FFE575;  // "COFFSETS" - magic number for validity check
+  uint32_t _magic = 0;  // Validity marker to detect use-after-free
   std::shared_ptr<PointerWrapper> _primaryOffsets;
   std::shared_ptr<PointerWrapper> _specialOffsets;
 
  public:
   ConstantOffsetsBuffer(const std::shared_ptr<PointerWrapper> &primary);
   ConstantOffsetsBuffer(const std::shared_ptr<PointerWrapper> &primary, const std::shared_ptr<PointerWrapper> &special);
-  ConstantOffsetsBuffer() = default;
-  ~ConstantOffsetsBuffer() = default;
+  ConstantOffsetsBuffer();  // Default constructor - sets magic number
+  ~ConstantOffsetsBuffer();  // Need custom destructor to clear magic
+
+  inline bool isValid() const { return _magic == MAGIC_VALID; }
 
   LongType *primary();
   LongType *special();

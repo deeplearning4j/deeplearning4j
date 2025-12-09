@@ -167,18 +167,23 @@
 // SECTION 3: CONDITIONAL EXPANSION PRIMITIVES (VARIADIC)
 // ============================================================================
 
-// CRITICAL: Using variadic macros to preserve whitespace
 // Statement context expansions (for use in function bodies)
 #define SD_IF_1(...) __VA_ARGS__
 #define SD_IF_0(...) do {} while(0);
+// Fallback for undefined _COMPILED flags (treated as 0/false)
+#define SD_IF_(...) do {} while(0);
 
 // Declaration context expansions (for use at file/namespace scope)
 #define SD_IF_DECL_1(...) __VA_ARGS__
 #define SD_IF_DECL_0(...) /* filtered out */
+// Fallback for undefined _COMPILED flags (treated as 0/false)
+#define SD_IF_DECL_(...) /* filtered out */
 
 // Expression context expansions (for use in expressions)
 #define SD_IF_EXPR_1(...) __VA_ARGS__
 #define SD_IF_EXPR_0(...) ((void)0)
+// Fallback for undefined _COMPILED flags (treated as 0/false)
+#define SD_IF_EXPR_(...) ((void)0)
 
 // Special whitespace-preserving helpers
 #define SD_UNPAREN(...) SD_UNPAREN_IMPL __VA_ARGS__
@@ -224,27 +229,51 @@
 // SECTION 6: UNIFIED INTERFACE - NUMERIC (VARIADIC)
 // ============================================================================
 
+// Double-expansion pattern: force SD_*_TYPE_*_COMPILED to expand to its value before concatenation
+#define SD_CAT_AFTER_EXPAND(a, b) SD_CAT(a, b)
 
+// Intermediate macros that use CAT_AFTER_EXPAND to ensure flag value is expanded first
+#define SD_IF_SINGLE_COMPILED_I(COMPILED_FLAG, ...) \
+    SD_CAT_AFTER_EXPAND(SD_IF_, COMPILED_FLAG)(__VA_ARGS__)
+
+#define SD_IF_PAIR_COMPILED_I(COMPILED_FLAG, ...) \
+    SD_CAT_AFTER_EXPAND(SD_IF_, COMPILED_FLAG)(__VA_ARGS__)
+
+#define SD_IF_TRIPLE_COMPILED_I(COMPILED_FLAG, ...) \
+    SD_CAT_AFTER_EXPAND(SD_IF_, COMPILED_FLAG)(__VA_ARGS__)
+
+// Public interface
 #define SD_IF_SINGLE_COMPILED(TYPE_NUM, ...) \
-    SD_CAT(SD_IF_, SD_IS_SINGLE_COMPILED(TYPE_NUM))(__VA_ARGS__)
+    SD_IF_SINGLE_COMPILED_I(SD_IS_SINGLE_COMPILED(TYPE_NUM), __VA_ARGS__)
 
 #define SD_IF_PAIR_COMPILED(TYPE1_NUM, TYPE2_NUM, ...) \
-    SD_CAT(SD_IF_, SD_IS_PAIR_COMPILED(TYPE1_NUM, TYPE2_NUM))(__VA_ARGS__)
+    SD_IF_PAIR_COMPILED_I(SD_IS_PAIR_COMPILED(TYPE1_NUM, TYPE2_NUM), __VA_ARGS__)
 
 #define SD_IF_TRIPLE_COMPILED(TYPE1_NUM, TYPE2_NUM, TYPE3_NUM, ...) \
-    SD_CAT(SD_IF_, SD_IS_TRIPLE_COMPILED(TYPE1_NUM, TYPE2_NUM, TYPE3_NUM))(__VA_ARGS__)
+    SD_IF_TRIPLE_COMPILED_I(SD_IS_TRIPLE_COMPILED(TYPE1_NUM, TYPE2_NUM, TYPE3_NUM), __VA_ARGS__)
 
 
 
 // Direct numeric type ID interfaces (declaration context)
+// Use CAT_AFTER_EXPAND to ensure flag value is expanded before concatenation
+#define SD_IF_SINGLE_COMPILED_DECL_I(COMPILED_FLAG, ...) \
+    SD_CAT_AFTER_EXPAND(SD_IF_DECL_, COMPILED_FLAG)(__VA_ARGS__)
+
+#define SD_IF_PAIR_COMPILED_DECL_I(COMPILED_FLAG, ...) \
+    SD_CAT_AFTER_EXPAND(SD_IF_DECL_, COMPILED_FLAG)(__VA_ARGS__)
+
+#define SD_IF_TRIPLE_COMPILED_DECL_I(COMPILED_FLAG, ...) \
+    SD_CAT_AFTER_EXPAND(SD_IF_DECL_, COMPILED_FLAG)(__VA_ARGS__)
+
+// Public interface
 #define SD_IF_SINGLE_COMPILED_DECL(TYPE_NUM, ...) \
-    SD_CAT(SD_IF_DECL_, SD_IS_SINGLE_COMPILED(TYPE_NUM))(__VA_ARGS__)
+    SD_IF_SINGLE_COMPILED_DECL_I(SD_IS_SINGLE_COMPILED(TYPE_NUM), __VA_ARGS__)
 
 #define SD_IF_PAIR_COMPILED_DECL(TYPE1_NUM, TYPE2_NUM, ...) \
-    SD_CAT(SD_IF_DECL_, SD_IS_PAIR_COMPILED(TYPE1_NUM, TYPE2_NUM))(__VA_ARGS__)
+    SD_IF_PAIR_COMPILED_DECL_I(SD_IS_PAIR_COMPILED(TYPE1_NUM, TYPE2_NUM), __VA_ARGS__)
 
 #define SD_IF_TRIPLE_COMPILED_DECL(TYPE1_NUM, TYPE2_NUM, TYPE3_NUM, ...) \
-    SD_CAT(SD_IF_DECL_, SD_IS_TRIPLE_COMPILED(TYPE1_NUM, TYPE2_NUM, TYPE3_NUM))(__VA_ARGS__)
+    SD_IF_TRIPLE_COMPILED_DECL_I(SD_IS_TRIPLE_COMPILED(TYPE1_NUM, TYPE2_NUM, TYPE3_NUM), __VA_ARGS__)
 
 // ============================================================================
 // SECTION 7: UNIFIED INTERFACE - DATATYPE ENUM (VARIADIC)
@@ -292,38 +321,61 @@
 // SECTION 8: UNIFIED INTERFACE - CONSTEXPR ALIASES (VARIADIC)
 // ============================================================================
 
+// Helper macros to force evaluation of SD_ALIAS_TO_NUM_* before passing to SD_IF_*_COMPILED
+#define SD_EVAL_ALIAS_TO_NUM(ALIAS) SD_CAT(SD_ALIAS_TO_NUM_, ALIAS)
+
+// Intermediate evaluation macros
+#define SD_IF_SINGLE_ALIAS_COMPILED_I(TYPE_NUM, ...) \
+    SD_IF_SINGLE_COMPILED(TYPE_NUM, __VA_ARGS__)
+
+#define SD_IF_PAIR_ALIAS_COMPILED_I(TYPE_NUM1, TYPE_NUM2, ...) \
+    SD_IF_PAIR_COMPILED(TYPE_NUM1, TYPE_NUM2, __VA_ARGS__)
+
+#define SD_IF_TRIPLE_ALIAS_COMPILED_I(TYPE_NUM1, TYPE_NUM2, TYPE_NUM3, ...) \
+    SD_IF_TRIPLE_COMPILED(TYPE_NUM1, TYPE_NUM2, TYPE_NUM3, __VA_ARGS__)
+
 // Constexpr alias interfaces (statement context)
 #define SD_IF_SINGLE_ALIAS_COMPILED(ALIAS, ...) \
-    SD_IF_SINGLE_COMPILED(SD_CAT(SD_ALIAS_TO_NUM_, ALIAS), __VA_ARGS__)
+    SD_IF_SINGLE_ALIAS_COMPILED_I(SD_EVAL_ALIAS_TO_NUM(ALIAS), __VA_ARGS__)
 
 #define SD_IF_PAIR_ALIAS_COMPILED(ALIAS1, ALIAS2, ...) \
-    SD_IF_PAIR_COMPILED( \
-        SD_CAT(SD_ALIAS_TO_NUM_, ALIAS1), \
-        SD_CAT(SD_ALIAS_TO_NUM_, ALIAS2), \
+    SD_IF_PAIR_ALIAS_COMPILED_I( \
+        SD_EVAL_ALIAS_TO_NUM(ALIAS1), \
+        SD_EVAL_ALIAS_TO_NUM(ALIAS2), \
         __VA_ARGS__)
 
 #define SD_IF_TRIPLE_ALIAS_COMPILED(ALIAS1, ALIAS2, ALIAS3, ...) \
-    SD_IF_TRIPLE_COMPILED( \
-        SD_CAT(SD_ALIAS_TO_NUM_, ALIAS1), \
-        SD_CAT(SD_ALIAS_TO_NUM_, ALIAS2), \
-        SD_CAT(SD_ALIAS_TO_NUM_, ALIAS3), \
+    SD_IF_TRIPLE_ALIAS_COMPILED_I( \
+        SD_EVAL_ALIAS_TO_NUM(ALIAS1), \
+        SD_EVAL_ALIAS_TO_NUM(ALIAS2), \
+        SD_EVAL_ALIAS_TO_NUM(ALIAS3), \
         __VA_ARGS__)
+
+// Intermediate evaluation macros for declaration context
+#define SD_IF_SINGLE_ALIAS_COMPILED_DECL_I(TYPE_NUM, ...) \
+    SD_IF_SINGLE_COMPILED_DECL(TYPE_NUM, __VA_ARGS__)
+
+#define SD_IF_PAIR_ALIAS_COMPILED_DECL_I(TYPE_NUM1, TYPE_NUM2, ...) \
+    SD_IF_PAIR_COMPILED_DECL(TYPE_NUM1, TYPE_NUM2, __VA_ARGS__)
+
+#define SD_IF_TRIPLE_ALIAS_COMPILED_DECL_I(TYPE_NUM1, TYPE_NUM2, TYPE_NUM3, ...) \
+    SD_IF_TRIPLE_COMPILED_DECL(TYPE_NUM1, TYPE_NUM2, TYPE_NUM3, __VA_ARGS__)
 
 // Constexpr alias interfaces (declaration context)
 #define SD_IF_SINGLE_ALIAS_COMPILED_DECL(ALIAS, ...) \
-    SD_IF_SINGLE_COMPILED_DECL(SD_CAT(SD_ALIAS_TO_NUM_, ALIAS), __VA_ARGS__)
+    SD_IF_SINGLE_ALIAS_COMPILED_DECL_I(SD_EVAL_ALIAS_TO_NUM(ALIAS), __VA_ARGS__)
 
 #define SD_IF_PAIR_ALIAS_COMPILED_DECL(ALIAS1, ALIAS2, ...) \
-    SD_IF_PAIR_COMPILED_DECL( \
-        SD_CAT(SD_ALIAS_TO_NUM_, ALIAS1), \
-        SD_CAT(SD_ALIAS_TO_NUM_, ALIAS2), \
+    SD_IF_PAIR_ALIAS_COMPILED_DECL_I( \
+        SD_EVAL_ALIAS_TO_NUM(ALIAS1), \
+        SD_EVAL_ALIAS_TO_NUM(ALIAS2), \
         __VA_ARGS__)
 
 #define SD_IF_TRIPLE_ALIAS_COMPILED_DECL(ALIAS1, ALIAS2, ALIAS3, ...) \
-    SD_IF_TRIPLE_COMPILED_DECL( \
-        SD_CAT(SD_ALIAS_TO_NUM_, ALIAS1), \
-        SD_CAT(SD_ALIAS_TO_NUM_, ALIAS2), \
-        SD_CAT(SD_ALIAS_TO_NUM_, ALIAS3), \
+    SD_IF_TRIPLE_ALIAS_COMPILED_DECL_I( \
+        SD_EVAL_ALIAS_TO_NUM(ALIAS1), \
+        SD_EVAL_ALIAS_TO_NUM(ALIAS2), \
+        SD_EVAL_ALIAS_TO_NUM(ALIAS3), \
         __VA_ARGS__)
 
 // ============================================================================

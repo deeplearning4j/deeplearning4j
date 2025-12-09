@@ -34,6 +34,7 @@
 #include <types/uint8.h>
 #include <types/utf8string.h>
 #include <types/types_impl.h>
+#include <type_traits>
 
 // ============================================================================
 // DATATYPE CONSTEXPR ALIASES
@@ -62,9 +63,19 @@
   using stdstring = std::string;
   using u32string = std::u32string;
   using u16string = std::u16string;
-  using Int32Type = std::conditional_t<sizeof(int) == 4, int, int32_t>;
-  using SignedChar = signed char;
-  using UnsignedChar = unsigned char;
+  using Int32Type = int32_t;
+  using SignedChar = int8_t;
+  using UnsignedChar = uint8_t;
+  using Int16Type = int16_t;
+  using UInt16Type = uint16_t;
+  using UInt32Type = uint32_t;
+  using UInt64Type = uint64_t;
+
+  // Platform-specific type alias for raw 'unsigned long' on Linux
+  // Required for macro processing - multi-word type names break BUILD_*_TEMPLATE macros
+#if defined(__linux__) && !defined(__ANDROID__)
+  using PlatformUInt64 = unsigned long;
+#endif
 
   // ============================================================================
 // SELECTIVE RENDERING INTEGRATION
@@ -181,92 +192,218 @@
 #if defined(HAS_int32_t) && !defined(HAS_INT32)
 #define HAS_INT32
 #endif
-#if defined(HAS_BFLOAT16) && !defined(HAS_BFLOAT)
-#define HAS_BFLOAT
-#endif
-#if defined(HAS_BFLOAT)
-#define TTYPE_BFLOAT , (BFLOAT16, bfloat16)
-#define TTYPE_BFLOAT16 , (BFLOAT16, bfloat16)  
-#else
-#define TTYPE_BFLOAT
-#define TTYPE_BFLOAT16  
-#endif
-#if defined(HAS_BOOL)
-#define TTYPE_BOOL , (BOOL, bool)
-#else
-#define TTYPE_BOOL
-#endif
-#if defined(HAS_DOUBLE)
-#define TTYPE_DOUBLE , (DOUBLE, double)
-#else
-#define TTYPE_DOUBLE
-#endif
-#if defined(HAS_FLOAT32)
-#define TTYPE_FLOAT32 , (FLOAT32, float)
-#else
-#define TTYPE_FLOAT32
-#endif
-#if defined(HAS_FLOAT16)
-#define TTYPE_HALF , (HALF, float16)
-#else
-#define TTYPE_HALF
-#endif
-#if defined(HAS_INT16)
-#define TTYPE_INT16 , (INT16, int16_t)
-#else
-#define TTYPE_INT16
-#endif
-#if defined(HAS_INT32)
-#define TTYPE_INT32 , (INT32, Int32Type)
-#else
-#define TTYPE_INT32
-#endif
 
-#if defined(HAS_INT64)
-#define TTYPE_INT64 , (INT64, LongType)
+// ============================================================================
+// TYPE ALIAS DETECTION
+// ============================================================================
+// Detect type aliases to prevent duplicate template instantiations
+// On virtually all platforms, these fixed-width types are typedef'd to standard types:
+//   - uint8_t  -> unsigned char
+//   - int8_t   -> signed char
+//   - int32_t  -> int
+// This causes duplicate template instantiations, so we exclude them when true
+#if defined(HAS_UINT8)
+  // uint8_t is unsigned char on all standard-compliant platforms
+  #define SD_UINT8_IS_UCHAR 1
 #else
-#define TTYPE_INT64
+  #define SD_UINT8_IS_UCHAR 0
 #endif
 
 #if defined(HAS_INT8)
-#define TTYPE_INT8 , (INT8, int8_t)
+  // int8_t is signed char on all standard-compliant platforms
+  #define SD_INT8_IS_SCHAR 1
 #else
-#define TTYPE_INT8
+  #define SD_INT8_IS_SCHAR 0
 #endif
-#if defined(HAS_UINT16)
-#define TTYPE_UINT16 , (UINT16, uint16_t)
+
+#if defined(HAS_INT32)
+  // int32_t is int on most platforms (LP64, LLP64)
+  // Only define if not already defined by type_boiler_plate_expansions.h
+  #ifndef SD_INT32_IS_INT
+    #define SD_INT32_IS_INT 1
+  #endif
 #else
-#define TTYPE_UINT16
+  #ifndef SD_INT32_IS_INT
+    #define SD_INT32_IS_INT 0
+  #endif
 #endif
-#if defined(HAS_UINT32)
-#define TTYPE_UINT32 , (UINT32, uint32_t)
+
+// TTYPE_* macro definitions MUST be here (before type list definitions at line ~329+)
+// These macros are conditionally defined based on SD_SINGLE_TYPE_*_COMPILED flags
+// which are set by selective rendering headers (included via type_boilerplate.h above).
+// The type lists (SD_COMMON_TYPES_ALL_L, etc.) reference these TTYPE_* macros,
+// so they must be defined BEFORE the type lists, not after.
+
+// Boolean type
+#if SD_SINGLE_TYPE_1_COMPILED
+  #define HAS_BOOL 1
+  #define TTYPE_BOOL , (BOOL, bool)
 #else
-#define TTYPE_UINT32
+  #define TTYPE_BOOL
 #endif
-#if defined(HAS_UNSIGNEDLONG)
-#define TTYPE_UINT64 , (UINT64, uint64_t)
-#else
-#define TTYPE_UINT64
+
+// Float8 type
+#if SD_SINGLE_TYPE_2_COMPILED
+  #define HAS_FLOAT8 1
 #endif
-#if defined(HAS_UINT8)
-#define TTYPE_UINT8 , (UINT8, UnsignedChar)
+
+// Float16/Half type
+#if SD_SINGLE_TYPE_3_COMPILED
+  #define HAS_FLOAT16 1
+  #define HAS_HALF 1  // Both aliases for the same type
+  #define TTYPE_HALF , (HALF, float16)
 #else
-#define TTYPE_UINT8
+  #define TTYPE_HALF
 #endif
-#if defined(HAS_UTF16)
-#define TTYPE_UTF16 , (UTF16, u16string)
-#else
-#define TTYPE_UTF16
+
+// Half2 type
+#if SD_SINGLE_TYPE_4_COMPILED
+  #define HAS_HALF2 1
 #endif
-#if defined(HAS_UTF32)
-#define TTYPE_UTF32 , (UTF32, u32string)
+
+// Float32 type
+#if SD_SINGLE_TYPE_5_COMPILED
+  #define HAS_FLOAT32 1
+  #define TTYPE_FLOAT32 , (FLOAT32, float)
 #else
-#define TTYPE_UTF32
+  #define TTYPE_FLOAT32
 #endif
-#if defined(HAS_UTF8)
-#define TTYPE_UTF8 , (UTF8, stdstring)
+
+// Double type
+#if SD_SINGLE_TYPE_6_COMPILED
+  #define HAS_DOUBLE 1
+  #define TTYPE_DOUBLE , (DOUBLE, double)
 #else
-#define TTYPE_UTF8
+  #define TTYPE_DOUBLE
+#endif
+
+// Int8 type
+#if SD_SINGLE_TYPE_7_COMPILED
+  #define HAS_INT8 1
+  #define TTYPE_INT8 , (INT8, SignedChar)
+#else
+  #define TTYPE_INT8
+#endif
+
+// Int16 type
+#if SD_SINGLE_TYPE_8_COMPILED
+  #define HAS_INT16 1
+  #define TTYPE_INT16 , (INT16, Int16Type)
+#else
+  #define TTYPE_INT16
+#endif
+
+// Int32 type
+#if SD_SINGLE_TYPE_9_COMPILED
+  #define HAS_INT32 1
+  #define TTYPE_INT32 , (INT32, Int32Type)
+#else
+  #define TTYPE_INT32
+#endif
+
+// Int64 type
+#if SD_SINGLE_TYPE_10_COMPILED
+  #define HAS_INT64 1
+  #define TTYPE_INT64 , (INT64, LongType)
+#else
+  #define TTYPE_INT64
+#endif
+
+// UInt8 type
+#if SD_SINGLE_TYPE_11_COMPILED
+  #define HAS_UINT8 1
+  #define TTYPE_UINT8 , (UINT8, UnsignedChar)
+#else
+  #define TTYPE_UINT8
+#endif
+
+// UInt16 type
+#if SD_SINGLE_TYPE_12_COMPILED
+  #define HAS_UINT16 1
+  #define TTYPE_UINT16 , (UINT16, UInt16Type)
+#else
+  #define TTYPE_UINT16
+#endif
+
+// UInt32 type
+#if SD_SINGLE_TYPE_13_COMPILED
+  #define HAS_UINT32 1
+  #define TTYPE_UINT32 , (UINT32, UInt32Type)
+#else
+  #define TTYPE_UINT32
+#endif
+
+// UInt64 type
+#if SD_SINGLE_TYPE_14_COMPILED
+  #define HAS_UNSIGNEDLONG 1
+  #define HAS_UINT64 1  // Alternative name
+  #define TTYPE_UINT64 , (UINT64, UInt64Type)
+#else
+  #define TTYPE_UINT64
+#endif
+
+// QInt8 type
+#if SD_SINGLE_TYPE_15_COMPILED
+  #define HAS_QINT8 1
+#endif
+
+// QInt16 type
+#if SD_SINGLE_TYPE_16_COMPILED
+  #define HAS_QINT16 1
+#endif
+
+// BFloat16 type
+#if SD_SINGLE_TYPE_17_COMPILED
+  #define HAS_BFLOAT16 1
+  #define TTYPE_BFLOAT , (BFLOAT16, bfloat16)
+  #define TTYPE_BFLOAT16 , (BFLOAT16, bfloat16)
+#else
+  #define TTYPE_BFLOAT
+  #define TTYPE_BFLOAT16
+#endif
+
+// UTF8 type
+#if SD_SINGLE_TYPE_50_COMPILED
+  #define HAS_UTF8 1
+  #define TTYPE_UTF8 , (UTF8, stdstring)
+#else
+  #define TTYPE_UTF8
+#endif
+
+// UTF16 type
+#if SD_SINGLE_TYPE_51_COMPILED
+  #define HAS_UTF16 1
+  #define TTYPE_UTF16 , (UTF16, u16string)
+#else
+  #define TTYPE_UTF16
+#endif
+
+// UTF32 type
+#if SD_SINGLE_TYPE_52_COMPILED
+  #define HAS_UTF32 1
+  #define TTYPE_UTF32 , (UTF32, u32string)
+#else
+  #define TTYPE_UTF32
+#endif
+
+// Platform-specific raw type variants for JavaCPP compatibility on Linux
+// On Linux x86-64, 'unsigned long' and 'unsigned long long' are distinct types from their typedefs
+// for template instantiation purposes, even though they have the same size.
+// JavaCPP and platform-specific code may request these raw types directly, so we need instantiations for both.
+// NOTE: Using PlatformUInt64 alias (defined above) instead of raw 'unsigned long' to avoid macro expansion issues
+// both TTYPE_UINT64 (which is uint64_t) and TTYPE_PLATFORM_UINT64 (which is unsigned long) creates
+// duplicate template instantiations. Only include TTYPE_PLATFORM_UINT64 on non-__LP64__ systems where
+// uint64_t is unsigned long long and we need unsigned long separately.
+#if defined(__linux__) && !defined(__ANDROID__) && !defined(__LP64__)
+#define TTYPE_PLATFORM_UINT64 , (UINT64, PlatformUInt64)
+#else
+#define TTYPE_PLATFORM_UINT64
+#endif
+
+#if defined(__linux__) && !defined(__ANDROID__) && defined(HAS_UINT32)
+#define TTYPE_PLATFORM_UINT32 , (UINT32, UInt32Type)
+#else
+#define TTYPE_PLATFORM_UINT32
 #endif
 
 #define M_CONCAT2(A, B) A##B
@@ -329,24 +466,31 @@
                       ...)                                                                                           \
  _20
 
+#define SD_INTEGER_TYPES_L TTYPE_INT8 TTYPE_INT16 TTYPE_INT32 TTYPE_INT64 TTYPE_UINT8 TTYPE_UINT16 TTYPE_UINT32 TTYPE_UINT64
+// Note: TTYPE_PLATFORM_UINT32 and TTYPE_PLATFORM_UINT64 are NOT included here to avoid duplicate
+// case values in BUILD_SINGLE_SELECTOR switch statements (they map to same enum as UINT32/UINT64).
+// These platform types are for template instantiation only and should be used in BUILD_*_TEMPLATE contexts.
+
 // we have to define bool anyway
 #define SD_BOOL_TYPES (BOOL, bool)
+
+// On __LP64__ systems (Linux x86-64), uint64_t IS typedef'd to unsigned long, so TTYPE_UINT64
+// (which uses UnsignedLong = uint64_t) already covers unsigned long. Including TTYPE_PLATFORM_UINT64
+// would create duplicate template instantiations. Only include it on non-__LP64__ systems where
+// uint64_t is unsigned long long and we need unsigned long as a separate type.
+#if defined(__LP64__)
 #define SD_LONG_TYPES_L TTYPE_INT64 TTYPE_UINT64
-#define SD_STRING_TYPES_L TTYPE_UTF8 TTYPE_UTF16 TTYPE_UTF32
+#else
+#define SD_LONG_TYPES_L TTYPE_INT64 TTYPE_UINT64 TTYPE_PLATFORM_UINT64
+#endif
+// NOTE: SD_STRING_TYPES_L and SD_STRING_TYPES are defined later, after selective rendering adjusts TTYPE_UTF* macros
+#define SD_COMMON_TYPES_ALL_L TTYPE_HALF TTYPE_FLOAT32 TTYPE_DOUBLE TTYPE_BOOL TTYPE_INT8 TTYPE_UINT8 TTYPE_INT16 TTYPE_INT32 TTYPE_INT64 TTYPE_UINT16 TTYPE_UINT64 TTYPE_UINT32 TTYPE_BFLOAT16
 #define SD_INDEXING_TYPES_L TTYPE_INT32 TTYPE_INT64
-#define SD_INTEGER_TYPES_L SD_INDEXING_TYPES_L TTYPE_INT8 TTYPE_INT16 TTYPE_UINT8 TTYPE_UINT16 TTYPE_UINT32 TTYPE_UINT64
 #define SD_FLOAT_NATIVE_L TTYPE_FLOAT32 TTYPE_DOUBLE TTYPE_HALF
 #define SD_FLOAT_TYPES_L TTYPE_BFLOAT SD_FLOAT_NATIVE_L
 #define SD_NUMERIC_TYPES_L SD_FLOAT_TYPES_L SD_INTEGER_TYPES_L
-#define SD_GENERIC_NUMERIC_TYPES_L SD_FLOAT_TYPES_L SD_INDEXING_TYPES_L
+#define SD_GENERIC_NUMERIC_TYPES_L TTYPE_BFLOAT TTYPE_FLOAT32 TTYPE_DOUBLE TTYPE_HALF TTYPE_INT32 TTYPE_INT64
 #define SD_COMMON_TYPES_L TTYPE_BOOL SD_NUMERIC_TYPES_L
-
-#if COUNT_NARG(SD_STRING_TYPES_L) < 1
-#pragma message WARN("it will use utf8 as SD_STRING_TYPES")
-#define SD_STRING_TYPES (UTF8, stdstring)
-#else
-#define SD_STRING_TYPES SKIP_FIRST_COMMA(SD_STRING_TYPES_L)
-#endif
 
 #if COUNT_NARG(SD_LONG_TYPES_L) < 1
 #pragma message WARN("it will use int64 as SD_LONG_TYPES")
@@ -355,11 +499,11 @@
 #define SD_LONG_TYPES SKIP_FIRST_COMMA(SD_LONG_TYPES_L)
 #endif
 
-#if COUNT_NARG(SD_INDEXING_TYPES_L) < 1
+#if COUNT_NARG(SD_INTEGER_TYPES_L) > 3
+#define SD_INDEXING_TYPES SKIP_FIRST_COMMA(SD_INDEXING_TYPES_L)
+#else
 #pragma message WARN("it will use int32 as SD_INDEXING_TYPES")
 #define SD_INDEXING_TYPES (INT32, Int32Type)
-#else
-#define SD_INDEXING_TYPES SKIP_FIRST_COMMA(SD_INDEXING_TYPES_L)
 #endif
 
 #if COUNT_NARG(SD_INTEGER_TYPES_L) < 1
@@ -410,17 +554,28 @@
 
 
 ///////////FULL LIST FOR THE METHODS WHICH SHOULD BE DEFINED FOR GENERAL TYPES///////////////
-#define SD_COMMON_TYPES_ALL                                                                                         \
- (HALF, float16), (FLOAT32, float), (DOUBLE, double),                    \
-     (BOOL, bool), (INT8, int8_t), (UINT8, uint8_t),                     \
-     (INT16, int16_t), (INT32, Int32Type), (INT64, LongType),          \
-     (UINT16, uint16_t), (UINT64, UnsignedLong), (UINT32, uint32_t), \
-     (BFLOAT16, bfloat16)
+#define SD_COMMON_TYPES_ALL_L TTYPE_HALF TTYPE_FLOAT32 TTYPE_DOUBLE TTYPE_BOOL TTYPE_INT8 TTYPE_UINT8 TTYPE_INT16 TTYPE_INT32 TTYPE_INT64 TTYPE_UINT16 TTYPE_UINT64 TTYPE_UINT32 TTYPE_BFLOAT16
 
-//apply selective rendering to the HAS_* macros
-#ifdef SD_SELECTIVE_RENDERING_H  // Only apply if selective rendering is active
+// Fallback for SD_COMMON_TYPES_ALL when selective rendering filters out all TTYPE_* macros.
+// This ensures runtime methods always have access to all fundamental types, even in minimal builds.
+// Without this fallback, BUILD_SINGLE_SELECTOR in runtime methods would have no cases and crash.
+#if COUNT_NARG(SD_COMMON_TYPES_ALL_L) < 1
+#pragma message WARN("SD_COMMON_TYPES_ALL_L is empty due to selective rendering - using explicit runtime type list")
+#define SD_COMMON_TYPES_ALL (BOOL, bool), (INT8, SignedChar), (INT16, Int16Type), (INT32, Int32Type), (INT64, LongType), (UINT8, UnsignedChar), (UINT16, UInt16Type), (UINT32, UInt32Type), (UINT64, UInt64Type), (HALF, float16), (FLOAT32, float), (DOUBLE, double), (BFLOAT16, bfloat16)
+#else
+#define SD_COMMON_TYPES_ALL SKIP_FIRST_COMMA(SD_COMMON_TYPES_ALL_L)
+#endif
 
-// Save original HAS_* values if needed for debugging
+// DEPRECATED: SD_ALL_RUNTIME_TYPES was an early attempt to solve this problem, but used wrong format.
+// The fallback above (with COUNT_NARG check) is the correct solution.
+// #define SD_ALL_RUNTIME_TYPES (BOOL, bool), (INT8, SignedChar), (INT16, Int16Type), (INT32, Int32Type), (INT64, LongType), (UINT8, UnsignedChar), (UINT16, UInt16Type), (UINT32, UInt32Type), (UINT64, UInt64Type), (HALF, float16), (FLOAT32, float), (DOUBLE, double), (BFLOAT16, bfloat16)
+
+// NOTE: The HAS_* and TTYPE_* macros are now defined earlier in this file (around line 238-387)
+// to ensure they're available when type lists like SD_COMMON_TYPES_ALL_L are expanded.
+// The old approach of defining them here (after the type lists) was causing TTYPE_* to be
+// undefined when used in SD_COMMON_TYPES_ALL_L, resulting in runtime errors for certain types.
+
+// Define SD_STRING_TYPES after TTYPE_UTF* macros are defined
 #ifdef HAS_BOOL
   #define ORIGINAL_HAS_BOOL 1
 #endif
@@ -508,9 +663,34 @@
 #undef HAS_UTF16
 #undef HAS_UTF32
 
+// Undefine all TTYPE_* macros before redefining them
+#undef TTYPE_BOOL
+#undef TTYPE_HALF
+#undef TTYPE_FLOAT32
+#undef TTYPE_DOUBLE
+#undef TTYPE_INT8
+#undef TTYPE_INT16
+#undef TTYPE_INT32
+#undef TTYPE_INT64
+#undef TTYPE_UINT8
+#undef TTYPE_UINT16
+#undef TTYPE_UINT32
+#undef TTYPE_UINT64
+#undef TTYPE_BFLOAT
+#undef TTYPE_BFLOAT16
+#undef TTYPE_UTF8
+#undef TTYPE_UTF16
+#undef TTYPE_UTF32
+#undef TTYPE_PLATFORM_UINT64
+#undef TTYPE_PLATFORM_UINT32
+
 // Redefine based on SD_SINGLE_TYPE_*_COMPILED flags
+// NOTE: TTYPE_* macros MUST be defined here, after HAS_* redefinitions, not before
 #if SD_SINGLE_TYPE_1_COMPILED
   #define HAS_BOOL 1
+  #define TTYPE_BOOL , (BOOL, bool)
+#else
+  #define TTYPE_BOOL
 #endif
 
 #if SD_SINGLE_TYPE_2_COMPILED
@@ -520,6 +700,9 @@
 #if SD_SINGLE_TYPE_3_COMPILED
   #define HAS_FLOAT16 1
   #define HAS_HALF 1  // Both aliases for the same type
+  #define TTYPE_HALF , (HALF, float16)
+#else
+  #define TTYPE_HALF
 #endif
 
 #if SD_SINGLE_TYPE_4_COMPILED
@@ -528,44 +711,73 @@
 
 #if SD_SINGLE_TYPE_5_COMPILED
   #define HAS_FLOAT32 1
+  #define TTYPE_FLOAT32 , (FLOAT32, float)
+#else
+  #define TTYPE_FLOAT32
 #endif
 
 #if SD_SINGLE_TYPE_6_COMPILED
   #define HAS_DOUBLE 1
+  #define TTYPE_DOUBLE , (DOUBLE, double)
+#else
+  #define TTYPE_DOUBLE
 #endif
 
 #if SD_SINGLE_TYPE_7_COMPILED
   #define HAS_INT8 1
+  #define TTYPE_INT8 , (INT8, SignedChar)
+#else
+  #define TTYPE_INT8
 #endif
 
 #if SD_SINGLE_TYPE_8_COMPILED
   #define HAS_INT16 1
+  #define TTYPE_INT16 , (INT16, Int16Type)
+#else
+  #define TTYPE_INT16
 #endif
 
 #if SD_SINGLE_TYPE_9_COMPILED
   #define HAS_INT32 1
+  #define TTYPE_INT32 , (INT32, Int32Type)
+#else
+  #define TTYPE_INT32
 #endif
 
 #if SD_SINGLE_TYPE_10_COMPILED
   #define HAS_INT64 1
-  #define HAS_INT64 1  // Alternative name
+  #define TTYPE_INT64 , (INT64, LongType)
+#else
+  #define TTYPE_INT64
 #endif
 
 #if SD_SINGLE_TYPE_11_COMPILED
   #define HAS_UINT8 1
+  #define TTYPE_UINT8 , (UINT8, UnsignedChar)
+#else
+  #define TTYPE_UINT8
 #endif
 
 #if SD_SINGLE_TYPE_12_COMPILED
   #define HAS_UINT16 1
+  #define TTYPE_UINT16 , (UINT16, UInt16Type)
+#else
+  #define TTYPE_UINT16
 #endif
 
 #if SD_SINGLE_TYPE_13_COMPILED
   #define HAS_UINT32 1
+  #define TTYPE_UINT32 , (UINT32, UInt32Type)
+#else
+  #define TTYPE_UINT32
 #endif
 
 #if SD_SINGLE_TYPE_14_COMPILED
   #define HAS_UNSIGNEDLONG 1
   #define HAS_UINT64 1  // Alternative name
+  #define TTYPE_UINT64 , (UINT64, UnsignedLong)
+#else
+  #define TTYPE_UINT64
 #endif
 
 #if SD_SINGLE_TYPE_15_COMPILED
@@ -578,22 +790,42 @@
 
 #if SD_SINGLE_TYPE_17_COMPILED
   #define HAS_BFLOAT16 1
+  #define TTYPE_BFLOAT , (BFLOAT16, bfloat16)
+  #define TTYPE_BFLOAT16 , (BFLOAT16, bfloat16)
+#else
+  #define TTYPE_BFLOAT
+  #define TTYPE_BFLOAT16
 #endif
 
 #if SD_SINGLE_TYPE_50_COMPILED
   #define HAS_UTF8 1
+  #define TTYPE_UTF8 , (UTF8, stdstring)
+#else
+  #define TTYPE_UTF8
 #endif
 
 #if SD_SINGLE_TYPE_51_COMPILED
   #define HAS_UTF16 1
+  #define TTYPE_UTF16 , (UTF16, u16string)
+#else
+  #define TTYPE_UTF16
 #endif
 
 #if SD_SINGLE_TYPE_52_COMPILED
   #define HAS_UTF32 1
+  #define TTYPE_UTF32 , (UTF32, u32string)
+#else
+  #define TTYPE_UTF32
 #endif
 
-#endif 
-
+// Define SD_STRING_TYPES after selective rendering has adjusted TTYPE_UTF* macros
+#define SD_STRING_TYPES_L TTYPE_UTF8 TTYPE_UTF16 TTYPE_UTF32
+#if COUNT_NARG(SD_STRING_TYPES_L) < 1
+#pragma message WARN("it will use utf8 as SD_STRING_TYPES")
+#define SD_STRING_TYPES (UTF8, stdstring)
+#else
+#define SD_STRING_TYPES SKIP_FIRST_COMMA(SD_STRING_TYPES_L)
+#endif
 
 ///////////TRIPLES GENERATED MANUALLY USING REGEX /////////////////////////
 #if defined(HAS_BFLOAT16)
@@ -627,8 +859,8 @@
 #define TTYPE_BFLOAT16_FLOAT16_FLOAT16
 #endif
 #if defined(HAS_INT16)
-#define TTYPE_BFLOAT16_INT16_BFLOAT16 , (bfloat16, int16_t, bfloat16)
-#define TTYPE_BFLOAT16_INT16_INT16 , (bfloat16, int16_t, int16_t)
+#define TTYPE_BFLOAT16_INT16_BFLOAT16 , (bfloat16, Int16Type, bfloat16)
+#define TTYPE_BFLOAT16_INT16_INT16 , (bfloat16, Int16Type, Int16Type)
 #else
 #define TTYPE_BFLOAT16_INT16_BFLOAT16
 #define TTYPE_BFLOAT16_INT16_INT16
@@ -641,8 +873,8 @@
 #define TTYPE_BFLOAT16_INT32_INT32
 #endif
 #if defined(HAS_INT8)
-#define TTYPE_BFLOAT16_INT8_BFLOAT16 , (bfloat16, int8_t, bfloat16)
-#define TTYPE_BFLOAT16_INT8_INT8 , (bfloat16, int8_t, int8_t)
+#define TTYPE_BFLOAT16_INT8_BFLOAT16 , (bfloat16, SignedChar, bfloat16)
+#define TTYPE_BFLOAT16_INT8_INT8 , (bfloat16, SignedChar, SignedChar)
 #else
 #define TTYPE_BFLOAT16_INT8_BFLOAT16
 #define TTYPE_BFLOAT16_INT8_INT8
@@ -696,8 +928,8 @@
 #define TTYPE_BOOL_FLOAT16_FLOAT16
 #endif
 #if defined(HAS_INT16)
-#define TTYPE_BOOL_INT16_BOOL , (bool, int16_t, bool)
-#define TTYPE_BOOL_INT16_INT16 , (bool, int16_t, int16_t)
+#define TTYPE_BOOL_INT16_BOOL , (bool, Int16Type, bool)
+#define TTYPE_BOOL_INT16_INT16 , (bool, Int16Type, Int16Type)
 #else
 #define TTYPE_BOOL_INT16_BOOL
 #define TTYPE_BOOL_INT16_INT16
@@ -710,8 +942,8 @@
 #define TTYPE_BOOL_INT32_INT32
 #endif
 #if defined(HAS_INT8)
-#define TTYPE_BOOL_INT8_BOOL , (bool, int8_t, bool)
-#define TTYPE_BOOL_INT8_INT8 , (bool, int8_t, int8_t)
+#define TTYPE_BOOL_INT8_BOOL , (bool, SignedChar, bool)
+#define TTYPE_BOOL_INT8_INT8 , (bool, SignedChar, SignedChar)
 #else
 #define TTYPE_BOOL_INT8_BOOL
 #define TTYPE_BOOL_INT8_INT8
@@ -765,8 +997,8 @@
 #define TTYPE_DOUBLE_FLOAT16_FLOAT16
 #endif
 #if defined(HAS_INT16)
-#define TTYPE_DOUBLE_INT16_DOUBLE , (double, int16_t, double)
-#define TTYPE_DOUBLE_INT16_INT16 , (double, int16_t, int16_t)
+#define TTYPE_DOUBLE_INT16_DOUBLE , (double, Int16Type, double)
+#define TTYPE_DOUBLE_INT16_INT16 , (double, Int16Type, Int16Type)
 #else
 #define TTYPE_DOUBLE_INT16_DOUBLE
 #define TTYPE_DOUBLE_INT16_INT16
@@ -779,8 +1011,8 @@
 #define TTYPE_DOUBLE_INT32_INT32
 #endif
 #if defined(HAS_INT8)
-#define TTYPE_DOUBLE_INT8_DOUBLE , (double, int8_t, double)
-#define TTYPE_DOUBLE_INT8_INT8 , (double, int8_t, int8_t)
+#define TTYPE_DOUBLE_INT8_DOUBLE , (double, SignedChar, double)
+#define TTYPE_DOUBLE_INT8_INT8 , (double, SignedChar, SignedChar)
 #else
 #define TTYPE_DOUBLE_INT8_DOUBLE
 #define TTYPE_DOUBLE_INT8_INT8
@@ -834,8 +1066,8 @@
 #define TTYPE_FLOAT_FLOAT16_FLOAT16
 #endif
 #if defined(HAS_INT16)
-#define TTYPE_FLOAT_INT16_FLOAT , (float, int16_t, float)
-#define TTYPE_FLOAT_INT16_INT16 , (float, int16_t, int16_t)
+#define TTYPE_FLOAT_INT16_FLOAT , (float, Int16Type, float)
+#define TTYPE_FLOAT_INT16_INT16 , (float, Int16Type, Int16Type)
 #else
 #define TTYPE_FLOAT_INT16_FLOAT
 #define TTYPE_FLOAT_INT16_INT16
@@ -848,8 +1080,8 @@
 #define TTYPE_FLOAT_INT32_INT32
 #endif
 #if defined(HAS_INT8)
-#define TTYPE_FLOAT_INT8_FLOAT , (float, int8_t, float)
-#define TTYPE_FLOAT_INT8_INT8 , (float, int8_t, int8_t)
+#define TTYPE_FLOAT_INT8_FLOAT , (float, SignedChar, float)
+#define TTYPE_FLOAT_INT8_INT8 , (float, SignedChar, SignedChar)
 #else
 #define TTYPE_FLOAT_INT8_FLOAT
 #define TTYPE_FLOAT_INT8_INT8
@@ -903,8 +1135,8 @@
 #define TTYPE_FLOAT16_FLOAT_FLOAT16
 #endif
 #if defined(HAS_INT16)
-#define TTYPE_FLOAT16_INT16_FLOAT16 , (float16, int16_t, float16)
-#define TTYPE_FLOAT16_INT16_INT16 , (float16, int16_t, int16_t)
+#define TTYPE_FLOAT16_INT16_FLOAT16 , (float16, Int16Type, float16)
+#define TTYPE_FLOAT16_INT16_INT16 , (float16, Int16Type, Int16Type)
 #else
 #define TTYPE_FLOAT16_INT16_FLOAT16
 #define TTYPE_FLOAT16_INT16_INT16
@@ -917,8 +1149,8 @@
 #define TTYPE_FLOAT16_INT32_INT32
 #endif
 #if defined(HAS_INT8)
-#define TTYPE_FLOAT16_INT8_FLOAT16 , (float16, int8_t, float16)
-#define TTYPE_FLOAT16_INT8_INT8 , (float16, int8_t, int8_t)
+#define TTYPE_FLOAT16_INT8_FLOAT16 , (float16, SignedChar, float16)
+#define TTYPE_FLOAT16_INT8_INT8 , (float16, SignedChar, SignedChar)
 #else
 #define TTYPE_FLOAT16_INT8_FLOAT16
 #define TTYPE_FLOAT16_INT8_INT8
@@ -942,66 +1174,66 @@
 #endif
 
 #if defined(HAS_INT16)
-#define TTYPE_INT16_INT16_INT16 , (int16_t, int16_t, int16_t)
+#define TTYPE_INT16_INT16_INT16 , (Int16Type, Int16Type, Int16Type)
 #if defined(HAS_BFLOAT16)
-#define TTYPE_INT16_BFLOAT16_BFLOAT16 , (int16_t, bfloat16, bfloat16)
-#define TTYPE_INT16_BFLOAT16_INT16 , (int16_t, bfloat16, int16_t)
+#define TTYPE_INT16_BFLOAT16_BFLOAT16 , (Int16Type, bfloat16, bfloat16)
+#define TTYPE_INT16_BFLOAT16_INT16 , (Int16Type, bfloat16, Int16Type)
 #else
 #define TTYPE_INT16_BFLOAT16_BFLOAT16
 #define TTYPE_INT16_BFLOAT16_INT16
 #endif
 #if defined(HAS_BOOL)
-#define TTYPE_INT16_BOOL_BOOL , (int16_t, bool, bool)
-#define TTYPE_INT16_BOOL_INT16 , (int16_t, bool, int16_t)
+#define TTYPE_INT16_BOOL_BOOL , (Int16Type, bool, bool)
+#define TTYPE_INT16_BOOL_INT16 , (Int16Type, bool, Int16Type)
 #else
 #define TTYPE_INT16_BOOL_BOOL
 #define TTYPE_INT16_BOOL_INT16
 #endif
 #if defined(HAS_DOUBLE)
-#define TTYPE_INT16_DOUBLE_DOUBLE , (int16_t, double, double)
-#define TTYPE_INT16_DOUBLE_INT16 , (int16_t, double, int16_t)
+#define TTYPE_INT16_DOUBLE_DOUBLE , (Int16Type, double, double)
+#define TTYPE_INT16_DOUBLE_INT16 , (Int16Type, double, Int16Type)
 #else
 #define TTYPE_INT16_DOUBLE_DOUBLE
 #define TTYPE_INT16_DOUBLE_INT16
 #endif
 #if defined(HAS_FLOAT32)
-#define TTYPE_INT16_FLOAT_FLOAT , (int16_t, float, float)
-#define TTYPE_INT16_FLOAT_INT16 , (int16_t, float, int16_t)
+#define TTYPE_INT16_FLOAT_FLOAT , (Int16Type, float, float)
+#define TTYPE_INT16_FLOAT_INT16 , (Int16Type, float, Int16Type)
 #else
 #define TTYPE_INT16_FLOAT_FLOAT
 #define TTYPE_INT16_FLOAT_INT16
 #endif
 #if defined(HAS_FLOAT16)
-#define TTYPE_INT16_FLOAT16_FLOAT16 , (int16_t, float16, float16)
-#define TTYPE_INT16_FLOAT16_INT16 , (int16_t, float16, int16_t)
+#define TTYPE_INT16_FLOAT16_FLOAT16 , (Int16Type, float16, float16)
+#define TTYPE_INT16_FLOAT16_INT16 , (Int16Type, float16, Int16Type)
 #else
 #define TTYPE_INT16_FLOAT16_FLOAT16
 #define TTYPE_INT16_FLOAT16_INT16
 #endif
 #if defined(HAS_INT32)
-#define TTYPE_INT16_INT32_INT16 , (int16_t, Int32Type, int16_t)
-#define TTYPE_INT16_INT32_INT32 , (int16_t, Int32Type, Int32Type)
+#define TTYPE_INT16_INT32_INT16 , (Int16Type, Int32Type, Int16Type)
+#define TTYPE_INT16_INT32_INT32 , (Int16Type, Int32Type, Int32Type)
 #else
 #define TTYPE_INT16_INT32_INT16
 #define TTYPE_INT16_INT32_INT32
 #endif
 #if defined(HAS_INT8)
-#define TTYPE_INT16_INT8_INT16 , (int16_t, int8_t, int16_t)
-#define TTYPE_INT16_INT8_INT8 , (int16_t, int8_t, int8_t)
+#define TTYPE_INT16_INT8_INT16 , (Int16Type, SignedChar, Int16Type)
+#define TTYPE_INT16_INT8_INT8 , (Int16Type, SignedChar, SignedChar)
 #else
 #define TTYPE_INT16_INT8_INT16
 #define TTYPE_INT16_INT8_INT8
 #endif
 #if defined(HAS_INT64)
-#define TTYPE_INT16_LONG_INT16 , (int16_t, LongType, int16_t)
-#define TTYPE_INT16_LONG_LONG , (int16_t, LongType, LongType)
+#define TTYPE_INT16_LONG_INT16 , (Int16Type, LongType, Int16Type)
+#define TTYPE_INT16_LONG_LONG , (Int16Type, LongType, LongType)
 #else
 #define TTYPE_INT16_LONG_INT16
 #define TTYPE_INT16_LONG_LONG
 #endif
 #if defined(HAS_UINT8)
-#define TTYPE_INT16_UINT8_INT16 , (int16_t, UnsignedChar, int16_t)
-#define TTYPE_INT16_UINT8_UINT8 , (int16_t, UnsignedChar, UnsignedChar)
+#define TTYPE_INT16_UINT8_INT16 , (Int16Type, UnsignedChar, Int16Type)
+#define TTYPE_INT16_UINT8_UINT8 , (Int16Type, UnsignedChar, UnsignedChar)
 #else
 #define TTYPE_INT16_UINT8_INT16
 #define TTYPE_INT16_UINT8_UINT8
@@ -1048,15 +1280,15 @@
 #define TTYPE_INT32_FLOAT16_INT32
 #endif
 #if defined(HAS_INT16)
-#define TTYPE_INT32_INT16_INT16 , (Int32Type, int16_t, int16_t)
-#define TTYPE_INT32_INT16_INT32 , (Int32Type, int16_t, Int32Type)
+#define TTYPE_INT32_INT16_INT16 , (Int32Type, Int16Type, Int16Type)
+#define TTYPE_INT32_INT16_INT32 , (Int32Type, Int16Type, Int32Type)
 #else
 #define TTYPE_INT32_INT16_INT16
 #define TTYPE_INT32_INT16_INT32
 #endif
 #if defined(HAS_INT8)
-#define TTYPE_INT32_INT8_INT32 , (Int32Type, int8_t, Int32Type)
-#define TTYPE_INT32_INT8_INT8 , (Int32Type, int8_t, int8_t)
+#define TTYPE_INT32_INT8_INT32 , (Int32Type, SignedChar, Int32Type)
+#define TTYPE_INT32_INT8_INT8 , (Int32Type, SignedChar, SignedChar)
 #else
 #define TTYPE_INT32_INT8_INT32
 #define TTYPE_INT32_INT8_INT8
@@ -1080,66 +1312,66 @@
 #endif
 
 #if defined(HAS_INT8)
-#define TTYPE_INT8_INT8_INT8 , (int8_t, int8_t, int8_t)
+#define TTYPE_INT8_INT8_INT8 , (SignedChar, SignedChar, SignedChar)
 #if defined(HAS_BFLOAT16)
-#define TTYPE_INT8_BFLOAT16_BFLOAT16 , (int8_t, bfloat16, bfloat16)
-#define TTYPE_INT8_BFLOAT16_INT8 , (int8_t, bfloat16, int8_t)
+#define TTYPE_INT8_BFLOAT16_BFLOAT16 , (SignedChar, bfloat16, bfloat16)
+#define TTYPE_INT8_BFLOAT16_INT8 , (SignedChar, bfloat16, SignedChar)
 #else
 #define TTYPE_INT8_BFLOAT16_BFLOAT16
 #define TTYPE_INT8_BFLOAT16_INT8
 #endif
 #if defined(HAS_BOOL)
-#define TTYPE_INT8_BOOL_BOOL , (int8_t, bool, bool)
-#define TTYPE_INT8_BOOL_INT8 , (int8_t, bool, int8_t)
+#define TTYPE_INT8_BOOL_BOOL , (SignedChar, bool, bool)
+#define TTYPE_INT8_BOOL_INT8 , (SignedChar, bool, SignedChar)
 #else
 #define TTYPE_INT8_BOOL_BOOL
 #define TTYPE_INT8_BOOL_INT8
 #endif
 #if defined(HAS_DOUBLE)
-#define TTYPE_INT8_DOUBLE_DOUBLE , (int8_t, double, double)
-#define TTYPE_INT8_DOUBLE_INT8 , (int8_t, double, int8_t)
+#define TTYPE_INT8_DOUBLE_DOUBLE , (SignedChar, double, double)
+#define TTYPE_INT8_DOUBLE_INT8 , (SignedChar, double, SignedChar)
 #else
 #define TTYPE_INT8_DOUBLE_DOUBLE
 #define TTYPE_INT8_DOUBLE_INT8
 #endif
 #if defined(HAS_FLOAT32)
-#define TTYPE_INT8_FLOAT_FLOAT , (int8_t, float, float)
-#define TTYPE_INT8_FLOAT_INT8 , (int8_t, float, int8_t)
+#define TTYPE_INT8_FLOAT_FLOAT , (SignedChar, float, float)
+#define TTYPE_INT8_FLOAT_INT8 , (SignedChar, float, SignedChar)
 #else
 #define TTYPE_INT8_FLOAT_FLOAT
 #define TTYPE_INT8_FLOAT_INT8
 #endif
 #if defined(HAS_FLOAT16)
-#define TTYPE_INT8_FLOAT16_FLOAT16 , (int8_t, float16, float16)
-#define TTYPE_INT8_FLOAT16_INT8 , (int8_t, float16, int8_t)
+#define TTYPE_INT8_FLOAT16_FLOAT16 , (SignedChar, float16, float16)
+#define TTYPE_INT8_FLOAT16_INT8 , (SignedChar, float16, SignedChar)
 #else
 #define TTYPE_INT8_FLOAT16_FLOAT16
 #define TTYPE_INT8_FLOAT16_INT8
 #endif
 #if defined(HAS_INT16)
-#define TTYPE_INT8_INT16_INT16 , (int8_t, int16_t, int16_t)
-#define TTYPE_INT8_INT16_INT8 , (int8_t, int16_t, int8_t)
+#define TTYPE_INT8_INT16_INT16 , (SignedChar, Int16Type, Int16Type)
+#define TTYPE_INT8_INT16_INT8 , (SignedChar, Int16Type, SignedChar)
 #else
 #define TTYPE_INT8_INT16_INT16
 #define TTYPE_INT8_INT16_INT8
 #endif
 #if defined(HAS_INT32)
-#define TTYPE_INT8_INT32_INT32 , (int8_t, Int32Type, Int32Type)
-#define TTYPE_INT8_INT32_INT8 , (int8_t, Int32Type, int8_t)
+#define TTYPE_INT8_INT32_INT32 , (SignedChar, Int32Type, Int32Type)
+#define TTYPE_INT8_INT32_INT8 , (SignedChar, Int32Type, SignedChar)
 #else
 #define TTYPE_INT8_INT32_INT32
 #define TTYPE_INT8_INT32_INT8
 #endif
 #if defined(HAS_INT64)
-#define TTYPE_INT8_LONG_INT8 , (int8_t, LongType, int8_t)
-#define TTYPE_INT8_LONG_LONG , (int8_t, LongType, LongType)
+#define TTYPE_INT8_LONG_INT8 , (SignedChar, LongType, SignedChar)
+#define TTYPE_INT8_LONG_LONG , (SignedChar, LongType, LongType)
 #else
 #define TTYPE_INT8_LONG_INT8
 #define TTYPE_INT8_LONG_LONG
 #endif
 #if defined(HAS_UINT8)
-#define TTYPE_INT8_UINT8_INT8 , (int8_t, UnsignedChar, int8_t)
-#define TTYPE_INT8_UINT8_UINT8 , (int8_t, UnsignedChar, UnsignedChar)
+#define TTYPE_INT8_UINT8_INT8 , (SignedChar, UnsignedChar, SignedChar)
+#define TTYPE_INT8_UINT8_UINT8 , (SignedChar, UnsignedChar, UnsignedChar)
 #else
 #define TTYPE_INT8_UINT8_INT8
 #define TTYPE_INT8_UINT8_UINT8
@@ -1186,8 +1418,8 @@
 #define TTYPE_LONG_FLOAT16_LONG
 #endif
 #if defined(HAS_INT16)
-#define TTYPE_LONG_INT16_INT16 , (LongType, int16_t, int16_t)
-#define TTYPE_LONG_INT16_LONG , (LongType, int16_t, LongType)
+#define TTYPE_LONG_INT16_INT16 , (LongType, Int16Type, Int16Type)
+#define TTYPE_LONG_INT16_LONG , (LongType, Int16Type, LongType)
 #else
 #define TTYPE_LONG_INT16_INT16
 #define TTYPE_LONG_INT16_LONG
@@ -1200,8 +1432,8 @@
 #define TTYPE_LONG_INT32_LONG
 #endif
 #if defined(HAS_INT8)
-#define TTYPE_LONG_INT8_INT8 , (LongType, int8_t, int8_t)
-#define TTYPE_LONG_INT8_LONG , (LongType, int8_t, LongType)
+#define TTYPE_LONG_INT8_INT8 , (LongType, SignedChar, SignedChar)
+#define TTYPE_LONG_INT8_LONG , (LongType, SignedChar, LongType)
 #else
 #define TTYPE_LONG_INT8_INT8
 #define TTYPE_LONG_INT8_LONG
@@ -1255,8 +1487,8 @@
 #define TTYPE_UINT8_FLOAT16_UINT8
 #endif
 #if defined(HAS_INT16)
-#define TTYPE_UINT8_INT16_INT16 , (UnsignedChar, int16_t, int16_t)
-#define TTYPE_UINT8_INT16_UINT8 , (UnsignedChar, int16_t, UnsignedChar)
+#define TTYPE_UINT8_INT16_INT16 , (UnsignedChar, Int16Type, Int16Type)
+#define TTYPE_UINT8_INT16_UINT8 , (UnsignedChar, Int16Type, UnsignedChar)
 #else
 #define TTYPE_UINT8_INT16_INT16
 #define TTYPE_UINT8_INT16_UINT8
@@ -1269,8 +1501,8 @@
 #define TTYPE_UINT8_INT32_UINT8
 #endif
 #if defined(HAS_INT8)
-#define TTYPE_UINT8_INT8_INT8 , (UnsignedChar, int8_t, int8_t)
-#define TTYPE_UINT8_INT8_UINT8 , (UnsignedChar, int8_t, UnsignedChar)
+#define TTYPE_UINT8_INT8_INT8 , (UnsignedChar, SignedChar, SignedChar)
+#define TTYPE_UINT8_INT8_UINT8 , (UnsignedChar, SignedChar, UnsignedChar)
 #else
 #define TTYPE_UINT8_INT8_INT8
 #define TTYPE_UINT8_INT8_UINT8
@@ -1287,9 +1519,9 @@
 #endif
 
 #if defined(HAS_UNSIGNEDLONG)
-#define TTYPE_ND4JULONG_ND4JULONG_ND4JULONG , (uint64_t, uint64_t, uint64_t)
+#define TTYPE_ND4JULONG_ND4JULONG_ND4JULONG , (UnsignedLong, UnsignedLong, UnsignedLong)
 #if defined(HAS_BOOL)
-#define TTYPE_UINT64_BOOL_UINT64 , (uint64_t, bool, uint64_t)
+#define TTYPE_UINT64_BOOL_UINT64 , (UnsignedLong, bool, UnsignedLong)
 #else
 #define TTYPE_UINT64_BOOL_UINT64
 #endif
@@ -1298,9 +1530,9 @@
 #endif
 
 #if defined(HAS_UINT16)
-#define TTYPE_UINT16_UINT16_UINT16 , (uint16_t, uint16_t, uint16_t)
+#define TTYPE_UINT16_UINT16_UINT16 , (UInt16Type, UInt16Type, UInt16Type)
 #if defined(HAS_BOOL)
-#define TTYPE_UINT16_BOOL_UINT16 , (uint16_t, bool, uint16_t)
+#define TTYPE_UINT16_BOOL_UINT16 , (UInt16Type, bool, UInt16Type)
 #else
 #define TTYPE_UINT16_BOOL_UINT16
 #endif
@@ -1309,9 +1541,9 @@
 #endif
 
 #if defined(HAS_UINT32)
-#define TTYPE_UINT32_UINT32_UINT32 , (uint32_t, uint32_t, uint32_t)
+#define TTYPE_UINT32_UINT32_UINT32 , (UInt32Type, UInt32Type, UInt32Type)
 #if defined(HAS_BOOL)
-#define TTYPE_UINT32_BOOL_UINT32 , (uint32_t, bool, uint32_t)
+#define TTYPE_UINT32_BOOL_UINT32 , (UInt32Type, bool, UInt32Type)
 #else
 #define TTYPE_UINT32_BOOL_UINT32
 #endif
@@ -1659,8 +1891,9 @@ static void safe_copy(U* dest, const V* src, size_t count) {
 #endif
 
 // Apply selective rendering to safe_copy instantiations
-// This is the key line that was causing your compilation error
-ITERATE_COMBINATIONS((SD_NUMERIC_TYPES), (SD_NUMERIC_TYPES), INSTANTIATE_COPY, safe_copy, ;);
+// NOTE: Explicit instantiation disabled to avoid duplicates with platform-specific types
+// (TTYPE_PLATFORM_UINT32/UINT64). The inline template will be instantiated on-demand.
+// ITERATE_COMBINATIONS((SD_NUMERIC_TYPES), (SD_NUMERIC_TYPES), INSTANTIATE_COPY, safe_copy, ;);
 
 template <typename T>
 static void safe_zero(T* dest, size_t count) {
@@ -1680,7 +1913,9 @@ static void safe_zero(T* dest, size_t count) {
 #endif
 
 // Apply selective rendering to safe_zero instantiations
-ITERATE_LIST((SD_NUMERIC_TYPES), INSTANTIATE_ZERO)
+// NOTE: Explicit instantiation disabled to avoid duplicates with platform-specific types
+// (TTYPE_PLATFORM_UINT32/UINT64). The inline template will be instantiated on-demand.
+// ITERATE_LIST((SD_NUMERIC_TYPES), INSTANTIATE_ZERO)
 
 } // namespace ops
 } // namespace sd
@@ -1768,7 +2003,7 @@ static_assert(true, "Selective rendering integration active in types.h");
 #define TYPE_MACRO_double DOUBLE
 #define TYPE_MACRO_float16 FLOAT16
 #define TYPE_MACRO_bfloat16 BFLOAT16
-#define TYPE_MACRO_UnsignedChar UINT8
+#define TYPE_MACRO_uint8_t UINT8
 #define TYPE_MACRO_uint16_t UINT16
 #define TYPE_MACRO_uint32_t UINT32
 #define TYPE_MACRO_uint64_t UINT64
