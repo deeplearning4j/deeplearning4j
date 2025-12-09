@@ -94,8 +94,11 @@ CUSTOM_OP_IMPL(resize_bicubic, 2, 1, false, 0, 0) {
   bool exclude_outside = halfPixelAlign;
   double coef = halfPixelAlign ? helpers::KeysCubicKernelFunc<double>::KEYS_CUBIC_COEF
                                : helpers::KeysCubicKernelFunc<double>::ORDINARY_COEF;
-  return resizeBicubicFunctorA(block.launchContext(), &source, width, height, alignCorners, coorMode,
-                                        exclude_outside, coef, &target);
+  auto ret =  resizeBicubicFunctorA(block.launchContext(), source, width, height, alignCorners, coorMode,
+                                        exclude_outside, coef, target);
+  delete source;
+  delete target;
+  return ret;
 }
 
 DECLARE_SHAPE_FN(resize_bicubic) {

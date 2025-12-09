@@ -85,8 +85,11 @@ CUSTOM_OP_IMPL(resize_bilinear, 1, 1, false, 0, -2) {
   REQUIRE_TRUE(!halfPixelCenter || (halfPixelCenter && !alignCorners), 0,
                "resize_bilinear: `half_pixel_centers' should be false or true only when `align_corners' is false");
 
-  return helpers::resizeBilinearFunctor(block.launchContext(), inRank == 4 ? image : &source, width, height,
-                                        alignCorners, halfPixelCenter, inRank == 4 ? output : &target);
+  auto ret =  helpers::resizeBilinearFunctor(block.launchContext(), inRank == 4 ? image : source, width, height,
+                                        alignCorners, halfPixelCenter, inRank == 4 ? output : target);
+  delete source;
+  delete target;
+  return ret;
 }
 
 DECLARE_SHAPE_FN(resize_bilinear) {
