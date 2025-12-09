@@ -34,6 +34,14 @@ InteropDataBuffer::InteropDataBuffer(InteropDataBuffer* dataBuffer, uint64_t len
   _dataBuffer = dataBuffer->dataBuffer();
   _dataType = dataBuffer->_dataType;
 
+  _cachedLenInBytes = length * DataTypeUtils::sizeOf(_dataType);
+  // Cache pointers for deallocation tracking
+  if (_dataBuffer != nullptr) {
+    _cachedPrimaryPtr = _dataBuffer->primary();
+    _cachedSpecialPtr = _dataBuffer->special();
+  }
+
+  owner = false;
 }
 
 InteropDataBuffer::InteropDataBuffer(DataBuffer * databuffer) {
@@ -43,6 +51,15 @@ InteropDataBuffer::InteropDataBuffer(DataBuffer * databuffer) {
     THROW_EXCEPTION(
         "InteropDataBuffer::InteropDataBuffer(size_t lenInBytes, DataType dtype, bool allocateBoth) - data type is unknown");
   }
+  // Cache the size to avoid accessing freed memory later
+  _cachedLenInBytes = databuffer != nullptr ? databuffer->getLenInBytes() : 0;
+  // Cache pointers for deallocation tracking
+  if (databuffer != nullptr) {
+    _cachedPrimaryPtr = databuffer->primary();
+    _cachedSpecialPtr = databuffer->special();
+  }
+  // When wrapping an existing DataBuffer, we don't own it by default
+  owner = false;
 }
 
 InteropDataBuffer::InteropDataBuffer(size_t lenInBytes, DataType dtype, bool allocateBoth) {
@@ -50,6 +67,8 @@ InteropDataBuffer::InteropDataBuffer(size_t lenInBytes, DataType dtype, bool all
     THROW_EXCEPTION(
         "InteropDataBuffer::InteropDataBuffer(size_t lenInBytes, DataType dtype, bool allocateBoth) - data type is unknown");
   }
+
+  _cachedLenInBytes = lenInBytes;
 
   if (lenInBytes == 0) {
     _dataBuffer = nullptr;
@@ -59,6 +78,10 @@ InteropDataBuffer::InteropDataBuffer(size_t lenInBytes, DataType dtype, bool all
     //note this should be size in bytes hence why we multiply the number of elements by the size of the data type
     _dataBuffer = new DataBuffer(lenInBytes, dtype, nullptr, allocateBoth);
     this->_dataType = dtype;
+    this->markOwner(true);
+    // Cache pointers for deallocation tracking
+    _cachedPrimaryPtr = _dataBuffer->primary();
+    _cachedSpecialPtr = _dataBuffer->special();
   }
 }
 
@@ -71,8 +94,10 @@ void InteropDataBuffer::printDbAllocationTrace() {
 
 void InteropDataBuffer::markOwner(bool owner) {
   this->owner = owner;
-  this->_dataBuffer->_isOwnerPrimary = owner;
-  this->_dataBuffer->_isOwnerSpecial = owner;
+  if(_dataBuffer != nullptr && !_closed) {
+    this->_dataBuffer->_isOwnerPrimary = owner;
+    this->_dataBuffer->_isOwnerSpecial = owner;
+  }
 }
 
 DataBuffer * InteropDataBuffer::getDataBuffer() const {
@@ -80,15 +105,16 @@ DataBuffer * InteropDataBuffer::getDataBuffer() const {
   if(_dataType == DataType::UNKNOWN) {
     THROW_EXCEPTION("All interop buffers must have a known data type.");
   }
- if(_dataBuffer != nullptr && _dataBuffer->_dataType == DataType::UNKNOWN) {
+  // Don't access _dataBuffer if it's been closed/freed
+  if(_dataBuffer != nullptr && !_closed && _dataBuffer->_dataType == DataType::UNKNOWN) {
     _dataBuffer->_dataType = _dataType;
-
- }
-  return _dataBuffer;
+  }
+  // Return nullptr if closed to prevent use-after-free
+  return _closed ? nullptr : _dataBuffer;
 }
 
 DataBuffer * InteropDataBuffer::dataBuffer() {
-  if(_dataBuffer == nullptr || _dataBuffer == nullptr) {
+  if(_dataBuffer == nullptr) {
     return nullptr;
   }
   return _dataBuffer;
@@ -97,7 +123,7 @@ DataBuffer * InteropDataBuffer::dataBuffer() {
 
 
 void* InteropDataBuffer::primary() const {
-  if(_dataBuffer->primary() == nullptr) {
+  if(_dataBuffer == nullptr || _dataBuffer->primary() == nullptr) {
     return nullptr;
   }
   return reinterpret_cast<int8_t*>(_dataBuffer->primary());
@@ -112,21 +138,36 @@ void* InteropDataBuffer::special() const {
   return reinterpret_cast<int8_t*>(_dataBuffer->special());
 }
 
-void InteropDataBuffer::setPrimary(void* ptr, size_t length) {
-  if(_dataBuffer == nullptr)
-    THROW_EXCEPTION("InteropDataBuffer::setPrimary() - _dataBuffer is nullptr");
-  _dataBuffer->setPrimaryBuffer(ptr, length);
-}
-
 void InteropDataBuffer::setSpecial(void* ptr, size_t length) {
   if(_dataBuffer == nullptr)
     THROW_EXCEPTION("InteropDataBuffer::setSpecial() - _dataBuffer is nullptr");
+  if(_closed)
+    return;  // Silently ignore if buffer was already closed
   _dataBuffer->setSpecialBuffer(ptr, length);
+  // Update cached pointer
+  _cachedSpecialPtr = ptr;
 }
 
+void InteropDataBuffer::setPrimary(void* ptr, size_t length) {
+  if(_dataBuffer == nullptr)
+    THROW_EXCEPTION("InteropDataBuffer::setPrimary() - _dataBuffer is nullptr");
+  if(_closed)
+    return;  // Silently ignore if buffer was already closed
+  _dataBuffer->setPrimaryBuffer(ptr, length);
+  // Update cached pointer
+  _cachedPrimaryPtr = ptr;
+}
 
-
-int InteropDataBuffer::deviceId() const { return _dataBuffer->deviceId(); }
+void InteropDataBuffer::setDeviceId(int deviceId) {
+  if(_dataBuffer == nullptr || _closed)
+    return;
+  _dataBuffer->setDeviceId(deviceId);
+}
+int InteropDataBuffer::deviceId() const {
+  if(_dataBuffer == nullptr || _closed)
+    return 0;
+  return _dataBuffer->deviceId();
+}
 
 int InteropDataBuffer::useCount() const {
   return 1;
@@ -146,21 +187,26 @@ void InteropDataBuffer::prepareSpecialUse(const std::vector<const InteropDataBuf
                                           bool synchronizeWritables) {
   auto currentDeviceId = AffinityManager::currentDeviceId();
   for (const auto& v : readList) {
-    if (v == nullptr) continue;
+    if (v == nullptr || v->_closed) continue;
 
-    if (v->getDataBuffer()->deviceId() != currentDeviceId) v->getDataBuffer()->migrate();
+    auto db = v->getDataBuffer();
+    if(db == nullptr) continue;
 
-    v->getDataBuffer()->syncToSpecial();
+    if (db->deviceId() != currentDeviceId) db->migrate();
+    db->syncToSpecial();
   }
 
   // we don't tick write list, only ensure the same device affinity
   for (const auto& v : writeList) {
-    if (v == nullptr) continue;
+    if (v == nullptr || v->_closed) continue;
+
+    auto db = v->getDataBuffer();
+    if(db == nullptr) continue;
 
     // special case for legacy ops - views can be updated on host side, thus original array can be not updated
-    if (!v->getDataBuffer()->isSpecialActual()) v->getDataBuffer()->syncToSpecial();
+    if (!db->isSpecialActual()) db->syncToSpecial();
 
-    if (v->getDataBuffer()->deviceId() != currentDeviceId) v->getDataBuffer()->migrate();
+    if (db->deviceId() != currentDeviceId) db->migrate();
   }
 }
 
@@ -176,8 +222,10 @@ void InteropDataBuffer::preparePrimaryUse(const std::vector<const InteropDataBuf
 }
 
 void InteropDataBuffer::expand(size_t newlength) {
+  if(_dataBuffer == nullptr || _closed)
+    return;  // Cannot expand a closed or null buffer
   _dataBuffer->expand(newlength * DataTypeUtils::sizeOf(_dataBuffer->getDataType()));
 }
 
-void InteropDataBuffer::setDeviceId(int deviceId) { _dataBuffer->setDeviceId(deviceId); }
+
 }  // namespace sd
