@@ -199,7 +199,7 @@ std::vector<Variable *> *Graph::fetchOutputs() {
         res->push_back(_variableSpace->getVariable(nodeId, e1));
       } else {
         if (e == 0) {
-          throw unresolved_output_exception::build("Can't find output variable", nodeId, e);
+          THROW_EXCEPTION(unresolved_output_exception::build("Can't find output variable", nodeId, e).what());
         } else
           break;
       }
@@ -888,7 +888,7 @@ void Graph::toposortNodes() {
             in.first)) {  // that's probably variable. if not - we'll throw exception later
           // do nothing, maxDepLayer is -1 here, because it's a variable input
         } else {
-          throw unresolved_input_exception::build("Unknown input specified", id, in);
+          THROW_EXCEPTION(unresolved_input_exception::build("Unknown input specified", id, in).what());
         }
       }
 
@@ -908,7 +908,7 @@ void Graph::toposortNodes() {
     attempts++;
   }
 
-  if (!_unmapped.empty()) throw graph_exception("Graph wasn't toposorted", 0);
+  if (!_unmapped.empty()) THROW_EXCEPTION(graph_exception("Graph wasn't toposorted", 0).what());
 
   _built = true;
 }
