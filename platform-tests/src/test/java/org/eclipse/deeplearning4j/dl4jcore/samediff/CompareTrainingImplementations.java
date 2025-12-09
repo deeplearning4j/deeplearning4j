@@ -69,14 +69,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class CompareTrainingImplementations extends BaseDL4JTest {
 
 
-    @Test
-    public void simpleTest() throws Exception {
-        INDArray arr = Nd4j.read(new FileInputStream("/home/agibsonccc/Documents/GitHub/kompile/kompile-rag-builds/kompile-sample/project/inputs.bin"));
-        SameDiff model = SDZSerializer.load(new File("/home/agibsonccc/.kompile/models/anserini/encoders/bge-base-en-v1.5/bge-base-en-v1.5.sdz"), true);
-        Map<String,INDArray> placeholders = new HashMap<>();
-        placeholders.put("input_ids", arr);
-        model.output(placeholders,"1492");
-    }
+
 
     @Test
     @Disabled("Need to look in to comparisons to see how valid this test is")
