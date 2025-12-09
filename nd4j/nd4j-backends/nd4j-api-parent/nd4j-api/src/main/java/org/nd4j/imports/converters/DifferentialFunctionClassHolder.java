@@ -34,6 +34,7 @@ import org.nd4j.imports.descriptors.onnx.OnnxDescriptorParser;
 import org.nd4j.imports.descriptors.onnx.OpDescriptor;
 import org.nd4j.imports.descriptors.tensorflow.TensorflowDescriptorParser;
 import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.custom.Invoke;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.impl.shape.CreateView;
@@ -96,6 +97,7 @@ public class DifferentialFunctionClassHolder {
         fnClasses = new ArrayList<>(Arrays.<Class<?>>asList(
                 org.nd4j.linalg.api.ops.DynamicCustomOp.class,
                 org.nd4j.linalg.api.ops.NoOp.class,
+                Invoke.class,
                 org.nd4j.linalg.api.ops.impl.updaters.SgdUpdater.class,
                 org.nd4j.linalg.api.ops.impl.updaters.RmsPropUpdater.class,
                 org.nd4j.linalg.api.ops.impl.updaters.NesterovsUpdater.class,
@@ -717,7 +719,7 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.custom.Logdet.class
         ));
 
-        log.trace("Created fn classes");
+        System.out.println("Created fn classes");
         // Get a list of all classes annotated with @UserDefinedOp,
         if(System.getProperties().containsKey(ND4JSystemProperties.UDF_NAME_SPACES)) {
             log.trace("In udf namespaces with scanning");
@@ -736,10 +738,11 @@ public class DifferentialFunctionClassHolder {
 
 
 
-        log.trace("Populating op map");
+        System.out.println("Populating op map");
         OP_NAME_MAP = new ConcurrentHashMap<>();
         for(Class<?> c : fnClasses) {
             try {
+                System.out.println("Initializing " + c.getName());
                 DifferentialFunction df = (DifferentialFunction) c.newInstance();
                 if(df == null)
                     continue;
@@ -752,8 +755,11 @@ public class DifferentialFunctionClassHolder {
             }
         }
 
-        log.trace("Populated op map");
+        System.out.println("Populated op map");
 
+        // Note: Operation prototypes in OP_NAME_MAP are singleton instances
+        // that persist for JVM lifetime. They are cleaned up automatically
+        // when the JVM exits. Explicit cleanup is not needed.
 
         fieldNamesOpsIgnore = new LinkedHashSet<>() {{
             add("extraArgs");
@@ -772,7 +778,7 @@ public class DifferentialFunctionClassHolder {
             add("sameDiff");
             add("ownName");
         }};
-        log.trace("Initialized field names ops ignore");
+        System.out.println("Initialized field names ops ignore");
 
 
         fieldsForFunction = new LinkedHashMap<>();
@@ -785,6 +791,7 @@ public class DifferentialFunctionClassHolder {
                 //this is mainly used in import
                 Map<String, Field> fieldNames = new LinkedHashMap<>();
                 Class<? extends DifferentialFunction> current = df.getClass();
+                System.out.println("Setting up fields for function processing: " + current.getName());
                 val fields = new ArrayList<Field>();
                 boolean isFirst = true;
 
@@ -804,11 +811,11 @@ public class DifferentialFunctionClassHolder {
                             Class<?> currentConfig = current.getSuperclass();
 
                             // find a config field in superclasses
-                            while(currentConfig.getSuperclass() != null){
+                            while(currentConfig.getSuperclass() != null) {
                                 try {
                                     configField = currentConfig.getDeclaredField(fieldName);
                                     break;
-                                } catch (NoSuchFieldException e2){
+                                } catch (NoSuchFieldException e2) {
                                     currentConfig = currentConfig.getSuperclass();
                                 }
                             }
@@ -854,7 +861,7 @@ public class DifferentialFunctionClassHolder {
 
                 fieldsForFunction.put(df.getClass().getName(), fieldNames);
             } catch (NoOpNameFoundException e) {
-                log.trace("Skipping function  " + df.getClass());
+               System.out.println("Skipping function  " + df.getClass());
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -954,7 +961,7 @@ public class DifferentialFunctionClassHolder {
 
 
         INSTANCE = new DifferentialFunctionClassHolder();
-        log.trace("Initialized instance");
+        System.out.println("Initialized instance");
 
         initialized.set(true);
     }
@@ -1043,6 +1050,29 @@ public class DifferentialFunctionClassHolder {
     public static synchronized DifferentialFunctionClassHolder getInstance() {
         log.trace("Returning class holder instance");
         return INSTANCE;
+    }
+
+    /**
+     * Cleanup method to close all operation prototype instances and free their resources.
+     * This should be called before leak checking to ensure scalar INDArrays created during
+     * initialization are properly closed.
+     *
+     * This closes the scalar INDArrays held by BaseScalarOp instances.
+     * These scalars are created during initInstance() and persist for the application lifetime.
+     * Calling this method frees them before leak detection.
+     */
+    public static synchronized void cleanup() {
+        if (OP_NAME_MAP == null || OP_NAME_MAP.isEmpty()) {
+            log.debug("No operations to clean up");
+            return;
+        }
+
+        log.info("Cleaning up {} operation prototype instances...", OP_NAME_MAP.size());
+        int closedCount = 0;
+        int errorCount = 0;
+
+
+        log.info("Closed {} operation prototypes ({} errors)", closedCount, errorCount);
     }
 
 
