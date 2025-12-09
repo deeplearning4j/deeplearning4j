@@ -102,7 +102,6 @@ function(is_semantically_valid_combination type1 type2 type3 mode result_var)
 endfunction()
 
 # =============================================================================
-# ORIGINAL FUNCTIONS - PRESERVED EXACTLY AS THEY WERE
 # =============================================================================
 
 # Enhanced function to validate ML-specific type combinations
@@ -244,7 +243,7 @@ function(suggest_type_optimizations current_types target_workload result_var)
         list(APPEND suggestions "Focus on deployment-optimized types")
         list(APPEND suggestions "Optimize for quantized inference patterns")
         list(APPEND suggestions "Remove training-specific combinations")
-        list(APPEND suggestions "Prioritize int8_t, uint8_t, float16, float combinations")
+        list(APPEND suggestions "Prioritize int8_t, UnsignedChar, float16, float combinations")
 
     elseif(target_workload STREQUAL "nlp")
         # Check for string types
@@ -473,7 +472,6 @@ function(sort_types_by_ml_priority types_list result_var)
 endfunction()
 
 # =============================================================================
-# ORIGINAL FUNCTIONS (Enhanced) - ALL PRESERVED
 # =============================================================================
 
 # Type aliases for normalization
@@ -491,6 +489,8 @@ set(ALL_SUPPORTED_TYPES
         "int64" "uint64" "float16" "bfloat16" "float32" "double"
         "float" "half" "long" "unsignedlong" "int" "bfloat" "float64"
         "utf8" "utf16" "utf32"
+        # String normalized forms (from srcore_normalize_type)
+        "std::string" "std::u16string" "std::u32string"
         # Quantization aliases
         "qint8" "quint8" "qint16" "quint16"
 )
@@ -509,7 +509,6 @@ set(DEBUG_PROFILE_QUANTIZATION "int8;uint8;float32;int32;int64")
 set(DEBUG_PROFILE_MIXED_PRECISION "float16;bfloat16;float32;int32;int64")
 set(DEBUG_PROFILE_NLP "std::string;float32;int32;int64")
 
-# Function to normalize a type name (enhanced) - FIXED TO USE srcore_normalize_type
 function(normalize_type input_type output_var)
     srcore_normalize_type("${input_type}" result)
     set(${output_var} "${result}" PARENT_SCOPE)
@@ -850,7 +849,6 @@ function(validate_and_process_types)
         message(STATUS "🎯 SD_FORCE_ALL_TYPES=ON detected - USER EXPLICITLY REQUESTED ALL TYPES")
     endif()
 
-    # STEP 2: Check if the current SD_TYPES_LIST matches any debug profile (CRITICAL FIX)
     set(TYPES_ARE_DEBUG_PROFILE FALSE)
     if(DEFINED SD_TYPES_LIST AND SD_TYPES_LIST AND NOT SD_TYPES_LIST STREQUAL "")
         string(STRIP "${SD_TYPES_LIST}" stripped_types)
@@ -901,7 +899,6 @@ function(validate_and_process_types)
                 set(USER_EXPLICITLY_PROVIDED_TYPES TRUE)
                 message(STATUS "🎯 SD_FORCE_SELECTIVE_TYPES=ON - User explicitly wants selective types: ${SD_TYPES_LIST}")
             elseif(TYPES_ARE_DEBUG_PROFILE)
-                # CRITICAL FIX: If types match a debug profile, they are NOT user-provided
                 set(USER_EXPLICITLY_PROVIDED_TYPES FALSE)
                 message(STATUS "🎯 Types match debug profile ${matched_profile} - NOT treating as user-provided")
             elseif(CMAKE_BUILD_TYPE STREQUAL "Debug" AND SD_GCC_FUNCTRACE)
@@ -941,7 +938,6 @@ function(validate_and_process_types)
         set(SD_TYPES_LIST "" PARENT_SCOPE)
         set(SD_TYPES_LIST_COUNT 0 PARENT_SCOPE)
 
-        # CRITICAL: Also clear all cached variables to prevent them from overriding
         unset(SD_TYPES_LIST CACHE)
         unset(SD_TYPES_LIST_COUNT CACHE)
         unset(SRCORE_VALIDATED_TYPES CACHE)
@@ -958,7 +954,6 @@ function(validate_and_process_types)
         validate_type_list("${SD_TYPES_LIST}" "${validation_mode}")
 
     elseif(TYPES_ARE_DEBUG_PROFILE)
-        # CRITICAL FIX: If types are from a debug profile, ignore them and use ALL types
         message(STATUS "🎯 ✅ DECISION: ALL TYPES MODE (debug profile detected and ignored)")
         message(STATUS "🎯 Reason: SD_TYPES_LIST matches debug profile ${matched_profile} - ignoring and using ALL types")
         set(USE_ALL_TYPES TRUE)
@@ -968,7 +963,6 @@ function(validate_and_process_types)
         set(SD_TYPES_LIST "" PARENT_SCOPE)
         set(SD_TYPES_LIST_COUNT 0 PARENT_SCOPE)
 
-        # CRITICAL: Also clear all cached variables to prevent them from overriding
         unset(SD_TYPES_LIST CACHE)
         unset(SD_TYPES_LIST_COUNT CACHE)
         unset(SRCORE_VALIDATED_TYPES CACHE)
@@ -985,7 +979,6 @@ function(validate_and_process_types)
         set(SD_TYPES_LIST "" PARENT_SCOPE)
         set(SD_TYPES_LIST_COUNT 0 PARENT_SCOPE)
 
-        # CRITICAL: Also clear all cached variables to prevent them from overriding
         unset(SD_TYPES_LIST CACHE)
         unset(SD_TYPES_LIST_COUNT CACHE)
         unset(SRCORE_VALIDATED_TYPES CACHE)
@@ -1255,10 +1248,8 @@ function(libnd4j_validate_and_setup_types)
     # Step 2: Run main validation
     validate_and_process_types()
 
-    # Step 3: Set up compile definitions - THIS IS THE CRITICAL STEP
     setup_type_definitions()
 
-    # Step 4: Validate consistency - FIXED FUNCTION
     validate_type_consistency()
 
     if(COMMAND print_status_colored)
@@ -1457,7 +1448,6 @@ function(setup_type_definitions_for_target target_name)
 endfunction()
 
 # =============================================================================
-# UTILITY FUNCTIONS - ALL PRESERVED
 # =============================================================================
 
 # Function to create a type configuration summary file
