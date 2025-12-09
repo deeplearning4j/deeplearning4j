@@ -21,6 +21,7 @@
 #ifndef LIBND4J_SHAPEBUFFERPLATFORMHELPER_H
 #define LIBND4J_SHAPEBUFFERPLATFORMHELPER_H
 
+#include <system/common.h>
 #include <helpers/ShapeBufferCreatorHelper.h>
 
 namespace sd {
@@ -36,7 +37,7 @@ public:
      * This method should be called during the application startup
      * to ensure proper creators are set based on the available hardware
      */
-    static void initialize();
+    SD_LIB_EXPORT static void initialize();
 
     /**
      * Automatic initialization through static initialization
