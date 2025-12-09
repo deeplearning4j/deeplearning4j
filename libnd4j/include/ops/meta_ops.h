@@ -42,7 +42,6 @@ class InvertedMetaOp {
     /*
      * We assume, that this method won't be EVER called
      */
-    printf("InvertedMetaOp:postProcess This method should not have been executed.\n");
     return (T)0.0f;
   }
 
@@ -64,7 +63,6 @@ class InvertedMetaOp {
     /*
      * We assume, that this method won't be EVER called
      */
-    printf("MetaOp:postProcess This method should not have been executed.\n");
 
     return (T)0.0f;
   }
