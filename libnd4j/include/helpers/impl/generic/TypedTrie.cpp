@@ -27,19 +27,10 @@ template<typename KeyType, typename ValueType, size_t NUM_STRIPES>
 struct TypedTrie<KeyType, ValueType, NUM_STRIPES>::TrieNode {
   std::shared_ptr<ValueType> value;
   std::unordered_map<typename KeyType::value_type, std::unique_ptr<TrieNode>> children;
-  std::atomic<uint32_t> refCount{0};
   std::atomic<bool> isComplete{false};
   std::chrono::steady_clock::time_point lastAccess;
 
   TrieNode() : lastAccess(std::chrono::steady_clock::now()) {}
-
-  void incrementRef() {
-    refCount.fetch_add(1, std::memory_order_acq_rel);
-  }
-
-  bool decrementRef() {
-    return refCount.fetch_sub(1, std::memory_order_acq_rel) == 1;
-  }
 };
 
 
@@ -47,6 +38,7 @@ struct TypedTrie<KeyType, ValueType, NUM_STRIPES>::TrieNode {
 template<typename KeyType, typename ValueType, size_t NUM_STRIPES>
 TypedTrie<KeyType, ValueType, NUM_STRIPES>::TypedTrie()
  {
+#ifdef __cpp_exceptions
   try {
     for (auto& root : _roots) {
       root = std::make_unique<TrieNode>();
@@ -56,6 +48,13 @@ TypedTrie<KeyType, ValueType, NUM_STRIPES>::TypedTrie()
     cleanup();
     throw;
   }
+#else
+  // Exceptions disabled - direct initialization without try/catch
+  for (auto& root : _roots) {
+    root = std::make_unique<TrieNode>();
+    _resourceManager.registerNode();
+  }
+#endif
 }
 
 template<typename KeyType, typename ValueType, size_t NUM_STRIPES>
@@ -102,7 +101,8 @@ void TypedTrie<KeyType, ValueType, NUM_STRIPES>::cleanupNode(TrieNode* node) {
   auto age = std::chrono::duration_cast<std::chrono::minutes>(
       now - node->lastAccess).count();
 
-  if (age > 30 && node->refCount.load(std::memory_order_acquire) == 0) {
+  // Clean up nodes older than 30 minutes
+  if (age > 30) {
     node->value.reset();
 
     for (auto it = node->children.begin(); it != node->children.end();) {
@@ -142,12 +142,9 @@ std::shared_ptr<ValueType> TypedTrie<KeyType, ValueType, NUM_STRIPES>::get(const
 }
 
 
-template std::shared_ptr<sd::ConstantShapeBuffer*>
-sd::generic::TypedTrie<std::vector<long long, std::allocator<long long>>,
-    sd::ConstantShapeBuffer*,
-    32>::get(const std::vector<long long, std::allocator<long long>>& key) const;
-
-
+// Previously instantiated TypedTrie with ConstantShapeBuffer* (raw pointer) as ValueType
+// This caused undefined behavior by mixing raw pointer storage with shared_ptr returns
+// The correct instantiation uses std::shared_ptr<ConstantShapeBuffer> (line 246)
 
 template<typename KeyType, typename ValueType, size_t NUM_STRIPES>
 bool TypedTrie<KeyType, ValueType, NUM_STRIPES>::insert(const KeyType& key,
@@ -169,7 +166,6 @@ bool TypedTrie<KeyType, ValueType, NUM_STRIPES>::insert(const KeyType& key,
     return false;
   }
 
-  node->incrementRef();
   node->value = value;
   node->lastAccess = std::chrono::steady_clock::now();
   node->isComplete.store(true, std::memory_order_release);
@@ -177,11 +173,7 @@ bool TypedTrie<KeyType, ValueType, NUM_STRIPES>::insert(const KeyType& key,
   return true;
 }
 
-template bool
-sd::generic::TypedTrie<std::vector<long long, std::allocator<long long>>,
-    sd::ConstantShapeBuffer*,
-    32>::insert(const std::vector<long long, std::allocator<long long>>& key,
-                std::shared_ptr<sd::ConstantShapeBuffer*> value);
+// template bool sd::generic::TypedTrie<..., ConstantShapeBuffer*, ...>::insert(...)
 
 template<typename KeyType, typename ValueType, size_t NUM_STRIPES>
 bool TypedTrie<KeyType, ValueType, NUM_STRIPES>::remove(const KeyType& key) {
@@ -217,19 +209,14 @@ void TypedTrie<KeyType, ValueType, NUM_STRIPES>::cleanup() {
   }
 }
 
-template void
-sd::generic::TypedTrie<std::vector<long long, std::allocator<long long>>,
-    sd::ConstantShapeBuffer*,
-    32>::cleanup();
+// template void sd::generic::TypedTrie<..., ConstantShapeBuffer*, ...>::cleanup();
+
 template void
 sd::generic::TypedTrie<std::vector<long long, std::allocator<long long>>,
     sd::TadPack*,
     32>::cleanup();
 
-template
-sd::generic::TypedTrie<std::vector<long long, std::allocator<long long>>,
-    sd::ConstantShapeBuffer*,
-    32>::~TypedTrie();
+// template sd::generic::TypedTrie<..., ConstantShapeBuffer*, ...>::~TypedTrie();
 
 template<typename KeyType, typename ValueType, size_t NUM_STRIPES>
 typename TypedTrie<KeyType, ValueType, NUM_STRIPES>::Stats
@@ -246,11 +233,12 @@ TypedTrie<KeyType, ValueType, NUM_STRIPES>::getStats() const {
 
 template class sd::generic::TypedTrie<std::vector<unsigned char>, std::shared_ptr<sd::ConstantShapeBuffer>, 32>;
 template class sd::generic::TypedTrie<std::vector<sd::LongType>, std::shared_ptr<sd::TadPack>, 32>;
+
+// NOTE: TadPack raw pointer instantiations kept for now (may need similar cleanup in future)
 template std::shared_ptr<sd::TadPack*>
 sd::generic::TypedTrie<std::vector<long long, std::allocator<long long>>,
                        sd::TadPack*,
                        32>::get(const std::vector<long long, std::allocator<long long>>& key) const;
-// Add to TypedTrie.cpp
 template bool
 sd::generic::TypedTrie<std::vector<long long, std::allocator<long long>>,
                        sd::TadPack*,
@@ -261,8 +249,5 @@ template
                            sd::TadPack*,
                            32>::~TypedTrie();
 
-
-
-template sd::generic::TypedTrie<std::vector<long long, std::allocator<long long>>,
-                   sd::ConstantShapeBuffer*,
-                   32ul>::TypedTrie();
+// template sd::generic::TypedTrie<..., ConstantShapeBuffer*, ...>::TypedTrie();
+// This was mixing raw pointer storage with shared_ptr-based lifecycle management
