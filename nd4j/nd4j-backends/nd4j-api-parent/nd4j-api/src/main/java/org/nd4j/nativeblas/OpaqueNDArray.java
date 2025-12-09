@@ -314,7 +314,16 @@ public class OpaqueNDArray extends Pointer {
         if(array == null) {
             return null;
         }
-        return array.getOrCreateOpaqueNDArray();
+        OpaqueNDArray opaque = array.getOrCreateOpaqueNDArray();
+        // Defensive check: verify the OpaqueNDArray has a valid native pointer.
+        // This can fail if the OpaqueNDArray was deallocated between creation and this check.
+        if (opaque == null || opaque.isNull()) {
+            throw new IllegalStateException(
+                "Failed to create OpaqueNDArray from INDArray (id=" + array.getId() +
+                ", closed=" + array.wasClosed() +
+                "). The native pointer is null. This indicates premature deallocation.");
+        }
+        return opaque;
     }
 
     /**

@@ -24,7 +24,6 @@ import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.common.base.Preconditions;

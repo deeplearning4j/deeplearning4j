@@ -958,6 +958,19 @@ public interface NativeOps {
   */
  void clearAllocationContext();
 
+
+ void recordJavaNDArrayAllocation(OpaqueNDArray array, long size, int dataType, boolean isView);
+
+ void recordJavaNDArrayDeallocation(OpaqueNDArray array);
+
+ void recordJavaDataBufferAllocation(OpaqueDataBuffer buffer, long size, int dataType, boolean isWorkspace);
+
+ void recordJavaDataBufferDeallocation(OpaqueDataBuffer buffer);
+
+ void recordJavaOpContextAllocation(OpaqueContext context, int nodeId, long fastpathInSize, long fastpathOutSize, long intermediateResultsSize, long handlesSize, boolean hasWorkspace, boolean isFastPath);
+
+ void recordJavaOpContextDeallocation(OpaqueContext context);
+
  /**
   * Update the Java stack trace for an existing NDArray allocation record.
   * <p>

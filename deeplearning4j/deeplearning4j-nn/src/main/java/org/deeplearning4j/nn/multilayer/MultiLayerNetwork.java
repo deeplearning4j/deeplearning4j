@@ -85,7 +85,6 @@ import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.linalg.workspace.ND4JWorkspaceException;
 import org.nd4j.linalg.workspace.WorkspaceUtils;
 import org.nd4j.common.util.OneTimeLogger;
-import org.nd4j.linalg.workspace.WorkspacesCloseable;
 
 import java.io.*;
 import java.util.*;

@@ -707,4 +707,54 @@ public class CpuEnvironment implements Environment {
     public void setTrackOperations(boolean enabled) {
         e.setTrackOperations(enabled);
     }
+
+    @Override
+    public boolean isNDArrayTracking() {
+        return e.isNDArrayTracking();
+    }
+
+    @Override
+    public void setNDArrayTracking(boolean enabled) {
+        e.setNDArrayTracking(enabled);
+    }
+
+    @Override
+    public boolean isDataBufferTracking() {
+        return e.isDataBufferTracking();
+    }
+
+    @Override
+    public void setDataBufferTracking(boolean enabled) {
+        e.setDataBufferTracking(enabled);
+    }
+
+    @Override
+    public boolean isTADCacheTracking() {
+        return e.isTADCacheTracking();
+    }
+
+    @Override
+    public void setTADCacheTracking(boolean enabled) {
+        e.setTADCacheTracking(enabled);
+    }
+
+    @Override
+    public boolean isShapeCacheTracking() {
+        return e.isShapeCacheTracking();
+    }
+
+    @Override
+    public void setShapeCacheTracking(boolean enabled) {
+        e.setShapeCacheTracking(enabled);
+    }
+
+    @Override
+    public boolean isOpContextTracking() {
+        return e.isOpContextTracking();
+    }
+
+    @Override
+    public void setOpContextTracking(boolean enabled) {
+        e.setOpContextTracking(enabled);
+    }
 }

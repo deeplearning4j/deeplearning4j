@@ -51,6 +51,8 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/OpExecutionLogger.h>
 #include <graph/OpContextLifecycleTracker.h>
+#include <array/NDArrayLifecycleTracker.h>
+#include <array/DataBufferLifecycleTracker.h>
 #include <sys/types.h>
 
 #include <execution/Threads.h>
@@ -872,16 +874,31 @@ void sortTad(sd::Pointer *extraPointers, OpaqueNDArray  x,
 sd::Status execCustomOp2(sd::Pointer *extraPointers, sd::LongType hash, OpaqueContext *context) {
     auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
 
-#if defined(SD_GCC_FUNCTRACE)
     // Set op name BEFORE execute() so allocations during execution are tagged
+    // This is done unconditionally so per-op tracking works even without SD_GCC_FUNCTRACE
     if (op->getOpName() != nullptr) {
-        sd::ops::OpExecutionLogger::setCurrentOpName(*op->getOpName());
+        const std::string& opName = *op->getOpName();
+
+        // Set the op context in ALL lifecycle trackers so allocations are tagged
+        sd::array::NDArrayLifecycleTracker::setCurrentOpContext(opName);
+        sd::array::DataBufferLifecycleTracker::setCurrentOpContext(opName);
+        sd::graph::OpContextLifecycleTracker::setCurrentOpContext(opName);
+
         // Also update the already-tracked context with the op name
-        sd::graph::OpContextLifecycleTracker::getInstance().updateContextOpName(context, *op->getOpName());
-    }
+        sd::graph::OpContextLifecycleTracker::getInstance().updateContextOpName(context, opName);
+
+#if defined(SD_GCC_FUNCTRACE)
+        // Also set for OpExecutionLogger when functrace is enabled
+        sd::ops::OpExecutionLogger::setCurrentOpName(opName);
 #endif
+    }
 
     auto result = op->execute(context);
+
+    // Clear op context after execution
+    sd::array::NDArrayLifecycleTracker::clearCurrentOpContext();
+    sd::array::DataBufferLifecycleTracker::clearCurrentOpContext();
+    sd::graph::OpContextLifecycleTracker::clearCurrentOpContext();
 
 #if defined(SD_GCC_FUNCTRACE)
     sd::ops::OpExecutionLogger::clearCurrentOpName();

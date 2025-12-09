@@ -110,6 +110,8 @@ class SD_LIB_EXPORT LaunchContext {
                 Pointer allocationPointer = nullptr);
   LaunchContext();
   ~LaunchContext();
+  static bool isManagedContext(LaunchContext* contextPtr);
+  void operator delete(void* ptr) noexcept;
   memory::Workspace* getWorkspace() const {
     return _workspace;
   }

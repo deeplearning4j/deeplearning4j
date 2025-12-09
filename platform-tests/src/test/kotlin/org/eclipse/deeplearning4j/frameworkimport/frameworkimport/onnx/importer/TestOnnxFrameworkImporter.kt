@@ -38,7 +38,7 @@ class TestOnnxFrameworkImporter {
             val sameDiffOutput = imported.output(inputs, outputName)[outputName]!!
 
             assertArrayEquals(runnerOutput.shape(), sameDiffOutput.shape())
-            assertTrue(runnerOutput.equalsWithEps(sameDiffOutput, 1e-4f))
+            assertTrue(runnerOutput.equalsWithEps(sameDiffOutput, 1e-4))
         }
     }
 }

@@ -38,6 +38,7 @@ import org.nd4j.autodiff.samediff.execution.ForwardExecutionDAGBuilder;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.common.function.Predicate;
 
@@ -265,19 +266,27 @@ public abstract class AbstractSession<T, O> {
         zeroInputOpsInSubgraph.clear();
 
         // Deallocate arrays before clearing map to prevent memory leak
+        // CRITICAL: Check useCount to avoid closing shared data buffers which causes NaN
         for (SDValue value : nodeValueOutputs.values()) {
             if (value != null) {
                 switch (value.getSdValueType()) {
                     case TENSOR:
-                        if (value.getTensorValue() != null && value.getTensorValue().closeable()) {
-                            value.getTensorValue().close();
+                        INDArray tensor = value.getTensorValue();
+                        if (tensor != null && tensor.closeable() && !tensor.wasClosed()) {
+                            // Only close if data buffer is not shared with other arrays
+                            if (tensor.data() == null || Nd4j.getExecutioner().useCount(tensor.data()) <= 1) {
+                                tensor.close();
+                            }
                         }
                         break;
                     case LIST:
                         if (value.getListValue() != null) {
                             for (INDArray arr : value.getListValue()) {
-                                if (arr != null && arr.closeable()) {
-                                    arr.close();
+                                if (arr != null && arr.closeable() && !arr.wasClosed()) {
+                                    // Only close if data buffer is not shared with other arrays
+                                    if (arr.data() == null || Nd4j.getExecutioner().useCount(arr.data()) <= 1) {
+                                        arr.close();
+                                    }
                                 }
                             }
                         }
@@ -2042,6 +2051,11 @@ public abstract class AbstractSession<T, O> {
                 }
             }
         }
+
+        if(sameDiff.getConstantArrays().hasArray(varName)) {
+            return sameDiff.getConstantArrays().getArray(varName);
+        }
+
         return null;
     }
 

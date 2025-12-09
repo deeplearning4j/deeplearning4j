@@ -746,7 +746,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     }
 
     @Override
-    public void clearArrays(){
+    public void clearArrays() {
         x = null;
         y = null;
         z = null;

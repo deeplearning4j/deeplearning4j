@@ -23,6 +23,7 @@
 #include <execution/AffinityManager.h>
 #include <execution/LaunchContext.h>
 #include <helpers/logger.h>
+#include <algorithm>
 #include <thread>
 
 // NOTE: Removed thread_local to fix "cannot allocate memory in static TLS block" error
@@ -66,9 +67,29 @@ LaunchContext::~LaunchContext() {
 // 3. The vector's destructor tries to destroy stored contexts while they're still in use
 // This is safe because LaunchContexts are only created during initialization and
 // process exit cleans up all memory anyway.
+//
+// IMPORTANT: This must remain a vector of raw pointers (not shared_ptr). Using shared_ptr here
+// reintroduces shutdown crashes because the shared_ptr control block will still try to destroy
+// the LaunchContext instances during static cleanup, even if the underlying storage is leaked.
+// By keeping raw pointers we completely sidestep shared_ptr reference counting and destructor
+// execution during JVM shutdown.
 std::vector<LaunchContext*>& LaunchContext::contexts() {
   static std::vector<LaunchContext*>* _contexts = new std::vector<LaunchContext*>();
   return *_contexts;
+}
+
+bool LaunchContext::isManagedContext(LaunchContext* contextPtr) {
+  auto& ctxs = LaunchContext::contexts();
+  return std::find(ctxs.begin(), ctxs.end(), contextPtr) != ctxs.end();
+}
+
+void LaunchContext::operator delete(void* ptr) noexcept {
+  if (ptr == nullptr) return;
+  auto* ctx = reinterpret_cast<LaunchContext*>(ptr);
+  // Default contexts are intentionally leaked to avoid shutdown-order crashes.
+  if (LaunchContext::isManagedContext(ctx)) return;
+
+  ::operator delete(ptr);
 }
 
 SD_MAP_IMPL<int, std::mutex*> LaunchContext::_deviceMutexes;

@@ -113,7 +113,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected static ThreadLocal<Boolean> callingToString = initWithFalse();
     protected long offset = 0;
 
-    protected OpaqueNDArray opaqueNDArray;
+    // CRITICAL: volatile ensures visibility across threads.
+    // Access MUST be synchronized via opaqueNDArrayLock to prevent race conditions
+    // between getOrCreateOpaqueNDArray() and clearOpaqueNDArray().
+    protected volatile OpaqueNDArray opaqueNDArray;
+
+    // Lock object for thread-safe access to opaqueNDArray
+    private final Object opaqueNDArrayLock = new Object();
 
     public BaseNDArray(DataBuffer data, long[] newShape, long[] newStride, long offset, long ews, char ordering, DataType dataType, boolean isView) {
         this.data = data;
@@ -286,8 +292,16 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
     public BaseNDArray(LongShapeDescriptor descriptor) {
+        // CRITICAL FIX: Use initialized buffer (true) instead of uninitialized (false).
+        // When uninitialized, buffer contains garbage data which may include NaN values.
+        // If native operations fail to write to the buffer for any reason (e.g., memory
+        // management issues, stale pointers), the output will contain these garbage NaN values.
+        // Using initialized (zeroed) buffers ensures predictable behavior even if native
+        // operations don't write - though this does have a small performance cost.
+        // This was changed after memory management updates caused sporadic NaN outputs
+        // in reduce operations like norm2() where the native code wasn't writing to output.
         this(descriptor.isEmpty() ? null :
-                        Nd4j.createBuffer(descriptor.dataType(),descriptor.length(),false)
+                        Nd4j.createBuffer(descriptor.dataType(),descriptor.length(),true)
                 , descriptor);
         this.offset = descriptor.getOffset();
     }
@@ -1355,6 +1369,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     private void setShapeInformation(Pair<DataBuffer, long[]> shapeInfo) {
+        // CRITICAL: Clear cached OpaqueNDArray when shape info changes!
+        // The cached OpaqueNDArray holds native pointers to the old shape info memory.
+        // If we don't clear it, the native sd::NDArray* will have dangling pointers
+        // to the old shape info, causing SIGSEGV crashes when native code accesses it.
+        // Note: During construction opaqueNDArray is null, so this is a no-op then.
+        clearOpaqueNDArray();
         this.jvmShapeInfo = new JvmShapeInfo(shapeInfo.getSecond());
         this.shapeInfoDataBuffer = shapeInfo.getFirst();
     }
@@ -2742,6 +2762,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public void setData(DataBuffer data) {
+        // CRITICAL: Clear cached OpaqueNDArray when data buffer changes!
+        // The cached OpaqueNDArray holds native pointers to the old data buffer memory.
+        // If we don't clear it, the native sd::NDArray* will have dangling pointers
+        // to the old data, causing SIGSEGV crashes when native code accesses it.
+        clearOpaqueNDArray();
         this.data = data;
     }
 
@@ -6371,37 +6396,79 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public OpaqueNDArray getOrCreateOpaqueNDArray() {
-        if(opaqueNDArray != null) {
-            return opaqueNDArray;
+        // CRITICAL: Check if the array is closed BEFORE attempting to create OpaqueNDArray.
+        // If the array is closed, its data buffer's native memory has been freed.
+        // Creating an OpaqueNDArray with pointers to freed memory causes use-after-free
+        // crashes (SIGSEGV) when native code tries to access the memory.
+        // This check prevents the crash by failing fast with a clear exception.
+        if (wasClosed()) {
+            throw new IllegalStateException(
+                "Cannot create OpaqueNDArray for closed INDArray (id=" + getId() +
+                "). The data buffer has been freed. This usually indicates a bug " +
+                "where an array is used after being closed or released to memory manager.");
         }
-        DataBuffer buffer = data();
-        DataBuffer shapeInfo = shapeInfoDataBuffer();
 
-        OpaqueNDArray ret =  OpaqueNDArray.create(
-                shapeInfo.opaqueBuffer(),
-                isEmpty() ? null : buffer.opaqueBuffer(),
-                isEmpty() ? null :buffer.opaqueBuffer(),
-                offset()
-        );
-        opaqueNDArray = ret;
+        // CRITICAL: Synchronize to prevent race condition with clearOpaqueNDArray().
+        // Without synchronization, another thread could close the OpaqueNDArray between
+        // our null check and our return, causing us to return an invalid/closed reference.
+        // This race condition was causing NaN values in reduce operations.
+        synchronized (opaqueNDArrayLock) {
+            // Double-check after acquiring lock in case close() was called concurrently
+            if (wasClosed()) {
+                throw new IllegalStateException(
+                    "Cannot create OpaqueNDArray for closed INDArray (id=" + getId() +
+                    "). Array was closed by another thread.");
+            }
 
-        return ret;
+            // CRITICAL: Check both that the cached OpaqueNDArray exists AND that its native pointer
+            // is still valid. The DeallocatorService can deallocate the OpaqueNDArray (setting its
+            // pointer to null via setNull()) while we still hold a reference to the Java object.
+            // Without the isNull() check, we'd return an invalidated OpaqueNDArray with a null
+            // native pointer, causing "Input array at index X was null!" errors in native code.
+            if (opaqueNDArray != null && !opaqueNDArray.isNull()) {
+                return opaqueNDArray;
+            }
+
+            // If we had a cached OpaqueNDArray but it was deallocated, clear the stale reference
+            if (opaqueNDArray != null && opaqueNDArray.isNull()) {
+                opaqueNDArray = null;
+            }
+            DataBuffer buffer = data();
+            DataBuffer shapeInfo = shapeInfoDataBuffer();
+
+            OpaqueNDArray ret = OpaqueNDArray.create(
+                    shapeInfo.opaqueBuffer(),
+                    isEmpty() ? null : buffer.opaqueBuffer(),
+                    isEmpty() ? null : buffer.opaqueBuffer(),
+                    offset()
+            );
+            opaqueNDArray = ret;
+
+            return ret;
+        }
     }
 
     @Override
     public void clearOpaqueNDArray() {
-        // Close the OpaqueNDArray BEFORE nulling the reference.
-        // This ensures the native sd::NDArray* is deleted while the data buffer is still valid.
-        // The OpaqueNDArrayDeallocator has double-free protection (synchronized block + deallocated flag)
-        // so calling close() here is safe even if DeallocatorService tries to clean up later.
-        //
-        // CRITICAL: We MUST close before the data buffer is closed!
-        // If we just null the reference, the OpaqueNDArray still exists in DeallocatorService
-        // with pointers to the data buffer. When we close data buffer and DeallocatorService
-        // later cleans up, it may try to access freed memory, causing heap corruption
-        // ("malloc(): invalid size (unsorted)").
-        if (opaqueNDArray != null) {
-            opaqueNDArray.close();
+        // CRITICAL: Synchronize to prevent race condition with getOrCreateOpaqueNDArray().
+        // Without synchronization, getOrCreateOpaqueNDArray() could return a reference
+        // that we're about to clear, causing the caller to use an invalidated OpaqueNDArray.
+        synchronized (opaqueNDArrayLock) {
+            // CRITICAL FIX: Do NOT call close() here!
+            // The OpaqueNDArray might still be in use by OpaqueNDArrayArr (e.g., during operation
+            // execution when setData() or setShapeInformation() is called on an input array).
+            // If we close() the OpaqueNDArray, its native pointer becomes null, causing
+            // "Input array at index X was null!" errors in native code.
+            //
+            // Instead, just clear our cache reference. The OpaqueNDArray will be cleaned up by
+            // DeallocatorService when all strong references are gone (including OpaqueNDArrayArr).
+            // The next call to getOrCreateOpaqueNDArray() will create a fresh OpaqueNDArray
+            // with the updated data/shape pointers.
+            //
+            // Note: This is safe because:
+            // 1. OpaqueNDArrayArr keeps parentArrays alive, which keeps data buffers valid
+            // 2. When OpaqueNDArrayArr is closed, it clears references and lets GC handle cleanup
+            // 3. DeallocatorService will delete the native sd::NDArray* when no refs remain
             opaqueNDArray = null;
         }
     }
@@ -6429,19 +6496,27 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         // CRITICAL ORDER: Close OpaqueNDArray BEFORE data buffer!
         // The OpaqueNDArray holds native pointers to the data buffer.
         // If we close data first, those pointers become dangling.
-        clearOpaqueNDArray();
-        data.close();
-
-        // CRITICAL: Close shape info buffer if it's not a cached constant
-        // Shape buffers from DirectShapeInfoProvider are cached and marked constant up to MAX_ENTRIES (1000).
-        // After that, uncached shape buffers are returned that need to be deallocated to prevent memory leaks.
-        if (shapeInfoDataBuffer != null && shapeInfoDataBuffer.closeable()) {
-            try {
-                shapeInfoDataBuffer.close();
-            } catch (Exception e) {
-                // Ignore - may already be closed or shared
+        // NOTE: We close directly here instead of calling clearOpaqueNDArray() because
+        // the data buffer is about to be freed. clearOpaqueNDArray() just clears the
+        // reference (for use during data/shape changes), but here we must actually
+        // close the native array before the data buffer becomes invalid.
+        synchronized (opaqueNDArrayLock) {
+            if (opaqueNDArray != null) {
+                opaqueNDArray.close();
+                opaqueNDArray = null;
             }
         }
+        data.close();
+
+        // NOTE: Do NOT close shapeInfoDataBuffer here!
+        // Shape buffers can be SHARED between multiple NDArrays (e.g., when reshaping,
+        // creating views, or when the cache limit is reached). Closing one array's
+        // shape buffer would invalidate it for all arrays sharing the same shape,
+        // causing use-after-free crashes.
+        // Shape buffers are small (typically 64-128 bytes) and are either:
+        // 1. Cached as constants (no leak) - up to MAX_ENTRIES in DirectShapeInfoProvider
+        // 2. Shared between arrays (closing would cause crashes)
+        // The minimal memory overhead is acceptable to avoid the severe crash risk.
 
         released = true;
     }
@@ -6472,10 +6547,21 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     public void assignNewId() {
         arrayId = arrayCounter.incrementAndGet();
+        // CRITICAL: Clear cached OpaqueNDArray when array is reused from cache.
+        // The old OpaqueNDArray may have been deallocated by DeallocatorService
+        // while the array was in the cache. Using a stale OpaqueNDArray that points
+        // to freed memory causes undefined behavior (NaN values, crashes).
+        // A fresh OpaqueNDArray will be created on demand via getOrCreateOpaqueNDArray().
+        clearOpaqueNDArray();
     }
 
 
     public void setShapeInfoDataBuffer(DataBuffer shapeInformation) {
+        // CRITICAL: Clear cached OpaqueNDArray when shape info changes!
+        // The cached OpaqueNDArray holds native pointers to the old shape info memory.
+        // If we don't clear it, the native sd::NDArray* will have dangling pointers
+        // to the old shape info, causing SIGSEGV crashes when native code accesses it.
+        clearOpaqueNDArray();
         this.shapeInfoDataBuffer = shapeInformation;
         this.jvmShapeInfo = new JvmShapeInfo(shapeInformation.asLong());
     }

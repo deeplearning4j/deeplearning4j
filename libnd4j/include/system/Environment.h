@@ -65,6 +65,13 @@ class SD_LIB_EXPORT Environment {
   std::atomic<bool> _snapshotFiles{false};  // Default off - only write snapshots on demand
   std::atomic<bool> _trackOperations{false};  // Default off - operation tracking adds overhead
 
+  // Individual tracker enable flags
+  std::atomic<bool> _ndArrayTracking{false};
+  std::atomic<bool> _dataBufferTracking{false};
+  std::atomic<bool> _tadCacheTracking{false};
+  std::atomic<bool> _shapeCacheTracking{false};
+  std::atomic<bool> _opContextTracking{false};
+
   std::atomic<int> _maxThreads;
   std::atomic<int> _maxMasterThreads;
   std::atomic<bool> deleteSpecial{true};
@@ -289,6 +296,18 @@ class SD_LIB_EXPORT Environment {
   void setSnapshotFiles(bool enabled);
   bool isTrackOperations();
   void setTrackOperations(bool enabled);
+
+  // Individual tracker enable/disable methods
+  bool isNDArrayTracking();
+  void setNDArrayTracking(bool enabled);
+  bool isDataBufferTracking();
+  void setDataBufferTracking(bool enabled);
+  bool isTADCacheTracking();
+  void setTADCacheTracking(bool enabled);
+  bool isShapeCacheTracking();
+  void setShapeCacheTracking(bool enabled);
+  bool isOpContextTracking();
+  void setOpContextTracking(bool enabled);
 
   bool isDeleteShapeInfo();
   void setDeleteShapeInfo(bool deleteShapeInfo);

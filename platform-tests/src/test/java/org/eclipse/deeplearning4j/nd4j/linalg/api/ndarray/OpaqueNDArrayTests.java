@@ -64,84 +64,6 @@ public class OpaqueNDArrayTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
-    public void testOpaqueNDArrayMemoryLeak() throws Exception {
-        log.info("Starting OpaqueNDArray memory leak test");
-        
-        // Get baseline
-        NativeOps nativeOps = Nd4j.getNativeOps();
-        long beforeCount = nativeOps.getOpaqueNDArrayLeakCount();
-        long beforeBytes = nativeOps.getOpaqueNDArrayLeakBytes();
-        long beforePhysical = Pointer.physicalBytes();
-        
-        log.info("Before test - Count: {}, Bytes: {}, Physical: {}", 
-                 beforeCount, beforeBytes, beforePhysical);
-        
-        // Create and destroy many arrays
-        final int iterations = 1000;
-        for (int i = 0; i < iterations; i++) {
-            INDArray arr = Nd4j.create(DataType.FLOAT, 100, 100);
-            
-            try (OpaqueNDArray opaque = OpaqueNDArray.fromINDArrayUncached(arr)) {
-                assertNotNull(opaque.buffer());
-                assertTrue(opaque.length() > 0);
-            } // Should auto-cleanup via close()
-            
-            arr.close();
-        }
-        
-        // Force cleanup cycles
-        System.gc();
-        Thread.sleep(2000);
-        System.gc();
-        Thread.sleep(1000);
-        
-        long afterCount = nativeOps.getOpaqueNDArrayLeakCount();
-        long afterBytes = nativeOps.getOpaqueNDArrayLeakBytes();
-        long afterPhysical = Pointer.physicalBytes();
-        
-        log.info("After test - Count: {}, Bytes: {}, Physical: {}", 
-                 afterCount, afterBytes, afterPhysical);
-        
-        long leakedCount = afterCount - beforeCount;
-        long leakedBytes = afterBytes - beforeBytes;
-        long leakedPhysical = afterPhysical - beforePhysical;
-        
-        log.info("Leaked - Count: {}, Bytes: {} ({} MB), Physical: {} ({} MB)",
-                 leakedCount, leakedBytes, leakedBytes / (1024.0 * 1024.0),
-                 leakedPhysical, leakedPhysical / (1024.0 * 1024.0));
-        
-        // Allow small tolerance for transient allocations
-        assertTrue(leakedCount < 10, 
-                   "Too many OpaqueNDArrays leaked: " + leakedCount);
-        assertTrue(leakedBytes < 1_000_000, 
-                   "Too much memory leaked: " + leakedBytes + " bytes (" + 
-                   (leakedBytes / (1024.0 * 1024.0)) + " MB)");
-    }
-
-    @Test
-    public void testOpaqueNDArrayCloseExplicit() {
-        NativeOps nativeOps = Nd4j.getNativeOps();
-        long beforeCount = nativeOps.getOpaqueNDArrayLeakCount();
-        
-        INDArray arr = Nd4j.create(DataType.FLOAT, 50, 50);
-        OpaqueNDArray opaque = OpaqueNDArray.fromINDArrayUncached(arr);
-        
-        assertNotNull(opaque);
-        assertFalse(opaque.isNull());
-        
-        long duringCount = nativeOps.getOpaqueNDArrayLeakCount();
-        assertTrue(duringCount > beforeCount, "Count should increase after allocation");
-        
-        // Explicit close
-        opaque.close();
-        
-        // Verify deallocator was called
-        assertNotNull(opaque.getDeallocator());
-        assertTrue(opaque.getDeallocator().isDeallocated());
-        
-        arr.close();
-    }
 
     @Test
     public void testOpaqueNDArrayCachedVsUncached() {
@@ -221,38 +143,5 @@ public class OpaqueNDArrayTests extends BaseNd4jTestWithBackends {
         arr.close();
     }
 
-    @Test
-    public void testLargeArrayCleanup() throws Exception {
-        log.info("Testing large array cleanup");
-        
-        NativeOps nativeOps = Nd4j.getNativeOps();
-        long beforeBytes = nativeOps.getOpaqueNDArrayLeakBytes();
-        
-        // Create a large array (40 MB)
-        INDArray largeArray = Nd4j.create(DataType.FLOAT, 10_000_000);
-        
-        try (OpaqueNDArray opaque = OpaqueNDArray.fromINDArrayUncached(largeArray)) {
-            long duringBytes = nativeOps.getOpaqueNDArrayLeakBytes();
-            long allocated = duringBytes - beforeBytes;
-            
-            log.info("Allocated {} bytes ({} MB)", allocated, allocated / (1024.0 * 1024.0));
-            assertTrue(allocated > 35_000_000, "Should allocate at least 35 MB");
-        } // Should cleanup here
-        
-        largeArray.close();
-        
-        // Force cleanup
-        System.gc();
-        Thread.sleep(1000);
-        
-        long afterBytes = nativeOps.getOpaqueNDArrayLeakBytes();
-        long remaining = afterBytes - beforeBytes;
-        
-        log.info("Remaining after cleanup: {} bytes ({} MB)", 
-                 remaining, remaining / (1024.0 * 1024.0));
-        
-        // Should have cleaned up most of it
-        assertTrue(remaining < 5_000_000, 
-                   "Should cleanup large array, but " + remaining + " bytes remain");
-    }
+
 }

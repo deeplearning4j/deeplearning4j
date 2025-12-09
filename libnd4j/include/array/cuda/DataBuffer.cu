@@ -42,6 +42,10 @@ void DataBuffer::expand(const uint64_t size) {
     int8_t* newBuffer = nullptr;
     int8_t* newSpecialBuffer = nullptr;
     ALLOCATE_SPECIAL(newSpecialBuffer, _workspace, size, int8_t);
+#if defined(SD_GCC_FUNCTRACE)
+    DataBufferLifecycleTracker::getInstance().recordAllocation(
+        newSpecialBuffer, size, _dataType,BufferType::SPECIAL, this, _workspace != nullptr);
+#endif
 
     // copy data from existing buffer
     if (_primaryBuffer != nullptr) {
@@ -50,17 +54,29 @@ void DataBuffer::expand(const uint64_t size) {
       std::memcpy(newBuffer, _primaryBuffer, _lenInBytes);
 
       if (_isOwnerPrimary) {
+#if defined(SD_GCC_FUNCTRACE)
+        DataBufferLifecycleTracker::getInstance().recordDeallocation(
+            _primaryBuffer,BufferType::PRIMARY);
+#endif
         auto ipb = reinterpret_cast<int8_t*>(_primaryBuffer);
         RELEASE(ipb, _workspace);
       }
 
       _primaryBuffer = newBuffer;
       _isOwnerPrimary = true;
+#if defined(SD_GCC_FUNCTRACE)
+      DataBufferLifecycleTracker::getInstance().recordAllocation(
+          _primaryBuffer, size, _dataType,BufferType::PRIMARY, this, _workspace != nullptr);
+#endif
     }
 
     cudaMemcpy(newSpecialBuffer, _specialBuffer, _lenInBytes, cudaMemcpyDeviceToDevice);
 
     if (_isOwnerSpecial) {
+#if defined(SD_GCC_FUNCTRACE)
+      DataBufferLifecycleTracker::getInstance().recordDeallocation(
+          _specialBuffer,BufferType::SPECIAL);
+#endif
       auto isb = reinterpret_cast<int8_t*>(_specialBuffer);
       RELEASE_SPECIAL(isb, _workspace);
     }
@@ -340,9 +356,9 @@ void DataBuffer::allocateSpecial() {
 
 #if defined(SD_GCC_FUNCTRACE)
     // Record SPECIAL (device) buffer allocation
-    array::DataBufferLifecycleTracker::getInstance().recordAllocation(
+    DataBufferLifecycleTracker::getInstance().recordAllocation(
         _specialBuffer, getLenInBytes(), getDataType(),
-        array::BufferType::SPECIAL, this, _workspace != nullptr);
+       BufferType::SPECIAL, this, _workspace != nullptr);
 #endif
 
     if (_workspace == nullptr) {
@@ -425,8 +441,8 @@ void DataBuffer::deleteSpecial() {
     auto p = reinterpret_cast<int8_t*>(_specialBuffer);
 #if defined(SD_GCC_FUNCTRACE)
     // Record SPECIAL (device) buffer deallocation before releasing
-    array::DataBufferLifecycleTracker::getInstance().recordDeallocation(
-        _specialBuffer, array::BufferType::SPECIAL);
+    DataBufferLifecycleTracker::getInstance().recordDeallocation(
+        _specialBuffer,BufferType::SPECIAL);
 #endif
     RELEASE_SPECIAL(p, _workspace);
     _specialBuffer = nullptr;

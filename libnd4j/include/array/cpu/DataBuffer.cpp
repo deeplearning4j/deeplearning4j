@@ -21,6 +21,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 #include <array/DataBuffer.h>
+#include <array/DataBufferLifecycleTracker.h>
 #include <array/DataTypeUtils.h>
 #include <types/types.h>
 #include <system/type_boilerplate.h>
@@ -32,11 +33,21 @@ void DataBuffer::expand(const uint64_t size) {
     // allocate new buffer
     int8_t* newBuffer = nullptr;
     ALLOCATE(newBuffer, _workspace, size, int8_t);
+#if defined(SD_GCC_FUNCTRACE)
+    // Track the new allocation before swapping pointers
+    sd::array::DataBufferLifecycleTracker::getInstance().recordAllocation(
+        newBuffer, size, _dataType, sd::array::BufferType::PRIMARY, this, _workspace != nullptr);
+#endif
 
     // copy data from existing buffer
     std::memcpy(newBuffer, _primaryBuffer, _lenInBytes);
 
     if (_isOwnerPrimary) {
+#if defined(SD_GCC_FUNCTRACE)
+      // Record deallocation of the old primary buffer before releasing it
+      sd::array::DataBufferLifecycleTracker::getInstance().recordDeallocation(
+          _primaryBuffer, sd::array::BufferType::PRIMARY);
+#endif
       RELEASE(reinterpret_cast<int8_t*>(_primaryBuffer), _workspace);
     }
 

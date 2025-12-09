@@ -397,8 +397,8 @@ SD_LIB_EXPORT sd::LongType numTArgumentsNative(OpaqueContext* ptr) ;
 SD_LIB_EXPORT sd::LongType numIArgumentsNative(OpaqueContext* ptr) ;
 SD_LIB_EXPORT void setGraphContextOutputArray(OpaqueContext* ptr, int index,OpaqueNDArray arr) ;
 SD_LIB_EXPORT void setGraphContextInputArray(OpaqueContext* ptr,int index,OpaqueNDArray arr) ;
-SD_LIB_EXPORT void setGraphContextOutputArraysArr(OpaqueContext* ptr, int numArrays,OpaqueNDArrayArr *arr) ;
-SD_LIB_EXPORT void setGraphContextInputArraysArr(OpaqueContext* ptr, int numArrays,OpaqueNDArrayArr *arr) ;
+SD_LIB_EXPORT void setGraphContextOutputArraysArr(OpaqueContext* ptr, int numArrays, OpaqueNDArrayArr arr) ;
+SD_LIB_EXPORT void setGraphContextInputArraysArr(OpaqueContext* ptr, int numArrays, OpaqueNDArrayArr arr) ;
 SD_LIB_EXPORT void setGraphContextTArguments(OpaqueContext *ptr, double *arguments, int numberOfArguments) ;
 SD_LIB_EXPORT void setGraphContextIArguments(OpaqueContext *ptr, sd::LongType *arguments, int numberOfArguments) ;
 SD_LIB_EXPORT void setGraphContextBArguments(OpaqueContext *ptr, bool *arguments, int numberOfArguments) ;
@@ -533,6 +533,27 @@ SD_LIB_EXPORT void enableOpContextTracking();
 SD_LIB_EXPORT void disableOpContextTracking();
 
 /**
+ * Set the current operation context for allocation tracking.
+ * All allocations (NDArray, DataBuffer) made while an op context is set
+ * will be tagged with the operation name for per-op leak analysis.
+ * @param opName The name of the operation (e.g., "matmul", "add", "conv2d")
+ *               Pass nullptr to clear the context.
+ */
+SD_LIB_EXPORT void setLifecycleOpContext(const char* opName);
+
+/**
+ * Clear the current operation context for allocation tracking.
+ * Subsequent allocations will be tagged as "(unknown)" in leak reports.
+ */
+SD_LIB_EXPORT void clearLifecycleOpContext();
+
+/**
+ * Get the current operation context for allocation tracking.
+ * @return The current operation name, or empty string if none is set
+ */
+SD_LIB_EXPORT const char* getLifecycleOpContext();
+
+/**
  * Enable operation execution logging for crash detection.
  * When enabled (and SD_GCC_FUNCTRACE is defined), all operation executions
  * are logged to a file with full unified C++/Java stack traces.
@@ -635,6 +656,61 @@ SD_LIB_EXPORT void clearAllocationContext();
  * @param javaStackTrace The full Java stack trace as a string
  */
 SD_LIB_EXPORT void updateAllocationJavaStackTrace(OpaqueNDArray array, const char* javaStackTrace);
+
+// ===============================
+// Java-side Lifecycle Recording API
+// These functions are called from Java to record allocation/deallocation events
+// for lifecycle tracking. They delegate to the corresponding C++ lifecycle trackers.
+// ===============================
+
+/**
+ * Record an NDArray allocation from Java side.
+ * @param array The OpaqueNDArray that was allocated
+ * @param size Size in bytes
+ * @param dataType Data type of the array
+ * @param isView Whether this is a view of another array
+ */
+SD_LIB_EXPORT void recordJavaNDArrayAllocation(OpaqueNDArray array, long size, int dataType, bool isView);
+
+/**
+ * Record an NDArray deallocation from Java side.
+ * @param array The OpaqueNDArray being deallocated
+ */
+SD_LIB_EXPORT void recordJavaNDArrayDeallocation(OpaqueNDArray array);
+
+/**
+ * Record a DataBuffer allocation from Java side.
+ * @param buffer The OpaqueDataBuffer that was allocated
+ * @param size Size in bytes
+ * @param dataType Data type of the buffer
+ * @param isWorkspace Whether this buffer is from a workspace
+ */
+SD_LIB_EXPORT void recordJavaDataBufferAllocation(OpaqueDataBuffer *buffer, long size, int dataType, bool isWorkspace);
+
+/**
+ * Record a DataBuffer deallocation from Java side.
+ * @param buffer The OpaqueDataBuffer being deallocated
+ */
+SD_LIB_EXPORT void recordJavaDataBufferDeallocation(OpaqueDataBuffer *buffer);
+
+/**
+ * Record an OpContext allocation from Java side.
+ * @param context The OpaqueContext that was allocated
+ * @param nodeId Node ID for the context
+ * @param fastpathInSize Size of fastpath input arrays
+ * @param fastpathOutSize Size of fastpath output arrays
+ * @param intermediateResultsSize Size of intermediate results
+ * @param handlesSize Size of handles
+ * @param hasWorkspace Whether context has workspace
+ * @param isFastPath Whether this is a fastpath context
+ */
+SD_LIB_EXPORT void recordJavaOpContextAllocation(OpaqueContext *context, int nodeId, long fastpathInSize, long fastpathOutSize, long intermediateResultsSize, long handlesSize, bool hasWorkspace, bool isFastPath);
+
+/**
+ * Record an OpContext deallocation from Java side.
+ * @param context The OpaqueContext being deallocated
+ */
+SD_LIB_EXPORT void recordJavaOpContextDeallocation(OpaqueContext *context);
 
 /**
  * Clear all cached TAD packs to prevent memory leaks during testing.

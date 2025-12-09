@@ -48,9 +48,10 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     protected void closeScalarValue() {
         if (this.scalarValue != null) {
             try {
-                if (this.scalarValue.data() != null) {
-                    this.scalarValue.data().close();
-                }
+                // Only call close() on the NDArray - it internally handles closing the data buffer.
+                // Previously we were calling data().close() AND close(), which caused double-free
+                // in native memory. This accumulated memory corruption would cause crashes after
+                // many iterations (e.g., ~35 forward passes in memory leak testing).
                 this.scalarValue.close();
             } catch (Exception e) {
                 // Ignore close errors
@@ -81,7 +82,14 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
             Nd4j.getCompressor().decompressi(x);
 
         closeScalarValue();
-        this.scalarValue = Nd4j.scalar(x.dataType(), num);
+        // CRITICAL FIX: Detach scalar from any workspace to prevent buffer invalidation.
+        // When Nd4j.scalar() is called, it uses the current workspace. If the workspace
+        // is later reset or closed (e.g., during SameDiff inference cleanup), the scalar's
+        // buffer becomes invalid, causing the native scalar operation to read stale/wrong data.
+        // This was causing NaN values in sqrt operations because max(negative, 1e-12) was
+        // returning the negative value instead of 1e-12 due to an invalid scalar buffer.
+        INDArray scalar = Nd4j.scalar(x.dataType(), num);
+        this.scalarValue = scalar.isAttached() ? scalar.detach() : scalar;
 
     }
 
@@ -91,7 +99,9 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
             Nd4j.getCompressor().decompressi(x);
 
         closeScalarValue();
-        this.scalarValue = Nd4j.scalar(x.dataType(), num);
+        // CRITICAL FIX: Detach scalar from any workspace to prevent buffer invalidation
+        INDArray scalar = Nd4j.scalar(x.dataType(), num);
+        this.scalarValue = scalar.isAttached() ? scalar.detach() : scalar;
 
 
     }
@@ -101,7 +111,9 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
             Nd4j.getCompressor().decompressi(x);
 
         closeScalarValue();
-        this.scalarValue = Nd4j.scalar(x.dataType(), set);
+        // CRITICAL FIX: Detach scalar from any workspace to prevent buffer invalidation
+        INDArray scalar = Nd4j.scalar(x.dataType(), set);
+        this.scalarValue = scalar.isAttached() ? scalar.detach() : scalar;
 
     }
 
@@ -123,7 +135,9 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
                         Object[] extraArgs) {
         super(sameDiff,inPlace,extraArgs);
         closeScalarValue();
-        this.scalarValue = Nd4j.scalar(i_v.dataType(), scalar);
+        // CRITICAL FIX: Detach scalar from any workspace to prevent buffer invalidation
+        INDArray scalarArr = Nd4j.scalar(i_v.dataType(), scalar);
+        this.scalarValue = scalarArr.isAttached() ? scalarArr.detach() : scalarArr;
         this.xVertexId = i_v.name();
         sameDiff.addArgsFor(new String[]{xVertexId},this);
         SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v, this);
@@ -181,13 +195,16 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     @Override
     public void setScalar(Number scalar) {
         closeScalarValue();
-        this.scalarValue = Nd4j.scalar(x.dataType(), scalar);
+        // CRITICAL FIX: Detach scalar from any workspace to prevent buffer invalidation
+        INDArray scalarArr = Nd4j.scalar(x.dataType(), scalar);
+        this.scalarValue = scalarArr.isAttached() ? scalarArr.detach() : scalarArr;
     }
 
     @Override
     public void setScalar(INDArray scalar){
         closeScalarValue();
-        this.scalarValue = scalar;
+        // CRITICAL FIX: Detach scalar from any workspace to prevent buffer invalidation
+        this.scalarValue = (scalar != null && scalar.isAttached()) ? scalar.detach() : scalar;
     }
 
     @Override

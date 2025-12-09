@@ -23,8 +23,6 @@
 
 #include <legacy/NativeOps.h>
 
-#if defined(SD_GCC_FUNCTRACE)
-
 // Forward declare the ComprehensiveLeakAnalyzer class before including tracker headers
 // This ensures the friend declarations in the tracker classes can see the class
 namespace sd {
@@ -33,6 +31,8 @@ namespace analysis {
 }
 }
 
+// Always include lifecycle trackers - they work without SD_GCC_FUNCTRACE
+// but stack trace capture is only enabled when SD_GCC_FUNCTRACE is defined
 #include <array/NDArrayLifecycleTracker.h>
 #include <array/DataBufferLifecycleTracker.h>
 #include <array/TADCacheLifecycleTracker.h>
@@ -40,7 +40,6 @@ namespace analysis {
 #include <array/DeallocatorServiceLifecycleTracker.h>
 #include <graph/OpContextLifecycleTracker.h>
 #include <ops/declarable/OpExecutionLogger.h>
-#include <array/AllocationLogger.h>
 #include <sstream>
 #include <iomanip>
 #include <cstring>
@@ -48,21 +47,28 @@ namespace analysis {
 #include <cstdlib>
 #include <thread>
 #include <csignal>
-#include <unistd.h>
-#include <fcntl.h>
-#include <filesystem>
+#include <fstream>
 #include <chrono>
 #include <ctime>
-#include <fstream>
-#include <array>
-#include <vector>
-#include <sched.h>
 #include <iostream>
+
 #ifndef _WIN32
+#include <unistd.h>
+#include <fcntl.h>
 #include <pthread.h>
+#include <sched.h>
 #endif
+
 #ifdef __linux__
 #include <sys/syscall.h>
+#endif
+
+// Only include filesystem and AllocationLogger when functrace is enabled
+#if defined(SD_GCC_FUNCTRACE)
+#include <filesystem>
+#include <array>
+#include <vector>
+#include <array/AllocationLogger.h>
 #endif
 
 using namespace sd::array;
@@ -537,10 +543,11 @@ public:
     }
     void ensureInitialized() {}
 };
-#endif
+#endif  // _WIN32
 
 }  // namespace
-#endif
+
+#endif // SD_GCC_FUNCTRACE (crash handlers section)
 
 // Forward declarations for cache clearing functions
 SD_LIB_EXPORT void clearTADCache();
@@ -550,25 +557,14 @@ SD_LIB_EXPORT void checkAndCleanupCaches();
 // Note: ComprehensiveLeakAnalyzer is forward declared but not yet implemented
 // The friend declarations in lifecycle tracker classes allow for future extension
 
-/**
- * Initializes lifecycle crash handlers AFTER JVM is fully initialized.
- *
- * This fixes the signal handler installation race condition where the lifecycle
- * tracker was installing handlers during library load (too early), capturing
- * SIG_DFL instead of JVM's actual crash handler. This prevented hs_err file
- * generation.
- *
- * Now the crash handlers are installed on-demand from Java code after JVM
- * initialization is complete, ensuring they properly chain to JVM's hs_err
- * generation.
- *
- * Safe to call multiple times - only initializes once.
- */
-void initializeLifecycleCrashHandlers() {
-#ifndef _WIN32
-    LifecycleCrashHandler::instance().ensureInitialized();
-#endif
-}
+// initializeLifecycleCrashHandlers moved to end of file
+// (single definition with #if SD_GCC_FUNCTRACE guard inside)
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LIFECYCLE STATS AND REPORT FUNCTIONS - Always available
+// These functions use the trackers which work without SD_GCC_FUNCTRACE.
+// Stack trace output will be limited without functrace, but stats work.
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * Converts NDArray lifecycle statistics to JSON format.
@@ -666,7 +662,8 @@ void generateDataBufferDeallocationFlamegraph(const char* outputPath, int buffer
 }
 
 /**
- * Generates a comprehensive leak report combining NDArray and DataBuffer leaks.
+ * Generates a comprehensive leak report combining all lifecycle trackers.
+ * This report now includes sample stack traces for each leaked allocation.
  */
 void generateLifecycleLeakReport(const char* outputPath) {
     if (outputPath == nullptr) {
@@ -675,48 +672,209 @@ void generateLifecycleLeakReport(const char* outputPath) {
 
     std::string path(outputPath);
 
-    // Generate separate reports then combine them
-    std::string ndarray_report = path + ".ndarray.txt";
-    std::string databuffer_report = path + ".databuffer.txt";
-
-    // Generate individual reports
-    NDArrayLifecycleTracker::getInstance().generateLeakReport(ndarray_report);
-    DataBufferLifecycleTracker::getInstance().generateLeakReport(databuffer_report);
-
-    // Create combined report
+    // Create combined report with all tracker statistics
     std::ofstream combined(path);
     if (combined.is_open()) {
         combined << "============================================\n";
-        combined << "  COMBINED LIFECYCLE LEAK REPORT\n";
+        combined << "  COMPREHENSIVE LIFECYCLE LEAK REPORT\n";
         combined << "============================================\n\n";
 
         // NDArray statistics
         auto ndarray_stats = NDArrayLifecycleTracker::getInstance().getStats();
-        combined << "NDArray Statistics:\n";
+        combined << "=== NDArray Statistics ===\n";
+        combined << "  Tracking Enabled:         " << (NDArrayLifecycleTracker::getInstance().isEnabled() ? "YES" : "NO") << "\n";
         combined << "  Total Allocations:        " << ndarray_stats.totalAllocations << "\n";
         combined << "  Total Deallocations:      " << ndarray_stats.totalDeallocations << "\n";
         combined << "  Current Live:             " << ndarray_stats.currentLive << "\n";
         combined << "  Peak Live:                " << ndarray_stats.peakLive << "\n";
         combined << "  Total Bytes Allocated:    " << ndarray_stats.totalBytesAllocated << "\n";
-        combined << "  Total Bytes Deallocated:  " << ndarray_stats.totalBytesDeallocated << "\n\n";
+        combined << "  Total Bytes Deallocated:  " << ndarray_stats.totalBytesDeallocated << "\n";
+        combined << "\n";
 
         // DataBuffer statistics
         auto databuffer_stats = DataBufferLifecycleTracker::getInstance().getStats();
-        combined << "DataBuffer Statistics:\n";
+        combined << "=== DataBuffer Statistics ===\n";
+        combined << "  Tracking Enabled:         " << (DataBufferLifecycleTracker::getInstance().isEnabled() ? "YES" : "NO") << "\n";
         combined << "  Total Allocations:        " << databuffer_stats.totalAllocations << "\n";
         combined << "  Total Deallocations:      " << databuffer_stats.totalDeallocations << "\n";
         combined << "  Current Live:             " << databuffer_stats.currentLive << "\n";
         combined << "  Peak Live:                " << databuffer_stats.peakLive << "\n";
         combined << "  Total Bytes Allocated:    " << databuffer_stats.totalBytesAllocated << "\n";
-        combined << "  Total Bytes Deallocated:  " << databuffer_stats.totalBytesDeallocated << "\n\n";
+        combined << "  Total Bytes Deallocated:  " << databuffer_stats.totalBytesDeallocated << "\n";
+        combined << "\n";
 
-        combined << "See detailed reports:\n";
-        combined << "  " << ndarray_report << "\n";
-        combined << "  " << databuffer_report << "\n";
+        // TADCache statistics
+        auto tad_stats = TADCacheLifecycleTracker::getInstance().getStats();
+        combined << "=== TADCache Statistics ===\n";
+        combined << "  Tracking Enabled:         " << (TADCacheLifecycleTracker::getInstance().isEnabled() ? "YES" : "NO") << "\n";
+        combined << "  Total Allocations:        " << tad_stats.totalAllocations << "\n";
+        combined << "  Total Deallocations:      " << tad_stats.totalDeallocations << "\n";
+        combined << "  Current Live:             " << tad_stats.currentLive << "\n";
+        combined << "  Peak Live:                " << tad_stats.peakLive << "\n";
+        combined << "  Total Bytes Allocated:    " << tad_stats.totalBytesAllocated << "\n";
+        combined << "  Total Bytes Deallocated:  " << tad_stats.totalBytesDeallocated << "\n";
+        combined << "\n";
+
+        // ShapeCache statistics
+        auto shape_stats = ShapeCacheLifecycleTracker::getInstance().getStats();
+        combined << "=== ShapeCache Statistics ===\n";
+        combined << "  Tracking Enabled:         " << (ShapeCacheLifecycleTracker::getInstance().isEnabled() ? "YES" : "NO") << "\n";
+        combined << "  Total Allocations:        " << shape_stats.totalAllocations << "\n";
+        combined << "  Total Deallocations:      " << shape_stats.totalDeallocations << "\n";
+        combined << "  Current Live:             " << shape_stats.currentLive << "\n";
+        combined << "  Peak Live:                " << shape_stats.peakLive << "\n";
+        combined << "\n";
+
+        // OpContext statistics
+        auto opctx_stats = sd::graph::OpContextLifecycleTracker::getInstance().getStats();
+        combined << "=== OpContext Statistics ===\n";
+        combined << "  Tracking Enabled:         " << (sd::graph::OpContextLifecycleTracker::getInstance().isEnabled() ? "YES" : "NO") << "\n";
+        combined << "  Total Allocations:        " << opctx_stats.totalAllocations << "\n";
+        combined << "  Total Deallocations:      " << opctx_stats.totalDeallocations << "\n";
+        combined << "  Current Live:             " << opctx_stats.currentLive << "\n";
+        combined << "  Peak Live:                " << opctx_stats.peakLive << "\n";
+        combined << "\n";
+
+        // DeallocatorService statistics
+        combined << "=== DeallocatorService Statistics ===\n";
+        combined << "  Tracking Enabled:         " << (DeallocatorServiceLifecycleTracker::getInstance().isEnabled() ? "YES" : "NO") << "\n";
+        combined << "  Total Allocations:        " << DeallocatorServiceLifecycleTracker::getInstance().getTotalAllocations() << "\n";
+        combined << "  Total Deallocations:      " << DeallocatorServiceLifecycleTracker::getInstance().getTotalDeallocations() << "\n";
+        combined << "  Current Live Count:       " << DeallocatorServiceLifecycleTracker::getInstance().getCurrentLiveCount() << "\n";
+        combined << "  Current Bytes In Use:     " << DeallocatorServiceLifecycleTracker::getInstance().getCurrentBytesInUse() << "\n";
+        combined << "  Peak Live Count:          " << DeallocatorServiceLifecycleTracker::getInstance().getPeakLiveCount() << "\n";
+        combined << "  Peak Bytes:               " << DeallocatorServiceLifecycleTracker::getInstance().getPeakBytes() << "\n";
+        combined << "\n";
+
+        // Summary
+        combined << "============================================\n";
+        combined << "  SUMMARY\n";
+        combined << "============================================\n";
+        size_t total_leaks = ndarray_stats.currentLive + databuffer_stats.currentLive + opctx_stats.currentLive;
+        if (total_leaks > 0) {
+            combined << "  TOTAL POTENTIAL LEAKS: " << total_leaks << "\n";
+            combined << "    - NDArrays:     " << ndarray_stats.currentLive << "\n";
+            combined << "    - DataBuffers:  " << databuffer_stats.currentLive << "\n";
+            combined << "    - OpContexts:   " << opctx_stats.currentLive << "\n";
+        } else {
+            combined << "  No leaks detected.\n";
+        }
+        combined << "\n";
+
+        // Now output sample stack traces for each type of leak
+        combined << "============================================\n";
+        combined << "  SAMPLE LEAK STACK TRACES\n";
+        combined << "============================================\n\n";
+
+        // NDArray leaks with stack traces
+        NDArrayLifecycleTracker::getInstance().printCurrentLeaks(combined, 5);
+        combined << "\n";
+
+        // DataBuffer leaks with stack traces
+        DataBufferLifecycleTracker::getInstance().printCurrentLeaks(combined, 5);
+        combined << "\n";
+
+        // OpContext leaks with stack traces
+        sd::graph::OpContextLifecycleTracker::getInstance().printCurrentLeaks(combined, 5);
+        combined << "\n";
+
+        // Per-operation analysis - groups allocations by operation with stack traces
+        combined << "============================================\n";
+        combined << "  PER-OPERATION ALLOCATION BREAKDOWN\n";
+        combined << "============================================\n";
+        combined << "This section groups leaked allocations by the operation\n";
+        combined << "that created them, with sample stack traces for each.\n\n";
+
+        // NDArray per-op analysis with stack traces
+        NDArrayLifecycleTracker::getInstance().printPerOpAnalysis(combined, 3);
+        combined << "\n";
+
+        // DataBuffer per-op analysis with stack traces
+        DataBufferLifecycleTracker::getInstance().printPerOpAnalysis(combined, 3);
+        combined << "\n";
+
+        // OpContext per-op analysis with stack traces
+        sd::graph::OpContextLifecycleTracker::getInstance().printPerOpAnalysis(combined, 3);
+        combined << "\n";
+
+        // Actionable analysis section
+        combined << "============================================\n";
+        combined << "  ACTIONABLE RECOMMENDATIONS\n";
+        combined << "============================================\n";
+        combined << "This section provides specific actions to address memory issues.\n\n";
+
+        // Top leaking operations
+        combined << "--- TOP OPERATIONS BY LIVE ALLOCATIONS ---\n\n";
+        
+        auto ndTopOps = NDArrayLifecycleTracker::getInstance().getTopOpsByLiveCount(5);
+        if (!ndTopOps.empty()) {
+            combined << "  NDArray Top 5:\n";
+            for (const auto& op : ndTopOps) {
+                double javaPct = op.liveCount > 0 ? (100.0 * op.javaCount / op.liveCount) : 0;
+                combined << "    " << op.opName << ": " << op.liveCount << " live (" 
+                         << (op.liveBytes / (1024*1024)) << " MB) - " 
+                         << javaPct << "% Java\n";
+            }
+            combined << "\n";
+        }
+
+        auto dbTopOps = DataBufferLifecycleTracker::getInstance().getTopOpsByLiveCount(5);
+        if (!dbTopOps.empty()) {
+            combined << "  DataBuffer Top 5:\n";
+            for (const auto& op : dbTopOps) {
+                double javaPct = op.liveCount > 0 ? (100.0 * op.javaCount / op.liveCount) : 0;
+                combined << "    " << op.opName << ": " << op.liveCount << " live (" 
+                         << (op.liveBytes / (1024*1024)) << " MB) - " 
+                         << javaPct << "% Java\n";
+            }
+            combined << "\n";
+        }
+
+        // Detailed actionable analysis per tracker
+        NDArrayLifecycleTracker::getInstance().printActionableAnalysis(combined);
+        combined << "\n";
+        
+        DataBufferLifecycleTracker::getInstance().printActionableAnalysis(combined);
+        combined << "\n";
+
+        // DeallocatorService status
+        combined << "--- DeallocatorService Status ---\n";
+        auto deallocAllocs = DeallocatorServiceLifecycleTracker::getInstance().getTotalAllocations();
+        auto deallocDeallocs = DeallocatorServiceLifecycleTracker::getInstance().getTotalDeallocations();
+        auto backlog = deallocAllocs - deallocDeallocs;
+        double backlogPct = deallocAllocs > 0 ? (100.0 * backlog / deallocAllocs) : 0;
+        
+        combined << "  Allocations: " << deallocAllocs << "\n";
+        combined << "  Deallocations: " << deallocDeallocs << "\n";
+        combined << "  Backlog: " << backlog << " (" << backlogPct << "%)\n";
+        
+        if (backlogPct > 10) {
+            combined << "  [WARNING] Deallocator falling behind - consider System.gc()\n";
+        } else if (backlogPct > 5) {
+            combined << "  [INFO] Mild deallocation lag - normal during high throughput\n";
+        } else {
+            combined << "  [OK] Deallocator keeping up\n";
+        }
+        combined << "\n";
+
+        // Cache status and actions
+        combined << "--- Cache Actions ---\n";
+        auto tadStats = TADCacheLifecycleTracker::getInstance().getStats();
+        auto shapeStats = ShapeCacheLifecycleTracker::getInstance().getStats();
+        
+        combined << "  TAD Cache: " << tadStats.currentLive << " entries\n";
+        combined << "  Shape Cache: " << shapeStats.currentLive << " entries\n";
+        
+        if (tadStats.currentLive > 5000) {
+            combined << "  [ACTION] TAD cache large - call clearTADCache() to free memory\n";
+        }
+        
+        combined << "\n";
 
         combined.close();
     }
 }
+
 
 /**
  * Generates a comprehensive leak source analysis combining ALL lifecycle trackers.
@@ -732,12 +890,11 @@ void generateComprehensiveLeakAnalysis(const char* outputDir) {
     generateLifecycleLeakReport(reportPath.c_str());
 }
 
-#endif // SD_GCC_FUNCTRACE
-
-// Enable/disable functions are ALWAYS available, regardless of SD_GCC_FUNCTRACE
-// They will simply enable/disable tracking if the trackers are compiled in
-
-#if defined(SD_GCC_FUNCTRACE)
+// ═══════════════════════════════════════════════════════════════════════════
+// LIFECYCLE TRACKING FUNCTIONS - Always available (not dependent on SD_GCC_FUNCTRACE)
+// Stack trace capture is only enabled when SD_GCC_FUNCTRACE is defined,
+// but basic tracking (counts, pointers, timestamps) always works.
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * Enables NDArray lifecycle tracking.
@@ -820,79 +977,47 @@ SD_LIB_EXPORT void disableOpContextTracking() {
 }
 
 /**
- * Enables operation execution logging for crash detection.
- * When enabled, all operation executions are logged to a file with
- * full unified C++/Java stack traces.
+ * Sets the current operation context for allocation tracking.
+ * All allocations (NDArray, DataBuffer, OpContext) made while an op context is set
+ * will be tagged with the operation name for per-op analysis.
+ * @param opName The name of the operation (e.g., "matmul", "add", "conv2d")
  */
-SD_LIB_EXPORT void enableOpExecutionLogging() {
-    sd::ops::OpExecutionLogger::getInstance().enable();
+SD_LIB_EXPORT void setLifecycleOpContext(const char* opName) {
+    if (opName == nullptr) {
+        NDArrayLifecycleTracker::clearCurrentOpContext();
+        DataBufferLifecycleTracker::clearCurrentOpContext();
+        sd::graph::OpContextLifecycleTracker::clearCurrentOpContext();
+    } else {
+        std::string op(opName);
+        NDArrayLifecycleTracker::setCurrentOpContext(op);
+        DataBufferLifecycleTracker::setCurrentOpContext(op);
+        sd::graph::OpContextLifecycleTracker::setCurrentOpContext(op);
+    }
 }
 
 /**
- * Disables operation execution logging.
+ * Clears the current operation context for allocation tracking.
+ * Subsequent allocations will be tagged as "(unknown)".
  */
-SD_LIB_EXPORT void disableOpExecutionLogging() {
-    sd::ops::OpExecutionLogger::getInstance().disable();
+SD_LIB_EXPORT void clearLifecycleOpContext() {
+    NDArrayLifecycleTracker::clearCurrentOpContext();
+    DataBufferLifecycleTracker::clearCurrentOpContext();
+    sd::graph::OpContextLifecycleTracker::clearCurrentOpContext();
 }
 
 /**
- * Check if operation execution logging is currently enabled.
+ * Gets the current operation context for allocation tracking.
+ * @return The current operation name, or empty string if none is set
  */
-SD_LIB_EXPORT bool isOpExecutionLoggingEnabled() {
-    return sd::ops::OpExecutionLogger::getInstance().isEnabled();
-}
-
-// Static storage for returned strings (to avoid dangling pointers)
-namespace {
-    thread_local std::string g_opLogPath;
-    thread_local std::string g_opLogContents;
-}
-
-/**
- * Get the current operation execution log file path.
- */
-SD_LIB_EXPORT const char* getOpExecutionLogPath() {
-    g_opLogPath = sd::ops::OpExecutionLogger::getInstance().getLogPath();
-    return g_opLogPath.c_str();
-}
-
-/**
- * Get the current operation execution log contents as a string.
- */
-SD_LIB_EXPORT const char* getOpExecutionLogContents(size_t maxBytes, bool fromEnd) {
-    g_opLogContents = sd::ops::OpExecutionLogger::getInstance().getLogContents(maxBytes, fromEnd);
-    return g_opLogContents.c_str();
-}
-
-/**
- * Force a flush of the operation execution log to disk.
- */
-SD_LIB_EXPORT void dumpOpExecutionLog() {
-    sd::ops::OpExecutionLogger::getInstance().flush();
-}
-
-/**
- * Manually dump current state to the operation execution log.
- */
-SD_LIB_EXPORT void dumpOpExecutionState(const char* message) {
-    std::string msg = message ? message : "";
-    sd::ops::OpExecutionLogger::getInstance().dumpCurrentState(msg);
-}
-
-// ═══════════════════════════════════════════════════════════════
-// Allocation Logging Implementation (SD_GCC_FUNCTRACE)
-// ═══════════════════════════════════════════════════════════════
-
-/**
- * Get the current allocation log file path.
- * Allocation logging is always active in functrace builds.
- */
-SD_LIB_EXPORT const char* getAllocationLogPath() {
+SD_LIB_EXPORT const char* getLifecycleOpContext() {
     // Thread-local static to avoid dangling pointer
-    thread_local static std::string g_allocLogPath;
-    g_allocLogPath = sd::array::AllocationLogger::getInstance().getLogPath();
-    return g_allocLogPath.c_str();
+    thread_local static std::string g_opContext;
+    g_opContext = NDArrayLifecycleTracker::getCurrentOpContext();
+    return g_opContext.c_str();
 }
+
+// OpExecutionLogger and AllocationLogger functions moved to end of file
+// (single definitions with #if SD_GCC_FUNCTRACE guards inside)
 
 /**
  * Generates a temporal leak report for NDArray allocations over time.
@@ -972,34 +1097,37 @@ SD_LIB_EXPORT void clearTADCacheSnapshots() {
  * Set the current allocation context (operation name) for lifecycle tracking.
  * This allows Java code to tag allocations with the operation that triggered them,
  * providing much better granularity in leak reports than stack trace analysis alone.
+ *
+ * This function updates BOTH the OpExecutionLogger AND all lifecycle trackers
+ * (NDArray, DataBuffer, OpContext) so that any allocations made during this
+ * operation are properly tagged.
  */
 SD_LIB_EXPORT void setAllocationContext(const char* opName) {
     if (opName != nullptr) {
-        sd::ops::OpExecutionLogger::setCurrentOpName(std::string(opName));
+        std::string op(opName);
+        // Set the op name in OpExecutionLogger for logging
+        sd::ops::OpExecutionLogger::setCurrentOpName(op);
+        // Also set the op context in all lifecycle trackers so allocations are tagged
+        NDArrayLifecycleTracker::setCurrentOpContext(op);
+        DataBufferLifecycleTracker::setCurrentOpContext(op);
+        sd::graph::OpContextLifecycleTracker::setCurrentOpContext(op);
     }
 }
 
 /**
  * Clear the current allocation context for this thread.
+ * Clears the op context from both OpExecutionLogger and all lifecycle trackers.
  */
 SD_LIB_EXPORT void clearAllocationContext() {
     sd::ops::OpExecutionLogger::clearCurrentOpName();
+    // Also clear the op context in all lifecycle trackers
+    NDArrayLifecycleTracker::clearCurrentOpContext();
+    DataBufferLifecycleTracker::clearCurrentOpContext();
+    sd::graph::OpContextLifecycleTracker::clearCurrentOpContext();
 }
 
-/**
- * Update the Java stack trace for an existing NDArray allocation record.
- * This is called from Java after creating an OpaqueNDArray to provide the full Java stack trace
- * captured before the JNI boundary.
- */
-SD_LIB_EXPORT void updateAllocationJavaStackTrace(OpaqueNDArray array, const char* javaStackTrace) {
-    if (array == nullptr || javaStackTrace == nullptr) return;
-
-    // Get the NDArray pointer from the opaque wrapper
-    void* ndarray_ptr = static_cast<void*>(array);
-
-    // Update the allocation record in the tracker
-    NDArrayLifecycleTracker::getInstance().updateJavaStackTrace(ndarray_ptr, std::string(javaStackTrace));
-}
+// updateAllocationJavaStackTrace moved to end of file
+// (single definition with #if SD_GCC_FUNCTRACE guard inside)
 
 // ===============================
 // DeallocatorService Lifecycle Tracking
@@ -1061,8 +1189,6 @@ SD_LIB_EXPORT sd::LongType getDeallocatorServiceBytesInUse() {
         DeallocatorServiceLifecycleTracker::getInstance().getCurrentBytesInUse());
 }
 
-#endif // SD_GCC_FUNCTRACE
-
 // AUTO CACHE CLEANUP - MOVED OUTSIDE SD_GCC_FUNCTRACE GUARD
 // Critical fix: Cache cleanup must work even without functrace!
 // The caches accumulate regardless of tracking, so cleanup must always be available.
@@ -1116,10 +1242,6 @@ namespace {
         return enabled == 1;
     }
 }
-
-// Forward declarations for cache clearing
-SD_LIB_EXPORT void clearTADCache();
-SD_LIB_EXPORT void clearShapeCache();
 
 /**
  * Automatic cache cleanup called after operations.
@@ -1334,95 +1456,87 @@ SD_LIB_EXPORT void freeString(const char* ptr) {
     }
 }
 
-#if !defined(SD_GCC_FUNCTRACE)
+// ═══════════════════════════════════════════════════════════════════════════
+// Functions that require SD_GCC_FUNCTRACE for full functionality
+// These are no-ops when functrace is not available
+// ═══════════════════════════════════════════════════════════════════════════
 
-// Stub implementations when SD_GCC_FUNCTRACE is not defined
-// These provide no-op fallbacks for all lifecycle tracking functions
+SD_LIB_EXPORT void initializeLifecycleCrashHandlers() {
+#if defined(SD_GCC_FUNCTRACE) && !defined(_WIN32)
+    LifecycleCrashHandler::instance().ensureInitialized();
+#endif
+}
 
-// Crash handler stub - no-op when functrace is not available
-SD_LIB_EXPORT void initializeLifecycleCrashHandlers() {}
+SD_LIB_EXPORT void enableOpExecutionLogging() {
+#if defined(SD_GCC_FUNCTRACE)
+    sd::ops::OpExecutionLogger::getInstance().enable();
+#endif
+}
 
-SD_LIB_EXPORT void enableNDArrayTracking() {}
-SD_LIB_EXPORT void disableNDArrayTracking() {}
-SD_LIB_EXPORT void enableDataBufferTracking() {}
-SD_LIB_EXPORT void disableDataBufferTracking() {}
-SD_LIB_EXPORT void enableTADCacheTracking() {}
-SD_LIB_EXPORT void disableTADCacheTracking() {}
-SD_LIB_EXPORT void enableShapeCacheTracking() {}
-SD_LIB_EXPORT void disableShapeCacheTracking() {}
-SD_LIB_EXPORT void enableOpContextTracking() {}
-SD_LIB_EXPORT void disableOpContextTracking() {}
+SD_LIB_EXPORT void disableOpExecutionLogging() {
+#if defined(SD_GCC_FUNCTRACE)
+    sd::ops::OpExecutionLogger::getInstance().disable();
+#endif
+}
 
-// OpExecutionLogger stubs
-SD_LIB_EXPORT void enableOpExecutionLogging() {}
-SD_LIB_EXPORT void disableOpExecutionLogging() {}
-SD_LIB_EXPORT bool isOpExecutionLoggingEnabled() { return false; }
+SD_LIB_EXPORT bool isOpExecutionLoggingEnabled() {
+#if defined(SD_GCC_FUNCTRACE)
+    return sd::ops::OpExecutionLogger::getInstance().isEnabled();
+#else
+    return false;
+#endif
+}
+
 SD_LIB_EXPORT const char* getOpExecutionLogPath() {
+#if defined(SD_GCC_FUNCTRACE)
+    static thread_local std::string g_opLogPath;
+    g_opLogPath = sd::ops::OpExecutionLogger::getInstance().getLogPath();
+    return g_opLogPath.c_str();
+#else
     static const char* empty = "";
     return empty;
+#endif
 }
+
 SD_LIB_EXPORT const char* getOpExecutionLogContents(size_t maxBytes, bool fromEnd) {
+#if defined(SD_GCC_FUNCTRACE)
+    static thread_local std::string g_opLogContents;
+    g_opLogContents = sd::ops::OpExecutionLogger::getInstance().getLogContents(maxBytes, fromEnd);
+    return g_opLogContents.c_str();
+#else
     static const char* empty = "";
     return empty;
+#endif
 }
-SD_LIB_EXPORT void dumpOpExecutionLog() {}
-SD_LIB_EXPORT void dumpOpExecutionState(const char* message) {}
 
-// AllocationLogger stub
+SD_LIB_EXPORT void dumpOpExecutionLog() {
+#if defined(SD_GCC_FUNCTRACE)
+    sd::ops::OpExecutionLogger::getInstance().flush();
+#endif
+}
+
+SD_LIB_EXPORT void dumpOpExecutionState(const char* message) {
+#if defined(SD_GCC_FUNCTRACE)
+    std::string msg = message ? message : "";
+    sd::ops::OpExecutionLogger::getInstance().dumpCurrentState(msg);
+#endif
+}
+
 SD_LIB_EXPORT const char* getAllocationLogPath() {
+#if defined(SD_GCC_FUNCTRACE)
+    static thread_local std::string g_allocLogPath;
+    g_allocLogPath = sd::array::AllocationLogger::getInstance().getLogPath();
+    return g_allocLogPath.c_str();
+#else
     static const char* empty = "";
     return empty;
+#endif
 }
 
-SD_LIB_EXPORT const char* getNDArrayLifecycleStats() {
-    static const char* empty_stats = "{}";
-    return empty_stats;
+SD_LIB_EXPORT void updateAllocationJavaStackTrace(OpaqueNDArray array, const char* javaStackTrace) {
+#if defined(SD_GCC_FUNCTRACE)
+    if (array != nullptr && javaStackTrace != nullptr) {
+        NDArrayLifecycleTracker::getInstance().updateJavaStackTrace(array, std::string(javaStackTrace));
+    }
+#endif
 }
-
-SD_LIB_EXPORT const char* getDataBufferLifecycleStats() {
-    static const char* empty_stats = "{}";
-    return empty_stats;
-}
-
-SD_LIB_EXPORT void generateNDArrayAllocationFlamegraph(const char* outputPath) {}
-SD_LIB_EXPORT void generateNDArrayDeallocationFlamegraph(const char* outputPath) {}
-SD_LIB_EXPORT void generateDataBufferAllocationFlamegraph(const char* outputPath, int bufferType) {}
-SD_LIB_EXPORT void generateDataBufferDeallocationFlamegraph(const char* outputPath, int bufferType) {}
-SD_LIB_EXPORT void generateLifecycleLeakReport(const char* outputPath) {}
-SD_LIB_EXPORT void generateComprehensiveLeakAnalysis(const char* outputDir) {}
-
-SD_LIB_EXPORT void generateNDArrayTemporalLeakReport(const char* outputPath, int windowCount, double windowDurationSec) {}
-SD_LIB_EXPORT void generateTADCacheTemporalLeakReport(const char* outputPath, int windowCount, double windowDurationSec) {}
-
-SD_LIB_EXPORT sd::LongType captureNDArrayLeakSnapshot() {
-    return 0;
-}
-
-SD_LIB_EXPORT sd::LongType captureTADCacheLeakSnapshot() {
-    return 0;
-}
-
-SD_LIB_EXPORT void generateNDArraySnapshotDiff(sd::LongType snapshot1, sd::LongType snapshot2, const char* outputPath) {}
-SD_LIB_EXPORT void generateTADCacheSnapshotDiff(sd::LongType snapshot1, sd::LongType snapshot2, const char* outputPath) {}
-
-SD_LIB_EXPORT void clearNDArraySnapshots() {}
-SD_LIB_EXPORT void clearTADCacheSnapshots() {}
-
-// DeallocatorService Lifecycle Tracking stubs
-SD_LIB_EXPORT void recordDeallocatorServiceSnapshot(
-    sd::LongType totalAllocations, sd::LongType totalDeallocations,
-    sd::LongType totalBytesAllocated, sd::LongType totalBytesDeallocated,
-    sd::LongType peakLiveCount, sd::LongType peakBytes) {}
-
-SD_LIB_EXPORT void enableDeallocatorServiceTracking() {}
-SD_LIB_EXPORT void disableDeallocatorServiceTracking() {}
-SD_LIB_EXPORT bool isDeallocatorServiceTrackingEnabled() { return false; }
-SD_LIB_EXPORT sd::LongType getDeallocatorServiceLiveCount() { return 0; }
-SD_LIB_EXPORT sd::LongType getDeallocatorServiceBytesInUse() { return 0; }
-
-// Allocation context stubs (no-op without functrace)
-SD_LIB_EXPORT void setAllocationContext(const char* opName) {}
-SD_LIB_EXPORT void clearAllocationContext() {}
-SD_LIB_EXPORT void updateAllocationJavaStackTrace(OpaqueNDArray array, const char* javaStackTrace) {}
-
-#endif // !defined(SD_GCC_FUNCTRACE)

@@ -432,6 +432,80 @@ public interface Environment {
      */
     void setTrackOperations(boolean enabled);
 
+    /**
+     * Returns whether NDArray lifecycle tracking is enabled.
+     * This controls the NDArrayLifecycleTracker specifically.
+     *
+     * @return true if NDArray tracking is enabled
+     */
+    boolean isNDArrayTracking();
+
+    /**
+     * Enable or disable NDArray lifecycle tracking.
+     *
+     * @param enabled true to enable NDArray tracking
+     */
+    void setNDArrayTracking(boolean enabled);
+
+    /**
+     * Returns whether DataBuffer lifecycle tracking is enabled.
+     * This controls the DataBufferLifecycleTracker specifically.
+     *
+     * @return true if DataBuffer tracking is enabled
+     */
+    boolean isDataBufferTracking();
+
+    /**
+     * Enable or disable DataBuffer lifecycle tracking.
+     *
+     * @param enabled true to enable DataBuffer tracking
+     */
+    void setDataBufferTracking(boolean enabled);
+
+    /**
+     * Returns whether TAD cache lifecycle tracking is enabled.
+     * This controls the TADCacheLifecycleTracker specifically.
+     *
+     * @return true if TAD cache tracking is enabled
+     */
+    boolean isTADCacheTracking();
+
+    /**
+     * Enable or disable TAD cache lifecycle tracking.
+     *
+     * @param enabled true to enable TAD cache tracking
+     */
+    void setTADCacheTracking(boolean enabled);
+
+    /**
+     * Returns whether shape cache lifecycle tracking is enabled.
+     * This controls the ShapeCacheLifecycleTracker specifically.
+     *
+     * @return true if shape cache tracking is enabled
+     */
+    boolean isShapeCacheTracking();
+
+    /**
+     * Enable or disable shape cache lifecycle tracking.
+     *
+     * @param enabled true to enable shape cache tracking
+     */
+    void setShapeCacheTracking(boolean enabled);
+
+    /**
+     * Returns whether OpContext lifecycle tracking is enabled.
+     * This controls the OpContextLifecycleTracker specifically.
+     *
+     * @return true if OpContext tracking is enabled
+     */
+    boolean isOpContextTracking();
+
+    /**
+     * Enable or disable OpContext lifecycle tracking.
+     *
+     * @param enabled true to enable OpContext tracking
+     */
+    void setOpContextTracking(boolean enabled);
 
     /**
      * This method returns whether to delete cpu side (host side in gpu terms)

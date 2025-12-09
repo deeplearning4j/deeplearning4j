@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.TrainingConfig;
+import org.nd4j.autodiff.samediff.serde.SDZSerializer;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.evaluation.classification.Evaluation;
@@ -55,6 +56,8 @@ import org.nd4j.linalg.learning.regularization.WeightDecay;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.weightinit.impl.XavierInitScheme;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -64,6 +67,16 @@ import static org.junit.jupiter.api.Assertions.fail;
 @NativeTag
 @Tag(TagNames.SAMEDIFF)
 public class CompareTrainingImplementations extends BaseDL4JTest {
+
+
+    @Test
+    public void simpleTest() throws Exception {
+        INDArray arr = Nd4j.read(new FileInputStream("/home/agibsonccc/Documents/GitHub/kompile/kompile-rag-builds/kompile-sample/project/inputs.bin"));
+        SameDiff model = SDZSerializer.load(new File("/home/agibsonccc/.kompile/models/anserini/encoders/bge-base-en-v1.5/bge-base-en-v1.5.sdz"), true);
+        Map<String,INDArray> placeholders = new HashMap<>();
+        placeholders.put("input_ids", arr);
+        model.output(placeholders,"1492");
+    }
 
     @Test
     @Disabled("Need to look in to comparisons to see how valid this test is")
