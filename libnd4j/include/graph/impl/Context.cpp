@@ -156,7 +156,8 @@ Context::~Context() {
   // Clean up handles - these are arrays explicitly marked as removable/owned
   for (auto v : _handles) delete v;
 
-  if (_context != nullptr) delete _context;
+  // Only delete _context if it's not a managed (intentionally leaked) context
+  if (_context != nullptr && !LaunchContext::isManagedContext(_context)) delete _context;
 }
 
 void Context::setTargetEngine(samediff::Engine engine) { _engine = engine; }
@@ -570,7 +571,8 @@ memory::Workspace *Context::oWorkspace() { return nullptr; }
 LaunchContext *Context::launchContext() {
   // FIXME: we need proper context to be shared here
   if (_context == nullptr) {
-    return LaunchContext::defaultContext();
+    _context = LaunchContext::defaultContext(); // Assign default context
+    return _context;
   } else {
     return _context;
   }
