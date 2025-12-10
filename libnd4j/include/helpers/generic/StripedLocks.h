@@ -40,9 +40,11 @@ namespace generic {
 #if SD_HAS_SHARED_MUTEX
 #define MUTEX_TYPE std::shared_mutex
 #define SHARED_LOCK_TYPE std::shared_lock
+#define EXCLUSIVE_LOCK_TYPE std::unique_lock
 #else
 #define MUTEX_TYPE std::mutex
 #define SHARED_LOCK_TYPE std::lock_guard
+#define EXCLUSIVE_LOCK_TYPE std::lock_guard
 #endif
 
 template<size_t NUM_STRIPES = 32>
@@ -167,7 +169,7 @@ class StripedLocks {
 
   void lockStripe(size_t stripe, bool exclusive = false) const {
     if (stripe >= NUM_STRIPES) {
-      throw std::out_of_range("Invalid stripe index");
+      THROW_EXCEPTION("Invalid stripe index");
     }
 
     if (!acquireLockWithTimeout(stripe, exclusive, MAX_RETRIES)) {
@@ -183,7 +185,7 @@ class StripedLocks {
 
   void unlockStripe(size_t stripe, bool exclusive = false) const {
     if (stripe >= NUM_STRIPES) {
-      throw std::out_of_range("Invalid stripe index");
+      THROW_EXCEPTION("Invalid stripe index");
     }
     _stripeCounts[stripe].fetch_sub(1, std::memory_order_relaxed);
 

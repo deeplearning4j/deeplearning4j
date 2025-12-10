@@ -111,7 +111,7 @@ void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, b
   LongType N = matrix->sizeAt(1);
   auto resQ = fullMatrices ? *Q->ulike() : NDArrayFactory::create<T>(matrix->ordering(), {M, M}, Q->getContext());
   auto resR = fullMatrices ? R->ulike() : matrix->ulike();
-  std::vector<NDArray> q(M);
+  std::vector<NDArray*> q(M, nullptr);
   NDArray z = *matrix;
   std::vector<LongType> shape = {M};
 
@@ -131,16 +131,16 @@ void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, b
     e += currentColumn;  // e[i] = x[i] + a * e[i] for each i from 0 to n - 1
     auto normE = e.reduceAlongDimension(reduce::Norm2, &zero);
     e /= normE;
-    q[k] = vmul<T>(context, e, M);
+    q[k] = new NDArray(vmul<T>(context, e, M));
     auto qQ = z.ulike();
-    MmulHelper::matmul(&q[k], &z, qQ, false, false,1.0,0.0,qQ);
+    MmulHelper::matmul(q[k], &z, qQ, false, false,1.0,0.0,qQ);
     z = std::move(*qQ);
   }
-  resQ.assign(&q[0]);
+  resQ.assign(q[0]);
 
   for (int i = 1; i < N && i < M - 1; i++) {
     auto tempResQ = resQ;
-    MmulHelper::matmul(&q[i],&resQ, &tempResQ, false, false,1.0,0.0,&tempResQ);
+    MmulHelper::matmul(q[i],&resQ, &tempResQ, false, false,1.0,0.0,&tempResQ);
     resQ = std::move(tempResQ);
   }
   MmulHelper::matmul(&resQ, matrix, resR, false, false,1.0,0.0,resR);
@@ -156,6 +156,13 @@ void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, b
     Q->assign(&qAssign);
     NDArray rAssign = resRRef({0, N, 0, 0});
     R->assign(&rAssign);
+  }
+
+  // Clean up allocated NDArrays in q vector
+  for (LongType i = 0; i < M; i++) {
+    if (q[i] != nullptr) {
+      delete q[i];
+    }
   }
 }
 

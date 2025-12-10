@@ -32,7 +32,7 @@ GraphHolder& GraphHolder::getInstance() {
 };
 
 void GraphHolder::registerGraph(sd::LongType graphId, Graph* graph) {
-  if (hasGraphAny(graphId)) throw graph_exists_exception(graphId);
+  if (hasGraphAny(graphId)) THROW_EXCEPTION(graph_exists_exception(graphId).what());
 
   _graphF[graphId] = graph;
 
@@ -103,7 +103,7 @@ void GraphHolder::replaceGraph(sd::LongType graphId, Graph* graph) {
 
 flatbuffers::Offset<::graph::FlatResult> GraphHolder::execute(sd::LongType graphId, flatbuffers::FlatBufferBuilder& builder,
                                                      const ::graph::FlatInferenceRequest* request) {
-  if (!hasGraph(graphId)) throw unknown_graph_exception(graphId);
+  if (!hasGraph(graphId)) THROW_EXCEPTION(unknown_graph_exception(graphId).what());
 
   lockRead(graphId);
 
