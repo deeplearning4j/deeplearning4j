@@ -34,9 +34,9 @@ void crossBatched(sd::LaunchContext *context, NDArray *a, NDArray *b, NDArray *o
   auto _b = b->reshape(b->ordering(), shape2);
   auto _o = o->reshape(o->ordering(), shape2, false);
 
-  auto tadsA = _a.allTensorsAlongDimension({1});
-  auto tadsB = _b.allTensorsAlongDimension({1});
-  auto tadsO = _o.allTensorsAlongDimension({1});
+  auto tadsA = _a->allTensorsAlongDimension({1});
+  auto tadsB = _b->allTensorsAlongDimension({1});
+  auto tadsO = _o->allTensorsAlongDimension({1});
 
   int tads = tadsA.size();
 

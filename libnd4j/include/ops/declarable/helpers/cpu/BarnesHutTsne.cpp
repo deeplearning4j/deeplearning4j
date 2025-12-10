@@ -112,7 +112,7 @@ void barnes_symmetrize(NDArray* rowP, NDArray* colP, NDArray* valP, sd::LongType
 
   *outputVals /= 2.0;
 }
-BUILD_SINGLE_TEMPLATE(template void barnes_symmetrize_,
+BUILD_SINGLE_TEMPLATE( void barnes_symmetrize_,
                       (NDArray* rowP, NDArray* colP, NDArray* valP, sd::LongType N,
                        NDArray* outputRows, NDArray* outputCols, NDArray* outputVals, NDArray* rowCounts),
                       SD_NUMERIC_TYPES);
@@ -134,7 +134,7 @@ static void barnes_edge_forces_(NDArray* rowP, NDArray * colP, NDArray * valP, i
       int shift = n * colCount;
       for (int i = s; i < end; i++) {
         T const* thisSlice = dataP + colP->e<int>(i) * colCount;
-        T res = 1;
+        T res = static_cast<T>(1);
 
         for (int k = 0; k < colCount; k++) {
           auto tempVal = dataP[shift + k] - thisSlice[k];  // thisSlice[k];
@@ -155,7 +155,7 @@ void barnes_edge_forces(NDArray* rowP, NDArray * colP, NDArray * valP, int N, ND
   // Loop over all edges in the graph
   BUILD_SINGLE_SELECTOR(output->dataType(), barnes_edge_forces_, (rowP, colP, valP, N, &data, output), SD_FLOAT_TYPES);
 }
-BUILD_SINGLE_TEMPLATE(template void barnes_edge_forces_,
+BUILD_SINGLE_TEMPLATE( void barnes_edge_forces_,
                       (NDArray* rowP, NDArray * colP, NDArray * valP, int N, NDArray * data,
                        NDArray* output),
                       SD_FLOAT_TYPES);
@@ -174,7 +174,7 @@ static void barnes_gains_(NDArray* input, NDArray* gradX, NDArray* epsilon, NDAr
 void barnes_gains(NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output) {
   BUILD_SINGLE_SELECTOR(input->dataType(), barnes_gains_, (input, gradX, epsilon, output), SD_NUMERIC_TYPES);
 }
-BUILD_SINGLE_TEMPLATE(template void barnes_gains_, (NDArray * input, NDArray* gradX, NDArray* epsilon, NDArray* output),
+BUILD_SINGLE_TEMPLATE( void barnes_gains_, (NDArray * input, NDArray* gradX, NDArray* epsilon, NDArray* output),
                       SD_NUMERIC_TYPES);
 
 bool cell_contains(NDArray* corner, NDArray* width, NDArray* point, sd::LongType dimension) {

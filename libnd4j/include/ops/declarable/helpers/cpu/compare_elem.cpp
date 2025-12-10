@@ -64,7 +64,7 @@ void compare_elem(sd::LaunchContext* context, NDArray* input, bool isStrictlyInc
   BUILD_SINGLE_SELECTOR(xType, _compare_elem, (input, isStrictlyIncreasing, output), SD_COMMON_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void _compare_elem, (NDArray * A, bool isStrictlyIncreasing, bool& output);
+BUILD_SINGLE_TEMPLATE( void _compare_elem, (NDArray * A, bool isStrictlyIncreasing, bool& output);
                       , SD_COMMON_TYPES);
 }  // namespace helpers
 }  // namespace ops

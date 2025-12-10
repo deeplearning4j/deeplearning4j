@@ -40,8 +40,8 @@ void bgemm(NDArray *a,  NDArray *b,  NDArray *c,   NDArray *alphas,   NDArray *b
   if(all != nullptr)
     allIndex = all;
   else {
-    NDArray allLocal = NDIndexUtils::createAll();
-    allIndex = &allLocal;
+    NDArray *allLocal = NDIndexUtils::createAll();
+    allIndex = allLocal;
   }
 
   int batchSize = a->sizeAt(0);
@@ -54,13 +54,16 @@ void bgemm(NDArray *a,  NDArray *b,  NDArray *c,   NDArray *alphas,   NDArray *b
   //divide by 2: queries and keys
   for(int i = 0; i < batchSize; i++) {
     auto point = NDIndexUtils::createPoint(i);
-    auto aSlice = createView.evaluate({a,&point,allIndex,allIndex},{},{});
-    auto bSlice = createView.evaluate({b,&point,allIndex,allIndex},{},{});
-    auto outSlice = createView.evaluate({c,&point,allIndex,allIndex},{},{});
+    auto aSlice = createView.evaluate({a,point,allIndex,allIndex},{},{});
+    auto bSlice = createView.evaluate({b,point,allIndex,allIndex},{},{});
+    auto outSlice = createView.evaluate({c,point,allIndex,allIndex},{},{});
     inputs.push_back(aSlice.at(0));
     bInputs.push_back(bSlice.at(0));
     outputs.push_back(outSlice.at(0));
+    delete point;
   }
+
+  delete allIndex;
 
 
 
@@ -73,7 +76,12 @@ static void bgemm_( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std
                     NDArray *alphas,  NDArray *betas, int transA, int transB, int M, int N, int K,
                     int lda,  int ldb,  int ldc) {
   int batchSize = vA.size();
-  if (BlasHelper::getInstance().hasBatchedGEMM<T>() || !Environment::getInstance().isEnableBlas()) {
+
+
+  
+  // Use batched BLAS only when: 1) batched GEMM is available AND 2) BLAS is enabled
+  // Previously used || which incorrectly entered BLAS path when BLAS was disabled
+  if (BlasHelper::getInstance().hasBatchedGEMM<T>() && Environment::getInstance().isEnableBlas()) {
     auto arr = vA.at(0);
     CBLAS_TRANSPOSE *tA, *tB;
     int *tM, *tN, *tK, *tldA, *tldB, *tldC, *tsize;
@@ -111,12 +119,13 @@ static void bgemm_( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std
       buffersC.push_back(reinterpret_cast<T *>(vC[e]->buffer()));
     }
 
-    if (std::is_same<T, double>::value || !Environment::getInstance().isEnableBlas()) {
+    // Inside BLAS block, only check type - BLAS enablement was already verified in outer condition
+    if (std::is_same<T, double>::value) {
       BlasHelper::getInstance().dgemmBatched()(CblasColMajor, tA, tB, tM, tN, tK, (double *)alphas->buffer(),
                                                (double **)buffersA.data(), tldA, (double **)buffersB.data(), tldB,
                                                (double *)betas->buffer(), (double **)buffersC.data(), tldC, vA.size(),
                                                tsize);
-    } else if (std::is_same<T, float>::value || !Environment::getInstance().isEnableBlas()) {
+    } else if (std::is_same<T, float>::value) {
       BlasHelper::getInstance().sgemmBatched()(
           CblasColMajor, tA, tB, tM, tN, tK, (float *)alphas->buffer(), (float **)buffersA.data(), tldA,
           (float **)buffersB.data(), tldB, (float *)betas->buffer(), (float **)buffersC.data(), tldC, vA.size(), tsize);
@@ -148,7 +157,7 @@ static void bgemm_( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std
         auto beta = betas->isScalar() ? betas->e<T>(0) : betas->e<T>(p);
         for (int m = 0; m < M; m++) {
           for (int n = 0; n < N; n++) {
-            T c_mnp = 0;
+            T c_mnp = static_cast<T>(0);
             PRAGMA_OMP_SIMD
             for (int k = 0; k < K; k++) {
               c_mnp += A[tA == CblasNoTrans ? (m + k * lda) : (m * lda + k)] *
@@ -173,7 +182,7 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
                         SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void bgemm_,
+BUILD_SINGLE_TEMPLATE( void bgemm_,
                       ( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector<NDArray *> &vC,
                           NDArray *alphas,  NDArray *betas, int transA, int transB, int M, int N, int K,
                           int lda,  int ldb,  int ldc),

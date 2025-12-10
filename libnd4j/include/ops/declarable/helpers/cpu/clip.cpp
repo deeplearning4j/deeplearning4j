@@ -124,7 +124,7 @@ static void clipByNormBp_(NDArray *input, NDArray *gradO, NDArray *gradI,
     samediff::Threads::parallel_tad(func, 0, gradISubArrs.size());
   }
 }
-BUILD_SINGLE_TEMPLATE(template void clipByNormBp_,
+BUILD_SINGLE_TEMPLATE(void clipByNormBp_,
                       (NDArray *input, NDArray *gradO, NDArray *gradI, const std::vector<sd::LongType>& dimensions,
                        NDArray *clipNorm, const bool useAverage),
                       SD_FLOAT_TYPES);
@@ -139,7 +139,7 @@ void clipByNormBp(sd::LaunchContext* context, NDArray *input, NDArray  *gradO, N
 template <typename T>
 static void clipByGlobalNorm_(std::vector<NDArray*>& inputs, double clipNorm, sd::memory::Workspace* workspace,
                               std::vector<NDArray*>& outputs, bool isInplace) {
-  T globalNorm = 0;
+  T globalNorm = static_cast<T>(0);
   for (size_t i = 0; i < inputs.size(); i++) {
     auto input = inputs[i];
     auto l2norm = input->reduceNumber(reduce::Norm2);
@@ -170,7 +170,7 @@ void clipByGlobalNorm(LaunchContext* context, std::vector<NDArray*>& inputs, dou
                         SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void clipByGlobalNorm_,
+BUILD_SINGLE_TEMPLATE( void clipByGlobalNorm_,
                       (std::vector<NDArray*> & inputs, double clipNorm, sd::memory::Workspace* workspace,
                        std::vector<NDArray*>& outputs, bool isInplace),
                       SD_FLOAT_TYPES);
@@ -178,8 +178,8 @@ BUILD_SINGLE_TEMPLATE(template void clipByGlobalNorm_,
 template <typename T>
 static void clipByValue_(NDArray* input, double leftBound, double rightBound, NDArray* output) {
   auto routine = LAMBDA_T(_x, leftBound, rightBound) {
-    if (_x > rightBound) return rightBound;
-    if (_x < leftBound) return leftBound;
+    if (_x > rightBound) return static_cast<T>(rightBound);
+    if (_x < leftBound) return static_cast<T>(leftBound);
     return _x;
   });
 
@@ -190,7 +190,7 @@ void clipByValue(LaunchContext* context, NDArray* input, double leftBound, doubl
   BUILD_SINGLE_SELECTOR(input->dataType(), clipByValue_, (input, leftBound, rightBound, output), SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void clipByValue_,
+BUILD_SINGLE_TEMPLATE( void clipByValue_,
                       (NDArray * input, double leftBound, double rightBound, NDArray* output);
                       , SD_FLOAT_TYPES);
 
