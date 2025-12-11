@@ -20,7 +20,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 06.02.2019
 //
 
-#ifndef __CUDABLAS__
+#ifndef SD_CUDA
 #include <exceptions/cuda_exception.h>
 #include <helpers/PointersManager.h>
 #include <helpers/logger.h>

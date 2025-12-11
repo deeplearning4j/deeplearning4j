@@ -95,7 +95,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
   if (!weights->isScalar() && !weights->isSameShape(&E)) {
     std::vector<LongType> weightsShape = {weights->lengthOf()};
     if (E.rankOf() == 1 && weights->isVector() && weights->rankOf() > 1)
-      weightsBroad = new NDArray(weights->reshape(weights->ordering(), weightsShape));
+      weightsBroad = weights->reshape(weights->ordering(), weightsShape);
     else
       weightsBroad = new NDArray(weights->tileToShape(E.shapeInfo()));
   }
