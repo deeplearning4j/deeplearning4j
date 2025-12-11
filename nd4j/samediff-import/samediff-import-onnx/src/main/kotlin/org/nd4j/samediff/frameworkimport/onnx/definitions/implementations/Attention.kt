@@ -242,7 +242,13 @@ class Attention: PreImportHook {
         
         // Add relative position bias if present
         if (relativePositionBias != null) {
-            scaledScores = sd.math.add("${opName}_scaledScoresWithBias", scaledScores, relativePositionBias)
+            // Cast relativePositionBias to FLOAT if necessary
+            val biasFloat = if (relativePositionBias.dataType() != DataType.FLOAT) {
+                sd.castTo("${opName}_relativePositionBiasFloat", relativePositionBias, DataType.FLOAT)
+            } else {
+                relativePositionBias
+            }
+            scaledScores = sd.math.add("${opName}_scaledScoresWithBias", scaledScores, biasFloat)
         }
         
         // Apply mask if present
@@ -250,8 +256,45 @@ class Attention: PreImportHook {
             val maskValue = sd.constant("${opName}_maskValue", maskFilterValue)
             
             if (maskIndex != null) {
-                // Handle different mask formats
-                scaledScores = sd.math.add("${opName}_scaledScoresWithMask", scaledScores, maskIndex)
+                // Handle different mask formats from EmbedLayerNormalization or other sources
+                // The mask may come in various shapes:
+                // - [batch, seq] - needs expansion to [batch, 1, 1, seq]
+                // - [batch, 1, 1, seq] - already correct
+                // - [batch, 1, seq, seq] - already broadcastable
+                // scaledScores has shape [batch, heads, q_seq, k_seq]
+
+                // Cast maskIndex to FLOAT to match scaledScores dtype
+                val maskIndexFloat = if (maskIndex.dataType() != DataType.FLOAT) {
+                    sd.castTo("${opName}_maskIndexFloat", maskIndex, DataType.FLOAT)
+                } else {
+                    maskIndex
+                }
+
+                // Determine mask rank from static shape if available, otherwise assume 2D (most common case)
+                val staticShape = maskIndexFloat.shape
+                val maskRank = staticShape?.size ?: 2
+
+                // Expand mask dimensions to match attention scores shape [batch, heads, q_seq, k_seq]
+                val maskExpanded = when (maskRank) {
+                    2 -> {
+                        // Mask is [batch, seq], expand to [batch, 1, 1, seq]
+                        val expanded1 = sd.expandDims("${opName}_maskExpanded1", maskIndexFloat, 1)
+                        sd.expandDims("${opName}_maskExpanded2", expanded1, 2)
+                    }
+                    3 -> {
+                        // Mask is [batch, 1, seq], expand to [batch, 1, 1, seq]
+                        sd.expandDims("${opName}_maskExpanded", maskIndexFloat, 2)
+                    }
+                    else -> {
+                        // Mask is already 4D, use as-is
+                        maskIndexFloat
+                    }
+                }
+
+                // Add the expanded mask to attention scores
+                // For EmbedLayerNormalization dummy_mask_index which is typically zeros, this is a no-op
+                // For actual masks with large negative values, this applies the masking
+                scaledScores = sd.math.add("${opName}_scaledScoresWithMask", scaledScores, maskExpanded)
             }
             
             if (unidirectional) {
@@ -457,7 +500,34 @@ class Attention: PreImportHook {
         // Add attention mask if provided
         var scoresWithMask = scores
         if (attnMask != null) {
-            scoresWithMask = sd.math.add("${opName}_scoresWithMask", scores, attnMask)
+            // Cast attnMask to FLOAT to match scores dtype if necessary
+            val attnMaskFloat = if (attnMask.dataType() != DataType.FLOAT) {
+                sd.castTo("${opName}_attnMaskFloat", attnMask, DataType.FLOAT)
+            } else {
+                attnMask
+            }
+
+            // Expand mask dimensions if needed to match scores shape [batch, heads, q_seq, k_seq]
+            val staticShape = attnMaskFloat.shape
+            val maskRank = staticShape?.size ?: 2
+
+            val maskExpanded = when (maskRank) {
+                2 -> {
+                    // Mask is [batch, seq], expand to [batch, 1, 1, seq]
+                    val expanded1 = sd.expandDims("${opName}_attnMaskExpanded1", attnMaskFloat, 1)
+                    sd.expandDims("${opName}_attnMaskExpanded2", expanded1, 2)
+                }
+                3 -> {
+                    // Mask is [batch, 1, seq], expand to [batch, 1, 1, seq]
+                    sd.expandDims("${opName}_attnMaskExpanded", attnMaskFloat, 2)
+                }
+                else -> {
+                    // Mask is already 4D, use as-is
+                    attnMaskFloat
+                }
+            }
+
+            scoresWithMask = sd.math.add("${opName}_scoresWithMask", scores, maskExpanded)
         }
         
         // Apply causal mask if needed
