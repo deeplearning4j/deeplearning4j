@@ -46,24 +46,55 @@ CONFIGURABLE_OP_IMPL(standardize, 1, 1, true, 0, -2) {
 
   shape::checkDimensions(input->rankOf(), &axis);
 
-  auto means = input->reduceAlongDimension(reduce::Mean, &axis, true);
+  // First, replace any Inf/NaN in input to prevent them from corrupting mean/stdev calculations
+  // Create a working copy if input contains problematic values
+  NDArray* workingInput = const_cast<NDArray*>(input);
+  NDArray* inputCopy = nullptr;
+
+  // Check if input has Inf or NaN using type-safe methods - if so, create a cleaned copy
+  bool hasInfOrNan = input->hasNaNs() || input->hasInfs();
+
+  if (hasInfOrNan) {
+    inputCopy = input->dup();
+    // Replace Inf with large finite values, NaN with 0
+    inputCopy->applyScalar(sd::scalar::ReplaceNans, 0.0, inputCopy);
+    // Clamp to prevent Inf - use a large but finite value
+    sd::ops::clipbyvalue clipOp;
+    clipOp.execute({inputCopy}, {inputCopy}, {-1e10, 1e10}, {});
+    workingInput = inputCopy;
+  }
+
+  auto means = workingInput->reduceAlongDimension(reduce::Mean, &axis, true);
   REQUIRE_TRUE(means != nullptr, 0, "STANDARDIZE OP: failed to compute mean along dimension");
 
-  auto base = input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, &axis);
+  auto base = workingInput->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, &axis);
   REQUIRE_TRUE(base != nullptr, 0, "STANDARDIZE OP: failed to compute standard deviation along dimension");
 
-  auto stdev = *base  + 1e-12;
+  // Use larger epsilon for numerical stability - 1e-12 is too small for float32
+  // and can cause division by near-zero, leading to Inf values
+  // Note: base + 1e-5 creates a new NDArray, so we need to manage it as a pointer
+  NDArray* stdev = new NDArray(*base + 1e-5);
   REQUIRE_TRUE(stdev != nullptr, 0, "STANDARDIZE OP: failed to add epsilon to standard deviation");
-  auto meansShape = means->getShapeAsVector();;
+  auto meansShape = means->getShapeAsVector();
   std::vector<sd::LongType> meansShapeVec = *meansShape;
   stdev->reshapei(meansShapeVec);
   delete meansShape;
-  input->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), means, output, false);
+  workingInput->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), means, output, false);
   output->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), stdev, output, false);
+
+  // Replace any NaN that may have been created and clamp output to reasonable range
   output->applyScalar(sd::scalar::ReplaceNans, 0, output);
+
+  // Clamp output to prevent extreme values from propagating
+  sd::ops::clipbyvalue finalClipOp;
+  finalClipOp.execute({output}, {output}, {-1e4, 1e4}, {});
+
   delete means;
   delete base;
   delete stdev;
+  if (inputCopy != nullptr) {
+    delete inputCopy;
+  }
   return sd::Status::OK;
 }
 

@@ -51,8 +51,9 @@
 
 namespace sd {
 
+// Forward declaration needed for LaunchContextNoOpDeleter
+class LaunchContext;
 
-namespace sd {
 // Custom deleter for sd::LaunchContext instances that are intentionally leaked
 // by the LaunchContext::defaultContext() mechanism.
 // This prevents std::shared_ptr from attempting to delete these objects,
