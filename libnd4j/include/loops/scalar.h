@@ -35,8 +35,6 @@
 #include <ops/ops.h>
 #include <system/op_boilerplate.h>
 
-#include "helpers/logger.h"
-
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -87,14 +85,14 @@ class ScalarTransform {
   template <typename OpType>
   static void transform(const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *z,
                         const sd::LongType *zShapeInfo, const void *scalars, sd::LongType *dimension,
-                        long long int dimensionLength,
+                        sd::LongType dimensionLength,
                         const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets,
                         const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ, sd::LongType start,
                         sd::LongType stop);
 
   static void transform(int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *z,
                         const sd::LongType *zShapeInfo, const void *scalars, sd::LongType *dimension,
-                        long long int dimensionLength,
+                        sd::LongType dimensionLength,
                         const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets,
                         const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ, sd::LongType start,
                         sd::LongType stop);
