@@ -33,15 +33,15 @@ namespace functions {
 namespace indexreduce {
 
 ////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y>
-sd::LongType IndexReduce<X, Y>::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo,
+template <typename X, typename Z>
+sd::LongType IndexReduce<X, Z>::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo,
                                           void *extraParams) {
  RETURNING_DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams), INDEX_REDUCE_OPS);
 }
 
 ////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y>
-void IndexReduce<X, Y>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *z,
+template <typename X, typename Z>
+void IndexReduce<X, Z>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *z,
                             const sd::LongType *zShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength,
                             const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {
  DISPATCH_BY_OPNUM_TT(
@@ -50,9 +50,9 @@ void IndexReduce<X, Y>::exec(int opNum, const void *x, const sd::LongType *xShap
 }
 
 ////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y>
+template <typename X, typename Z>
 template <typename OpType>
-sd::LongType IndexReduce<X, Y>::execScalar(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams) {
+sd::LongType IndexReduce<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams) {
  auto x = reinterpret_cast<const X *>(vx);
  auto extraParams = reinterpret_cast<X *>(vextraParams);
 
@@ -120,11 +120,14 @@ void IndexReduce<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, voi
  auto tadOnlyShapeInfo = tadShapeInfo;
  auto tadOffsets = tadOffset;
 
+ // When shared_ptr goes out of scope, it deletes the TadPack and invalidates pointers!
+ std::shared_ptr<sd::TadPack> tadPack = nullptr;
+
  if (tadOnlyShapeInfo == nullptr || tadOffsets == nullptr) {
    if (dimensionLength < 1) return;
 
-   auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType*>(xShapeInfo), dimension,
-                                                                        dimensionLength);
+   tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType*>(xShapeInfo), dimension,
+                                                                   dimensionLength);
    tadOnlyShapeInfo = tadPack->primaryShapeInfo();
    tadOffsets = tadPack->primaryOffsets();
  }

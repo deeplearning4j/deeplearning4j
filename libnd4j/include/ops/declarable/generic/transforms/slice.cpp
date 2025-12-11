@@ -33,8 +33,6 @@ CUSTOM_OP_IMPL(slice, 1, 1, false, 0, -2) {
 
   int x_rank = input->rankOf();
 
-
-
   std::vector<LongType> begin;
   std::vector<LongType> sz;
 
@@ -108,7 +106,6 @@ CUSTOM_OP_IMPL(slice, 1, 1, false, 0, -2) {
 
   RELEASE(subArrShapeInfo, block.getWorkspace());
 
-
   STORE_RESULT(output);
 
   return Status::OK;
@@ -131,6 +128,19 @@ DECLARE_SHAPE_FN(slice) {
     auto b = INPUT_VARIABLE(1);
     auto e = INPUT_VARIABLE(2);
 
+    // Check if begin/end are empty - this can happen during graph construction
+    if (b->isEmpty() || e->isEmpty()) {
+      // For slicing a 1D shape tensor to extract a single element, return scalar
+      if (x_rank == 1) {
+        auto scalarShape = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inShape));
+        return SHAPELIST(scalarShape);
+      }
+      // Otherwise cannot determine shape at compile time
+      std::vector<LongType> unknownShape(x_rank, -1);
+      auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), 'c', unknownShape);
+      return SHAPELIST(newShape);
+    }
+
     begin = b->template asVectorT<LongType>();
     sz = e->template asVectorT<LongType>();
   } else {
@@ -150,6 +160,12 @@ DECLARE_SHAPE_FN(slice) {
   for (int e = 0; e < x_rank; e++) {
     auto size = sz[e];
     auto start = begin[e];
+
+    // Handle unknown/dynamic dimensions
+    if (inShape[e + 1] < 0) {
+      shape.emplace_back(-1);
+      continue;
+    }
 
     if (size == -1) {
       size = inShape[e + 1] - start;
@@ -175,6 +191,12 @@ DECLARE_SHAPE_FN(slice) {
     }
 
     shape.emplace_back(size);
+  }
+
+  // Special case: slicing a 1D tensor with size 1 should produce a scalar
+  if (x_rank == 1 && shape.size() == 1 && shape[0] == 1) {
+    auto scalarShape = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inShape));
+    return SHAPELIST(scalarShape);
   }
 
   if(shape.size() == 1 && shape[0] == 0) {
