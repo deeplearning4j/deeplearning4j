@@ -28,6 +28,7 @@
 
 #include <map>
 #include <mutex>
+#include <unordered_set>
 #include <vector>
 
 namespace sd {
@@ -51,13 +52,84 @@ class SD_LIB_EXPORT ConstantTadHelper {
    * @return
    */
 
-  TadPack *tadForDimensions(LongType *originalShape, LongType *dimensions, LongType dimLength);
-  TadPack *tadForDimensions(ShapeDescriptor &descriptor, std::vector<LongType> &dimensions,
+  std::shared_ptr<TadPack> tadForDimensions(LongType *originalShape, LongType *dimensions, LongType dimLength);
+  std::shared_ptr<TadPack> tadForDimensions(ShapeDescriptor &descriptor, std::vector<LongType> &dimensions,
                            const bool keepUnitiesInShape = false);
-  TadPack *tadForDimensions(TadDescriptor *descriptor);
+  std::shared_ptr<TadPack> tadForDimensions(TadDescriptor *descriptor);
 
-  TadPack *tadForDimensions(LongType *originalShape, LongType dimension);
-  TadPack *tadForDimensions(LongType *originalShape, std::vector<LongType> *dimensions);
+  std::shared_ptr<TadPack> tadForDimensions(LongType *originalShape, LongType dimension);
+  std::shared_ptr<TadPack> tadForDimensions(LongType *originalShape, std::vector<LongType> *dimensions);
+
+  /**
+   * Clear all cached TAD packs to prevent memory leaks during testing.
+   * NOTE: Will return early without action if setShutdownInProgress(true) was called.
+   */
+  void clearCache();
+
+  /**
+   * Mark that shutdown is in progress.
+   * When true, clearCache() will skip tree traversal to avoid SIGSEGV from corrupted memory
+   * during JVM/static destruction.
+   * @param inProgress true to mark shutdown in progress, false otherwise
+   */
+  void setShutdownInProgress(bool inProgress) {
+    _trie.setShutdownInProgress(inProgress);
+  }
+
+  /**
+   * Check if shutdown is in progress.
+   * @return true if shutdown is marked as in progress
+   */
+  bool isShutdownInProgress() const {
+    return _trie.isShutdownInProgress();
+  }
+
+  /**
+   * Get the total number of cached TAD pack entries.
+   *
+   * @return Total number of cached TAD packs across all stripes
+   */
+  LongType getCachedEntries() const;
+
+  /**
+   * Get the total memory used by cached TAD packs in bytes.
+   * This includes both shape_info and offset buffer sizes.
+   *
+   * @return Total memory used in bytes
+   */
+  LongType getCachedBytes() const;
+
+  /**
+   * Get the peak number of TAD pack entries that were cached simultaneously.
+   *
+   * @return Peak number of cached TAD packs
+   */
+  LongType getPeakCachedEntries() const;
+
+  /**
+   * Get the peak memory usage by cached TAD packs in bytes.
+   *
+   * @return Peak memory usage in bytes
+   */
+  LongType getPeakCachedBytes() const;
+
+  /**
+   * Generate a human-readable string representation of the TAD cache.
+   * Shows the trie structure with cached TAD packs for debugging.
+   *
+   * @param maxDepth Maximum depth to traverse (default: 10, -1 for unlimited)
+   * @param maxEntries Maximum number of entries to show (default: 100, -1 for unlimited)
+   * @return String representation of the cache
+   */
+  std::string toString(int maxDepth = 10, int maxEntries = 100) const;
+
+  /**
+   * Get all TadPack pointers currently in the cache.
+   * This is used by lifecycle tracking to distinguish cached entries from real leaks.
+   *
+   * @param out_pointers Set to fill with pointers to all cached TadPack objects
+   */
+  void getCachedPointers(std::unordered_set<void*>& out_pointers) const;
 };
 }  // namespace sd
 
