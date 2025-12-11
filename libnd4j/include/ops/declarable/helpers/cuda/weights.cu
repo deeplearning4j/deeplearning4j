@@ -127,7 +127,7 @@ void adjustWeights(LaunchContext* context, NDArray* input, NDArray* weights, NDA
                        SD_GENERIC_NUMERIC_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void adjustWeights_,
+BUILD_SINGLE_TEMPLATE( void adjustWeights_,
                      (sd::LaunchContext * context, NDArray* input, NDArray* weights, NDArray* output, int minLength,
                       int maxLength),
                      SD_GENERIC_NUMERIC_TYPES);
