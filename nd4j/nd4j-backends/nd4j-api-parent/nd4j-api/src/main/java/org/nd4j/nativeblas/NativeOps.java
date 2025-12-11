@@ -185,12 +185,54 @@ public interface NativeOps {
  LongPointer getPrimaryOffsets(OpaqueTadPack pack);
  LongPointer getSpecialShapeInfo(OpaqueTadPack pack) ;
  LongPointer getSpecialOffsets(OpaqueTadPack pack);
+
+ /**
+  * Get the stack trace for a TadPack as a string.
+  * Returns the allocation stack trace if functrace is enabled, empty string otherwise.
+  * This is useful for debugging TAD cache lifecycle issues.
+  *
+  * @param pack The TadPack to get the stack trace from
+  * @return String containing the formatted stack trace
+  */
+ String getTadPackStackTrace(OpaqueTadPack pack);
+
  OpaqueTadPack tadOnlyShapeInfo(OpaqueDataBuffer hXShapeInfo, LongPointer dimension, long dimensionLength);
  void checkP2P();
  void enableP2P(boolean enable);
  boolean isP2PAvailable();
  void initializeDevicesAndFunctions();
  void initializeFunctions(PointerPointer functions);
+
+ /**
+  * Initialize the shape cache eagerly during early JVM startup.
+  * This prevents race conditions during static initialization when multiple threads
+  * try to create NDArrays concurrently before the shape cache is fully initialized.
+  * <p>
+  * This should be called from Nd4j initialization BEFORE any class loading
+  * that might create NDArrays (like DifferentialFunctionClassHolder).
+  * </p>
+  * <p>
+  * Safe to call multiple times - subsequent calls are no-ops.
+  * </p>
+  */
+ void initializeShapeCache();
+
+ /**
+  * Initialize the TAD (Tensor-Along-Dimension) cache early to prevent race conditions.
+  * <p>
+  * This forces initialization of DirectTadTrie in a controlled, single-threaded context.
+  * This prevents race conditions during static initialization when multiple threads
+  * try to create TAD operations concurrently before the TAD cache is fully initialized.
+  * </p>
+  * <p>
+  * This should be called from Nd4j initialization BEFORE any class loading
+  * that might create TAD operations.
+  * </p>
+  * <p>
+  * Safe to call multiple times - subsequent calls are no-ops.
+  * </p>
+  */
+ void initializeTadCache();
  Pointer mallocHost(long memorySize, int flags);
  Pointer mallocDevice(long memorySize, int deviceId, int flags);
  int freeHost(Pointer pointer);
@@ -307,6 +349,17 @@ public interface NativeOps {
  long getConstantDataBufferSizeOf(org.nd4j.nativeblas.OpaqueConstantDataBuffer dbf);
  Pointer getConstantShapeBufferPrimary(org.nd4j.nativeblas.OpaqueConstantShapeBuffer dbf);
  Pointer getConstantShapeBufferSpecial(org.nd4j.nativeblas.OpaqueConstantShapeBuffer dbf);
+
+ /**
+  * Get the stack trace for a ConstantShapeBuffer as a string.
+  * Returns the allocation stack trace if functrace is enabled, empty string otherwise.
+  * This is useful for debugging shape buffer lifecycle issues.
+  *
+  * @param buffer The ConstantShapeBuffer to get the stack trace from
+  * @return String containing the formatted stack trace
+  */
+ String getConstantShapeBufferStackTrace(org.nd4j.nativeblas.OpaqueConstantShapeBuffer buffer);
+
  void markGraphContextInplace(OpaqueContext ptr, boolean reallyInplace);
  org.nd4j.nativeblas.OpaqueNDArray getOutputArrayNative(org.nd4j.nativeblas.OpaqueContext ptr, int idx);
  org.nd4j.nativeblas.OpaqueNDArray getInputArrayNative(org.nd4j.nativeblas.OpaqueContext ptr, int idx);
@@ -436,4 +489,488 @@ public interface NativeOps {
  org.nd4j.nativeblas.OpaqueLaunchContext defaultLaunchContext();
  String buildInfo();
  boolean isFuncTrace();
+
+ /**
+  * Triggers LeakSanitizer to perform a leak check immediately.
+  * Only functional when libnd4j is built with ASAN/LSAN enabled.
+  * No-op when built without sanitizers.
+  */
+ void triggerLeakCheck();
+
+ /**
+  * Initializes lifecycle crash handlers to capture crash dumps.
+  * <p>
+  * This must be called AFTER JVM is fully initialized to ensure
+  * the crash handler properly chains to JVM's hs_err generation.
+  * </p>
+  * <p>
+  * This fixes the signal handler installation race condition where crash handlers
+  * were being installed during library load (too early), capturing SIG_DFL instead
+  * of JVM's actual crash handler. This prevented hs_err file generation.
+  * </p>
+  * <p>
+  * After this fix, crashes will generate BOTH:
+  * <ul>
+  * <li>sd_crash_*.log - Lifecycle tracker dump (NDArray allocations, etc.)</li>
+  * <li>hs_err_pid*.log - JVM crash dump (full stack trace, thread info, etc.)</li>
+  * </ul>
+  * </p>
+  * <p>
+  * Safe to call multiple times - only initializes once.
+  * </p>
+  * <p>
+  * NOTE: Only available when built with {@code -Dlibnd4j.calltrace=ON}. No-op otherwise.
+  * </p>
+  */
+ void initializeLifecycleCrashHandlers();
+
+ /**
+  * Enables NDArray lifecycle tracking (allocation/deallocation monitoring).
+  */
+ void enableNDArrayTracking();
+
+ /**
+  * Disables NDArray lifecycle tracking.
+  */
+ void disableNDArrayTracking();
+
+ /**
+  * Enables DataBuffer lifecycle tracking.
+  */
+ void enableDataBufferTracking();
+
+ /**
+  * Disables DataBuffer lifecycle tracking.
+  */
+ void disableDataBufferTracking();
+
+ /**
+  * Enables TADCache lifecycle tracking.
+  */
+ void enableTADCacheTracking();
+
+ /**
+  * Disables TADCache lifecycle tracking.
+  */
+ void disableTADCacheTracking();
+
+ /**
+  * Enables ShapeCache lifecycle tracking.
+  */
+ void enableShapeCacheTracking();
+
+ /**
+  * Disables ShapeCache lifecycle tracking.
+  */
+ void disableShapeCacheTracking();
+
+ /**
+  * Enables OpContext lifecycle tracking.
+  */
+ void enableOpContextTracking();
+
+ /**
+  * Disables OpContext lifecycle tracking.
+  */
+ void disableOpContextTracking();
+
+ /**
+  * Enables operation execution logging for crash detection.
+  * <p>
+  * When enabled (and libnd4j is built with -Dlibnd4j.calltrace=ON), all operation executions
+  * are logged to a file with full unified C++/Java stack traces. The log file survives crashes
+  * and can be used for post-mortem debugging.
+  * </p>
+  * <p>
+  * Log files are located at: {@code /tmp/nd4j_op_execution_<PID>.log}
+  * (or {@code $SD_OP_LOG_DIR} if set)
+  * </p>
+  * <p>
+  * NOTE: Only available when built with {@code -Dlibnd4j.calltrace=ON}. No-op otherwise.
+  * </p>
+  *
+  * @see #disableOpExecutionLogging()
+  * @see #getOpExecutionLogPath()
+  * @see #getOpExecutionLogContents(long, boolean)
+  */
+ void enableOpExecutionLogging();
+
+ /**
+  * Disables operation execution logging.
+  * <p>
+  * No-op if SD_GCC_FUNCTRACE is not defined.
+  * </p>
+  *
+  * @see #enableOpExecutionLogging()
+  */
+ void disableOpExecutionLogging();
+
+ /**
+  * Check if operation execution logging is currently enabled.
+  *
+  * @return true if logging is enabled, false otherwise
+  */
+ boolean isOpExecutionLoggingEnabled();
+
+ /**
+  * Get the current operation execution log file path.
+  * <p>
+  * Returns empty string if logging is not enabled or not available.
+  * </p>
+  *
+  * @return String containing the log file path
+  */
+ String getOpExecutionLogPath();
+
+ /**
+  * Get the current operation execution log contents as a string.
+  * <p>
+  * Useful for retrieving recent execution history for debugging.
+  * </p>
+  *
+  * @param maxBytes Maximum bytes to read (0 = read entire file)
+  * @param fromEnd If true, read from end of file (most recent entries)
+  * @return String containing the log contents (empty if logging not enabled)
+  */
+ String getOpExecutionLogContents(long maxBytes, boolean fromEnd);
+
+ /**
+  * Force a flush of the operation execution log to disk.
+  * <p>
+  * The logger flushes after each operation by default, but this
+  * can be called manually for explicit checkpointing.
+  * </p>
+  */
+ void dumpOpExecutionLog();
+
+ /**
+  * Manually dump current state to the operation execution log.
+  * <p>
+  * Useful for checkpointing at specific points in code.
+  * </p>
+  *
+  * @param message Optional message to include in the dump (can be null)
+  */
+ void dumpOpExecutionState(String message);
+
+ // ═══════════════════════════════════════════════════════════════
+ // Allocation Logging API (SD_GCC_FUNCTRACE only)
+ // Similar to OpExecutionLogging, but focuses on tracking NDArray
+ // and OpContext allocations for understanding memory growth patterns
+ // ═══════════════════════════════════════════════════════════════
+
+ /**
+  * Get the current allocation log file path.
+  * <p>
+  * Allocation logging is always active in functrace builds (SD_GCC_FUNCTRACE).
+  * Returns empty string if functrace is not enabled.
+  * </p>
+  * <p>
+  * Log file location: /tmp/nd4j_allocations_&lt;PID&gt;.log (configurable via SD_ALLOCATION_LOG_DIR)
+  * </p>
+  *
+  * @return String containing the log file path
+  */
+ String getAllocationLogPath();
+
+ /**
+  * Generates a comprehensive leak source analysis report combining data from ALL lifecycle trackers.
+  * <p>
+  * This method analyzes undeleted allocations across all 5 lifecycle trackers:
+  * <ul>
+  *   <li>NDArrayLifecycleTracker</li>
+  *   <li>DataBufferLifecycleTracker</li>
+  *   <li>TADCacheLifecycleTracker</li>
+  *   <li>ShapeCacheLifecycleTracker</li>
+  *   <li>OpContextLifecycleTracker</li>
+  * </ul>
+  * <p>
+  * For each allocation source (Java method or C++ function), the report shows:
+  * <ul>
+  *   <li>Total number of undeleted allocations</li>
+  *   <li>Breakdown by object type (NDArray, DataBuffer, TAD, Shape, OpContext)</li>
+  *   <li>Total bytes leaked</li>
+  *   <li>Example stack traces (both Java and C++)</li>
+  * </ul>
+  * <p>
+  * Results are sorted by total leak count, making it easy to identify the top leak sources.
+  *
+  * @param outputDir Directory where report files should be written (e.g., "./leak_reports").
+  *                  If null or empty, uses current directory.
+  *
+  * <p>Output files generated:</p>
+  * <ul>
+  *   <li>comprehensive_leak_report.txt - Detailed report with top 50 leak sources</li>
+  *   <li>Console output shows top 20 leak sources summary</li>
+  * </ul>
+  *
+  * <p>Example usage:</p>
+  * <pre>{@code
+  * // Enable tracking
+  * Nd4j.getNativeOps().enableNDArrayTracking();
+  * Nd4j.getNativeOps().enableDataBufferTracking();
+  * Nd4j.getNativeOps().enableTADCacheTracking();
+  * Nd4j.getNativeOps().enableShapeCacheTracking();
+  * Nd4j.getNativeOps().enableOpContextTracking();
+  *
+  * // Run workload
+  * runYourWorkload();
+  *
+  * // Generate analysis
+  * Nd4j.getNativeOps().generateComprehensiveLeakAnalysis("./leak_reports");
+  * }</pre>
+  *
+  * @see #enableNDArrayTracking()
+  * @see #enableDataBufferTracking()
+  */
+ void generateComprehensiveLeakAnalysis(String outputDir);
+
+ /**
+  * Clears all cached TAD packs to prevent memory leaks.
+  * This is particularly useful when running memory leak tests or
+  * during application shutdown to free accumulated cache memory.
+  * NOTE: Will return early without action if setTADCacheShutdownInProgress(true) was called.
+  */
+ void clearTADCache();
+
+ /**
+  * Marks that shutdown is in progress.
+  * CRITICAL: Call this early in JVM shutdown (e.g., from a shutdown hook)
+  * to prevent SIGSEGV crashes during cache cleanup.
+  *
+  * During JVM/static destruction, memory allocators may have been destroyed,
+  * leaving corrupted pointers in cached data structures. Setting this flag
+  * causes clearTADCache() and similar functions to skip tree traversal,
+  * letting the OS safely reclaim memory at process exit instead.
+  *
+  * @param inProgress true to mark shutdown in progress, false otherwise
+  */
+ void setTADCacheShutdownInProgress(boolean inProgress);
+
+ /**
+  * Check if TAD cache shutdown is in progress.
+  * @return true if shutdown is marked as in progress
+  */
+ boolean isTADCacheShutdownInProgress();
+
+ /**
+  * Clears all cached shape buffers to prevent memory leaks.
+  * This is called during application shutdown to free accumulated cache memory.
+  */
+ void clearShapeCache();
+
+ /**
+  * Get the total number of cached shape buffer entries.
+  *
+  * @return Total number of cached shape buffers across all stripes
+  */
+ long getShapeCachedEntries();
+
+ /**
+  * Get the total memory used by cached shape buffers in bytes.
+  *
+  * @return Total memory used in bytes
+  */
+ long getShapeCachedBytes();
+
+ /**
+  * Get the peak number of shape entries that were cached simultaneously.
+  *
+  * @return Peak number of cached shape buffers
+  */
+ long getShapePeakCachedEntries();
+
+ /**
+  * Get the peak memory usage by cached shape buffers in bytes.
+  *
+  * @return Peak memory usage in bytes
+  */
+ long getShapePeakCachedBytes();
+
+ /**
+  * Get the total number of cached TAD pack entries.
+  *
+  * @return Total number of cached TAD packs across all stripes
+  */
+ long getTADCachedEntries();
+
+ /**
+  * Get the total memory used by cached TAD packs in bytes.
+  * This includes both shape_info and offset buffer sizes.
+  *
+  * @return Total memory used in bytes
+  */
+ long getTADCachedBytes();
+
+ /**
+  * Get the peak number of TAD pack entries that were cached simultaneously.
+  *
+  * @return Peak number of cached TAD packs
+  */
+ long getTADPeakCachedEntries();
+
+ /**
+  * Get the peak memory usage by cached TAD packs in bytes.
+  *
+  * @return Peak memory usage in bytes
+  */
+ long getTADPeakCachedBytes();
+
+ /**
+  * Get a string representation of the shape cache for debugging.
+  * Shows the trie structure with cached shape buffers.
+  * The returned string must be freed using freeString().
+  *
+  * @param maxDepth Maximum depth to traverse (default: 10, -1 for unlimited)
+  * @param maxEntries Maximum number of entries to show (default: 100, -1 for unlimited)
+  * @return String representation of the shape cache
+  */
+ String getShapeCacheString(int maxDepth, int maxEntries);
+
+ /**
+  * Get a string representation of the TAD cache for debugging.
+  * Shows the trie structure with cached TAD packs.
+  * The returned string must be freed using freeString().
+  *
+  * @param maxDepth Maximum depth to traverse (default: 10, -1 for unlimited)
+  * @param maxEntries Maximum number of entries to show (default: 100, -1 for unlimited)
+  * @return String representation of the TAD cache
+  */
+ String getTADCacheString(int maxDepth, int maxEntries);
+
+ /**
+  * Check and cleanup caches at configurable intervals.
+  * Called after operations to prevent cache accumulation.
+  */
+ void checkAndCleanupCaches();
+
+ // NEW: Temporal leak analysis
+ void generateNDArrayTemporalLeakReport(String outputPath, int windowCount, double windowDurationSec);
+ void generateTADCacheTemporalLeakReport(String outputPath, int windowCount, double windowDurationSec);
+
+ // NEW: Snapshot differential analysis
+ long captureNDArrayLeakSnapshot();
+ long captureTADCacheLeakSnapshot();
+ void generateNDArraySnapshotDiff(long snapshot1, long snapshot2, String outputPath);
+ void generateTADCacheSnapshotDiff(long snapshot1, long snapshot2, String outputPath);
+ void clearNDArraySnapshots();
+ void clearTADCacheSnapshots();
+
+ // ===============================
+ // DeallocatorService Lifecycle Tracking
+ // Records Java-side deallocation statistics from DeallocatorService
+ // to be merged with C++ lifecycle trackers in UnifiedMemoryReporter
+ // ===============================
+
+ /**
+  * Records a snapshot of DeallocatorService statistics for integration with C++ lifecycle tracking.
+  * <p>
+  * This method is called by the Java DeallocatorService to push its time-series
+  * tracking data to the C++ DeallocatorServiceLifecycleTracker, which is then
+  * merged into the UnifiedMemoryReporter.
+  * </p>
+  * <p>
+  * Only functional when built with SD_GCC_FUNCTRACE. No-op otherwise.
+  * </p>
+  *
+  * @param totalAllocations Total number of allocations tracked
+  * @param totalDeallocations Total number of deallocations tracked
+  * @param totalBytesAllocated Total bytes allocated
+  * @param totalBytesDeallocated Total bytes deallocated
+  * @param peakLiveCount Peak number of live objects observed
+  * @param peakBytes Peak bytes in use observed
+  */
+ void recordDeallocatorServiceSnapshot(long totalAllocations, long totalDeallocations,
+                                       long totalBytesAllocated, long totalBytesDeallocated,
+                                       long peakLiveCount, long peakBytes);
+
+ /**
+  * Enables DeallocatorService lifecycle tracking on the C++ side.
+  * <p>
+  * When enabled, the DeallocatorServiceLifecycleTracker will store snapshots
+  * pushed from Java and include them in UnifiedMemoryReporter output.
+  * </p>
+  */
+ void enableDeallocatorServiceTracking();
+
+ /**
+  * Disables DeallocatorService lifecycle tracking on the C++ side.
+  */
+ void disableDeallocatorServiceTracking();
+
+ /**
+  * Checks if DeallocatorService tracking is enabled.
+  *
+  * @return true if tracking is enabled
+  */
+ boolean isDeallocatorServiceTrackingEnabled();
+
+ /**
+  * Gets the current live count from DeallocatorService tracker.
+  *
+  * @return current live count (allocations - deallocations)
+  */
+ long getDeallocatorServiceLiveCount();
+
+ /**
+  * Gets the current bytes in use from DeallocatorService tracker.
+  *
+  * @return current bytes in use (allocated - deallocated)
+  */
+ long getDeallocatorServiceBytesInUse();
+
+ /**
+  * Free a string returned by native code.
+  *
+  * @param ptr String pointer to free
+  */
+ void freeString(String ptr);
+
+ // ===============================
+ // Allocation Context for Lifecycle Tracking
+ // Allows Java code to tag allocations with operation names
+ // ===============================
+
+ /**
+  * Set the current allocation context (operation name) for lifecycle tracking.
+  * <p>
+  * This allows tagging native memory allocations with the operation that triggered them,
+  * providing much better granularity in leak reports. For example, instead of seeing
+  * "720 leaks from data_buffer_alloc", you'll see "50 leaks from Sum", "30 leaks from Mean", etc.
+  * </p>
+  * <p>
+  * The context is thread-local, so each thread can have its own context.
+  * Call {@link #clearAllocationContext()} when the operation is complete.
+  * </p>
+  * <p>
+  * Only functional when built with SD_GCC_FUNCTRACE. No-op otherwise.
+  * </p>
+  *
+  * @param opName The operation name to associate with allocations (e.g., "Sum", "Mean", "Concat")
+  */
+ void setAllocationContext(String opName);
+
+ /**
+  * Clear the current allocation context for this thread.
+  * <p>
+  * Call this after op creation/execution to stop tagging allocations with the operation name.
+  * </p>
+  */
+ void clearAllocationContext();
+
+ /**
+  * Update the Java stack trace for an existing NDArray allocation record.
+  * <p>
+  * This is called from Java after creating an OpaqueNDArray to provide the full Java stack trace
+  * captured before the JNI boundary. This gives much better context than capturing the stack
+  * trace from within native code.
+  * </p>
+  * <p>
+  * Only functional when built with SD_GCC_FUNCTRACE. No-op otherwise.
+  * </p>
+  *
+  * @param array The OpaqueNDArray whose allocation record should be updated
+  * @param javaStackTrace The full Java stack trace as a string
+  */
+ void updateAllocationJavaStackTrace(OpaqueNDArray array, String javaStackTrace);
 }
