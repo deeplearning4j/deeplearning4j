@@ -87,7 +87,9 @@ char BigEndianTest();
  * @param t
  * @return
  */
+#ifdef __cpp_rtti
 SD_LIB_EXPORT char mapType(const std::type_info &t);
+#endif
 
 template <typename T>
 SD_LIB_EXPORT char mapType();

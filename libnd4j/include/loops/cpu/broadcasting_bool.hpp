@@ -32,8 +32,8 @@ using namespace simdOps;
 namespace functions {
 namespace broadcast {
 
-template <typename X, typename Y>
-void BroadcastBool<X, Y>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
+template <typename X, typename Z>
+void BroadcastBool<X, Z>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                                const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo,
                                void *extraParams, sd::LongType *dimension, sd::LongType dimensionLength,
                                const sd::LongType *xTadShapeInfo, const sd::LongType *xTadOffset,
@@ -45,15 +45,15 @@ void BroadcastBool<X, Y>::exec(int opNum, const void *x, const sd::LongType *xSh
                        BROADCAST_BOOL_OPS);
 }
 
-template <typename X, typename Y>
-void BroadcastBool<X, Y>::exec(const int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
+template <typename X, typename Z>
+void BroadcastBool<X, Z>::exec(const int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                                const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo,
                                void *extraParams) {
   DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams), BROADCAST_BOOL_OPS);
 }
 
-template <typename X, typename Y>
-void BroadcastBool<X, Y>::execInverse(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
+template <typename X, typename Z>
+void BroadcastBool<X, Z>::execInverse(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                                       const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo,
                                       void *extraParams, sd::LongType *dimension, sd::LongType dimensionLength,
                                       const sd::LongType *xTadShapeInfo, const sd::LongType *xTadOffset,
@@ -254,9 +254,12 @@ void BroadcastBool<X, Z>::execInverse(const void *vx, const sd::LongType *xShape
   auto yTadShapeShapeInfo = yTadShapeInfo;
   auto tadOffsets = yTadOffset;
 
+  // When shared_ptr goes out of scope, it deletes the TadPack and invalidates pointers!
+  std::shared_ptr<sd::TadPack> tadPack = nullptr;
+
   if (yTadShapeInfo == nullptr || tadOffsets == nullptr) {
-    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType*>(yShapeInfo), dimension,
-                                                                         dimensionLength);
+    tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType*>(yShapeInfo), dimension,
+                                                                    dimensionLength);
     yTadShapeShapeInfo = tadPack->primaryShapeInfo();
     tadOffsets = tadPack->primaryOffsets();
   }
@@ -573,32 +576,39 @@ static void execDefault(const X *x, const sd::LongType *xShapeInfo, const X *y, 
 
   // Cache shape-related values
   sd::LongType zRank = shape::rank(zShapeInfo);
-  auto zShape = shape::shapeOf(zShapeInfo);
-  auto zStride = shape::stride(zShapeInfo);
-
   sd::LongType xRank = shape::rank(xShapeInfo);
-  auto xStride = shape::stride(xShapeInfo);
-
   sd::LongType yRank = shape::rank(yShapeInfo);
-  auto yStride = shape::stride(yShapeInfo);
+
+  // C-style arrays CANNOT be captured by value in lambdas - they decay to pointers
+  // that point to stack memory. std::array CAN be captured by value, ensuring each
+  // parallel thread gets its own copy of the data with guaranteed lifetime.
+  std::array<sd::LongType, SD_MAX_RANK> zShapeLocal;
+  std::array<sd::LongType, SD_MAX_RANK> zStrideLocal;
+  std::array<sd::LongType, SD_MAX_RANK> xStrideLocal;
+  std::array<sd::LongType, SD_MAX_RANK> yStrideLocal;
+
+  std::memcpy(zShapeLocal.data(), shape::shapeOf(zShapeInfo), zRank * sizeof(sd::LongType));
+  std::memcpy(zStrideLocal.data(), shape::stride(zShapeInfo), zRank * sizeof(sd::LongType));
+  std::memcpy(xStrideLocal.data(), shape::stride(xShapeInfo), xRank * sizeof(sd::LongType));
+  std::memcpy(yStrideLocal.data(), shape::stride(yShapeInfo), yRank * sizeof(sd::LongType));
 
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK];
     sd::LongType xOffset, yOffset, zOffset;
 
     for (auto i = start; i < stop; ++i) {
-      INDEX2COORDS(i, zRank, zShape, coords);
+      INDEX2COORDS(i, zRank, zShapeLocal.data(), coords);
 
-      COORDS2INDEX(zRank, zStride, coords, zOffset);
+      COORDS2INDEX(zRank, zStrideLocal.data(), coords, zOffset);
       if (xzSameOffsets) {
         xOffset = zOffset;
       } else {
-        COORDS2INDEX(xRank, xStride, coords, xOffset);
+        COORDS2INDEX(xRank, xStrideLocal.data(), coords, xOffset);
       }
       if (yzSameOffsets) {
         yOffset = zOffset;
       } else {
-        COORDS2INDEX(yRank, yStride, coords, yOffset);
+        COORDS2INDEX(yRank, yStrideLocal.data(), coords, yOffset);
       }
 
       z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
