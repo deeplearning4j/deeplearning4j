@@ -52,8 +52,7 @@ fi
 SOURCE_DIR="$LIBND4J_DIR/include/graph/generated/org/nd4j/graph"
 TARGET_DIR="$PROJECT_ROOT/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/graph"
 
-# Enable debug output
-set -x
+
 echo "Script directory: $SCRIPT_DIR"
 echo "LibND4J directory: $LIBND4J_DIR"
 echo "Project root: $PROJECT_ROOT"
@@ -66,11 +65,7 @@ if [ ! -d "$SOURCE_DIR" ]; then
     exit 1
 fi
 
-# List source directory content
-ls -la "$SOURCE_DIR" || {
-    echo "Error: Cannot access source directory or it is empty"
-    exit 1
-}
+
 
 # Create copyright header content
 COPYRIGHT="/*

@@ -102,6 +102,26 @@ public class NativeOpsHolder {
                deviceNativeOps = ReflectionUtils.newInstance(nativeOpsClass);
                initOps();
 
+               // Register shutdown hook to set the shutdown flag EARLY.
+               // This prevents SIGSEGV crashes if any code accidentally calls
+               // clearTADCache() during JVM shutdown (e.g., finalizers, GC, or other hooks).
+               //
+               // NOTE: We ONLY set the shutdown flag here - we do NOT clear the caches!
+               // During JVM shutdown, memory allocators may have been destroyed,
+               // causing corrupted pointers in the cache tries. The OS will reclaim
+               // all memory when the process exits anyway.
+               //
+               // For explicit cleanup during runtime (e.g., testing), call:
+               //   Nd4j.clearTADCache() and Nd4j.clearShapeCache() directly.
+               Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                   try {
+                       // Set the shutdown flag - this makes clearTADCache() safe to call
+                       // (it will return early without traversing potentially corrupted memory)
+                       deviceNativeOps.setTADCacheShutdownInProgress(true);
+                   } catch (Throwable t) {
+                       // Ignore errors during shutdown - we're just trying to be safe
+                   }
+               }, "ND4J-Shutdown-Flag"));
 
            }
 
@@ -117,6 +137,11 @@ public class NativeOpsHolder {
 
     public void initOps() {
         deviceNativeOps.initializeDevicesAndFunctions();
+
+        // Removed explicit cache initialization - caches use lazy singleton initialization
+        // Previous attempts to pre-initialize caused issues with initialization tracking atomics
+        // The shape and TAD caches will initialize naturally on first use via getInstance()
+
         int numThreads;
         String numThreadsString = System.getenv(ND4JEnvironmentVars.OMP_NUM_THREADS);
         if (numThreadsString != null && !numThreadsString.isEmpty()) {
@@ -157,6 +182,23 @@ public class NativeOpsHolder {
         if (logInit) {
             log.info("Number of threads used for linear algebra: {}", deviceNativeOps.ompGetMaxThreads());
         }
+
+        // DISABLED: Custom signal handlers interfere with JVM's crash handling chain
+        // The custom handlers were causing double-crashes: when the primary crash occurs,
+        // the signal handler tries to chain to JVM's handler, but the handler address
+        // becomes invalid, causing a second crash in PosixSignals::chained_handler().
+        //
+        // Root cause: Installing custom signal handlers on top of JVM's signal handlers
+        // corrupts the signal handler chain. When a crash occurs, the chained handler
+        // address is invalid (0x00007ff1cf625955 in crash dump), causing SIGSEGV in
+        // libjvm.so itself.
+        //
+        // Solution: Let JVM handle all crashes natively. JVM's crash handling already
+        // generates hs_err files and properly handles signals. Custom handlers are not needed.
+        //
+        // See: contrib/benchmarking_nd4j/hs_err_pid950199.log lines 9, 33-41 for crash details.
+        //
+        // deviceNativeOps.initializeLifecycleCrashHandlers();  // DISABLED
     }
 
     private void extractVeIfNeeded(boolean logInit, String vednnUrl) throws IOException {

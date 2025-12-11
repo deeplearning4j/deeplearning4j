@@ -23,10 +23,22 @@
 //
 #include <array/PrimaryPointerDeallocator.h>
 
+#if defined(SD_GCC_FUNCTRACE)
+#include <array/ShapeCacheLifecycleTracker.h>
+#endif
+
 namespace sd {
 
 void PrimaryPointerDeallocator::release(void *ptr) {
-   delete reinterpret_cast<int8_t *>(ptr);
+#if defined(SD_GCC_FUNCTRACE)
+  // Track shape cache deallocation before freeing
+  sd::array::ShapeCacheLifecycleTracker::getInstance().recordDeallocation(
+      reinterpret_cast<LongType*>(ptr));
+#endif
+
+  // Root cause of SIGSEGV crashes: shape buffers are allocated with new[] but were being
+  // freed with delete (single-object), causing heap corruption and undefined behavior.
+  delete[] reinterpret_cast<int8_t *>(ptr);
 }
 
 }  // namespace sd
