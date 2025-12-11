@@ -109,60 +109,69 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray im2col2d = this.im2col2d; //Re-use im2col2d array from forward pass if available; recalculate if not
 
         OpContext ctx = Nd4j.getExecutioner().buildContext();
-        ctx.addIntermediateResult(im2col2d);
-
-        INDArray epsOut = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, epsilon.dataType(), input.shape());
-        CNN2DFormat format = ConvolutionUtils.getFormatForLayer(layerConf());
-
-        Conv2DDerivative conv2DDerivative = Conv2DDerivative.derivativeBuilder()
-                .config(Conv2DConfig.builder()
-                        .dH((int) strides[0])
-                        .dW((int) strides[1])
-                        .kH((int) kernel[0])
-                        .kW((int) kernel[1])
-                        .sH((int) strides[0])
-                        .sW((int) strides[1])
-                        .weightsFormat(ConvolutionUtils.getWeightFormat(format))
-                        .paddingMode(ConvolutionUtils.paddingModeForConvolutionMode(layerConf().getConvolutionMode()))
-                        .dataFormat(ConvolutionUtils.getFormatForLayer(layerConf()).name())
-                        .build())
-                .build();
-
-        if(bias != null) {
-            conv2DDerivative.addInputArgument(input, weights, bias, delta);
-            conv2DDerivative.addOutputArgument(epsOut, weightGradView, biasGradView);
-        } else {
-            conv2DDerivative.addInputArgument(input, weights, delta);
-            conv2DDerivative.addOutputArgument(epsOut, weightGradView);
-        }
-
-        ctx.setArgsFrom(conv2DDerivative);
-        Nd4j.getExecutioner().exec(conv2DDerivative, ctx);
-
-
-        Gradient retGradient = new DefaultGradient();
-        if(layerConf().hasBias()) {
-            retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, biasGradView);
-        }
-        retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, weightGradView, 'c');
-
-        weightNoiseParams.clear();
-
-        if(layerConf().hasBias()) {
-            retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, gradientViews.get(ConvolutionParamInitializer.BIAS_KEY));
-        }
-        retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, gradientViews.get(ConvolutionParamInitializer.WEIGHT_KEY), 'c');
-
         try {
-            ctx.close();
-            im2col2d.close();
-            lastZ.close();
+            ctx.addIntermediateResult(im2col2d);
+
+            INDArray epsOut = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, epsilon.dataType(), input.shape());
+            CNN2DFormat format = ConvolutionUtils.getFormatForLayer(layerConf());
+
+            Conv2DDerivative conv2DDerivative = Conv2DDerivative.derivativeBuilder()
+                    .config(Conv2DConfig.builder()
+                            .dH((int) strides[0])
+                            .dW((int) strides[1])
+                            .kH((int) kernel[0])
+                            .kW((int) kernel[1])
+                            .sH((int) strides[0])
+                            .sW((int) strides[1])
+                            .weightsFormat(ConvolutionUtils.getWeightFormat(format))
+                            .paddingMode(ConvolutionUtils.paddingModeForConvolutionMode(layerConf().getConvolutionMode()))
+                            .dataFormat(ConvolutionUtils.getFormatForLayer(layerConf()).name())
+                            .build())
+                    .build();
+
+            if(bias != null) {
+                conv2DDerivative.addInputArgument(input, weights, bias, delta);
+                conv2DDerivative.addOutputArgument(epsOut, weightGradView, biasGradView);
+            } else {
+                conv2DDerivative.addInputArgument(input, weights, delta);
+                conv2DDerivative.addOutputArgument(epsOut, weightGradView);
+            }
+
+            ctx.setArgsFrom(conv2DDerivative);
+            Nd4j.getExecutioner().exec(conv2DDerivative, ctx);
+
+
+            Gradient retGradient = new DefaultGradient();
+            if(layerConf().hasBias()) {
+                retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, biasGradView);
+            }
+            retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, weightGradView, 'c');
+
+            weightNoiseParams.clear();
+
+            if(layerConf().hasBias()) {
+                retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, gradientViews.get(ConvolutionParamInitializer.BIAS_KEY));
+            }
+            retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, gradientViews.get(ConvolutionParamInitializer.WEIGHT_KEY), 'c');
+
+            return new Pair<>(retGradient, workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsOut));
+        } finally {
+            // CRITICAL: Close OpContext to prevent native memory leak even on exceptions
+            try {
+                ctx.close();
+            } catch (Exception e) {
+                // Log but don't throw - cleanup should not fail the operation
+            }
+            // Clean up intermediate arrays
+            try {
+                if (im2col2d != null) im2col2d.close();
+                if (lastZ != null) lastZ.close();
+            } catch (Exception e) {
+                // Ignore close errors
+            }
             lastZ = null;
             this.im2col2d = null;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
         }
-        return new Pair<>(retGradient, workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD,epsOut));
     }
 
     /**
@@ -218,12 +227,16 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         Nd4j.getEnvironment().setEnableBlas(false);
         //initialize a context and inject it for pulling out the im2col forward pass.
         OpContext ctx = Nd4j.getExecutioner().injectNewContext();
-
-        INDArray z  = Nd4j.cnn().conv2d(input,weights,bias,config);
-        INDArray im2col = ctx.getIntermediateResult(0);
-
-
-        Nd4j.getExecutioner().clearOpContext();
+        INDArray z;
+        INDArray im2col;
+        try {
+            z = Nd4j.cnn().conv2d(input, weights, bias, config);
+            im2col = ctx.getIntermediateResult(0);
+        } finally {
+            // CRITICAL: Close OpContext to prevent native memory leak
+            Nd4j.getExecutioner().clearOpContext();
+            ctx.close();
+        }
         long outH = im2col.size(-1);
         long outW = im2col.size(-2);
         INDArray im2col2d = im2col.reshape(miniBatch * outH * outW, inDepth * kH * kW);
