@@ -301,7 +301,6 @@ Variable *Context::variable(int node, int idx) {
 }
 
 Variable *Context::variable(std::pair<int, int> &p) {
-  // CRITICAL: Check for null variableSpace to prevent SIGSEGV
   if (_variableSpace == nullptr) {
     std::string errorMessage;
     errorMessage += "Node ";
@@ -509,10 +508,9 @@ NDArray *Context::array(int idx) {
     return result;
   }
 
-  // CRITICAL: Check if we're in fastpath mode with insufficient inputs
   // When using fastpath (from OpContext/Java), _variableSpace is null by design.
   // If the operation expects more inputs than were provided via setInputArrays(),
-  // we must throw an informative error instead of crashing in getVariable().
+  // throw an informative error instead of crashing in getVariable().
   if (!_fastpath_in.empty() && _variableSpace == nullptr) {
     // Fastpath has some inputs but not enough for the requested index
     std::string errorMessage;
