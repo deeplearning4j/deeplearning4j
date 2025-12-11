@@ -161,10 +161,13 @@ CUSTOM_OP_IMPL(reduce_stdev_bp, -1, 1, false, 0, 0) {
     if (!gradO->isScalar()) {
       std::vector<sd::LongType> shape =  ShapeUtils::pullShapeFromShapeInfo(
           gradOShapeKeepDims);
-      *gradI *= gradO->reshape(gradO->ordering(),
-                               shape);  // for example could be something like [a,b] -> [1,a,1,b]
+      auto reshaped = gradO->reshape(gradO->ordering(),
+                                      shape);
+      *gradI *= *reshaped;  // for example could be something like [a,b] -> [1,a,1,b]
+      delete reshaped;
     } else {
       *gradI *= *gradO;  // for example could be something like [a,b] -> [1,a,1,b]
+
     }
   } else {
     *gradI *= *gradO;  // automatic broadcasting happens here

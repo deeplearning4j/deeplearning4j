@@ -23,7 +23,7 @@
 #ifndef NATIVEOPS_H
 #define NATIVEOPS_H
 
-#include <array/ArrayOptions.h>
+#include <array/ArrayOptions.hXX>
 #include <array/DataTypeUtils.h>
 #include <array/ShapeList.h>
 #include <array/ConstantDataBuffer.h>
@@ -37,6 +37,7 @@
 // Windows-specific backtrace implementation
 #else
 #include <execinfo.h>
+#include <unistd.h>
 // Unix-style backtrace implementation
 #endif
 #include <graph/GraphState.h>
@@ -52,7 +53,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <types/float16.h>
-#include <unistd.h>
+
 typedef sd::InteropDataBuffer  OpaqueDataBuffer;
 typedef sd::ops::OpExecTrace ExecTrace;
 typedef sd::ShapeList OpaqueShapeList;
@@ -68,15 +69,7 @@ typedef sd::TadPack OpaqueTadPack;
 
 typedef sd::ConstantDataBuffer* OpaqueConstantDataBuffer;
 typedef sd::ConstantShapeBuffer* OpaqueConstantShapeBuffer;
-extern "C" {
 
-
-
-//this is to ensure symbol is loaded and exported from this library instead when using LD_PRELOAD.
-__attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_enter (void *this_fn,void *call_site);
-__attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_exit  (void *this_fn,void *call_site);
-
-}
 
 
 
@@ -153,6 +146,15 @@ SD_LIB_EXPORT sd::LongType const *getSpecialOffsets(OpaqueTadPack *pack);
 SD_LIB_EXPORT sd::LongType getNumberOfTads(OpaqueTadPack *pack);
 SD_LIB_EXPORT int getShapeInfoLength(OpaqueTadPack *pack);
 
+/**
+ * Get the stack trace for a TadPack as a string.
+ * Returns the allocation stack trace if functrace is enabled, empty string otherwise.
+ * This is useful for debugging TAD cache lifecycle issues.
+ *
+ * @param pack The TadPack to get the stack trace from
+ * @return C-string containing the formatted stack trace (caller must NOT free this)
+ */
+SD_LIB_EXPORT const char* getTadPackStackTrace(OpaqueTadPack *pack);
 
 SD_LIB_EXPORT OpaqueTadPack *tadOnlyShapeInfo(OpaqueDataBuffer *hXShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength);
 SD_LIB_EXPORT OpaqueConstantDataBuffer constantBufferLong(sd::DataType dtype, sd::LongType  *data, int length);
@@ -222,6 +224,33 @@ SD_LIB_EXPORT void enableP2P(bool enable) ;
 SD_LIB_EXPORT bool isP2PAvailable() ;
 SD_LIB_EXPORT void initializeDevicesAndFunctions() ;
 SD_LIB_EXPORT void initializeFunctions(sd::Pointer *functions) ;
+
+/**
+ * Initialize the shape cache eagerly during early JVM startup.
+ * This prevents race conditions during static initialization when multiple threads
+ * try to create NDArrays concurrently before the shape cache is fully initialized.
+ *
+ * This should be called from Nd4j initialization before any class loading
+ * that might create NDArrays (like DifferentialFunctionClassHolder).
+ *
+ * Safe to call multiple times - subsequent calls are no-ops.
+ */
+SD_LIB_EXPORT void initializeShapeCache() ;
+
+/**
+ * Initialize the TAD (Tensor-Along-Dimension) cache early to prevent race conditions.
+ *
+ * This forces initialization of DirectTadTrie in a controlled, single-threaded context.
+ * This prevents race conditions during static initialization when multiple threads
+ * try to create TAD packs concurrently before the TAD cache is fully initialized.
+ *
+ * This should be called from Nd4j initialization before any class loading
+ * that might create TAD operations.
+ *
+ * Safe to call multiple times - subsequent calls are no-ops.
+ */
+SD_LIB_EXPORT void initializeTadCache() ;
+
 SD_LIB_EXPORT sd::Pointer mallocHost(sd::LongType memorySize, int flags) ;
 SD_LIB_EXPORT sd::Pointer mallocDevice(sd::LongType memorySize, int deviceId, int flags) ;
 SD_LIB_EXPORT int freeHost(sd::Pointer pointer) ;
@@ -342,6 +371,17 @@ SD_LIB_EXPORT sd::LongType getConstantDataBufferLength(OpaqueConstantDataBuffer 
 SD_LIB_EXPORT sd::LongType getConstantDataBufferSizeOf(OpaqueConstantDataBuffer dbf) ;
 SD_LIB_EXPORT sd::Pointer getConstantShapeBufferPrimary(OpaqueConstantShapeBuffer dbf) ;
 SD_LIB_EXPORT sd::Pointer getConstantShapeBufferSpecial(OpaqueConstantShapeBuffer dbf) ;
+
+/**
+ * Get the stack trace for a ConstantShapeBuffer as a string.
+ * Returns the allocation stack trace if functrace is enabled, empty string otherwise.
+ * This is useful for debugging shape buffer lifecycle issues.
+ *
+ * @param buffer The ConstantShapeBuffer to get the stack trace from
+ * @return C-string containing the formatted stack trace (caller must NOT free this)
+ */
+SD_LIB_EXPORT const char* getConstantShapeBufferStackTrace(OpaqueConstantShapeBuffer buffer);
+
 SD_LIB_EXPORT void markGraphContextInplace(OpaqueContext *ptr, bool reallyInplace) ;
 SD_LIB_EXPORT OpaqueNDArray getOutputArrayNative(OpaqueContext* ptr, int idx) ;
 SD_LIB_EXPORT OpaqueNDArray getInputArrayNative(OpaqueContext* ptr, int idx) ;
@@ -480,7 +520,488 @@ SD_LIB_EXPORT OpaqueDataBuffer  * intermediateResultDataAt(int index, OpaqueCont
 SD_LIB_EXPORT const sd::LongType * intermediateResultShapeInfoAt(int index, OpaqueContext *contextPointer);
 SD_LIB_EXPORT const char *lastErrorMessage();
 SD_LIB_EXPORT int lastErrorCode();
+SD_LIB_EXPORT void triggerLeakCheck();
+SD_LIB_EXPORT void enableNDArrayTracking();
+SD_LIB_EXPORT void disableNDArrayTracking();
+SD_LIB_EXPORT void enableDataBufferTracking();
+SD_LIB_EXPORT void disableDataBufferTracking();
+SD_LIB_EXPORT void enableTADCacheTracking();
+SD_LIB_EXPORT void disableTADCacheTracking();
+SD_LIB_EXPORT void enableShapeCacheTracking();
+SD_LIB_EXPORT void disableShapeCacheTracking();
+SD_LIB_EXPORT void enableOpContextTracking();
+SD_LIB_EXPORT void disableOpContextTracking();
 
+/**
+ * Enable operation execution logging for crash detection.
+ * When enabled (and SD_GCC_FUNCTRACE is defined), all operation executions
+ * are logged to a file with full unified C++/Java stack traces.
+ * The log file survives crashes and can be used for post-mortem debugging.
+ *
+ * Log files are located at: /tmp/nd4j_op_execution_<PID>.log
+ * (or $SD_OP_LOG_DIR if set)
+ *
+ * NOTE: Only available when built with -Dlibnd4j.calltrace=ON
+ */
+SD_LIB_EXPORT void enableOpExecutionLogging();
 
+/**
+ * Disable operation execution logging.
+ * No-op if SD_GCC_FUNCTRACE is not defined.
+ */
+SD_LIB_EXPORT void disableOpExecutionLogging();
+
+/**
+ * Check if operation execution logging is currently enabled.
+ * @return true if logging is enabled, false otherwise
+ */
+SD_LIB_EXPORT bool isOpExecutionLoggingEnabled();
+
+/**
+ * Get the current operation execution log file path.
+ * Returns empty string if logging is not enabled or not available.
+ *
+ * @return C-string containing the log file path (caller must NOT free this)
+ */
+SD_LIB_EXPORT const char* getOpExecutionLogPath();
+
+/**
+ * Get the current operation execution log contents as a string.
+ * Useful for retrieving recent execution history for debugging.
+ *
+ * @param maxBytes Maximum bytes to read (0 = read entire file)
+ * @param fromEnd If true, read from end of file (most recent entries)
+ * @return C-string containing the log contents (caller must NOT free this)
+ */
+SD_LIB_EXPORT const char* getOpExecutionLogContents(size_t maxBytes, bool fromEnd);
+
+/**
+ * Force a flush of the operation execution log to disk.
+ * The logger flushes after each operation by default, but this
+ * can be called manually for explicit checkpointing.
+ */
+SD_LIB_EXPORT void dumpOpExecutionLog();
+
+/**
+ * Manually dump current state to the operation execution log.
+ * Useful for checkpointing at specific points in code.
+ *
+ * @param message Optional message to include in the dump
+ */
+SD_LIB_EXPORT void dumpOpExecutionState(const char* message);
+
+// ═══════════════════════════════════════════════════════════════
+// Allocation Logging API (SD_GCC_FUNCTRACE only)
+// Similar to OpExecutionLogging, but focuses on tracking NDArray
+// and OpContext allocations for understanding memory growth patterns
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Get the current allocation log file path.
+ * Allocation logging is always active in functrace builds (SD_GCC_FUNCTRACE).
+ * Returns empty string if functrace is not enabled.
+ *
+ * Log file location: /tmp/nd4j_allocations_<PID>.log (configurable via SD_ALLOCATION_LOG_DIR)
+ *
+ * @return C-string containing the log file path (caller must NOT free this)
+ */
+SD_LIB_EXPORT const char* getAllocationLogPath();
+
+/**
+ * Set the current allocation context (operation name) for lifecycle tracking.
+ * This is used to associate memory allocations with the operation that triggered them.
+ * The context is thread-local, so each thread can have its own context.
+ *
+ * Call this before creating ops/arrays to tag allocations with the op name.
+ * Call clearAllocationContext() when done.
+ *
+ * @param opName The operation name to associate with allocations (e.g., "Sum", "Mean", "Concat")
+ */
+SD_LIB_EXPORT void setAllocationContext(const char* opName);
+
+/**
+ * Clear the current allocation context for this thread.
+ * Call this after op creation/execution to stop tagging allocations.
+ */
+SD_LIB_EXPORT void clearAllocationContext();
+
+/**
+ * Update the Java stack trace for an existing NDArray allocation record.
+ * This is called from Java after creating an OpaqueNDArray to provide the full Java stack trace
+ * captured before the JNI boundary. This gives much better context than capturing the stack
+ * trace from within native code.
+ *
+ * @param array The OpaqueNDArray whose allocation record should be updated
+ * @param javaStackTrace The full Java stack trace as a string
+ */
+SD_LIB_EXPORT void updateAllocationJavaStackTrace(OpaqueNDArray array, const char* javaStackTrace);
+
+/**
+ * Clear all cached TAD packs to prevent memory leaks during testing.
+ * This frees all TadPack objects stored in the TAD cache.
+ * NOTE: Will return early without action if setTADCacheShutdownInProgress(true) was called.
+ */
+SD_LIB_EXPORT void clearTADCache();
+
+/**
+ * Marks that shutdown is in progress.
+ * CRITICAL: Call this early in JVM shutdown (e.g., from a shutdown hook)
+ * to prevent SIGSEGV crashes during cache cleanup.
+ *
+ * During JVM/static destruction, memory allocators may have been destroyed,
+ * leaving corrupted pointers in cached data structures. Setting this flag
+ * causes clearTADCache() and similar functions to skip tree traversal,
+ * letting the OS safely reclaim memory at process exit instead.
+ *
+ * @param inProgress true to mark shutdown in progress, false otherwise
+ */
+SD_LIB_EXPORT void setTADCacheShutdownInProgress(bool inProgress);
+
+/**
+ * Check if TAD cache shutdown is in progress.
+ * @return true if shutdown is marked as in progress
+ */
+SD_LIB_EXPORT bool isTADCacheShutdownInProgress();
+
+/**
+ * Clears all cached shape buffers.
+ * This frees all ConstantShapeBuffer objects stored in the shape cache.
+ * Called during application shutdown to prevent memory leaks.
+ */
+SD_LIB_EXPORT void clearShapeCache();
+
+/**
+ * Get the total number of cached shape buffer entries.
+ * @return Total number of cached shape buffers across all stripes
+ */
+SD_LIB_EXPORT sd::LongType getShapeCachedEntries();
+
+/**
+ * Get the total memory used by cached shape buffers in bytes.
+ * @return Total memory used in bytes
+ */
+SD_LIB_EXPORT sd::LongType getShapeCachedBytes();
+
+/**
+ * Get the peak number of shape entries that were cached simultaneously.
+ * @return Peak number of cached shape buffers
+ */
+SD_LIB_EXPORT sd::LongType getShapePeakCachedEntries();
+
+/**
+ * Get the peak memory usage by cached shape buffers in bytes.
+ * @return Peak memory usage in bytes
+ */
+SD_LIB_EXPORT sd::LongType getShapePeakCachedBytes();
+
+/**
+ * Get the total number of cached TAD pack entries.
+ * @return Total number of cached TAD packs across all stripes
+ */
+SD_LIB_EXPORT sd::LongType getTADCachedEntries();
+
+/**
+ * Get the total memory used by cached TAD packs in bytes.
+ * This includes both shape_info and offset buffer sizes.
+ * @return Total memory used in bytes
+ */
+SD_LIB_EXPORT sd::LongType getTADCachedBytes();
+
+/**
+ * Get the peak number of TAD pack entries that were cached simultaneously.
+ * @return Peak number of cached TAD packs
+ */
+SD_LIB_EXPORT sd::LongType getTADPeakCachedEntries();
+
+/**
+ * Get the peak memory usage by cached TAD packs in bytes.
+ * @return Peak memory usage in bytes
+ */
+SD_LIB_EXPORT sd::LongType getTADPeakCachedBytes();
+
+/**
+ * Get a string representation of the shape cache for debugging.
+ * The returned string must be freed by the caller using freeString().
+ *
+ * @param maxDepth Maximum depth to traverse (default: 10, -1 for unlimited)
+ * @param maxEntries Maximum number of entries to show (default: 100, -1 for unlimited)
+ * @return String representation of the shape cache
+ */
+SD_LIB_EXPORT const char* getShapeCacheString(int maxDepth, int maxEntries);
+
+/**
+ * Get a string representation of the TAD cache for debugging.
+ * The returned string must be freed by the caller using freeString().
+ *
+ * @param maxDepth Maximum depth to traverse (default: 10, -1 for unlimited)
+ * @param maxEntries Maximum number of entries to show (default: 100, -1 for unlimited)
+ * @return String representation of the TAD cache
+ */
+SD_LIB_EXPORT const char* getTADCacheString(int maxDepth, int maxEntries);
+
+/**
+ * Free a string returned by native code.
+ * @param ptr String pointer to free
+ */
+SD_LIB_EXPORT void freeString(const char* ptr);
+
+/**
+ * Checks operation counter and automatically clears TAD/Shape caches periodically.
+ * Called internally from operation execution entry points to prevent cache accumulation
+ * during testing. Configurable via SD_CACHE_CLEANUP_INTERVAL and SD_AUTO_CACHE_CLEANUP
+ * environment variables.
+ *
+ * Note: This function is available regardless of SD_GCC_FUNCTRACE build flag.
+ * When SD_GCC_FUNCTRACE is disabled, it becomes a no-op stub.
+ */
+SD_LIB_EXPORT void checkAndCleanupCaches();
+
+// Lifecycle tracking API
+// NOTE: These functions are always declared but only fully functional with SD_GCC_FUNCTRACE.
+// When SD_GCC_FUNCTRACE is not defined, stub implementations provide no-op behavior.
+
+/**
+ * Initializes lifecycle crash handlers to capture crash dumps.
+ *
+ * This must be called after JVM is fully initialized to ensure
+ * the crash handler properly chains to JVM's hs_err generation.
+ *
+ * If called during library load (too early), the crash handler will capture
+ * SIG_DFL instead of JVM's crash handler, preventing hs_err file generation.
+ *
+ * Safe to call multiple times - only initializes once.
+ *
+ * Recommended: Call from Java after NativeOpsHolder initialization.
+ *
+ * NOTE: No-op when SD_GCC_FUNCTRACE is not defined.
+ */
+SD_LIB_EXPORT void initializeLifecycleCrashHandlers();
+
+/**
+ * Returns NDArray lifecycle statistics as a JSON string.
+ * The returned string must be freed by the caller using freeString().
+ *
+ * JSON format:
+ * {
+ *   "total_allocations": <count>,
+ *   "total_deallocations": <count>,
+ *   "current_live": <count>,
+ *   "peak_live": <count>,
+ *   "current_bytes": <bytes>,
+ *   "peak_bytes": <bytes>,
+ *   "double_frees": <count>
+ * }
+ *
+ * NOTE: Returns empty JSON "{}" when SD_GCC_FUNCTRACE is not defined.
+ */
+SD_LIB_EXPORT const char* getNDArrayLifecycleStats();
+
+/**
+ * Returns DataBuffer lifecycle statistics as a JSON string.
+ * The returned string must be freed by the caller using freeString().
+ *
+ * JSON format:
+ * {
+ *   "primary": {
+ *     "total_allocations": <count>,
+ *     "total_deallocations": <count>,
+ *     "current_live": <count>,
+ *     "current_bytes": <bytes>,
+ *     "peak_bytes": <bytes>
+ *   },
+ *   "special": {
+ *     "total_allocations": <count>,
+ *     "total_deallocations": <count>,
+ *     "current_live": <count>,
+ *     "current_bytes": <bytes>,
+ *     "peak_bytes": <bytes>
+ *   },
+ *   "double_frees": <count>
+ * }
+ *
+ * NOTE: Returns empty JSON "{}" when SD_GCC_FUNCTRACE is not defined.
+ */
+SD_LIB_EXPORT const char* getDataBufferLifecycleStats();
+
+/**
+ * Generates a flamegraph SVG file for NDArray allocations.
+ * @param outputPath Path where the SVG file should be written
+ *
+ * NOTE: No-op when SD_GCC_FUNCTRACE is not defined.
+ */
+SD_LIB_EXPORT void generateNDArrayAllocationFlamegraph(const char* outputPath);
+
+/**
+ * Generates a flamegraph SVG file for NDArray deallocations.
+ * @param outputPath Path where the SVG file should be written
+ *
+ * NOTE: No-op when SD_GCC_FUNCTRACE is not defined.
+ */
+SD_LIB_EXPORT void generateNDArrayDeallocationFlamegraph(const char* outputPath);
+
+/**
+ * Generates a flamegraph SVG file for DataBuffer allocations.
+ * @param outputPath Path where the SVG file should be written
+ * @param bufferType 0 = PRIMARY (host), 1 = SPECIAL (device)
+ *
+ * NOTE: No-op when SD_GCC_FUNCTRACE is not defined.
+ */
+SD_LIB_EXPORT void generateDataBufferAllocationFlamegraph(const char* outputPath, int bufferType);
+
+/**
+ * Generates a flamegraph SVG file for DataBuffer deallocations.
+ * @param outputPath Path where the SVG file should be written
+ * @param bufferType 0 = PRIMARY (host), 1 = SPECIAL (device)
+ *
+ * NOTE: No-op when SD_GCC_FUNCTRACE is not defined.
+ */
+SD_LIB_EXPORT void generateDataBufferDeallocationFlamegraph(const char* outputPath, int bufferType);
+
+/**
+ * Generates a detailed leak report showing all currently live allocations.
+ * @param outputPath Path where the report file should be written
+ *
+ * NOTE: No-op when SD_GCC_FUNCTRACE is not defined.
+ */
+SD_LIB_EXPORT void generateLifecycleLeakReport(const char* outputPath);
+
+/**
+ * Generates a comprehensive leak source analysis report combining data from ALL lifecycle trackers.
+ *
+ * This function analyzes undeleted allocations across all 5 lifecycle trackers:
+ * - NDArrayLifecycleTracker
+ * - DataBufferLifecycleTracker
+ * - TADCacheLifecycleTracker
+ * - ShapeCacheLifecycleTracker
+ * - OpContextLifecycleTracker
+ *
+ * For each allocation source (Java method or C++ function), the report shows:
+ * - Total number of undeleted allocations
+ * - Breakdown by object type (NDArray, DataBuffer, TAD, Shape, OpContext)
+ * - Total bytes leaked
+ * - Example stack traces (both Java and C++)
+ *
+ * Results are sorted by total leak count, making it easy to identify the top leak sources.
+ *
+ * @param outputDir Directory where report files should be written (e.g., "./leak_reports")
+ *                  If NULL or empty, uses current directory.
+ *
+ * Output files generated:
+ * - comprehensive_leak_report.txt - Detailed report with top 50 leak sources
+ * - Console output shows top 20 leak sources summary
+ *
+ * Example usage from Java:
+ *   Nd4j.getNativeOps().generateComprehensiveLeakAnalysis("./leak_reports");
+ *
+ * NOTE: No-op when SD_GCC_FUNCTRACE is not defined.
+ */
+SD_LIB_EXPORT void generateComprehensiveLeakAnalysis(const char* outputDir);
+
+/**
+ * Generate temporal leak analysis report showing leak velocity over time windows.
+ *
+ * @param outputPath Path to output file
+ * @param windowCount Number of time windows to analyze (default: 10)
+ * @param windowDurationSec Duration of each window in seconds (default: 30.0)
+ *
+ * NOTE: No-op when SD_GCC_FUNCTRACE is not defined.
+ */
+SD_LIB_EXPORT void generateNDArrayTemporalLeakReport(const char* outputPath, int windowCount, double windowDurationSec);
+SD_LIB_EXPORT void generateTADCacheTemporalLeakReport(const char* outputPath, int windowCount, double windowDurationSec);
+
+/**
+ * Capture a snapshot of current leak state for differential analysis.
+ *
+ * @return Snapshot ID (use with generateSnapshotDiff)
+ *
+ * NOTE: Returns 0 when SD_GCC_FUNCTRACE is not defined.
+ */
+SD_LIB_EXPORT sd::LongType captureNDArrayLeakSnapshot();
+SD_LIB_EXPORT sd::LongType captureTADCacheLeakSnapshot();
+
+/**
+ * Generate differential report comparing two snapshots.
+ *
+ * @param snapshot1 First snapshot ID
+ * @param snapshot2 Second snapshot ID
+ * @param outputPath Path to output file
+ *
+ * NOTE: No-op when SD_GCC_FUNCTRACE is not defined.
+ */
+SD_LIB_EXPORT void generateNDArraySnapshotDiff(sd::LongType snapshot1, sd::LongType snapshot2, const char* outputPath);
+SD_LIB_EXPORT void generateTADCacheSnapshotDiff(sd::LongType snapshot1, sd::LongType snapshot2, const char* outputPath);
+
+/**
+ * Clear all stored snapshots to free memory.
+ *
+ * NOTE: No-op when SD_GCC_FUNCTRACE is not defined.
+ */
+SD_LIB_EXPORT void clearNDArraySnapshots();
+SD_LIB_EXPORT void clearTADCacheSnapshots();
+
+// ===============================
+// DeallocatorService Lifecycle Tracking
+// Records Java-side deallocation statistics from DeallocatorService
+// to be merged with C++ lifecycle trackers in UnifiedMemoryReporter
+// ===============================
+
+/**
+ * Records a snapshot of DeallocatorService statistics from Java.
+ * Called by Java DeallocatorService to push its time-series tracking data.
+ *
+ * @param totalAllocations Total number of allocations tracked
+ * @param totalDeallocations Total number of deallocations tracked
+ * @param totalBytesAllocated Total bytes allocated
+ * @param totalBytesDeallocated Total bytes deallocated
+ * @param peakLiveCount Peak number of live objects observed
+ * @param peakBytes Peak bytes in use observed
+ *
+ * NOTE: No-op when SD_GCC_FUNCTRACE is not defined.
+ */
+SD_LIB_EXPORT void recordDeallocatorServiceSnapshot(
+    sd::LongType totalAllocations, sd::LongType totalDeallocations,
+    sd::LongType totalBytesAllocated, sd::LongType totalBytesDeallocated,
+    sd::LongType peakLiveCount, sd::LongType peakBytes);
+
+/**
+ * Enables DeallocatorService lifecycle tracking on the C++ side.
+ *
+ * NOTE: No-op when SD_GCC_FUNCTRACE is not defined.
+ */
+SD_LIB_EXPORT void enableDeallocatorServiceTracking();
+
+/**
+ * Disables DeallocatorService lifecycle tracking on the C++ side.
+ *
+ * NOTE: No-op when SD_GCC_FUNCTRACE is not defined.
+ */
+SD_LIB_EXPORT void disableDeallocatorServiceTracking();
+
+/**
+ * Checks if DeallocatorService tracking is enabled.
+ *
+ * @return true if tracking is enabled
+ *
+ * NOTE: Always returns false when SD_GCC_FUNCTRACE is not defined.
+ */
+SD_LIB_EXPORT bool isDeallocatorServiceTrackingEnabled();
+
+/**
+ * Gets the current live count from DeallocatorService tracker.
+ *
+ * @return current live count (allocations - deallocations)
+ *
+ * NOTE: Returns 0 when SD_GCC_FUNCTRACE is not defined.
+ */
+SD_LIB_EXPORT sd::LongType getDeallocatorServiceLiveCount();
+
+/**
+ * Gets the current bytes in use from DeallocatorService tracker.
+ *
+ * @return current bytes in use (allocated - deallocated)
+ *
+ * NOTE: Returns 0 when SD_GCC_FUNCTRACE is not defined.
+ */
+SD_LIB_EXPORT sd::LongType getDeallocatorServiceBytesInUse();
 
 #endif // NATIVEOPS_H

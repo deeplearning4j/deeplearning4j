@@ -47,12 +47,23 @@ CONFIGURABLE_OP_IMPL(standardize, 1, 1, true, 0, -2) {
   shape::checkDimensions(input->rankOf(), &axis);
 
   auto means = input->reduceAlongDimension(reduce::Mean, &axis, true);
-  auto stdev = input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, &axis) + 1e-12;
-  stdev.reshapei(means.getShapeAsVector());
-  input->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), &means, output, false);
-  output->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), &stdev, output, false);
-  output->applyScalar(sd::scalar::ReplaceNans, 0, output);
+  REQUIRE_TRUE(means != nullptr, 0, "STANDARDIZE OP: failed to compute mean along dimension");
 
+  auto base = input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, &axis);
+  REQUIRE_TRUE(base != nullptr, 0, "STANDARDIZE OP: failed to compute standard deviation along dimension");
+
+  auto stdev = *base  + 1e-12;
+  REQUIRE_TRUE(stdev != nullptr, 0, "STANDARDIZE OP: failed to add epsilon to standard deviation");
+  auto meansShape = means->getShapeAsVector();;
+  std::vector<sd::LongType> meansShapeVec = *meansShape;
+  stdev->reshapei(meansShapeVec);
+  delete meansShape;
+  input->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), means, output, false);
+  output->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), stdev, output, false);
+  output->applyScalar(sd::scalar::ReplaceNans, 0, output);
+  delete means;
+  delete base;
+  delete stdev;
   return sd::Status::OK;
 }
 
@@ -80,12 +91,22 @@ CUSTOM_OP_IMPL(standardize_bp, 2, 1, false, 0, -2) {
   auto longAxis = ArrayUtils::toLongVector(axis);
 
   auto means = input->reduceAlongDimension(reduce::Mean, &axis, true);
+  REQUIRE_TRUE(means != nullptr, 0, "STANDARDIZE_BP OP: failed to compute mean along dimension");
+
   auto stdev = input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, &axis);
-  stdev.reshapei(means.getShapeAsVector());
+  REQUIRE_TRUE(stdev != nullptr, 0, "STANDARDIZE_BP OP: failed to compute standard deviation along dimension");
 
-  eps->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), &stdev, output, false);
+  auto meansShape = means->getShapeAsVector();;
+  std::vector<sd::LongType> meansShapeVec = *meansShape;
+  stdev->reshapei(meansShapeVec);
+  delete meansShape;
 
-  NDArray dldu_sum = -output->reduceAlongDimension(reduce::Sum, &axis, true);
+  eps->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), stdev, output, false);
+
+  auto sum = output->reduceAlongDimension(reduce::Sum, &axis, true);
+  REQUIRE_TRUE(sum != nullptr, 0, "STANDARDIZE_BP OP: failed to compute sum along dimension");
+
+  NDArray dldu_sum = -(*sum);
 
   NDArray dldx_u(input->shapeInfo(), false, block.launchContext());
   std::vector<NDArray *> meanBpArgs = {input, &dldu_sum};
@@ -99,14 +120,16 @@ CUSTOM_OP_IMPL(standardize_bp, 2, 1, false, 0, -2) {
 
   // (eps * (means - input) / (stdev * stdev))
   NDArray tmp(eps->shapeInfo(), false, block.launchContext());
-  means.applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), input, &tmp, false);
+  means->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), input, &tmp, false);
   tmp.applyPairwiseTransform(sd::pairwise::Multiply, eps, &tmp);
-  stdev.applyPairwiseTransform(sd::pairwise::Multiply, &stdev, &stdev);
-  tmp.applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), &stdev, &tmp, false);
+  stdev->applyPairwiseTransform(sd::pairwise::Multiply, stdev, stdev);
+  tmp.applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), stdev, &tmp, false);
 
   auto dlds_sum = tmp.reduceAlongDimension(reduce::Sum, &axis, true);
+  REQUIRE_TRUE(dlds_sum != nullptr, 0, "STANDARDIZE_BP OP: failed to compute dlds_sum along dimension");
+
   NDArray dldx_s(input->shapeInfo(), false, block.launchContext());
-  std::vector<NDArray *> stdevBpArgs = {input, &dlds_sum};
+  std::vector<NDArray *> stdevBpArgs = {input, dlds_sum};
   std::vector<NDArray *> stdevBpOutput = {&dldx_s};
   std::vector<double> stdevBpTArgs = {};
   std::vector<bool> stdevBpBArgs = {};
@@ -115,7 +138,10 @@ CUSTOM_OP_IMPL(standardize_bp, 2, 1, false, 0, -2) {
   *output += dldx_s;
 
   output->applyScalar(sd::scalar::ReplaceNans, 0, output);
-
+  delete sum;
+  delete means;
+  delete stdev;
+  delete dlds_sum;
   return sd::Status::OK;
 }
 
@@ -127,8 +153,10 @@ DECLARE_SHAPE_FN(standardize_bp) {
   auto in = inputShape->at(0);
   sd::LongType *out;
   COPY_SHAPE(in, out);
+  auto result = CONSTANT(out);
+  delete[] out;
 
-  return SHAPELIST(CONSTANT(out));
+  return SHAPELIST(result);
 }
 
 }  // namespace ops
