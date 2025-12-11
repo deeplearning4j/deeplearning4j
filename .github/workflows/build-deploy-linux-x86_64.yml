@@ -21,11 +21,6 @@ on:
         required: false
         default: 1.0.0-SNAPSHOT
 
-      releaseRepoId:
-        description: 'Release repository id'
-        required: false
-        default:
-
       serverId:
         description: 'Server id to publish to'
         required: false
@@ -34,13 +29,12 @@ on:
       mvnFlags:
         description: "Extra maven flags (must escape input yourself if used)"
         required: false
-        default:
+        default: ""
 
       libnd4jUrl:
-          description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
-          required: false
-          default:
-
+        description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
+        required: false
+        default: ""
 
       runsOn:
         description: 'System to run on'
@@ -51,6 +45,12 @@ on:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
         required: false
         default: false
+
+      swapSize:
+        description: 'Swap file size in GB (e.g., 4 for 4GB)'
+        required: false
+        default: 12
+
 jobs:
   #Note: no -pl here because we publish everything from this branch and use this as the basis for all uploads.
   linux-x86_64:
@@ -73,7 +73,7 @@ jobs:
 
           - libnd4j_file_download: ${{ github.event.inputs.libnd4jUrl }}
             experimental: true
-            name: OS to run on
+            name: libnd4j download URL
 
           - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging }}
             experimental: true
@@ -91,10 +91,6 @@ jobs:
             experimental: true
             name: Server id
 
-          - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
-            experimental: true
-            name: The release repository to run on
-
           - mvn_flags: ${{ github.event.inputs.mvnFlags }}
             experimental: true
             name: Extra maven flags to use as part of the build
@@ -103,17 +99,23 @@ jobs:
             experimental: true
             name: The number of threads to build libnd4j with
 
+          - swap_size: ${{ github.event.inputs.swapSize }}
+            experimental: true
+            name: Swap file size in GB
 
     runs-on: ${{ matrix.runs_on }}
     steps:
+      - uses: AutoModality/action-clean@v1
+
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
-      - uses: actions/checkout@v2
+
+      - uses: actions/checkout@v4
 
       - name: Free Disk Space
-        uses: jlumbroso/free-disk-space@v1.0.0
+        uses: jlumbroso/free-disk-space@main
         with:
           tool-cache: false
           android: true
@@ -123,52 +125,109 @@ jobs:
           docker-images: true
           swap-storage: true
 
+      - name: Configure swap space
+        shell: bash
+        run: |
+          echo "=== Initial system status ==="
+          free -h
+          df -h
+          echo "Available disk space on root:"
+          df -h /
+          
+          # Check if swap is already enabled
+          if swapon --show | grep -q "/"; then
+            echo "Swap already configured:"
+            swapon --show
+          else
+            echo "Configuring swap space..."
+          
+            # Use input parameter for swap size, default to 12GB like Android workflow
+            SWAP_SIZE="${{ matrix.swap_size }}G"
+            echo "Creating ${SWAP_SIZE} swap file..."
+          
+            # Create swap file
+            sudo fallocate -l ${SWAP_SIZE} /swapfile || {
+              echo "fallocate failed, trying dd..."
+              sudo dd if=/dev/zero of=/swapfile bs=1G count=${{ matrix.swap_size }} status=progress
+            }
+          
+            # Set up swap
+            sudo chmod 600 /swapfile
+            sudo mkswap /swapfile
+            sudo swapon /swapfile
+          
+            # Verify swap is active
+            echo "=== Swap configuration completed ==="
+            free -h
+            swapon --show
+          fi
+          
+          # Tune swappiness for build workloads - using Android workflow settings
+          # Lower values (10-20) prefer RAM, higher values (60+) use swap more aggressively
+          echo "Current swappiness: $(cat /proc/sys/vm/swappiness)"
+          sudo sysctl vm.swappiness=80
+          echo "Adjusted swappiness: $(cat /proc/sys/vm/swappiness)"
+          sudo sysctl vm.overcommit_memory=2        # Allow overcommit
+          sudo sysctl vm.overcommit_ratio=80
+          
+          # Show final memory status
+          echo "=== Final memory status ==="
+          free -h
+
       - uses: ./.github/actions/set-linux-distro-version
+
       - name: Set mvn build command based on matrix
         shell: bash
         run: |
-              if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
-                 modules=':nd4j-native,:nd4j-native-preset'
-              else 
-               echo "Building libnd4j from source"
-               modules=':nd4j-native,:nd4j-native-preset,:libnd4j'
-              fi
-              command="mvn  ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh  -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64  -Pcpu  --also-make  --batch-mode deploy -DskipTests"
-              if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
-                     mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.helper }}-${{matrix.extension}}"
-              elif [ "${{ matrix.helper }}" != '' ]; then
-                     mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.helper }}"
-              elif [ "${{ matrix.extension }}" != '' ]; then
-                     mvn_ext=" -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.extension }}"
-               else
-                   mvn_ext=""
-              fi
-              if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
-                 echo "Adding libnd4j download"
-              fi
-              command="${command} ${mvn_ext}"
-              echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
-              echo "COMMAND=${command}" >> $GITHUB_ENV
+          if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
+             modules=':nd4j-native,:nd4j-native-preset'
+          else 
+           echo "Building libnd4j from source"
+           modules=':nd4j-native,:nd4j-native-preset,:libnd4j'
+          fi
+          command="mvn  ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON --no-transfer-progress -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh  -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64  -Pcpu  --also-make  --batch-mode deploy -DskipTests"
+          if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
+                 mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.helper }}-${{matrix.extension}}"
+          elif [ "${{ matrix.helper }}" != '' ]; then
+                 mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.helper }}"
+          elif [ "${{ matrix.extension }}" != '' ]; then
+                 mvn_ext=" -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.extension }}"
+           else
+               mvn_ext=""
+          fi
+          if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
+             echo "Adding libnd4j download"
+          fi
+          command="${command} ${mvn_ext}"
+          echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
+          echo "COMMAND=${command}" >> $GITHUB_ENV
 
       - uses: ./.github/actions/update-deps-linux
+
       - name: Cache cmake install
         uses: actions/cache@v4
         id: cache-cmake
         with:
           path: /opt/cmake
-          key: ${{ runner.os }}-cmake
-          restore-keys: ${{ runner.os }}-cmake
+          key: ${{ runner.os }}-cmake-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-cmake-
+
       - name: Cache protobuf install
         uses: actions/cache@v4
         id: cache-protobuf
         with:
           path: /opt/protobuf
-          key: ${{ runner.os }}-protobuf
-          restore-keys: ${{ runner.os }}-protobuf
+          key: ${{ runner.os }}-protobuf-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-protobuf-
+
       - uses: ./.github/actions/install-protobuf-linux
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
+
       - uses: ./.github/actions/install-cmake-linux
         if: steps.cache-cmake.outputs.cache-hit != 'true'
+
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v4
         with:
@@ -177,32 +236,47 @@ jobs:
           server-id:  ${{ github.event.inputs.serverId }}
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
-          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
-        
+          cache: 'maven'
 
       - name: Setup libnd4j home if a download url is specified
         shell: bash
         run: |
-              mkdir "${GITHUB_WORKSPACE}/openblas_home"
-              cd "${GITHUB_WORKSPACE}/openblas_home"
-              wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/openblas-0.3.28-1.5.11-linux-x86_64.jar
-              unzip openblas-0.3.28-1.5.11-linux-x86_64.jar
-              cd ..
-              echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64" >> "$GITHUB_ENV"
-              cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so.0  ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so
+          mkdir "${GITHUB_WORKSPACE}/openblas_home"
+          cd "${GITHUB_WORKSPACE}/openblas_home"
+          wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/openblas-0.3.28-1.5.11-linux-x86_64.jar
+          unzip openblas-0.3.28-1.5.11-linux-x86_64.jar
+          cd ..
+          echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64" >> "$GITHUB_ENV"
+          cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so.0  ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so
         if: ${{ github.event.inputs.libnd4jUrl != '' }}
 
-      - name: Build on  linux-x86_64
+      - name: Monitor memory during build
+        shell: bash
+        run: |
+          # Start background memory monitoring
+          (while true; do 
+            echo "$(date '+%H:%M:%S'): $(free -h | head -n 2 | tail -n 1)"
+            if swapon --show | grep -q "/"; then
+              echo "$(date '+%H:%M:%S'): Swap: $(swapon --show --noheadings)"
+            fi
+            sleep 120  # Check every 2 minutes
+          done) > memory_monitor.log 2>&1 &
+          MONITOR_PID=$!
+          echo "MONITOR_PID=${MONITOR_PID}" >> $GITHUB_ENV
+          echo "Started memory monitoring (PID: ${MONITOR_PID})"
+
+      - name: Build on linux-x86_64
         shell: bash
         env:
-          MAVEN_GPG_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           DEBIAN_FRONTEND: noninteractive
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_TO: central
           MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
           PERFORM_RELEASE: ${{ matrix.deploy_to_release_staging }}
           RELEASE_VERSION: ${{ matrix.release_version }}
           SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
@@ -212,8 +286,8 @@ jobs:
           EXTENSION: ${{ matrix.extension }}
           MAVEN_OPTS: -Xmx2g
           LIBND4J_FILE_NAME: ${{ matrix.libnd4j_file_download }}
-
-
+          RLIMIT_AS: 6442450944  # 6GB virtual memory limit
+          RLIMIT_DATA: 4294967296  # 4GB data segment limit
         run: |
           echo "libnd4j build threads ${{ matrix.build_threads }}"
           echo "deploy to release staging repo or not ${{ matrix.deploy_to_release_staging }}"
@@ -225,18 +299,53 @@ jobs:
           echo "snapshot version ${{ matrix.snapshot_version }}"
           echo "server id ${{ matrix.server_id }}"
           echo "release repo id ${{ matrix.release_repo_id }}"
-
+          echo "swap size ${{ matrix.swap_size }}GB"
+          
+          # Show memory status before build
+          echo "=== Memory status before build ==="
+          free -h
+          
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           mvn --version
           cmake --version
           protoc --version
-          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
-          sudo apt-get -y autoremove
-          sudo apt-get -y clean
           export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OPENBLAS_PATH"
+          
           if [ "$PERFORM_RELEASE" == 1 ]; then
-                    bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
+                    bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
                    else
                        echo "Running build and deploying to snapshots"
                        eval "${COMMAND}"
           fi
+
+      - name: Show memory usage summary
+        if: always()
+        shell: bash
+        run: |
+          # Stop memory monitoring
+          if [ -n "$MONITOR_PID" ]; then
+            kill $MONITOR_PID 2>/dev/null || true
+          fi
+          
+          echo "=== Final memory status ==="
+          free -h
+          if swapon --show | grep -q "/"; then
+            echo "=== Swap usage ==="
+            swapon --show
+          fi
+          
+          echo "=== Memory usage during build ==="
+          if [ -f memory_monitor.log ]; then
+            cat memory_monitor.log
+          else
+            echo "No memory monitoring log found"
+          fi
+
+      - name: Cleanup swap
+        if: always()
+        shell: bash
+        run: |
+          echo "Cleaning up swap configuration..."
+          sudo swapoff /swapfile 2>/dev/null || true
+          sudo rm -f /swapfile 2>/dev/null || true
+          echo "Swap cleanup completed"
