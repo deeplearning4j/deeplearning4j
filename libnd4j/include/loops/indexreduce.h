@@ -38,7 +38,7 @@ namespace indexreduce {
 template <typename X, typename Z>
 class IndexReduce {
  public:
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
 
   static SD_DEVICE void transform(int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams,
                                   void *result, const sd::LongType *resultShapeInfo, sd::LongType *dimension,

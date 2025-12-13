@@ -98,11 +98,11 @@
   (0, Any), (1, All), (2, IsFinite), (3, IsInfOrNan), (4, IsNan), (5, IsInf), (6, IsPositive), (7, IsNegative)
 
 #define REDUCE_SAME_OPS \
-  (0, Sum), (1, Max), (2, Min), (3, Prod), (4, ASum), (5, AMax), (6, AMin), (7, ReduceSameBenchmarkOp)
+  (0, Sum), (1, Max), (2, Min), (3, Prod), (4, ASum), (5, AMax), (6, AMin)
 
 #define REDUCE_FLOAT_OPS                                                                                         \
   (0, Mean), (1, AMean), (2, Norm1), (3, Norm2), (4, NormMax), (5, NormFrobenius), (6, NormP), (7, SquaredNorm), \
-      (8, Entropy), (9, LogEntropy), (10, ShannonEntropy), (12, ReduceFloatBenchmarkOp)
+      (8, Entropy), (9, LogEntropy), (10, ShannonEntropy)
 
 #define RANDOM_OPS                                                                                                   \
   (0, UniformDistribution), (1, DropOut), (2, DropOutInverted), (3, ProbablisticMerge), (4, Linspace), (5, Choice),  \
