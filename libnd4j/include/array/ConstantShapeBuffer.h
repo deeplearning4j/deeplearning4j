@@ -28,7 +28,9 @@
 #include <array/PointerWrapper.h>
 #include <system/common.h>
 
+#include <atomic>
 #include <memory>
+#include <string>
 #ifndef  __JAVACPP_HACK__
 #if defined(SD_GCC_FUNCTRACE)
 #include <exceptions/backward.hpp>
@@ -38,8 +40,11 @@ namespace sd {
 
 class SD_LIB_EXPORT ConstantShapeBuffer {
  private:
+  static constexpr uint32_t MAGIC_VALID = 0x58A9EB0F;  // Magic number for validity check
+  uint32_t _magic;  // Validity marker to detect use-after-free/garbage pointers
   PointerWrapper* _primaryShapeInfo;
   PointerWrapper*  _specialShapeInfo;
+  std::atomic<int> _refCount;
 
 
  public:
@@ -47,6 +52,12 @@ class SD_LIB_EXPORT ConstantShapeBuffer {
   ConstantShapeBuffer( PointerWrapper* primary, PointerWrapper* special);
   ConstantShapeBuffer();
   ~ConstantShapeBuffer();
+
+  /**
+   * Check if this buffer is valid (not garbage/use-after-free).
+   * Uses magic number validation.
+   */
+  inline bool isValid() const { return _magic == MAGIC_VALID; }
 #ifndef  __JAVACPP_HACK__
 #if defined(SD_GCC_FUNCTRACE)
   backward::StackTrace st;
@@ -55,6 +66,30 @@ class SD_LIB_EXPORT ConstantShapeBuffer {
   LongType *primary() ;
   LongType *special() ;
   LongType *platform() ;
+
+  /**
+   * Get the stack trace as a formatted string.
+   * Returns empty string if functrace is not enabled.
+   */
+  std::string getStackTraceAsString() const;
+
+  /**
+   * Manual reference counting for safe cross-JNI ownership.
+   * Increments reference count - call when handing out a pointer.
+   */
+  void addRef();
+
+  /**
+   * Manual reference counting for safe cross-JNI ownership.
+   * Decrements reference count and deletes when reaching zero.
+   * Call when done with a pointer (e.g., in deleteConstantShapeBuffer).
+   */
+  void release();
+
+  /**
+   * Get current reference count (for debugging).
+   */
+  int getRefCount() const;
 };
 
 

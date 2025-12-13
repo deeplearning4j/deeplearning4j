@@ -31,7 +31,7 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>nd4j-cuda-12.3-platform</artifactId>
+    <artifactId>nd4j-cuda-platform</artifactId>
     <name>nd4j-cuda-platform</name>
 
     <properties>
@@ -39,7 +39,7 @@
         <cuda.version>12.3</cuda.version>
         <cudnn.version>8.9</cudnn.version>
         <javacpp-presets.cuda.version>1.5.10</javacpp-presets.cuda.version>
-        <nd4j.backend>nd4j-cuda-${cuda.version}</nd4j.backend>
+        <nd4j.backend>nd4j-cuda</nd4j.backend>
     </properties>
 
 

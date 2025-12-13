@@ -48,7 +48,7 @@ void range(sd::LaunchContext* context, NDArray& start, NDArray& delta, NDArray& 
   BUILD_SINGLE_SELECTOR(outVector.dataType(), _range, (start, delta, outVector), SD_COMMON_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void _range, (NDArray& start, NDArray& delta, NDArray& outVector),
+BUILD_SINGLE_TEMPLATE( void _range, (NDArray& start, NDArray& delta, NDArray& outVector),
                       SD_COMMON_TYPES);
 
 }  // namespace helpers

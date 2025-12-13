@@ -56,7 +56,7 @@ sd::LongType listDiffCount(sd::LaunchContext* context, NDArray* values, NDArray*
   return 0;
 }
 
-BUILD_SINGLE_TEMPLATE(template sd::LongType listDiffCount_, (NDArray * values, NDArray* keep);, SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE( sd::LongType listDiffCount_, (NDArray * values, NDArray* keep);, SD_COMMON_TYPES);
 
 template <typename T>
 static sd::Status listDiffFunctor_(NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2) {
@@ -119,10 +119,10 @@ sd::Status listDiffFunctor(sd::LaunchContext* context, NDArray* values, NDArray*
   return result;
 }
 
-BUILD_SINGLE_TEMPLATE(template sd::Status listDiffFunctor_,
+BUILD_SINGLE_TEMPLATE( sd::Status listDiffFunctor_,
                       (NDArray * values, NDArray* keep, NDArray* output1, NDArray* output2);
                       , SD_FLOAT_TYPES);
-BUILD_SINGLE_TEMPLATE(template sd::Status listDiffFunctor_,
+BUILD_SINGLE_TEMPLATE( sd::Status listDiffFunctor_,
                       (NDArray * values, NDArray* keep, NDArray* output1, NDArray* output2);
                       , SD_INTEGER_TYPES);
 

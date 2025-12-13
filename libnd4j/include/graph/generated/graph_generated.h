@@ -26,6 +26,9 @@ namespace graph {
 struct UpdaterState;
 struct UpdaterStateBuilder;
 
+struct SameDiffSubInstance;
+struct SameDiffSubInstanceBuilder;
+
 struct FlatGraph;
 struct FlatGraphBuilder;
 
@@ -116,6 +119,71 @@ inline ::flatbuffers::Offset<UpdaterState> CreateUpdaterStateDirect(
       updaterStateValues__);
 }
 
+struct SameDiffSubInstance FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef SameDiffSubInstanceBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_NAME = 4,
+    VT_SERIALIZEDDATA = 6
+  };
+  const ::flatbuffers::String *name() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_NAME);
+  }
+  const ::flatbuffers::Vector<uint8_t> *serializedData() const {
+    return GetPointer<const ::flatbuffers::Vector<uint8_t> *>(VT_SERIALIZEDDATA);
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_NAME) &&
+           verifier.VerifyString(name()) &&
+           VerifyOffset(verifier, VT_SERIALIZEDDATA) &&
+           verifier.VerifyVector(serializedData()) &&
+           verifier.EndTable();
+  }
+};
+
+struct SameDiffSubInstanceBuilder {
+  typedef SameDiffSubInstance Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_name(::flatbuffers::Offset<::flatbuffers::String> name) {
+    fbb_.AddOffset(SameDiffSubInstance::VT_NAME, name);
+  }
+  void add_serializedData(::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> serializedData) {
+    fbb_.AddOffset(SameDiffSubInstance::VT_SERIALIZEDDATA, serializedData);
+  }
+  explicit SameDiffSubInstanceBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<SameDiffSubInstance> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<SameDiffSubInstance>(end);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<SameDiffSubInstance> CreateSameDiffSubInstance(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::String> name = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> serializedData = 0) {
+  SameDiffSubInstanceBuilder builder_(_fbb);
+  builder_.add_serializedData(serializedData);
+  builder_.add_name(name);
+  return builder_.Finish();
+}
+
+inline ::flatbuffers::Offset<SameDiffSubInstance> CreateSameDiffSubInstanceDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    const char *name = nullptr,
+    const std::vector<uint8_t> *serializedData = nullptr) {
+  auto name__ = name ? _fbb.CreateString(name) : 0;
+  auto serializedData__ = serializedData ? _fbb.CreateVector<uint8_t>(*serializedData) : 0;
+  return graph::CreateSameDiffSubInstance(
+      _fbb,
+      name__,
+      serializedData__);
+}
+
 struct FlatGraph FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef FlatGraphBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
@@ -129,7 +197,8 @@ struct FlatGraph FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     VT_TRAININGCONFIG = 18,
     VT_UPDATERSTATE = 20,
     VT_METADATAKEYS = 22,
-    VT_METADATAVALUES = 24
+    VT_METADATAVALUES = 24,
+    VT_SUBINSTANCES = 26
   };
   int64_t id() const {
     return GetField<int64_t>(VT_ID, 0);
@@ -164,6 +233,9 @@ struct FlatGraph FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   const ::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>> *metadataValues() const {
     return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>> *>(VT_METADATAVALUES);
   }
+  const ::flatbuffers::Vector<::flatbuffers::Offset<graph::SameDiffSubInstance>> *subInstances() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<graph::SameDiffSubInstance>> *>(VT_SUBINSTANCES);
+  }
   bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int64_t>(verifier, VT_ID, 8) &&
@@ -195,6 +267,9 @@ struct FlatGraph FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
            VerifyOffset(verifier, VT_METADATAVALUES) &&
            verifier.VerifyVector(metadataValues()) &&
            verifier.VerifyVectorOfStrings(metadataValues()) &&
+           VerifyOffset(verifier, VT_SUBINSTANCES) &&
+           verifier.VerifyVector(subInstances()) &&
+           verifier.VerifyVectorOfTables(subInstances()) &&
            verifier.EndTable();
   }
 };
@@ -236,6 +311,9 @@ struct FlatGraphBuilder {
   void add_metadataValues(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>>> metadataValues) {
     fbb_.AddOffset(FlatGraph::VT_METADATAVALUES, metadataValues);
   }
+  void add_subInstances(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<graph::SameDiffSubInstance>>> subInstances) {
+    fbb_.AddOffset(FlatGraph::VT_SUBINSTANCES, subInstances);
+  }
   explicit FlatGraphBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -259,9 +337,11 @@ inline ::flatbuffers::Offset<FlatGraph> CreateFlatGraph(
     ::flatbuffers::Offset<::flatbuffers::String> trainingConfig = 0,
     ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<graph::UpdaterState>>> updaterState = 0,
     ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>>> metadataKeys = 0,
-    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>>> metadataValues = 0) {
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>>> metadataValues = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<graph::SameDiffSubInstance>>> subInstances = 0) {
   FlatGraphBuilder builder_(_fbb);
   builder_.add_id(id);
+  builder_.add_subInstances(subInstances);
   builder_.add_metadataValues(metadataValues);
   builder_.add_metadataKeys(metadataKeys);
   builder_.add_updaterState(updaterState);
@@ -287,7 +367,8 @@ inline ::flatbuffers::Offset<FlatGraph> CreateFlatGraphDirect(
     const char *trainingConfig = nullptr,
     const std::vector<::flatbuffers::Offset<graph::UpdaterState>> *updaterState = nullptr,
     const std::vector<::flatbuffers::Offset<::flatbuffers::String>> *metadataKeys = nullptr,
-    const std::vector<::flatbuffers::Offset<::flatbuffers::String>> *metadataValues = nullptr) {
+    const std::vector<::flatbuffers::Offset<::flatbuffers::String>> *metadataValues = nullptr,
+    const std::vector<::flatbuffers::Offset<graph::SameDiffSubInstance>> *subInstances = nullptr) {
   auto variables__ = variables ? _fbb.CreateVector<::flatbuffers::Offset<graph::FlatVariable>>(*variables) : 0;
   auto nodes__ = nodes ? _fbb.CreateVector<::flatbuffers::Offset<graph::FlatNode>>(*nodes) : 0;
   auto outputs__ = outputs ? _fbb.CreateVector<::flatbuffers::Offset<graph::IntPair>>(*outputs) : 0;
@@ -297,6 +378,7 @@ inline ::flatbuffers::Offset<FlatGraph> CreateFlatGraphDirect(
   auto updaterState__ = updaterState ? _fbb.CreateVector<::flatbuffers::Offset<graph::UpdaterState>>(*updaterState) : 0;
   auto metadataKeys__ = metadataKeys ? _fbb.CreateVector<::flatbuffers::Offset<::flatbuffers::String>>(*metadataKeys) : 0;
   auto metadataValues__ = metadataValues ? _fbb.CreateVector<::flatbuffers::Offset<::flatbuffers::String>>(*metadataValues) : 0;
+  auto subInstances__ = subInstances ? _fbb.CreateVector<::flatbuffers::Offset<graph::SameDiffSubInstance>>(*subInstances) : 0;
   return graph::CreateFlatGraph(
       _fbb,
       id,
@@ -309,7 +391,8 @@ inline ::flatbuffers::Offset<FlatGraph> CreateFlatGraphDirect(
       trainingConfig__,
       updaterState__,
       metadataKeys__,
-      metadataValues__);
+      metadataValues__,
+      subInstances__);
 }
 
 struct FlatDropRequest FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {

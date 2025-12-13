@@ -20,6 +20,7 @@
 
 #include <helpers/ShapeBufferPlatformHelper.h>
 #include <helpers/cpu/CpuShapeBufferCreator.h>
+#include <mutex>
 
 // Include platform-specific headers conditionally
 #if defined(SD_CUDA)
@@ -32,7 +33,31 @@
 
 namespace sd {
 
+// This ensures ShapeBufferPlatformHelper is initialized BEFORE DirectShapeTrie or any other
+// code tries to use it. The dummy struct with static member forces initialization at program startup.
+struct ShapeBufferInitializer {
+  ShapeBufferInitializer() {
+    ShapeBufferPlatformHelper::initialize();
+  }
+};
+static ShapeBufferInitializer _force_early_init;
+
 void ShapeBufferPlatformHelper::initialize() {
+  // Thread-safe initialization using static local mutex
+  // This prevents race conditions when multiple threads call initialize() simultaneously
+  static std::mutex init_mutex;
+  static bool init_done = false;
+
+  // Fast path: if already initialized, return immediately without locking
+  if (init_done) {
+    return;
+  }
+
+  // Slow path: acquire lock and check again
+  std::lock_guard<std::mutex> lock(init_mutex);
+  if (init_done) {
+    return;  // Another thread completed initialization while we were waiting
+  }
 
 #if defined(SD_CUDA)
   printf("Initializing CUDA platform\n");
@@ -46,6 +71,9 @@ void ShapeBufferPlatformHelper::initialize() {
   ShapeBufferCreatorHelper::setCurrentCreator(&CpuShapeBufferCreator::getInstance());
 
 #endif
+
+  // Mark as complete - must be last line after all initialization
+  init_done = true;
 
   // Add other platforms as needed (ROCm, OpenCL, etc.)
 }

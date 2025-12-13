@@ -58,11 +58,11 @@ class ScalarBoolTransform {
   template <typename OpType>
   SD_DEVICE static void transformCuda(const void *scalar, const void *vy, const sd::LongType *shapeInfo, void *vparams,
                                       void *vresult, const sd::LongType *resultShapeInfo,
-                                      long long int *allocationBuffer);
+                                      sd::LongType *allocationBuffer);
 
   template <typename OpType>
   SD_DEVICE static void transformCuda(sd::LongType n, const void *vx, const void *vy, sd::LongType yEWS, void *vparams,
-                                      void *vz, sd::LongType zEWS, long long int *allocationBuffer);
+                                      void *vz, sd::LongType zEWS, sd::LongType *allocationBuffer);
 
   template <typename OpType>
   SD_DEVICE static void transformCuda(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
@@ -82,7 +82,7 @@ class ScalarBoolTransform {
   template <typename OpType>
   SD_HOST static void intermediateShaped(dim3 &launchDims, cudaStream_t *stream, const void *vx,
                                          const sd::LongType *xShapeInfo, void *vz, const sd::LongType *zShapeInfo,
-                                         const void *vscalar, void *vextraParams, long long int *allocPointer);
+                                         const void *vscalar, void *vextraParams, sd::LongType *allocPointer);
 
   SD_HOST
   static void executeCudaShaped(dim3 &launchDims, cudaStream_t *stream, int opNum, const void *x,

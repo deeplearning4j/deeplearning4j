@@ -161,7 +161,7 @@ void FullPivLU<T>::solve(NDArray &A, NDArray &b, NDArray& x) {
   delete bUlike;
 }
 
-BUILD_SINGLE_TEMPLATE(template class FullPivLU, , SD_FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE( class FullPivLU, , SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops
