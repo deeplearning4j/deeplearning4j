@@ -23,6 +23,11 @@
 
 #include <helpers/shape.h>
 #include <system/Environment.h>
+#include <sstream>
+
+#if defined(SD_GCC_FUNCTRACE)
+#include <array/TADCacheLifecycleTracker.h>
+#endif
 
 namespace sd {
 TadPack::TadPack( ConstantShapeBuffer *shapes,
@@ -41,6 +46,59 @@ TadPack::TadPack( ConstantShapeBuffer *shapes,
 
   computeHash();
 
+#if defined(SD_GCC_FUNCTRACE) && !defined(__JAVACPP_HACK__)
+  // Track TAD cache allocation - only capture stack trace if tracking is enabled
+  // Stack trace capture is expensive, so skip it when tracking is disabled
+  auto& tracker = sd::array::TADCacheLifecycleTracker::getInstance();
+  if (tracker.isEnabled()) {
+    // Capture stack trace for this TadPack allocation
+    _stackTrace = backward::StackTrace();
+    _stackTrace.load_here(32);
+  }
+
+  // Always record allocation for basic counting (cheap operation)
+  size_t shape_info_bytes = 0;
+  size_t offsets_bytes = 0;
+
+  if (_tadShape != nullptr && _tadShape->primary() != nullptr) {
+    shape_info_bytes = shape::shapeInfoByteLength(_tadShape->primary());
+  }
+
+  if (_tadOffsets != nullptr && _tadOffsets->primary() != nullptr) {
+    offsets_bytes = _numTads * sizeof(LongType);
+  }
+
+  std::vector<LongType> dims;
+  if (_dimensions != nullptr) {
+    dims.assign(_dimensions, _dimensions + _dimensionsLength);
+  }
+
+  tracker.recordAllocation(this, _numTads, shape_info_bytes, offsets_bytes, dims);
+#endif
+
+}
+
+TadPack::~TadPack() {
+#if defined(SD_GCC_FUNCTRACE) && !defined(__JAVACPP_HACK__)
+  // Track TAD cache deallocation before cleanup.
+  // Guard must match constructor guard for proper allocation/deallocation pairing.
+  sd::array::TADCacheLifecycleTracker::getInstance().recordDeallocation(this);
+#endif
+
+  // Clean up dimensions array that was allocated in constructor
+  if (_dimensions != nullptr) {
+    delete[] _dimensions;
+    _dimensions = nullptr;
+  }
+
+  // Clean up TAD offsets buffer if we own it
+  // This is owned when transferred via releaseOffsets() from TadCalculator
+  if (_tadOffsets != nullptr) {
+    delete _tadOffsets;
+    _tadOffsets = nullptr;
+  }
+
+  // DON'T delete _tadShape - it comes from ConstantShapeHelper cache
 }
 
 LongType* TadPack::primaryShapeInfo() {
@@ -167,6 +225,27 @@ bool TadPack::operator==( TadPack& other)  {
   }
 
   return true;
+}
+
+std::string TadPack::getStackTraceAsString() const {
+#if defined(SD_GCC_FUNCTRACE) && !defined(__JAVACPP_HACK__)
+  // Use backward::Printer to format the stack trace into a string
+  std::ostringstream oss;
+  backward::Printer p;
+  p.snippet = false;  // Don't include source code snippets
+  p.address = true;   // Include addresses
+  p.object = false;   // Don't include object file info
+  p.color_mode = backward::ColorMode::never;  // No ANSI colors in string
+
+  // Print to our string stream (we need to cast away const to use _stackTrace)
+  // This is safe since print doesn't modify the StackTrace
+  backward::StackTrace& mutable_st = const_cast<backward::StackTrace&>(_stackTrace);
+  p.print(mutable_st, oss);
+
+  return oss.str();
+#else
+  return "";  // Return empty string when functrace is not enabled
+#endif
 }
 
 

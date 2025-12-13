@@ -148,6 +148,6 @@ void PairWiseIntTransform<X>::exec(const void *vx, const sd::LongType *xShapeInf
 
 }
 
-BUILD_SINGLE_TEMPLATE(template class PairWiseIntTransform, , SD_INTEGER_TYPES);
+BUILD_SINGLE_TEMPLATE( class PairWiseIntTransform, , SD_INTEGER_TYPES);
 }  // namespace pairwise_transforms
 }  // namespace functions

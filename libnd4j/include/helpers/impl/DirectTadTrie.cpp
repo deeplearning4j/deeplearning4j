@@ -22,12 +22,15 @@
 #include <algorithm>
 #include <memory>
 #include <atomic>
+#include <sstream>
+#include <string>
+#include <unordered_set>
 
 #include "array/TadCalculator.h"
 
 namespace sd {
 
-TadPack* DirectTadTrie::enhancedSearch(const std::vector<LongType>& dimensions, LongType* originalShape, size_t stripeIdx) {
+std::shared_ptr<TadPack> DirectTadTrie::enhancedSearch(const std::vector<LongType>& dimensions, LongType* originalShape, size_t stripeIdx) {
   const TadTrieNode* current = _roots[stripeIdx].get();
   int rank = shape::rank(originalShape);
 
@@ -41,45 +44,22 @@ TadPack* DirectTadTrie::enhancedSearch(const std::vector<LongType>& dimensions, 
     if (!current) return nullptr;
   }
 
-  // Found a matching node, now verify TadPack compatibility with shape signature
-  TadPack* pack = current->pack();
+  // Found a matching node, now verify TadPack compatibility
+  std::shared_ptr<TadPack> pack = current->pack();
   if (!pack) return nullptr;
 
-  // Get the stored shape info from the TadPack
-  LongType* storedShapeInfo = pack->primaryShapeInfo();
-  LongType* storedStrides = shape::stride(storedShapeInfo);
-  int storedRank = shape::rank(storedShapeInfo);
-
-  // Compare with expected strides and shape
-  // Create a temporary calculator to check what the strides should be
-  TadCalculator *tempCalc = new TadCalculator(originalShape);
-  tempCalc->createTadPack(dimensions);
-  LongType* expectedShapeInfo = tempCalc->tadShape()->primary();
-  LongType* expectedStrides = shape::stride(expectedShapeInfo);
-
-  // Check if strides are compatible
-  for (int i = 0; i < storedRank; i++) {
-    if (storedStrides[i] != expectedStrides[i]) {
-      return nullptr; // Strides don't match, not the right TadPack
-    }
-  }
-
-  // Additional verification for shape dimensions
-  LongType* storedShape = shape::shapeOf(storedShapeInfo);
-  LongType* expectedShape = shape::shapeOf(expectedShapeInfo);
-  for (int i = 0; i < storedRank; i++) {
-    if (storedShape[i] != expectedShape[i]) {
-      return nullptr; // Shape dimensions don't match
-    }
-  }
-
-  // Verify order and data type match
-  if (shape::order(storedShapeInfo) != shape::order(expectedShapeInfo) ||
-      ArrayOptions::dataType(storedShapeInfo) != ArrayOptions::dataType(expectedShapeInfo)) {
+  // Use cached signature for fast comparison - no TadCalculator needed!
+  const TadPackSignature* signature = current->packSignature();
+  if (!signature) {
+    // Signature not cached (shouldn't happen, but handle gracefully)
     return nullptr;
   }
 
-  // If everything matches, return the found TadPack
+  // Fast comparison using cached signature instead of creating TadCalculator
+  if (!signature->matches(originalShape)) {
+    return nullptr;
+  }
+
   return pack;
 }
 
@@ -89,9 +69,15 @@ size_t DirectTadTrie::computeStrideAwareHash(const std::vector<LongType>& dimens
 
   size_t hash = 17; // Prime number starting point
 
-  // Add dimension-specific hash contribution with position-dependence
-  for (size_t i = 0; i < dimensions.size(); i++) {
-    hash = hash * 31 + static_cast<size_t>(dimensions[i]) * (i + 1);
+  // Handle empty dimensions specially
+  if (dimensions.empty()) {
+    // Empty dimensions case - hash based on shape only
+    hash = hash * 31 + 0; // Marker for empty dimensions
+  } else {
+    // Add dimension-specific hash contribution with position-dependence
+    for (size_t i = 0; i < dimensions.size(); i++) {
+      hash = hash * 31 + static_cast<size_t>(dimensions[i]) * (i + 1);
+    }
   }
 
   // Add rank - critical for distinguishing different dimension arrays
@@ -121,9 +107,6 @@ size_t DirectTadTrie::computeStrideAwareHash(const std::vector<LongType>& dimens
   return hash % NUM_STRIPES;
 }
 
-// Check if dimensions are compatible with a TadPack
-
-
 bool DirectTadTrie::exists(const std::vector<LongType>& dimensions, LongType* originalShape)  {
   if (!originalShape) return false;
 
@@ -140,7 +123,7 @@ std::vector<LongType> DirectTadTrie::sortDimensions(const std::vector<LongType>&
   return sorted;
 }
 
-TadPack* DirectTadTrie::search(const std::vector<LongType>& dimensions, int originalShapeRank, size_t stripeIdx) const {
+std::shared_ptr<TadPack> DirectTadTrie::search(const std::vector<LongType>& dimensions, int originalShapeRank, size_t stripeIdx) const {
   // No need for locking - caller handles locking (e.g., in getOrCreate)
   const TadTrieNode* current = _roots[stripeIdx].get();
 
@@ -157,8 +140,7 @@ TadPack* DirectTadTrie::search(const std::vector<LongType>& dimensions, int orig
   return current->pack();
 }
 
-// Critical method that needs revision for better thread safety
-TadPack* DirectTadTrie::getOrCreate(std::vector<LongType>& dimensions, LongType* originalShape) {
+std::shared_ptr<TadPack> DirectTadTrie::getOrCreate(std::vector<LongType>& dimensions, LongType* originalShape) {
   if (!originalShape) {
     THROW_EXCEPTION("Original shape cannot be null in TAD calculation");
   }
@@ -169,7 +151,7 @@ TadPack* DirectTadTrie::getOrCreate(std::vector<LongType>& dimensions, LongType*
   // First try a read-only lookup
   {
     SHARED_LOCK_TYPE<MUTEX_TYPE> readLock(_mutexes[stripeIdx]);
-    TadPack* existing = enhancedSearch(dimensions, originalShape, stripeIdx);
+    std::shared_ptr<TadPack> existing = enhancedSearch(dimensions, originalShape, stripeIdx);
     if (existing) {
       return existing;
     }
@@ -179,7 +161,7 @@ TadPack* DirectTadTrie::getOrCreate(std::vector<LongType>& dimensions, LongType*
   return insert(dimensions, originalShape);
 }
 
-TadPack* DirectTadTrie::insert(std::vector<LongType>& dimensions, LongType* originalShape) {
+std::shared_ptr<TadPack> DirectTadTrie::insert(std::vector<LongType>& dimensions, LongType* originalShape) {
   if (!originalShape) {
     THROW_EXCEPTION("Original shape cannot be null in TAD calculation");
   }
@@ -187,10 +169,11 @@ TadPack* DirectTadTrie::insert(std::vector<LongType>& dimensions, LongType* orig
   int rank = shape::rank(originalShape);
   // Use the enhanced hash computation for better distribution
   const size_t stripeIdx = computeStrideAwareHash(dimensions, originalShape);
-  SHARED_LOCK_TYPE<MUTEX_TYPE> lock(_mutexes[stripeIdx]);
+  // Use exclusive lock for write operation (inserting new TAD packs)
+  EXCLUSIVE_LOCK_TYPE<MUTEX_TYPE> lock(_mutexes[stripeIdx]);
 
   // Check if a compatible TadPack already exists
-  TadPack* existing = enhancedSearch(dimensions, originalShape, stripeIdx);
+  std::shared_ptr<TadPack> existing = enhancedSearch(dimensions, originalShape, stripeIdx);
   if (existing) {
     return existing;
   }
@@ -214,22 +197,38 @@ TadPack* DirectTadTrie::insert(std::vector<LongType>& dimensions, LongType* orig
 
   // Create the TadPack only if it doesn't exist yet
   if (!current->pack()) {
+    TadCalculator *calculator = nullptr;
+    std::shared_ptr<TadPack> newPack;
+
     try {
-      TadCalculator *calculator = new TadCalculator(originalShape);
+      calculator = new TadCalculator(originalShape);
       calculator->createTadPack(dimensions);
 
       // Create a new TadPack with full dimension information
-      TadPack* newPack = new TadPack(
+      // Use releaseOffsets() to transfer ownership of the offsets buffer to TadPack
+      // Wrap in shared_ptr for proper memory management
+      newPack = std::make_shared<TadPack>(
           calculator->tadShape(),
-          calculator->tadOffsets(),
+          calculator->releaseOffsets(),  // Transfer ownership
           calculator->numberOfTads(),
           dimensions.data(),
           dimensions.size());
 
-      // Store the TadPack in the node (setPack handles synchronization)
+      // Store the TadPack in the node
+      // setPack now also caches the signature for future fast comparisons
       current->setPack(newPack);
 
+      // Clean up the calculator (safe now that offsets ownership was transferred)
+      delete calculator;
+      calculator = nullptr;
+
     } catch (const std::exception& e) {
+      // Clean up on exception to prevent memory leaks
+      // shared_ptr will automatically clean up newPack
+      if (calculator != nullptr) {
+        delete calculator;
+        calculator = nullptr;
+      }
       std::string msg = "TAD creation failed: ";
       msg += e.what();
       THROW_EXCEPTION(msg.c_str());
@@ -253,6 +252,312 @@ const TadTrieNode* DirectTadTrie::findChild(const TadTrieNode* node, LongType va
   }
 
   return nullptr;
+}
+
+// Helper function to recursively delete TadPacks from a node and its children
+// This ensures TadPack destructors are called, which triggers recordDeallocation()
+static void deleteTadPacksRecursive(TadTrieNode* node, int& deletedCount) {
+  if (!node) return;
+
+  // First, recursively delete from all children
+  const auto& children = node->children();
+  for (const auto& child : children) {
+    deleteTadPacksRecursive(child.get(), deletedCount);
+  }
+
+  // Then delete this node's TadPack if it exists
+  // shared_ptr will handle deletion automatically when we reset it
+  auto pack = node->pack();
+  if (pack) {
+    deletedCount++;
+    // Clear the shared_ptr to trigger TadPack destructor
+    // The destructor will call TADCacheLifecycleTracker::recordDeallocation()
+    // if SD_GCC_FUNCTRACE is defined during compilation
+    node->setPack(nullptr);
+  }
+}
+
+void DirectTadTrie::clear() {
+  // CRITICAL: Skip cleanup during shutdown to avoid SIGSEGV from corrupted memory
+  // During JVM/static destruction, memory allocators may have been destroyed,
+  // leaving corrupted pointers in the trie. Traversing the tree in this state
+  // causes crashes in deleteTadPacksRecursive.
+  if (_shutdownInProgress.load(std::memory_order_acquire)) {
+    return;  // Let the OS reclaim memory at exit - this is safe
+  }
+
+  // Clear all stripes
+  // NOTE: Removed #ifndef __JAVACPP_HACK__ guard to fix TAD cache memory leak
+  // The guard was preventing cache cleanup when JavaCPP is used (production mode)
+  // This caused indefinite accumulation of TADPack objects despite clearTADCache() calls
+
+  int totalDeleted = 0;
+  for (size_t i = 0; i < NUM_STRIPES; i++) {
+    // Use exclusive lock for write operation (clearing the cache)
+    EXCLUSIVE_LOCK_TYPE<MUTEX_TYPE> lock(_mutexes[i]);
+
+    // This ensures TadPack destructors are called, which invokes recordDeallocation()
+    // for proper lifecycle tracking.
+    //
+    // IMPORTANT: We CANNOT rely on unique_ptr cascade deletion because:
+    // 1. TadTrieNode destructor deletes _tadPack only if SD_GCC_FUNCTRACE is defined
+    // 2. Functrace may be auto-disabled during build, causing guards to evaluate false
+    // 3. Even if guards pass, destructor might not run if roots are replaced before going out of scope
+    //
+    // By explicitly calling deleteTadPacksRecursive() BEFORE replacing roots,
+    // we guarantee that:
+    // - All TadPack objects are explicitly deleted via delete operator
+    // - Their destructors run and call recordDeallocation() (if tracking enabled)
+    // - Pointers are cleared to nullptr to prevent double-delete in node destructors
+    int deletedCount = 0;
+    deleteTadPacksRecursive(_roots[i].get(), deletedCount);
+    totalDeleted += deletedCount;
+
+    // Recreate the root node - this will delete the old tree structure
+    // (nodes are already cleaned of TadPacks above via deleteTadPacksRecursive)
+    // The old root's unique_ptr goes out of scope here, triggering node destructor cascade
+    // But TadPacks are already deleted and nulled out, so no double-delete occurs
+    _roots[i] = std::make_unique<TadTrieNode>(0, 0, false);
+    _stripeCounts[i].store(0);
+  }
+
+  // Reset current counters (but preserve peak values for diagnostics)
+  _current_entries.store(0);
+  _current_bytes.store(0);
+}
+
+void DirectTadTrie::countEntriesAndBytes(const TadTrieNode* node, LongType& entries, LongType& bytes) const {
+  if (node == nullptr) return;
+
+  // If this node has a TadPack, count it
+  auto pack = node->pack();
+  if (pack != nullptr) {
+    entries++;
+
+    // Calculate total bytes for this TadPack
+    // Shape info buffer
+    const LongType* shapeInfo = pack->primaryShapeInfo();
+    if (shapeInfo != nullptr) {
+      LongType shapeInfoLength = shape::shapeInfoLength(shapeInfo);
+      bytes += shapeInfoLength * sizeof(LongType);
+    }
+
+    // Offsets buffer
+    const LongType* offsets = pack->primaryOffsets();
+    if (offsets != nullptr) {
+      LongType numTads = pack->numberOfTads();
+      bytes += numTads * sizeof(LongType);
+    }
+  }
+
+  // Recursively count children
+  const std::vector<std::unique_ptr<TadTrieNode>>& children = node->children();
+  for (const auto& child : children) {
+    countEntriesAndBytes(child.get(), entries, bytes);
+  }
+}
+
+LongType DirectTadTrie::getCachedEntries() const {
+  LongType total_entries = 0;
+  LongType total_bytes = 0;
+
+  // Count entries across all stripes
+  for (size_t i = 0; i < NUM_STRIPES; i++) {
+    // Lock this stripe for reading
+    SHARED_LOCK_TYPE<MUTEX_TYPE> lock(_mutexes[i]);
+
+    const TadTrieNode* root = _roots[i].get();
+    if (root != nullptr) {
+      countEntriesAndBytes(root, total_entries, total_bytes);
+    }
+  }
+
+  // Update current counters
+  _current_entries.store(total_entries);
+  _current_bytes.store(total_bytes);
+
+  // Update peak if current exceeds it
+  LongType current_peak = _peak_entries.load();
+  while (total_entries > current_peak) {
+    if (_peak_entries.compare_exchange_weak(current_peak, total_entries)) {
+      break;
+    }
+  }
+
+  current_peak = _peak_bytes.load();
+  while (total_bytes > current_peak) {
+    if (_peak_bytes.compare_exchange_weak(current_peak, total_bytes)) {
+      break;
+    }
+  }
+
+  return total_entries;
+}
+
+LongType DirectTadTrie::getCachedBytes() const {
+  // getCachedEntries() updates both entries and bytes
+  getCachedEntries();
+  return _current_bytes.load();
+}
+
+LongType DirectTadTrie::getPeakCachedEntries() const {
+  return _peak_entries.load();
+}
+
+LongType DirectTadTrie::getPeakCachedBytes() const {
+  return _peak_bytes.load();
+}
+
+void DirectTadTrie::buildStringRepresentation(const TadTrieNode* node, std::stringstream& ss,
+                                              const std::string& indent, int currentDepth,
+                                              int maxDepth, int& entriesShown, int maxEntries) const {
+  if (node == nullptr) return;
+  if (maxDepth != -1 && currentDepth > maxDepth) return;
+  if (maxEntries != -1 && entriesShown >= maxEntries) return;
+
+  // Check if this node has a TadPack
+  auto pack = node->pack();
+  if (pack != nullptr) {
+    entriesShown++;
+
+    // Display node info
+    ss << indent << "Node[level=" << node->level()
+       << ", value=" << node->value()
+       << ", isDim=" << (node->isDimension() ? "true" : "false")
+       << ", rank=" << node->shapeRank()
+       << "]\n";
+
+    // Display TAD pack details
+    const LongType* shapeInfo = pack->primaryShapeInfo();
+    if (shapeInfo != nullptr) {
+      int rank = shape::rank(shapeInfo);
+      ss << indent << "  TAD Shape: rank=" << rank
+         << ", order=" << shape::order(shapeInfo)
+         << ", dtype=" << DataTypeUtils::asString(ArrayOptions::dataType(shapeInfo)) << "\n";
+
+      // Display TAD dimensions
+      ss << indent << "  TAD Dims: [";
+      const LongType* dims = shape::shapeOf(shapeInfo);
+      for (int i = 0; i < rank; i++) {
+        if (i > 0) ss << ", ";
+        ss << dims[i];
+      }
+      ss << "]\n";
+
+      // Display TAD strides
+      ss << indent << "  TAD Strides: [";
+      const LongType* strides = shape::stride(shapeInfo);
+      for (int i = 0; i < rank; i++) {
+        if (i > 0) ss << ", ";
+        ss << strides[i];
+      }
+      ss << "]\n";
+    }
+
+    // Display number of TADs and offset info
+    LongType numTads = pack->numberOfTads();
+    ss << indent << "  Number of TADs: " << numTads << "\n";
+
+    // Display memory usage
+    LongType shapeInfoBytes = 0;
+    LongType offsetsBytes = 0;
+    if (shapeInfo != nullptr) {
+      LongType shapeInfoLength = shape::shapeInfoLength(shapeInfo);
+      shapeInfoBytes = shapeInfoLength * sizeof(LongType);
+    }
+    if (pack->primaryOffsets() != nullptr) {
+      offsetsBytes = numTads * sizeof(LongType);
+    }
+    ss << indent << "  Memory: shape_info=" << shapeInfoBytes
+       << " bytes, offsets=" << offsetsBytes
+       << " bytes, total=" << (shapeInfoBytes + offsetsBytes) << " bytes\n";
+
+    if (maxEntries != -1 && entriesShown >= maxEntries) {
+      ss << indent << "  ... (max entries reached)\n";
+      return;
+    }
+  }
+
+  // Recursively process children
+  const std::vector<std::unique_ptr<TadTrieNode>>& children = node->children();
+  if (!children.empty() && (maxDepth == -1 || currentDepth < maxDepth)) {
+    for (const auto& child : children) {
+      if (maxEntries != -1 && entriesShown >= maxEntries) break;
+      buildStringRepresentation(child.get(), ss, indent + "  ", currentDepth + 1,
+                               maxDepth, entriesShown, maxEntries);
+    }
+  }
+}
+
+std::string DirectTadTrie::toString(int maxDepth, int maxEntries) const {
+  std::stringstream ss;
+
+  // Get current statistics
+  LongType totalEntries = getCachedEntries();
+  LongType totalBytes = getCachedBytes();
+  LongType peakEntries = getPeakCachedEntries();
+  LongType peakBytes = getPeakCachedBytes();
+
+  // Header
+  ss << "DirectTadTrie [" << NUM_STRIPES << " stripes]\n";
+  ss << "Current: " << totalEntries << " entries, " << totalBytes << " bytes\n";
+  ss << "Peak: " << peakEntries << " entries, " << peakBytes << " bytes\n";
+  ss << "Showing: max depth=" << (maxDepth == -1 ? "unlimited" : std::to_string(maxDepth))
+     << ", max entries=" << (maxEntries == -1 ? "unlimited" : std::to_string(maxEntries)) << "\n";
+  ss << "---\n";
+
+  int entriesShown = 0;
+
+  // Traverse each stripe
+  for (size_t i = 0; i < NUM_STRIPES; i++) {
+    // Lock this stripe for reading
+    SHARED_LOCK_TYPE<MUTEX_TYPE> lock(_mutexes[i]);
+
+    const TadTrieNode* root = _roots[i].get();
+    if (root != nullptr && !root->children().empty()) {
+      ss << "Stripe " << i << ":\n";
+      buildStringRepresentation(root, ss, "  ", 0, maxDepth, entriesShown, maxEntries);
+
+      if (maxEntries != -1 && entriesShown >= maxEntries) {
+        ss << "... (max entries limit reached, " << (totalEntries - entriesShown)
+           << " more entries not shown)\n";
+        break;
+      }
+    }
+  }
+
+  if (entriesShown == 0) {
+    ss << "(Cache is empty)\n";
+  }
+
+  return ss.str();
+}
+
+void DirectTadTrie::getCachedPointers(std::unordered_set<void*>& out_pointers) const {
+  // Traverse all stripes and collect TadPack pointers
+  for (size_t i = 0; i < NUM_STRIPES; i++) {
+    SHARED_LOCK_TYPE<MUTEX_TYPE> lock(_mutexes[i]);
+
+    const TadTrieNode* root = _roots[i].get();
+    if (root != nullptr) {
+      collectCachedPointers(root, out_pointers);
+    }
+  }
+}
+
+void DirectTadTrie::collectCachedPointers(const TadTrieNode* node, std::unordered_set<void*>& out_pointers) const {
+  if (node == nullptr) return;
+
+  // If this node has a TadPack, add it to the set
+  auto pack = node->pack();
+  if (pack != nullptr) {
+    out_pointers.insert(pack.get());
+  }
+
+  // Recursively collect from all children
+  for (const auto& child : node->children()) {
+    collectCachedPointers(child.get(), out_pointers);
+  }
 }
 
 }  // namespace sd

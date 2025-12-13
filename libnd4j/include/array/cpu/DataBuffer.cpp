@@ -62,7 +62,7 @@ void DataBuffer::printHostBufferContent(void* buffer, sd::LongType offset, sd::L
   }
   sd_printf("]", 0);
 }
-BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void DataBuffer::printHostBufferContent,(void* buffer, sd::LongType offset, sd::LongType length),SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE(void DataBuffer::printHostBufferContent,(void* buffer, sd::LongType offset, sd::LongType length),SD_COMMON_TYPES);
 
 
 
@@ -99,7 +99,7 @@ void DataBuffer::printBufferDebug(const char* msg, sd::LongType offset, sd::Long
     sd_printf("Device buffer: nullptr\n", 0);
   }
 
-#if defined(__CUDABLAS__)
+#if defined(SD_CUDA)
   // Print sync state counters
   sd_printf("Sync state: _counter=%lld, _writePrimary=%lld, _writeSpecial=%lld, _readPrimary=%lld, _readSpecial=%lld\n",
             (long long)_counter.load(), (long long)_writePrimary.load(), (long long)_writeSpecial.load(),
@@ -207,7 +207,7 @@ void memcpyWithT(DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, 
 
 void DataBuffer::memcpy(DataBuffer* dst, DataBuffer* src,
                         sd::LongType startingOffset, sd::LongType dstOffset) {
-  BUILD_SINGLE_TEMPLATE(memcpyWithT,(dst, src, startingOffset, dstOffset),
+  BUILD_SINGLE_SELECTOR(dst->_dataType, memcpyWithT,(dst, src, startingOffset, dstOffset),
                         SD_COMMON_TYPES);
 
   dst->readPrimary();
@@ -340,7 +340,7 @@ void _printHostBuffer(DataBuffer* buffer, long offset) {
 }
 void DataBuffer::printHostDevice(long offset) {
   auto xType = getDataType();
-  BUILD_SINGLE_SELECTOR(xType, _printHostBuffer,(this,offset),SD_COMMON_TYPES_ALL);
+  BUILD_SINGLE_SELECTOR(xType, _printHostBuffer,(this,offset),SD_COMMON_TYPES);
 
 }
 
@@ -350,6 +350,8 @@ void DataBuffer::showCounters(const char* msg1, const char* msg2) {
 }
 template <typename T>
 void* DataBuffer::primaryAtOffset(const LongType offset) {
+  if(_primaryBuffer == nullptr)
+    return nullptr;
   T *type = reinterpret_cast<T*>(_primaryBuffer);
   return reinterpret_cast<void *>(type + offset);
 }

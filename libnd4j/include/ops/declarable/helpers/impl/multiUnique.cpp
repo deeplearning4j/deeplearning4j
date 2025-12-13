@@ -32,7 +32,7 @@ namespace helpers {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool multiUnique(std::vector<NDArray*> const& inputList, sd::memory::Workspace* workspace) {
   sd::LongType length = 0;
-  std::vector<NDArray> reshaped(inputList.size());
+  std::vector<NDArray*> reshaped(inputList.size());
   int pos = 0;
   sd::LongType axis = 0;
   Context cContext(1);
@@ -42,7 +42,7 @@ bool multiUnique(std::vector<NDArray*> const& inputList, sd::memory::Workspace* 
 
     std::vector<sd::LongType> reshape = {-1};
     reshaped[pos] = array->reshape(array->ordering(), reshape);
-    cContext.setInputArray(pos, &reshaped[pos]);
+    cContext.setInputArray(pos, reshaped[pos]);
 
     length += array->lengthOf();
     pos++;
