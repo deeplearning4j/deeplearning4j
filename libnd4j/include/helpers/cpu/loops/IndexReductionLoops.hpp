@@ -23,6 +23,19 @@
 
 using namespace simdOps;
 
+// Helper function to safely convert index to output type
+template<typename Z>
+SD_INLINE SD_HOST_DEVICE Z convertIndexToZ(sd::LongType index) {
+  if constexpr (any_my_string_v<Z>) {
+    // For string types, we can't meaningfully store an index
+    // You might want to convert to string representation or use default
+    return Z{};  // Default construct empty string
+    // Alternative: return Z(std::to_string(index)); if you want string representation
+  } else {
+    return static_cast<Z>(index);
+  }
+}
+
 //////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
@@ -56,7 +69,7 @@ SD_LIB_EXPORT void sd::IndexReductionLoops<X, Z>::loopIndexReduce( X* x, const L
               indexValue = OpType::update(indexValue, comp, extraParams);
             }
 
-            z[i] = (Z)indexValue.index;
+            z[i] = convertIndexToZ<Z>(indexValue.index);
           }
       };
 
@@ -82,7 +95,7 @@ SD_LIB_EXPORT void sd::IndexReductionLoops<X, Z>::loopIndexReduce( X* x, const L
               }
             }
 
-            z[i] = (Z)indexValue.index;
+            z[i] = convertIndexToZ<Z>(indexValue.index);
           }
       };
 
@@ -110,7 +123,7 @@ SD_LIB_EXPORT void sd::IndexReductionLoops<X, Z>::loopIndexReduce( X* x, const L
               }
             }
 
-            z[i] = (Z)indexValue.index;
+            z[i] = convertIndexToZ<Z>(indexValue.index);
           }
       };
 
@@ -140,7 +153,7 @@ SD_LIB_EXPORT void sd::IndexReductionLoops<X, Z>::loopIndexReduce( X* x, const L
               }
             }
 
-            z[i] = (Z)indexValue.index;
+            z[i] = convertIndexToZ<Z>(indexValue.index);
           }
       };
 
@@ -174,7 +187,7 @@ SD_LIB_EXPORT void sd::IndexReductionLoops<X, Z>::loopIndexReduce( X* x, const L
               }
             }
 
-            z[i] = (Z)indexValue.index;
+            z[i] = convertIndexToZ<Z>(indexValue.index);
           }
       };
 
@@ -209,7 +222,7 @@ SD_LIB_EXPORT void sd::IndexReductionLoops<X, Z>::loopIndexReduce( X* x, const L
             INDEX2COORDS(i, zRank, zShape, coords);
             LongType zOffset;
             COORDS2INDEX(zRank, zStride, coords, zOffset);
-            z[zOffset] = (Z)indexValue.index;
+            z[zOffset] = convertIndexToZ<Z>(indexValue.index);
           }
       };
       samediff::Threads::parallel_tad(func, 0, zLen);

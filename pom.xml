@@ -57,6 +57,7 @@
     </scm>
 
     <modules>
+        <module>libnd4j</module>
         <module>nd4j</module>
         <module>datavec</module>
         <module>deeplearning4j</module>
@@ -66,20 +67,6 @@
         <module>codegen</module>
     </modules>
 
-    <repositories>
-        <repository>
-            <id>jetbrains-kotlinx</id>
-            <url>https://maven.pkg.jetbrains.space/public/p/kotlinx-html/maven</url>
-            <name>Kotlinx repo</name>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-        </repository>
-
-    </repositories>
 
 
 
@@ -185,7 +172,7 @@
         <jackson.databind.version>2.16.0</jackson.databind.version>
         <shaded.snakeyaml.version>1.33</shaded.snakeyaml.version>
         <geo.jackson.version>2.8.7</geo.jackson.version>
-        <lombok.version>1.18.38</lombok.version>
+        <lombok.version>1.18.42</lombok.version>
         <json.versiounitn>20131018</json.versiounitn>
         <google.protobuf.version>3.21.7</google.protobuf.version>
         <failIfNoTests>false</failIfNoTests>
@@ -385,7 +372,7 @@
                             <module>
                                 <artifact>
                                     <groupId>org.eclipse.deeplearning4j</groupId>
-                                    <artifactId>nd4j-cuda-12.3</artifactId>
+                                    <artifactId>nd4j-cuda</artifactId>
                                     <version>${project.version}</version>
                                 </artifact>
                                 <moduleInfo>

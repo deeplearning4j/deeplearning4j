@@ -107,7 +107,7 @@ void triangularSolve2D(sd::LaunchContext* context, NDArray& leftInput, NDArray& 
     upperTriangularSolve<T>(context, &leftInput, &rightInput, unitsOnDiag, &output);
   }
 }
-BUILD_SINGLE_TEMPLATE(template void triangularSolve2D,
+BUILD_SINGLE_TEMPLATE( void triangularSolve2D,
                       (sd::LaunchContext * context, NDArray& leftInput, NDArray& rightInput,
                           bool const lower, bool const unitsOnDiag, NDArray& output),
                       SD_FLOAT_TYPES);
