@@ -74,19 +74,39 @@ public class Transforms {
      * @return the cosine similarities between the 2 arrays
      */
     public static double cosineSim(@NonNull INDArray d1, @NonNull INDArray d2) {
-        return Nd4j.getExecutioner().exec(new CosineSimilarity(d1, d2)).getDouble(0);
+        INDArray result = Nd4j.getExecutioner().exec(new CosineSimilarity(d1, d2));
+        try {
+            return result.getDouble(0);
+        } finally {
+            result.close();
+        }
     }
 
     public static double cosineDistance(@NonNull INDArray d1, @NonNull INDArray d2) {
-        return Nd4j.getExecutioner().exec(new CosineDistance(d1, d2)).getDouble(0);
+        INDArray result = Nd4j.getExecutioner().exec(new CosineDistance(d1, d2));
+        try {
+            return result.getDouble(0);
+        } finally {
+            result.close();
+        }
     }
 
     public static double hammingDistance(@NonNull INDArray d1, @NonNull INDArray d2) {
-        return Nd4j.getExecutioner().exec(new HammingDistance(d1, d2)).getDouble(0);
+        INDArray result = Nd4j.getExecutioner().exec(new HammingDistance(d1, d2));
+        try {
+            return result.getDouble(0);
+        } finally {
+            result.close();
+        }
     }
 
     public static double jaccardDistance(@NonNull INDArray d1, @NonNull INDArray d2) {
-        return Nd4j.getExecutioner().exec(new JaccardDistance(d1, d2)).getDouble(0);
+        INDArray result = Nd4j.getExecutioner().exec(new JaccardDistance(d1, d2));
+        try {
+            return result.getDouble(0);
+        } finally {
+            result.close();
+        }
     }
 
     public static INDArray allCosineSimilarities(@NonNull INDArray d1, @NonNull INDArray d2, long... dimensions) {
@@ -126,10 +146,24 @@ public class Transforms {
     public static INDArray cross(INDArray x, INDArray y) {
         Cross c = new Cross(x, y, null);
         List<DataBuffer> shape = c.calculateOutputShape();
-        INDArray out = Nd4j.create(shape.get(0));
-        c.addOutputArgument(out);
-        Nd4j.getExecutioner().exec(c);
-        return out;
+        INDArray out = null;
+        boolean firstBufferUsed = false;
+        try {
+            out = Nd4j.create(shape.get(0));
+            firstBufferUsed = true;
+            c.addOutputArgument(out);
+            Nd4j.getExecutioner().exec(c);
+            return out;
+        } finally {
+            // Clean up unused shape buffers to prevent memory leak
+            int startIndex = firstBufferUsed ? 1 : 0;
+            for (int i = startIndex; i < shape.size(); i++) {
+                DataBuffer db = shape.get(i);
+                if (db != null) {
+                    db.close();
+                }
+            }
+        }
     }
 
     /**

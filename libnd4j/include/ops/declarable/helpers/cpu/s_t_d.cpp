@@ -102,7 +102,7 @@ void _spaceTodepth(sd::LaunchContext *context, NDArray&input, NDArray *output, i
   BUILD_SINGLE_SELECTOR(input.dataType(), _spaceTodepth_, (input, output, block_size, isNHWC), SD_COMMON_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void _spaceTodepth_,
+BUILD_SINGLE_TEMPLATE( void _spaceTodepth_,
                       (NDArray&input, NDArray *output, int block_size, bool isNHWC), SD_COMMON_TYPES);
 
 }  // namespace helpers

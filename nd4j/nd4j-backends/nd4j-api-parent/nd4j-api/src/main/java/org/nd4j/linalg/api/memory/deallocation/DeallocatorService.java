@@ -30,10 +30,14 @@ import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.lang.ref.ReferenceQueue;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Handles deallocation of offheap references.
@@ -95,6 +99,63 @@ public class DeallocatorService {
     private  int numThreads =  Integer.parseInt(System.getProperty(ND4JSystemProperties.DEALLOCATOR_SERVICE_GC_THREADS,"1"));
 
     private final transient AtomicLong counter = new AtomicLong(0);
+
+    // Time-series tracking fields - only active when functrace is enabled
+    private volatile boolean timeSeriesTrackingEnabled = false;
+    private static final int MAX_SNAPSHOT_HISTORY = 1000;
+    private final Deque<MemorySnapshot> snapshotHistory = new ConcurrentLinkedDeque<>();
+    private final AtomicLong totalAllocations = new AtomicLong(0);
+    private final AtomicLong totalDeallocations = new AtomicLong(0);
+    private final AtomicLong totalBytesAllocated = new AtomicLong(0);
+    private final AtomicLong totalBytesDeallocated = new AtomicLong(0);
+    private final AtomicLong peakLiveCount = new AtomicLong(0);
+    private final AtomicLong peakBytes = new AtomicLong(0);
+    private final AtomicReference<Instant> trackingStartTime = new AtomicReference<>(null);
+
+    /**
+     * Represents a memory snapshot at a point in time for time-series tracking.
+     * Used when functrace is enabled to track memory growth/shrinkage over time.
+     */
+    @Data
+    @AllArgsConstructor
+    public static class MemorySnapshot {
+        private final Instant timestamp;
+        private final long liveCount;
+        private final long bytesInUse;
+        private final long totalAllocations;
+        private final long totalDeallocations;
+        private final long totalBytesAllocated;
+        private final long totalBytesDeallocated;
+    }
+
+    /**
+     * Represents the delta between two memory snapshots.
+     */
+    @Data
+    public static class MemoryDelta {
+        private final Duration timeDelta;
+        private final long liveCountDelta;
+        private final long bytesDelta;
+        private final long allocationsDelta;
+        private final long deallocationsDelta;
+        private final double allocationsPerSecond;
+        private final double deallocationsPerSecond;
+        private final double bytesPerSecond;
+
+        public boolean isGrowing() {
+            return bytesDelta > 0 || liveCountDelta > 0;
+        }
+
+        public boolean isShrinking() {
+            return bytesDelta < 0 || liveCountDelta < 0;
+        }
+
+        public boolean isPotentialLeak() {
+            // Consider it a potential leak if allocations significantly exceed deallocations
+            return allocationsDelta > 0 && (deallocationsDelta == 0 ||
+                   (double)allocationsDelta / Math.max(1, deallocationsDelta) > 1.5);
+        }
+    }
 
 
     /**
@@ -160,7 +221,34 @@ public class DeallocatorService {
             log.warn("Disabling automatic garbage collection since the system property " + ND4JSystemProperties.NO_ARRAY_GC + " or " + " org.bytedeco.javacpp.nopointergc was set to false");
         }
 
+        // Initialize time-series tracking if functrace is enabled
+        initializeTimeSeriesTracking();
+    }
 
+    /**
+     * Initializes time-series tracking if functrace is enabled at build time.
+     * This allows tracking memory growth/shrinkage over time, which is then
+     * reported alongside other lifecycle tracker data.
+     */
+    private void initializeTimeSeriesTracking() {
+        try {
+            if (Nd4j.getNativeOps().isFuncTrace()) {
+                timeSeriesTrackingEnabled = true;
+                trackingStartTime.set(Instant.now());
+                log.info("DeallocatorService time-series tracking enabled (functrace build detected)");
+            }
+        } catch (Exception e) {
+            // NativeOps may not be initialized yet - that's OK, tracking stays disabled
+            log.trace("Could not check isFuncTrace() status: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Returns whether time-series tracking is currently enabled.
+     * @return true if tracking is enabled
+     */
+    public boolean isTimeSeriesTrackingEnabled() {
+        return timeSeriesTrackingEnabled;
     }
 
 
@@ -314,6 +402,223 @@ public class DeallocatorService {
                 }
             }
         }
+    }
+
+    // ===============================
+    // Time-Series Tracking Methods
+    // ===============================
+
+    /**
+     * Records an allocation event for time-series tracking.
+     * Only tracks if functrace is enabled.
+     *
+     * @param bytes the number of bytes allocated
+     */
+    public void recordAllocation(long bytes) {
+        if (!timeSeriesTrackingEnabled) return;
+
+        totalAllocations.incrementAndGet();
+        totalBytesAllocated.addAndGet(bytes);
+
+        // Update peak tracking
+        long currentLive = totalAllocations.get() - totalDeallocations.get();
+        peakLiveCount.updateAndGet(peak -> Math.max(peak, currentLive));
+
+        long currentBytes = totalBytesAllocated.get() - totalBytesDeallocated.get();
+        peakBytes.updateAndGet(peak -> Math.max(peak, currentBytes));
+    }
+
+    /**
+     * Records a deallocation event for time-series tracking.
+     * Only tracks if functrace is enabled.
+     *
+     * @param bytes the number of bytes deallocated
+     */
+    public void recordDeallocation(long bytes) {
+        if (!timeSeriesTrackingEnabled) return;
+
+        totalDeallocations.incrementAndGet();
+        totalBytesDeallocated.addAndGet(bytes);
+    }
+
+    /**
+     * Takes a snapshot of current memory state.
+     * Only active if functrace is enabled.
+     *
+     * @return the current memory snapshot, or null if tracking is disabled
+     */
+    public MemorySnapshot takeSnapshot() {
+        if (!timeSeriesTrackingEnabled) return null;
+
+        long live = totalAllocations.get() - totalDeallocations.get();
+        long bytesInUse = totalBytesAllocated.get() - totalBytesDeallocated.get();
+
+        MemorySnapshot snapshot = new MemorySnapshot(
+                Instant.now(),
+                live,
+                bytesInUse,
+                totalAllocations.get(),
+                totalDeallocations.get(),
+                totalBytesAllocated.get(),
+                totalBytesDeallocated.get()
+        );
+
+        // Store in history, maintaining max size
+        snapshotHistory.addLast(snapshot);
+        while (snapshotHistory.size() > MAX_SNAPSHOT_HISTORY) {
+            snapshotHistory.removeFirst();
+        }
+
+        return snapshot;
+    }
+
+    /**
+     * Calculates the delta between two snapshots.
+     *
+     * @param older the older snapshot
+     * @param newer the newer snapshot
+     * @return the delta between the snapshots
+     */
+    public MemoryDelta calculateDelta(MemorySnapshot older, MemorySnapshot newer) {
+        Duration timeDelta = Duration.between(older.getTimestamp(), newer.getTimestamp());
+        long seconds = Math.max(1, timeDelta.getSeconds());
+
+        long liveCountDelta = newer.getLiveCount() - older.getLiveCount();
+        long bytesDelta = newer.getBytesInUse() - older.getBytesInUse();
+        long allocationsDelta = newer.getTotalAllocations() - older.getTotalAllocations();
+        long deallocationsDelta = newer.getTotalDeallocations() - older.getTotalDeallocations();
+
+        return new MemoryDelta(
+                timeDelta,
+                liveCountDelta,
+                bytesDelta,
+                allocationsDelta,
+                deallocationsDelta,
+                (double) allocationsDelta / seconds,
+                (double) deallocationsDelta / seconds,
+                (double) bytesDelta / seconds
+        );
+    }
+
+    /**
+     * Gets the snapshot history for analysis.
+     *
+     * @return list of snapshots, oldest first
+     */
+    public List<MemorySnapshot> getSnapshotHistory() {
+        return new ArrayList<>(snapshotHistory);
+    }
+
+    /**
+     * Detects potential memory leak by analyzing the growth pattern.
+     *
+     * @return true if a potential leak is detected
+     */
+    public boolean detectPotentialLeak() {
+        if (!timeSeriesTrackingEnabled || snapshotHistory.size() < 2) return false;
+
+        MemorySnapshot oldest = snapshotHistory.peekFirst();
+        MemorySnapshot newest = snapshotHistory.peekLast();
+
+        if (oldest == null || newest == null) return false;
+
+        MemoryDelta delta = calculateDelta(oldest, newest);
+        return delta.isPotentialLeak();
+    }
+
+    /**
+     * Gets a summary of the current tracking state.
+     * This data is meant to be pushed to the C++ lifecycle tracker.
+     *
+     * @return summary map suitable for native integration
+     */
+    public Map<String, Long> getTrackingSummary() {
+        Map<String, Long> summary = new LinkedHashMap<>();
+        if (!timeSeriesTrackingEnabled) {
+            summary.put("enabled", 0L);
+            return summary;
+        }
+
+        summary.put("enabled", 1L);
+        summary.put("totalAllocations", totalAllocations.get());
+        summary.put("totalDeallocations", totalDeallocations.get());
+        summary.put("totalBytesAllocated", totalBytesAllocated.get());
+        summary.put("totalBytesDeallocated", totalBytesDeallocated.get());
+        summary.put("currentLiveCount", totalAllocations.get() - totalDeallocations.get());
+        summary.put("currentBytesInUse", totalBytesAllocated.get() - totalBytesDeallocated.get());
+        summary.put("peakLiveCount", peakLiveCount.get());
+        summary.put("peakBytes", peakBytes.get());
+        summary.put("snapshotCount", (long) snapshotHistory.size());
+
+        Instant start = trackingStartTime.get();
+        if (start != null) {
+            summary.put("trackingDurationMs", Duration.between(start, Instant.now()).toMillis());
+        }
+
+        return summary;
+    }
+
+    /**
+     * Gets the peak live count observed since tracking started.
+     */
+    public long getPeakLiveCount() {
+        return peakLiveCount.get();
+    }
+
+    /**
+     * Gets the peak bytes in use observed since tracking started.
+     */
+    public long getPeakBytes() {
+        return peakBytes.get();
+    }
+
+    /**
+     * Gets the tracking duration since initialization.
+     */
+    public Duration getTrackingDuration() {
+        Instant start = trackingStartTime.get();
+        if (start == null) return Duration.ZERO;
+        return Duration.between(start, Instant.now());
+    }
+
+    /**
+     * Pushes current tracking state to native lifecycle tracker.
+     * This should be called periodically to sync Java-side tracking
+     * with the C++ UnifiedMemoryReporter.
+     */
+    public void pushToNativeTracker() {
+        if (!timeSeriesTrackingEnabled) return;
+
+        try {
+            Map<String, Long> summary = getTrackingSummary();
+            Nd4j.getNativeOps().recordDeallocatorServiceSnapshot(
+                    summary.get("totalAllocations"),
+                    summary.get("totalDeallocations"),
+                    summary.get("totalBytesAllocated"),
+                    summary.get("totalBytesDeallocated"),
+                    summary.get("peakLiveCount"),
+                    summary.get("peakBytes")
+            );
+        } catch (Exception e) {
+            log.trace("Failed to push to native tracker: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Resets all time-series tracking counters.
+     * Useful for testing or after a memory checkpoint.
+     */
+    public void resetTracking() {
+        if (!timeSeriesTrackingEnabled) return;
+
+        totalAllocations.set(0);
+        totalDeallocations.set(0);
+        totalBytesAllocated.set(0);
+        totalBytesDeallocated.set(0);
+        peakLiveCount.set(0);
+        peakBytes.set(0);
+        snapshotHistory.clear();
+        trackingStartTime.set(Instant.now());
     }
 
 }
