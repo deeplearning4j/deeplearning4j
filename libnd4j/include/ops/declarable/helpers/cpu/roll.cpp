@@ -105,7 +105,7 @@ void rollFunctorLinear(sd::LaunchContext* context, NDArray* input, NDArray* outp
   BUILD_SINGLE_SELECTOR(input->dataType(), rollFunctorLinear_, (input, output, shift, inplace), SD_COMMON_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void rollFunctorLinear_, (NDArray * input, NDArray* output, int shift, bool inplace),
+BUILD_SINGLE_TEMPLATE( void rollFunctorLinear_, (NDArray * input, NDArray* output, int shift, bool inplace),
                       SD_COMMON_TYPES);
 }  // namespace helpers
 }  // namespace ops

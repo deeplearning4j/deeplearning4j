@@ -106,8 +106,24 @@ public class CpuThreshold extends AbstractCompressor {
     public DataBuffer compress(DataBuffer buffer) {
         INDArray temp = Nd4j.createArrayFromShapeBuffer(buffer, Nd4j.getShapeInfoProvider().createShapeInformation(new long[]{1, buffer.length()}, buffer.dataType()).getFirst());
         MatchCondition condition = new MatchCondition(temp, Conditions.absGreaterThanOrEqual(threshold));
-        int cntAbs = Nd4j.getExecutioner().exec(condition).getInt(0);
-
+        INDArray result = null;
+        int cntAbs;
+        try {
+            result = Nd4j.getExecutioner().exec(condition);
+            cntAbs = result.getInt(0);
+        } finally {
+            // Clean up the result array to prevent DataBuffer leak
+            if (result != null && result.closeable()) {
+                result.close();
+            }
+            // Clean up the MatchCondition's internal arrays (dimensionz and its DataBuffer)
+            condition.clearArrays();
+            // Clean up temp array - it's a wrapper around the buffer so only close the INDArray metadata
+            // Note: temp shares the buffer with input, so we only close the INDArray itself
+            if (temp != null && temp.closeable()) {
+                temp.close();
+            }
+        }
 
         //log.info("density ratio: {}", String.format("%.2f", cntAbs * 100.0f / buffer.length()));
 
