@@ -23,7 +23,9 @@
 #ifndef LIBND4J_CUDACONTEXT_H
 #define LIBND4J_CUDACONTEXT_H
 
-#ifdef __CUDABLAS__
+
+
+#ifdef SD_CUDA
 #include <cuda.h>
 #include <cuda_device_runtime_api.h>
 #include <cuda_runtime.h>
@@ -51,7 +53,12 @@ namespace sd {
 
 class SD_LIB_EXPORT LaunchContext {
  private:
-  static std::vector<std::shared_ptr<LaunchContext>> _contexts;
+  // Previous implementation used heap-allocated pointer which caused crashes during JVM shutdown:
+  // - The vector* was allocated with new and "intentionally leaked"
+  // - But C++ static destruction still tried to destruct it, causing SIGSEGV
+  // - This SIGSEGV triggered signal handler which called abort(), resulting in SIGABRT
+  // Function-local static has well-defined destruction order and avoids this crash
+  static std::vector<LaunchContext*>& contexts();
   static std::mutex _mutex;
 
   static SD_MAP_IMPL<int, std::mutex*> _deviceMutexes;
@@ -59,7 +66,7 @@ class SD_LIB_EXPORT LaunchContext {
   // used for MKLDNN
   void* _engine = nullptr;
 
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
 
 #ifndef __JAVACPP_HACK__
 
@@ -74,7 +81,7 @@ class SD_LIB_EXPORT LaunchContext {
   int _deviceID = 0;
 
  public:
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
 
 #ifndef __JAVACPP_HACK__
   LaunchContext(cudaStream_t* cudaStream, cudaStream_t& specialCudaStream, void* reductionPointer = nullptr,

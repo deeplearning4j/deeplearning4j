@@ -46,13 +46,9 @@
 namespace sd {
 namespace graph {
 void sd::graph::Node::setOuterTime(sd::LongType time) {
-  //            if (hasBlockAttached())
-  //                _block->setOuterTime(time);
 }
 
 void sd::graph::Node::setInnerTime(sd::LongType time) {
-  //            if (hasBlockAttached())
-  //                _block->setInnerTime(time);
 }
 
 void sd::graph::Node::setGraph(sd::graph::Graph* graph) { _graph = graph; }
@@ -229,7 +225,7 @@ Node* Node::asT() {
   node->_dataType = DataTypeUtils::fromT<T>();
   return node;
 }
-BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT Node* Node::asT, (), SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT Node* Node::asT, (), SD_COMMON_TYPES);
 
 sd::graph::Node::Node(sd::ops::DeclarableOp* customOp, int id, std::initializer_list<int> input,
                       std::initializer_list<int> output, std::initializer_list<int> dimensions, float scalar,
@@ -330,12 +326,13 @@ sd::graph::Node::Node(::graph::OpType opType, int opNum, int id, std::initialize
     for (auto v : iArgs) block->getIArguments()->emplace_back(v);
 
     for (auto v : tArgs) block->getTArguments()->emplace_back(v);
-    NDArray _scalar = NDArrayFactory::create(0.0f);
+    NDArray *_scalar = NDArrayFactory::create(0.0f);
 
     this->setContextPrototype(block);
     this->setCustomOp(Node::buildOpByType(opType, (int)input.size(), (int)block->getIArguments()->size(),
-                                          (int)block->getTArguments()->size(), opNum, &_scalar));
+                                          (int)block->getTArguments()->size(), opNum, _scalar));
     block->setOpDescriptor(this->getCustomOp()->getOpDescriptor());
+    delete _scalar;
   } else if (opType == ::graph::OpType_CUSTOM) {
     if (this->getCustomOp()) {
       auto block = new ContextPrototype(this->getCustomOp()->getOpDescriptor(), this->id(), false);
@@ -457,11 +454,12 @@ sd::graph::Node::Node(const ::graph::FlatNode* node) {
           }
         }
 
-        NDArray _scalar = NDArrayFactory::create(0.0f);
+        NDArray *_scalar = NDArrayFactory::create(0.0f);
         this->setContextPrototype(block);
         this->setCustomOp(Node::buildOpByType(_opType, (int)node->input()->size(), (int)block->getIArguments()->size(),
-                                              (int)block->getTArguments()->size(), (int)_opNum, &_scalar));
+                                              (int)block->getTArguments()->size(), (int)_opNum, _scalar));
         block->setOpDescriptor(this->getCustomOp()->getOpDescriptor());
+        delete _scalar;
       } else if (node->inputPaired() != nullptr && node->inputPaired()->size() > 0) {
         this->_isDeductable = true;
 
@@ -496,12 +494,13 @@ sd::graph::Node::Node(const ::graph::FlatNode* node) {
         }
 
         this->setContextPrototype(block);
-        NDArray _scalar = NDArrayFactory::create(0.0f);
+        NDArray *_scalar = NDArrayFactory::create(0.0f);
 
         this->setCustomOp(Node::buildOpByType(_opType, (int)node->inputPaired()->size(),
                                               (int)block->getIArguments()->size(), (int)block->getTArguments()->size(),
-                                              (int)_opNum, &_scalar));
+                                              (int)_opNum, _scalar));
         block->setOpDescriptor(this->getCustomOp()->getOpDescriptor());
+        delete _scalar;
       }
     } else if (this->_opType == ::graph::OpType_CUSTOM) {
       auto op = sd::ops::OpRegistrator::getInstance().getOperation(this->opNum());
@@ -710,7 +709,7 @@ Node* Node::clone() {
     if (!_isDeductable)
       clone->_customOp = _customOp;
     else {
-      auto c = dynamic_cast<sd::ops::LegacyOp*>(_customOp);
+      auto c = static_cast<sd::ops::LegacyOp*>(_customOp);
       clone->_customOp = c->clone();
     }
 
