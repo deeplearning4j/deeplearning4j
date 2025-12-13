@@ -38,7 +38,6 @@ import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
 import org.nd4j.linalg.api.ops.*;
@@ -124,6 +123,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
 
         profilingConfigurableHookOut(op,opContext,start);
+        // Periodic TAD cache cleanup to prevent memory leaks
+        Nd4j.getNativeOps().checkAndCleanupCaches();
         return op.z();
     }
 
@@ -206,6 +207,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             throw new RuntimeException(errorMessage.toString());
         }
         profilingConfigurableHookOut(op, oc, st);
+
+        // Clear TAD and Shape caches to prevent memory leaks (matches CUDA backend pattern)
+        // IndexAccumulation operations use TAD heavily and must clean up cached TAD packs
+        Nd4j.getNativeOps().checkAndCleanupCaches();
+
         return getZ(op, oc);
     }
 
@@ -256,6 +262,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         if (x.isVector() && x.length() == ArrayUtil.prod(retShape) && ArrayUtil.prodLong(retShape) > 1 && y == null) {
             profilingConfigurableHookOut(op, oc, st);
+            // Periodic TAD cache cleanup to prevent memory leaks
+            Nd4j.getNativeOps().checkAndCleanupCaches();
             return op.noOp();
         }
 
@@ -336,6 +344,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 } catch (Throwable t) {
                     String str = opInfoString(op, Optional.of(dimension));
                     StringBuilder errorMessage = new StringBuilder();
+                    errorMessage.append(Nd4j.getNativeOps().lastErrorMessage());
+
                     DifferentialFunction differentialFunction = (DifferentialFunction) op;
                     errorMessage.append("Native AccumulationOp execution (double) failed: " + str +  t);
                     errorMessage.append(differentialFunction.debugInfo());
@@ -356,6 +366,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 } catch (Throwable t) {
                     String str = opInfoString(op, Optional.of(dimension));
                     StringBuilder errorMessage = new StringBuilder();
+                    errorMessage.append(Nd4j.getNativeOps().lastErrorMessage());
                     DifferentialFunction differentialFunction = (DifferentialFunction) op;
                     errorMessage.append("Native AccumulationOp execution (double) failed: " + str +  t);
                     errorMessage.append(differentialFunction.debugInfo());
@@ -370,6 +381,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 } catch (Throwable t) {
                     String str = opInfoString(op, Optional.of(dimension));
                     StringBuilder errorMessage = new StringBuilder();
+                    errorMessage.append(Nd4j.getNativeOps().lastErrorMessage());
+
                     DifferentialFunction differentialFunction = (DifferentialFunction) op;
                     errorMessage.append("Native AccumulationOp execution (double) failed: " + str +  t);
                     errorMessage.append(differentialFunction.debugInfo());
@@ -377,7 +390,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 }
             }
 
-        } else {if (extraz.get() == null)
+        } else {
+            if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
             OpaqueNDArray dims = OpaqueNDArray.fromINDArray(op.dimensions());
 
@@ -426,6 +440,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (Nd4j.getNativeOps().lastErrorCode() != 0) {
             String str = opInfoString(op, Optional.of(dimension));
             StringBuilder errorMessage = new StringBuilder();
+            errorMessage.append(Nd4j.getNativeOps().lastErrorMessage());
+
             DifferentialFunction differentialFunction = (DifferentialFunction) op;
             errorMessage.append("Native AccumulationOp execution (double) failed: " + str);
             errorMessage.append(differentialFunction.debugInfo());
@@ -433,6 +449,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             throw new RuntimeException(errorMessage.toString());
         }
         profilingConfigurableHookOut(op, oc, st);
+
+        // Clear TAD and Shape caches to prevent memory leaks (matches CUDA backend pattern)
+        // TAD packs accumulate during reduce operations and must be cleaned up
+        Nd4j.getNativeOps().checkAndCleanupCaches();
+
         return getZ(op, oc);
     }
 
@@ -542,6 +563,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             throw new RuntimeException(errorMessage.toString());
         }
         profilingConfigurableHookOut(op, oc, st);
+        // Periodic TAD cache cleanup to prevent memory leaks
+        Nd4j.getNativeOps().checkAndCleanupCaches();
         return getZ(op, oc);
     }
 
@@ -701,6 +724,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
         profilingConfigurableHookOut(op, oc, st);
+
+        // Clear TAD and Shape caches to prevent memory leaks (matches CUDA backend pattern)
+        // Scalar operations can create temporary buffers that accumulate in caches
+        Nd4j.getNativeOps().checkAndCleanupCaches();
     }
 
     public INDArray exec(BroadcastOp op) {
@@ -795,6 +822,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             throw new RuntimeException(errorMessage.toString());
         }
         profilingConfigurableHookOut(op,oc,st);
+
+        // Clear TAD and Shape caches to prevent memory leaks (matches CUDA backend pattern)
+        // Broadcast operations use TAD for dimension-wise operations
+        Nd4j.getNativeOps().checkAndCleanupCaches();
+
         return z;
     }
 
@@ -968,6 +1000,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public  INDArray[] exec(@NonNull CustomOp op) {
         val name = op.opName();
+        // Set allocation context BEFORE any native calls so allocations are tagged with op name
+        if (name != null) {
+            Nd4j.getNativeOps().setAllocationContext(name);
+        }
         try (val context = buildContext()) {
             op.setupOpContextFromCustomOp(context);
             boolean shapeOverride = op.initializeOutputs(context);
@@ -981,6 +1017,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             // pulling states back
             Nd4j.getRandom().setStates(states.getFirst(), states.getSecond());
             profilingConfigurableHookOut(op,context,start);
+            // Periodic TAD cache cleanup to prevent memory leaks
+            Nd4j.getNativeOps().checkAndCleanupCaches();
 
             return result;
         } catch (ND4JOpProfilerException e) {
@@ -988,6 +1026,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException("Op [" + name + "] execution failed", e);
+        } finally {
+            // Clear allocation context after op execution
+            Nd4j.getNativeOps().clearAllocationContext();
+            // Clear ThreadLocal to prevent stale context references
+            clearOpContext();
         }
 
 
@@ -1105,6 +1148,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             throw e;
         } finally {
             profilingConfigurableHookOut(op, context, st);
+            // Periodic TAD cache cleanup to prevent memory leaks
+            Nd4j.getNativeOps().checkAndCleanupCaches();
         }
     }
 
@@ -1115,77 +1160,17 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty, boolean isView) {
-        long[] merged = new long[Shape.shapeInfoLength(shape.length)];
+        LongPointer shapePointer = new LongPointer(shape);
+        LongPointer stridePointer = new LongPointer(stride);
+        long extras = ArrayOptionsHelper.composeTypicalChecks(false,DataType.INT64,false,false,isView ,false,false );
+        OpaqueConstantShapeBuffer dbf = Nd4j.getNativeOps().shapeBufferEx(shape.length, shapePointer, stridePointer, dtype.toInt(), order, elementWiseStride, extras);
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
-        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            DataBuffer ret = Nd4j.createBuffer(DataType.INT64,Shape.shapeInfoLength(shape.length),true);
-            merged[0] = shape.length;
-            int shapeIdx = 0;
-            int strideIdx = 0;
-            for(int i = 1; i < shape.length * 2 + 1; i++) {
-                if(shapeIdx < shape.length) {
-                    merged[i] = shape[shapeIdx];
-                    shapeIdx++;
-                } else {
-                    merged[i] = stride[strideIdx];
-                    strideIdx++;
-                }
-            }
+        val result = Nd4j.createBuffer(Nd4j.getNativeOps().getConstantShapeBufferPrimary(dbf),
+                Shape.shapeInfoLength(shape.length),DataType.INT64);
 
-
-
-            Shape.setElementWiseStride(merged,(int) elementWiseStride);
-            LongPointer longPointer = new LongPointer(merged);
-            Nd4j.getNativeOps().setShapeBuffer(longPointer,dtype.toInt(),new LongPointer(ret.addressPointer()),order,(int) elementWiseStride,empty,isView);
-            longPointer.deallocate();
-            longPointer.releaseReference();
-            if(isView != ArrayOptionsHelper.isView(Shape.options(ret))) {
-                throw new IllegalStateException("isView is not set properly");
-            }
-
-            if(empty != ArrayOptionsHelper.isEmpty(Shape.options(ret))) {
-                throw new IllegalStateException("Empty is not set properly");
-            }
-
-
-            long[] shape2 = Shape.shape(ret.asLong());
-            long[] stride2 = Shape.stride(ret.asLong());
-            long ews = Shape.elementWiseStride(ret.asLong());
-            char order2 = Shape.order(ret.asLong());
-            DataType dtype2 = ArrayOptionsHelper.dataType(Shape.options(ret));
-            boolean empty2 = ArrayOptionsHelper.isEmpty(Shape.options(ret));
-            boolean isView2 = ArrayOptionsHelper.isView(Shape.options(ret));
-            if(!Arrays.equals(shape,shape2)) {
-                throw new IllegalStateException("Shape is not set properly");
-            }
-
-            if(!Arrays.equals(stride,stride2)) {
-                throw new IllegalStateException("Stride is not set properly");
-            }
-
-            if(ews > 0 && ews != elementWiseStride) {
-                throw new IllegalStateException("Element wise stride is not set properly");
-            }
-
-            if(order != order2) {
-                throw new IllegalStateException("Order is not set properly");
-            }
-
-            if(dtype != dtype2) {
-                throw new IllegalStateException("Data type is not set properly");
-            }
-
-            if(empty != empty2) {
-                throw new IllegalStateException("Empty is not set properly");
-            }
-
-            if(isView != isView2) {
-                throw new IllegalStateException("Is view is not set properly");
-            }
-            return ret;
-        }
-
-
+        return result;
     }
 
     @Override

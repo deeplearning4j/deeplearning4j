@@ -62,11 +62,12 @@ CONFIGURABLE_OP_IMPL(prelu, 2, 1, true, 0, 0) {
   }
 
 
-  NDArray alpha2 =  alphaShape != expectedAlphaShape ? alpha->reshape(alpha->ordering(), expectedAlphaShape) : *alpha;
+  NDArray *alpha2 =  alphaShape != expectedAlphaShape ? alpha->reshape(alpha->ordering(), expectedAlphaShape) : alpha;
   helpers::prelu(block.launchContext(), input,
-                 &alpha2,
+                 alpha2,
                  output);
 
+  delete alpha2;
   return Status::OK;
 }
 
@@ -127,8 +128,8 @@ CONFIGURABLE_OP_IMPL(prelu_bp, 3, 2, true, 0, 0) {
   // ***** end of validation ***** //
 
   if (alphaShape != expectedAlphaShape) {
-    alpha = new NDArray(alpha->reshape(alpha->ordering(), expectedAlphaShape));
-    dLdA = new NDArray(dLdA->reshape(dLdA->ordering(), expectedAlphaShape));
+    alpha = alpha->reshape(alpha->ordering(), expectedAlphaShape);
+    dLdA = dLdA->reshape(dLdA->ordering(), expectedAlphaShape);
   }
 
   helpers::preluBP(block.launchContext(), input, alpha, dLdO, dLdI, dLdA);
