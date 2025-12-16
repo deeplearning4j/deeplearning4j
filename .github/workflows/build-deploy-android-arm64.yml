@@ -44,7 +44,7 @@ on:
       runsOn:
         description: 'System to run on'
         required: false
-        default: 'ubuntu-22.04'
+        default: 'ubuntu-22.04-arm'
 
       debug_enabled:
         description: 'Enable debug session'
