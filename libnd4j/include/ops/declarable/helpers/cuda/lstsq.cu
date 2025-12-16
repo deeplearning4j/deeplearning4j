@@ -47,7 +47,7 @@ static SD_KERNEL void fillRegularizerKernel(T* ioMatrixData, const LongType* ioM
     for (auto r = threadIdx.x; r < rows; r += blockDim.x) {
       LongType pos[] = {r, r};
       LongType zIndex;
-      COORDS2INDEX(2, ioMatrixTads + 1, pos, zIndex);
+      COORDS2INDEX(2, shape::stride(ioMatrixTads), pos, zIndex);
       z[zIndex] = value;
     }
   }

@@ -260,6 +260,13 @@ public interface NativeOps {
  int ompGetMaxThreads();
  int ompGetNumThreads();
  void setOmpNumThreads(int threads);
+ /**
+  * Sets the number of threads used by OpenBLAS for BLAS operations.
+  * This is separate from OMP threads and specifically controls OpenBLAS's internal threading.
+  * Default should be 1 to prevent TLS corruption crashes in multi-threaded Java applications.
+  * @param threads number of threads for OpenBLAS to use
+  */
+ void setOpenBlasThreads(int threads);
  void enableVerboseMode(boolean reallyEnable);
  int getDeviceMajor(int device);
  int getDeviceMinor(int device);

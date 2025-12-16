@@ -103,6 +103,9 @@ DataBuffer DataBuffer::dup() {
 
 template <typename T>
 void* DataBuffer::primaryAtOffset(const LongType offset) {
+  // Validate buffer integrity before returning pointer to prevent use-after-free crashes in BLAS/cuBLAS
+  validateIntegrity();
+
   if(_primaryBuffer == nullptr)
     return nullptr;
   T *type = reinterpret_cast<T*>(_primaryBuffer);
@@ -110,6 +113,9 @@ void* DataBuffer::primaryAtOffset(const LongType offset) {
 }
 template <typename T>
 void* DataBuffer::specialAtOffset(const LongType offset) {
+  // Validate buffer integrity before returning pointer to prevent use-after-free crashes
+  validateIntegrity();
+
   if(_specialBuffer == nullptr)
     return nullptr;
   T *type = reinterpret_cast<T*>(_specialBuffer);

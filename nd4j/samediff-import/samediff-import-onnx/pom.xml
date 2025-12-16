@@ -69,7 +69,7 @@
     <dependency>
       <groupId>org.bytedeco</groupId>
       <artifactId>onnx-platform</artifactId>
-      <version>1.17.0-1.5.11</version>
+      <version>${onnx.javacpp.version}</version>
     </dependency>
 
     <dependency>

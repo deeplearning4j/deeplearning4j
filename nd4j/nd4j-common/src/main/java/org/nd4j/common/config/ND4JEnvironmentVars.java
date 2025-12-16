@@ -187,6 +187,25 @@ public class ND4JEnvironmentVars {
      */
     public static final String SD_MAX_DEVICE_BYTES = "SD_MAX_DEVICE_BYTES";
 
+    /**
+     * Applicability: nd4j-native backend with OpenBLAS<br>
+     * Description: Sets the number of threads used by OpenBLAS for BLAS operations (GEMM, GEMV, etc.).
+     * This is separate from {@link #OMP_NUM_THREADS} which controls ND4J's own parallel operations.
+     * <p>
+     * Default value: 1 (single-threaded). This default prevents SEGV_ACCERR crashes caused by
+     * OpenBLAS's thread-local storage (TLS) corruption when called from Java thread pools.
+     * OpenBLAS uses TLS for per-thread scratch buffers, and when Java threads are recycled,
+     * the TLS state can become stale or corrupted, leading to crashes in BLAS kernels.
+     * <p>
+     * Setting this to a higher value may improve performance for large matrix operations,
+     * but can cause stability issues in multi-threaded Java applications. Only increase this
+     * if you understand the implications and have tested thoroughly.
+     * <p>
+     * This can also be set via the native environment variable OPENBLAS_NUM_THREADS before
+     * JVM startup, which takes precedence over this setting.
+     */
+    public static final String ND4J_OPENBLAS_THREADS = "ND4J_OPENBLAS_THREADS";
+
     private ND4JEnvironmentVars() {
     }
 }

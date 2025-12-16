@@ -276,6 +276,13 @@ SD_LIB_EXPORT void setGridLimit(int gridSize) ;
 SD_LIB_EXPORT int ompGetMaxThreads() ;
 SD_LIB_EXPORT int ompGetNumThreads() ;
 SD_LIB_EXPORT void setOmpNumThreads(int threads) ;
+/**
+ * Sets the number of threads used by OpenBLAS for BLAS operations.
+ * This is separate from OMP threads and specifically controls OpenBLAS's internal threading.
+ * Default should be 1 to prevent TLS corruption crashes in multi-threaded Java applications.
+ * @param threads number of threads for OpenBLAS to use
+ */
+SD_LIB_EXPORT void setOpenBlasThreads(int threads) ;
 SD_LIB_EXPORT void enableVerboseMode(bool reallyEnable) ;
 SD_LIB_EXPORT int getDeviceMajor(int device) ;
 SD_LIB_EXPORT int getDeviceMinor(int device) ;

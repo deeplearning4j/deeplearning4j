@@ -361,6 +361,10 @@ void DataBuffer::showCounters(const char* msg1, const char* msg2) {
 }
 template <typename T>
 void* DataBuffer::primaryAtOffset(const LongType offset) {
+  // Validate buffer integrity before returning pointer to prevent use-after-free crashes in BLAS
+  // This catches dangling pointers that would otherwise cause SIGSEGV in sgemm_nn, etc.
+  validateIntegrity();
+
   if(_primaryBuffer == nullptr)
     return nullptr;
   T *type = reinterpret_cast<T*>(_primaryBuffer);
@@ -372,6 +376,9 @@ ITERATE_LIST((SD_COMMON_TYPES),PRIMARYOFFSET)
 
 template <typename T>
 void* DataBuffer::specialAtOffset(const LongType offset) {
+  // Validate buffer integrity before returning pointer to prevent use-after-free crashes
+  validateIntegrity();
+
   if(_specialBuffer == nullptr)
     return nullptr;
   T *type = reinterpret_cast<T*>(_specialBuffer);

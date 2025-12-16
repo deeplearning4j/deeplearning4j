@@ -331,6 +331,23 @@ int ompGetNumThreads() { return omp_get_num_threads(); }
  */
 void setOmpNumThreads(int threads) { omp_set_num_threads(threads); }
 
+/**
+ * Sets the number of threads used by OpenBLAS for BLAS operations.
+ * This is separate from OMP threads and specifically controls OpenBLAS's internal threading.
+ * Default should be 1 to prevent TLS corruption crashes in multi-threaded Java applications.
+ */
+void setOpenBlasThreads(int threads) {
+#if defined(__OPENBLAS)
+  openblas_set_num_threads(threads);
+#elif defined(__MKL)
+  // MKL uses a different function
+  MKL_Set_Num_Threads(threads);
+#else
+  // No OpenBLAS or MKL - this is a no-op
+  // The OMP thread setting may still affect BLAS behavior in some configurations
+#endif
+}
+
 sd::Pointer createContext() { return 0L; }
 
 sd::Pointer createStream() { return 0L; }

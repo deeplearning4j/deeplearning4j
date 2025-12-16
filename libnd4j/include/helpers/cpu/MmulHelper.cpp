@@ -27,7 +27,6 @@
 #include <execution/Threads.h>
 #include <helpers/BlasHelper.h>
 #include <helpers/ShapeUtils.h>
-
 namespace sd {
 
 //////////////////////////////////////////////////////////////////////////////
@@ -511,8 +510,8 @@ static void batchedGemm(NDArray* vA, NDArray* vB, NDArray* vC, const sd::LongTyp
       bCoords[bNaxis] = cCoords[cNaxis];
 
       sd::LongType aOffset, bOffset, cOffset;
-      COORDS2INDEX(aRank, aShape, aCoords.data(), aOffset);
-      COORDS2INDEX(bRank, bShape, bCoords.data(), bOffset);
+      COORDS2INDEX(aRank, aStride, aCoords.data(), aOffset);
+      COORDS2INDEX(bRank, bStride, bCoords.data(), bOffset);
 
       T3 val = A[aOffset] * B[bOffset];  // first iteration
 
@@ -522,7 +521,7 @@ static void batchedGemm(NDArray* vA, NDArray* vB, NDArray* vC, const sd::LongTyp
         val = val + A[aOffset] * B[bOffset];
       }
 
-      COORDS2INDEX(cRank,cShape, cCoords.data(), cOffset);
+      COORDS2INDEX(cRank, cStride, cCoords.data(), cOffset);
 
       if (betaPersent)
         C[cOffset] = alphaZ * val + betaZ * C[cOffset];

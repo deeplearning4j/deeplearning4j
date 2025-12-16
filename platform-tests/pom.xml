@@ -599,9 +599,9 @@
                 </property>
             </activation>
             <properties>
-                <cuda.version>12.3</cuda.version>
-                <cudnn.version>8.9</cudnn.version>
-                <javacpp-presets.cuda.version>1.5.10</javacpp-presets.cuda.version>
+                <cuda.version>12.9</cuda.version>
+                <cudnn.version>9.10</cudnn.version>
+                <javacpp-presets.cuda.version>1.5.12</javacpp-presets.cuda.version>
                 <test.heap.size>14g</test.heap.size>
                 <test.offheap.size>14g</test.offheap.size>
                 <surefire.threads>4</surefire.threads>

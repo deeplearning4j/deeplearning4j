@@ -153,8 +153,13 @@ static void bgemm_( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std
         auto A = reinterpret_cast<T *>(vA.at(p)->buffer());
         auto B = reinterpret_cast<T *>(vB.at(p)->buffer());
         auto C = reinterpret_cast<T *>(vC.at(p)->buffer());
-        auto alpha = alphas->isScalar() ? alphas->e<T>(0) : alphas->e<T>(p);
-        auto beta = betas->isScalar() ? betas->e<T>(0) : betas->e<T>(p);
+        // Handle scalar, single-element, or empty arrays (use defaults for empty)
+        auto alpha = (alphas->isScalar() || alphas->lengthOf() <= 1)
+                     ? (alphas->lengthOf() > 0 ? alphas->e<T>(0) : static_cast<T>(1))
+                     : alphas->e<T>(p);
+        auto beta = (betas->isScalar() || betas->lengthOf() <= 1)
+                    ? (betas->lengthOf() > 0 ? betas->e<T>(0) : static_cast<T>(0))
+                    : betas->e<T>(p);
         for (int m = 0; m < M; m++) {
           for (int n = 0; n < N; n++) {
             T c_mnp = static_cast<T>(0);

@@ -1477,6 +1477,14 @@ void setOmpNumThreads(int threads) {
   maxThreads = threads;
 }
 
+/**
+ * Sets the number of threads used by OpenBLAS for BLAS operations.
+ * On CUDA backend, this is a no-op since we use cuBLAS, not OpenBLAS.
+ */
+void setOpenBlasThreads(int threads) {
+  // No-op on CUDA - we use cuBLAS, not OpenBLAS
+}
+
 void enableVerboseMode(bool reallyEnable) { sd::Environment::getInstance().setVerbose(reallyEnable); }
 
 int getDeviceMajor(int device) { return deviceProperties[device].major; }
