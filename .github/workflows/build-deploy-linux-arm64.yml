@@ -26,11 +26,6 @@ on:
         required: false
         default: 1.0.0-SNAPSHOT
 
-      releaseRepoId:
-        description: 'Release repository id'
-        required: false
-        default:
-
       mvnFlags:
         description: "Extra maven flags (must escape input yourself if used)"
         required: false
@@ -51,6 +46,11 @@ on:
         required: false
         default: false
 
+      swapSize:
+        description: 'Swap file size in GB (e.g., 8 for 8GB)'
+        required: false
+        default: 8
+
 jobs:
   linux-arm64:
     runs-on: ${{ github.event.inputs.runsOn }}
@@ -60,29 +60,13 @@ jobs:
         helper: [armcompute, ""]
         include:
           - mvn_ext: ${{ github.event.inputs.mvnFlags }}
-            experimental: true
-            name: Extra maven flags
           - debug_enabled: ${{ github.event.inputs.debug_enabled }}
-            experimental: true
-            name: Debug enabled
           - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging }}
-            experimental: true
-            name: Whether to deploy to release staging or not
           - release_version: ${{ github.event.inputs.releaseVersion }}
-            experimental: true
-            name: Release version
           - snapshot_version: ${{ github.event.inputs.snapshotVersion }}
-            experimental: true
-            name: Snapshot version
           - server_id: ${{ github.event.inputs.serverId }}
-            experimental: true
-            name: Server id
-          - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
-            experimental: true
-            name: The release repository to run on
           - build_threads: ${{ github.event.inputs.buildThreads }}
-            experimental: true
-            name: The number of threads to build libnd4j with
+          - swap_size: ${{ github.event.inputs.swapSize }}
     steps:
       - uses: AutoModality/action-clean@v1
       - name: Cancel Previous Runs
@@ -90,7 +74,6 @@ jobs:
         with:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
-
       - name: Free Disk Space
         uses: jlumbroso/free-disk-space@main
         with:
@@ -101,63 +84,59 @@ jobs:
           large-packages: true
           docker-images: true
           swap-storage: true
-
+      - name: Configure swap space
+        shell: bash
+        run: |
+          sudo fallocate -l 16G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          sudo sysctl vm.swappiness=60
+          free -h
       - name: Cache protobuf install
         uses: actions/cache@v4
         id: cache-protobuf
         with:
           path: /opt/protobuf
           key: ${{ runner.os }}-protobuf
-          restore-keys: |
-            ${{ runner.os }}-protobuf
       - uses: ./.github/actions/install-protobuf-linux
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
-
       - name: Set mvn build command based on matrix
         shell: bash
         run: |
-          # Set constants for ARM64
           LIBND4J_CLASSIFIER="linux-arm64"
-          OPENBLAS_JAR="openblas-0.3.28-1.5.11-linux-arm64.jar"
-
           echo "LIBND4J_CLASSIFIER=${LIBND4J_CLASSIFIER}" >> $GITHUB_ENV
-          echo "OPENBLAS_JAR=${OPENBLAS_JAR}" >> $GITHUB_ENV
-          echo "CURRENT_TARGET=arm64" >> $GITHUB_ENV
+          echo "OPENBLAS_JAR=openblas-0.3.28-1.5.11-linux-arm64.jar" >> $GITHUB_ENV
           echo "ARMCOMPUTE_TARGET=arm64-v8a" >> $GITHUB_ENV
-
           if [ "${{ github.event.inputs.libnd4jUrl }}" != '' ]; then
              modules=':nd4j-native,:nd4j-native-preset'
           else
-             echo "Building libnd4j from source"
              modules=':nd4j-native,:nd4j-native-preset,:libnd4j'
           fi
-
-          command="mvn ${{ matrix.mvn_ext }} -Posx-aarch64-protoc -Dlibnd4j.generate.flatc=ON -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Possrh -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=${LIBND4J_CLASSIFIER} -Pcpu --also-make --batch-mode deploy -DskipTests"
-
+          command="mvn ${{ matrix.mvn_ext }} -Posx-aarch64-protoc -Dlibnd4j.generate.flatc=ON --no-transfer-progress -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Possrh -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=${LIBND4J_CLASSIFIER} -Pcpu --also-make --batch-mode deploy -DskipTests"
           if [ "${{ matrix.helper }}" != '' ]; then
              mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.classifier=${LIBND4J_CLASSIFIER}-${{ matrix.helper }}"
           else
              mvn_ext=""
           fi
-
           command="${command} ${mvn_ext}"
-          echo "Setting command for helper ${{ matrix.helper }} to ${command}"
           echo "COMMAND=${command}" >> $GITHUB_ENV
-
       - name: Set up Java for publishing to OSSRH
         uses: actions/setup-java@v4
         with:
           java-version: 11
           distribution: 'temurin'
-          server-id: 'central'
-          server-username: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
-          server-password: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
-
-      - name: Setup path
+          server-id: ${{ github.event.inputs.serverId }}
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+          cache: 'maven'
+      - name: Setup Path
         shell: bash
-        run: echo "/opt/protobuf/bin" >> $GITHUB_PATH
-
-      # --- MODIFIED STEP WITH FIX ---
+        run: |
+          echo "/opt/protobuf/bin" >> $GITHUB_PATH
+          echo "/opt/cmake/bin" >> $GITHUB_PATH
       - name: Setup OpenBLAS and ARM Compute Library
         shell: bash
         run: |
@@ -166,180 +145,76 @@ jobs:
           cd "${GITHUB_WORKSPACE}/openblas_home"
           wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/${OPENBLAS_JAR}
           unzip ${OPENBLAS_JAR}
-
           OPENBLAS_DIR="${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-arm64"
-
           echo "OPENBLAS_PATH=${OPENBLAS_DIR}" >> "$GITHUB_ENV"
-          # Ensure the symlink exists for consistency, even if already present
+          # Ensure the symlink exists for consistency
           ln -sf "${OPENBLAS_DIR}/libopenblas.so.0" "${OPENBLAS_DIR}/libopenblas.so"
-
           # Setup ARM Compute Library if selected
           if [ "${{ matrix.helper }}" == "armcompute" ]; then
-              ARMCOMPUTE_PARENT_DIR="${GITHUB_WORKSPACE}/armcompute_home"
-              mkdir -p "${ARMCOMPUTE_PARENT_DIR}"
-              cd "${ARMCOMPUTE_PARENT_DIR}"
-
-              # Download ARM64 Compute Library
-              ARCHIVE_NAME="arm_compute-v25.04-linux-aarch64-cpu-bin.tar.gz"
-              wget https://github.com/ARM-software/ComputeLibrary/releases/download/v25.04/${ARCHIVE_NAME}
-          
-              # Verify the downloaded archive
-              echo "Verifying downloaded archive:"
-              file ${ARCHIVE_NAME}
-          
-              # Create a specific directory for extraction
-              mkdir -p extract_dir
-          
-              # Extract with verbose output and error handling
-              echo "Extracting archive to designated directory..."
-              tar -xzvf ${ARCHIVE_NAME} -C extract_dir || { 
-                echo "Tar extraction failed with error code $?"; 
-                echo "Attempting alternative extraction method...";
-                # Alternative extraction without stdout redirection
-                tar -xvf ${ARCHIVE_NAME} --no-same-owner -C extract_dir;
-              }
-          
-              # List extracted contents to verify success
-              echo "Listing extracted contents:"
-              ls -la extract_dir
-
-              # Determine the actual extracted directory name
-              EXTRACTED_DIR_NAME=$(find extract_dir -maxdepth 1 -type d | grep -v "^extract_dir$" | head -1)
-              if [ -z "$EXTRACTED_DIR_NAME" ]; then
-                echo "Warning: Could not determine extracted directory name. Using extract_dir as root."
-                ACTUAL_ARMCOMPUTE_ROOT="${ARMCOMPUTE_PARENT_DIR}/extract_dir"
-              else
-                echo "Determined ARM Compute Library root: ${EXTRACTED_DIR_NAME}"
-                ACTUAL_ARMCOMPUTE_ROOT="${EXTRACTED_DIR_NAME}"
-              fi
-          
-              # Set the actual libraries paths
-              COMPUTE_LIB="${ACTUAL_ARMCOMPUTE_ROOT}/lib/armv8a-neon/libarm_compute.so"
-              COMPUTE_GRAPH_LIB="${ACTUAL_ARMCOMPUTE_ROOT}/lib/armv8a-neon/libarm_compute_graph.so"
-          
-              # Check if the libraries exist
-              if [ -f "${COMPUTE_LIB}" ]; then
-                echo "Found libarm_compute.so at ${COMPUTE_LIB}"
-              else
-                echo "ERROR: libarm_compute.so not found at expected location: ${COMPUTE_LIB}"
-                # Try to find it
-                COMPUTE_LIB=$(find "${ACTUAL_ARMCOMPUTE_ROOT}" -name "libarm_compute.so" | head -1)
-                echo "Searching for libarm_compute.so, found: ${COMPUTE_LIB}"
-              fi
-          
-              if [ -f "${COMPUTE_GRAPH_LIB}" ]; then
-                echo "Found libarm_compute_graph.so at ${COMPUTE_GRAPH_LIB}"
-              else
-                echo "ERROR: libarm_compute_graph.so not found at expected location: ${COMPUTE_GRAPH_LIB}"
-                # Try to find it
-                COMPUTE_GRAPH_LIB=$(find "${ACTUAL_ARMCOMPUTE_ROOT}" -name "libarm_compute_graph.so" | head -1)
-                echo "Searching for libarm_compute_graph.so, found: ${COMPUTE_GRAPH_LIB}"
-              fi
-          
-              # Set environment variables for the build
-              echo "ARMCOMPUTE_ROOT=${ACTUAL_ARMCOMPUTE_ROOT}" >> "$GITHUB_ENV"
-              echo "ARMCOMPUTE_LIBRARY=${COMPUTE_LIB}" >> "$GITHUB_ENV"
-              echo "ARMCOMPUTE_GRAPH_LIBRARY=${COMPUTE_GRAPH_LIB}" >> "$GITHUB_ENV"
-          
-              # Since libarm_compute_core.so might not exist in this version, use libarm_compute.so as a fallback
-              echo "ARMCOMPUTE_CORE_LIBRARY=${COMPUTE_LIB}" >> "$GITHUB_ENV"
-          
-              echo "ARM Compute Library setup complete at: ${ACTUAL_ARMCOMPUTE_ROOT}"
-              echo "Libraries configured: COMPUTE=${COMPUTE_LIB}, GRAPH=${COMPUTE_GRAPH_LIB}"
-          
-              # Also make sure LD_LIBRARY_PATH includes the ARM Compute Library directory
-              LIB_DIR=$(dirname "${COMPUTE_LIB}")
-              echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${LIB_DIR}:${OPENBLAS_PATH}" >> "$GITHUB_ENV"
+              ARMCOMPUTE_HOME="${GITHUB_WORKSPACE}/armcompute_home"
+              mkdir -p "${ARMCOMPUTE_HOME}"
+              cd "${ARMCOMPUTE_HOME}"
+              wget https://github.com/ARM-software/ComputeLibrary/releases/download/v25.04/arm_compute-v25.04-linux-aarch64-cpu-bin.tar.gz
+              tar -xzf arm_compute-v25.04-linux-aarch64-cpu-bin.tar.gz
+              # Set ARMCOMPUTE_ROOT to the explicit path of the extracted contents
+              EXTRACTED_DIR="${ARMCOMPUTE_HOME}/arm_compute-v25.04-linux-aarch64-cpu-bin"
+              echo "ARMCOMPUTE_ROOT=${EXTRACTED_DIR}" >> "$GITHUB_ENV"
+              echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${EXTRACTED_DIR}/lib/armv8a-neon" >> "$GITHUB_ENV"
           fi
-      # --- END OF MODIFIED STEP ---
-
-      - name: Debug Info
-        shell: bash
-        run: |
-          echo "libnd4j build threads ${{ github.event.inputs.buildThreads }}"
-          echo "deploy to release staging repo or not ${{ github.event.inputs.deployToReleaseStaging }}"
-          echo "release version ${{ github.event.inputs.releaseVersion }}"
-          echo "snapshot version ${{ github.event.inputs.snapshotVersion }}"
-          echo "debug enabled ${{ github.event.inputs.debug_enabled }}"
-          echo "libnd4j url ${{ github.event.inputs.libnd4jUrl }}"
-          echo "maven flags ${{ github.event.inputs.mvnFlags }}"
-          echo "server id ${{ github.event.inputs.serverId }}"
-          echo "release repo id ${{ github.event.inputs.releaseRepoId }}"
-          echo "helper ${{ matrix.helper }}"
-          echo "ARMCOMPUTE_TARGET $ARMCOMPUTE_TARGET"
-          echo "LIBND4J_CLASSIFIER $LIBND4J_CLASSIFIER"
-          
-          # Debug ARM Compute Library setup
-          if [ "${{ matrix.helper }}" == "armcompute" ]; then
-            echo "ARMCOMPUTE_ROOT: $ARMCOMPUTE_ROOT"
-            echo "ARMCOMPUTE_LIBRARY: $ARMCOMPUTE_LIBRARY"
-            echo "ARMCOMPUTE_GRAPH_LIBRARY: $ARMCOMPUTE_GRAPH_LIBRARY"
-            echo "ARMCOMPUTE_CORE_LIBRARY: $ARMCOMPUTE_CORE_LIBRARY"
-            echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
-          
-            # Check if libraries exist
-            if [ -f "$ARMCOMPUTE_LIBRARY" ]; then
-              echo "ARMCOMPUTE_LIBRARY exists"
-            else
-              echo "WARNING: ARMCOMPUTE_LIBRARY does not exist at $ARMCOMPUTE_LIBRARY"
-            fi
-          
-            if [ -f "$ARMCOMPUTE_CORE_LIBRARY" ]; then
-              echo "ARMCOMPUTE_CORE_LIBRARY exists"
-            else
-              echo "WARNING: ARMCOMPUTE_CORE_LIBRARY does not exist at $ARMCOMPUTE_CORE_LIBRARY"
-            fi
-          
-            if [ -f "$ARMCOMPUTE_GRAPH_LIBRARY" ]; then
-              echo "ARMCOMPUTE_GRAPH_LIBRARY exists"
-            else
-              echo "WARNING: ARMCOMPUTE_GRAPH_LIBRARY does not exist at $ARMCOMPUTE_GRAPH_LIBRARY"
-            fi
-          fi
-
-          sudo sysctl vm.overcommit_memory=2
-          mvn --version
-          cmake --version
-          protoc --version
-
       - name: Build with Maven
         shell: bash
         env:
-          MAVEN_GPG_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-          DEBIAN_FRONTEND: noninteractive
+          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLISH_TO: central
-          DEPLOY_TO: central
-          MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
           PERFORM_RELEASE: ${{ github.event.inputs.deployToReleaseStaging }}
           RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
-          MODULES: ${{ github.event.inputs.mvnFlags }}
-          HELPER: ${{ matrix.helper }}
+          MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
           MAVEN_OPTS: -Xmx2g
-          LIBND4J_BUILD_THREADS: ${{ github.event.inputs.buildThreads }}
           PROTO_EXEC: /opt/protobuf/bin/protoc
         run: |
-          # Additional diagnostics for ARM Compute Library
-          if [ "$HELPER" == "armcompute" ]; then
-            echo "Running with ARM Compute Library helper"
-            echo "ARMCOMPUTE_ROOT: $ARMCOMPUTE_ROOT"
-            echo "ARMCOMPUTE_LIBRARY: $ARMCOMPUTE_LIBRARY"
-            echo "ARMCOMPUTE_CORE_LIBRARY: $ARMCOMPUTE_CORE_LIBRARY"
-            echo "ARMCOMPUTE_GRAPH_LIBRARY: $ARMCOMPUTE_GRAPH_LIBRARY"
-            echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
+          # Pre-build native libraries with CMake if not using a pre-packaged libnd4j
+          if [ "${{ github.event.inputs.libnd4jUrl }}" == '' ]; then
+            echo "Starting manual pre-build of libnd4j..."
           
-            # Ensure the CMake command includes the ARM Compute Library paths
-            export MAVEN_OPTS="$MAVEN_OPTS -DARMCOMPUTE_LIBRARY=$ARMCOMPUTE_LIBRARY -DARMCOMPUTE_CORE_LIBRARY=$ARMCOMPUTE_CORE_LIBRARY -DARMCOMPUTE_GRAPH_LIBRARY=$ARMCOMPUTE_GRAPH_LIBRARY"
+            # Define CMake arguments for building libnd4j
+            cmake_args="-DOPENBLAS_PATH=${OPENBLAS_PATH}"
+          
+            # Add armcompute helper flags if enabled
+            if [ "${{ matrix.helper }}" == "armcompute" ]; then
+              echo "Enabling armcompute helper for native build."
+              cmake_args="${cmake_args} -DHELPERS_armcompute=true -DARMCOMPUTE_ROOT=${ARMCOMPUTE_ROOT}"
+            fi
+          
+            # Navigate to libnd4j build directory
+            cd "${GITHUB_WORKSPACE}/libnd4j"
+            mkdir -p blasbuild/linux-arm64
+            cd blasbuild/linux-arm64
+          
+            # Configure with CMake
+            echo "Configuring with CMake args: ${cmake_args}"
+            cmake ${cmake_args} ../..
+          
+            # Build with specified number of threads
+            echo "Building with make -j${{ github.event.inputs.buildThreads }}"
+            make -j${{ github.event.inputs.buildThreads }}
+            cd ${GITHUB_WORKSPACE}
+            echo "Manual pre-build of libnd4j finished."
           fi
           
+          # Run the main Maven build
+          echo "Running Maven command: ${COMMAND}"
           if [ "$PERFORM_RELEASE" == 1 ]; then
               bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
           else
-              echo "Running build and deploying to snapshots"
-              # This command should now execute successfully if dependencies are correct
               eval "${COMMAND}"
           fi
+      - name: Cleanup swap
+        if: always()
+        shell: bash
+        run: |
+          sudo swapoff /swapfile || true
+          sudo rm -f /swapfile || true
