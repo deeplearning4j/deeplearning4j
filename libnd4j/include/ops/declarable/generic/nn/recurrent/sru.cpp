@@ -325,7 +325,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
   std::vector<LongType> axes2;
   axes.push_back(0);
   axes.push_back(2);
-  gradBias->reduceAlongDimension(reduce::Sum, &gradB2, &axes2);  // [1 x 2K]
+  gradBias->reduceAlongDimension(reduce::Sum, gradB2, &axes2);  // [1 x 2K]
 
   // gradW [bS x 3K x K]
   x->permutei({0, 2, 1}, false, false);                     // [bS x N x K]

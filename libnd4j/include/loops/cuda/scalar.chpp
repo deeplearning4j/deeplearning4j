@@ -71,9 +71,21 @@ SD_KERNEL static void scalarSimpleShaped(
     zRank      = shape::rank(zShapeInfo);
     zShapePtr  = shape::shapeOf(zShapeInfo);
     zStridePtr = shape::stride(zShapeInfo);
+
+    //need special handling for scalars as strides may not be set for scalars
+    if(shape::length(xShapeInfo) <= 1 && shape::length(zShapeInfo) <= 1) {
+      z[0] = OpType::op(x[0], scalar[0], extraParams);
+      return;
+
+    }
   }
   __syncthreads();
 
+  //need special handling for scalars as strides may not be set for scalars
+  if(shape::length(xShapeInfo) <= 1 && shape::length(zShapeInfo) <= 1) {
+    return;
+
+  }
   for (sd::LongType i = tid; i < length; i += totalThreads) {
     sd::LongType xCoords[SD_MAX_RANK];
     sd::LongType zCoords[SD_MAX_RANK];

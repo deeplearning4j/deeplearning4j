@@ -30,13 +30,13 @@
 #include <helpers/logger.h>
 #include <helpers/shape.h>
 #include <ops/specials.h>
-
+#include <system/selective_rendering.h>
 #define CONSTANT_LIMIT 49152
 
 __constant__ char deviceConstantMemory[CONSTANT_LIMIT];
 
 namespace sd {
-static void *getConstantSpace() {
+void * ConstantHelper::getConstantSpace() {
   Pointer dConstAddr;
   auto dZ = cudaGetSymbolAddress(reinterpret_cast<void **>(&dConstAddr), deviceConstantMemory);
 
@@ -159,6 +159,7 @@ ConstantDataBuffer *ConstantHelper::constantBuffer(const ConstantDescriptor &des
           (nullptr, const_cast<double *>(descriptor.floatValues().data()), descriptor.length(), cbuff->pointer()),
           (sd::DataType::DOUBLE, double), SD_COMMON_TYPES);
     } else if (descriptor.isInteger()) {
+      auto int64DType = sd::DataType::INT64;
       BUILD_DOUBLE_SELECTOR(sd::DataType::INT64, dataType, sd::SpecialTypeConverter::convertGeneric,
                             (nullptr, const_cast<sd::LongType *>(descriptor.integerValues().data()),
                                 descriptor.length(), cbuff->pointer()),

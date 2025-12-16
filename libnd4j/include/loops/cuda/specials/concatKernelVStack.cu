@@ -129,7 +129,7 @@
   }
 
   BUILD_SINGLE_TEMPLATE(
-      template void concatKernelVStackGeneric,
+       void concatKernelVStackGeneric,
       (dim3 & launchDims, cudaStream_t *stream, int numArrays, sd::Pointer *data,
        sd::Pointer *inputShapeInfos, void *vz, sd::LongType *zShapeInfo),
       SD_COMMON_TYPES);

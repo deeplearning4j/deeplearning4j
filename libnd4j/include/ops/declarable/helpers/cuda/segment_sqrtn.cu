@@ -190,6 +190,8 @@ static void unsortedSegmentSqrtNFunctor_(LaunchContext* context, NDArray* input,
 // -------------------------------------------------------------------------------------------------------------- //
 void unsortedSegmentSqrtNFunctor(LaunchContext* context, NDArray* input, NDArray* indices, LongType numOfClasses, NDArray* output) {
  NDArray::prepareSpecialUse({output}, {input, indices});
+ auto indicesDType = indices->dataType();
+ auto outputDType = input->dataType();
  BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), unsortedSegmentSqrtNFunctor_,
                        (context, input, indices, numOfClasses, output), SD_FLOAT_TYPES, SD_INDEXING_TYPES);
  NDArray::registerSpecialUse({output}, {input, indices});
@@ -391,6 +393,8 @@ static Status unsortedSegmentSqrtNFunctorBP_(LaunchContext* context, NDArray* in
 Status unsortedSegmentSqrtNFunctorBP(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                                     LongType numOfClasses, NDArray* output) {
  NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
+ auto indicesDType = indices->dataType();
+ auto outputDType = output->dataType();
  BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentSqrtNFunctorBP_,
                        (context, input, indices, gradOut, numOfClasses, output), SD_FLOAT_TYPES, SD_INDEXING_TYPES);
  NDArray::registerSpecialUse({output}, {input, indices, gradOut});
