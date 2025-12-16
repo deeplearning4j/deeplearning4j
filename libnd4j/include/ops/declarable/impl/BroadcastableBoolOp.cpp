@@ -29,7 +29,6 @@ BroadcastableBoolOp::BroadcastableBoolOp(const char *name, int numTArgs, int num
     : DeclarableCustomOp::DeclarableCustomOp(2, 1, name, false, numTArgs, numIArgs) {
   //
 }
-
 ShapeList *BroadcastableBoolOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
   auto shapeList = SHAPELIST();
   auto x = inputShape->at(0);
@@ -43,30 +42,37 @@ ShapeList *BroadcastableBoolOp::calculateOutputShape(ShapeList *inputShape, sd::
       return shapeList;
     }
 
-     sd::LongType *newshape = nullptr;
+    sd::LongType *newshape = nullptr;
     ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
-    shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(newshape)->primary());
+    // Cast to boolean and let ConstantShapeHelper manage the memory
+    auto castedShape = ConstantShapeHelper::getInstance().castToDataType(newshape, dtype);
+    shapeList->push_back(castedShape);
   } else if (shape::isScalar(x) && shape::isScalar(y)) {
     if (shape::rank(x) >= shape::rank(y)) {
-      shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(x)->primary());
+      auto castedShape = ConstantShapeHelper::getInstance().castToDataType(x, dtype);
+      shapeList->push_back(castedShape);
     } else {
-      shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(y)->primary());
-
+      auto castedShape = ConstantShapeHelper::getInstance().castToDataType(y, dtype);
+      shapeList->push_back(castedShape);
     }
   } else if (shape::equalsSoft(x, y)) {
-    shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(x)->primary());
+    auto castedShape = ConstantShapeHelper::getInstance().castToDataType(x, dtype);
+    shapeList->push_back(castedShape);
   } else if (shape::isScalar(x) && !shape::isScalar(y)) {
-    shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(y)->primary());
-
+    auto castedShape = ConstantShapeHelper::getInstance().castToDataType(y, dtype);
+    shapeList->push_back(castedShape);
   } else if (!shape::isScalar(x) && shape::isScalar(y)) {
-    shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(x)->primary());
+    auto castedShape = ConstantShapeHelper::getInstance().castToDataType(x, dtype);
+    shapeList->push_back(castedShape);
   } else if (ShapeUtils::areShapesBroadcastable(x, y)) {
-     sd::LongType *newshape = nullptr;
+    sd::LongType *newshape = nullptr;
     ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
-    shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(newshape)->primary());
+    // Cast to boolean and let ConstantShapeHelper manage the memory
+    auto castedShape = ConstantShapeHelper::getInstance().castToDataType(newshape, dtype);
+    shapeList->push_back(castedShape);
   } else {
-    shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(x)->primary());
-
+    auto castedShape = ConstantShapeHelper::getInstance().castToDataType(x, dtype);
+    shapeList->push_back(castedShape);
   }
 
   return shapeList;
