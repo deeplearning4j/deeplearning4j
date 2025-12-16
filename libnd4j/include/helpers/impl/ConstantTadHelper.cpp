@@ -26,31 +26,115 @@ ConstantTadHelper& ConstantTadHelper::getInstance() {
   return instance;
 }
 
-TadPack* ConstantTadHelper::tadForDimensions(LongType* originalShape, LongType dimension) {
+std::shared_ptr<TadPack> ConstantTadHelper::tadForDimensions(LongType* originalShape, LongType dimension) {
   return tadForDimensions(originalShape, &dimension, 1);
 }
 
-TadPack* ConstantTadHelper::tadForDimensions(LongType* originalShape, std::vector<LongType>* dimensions) {
+std::shared_ptr<TadPack> ConstantTadHelper::tadForDimensions(LongType* originalShape, std::vector<LongType>* dimensions) {
+  if (dimensions == nullptr) {
+    THROW_EXCEPTION("Dimensions vector is null");
+  }
   return tadForDimensions(originalShape, const_cast<LongType*>(dimensions->data()), dimensions->size());
 }
 
-TadPack* ConstantTadHelper::tadForDimensions(TadDescriptor* descriptor) {
+std::shared_ptr<TadPack> ConstantTadHelper::tadForDimensions(TadDescriptor* descriptor) {
+  if (descriptor == nullptr) {
+    THROW_EXCEPTION("TadDescriptor is null");
+  }
   return tadForDimensions(descriptor->originalShape(), descriptor->axis().data(),
                           descriptor->axis().size());
 }
 
-TadPack* ConstantTadHelper::tadForDimensions(LongType* originalShape, LongType* dimensions, LongType dimLength) {
-    if (!originalShape) THROW_EXCEPTION("Original shape is null");
-    if (!dimensions) THROW_EXCEPTION("Dimensions array is null");
-    if (dimLength <= 0) THROW_EXCEPTION("Invalid dimension length");
+std::shared_ptr<TadPack> ConstantTadHelper::tadForDimensions(LongType* originalShape, LongType* dimensions, LongType dimLength) {
+  if (originalShape == nullptr) {
+    THROW_EXCEPTION("Original shape is null");
+  }
 
-    sd::LongType rank = shape::rank(originalShape);
-    if (rank < 0) THROW_EXCEPTION("Invalid shape rank");
+  if (dimensions == nullptr && dimLength > 0) {
+    THROW_EXCEPTION("Dimensions array is null but dimLength > 0");
+  }
 
-    std::vector<LongType> dims(dimensions, dimensions + dimLength);
+  // Check for empty array
+  if (shape::isEmptyConst(originalShape)) {
+    THROW_EXCEPTION("Cannot create TADs for empty array");
+  }
 
-    // Single attempt pattern - no double locking
-    return _trie.getOrCreate(dims, originalShape);
+  sd::LongType rank = shape::rank(originalShape);
+  if (rank < 0) {
+    THROW_EXCEPTION("Invalid shape rank");
+  }
+
+  // Check for zero-sized dimensions
+  for (LongType i = 0; i < rank; i++) {
+    if (shape::sizeAt(originalShape, i) == 0) {
+      THROW_EXCEPTION("Cannot create TADs for array with zero-sized dimensions");
+    }
+  }
+
+  // Handle zero dimension length case - treat entire array as single TAD
+  if (dimLength <= 0) {
+    // When no dimensions specified, create TAD along all dimensions
+    // This means the entire array is treated as a single TAD
+    std::vector<LongType> allDims;
+    for (LongType i = 0; i < rank; i++) {
+      allDims.push_back(i);
+    }
+
+    // Recursively call with all dimensions
+    return tadForDimensions(originalShape, allDims.data(), rank);
+  }
+
+  // Additional validation: check if dimensions are within valid range
+  for (LongType i = 0; i < dimLength; i++) {
+    LongType dim = dimensions[i];
+    if (dim < 0) dim += rank;  // Handle negative dimensions
+    if (dim < 0 || dim >= rank) {
+      THROW_EXCEPTION("Dimension index is out of bounds");
+    }
+  }
+
+  // Create non-temporary vector to satisfy the reference requirement
+  std::vector<LongType> dims(dimensions, dimensions + dimLength);
+
+  // The shared_ptr keeps the TadPack alive even if the cache tries to clear it
+  std::shared_ptr<TadPack> result = nullptr;
+  try {
+    result = _trie.getOrCreate(dims, originalShape);
+  } catch (const std::exception& e) {
+    THROW_EXCEPTION("Failed to create or retrieve TAD pack");
+  }
+
+  // DO NOT call checkAndCleanupCaches() here - would delete the pack we just created!
+  // Cleanup happens at NativeOps layer AFTER operations complete.
+  return result;
+}
+
+void ConstantTadHelper::clearCache() {
+  _trie.clear();
+}
+
+LongType ConstantTadHelper::getCachedEntries() const {
+  return _trie.getCachedEntries();
+}
+
+LongType ConstantTadHelper::getCachedBytes() const {
+  return _trie.getCachedBytes();
+}
+
+LongType ConstantTadHelper::getPeakCachedEntries() const {
+  return _trie.getPeakCachedEntries();
+}
+
+LongType ConstantTadHelper::getPeakCachedBytes() const {
+  return _trie.getPeakCachedBytes();
+}
+
+std::string ConstantTadHelper::toString(int maxDepth, int maxEntries) const {
+  return _trie.toString(maxDepth, maxEntries);
+}
+
+void ConstantTadHelper::getCachedPointers(std::unordered_set<void*>& out_pointers) const {
+  _trie.getCachedPointers(out_pointers);
 }
 
 } // namespace sd

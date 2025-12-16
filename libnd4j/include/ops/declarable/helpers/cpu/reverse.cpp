@@ -162,11 +162,11 @@ void reverse(sd::LaunchContext* context, NDArray* input, NDArray* output, const 
   }
 }
 
-BUILD_SINGLE_TEMPLATE(template void reverseSequence_,
+BUILD_SINGLE_TEMPLATE( void reverseSequence_,
                       (sd::LaunchContext * context, NDArray* input, NDArray* seqLengths, NDArray* output,
                           int seqDim, const int batchDim),
                       SD_COMMON_TYPES);
-BUILD_SINGLE_TEMPLATE(template void reverseArray,
+BUILD_SINGLE_TEMPLATE( void reverseArray,
                       (sd::LaunchContext * context, void const* inArr, sd::LongType const* inShapeBuffer, void* outArr,
                           sd::LongType const* outShapeBuffer, int numOfElemsToReverse),
                       SD_COMMON_TYPES);
