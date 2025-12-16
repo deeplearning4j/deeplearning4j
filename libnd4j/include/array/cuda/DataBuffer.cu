@@ -31,6 +31,10 @@
 #include "../DataBuffer.h"
 #include "helpers/DebugHelper.h"
 
+#if defined(SD_GCC_FUNCTRACE)
+#include <array/DataBufferLifecycleTracker.h>
+#endif
+
 namespace sd {
 void DataBuffer::expand(const uint64_t size) {
   if (size > _lenInBytes) {
@@ -83,6 +87,8 @@ DataBuffer DataBuffer::dup() {
 
 template <typename T>
 void* DataBuffer::primaryAtOffset(const LongType offset) {
+  if(_primaryBuffer == nullptr)
+    return nullptr;
   T *type = reinterpret_cast<T*>(_primaryBuffer);
   return reinterpret_cast<void *>(type + offset);
 }
@@ -195,7 +201,7 @@ SD_KERNEL void printDeviceBufferKernel(void* buffer, sd::LongType offset, sd::Lo
   }
 }
 
-BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT  SD_KERNEL void printDeviceBufferKernel,(void* buffer, sd::LongType offset, sd::LongType length),SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT  SD_KERNEL void printDeviceBufferKernel,(void* buffer, sd::LongType offset, sd::LongType length),SD_COMMON_TYPES);
 
 
 // Wrapper function to launch the kernel
@@ -207,7 +213,7 @@ void launchPrintDeviceBufferKernel(void* buffer, sd::LongType offset, sd::LongTy
   sd::DebugHelper::checkErrorCode(LaunchContext::defaultContext()->getCudaStream(),
                                   "printBufferDebug kernel failed");
 }
-BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void launchPrintDeviceBufferKernel,(void* buffer, sd::LongType offset, sd::LongType length),SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT void launchPrintDeviceBufferKernel,(void* buffer, sd::LongType offset, sd::LongType length),SD_COMMON_TYPES);
 
 
 template <typename T>
@@ -226,7 +232,7 @@ void DataBuffer::printHostBufferContent(void* buffer, sd::LongType offset, sd::L
   }
   sd_printf("]", 0);
 }
-BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void DataBuffer::printHostBufferContent,(void* buffer, sd::LongType offset, sd::LongType length),SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT void DataBuffer::printHostBufferContent,(void* buffer, sd::LongType offset, sd::LongType length),SD_COMMON_TYPES);
 
 
 // DataBuffer implementation for .cu file
@@ -332,6 +338,13 @@ void DataBuffer::allocateSpecial() {
     ALLOCATE_SPECIAL(_specialBuffer, _workspace, getLenInBytes(), int8_t);
     _isOwnerSpecial = true;
 
+#if defined(SD_GCC_FUNCTRACE)
+    // Record SPECIAL (device) buffer allocation
+    array::DataBufferLifecycleTracker::getInstance().recordAllocation(
+        _specialBuffer, getLenInBytes(), getDataType(),
+        array::BufferType::SPECIAL, this, _workspace != nullptr);
+#endif
+
     if (_workspace == nullptr) {
       memory::MemoryCounter::getInstance().countIn(deviceId, getLenInBytes());
       memory::MemoryCounter::getInstance().countIn(memory::MemoryType::DEVICE, getLenInBytes());
@@ -410,6 +423,11 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
 void DataBuffer::deleteSpecial() {
   if (_isOwnerSpecial && _specialBuffer != nullptr && getLenInBytes() != 0) {
     auto p = reinterpret_cast<int8_t*>(_specialBuffer);
+#if defined(SD_GCC_FUNCTRACE)
+    // Record SPECIAL (device) buffer deallocation before releasing
+    array::DataBufferLifecycleTracker::getInstance().recordDeallocation(
+        _specialBuffer, array::BufferType::SPECIAL);
+#endif
     RELEASE_SPECIAL(p, _workspace);
     _specialBuffer = nullptr;
     _isOwnerSpecial = false;

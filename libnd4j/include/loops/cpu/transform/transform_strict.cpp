@@ -50,6 +50,6 @@ void SD_HOST TransformStrict<X>::exec(const void *vx, const sd::LongType *xShape
                                                               numThreads);
 }
 
-BUILD_SINGLE_TEMPLATE(template class TransformStrict, , SD_FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE( class TransformStrict, , SD_FLOAT_TYPES);
 }  // namespace transform
 }  // namespace functions

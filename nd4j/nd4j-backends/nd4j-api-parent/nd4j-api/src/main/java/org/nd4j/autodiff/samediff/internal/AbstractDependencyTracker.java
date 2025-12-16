@@ -32,23 +32,22 @@ import java.util.*;
 @Slf4j
 public abstract class AbstractDependencyTracker<T, D> {
     @Getter
-    private final IDependencyMap<T, D> dependencies; // Key: the dependent. Value: all things that the key depends on
+    private final IDependencyMap<T, D> dependencies;
     @Getter
-    private final IDependencyMap<T, Pair<D, D>> orDependencies; // Key: the dependent. Value: the set of OR dependencies
+    private final IDependencyMap<T, Pair<D, D>> orDependencies;
     @Getter
-    private final Map<D, Set<T>> reverseDependencies = new LinkedHashMap<>(); // Key: the dependee. Value: The set of
-                                                                              // all dependents that depend on this
-                                                                              // value
+    private final Map<D, Set<T>> reverseDependencies = new LinkedHashMap<>();
     @Getter
     private final Map<D, Set<T>> reverseOrDependencies = new HashMap<>();
     @Getter
-    private final Set<D> satisfiedDependencies = new LinkedHashSet<>(); // Mark the dependency as satisfied. If not in
-                                                                        // set: assumed to not be satisfied
+    private final Set<D> satisfiedDependencies = new LinkedHashSet<>();
     @Getter
-    private final Set<T> allSatisfied; // Set of all dependent values (Ys) that have all dependencies satisfied
+    private final Set<T> allSatisfied;
     @Getter
-    private final Queue<T> allSatisfiedQueue = new LinkedList<>(); // Queue for *new* "all satisfied" values. Values are
-                                                                   // removed using the "new all satisfied" methods
+    private final Queue<T> allSatisfiedQueue = new LinkedList<>();
+
+    // Cross-frame dependency alias tracking for dependees (D type)
+    private final Map<D, D> dependeeAliases = new HashMap<>();
 
     protected AbstractDependencyTracker() {
         dependencies = (IDependencyMap<T, D>) newTMap();
@@ -77,6 +76,56 @@ public abstract class AbstractDependencyTracker<T, D> {
     protected abstract String toStringD(D d);
 
     /**
+     * Resolve cross-frame dependencies for control flow operations
+     * This method should be called after Enter operations complete to establish
+     * proper dependency links for Merge operations
+     */
+    public void resolveCrossFrameDependencies(Map<String, FrameIter> frameTransitions) {
+        Map<D, D> newAliases = new HashMap<>();
+
+        // For each frame transition, create appropriate aliases
+        for (Map.Entry<String, FrameIter> entry : frameTransitions.entrySet()) {
+            String varName = entry.getKey();
+            FrameIter targetFrame = entry.getValue();
+
+            // Find any existing dependencies that should be aliased to the new frame
+            for (Map.Entry<D, Set<T>> dep : reverseDependencies.entrySet()) {
+                D dependee = dep.getKey();
+
+                // Check if this dependee matches the variable name and should be aliased
+                String dependeeName = toStringD(dependee);
+                if (dependeeName.contains(varName)) {
+                    // Create a new dependee for the target frame
+                    // This is a generic approach - specific implementations may need to override
+                    try {
+                        // Use reflection to create a new instance of the same type
+                        D newDependee = createDependeeForFrame(dependee, varName, targetFrame);
+                        if (newDependee != null) {
+                            newAliases.put(dependee, newDependee);
+                        }
+                    } catch (Exception e) {
+                        log.warn("Could not create cross-frame alias for {}: {}", dependeeName, e.getMessage());
+                    }
+                }
+            }
+        }
+
+        if (!newAliases.isEmpty()) {
+            batchCreateDependeeAliases(newAliases);
+            log.debug("Created {} cross-frame dependency aliases", newAliases.size());
+        }
+    }
+
+    /**
+     * Create a new dependee for the specified frame
+     * Subclasses should override this method to provide type-specific implementations
+     */
+    protected D createDependeeForFrame(D originalDependee, String varName, FrameIter targetFrame) {
+        // Default implementation returns null - subclasses should override
+        return null;
+    }
+
+    /**
      * Clear all internal state for the dependency tracker
      */
     public void clear() {
@@ -87,6 +136,7 @@ public abstract class AbstractDependencyTracker<T, D> {
         satisfiedDependencies.clear();
         allSatisfied.clear();
         allSatisfiedQueue.clear();
+        dependeeAliases.clear();
     }
 
     /**
@@ -98,14 +148,31 @@ public abstract class AbstractDependencyTracker<T, D> {
     }
 
     /**
+     * Resolve dependee aliases - follow the chain to get the actual dependee
+     */
+    private D resolveDependeeAlias(D dependee) {
+        D current = dependee;
+        Set<D> visited = new HashSet<>();
+
+        while (dependeeAliases.containsKey(current)) {
+            if (visited.contains(current)) {
+                log.warn("Circular dependee alias detected for: {}", toStringD(dependee));
+                break;
+            }
+            visited.add(current);
+            current = dependeeAliases.get(current);
+        }
+
+        return current;
+    }
+
+    /**
      * @return True if the dependency has been marked as satisfied using
      *         {@link #markSatisfied(Object, boolean)}
      */
     public boolean isSatisfied(@NonNull D x) {
-
-        boolean ret = satisfiedDependencies.contains(x);
-
-        return ret;
+        D resolved = resolveDependeeAlias(x);
+        return satisfiedDependencies.contains(resolved);
     }
 
     /**
@@ -118,17 +185,17 @@ public abstract class AbstractDependencyTracker<T, D> {
      * @param satisfied Whether to mark as satisfied (true) or unsatisfied (false)
      */
     public void markSatisfied(@NonNull D x, boolean satisfied) {
+        D resolved = resolveDependeeAlias(x);
 
         if (satisfied) {
-            boolean alreadySatisfied = satisfiedDependencies.contains(x);
+            boolean alreadySatisfied = satisfiedDependencies.contains(resolved);
 
             if (!alreadySatisfied) {
-                satisfiedDependencies.add(x);
+                satisfiedDependencies.add(resolved);
 
-                // Check if any Y's exist that have dependencies that are all satisfied, for X
-                // -> Y
-                Set<T> s = reverseDependencies.get(x);
-                Set<T> s2 = reverseOrDependencies.get(x);
+                // Check if any Y's exist that have dependencies that are all satisfied, for X -> Y
+                Set<T> s = reverseDependencies.get(resolved);
+                Set<T> s2 = reverseOrDependencies.get(resolved);
 
                 Set<T> set;
                 if (s != null && s2 != null) {
@@ -141,13 +208,12 @@ public abstract class AbstractDependencyTracker<T, D> {
                     set = s2;
                 } else {
                     if (log.isTraceEnabled()) {
-                        log.trace("No values depend on: {}", toStringD(x));
+                        log.trace("No values depend on: {}", toStringD(resolved));
                     }
                     return;
                 }
 
                 for (T t : set) {
-
                     boolean allSatisfied = true;
                     Iterable<D> it = dependencies.getDependantsForEach(t);
                     if (it != null) {
@@ -179,10 +245,10 @@ public abstract class AbstractDependencyTracker<T, D> {
             }
 
         } else {
-            satisfiedDependencies.remove(x);
+            satisfiedDependencies.remove(resolved);
             if (!allSatisfied.isEmpty()) {
 
-                Set<T> reverse = reverseDependencies.get(x);
+                Set<T> reverse = reverseDependencies.get(resolved);
                 if (reverse != null) {
                     for (T y : reverse) {
                         if (allSatisfied.contains(y)) {
@@ -191,7 +257,7 @@ public abstract class AbstractDependencyTracker<T, D> {
                         }
                     }
                 }
-                Set<T> orReverse = reverseOrDependencies.get(x);
+                Set<T> orReverse = reverseOrDependencies.get(resolved);
                 if (orReverse != null) {
                     for (T y : orReverse) {
                         if (allSatisfied.contains(y) && !isAllSatisfied(y)) {
@@ -213,18 +279,7 @@ public abstract class AbstractDependencyTracker<T, D> {
      * @return True if Y depends on any values
      */
     public boolean hasDependency(@NonNull T y) {
-
-        if (dependencies.containsAny(y)) {
-
-            return true;
-        }
-
-        if (orDependencies.containsAny(y)) {
-
-            return true;
-        }
-
-        return false;
+        return dependencies.containsAny(y) || orDependencies.containsAny(y);
     }
 
     /**
@@ -247,18 +302,18 @@ public abstract class AbstractDependencyTracker<T, D> {
      * @param x The dependee that is required for Y
      */
     public void addDependency(@NonNull T y, @NonNull D x) {
+        D resolved = resolveDependeeAlias(x);
 
-        if (!reverseDependencies.containsKey(x))
-            reverseDependencies.put(x, newTSet());
+        if (!reverseDependencies.containsKey(resolved))
+            reverseDependencies.put(resolved, newTSet());
 
-        dependencies.add(y, x);
-        reverseDependencies.get(x).add(y);
+        dependencies.add(y, resolved);
+        reverseDependencies.get(resolved).add(y);
 
         checkAndUpdateIfAllSatisfied(y);
     }
 
     protected void checkAndUpdateIfAllSatisfied(@NonNull T y) {
-
         boolean allSat = isAllSatisfied(y);
         if (allSat) {
             // Case where "x is satisfied" happened before x->y added
@@ -299,7 +354,6 @@ public abstract class AbstractDependencyTracker<T, D> {
     }
 
     protected boolean isAllSatisfied(@NonNull T y) {
-
         Iterable<D> set1 = dependencies.getDependantsForEach(y);
 
         boolean retVal = true;
@@ -331,44 +385,50 @@ public abstract class AbstractDependencyTracker<T, D> {
      * @param x The dependee that is no longer required for Y
      */
     public void removeDependency(@NonNull T y, @NonNull D x) {
+        D resolved = resolveDependeeAlias(x);
 
-        dependencies.removeGroupReturn(y, t -> t.equals(x));
+        dependencies.removeGroupReturn(y, t -> t.equals(resolved));
 
-        Set<T> s2 = reverseDependencies.get(x);
+        Set<T> s2 = reverseDependencies.get(resolved);
         if (s2 != null) {
             s2.remove(y);
             if (s2.isEmpty())
-                reverseDependencies.remove(x);
+                reverseDependencies.remove(resolved);
         }
 
         Iterable<Pair<D, D>> s3 = orDependencies.removeGroupReturn(y, t -> {
-            return x.equals(t.getFirst()) || x.equals(t.getSecond());
+            D first = resolveDependeeAlias(t.getFirst());
+            D second = resolveDependeeAlias(t.getSecond());
+            return resolved.equals(first) || resolved.equals(second);
         });
+
         if (s3 != null) {
             boolean removedReverse = false;
             for (Pair<D, D> p : s3) {
                 if (!removedReverse) {
-                    Set<T> set1 = reverseOrDependencies.get(p.getFirst());
-                    Set<T> set2 = reverseOrDependencies.get(p.getSecond());
+                    D first = resolveDependeeAlias(p.getFirst());
+                    D second = resolveDependeeAlias(p.getSecond());
 
-                    set1.remove(y);
-                    set2.remove(y);
+                    Set<T> set1 = reverseOrDependencies.get(first);
+                    Set<T> set2 = reverseOrDependencies.get(second);
 
-                    if (set1.isEmpty())
-                        reverseOrDependencies.remove(p.getFirst());
-                    if (set2.isEmpty())
-                        reverseOrDependencies.remove(p.getSecond());
+                    if (set1 != null) {
+                        set1.remove(y);
+                        if (set1.isEmpty()) reverseOrDependencies.remove(first);
+                    }
+                    if (set2 != null) {
+                        set2.remove(y);
+                        if (set2.isEmpty()) reverseOrDependencies.remove(second);
+                    }
 
                     removedReverse = true;
                 }
             }
         }
-
     }
 
     /**
-     * Add an "Or" dependency: Y requires either x1 OR x2 - i.e., (x1 or x2) ->
-     * Y<br>
+     * Add an "Or" dependency: Y requires either x1 OR x2 - i.e., (x1 or x2) -> Y<br>
      * If either x1 or x2 (or both) are marked satisfied via
      * {@link #markSatisfied(Object, boolean)} then the
      * dependency is considered satisfied
@@ -378,15 +438,17 @@ public abstract class AbstractDependencyTracker<T, D> {
      * @param x2 Dependee 2
      */
     public void addOrDependency(@NonNull T y, @NonNull D x1, @NonNull D x2) {
+        D resolved1 = resolveDependeeAlias(x1);
+        D resolved2 = resolveDependeeAlias(x2);
 
-        if (!reverseOrDependencies.containsKey(x1))
-            reverseOrDependencies.put(x1, newTSet());
-        if (!reverseOrDependencies.containsKey(x2))
-            reverseOrDependencies.put(x2, newTSet());
+        if (!reverseOrDependencies.containsKey(resolved1))
+            reverseOrDependencies.put(resolved1, newTSet());
+        if (!reverseOrDependencies.containsKey(resolved2))
+            reverseOrDependencies.put(resolved2, newTSet());
 
-        orDependencies.add(y, new Pair<>(x1, x2));
-        reverseOrDependencies.get(x1).add(y);
-        reverseOrDependencies.get(x2).add(y);
+        orDependencies.add(y, new Pair<>(resolved1, resolved2));
+        reverseOrDependencies.get(resolved1).add(y);
+        reverseOrDependencies.get(resolved2).add(y);
 
         checkAndUpdateIfAllSatisfied(y);
     }
@@ -429,7 +491,7 @@ public abstract class AbstractDependencyTracker<T, D> {
      * dependee, it returns the first that matches
      * the provided predicate. If no value matches the predicate, null is returned
      *
-     * @param predicate Predicate gor checking
+     * @param predicate Predicate for checking
      * @return The first value matching the predicate, or null if no values match
      *         the predicate
      */
@@ -456,5 +518,65 @@ public abstract class AbstractDependencyTracker<T, D> {
         }
 
         return null; // None match predicate
+    }
+
+    /**
+     * Create an alias mapping from oldDependee to newDependee
+     * This allows operations to find dependencies that have moved between frames
+     */
+    public void createDependeeAlias(@NonNull D oldDependee, @NonNull D newDependee) {
+        dependeeAliases.put(oldDependee, newDependee);
+
+        // If the old dependee was satisfied, mark the new one as satisfied
+        if (satisfiedDependencies.contains(oldDependee)) {
+            satisfiedDependencies.remove(oldDependee);
+            satisfiedDependencies.add(newDependee);
+        }
+
+        log.debug("Created dependee alias: {} -> {}", toStringD(oldDependee), toStringD(newDependee));
+    }
+
+    /**
+     * Batch create dependee aliases
+     */
+    public void batchCreateDependeeAliases(@NonNull Map<D, D> aliasMapping) {
+        for (Map.Entry<D, D> entry : aliasMapping.entrySet()) {
+            dependeeAliases.put(entry.getKey(), entry.getValue());
+        }
+
+        // Handle satisfaction transfer
+        for (Map.Entry<D, D> entry : aliasMapping.entrySet()) {
+            if (satisfiedDependencies.contains(entry.getKey())) {
+                satisfiedDependencies.remove(entry.getKey());
+                satisfiedDependencies.add(entry.getValue());
+            }
+        }
+
+        // Re-evaluate dependencies that might now be satisfied
+        reevaluateAllSatisfied();
+
+        log.debug("Batch created {} dependee aliases", aliasMapping.size());
+    }
+
+
+
+    /**
+     * Force re-evaluation of all satisfied dependencies
+     */
+    public void reevaluateAllSatisfied() {
+        Set<T> previouslySatisfied = new HashSet<>(allSatisfied);
+        allSatisfied.clear();
+        allSatisfiedQueue.clear();
+
+        // Re-check all previously satisfied dependents
+        for (T dependent : previouslySatisfied) {
+            if (isAllSatisfied(dependent)) {
+                allSatisfied.add(dependent);
+                allSatisfiedQueue.add(dependent);
+            }
+        }
+
+        log.debug("Re-evaluated satisfied dependencies: {} -> {}",
+                previouslySatisfied.size(), allSatisfied.size());
     }
 }

@@ -54,6 +54,17 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     OpaqueNDArray getOrCreateOpaqueNDArray();
 
+    /**
+     * Clears the cached {@link OpaqueNDArray} if one exists.
+     * This releases the native memory associated with the opaque array
+     * without closing the underlying INDArray itself.
+     *
+     * This is useful for releasing native resources when the opaque array
+     * is no longer needed but the INDArray should remain usable.
+     * A new OpaqueNDArray will be created on the next call to
+     * {@link #getOrCreateOpaqueNDArray()}.
+     */
+    void clearOpaqueNDArray();
 
     /**
      * The underlying event log for all ndarrays.

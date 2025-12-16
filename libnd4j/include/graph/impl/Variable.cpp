@@ -50,7 +50,7 @@ Variable *Variable::asT() {
 
   return result;
 }
-BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT Variable *Variable::asT, (), SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT Variable *Variable::asT, (), SD_COMMON_TYPES);
 
 Variable *Variable::clone() {
   auto result = new Variable(this->isPlaceholder());
