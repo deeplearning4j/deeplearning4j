@@ -186,7 +186,7 @@ SD_HOST void TransformAny<X, Z>::intermediateShaped(
   sd::DebugHelper::checkErrorCode(stream, "transformAny(...) cached kernel failed");
 }
 
-BUILD_DOUBLE_TEMPLATE(template class TransformAny, , SD_COMMON_TYPES, SD_COMMON_TYPES);
+BUILD_DOUBLE_TEMPLATE( class TransformAny, , SD_COMMON_TYPES, SD_COMMON_TYPES);
 
 }  // namespace transform
 }  // namespace functions
