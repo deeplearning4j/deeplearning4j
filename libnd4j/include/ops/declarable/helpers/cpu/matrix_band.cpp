@@ -62,7 +62,7 @@ void matrixBandPart(sd::LaunchContext* context, NDArray* input, NDArray* output,
                     sd::LongType upperBand) {
   BUILD_SINGLE_SELECTOR(input->dataType(), matrixBandPart_, (input, output, lowerBand, upperBand), SD_FLOAT_TYPES);
 }
-BUILD_SINGLE_TEMPLATE(template void matrixBandPart_,
+BUILD_SINGLE_TEMPLATE( void matrixBandPart_,
                       (NDArray * input, NDArray* output, sd::LongType lowerBand, sd::LongType upperBand),
                       SD_FLOAT_TYPES);
 }  // namespace helpers
