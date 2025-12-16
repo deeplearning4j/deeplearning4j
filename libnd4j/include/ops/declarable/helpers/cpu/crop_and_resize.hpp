@@ -25,9 +25,22 @@
 namespace sd {
 namespace ops {
 namespace helpers {
-template <typename T, typename F, typename I>
-SD_LIB_HIDDEN void cropAndResizeFunctor_(NDArray *images, NDArray *boxes, NDArray *indices,
-                                         NDArray *cropSize, int method, double extrapolationVal, NDArray *crops) {
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// cropAndResizeFunctor main algorithm
+//      context - launch context
+//      images - batch of images (4D tensor - [batch, width, height, pixels])
+//      boxes - 2D tensor with boxes for crop
+//      indices - 2D int tensor with indices of boxes to crop
+//      cropSize - 2D int tensor with crop box sizes
+//      method - (one of 0 - bilinear, 1 - nearest)
+//      extrapolationVal - double value of extrapolation
+//      crops - output (4D tensor - [batch, outWidth, outHeight, pixels])
+//
+template <typename T, typename Z, typename I>
+SD_LIB_EXPORT void cropAndResizeFunctor_(LaunchContext* context, NDArray * images, NDArray * boxes,
+                           NDArray * indices, NDArray * cropSize, int method, double extrapolationVal,
+                           NDArray* crops) {
   const int batchSize = images->sizeAt(0);
   const int imageHeight = images->sizeAt(1);
   const int imageWidth = images->sizeAt(2);
@@ -38,22 +51,23 @@ SD_LIB_HIDDEN void cropAndResizeFunctor_(NDArray *images, NDArray *boxes, NDArra
   const int depth = crops->sizeAt(3);
 
   for (auto b = 0; b < numBoxes; ++b) {
-    T y1 = boxes->t<F>(b, 0);
-    T x1 = boxes->t<F>(b, 1);
-    T y2 = boxes->t<F>(b, 2);
-    T x2 = boxes->t<F>(b, 3);
+    Z y1 = static_cast<Z>(boxes->t<Z>(b, 0));
+    Z x1 = static_cast<Z>(boxes->t<Z>(b, 1));
+    Z y2 = static_cast<Z>(boxes->t<Z>(b, 2));
+    Z x2 = static_cast<Z>(boxes->t<Z>(b, 3));
 
-    int bIn = indices->e<int>(b);
+    int bIn = indices->e<I>(b);
     if (bIn >= batchSize) {
       continue;
     }
 
-    T heightScale = (cropHeight > 1)
-                        ? T((y2 - y1) * (imageHeight - 1) / (cropHeight - 1))
-                        : T(0);
-    T widthScale = (cropWidth > 1)
-                       ? T((x2 - x1) * (imageWidth - 1) / (cropWidth - 1))
-                       : T(0);
+    Z heightScale = (cropHeight > 1)
+                        ? Z((y2 - y1) * (imageHeight - 1) / (cropHeight - 1))
+                        : Z(0);
+    Z widthScale = (cropWidth > 1)
+                       ? Z((x2 - x1) * (imageWidth - 1) / (cropWidth - 1))
+                       : Z(0);
+
     auto func = PRAGMA_THREADS_FOR {
       for (auto y = start; y < stop; y++) {
         const float inY =
@@ -84,15 +98,15 @@ SD_LIB_HIDDEN void cropAndResizeFunctor_(NDArray *images, NDArray *boxes, NDArra
             }
             int left_x_index = math::p_floor(in_x);
             int right_x_index = math::p_ceil(in_x);
-            T x_lerp = in_x - left_x_index;
+            T x_lerp = static_cast<T>(in_x - left_x_index);
 
             for (auto d = 0; d < depth; ++d) {
-              const float topLeft(images->e<float>(bIn, topYIndex, left_x_index, d));
-              const float topRight(images->e<float>(bIn, topYIndex, right_x_index, d));
-              const float bottomLeft(images->e<float>(bIn, bottomYIndex, left_x_index, d));
-              const float bottomRight(images->e<float>(bIn, bottomYIndex, right_x_index, d));
-              const float top = topLeft + (topRight - topLeft) * x_lerp;
-              const float bottom = bottomLeft + (bottomRight - bottomLeft) * x_lerp;
+              const T topLeft(images->e<T>(bIn, topYIndex, left_x_index, d));
+              const T topRight(images->e<T>(bIn, topYIndex, right_x_index, d));
+              const T bottomLeft(images->e<T>(bIn, bottomYIndex, left_x_index, d));
+              const T bottomRight(images->e<T>(bIn, bottomYIndex, right_x_index, d));
+              const T top = topLeft + (topRight - topLeft) * x_lerp;
+              const T bottom = bottomLeft + (bottomRight - bottomLeft) * x_lerp;
               crops->p(b, y, x, d, top + (bottom - top) * y_lerp);
             }
           }
@@ -120,7 +134,14 @@ SD_LIB_HIDDEN void cropAndResizeFunctor_(NDArray *images, NDArray *boxes, NDArra
     samediff::Threads::parallel_for(func, 0, cropHeight);
   }
 }
-}  // namespace helpers
+}
 }  // namespace ops
 }  // namespace sd
+
+
+BUILD_TRIPLE_TEMPLATE( SD_LIB_EXPORT void sd::ops::helpers::cropAndResizeFunctor_,
+                      (sd::LaunchContext * context, NDArray * images, NDArray * boxes, NDArray * indices,
+                       NDArray * cropSize, int method, double extrapolationVal, NDArray* crops),
+                      SD_NUMERIC_TYPES, SD_FLOAT_TYPES, SD_INTEGER_TYPES);
+                      
 #endif

@@ -216,7 +216,7 @@ static void pooling3d_(sd::graph::Context& block, NDArray& input, NDArray& outpu
                 for (sd::LongType kd = dstart; kd < dend; kd += iStep2)
                   for (sd::LongType kh = hstart; kh < hend; kh += iStep3)
                     for (sd::LongType kw = wstart; kw < wend; kw += iStep4)
-                      sum += sd::math::sd_pow<T, T, T>(sd::math::sd_abs<T,T>(pIn[kd + kh + kw]), extraParam0);
+                      sum += sd::math::sd_pow<T, T, T>(sd::math::sd_abs<T,T>(pIn[kd + kh + kw]), static_cast<T>(extraParam0));
 
                 sum = sd::math::sd_pow<T, T, T>(sum, (T)1.f / extraParam0);
 
