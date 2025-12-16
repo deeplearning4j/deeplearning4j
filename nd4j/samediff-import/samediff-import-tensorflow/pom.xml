@@ -58,15 +58,14 @@
     </plugins>
   </build>
 
-
-
   <dependencies>
     <dependency>
       <groupId>org.eclipse.deeplearning4j</groupId>
       <artifactId>samediff-import-api</artifactId>
       <version>${project.version}</version>
     </dependency>
-  </dependencies>
+    
 
+  </dependencies>
 
 </project>

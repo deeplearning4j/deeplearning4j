@@ -28,6 +28,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/specials.h>
 #include <types/types.h>
+#include <loops/pairwise_instantiations.h>
 
 namespace sd {
 
@@ -331,3 +332,5 @@ void DoubleMethods<X, Y>::sortTadByValue(NDArray *xArr, NDArray *yArr,
   samediff::Threads::parallel_tad(func, 0, numTads);
 }
 }  // namespace sd
+
+

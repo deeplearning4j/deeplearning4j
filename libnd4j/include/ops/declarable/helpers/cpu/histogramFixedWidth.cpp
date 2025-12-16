@@ -32,8 +32,8 @@ void histogramFixedWidth_(NDArray& input, NDArray& range, NDArray& output) {
   // firstly initialize output with zeros
   output.nullify();
 
-  const T leftEdge = range.e<double>(0);
-  const T rightEdge = range.e<double>(1);
+  const T leftEdge = static_cast<T>(range.e<double>(0));
+  const T rightEdge = static_cast<T>(range.e<double>(1));
 
   const T binWidth = (rightEdge - leftEdge) / nbins;
   const T secondEdge = leftEdge + binWidth;
@@ -59,7 +59,7 @@ void histogramFixedWidth_(NDArray& input, NDArray& range, NDArray& output) {
 void histogramFixedWidth(sd::LaunchContext* context, NDArray& input, NDArray& range, NDArray& output) {
   BUILD_SINGLE_SELECTOR(input.dataType(), histogramFixedWidth_, (input, range, output), SD_COMMON_TYPES);
 }
-BUILD_SINGLE_TEMPLATE(template void histogramFixedWidth_, (NDArray& input, NDArray& range, NDArray& output),
+BUILD_SINGLE_TEMPLATE( void histogramFixedWidth_, (NDArray& input, NDArray& range, NDArray& output),
                       SD_COMMON_TYPES);
 
 }  // namespace helpers

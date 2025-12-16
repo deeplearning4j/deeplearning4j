@@ -24,6 +24,7 @@
 #include <array>
 #include <atomic>
 #include <memory>
+#include <unordered_set>
 #include <vector>
 #include "./generic/StripedLocks.h"
 namespace sd {
@@ -55,9 +56,21 @@ class SD_LIB_EXPORT ShapeTrieNode {
     }
     _children.clear();
 
-    // Delete buffer if it exists
+    // CRITICAL FIX: Respect reference counting before deleting buffers!
+    // The buffer should ONLY be deleted if refcount == 1 (cache is the only owner).
+    // If refcount > 1, other NDArrays still hold references - deleting would create
+    // dangling pointers that cause SIGSEGV crashes when accessed later.
+    //
+    // This is especially important during JVM shutdown where static destruction order
+    // is unpredictable and NDArrays may outlive the cache singleton.
     if (_buffer != nullptr) {
-      delete _buffer;
+      int refCount = _buffer->getRefCount();
+      if (refCount <= 1) {
+        // Only cache owns it - safe to delete
+        delete _buffer;
+      }
+      // If refCount > 1, intentionally leak to prevent use-after-free crashes.
+      // This is the correct behavior for cache cleanup with external references.
       _buffer = nullptr;
     }
   }
@@ -107,13 +120,32 @@ class SD_LIB_EXPORT DirectShapeTrie {
   std::array<ShapeTrieNode*, NUM_STRIPES> *_roots;
   std::array<MUTEX_TYPE*, NUM_STRIPES> *_mutexes = nullptr;
 
+  // Initialization guards to prevent partially-constructed state from leaking
+  std::atomic<bool> _initialization_complete{false};
+  std::atomic<bool> _initialization_in_progress{false};
+
+  // Cache statistics tracking
+  mutable std::atomic<LongType> _current_entries{0};
+  mutable std::atomic<LongType> _current_bytes{0};
+  mutable std::atomic<LongType> _peak_entries{0};
+  mutable std::atomic<LongType> _peak_bytes{0};
+
   // Helper method to create a fallback buffer when trie insertion fails
   // Always returns a valid shape buffer or throws an exception
   ConstantShapeBuffer* createFallbackBuffer(const LongType* shapeInfo, int rank);
 
+  // Internal helper to recursively count entries and bytes in a subtrie
+  void countEntriesAndBytes(const ShapeTrieNode* node, LongType& entries, LongType& bytes) const;
+
+  // Internal helper to build string representation recursively
+  void buildStringRepresentation(const ShapeTrieNode* node, std::stringstream& ss,
+                                 const std::string& indent, int currentDepth,
+                                 int maxDepth, int& entriesShown, int maxEntries) const;
+
  public:
   // Constructor
   DirectShapeTrie() {
+    _initialization_in_progress.store(true, std::memory_order_release);
     _roots = new std::array<ShapeTrieNode*, NUM_STRIPES>();
     _mutexes = new std::array<MUTEX_TYPE*, NUM_STRIPES>();
 
@@ -124,6 +156,8 @@ class SD_LIB_EXPORT DirectShapeTrie {
     }
 
     ShapeBufferPlatformHelper::initialize();
+    _initialization_in_progress.store(false, std::memory_order_release);
+    _initialization_complete.store(true, std::memory_order_release);
   }
 
   // Delete copy constructor and assignment
@@ -163,6 +197,9 @@ class SD_LIB_EXPORT DirectShapeTrie {
   // Check if a shape info already exists in the trie
   bool exists(const LongType* shapeInfo) const;
 
+  // Wait until constructor finishes allocating internal state.
+  void waitForInitialization() const;
+
   // Helper methods
   size_t computeHash(const LongType* shapeInfo) const;
   size_t getStripeIndex(const LongType* shapeInfo) const;
@@ -174,6 +211,60 @@ class SD_LIB_EXPORT DirectShapeTrie {
 
   // Calculate a unique shape signature for additional validation
   int calculateShapeSignature(const LongType* shapeInfo) const;
+
+  // Clear all cached shape buffers
+  void clearCache();
+
+  /**
+   * Get the total number of cached shape entries.
+   *
+   * @return Total number of cached shape buffers across all stripes
+   */
+  LongType getCachedEntries() const;
+
+  /**
+   * Get the total memory used by cached shape buffers in bytes.
+   * This includes the shape_info buffer sizes across all cached entries.
+   *
+   * @return Total memory used in bytes
+   */
+  LongType getCachedBytes() const;
+
+  /**
+   * Get the peak number of entries that were cached simultaneously.
+   *
+   * @return Peak number of cached entries
+   */
+  LongType getPeakCachedEntries() const;
+
+  /**
+   * Get the peak memory usage by cached shape buffers in bytes.
+   *
+   * @return Peak memory usage in bytes
+   */
+  LongType getPeakCachedBytes() const;
+
+  /**
+   * Generate a human-readable string representation of the trie structure.
+   * Shows the hierarchy of nodes and cached shape buffers for debugging.
+   *
+   * @param maxDepth Maximum depth to traverse (default: 10, -1 for unlimited)
+   * @param maxEntries Maximum number of entries to show (default: 100, -1 for unlimited)
+   * @return String representation of the trie
+   */
+  std::string toString(int maxDepth = 10, int maxEntries = 100) const;
+
+  /**
+   * Get all ConstantShapeBuffer pointers currently in the cache.
+   * This is used by lifecycle tracking to distinguish cached entries from real leaks.
+   *
+   * @param out_pointers Set to fill with pointers to all cached ConstantShapeBuffer objects
+   */
+  void getCachedPointers(std::unordered_set<void*>& out_pointers) const;
+
+ private:
+  // Internal helper to collect ConstantShapeBuffer pointers recursively
+  void collectCachedPointers(const ShapeTrieNode* node, std::unordered_set<void*>& out_pointers) const;
 };
 
 }  // namespace sd

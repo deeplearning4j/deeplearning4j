@@ -122,7 +122,7 @@ SD_HOST void concatKernelHStackGeneric(dim3 &launchDims, cudaStream_t *stream,
 }
 
 BUILD_SINGLE_TEMPLATE(
-template void concatKernelHStackGeneric,
+ void concatKernelHStackGeneric,
 (dim3 &launchDims, cudaStream_t *stream, int numArrays, sd::Pointer *data,
 sd::Pointer *inputShapeInfos, void *vz, sd::LongType *zShapeInfo),
 SD_COMMON_TYPES);

@@ -52,7 +52,7 @@ LongType uniqueCount(LaunchContext* context, NDArray* input) {
   return 0;
 }
 
-BUILD_SINGLE_TEMPLATE(template sd::LongType uniqueCount_, (NDArray * input), SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE( sd::LongType uniqueCount_, (NDArray * input), SD_COMMON_TYPES);
 
 template <typename T>
 static Status uniqueFunctor_(NDArray* input, NDArray* values, NDArray* indices, NDArray* counts) {
@@ -108,7 +108,7 @@ Status uniqueFunctor(LaunchContext* context, NDArray* input, NDArray* values, ND
   return sd::Status::KERNEL_FAILURE;
 }
 
-BUILD_SINGLE_TEMPLATE(template sd::Status uniqueFunctor_,
+BUILD_SINGLE_TEMPLATE( sd::Status uniqueFunctor_,
                       (NDArray * input, NDArray* values, NDArray* indices, NDArray* counts), SD_COMMON_TYPES);
 }  // namespace helpers
 }  // namespace ops
