@@ -310,7 +310,7 @@ public class ControlFlow {
         }
 
         SameDiffSingleLambda cond = condBody();
-        SameDiffLambda loopBody = loopBody(parent,functionBody,functionName,functionBodyInputs,functionBodyOutputs);
+        SameDiffLambda loopBody = loopBody(parent,functionBody,functionName,functionBodyInputs,functionBodyOutputs,outputVarNames);
         return parent.whileLoop(outputVarNames,loopName,loopVars,cond,loopBody);
 
     }
@@ -380,6 +380,24 @@ public class ControlFlow {
          * @return the appropriate invoke parameters for use with {@link #condBody()} and {@link #loopBody(SameDiff, SameDiff, String, String[], String[])}
          */
         public Invoke.InvokeParams invokeParams(String functionName,String[] subGraphInputNames,String[] subGraphOutputNames) {
+            return invokeParams(functionName, subGraphInputNames, subGraphOutputNames, null);
+        }
+
+        /**
+         * Construct {@link org.nd4j.linalg.api.ops.custom.Invoke.InvokeParams}
+         * for usage with {@link SameDiff#invoke(Invoke.InvokeParams)}
+         * the variables here reflect what is used in the loop.
+         * A user can use {@link LoopLambdaArgs} to create an appropriately configured
+         * {@link org.nd4j.linalg.api.ops.custom.Invoke.InvokeParams} to be used
+         * with the body.
+         *
+         * @param functionName the name of the function to invoke
+         * @param subGraphInputNames the subgraph input names to invoke the function with
+         * @param subGraphOutputNames the subgraph output names to expect returned from the function
+         * @param outputVarNames the output variable names for the parent graph
+         * @return the appropriate invoke parameters for use with {@link #condBody()} and {@link #loopBody(SameDiff, SameDiff, String, String[], String[])}
+         */
+        public Invoke.InvokeParams invokeParams(String functionName, String[] subGraphInputNames, String[] subGraphOutputNames, String[] outputVarNames) {
             List<SDVariable> inputs = new ArrayList<>();
             //starting iteration
             inputs.add(iterStart);
@@ -396,6 +414,7 @@ public class ControlFlow {
                     .inputVarNames(inputs.stream().map(input ->
                                     input.name()).collect(Collectors.toList())
                             .toArray(new String[inputs.size()]))
+                    .outputVarNames(outputVarNames)
                     .build();
         }
 
@@ -405,7 +424,7 @@ public class ControlFlow {
     /**
      * Create a {@link SameDiffLambda} to be used in combination with
      * {@link #condBody()} and {@link SameDiff#invoke(Invoke.InvokeParams)}
-     * this lambda will use samediff invoke as the function bdoy
+     * this lambda will use samediff invoke as the function body
      * and setup the appropriate parameters to create a looping construct
      * as described in {@link #loopBody(SameDiff, SameDiff, String, String[], String[])}
      * @param parent
@@ -420,12 +439,35 @@ public class ControlFlow {
                                           String functionName,
                                           String[] subGraphInputNames,
                                           String[] subGraphOutputNames) {
+        return loopBody(parent, functionBody, functionName, subGraphInputNames, subGraphOutputNames, null);
+    }
+
+    /**
+     * Create a {@link SameDiffLambda} to be used in combination with
+     * {@link #condBody()} and {@link SameDiff#invoke(Invoke.InvokeParams)}
+     * this lambda will use samediff invoke as the function body
+     * and setup the appropriate parameters to create a looping construct
+     * as described in {@link #loopBody(SameDiff, SameDiff, String, String[], String[])}
+     * @param parent
+     * @param functionBody
+     * @param functionName
+     * @param subGraphInputNames  the subgraph input names for use to invoke the graph with
+     * @param subGraphOutputNames the subgraph output names to expect to be returned from the subgraph invoke
+     * @param outputVarNames the output variable names for the parent graph
+     * @return
+     */
+    public static SameDiffLambda loopBody(SameDiff parent,
+                                          SameDiff functionBody,
+                                          String functionName,
+                                          String[] subGraphInputNames,
+                                          String[] subGraphOutputNames,
+                                          String[] outputVarNames) {
         Preconditions.checkState(subGraphInputNames != null && subGraphOutputNames != null && subGraphInputNames.length == subGraphOutputNames.length,"Sub graph input and output names must  be defined and equal in length.");
         if(parent.getFunction(functionName) == null)
             parent.putSubFunction(functionName,functionBody);
         return (sameDiff, inputs) -> {
             LoopLambdaArgs loopLambdaArgs = ControlFlow.argsFromInputs(inputs);
-            Invoke.InvokeParams invokeParams = loopLambdaArgs.invokeParams(functionName, subGraphInputNames, subGraphOutputNames);
+            Invoke.InvokeParams invokeParams = loopLambdaArgs.invokeParams(functionName, subGraphInputNames, subGraphOutputNames, outputVarNames);
             SDVariable[] invoke = sameDiff.invoke(invokeParams);
             List<SDVariable> retList = new ArrayList<>();
             //current iterations + 1 (each time the body is invoked update the current iteration)
