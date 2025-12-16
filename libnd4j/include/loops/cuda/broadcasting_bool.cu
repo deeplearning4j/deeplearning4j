@@ -564,7 +564,7 @@ SD_DEVICE void BroadcastBool<X, Z>::transformCuda(
 }
 
 // build the class
-BUILD_DOUBLE_TEMPLATE(template class BroadcastBool, , SD_COMMON_TYPES, SD_BOOL_TYPES);
+BUILD_DOUBLE_TEMPLATE( class BroadcastBool, , SD_COMMON_TYPES, SD_BOOL_TYPES);
 
 }  // namespace broadcast
 }  // namespace functions
