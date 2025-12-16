@@ -41,6 +41,6 @@ SD_HOST void convertHalfsToGeneric(dim3 &launchDims, cudaStream_t *stream, half 
   DebugHelper::checkErrorCode(stream, "convertHalfsToGeneric(...) failed");
 }
 
-BUILD_SINGLE_TEMPLATE(template void convertHalfsToGeneric,
+BUILD_SINGLE_TEMPLATE( void convertHalfsToGeneric,
                       (dim3 & launchDims, cudaStream_t *stream, half *dx, sd::LongType n, void *dz), SD_COMMON_TYPES);
 }  // namespace sd
