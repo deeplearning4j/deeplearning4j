@@ -32,7 +32,7 @@
 
     </parent>
 
-    <artifactId>nd4j-cuda-12.3</artifactId>
+    <artifactId>nd4j-cuda</artifactId>
 
     <name>nd4j-cuda</name>
 
@@ -59,7 +59,7 @@
         </dependency>
         <dependency>
             <groupId>org.eclipse.deeplearning4j</groupId>
-            <artifactId>nd4j-cuda-12.3-preset</artifactId>
+            <artifactId>nd4j-cuda-preset</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -67,11 +67,14 @@
         <dependency>
             <groupId>org.bytedeco</groupId>
             <artifactId>javacpp</artifactId>
+            <version>${javacpp.version}</version>
         </dependency>
         <dependency>
             <groupId>org.bytedeco</groupId>
             <artifactId>javacpp</artifactId>
-            <classifier>${dependency.platform}</classifier> </dependency>
+            <version>${javacpp.version}</version>
+            <classifier>${dependency.platform}</classifier>
+        </dependency>
 
         <dependency>
             <groupId>org.eclipse.deeplearning4j</groupId>
@@ -207,7 +210,7 @@
                         <dependencies>
                             <dependency>
                                 <groupId>org.eclipse.deeplearning4j</groupId>
-                                <artifactId>nd4j-cuda-12.3-preset</artifactId>
+                                <artifactId>nd4j-cuda-preset</artifactId>
                                 <version>${project.version}</version>
                             </dependency>
                             <dependency>
@@ -314,7 +317,7 @@
                         <dependencies>
                             <dependency>
                                 <groupId>org.eclipse.deeplearning4j</groupId>
-                                <artifactId>nd4j-cuda-12.3-preset</artifactId>
+                                <artifactId>nd4j-cuda-preset</artifactId>
                                 <version>${project.version}</version>
                             </dependency>
                             <dependency>

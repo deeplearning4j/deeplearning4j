@@ -170,12 +170,28 @@ public abstract class DifferentialFunction {
 
 
     protected void recordCreation() {
-        if(Nd4j.getEnvironment().isDebug() || Nd4j.getEnvironment().isVerbose()) {
-            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-            this.creationLocation = StackTraceUtils.pointOfInvocation(stackTrace);
-            this.creationPointofOrigin = StackTraceUtils.pointOfOrigin(stackTrace);
-            this.sameDiffCalls = StackTraceUtils.callsFromClass(stackTrace, SameDiff.class.getName());
-            creationCallStack = stackTrace;
+        // Guard against circular initialization: DifferentialFunctionClassHolder.initInstance()
+        // is called during Nd4j initialization before the backend is fully set up.
+        //
+        // while Nd4j class is being initialized causes circular dependency issues and crashes.
+        //
+        // Instead, we use try-catch to safely handle the case where Nd4j is not yet initialized.
+        // If Nd4j.getEnvironment() throws any exception (NoClassDefFoundError, NullPointerException,
+        // ExceptionInInitializerError, etc.), it means Nd4j is not ready, so we skip recording.
+        try {
+            if(Nd4j.getEnvironment().isDebug() || Nd4j.getEnvironment().isVerbose() ||
+            Nd4j.getEnvironment().isFuncTracePrintJavaOnly()) {
+                StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+                this.creationLocation = StackTraceUtils.pointOfInvocation(stackTrace);
+                this.creationPointofOrigin = StackTraceUtils.pointOfOrigin(stackTrace);
+                this.sameDiffCalls = StackTraceUtils.callsFromClass(stackTrace, SameDiff.class.getName());
+                creationCallStack = stackTrace;
+            }
+        } catch (Throwable t) {
+            // Nd4j is not fully initialized yet - skip recording.
+            // This is expected during DifferentialFunctionClassHolder.initInstance() which
+            // happens during Nd4j static initialization.
+            return;
         }
     }
 
@@ -258,10 +274,32 @@ public abstract class DifferentialFunction {
         return null;
     }
 
-    protected String getStringFromProperty(String propertyName,Map<String,Object> properties) {
+    protected String getStringFromProperty(String propertyName, Map<String,Object> properties) {
         if(properties.containsKey(propertyName)) {
-            String value = (String) properties.get(propertyName);
-            return value;
+            Object value = properties.get(propertyName);
+
+            if (value instanceof String) {
+                return (String) value;
+            } else if (value instanceof String[]) {
+                String[] stringArray = (String[]) value;
+                // Return first element if array has elements, null otherwise
+                return stringArray.length > 0 ? stringArray[0] : null;
+            }
+        }
+
+        return null;
+    }
+
+    protected String[] getStringArrayFromProperty(String propertyName, Map<String,Object> properties) {
+        if(properties.containsKey(propertyName)) {
+            Object value = properties.get(propertyName);
+
+            if (value instanceof String[]) {
+                return (String[]) value;
+            } else if (value instanceof String) {
+                // Wrap single string in array
+                return new String[]{(String) value};
+            }
         }
 
         return null;
@@ -404,7 +442,6 @@ public abstract class DifferentialFunction {
                     value = value2.longValue();
                 }
 
-
                 if(target.getType().equals(Double.class) && value instanceof Long) {
                     Long value2 = (Long) value;
                     value = value2.doubleValue();
@@ -421,6 +458,20 @@ public abstract class DifferentialFunction {
                     value = DataType.values()[idxConverted];
                 }
 
+                // NEW: Handle String array to String conversion
+                if(target.getType().equals(String.class) && value instanceof String[]) {
+                    String[] stringArray = (String[]) value;
+                    // Take the first element if array has elements, null otherwise
+                    value = stringArray.length > 0 ? stringArray[0] : null;
+                }
+
+                // NEW: Handle String to String array conversion
+                if(target.getType().equals(String[].class) && value instanceof String) {
+                    String stringValue = (String) value;
+                    // Wrap single string in array
+                    value = new String[]{stringValue};
+                }
+
                 if(target.getType().isEnum() && (value instanceof Long || value instanceof Integer && !target.getType().equals(int.class) && !target.getType().equals(long.class))) {
                     Class<? extends Enum> enumType = (Class<? extends Enum>) target.getType();
                     Method method = enumType.getMethod("values");
@@ -432,11 +483,11 @@ public abstract class DifferentialFunction {
                     value = get;
                 }
 
-
-
                 target.set(this,value);
             } catch (Exception e) {
-                throw new RuntimeException("Error setting property for function " + getClass().getName(), e);
+                throw new RuntimeException("Error setting property for function " + getClass().getName() +
+                        ". Field: " + target.getName() + ", Field Type: " + target.getType() +
+                        ", Value Type: " + (value != null ? value.getClass() : "null"), e);
             }
         }
     }
