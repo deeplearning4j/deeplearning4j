@@ -396,7 +396,6 @@ jobs:
           df -h
           wmic pagefile list /format:list
         env:
-          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_TO: central
           MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
@@ -407,7 +406,6 @@ jobs:
           SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
           RELEASE_REPO_ID: ${{ matrix.release_repo_id }}
           GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
-          GPG_SIGNING_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           MODULES: ${{ matrix.mvn_flags }}
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
