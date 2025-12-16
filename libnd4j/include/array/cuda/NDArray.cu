@@ -39,7 +39,6 @@
 #include <loops/transform_same.h>
 #include <memory/MemoryRegistrator.h>
 #include <memory/Workspace.h>
-#include <ops/gemm.h>
 #include <ops/ops.h>
 #include <ops/specials_cuda.h>
 
@@ -47,9 +46,8 @@
 #include <memory>
 #include <sstream>
 #include <stdexcept>
-
+#include <system/selective_rendering.h>
 #include "execution/cuda/LaunchDims.h"
-
 
 namespace sd {
 
@@ -168,7 +166,7 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
 
   manager.synchronize();
 }
-BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void NDArray::fillAsTriangular,
+BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT void NDArray::fillAsTriangular,
                       (const float val, int lower, int upper, NDArray& target, const char direction,
                           const bool includeEdges),
                       SD_COMMON_TYPES);
@@ -238,7 +236,7 @@ static void identityMatrixCudaLauncher(const int blocksPerGrid, const int thread
   sd::DebugHelper::checkGlobalErrorCode("identityMatrix  failed");
 
 }
-BUILD_SINGLE_TEMPLATE(template void identityMatrixCudaLauncher,
+BUILD_SINGLE_TEMPLATE( void identityMatrixCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                           const cudaStream_t* stream, void* vx, const sd::LongType* xShapeInfo, const float val),
                       SD_COMMON_TYPES);
@@ -548,7 +546,7 @@ static void repeatCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
   DebugHelper::checkGlobalErrorCode("NDArray repeat cuda failed(...) failed");
 
 }
-BUILD_DOUBLE_TEMPLATE(template void repeatCudaLauncher,
+BUILD_DOUBLE_TEMPLATE( void repeatCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                           const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo, void* vz,
                           const sd::LongType* zShapeInfo, const sd::LongType* repeats, const sd::LongType repSize, const sd::LongType axis),
@@ -595,7 +593,8 @@ void NDArray::repeat(const int axis, const std::vector<LongType>& repeats, NDArr
   PointersManager manager(getContext(), "NDArray::repeat(const int axis, const std::vector<int>& repeats)");
 
   const LongType* reps = reinterpret_cast<LongType*>(manager.replicatePointer(repeats.data(), repeats.size() * sizeof(LongType)));
-
+  auto targetDataType = target.dataType();
+  auto selfDType = dataType();
   prepareSpecialUse({&target}, {this});
   BUILD_DOUBLE_SELECTOR(
       dataType(), target.dataType(), repeatCudaLauncher,
@@ -609,12 +608,23 @@ void NDArray::repeat(const int axis, const std::vector<LongType>& repeats, NDArr
 
 ////////////////////////////////////////////////////////////////////////
 void* NDArray::specialBuffer() {
-  if (_buffer->special() == nullptr) {
+  if (_buffer == nullptr) {
+    THROW_EXCEPTION("NDArray::specialBuffer(): _buffer is nullptr - array not properly initialized");
+  }
+
+  void* specialBuf = _buffer->special();
+
+  if (specialBuf == nullptr) {
     syncToDevice();
     tickReadHost();
+    specialBuf = _buffer->special();
+    if (specialBuf == nullptr) {
+      THROW_EXCEPTION("NDArray::specialBuffer(): _buffer->special() returned nullptr even after syncToDevice - buffer not allocated");
+    }
   }
+
   // FIXME: this should be fixed once CUDA backend added
-  return static_cast<int8_t*>(_buffer->special()) + (offset() * sizeOfT());
+  return static_cast<int8_t*>(specialBuf) + (offset() * sizeOfT());
 }
 
 

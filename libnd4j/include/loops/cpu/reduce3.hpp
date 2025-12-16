@@ -222,7 +222,7 @@ void Reduce3<X, Y>::exec(int opNum, const void *vx, const sd::LongType *xShapeIn
 template <typename X, typename Y>
 void Reduce3<X, Y>::execAll(int opNum, const void *vx, const sd::LongType *xShapeInfo, void *extraParamsVals,
                             const void *vy, const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
-                            long long int *dimension, sd::LongType dimensionLength, const sd::LongType *xTadShapeInfo,
+                            sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *xTadShapeInfo,
                             const sd::LongType *xOffsets, const sd::LongType *yTadShapeInfo,
                             const sd::LongType *yOffsets, sd::LongType start, sd::LongType stop) {
   DISPATCH_BY_OPNUM_TT(execAll,

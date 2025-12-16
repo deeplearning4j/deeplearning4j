@@ -116,7 +116,7 @@ Status matrixDiagPart(LaunchContext* context, NDArray* input, NDArray* output) {
   BUILD_SINGLE_SELECTOR(input->dataType(), return _matrixDiagPart, (context, input, output), SD_COMMON_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template sd::Status _matrixDiagPart,
+BUILD_SINGLE_TEMPLATE( sd::Status _matrixDiagPart,
                       (sd::LaunchContext * context, NDArray* input, NDArray* output), SD_COMMON_TYPES);
 
 }  // namespace helpers

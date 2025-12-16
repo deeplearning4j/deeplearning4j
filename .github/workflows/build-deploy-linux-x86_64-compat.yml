@@ -151,13 +151,13 @@ jobs:
         uses: ./.github/actions/build-centos
         env:
           JAVA_HOME: /usr/lib/jvm/java-11-openjdk-amd64/
-          MAVEN_GPG_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           DEBIAN_FRONTEND: noninteractive
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_TO: central
           MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
           PERFORM_RELEASE: ${{ matrix.deploy_to_release_staging }}
           RELEASE_VERSION: ${{ matrix.release_version }}
           SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
@@ -171,7 +171,12 @@ jobs:
         with:
           java-version: 11
           distribution: 'temurin'
-        
+          server-id: ${{ github.event.inputs.serverId }}
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+          cache: 'maven'
         
 
 
@@ -188,13 +193,13 @@ jobs:
                            eval "${DEPLOY_COMMAND}"
               fi
         env:
-          MAVEN_GPG_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           DEBIAN_FRONTEND: noninteractive
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_TO: central
           MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
           PERFORM_RELEASE: ${{ matrix.deploy_to_release_staging }}
           RELEASE_VERSION: ${{ matrix.release_version }}
           SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
@@ -203,7 +208,3 @@ jobs:
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
           MAVEN_OPTS: -Xmx2g
-
-
-
-

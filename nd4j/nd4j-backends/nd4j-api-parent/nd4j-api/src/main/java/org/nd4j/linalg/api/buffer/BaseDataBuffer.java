@@ -117,6 +117,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public OpaqueDataBuffer opaqueBuffer() {
+        if (released.get())
+            throw new IllegalStateException("You can't use DataBuffer once it was released via close() call");
         return ptrDataBuffer;
     }
 
@@ -1734,10 +1736,15 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
             if(d.dataType() != dataType())
                 return false;
-            OpContext ctx = Nd4j.getExecutioner().buildContext();
-            ctx.setInputArrays(Nd4j.create(d),Nd4j.create(this));
-            INDArray exec = Nd4j.getExecutioner().exec(new Eps(Nd4j.create(d), Nd4j.create(this), Nd4j.createUninitialized(DataType.BOOL, length())));
-            return exec.all();
+            try (OpContext ctx = Nd4j.getExecutioner().buildContext()) {
+                INDArray arr1 = Nd4j.create(d);
+                INDArray arr2 = Nd4j.create(this);
+                ctx.setInputArrays(arr1, arr2);
+                INDArray exec = Nd4j.getExecutioner().exec(new Eps(arr1, arr2, Nd4j.createUninitialized(DataType.BOOL, length())));
+                return exec.all();
+            } catch (Exception e) {
+                throw new RuntimeException("Error comparing DataBuffers", e);
+            }
         }
 
         return true;
@@ -2210,8 +2217,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
         this.released.set(true);
         this.indexer = null;
         this.pointer = null;
+        this.ptrDataBuffer = null;  // Clear opaque buffer to prevent stale pointer access
         Nd4j.getDeallocatorService().getReferenceMap().remove(deallocationId);
-
     }
 
     @Override
