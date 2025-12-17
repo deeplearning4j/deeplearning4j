@@ -283,6 +283,30 @@ SD_LIB_EXPORT void setOmpNumThreads(int threads) ;
  * @param threads number of threads for OpenBLAS to use
  */
 SD_LIB_EXPORT void setOpenBlasThreads(int threads) ;
+
+/**
+ * Gets the number of threads OpenBLAS is configured to use.
+ * @return number of threads, 0 if using default
+ */
+SD_LIB_EXPORT int getOpenBlasThreads() ;
+
+/**
+ * Check if BLAS call serialization is enabled.
+ * When enabled, external BLAS calls are serialized to prevent OpenBLAS
+ * TLS corruption and race conditions in multi-threaded environments.
+ * @return true if serialization is enabled
+ */
+SD_LIB_EXPORT bool isSerializeBlasCalls() ;
+
+/**
+ * Enable or disable BLAS call serialization.
+ * When enabled, external BLAS calls are serialized to prevent OpenBLAS
+ * TLS corruption and race conditions in multi-threaded environments.
+ * Disable only if using a thread-safe BLAS implementation (e.g., MKL).
+ * @param serialize true to enable serialization, false to disable
+ */
+SD_LIB_EXPORT void setSerializeBlasCalls(bool serialize) ;
+
 SD_LIB_EXPORT void enableVerboseMode(bool reallyEnable) ;
 SD_LIB_EXPORT int getDeviceMajor(int device) ;
 SD_LIB_EXPORT int getDeviceMinor(int device) ;

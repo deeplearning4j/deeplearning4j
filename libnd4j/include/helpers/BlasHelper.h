@@ -31,6 +31,8 @@ struct bfloat16;
 #endif
 #include <helpers/logger.h>
 #include <types/float16.h>
+#include <mutex>
+#include <atomic>
 
 #ifdef _WIN32
 #define CUBLASWINAPI __stdcall
@@ -225,6 +227,9 @@ enum BlasFunctions {
 
 class BlasHelper {
  private:
+  // Private constructor for singleton pattern
+  BlasHelper();
+
   bool _hasHgemv = false;
   bool _hasHgemm = false;
   bool _hasHgemmBatch = false;
@@ -236,6 +241,17 @@ class BlasHelper {
   bool _hasDgemv = false;
   bool _hasDgemm = false;
   bool _hasDgemmBatch = false;
+
+  // Mutex for serializing BLAS calls to prevent OpenBLAS TLS corruption
+  // and race conditions when called from multiple threads concurrently
+  mutable std::mutex _blasMutex;
+
+  // Controls whether BLAS calls are serialized (default: true for safety)
+  // Can be disabled via SD_BLAS_SERIALIZE=0 for testing or if using a thread-safe BLAS
+  std::atomic<bool> _serializeBlasCalls{true};
+
+  // Number of threads OpenBLAS should use (0 = use OpenBLAS default)
+  std::atomic<int> _openblasThreads{0};
 #if !defined(SD_CUDA)
   CblasSgemv cblasSgemv;
   CblasDgemv cblasDgemv;
@@ -298,6 +314,51 @@ class BlasHelper {
   LapackeSgesdd sgesdd();
   LapackeDgesdd dgesdd();
 #endif
+
+  // BLAS call serialization methods to prevent OpenBLAS TLS corruption
+  // and race conditions in multi-threaded environments
+
+  /**
+   * Returns a lock guard that serializes BLAS calls.
+   * Use this before making any BLAS call to prevent concurrent access.
+   * Example:
+   *   auto lock = BlasHelper::getInstance().lockBlas();
+   *   sgemm()(...);
+   */
+  std::unique_lock<std::mutex> lockBlas() const;
+
+  /**
+   * Check if BLAS call serialization is enabled.
+   * Default is true for safety with OpenBLAS.
+   */
+  bool isSerializeBlasCalls() const;
+
+  /**
+   * Enable or disable BLAS call serialization.
+   * Disable only if using a thread-safe BLAS implementation (e.g., MKL).
+   */
+  void setSerializeBlasCalls(bool serialize);
+
+  /**
+   * Get the configured number of OpenBLAS threads.
+   * Returns 0 if using OpenBLAS default.
+   */
+  int getOpenblasThreads() const;
+
+  /**
+   * Set the number of threads OpenBLAS should use.
+   * Set to 0 to use OpenBLAS default, or a specific number for control.
+   * This is applied when BLAS is initialized.
+   */
+  void setOpenblasThreads(int threads);
+
+  /**
+   * Initialize OpenBLAS thread settings from environment variables.
+   * Checks SD_OPENBLAS_THREADS and SD_BLAS_SERIALIZE.
+   * Called automatically during getInstance() initialization.
+   */
+  void initializeBlasThreading();
+
   // destructor
   ~BlasHelper() noexcept;
 };

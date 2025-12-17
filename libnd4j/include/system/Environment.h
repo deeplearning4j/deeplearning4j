@@ -88,6 +88,11 @@ class SD_LIB_EXPORT Environment {
   bool _blasFallback = false;
   std::atomic<bool> _enableBlasFall{true};
 
+  // BLAS call serialization to prevent OpenBLAS TLS corruption and race conditions
+  // Default true for safety with OpenBLAS in multi-threaded Java applications
+  std::atomic<bool> _serializeBlasCallsSet{false};  // tracks if explicitly set
+  std::atomic<int> _openBlasThreads{0};  // 0 = use default
+
 #ifdef SD_EXPERIMENTAL_ENABLED
   const bool _experimental = true;
 #else
@@ -217,6 +222,32 @@ class SD_LIB_EXPORT Environment {
   void allowHelpers(bool reallyAllow);
 
   bool blasFallback();
+
+  /**
+   * Check if BLAS call serialization is enabled.
+   * When enabled, external BLAS calls are serialized to prevent OpenBLAS
+   * TLS corruption and race conditions in multi-threaded environments.
+   * Default is true for safety.
+   */
+  bool isSerializeBlasCalls();
+
+  /**
+   * Enable or disable BLAS call serialization.
+   * Disable only if using a thread-safe BLAS implementation (e.g., MKL).
+   */
+  void setSerializeBlasCalls(bool serialize);
+
+  /**
+   * Get the number of threads OpenBLAS should use.
+   * Returns 0 if using OpenBLAS default.
+   */
+  int getOpenBlasThreads();
+
+  /**
+   * Set the number of threads OpenBLAS should use.
+   * Set to 0 for OpenBLAS default, or a specific number for explicit control.
+   */
+  void setOpenBlasThreads(int threads);
 
   int tadThreshold();
   void setTadThreshold(int threshold);

@@ -267,6 +267,30 @@ public interface NativeOps {
   * @param threads number of threads for OpenBLAS to use
   */
  void setOpenBlasThreads(int threads);
+
+ /**
+  * Gets the number of threads OpenBLAS is configured to use.
+  * @return number of threads, 0 if using default
+  */
+ int getOpenBlasThreads();
+
+ /**
+  * Check if BLAS call serialization is enabled.
+  * When enabled, external BLAS calls are serialized to prevent OpenBLAS
+  * TLS corruption and race conditions in multi-threaded environments.
+  * @return true if serialization is enabled
+  */
+ boolean isSerializeBlasCalls();
+
+ /**
+  * Enable or disable BLAS call serialization.
+  * When enabled, external BLAS calls are serialized to prevent OpenBLAS
+  * TLS corruption and race conditions in multi-threaded environments.
+  * Disable only if using a thread-safe BLAS implementation (e.g., MKL).
+  * @param serialize true to enable serialization, false to disable
+  */
+ void setSerializeBlasCalls(boolean serialize);
+
  void enableVerboseMode(boolean reallyEnable);
  int getDeviceMajor(int device);
  int getDeviceMinor(int device);

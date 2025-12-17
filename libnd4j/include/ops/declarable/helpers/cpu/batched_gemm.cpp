@@ -119,6 +119,9 @@ static void bgemm_( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std
       buffersC.push_back(reinterpret_cast<T *>(vC[e]->buffer()));
     }
 
+    // Acquire BLAS lock to prevent OpenBLAS TLS corruption and race conditions
+    auto blasLock = BlasHelper::getInstance().lockBlas();
+
     // Inside BLAS block, only check type - BLAS enablement was already verified in outer condition
     if (std::is_same<T, double>::value) {
       BlasHelper::getInstance().dgemmBatched()(CblasColMajor, tA, tB, tM, tN, tK, (double *)alphas->buffer(),

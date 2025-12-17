@@ -136,12 +136,12 @@
         <cpython-platform.version>${python.version}-${javacpp-presets.version}</cpython-platform.version>
         <numpy.version>2.3.1</numpy.version>
         <numpy.javacpp.version>${numpy.version}-${javacpp-presets.version}</numpy.javacpp.version>
-        <onnx.version>1.17.0</onnx.version>
+        <onnx.version>1.18.0</onnx.version>
         <onnx.javacpp.version>${onnx.version}-${javacpp-presets.version}</onnx.javacpp.version>
         <openblas.version>0.3.30</openblas.version>
-        <mkl.version>2025.0</mkl.version>
+        <mkl.version>2025.2</mkl.version>
         <opencv.version>4.11.0</opencv.version>
-        <hdf5.version>1.14.5</hdf5.version>
+        <hdf5.version>1.14.3</hdf5.version>
         <tensorflow.version>1.15.5</tensorflow.version>
         <tensorflow.javacpp.version>${tensorflow.version}-1.5.8</tensorflow.javacpp.version>
 

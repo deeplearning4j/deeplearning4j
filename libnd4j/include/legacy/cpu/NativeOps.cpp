@@ -346,6 +346,29 @@ void setOpenBlasThreads(int threads) {
   // No OpenBLAS or MKL - this is a no-op
   // The OMP thread setting may still affect BLAS behavior in some configurations
 #endif
+  // Also update the Environment setting
+  sd::Environment::getInstance().setOpenBlasThreads(threads);
+}
+
+/**
+ * Gets the number of threads OpenBLAS is configured to use.
+ */
+int getOpenBlasThreads() {
+  return sd::Environment::getInstance().getOpenBlasThreads();
+}
+
+/**
+ * Check if BLAS call serialization is enabled.
+ */
+bool isSerializeBlasCalls() {
+  return sd::Environment::getInstance().isSerializeBlasCalls();
+}
+
+/**
+ * Enable or disable BLAS call serialization.
+ */
+void setSerializeBlasCalls(bool serialize) {
+  sd::Environment::getInstance().setSerializeBlasCalls(serialize);
 }
 
 sd::Pointer createContext() { return 0L; }

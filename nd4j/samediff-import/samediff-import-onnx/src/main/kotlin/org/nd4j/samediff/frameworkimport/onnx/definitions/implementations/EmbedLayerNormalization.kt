@@ -24,6 +24,7 @@ import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.buffer.DataType
+import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
@@ -172,8 +173,8 @@ class EmbedLayerNormalization : PreImportHook {
             embeddings = embeddings.add(segmentEmbedded)
         }
         
-        // Apply layer normalization using the SameDiff API
-        // The last dimension (-1) is used for normalization in transformer embeddings
+        // Use built-in layerNorm op - C++ standardize now correctly implements
+        // (x - mean) / sqrt(variance + epsilon)
         val normalized = sd.nn().layerNorm(outputNames[0], embeddings, gamma, beta, false, -1L)
         
         // Prepare outputs
@@ -181,7 +182,19 @@ class EmbedLayerNormalization : PreImportHook {
         outputs[outputNames[0]] = listOf(normalized)
         
         if (outputNames.size > 1) {
-            val maskOutput = mask ?: sd.zerosLike(inputIds).castTo(DataType.INT32)
+            // ALWAYS compute attention mask from input_ids using graph operations
+            // The ONNX mask input (if any) may not be in the correct additive format
+            // Attention mask format for additive masking: 0 for valid positions, -10000 for padding
+            // input_ids == 0 indicates padding tokens
+            //
+            // Graph operations (not Kotlin if/else) ensure this runs at inference time:
+            // 1. Compare input_ids to 0: produces 1 for padding, 0 for valid
+            // 2. Multiply by -10000: produces -10000 for padding, 0 for valid
+            //
+            // Use integer constant matching input_ids dtype for comparison
+            val zeroConst = sd.constant(Nd4j.zeros(inputIds.dataType(), 1))
+            val paddingMask = inputIds.eq(zeroConst).castTo(DataType.FLOAT)
+            val maskOutput = sd.math.mul(paddingMask, sd.constant(-10000.0f))
             outputs[outputNames[1]] = listOf(maskOutput.rename(outputNames[1]))
         }
         

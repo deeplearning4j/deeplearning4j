@@ -46,48 +46,46 @@ class LayerNormalization: PreImportHook {
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
         dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String, List<SDVariable>> {
-        
+
         val input = sd.getVariable(op.inputsToOp[0])
         val scale = sd.getVariable(op.inputsToOp[1])
-        
+
         // Bias is optional
         var bias: SDVariable? = null
         if (op.inputsToOp.size > 2 && op.inputsToOp[2] != null) {
             bias = sd.getVariable(op.inputsToOp[2])
         }
-        
+
         val axis = (attributes.getOrDefault("axis", -1) as Number).toInt()
         val epsilon = (attributes.getOrDefault("epsilon", 1e-5) as Number).toDouble()
-        
-        // Apply layer normalization using the correct API signature
+
+        // Use built-in layerNorm op - C++ standardize now correctly implements
+        // (x - mean) / sqrt(variance + epsilon)
         val result = if (bias != null) {
             sd.nn().layerNorm(outputNames[0], input, scale, bias, false, axis.toLong())
         } else {
-            // Create zero bias if not provided
             val zeroBias = sd.zerosLike(scale)
             sd.nn().layerNorm(outputNames[0], input, scale, zeroBias, false, axis.toLong())
         }
-        
+
         val outputs = mutableMapOf<String, List<SDVariable>>()
         outputs[outputNames[0]] = listOf(result)
-        
+
         // If additional outputs are requested (mean and inverse std dev)
         if (outputNames.size > 1) {
-            // Compute mean along the normalization axis - simplified version
+            // Compute mean along the normalization axis
             val actualAxis = if (axis < 0) -1L else axis.toLong()
-            
-            // Compute mean and variance manually for additional outputs
             val mean = sd.mean(input, false, actualAxis)
-            outputs[outputNames[1]] = listOf( mean.rename(outputNames[1]))
-            
+            outputs[outputNames[1]] = listOf(mean.rename(outputNames[1]))
+
             if (outputNames.size > 2) {
                 // Compute inverse standard deviation
                 val variance = sd.variance(input, false, actualAxis)
                 val invStdDev = sd.math().pow(variance.add(sd.constant(epsilon)), sd.constant(-0.5))
-                outputs[outputNames[2]] = listOf( invStdDev.rename(outputNames[2]))
+                outputs[outputNames[2]] = listOf(invStdDev.rename(outputNames[2]))
             }
         }
-        
+
         return outputs
     }
 }

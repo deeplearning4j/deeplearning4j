@@ -2011,7 +2011,10 @@ void NDArray::streamline(char o) {
   NativeOpExecutioner::execTransformSame(getContext(), transform::Copy, buffer(), shapeInfo(), specialBuffer(),
                                          specialShapeInfo(), newBuffer->primary(), shapeBuffer->primary(),
                                          newBuffer->special(), shapeBuffer->special(), nullptr, nullptr, nullptr);
-  // Cache owns all shape buffers - just update pointer
+  // BUGFIX: Must release old shape buffer before updating for proper lifecycle management
+  if (_shapeInfoBuffer != nullptr) {
+    _shapeInfoBuffer->release();
+  }
   _shapeInfoBuffer = shapeBuffer;
   _shapeInfo = shapeBuffer->primary();
   _shapeInfoD = shapeBuffer->special();
@@ -4365,6 +4368,11 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
 
   if (canReshape) {
     auto newShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoNew);
+    // BUGFIX: Must update _shapeInfoBuffer for proper lifecycle management
+    if (_shapeInfoBuffer != nullptr) {
+        _shapeInfoBuffer->release();
+    }
+    _shapeInfoBuffer = newShape;
     _shapeInfo = newShape->primary();
     _shapeInfoD = newShape->special();
   } else {
@@ -6186,6 +6194,11 @@ BUILD_SINGLE_TEMPLATE(void NDArray::templatedAssign,
 bool NDArray::permutei(sd::LongType *dimensions, const int rank) {
   auto shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, this, getContext()->getWorkspace(),true);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfoWithView(shapeInfo);
+  // BUGFIX: Must update _shapeInfoBuffer for proper lifecycle management
+  if (_shapeInfoBuffer != nullptr) {
+    _shapeInfoBuffer->release();
+  }
+  _shapeInfoBuffer = constDesc;
   _shapeInfo = constDesc->primary();
   _shapeInfoD = constDesc->special();
   return true;

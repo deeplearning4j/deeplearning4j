@@ -1483,6 +1483,32 @@ void setOmpNumThreads(int threads) {
  */
 void setOpenBlasThreads(int threads) {
   // No-op on CUDA - we use cuBLAS, not OpenBLAS
+  // But still track the setting in Environment for consistency
+  sd::Environment::getInstance().setOpenBlasThreads(threads);
+}
+
+/**
+ * Gets the number of threads OpenBLAS is configured to use.
+ * On CUDA backend, returns 0 since we use cuBLAS.
+ */
+int getOpenBlasThreads() {
+  return sd::Environment::getInstance().getOpenBlasThreads();
+}
+
+/**
+ * Check if BLAS call serialization is enabled.
+ * On CUDA backend, this is typically not needed since cuBLAS handles threading internally.
+ */
+bool isSerializeBlasCalls() {
+  return sd::Environment::getInstance().isSerializeBlasCalls();
+}
+
+/**
+ * Enable or disable BLAS call serialization.
+ * On CUDA backend, this is typically not needed since cuBLAS handles threading internally.
+ */
+void setSerializeBlasCalls(bool serialize) {
+  sd::Environment::getInstance().setSerializeBlasCalls(serialize);
 }
 
 void enableVerboseMode(bool reallyEnable) { sd::Environment::getInstance().setVerbose(reallyEnable); }

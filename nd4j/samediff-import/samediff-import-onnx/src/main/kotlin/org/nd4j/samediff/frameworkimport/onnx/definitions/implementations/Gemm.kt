@@ -49,15 +49,17 @@ class Gemm : PreImportHook  {
     ): Map<String, List<SDVariable>> {
         // Parameter docs below are from the onnx operator docs:
         // https://github.com/onnx/onnx/blob/master/docs/Operators.md#gemm
-        //this is actually linear, pytorch is capable of exporting a linear operator
-        //as Gemm despite it not actually being linear...
+        // This is actually linear - PyTorch exports nn.Linear as Gemm
+
+        val inputA = sd.getVariable(op.inputsToOp[0])
+
         if(op.inputsToOp.size > 2) {
            val lastVar = sd.getVariable(op.inputsToOp[2])
             val len = lastVar.length()
             val transA = attributes.getOrDefault("transA",0L) as Long
             val transB = attributes.getOrDefault("transB",0L) as Long
             val outputVar = sd.nn().linear(outputNames[0],
-                sd.getVariable(op.inputsToOp[0])
+                inputA
                 ,sd.getVariable(op.inputsToOp[1])
                 ,lastVar,transA > 0,transB > 0,false)
             return mapOf(outputVar.name() to listOf(outputVar))
@@ -68,7 +70,7 @@ class Gemm : PreImportHook  {
             val transA = attributes.getOrDefault("transA",0L) as Long
             val transB = attributes.getOrDefault("transB",0L) as Long
 
-            val outputVar = sd.linalg().matmul(sd.getVariable(op.inputsToOp[0]),
+            val outputVar = sd.linalg().matmul(inputA,
                 sd.getVariable(op.inputsToOp[1]),alpha,beta,transA > 0,transB > 0)
             return mapOf(outputVar.name() to listOf(outputVar))
         }

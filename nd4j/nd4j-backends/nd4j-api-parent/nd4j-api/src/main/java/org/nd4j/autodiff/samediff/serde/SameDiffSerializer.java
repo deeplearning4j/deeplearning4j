@@ -348,8 +348,15 @@ public class SameDiffSerializer {
 
                 // --- Add variable definition (stub) to the current shard's SameDiff ---
                 log.info("Adding variable definition '{}' ({} bytes, append={}) to shard {}", var.name(), varSizeBytes, appendData, currentShardIndex);
+                // Determine dataType, falling back to the array's dataType if variable's dataType is UNKNOWN
+                // (SDVariable constructor throws exception for UNKNOWN dataType on non-PLACEHOLDER types)
+                DataType stubDataType = var.dataType();
+                if (stubDataType == null || stubDataType == DataType.UNKNOWN) {
+                    stubDataType = arr.dataType();
+                    log.info("Variable '{}' has UNKNOWN dataType, using array's dataType: {}", var.name(), stubDataType);
+                }
                 // Create stub without array data in currentVarShard
-                SDVariable stub = new SDVariable(var.name(), var.getVariableType(), currentVarShard, var.getShape(), var.dataType());
+                SDVariable stub = new SDVariable(var.name(), var.getVariableType(), currentVarShard, var.getShape(), stubDataType);
                 currentVarShard.addVariable(stub);
                 // Copy structural metadata (control deps etc.) from original Variable metadata to the stub's metadata
                 Variable oMeta = sameDiff.getVariables().get(var.name());
@@ -363,12 +370,10 @@ public class SameDiffSerializer {
                 // --- Handle array data ---
                 if (!appendData) {
                     // Add small data inline TO THE SHARD'S SAMEDIFF OBJECT
-                    // Add with data
-                    if (var.getVariableType() == VariableType.CONSTANT) {
-                        currentVarShard.constant(var.name(), arr.dup());
-                    } else { // VARIABLE or ARRAY
-                        currentVarShard.var(var.name(), arr.dup());
-                    }
+                    // Use associateArrayWithVariable to add the array to the existing stub
+                    // (calling constant() or var() would either return early without adding
+                    // the array, or throw an exception because the variable already exists)
+                    currentVarShard.associateArrayWithVariable(arr.dup(), stub);
                 } else {
                     // Store the ACTUAL array data in the map for this shard
                     currentShardArraysToAppend.put(var.name(), arr);

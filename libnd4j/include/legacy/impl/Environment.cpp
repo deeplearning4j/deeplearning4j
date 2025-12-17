@@ -21,6 +21,7 @@
 //
 #include <system/Environment.h>
 
+#include <helpers/BlasHelper.h>
 #include <helpers/StringUtils.h>
 #include <helpers/logger.h>
 #include <memory/MemoryCounter.h>
@@ -1141,6 +1142,25 @@ void Environment::setCudaDeviceSchedule(int schedule) {
  void Environment::setDeleteShapeInfo(bool reallyDelete) { deleteShapeInfo = reallyDelete; }
 
  bool Environment::blasFallback() { return _blasFallback; }
+
+bool Environment::isSerializeBlasCalls() {
+  // Delegate to BlasHelper which manages the actual serialization
+  return BlasHelper::getInstance().isSerializeBlasCalls();
+}
+
+void Environment::setSerializeBlasCalls(bool serialize) {
+  _serializeBlasCallsSet.store(true);
+  BlasHelper::getInstance().setSerializeBlasCalls(serialize);
+}
+
+int Environment::getOpenBlasThreads() {
+  return BlasHelper::getInstance().getOpenblasThreads();
+}
+
+void Environment::setOpenBlasThreads(int threads) {
+  _openBlasThreads.store(threads);
+  BlasHelper::getInstance().setOpenblasThreads(threads);
+}
 
  Environment::~Environment() {
    //

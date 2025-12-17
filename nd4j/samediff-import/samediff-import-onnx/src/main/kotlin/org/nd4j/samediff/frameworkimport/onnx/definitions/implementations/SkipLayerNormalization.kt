@@ -77,29 +77,27 @@ class SkipLayerNormalization: PreImportHook {
         if (bias != null) {
             processedInput = input.add(bias)
         }
-        
+
         // Add skip connection
-        val summed = processedInput.add(skip)
-        
-        // Apply layer normalization
-        // LayerNorm normalizes over the last dimension (hidden_size)
+        val summed = sd.math.add("${op.name}_summed", processedInput, skip)
+
+        // Use built-in layerNorm op - C++ standardize now correctly implements
+        // (x - mean) / sqrt(variance + epsilon)
         val result = if (beta != null) {
             sd.nn().layerNorm(outputNames[0], summed, gamma, beta, false, -1L)
         } else {
-            // Create zero bias if not provided
-            val zeroBias = sd.zerosLike(gamma)
-            sd.nn().layerNorm(outputNames[0], summed, gamma, zeroBias, false, -1L)
+            val zeroBeta = sd.zerosLike(gamma)
+            sd.nn().layerNorm(outputNames[0], summed, gamma, zeroBeta, false, -1L)
         }
-        
+
         // Some implementations also output the sum before layer norm for downstream use
         if (outputNames.size > 1) {
-            summed.rename(outputNames[1])
             return mapOf(
-                outputNames[0] to listOf(result.rename(outputNames[0])),
+                outputNames[0] to listOf(result),
                 outputNames[1] to listOf(summed.rename(outputNames[1]))
             )
         }
-        
-        return mapOf(outputNames[0] to listOf(result.rename(outputNames[0])))
+
+        return mapOf(outputNames[0] to listOf(result))
     }
 }

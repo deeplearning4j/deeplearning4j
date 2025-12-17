@@ -172,6 +172,19 @@ public class NativeOpsHolder {
         }
         deviceNativeOps.setOpenBlasThreads(openBlasThreads);
 
+        // Configure BLAS call serialization.
+        // Default is true (enabled) for safety with OpenBLAS in multi-threaded environments.
+        // This can be disabled via ND4J_BLAS_SERIALIZE=false environment variable.
+        boolean serializeBlasCalls = true; // Safe default
+        String serializeBlasString = System.getenv(ND4JEnvironmentVars.ND4J_BLAS_SERIALIZE);
+        if (serializeBlasString != null && !serializeBlasString.isEmpty()) {
+            String val = serializeBlasString.toLowerCase().trim();
+            if (val.equals("false") || val.equals("0") || val.equals("no")) {
+                serializeBlasCalls = false;
+            }
+        }
+        deviceNativeOps.setSerializeBlasCalls(serializeBlasCalls);
+
         String logInitProperty = System.getProperty(ND4JSystemProperties.LOG_INITIALIZATION, "true");
         boolean logInit = Boolean.parseBoolean(logInitProperty);
 
@@ -197,6 +210,7 @@ public class NativeOpsHolder {
         if (logInit) {
             log.info("Number of threads used for linear algebra: {}", deviceNativeOps.ompGetMaxThreads());
             log.info("Number of threads used for OpenBLAS operations: {} (set ND4J_OPENBLAS_THREADS to override)", openBlasThreads);
+            log.info("BLAS call serialization: {} (set ND4J_BLAS_SERIALIZE=false to disable)", serializeBlasCalls ? "enabled" : "disabled");
         }
 
         // DISABLED: Custom signal handlers interfere with JVM's crash handling chain

@@ -206,6 +206,24 @@ public class ND4JEnvironmentVars {
      */
     public static final String ND4J_OPENBLAS_THREADS = "ND4J_OPENBLAS_THREADS";
 
+    /**
+     * Controls whether BLAS calls are serialized to prevent OpenBLAS TLS corruption
+     * and race conditions in multi-threaded environments.
+     * <p>
+     * Default value: "true" (serialization enabled). When enabled, external BLAS calls
+     * are serialized using a mutex, while OpenBLAS can still use multiple threads internally
+     * for each call. This prevents the Thread Local Storage (TLS) corruption that occurs
+     * when multiple Java threads call OpenBLAS concurrently.
+     * <p>
+     * Set to "false" only if:
+     * - Using a thread-safe BLAS implementation like Intel MKL
+     * - You have verified your workload doesn't trigger OpenBLAS race conditions
+     * - You need maximum throughput and accept the crash risk
+     * <p>
+     * Valid values: "true", "false", "1", "0", "yes", "no"
+     */
+    public static final String ND4J_BLAS_SERIALIZE = "ND4J_BLAS_SERIALIZE";
+
     private ND4JEnvironmentVars() {
     }
 }

@@ -53,15 +53,43 @@ class Gather : PreImportHook {
     ): Map<String, List<SDVariable>> {
         // Get input variables
         val dataVariable = sd.getVariable(op.inputsToOp[0])
-        val indicesVariable = sd.getVariable(op.inputsToOp[1])
-        
+        var indicesVariable = sd.getVariable(op.inputsToOp[1])
+
         // Get axis attribute (default to 0 if not specified)
         val axis = attributes["axis"]?.let { (it as Long).toInt() } ?: 0
-        
-        // Call SameDiff's gather method
-        val outputVarName = outputNames[0]
-        val outputVar = sd.gather(outputVarName, dataVariable, indicesVariable, axis)
-        
+
+        // Handle indices shape for proper gather semantics.
+        // ONNX Gather output rank = indices.rank + input.rank - 1
+        //
+        // For BGE pooler pattern: input [1, 512, 768], indices [[0]] shape [1,1], axis=1
+        //   - With [1,1] indices: output [1, 1, 1, 768] (wrong - indices adds 2 dims)
+        //   - With [1] indices + squeeze: output [1, 1, 768] then squeeze -> [1, 768] (correct)
+        //
+        // libnd4j's gather doesn't support scalar (0D) indices, so we:
+        // 1. Flatten indices to 1D
+        // 2. Gather (adds 1 dim from indices at axis position)
+        // 3. Squeeze the extra dimension if indices was single-element
+        val indicesShape = indicesVariable.shape
+        val isSingleElement = if (indicesShape != null && indicesShape.isNotEmpty()) {
+            indicesShape.fold(1L) { acc, dim -> acc * dim } == 1L
+        } else {
+            false
+        }
+
+        // Flatten indices to 1D - gather requires at least 1D indices
+        val flatIndices = sd.reshape("${op.name}_indices_flat", indicesVariable, -1L)
+
+        // Call SameDiff's gather method with 1D indices
+        // Output shape will be: [...dims before axis..., indices_length, ...dims after axis...]
+        val gatherResult = sd.gather("${op.name}_gather_result", dataVariable, flatIndices, axis)
+
+        // If single-element indices, squeeze out the dimension added by gather at axis position
+        val outputVar = if (isSingleElement) {
+            sd.squeeze(outputNames[0], gatherResult, axis)
+        } else {
+            sd.identity(outputNames[0], gatherResult)
+        }
+
         return mapOf(outputVar.name() to listOf(outputVar))
     }
 }

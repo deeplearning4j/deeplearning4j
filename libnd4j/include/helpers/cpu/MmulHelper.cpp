@@ -278,6 +278,10 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
     const int ldb = (bKcont && bNcont) ? K : !bKcont ? pB->strideAt(0) : pB->strideAt(1);
     const int ldc = (cMcont && cNcont) ? M : !cMcont ? pC->strideAt(0) : pC->strideAt(1);
 
+    // Acquire BLAS lock to prevent OpenBLAS TLS corruption and race conditions
+    // This serializes external BLAS calls while allowing OpenBLAS to use multiple threads internally
+    auto blasLock = BlasHelper::getInstance().lockBlas();
+
     if (typeFloat) {
       BlasHelper::getInstance().sgemm()(blasOrder, transAblas, transBblas, M, N, K, (float)alpha,
                                         pA->bufferAsT<float>(), lda, pB->bufferAsT<float>(), ldb, (float)beta,
@@ -367,6 +371,9 @@ NDArray* MmulHelper::mmulMxV( NDArray* A, NDArray* X, sd::NDArray* Y, const doub
     const CBLAS_ORDER blasOrder = aMcont ? CblasColMajor : CblasRowMajor;
 
     const int lda = (aMcont && aNcont) ? M : !aMcont ? pA->strideAt(0) : pA->strideAt(1);
+
+    // Acquire BLAS lock to prevent OpenBLAS TLS corruption and race conditions
+    auto blasLock = BlasHelper::getInstance().lockBlas();
 
     // choose appropriate cuda gemm api depending on data types
     if (typeDouble) {
