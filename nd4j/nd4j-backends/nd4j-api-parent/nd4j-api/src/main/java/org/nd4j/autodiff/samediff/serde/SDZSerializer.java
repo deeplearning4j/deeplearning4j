@@ -56,6 +56,92 @@ public class SDZSerializer {
     private static final long SDNB_HEADER_SIZE = 32;
 
     /**
+     * Maximum total decompressed size allowed when extracting ZIP files (default: 10GB).
+     * This limit protects against zip bomb attacks that could exhaust disk space.
+     * Can be overridden via system property "nd4j.sdz.maxZipSize" (in bytes).
+     */
+    public static final long DEFAULT_MAX_TOTAL_UNCOMPRESSED_SIZE = 10L * 1024L * 1024L * 1024L; // 10GB
+
+    /**
+     * Maximum allowed compression ratio (uncompressed/compressed size).
+     * Default is 100:1. Can be overridden via system property "nd4j.sdz.maxCompressionRatio".
+     */
+    public static final double DEFAULT_MAX_COMPRESSION_RATIO = 100.0;
+
+    /**
+     * Maximum number of entries allowed in a model ZIP file.
+     * Can be overridden via system property "nd4j.sdz.maxZipEntries".
+     */
+    public static final int DEFAULT_MAX_ZIP_ENTRIES = 1000;
+
+    private static long maxTotalUncompressedSize = getConfiguredMaxSize();
+    private static double maxCompressionRatio = getConfiguredMaxRatio();
+    private static int maxZipEntries = getConfiguredMaxEntries();
+
+    private static long getConfiguredMaxSize() {
+        String prop = System.getProperty("nd4j.sdz.maxZipSize");
+        if (prop != null) {
+            try {
+                return Long.parseLong(prop);
+            } catch (NumberFormatException e) {
+                log.warn("Invalid value for nd4j.sdz.maxZipSize: {}, using default", prop);
+            }
+        }
+        return DEFAULT_MAX_TOTAL_UNCOMPRESSED_SIZE;
+    }
+
+    private static double getConfiguredMaxRatio() {
+        String prop = System.getProperty("nd4j.sdz.maxCompressionRatio");
+        if (prop != null) {
+            try {
+                return Double.parseDouble(prop);
+            } catch (NumberFormatException e) {
+                log.warn("Invalid value for nd4j.sdz.maxCompressionRatio: {}, using default", prop);
+            }
+        }
+        return DEFAULT_MAX_COMPRESSION_RATIO;
+    }
+
+    private static int getConfiguredMaxEntries() {
+        String prop = System.getProperty("nd4j.sdz.maxZipEntries");
+        if (prop != null) {
+            try {
+                return Integer.parseInt(prop);
+            } catch (NumberFormatException e) {
+                log.warn("Invalid value for nd4j.sdz.maxZipEntries: {}, using default", prop);
+            }
+        }
+        return DEFAULT_MAX_ZIP_ENTRIES;
+    }
+
+    /**
+     * Set the maximum total uncompressed size allowed when extracting SDZ files.
+     * @param maxSize Maximum size in bytes (must be positive)
+     */
+    public static void setMaxTotalUncompressedSize(long maxSize) {
+        if (maxSize <= 0) throw new IllegalArgumentException("Max size must be positive, got " + maxSize);
+        maxTotalUncompressedSize = maxSize;
+    }
+
+    /**
+     * Set the maximum compression ratio allowed for ZIP entries.
+     * @param maxRatio Maximum ratio (must be >= 1.0)
+     */
+    public static void setMaxCompressionRatio(double maxRatio) {
+        if (maxRatio < 1.0) throw new IllegalArgumentException("Max ratio must be >= 1.0, got " + maxRatio);
+        maxCompressionRatio = maxRatio;
+    }
+
+    /**
+     * Set the maximum number of entries allowed in SDZ files.
+     * @param maxEntries Maximum entries (must be positive)
+     */
+    public static void setMaxZipEntries(int maxEntries) {
+        if (maxEntries <= 0) throw new IllegalArgumentException("Max entries must be positive, got " + maxEntries);
+        maxZipEntries = maxEntries;
+    }
+
+    /**
      * Saves the SameDiff model to a single ZIP archive (.sdz).
      * Internally uses SameDiffSerializer to create one or more .sdnb files in a
      * temporary directory, which are then zipped.
@@ -378,15 +464,53 @@ public class SDZSerializer {
         }
 
         byte[] buffer = new byte[8192];
+        long totalBytesExtracted = 0;
+        int entryCount = 0;
 
         try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(new FileInputStream(zipFile)))) {
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
-                File entryFile = new File(targetDir, entry.getName());
+                // Check entry count limit
+                entryCount++;
+                if (entryCount > maxZipEntries) {
+                    throw new IOException("Potential zip bomb detected: too many entries. " +
+                            "Found " + entryCount + " entries, maximum allowed is " + maxZipEntries + ". " +
+                            "If this is a legitimate SDZ file, increase the limit using " +
+                            "SDZSerializer.setMaxZipEntries() or system property 'nd4j.sdz.maxZipEntries'");
+                }
 
+                String entryName = entry.getName();
+                File entryFile = new File(targetDir, entryName);
+
+                // Zip Slip protection
                 String canonicalEntryPath = entryFile.getCanonicalPath();
                 if (!canonicalEntryPath.startsWith(canonicalTargetPath + File.separator) && !canonicalEntryPath.equals(canonicalTargetPath)) {
-                    throw new IOException("Zip Slip vulnerability detected! Entry is outside of the target dir: " + entry.getName());
+                    throw new IOException("Zip Slip vulnerability detected! Entry is outside of the target dir: " + entryName);
+                }
+
+                // Check compression ratio if sizes are known
+                long compressedSize = entry.getCompressedSize();
+                long uncompressedSize = entry.getSize();
+                if (compressedSize > 0 && uncompressedSize > 0) {
+                    double ratio = (double) uncompressedSize / compressedSize;
+                    if (ratio > maxCompressionRatio) {
+                        throw new IOException("Potential zip bomb detected: suspicious compression ratio. " +
+                                "Entry '" + entryName + "' has ratio " + String.format("%.1f", ratio) +
+                                ":1 (compressed: " + compressedSize + " bytes, uncompressed: " + uncompressedSize + " bytes). " +
+                                "Maximum allowed ratio is " + String.format("%.1f", maxCompressionRatio) + ":1. " +
+                                "If this is a legitimate SDZ file, increase the limit using " +
+                                "SDZSerializer.setMaxCompressionRatio() or system property 'nd4j.sdz.maxCompressionRatio'");
+                    }
+                }
+
+                // Check if claimed uncompressed size would exceed limit
+                if (uncompressedSize > 0 && (totalBytesExtracted + uncompressedSize) > maxTotalUncompressedSize) {
+                    throw new IOException("Potential zip bomb detected: total uncompressed size would exceed limit. " +
+                            "Entry '" + entryName + "' claims " + uncompressedSize + " bytes, " +
+                            "which would bring total to " + (totalBytesExtracted + uncompressedSize) + " bytes. " +
+                            "Maximum allowed is " + maxTotalUncompressedSize + " bytes (" + (maxTotalUncompressedSize / (1024 * 1024)) + " MB). " +
+                            "If this is a legitimate SDZ file, increase the limit using " +
+                            "SDZSerializer.setMaxTotalUncompressedSize() or system property 'nd4j.sdz.maxZipSize'");
                 }
 
                 if (entry.isDirectory()) {
@@ -399,10 +523,28 @@ public class SDZSerializer {
                         throw new IOException("Failed to create parent directory for extracted file: " + parent.getAbsolutePath());
                     }
 
+                    // Extract with size limit protection
+                    long entryBytesWritten = 0;
                     try (FileOutputStream fos = new FileOutputStream(entryFile);
                          BufferedOutputStream bos = new BufferedOutputStream(fos)) {
                         int len;
-                        while((len = zis.read(buffer)) > 0){
+                        while ((len = zis.read(buffer)) > 0) {
+                            entryBytesWritten += len;
+                            totalBytesExtracted += len;
+
+                            // Check limit during extraction
+                            if (totalBytesExtracted > maxTotalUncompressedSize) {
+                                // Clean up partial file
+                                bos.close();
+                                fos.close();
+                                entryFile.delete();
+                                throw new IOException("Potential zip bomb detected while extracting entry '" + entryName + "'. " +
+                                        "Total extracted size " + totalBytesExtracted + " bytes exceeded maximum allowed " +
+                                        maxTotalUncompressedSize + " bytes. " +
+                                        "If this is a legitimate SDZ file, increase the limit using " +
+                                        "SDZSerializer.setMaxTotalUncompressedSize() or system property 'nd4j.sdz.maxZipSize'");
+                            }
+
                             bos.write(buffer, 0, len);
                         }
                     }
@@ -410,6 +552,9 @@ public class SDZSerializer {
                 zis.closeEntry();
             }
         } catch (IOException e) {
+            if (e.getMessage() != null && e.getMessage().contains("zip bomb")) {
+                throw e; // Re-throw zip bomb exceptions as-is
+            }
             throw new IOException("Failed during ZIP extraction from " + zipFile.getAbsolutePath() + " to " + targetDir.getAbsolutePath(), e);
         }
         log.debug("Finished extracting ZIP archive to {}", targetDir.getAbsolutePath());
