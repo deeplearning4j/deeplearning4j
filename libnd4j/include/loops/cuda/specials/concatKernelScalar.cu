@@ -49,7 +49,7 @@ SD_HOST void concatKernelScalarGeneric(dim3 &launchDims, cudaStream_t *stream, i
   DebugHelper::checkErrorCode(stream, "concatScalar(...) failed");
 }
 
-BUILD_SINGLE_TEMPLATE(template void concatKernelScalarGeneric,
+BUILD_SINGLE_TEMPLATE( void concatKernelScalarGeneric,
                       (dim3 & launchDims, cudaStream_t *stream, int numArrays, sd::Pointer *data, void *vz),
                       SD_COMMON_TYPES);
 }  // namespace sd

@@ -30,7 +30,7 @@
 #include <vector>
 #include <config.h>
 
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
 #include <cuda.h>
 #include <cuda_runtime.h>
 
@@ -52,6 +52,19 @@ class SD_LIB_EXPORT Environment {
   std::atomic<bool> _allowHelpers{true};
   std::atomic<bool> funcTracePrintDeallocate;
   std::atomic<bool> funcTracePrintAllocate;
+
+  // NDArray lifecycle tracking fields
+  // Prevents backward-cpp crashes during early JVM initialization
+  // Can be enabled via SD_LIFECYCLE_TRACKING=1 env var after JVM is ready
+  std::atomic<bool> _lifecycleTracking{false};
+  std::atomic<bool> _trackViews{true};
+  std::atomic<bool> _trackDeletions{true};
+  std::atomic<int> _stackDepth{32};
+  std::atomic<int> _reportInterval{300};
+  std::atomic<size_t> _maxDeletionHistory{10000};
+  std::atomic<bool> _snapshotFiles{false};  // Default off - only write snapshots on demand
+  std::atomic<bool> _trackOperations{false};  // Default off - operation tracking adds overhead
+
   std::atomic<int> _maxThreads;
   std::atomic<int> _maxMasterThreads;
   std::atomic<bool> deleteSpecial{true};
@@ -258,6 +271,24 @@ class SD_LIB_EXPORT Environment {
   void setFuncTracePrintDeallocate(bool reallyPrint);
   bool isFuncTracePrintAllocate();
   void setFuncTracePrintAllocate(bool reallyPrint);
+
+  // NDArray lifecycle tracking methods
+  bool isLifecycleTracking();
+  void setLifecycleTracking(bool enabled);
+  bool isTrackViews();
+  void setTrackViews(bool track);
+  bool isTrackDeletions();
+  void setTrackDeletions(bool track);
+  int getStackDepth();
+  void setStackDepth(int depth);
+  int getReportInterval();
+  void setReportInterval(int seconds);
+  size_t getMaxDeletionHistory();
+  void setMaxDeletionHistory(size_t max);
+  bool isSnapshotFiles();
+  void setSnapshotFiles(bool enabled);
+  bool isTrackOperations();
+  void setTrackOperations(bool enabled);
 
   bool isDeleteShapeInfo();
   void setDeleteShapeInfo(bool deleteShapeInfo);

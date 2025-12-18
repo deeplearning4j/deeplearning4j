@@ -35,7 +35,7 @@ ShapeList::~ShapeList() {
 
 ShapeList::ShapeList(const std::vector< LongType*>& shapes, bool isWorkspace)
 
-  {
+{
   for (size_t i = 0; i < shapes.size(); i++) {
     push_back(shapes[i]);
   }
@@ -61,9 +61,12 @@ int ShapeList::size() const {
   return (int)_shapes.size();
 }
 
- LongType* ShapeList::at(int idx) {
+LongType* ShapeList::at(int idx) {
+  if(idx < 0) {
+    idx += _shapes.size();
+  }
 
-  if (size() <= idx || idx < 0) {
+  if (size() <= idx) {
     std::string errorMessage;
     errorMessage += "Can't find requested variable by index: ";
     errorMessage += std::to_string(idx);

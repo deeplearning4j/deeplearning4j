@@ -94,19 +94,19 @@ static void pooling2dBP_(sd::graph::Context& block, NDArray& input, NDArray& gra
               if (hstart < 0)
                 hstart +=
                     dH * ((-hstart + dH - 1) /
-                          dH);  // (sd::LongType)sd::math::sd_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                          dH);
               if (wstart < 0)
                 wstart +=
                     dW * ((-wstart + dW - 1) /
-                          dW);  //(sd::LongType)sd::math::sd_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                          dW);
               if (hend > iH)
                 hend -=
                     dH * ((hend - iH + dH - 1) /
-                          dH);  //(sd::LongType)sd::math::sd_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                          dH);
               if (wend > iW)
                 wend -=
                     dW * ((wend - iW + dW - 1) /
-                          dW);  //(sd::LongType)sd::math::sd_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                          dW);
 
               sum = -DataTypeUtils::max<T>();
               valO = gO[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3];
@@ -262,20 +262,20 @@ static void pooling2dBP_(sd::graph::Context& block, NDArray& input, NDArray& gra
 
                 for (sd::LongType kh = hstart; kh < hend; kh += iStep2)
                   for (sd::LongType kw = wstart; kw < wend; kw += iStep3)
-                    sum += sd::math::sd_pow<T, T, T>(sd::math::sd_abs<T,T>(pIn[kh + kw]), extraParam0);
+                    sum += sd::math::sd_pow<T, T, T>(sd::math::sd_abs<T,T>(pIn[kh + kw]), static_cast<T>(extraParam0));
 
                 valO *= sd::math::sd_pow<T, T, T>(sum, ((T)1. - extraParam0) / extraParam0);
 
                 for (sd::LongType kh = hstart; kh < hend; kh += iStep2)
                   for (sd::LongType kw = wstart; kw < wend; kw += iStep3)
                     pgI[kh + kw] += valO *
-                                    sd::math::sd_pow<T, T, T>(sd::math::sd_abs<T,T>(pIn[kh + kw]), extraParam0 - 1.f) *
+                                    sd::math::sd_pow<T, T, T>(sd::math::sd_abs<T,T>(pIn[kh + kw]), static_cast<T>(extraParam0) - 1.f) *
                                     sd::math::sd_sgn<T, T>(pIn[kh + kw]);
               } else {
                 for (sd::LongType kh = hstart; kh < hend; kh += dH)
                   for (sd::LongType kw = wstart; kw < wend; kw += dW)
                     sum +=
-                        sd::math::sd_pow<T, T, T>(sd::math::sd_abs<T,T>(pIn[kh * iStride2 + kw * iStride3]), extraParam0);
+                        sd::math::sd_pow<T, T, T>(sd::math::sd_abs<T,T>(pIn[kh * iStride2 + kw * iStride3]), static_cast<T>(extraParam0));
 
                 valO *= sd::math::sd_pow<T, T, T>(sum, ((T)1. - extraParam0) / extraParam0);
 
@@ -283,7 +283,7 @@ static void pooling2dBP_(sd::graph::Context& block, NDArray& input, NDArray& gra
                   for (sd::LongType kw = wstart; kw < wend; kw += dW) {
                     const auto inVal = pIn[kh * iStride2 + kw * iStride3];
                     pgI[kh * gIStride2 + kw * gIStride3] +=
-                        valO * sd::math::sd_pow<T, T, T>(sd::math::sd_abs<T,T>(inVal), extraParam0 - 1.f) *
+                        valO * sd::math::sd_pow<T, T, T>(sd::math::sd_abs<T,T>(inVal), static_cast<T>(extraParam0) - static_cast<T>(1.f)) *
                         sd::math::sd_sgn<T, T>(inVal);
                   }
                 }

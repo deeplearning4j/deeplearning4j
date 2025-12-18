@@ -176,10 +176,6 @@
                             <pattern>com.google.common</pattern>
                             <shadedPattern>org.nd4j.shade.protobuf.common</shadedPattern>
                         </relocation>
-                        <relocation>
-                            <pattern>com.google.thirdparty</pattern>
-                            <shadedPattern>org.nd4j.shade.protobuf.thirdparty</shadedPattern>
-                        </relocation>
                     </relocations>
                 </configuration>
             </plugin>

@@ -40,7 +40,7 @@
         <module.name>nd4j.cpu</module.name>
 
         <compiler.flag.cpp.standard>-std=c++17</compiler.flag.cpp.standard>
-
+        <javacpp.platform.compiler.output></javacpp.platform.compiler.output>
         <platform.linker.flag.no.undefined>-Wl,--no-undefined</platform.linker.flag.no.undefined>
         <platform.linker.flag.rdynamic>-rdynamic</platform.linker.flag.rdynamic>
         <platform.linker.flag.bsymbolic>-Bsymbolic</platform.linker.flag.bsymbolic>
@@ -50,6 +50,9 @@
         <platform.compiler.flag.debug>-g</platform.compiler.flag.debug>
         <platform.functrace.libs.unix>-ldl -lunwind -lbfd -ldw</platform.functrace.libs.unix>
         <libnd4j.outputPath>${project.build.directory}/../../../../../libnd4j/blasbuild/cpu</libnd4j.outputPath>
+        <!-- NDK specific: https://github.com/android/ndk/issues/1690-->
+        <javacpp.compiler.crtoption></javacpp.compiler.crtoption>
+
     </properties>
 
 
@@ -337,6 +340,8 @@
                                 <classPath>${project.build.outputDirectory}</classPath>
                             </classPaths>
                             <includePaths>
+                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-target-build/include</includePath>
+                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-host-build/include</includePath>
                                 <includePath>${libnd4jhome}/blasbuild/cpu/include</includePath>
                                 <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-src/include/
                                 </includePath>
@@ -495,6 +500,8 @@
                                 <classPath>${project.build.outputDirectory}</classPath>
                             </classPaths>
                             <includePaths>
+                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-target-build/include</includePath>
+                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-host-build/include</includePath>
                                 <includePath>${libnd4jhome}/blasbuild/cpu/include</includePath>
                                 <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-src/include/
                                 </includePath>
@@ -513,6 +520,7 @@
                                 <linkPath>${libnd4j.outputPath}</linkPath>
                                 <linkPath>${env.OPENBLAS_PATH}/lib</linkPath>
                                 <linkPath>${env.OPENBLAS_PATH}/</linkPath>
+
                             </linkPaths>
                             <resourcePath>${libnd4jhome}/blasbuild/cpu/blas</resourcePath>
                             <buildResources>
@@ -536,16 +544,14 @@
                             </linkResources>
                             <compilerOptions>
                                 <compilerOption>${compiler.flag.cpp.standard}</compilerOption>
-                                <compilerOption>-DSD_GCC_FUNCTRACE=ON</compilerOption> <compilerOption>${platform.linker.flag.no.undefined}</compilerOption>
+                                <compilerOption>-DSD_GCC_FUNCTRACE=ON</compilerOption>
+                                <compilerOption>${platform.linker.flag.no.undefined}</compilerOption>
                                 <compilerOption>${platform.linker.flag.rdynamic}</compilerOption>
                                 <compilerOption>${platform.linker.flag.bsymbolic}</compilerOption>
                                 <compilerOption>${platform.compiler.flag.optimize.none}</compilerOption>
                                 <compilerOption>${platform.compiler.flag.no.omit.fp}</compilerOption>
                                 <compilerOption>${platform.compiler.flag.no.optimize.sibling.calls}</compilerOption>
                                 <compilerOption>${platform.compiler.flag.debug}</compilerOption>
-
-                                <compilerOption>-finstrument-functions</compilerOption>
-
                             </compilerOptions>
                         </configuration>
                         <executions>
@@ -613,7 +619,8 @@
                     <groupId>org.bytedeco</groupId>
                     <artifactId>openblas</artifactId>
                     <version>${openblas.version}-${javacpp-presets.version}</version>
-                    <classifier>linux-x86_64</classifier> <optional>true</optional>
+                    <classifier>linux-x86_64</classifier>
+                    <optional>true</optional>
                 </dependency>
             </dependencies>
         </profile>
@@ -668,7 +675,73 @@
             </activation>
             <properties>
                 <javacpp.build.output.path>${project.build.directory}/classes/lib/arm64-v8a</javacpp.build.output.path>
+                <platform.compiler.output>-Wl,-rpath,lib/ -D__ANDROID_API__=21 -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -march=armv8-a -Wall -nostdlib++ -fPIC -shared -Wl,--no-undefined -z text -o</platform.compiler.output>
             </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <version>${javacpp.version}</version>
+                        <configuration>
+                            <includePaths>
+                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-target-build/include</includePath>
+                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-host-build/include</includePath>
+                                <includePath>${libnd4jhome}/blasbuild/cpu/include</includePath>
+                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-src/include/</includePath>
+                                <includePath>${libnd4jhome}/blas</includePath>
+                                <includePath>${libnd4jhome}/include</includePath>
+                                <includePath>${libnd4jhome}/include/helpers</includePath>
+                                <includePath>${libnd4jhome}/include/array</includePath>
+                                <includePath>${libnd4jhome}/include/cnpy</includePath>
+                                <includePath>${libnd4jhome}/include/execution</includePath>
+                                <includePath>${libnd4jhome}/include/exceptions</includePath>
+                                <includePath>${libnd4jhome}/include/graph</includePath>
+                                <includePath>${libnd4jhome}/include/indexing</includePath>
+                                <includePath>${libnd4jhome}/include/memory</includePath>
+                            </includePaths>
+                            <linkPaths>
+                                <linkPath>${libnd4j.outputPath}</linkPath>
+                                <linkPath>${env.OPENBLAS_PATH}/lib</linkPath>
+                                <linkPath>${env.OPENBLAS_PATH}/</linkPath>
+                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/21</linkPath>
+
+                            </linkPaths>
+
+                            <compilerOptions>
+                                <compilerOption>${compiler.flag.cpp.standard}</compilerOption>
+                                <compilerOption>${platform.linker.flag.no.undefined}</compilerOption>
+                                <compilerOption>--target=aarch64-linux-android21</compilerOption>
+                                <compilerOption>-D__ANDROID_API__=21</compilerOption>
+                                <compilerOption>-DANDROID</compilerOption>
+                            </compilerOptions>
+                            <properties>${javacpp.platform.properties}</properties>
+                            <propertyKeysAndValues>
+                                <property>
+                                    <name>platform.root</name>
+                                    <value>${javacpp.platform.root}</value>
+                                </property>
+                                <property>
+                                    <name>platform.compiler</name>
+                                    <value>${javacpp.platform.compiler}</value>
+                                </property>
+                                <property>
+                                    <name>platform.sysroot</name>
+                                    <value>${javacpp.platform.sysroot}</value>
+                                </property>
+                                <property>
+                                    <name>platform.extension</name>
+                                    <value>${javacpp.platform.extension}</value>
+                                </property>
+                                <property>
+                                    <name>platform.compiler.output</name>
+                                    <value>-Wl,-rpath,lib/ -D__ANDROID_API__=21 -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -march=armv8-a -Wall -nostdlib++ -fPIC -shared -Wl,--no-undefined -z text -o </value>
+                                </property>
+                            </propertyKeysAndValues>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
         <profile>
             <id>android-x86-output</id>
@@ -692,9 +765,66 @@
             </activation>
             <properties>
                 <javacpp.build.output.path>${project.build.directory}/classes/lib/x86_64</javacpp.build.output.path>
+                <!-- Remove -nostartfiles since we need the CRT objects -->
+                <javacpp.compiler.crtoption></javacpp.compiler.crtoption>
+                <!-- Add sysroot configuration for android-x86_64 -->
+                <javacpp.platform.sysroot>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</javacpp.platform.sysroot>
             </properties>
-        </profile>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <version>${javacpp.version}</version>
+                        <configuration>
+                            <properties>${javacpp.platform.properties}</properties>
+                            <propertyKeysAndValues>
+                                <property>
+                                    <name>platform.root</name>
+                                    <value>${javacpp.platform.root}</value>
+                                </property>
+                                <property>
+                                    <name>platform.compiler</name>
+                                    <value>${javacpp.platform.compiler}</value>
+                                </property>
+                                <property>
+                                    <name>platform.sysroot</name>
+                                    <value>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</value>
+                                </property>
+                                <property>
+                                    <name>platform.extension</name>
+                                    <value>${javacpp.platform.extension}</value>
+                                </property>
+                            </propertyKeysAndValues>
+                            <linkPaths>
+                                <linkPath>${libnd4j.outputPath}</linkPath>
+                                <linkPath>${env.OPENBLAS_PATH}/lib</linkPath>
+                                <linkPath>${env.OPENBLAS_PATH}/</linkPath>
 
+                                <!-- Android NDK library paths -->
+                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/21</linkPath>
+                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android</linkPath>
+                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/17/lib/linux</linkPath>
+                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib</linkPath>
+                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib</linkPath>
+                            </linkPaths>
+                            <compilerOptions>
+                                <compilerOption>${compiler.flag.cpp.standard}</compilerOption>
+                                <compilerOption>${platform.linker.flag.no.undefined}</compilerOption>
+                                <!-- Add explicit sysroot to compiler options -->
+                                <compilerOption>--sysroot=${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</compilerOption>
+                                <!-- Add multiple -B flags for different possible CRT locations -->
+                                <compilerOption>-B${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/17/lib/linux</compilerOption>
+                                <compilerOption>-B${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/17/lib/linux/x86_64</compilerOption>
+                                <compilerOption>-B${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/21</compilerOption>
+                                <!-- Explicitly tell linker where to find CRT objects -->
+                                <compilerOption>-Wl,--dynamic-linker=/system/bin/linker64</compilerOption>
+                            </compilerOptions>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
         <profile>
             <id>avx2</id>
             <activation>

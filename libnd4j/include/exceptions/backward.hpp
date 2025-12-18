@@ -20,14 +20,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#define BACKWARD_HAS_LIBUNWIND 1
+// Use libdw instead of libunwind to avoid linker issues
+// libdw is more commonly available and provides similar functionality
+#define BACKWARD_HAS_LIBUNWIND 0
+
+// - BACKWARD_HAS_BACKTRACE uses backtrace() from glibc (execinfo.h)
+//   This is more reliable when libraries are loaded dynamically (JNI/dlopen)
+//   Works better with mixed libunwind.so + libgcc_s.so environments
+// - BACKWARD_HAS_DW uses libdw to resolve symbols/line numbers from DWARF debug info
+//   This provides human-readable function names and source locations
+// Together they provide complete stack traces with symbols
+
+// Force backtrace mode instead of unwind mode
+// backtrace() is more compatible with JNI-loaded shared libraries
+#define BACKWARD_HAS_BACKTRACE 1
+#define BACKWARD_HAS_UNWIND 0
+
 // - apt-get install libdw-dev ...
 // - g++/clang++ -ldw ...
 #define BACKWARD_HAS_DW 1
 
 // - apt-get install binutils-dev ...
 // - g++/clang++ -lbfd ...
-//#define BACKWARD_HAS_DW 1
+//#define BACKWARD_HAS_BFD 1
 
 // - apt-get install libdwarf-dev ...
 // - g++/clang++ -ldwarf ...
@@ -4235,6 +4250,10 @@ public:
         success = false;
     }
 
+    // Set custom terminate handler to catch uncaught exceptions
+    // This prevents std::terminate() from simply calling abort()
+    std::set_terminate(&terminator);
+
     _loaded = success;
   }
 
@@ -4300,6 +4319,49 @@ private:
 #ifdef __GNUC__
   __attribute__((noreturn))
 #endif
+  static void terminator() {
+    // Custom terminate handler for uncaught exceptions
+    // This is called when an exception is thrown but not caught
+    fprintf(stderr, "\n=== UNCAUGHT EXCEPTION ===\n");
+
+#ifdef __cpp_exceptions
+    // Try to get exception info (only when exceptions are enabled)
+    std::exception_ptr eptr = std::current_exception();
+    if (eptr) {
+      try {
+        std::rethrow_exception(eptr);
+      } catch (const std::exception& e) {
+#ifdef __cpp_rtti
+        fprintf(stderr, "Exception type: %s\n", typeid(e).name());
+#else
+        fprintf(stderr, "Exception type: <RTTI disabled>\n");
+#endif
+        fprintf(stderr, "Exception message: %s\n", e.what());
+      } catch (...) {
+        fprintf(stderr, "Unknown exception type\n");
+      }
+    }
+#else
+    // Exceptions disabled - cannot retrieve exception details
+    fprintf(stderr, "Exception handling disabled at compile time (-fno-exceptions)\n");
+#endif
+
+    // Print stack trace
+    StackTrace st;
+    st.load_here(32);
+    Printer printer;
+    printer.address = true;
+    printer.print(st, stderr);
+
+    fprintf(stderr, "\n=== TERMINATING ===\n");
+    // DO NOT call _exit() - allow normal C++ exception propagation to JNI boundary
+    // The JVM needs to handle the exception, not have the process killed
+    std::abort();  // Use abort() which can be caught by debuggers and respects SIGABRT handlers
+  }
+
+#ifdef __GNUC__
+  __attribute__((noreturn))
+#endif
   static void
   sig_handler(int signo, siginfo_t *info, void *_ctx) {
     handleSignal(signo, info, _ctx);
@@ -4310,9 +4372,10 @@ if(info != nullptr) {
 
     }
 
-    // terminate the process immediately.
-    puts("EXIT FAILURE");
-    _exit(EXIT_FAILURE);
+    // Signal has been handled and information printed
+    // Allow normal signal propagation instead of killing process
+    // DO NOT call _exit() which prevents JVM from handling the crash
+    std::abort();  // Use abort() for crash dumps and debugger compatibility
   }
 };
 

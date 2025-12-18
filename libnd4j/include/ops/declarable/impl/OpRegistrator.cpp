@@ -234,14 +234,6 @@ platforms::PlatformHelper* OpRegistrator::getPlatformHelper(LongType hash, samed
   return _helpersLH[p];
 }
 
-#if defined(HAVE_VEDA)
-sd::ops::platforms::PlatformHelperLegacy* OpRegistrator::getPlatformHelperLegacy(
-    const platforms::PlatformHelperLegacyEntry& entry) {
-  // do not throw , just return nullptr
-  if (_helpersHLegacy.count(entry) < 1) return nullptr;
-  return _helpersHLegacy[entry];
-}
-#endif
 
 bool OpRegistrator::hasHelper(LongType hash, samediff::Engine engine) {
   std::pair<LongType, samediff::Engine> p = {hash, engine};

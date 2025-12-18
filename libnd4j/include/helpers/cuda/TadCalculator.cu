@@ -45,7 +45,6 @@ TadCalculator::~TadCalculator() {
 
 
 void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
-  // Validate input and create shape info from original shape
   if (!_originalShape) {
     THROW_EXCEPTION("Original shape is null");
   }
@@ -53,24 +52,52 @@ void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
   auto shapeInfo = ConstantShapeHelper::getInstance().createFromExisting(_originalShape);
   const LongType rank = shape::rank(shapeInfo);
 
-  // Calculate dimensions to exclude
   const std::vector<LongType>* dimsToExclude = ShapeUtils::evalDimsToExclude(rank, dimensions.size(), dimensions.data());
   if (!dimsToExclude) {
     THROW_EXCEPTION("Failed to evaluate dimensions to exclude");
   }
 
-  // Calculate number of sub-arrays
+  bool hasSize1Dimension = false;
+  for (auto dim : dimensions) {
+    if (shape::shapeOf(shapeInfo)[dim] == 1) {
+      hasSize1Dimension = true;
+      break;
+    }
+  }
+
+  if (dimsToExclude->size() == 0 || dimsToExclude->size() == rank || hasSize1Dimension) {
+    const LongType totalElements = shape::length(shapeInfo);
+    
+    auto scalarShapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(shapeInfo));
+    auto scalarShapeBuffer = CudaShapeBufferCreator::getInstance().create(scalarShapeInfo, 0);
+    
+    LongType* offsetsBuf = new LongType[totalElements];
+    
+    for (LongType i = 0; i < totalElements; ++i) {
+      offsetsBuf[i] = i;
+    }
+    
+    auto oPtr = std::make_shared<PointerWrapper>(offsetsBuf);
+    auto offDPtr = std::make_shared<PointerWrapper>(
+        ConstantHelper::getInstance().replicatePointer(oPtr->pointer(), totalElements * sizeof(LongType)),
+        std::make_shared<CudaPointerDeallocator>());
+    
+    _tadShape = scalarShapeBuffer;
+    _tadOffsets = new ConstantOffsetsBuffer(oPtr, offDPtr);
+    _numTads = totalElements;
+    
+    delete dimsToExclude;
+    return;
+  }
+
   const LongType numOfSubArrs = ShapeUtils::getNumOfSubArrs(shapeInfo, *dimsToExclude);
 
   if (numOfSubArrs > 0) {
-    // Calculate sub-array rank
     const LongType subArrRank = (static_cast<size_t>(rank) == dimsToExclude->size() || false) ? rank : rank - dimsToExclude->size();
 
-    // Allocate memory for shapes and offsets
     LongType* shapeInfoBuf = new LongType[shape::shapeInfoLength(subArrRank)];
     LongType* offsetsBuf = new LongType[numOfSubArrs];
 
-    // Calculate shapes and offsets
     shape::calcSubArrsShapeInfoAndOffsets(
         shapeInfo,
         numOfSubArrs,
@@ -78,12 +105,10 @@ void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
         dimsToExclude->data(),
         shapeInfoBuf,
         offsetsBuf,
-        false);  // areUnitiesInShape
+        false);
 
-    // Use the CUDA ShapeBufferCreator for shape buffer creation
     ConstantShapeBuffer* shapesBuffer = CudaShapeBufferCreator::getInstance().create(shapeInfoBuf, subArrRank);
 
-    // Create offsets buffer with CUDA device copy
     auto oPtr = std::make_shared<PointerWrapper>(offsetsBuf);
     auto offDPtr = std::make_shared<PointerWrapper>(
         ConstantHelper::getInstance().replicatePointer(oPtr->pointer(), numOfSubArrs * sizeof(LongType)),
@@ -95,20 +120,15 @@ void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
     
 
   } else {
-    // Base case: number of sub arrays is zero, use original shape
     const LongType subArrRank = rank;
 
-    // Allocate and copy shape info
     LongType* shapeInfoBuf = new LongType[shape::shapeInfoLength(subArrRank)];
 
-    // Copy shape info
     auto nonConstant = const_cast<LongType*>(shapeInfo);
     shape::copyTo<LongType>(shape::shapeInfoLength(subArrRank), nonConstant, shapeInfoBuf);
 
-    // Use the CUDA ShapeBufferCreator for shape buffer creation
     ConstantShapeBuffer* shapesBuffer = CudaShapeBufferCreator::getInstance().create(shapeInfoBuf, subArrRank);
 
-    // Create base offset
     LongType* baseOffset = new LongType[1];
     baseOffset[0] = 0;
     auto oPtr = std::make_shared<PointerWrapper>(baseOffset);
