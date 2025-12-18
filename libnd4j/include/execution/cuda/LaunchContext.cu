@@ -31,7 +31,12 @@ thread_local sd::ContextBuffers contextBuffers = sd::ContextBuffers();
 
 namespace sd {
 
-std::vector<std::shared_ptr<LaunchContext>> LaunchContext::_contexts = std::vector<std::shared_ptr<LaunchContext>>();
+// This avoids static destruction order crashes during JVM shutdown
+std::vector<LaunchContext*>& LaunchContext::contexts() {
+  static std::vector<LaunchContext*>* _contexts = new std::vector<LaunchContext*>();
+  return *_contexts;
+}
+
 std::mutex LaunchContext::_mutex;
 SD_MAP_IMPL<int, std::mutex*> LaunchContext::_deviceMutexes;
 
@@ -80,17 +85,17 @@ LaunchContext* LaunchContext::defaultContext() {
   {
     // we need this block synchronous, to avoid double initialization etc
     std::lock_guard<std::mutex> lock(_mutex);
-    if (_contexts.empty()) {
+    if (contexts().empty()) {
       // create one context per device
       auto numDevices = AffinityManager::numberOfDevices();
 
-      _contexts.resize(numDevices);
+      contexts().resize(numDevices);
       for (int e = 0; e < numDevices; e++) {
         _deviceMutexes[e] = new std::mutex();
 
         AffinityManager::setCurrentNativeDevice(e);
 
-        _contexts[e] = std::make_shared<LaunchContext>();
+        contexts().at(e) = new LaunchContext();
       }
 
       // don't forget to restore device back again
@@ -99,7 +104,7 @@ LaunchContext* LaunchContext::defaultContext() {
   }
 
   // return context for current device
-  return _contexts[deviceId].get();
+  return contexts().at(deviceId);
 }
 
 void* LaunchContext::getReductionPointer() const { return contextBuffers.reductionBuffer(); };

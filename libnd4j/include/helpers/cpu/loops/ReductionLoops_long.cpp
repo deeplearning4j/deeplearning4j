@@ -19,15 +19,12 @@
 //
 // @author raver119@gmail.com
 //
+
 #include "ReductionLoops.hpp"
 
 using namespace simdOps;
 
 #include <types/types.h>
-
-#include "ReductionLoops.hpp"
-
-using namespace simdOps;
 
 namespace sd {
 
@@ -36,21 +33,17 @@ template <typename OpType>
 void ReductionLongLoops<X, Z>::innerloopReduce(sd::memory::Workspace* workspace, const X* x,
                                                const sd::LongType* xShapeInfo, Z* z, const sd::LongType* zShapeInfo,
                                                const LongType* dims, X* extraParams) {
-#ifndef SD_LOOPS_INLINED
-  ReductionLoops<X, Z, X>::template loopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, tadShapeInfo,
-                                                       tadOffsets, extraParams, start, stop);
-#endif
+  ReductionLoops<X, Z, X>::template loopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams);
 }
 
 template <typename X, typename Y>
 void ReductionLongLoops<X, Y>::wrapper(int opNum, sd::memory::Workspace* workspace, const X* x,
                                        const sd::LongType* xShapeInfo, Y* z, const sd::LongType* zShapeInfo,
                                        const LongType* dims, X* extraParams) {
-#ifndef SD_LOOPS_INLINED
   DISPATCH_BY_OPNUM_TT(innerloopReduce, PARAMS(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams),
                        REDUCE_LONG_OPS);
-#endif
 }
 
-BUILD_DOUBLE_TEMPLATE(template class ReductionLongLoops, , SD_COMMON_TYPES, SD_LONG_TYPES);
+BUILD_DOUBLE_TEMPLATE( class ReductionLongLoops, , SD_COMMON_TYPES, SD_LONG_TYPES);
+
 }  // namespace sd

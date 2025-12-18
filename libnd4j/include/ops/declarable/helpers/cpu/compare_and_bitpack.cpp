@@ -178,7 +178,7 @@ void compareAndBitpack(sd::graph::Context& block, NDArray& input, NDArray& thres
   BUILD_SINGLE_SELECTOR(input.dataType(), compareAndBitpack_, (input, threshold, output), SD_COMMON_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void compareAndBitpack_,
+BUILD_SINGLE_TEMPLATE( void compareAndBitpack_,
                       (NDArray& input, NDArray& threshold, NDArray& output), SD_COMMON_TYPES);
 
 }  // namespace helpers

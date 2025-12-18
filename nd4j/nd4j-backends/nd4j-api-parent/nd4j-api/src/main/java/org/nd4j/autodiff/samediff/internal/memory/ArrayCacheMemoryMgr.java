@@ -295,16 +295,32 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
     @Override
     public  void release(@NonNull INDArray array) {
-        if(!array.closeable())
-            return;
-
         Set<Long> lruCacheForThread = getLruCacheForThread();
         Table<DataType, String, List<INDArray>> arraysForThread = getArraysForThread();
         Map<Long, INDArray> lruCacheValues = getLruCacheValues();
-        // Check for multiple releases of the array
+
+        // Check for multiple releases of the array (only for closeable arrays that might be cached)
         long id = array.getId();
-        Preconditions.checkState(!lruCacheForThread.contains(id), "Array was released multiple times: id=%s, shape=%ndShape", id,
-                array);
+        if (array.closeable()) {
+            Preconditions.checkState(!lruCacheForThread.contains(id), "Array was released multiple times: id=%s, shape=%ndShape", id,
+                    array);
+        }
+
+        // Handle non-closeable arrays (views, etc.)
+        if (!array.closeable()) {
+            // Non-closeable arrays can't be cached, but we should still cleanup if possible
+            if (array.data() != null && Nd4j.getExecutioner().useCount(array.data()) == 1) {
+                // This is the only reference to the DataBuffer, so we can safely close it
+                // This prevents memory leaks for view arrays that are marked non-closeable
+                try {
+                    array.close();
+                } catch (Exception e) {
+                    log.warn("Failed to close non-closeable array with exclusive data buffer: " + e.getMessage());
+                }
+            }
+            // If useCount > 1, the buffer is shared, so we can't close it
+            return;
+        }
 
         if (!enableCache) {
             if (array.closeable()) {
@@ -333,6 +349,9 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
             if (array.closeable()) {
                 array.close();
             }
+            // CRITICAL FIX: Must return after closing UTF8 arrays!
+            // Previously fell through to add closed array to LRU cache, causing double-free
+            return;
         } else if (currentCacheSize.get() + thisBytes > maxCacheBytes.get()) {
             if (thisBytes > maxCacheBytes.get()) {
 
@@ -367,10 +386,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
             // OK to cache
             cacheArray(array);
         }
-
-        // Store in LRU cache for "last used" removal if we exceed cache size
-        lruCacheForThread.add(array.getId());
-        lruCacheValues.put(array.getId(), array);
+        // NOTE: Removed duplicate LRU cache additions - cacheArray() already handles this
     }
 
     private void cacheArray(INDArray array) {
@@ -391,10 +407,22 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
     @Override
     public void close() {
-        getArraysForThread().values().stream().forEach(input -> input.stream().forEach(arr -> {
-           // if (arr.closeable())
-           //     arr.close();
+        // LEAK FIX: Actually close cached arrays when the manager is closed
+        Table<DataType, String, List<INDArray>> arraysForThread = getArraysForThread();
+        Set<Long> lruCacheForThread = getLruCacheForThread();
+        Map<Long, INDArray> lruCacheValues = getLruCacheValues();
+        
+        arraysForThread.values().stream().forEach(input -> input.stream().forEach(arr -> {
+            if (arr.closeable()) {
+                arr.close();
+            }
         }));
+        
+        // Clear the caches
+        arraysForThread.clear();
+        lruCacheForThread.clear();
+        lruCacheValues.clear();
+        currentCacheSize.set(0);
     }
 
     @Override

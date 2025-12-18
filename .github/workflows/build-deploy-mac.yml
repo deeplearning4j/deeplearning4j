@@ -144,7 +144,7 @@ jobs:
       - name: Import GPG Key
         uses: crazy-max/ghaction-import-gpg@v1
         env:
-            GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+            GPG_PRIVATE_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
             PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
 
       - name: Set up Java for publishing to OSSRH
@@ -152,9 +152,12 @@ jobs:
         with:
           java-version: 11
           distribution: 'temurin'
-          server-id: 'central'
-          server-username: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
-          server-password: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+          server-id: ${{ github.event.inputs.serverId }}
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+          cache: 'maven'
         
         
 
@@ -183,10 +186,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_TO: central
-          MAVEN_GPG_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
           PERFORM_RELEASE: ${{ matrix.deploy_to_release_staging }}
           RELEASE_VERSION: ${{ matrix.release_version }}
           SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
@@ -225,3 +228,4 @@ jobs:
           fi
 
     
+

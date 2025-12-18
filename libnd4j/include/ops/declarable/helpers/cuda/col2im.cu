@@ -86,7 +86,7 @@ static SD_KERNEL void col2imCuda(const void* columns, const LongType* colShapeIn
     const LongType colHend = sd::math::sd_min<LongType>(imH / sH + 1, oH);
     const LongType colWend = sd::math::sd_min<LongType>(imW / sW + 1, oW);
 
-    T val = 0;
+    T val = static_cast<T>(0);
 
     for (coords[4] = colHstart; coords[4] < colHend; ++coords[4]) {
       coords[2] = imH - coords[4] * sH;

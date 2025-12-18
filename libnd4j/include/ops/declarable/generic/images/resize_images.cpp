@@ -94,8 +94,11 @@ CUSTOM_OP_IMPL(resize_images, 1, 1, false, 0, 0) {
                             outputShape1, false)
           : output->reshape(output->ordering(), outputShape2, false);
 
-  return resizeImagesFunctor(block.launchContext(), &source, width, height,
-                                      (helpers::ImageResizeMethods)method, alignCorners, &target);
+  auto ret =  resizeImagesFunctor(block.launchContext(), source, width, height,
+                                      (helpers::ImageResizeMethods)method, alignCorners, target);
+  delete source;
+  delete target;
+  return ret;
 }
 
 DECLARE_SHAPE_FN(resize_images) {

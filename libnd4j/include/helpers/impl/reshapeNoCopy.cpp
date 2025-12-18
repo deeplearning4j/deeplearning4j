@@ -7,6 +7,7 @@
 #include <system/op_boilerplate.h>
 #include <helpers/reshapeNoCopy.h>
 #include <helpers/shape.h>
+#include <array/ArrayOptions.hXX>
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -23,6 +24,12 @@ bool reshapeNoAlloc(const sd::LongType* inShape,
 
   int newnd = newShape.size();
   bool isFOrder = order == 'f';
+
+  // FIX: Set data type early, before any return statements
+  // This ensures data type is preserved even for empty arrays
+  if(ArrayOptions::numDataTypesSet(ArrayOptions::extra(outShape)) < 1) {
+    ArrayOptions::setDataType(outShape, ArrayOptions::dataType(inShape));
+  }
 
   // Remove axes with dimension 1 from the old array
   int actual_oldnd = 0;
@@ -49,6 +56,7 @@ bool reshapeNoAlloc(const sd::LongType* inShape,
   }
 
   if (np == 0) {
+    // FIX: Data type has already been set above, so empty arrays will have correct type
     return false;  // don't support empty arrays
   }
 
@@ -122,11 +130,13 @@ bool reshapeNoAlloc(const sd::LongType* inShape,
 
   shape::setShape(outShape, const_cast<sd::LongType*>(newShape.data()));
   shape::setStride(outShape, newStrides.data());
-  if(ArrayOptions::numDataTypesSet(ArrayOptions::extra(outShape)) < 1) {
-    ArrayOptions::setDataType(outShape, ArrayOptions::dataType(inShape));
-  }
 
+  // Set order first
   shape::setOrder(outShape, order);
+
+  // Data type was set early (lines 28-32) but we set it again here as a defensive measure
+  // to ensure it's preserved even if other shape operations modified the extra field
+  ArrayOptions::setDataType(outShape, ArrayOptions::dataType(inShape));
 
   return true;
 }
