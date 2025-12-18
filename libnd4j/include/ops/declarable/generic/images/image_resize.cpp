@@ -107,8 +107,10 @@ CUSTOM_OP_IMPL(image_resize, 2, 1, false, -2, -2) {
                  "this method supports only HALF_PIXEL and exclude_outside being set true");
   }
 
-  return resizeFunctor(block.launchContext(), image, width, height, method, coorMode, exclude_outside,
+  auto ret =  resizeFunctor(block.launchContext(), image, width, height, method, coorMode, exclude_outside,
                                 nearestMode, bicubicCoefficient, antialias, output);
+  delete target;
+  return ret;
 }
 
 DECLARE_SHAPE_FN(image_resize) {

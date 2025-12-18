@@ -40,17 +40,12 @@ class BroadcastHelper {
     }
 
     if (x->lengthOf() > 1 && y->lengthOf() > 1 && x->isSameShape(y)) {
-      NDArray &yRef = *y;
-      NDArray &zRef = *z;
       x->applyPairwiseTransform(op.p, y, z, extraArgs);
     } else if (x->lengthOf() > 1 && y->lengthOf() <= 1) {
-      NDArray &yRef = *y;
-      NDArray &zRef = *z;
       x->applyScalarArr(op.s, y, z);
     } else if (x->lengthOf() <= 1 && y->lengthOf() > 1) {
       NDArray &xRef = *x;
       NDArray &yRef = *y;
-      NDArray &zRef = *z;
       if (z->isSameShape(y)) {
         if (op.s == scalar::Add || op.s == scalar::Multiply) {
           y->applyScalarArr(op.s, x, z);
