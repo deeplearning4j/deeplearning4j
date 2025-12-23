@@ -16,11 +16,6 @@ if not exist "%JAR_FILE%" (
 )
 
 REM Validate JAR file exists after build
-if not defined JAR_FILE (
-    echo Error: JAR_FILE is not defined
-    exit /b 1
-)
-
 if not exist "%JAR_FILE%" (
     echo Error: JAR file not found: %JAR_FILE%
     exit /b 1
