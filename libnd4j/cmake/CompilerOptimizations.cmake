@@ -66,9 +66,6 @@ endif()
 # Memory model is now configured in CompilerFlags.cmake to avoid conflicts
 # (Sanitizer builds use -mcmodel=large, non-sanitizer builds use -mcmodel=medium)
 if(SD_X86_BUILD AND NOT WIN32)
-    # Removed: -mcmodel setting now in CompilerFlags.cmake only
-    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=medium -fPIC")
-    # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcmodel=medium")
     message(STATUS "Memory model configuration deferred to CompilerFlags.cmake")
 else()
     if(SD_ARM_BUILD OR SD_ANDROID_BUILD)
