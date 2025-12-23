@@ -204,13 +204,13 @@ void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, ND
     if (inputWeights->rankOf() == 3) {
       NDArray* tempPermute = inputWeights->permute({0, 2, 1}, 0, false);
       inputWeightsT = tempPermute->dup('c');
-      if (tempPermute != nullptr && !tempPermute->isView()) {
+      if (!tempPermute->isView()) {
         delete tempPermute;
       }
     } else {
       NDArray* tempTranspose = inputWeights->transpose();
       inputWeightsT = tempTranspose->dup('c');
-      if (tempTranspose != nullptr && !tempTranspose->isView()) {
+      if (!tempTranspose->isView()) {
         delete tempTranspose;
       }
     }
@@ -220,13 +220,13 @@ void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, ND
     if (recurrentWeights->rankOf() == 3) {
       NDArray* tempPermute = recurrentWeights->permute({0, 2, 1}, 0, false);
       recurrentWeightsT = tempPermute->dup('c');
-      if (tempPermute != nullptr && !tempPermute->isView()) {
+      if (!tempPermute->isView()) {
         delete tempPermute;
       }
     } else {
       NDArray* tempTranspose = recurrentWeights->transpose();
       recurrentWeightsT = tempTranspose->dup('c');
-      if (tempTranspose != nullptr && !tempTranspose->isView()) {
+      if (!tempTranspose->isView()) {
         delete tempTranspose;
       }
     }
@@ -251,7 +251,7 @@ void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, ND
   if (dataFormat == 1) {
     NDArray* tempPermute = input->permute({1, 0, 2}, 0, false);
     permutedX = tempPermute->dup('c');
-    if (tempPermute != nullptr && !tempPermute->isView()) {
+    if (!tempPermute->isView()) {
       delete tempPermute;
     }
     argX = &permutedX;
