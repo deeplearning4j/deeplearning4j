@@ -172,23 +172,43 @@ class TestOnnxFrameworkImporter {
             "all-MiniLM-L12-v2" to "https://huggingface.co/sentence-transformers/all-MiniLM-L12-v2/resolve/main/config.json"
         )
 
+        /**
+         * Parse timeout value from system property, with validation and default fallback
+         * @param propertyName The system property name to read
+         * @param defaultValue The default timeout value in milliseconds
+         * @return The parsed timeout value, or default if property is not set or invalid
+         */
+        private fun parseTimeoutProperty(propertyName: String, defaultValue: Int): Int {
+            val propertyValue = System.getProperty(propertyName) ?: return defaultValue
+            
+            // Validate it's a positive number
+            if (!propertyValue.matches(Regex("\\d+"))) {
+                return defaultValue
+            }
+            
+            // Use toLongOrNull to safely parse and check range
+            val timeoutLong = propertyValue.toLongOrNull() ?: return defaultValue
+            
+            // Ensure it's within valid Int range and positive
+            return if (timeoutLong in 1..Int.MAX_VALUE) {
+                timeoutLong.toInt()
+            } else {
+                defaultValue
+            }
+        }
+
         fun downloadFile(urlString: String, targetFile: File) {
             // Use configurable timeouts via system properties, with defaults of 60 seconds
             // This follows the pattern used in ResourceFile and Downloader classes
-            val connTimeoutStr = System.getProperty(ND4JSystemProperties.RESOURCES_CONNECTION_TIMEOUT)
-            val readTimeoutStr = System.getProperty(ND4JSystemProperties.RESOURCES_READ_TIMEOUT)
-            
-            val connectTimeout = if (connTimeoutStr != null && connTimeoutStr.matches(Regex("\\d+"))) {
-                connTimeoutStr.toInt()
-            } else {
+            val connectTimeout = parseTimeoutProperty(
+                ND4JSystemProperties.RESOURCES_CONNECTION_TIMEOUT, 
                 60000  // Default: 60 seconds (matching Downloader.DEFAULT_CONNECTION_TIMEOUT and codebase standard)
-            }
+            )
             
-            val readTimeout = if (readTimeoutStr != null && readTimeoutStr.matches(Regex("\\d+"))) {
-                readTimeoutStr.toInt()
-            } else {
+            val readTimeout = parseTimeoutProperty(
+                ND4JSystemProperties.RESOURCES_READ_TIMEOUT,
                 60000  // Default: 60 seconds (matching Downloader.DEFAULT_READ_TIMEOUT and codebase standard)
-            }
+            )
             
             try {
                 val url = URL(urlString)
