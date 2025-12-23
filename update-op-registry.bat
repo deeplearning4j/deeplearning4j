@@ -222,6 +222,7 @@ echo   --clean              Perform a clean build before running
 echo                        Default: false
 echo.
 echo   --profiles=^<profiles^> Additional Maven profiles (comma-separated)
+echo                        Only alphanumeric, comma, hyphen, underscore allowed
 echo                        Example: --profiles=cuda,testresources
 echo                        Default: none
 echo.
