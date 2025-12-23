@@ -43,6 +43,7 @@ import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.tensorflow.TensorflowDescriptorParser;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.ReduceOp;
 import org.nd4j.linalg.api.ops.CustomOpDescriptor;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.bool.*;
@@ -335,9 +336,35 @@ public class OpValidation {
                 } else {
                     if (!orig.equals(deser)) {
                         //Edge case: check for NaNs in original and deserialized... might be legitimate test (like replaceNaNs op)
-                        long count = orig.dataType().isNumerical() ? Nd4j.getExecutioner().execAndReturn(new MatchCondition(orig, Conditions.isNan())).getFinalResult().longValue() : -1;
+                        long count = -1;
+                        if (orig.dataType().isNumerical()) {
+                            MatchCondition nanCheck1 = new MatchCondition(orig, Conditions.isNan());
+                            ReduceOp nanResult1 = null;
+                            try {
+                                nanResult1 = Nd4j.getExecutioner().execAndReturn(nanCheck1);
+                                count = nanResult1.getFinalResult().longValue();
+                            } finally {
+                                try {
+                                    nanCheck1.clearArrays();
+                                } catch (Exception e) {
+                                    // Ignore errors
+                                }
+                            }
+                        }
                         if (orig.dataType().isNumerical() && count > 0 && orig.equalShapes(deser)) {
-                            long count2 = Nd4j.getExecutioner().execAndReturn(new MatchCondition(deser, Conditions.isNan())).getFinalResult().longValue();
+                            MatchCondition nanCheck2 = new MatchCondition(deser, Conditions.isNan());
+                            ReduceOp nanResult2 = null;
+                            long count2 = -1;
+                            try {
+                                nanResult2 = Nd4j.getExecutioner().execAndReturn(nanCheck2);
+                                count2 = nanResult2.getFinalResult().longValue();
+                            } finally {
+                                try {
+                                    nanCheck2.clearArrays();
+                                } catch (Exception e) {
+                                    // Ignore errors
+                                }
+                            }
                             if (count != count2) {
                                 err = "INDArray equality failed";
                             } else {
