@@ -124,11 +124,16 @@ class BroadcastHelper {
         x->applyPairwiseTransform(op.p, y, z, extraArgs);
         return z;
       } else {
-        auto* yShapeVec = y->getShapeAsVector();
-        auto tZ = NDArrayFactory::valueOf(*yShapeVec, y, y->ordering());
-        delete yShapeVec;
-        // LEAK: tZ is never deleted by caller
-        return tZ;
+        std::string errorMessage;
+        errorMessage += "BroadcastHelper::broadcastApply: when x is scalar and y is non-scalar, ";
+        errorMessage += "the output array z must have the same shape as y. ";
+        errorMessage += "x shape: ";
+        errorMessage += ShapeUtils::shapeAsString(x);
+        errorMessage += ", y shape: ";
+        errorMessage += ShapeUtils::shapeAsString(y);
+        errorMessage += ", z shape: ";
+        errorMessage += ShapeUtils::shapeAsString(z);
+        THROW_EXCEPTION(errorMessage.c_str());
       }
     } else if (x->isScalar() && y->isScalar()) {  // x->isScalar() && y->isScalar()
       x->applyScalarArr(op.s, y, z);
