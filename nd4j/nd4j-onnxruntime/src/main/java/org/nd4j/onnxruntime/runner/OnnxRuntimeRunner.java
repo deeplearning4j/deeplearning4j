@@ -297,8 +297,24 @@ public class OnnxRuntimeRunner implements Closeable {
                     String outputName = entry.getKey();
                     TypeMismatchInfo mismatch = entry.getValue();
                     
-                    // Create a cast node
-                    String castOutputName = outputName + "_cast_to_" + mismatch.expectedType.toLowerCase().replace("tensor(", "").replace(")", "");
+                    // Create a cast node with a sanitized and unique output name
+                    String typeSuffix = mismatch.expectedType.toLowerCase().replace("tensor(", "").replace(")", "");
+                    String rawCastOutputName = outputName + "_cast_to_" + typeSuffix + "_" +
+                            UUID.randomUUID().toString().replace("-", "");
+                    StringBuilder sanitizedNameBuilder = new StringBuilder(rawCastOutputName.length());
+                    for (int i = 0; i < rawCastOutputName.length(); i++) {
+                        char c = rawCastOutputName.charAt(i);
+                        if (Character.isLetterOrDigit(c) || c == '_') {
+                            sanitizedNameBuilder.append(c);
+                        } else {
+                            sanitizedNameBuilder.append('_');
+                        }
+                    }
+                    if (sanitizedNameBuilder.length() == 0 ||
+                            !(Character.isLetter(sanitizedNameBuilder.charAt(0)) || sanitizedNameBuilder.charAt(0) == '_')) {
+                        sanitizedNameBuilder.insert(0, 'n');
+                    }
+                    String castOutputName = sanitizedNameBuilder.toString();
                     Onnx.NodeProto castNode = createCastNode(outputName, castOutputName, 
                             parseDataType(mismatch.expectedType));
                     graphBuilder.addNode(castNode);
