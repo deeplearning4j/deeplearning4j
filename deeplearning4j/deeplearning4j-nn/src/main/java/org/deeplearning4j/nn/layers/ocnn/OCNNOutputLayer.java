@@ -23,7 +23,6 @@ package org.deeplearning4j.nn.layers.ocnn;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;

@@ -22,6 +22,7 @@ package org.deeplearning4j.nn.graph.vertex.impl;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.SneakyThrows;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.TrainingConfig;
@@ -39,7 +40,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -104,6 +104,7 @@ public class LayerVertex extends BaseGraphVertex {
         return layer;
     }
 
+    @SneakyThrows
     @Override
     public INDArray doForward(boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (!canDoForward())
