@@ -673,12 +673,8 @@ private:
     mutable std::map<std::string, OpContextPerOpStats> _perOpStats;
 
     // Thread-local operation context
-    static thread_local std::string _currentOpContext;
+    static inline thread_local std::string _currentOpContext;
 };
-
-// Define thread-local storage
-inline thread_local std::string OpContextLifecycleTracker::_currentOpContext;
-
 } // namespace graph
 } // namespace sd
 
