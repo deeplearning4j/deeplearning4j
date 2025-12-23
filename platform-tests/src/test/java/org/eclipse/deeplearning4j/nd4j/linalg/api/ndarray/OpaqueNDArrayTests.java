@@ -68,24 +68,24 @@ public class OpaqueNDArrayTests extends BaseNd4jTestWithBackends {
     @Test
     public void testOpaqueNDArrayCachedVsUncached() {
         INDArray arr = Nd4j.create(DataType.FLOAT, 10, 10);
-        
-        // Cached version (via getOrCreateOpaqueNDArray)
-        OpaqueNDArray cached1 = OpaqueNDArray.fromINDArray(arr);
-        OpaqueNDArray cached2 = OpaqueNDArray.fromINDArray(arr);
-        
-        // Should return same instance when cached
-        assertSame(cached1, cached2, "Cached OpaqueNDArray should be same instance");
-        
-        // Uncached version
-        try (OpaqueNDArray uncached1 = OpaqueNDArray.fromINDArrayUncached(arr);
-             OpaqueNDArray uncached2 = OpaqueNDArray.fromINDArrayUncached(arr)) {
-            
-            // Should create new instances
-            assertNotSame(uncached1, uncached2, "Uncached OpaqueNDArray should be different instances");
-            assertNotSame(cached1, uncached1, "Cached and uncached should be different");
+        try (OpaqueNDArray cached1 = OpaqueNDArray.fromINDArray(arr)) {
+            // Cached version (via getOrCreateOpaqueNDArray)
+            OpaqueNDArray cached2 = OpaqueNDArray.fromINDArray(arr);
+
+            // Should return same instance when cached
+            assertSame(cached1, cached2, "Cached OpaqueNDArray should be same instance");
+
+            // Uncached version
+            try (OpaqueNDArray uncached1 = OpaqueNDArray.fromINDArrayUncached(arr);
+                 OpaqueNDArray uncached2 = OpaqueNDArray.fromINDArrayUncached(arr)) {
+
+                // Should create new instances
+                assertNotSame(uncached1, uncached2, "Uncached OpaqueNDArray should be different instances");
+                assertNotSame(cached1, uncached1, "Cached and uncached should be different");
+            }
+        } finally {
+            arr.close();
         }
-        
-        arr.close();
     }
 
     @Test
