@@ -21,7 +21,7 @@
 //
 // @author raver119@gmail.com
 //
-#include <array/ArrayOptions.hXX>
+#include <array/ArrayOptions.h>
 #include <array/NDArray.h>
 #include <array/NDArrayFactory.h>
 #include <execution/AffinityManager.h>
