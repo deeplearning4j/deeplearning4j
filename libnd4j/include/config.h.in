@@ -9,10 +9,12 @@
 #cmakedefine01 HAVE_OPENBLAS
 #cmakedefine01 HAVE_FLATBUFFERS
 
-#cmakedefine SD_LIBRARY_NAME "@SD_LIBRARY_NAME@"
-#cmakedefine ONEDNN_PATH "@ONEDNN_PATH@"
-#cmakedefine OPENBLAS_PATH "@OPENBLAS_PATH@"
-#cmakedefine FLATBUFFERS_PATH "@FLATBUFFERS_PATH@"
-#cmakedefine DEFAULT_ENGINE @DEFAULT_ENGINE@
+#define SD_LIBRARY_NAME "@SD_LIBRARY_NAME@"
+#define OPENBLAS_PATH "@OPENBLAS_PATH@"
+#define DEFAULT_ENGINE @DEFAULT_ENGINE@
+
+// Type system configuration - populated by CMake TypeValidation system
+#cmakedefine01 SD_SELECTIVE_TYPES
+@TYPE_DEFINES@
 
 #endif

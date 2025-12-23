@@ -38,7 +38,7 @@ namespace samediff {
 
 int ThreadsHelper::numberOfThreads(int maxThreads, uint64_t numberOfElements) {
   // let's see how many threads we actually need first
-  auto optimalThreads = sd::math::sd_max<uint64_t>(1, numberOfElements / 1024);
+  auto optimalThreads = sd::math::sd_max<sd::UnsignedLong>(1, numberOfElements / 1024);
 
   // now return the smallest value
   return sd::math::sd_min<int>(optimalThreads, maxThreads);

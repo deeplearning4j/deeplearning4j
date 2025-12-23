@@ -51,7 +51,23 @@
 
 namespace sd {
 
+// Forward declaration needed for LaunchContextNoOpDeleter
+class LaunchContext;
+
+// Custom deleter for sd::LaunchContext instances that are intentionally leaked
+// by the LaunchContext::defaultContext() mechanism.
+// This prevents std::shared_ptr from attempting to delete these objects,
+// avoiding double-free or invalid memory access issues during shutdown.
+struct LaunchContextNoOpDeleter {
+    void operator()(LaunchContext* lc) const {
+        // Do nothing. The LaunchContext instance is managed by the static contexts() vector
+        // and is intentionally leaked to avoid static destruction order problems.
+        // Its memory is reclaimed by the operating system on process exit.
+    }
+};
+
 class SD_LIB_EXPORT LaunchContext {
+
  private:
   // Previous implementation used heap-allocated pointer which caused crashes during JVM shutdown:
   // - The vector* was allocated with new and "intentionally leaked"
@@ -110,6 +126,8 @@ class SD_LIB_EXPORT LaunchContext {
                 Pointer allocationPointer = nullptr);
   LaunchContext();
   ~LaunchContext();
+  static bool isManagedContext(LaunchContext* contextPtr);
+  void operator delete(void* ptr) noexcept;
   memory::Workspace* getWorkspace() const {
     return _workspace;
   }

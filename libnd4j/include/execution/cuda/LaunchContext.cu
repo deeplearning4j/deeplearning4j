@@ -25,6 +25,8 @@
 #include <helpers/cublasHelper.h>
 #include <helpers/logger.h>
 
+#include <algorithm>
+
 #include <thread>
 
 thread_local sd::ContextBuffers contextBuffers = sd::ContextBuffers();
@@ -35,6 +37,19 @@ namespace sd {
 std::vector<LaunchContext*>& LaunchContext::contexts() {
   static std::vector<LaunchContext*>* _contexts = new std::vector<LaunchContext*>();
   return *_contexts;
+}
+
+bool LaunchContext::isManagedContext(LaunchContext* contextPtr) {
+  auto& ctxs = LaunchContext::contexts();
+  return std::find(ctxs.begin(), ctxs.end(), contextPtr) != ctxs.end();
+}
+
+void LaunchContext::operator delete(void* ptr) noexcept {
+  if (ptr == nullptr) return;
+  auto* ctx = reinterpret_cast<LaunchContext*>(ptr);
+  if (LaunchContext::isManagedContext(ctx)) return;
+
+  ::operator delete(ptr);
 }
 
 std::mutex LaunchContext::_mutex;

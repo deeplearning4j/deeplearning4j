@@ -81,7 +81,7 @@ void ExtraArguments::convertAndCopy(Pointer pointer, LongType offset) {
   delete[] target;
 #endif
 }
-BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT void ExtraArguments::convertAndCopy,
+BUILD_SINGLE_TEMPLATE(void ExtraArguments::convertAndCopy,
                       (sd::Pointer pointer, sd::LongType offset), SD_COMMON_TYPES);
 
 void *ExtraArguments::allocate(size_t length, size_t elementSize) {
@@ -110,7 +110,7 @@ template <typename T>
 void *ExtraArguments::argumentsAsT(LongType offset) {
   return argumentsAsT(DataTypeUtils::fromT<T>(), offset);
 }
-BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT void *ExtraArguments::argumentsAsT, (sd::LongType offset),
+BUILD_SINGLE_TEMPLATE(void *ExtraArguments::argumentsAsT, (sd::LongType offset),
                       SD_COMMON_TYPES);
 
 void *ExtraArguments::argumentsAsT(DataType dataType, LongType offset) {

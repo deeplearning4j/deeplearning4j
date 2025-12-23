@@ -122,8 +122,8 @@ class SD_LIB_EXPORT Threads {
    * @param increment
    * @return
    */
-  static int parallel_for(FUNC_1D function, long long int start, long long int stop, long long int increment = 1,
-                          long long int numThreads = sd::Environment::getInstance().maxMasterThreads());
+  static int parallel_for(FUNC_1D function, sd::LongType start, sd::LongType stop, sd::LongType increment = 1,
+                          sd::LongType numThreads = sd::Environment::getInstance().maxMasterThreads());
 
   /**
    * This function executes 1 dimensional loop for a given number of threads
@@ -135,8 +135,8 @@ class SD_LIB_EXPORT Threads {
    * @param numThreads
    * @return
    */
-  static int parallel_tad(FUNC_1D function, long long int start, long long int stop, long long int increment = 1,
-                          long long int numThreads = sd::Environment::getInstance().maxMasterThreads());
+  static int parallel_tad(FUNC_1D function, sd::LongType start, sd::LongType stop, sd::LongType increment = 1,
+                          sd::LongType numThreads = sd::Environment::getInstance().maxMasterThreads());
 
   /**
    * This method will execute function splitting 2 nested loops space with multiple threads
@@ -182,11 +182,11 @@ class SD_LIB_EXPORT Threads {
    * @return
    */
   static int parallel_do(FUNC_DO function,
-                         long long int numThreads = sd::Environment::getInstance().maxMasterThreads());
+                         sd::LongType numThreads = sd::Environment::getInstance().maxMasterThreads());
 
-  static int64_t parallel_long(FUNC_RL function, FUNC_AL aggregator, long long int start, long long int stop,
-                               long long int increment = 1,
-                               long long int numThreads = sd::Environment::getInstance().maxMasterThreads());
+  static int64_t parallel_long(FUNC_RL function, FUNC_AL aggregator, sd::LongType start, sd::LongType stop,
+                               sd::LongType increment = 1,
+                               sd::LongType numThreads = sd::Environment::getInstance().maxMasterThreads());
 
   static double parallel_double(FUNC_RD function, FUNC_AD aggregator, int64_t start, int64_t stop,
                                 int64_t increment = 1,
