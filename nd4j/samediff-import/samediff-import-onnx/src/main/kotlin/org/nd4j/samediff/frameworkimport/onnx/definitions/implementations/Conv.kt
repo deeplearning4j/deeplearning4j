@@ -40,6 +40,7 @@ import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
+import onnx.Onnx
 
 /**
  * A port of cast.py from onnx tensorflow for samediff:
@@ -60,11 +61,28 @@ class Conv : PreImportHook  {
         dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String, List<SDVariable>> {
         val inWeights = sd.getVariable(op.inputsToOp[1])
-        val weightsRank = inWeights.shape.size
+
+        // Get weights shape from ONNX tensor proto in dynamicVariables
+        val weightsName = op.inputsToOp[1]
+        val weightsTensor = dynamicVariables[weightsName] as? Onnx.TensorProto
+        val weightsShape = if (weightsTensor != null && weightsTensor.dimsCount > 0) {
+            weightsTensor.dimsList.map { it }.toLongArray()
+        } else {
+            throw IllegalStateException("Cannot determine weights shape for Conv op: $weightsName not found in dynamicVariables")
+        }
+        val weightsRank = weightsShape.size
 
         var inputVariable = sd.getVariable(op.inputsToOp[0])
         val rank = weightsRank
-        val xShape = inputVariable.shape
+
+        // Get input shape from ONNX tensor proto if available
+        val inputName = op.inputsToOp[0]
+        val inputTensor = dynamicVariables[inputName] as? Onnx.TensorProto
+        val xShape = if (inputTensor != null && inputTensor.dimsCount > 0) {
+            inputTensor.dimsList.map { it }.toLongArray()
+        } else {
+            null // Input might be dynamic (from previous op output)
+        }
         val spatialSize = rank - 2
         val storageComputeFormat = ImportUtils.getDataFormat(rank)
         val computeIndex = storageComputeFormat.second.indexOf('C')
@@ -75,12 +93,11 @@ class Conv : PreImportHook  {
             val kernelShapeList = attributes["kernel_shape"] as List<Int>
             kernelShapeList.map { input -> input }.toIntArray()
         } else {
-            val weightsShape = inWeights.shape
             weightsShape.map { input -> input.toInt() }.toIntArray()
         }
 
         var weights = sd.permute(inWeights,*perm)
-        var inWeightsShape = ArrayUtil.permute(ArrayUtil.copy(inWeights.shape),perm)
+        var inWeightsShape = ArrayUtil.permute(ArrayUtil.copy(weightsShape),perm)
         val dilations = if(attributes.containsKey("dilations")) {
             val dilationsList = attributes["dilations"] as List<Int>
             val dilationsArr = dilationsList
@@ -144,7 +161,7 @@ class Conv : PreImportHook  {
             val depthWiseFilterShape = mutableListOf<Int>()
             for(i in 0 until 2) depthWiseFilterShape.add(inWeightsShape[i].toInt())
             depthWiseFilterShape.add(-1)
-            depthWiseFilterShape.add(Math.floorDiv(weights.shape[3].toInt(),groups.toInt()))
+            depthWiseFilterShape.add(Math.floorDiv(inWeightsShape[3].toInt(),groups.toInt()))
             weights = weights.reshape(*depthWiseFilterShape.toIntArray())
             inputVariable = sd.permute(inputVariable,*ImportUtils.getPermFromFormats(storageComputeFormat.first,storageComputeFormat.second))
             xs.add(inputVariable)

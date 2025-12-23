@@ -70,6 +70,7 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
 
         nodeNames = HashSet()
         preProcessZeroSuffixes()
+        preProcessUnnamedNodes()
 
         cachedNodeList = nodeList()
 
@@ -106,6 +107,52 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
         initializerSet.addAll(initializers)
         outputList.addAll(this.graphDef.outputList.filter { valueInfo -> !valueInfo.name.contains(valueInfo.name) }
             .map { input -> input.name.replace(":0","") })
+    }
+
+    /**
+     * Preprocessing step to assign unique names to unnamed nodes based on their operation type.
+     * Uses per-operation-type counters to ensure unique identification.
+     */
+    private fun preProcessUnnamedNodes() {
+        val graphDefBuilder = graphDef.toBuilder()
+        val opTypeCounters = mutableMapOf<String, Int>()
+        val nodeList = ArrayList<Onnx.NodeProto>()
+
+        // Process each node and assign names to unnamed ones
+        for (i in 0 until graphDefBuilder.nodeCount) {
+            val node = graphDefBuilder.getNode(i)
+
+            // Validate node has required properties
+            if (node.opType.isEmpty() && node.inputCount == 0 && node.outputCount == 0) {
+                throw IllegalStateException("Invalid node found: no op type, no inputs, and no outputs at index $i")
+            }
+
+            val nodeBuilder = if (node.name.isEmpty()) {
+                // Node has no name, assign one based on op type
+                val opType = node.opType
+                val counter = opTypeCounters.getOrDefault(opType, 0)
+                val assignedName = "${opType}_${counter}"
+                opTypeCounters[opType] = counter + 1
+
+                node.toBuilder().setName(assignedName)
+            } else {
+                // Node already has a name, keep it as is
+                node.toBuilder()
+            }
+
+            nodeList.add(nodeBuilder.build())
+        }
+
+        // Clear existing nodes and add the processed ones
+        for (i in 0 until graphDefBuilder.nodeCount) {
+            graphDefBuilder.removeNode(0)
+        }
+
+        nodeList.forEach { processedNode ->
+            graphDefBuilder.addNode(processedNode)
+        }
+
+        this.graphDef = graphDefBuilder.build()
     }
 
     /**
@@ -443,6 +490,30 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
         return true
     }
 
+    override fun graphStructure(): String {
+        val builder = StringBuilder()
+        builder.append("ONNX Graph Structure:\n")
+        builder.append("====================\n")
+        builder.append("Inputs: ${inputList.joinToString(", ")}\n")
+        builder.append("Outputs: ${outputList.joinToString(", ")}\n")
+        builder.append("Variables: ${variableList.joinToString(", ")}\n")
+        builder.append("Initializers: ${initializerSet.joinToString(", ")}\n")
+        builder.append("Total Nodes: ${nodeNames.size}\n\n")
+
+        builder.append("Nodes:\n")
+        cachedNodeList.forEach { node ->
+            builder.append("  ${node.nodeName()} (${node.opName()})\n")
+            if (node.inputs().isNotEmpty()) {
+                builder.append("    Inputs: ${node.inputs().joinToString(", ")}\n")
+            }
+            if (node.outputs().isNotEmpty()) {
+                builder.append("    Outputs: ${node.outputs().joinToString(", ")}\n")
+            }
+        }
+
+        return builder.toString()
+    }
+
     override fun convertToNDArray(tensorTypeInput: Onnx.TensorProto): INDArray {
         return OnnxIRTensor(tensorTypeInput).toNd4jNDArray()
     }
@@ -473,4 +544,6 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
     override fun convertToTensor(ndarrayInput: INDArray, tensorName: String): Onnx.TensorProto {
         return convertToOnnxTensor(ndarrayInput,tensorName)
     }
+
+
 }

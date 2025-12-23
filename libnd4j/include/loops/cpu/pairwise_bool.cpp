@@ -31,8 +31,8 @@ namespace functions {
 namespace pairwise_transforms {
 
 
-template <typename X, typename Y>
-void PairWiseBoolTransform<X, Y>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
+template <typename X, typename Z>
+void PairWiseBoolTransform<X, Z>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                                        const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo,
                                        void *extraParams, sd::LongType start, sd::LongType stop) {
   DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams, start, stop),

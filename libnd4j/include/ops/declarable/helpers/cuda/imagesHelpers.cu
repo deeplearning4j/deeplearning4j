@@ -173,6 +173,7 @@ SD_KERNEL void rgbToGrsCuda(const void* vx, const LongType* xShapeInfo, void* vz
   __shared__ const LongType* xShapePtr;
   __shared__ const LongType* zShapePtr;
   __shared__ const LongType* xStridePtr;
+  __shared__ const LongType* zStridePtr;
 
   if (threadIdx.x == 0) {
     zLen = shape::length(zShapeInfo);
@@ -180,6 +181,7 @@ SD_KERNEL void rgbToGrsCuda(const void* vx, const LongType* xShapeInfo, void* vz
     xShapePtr = shape::shapeOf(xShapeInfo);
     zShapePtr = shape::shapeOf(zShapeInfo);
     xStridePtr = shape::stride(xShapeInfo);
+    zStridePtr = shape::stride(zShapeInfo);
   }
   __syncthreads();
 
@@ -192,11 +194,11 @@ SD_KERNEL void rgbToGrsCuda(const void* vx, const LongType* xShapeInfo, void* vz
 
     // Compute z offset
     LongType zOffset;
-    COORDS2INDEX(rank, zShapePtr, coords, zOffset);
+    COORDS2INDEX(rank, zStridePtr, coords, zOffset);
 
     // Compute x offsets for R, G, B channels
     LongType xOffset0;
-    COORDS2INDEX(rank, xShapePtr, coords, xOffset0);
+    COORDS2INDEX(rank, xStridePtr, coords, xOffset0);
     const auto xOffset1 = xOffset0 + xStridePtr[dimC];
     const auto xOffset2 = xOffset1 + xStridePtr[dimC];
 

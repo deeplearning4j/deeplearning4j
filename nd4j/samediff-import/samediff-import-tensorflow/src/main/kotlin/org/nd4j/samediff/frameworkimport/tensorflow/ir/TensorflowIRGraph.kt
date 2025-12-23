@@ -95,6 +95,27 @@ class TensorflowIRGraph(graphDef: GraphDef, opDef: OpList
     }
 
 
+    override fun graphStructure(): String {
+        val builder = StringBuilder()
+        builder.append("TensorFlow Graph Structure:\n")
+        builder.append("=========================\n")
+        builder.append("Inputs: ${inputs.joinToString(", ")}\n")
+        builder.append("Outputs: ${outputs.joinToString(", ")}\n")
+        builder.append("Total Nodes: ${nodeNames.size}\n\n")
+
+        builder.append("Nodes:\n")
+        cachedNodeList.forEach { node ->
+            builder.append("  ${node.nodeName()} (${node.opName()})\n")
+            if (node.inputs().isNotEmpty()) {
+                builder.append("    Inputs: ${node.inputs().joinToString(", ")}\n")
+            }
+            if (node.outputs().isNotEmpty()) {
+                builder.append("    Outputs: ${node.outputs().joinToString(", ")}\n")
+            }
+        }
+
+        return builder.toString()
+    }
 
     override fun createMappingContext(
         opDef: OpDef,

@@ -187,27 +187,7 @@ void TypeCast::convertFromThreshold(Pointer *extras, const void *dx, LongType N,
   samediff::Threads::parallel_for(func, 4, flimit);
 }
 
-/**
- * This is cpu version, so leave it here as inline, to avoid templates instantiation
- *
- * @tparam S
- * @tparam T
- * @param dx
- * @param N
- * @param dz
- */
-template <typename S, typename T>
-void TypeCast::convertGeneric(Pointer *extras, void *dx, LongType N, void *dz) {
-  auto x = reinterpret_cast<S *>(dx);
-  auto z = reinterpret_cast<T *>(dz);
 
-  auto func = PRAGMA_THREADS_FOR {
-    for (auto i = start; i < stop; i++) {
-      z[i] = static_cast<T>(static_cast<float>(x[i]));
-    }
-  };
-  samediff::Threads::parallel_for(func, 0, N);
-};
 
 template void TypeCast::convertFromThreshold<double>(Pointer *extras, const void *dx, LongType N, void *dz);
 template void TypeCast::convertFromThreshold<float>(Pointer *extras, const void *dx, LongType N, void *dz);
@@ -227,8 +207,6 @@ template void TypeCast::convertToQuantized<double>(Pointer *extras, void *dx, Lo
 template void TypeCast::convertToQuantized<float>(Pointer *extras, void *dx, LongType N, void *dz);
 template void TypeCast::convertToQuantized<float16>(Pointer *extras, void *dx, LongType N, void *dz);
 
-BUILD_DOUBLE_TEMPLATE( void TypeCast::convertGeneric,
-                      (sd::Pointer * extras, void *dx, sd::LongType N, void *dz), SD_COMMON_TYPES_ALL,
-                      SD_COMMON_TYPES_ALL)
+
 
 }  // namespace sd

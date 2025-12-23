@@ -63,9 +63,9 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
   NDArray *inputPermuted, *gradOPermuted, *gradIPermuted;
   if (!isNCHW) {
     std::vector<sd::LongType> permute = {0, 3, 1, 2};
-    inputPermuted = new NDArray(input->permute(permute,false,false));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
-    gradOPermuted = new NDArray(gradO->permute(permute,false,false));  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
-    gradIPermuted = new NDArray(gradI->permute(permute,false,false));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+    inputPermuted = input->permute(permute,false,false);  // permute() already returns NDArray*
+    gradOPermuted = gradO->permute(permute,false,false);
+    gradIPermuted = gradI->permute(permute,false,false);
   } else {
     inputPermuted = input;
     gradOPermuted = gradO;
