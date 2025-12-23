@@ -96,15 +96,49 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
       
     } else {
       // Standard gather implementation
-      std::vector<sd::LongType> dimsOut(indices->rankOf());
-      std::iota(dimsOut.begin(), dimsOut.end(), axis);
-
-      const sd::LongType numOfSubArrs = ShapeUtils::getNumOfSubArrs(output->shapeInfo(), dimsOut);
+      //
+      // For gather with axis=A on input shape [..., dimA, ...] and indices shape [I1, I2, ...]:
+      // - Output shape is: input[0:A] + indices_shape + input[A+1:]
+      // - Input TADs: iterate along axis A, each TAD has shape input[A+1:]
+      // - Output TADs: iterate along indices dimensions, each TAD has same shape as input TAD
+      //
+      // tadForDimensions takes dimensions to KEEP in each TAD (not to exclude)
+      // It then internally calls evalDimsToExclude to find which dims to iterate over
 
       std::vector<sd::LongType> axesVec = {axis};
       auto dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1, axesVec.data());
+
+      // For output TADs, we want the same shape as input TADs
+      // Input TAD shape = all dims except axis
+      // Output shape = input[0:axis] + indices_shape + input[axis+1:]
+      // Output TAD dims should be: dims 0 to axis-1, then dims axis+indicesRank to end
+      // This gives TAD shape matching input's TAD shape
+      std::vector<sd::LongType> outputTadDims;
+      sd::LongType indicesRank = indices->rankOf();
+
+      // Add dimensions before the indices dimensions (0 to axis-1)
+      for (sd::LongType d = 0; d < axis; d++) {
+        outputTadDims.push_back(d);
+      }
+      // Add dimensions after the indices dimensions (axis+indicesRank to outputRank-1)
+      for (sd::LongType d = axis + indicesRank; d < output->rankOf(); d++) {
+        outputTadDims.push_back(d);
+      }
+
+      // If outputTadDims is empty, it means each TAD is a scalar - handle this case
+      // by using the same approach as input (which would also have empty TAD dims)
+
+      // Get TAD packs - these are cached and should not be deleted
       auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
-      auto tadPackOut = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &dimsOut);
+      auto tadPackOut = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &outputTadDims);
+
+      // Validate TAD packs before use
+      if (tadPack == nullptr || tadPackOut == nullptr) {
+        if (dimensions) delete dimensions;
+        THROW_EXCEPTION("gather: Failed to create TAD packs");
+      }
+
+      // Now safe to delete dimensions as TAD helper has made internal copy
       delete dimensions;
 
       auto tadShapeInfo = tadPack->primaryShapeInfo();
@@ -112,30 +146,67 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
       auto tadShapeInfoOut = tadPackOut->primaryShapeInfo();
       auto tadOffsetsOut = tadPackOut->primaryOffsets();
 
+      // Validate that input and output TAD shapes match
+      auto inputTadLength = shape::length(tadShapeInfo);
+      auto outputTadLength = shape::length(tadShapeInfoOut);
+      if (inputTadLength != outputTadLength) {
+        std::string error = "gather: TAD shape mismatch - input TAD length ";
+        error += std::to_string(inputTadLength);
+        error += " != output TAD length ";
+        error += std::to_string(outputTadLength);
+        error += ". Input shape: ";
+        error += ShapeUtils::shapeAsString(input->shapeInfo());
+        error += ", Output shape: ";
+        error += ShapeUtils::shapeAsString(output->shapeInfo());
+        error += ", Indices shape: ";
+        error += ShapeUtils::shapeAsString(indices->shapeInfo());
+        error += ", axis: ";
+        error += std::to_string(axis);
+        THROW_EXCEPTION(error.c_str());
+      }
+
       auto tadShapeInfoCast = const_cast<sd::LongType *>(tadShapeInfo);
       auto tadShapeInfoOutCast = const_cast<sd::LongType *>(tadShapeInfoOut);
+
+      // Calculate the number of gather operations (equal to indices length)
+      const sd::LongType numGatherOps = indices->lengthOf();
+
+      // Validate bounds before parallel execution
+      if (numGatherOps > tadPackOut->numberOfTads()) {
+        std::string error = "gather: indices length ";
+        error += std::to_string(numGatherOps);
+        error += " exceeds output TAD count ";
+        error += std::to_string(tadPackOut->numberOfTads());
+        THROW_EXCEPTION(error.c_str());
+      }
 
       auto func = PRAGMA_THREADS_FOR {
         for (auto i = start; i < stop; i++) {
           auto idx = indices->e<sd::LongType>(i);
-          
+
+          // Bounds check for input TAD access
           if (idx >= tadPack->numberOfTads() || idx < 0) {
             continue;
           }
-          
+
+          // Bounds check for output TAD access
+          if (i >= tadPackOut->numberOfTads()) {
+            continue;
+          }
+
           auto offsetIn = tadOffsets[idx];
           auto offsetOut = tadOffsetsOut[i];
-          
-          NativeOpExecutioner::execTransformAny(input->getContext(), 
-                                                transform::Assign, 
-                                                input->bufferWithOffset(offsetIn), tadShapeInfoCast, 
+
+          NativeOpExecutioner::execTransformAny(input->getContext(),
+                                                transform::Assign,
+                                                input->bufferWithOffset(offsetIn), tadShapeInfoCast,
                                                 nullptr, nullptr,
-                                                output->bufferWithOffset(offsetOut), tadShapeInfoOutCast, 
+                                                output->bufferWithOffset(offsetOut), tadShapeInfoOutCast,
                                                 nullptr, nullptr,
                                                 nullptr, false);
         }
       };
-      samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
+      samediff::Threads::parallel_tad(func, 0, numGatherOps);
     }
       
   } else {
@@ -181,8 +252,9 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
         output->assign(value);
       } else {
         // Standard single index gather
-        NDArray copy = (*input)(intArgs[1], {axis});
-        output->assign(&copy);
+        NDArray *copy = (*input)(intArgs[1], {axis});
+        output->assign(copy);
+        delete copy;
       }
     } else {
       if (is1DFlatGather) {
@@ -194,32 +266,76 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
         }
       } else {
         // Standard multiple indices gather
-        const sd::LongType numOfSubArrs = ShapeUtils::getNumOfSubArrs(output->shapeInfo(), {axis});
-
+        // Use the same dimension calculation for input and output TADs
         std::vector<sd::LongType> axesVec = {axis};
         auto dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1, axesVec.data());
+
+        // Get TAD packs - these are cached and should not be deleted
         auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
         auto tadPackOut = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
+
+        // Validate TAD packs before use
+        if (tadPack == nullptr || tadPackOut == nullptr) {
+          if (dimensions) delete dimensions;
+          THROW_EXCEPTION("gather: Failed to create TAD packs");
+        }
+
+        // Now safe to delete dimensions as TAD helper has made internal copy
         delete dimensions;
 
         auto tadShapeInfo = tadPack->primaryShapeInfo();
         auto tadOffsets = tadPack->primaryOffsets();
         auto tadShapeInfoOut = tadPackOut->primaryShapeInfo();
         auto tadOffsetsOut = tadPackOut->primaryOffsets();
-        
+
+        // Validate that input and output TAD shapes match
+        auto inputTadLength = shape::length(tadShapeInfo);
+        auto outputTadLength = shape::length(tadShapeInfoOut);
+        if (inputTadLength != outputTadLength) {
+          std::string error = "gather: TAD shape mismatch - input TAD length ";
+          error += std::to_string(inputTadLength);
+          error += " != output TAD length ";
+          error += std::to_string(outputTadLength);
+          error += ". Input shape: ";
+          error += ShapeUtils::shapeAsString(input->shapeInfo());
+          error += ", Output shape: ";
+          error += ShapeUtils::shapeAsString(output->shapeInfo());
+          error += ", axis: ";
+          error += std::to_string(axis);
+          THROW_EXCEPTION(error.c_str());
+        }
+
+        // Number of gather operations (number of indices provided as int args)
+        const sd::LongType numGatherOps = numOfIntArgs - 1;
+
+        // Validate bounds before parallel execution
+        if (numGatherOps > tadPackOut->numberOfTads()) {
+          std::string error = "gather: number of indices ";
+          error += std::to_string(numGatherOps);
+          error += " exceeds output TAD count ";
+          error += std::to_string(tadPackOut->numberOfTads());
+          THROW_EXCEPTION(error.c_str());
+        }
+
         auto func = PRAGMA_THREADS_FOR {
           for (auto i = start; i < stop; i++) {
             auto idx = intArgs[i + 1];
-            
+
+            // Bounds check for input TAD access
             if (idx >= tadPack->numberOfTads() || idx < 0) {
               continue;
             }
-            
+
+            // Bounds check for output TAD access
+            if (i >= tadPackOut->numberOfTads()) {
+              continue;
+            }
+
             auto offsetIn = tadOffsets[idx];
             auto offsetOut = tadOffsetsOut[i];
 
-            NativeOpExecutioner::execTransformAny(input->getContext(), 
-                                                  transform::Assign, 
+            NativeOpExecutioner::execTransformAny(input->getContext(),
+                                                  transform::Assign,
                                                   input->bufferWithOffset(offsetIn), const_cast<sd::LongType*>(tadShapeInfo),
                                                   nullptr, nullptr,
                                                   output->bufferWithOffset(offsetOut), const_cast<sd::LongType*>(tadShapeInfoOut),
@@ -227,7 +343,7 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
                                                   nullptr, false);
           }
         };
-        samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
+        samediff::Threads::parallel_tad(func, 0, numGatherOps);
       }
     }
   }

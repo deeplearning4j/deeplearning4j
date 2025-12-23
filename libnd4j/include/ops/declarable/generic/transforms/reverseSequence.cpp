@@ -61,12 +61,12 @@ CUSTOM_OP_IMPL(reverse_sequence, 2, 1, false, 0, 2) {
                seqDim, input->rankOf());
 
   auto maxElem = seqLengths->reduceNumber(reduce::Max);
-  REQUIRE_TRUE(maxElem.e<sd::LongType>(0) <= input->sizeAt(seqDim), 0,
+  REQUIRE_TRUE(maxElem->e<sd::LongType>(0) <= input->sizeAt(seqDim), 0,
                "REVERSE_SEQUENSE operation: max element in seqLengths array must be not greater than value of seqDim "
                "dimension of input array !");
 
   helpers::reverseSequence(block.launchContext(), input, seqLengths, output, seqDim, batchDim);
-
+  delete maxElem;
   return sd::Status::OK;
 }
 

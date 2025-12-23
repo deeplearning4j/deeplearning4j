@@ -70,7 +70,8 @@ DECLARE_SHAPE_FN(dynamic_stitch) {
     REQUIRE_TRUE(input->isZ(), 0, "dynamic_stitch: Indices should be integer, but %d type given.",
                  (int)input->dataType());
     auto maxV = input->reduceNumber(reduce::Max);
-    if (maxV.e<sd::LongType>(0) > maxValue) maxValue = maxV.e<sd::LongType>(0);
+    if (maxV->e<sd::LongType>(0) > maxValue) maxValue = maxV->e<sd::LongType>(0);
+    delete maxV;
   }
   // calculate output rank - difference between indices shape and data shape
   int outRank = shape::rank(restShape) - shape::rank(firstShape) + 1;  // at least 1D tensor

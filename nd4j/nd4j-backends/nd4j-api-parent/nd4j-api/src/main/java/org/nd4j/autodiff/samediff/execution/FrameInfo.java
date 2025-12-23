@@ -28,7 +28,7 @@ import lombok.Data;
  * which represent different scopes (like loop bodies). Each frame can have
  * multiple iterations for loops.
  * 
- * @author Alex Gibson
+ * @author Adam Gibson
  */
 @Data
 public class FrameInfo {

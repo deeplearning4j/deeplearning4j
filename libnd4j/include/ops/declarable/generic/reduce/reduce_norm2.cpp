@@ -132,19 +132,20 @@ CUSTOM_OP_IMPL(reduce_norm2_bp, -1, 1, false, 0, 0) {
 
   // *** calculations *** //
 
-  *gradI /= input->reduceAlongDimension(reduce::Norm2, &dimensions, true);
+  auto* norm2 = input->reduceAlongDimension(reduce::Norm2, &dimensions, true);
+  *gradI /= (*norm2);
+  delete norm2;
 
   if (!keepDims && gradO->lengthOf() > 1) {
     auto gradOShapeKeepDims =
         ShapeUtils::evalReduceShapeInfo(gradO->ordering(), &dimensions, *input, true, false, block.getWorkspace());
     std::vector<sd::LongType> shape =  ShapeUtils::pullShapeFromShapeInfo(
         gradOShapeKeepDims);
-    auto reshaped = gradO->reshape(gradO->ordering(),
-                                   shape);
-    *gradI *=   *reshaped;// for example could be something like [a,b] -> [1,a,1,b]
+    auto* reshaped = gradO->reshape(gradO->ordering(), shape);
+    *gradI *= (*reshaped);  // for example could be something like [a,b] -> [1,a,1,b]
     delete reshaped;
   } else
-    *gradI *= *gradO;
+    *gradI *= (*gradO);
 
   return sd::Status::OK;
 }

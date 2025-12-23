@@ -20,10 +20,7 @@
 
 package org.deeplearning4j.nn.layers;
 
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.TrainingConfig;
@@ -39,7 +36,6 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.common.primitives.Pair;
-import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.*;
 
@@ -264,6 +260,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
+    @SneakyThrows
     public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
         setInput(input, workspaceMgr);
         return activate(training, workspaceMgr);

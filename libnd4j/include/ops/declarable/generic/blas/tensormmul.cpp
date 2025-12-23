@@ -80,8 +80,9 @@ DECLARE_SHAPE_FN(tensormmul) {
                                                         shapeAt, shapeBt);
 
   auto desc = new  ShapeDescriptor(ArrayOptions::dataType(aShapeInfo), 'c', outShape);
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
-      desc));
+  auto result = SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+  delete desc;
+  return result;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -128,8 +129,9 @@ CUSTOM_OP_IMPL(tensormmul_bp, 4, 2, false, 0, -1) {
   //scalar case, tile value to be whatever the c value is. common when directly attached to the loss
   if(dC->isScalar()) {
     auto newVec = const_cast<NDArray *>(C);
-    auto newShape = newVec->getShapeAsVector();
-    dC = new NDArray('c',newShape, dC->dataType(), dC->getContext());
+    auto* newShapeVec = newVec->getShapeAsVector();
+    dC = new NDArray('c', *newShapeVec, dC->dataType(), dC->getContext());
+    delete newShapeVec;
   }
 
 
@@ -220,10 +222,19 @@ CUSTOM_OP_IMPL(tensormmul_bp, 4, 2, false, 0, -1) {
 
 
   //perform the actual matrix multiplication
-  MmulHelper::tensorDot2(dC, &newB, gradA, axes_a_gradA, axes_b_gradA, empty, empty, aPermArgsAfter, gradA);
-  MmulHelper::tensorDot2(&newA, dC, gradB, axes_a_gradB, axes_b_gradB, empty, empty, bPermArgsAfter, gradB);
+  MmulHelper::tensorDot2(dC, newB, gradA, axes_a_gradA, axes_b_gradA, empty, empty, aPermArgsAfter, gradA);
+  MmulHelper::tensorDot2(newA, dC, gradB, axes_a_gradB, axes_b_gradB, empty, empty, bPermArgsAfter, gradB);
 
-
+  // FIXED: permute() with copyToNewBuff=false returns view - only delete if not view
+  if (newA != nullptr && !newA->isView()) {
+    delete newA;
+  }
+  if (newB != nullptr && !newB->isView()) {
+    delete newB;
+  }
+  if(dC != originalDC) {
+    delete dC;
+  }
 
   return Status::OK;
 }

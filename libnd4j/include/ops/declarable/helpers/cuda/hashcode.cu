@@ -121,6 +121,8 @@ void hashCode_(LaunchContext* context, NDArray& array, NDArray& result) {
                                    length, blockSize);
   DebugHelper::checkErrorCode(context->getCudaStream(),"lastStep failed");
 
+  delete tempA;
+  delete tempB;
   NDArray::registerSpecialUse({&result}, {&array});
 }
 

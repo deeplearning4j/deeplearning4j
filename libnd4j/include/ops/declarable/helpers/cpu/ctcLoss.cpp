@@ -277,13 +277,12 @@ Type unitLossAndGrad(const Type *logP, int incP, Type *gradPtr, int incG, const 
   // create temp Array for holding bettaArr [lenT,lenSB]
   // create temp Array for holding alphaArr [lenT,lenSB]
   int bufferC = gradPtr ? 2 : 1;
-  NDArray bufferArr = NDArrayFactory::create<Type>('c', {bufferC, lenT, lenSB});
-  auto bufferPtr = bufferArr.bufferAsT<Type>();
-  auto incA = bufferArr.stridesOf()[1];
-  auto bettaBufferPtr = bufferPtr + bufferArr.stridesOf()[0];
+  NDArray *bufferArr = NDArrayFactory::create<Type>('c', {bufferC, lenT, lenSB});
+  auto bufferPtr = bufferArr->bufferAsT<Type>();
+  auto incA = bufferArr->stridesOf()[1];
+  auto bettaBufferPtr = bufferPtr + bufferArr->stridesOf()[0];
   Type negInf = negative_infinity<Type>();
 
-#if 1
   if (gradPtr) {
     if (elwiseG == 1) {
       PRAGMA_OMP_SIMD
@@ -298,7 +297,6 @@ Type unitLossAndGrad(const Type *logP, int incP, Type *gradPtr, int incG, const 
       }
     }
   }
-#endif
 
   // set all vals to neginf
   PRAGMA_OMP_SIMD
@@ -314,6 +312,8 @@ Type unitLossAndGrad(const Type *logP, int incP, Type *gradPtr, int incG, const 
     backwardAndGrad<IsLogPStrided, IsLblStrided, IsGradStrided>(logLoss, bufferPtr, bettaBufferPtr, incA, logP, incP,
                                                                 gradPtr, incG, lbl, lenS, lenT, lenK, blankIndex,
                                                                 elwiseP, elwiseS, elwiseG);
+
+  delete bufferArr;
   return logLoss;
 }
 
