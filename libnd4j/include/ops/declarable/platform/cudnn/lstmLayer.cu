@@ -202,33 +202,25 @@ void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, ND
   uint8_t *recurrentWeightsData = nullptr;
   if (inputWeights) {
     if (inputWeights->rankOf() == 3) {
-      NDArray* tempPermute = inputWeights->permute({0, 2, 1}, 0, false);
-      inputWeightsT = tempPermute->dup('c');
-      if (!tempPermute->isView()) {
-        delete tempPermute;
-      }
+      NDArray* temp = inputWeights->permute({0, 2, 1}, 0, false);
+      inputWeightsT = temp->dup('c');
+      delete temp;
     } else {
-      NDArray* tempTranspose = inputWeights->transpose();
-      inputWeightsT = tempTranspose->dup('c');
-      if (!tempTranspose->isView()) {
-        delete tempTranspose;
-      }
+      NDArray* temp = inputWeights->transpose();
+      inputWeightsT = temp->dup('c');
+      delete temp;
     }
     inputWeightsData = (uint8_t *)inputWeightsT.specialBuffer();
   }
   if (recurrentWeights) {
     if (recurrentWeights->rankOf() == 3) {
-      NDArray* tempPermute = recurrentWeights->permute({0, 2, 1}, 0, false);
-      recurrentWeightsT = tempPermute->dup('c');
-      if (!tempPermute->isView()) {
-        delete tempPermute;
-      }
+      NDArray* temp = recurrentWeights->permute({0, 2, 1}, 0, false);
+      recurrentWeightsT = temp->dup('c');
+      delete temp;
     } else {
-      NDArray* tempTranspose = recurrentWeights->transpose();
-      recurrentWeightsT = tempTranspose->dup('c');
-      if (!tempTranspose->isView()) {
-        delete tempTranspose;
-      }
+      NDArray* temp = recurrentWeights->transpose();
+      recurrentWeightsT = temp->dup('c');
+      delete temp;
     }
     recurrentWeightsData = (uint8_t *)recurrentWeightsT.specialBuffer();
   }
