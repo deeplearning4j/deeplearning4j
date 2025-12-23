@@ -71,9 +71,36 @@ class SD_LIB_EXPORT TadCalculator {
 
   /**
     * Releases ownership of the TAD offsets buffer to the caller.
-    * After this call, the TadCalculator no longer owns the offsets and will not delete them.
-    * The caller becomes responsible for deleting the returned buffer.
-    * @return ConstantOffsetsBuffer pointer that the caller must manage
+    * 
+    * Usage Pattern:
+    * This method should be used when transferring ownership of the offsets buffer to another
+    * object that will manage its lifetime (e.g., TadPack). This is typically done immediately
+    * after calling createTadPack() to construct a TadPack with the calculated offsets.
+    * 
+    * Lifecycle Implications:
+    * - After this call, the TadCalculator no longer owns the offsets and will not delete them
+    * - The caller becomes responsible for managing and deleting the returned buffer
+    * - The internal _tadOffsets pointer is set to nullptr
+    * 
+    * IMPORTANT: After calling releaseOffsets(), the TadCalculator object should not be used
+    * for any operations that depend on the offsets buffer. Calling tadOffsets() will return
+    * nullptr, and the object should generally be destroyed or reset soon after releasing.
+    * 
+    * Example Usage:
+    * @code
+    *   TadCalculator calculator(originalShape);
+    *   calculator.createTadPack(dimensions);
+    *   auto pack = std::make_shared<TadPack>(
+    *       calculator.tadShape(),
+    *       calculator.releaseOffsets(),  // Transfer ownership to TadPack
+    *       calculator.numberOfTads(),
+    *       dimensions.data(),
+    *       dimensions.size());
+    *   // Calculator should not be used after this point
+    * @endcode
+    * 
+    * @return ConstantOffsetsBuffer pointer that the caller must manage, or nullptr if
+    *         offsets have not been calculated or have already been released
    */
   ConstantOffsetsBuffer* releaseOffsets() {
     ConstantOffsetsBuffer* temp = _tadOffsets;
