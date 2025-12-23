@@ -288,7 +288,6 @@ LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType
       delete[] newShapeInfo;
       return ret;
     } else if (supportOldShapes) {
-      newShapeInfo = new LongType[shape::shapeInfoLength(2)];
       newShapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, workspace);
       auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
       delete[] newShapeInfo;
