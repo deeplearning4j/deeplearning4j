@@ -65,47 +65,71 @@ CUSTOM_OP_IMPL(reversedivide_bp, 3, 2, false, 0, 0) {
     // PWT case case
 
     // X gradient
-    NDArray gradXTemp = (*epsNext) * (*y) / ((*x) * (*x));
-    gradX->assign(&gradXTemp);
+    auto* epsY = (*epsNext) * (*y);
+    auto* xSquared = (*x) * (*x);
+    auto* gradXTemp = (*epsY) / (*xSquared);
+    delete epsY;
+    delete xSquared;
+    gradX->assign(gradXTemp);
+    delete gradXTemp;
     gradX->applyTransform(transform::Neg, gradX);
 
     // Y gradient
-    NDArray gradYTemp = (*epsNext) / (*x);
-    gradY->assign(&gradYTemp);
+    auto* gradYTemp = (*epsNext) / (*x);
+    gradY->assign(gradYTemp);
+    delete gradYTemp;
   } else if (y->isScalar()) {
     // scalar case
-    auto tmp = epsNext->reduceNumber(reduce::Sum);
-    auto tmpX = x->reduceNumber(reduce::Sum);
+    auto* tmp = epsNext->reduceNumber(reduce::Sum);
+    auto* tmpX = x->reduceNumber(reduce::Sum);
     // For gradY
-    NDArray gradYTemp = tmp / tmpX;
-    gradY->assign(&gradYTemp);
+    auto* gradYTemp = (*tmp) / (*tmpX);
+    delete tmp;
+    delete tmpX;
+    gradY->assign(gradYTemp);
+    delete gradYTemp;
 
     // For gradX
-    NDArray gradXTemp = (*epsNext) * (*y) / ((*x) * (*x));
-    gradX->assign(&gradXTemp);
+    auto* epsY = (*epsNext) * (*y);
+    auto* xSquared = (*x) * (*x);
+    auto* gradXTemp = (*epsY) / (*xSquared);
+    delete epsY;
+    delete xSquared;
+    gradX->assign(gradXTemp);
+    delete gradXTemp;
     gradX->applyTransform(transform::Neg, gradX);
   } else {
     // broadcast case
 
-    auto preY = (*epsNext) / (*x);
+    auto* preY = (*epsNext) / (*x);
 
-    auto preX = *epsNext * (*y) / ((*x) * (*x));
-    preX.applyTransform(transform::Neg, &preX);
+    auto* epsY = (*epsNext) * (*y);
+    auto* xSquared = (*x) * (*x);
+    auto* preXTemp = (*epsY) / (*xSquared);
+    delete epsY;
+    delete xSquared;
+    preXTemp->applyTransform(transform::Neg, preXTemp);
 
     auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
     auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
     if (axisX.size() > 0) {
-      auto sum = preX.reduceAlongDimension(reduce::Sum, &axisX);
-      gradX->assign(&sum);
-    } else
-      gradX->assign(&preX);
+      auto* sum = preXTemp->reduceAlongDimension(reduce::Sum, &axisX);
+      gradX->assign(sum);
+      delete sum;
+    } else {
+      gradX->assign(preXTemp);
+    }
+    delete preXTemp;
 
     if (axisY.size() > 0) {
-      auto sum = preY.reduceAlongDimension(reduce::Sum, &axisY);
-      gradY->assign(&sum);
-    } else
-      gradY->assign(&preY);
+      auto* sum = preY->reduceAlongDimension(reduce::Sum, &axisY);
+      gradY->assign(sum);
+      delete sum;
+    } else {
+      gradY->assign(preY);
+    }
+    delete preY;
   }
 
   return Status::OK;

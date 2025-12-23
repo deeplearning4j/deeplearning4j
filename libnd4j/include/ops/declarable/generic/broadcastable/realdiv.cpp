@@ -74,8 +74,14 @@ CUSTOM_OP_IMPL(realdiv_bp, 3, 2, false, 0, 0) {
     // Y gradient
 
     // First case
-    NDArray gradYTemp = (*epsNext) * -(*x) / ((*y) * (*y));
-    gradY->assign(&gradYTemp);
+    NDArray negX = -(*x);
+    NDArray *epsNextMulNegX = (*epsNext) * negX;
+    NDArray *ySquared = (*y) * (*y);
+    NDArray *gradYTemp = (*epsNextMulNegX) / (*ySquared);
+    gradY->assign(gradYTemp);
+    delete epsNextMulNegX;
+    delete ySquared;
+    delete gradYTemp;
 
   } else if (y->isScalar()) {
     // scalar case
@@ -83,8 +89,14 @@ CUSTOM_OP_IMPL(realdiv_bp, 3, 2, false, 0, 0) {
     auto tmp = epsNext->reduceNumber(reduce::Sum);
     auto tmpX = x->reduceNumber(reduce::Sum);
 
-    NDArray gradYTemp = tmp * -tmpX / ((*y) * (*y));
-    gradY->assign(&gradYTemp);
+    NDArray negTmpX = -*tmpX;
+    NDArray *tmpMulNegTmpX = (*tmp) * negTmpX;
+    NDArray *ySquared = (*y) * (*y);
+    NDArray *gradYTemp = (*tmpMulNegTmpX) / (*ySquared);
+    gradY->assign(gradYTemp);
+    delete tmpMulNegTmpX;
+    delete ySquared;
+    delete gradYTemp;
 
     epsNext->applyScalarArr(scalar::Divide, y, gradX);
   } else {
@@ -94,22 +106,27 @@ CUSTOM_OP_IMPL(realdiv_bp, 3, 2, false, 0, 0) {
 
     NDArray negX(*x);
     x->applyTransform(transform::Neg, &negX);
-    auto preY = *epsNext * negX / ((*y) * (*y));
+    NDArray *epsNextMulNegX = (*epsNext) * negX;
+    NDArray *ySquared = (*y) * (*y);
+    NDArray *preY = (*epsNextMulNegX) / (*ySquared);
+    delete epsNextMulNegX;
+    delete ySquared;
 
     auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
     auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
     if (axisX.size() > 0) {
-      auto sum = preX.reduceAlongDimension(reduce::Sum, &axisX);
-      gradX->assign(&sum);
+      auto sum = preX->reduceAlongDimension(reduce::Sum, &axisX);
+      gradX->assign(sum);
     } else
-      gradX->assign(&preX);
+      gradX->assign(preX);
 
     if (axisY.size() > 0) {
-      auto sum = preY.reduceAlongDimension(reduce::Sum, &axisY);
-      gradY->assign(&sum);
+      auto sum = preY->reduceAlongDimension(reduce::Sum, &axisY);
+      gradY->assign(sum);
+      delete sum;
     } else
-      gradY->assign(&preY);
+      gradY->assign(preY);
   }
 
   return Status::OK;

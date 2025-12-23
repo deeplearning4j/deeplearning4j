@@ -130,7 +130,6 @@ static void gather_(NDArray* input, NDArray* indices, NDArray* output, const std
         auto scalarNDArray = input->e(idx);
         output->assign(&scalarNDArray);
       } else {
-        // FIX: Don't call evalDimsToExclude here!
         // tadForDimensions expects the dimensions to create TADs along,
         // NOT the dimensions to exclude
         std::vector<sd::LongType> axesVec = {axis};
@@ -156,9 +155,11 @@ static void gather_(NDArray* input, NDArray* indices, NDArray* output, const std
 
       auto func = PRAGMA_THREADS_FOR {
         for (auto i = start; i < stop; i++) {
-          NDArray subArrOut = (*output)(i, dimsOut);
-          NDArray subArrIn = (*input)(indices->e<sd::LongType>(i), {axis});
-          subArrOut.assign(&subArrIn);
+          NDArray *subArrOut = (*output)(i, dimsOut);
+          NDArray *subArrIn = (*input)(indices->e<sd::LongType>(i), {axis});
+          subArrOut->assign(subArrIn);
+          delete subArrOut;
+          delete subArrIn;
         }
       };
 
@@ -172,16 +173,19 @@ static void gather_(NDArray* input, NDArray* indices, NDArray* output, const std
 
     // we only allow scalar/vector case here
     if (numOfIntArgs == 2) {  // scalar case
-      NDArray view = (*input)(intArgs[1], {axis});
-      output->assign(&view);
+      NDArray *view = (*input)(intArgs[1], {axis});
+      output->assign(view);
+      delete view;
     } else {  // vector case
       const sd::LongType numOfSubArrs = ShapeUtils::getNumOfSubArrs(output->shapeInfo(), {axis});
 
       auto func = PRAGMA_THREADS_FOR {
         for (auto i = start; i < stop; i++) {
-          NDArray subArrOut = (*output)(i, {axis});
-          NDArray subArrIn = (*input)(intArgs[i + 1], {axis});
-          subArrOut.assign(&subArrIn);
+          NDArray *subArrOut = (*output)(i, {axis});
+          NDArray *subArrIn = (*input)(intArgs[i + 1], {axis});
+          subArrOut->assign(subArrIn);
+          delete subArrIn;
+          delete subArrOut;
         }
       };
 

@@ -72,8 +72,8 @@ static void depthwiseConv2dBP_(NDArray* input, NDArray* weights, NDArray* bias, 
                    {iC, bS * oH * oW, mC}};                // [bS,oH,oW,iC,mC] -> [iC,bS,oH,oW,mC] -> [iC,bS*oH*oW,mC]
     modifGradO2 = {{3, 0, 1, 2}, {iC, mC, bS * oH * oW}};  // [bS,oH,oW,iC*mC] -> [iC*mC,bS,oH,oW] -> [iC,mC,bS*oH*oW]
     std::vector<sd::LongType> perm = {0,3,1,2};
-    input = new NDArray(input->permute(perm, false, false));     // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
-    gradI = new NDArray(gradI->permute(perm, false, false));     // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
+    input = input->permute(perm, false, false);     // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
+    gradI = gradI->permute(perm, false, false);     // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
   } else {
     gradOreShape = {bS, iC, mC, oH, oW};  // [bS,iC*mC,oH,oW] -> [bS,iC,mC,oH,oW]
     modifGradO1 = {{1, 0, 3, 4, 2},
@@ -96,13 +96,14 @@ static void depthwiseConv2dBP_(NDArray* input, NDArray* weights, NDArray* bias, 
   NDArray *gradOreshaped = gradO->reshape(gradO->ordering(), gradOreShape);
 
   // ----- calculation of gradW and gradB ----- //
-  NDArray zero = NDArrayFactory::create(0.f, input->getContext());
+  NDArray *zero = NDArrayFactory::create(0.f, input->getContext());
   helpers::im2col(
       *input->getContext(), *input, columns, kH, kW, sH, sW, pH, pW, dH, dW,
-  zero);  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
+  *zero);  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
   sd::MmulHelper::tensorDot(&columns, gradOreshaped, gradW, modifColumns, modifGradO1,
                             modifWeights);  // [iC, kW*kH, bS*oH*oW] x [iC, bS*oH*oW, mC] = [iC, kH*kW, mC]
 
+  delete zero;
   // ----- calculation of gradB ----- //
   if (gradB) {
     NDArray* gradBR = gradB;

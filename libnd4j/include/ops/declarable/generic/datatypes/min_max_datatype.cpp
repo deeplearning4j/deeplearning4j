@@ -87,7 +87,7 @@ CUSTOM_OP_IMPL(min_max_datatype, -2, 1, false, 0, 2) {
 #endif
 #ifdef HAS_UNSIGNEDLONG
       case UINT64:
-        output->p(0, DataTypeUtils::min<uint64_t>());
+        output->p(0, DataTypeUtils::min<sd::UnsignedLong>());
         break;
 #endif
 #ifdef HAS_LONG
@@ -163,7 +163,7 @@ CUSTOM_OP_IMPL(min_max_datatype, -2, 1, false, 0, 2) {
 #endif
 #ifdef HAS_UNSIGNEDLONG
       case UINT64:
-        output->p(0, DataTypeUtils::max<uint64_t>());
+        output->p(0, DataTypeUtils::max<sd::UnsignedLong>());
         break;
 #endif
 #ifdef HAS_LONG

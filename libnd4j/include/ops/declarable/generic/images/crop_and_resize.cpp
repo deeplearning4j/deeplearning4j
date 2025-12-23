@@ -37,7 +37,13 @@ CUSTOM_OP_IMPL(crop_and_resize, 4, 1, false, 0, 0) {
   int width;
   int height;
   int method = 0;  // bilinear
+#ifdef HAS_DOUBLE
   double extrapolationVal = 0.;
+#elif defined(HAS_FLOAT32)
+  float extrapolationVal = 0.0f;
+#else
+#error "No floating-point type available for crop_and_resize operation"
+#endif
 
   auto newImageSize = INPUT_VARIABLE(3);
   REQUIRE_TRUE(output->dataType() == image->dataType(), 0,
@@ -51,7 +57,13 @@ CUSTOM_OP_IMPL(crop_and_resize, 4, 1, false, 0, 0) {
   }
 
   if (block.numT() == 1) {
-    extrapolationVal = T_ARG(0);
+#ifdef HAS_DOUBLE
+    extrapolationVal = static_cast<double>(T_ARG(0));
+#elif defined(HAS_FLOAT32)
+    extrapolationVal = static_cast<float>(T_ARG(0));
+#else
+#error "No floating-point type available for crop_and_resize operation"
+#endif
   }
 
   helpers::cropAndResizeFunctor(block.launchContext(), image, boxes, boxIndexes, newImageSize, method, extrapolationVal,

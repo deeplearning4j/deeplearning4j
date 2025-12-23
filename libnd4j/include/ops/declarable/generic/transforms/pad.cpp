@@ -41,11 +41,12 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
 
   // input validation
   std::vector<sd::LongType> expectedPaddingsShape = {rank, 2};
-  std::vector<sd::LongType> currentPaddingsShape = paddings->getShapeAsVector();
-  REQUIRE_TRUE(expectedPaddingsShape == currentPaddingsShape, 0,
+  std::vector<sd::LongType> *currentPaddingsShape = paddings->getShapeAsVector();
+  REQUIRE_TRUE(expectedPaddingsShape == *currentPaddingsShape, 0,
                "PAD op: wrong shape of paddings array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedPaddingsShape).c_str(),
-               ShapeUtils::shapeAsString(currentPaddingsShape).c_str());
+               ShapeUtils::shapeAsString(*currentPaddingsShape).c_str());
+
 
   NDArray padValue(input->dataType(), block.launchContext());
 
@@ -81,6 +82,7 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
 
   helpers::pad(block.launchContext(), INT_ARG(0), *input, *paddings, *output, padValue);
 
+  delete currentPaddingsShape;
   return sd::Status::OK;
 }
 
@@ -101,12 +103,13 @@ DECLARE_SHAPE_FN(pad) {
   }
   // paddings validation
   const std::vector<sd::LongType> expectedPaddingsShape = {rank, 2};
-  const std::vector<sd::LongType> currentPaddingsShape = paddings->getShapeAsVector();
-  REQUIRE_TRUE(expectedPaddingsShape == currentPaddingsShape, 0,
+  const std::vector<sd::LongType> *currentPaddingsShape = paddings->getShapeAsVector();
+  REQUIRE_TRUE(expectedPaddingsShape == *currentPaddingsShape, 0,
                "PAD op: wrong shape of paddings array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedPaddingsShape).c_str(),
-               ShapeUtils::shapeAsString(currentPaddingsShape).c_str());
+               ShapeUtils::shapeAsString(*currentPaddingsShape).c_str());
 
+  delete currentPaddingsShape;
   sd::LongType* outShapeInfo = nullptr;
   ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), sd::LongType);
   outShapeInfo[0] = rank;
@@ -115,6 +118,7 @@ DECLARE_SHAPE_FN(pad) {
 
   ShapeUtils::updateStridesAndType(outShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
   auto ret = SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(outShapeInfo)->primary());
+  RELEASE(outShapeInfo, block.getWorkspace());
   return ret;
 }
 

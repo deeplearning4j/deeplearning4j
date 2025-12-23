@@ -160,7 +160,7 @@ static void barnes_symmetrize_(NDArray* rowP, NDArray* colP, NDArray* valP, Long
   T const* pVals = reinterpret_cast<T const*>(valP->specialBuffer());
   T* pOutput = reinterpret_cast<T*>(outputVals->specialBuffer());
   auto offsetArr = NDArrayFactory::create<int>('c', {N});
-  int* offset = reinterpret_cast<int*>(offsetArr.specialBuffer());
+  int* offset = reinterpret_cast<int*>(offsetArr->specialBuffer());
   // symmetrize itself
   symmetrizeKernel<T><<<1, 1, 1024, *stream>>>(pRows, pCols, pVals, symRowP, symColP, offset, pOutput, N);
   sd::DebugHelper::checkErrorCode(stream, "symmetrizeKernel  failed");

@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
  * - Frame-aware execution for control flow
  * - Multi-output operation support
  * 
- * @author Alex Gibson
+ * @author Adam Gibson
  */
 @Data
 public class ForwardExecutionDAG {

@@ -126,13 +126,13 @@ static inline T similarityOverlaps_(NDArray& boxes, sd::LongType i, sd::LongType
 typedef NDArray (*SimilarityFunc)(NDArray& boxes, sd::LongType i, sd::LongType j);
 
 static NDArray similiratyOverlaps(NDArray& boxes, sd::LongType i, sd::LongType j) {
-  NDArray res(boxes.dataType(), boxes.getContext());  // = NDArrayFactory::create(0.);
+  NDArray res(boxes.dataType(), boxes.getContext());
   BUILD_SINGLE_SELECTOR(boxes.dataType(), res = similarityOverlaps_, (boxes, i, j), SD_FLOAT_TYPES);
   return res;
 }
 
 static NDArray similarityV3(NDArray& boxes, sd::LongType i, sd::LongType j) {
-  NDArray res(boxes.dataType(), boxes.getContext());  // = NDArrayFactory::create(0.);
+  NDArray res(boxes.dataType(), boxes.getContext());
   BUILD_SINGLE_SELECTOR(boxes.dataType(), res = similirityV3_, (boxes, i, j), SD_FLOAT_TYPES);
   return res;
 }

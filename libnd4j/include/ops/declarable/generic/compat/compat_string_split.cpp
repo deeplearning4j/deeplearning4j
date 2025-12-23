@@ -82,11 +82,12 @@ CUSTOM_OP_IMPL(compat_string_split, 2, 2, false, 0, 0) {
 
   // now once we have all strings in single vector time to fill
   auto nonConst = const_cast<NDArray*>(values);
-  std::vector<sd::LongType> shape = nonConst->getShapeAsVector();
-  auto tmp = NDArrayFactory::string(shape, strings);
-  auto blen = StringUtils::byteLength(tmp) + ShapeUtils::stringBufferHeaderRequirements(strings.size());
+  auto* valuesShapeVec = nonConst->getShapeAsVector();
+  auto tmp = NDArrayFactory::string(*valuesShapeVec, strings);
+  delete valuesShapeVec;
+  auto blen = StringUtils::byteLength(*tmp) + ShapeUtils::stringBufferHeaderRequirements(strings.size());
   values->dataBuffer()->expand(blen);
-  memcpy(values->buffer(), tmp.buffer(), blen);
+  memcpy(values->buffer(), tmp->buffer(), blen);
   values->tickWriteHost();
 
   // special case, for future use
@@ -98,6 +99,7 @@ CUSTOM_OP_IMPL(compat_string_split, 2, 2, false, 0, 0) {
   values->dataBuffer()->writePrimary();
   values->dataBuffer()->readSpecial();
 
+  delete tmp;
 
   return Status::OK;
 };

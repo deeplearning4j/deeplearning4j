@@ -30,6 +30,7 @@ SD_LIB_HIDDEN void crossBatched(LaunchContext *context, NDArray *a, NDArray *b, 
 
 void SD_INLINE cross(LaunchContext *context, NDArray *a, NDArray *b, NDArray *o) {
   if (a->isR()) {
+#ifdef HAS_DOUBLE
     auto a0 = a->e<double>(0);
     auto a1 = a->e<double>(1);
     auto a2 = a->e<double>(2);
@@ -38,9 +39,24 @@ void SD_INLINE cross(LaunchContext *context, NDArray *a, NDArray *b, NDArray *o)
     auto b1 = b->e<double>(1);
     auto b2 = b->e<double>(2);
 
-    o->p(LongType(0L), a1 * b2 - a2 * b1);
-    o->p(1L, a2 * b0 - a0 * b2);
-    o->p(2L, a0 * b1 - a1 * b0);
+    o->p(LongType(0L), static_cast<double>(a1 * b2 - a2 * b1));
+    o->p(1L, static_cast<double>(a2 * b0 - a0 * b2));
+    o->p(2L, static_cast<double>(a0 * b1 - a1 * b0));
+#elif defined(HAS_FLOAT32)
+    auto a0 = a->e<float>(0);
+    auto a1 = a->e<float>(1);
+    auto a2 = a->e<float>(2);
+
+    auto b0 = b->e<float>(0);
+    auto b1 = b->e<float>(1);
+    auto b2 = b->e<float>(2);
+
+    o->p(LongType(0L), static_cast<float>(a1 * b2 - a2 * b1));
+    o->p(1L, static_cast<float>(a2 * b0 - a0 * b2));
+    o->p(2L, static_cast<float>(a0 * b1 - a1 * b0));
+#else
+#error "No floating-point type available for cross product operation"
+#endif
   } else {
     auto a0 = a->e<LongType>(0);
     auto a1 = a->e<LongType>(1);

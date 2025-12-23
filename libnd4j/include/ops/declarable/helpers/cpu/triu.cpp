@@ -48,9 +48,9 @@ static void triuBP_(sd::LaunchContext* context, NDArray& input, NDArray& gradO, 
     };
     samediff::Threads::parallel_for(func, 0, dLen);
 
-    // FIXME: !!!
-    NDArray ref = dOdI * gradO;
-    gradI.assign(&ref);  // chain rule: dLoss/dI = dO/dI * dLoss/dO
+    NDArray *ref = dOdI * gradO;
+    gradI.assign(ref);  // chain rule: dLoss/dI = dO/dI * dLoss/dO
+    delete ref;
   }
 
 

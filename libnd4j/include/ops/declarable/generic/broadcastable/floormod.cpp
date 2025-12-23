@@ -77,8 +77,11 @@ CUSTOM_OP_IMPL(floormod_bp, 3, 2, false, 0, 0) {
       dims[d * 2 + 1] = 1;
     }
     auto tempIn((temp)(dims));
-    NDArray negTempIn = -tempIn;
-    (*epsNext)(dims).applyPairwiseTransform(pairwise::Multiply, &negTempIn, gradY);
+    NDArray negTempIn = -*tempIn;
+    auto get=  (*epsNext)(dims);
+    get->applyPairwiseTransform(pairwise::Multiply, &negTempIn, gradY);
+    delete get;
+    delete tempIn;
   }
   return Status::OK;
 }

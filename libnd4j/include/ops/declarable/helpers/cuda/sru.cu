@@ -106,6 +106,8 @@ void sruTimeLoop(LaunchContext* context, NDArray* x, NDArray* c0, NDArray* w, ND
     sruCell(context, &xt, &ct_1, &wT, b, &ht, &ct);
     ct_1.assign(&ct);
   }
+
+  delete wT;
 }
 
 //////////////////////////////////////////////////////////////////////////

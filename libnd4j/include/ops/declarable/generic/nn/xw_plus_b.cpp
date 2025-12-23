@@ -20,6 +20,8 @@
 //  xw_plus_b op. Created by GS <george@skymind.io> 31.01.2018
 //  @author Oleg Semeniv <oleg.semeniv@gmail.com>
 //
+//  Fixed to handle higher-rank inputs (e.g., from ONNX Gemm with batched input)
+//  and corrected bias addition to always use row vector broadcasting.
 //
 
 #include <system/op_boilerplate.h>
@@ -36,107 +38,106 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
   bool bTranspose = (block.getIArguments()->size() > 1 ? INT_ARG(1) == 1 : false);
   bool cTranspose = (block.getIArguments()->size() > 2 ? INT_ARG(2) == 1 : false);
 
-  auto x = aTranspose ? new NDArray(INPUT_VARIABLE(0)->transpose()) : INPUT_VARIABLE(0);
-  auto w = bTranspose ? new NDArray(INPUT_VARIABLE(1)->transpose()) : INPUT_VARIABLE(1);
+  auto x = INPUT_VARIABLE(0);
+  auto w = INPUT_VARIABLE(1);
   auto b = INPUT_VARIABLE(2);
-  auto z = cTranspose ? new NDArray(OUTPUT_VARIABLE(0)->transpose()) : OUTPUT_VARIABLE(0);
+  auto z = OUTPUT_VARIABLE(0);
 
   if (x->isEmpty() || w->isEmpty() || b->isEmpty()) return Status::OK;
 
-  // Handle higher rank inputs by reshaping to 2D
-  NDArray* xReshaped = nullptr;
-  NDArray* zReshaped = nullptr;
-  std::vector<sd::LongType> originalShape;
-  
-  if (x->rankOf() > 2) {
-    // Save original shape for later
-    originalShape = x->getShapeAsVector();
-    
+  // Handle higher rank inputs by reshaping to 2D for matmul
+  // This supports inputs like [batch, 1, 1, hidden] from ONNX pooler operations
+  NDArray* xEffective = nullptr;
+  NDArray* wEffective = nullptr;
+  NDArray* zEffective = nullptr;
+  NDArray* bEffective = nullptr;
+
+  bool deleteX = false;
+  bool deleteW = false;
+  bool deleteZ = false;
+  bool deleteB = false;
+
+  sd::LongType batchSize = 1;
+  bool needsReshape = x->rankOf() > 2;
+
+  if (needsReshape) {
     // Calculate the 2D shape: flatten all but last dimension
-    sd::LongType batchSize = 1;
     for (int i = 0; i < x->rankOf() - 1; i++) {
       batchSize *= x->sizeAt(i);
     }
-    sd::LongType lastDim = x->sizeAt(x->rankOf() - 1);
-    
-    // Reshape x to 2D
-    std::vector<sd::LongType> reshapeVec = {batchSize, lastDim};
-    xReshaped = x->reshape('c', reshapeVec);
-    x = xReshaped;
-    
-    // Calculate output shape
-    sd::LongType outputLastDim = bTranspose ? w->sizeAt(0) : w->sizeAt(1);
-    
-    // Reshape z to 2D for computation
-    std::vector<sd::LongType> zReshapeVec = {batchSize, outputLastDim};
-    zReshaped = z->reshape('c', zReshapeVec);
-    z = zReshaped;
-  }
+    sd::LongType inputLastDim = x->sizeAt(-1);
+    sd::LongType outputLastDim = z->sizeAt(-1);
 
-  REQUIRE_TRUE(x->rankOf() == 2, 0, "xw_plus_b: After reshaping, input x array should have rank equal 2, but got instead %i!",
-               x->rankOf());
-  REQUIRE_TRUE(w->rankOf() == 2, 0, "xw_plus_b: Input weights array should have rank equal 2, but got instead %i!",
-               w->rankOf());
-  REQUIRE_TRUE(z->rankOf() == 2, 0, "xw_plus_b: After reshaping, output array should have rank equal 2, but got instead %i!",
-               z->rankOf());
-
-  // multiply x to y
-  MmulHelper::mmul(x, w, z, 1.0, 0.0);
-  
-  if(bTranspose && b->rankOf() == 1) {
-    std::vector<sd::LongType> bShape = {b->lengthOf(), 1};
-    b = b->reshape('c', bShape);
-    if(z->isMatrix()) {
-      z->addiColumnVector(b);
-    } else {
-      *z += *b;
-    }
+    // Reshape to 2D - these create new NDArray objects
+    std::vector<sd::LongType> xShape2D = {batchSize, inputLastDim};
+    std::vector<sd::LongType> zShape2D = {batchSize, outputLastDim};
+    xEffective = x->reshape('c', xShape2D);
+    zEffective = z->reshape('c', zShape2D);
+    deleteX = true;
+    deleteZ = true;
   } else {
-    if(b->rankOf() == 1) {
-      std::vector<sd::LongType> bShape = {1, b->lengthOf()};
-      b = b->reshape('c', bShape);
-    }
-
-    if(z->isMatrix()) {
-      // adding b vector
-      z->addiRowVector(b);
-    } else  {
-      *z += *b;
-    }
+    xEffective = x;
+    zEffective = z;
   }
 
-  // If we reshaped, copy back to original output shape
-  if (zReshaped != nullptr) {
-    // Calculate final output shape
-    std::vector<sd::LongType> outputShape = originalShape;
-    outputShape[outputShape.size() - 1] = bTranspose ? w->sizeAt(0) : w->sizeAt(1);
-    
-    // Reshape z back to original dimensions
-    auto zFinal = z->reshape('c', outputShape);
-    OUTPUT_VARIABLE(0)->assign(zFinal);
-    delete zFinal;
+  // Apply transposes if needed
+  if (aTranspose) {
+    auto xTransposed = new NDArray(xEffective->transpose());
+    if (deleteX) delete xEffective;
+    xEffective = xTransposed;
+    deleteX = true;
+  }
+  if (cTranspose) {
+    auto zTransposed = new NDArray(zEffective->transpose());
+    if (deleteZ) delete zEffective;
+    zEffective = zTransposed;
+    deleteZ = true;
   }
 
-  // Cleanup
-  if (xReshaped != nullptr) {
-    delete xReshaped;
-  }
-  if (zReshaped != nullptr) {
-    delete zReshaped;
-  }
-  if(bTranspose || (b->lengthOf() == 1 && b->rankOf() > 1)) {
-    delete b;
-  }
+  // Handle weight transpose
   if (bTranspose) {
-    delete w;
+    wEffective = new NDArray(w->transpose());
+    deleteW = true;
+  } else {
+    wEffective = w;
   }
-  if (aTranspose && xReshaped == nullptr) {
-    delete x;
+
+  REQUIRE_TRUE(xEffective->rankOf() == 2, 0,
+               "xw_plus_b: After reshaping, input x array should have rank equal 2, but got instead %i!",
+               xEffective->rankOf());
+  REQUIRE_TRUE(wEffective->rankOf() == 2, 0,
+               "xw_plus_b: Input weights array should have rank equal 2, but got instead %i!",
+               wEffective->rankOf());
+  REQUIRE_TRUE(zEffective->rankOf() == 2, 0,
+               "xw_plus_b: After reshaping, output array should have rank equal 2, but got instead %i!",
+               zEffective->rankOf());
+
+  // Perform matrix multiplication: z = x @ w
+  MmulHelper::mmul(xEffective, wEffective, zEffective, 1.0, 0.0);
+
+  // Add bias - ALWAYS as a row vector since output is [batch, features]
+  // The bias vector has shape [features] and should broadcast across the batch dimension
+  // This is the standard behavior for ONNX Gemm: Y = X @ W + B where B broadcasts
+  if (b->rankOf() == 1) {
+    std::vector<sd::LongType> bShape2D = {1, b->lengthOf()};
+    bEffective = b->reshape('c', bShape2D);
+    deleteB = true;
+  } else {
+    bEffective = b;
   }
-  if (cTranspose && zReshaped == nullptr) {
-    delete z;
+
+  if (zEffective->isMatrix()) {
+    zEffective->addiRowVector(bEffective);
+  } else {
+    *zEffective += *bEffective;
   }
-  
+
+  // Cleanup heap-allocated arrays
+  if (deleteB) delete bEffective;
+  if (deleteW) delete wEffective;
+  if (deleteX) delete xEffective;
+  if (deleteZ) delete zEffective;
+
   return Status::OK;
 }
 
@@ -199,13 +200,13 @@ CUSTOM_OP_IMPL(xw_plus_b_bp, 4, 3, false, 0, 0) {
 
   bool aTranspose = (block.getIArguments()->size() > 0 ? INT_ARG(0) == 1 : false);
   bool bTranspose = (block.getIArguments()->size() > 1 ? INT_ARG(1) == 1 : false);
-  auto x = aTranspose ? new NDArray(INPUT_VARIABLE(0)->transpose()) : INPUT_VARIABLE(0);
+  auto x = aTranspose ? INPUT_VARIABLE(0)->transpose() : INPUT_VARIABLE(0);  // transpose() already returns NDArray*
   auto b = INPUT_VARIABLE(2);
   auto dLdz = INPUT_VARIABLE(3);
 
   if (x->isEmpty() || INPUT_VARIABLE(1)->isEmpty() || b->isEmpty() || dLdz->isEmpty()) return Status::OK;
 
-  auto w = bTranspose ? new NDArray(INPUT_VARIABLE(1)->transpose()) : INPUT_VARIABLE(1);
+  auto w = bTranspose ? INPUT_VARIABLE(1)->transpose() : INPUT_VARIABLE(1);  // transpose() already returns NDArray*
 
   REQUIRE_TRUE(x->rankOf() == 2, 0, "xw_plus_b BP: Input x array should have rank equal 2, but got instead %i!",
                x->rankOf());
@@ -214,28 +215,26 @@ CUSTOM_OP_IMPL(xw_plus_b_bp, 4, 3, false, 0, 0) {
   REQUIRE_TRUE(dLdz->rankOf() == 2, 0, "xw_plus_b BP: Output array should have rank equal 2, but got instead %i!",
                dLdz->rankOf());
 
-  auto dLdx = aTranspose ? new NDArray(OUTPUT_VARIABLE(0)->transpose()) : OUTPUT_VARIABLE(0);
+  auto dLdx = aTranspose ? OUTPUT_VARIABLE(0)->transpose() : OUTPUT_VARIABLE(0);  // transpose() already returns NDArray*
   auto dLdb = OUTPUT_VARIABLE(2);
 
-  auto dLdw = (bTranspose) ? new NDArray(OUTPUT_VARIABLE(1)->transpose()) : OUTPUT_VARIABLE(1);
+  auto dLdw = (bTranspose) ? OUTPUT_VARIABLE(1)->transpose() : OUTPUT_VARIABLE(1);  // transpose() already returns NDArray*
 
-  // dLdb
+  // dLdb - reduceAlongDimension returns pointer
   std::vector<LongType> dims({0});
-  NDArray assign = dLdz->reduceAlongDimension(reduce::Sum, &dims);
-  dLdb->assign(&assign);
+  auto* assign = dLdz->reduceAlongDimension(reduce::Sum, &dims);
+  dLdb->assign(assign);
+  delete assign;
 
   matmul_bp mmul_bp;
   mmul_bp.execute({x, w, dLdz}, std::vector<NDArray*>{dLdx, dLdw}, {}, {}, {});
 
-  if(aTranspose) {
-    delete x;
-    delete dLdx;
-  }
-
-  if (bTranspose) {
-    delete w;
-    delete dLdw;
-  }
+  // Transpose views are managed by parent arrays - no deletion needed
+  // x is from INPUT_VARIABLE(0)->transpose() if aTranspose
+  // w is from INPUT_VARIABLE(1)->transpose() if bTranspose
+  // dLdx is from OUTPUT_VARIABLE(0)->transpose() if aTranspose
+  // dLdw is from OUTPUT_VARIABLE(1)->transpose() if bTranspose
+  // All are views managed by their parent arrays
 
   return Status::OK;
 }

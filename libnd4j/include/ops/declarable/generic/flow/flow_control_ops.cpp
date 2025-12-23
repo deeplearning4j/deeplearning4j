@@ -47,14 +47,14 @@ DIVERGENT_OP_IMPL(Switch, 2, 2, true) {
   if (condition->e<int>(0) == 0) {
     block.setBranch(0);
     if (!out0) {
-      this->storeResult(block, 0, new NDArray(input->dup()));
+      this->storeResult(block, 0, input->dup());
     } else {
       out0->assign(input);
     }
   } else {
     block.setBranch(1);
     if (!out1) {
-      this->storeResult(block, 1, new NDArray(input->dup()));
+      this->storeResult(block, 1,input->dup());
     } else {
       out1->assign(input);
     }

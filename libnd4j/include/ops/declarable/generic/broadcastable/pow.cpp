@@ -85,9 +85,10 @@ CUSTOM_OP_IMPL(Pow_bp, 3, 2, false, 0, 0) {
     dLdy->assign(temp);
   } else {
     std::vector<LongType> axesForY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), dLdz->shapeInfo());
-    NDArray dLdyTemp = temp->reduceAlongDimension(reduce::Sum, &axesForY);
-    dLdy->assign(&dLdyTemp);  // dL/dy = sum(c * dL/dz)
-      }
+    NDArray *dLdyTemp = temp->reduceAlongDimension(reduce::Sum, &axesForY);
+    dLdy->assign(dLdyTemp);  // dL/dy = sum(c * dL/dz)
+    delete dLdyTemp;
+  }
 
   // dL/dx = y*x^(y-1) * dL/dz
   x->applyTrueBroadcast(BroadcastOpsTuple::PowDerivative(), y, temp);  // a = y*x^(y-1)
@@ -97,8 +98,9 @@ CUSTOM_OP_IMPL(Pow_bp, 3, 2, false, 0, 0) {
     dLdx->assign(temp);  // dLdx = a*dL/dz
   } else {
     std::vector<LongType> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), dLdz->shapeInfo());
-    NDArray dLdxTemp = temp->reduceAlongDimension(reduce::Sum, &axesForX);
-    dLdx->assign(&dLdxTemp);  // dLdx = a*dL/dz
+    NDArray *dLdxTemp = temp->reduceAlongDimension(reduce::Sum, &axesForX);
+    dLdx->assign(dLdxTemp);  // dLdx = a*dL/dz
+    delete dLdxTemp;
   }
 
   return Status::OK;

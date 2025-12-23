@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.nn.layers;
 
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
@@ -36,7 +37,6 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNorm;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNormBp;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.regularization.Regularization;
@@ -122,6 +122,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     }
 
     @Override
+    @SneakyThrows
     public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
         if (this.input == null)
             return;
@@ -344,6 +345,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     }
 
     @Override
+    @SneakyThrows
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray z = preOutput(training, workspaceMgr);
         INDArray ret = layerConf().getActivationFn().getActivation(z, training);
@@ -360,7 +362,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         double scoreSum = 0.0;
         for (Map.Entry<String, INDArray> e : paramTable().entrySet()) {
             List<Regularization> l = layerConf().getRegularizationByParam(e.getKey());
-            if(l == null || l.isEmpty()){
+            if(l == null || l.isEmpty()) {
                 continue;
             }
             for(Regularization r : l) {

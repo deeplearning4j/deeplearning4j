@@ -198,7 +198,7 @@ SD_DEVICE void concatKernel(
                INDEX2COORDS(i, currTadRank, currTadShape, yIdx);
 
                LongType yOffset;
-               COORDS2INDEX(currTadRank, currTadShape, yIdx, yOffset);
+               COORDS2INDEX(currTadRank, currTadStride, yIdx, yOffset);
 
                resultTAD[baseIdx + i] = dataTAD[yOffset];
              }
@@ -214,10 +214,10 @@ SD_DEVICE void concatKernel(
              INDEX2COORDS(i, zTadRank, zTadShapeOf, zIdx);
 
              LongType yOffset;
-             COORDS2INDEX(currTadRank, currTadShape, yIdx, yOffset);
+             COORDS2INDEX(currTadRank, currTadStride, yIdx, yOffset);
 
              LongType rOffset;
-             COORDS2INDEX(zTadRank, zTadShapeOf, zIdx, rOffset);
+             COORDS2INDEX(zTadRank, zTadStride, zIdx, rOffset);
              resultTAD[rOffset] = dataTAD[yOffset];
            }
          }

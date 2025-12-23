@@ -382,7 +382,7 @@ TEST_F(NDArrayTest2, tileToShape_test4) {
   ASSERT_TRUE(result.equalsTo(&exp));
 }
 
-#ifndef __CUDABLAS__
+#ifndef SD_CUDA
 
 TEST_F(NDArrayTest2, Test_TriplewiseLambda_1) {
   auto t = NDArrayFactory::create<double>('c', {3, 3}, {1, 1, 1, 1, 1, 1, 1, 1, 1});

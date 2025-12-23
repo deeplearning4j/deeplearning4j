@@ -530,8 +530,8 @@ SD_KERNEL void convertKernel(void *dx, LongType N, void *dz) {
 #define LIBND4J_BOOLS_LOCAL (randomName0, 0), (randomName1, 1)
 
 BUILD_DOUBLE_TEMPLATE( void TypeCast::convertGenericCuda,
-                      (sd::Pointer * extras, void *dx, sd::LongType N, void *dz), SD_COMMON_TYPES_ALL,
-                      SD_COMMON_TYPES_ALL);
+                      (sd::Pointer * extras, void *dx, sd::LongType N, void *dz), SD_COMMON_TYPES,
+                      SD_COMMON_TYPES);
 BUILD_DOUBLE_TEMPLATE( void prescanLauncher,
                       (dim3 & blocks, dim3 &threads, int shmem, cudaStream_t *stream, int *g_odata, const int *g_idata,
                        int *g_blockSums, int n, int blockIndex, int baseIndex),

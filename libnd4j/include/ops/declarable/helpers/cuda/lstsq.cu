@@ -47,7 +47,7 @@ static SD_KERNEL void fillRegularizerKernel(T* ioMatrixData, const LongType* ioM
     for (auto r = threadIdx.x; r < rows; r += blockDim.x) {
       LongType pos[] = {r, r};
       LongType zIndex;
-      COORDS2INDEX(2, ioMatrixTads + 1, pos, zIndex);
+      COORDS2INDEX(2, shape::stride(ioMatrixTads), pos, zIndex);
       z[zIndex] = value;
     }
   }
@@ -101,8 +101,12 @@ Status leastSquaresSolveFunctor_(LaunchContext* context, NDArray* leftInput, NDA
   } else {  // QR decomposition approach
     // Equation for solve Rx = Q^T * b, where A = Q * R, where Q - orthogonal matrix, and R - upper triangular
     // 1. QR decomposition
-    auto qShape = leftInput->getShapeAsVector();
-    auto rShape = leftInput->getShapeAsVector();
+    auto* qShapePtr = leftInput->getShapeAsVector();
+    std::vector<LongType> qShape = *qShapePtr;
+    delete qShapePtr;
+    auto* rShapePtr = leftInput->getShapeAsVector();
+    std::vector<LongType> rShape = *rShapePtr;
+    delete rShapePtr;
     qShape[leftInput->rankOf() - 1] = leftInput->sizeAt(-2);
 
     NDArray Q(leftInput->ordering(), qShape, leftInput->dataType(), context);
