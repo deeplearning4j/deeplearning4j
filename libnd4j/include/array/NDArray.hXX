@@ -2011,7 +2011,10 @@ void NDArray::streamline(char o) {
   NativeOpExecutioner::execTransformSame(getContext(), transform::Copy, buffer(), shapeInfo(), specialBuffer(),
                                          specialShapeInfo(), newBuffer->primary(), shapeBuffer->primary(),
                                          newBuffer->special(), shapeBuffer->special(), nullptr, nullptr, nullptr);
-  // Cache owns all shape buffers - just update pointer
+  // BUGFIX: Must release old shape buffer before updating for proper lifecycle management
+  if (_shapeInfoBuffer != nullptr) {
+    _shapeInfoBuffer->release();
+  }
   _shapeInfoBuffer = shapeBuffer;
   _shapeInfo = shapeBuffer->primary();
   _shapeInfoD = shapeBuffer->special();
@@ -4365,6 +4368,11 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
 
   if (canReshape) {
     auto newShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoNew);
+    // BUGFIX: Must update _shapeInfoBuffer for proper lifecycle management
+    if (_shapeInfoBuffer != nullptr) {
+        _shapeInfoBuffer->release();
+    }
+    _shapeInfoBuffer = newShape;
     _shapeInfo = newShape->primary();
     _shapeInfoD = newShape->special();
   } else {
@@ -5993,16 +6001,18 @@ void NDArray::addRowVector(NDArray *row, NDArray *target)  {
       !(isR() && row->isR() && target->isR()))
     THROW_EXCEPTION("NDArray::addRowVector: wrong type of target array !");
 
-  int dimension = 1;
+  sd::LongType dimension = 1;
 
   auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), dimension);
+  auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(target->shapeInfo(), dimension);
 
   NDArray::prepareSpecialUse({target}, {this, row});
   NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Ops::Add, buffer(), shapeInfo(), specialBuffer(),
                                      specialShapeInfo(), row->buffer(), row->shapeInfo(), row->specialBuffer(),
                                      row->specialShapeInfo(), target->buffer(), target->shapeInfo(),
-                                     target->specialBuffer(), target->specialShapeInfo(), nullptr, 1,
-                                     packX->platformShapeInfo(), packX->platformOffsets(), nullptr, nullptr);
+                                     target->specialBuffer(), target->specialShapeInfo(), &dimension, 1,
+                                     packX->platformShapeInfo(), packX->platformOffsets(),
+                                     packZ->platformShapeInfo(), packZ->platformOffsets());
   NDArray::registerSpecialUse({target}, {this, row});
 }
 
@@ -6023,16 +6033,18 @@ void NDArray::mulRowVector(NDArray *row, NDArray *target)  {
   if (target->dataType() != DataTypeUtils::pickPairwiseResultType(dataType(), row->dataType()))
     THROW_EXCEPTION("NDArray::mulRowVector: wrong type of target array !");
 
-  int dimension = 1;
+  sd::LongType dimension = 1;
 
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(),dimension);
+  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), dimension);
+  auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(target->shapeInfo(), dimension);
 
   NDArray::prepareSpecialUse({target}, {this, row});
   NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Ops::Multiply, buffer(), shapeInfo(), specialBuffer(),
                                      specialShapeInfo(), row->buffer(), row->shapeInfo(), row->specialBuffer(),
                                      row->specialShapeInfo(), target->buffer(), target->shapeInfo(),
-                                     target->specialBuffer(), target->specialShapeInfo(), nullptr, 1,
-                                     packX->platformShapeInfo(), packX->platformOffsets(), nullptr, nullptr);
+                                     target->specialBuffer(), target->specialShapeInfo(), &dimension, 1,
+                                     packX->platformShapeInfo(), packX->platformOffsets(),
+                                     packZ->platformShapeInfo(), packZ->platformOffsets());
   NDArray::registerSpecialUse({target}, {this, row});
 }
 
@@ -6052,16 +6064,18 @@ void NDArray::divRowVector(NDArray *row, NDArray *target)  {
   if (target->dataType() != DataTypeUtils::pickPairwiseResultType(dataType(), row->dataType()))
     THROW_EXCEPTION("NDArray::divRowVector: wrong type of target array !");
 
-  int dimension = 1;
+  sd::LongType dimension = 1;
 
   auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), dimension);
+  auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(target->shapeInfo(), dimension);
 
   NDArray::prepareSpecialUse({target}, {this, row});
   NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Divide, buffer(), shapeInfo(), specialBuffer(),
                                      specialShapeInfo(), row->buffer(), row->shapeInfo(), row->specialBuffer(),
                                      row->specialShapeInfo(), target->buffer(), target->shapeInfo(),
-                                     target->specialBuffer(), target->specialShapeInfo(), nullptr, 1,
-                                     packX->platformShapeInfo(), packX->platformOffsets(), nullptr, nullptr);
+                                     target->specialBuffer(), target->specialShapeInfo(), &dimension, 1,
+                                     packX->platformShapeInfo(), packX->platformOffsets(),
+                                     packZ->platformShapeInfo(), packZ->platformOffsets());
   NDArray::registerSpecialUse({target}, {this, row});
 }
 
@@ -6077,7 +6091,7 @@ void NDArray::addiRowVector(NDArray *row) {
     errorMessage += ", Row length: " + std::to_string(row->lengthOf());
     THROW_EXCEPTION(errorMessage.c_str());
   }
-  int dimension = 1;
+  sd::LongType dimension = 1;
 
   auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), dimension);
 
@@ -6085,8 +6099,8 @@ void NDArray::addiRowVector(NDArray *row) {
   NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Ops::Add, buffer(), shapeInfo(), specialBuffer(),
                                      specialShapeInfo(), row->buffer(), row->shapeInfo(), row->specialBuffer(),
                                      row->specialShapeInfo(), this->buffer(), this->shapeInfo(), this->specialBuffer(),
-                                     this->specialShapeInfo(), nullptr, 1, packX->platformShapeInfo(),
-                                     packX->platformOffsets(), nullptr, nullptr);
+                                     this->specialShapeInfo(), &dimension, 1, packX->platformShapeInfo(),
+                                     packX->platformOffsets(), packX->platformShapeInfo(), packX->platformOffsets());
   NDArray::registerSpecialUse({this}, {row});
 }
 
@@ -6105,16 +6119,18 @@ void NDArray::addColumnVector(NDArray *column, NDArray *target)  {
   if (target->dataType() != DataTypeUtils::pickPairwiseResultType(dataType(), column->dataType()))
     THROW_EXCEPTION("NDArray::addColumnVector: wrong type of target array !");
 
-  int dimension = 0;
+  sd::LongType dimension = 0;
 
   auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), dimension);
+  auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(target->shapeInfo(), dimension);
 
   NDArray::prepareSpecialUse({target}, {this, column});
   NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Ops::Add, buffer(), shapeInfo(), specialBuffer(),
                                      specialShapeInfo(), column->buffer(), column->shapeInfo(), column->specialBuffer(),
                                      column->specialShapeInfo(), target->buffer(), target->shapeInfo(),
-                                     target->specialBuffer(), target->specialShapeInfo(), nullptr, 1,
-                                     packX->platformShapeInfo(), packX->platformOffsets(), nullptr, nullptr);
+                                     target->specialBuffer(), target->specialShapeInfo(), &dimension, 1,
+                                     packX->platformShapeInfo(), packX->platformOffsets(),
+                                     packZ->platformShapeInfo(), packZ->platformOffsets());
   NDArray::registerSpecialUse({target}, {this, column});
 }
 
@@ -6131,7 +6147,7 @@ void NDArray::addiColumnVector(NDArray *column) {
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
-  int dimension = 0;
+  sd::LongType dimension = 0;
 
   auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), dimension);
 
@@ -6139,8 +6155,9 @@ void NDArray::addiColumnVector(NDArray *column) {
   NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Ops::Add, buffer(), shapeInfo(), specialBuffer(),
                                      specialShapeInfo(), column->buffer(), column->shapeInfo(), column->specialBuffer(),
                                      column->specialShapeInfo(), this->buffer(), this->shapeInfo(),
-                                     this->specialBuffer(), this->specialShapeInfo(), nullptr, 1,
-                                     packX->platformShapeInfo(), packX->platformOffsets(), nullptr, nullptr);
+                                     this->specialBuffer(), this->specialShapeInfo(), &dimension, 1,
+                                     packX->platformShapeInfo(), packX->platformOffsets(),
+                                     packX->platformShapeInfo(), packX->platformOffsets());
   NDArray::registerSpecialUse({this}, {column});
 }
 
@@ -6156,7 +6173,7 @@ void NDArray::muliColumnVector(NDArray *column) {
     errorMessage += ", Column length: " + std::to_string(column->lengthOf());
     THROW_EXCEPTION(errorMessage.c_str());
   }
-  int dimension = 0;
+  sd::LongType dimension = 0;
 
   auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), dimension);
 
@@ -6164,8 +6181,9 @@ void NDArray::muliColumnVector(NDArray *column) {
   NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Ops::Multiply, buffer(), shapeInfo(), specialBuffer(),
                                      specialShapeInfo(), column->buffer(), column->shapeInfo(), column->specialBuffer(),
                                      column->specialShapeInfo(), this->buffer(), this->shapeInfo(),
-                                     this->specialBuffer(), this->specialShapeInfo(), nullptr, 1,
-                                     packX->platformShapeInfo(), packX->platformOffsets(), nullptr, nullptr);
+                                     this->specialBuffer(), this->specialShapeInfo(), &dimension, 1,
+                                     packX->platformShapeInfo(), packX->platformOffsets(),
+                                     packX->platformShapeInfo(), packX->platformOffsets());
   NDArray::registerSpecialUse({this}, {column});
 }
 
@@ -6186,6 +6204,11 @@ BUILD_SINGLE_TEMPLATE(void NDArray::templatedAssign,
 bool NDArray::permutei(sd::LongType *dimensions, const int rank) {
   auto shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, this, getContext()->getWorkspace(),true);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfoWithView(shapeInfo);
+  // BUGFIX: Must update _shapeInfoBuffer for proper lifecycle management
+  if (_shapeInfoBuffer != nullptr) {
+    _shapeInfoBuffer->release();
+  }
+  _shapeInfoBuffer = constDesc;
   _shapeInfo = constDesc->primary();
   _shapeInfoD = constDesc->special();
   return true;

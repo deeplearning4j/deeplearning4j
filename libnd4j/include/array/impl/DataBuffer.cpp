@@ -549,7 +549,7 @@ void DataBuffer::allocatePrimary() {
     // Record allocation in lifecycle tracker
     array::DataBufferLifecycleTracker::getInstance().recordAllocation(
         _primaryBuffer, getLenInBytes(), getDataType(),
-        array::BufferType::PRIMARY, this, _workspace != nullptr);
+       array::BufferType::PRIMARY, this, _workspace != nullptr);
 #endif
   }
 }
