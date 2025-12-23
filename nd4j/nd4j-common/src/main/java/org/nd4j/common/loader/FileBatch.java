@@ -22,6 +22,7 @@ package org.nd4j.common.loader;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
@@ -36,6 +37,7 @@ import java.util.zip.ZipOutputStream;
 
 @AllArgsConstructor
 @Data
+@Slf4j
 public class FileBatch implements Serializable {
     /**
      * Name of the file in the zip file that contains the original paths/filenames
@@ -71,7 +73,7 @@ public class FileBatch implements Serializable {
             try {
                 return Long.parseLong(prop);
             } catch (NumberFormatException e) {
-                // Use default
+                log.warn("Invalid value for nd4j.filebatch.maxZipSize: {}, using default", prop);
             }
         }
         return DEFAULT_MAX_TOTAL_UNCOMPRESSED_SIZE;
@@ -83,7 +85,7 @@ public class FileBatch implements Serializable {
             try {
                 return Double.parseDouble(prop);
             } catch (NumberFormatException e) {
-                // Use default
+                log.warn("Invalid value for nd4j.filebatch.maxCompressionRatio: {}, using default", prop);
             }
         }
         return DEFAULT_MAX_COMPRESSION_RATIO;
@@ -95,7 +97,7 @@ public class FileBatch implements Serializable {
             try {
                 return Integer.parseInt(prop);
             } catch (NumberFormatException e) {
-                // Use default
+                log.warn("Invalid value for nd4j.filebatch.maxZipEntries: {}, using default", prop);
             }
         }
         return DEFAULT_MAX_ZIP_ENTRIES;
