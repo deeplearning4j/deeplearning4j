@@ -538,7 +538,11 @@ public class Nd4jNamespaceGenerator {
                 c.addStatement(sb.toString(), Nd4j.class);
                 // Clean up non-returned arrays
                 c.beginControlFlow("try");
+                c.beginControlFlow("if(__tmp != null && __tmp.length > 0)");
                 c.addStatement("return __tmp[0]");
+                c.nextControlFlow("else");
+                c.addStatement("throw new IllegalStateException(\"CustomOp execution returned null or empty array\")");
+                c.endControlFlow();
                 c.nextControlFlow("finally");
                 c.beginControlFlow("if(__tmp != null)");
                 c.beginControlFlow("for(int __i = 1; __i < __tmp.length; __i++)");
