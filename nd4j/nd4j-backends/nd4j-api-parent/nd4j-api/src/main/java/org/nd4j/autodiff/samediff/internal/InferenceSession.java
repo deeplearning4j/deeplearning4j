@@ -64,9 +64,11 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+
 import org.nd4j.shade.wstx.util.StringUtil;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -91,8 +93,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     private AbstractDependencyTracker<SDValue, Dep> arrayUseTracker = new HashDependencyTracker<>();
 
 
+    // Use ConcurrentHashMap to prevent race conditions during concurrent inference
+    // OpContexts are now created fresh for each operation execution to prevent sharing
     @Getter
-    private Map<String,OpContext> opContexts = new LinkedHashMap<>();
+    private Map<String,OpContext> opContexts = new ConcurrentHashMap<>();
 
     // DAG cache for avoiding expensive convergence process
     private final DAGCache dagCache = new DAGCache();
@@ -433,35 +437,29 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 return;
             }
 
-            if (op instanceof Switch) {
-                executeSwitchNode(node, variableValues, op);
-                return;
+            // Using opName() is more robust than instanceof for control flow ops
+            String opNameLowerCase = op.opName().toLowerCase();
+            switch (opNameLowerCase) {
+                case "switch":
+                    executeSwitchNode(node, variableValues, op);
+                    return;
+                case "enter":
+                    executeEnterNode(node, variableValues, op);
+                    return;
+                case "exit":
+                    executeExitNode(node, variableValues, op);
+                    return;
+                case "next_iteration":
+                    executeNextIterationNode(node, variableValues, op);
+                    return;
+                case "merge":
+                    executeMergeNode(node, variableValues, op);
+                    return;
+                case "loop_cond":
+                    executeLoopCondNode(node, variableValues, op);
+                    return;
             }
 
-            if (op instanceof Enter) {
-                executeEnterNode(node, variableValues, op);
-                return;
-            }
-
-            if (op instanceof Exit) {
-                executeExitNode(node, variableValues, op);
-                return;
-            }
-
-            if (op instanceof NextIteration) {
-                executeNextIterationNode(node, variableValues, op);
-                return;
-            }
-
-            if (op instanceof Merge) {
-                executeMergeNode(node, variableValues, op);
-                return;
-            }
-
-            if (op instanceof LoopCond) {
-                executeLoopCondNode(node, variableValues, op);
-                return;
-            }
 
             if (op instanceof BaseTensorOp) {
                 executeTensorArrayNode(node, variableValues, op);
@@ -685,16 +683,19 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         SameDiffOp sameDiffOp = sameDiff.getOps().get(opName);
         DifferentialFunction op = sameDiffOp.getOp();
 
-        // Create OpContext for the operation - store in map for batch cleanup
-        // CRITICAL: Do NOT use try-with-resources here! The OpContext must remain open
-        // until ALL operations in the graph complete, because subsequent operations may
-        // use arrays that depend on this OpContext's native resources. Closing early
-        // causes "Pointer address of argument X is NULL" errors.
-        OpContext opContext = opContexts.get(opName);
-        if (opContext == null) {
-            opContext = Nd4j.getExecutioner().buildContext();
-            opContexts.put(opName, opContext);
-        }
+        // Create a NEW OpContext for each operation execution.
+        // CRITICAL: Each OpContext must be closed IMMEDIATELY after use, not accumulated.
+        // Accumulating OpContexts in a map causes unbounded memory growth:
+        // - For 6000+ chunks with 200+ ops each = 1.2M+ OpContexts
+        // - This causes the server to crash after ~20 minutes of processing
+        //
+        // The OpContext is used temporarily to:
+        // 1. Set input arrays
+        // 2. Execute the operation
+        // 3. Store results in variableValues
+        // After execution, the OpContext can be immediately closed since results are
+        // already stored in variableValues, not in the OpContext.
+        OpContext opContext = Nd4j.getExecutioner().buildContext();
 
         // Prepare inputs
         String[] argNames = op.argNames();
@@ -720,39 +721,74 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 SDValue argValue = variableValues.get(argName);
 
                 if (argValue == null) {
-                    // Try to get from constants/variables
-                    SDVariable variable = sameDiff.getVariable(argName);
-                    if (variable != null) {
-                        if (variable.isConstant() || variable.getVariableType() == VariableType.VARIABLE) {
-                            INDArray arr = getConstantOrVariable(argName);
-                            inputArrays[i] = arr;
-                            continue;
-                        }
-                    }
-                    throw new IllegalStateException("Input " + argName + " not found for operation " + opName);
-                }
-
-                switch (argValue.getSdValueType()) {
-                    case TENSOR:
-                        inputArrays[i] = argValue.getTensorValue();
-                        break;
-                    case LIST:
-                        // For list values, try to use the first non-null element
-                        List<INDArray> list = argValue.getListValue();
-                        if (!list.isEmpty()) {
-                            for (INDArray arr : list) {
-                                if (arr != null) {
-                                    inputArrays[i] = arr;
-                                    break;
+                    // Start of fix: Manually resolve Merge op outputs if not found
+                    SDVariable argVar = sameDiff.getVariable(argName);
+                    if (argVar != null && argVar.getCreator() != null) {
+                        SameDiffOp producerOp = sameDiff.getOps().get(argVar.getCreator().getOwnName());
+                        if (producerOp != null && producerOp.getOp() instanceof org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge) {
+                            for (String mergeInputName : producerOp.getInputsToOp()) {
+                                if(variableValues.containsKey(mergeInputName)) {
+                                    SDValue v = variableValues.get(mergeInputName);
+                                    if (v != null) {
+                                        argValue = v;
+                                        variableValues.put(argName, argValue); // Cache the resolved value
+                                        break;
+                                    }
                                 }
                             }
                         }
-                        if (inputArrays[i] == null) {
-                            throw new IllegalStateException("No valid array found in list for input " + argName);
-                        }
-                        break;
-                    default:
-                        throw new IllegalStateException("Unsupported SDValue type: " + argValue.getSdValueType());
+                    }
+                    // End of fix
+                }
+
+                if (argValue == null) {
+                    // This can happen if a variable is an output of a control flow op (like Switch) and that branch was not taken
+                    SDVariable variable = sameDiff.getVariable(argName);
+                    if (variable != null && (variable.isConstant() || variable.getVariableType() == VariableType.VARIABLE)) {
+                        inputArrays[i] = getConstantOrVariable(argName);
+                    } else {
+                        inputArrays[i] = null;
+                    }
+                } else {
+                    switch (argValue.getSdValueType()) {
+                        case TENSOR:
+                            inputArrays[i] = argValue.getTensorValue();
+                            break;
+                        case LIST:
+                            // For list values, try to use the first non-null, non-closed element
+                            List<INDArray> list = argValue.getListValue();
+                            inputArrays[i] = null;  //Default to null
+                            if (list != null && !list.isEmpty()) {
+                                for (INDArray arr : list) {
+                                    if (arr != null && !arr.wasClosed()) {
+                                        inputArrays[i] = arr;
+                                        break;
+                                    }
+                                }
+                            }
+                            break;
+                        default:
+                            throw new IllegalStateException("Unsupported SDValue type for op " + opName + " input " + argName + ": " + argValue.getSdValueType());
+                    }
+                }
+
+                // Centralized check for null or closed arrays, performed immediately after resolving each input.
+                // This prevents nulls from ever reaching the OpContext.
+                if (inputArrays[i] != null && inputArrays[i].wasClosed()) {
+                    throw new ND4JIllegalStateException("Input array was closed! For argument '" + argName + "' at index " + i + " for op '" + op.getOwnName() + "' (" + op.opName() + ") with id " + inputArrays[i].getId());
+                }
+            }
+
+            for(int i = 0; i < inputArrays.length; i++) {
+                if(inputArrays[i] == null) {
+                    // This should not happen for regular ops if control flow is handled correctly by Merge nodes.
+                    // The previous implementation would silently skip the op and propagate nulls, hiding the root cause.
+                    // By throwing an exception, we pinpoint the exact location where control flow resolution failed.
+                    throw new ND4JIllegalStateException("Unexpected null input array at index " + i + " for operation '" +
+                            op.getOwnName() + "' (op name: " + op.opName() + "). Input variable name: '" + argNames[i] + "'. " +
+                            "This indicates a failure in control flow management, where a null from an inactive branch " +
+                            "was propagated past a Merge node. \nDependent values for this operation:\n" +
+                            getDependentValuesString(variableValues, argNames[i]));
                 }
             }
 
@@ -760,6 +796,12 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         }
 
         // Handle different operation types
+        // NOTE: Do NOT call clearOpaqueNDArraysFromOpContext here!
+        // The OpaqueNDArrays are cached in the INDArrays and shared with the OpContext's
+        // OpaqueNDArrayArr. Closing them prematurely can cause dangling pointers and
+        // heap corruption. The OpaqueNDArrays will be properly cleaned up when:
+        // 1. The OpContext is closed (immediately after operation execution below)
+        // 2. The INDArrays are garbage collected
         try {
             if (op instanceof CustomOp) {
                 executeCustomOp((CustomOp) op, opContext, node, variableValues, allRequired);
@@ -769,12 +811,18 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 throw new UnsupportedOperationException("Unsupported operation type: " + op.getClass().getName());
             }
         } finally {
-            // Clear OpaqueNDArray cache from input arrays to prevent memory leaks
-            // The OpaqueNDArrays were created during setInputArrays() and are no longer needed
-            // after op execution. They can be recreated on demand if needed again.
-            clearOpaqueNDArraysFromOpContext(opContext);
+
+            // This prevents unbounded memory growth from accumulating OpContexts.
+            // The operation results are already stored in variableValues, so
+            // the OpContext is no longer needed after this point.
+            try {
+                opContext.close();
+            } catch (Exception e) {
+                if (log.isTraceEnabled()) {
+                    log.trace("Error closing OpContext for {}: {}", opName, e.getMessage());
+                }
+            }
         }
-        // NOTE: opContext cleanup happens in output() finally block via opContexts.clear()
     }
 
     private void executeCustomOp(CustomOp customOp, OpContext opContext, ExecutionNode node,
@@ -851,16 +899,15 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             } else {
                 // Check what ops need this array
                 Variable v = sameDiff.getVariables().get(varName);
-                if (v != null && v.getInputsForOp() != null) {
+                if (v != null && v.getInputsForOp() != null && !v.getInputsForOp().isEmpty()) {
                     for (String consumerOp : v.getInputsForOp()) {
                         arrayUseTracker.addDependency(outputValue, new OpDep(consumerOp, OUTER_FRAME, 0, null));
                     }
                 } else {
-                    // No consumers, can release immediately after this op
-                    if (!freedArrays.contains(outputArrays[i].getId())) {
-                        mmgr.release(outputArrays[i]);
-                        freedArrays.add(outputArrays[i].getId());
-                    }
+                    // No consumers tracked in graph metadata, but array might still be needed
+                    // by operations not properly registered. Add dependency on execution completion
+                    // to be safe. This prevents premature release when metadata is incomplete.
+                    arrayUseTracker.addDependency(outputValue, new ExecDoneDep());
                 }
             }
         }
@@ -933,16 +980,15 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             } else {
                 // Check what ops need this array
                 Variable v = sameDiff.getVariables().get(varName);
-                if (v != null && v.getInputsForOp() != null) {
+                if (v != null && v.getInputsForOp() != null && !v.getInputsForOp().isEmpty()) {
                     for (String consumerOp : v.getInputsForOp()) {
                         arrayUseTracker.addDependency(outputValue, new OpDep(consumerOp, OUTER_FRAME, 0, null));
                     }
                 } else {
-                    // No consumers, can release immediately after this op
-                    if (!freedArrays.contains(outputArray.getId())) {
-                        mmgr.release(outputArray);
-                        freedArrays.add(outputArray.getId());
-                    }
+                    // No consumers tracked in graph metadata, but array might still be needed
+                    // by operations not properly registered. Add dependency on execution completion
+                    // to be safe. This prevents premature release when metadata is incomplete.
+                    arrayUseTracker.addDependency(outputValue, new ExecDoneDep());
                 }
             }
         }
@@ -1248,30 +1294,20 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 //the specific value here
                 addToArrayTracker(out,i,new ReqOutputDep(name));
             } else if ((inputsForOps == null || inputsForOps.isEmpty()) && out.getValueOutputs() != null && !arrayUseTracker.hasDependency(out.valueWithKeyAtIndex(i,false))) {
-                //This particular array is not actually needed anywhere, so we can deallocate in immediately
-                //Possibly only a control dependency, or only one of the outputs of a multi-output op is used
+                // No consumers tracked in graph metadata. Instead of releasing immediately,
+                // add dependency on execution completion to prevent premature release when
+                // metadata is incomplete or operations are dynamically created.
                 SDValue array = out.valueWithKeyAtIndex(i, false);
-                if (log.isTraceEnabled()) {
-                    if(array != null && array.getTensorValue() != null)
-                        log.trace("Found array id {} (output of {}) not required anywhere, deallocating", array.getTensorValue().getId(), o.getName());
-                }
-
-                if(!outVarNames.contains(name) && array != null && array.getTensorValue() != null && !freedArrays.contains(array.getTensorValue().getId())) {
-                    mmgr.release(array.getTensorValue());
-                    freedArrays.add(array.getTensorValue().getId());
+                if (array != null) {
+                    arrayUseTracker.addDependency(array, new ExecDoneDep());
                 }
             } else if ((inputsForOps == null || inputsForOps.isEmpty()) && out.getOutputs() != null && !arrayUseTracker.hasDependency(SDValue.create(out.resultAt(i)))) {
-                //This particular array is not actually needed anywhere, so we can deallocate in immediately
-                //Possibly only a control dependency, or only one of the outputs of a multi-output op is used
+                // No consumers tracked in graph metadata. Instead of releasing immediately,
+                // add dependency on execution completion to prevent premature release when
+                // metadata is incomplete or operations are dynamically created.
                 INDArray array = out.resultAt(i);
-                if (log.isTraceEnabled()) {
-                    if(array != null && array != null)
-                        log.trace("Found array id {} (output of {}) not required anywhere, deallocating", array.getId(), o.getName());
-                }
-
-                if(!outVarNames.contains(name) && array != null && !freedArrays.contains(array.getId())) {
-                    mmgr.release(array);
-                    freedArrays.add(array.getId());
+                if (array != null) {
+                    arrayUseTracker.addDependency(SDValue.create(array), new ExecDoneDep());
                 }
             }
         }
@@ -2471,30 +2507,44 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             }
             List<INDArray> l = getSdValue(tArr).getListValue();
 
-            Concat c = new Concat(0, l.stream().filter(input -> input != null).collect(Collectors.toList())
+            Concat c = new Concat(0, l.stream().map(INDArray::detach).filter(input -> input != null && !input.wasClosed()).collect(Collectors.toList())
                     .toArray(new INDArray[0]));
-            List<DataBuffer> shape = c.calculateOutputShape();
-            try {
-                // shape.get(0) is OWNED by the output array after allocation - don't close it
-                INDArray out = mmgr.allocateFromDescriptor(false, shape.get(0));
-                c.setOutputArgument(0, out);
-                Nd4j.exec(c);
-                return ExecutionResult.createFrom(tArr.getVariable(),out);
-            } finally {
-                // LEAK FIX: Clean up Concat operation's internal arrays
-                c.clearArrays();
-                // Clean up shape buffers EXCEPT index 0 which is owned by the output array
-                // CRITICAL: Check wasClosed() before calling close() to avoid IllegalStateException
-                for (int i = 1; i < shape.size(); i++) {
-                    DataBuffer db = shape.get(i);
-                    if (db != null && !db.wasClosed()) {
-                        try {
-                            db.close();
-                        } catch (Exception e) {
-                            log.trace("Error closing shape buffer: {}", e.getMessage());
+            try (OpContext opContext = Nd4j.getExecutioner().buildContext()) {
+                opContext.setInputArrays(c.inputArguments());
+                opContext.setOutputArrays(c.outputArguments());
+                opContext.setIArguments(c.iArgs());
+                opContext.setTArguments(c.tArgs());
+                opContext.setBArguments(c.bArgs());
+                List<DataBuffer> shape = c.calculateOutputShape(opContext);
+                try {
+                    // shape.get(0) is OWNED by the output array after allocation - don't close it
+                    INDArray out = mmgr.allocateFromDescriptor(false, shape.get(0));
+                    c.setOutputArgument(0, out);
+                    Nd4j.getExecutioner().exec(c, opContext);
+                    c.setInputArguments(new INDArray[0]);
+                    return ExecutionResult.createFrom(tArr.getVariable(),out);
+                } finally {
+                    // NOTE: c.clearArrays() was removed.
+                    // The original "LEAK FIX" was causing a use-after-free bug by deallocating the input arrays
+                    // which are part of the persistent TensorArray state. It also deallocated the output array
+                    // 'out' before it was returned.
+                    // The temporary OpContext is closed by the try-with-resources block, which cleans up native resources.
+                    // The input arrays are persistent state. The output array is returned to the caller.
+
+                    // Clean up shape buffers EXCEPT index 0 which is owned by the output array
+                    // CRITICAL: Check wasClosed() before calling close() to avoid IllegalStateException
+                    for (int i = 1; i < shape.size(); i++) {
+                        DataBuffer db = shape.get(i);
+                        if (db != null && !db.wasClosed()) {
+                            try {
+                                db.close();
+                            } catch (Exception e) {
+                                log.trace("Error closing shape buffer: {}", e.getMessage());
+                            }
                         }
                     }
-                }
+                }            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         } else if (op instanceof TensorArrayGather) {
             //Input 0: the TensorArray
@@ -2534,30 +2584,43 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     }
                 }
 
-                Stack s = new Stack(newList.stream().filter(input -> input != null).collect(Collectors.toList())
+                Stack s = new Stack(newList.stream().map(INDArray::detach).filter(input -> input != null && !input.wasClosed()).collect(Collectors.toList())
                         .toArray(new INDArray[0]), null, 0);
-                List<DataBuffer> shape = s.calculateOutputShape();
-                try {
-                    // shape.get(0) is OWNED by the output array after allocation - don't close it
-                    INDArray out = mmgr.allocateFromDescriptor(false, shape.get(0));
-                    s.setOutputArgument(0, out);
-                    Nd4j.exec(s);
-                    return ExecutionResult.createFrom(tArr.getVariable(),out);
-                } finally {
-                    // LEAK FIX: Clean up Stack operation's internal arrays
-                    s.clearArrays();
-                    // Clean up shape buffers EXCEPT index 0 which is owned by the output array
-                    // CRITICAL: Check wasClosed() before calling close() to avoid IllegalStateException
-                    for (int i = 1; i < shape.size(); i++) {
-                        DataBuffer db = shape.get(i);
-                        if (db != null && !db.wasClosed()) {
-                            try {
-                                db.close();
-                            } catch (Exception e) {
-                                log.trace("Error closing shape buffer: {}", e.getMessage());
+                try (OpContext opContext = Nd4j.getExecutioner().buildContext()) {
+                    opContext.setInputArrays(s.inputArguments());
+                    opContext.setOutputArrays(s.outputArguments());
+                    opContext.setIArguments(s.iArgs());
+                    opContext.setTArguments(s.tArgs());
+                    opContext.setBArguments(s.bArgs());
+                    List<DataBuffer> shape = s.calculateOutputShape(opContext);
+                    try {
+                        // shape.get(0) is OWNED by the output array after allocation - don't close it
+                        INDArray out = mmgr.allocateFromDescriptor(false, shape.get(0));
+                        s.setOutputArgument(0, out);
+                        Nd4j.getExecutioner().exec(s, opContext);
+                        return ExecutionResult.createFrom(tArr.getVariable(),out);
+                    } finally {
+                        // NOTE: s.clearArrays() was removed.
+                        // The original "LEAK FIX" was causing a use-after-free bug by deallocating the input arrays
+                        // which are part of the persistent TensorArray state. It also deallocated the output array
+                        // 'out' before it was returned.
+                        // The temporary OpContext is closed by the try-with-resources block, which cleans up native resources.
+                        // The input arrays are persistent state. The output array is returned to the caller.
+
+                        // Clean up shape buffers EXCEPT index 0 which is owned by the output array
+                        // CRITICAL: Check wasClosed() before calling close() to avoid IllegalStateException
+                        for (int i = 1; i < shape.size(); i++) {
+                            DataBuffer db = shape.get(i);
+                            if (db != null && !db.wasClosed()) {
+                                try {
+                                    db.close();
+                                } catch (Exception e) {
+                                    log.trace("Error closing shape buffer: {}", e.getMessage());
+                                }
                             }
                         }
-                    }
+                    }                } catch (Exception e) {
+                    throw new RuntimeException(e);
                 }
             } else {
                 return ExecutionResult.createFrom(tArr.getVariable(),Nd4j.zeros(op.arg().dataType(),0));
@@ -3001,38 +3064,28 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     }
 
     /**
-     * Clears the cached OpaqueNDArray from all input and output arrays in the OpContext.
-     * This prevents memory leaks by releasing native memory associated with OpaqueNDArrays
-     * that were created during op execution but are no longer needed.
+     * DEPRECATED: Do NOT use this method!
      *
-     * The OpaqueNDArrays will be recreated on demand if needed again.
+     * This method was causing NaN values and potential heap corruption by closing OpaqueNDArrays
+     * that are still referenced by the OpContext's OpaqueNDArrayArr. The OpaqueNDArrays are
+     * CACHED in the INDArrays and SHARED with the OpContext. Closing them here causes:
+     * 1. Dangling pointers in the OpContext's OpaqueNDArrayArr (PointerPointer still has old ptrs)
+     * 2. Potential use-after-free if native code accesses the freed sd::NDArray* objects
+     * 3. NaN values appearing in reduce operations due to reading freed/corrupted memory
      *
-     * @param opContext The OpContext containing arrays to clean up
+     * The OpaqueNDArrays are properly cleaned up when:
+     * 1. The OpContext is closed (at end of inference via opContexts.clear())
+     * 2. The INDArrays are garbage collected (their cached OpaqueNDArrays are cleaned up)
+     *
+     * @param opContext The OpContext (not used - method is deprecated)
+     * @deprecated This method causes memory corruption. Let the normal cleanup path handle it.
      */
+    @Deprecated
+    @SuppressWarnings("unused")
     private void clearOpaqueNDArraysFromOpContext(OpContext opContext) {
-        if (opContext == null) {
-            return;
-        }
-
-        // Clear from input arrays
-        List<INDArray> inputs = opContext.getInputArrays();
-        if (inputs != null) {
-            for (INDArray arr : inputs) {
-                if (arr != null && !arr.wasClosed()) {
-                    arr.clearOpaqueNDArray();
-                }
-            }
-        }
-
-        // Clear from output arrays
-        List<INDArray> outputs = opContext.getOutputArrays();
-        if (outputs != null) {
-            for (INDArray arr : outputs) {
-                if (arr != null && !arr.wasClosed()) {
-                    arr.clearOpaqueNDArray();
-                }
-            }
-        }
+        // DO NOT USE THIS METHOD
+        // Left here for documentation purposes only
+        log.warn("clearOpaqueNDArraysFromOpContext is deprecated and should not be called - ignoring");
     }
 
 }

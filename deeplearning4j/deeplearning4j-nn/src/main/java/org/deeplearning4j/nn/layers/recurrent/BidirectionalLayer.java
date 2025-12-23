@@ -43,13 +43,11 @@ import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.SpecifiedIndex;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static org.deeplearning4j.nn.conf.RNNFormat.NCW;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
