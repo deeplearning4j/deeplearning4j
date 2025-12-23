@@ -206,7 +206,7 @@ echo.
 echo Usage: %~nx0 [options]
 echo.
 echo Options:
-echo   --framework=^<n^>     Update specific framework only (tensorflow^|onnx^|all)
+echo   --framework=^<framework^> Update specific framework only (tensorflow^|onnx^|all)
 echo                        Default: all
 echo.
 echo   --validate-only      Only validate existing configurations without saving
