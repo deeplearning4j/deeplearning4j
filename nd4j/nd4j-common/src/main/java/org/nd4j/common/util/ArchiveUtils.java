@@ -237,7 +237,6 @@ public class ArchiveUtils {
 
                             // Check limit during extraction
                             if (totalBytesExtracted > maxTotalUncompressedSize) {
-                                fos.close();
                                 newFile.delete();
                                 throw new IOException("Potential zip bomb detected while extracting entry '" + fileName + "'. " +
                                         "Total extracted size " + totalBytesExtracted + " bytes exceeded maximum allowed " +
