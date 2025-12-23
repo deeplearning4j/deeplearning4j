@@ -241,7 +241,11 @@ void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, ND
   }
 
   if (dataFormat == 1) {
-    permutedX = input->permute({1, 0, 2}, 0, false)->dup('c');
+    NDArray* tempPermute = input->permute({1, 0, 2}, 0, false);
+    permutedX = tempPermute->dup('c');
+    if (!tempPermute->isView()) {
+      delete tempPermute;
+    }
     argX = &permutedX;
   }
 
