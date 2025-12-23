@@ -181,15 +181,10 @@ class TestOnnxFrameworkImporter {
         private fun parseTimeoutProperty(propertyName: String, defaultValue: Int): Int {
             val propertyValue = System.getProperty(propertyName) ?: return defaultValue
             
-            // Validate it's a positive number
-            if (!propertyValue.matches(Regex("\\d+"))) {
-                return defaultValue
-            }
-            
-            // Use toLongOrNull to safely parse and check range
+            // Use toLongOrNull to safely parse - returns null if not a valid number
             val timeoutLong = propertyValue.toLongOrNull() ?: return defaultValue
             
-            // Ensure it's within valid Int range and positive
+            // Ensure it's within valid Int range and positive (HttpURLConnection requires positive int)
             return if (timeoutLong in 1..Int.MAX_VALUE) {
                 timeoutLong.toInt()
             } else {
