@@ -297,19 +297,56 @@ public class OnnxRuntimeRunner implements Closeable {
                     String outputName = entry.getKey();
                     TypeMismatchInfo mismatch = entry.getValue();
                     
-                    // Create a cast node
-                    String castOutputName = outputName + "_cast_to_" + mismatch.expectedType.toLowerCase().replace("tensor(", "").replace(")", "");
-                    Onnx.NodeProto castNode = createCastNode(outputName, castOutputName, 
+                    // Rename the original output to preserve it
+                    String originalOutputName = outputName + "_uncasted";
+                    
+                    // Update all nodes that produce this output
+                    for (int i = 0; i < graphBuilder.getNodeCount(); i++) {
+                        Onnx.NodeProto node = graphBuilder.getNode(i);
+                        boolean needsUpdate = false;
+                        Onnx.NodeProto.Builder nodeBuilder = node.toBuilder();
+                        
+                        for (int j = 0; j < node.getOutputCount(); j++) {
+                            if (node.getOutput(j).equals(outputName)) {
+                                nodeBuilder.setOutput(j, originalOutputName);
+                                needsUpdate = true;
+                            }
+                        }
+                        
+                        if (needsUpdate) {
+                            graphBuilder.setNode(i, nodeBuilder.build());
+                        }
+                    }
+                    
+                    // Update all nodes that consume this output as input
+                    for (int i = 0; i < graphBuilder.getNodeCount(); i++) {
+                        Onnx.NodeProto node = graphBuilder.getNode(i);
+                        boolean needsUpdate = false;
+                        Onnx.NodeProto.Builder nodeBuilder = node.toBuilder();
+                        
+                        for (int j = 0; j < node.getInputCount(); j++) {
+                            if (node.getInput(j).equals(outputName)) {
+                                nodeBuilder.setInput(j, originalOutputName);
+                                needsUpdate = true;
+                            }
+                        }
+                        
+                        if (needsUpdate) {
+                            graphBuilder.setNode(i, nodeBuilder.build());
+                        }
+                    }
+                    
+                    // Create a cast node that outputs to the original name
+                    Onnx.NodeProto castNode = createCastNode(originalOutputName, outputName, 
                             parseDataType(mismatch.expectedType));
                     graphBuilder.addNode(castNode);
                     
-                    // Update the output to use the cast output
-                    Onnx.ValueInfoProto castOutputInfo = createOutputInfo(castOutputName, 
+                    // Update the output info with correct type (keeping original name)
+                    Onnx.ValueInfoProto castOutputInfo = createOutputInfo(outputName, 
                             parseDataType(mismatch.expectedType));
                     outputsToAdd.put(outputName, castOutputInfo);
                     
-                    // Store the mapping
-                    outputCastMapping.put(outputName, castOutputName);
+                    // No need to store mapping since output name remains the same
                 }
             }
         }
