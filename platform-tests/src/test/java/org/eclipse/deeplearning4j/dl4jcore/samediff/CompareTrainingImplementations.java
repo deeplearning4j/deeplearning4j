@@ -56,8 +56,6 @@ import org.nd4j.linalg.learning.regularization.WeightDecay;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.weightinit.impl.XavierInitScheme;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
