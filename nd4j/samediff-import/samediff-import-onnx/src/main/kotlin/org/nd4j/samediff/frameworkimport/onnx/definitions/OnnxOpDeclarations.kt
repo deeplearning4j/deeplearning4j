@@ -29,6 +29,7 @@ import org.nd4j.samediff.frameworkimport.onnx.rule.tensor.NDArrayMappingRule
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.samediff.frameworkimport.registry.OpRegistryHolder
+import org.nd4j.samediff.frameworkimport.onnx.definitions.MicrosoftOnnxExtensions
 
 val onnxOpRegistry = OpMappingRegistry<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.TensorProto.DataType,Onnx.AttributeProto,Onnx.AttributeProto>("onnx",OpDescriptorLoaderHolder.nd4jOpDescriptor)
 fun registry(): OpMappingRegistry<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.TensorProto.DataType,Onnx.AttributeProto,Onnx.AttributeProto> {
@@ -61,13 +62,6 @@ val names = mapOf(
 val pairWiseNames = mapOf(
         "And" to "boolean_and")
 
-val equal = OnnxMappingProcess(
-        inputFrameworkOpName = "Equal",
-        opName = "equals",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "A","y" to "B"))),
-        attributeMappingRules = booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0),
-        opMappingRegistry = onnxOpRegistry)
-
 
 val sub = OnnxMappingProcess(
         inputFrameworkOpName = "Sub",
@@ -83,37 +77,6 @@ val mul = OnnxMappingProcess(
         attributeMappingRules = booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0),
         opMappingRegistry = onnxOpRegistry)
 
-val lessEqual = OnnxMappingProcess(
-        inputFrameworkOpName = "LessOrEqual",
-        opName = "less_equal",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "A","y" to "B"))),
-        attributeMappingRules = booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0),
-        opMappingRegistry = onnxOpRegistry)
-
-
-val less = OnnxMappingProcess(
-        inputFrameworkOpName = "Less",
-        opName = "less",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "A","y" to "B"))),
-        attributeMappingRules = booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0),
-        opMappingRegistry = onnxOpRegistry)
-
-
-
-val greaterEqual = OnnxMappingProcess(
-        inputFrameworkOpName = "GreaterOrEqual",
-        opName = "greater_equal",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "A","y" to "B"))),
-        attributeMappingRules = booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0),
-        opMappingRegistry = onnxOpRegistry)
-
-
-val greater = OnnxMappingProcess(
-        inputFrameworkOpName = "Greater",
-        opName = "greater",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "A","y" to "B"))),
-        attributeMappingRules = booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0),
-        opMappingRegistry = onnxOpRegistry)
 
 val divide = OnnxMappingProcess(
         inputFrameworkOpName = "Div",
@@ -213,6 +176,14 @@ val batchNorm = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry,
         inputFrameworkOpName = "BatchNormalization"
 )
+
+
+val embedLayerNormalization = OnnxMappingProcess(
+        opName = "noop",
+        opMappingRegistry = onnxOpRegistry,
+        inputFrameworkOpName = "EmbedLayerNormalization"
+)
+
 //TODO: Binarizer
 //TODO: Bitshift
 //TODO: CastMap
@@ -382,14 +353,7 @@ val gru = OnnxMappingProcess(
         inputFrameworkOpName = "GRU",
         opMappingRegistry = onnxOpRegistry
 )
-val gather = OnnxMappingProcess(
-        opMappingRegistry = onnxOpRegistry,
-        inputFrameworkOpName = "Gather",
-        opName = "gather",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("indices" to "indices","input" to "data"))),
-        attributeMappingRules = listOf(valueMappings(mapOf("dimensions" to "axis")),
-                booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0)[0])
-)
+
 //TODO: GatherElements
 val gatherNd = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry,
@@ -643,21 +607,7 @@ val leakyRelu = OnnxMappingProcess(
 //TODO: Loop
 //TODO: LpNormalization
 //TODO: LpPool
-val matMul = OnnxMappingProcess(
-        opMappingRegistry = onnxOpRegistry,
-        inputFrameworkOpName = "MatMul",
-        opName = "matmul",
-        attributeMappingRules = listOf(
-                booleanConstant(inputName = "transX",constantValue = false,argumentIndex = 0)[0],
-                booleanConstant(inputName = "transY",constantValue = false,argumentIndex = 1)[0],
-                booleanConstant(inputName = "transZ",constantValue = false,argumentIndex = 2)[0],
-                booleanConstant(inputName = "transposeX",constantValue = false,argumentIndex = 0)[0],
-                booleanConstant(inputName = "transposeY",constantValue = false,argumentIndex = 1)[0],
-                booleanConstant(inputName = "transposeZ",constantValue = false,argumentIndex = 2)[0],
-                doubleConstant(inputName = "alpha",constantValue = 0.0,argumentIndex = 0)[0],
-                doubleConstant(inputName = "beta",constantValue = 1.0,argumentIndex = 1)[0]),
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "A","y" to "B")))
-)
+
 
 
 //TODO: MatMulInteger
@@ -1051,12 +1001,7 @@ val topK = OnnxMappingProcess(
 )
 
 
-val where = OnnxMappingProcess(
-        inputFrameworkOpName = "Where",
-        opName = "Where",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("condition" to "condition","input" to "X","y" to "Y"))),
-        opMappingRegistry = onnxOpRegistry
-)
+
 
 
 val abs = OnnxMappingProcess(
@@ -1165,7 +1110,8 @@ booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0)
 
 
 object OnnxOpDeclarations {
-        init {
+
+        fun init() {
                 val onnxops = OpDescriptorLoaderHolder.listForFramework<Onnx.NodeProto>("onnx")
                 val groupedOps = onnxops.values.groupBy { input -> input.name }
                 val singleGroupedOps = HashMap<String,Onnx.NodeProto>()
@@ -1191,7 +1137,14 @@ object OnnxOpDeclarations {
                         onnxOpRegistry.registerNd4jOpDef(it.name,it)
                 }
 
+                MicrosoftOnnxExtensions.registerMicrosoftExtensions(onnxOpRegistry)
+
+
                 OpRegistryHolder.registerOpMappingRegistry("onnx", onnxOpRegistry)
+        }
+
+        init {
+             init()
 
         }
 }

@@ -57,6 +57,7 @@ interface IRGraph<
     fun updateNodeCacheWith(nodeList: List<IRNode<NODE_TYPE,TENSOR_TYPE,ATTRIBUTE_TYPE,ATTRIBUTE_VALUE_TYPE,DATA_TYPE>>)
 
 
+
     /**
      * All of the variable names in the graph.
      */
@@ -132,5 +133,7 @@ interface IRGraph<
      * and aren't discoverable for processing.
      */
     fun addGraphOutputsAsProcessingNodes(): Boolean
+
+    fun graphStructure(): String
 
 }

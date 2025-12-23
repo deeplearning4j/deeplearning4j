@@ -530,7 +530,7 @@ val tensorArrayV3 = TensorflowMappingProcess(
         inputFrameworkOpName = "TensorArrayV3",
         tensorMappingRules = listOf(mappingListNDArrays(mutableMapOf("input" to "size"))),
         attributeMappingRules = listOf(valueMapping(mutableMapOf("importDataType" to "dtype")),
-               )
+        )
 )
 
 
@@ -557,7 +557,7 @@ val concatV2 = TensorflowMappingProcess(
         opMappingRegistry = tensorflowOpRegistry,
         opName = "concat",
         variableResolutionType = MapperNamespace.VariableResolutionType.DIRECT,
-                inputFrameworkOpName = "ConcatV2",
+        inputFrameworkOpName = "ConcatV2",
         tensorMappingRules = listOf(passThroughNDArrayInputs()),
         attributeMappingRules = listOf(
                 booleanConstant(inputName = "isDynamicAxis",constantValue = true,argumentIndex = 0)[0]))
@@ -2396,7 +2396,7 @@ val any = TensorflowMappingProcess(
 
 
 object TensorflowOpDeclarations {
-        init {
+        fun init() {
                 val tensorflowOps = OpDescriptorLoaderHolder.listForFramework<OpDef>("tensorflow")
                 val groupedOps = tensorflowOps.values.groupBy { input -> input.name }
                 val singleGroupedOps = HashMap<String,OpDef>()
@@ -2430,7 +2430,11 @@ object TensorflowOpDeclarations {
                 }
 
                 OpRegistryHolder.registerOpMappingRegistry("tensorflow", tensorflowOpRegistry)
+        }
 
+
+        init {
+                init()
         }
 }
 
