@@ -610,12 +610,6 @@
 
         <profile>
             <id>use-specified-compiler</id>
-            <activation>
-                <property>
-                    <name>libnd4j.compiler</name>
-                    <value>!clang</value>
-                </property>
-            </activation>
             <properties>
                 <platform.compiler.actual>${libnd4j.compiler}</platform.compiler.actual>
             </properties>
