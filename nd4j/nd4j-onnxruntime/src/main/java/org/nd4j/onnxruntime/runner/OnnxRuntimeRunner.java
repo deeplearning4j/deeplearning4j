@@ -297,15 +297,17 @@ public class OnnxRuntimeRunner implements Closeable {
                     String outputName = entry.getKey();
                     TypeMismatchInfo mismatch = entry.getValue();
                     
-                    // Rename the original output to preserve it
-                    String originalOutputName = outputName + "_uncasted";
+                    // Rename the original output to preserve it, using a unique suffix to avoid conflicts
+                    String originalOutputName = outputName + "_original_type_" + 
+                            mismatch.actualType.toLowerCase().replace("tensor(", "").replace(")", "");
                     
-                    // Update all nodes that produce this output
+                    // Update all nodes in a single traversal (both producers and consumers)
                     for (int i = 0; i < graphBuilder.getNodeCount(); i++) {
                         Onnx.NodeProto node = graphBuilder.getNode(i);
                         boolean needsUpdate = false;
                         Onnx.NodeProto.Builder nodeBuilder = node.toBuilder();
                         
+                        // Update outputs that match
                         for (int j = 0; j < node.getOutputCount(); j++) {
                             if (node.getOutput(j).equals(outputName)) {
                                 nodeBuilder.setOutput(j, originalOutputName);
@@ -313,17 +315,7 @@ public class OnnxRuntimeRunner implements Closeable {
                             }
                         }
                         
-                        if (needsUpdate) {
-                            graphBuilder.setNode(i, nodeBuilder.build());
-                        }
-                    }
-                    
-                    // Update all nodes that consume this output as input
-                    for (int i = 0; i < graphBuilder.getNodeCount(); i++) {
-                        Onnx.NodeProto node = graphBuilder.getNode(i);
-                        boolean needsUpdate = false;
-                        Onnx.NodeProto.Builder nodeBuilder = node.toBuilder();
-                        
+                        // Update inputs that match
                         for (int j = 0; j < node.getInputCount(); j++) {
                             if (node.getInput(j).equals(outputName)) {
                                 nodeBuilder.setInput(j, originalOutputName);
