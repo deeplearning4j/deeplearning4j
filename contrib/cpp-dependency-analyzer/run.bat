@@ -1,4 +1,5 @@
 @echo off
+setlocal enabledelayedexpansion
 REM C++ Dependency Analyzer Runner Script for Windows
 REM Usage: run.bat [options] <root-directory>
 
@@ -14,5 +15,23 @@ if not exist "%JAR_FILE%" (
     )
 )
 
-REM Run the analyzer
-java -jar "%JAR_FILE%" %*
+REM Validate JAR file exists after build
+if not exist "%JAR_FILE%" (
+    echo Error: JAR file not found: %JAR_FILE%
+    exit /b 1
+)
+
+REM Run the analyzer with properly quoted arguments
+REM Build command with proper quoting to prevent command injection
+set "CMD=java -jar "!JAR_FILE!""
+:parse_args
+if "%~1"=="" goto run_analyzer
+set "CMD=!CMD! "%~1""
+shift
+goto parse_args
+
+:run_analyzer
+REM Execute the built command using call for additional protection
+call !CMD!
+
+endlocal
