@@ -29,8 +29,8 @@ using namespace simdOps;
 
 namespace functions {
 namespace transform {
-template <typename X, typename Y>
-void TransformFloat<X, Y>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, void *z,
+template <typename X, typename Z>
+void TransformFloat<X, Z>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, void *z,
                                 const sd::LongType *zShapeInfo, void *extraParams, sd::LongType threadId,
                                 sd::LongType numThreads) {
   DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, z, zShapeInfo, extraParams, threadId, numThreads),
@@ -51,14 +51,6 @@ void SD_HOST TransformFloat<X, Z>::exec(const void *vx, const sd::LongType *xSha
 }
 
 BUILD_DOUBLE_TEMPLATE( class TransformFloat, , SD_COMMON_TYPES, SD_FLOAT_TYPES);
-
-ITERATE_COMBINATIONS(
-   (SD_COMMON_TYPES),
-   (SD_COMMON_TYPES),
-   INSTANT_PROCESS_COMBINATION,
-    TransformFloat,
-   ::exec(int, const void*, const sd::LongType*, void*, const sd::LongType*, void*, sd::LongType, sd::LongType)
-);
 
 
 }  // namespace transform
