@@ -2818,7 +2818,6 @@ public class ArrayUtil {
         if (shape.length <= 1) {
             return new long[]{1};
         }
-
         if (shape.length == 2 && (shape[0] == 1 || shape[1] == 1)) {
             long[] ret = new long[2];
             Arrays.fill(ret, startNum);
@@ -2862,7 +2861,6 @@ public class ArrayUtil {
         if (shape.length <= 1) {
             return new int[]{1};
         }
-
         if (shape.length == 2 && (shape[0] == 1 || shape[1] == 1)) {
             int[] ret = new int[2];
             Arrays.fill(ret, startValue);
