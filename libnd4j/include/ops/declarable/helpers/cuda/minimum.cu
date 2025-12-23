@@ -66,7 +66,9 @@ void minimumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX,
     auto preX = x->dup();
     auto preY = y->dup();
 
-    auto targetShape = epsNext->getShapeAsVector();
+    auto* targetShapePtr = epsNext->getShapeAsVector();
+    std::vector<LongType> targetShape = *targetShapePtr;
+    delete targetShapePtr;
 
     preX.tileToShape(targetShape, preX);
     preY.tileToShape(targetShape, preY);

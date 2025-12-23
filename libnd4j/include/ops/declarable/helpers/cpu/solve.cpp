@@ -65,15 +65,16 @@ static sd::Status solveFunctor_(sd::LaunchContext* context, NDArray* leftInput, 
   // stage 1: LU decomposition batched
   auto leftOutput = leftInput->ulike();
   auto permuShape = rightInput->getShapeAsVector();
-  permuShape.pop_back();
-  auto permutations = NDArrayFactory::create<sd::LongType>('c', permuShape, context);
-  helpers::lu(context, leftInput, leftOutput, &permutations);
+  permuShape->pop_back();
+  std::vector<sd::LongType> &shapeDeRef = *permuShape;
+  auto permutations = NDArrayFactory::create<sd::LongType>('c', shapeDeRef, context);
+  helpers::lu(context, leftInput, leftOutput, permutations);
 
 
   auto P = leftInput->ulike();  // permutations batched matrix
   P->nullify();                  // to fill up matrices with zeros
   auto PPart = P->allTensorsAlongDimension({-2, -1});
-  auto permutationsPart = permutations.allTensorsAlongDimension({-1});
+  auto permutationsPart = permutations->allTensorsAlongDimension({-1});
   for (auto batch = 0; batch < permutationsPart.size(); batch++) {
     for (sd::LongType row = 0; row < PPart[batch]->rows(); row++) {
       std::vector<sd::LongType> vec = {row,permutationsPart[batch]->t<sd::LongType>(row)};
@@ -88,16 +89,18 @@ static sd::Status solveFunctor_(sd::LaunchContext* context, NDArray* leftInput, 
   auto rightOutput = rightInput->ulike();
   auto rightPart = rightInput->ulike();
   MmulHelper::matmul(P, rightInput, rightPart, 0.0, 0, 0, 0, rightPart);
-  ResultSet leftLowerPart = leftLower.allTensorsAlongDimension({-2, -1});
+  ResultSet leftLowerPart = leftLower->allTensorsAlongDimension({-2, -1});
   for (auto i = 0; i < leftLowerPart.size(); i++) {
     for (sd::LongType r = 0; r < leftLowerPart[i]->rows(); r++) leftLowerPart[i]->r<T>(r, r) = (T)1.f;
   }
 
   // stage 2: triangularSolveFunctor for Lower with given b
-  helpers::triangularSolveFunctor(context, &leftLower, rightPart, true, false, rightOutput);
+  helpers::triangularSolveFunctor(context, leftLower, rightPart, true, false, rightOutput);
   // stage 3: triangularSolveFunctor for Upper with output of previous stage
   helpers::triangularSolveFunctor(context, leftOutput, rightOutput, false, false, output);
 
+  delete permutations;
+  delete permuShape;
   return sd::Status::OK;
 }
 

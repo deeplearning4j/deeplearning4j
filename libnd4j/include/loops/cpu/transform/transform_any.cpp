@@ -19,6 +19,15 @@
 //
 //  @author  raver119@gmail.com
 //
+
+// Selective rendering - MUST be included before types.h to define HAS_* flags
+#include <system/selective_rendering/core.h>
+#include <system/selective_rendering/bool_types.h>
+#include <system/selective_rendering/float_types.h>
+#include <system/selective_rendering/bfloat_types.h>
+#include <system/selective_rendering/int_types.h>
+#include <system/selective_rendering/uint_types.h>
+
 #include <helpers/Loops.h>
 #include <loops/legacy_ops.h>
 #include <loops/transform_any.h>
@@ -30,8 +39,8 @@ using namespace simdOps;
 namespace functions {
 namespace transform {
 
-template <typename X, typename Y>
-void TransformAny<X, Y>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, void *z,
+template <typename X, typename Z>
+void TransformAny<X, Z>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, void *z,
                               const sd::LongType *zShapeInfo, void *extraParams, sd::LongType threadId,
                               sd::LongType numThreads) {
   DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, z, zShapeInfo, extraParams, threadId, numThreads),
@@ -52,16 +61,13 @@ void SD_HOST TransformAny<X, Z>::exec(const void *vx, const sd::LongType *xShape
                                                               numThreads);
 }
 
-BUILD_DOUBLE_TEMPLATE( class TransformAny, , SD_COMMON_TYPES, SD_COMMON_TYPES);
-BUILD_DOUBLE_TEMPLATE( class TransformAny, , SD_STRING_TYPES, SD_STRING_TYPES);
-
-ITERATE_COMBINATIONS(
-   (SD_COMMON_TYPES),
-   (SD_COMMON_TYPES),
-   INSTANT_PROCESS_COMBINATION,
-    TransformAny,
-   ::exec(int, const void*, const sd::LongType*, void*, const sd::LongType*, void*, sd::LongType, sd::LongType)
-);
+BUILD_DOUBLE_TEMPLATE(class TransformAny, , SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
+// Also instantiate numeric types -> bool for comparison operations
+BUILD_DOUBLE_TEMPLATE(class TransformAny, , SD_NUMERIC_TYPES, SD_BOOL_TYPES);
+// And bool -> numeric types for casting operations
+BUILD_DOUBLE_TEMPLATE(class TransformAny, , SD_BOOL_TYPES, SD_NUMERIC_TYPES);
+// And bool -> bool for boolean operations
+BUILD_DOUBLE_TEMPLATE(class TransformAny, , SD_BOOL_TYPES, SD_BOOL_TYPES);
 
 }  // namespace transform
 }  // namespace functions

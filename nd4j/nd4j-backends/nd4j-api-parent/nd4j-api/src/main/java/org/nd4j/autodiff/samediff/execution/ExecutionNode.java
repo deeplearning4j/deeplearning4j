@@ -35,7 +35,7 @@ import java.util.Set;
  * - A variable initialization (constant, variable, placeholder)
  * - A control flow operation (Switch, Merge, Enter, Exit, etc.)
  * 
- * @author Alex Gibson
+ * @author Adam Gibson
  */
 @Data
 public class ExecutionNode {

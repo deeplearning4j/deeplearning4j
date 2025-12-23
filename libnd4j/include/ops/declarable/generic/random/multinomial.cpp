@@ -98,13 +98,15 @@ DECLARE_SHAPE_FN(random_multinomial) {
   const int argSize = block.getIArguments()->size();
   const int dimC = argSize > 0 ? (INT_ARG(0) >= 0 ? INT_ARG(0) : INT_ARG(0) + rank) : rank - 1;
 
-  auto nShape = input->getShapeAsVector();
+  auto* inputShapeVec = input->getShapeAsVector();
   auto dimA = (0 == dimC) ? 1 : 0;
-  nShape[dimA] = numOfSamples;
+  (*inputShapeVec)[dimA] = numOfSamples;
 
   DataType nType =
       (argSize > 1) ? (INT_ARG(1) >= 0 ? static_cast<DataType>(INT_ARG(1)) : INT64) : INT64;
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(nType, input->ordering(), nShape));
+  auto result = SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(nType, input->ordering(), *inputShapeVec));
+  delete inputShapeVec;
+  return result;
 }
 
 DECLARE_TYPES(random_multinomial) {

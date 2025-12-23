@@ -45,8 +45,13 @@ CUSTOM_OP_IMPL(confusion_matrix, 2, 1, false, 0, -2) {
   }
   auto output = OUTPUT_NULLIFIED(0);
 
-  int minPrediction = predictions->reduceNumber(reduce::Min).e<int>(0);
-  int minLabel = labels->reduceNumber(reduce::Min).e<int>(0);
+  auto* minPredictionArr = predictions->reduceNumber(reduce::Min);
+  int minPrediction = minPredictionArr->e<int>(0);
+  delete minPredictionArr;
+  
+  auto* minLabelArr = labels->reduceNumber(reduce::Min);
+  int minLabel = minLabelArr->e<int>(0);
+  delete minLabelArr;
 
   REQUIRE_TRUE(minLabel >= 0, 0, "CONFUSION_MATRIX: Labels contains negative values !");
   REQUIRE_TRUE(minPrediction >= 0, 0, "CONFUSION_MATRIX: Predictions contains negative values !");
@@ -70,8 +75,14 @@ DECLARE_SHAPE_FN(confusion_matrix) {
   if (block.getIArguments()->size() > 0) {
     numClasses = INT_ARG(0);
   } else {
-    int maxPrediction = predictions->reduceNumber(reduce::Max).e<int>(0);
-    int maxLabel = labels->reduceNumber(reduce::Max).e<int>(0);
+    auto* maxPredictionArr = predictions->reduceNumber(reduce::Max);
+    int maxPrediction = maxPredictionArr->e<int>(0);
+    delete maxPredictionArr;
+    
+    auto* maxLabelArr = labels->reduceNumber(reduce::Max);
+    int maxLabel = maxLabelArr->e<int>(0);
+    delete maxLabelArr;
+    
     numClasses = (maxPrediction >= maxLabel) ? maxPrediction + 1 : maxLabel + 1;
   }
 

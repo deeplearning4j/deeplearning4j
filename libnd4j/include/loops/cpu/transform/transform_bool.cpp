@@ -30,8 +30,8 @@ using namespace simdOps;
 namespace functions {
 namespace transform {
 
-template <typename X, typename Y>
-void TransformBool<X, Y>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, void *z,
+template <typename X, typename Z>
+void TransformBool<X, Z>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, void *z,
                                const sd::LongType *zShapeInfo, void *extraParams, sd::LongType threadId,
                                sd::LongType numThreads) {
   DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, z, zShapeInfo, extraParams, threadId, numThreads),

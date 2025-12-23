@@ -111,6 +111,123 @@ public class WordVectorSerializer {
     private static final int MAX_SIZE = 50;
     private static final String WHITESPACE_REPLACEMENT = "_Az92_";
 
+    /**
+     * Maximum total decompressed size allowed when loading ZIP files (default: 2GB for word vectors).
+     * This limit protects against zip bomb attacks.
+     * Can be overridden via system property "dl4j.wordvec.maxZipSize" (in bytes).
+     */
+    public static final long DEFAULT_MAX_TOTAL_UNCOMPRESSED_SIZE = 2L * 1024L * 1024L * 1024L; // 2GB
+
+    /**
+     * Maximum allowed compression ratio (uncompressed/compressed size).
+     * Default is 100:1. Can be overridden via system property "dl4j.wordvec.maxCompressionRatio".
+     */
+    public static final double DEFAULT_MAX_COMPRESSION_RATIO = 100.0;
+
+    /**
+     * Maximum number of entries allowed in a word vector ZIP file.
+     * Can be overridden via system property "dl4j.wordvec.maxZipEntries".
+     */
+    public static final int DEFAULT_MAX_ZIP_ENTRIES = 50;
+
+    private static long maxTotalUncompressedSize = getConfiguredMaxSize();
+    private static double maxCompressionRatio = getConfiguredMaxRatio();
+    private static int maxZipEntries = getConfiguredMaxEntries();
+
+    private static long getConfiguredMaxSize() {
+        String prop = System.getProperty("dl4j.wordvec.maxZipSize");
+        if (prop != null) {
+            try {
+                return Long.parseLong(prop);
+            } catch (NumberFormatException e) {
+                log.warn("Invalid value for dl4j.wordvec.maxZipSize: {}, using default", prop);
+            }
+        }
+        return DEFAULT_MAX_TOTAL_UNCOMPRESSED_SIZE;
+    }
+
+    private static double getConfiguredMaxRatio() {
+        String prop = System.getProperty("dl4j.wordvec.maxCompressionRatio");
+        if (prop != null) {
+            try {
+                return Double.parseDouble(prop);
+            } catch (NumberFormatException e) {
+                log.warn("Invalid value for dl4j.wordvec.maxCompressionRatio: {}, using default", prop);
+            }
+        }
+        return DEFAULT_MAX_COMPRESSION_RATIO;
+    }
+
+    private static int getConfiguredMaxEntries() {
+        String prop = System.getProperty("dl4j.wordvec.maxZipEntries");
+        if (prop != null) {
+            try {
+                return Integer.parseInt(prop);
+            } catch (NumberFormatException e) {
+                log.warn("Invalid value for dl4j.wordvec.maxZipEntries: {}, using default", prop);
+            }
+        }
+        return DEFAULT_MAX_ZIP_ENTRIES;
+    }
+
+    /**
+     * Set the maximum total uncompressed size allowed when loading word vector ZIP files.
+     * @param maxSize Maximum size in bytes (must be positive)
+     */
+    public static void setMaxTotalUncompressedSize(long maxSize) {
+        if (maxSize <= 0) throw new IllegalArgumentException("Max size must be positive, got " + maxSize);
+        maxTotalUncompressedSize = maxSize;
+    }
+
+    /**
+     * Set the maximum compression ratio allowed for ZIP entries.
+     * @param maxRatio Maximum ratio (must be >= 1.0)
+     */
+    public static void setMaxCompressionRatio(double maxRatio) {
+        if (maxRatio < 1.0) throw new IllegalArgumentException("Max ratio must be >= 1.0, got " + maxRatio);
+        maxCompressionRatio = maxRatio;
+    }
+
+    /**
+     * Set the maximum number of entries allowed in word vector ZIP files.
+     * @param maxEntries Maximum entries (must be positive)
+     */
+    public static void setMaxZipEntries(int maxEntries) {
+        if (maxEntries <= 0) throw new IllegalArgumentException("Max entries must be positive, got " + maxEntries);
+        maxZipEntries = maxEntries;
+    }
+
+    /**
+     * Read a ZIP entry with size limit protection.
+     * This method reads data incrementally and tracks actual bytes read.
+     */
+    private static byte[] readZipEntryWithLimit(ZipInputStream zis, String entryName,
+            long remainingAllowed) throws IOException {
+        java.io.ByteArrayOutputStream bout = new java.io.ByteArrayOutputStream();
+        byte[] buffer = new byte[8192];
+        long totalRead = 0;
+        int bytesRead;
+
+        while ((bytesRead = zis.read(buffer)) != -1) {
+            totalRead += bytesRead;
+
+            if (totalRead > remainingAllowed) {
+                throw new IOException("Potential zip bomb detected while reading entry '" + entryName + "'. " +
+                        "Entry exceeded remaining size allowance of " + remainingAllowed + " bytes. " +
+                        "If this is a legitimate file, increase the limit using " +
+                        "WordVectorSerializer.setMaxTotalUncompressedSize() or system property 'dl4j.wordvec.maxZipSize'");
+            }
+
+            if (totalRead > Integer.MAX_VALUE - 8) {
+                throw new IOException("Entry '" + entryName + "' exceeds maximum supported size (2GB)");
+            }
+
+            bout.write(buffer, 0, bytesRead);
+        }
+
+        return bout.toByteArray();
+    }
+
     private WordVectorSerializer() {
     }
 
@@ -2308,13 +2425,43 @@ public class WordVectorSerializer {
 
         INDArray syn0 = null, syn1 = null, syn1neg = null;
 
+        long totalBytesRead = 0;
+        int entryCount = 0;
+
         try (ZipInputStream zipfile = new ZipInputStream(new BufferedInputStream(stream))) {
 
             ZipEntry entry = null;
             while ((entry = zipfile.getNextEntry()) != null) {
 
+                // Check entry count limit
+                entryCount++;
+                if (entryCount > maxZipEntries) {
+                    throw new IOException("Potential zip bomb detected: too many entries. " +
+                            "Found " + entryCount + " entries, maximum allowed is " + maxZipEntries + ". " +
+                            "If this is a legitimate file, increase the limit using " +
+                            "WordVectorSerializer.setMaxZipEntries() or system property 'dl4j.wordvec.maxZipEntries'");
+                }
+
                 String name = entry.getName();
-                byte[] bytes = IOUtils.toByteArray(zipfile);
+
+                // Check compression ratio if sizes are known
+                long compressedSize = entry.getCompressedSize();
+                long uncompressedSize = entry.getSize();
+                if (compressedSize > 0 && uncompressedSize > 0) {
+                    double ratio = (double) uncompressedSize / compressedSize;
+                    if (ratio > maxCompressionRatio) {
+                        throw new IOException("Potential zip bomb detected: suspicious compression ratio. " +
+                                "Entry '" + name + "' has ratio " + String.format("%.1f", ratio) +
+                                ":1 (compressed: " + compressedSize + " bytes, uncompressed: " + uncompressedSize + " bytes). " +
+                                "Maximum allowed ratio is " + String.format("%.1f", maxCompressionRatio) + ":1. " +
+                                "If this is a legitimate file, increase the limit using " +
+                                "WordVectorSerializer.setMaxCompressionRatio() or system property 'dl4j.wordvec.maxCompressionRatio'");
+                    }
+                }
+
+                // Read with size limit protection
+                byte[] bytes = readZipEntryWithLimit(zipfile, name, maxTotalUncompressedSize - totalBytesRead);
+                totalBytesRead += bytes.length;
 
                 if (name.equals(CONFIG_ENTRY)) {
                     String content = new String(bytes, "UTF-8");
@@ -2338,6 +2485,9 @@ public class WordVectorSerializer {
             }
 
         }
+
+        log.debug("Successfully loaded SequenceVectors ZIP data: {} entries, {} total bytes", entryCount, totalBytesRead);
+
         InMemoryLookupTable<T> lookupTable = new InMemoryLookupTable<>();
         lookupTable.setSyn0(syn0);
         lookupTable.setSyn1(syn1);
