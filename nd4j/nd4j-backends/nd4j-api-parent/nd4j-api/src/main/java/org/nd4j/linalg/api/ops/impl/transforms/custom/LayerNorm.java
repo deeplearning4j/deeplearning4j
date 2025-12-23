@@ -162,10 +162,7 @@ public class LayerNorm extends DynamicCustomOp {
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         Preconditions.checkState(dataTypes != null && dataTypes.size() >= 2 && dataTypes.size() <= 3, "Expected exactly 2 or 3 input datatypes, got %s", dataTypes);
         DataType first = dataTypes.get(0);
-        for (DataType dataType : dataTypes) {
-            Preconditions.checkState(dataType.isFPType(), "Input %s datatype must be a floating point type, got datypes %s", dataTypes);
-            Preconditions.checkState(first == dataType, "All datatypes must be same type, got input datatypes %s", dataTypes);
-        }
+
 
         return Collections.singletonList(first);
     }

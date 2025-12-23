@@ -48,7 +48,18 @@ public class NDBitwise {
     NDValidation.validateInteger("and", "x", x);
     NDValidation.validateInteger("and", "y", y);
     Preconditions.checkArgument(isSameType(x, y), "Must be same types");
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.BitwiseAnd(x, y))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.BitwiseAnd(x, y));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -61,7 +72,18 @@ public class NDBitwise {
   public INDArray bitRotl(INDArray x, INDArray shift) {
     NDValidation.validateInteger("bitRotl", "x", x);
     NDValidation.validateInteger("bitRotl", "shift", shift);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicShiftBits(x, shift))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicShiftBits(x, shift));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -74,7 +96,18 @@ public class NDBitwise {
   public INDArray bitRotr(INDArray x, INDArray shift) {
     NDValidation.validateInteger("bitRotr", "x", x);
     NDValidation.validateInteger("bitRotr", "shift", shift);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicRShiftBits(x, shift))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicRShiftBits(x, shift));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -87,7 +120,18 @@ public class NDBitwise {
   public INDArray bitShift(INDArray x, INDArray shift) {
     NDValidation.validateInteger("bitShift", "x", x);
     NDValidation.validateInteger("bitShift", "shift", shift);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.ShiftBits(x, shift))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.ShiftBits(x, shift));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -100,7 +144,18 @@ public class NDBitwise {
   public INDArray bitShiftRight(INDArray x, INDArray shift) {
     NDValidation.validateInteger("bitShiftRight", "x", x);
     NDValidation.validateInteger("bitShiftRight", "shift", shift);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RShiftBits(x, shift))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RShiftBits(x, shift));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -118,7 +173,18 @@ public class NDBitwise {
     NDValidation.validateInteger("bitsHammingDistance", "x", x);
     NDValidation.validateInteger("bitsHammingDistance", "y", y);
     Preconditions.checkArgument(isSameType(x, y), "Must be same types");
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.BitsHammingDistance(x, y))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.BitsHammingDistance(x, y));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -131,7 +197,18 @@ public class NDBitwise {
   public INDArray leftShift(INDArray x, INDArray y) {
     NDValidation.validateInteger("leftShift", "x", x);
     NDValidation.validateInteger("leftShift", "y", y);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.ShiftBits(x, y))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.ShiftBits(x, y));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -146,7 +223,18 @@ public class NDBitwise {
   public INDArray leftShiftCyclic(INDArray x, INDArray y) {
     NDValidation.validateInteger("leftShiftCyclic", "x", x);
     NDValidation.validateInteger("leftShiftCyclic", "y", y);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicShiftBits(x, y))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicShiftBits(x, y));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -164,7 +252,18 @@ public class NDBitwise {
     NDValidation.validateInteger("or", "x", x);
     NDValidation.validateInteger("or", "y", y);
     Preconditions.checkArgument(isSameType(x, y), "Must be same types");
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.BitwiseOr(x, y))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.BitwiseOr(x, y));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -177,7 +276,18 @@ public class NDBitwise {
   public INDArray rightShift(INDArray x, INDArray y) {
     NDValidation.validateInteger("rightShift", "x", x);
     NDValidation.validateInteger("rightShift", "y", y);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RShiftBits(x, y))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RShiftBits(x, y));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -192,7 +302,18 @@ public class NDBitwise {
   public INDArray rightShiftCyclic(INDArray x, INDArray y) {
     NDValidation.validateInteger("rightShiftCyclic", "x", x);
     NDValidation.validateInteger("rightShiftCyclic", "y", y);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicRShiftBits(x, y))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicRShiftBits(x, y));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -210,6 +331,17 @@ public class NDBitwise {
     NDValidation.validateInteger("xor", "x", x);
     NDValidation.validateInteger("xor", "y", y);
     Preconditions.checkArgument(isSameType(x, y), "Must be same types");
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.BitwiseXor(x, y))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.BitwiseXor(x, y));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 }

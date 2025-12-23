@@ -51,7 +51,18 @@ public class NDImage {
     NDValidation.validateNumerical("CropAndResize", "cropBoxes", cropBoxes);
     NDValidation.validateNumerical("CropAndResize", "boxIndices", boxIndices);
     NDValidation.validateInteger("CropAndResize", "cropOutSize", cropOutSize);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.CropAndResize(image, cropBoxes, boxIndices, cropOutSize, extrapolationValue))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.CropAndResize(image, cropBoxes, boxIndices, cropOutSize, extrapolationValue));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -69,7 +80,18 @@ public class NDImage {
     NDValidation.validateNumerical("CropAndResize", "cropBoxes", cropBoxes);
     NDValidation.validateNumerical("CropAndResize", "boxIndices", boxIndices);
     NDValidation.validateInteger("CropAndResize", "cropOutSize", cropOutSize);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.CropAndResize(image, cropBoxes, boxIndices, cropOutSize, 0.0))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.CropAndResize(image, cropBoxes, boxIndices, cropOutSize, 0.0));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -81,7 +103,18 @@ public class NDImage {
    */
   public INDArray adjustContrast(INDArray in, double factor) {
     NDValidation.validateNumerical("adjustContrast", "in", in);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.custom.AdjustContrast(in, factor))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.custom.AdjustContrast(in, factor));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -93,7 +126,18 @@ public class NDImage {
    */
   public INDArray adjustHue(INDArray in, double delta) {
     NDValidation.validateNumerical("adjustHue", "in", in);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.custom.AdjustHue(in, delta))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.custom.AdjustHue(in, delta));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -105,7 +149,18 @@ public class NDImage {
    */
   public INDArray adjustSaturation(INDArray in, double factor) {
     NDValidation.validateNumerical("adjustSaturation", "in", in);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.custom.AdjustSaturation(in, factor))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.custom.AdjustSaturation(in, factor));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -126,7 +181,18 @@ public class NDImage {
     Preconditions.checkArgument(kSizes.length == 2, "kSizes has incorrect size/length. Expected: kSizes.length == 2, got %s", kSizes.length);
     Preconditions.checkArgument(strides.length == 2, "strides has incorrect size/length. Expected: strides.length == 2, got %s", strides.length);
     Preconditions.checkArgument(rates.length >= 0, "rates has incorrect size/length. Expected: rates.length >= 0, got %s", rates.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.ExtractImagePatches(image, kSizes, strides, rates, sameMode))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.ExtractImagePatches(image, kSizes, strides, rates, sameMode));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -137,7 +203,18 @@ public class NDImage {
    */
   public INDArray hsvToRgb(INDArray input) {
     NDValidation.validateNumerical("hsvToRgb", "input", input);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.custom.HsvToRgb(input))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.custom.HsvToRgb(input));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -160,7 +237,18 @@ public class NDImage {
       boolean antialias, ImageResizeMethod ImageResizeMethod) {
     NDValidation.validateNumerical("imageResize", "input", input);
     NDValidation.validateInteger("imageResize", "size", size);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.ImageResize(input, size, preserveAspectRatio, antialias, ImageResizeMethod))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.ImageResize(input, size, preserveAspectRatio, antialias, ImageResizeMethod));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -180,7 +268,18 @@ public class NDImage {
   public INDArray imageResize(INDArray input, INDArray size, ImageResizeMethod ImageResizeMethod) {
     NDValidation.validateNumerical("imageResize", "input", input);
     NDValidation.validateInteger("imageResize", "size", size);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.ImageResize(input, size, false, false, ImageResizeMethod))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.ImageResize(input, size, false, false, ImageResizeMethod));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -197,7 +296,18 @@ public class NDImage {
       double iouThreshold, double scoreThreshold) {
     NDValidation.validateNumerical("nonMaxSuppression", "boxes", boxes);
     NDValidation.validateNumerical("nonMaxSuppression", "scores", scores);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.NonMaxSuppression(boxes, scores, maxOutSize, iouThreshold, scoreThreshold))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.NonMaxSuppression(boxes, scores, maxOutSize, iouThreshold, scoreThreshold));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -212,7 +322,18 @@ public class NDImage {
   public INDArray pad(INDArray input, INDArray padding, Mode Mode, double padValue) {
     NDValidation.validateNumerical("pad", "input", input);
     NDValidation.validateNumerical("pad", "padding", padding);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.Pad(input, padding, Mode, padValue))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.Pad(input, padding, Mode, padValue));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -225,7 +346,18 @@ public class NDImage {
   public INDArray randomCrop(INDArray input, INDArray shape) {
     NDValidation.validateNumerical("randomCrop", "input", input);
     NDValidation.validateInteger("randomCrop", "shape", shape);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.custom.RandomCrop(input, shape))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.custom.RandomCrop(input, shape));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -241,7 +373,18 @@ public class NDImage {
       boolean alignPixelCenters) {
     NDValidation.validateNumerical("resizeBiCubic", "input", input);
     NDValidation.validateInteger("resizeBiCubic", "size", size);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.ResizeBicubic(input, size, alignCorners, alignPixelCenters))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.ResizeBicubic(input, size, alignCorners, alignPixelCenters));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -257,7 +400,18 @@ public class NDImage {
   public INDArray resizeBiLinear(INDArray input, int height, int width, boolean alignCorners,
       boolean halfPixelCenters) {
     NDValidation.validateNumerical("resizeBiLinear", "input", input);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.ResizeBilinear(input, height, width, alignCorners, halfPixelCenters))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.ResizeBilinear(input, height, width, alignCorners, halfPixelCenters));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -268,7 +422,18 @@ public class NDImage {
    */
   public INDArray rgbToHsv(INDArray input) {
     NDValidation.validateNumerical("rgbToHsv", "input", input);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.custom.RgbToHsv(input))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.custom.RgbToHsv(input));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -279,7 +444,18 @@ public class NDImage {
    */
   public INDArray rgbToYiq(INDArray input) {
     NDValidation.validateNumerical("rgbToYiq", "input", input);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.custom.RgbToYiq(input))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.custom.RgbToYiq(input));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -290,7 +466,18 @@ public class NDImage {
    */
   public INDArray rgbToYuv(INDArray input) {
     NDValidation.validateNumerical("rgbToYuv", "input", input);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.custom.RgbToYuv(input))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.custom.RgbToYuv(input));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -301,7 +488,18 @@ public class NDImage {
    */
   public INDArray yiqToRgb(INDArray input) {
     NDValidation.validateNumerical("yiqToRgb", "input", input);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.custom.YiqToRgb(input))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.custom.YiqToRgb(input));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -312,6 +510,17 @@ public class NDImage {
    */
   public INDArray yuvToRgb(INDArray input) {
     NDValidation.validateNumerical("yuvToRgb", "input", input);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.custom.YuvToRgb(input))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.custom.YuvToRgb(input));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 }

@@ -49,6 +49,8 @@ public abstract class BaseOpContext implements OpContext {
     @Getter
     protected ExecutionMode executionMode = ExecutionMode.UNDEFINED;
 
+    protected volatile boolean closed = false;
+
     @Override
     public void setArgsFrom(CustomOp customOp) {
         setIArguments(customOp.iArgs());
@@ -356,5 +358,13 @@ public abstract class BaseOpContext implements OpContext {
     @Override
     public void transferDArgs() {
 
+    }
+
+    public boolean isClosed() {
+        return closed;
+    }
+
+    protected void setClosed(boolean closed) {
+        this.closed = closed;
     }
 }
