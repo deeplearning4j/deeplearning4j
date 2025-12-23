@@ -64,6 +64,95 @@ public class ModelSerializer {
     public static final String NO_PARAMS_MARKER = "noParams.marker";
     public static final String PREPROCESSOR_BIN = "preprocessor.bin";
 
+    /**
+     * Maximum total decompressed size allowed when loading ZIP files (default: 1GB).
+     * This limit protects against zip bomb attacks where small compressed files
+     * expand to consume all available memory.
+     * Can be overridden via system property "dl4j.model.maxZipSize" (in bytes).
+     */
+    public static final long DEFAULT_MAX_TOTAL_UNCOMPRESSED_SIZE = 1024L * 1024L * 1024L; // 1GB
+
+    /**
+     * Maximum allowed compression ratio (uncompressed/compressed size).
+     * Files with higher ratios are rejected as potential zip bombs.
+     * Default is 100:1. Can be overridden via system property "dl4j.model.maxCompressionRatio".
+     */
+    public static final double DEFAULT_MAX_COMPRESSION_RATIO = 100.0;
+
+    /**
+     * Maximum number of entries allowed in a model ZIP file.
+     * Protects against zip bombs with many small entries.
+     * Can be overridden via system property "dl4j.model.maxZipEntries".
+     */
+    public static final int DEFAULT_MAX_ZIP_ENTRIES = 100;
+
+    private static long maxTotalUncompressedSize = getConfiguredMaxSize();
+    private static double maxCompressionRatio = getConfiguredMaxRatio();
+    private static int maxZipEntries = getConfiguredMaxEntries();
+
+    private static long getConfiguredMaxSize() {
+        String prop = System.getProperty("dl4j.model.maxZipSize");
+        if (prop != null) {
+            try {
+                return Long.parseLong(prop);
+            } catch (NumberFormatException e) {
+                log.warn("Invalid value for dl4j.model.maxZipSize: {}, using default", prop);
+            }
+        }
+        return DEFAULT_MAX_TOTAL_UNCOMPRESSED_SIZE;
+    }
+
+    private static double getConfiguredMaxRatio() {
+        String prop = System.getProperty("dl4j.model.maxCompressionRatio");
+        if (prop != null) {
+            try {
+                return Double.parseDouble(prop);
+            } catch (NumberFormatException e) {
+                log.warn("Invalid value for dl4j.model.maxCompressionRatio: {}, using default", prop);
+            }
+        }
+        return DEFAULT_MAX_COMPRESSION_RATIO;
+    }
+
+    private static int getConfiguredMaxEntries() {
+        String prop = System.getProperty("dl4j.model.maxZipEntries");
+        if (prop != null) {
+            try {
+                return Integer.parseInt(prop);
+            } catch (NumberFormatException e) {
+                log.warn("Invalid value for dl4j.model.maxZipEntries: {}, using default", prop);
+            }
+        }
+        return DEFAULT_MAX_ZIP_ENTRIES;
+    }
+
+    /**
+     * Set the maximum total uncompressed size allowed when loading model ZIP files.
+     * @param maxSize Maximum size in bytes (must be positive)
+     */
+    public static void setMaxTotalUncompressedSize(long maxSize) {
+        Preconditions.checkArgument(maxSize > 0, "Max size must be positive, got %s", maxSize);
+        maxTotalUncompressedSize = maxSize;
+    }
+
+    /**
+     * Set the maximum compression ratio allowed for ZIP entries.
+     * @param maxRatio Maximum ratio (must be >= 1.0)
+     */
+    public static void setMaxCompressionRatio(double maxRatio) {
+        Preconditions.checkArgument(maxRatio >= 1.0, "Max ratio must be >= 1.0, got %s", maxRatio);
+        maxCompressionRatio = maxRatio;
+    }
+
+    /**
+     * Set the maximum number of entries allowed in model ZIP files.
+     * @param maxEntries Maximum entries (must be positive)
+     */
+    public static void setMaxZipEntries(int maxEntries) {
+        Preconditions.checkArgument(maxEntries > 0, "Max entries must be positive, got %s", maxEntries);
+        maxZipEntries = maxEntries;
+    }
+
     private ModelSerializer() {}
 
     /**
@@ -910,29 +999,119 @@ public class ModelSerializer {
     }
 
     private static Map<String, byte[]> loadZipData(InputStream is) throws IOException {
-    	Map<String, byte[]> result = new HashMap<>();
-		try (final ZipInputStream zis = new ZipInputStream(is)) {
-			while (true) {
-				final ZipEntry zipEntry = zis.getNextEntry();
-				if (zipEntry == null)
-					break;
-				if(zipEntry.isDirectory() || zipEntry.getSize() > Integer.MAX_VALUE)
-					throw new IllegalArgumentException();
+        return loadZipData(is, maxTotalUncompressedSize, maxCompressionRatio, maxZipEntries);
+    }
 
-				final int size = (int) (zipEntry.getSize());
-				final byte[] data;
-				if (size >= 0) { // known size
-					data = IOUtils.readFully(zis, size);
-				}
-				else { // unknown size
-					final ByteArrayOutputStream bout = new ByteArrayOutputStream();
-					IOUtils.copy(zis, bout);
-					data = bout.toByteArray();
-				}
-                                result.put(zipEntry.getName(), data);
-			}
-		}
-		return result;
+    /**
+     * Load ZIP data with explicit security limits.
+     * @param is Input stream containing ZIP data
+     * @param maxTotalSize Maximum total uncompressed size in bytes
+     * @param maxRatio Maximum compression ratio allowed
+     * @param maxEntries Maximum number of ZIP entries allowed
+     * @return Map of entry names to their decompressed byte contents
+     * @throws IOException If an I/O error occurs or security limits are exceeded
+     */
+    private static Map<String, byte[]> loadZipData(InputStream is, long maxTotalSize,
+            double maxRatio, int maxEntries) throws IOException {
+        Map<String, byte[]> result = new HashMap<>();
+        long totalBytesRead = 0;
+        int entryCount = 0;
+
+        try (final ZipInputStream zis = new ZipInputStream(is)) {
+            ZipEntry zipEntry;
+            while ((zipEntry = zis.getNextEntry()) != null) {
+                // Check entry count limit
+                entryCount++;
+                if (entryCount > maxEntries) {
+                    throw new IOException("Potential zip bomb detected: too many entries. " +
+                            "Found " + entryCount + " entries, maximum allowed is " + maxEntries + ". " +
+                            "If this is a legitimate model file, increase the limit using " +
+                            "ModelSerializer.setMaxZipEntries() or system property 'dl4j.model.maxZipEntries'");
+                }
+
+                if (zipEntry.isDirectory()) {
+                    continue;
+                }
+
+                String entryName = zipEntry.getName();
+                long compressedSize = zipEntry.getCompressedSize();
+                long uncompressedSize = zipEntry.getSize();
+
+                // Check compression ratio if both sizes are known
+                if (compressedSize > 0 && uncompressedSize > 0) {
+                    double ratio = (double) uncompressedSize / compressedSize;
+                    if (ratio > maxRatio) {
+                        throw new IOException("Potential zip bomb detected: suspicious compression ratio. " +
+                                "Entry '" + entryName + "' has ratio " + String.format("%.1f", ratio) +
+                                ":1 (compressed: " + compressedSize + " bytes, uncompressed: " + uncompressedSize + " bytes). " +
+                                "Maximum allowed ratio is " + String.format("%.1f", maxRatio) + ":1. " +
+                                "If this is a legitimate model file, increase the limit using " +
+                                "ModelSerializer.setMaxCompressionRatio() or system property 'dl4j.model.maxCompressionRatio'");
+                    }
+                }
+
+                // Check if claimed uncompressed size alone would exceed limit
+                if (uncompressedSize > 0 && (totalBytesRead + uncompressedSize) > maxTotalSize) {
+                    throw new IOException("Potential zip bomb detected: total uncompressed size would exceed limit. " +
+                            "Entry '" + entryName + "' claims " + uncompressedSize + " bytes, " +
+                            "which would bring total to " + (totalBytesRead + uncompressedSize) + " bytes. " +
+                            "Maximum allowed is " + maxTotalSize + " bytes (" + (maxTotalSize / (1024 * 1024)) + " MB). " +
+                            "If this is a legitimate model file, increase the limit using " +
+                            "ModelSerializer.setMaxTotalUncompressedSize() or system property 'dl4j.model.maxZipSize'");
+                }
+
+                // Read entry data with actual byte counting (don't trust ZIP headers)
+                byte[] data = readZipEntryWithLimit(zis, entryName, maxTotalSize - totalBytesRead);
+                totalBytesRead += data.length;
+
+                // Verify we haven't exceeded total limit (double-check after actual read)
+                if (totalBytesRead > maxTotalSize) {
+                    throw new IOException("Potential zip bomb detected: total uncompressed size exceeded limit. " +
+                            "Read " + totalBytesRead + " bytes so far, maximum allowed is " + maxTotalSize + " bytes. " +
+                            "If this is a legitimate model file, increase the limit using " +
+                            "ModelSerializer.setMaxTotalUncompressedSize() or system property 'dl4j.model.maxZipSize'");
+                }
+
+                result.put(entryName, data);
+            }
+        }
+
+        log.debug("Successfully loaded ZIP data: {} entries, {} total bytes", entryCount, totalBytesRead);
+        return result;
+    }
+
+    /**
+     * Read a ZIP entry with size limit protection.
+     * This method reads data incrementally and tracks actual bytes read,
+     * rather than trusting the ZIP header's claimed size.
+     */
+    private static byte[] readZipEntryWithLimit(ZipInputStream zis, String entryName, long remainingAllowed)
+            throws IOException {
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        byte[] buffer = new byte[8192];
+        long totalRead = 0;
+        int bytesRead;
+
+        while ((bytesRead = zis.read(buffer)) != -1) {
+            totalRead += bytesRead;
+
+            // Check limit during read, not just at the end
+            if (totalRead > remainingAllowed) {
+                throw new IOException("Potential zip bomb detected while reading entry '" + entryName + "'. " +
+                        "Entry exceeded remaining size allowance of " + remainingAllowed + " bytes. " +
+                        "If this is a legitimate model file, increase the limit using " +
+                        "ModelSerializer.setMaxTotalUncompressedSize() or system property 'dl4j.model.maxZipSize'");
+            }
+
+            // Also check for unreasonably large individual entries
+            if (totalRead > Integer.MAX_VALUE - 8) {
+                throw new IOException("Entry '" + entryName + "' exceeds maximum supported size (2GB)");
+            }
+
+            bout.write(buffer, 0, bytesRead);
+        }
+
+        return bout.toByteArray();
     }
 
 }

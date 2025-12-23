@@ -48,7 +48,7 @@ import org.nd4j.linalg.api.ops.impl.scalar.Pow;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.*;
 import org.nd4j.linalg.api.ops.impl.summarystats.StandardDeviation;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
-import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
+import org.nd4j.linalg.api.ops.impl.transforms.any.Assign;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.*;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.RSqrt;
@@ -716,7 +716,11 @@ public class LegacyOpMapper {
             case 0:
                 return Assign.class;
             case 1:
-                return IsMax.class;
+                return Set.class;
+            case 4:
+                return PowPairwise.class;
+            case 14:
+                return RemainderOp.class;
             default:
                 throw new UnsupportedOperationException("No known transform any op for op number: " + opNum);
         }

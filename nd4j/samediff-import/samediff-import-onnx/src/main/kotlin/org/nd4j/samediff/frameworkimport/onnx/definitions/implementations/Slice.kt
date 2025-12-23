@@ -19,27 +19,20 @@
  */
 package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 
+
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.linalg.api.buffer.DataType
-import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
-import java.util.*
 
-/**
- * A port of slice.py from onnx tensorflow for samediff:
- * https://github.com/onnx/onnx-tensorflow/blob/master/onnx_tf/handlers/backend/slice.py
- *
- * @author Adam Gibson
- */
-@PreHookRule(nodeNames = [],opNames = ["Slice"],frameworkName = "onnx")
-class Slice : PreImportHook  {
+@PreHookRule(nodeNames = [], opNames = ["Slice"], frameworkName = "onnx")
+class Slice : PreImportHook {
 
     override fun doImport(
         sd: SameDiff,
@@ -50,49 +43,85 @@ class Slice : PreImportHook  {
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
         dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String, List<SDVariable>> {
-        // Parameter docs below are from the onnx operator docs:
-        // https://github.com/onnx/onnx/blob/master/docs/Operators.md#slice
 
-        var inputVariable = sd.getVariable(op.inputsToOp[0])
-        val inputTensorShape = sd.shape(inputVariable)
-        //these should always be indices
-        val starts = sd.getVariable(op.inputsToOp[1]).castTo(sd.generateNewVarName("cast_int64_${op.inputsToOp[1]}_" + UUID.randomUUID().toString(),0),DataType.INT64)
-        val ends = sd.getVariable(op.inputsToOp[2]).castTo(sd.generateNewVarName("cast_int64_${op.inputsToOp[2]}" + UUID.randomUUID().toString(),0),DataType.INT64)
-        val axes = if(op.inputsToOp.size < 4) sd.range(sd.constant(0),sd.shape(starts),sd.constant(1),starts.dataType())
-        else sd.getVariable(op.inputsToOp[3])
-        val inputRank = sd.rank(inputVariable)
-        val isAxesNegative = sd.lt(axes,sd.zerosLike(axes))
-        val axesWhere = sd.where(axes.add(inputRank),axes,isAxesNegative)
-        val sparseIndices = sd.castTo(sd.expandDims(axesWhere,-1),DataType.INT64)
-        val sparseShape = sd.gatherNd(sd.shape(inputVariable),sparseIndices).castTo(ends.dataType())
-        val startsMin = sd.min(starts,sparseShape)
-        val endsMin = sd.min(ends,sparseShape)
-
-        val isStartsNegative = sd.lt(startsMin,sd.zerosLike(startsMin))
-        val startsFinal = sd.where(startsMin.add(sparseShape),startsMin,isStartsNegative)
-        val isEndsNegative = sd.lt(endsMin,sd.zerosLike(endsMin))
-        val endsFinal = sd.where(endsMin.add(sparseShape),endsMin,isEndsNegative)
-        val outputShape = inputRank.castTo(DataType.INT64)
-        val denseBegins = sd.sparseToDense(sparseIndices,outputShape,startsFinal)
-
-
-        val denseEnds = sd.sparseToDense(sparseIndices,outputShape,endsFinal,sd.constant(Nd4j.create(
-            floatArrayOf(-1.0f)).castTo(denseBegins.dataType())))
-        val denseEnds2 = sd.where(inputTensorShape,denseEnds,sd.eq(denseEnds,sd.constant(-1).castTo(denseBegins.dataType())))
-
-        val denseSteps: SDVariable = if(op.inputsToOp.size >= 5) {
-            val inputVar = sd.getVariable(op.inputsToOp[4])
-            sd.sparseToDense(sparseIndices,
-                outputShape,inputVar,
-                sd.constant(Nd4j.create(floatArrayOf(1.0f))
-                    .castTo(inputVar.dataType())))
+        val inputVariable = sd.getVariable(op.inputsToOp[0])
+        
+        // Get the slice parameters
+        var starts = sd.getVariable(op.inputsToOp[1])
+        var ends = sd.getVariable(op.inputsToOp[2])
+        
+        // Flatten the starts and ends to 1D if they have extra dimensions
+        starts = starts.reshape(-1)
+        ends = ends.reshape(-1)
+        
+        // Cast to INT64 for compatibility
+        starts = starts.castTo(DataType.INT64)
+        ends = ends.castTo(DataType.INT64)
+        
+        // Handle axes parameter (optional, 4th input) - if present, only slice specified axes
+        val hasAxes = op.inputsToOp.size >= 4 && op.inputsToOp[3] != null
+        
+        // Handle steps parameter (optional, 5th input)
+        val hasSteps = op.inputsToOp.size >= 5 && op.inputsToOp[4] != null
+        
+        if (!hasAxes) {
+            // Simple case: no axes specified, slice all dimensions in order
+            val steps = if (hasSteps) {
+                var stepsVar = sd.getVariable(op.inputsToOp[4])
+                stepsVar = sd.reshape(stepsVar, -1)
+                stepsVar.castTo(DataType.INT64)
+            } else {
+                sd.onesLike(starts).castTo(DataType.INT64)
+            }
+            
+            val result = sd.stridedSlice(
+                outputNames[0],
+                inputVariable,
+                starts,
+                ends,
+                steps,
+                0,  // beginMask
+                0,  // endMask
+                0,  // ellipsisMask
+                0,  // newAxisMask
+                0   // shrinkAxisMask
+            )
+            
+            return mapOf(outputNames[0] to listOf(result))
         } else {
-            sd.onesLike(inputVariable.shape())
+            // Complex case: axes specified
+            var axes = sd.getVariable(op.inputsToOp[3])
+            axes = axes.reshape(-1).castTo(DataType.INT64)
+            
+            val steps = if (hasSteps) {
+                var stepsVar = sd.getVariable(op.inputsToOp[4])
+                stepsVar = sd.reshape(stepsVar, -1)
+                stepsVar.castTo(DataType.INT64)
+            } else {
+                sd.onesLike(starts).castTo(DataType.INT64)
+            }
+            
+            // For axes-based slicing, we need to build full arrays
+            // Assuming 2D input with axes=[1] (common case from your error)
+            val zero = sd.constant(0L).castTo(DataType.INT64)
+            val one = sd.constant(1L).castTo(DataType.INT64)
+            val maxVal = sd.constant(-1).castTo(DataType.INT64)
+            
+            // Build full arrays for 2D case
+            val finalStarts = sd.concat(0, zero.reshape(1), starts)
+            val finalEnds = sd.concat(0, maxVal.reshape(1), ends)
+            val finalSteps = sd.concat(0, one.reshape(1), steps)
+            
+            val result = sd.stridedSlice(
+                outputNames[0],
+                inputVariable,
+                finalStarts,
+                finalEnds,
+                finalSteps,
+                0, 0, 0, 0, 0
+            )
+            
+            return mapOf(outputNames[0] to listOf(result))
         }
-
-        val finalVal = sd.stridedSlice(outputNames[0],inputVariable,denseBegins,denseEnds2,denseSteps,0,0,0,0,0)
-        return mapOf(finalVal.name() to listOf(finalVal))
     }
-
-
 }

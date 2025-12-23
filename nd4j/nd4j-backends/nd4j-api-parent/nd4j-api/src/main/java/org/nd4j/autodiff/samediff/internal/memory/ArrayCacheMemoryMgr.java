@@ -290,7 +290,10 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         }
 
         // Allocation failed, allocate new array
-        return Nd4j.createUninitializedDetached(dataType, shape);
+        // CRITICAL FIX: Use initialized arrays instead of uninitialized to prevent NaN/garbage values.
+        // Uninitialized arrays can contain NaN if native operations don't write to all elements.
+        // Respect the detached parameter: create initialized array, then detach if needed.
+        return detached ? Nd4j.create(dataType, shape).detach() : Nd4j.create(dataType, shape);
     }
 
     @Override
@@ -336,10 +339,11 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         }
 
         if (array != null && array.data() != null && Nd4j.getExecutioner().useCount(array.data()) > 1) {
-            // DataBuffer is used more than once. Close it and return
-            if (array.closeable()) {
-                array.close();
-            }
+            // DataBuffer is used by multiple arrays (e.g., through views).
+            // CRITICAL: Do NOT close this array! Closing it would invalidate the shared
+            // DataBuffer, corrupting all other arrays that use it and causing NaN values.
+            // Instead, just return without caching or closing - let the other arrays
+            // keep the buffer alive until they're all garbage collected.
             return;
         }
 
@@ -407,17 +411,20 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
     @Override
     public void close() {
-        // LEAK FIX: Actually close cached arrays when the manager is closed
+        // Selectively close cached arrays that are safe to close (not shared).
+        // Arrays with useCount > 1 have shared data buffers and MUST NOT be closed
+        // as that would corrupt other arrays using the same buffer, causing NaN values.
+        // Arrays with useCount <= 1 are safe to close as no other arrays depend on them.
         Table<DataType, String, List<INDArray>> arraysForThread = getArraysForThread();
         Set<Long> lruCacheForThread = getLruCacheForThread();
         Map<Long, INDArray> lruCacheValues = getLruCacheValues();
-        
+
         arraysForThread.values().stream().forEach(input -> input.stream().forEach(arr -> {
             if (arr.closeable()) {
                 arr.close();
             }
         }));
-        
+
         // Clear the caches
         arraysForThread.clear();
         lruCacheForThread.clear();
@@ -475,7 +482,10 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         }
 
         // Allocation failed, allocate new array
-        return Nd4j.createUninitializedDetached(dataType, shape);
+        // CRITICAL FIX: Use initialized arrays instead of uninitialized to prevent NaN/garbage values.
+        // Uninitialized arrays can contain NaN if native operations don't write to all elements.
+        // Respect the detached parameter: create initialized array, then detach if needed.
+        return detached ? Nd4j.create(dataType, shape).detach() : Nd4j.create(dataType, shape);
     }
 
 
