@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.nn.layers.convolution;
 
+import lombok.SneakyThrows;
 import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
@@ -53,6 +54,7 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
 
 
     @Override
+    @SneakyThrows
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
         CNN2DFormat format = layerConf().getCnn2dDataFormat();

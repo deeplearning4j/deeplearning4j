@@ -20,13 +20,11 @@
 
 package org.deeplearning4j.nn.layers.convolution;
 
+import lombok.SneakyThrows;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.MaskState;
-import org.deeplearning4j.nn.conf.CNN2DFormat;
-import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.RNNFormat;
-import org.deeplearning4j.nn.conf.layers.Convolution1D;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
@@ -40,8 +38,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv1D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv1DDerivative;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv1DConfig;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode;
-import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
@@ -49,7 +45,6 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
-import java.util.List;
 
 public class Convolution1DLayer extends ConvolutionLayer {
     public Convolution1DLayer(NeuralNetConfiguration conf, DataType dataType) {
@@ -121,6 +116,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
     }
 
     @Override
+    @SneakyThrows
     protected Pair<INDArray, INDArray> preOutput4d(boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
         Pair<INDArray,INDArray> preOutput = super.preOutput(true, forBackprop, workspaceMgr);
         INDArray p3d = preOutput.getFirst();
@@ -181,6 +177,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
 
 
     @Override
+    @SneakyThrows
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray act4d = super.activate(training, workspaceMgr);
         INDArray act3d = act4d.rank() > 3 ?

@@ -147,7 +147,7 @@ public class TFOpLayerImpl extends AbstractLayer<TFOpLayer> {
     }
 
     @Override
-    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr){
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         return runGraph(input);
     }
 
