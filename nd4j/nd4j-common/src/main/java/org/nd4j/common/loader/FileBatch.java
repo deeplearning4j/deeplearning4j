@@ -22,10 +22,12 @@ package org.nd4j.common.loader;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.nd4j.common.config.ND4JSystemProperties;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -34,6 +36,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+@Slf4j
 @AllArgsConstructor
 @Data
 public class FileBatch implements Serializable {
@@ -45,19 +48,19 @@ public class FileBatch implements Serializable {
     /**
      * Maximum total decompressed size allowed when reading FileBatch from ZIP (default: 1GB).
      * This limit protects against zip bomb attacks.
-     * Can be overridden via system property "nd4j.filebatch.maxZipSize" (in bytes).
+     * Can be overridden via system property {@link ND4JSystemProperties#FILEBATCH_MAX_ZIP_SIZE} (in bytes).
      */
     public static final long DEFAULT_MAX_TOTAL_UNCOMPRESSED_SIZE = 1024L * 1024L * 1024L; // 1GB
 
     /**
      * Maximum allowed compression ratio (uncompressed/compressed size).
-     * Default is 100:1. Can be overridden via system property "nd4j.filebatch.maxCompressionRatio".
+     * Default is 100:1. Can be overridden via system property {@link ND4JSystemProperties#FILEBATCH_MAX_COMPRESSION_RATIO}.
      */
     public static final double DEFAULT_MAX_COMPRESSION_RATIO = 100.0;
 
     /**
      * Maximum number of entries allowed in a FileBatch ZIP file.
-     * Can be overridden via system property "nd4j.filebatch.maxZipEntries".
+     * Can be overridden via system property {@link ND4JSystemProperties#FILEBATCH_MAX_ZIP_ENTRIES}.
      */
     public static final int DEFAULT_MAX_ZIP_ENTRIES = 10000;
 
@@ -66,36 +69,36 @@ public class FileBatch implements Serializable {
     private static int maxZipEntries = getConfiguredMaxEntries();
 
     private static long getConfiguredMaxSize() {
-        String prop = System.getProperty("nd4j.filebatch.maxZipSize");
+        String prop = System.getProperty(ND4JSystemProperties.FILEBATCH_MAX_ZIP_SIZE);
         if (prop != null) {
             try {
                 return Long.parseLong(prop);
             } catch (NumberFormatException e) {
-                // Use default
+                log.warn("Invalid value for {}: {}, using default", ND4JSystemProperties.FILEBATCH_MAX_ZIP_SIZE, prop);
             }
         }
         return DEFAULT_MAX_TOTAL_UNCOMPRESSED_SIZE;
     }
 
     private static double getConfiguredMaxRatio() {
-        String prop = System.getProperty("nd4j.filebatch.maxCompressionRatio");
+        String prop = System.getProperty(ND4JSystemProperties.FILEBATCH_MAX_COMPRESSION_RATIO);
         if (prop != null) {
             try {
                 return Double.parseDouble(prop);
             } catch (NumberFormatException e) {
-                // Use default
+                log.warn("Invalid value for {}: {}, using default", ND4JSystemProperties.FILEBATCH_MAX_COMPRESSION_RATIO, prop);
             }
         }
         return DEFAULT_MAX_COMPRESSION_RATIO;
     }
 
     private static int getConfiguredMaxEntries() {
-        String prop = System.getProperty("nd4j.filebatch.maxZipEntries");
+        String prop = System.getProperty(ND4JSystemProperties.FILEBATCH_MAX_ZIP_ENTRIES);
         if (prop != null) {
             try {
                 return Integer.parseInt(prop);
             } catch (NumberFormatException e) {
-                // Use default
+                log.warn("Invalid value for {}: {}, using default", ND4JSystemProperties.FILEBATCH_MAX_ZIP_ENTRIES, prop);
             }
         }
         return DEFAULT_MAX_ZIP_ENTRIES;
@@ -168,7 +171,7 @@ public class FileBatch implements Serializable {
                     throw new IOException("Potential zip bomb detected: too many entries. " +
                             "Found " + entryCount + " entries, maximum allowed is " + maxZipEntries + ". " +
                             "If this is a legitimate FileBatch, increase the limit using " +
-                            "FileBatch.setMaxZipEntries() or system property 'nd4j.filebatch.maxZipEntries'");
+                            "FileBatch.setMaxZipEntries() or system property '" + ND4JSystemProperties.FILEBATCH_MAX_ZIP_ENTRIES + "'");
                 }
 
                 String name = ze.getName();
@@ -184,7 +187,7 @@ public class FileBatch implements Serializable {
                                 ":1 (compressed: " + compressedSize + " bytes, uncompressed: " + uncompressedSize + " bytes). " +
                                 "Maximum allowed ratio is " + String.format("%.1f", maxCompressionRatio) + ":1. " +
                                 "If this is a legitimate FileBatch, increase the limit using " +
-                                "FileBatch.setMaxCompressionRatio() or system property 'nd4j.filebatch.maxCompressionRatio'");
+                                "FileBatch.setMaxCompressionRatio() or system property '" + ND4JSystemProperties.FILEBATCH_MAX_COMPRESSION_RATIO + "'");
                     }
                 }
 
@@ -229,7 +232,7 @@ public class FileBatch implements Serializable {
                 throw new IOException("Potential zip bomb detected while reading entry '" + entryName + "'. " +
                         "Entry exceeded remaining size allowance of " + remainingAllowed + " bytes. " +
                         "If this is a legitimate FileBatch, increase the limit using " +
-                        "FileBatch.setMaxTotalUncompressedSize() or system property 'nd4j.filebatch.maxZipSize'");
+                        "FileBatch.setMaxTotalUncompressedSize() or system property '" + ND4JSystemProperties.FILEBATCH_MAX_ZIP_SIZE + "'");
             }
 
             if (totalRead > Integer.MAX_VALUE) {
