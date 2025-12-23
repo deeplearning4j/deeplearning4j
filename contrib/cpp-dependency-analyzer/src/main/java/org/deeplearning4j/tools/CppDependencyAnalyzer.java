@@ -178,16 +178,16 @@ public class CppDependencyAnalyzer implements Callable<Integer> {
             }
         }
         
-        for (String module : moduleDeps.keySet().stream().sorted().toArray(String[]::new)) {
+        moduleDeps.keySet().stream().sorted().forEach(module -> {
             Set<String> deps = moduleDeps.get(module);
             if (!deps.isEmpty()) {
                 System.out.println(module + " depends on:");
-                for (String dep : deps.stream().sorted().toArray(String[]::new)) {
+                deps.stream().sorted().forEach(dep -> {
                     System.out.println("  -> " + dep);
-                }
+                });
                 System.out.println();
             }
-        }
+        });
         
         // Summary statistics
         System.out.println("\nSUMMARY:");
@@ -200,11 +200,11 @@ public class CppDependencyAnalyzer implements Callable<Integer> {
         }
         
         System.out.println("Modules and file counts:");
-        for (Map.Entry<String, Long> entry : moduleFileCounts.entrySet().stream()
+        moduleFileCounts.entrySet().stream()
                 .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
-                .toArray(Map.Entry[]::new)) {
-            System.out.println("  " + entry.getKey() + ": " + entry.getValue() + " files");
-        }
+                .forEach(entry -> {
+                    System.out.println("  " + entry.getKey() + ": " + entry.getValue() + " files");
+                });
         
         int totalDeps = dependencyCount.values().stream().mapToInt(Integer::intValue).sum();
         System.out.println("\nTotal internal dependencies: " + totalDeps);
