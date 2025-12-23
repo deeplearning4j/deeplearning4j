@@ -43,4 +43,22 @@ public class ArrayUtilTest {
         );
     }
 
+    @Test
+    public void testCalcStridesEmptyShape(){
+        // Empty shape (length 0) should return [1]
+        assertArrayEquals(
+                new long[]{1},
+                ArrayUtil.calcStrides(new long[]{})
+        );
+    }
+
+    @Test
+    public void testCalcStridesSingleElementShape(){
+        // Single-element shape (length 1) should return [1]
+        assertArrayEquals(
+                new long[]{1},
+                ArrayUtil.calcStrides(new long[]{5})
+        );
+    }
+
 }

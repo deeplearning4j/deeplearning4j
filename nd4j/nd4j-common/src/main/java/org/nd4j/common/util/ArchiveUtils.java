@@ -44,6 +44,92 @@ import java.util.zip.ZipInputStream;
 @Slf4j
 public class ArchiveUtils {
 
+    /**
+     * Maximum total decompressed size allowed when extracting archives (default: 10GB).
+     * This limit protects against zip bomb attacks that could exhaust disk space.
+     * Can be overridden via system property "nd4j.archive.maxUncompressedSize" (in bytes).
+     */
+    public static final long DEFAULT_MAX_TOTAL_UNCOMPRESSED_SIZE = 10L * 1024L * 1024L * 1024L; // 10GB
+
+    /**
+     * Maximum allowed compression ratio (uncompressed/compressed size).
+     * Default is 100:1. Can be overridden via system property "nd4j.archive.maxCompressionRatio".
+     */
+    public static final double DEFAULT_MAX_COMPRESSION_RATIO = 100.0;
+
+    /**
+     * Maximum number of entries allowed in an archive.
+     * Can be overridden via system property "nd4j.archive.maxEntries".
+     */
+    public static final int DEFAULT_MAX_ENTRIES = 100000;
+
+    private static long maxTotalUncompressedSize = getConfiguredMaxSize();
+    private static double maxCompressionRatio = getConfiguredMaxRatio();
+    private static int maxEntries = getConfiguredMaxEntries();
+
+    private static long getConfiguredMaxSize() {
+        String prop = System.getProperty("nd4j.archive.maxUncompressedSize");
+        if (prop != null) {
+            try {
+                return Long.parseLong(prop);
+            } catch (NumberFormatException e) {
+                log.warn("Invalid value for nd4j.archive.maxUncompressedSize: {}, using default", prop);
+            }
+        }
+        return DEFAULT_MAX_TOTAL_UNCOMPRESSED_SIZE;
+    }
+
+    private static double getConfiguredMaxRatio() {
+        String prop = System.getProperty("nd4j.archive.maxCompressionRatio");
+        if (prop != null) {
+            try {
+                return Double.parseDouble(prop);
+            } catch (NumberFormatException e) {
+                log.warn("Invalid value for nd4j.archive.maxCompressionRatio: {}, using default", prop);
+            }
+        }
+        return DEFAULT_MAX_COMPRESSION_RATIO;
+    }
+
+    private static int getConfiguredMaxEntries() {
+        String prop = System.getProperty("nd4j.archive.maxEntries");
+        if (prop != null) {
+            try {
+                return Integer.parseInt(prop);
+            } catch (NumberFormatException e) {
+                log.warn("Invalid value for nd4j.archive.maxEntries: {}, using default", prop);
+            }
+        }
+        return DEFAULT_MAX_ENTRIES;
+    }
+
+    /**
+     * Set the maximum total uncompressed size allowed when extracting archives.
+     * @param maxSize Maximum size in bytes (must be positive)
+     */
+    public static void setMaxTotalUncompressedSize(long maxSize) {
+        if (maxSize <= 0) throw new IllegalArgumentException("Max size must be positive, got " + maxSize);
+        maxTotalUncompressedSize = maxSize;
+    }
+
+    /**
+     * Set the maximum compression ratio allowed for archive entries.
+     * @param maxRatio Maximum ratio (must be >= 1.0)
+     */
+    public static void setMaxCompressionRatio(double maxRatio) {
+        if (maxRatio < 1.0) throw new IllegalArgumentException("Max ratio must be >= 1.0, got " + maxRatio);
+        maxCompressionRatio = maxRatio;
+    }
+
+    /**
+     * Set the maximum number of entries allowed in archives.
+     * @param max Maximum entries (must be positive)
+     */
+    public static void setMaxEntries(int max) {
+        if (max <= 0) throw new IllegalArgumentException("Max entries must be positive, got " + max);
+        maxEntries = max;
+    }
+
     protected ArchiveUtils() {
     }
 
@@ -83,11 +169,23 @@ public class ArchiveUtils {
         byte data[] = new byte[BUFFER];
 
         if (file.endsWith(".zip") || file.endsWith(".jar")) {
+            long totalBytesExtracted = 0;
+            int entryCount = 0;
+
             try(ZipInputStream zis = new ZipInputStream(fin)) {
                 //get the zipped file list entry
                 ZipEntry ze = zis.getNextEntry();
 
                 while (ze != null) {
+                    // Check entry count limit
+                    entryCount++;
+                    if (entryCount > maxEntries) {
+                        throw new IOException("Potential zip bomb detected: too many entries. " +
+                                "Found " + entryCount + " entries, maximum allowed is " + maxEntries + ". " +
+                                "If this is a legitimate archive, increase the limit using " +
+                                "ArchiveUtils.setMaxEntries() or system property 'nd4j.archive.maxEntries'");
+                    }
+
                     String fileName = ze.getName();
 
                     String canonicalDestinationDirPath = new File(dest).getCanonicalPath();
@@ -96,7 +194,32 @@ public class ArchiveUtils {
 
                     if (!canonicalDestinationFile.startsWith(canonicalDestinationDirPath + File.separator)) {
                         log.debug("Attempt to unzip entry is outside of the target dir");
-                        throw new IOException("Entry is outside of the target dir: ");
+                        throw new IOException("Entry is outside of the target dir: " + fileName);
+                    }
+
+                    // Check compression ratio if sizes are known
+                    long compressedSize = ze.getCompressedSize();
+                    long uncompressedSize = ze.getSize();
+                    if (compressedSize > 0 && uncompressedSize > 0) {
+                        double ratio = (double) uncompressedSize / compressedSize;
+                        if (ratio > maxCompressionRatio) {
+                            throw new IOException("Potential zip bomb detected: suspicious compression ratio. " +
+                                    "Entry '" + fileName + "' has ratio " + String.format("%.1f", ratio) +
+                                    ":1 (compressed: " + compressedSize + " bytes, uncompressed: " + uncompressedSize + " bytes). " +
+                                    "Maximum allowed ratio is " + String.format("%.1f", maxCompressionRatio) + ":1. " +
+                                    "If this is a legitimate archive, increase the limit using " +
+                                    "ArchiveUtils.setMaxCompressionRatio() or system property 'nd4j.archive.maxCompressionRatio'");
+                        }
+                    }
+
+                    // Check if claimed uncompressed size would exceed limit
+                    if (uncompressedSize > 0 && (totalBytesExtracted + uncompressedSize) > maxTotalUncompressedSize) {
+                        throw new IOException("Potential zip bomb detected: total uncompressed size would exceed limit. " +
+                                "Entry '" + fileName + "' claims " + uncompressedSize + " bytes, " +
+                                "which would bring total to " + (totalBytesExtracted + uncompressedSize) + " bytes. " +
+                                "Maximum allowed is " + maxTotalUncompressedSize + " bytes. " +
+                                "If this is a legitimate archive, increase the limit using " +
+                                "ArchiveUtils.setMaxTotalUncompressedSize() or system property 'nd4j.archive.maxUncompressedSize'");
                     }
 
                     if (ze.isDirectory()) {
@@ -106,14 +229,26 @@ public class ArchiveUtils {
                         continue;
                     }
 
-                    FileOutputStream fos = new FileOutputStream(newFile);
+                    // Extract with size limit protection
+                    try (FileOutputStream fos = new FileOutputStream(newFile)) {
+                        int len;
+                        while ((len = zis.read(data)) > 0) {
+                            totalBytesExtracted += len;
 
-                    int len;
-                    while ((len = zis.read(data)) > 0) {
-                        fos.write(data, 0, len);
+                            // Check limit during extraction
+                            if (totalBytesExtracted > maxTotalUncompressedSize) {
+                                newFile.delete();
+                                throw new IOException("Potential zip bomb detected while extracting entry '" + fileName + "'. " +
+                                        "Total extracted size " + totalBytesExtracted + " bytes exceeded maximum allowed " +
+                                        maxTotalUncompressedSize + " bytes. " +
+                                        "If this is a legitimate archive, increase the limit using " +
+                                        "ArchiveUtils.setMaxTotalUncompressedSize() or system property 'nd4j.archive.maxUncompressedSize'");
+                            }
+
+                            fos.write(data, 0, len);
+                        }
                     }
 
-                    fos.close();
                     ze = zis.getNextEntry();
                     if(logFiles) {
                         log.info("File extracted: " + newFile.getAbsoluteFile());
