@@ -375,7 +375,7 @@ public class OnnxRuntimeRunner implements Closeable {
         // of node (Attention_0) does not match expected type (tensor(float))."
         
         Pattern pattern = Pattern.compile(
-            "Type \\(tensor\\((\\w+)\\)\\) of output arg \\(([^)]+)\\) .* expected type \\(tensor\\((\\w+)\\)\\)"
+            "Type \\(tensor\\((\\w+)\\)\\) of output arg \\(([^)]+)\\) of node \\([^)]*\\) does not match expected type \\(tensor\\((\\w+)\\)\\)\\."
         );
         
         Matcher matcher = pattern.matcher(errorMessage);
