@@ -68,9 +68,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 @Tag(TagNames.SAMEDIFF)
 public class CompareTrainingImplementations extends BaseDL4JTest {
 
-
-
-
     @Test
     @Disabled("Need to look in to comparisons to see how valid this test is")
     public void testCompareMlpTrainingIris() {
