@@ -270,30 +270,30 @@ void hardSigmoidDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArra
 template <typename T>
 static void logSumExp_(NDArray* input, NDArray* axis, NDArray* output) {
   // reduce along axis with
-  NDArray tempInput = input->dup();
-  input->applyTransform(transform::Exp, &tempInput);
+  NDArray *tempInput = input->dup();
+  input->applyTransform(transform::Exp, tempInput);
   std::vector<sd::LongType> axisVector;
   if (axis != nullptr) {
     axisVector.resize(axis->lengthOf());
     for (size_t i = 0; i < axisVector.size(); ++i) axisVector[i] = axis->e<sd::LongType>(i);
   }
-  tempInput.reduceAlongDimension(reduce::Sum, output, &axisVector);
+  tempInput->reduceAlongDimension(reduce::Sum, output, &axisVector);
   output->applyTransform(transform::Log, output);
 }
 
 template <typename T>
 static void logSumExp_(NDArray* input, NDArray* subtrah, NDArray* axis, NDArray* output) {
   // reduce along axis with
-  NDArray tempInput = input->dup();
-  input->applyPairwiseTransform(pairwise::Subtract, subtrah, &tempInput);
-  tempInput.applyTransform(transform::Exp, &tempInput);
+  NDArray *tempInput = input->dup();
+  input->applyPairwiseTransform(pairwise::Subtract, subtrah, tempInput);
+  tempInput->applyTransform(transform::Exp, tempInput);
 
   std::vector<sd::LongType> axisVector;
   if (axis != nullptr) {
     axisVector.resize(axis->lengthOf());
     for (size_t i = 0; i < axisVector.size(); ++i) axisVector[i] = axis->e<sd::LongType>(i);
   }
-  tempInput.reduceAlongDimension(reduce::Sum, output, &axisVector);
+  tempInput->reduceAlongDimension(reduce::Sum, output, &axisVector);
   output->applyTransform(transform::Log, output);
 }
 
@@ -326,10 +326,12 @@ static void weightedCrossEntropyWithLogitsFunctor_(NDArray * targets, NDArray * 
   if (weights->isScalar()) {
     input->applyPairwiseLambda<T>(targets, mainRoutineT1, output);
   } else {
-    std::unique_ptr<NDArray> targetVector(new NDArray(*weights));
-    targetVector->applyScalar(scalar::Add, -1.f, targetVector.get());
-
-    *targets = (*targets * *targets) + T(1.f);
+    weights->applyScalar(scalar::Add, -1.f, weights);
+    auto add = (*targets * *targets);
+    auto addOne = (*add) + T(1.f);
+    *targets = *addOne;
+    delete addOne;
+    delete add;
     input->applyTriplewiseLambda<T>(targets, targets,mainRoutineT2, output);
   }
 }

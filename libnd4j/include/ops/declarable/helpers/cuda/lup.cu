@@ -1010,7 +1010,9 @@ Status cholesky_(LaunchContext *context, NDArray *input, NDArray *output, bool i
   else if (input->dataType() == FLOAT32)
     cholesky__<float>(context, input, output, inplace);
   else {
-    std::vector<sd::LongType> shape = input->getShapeAsVector();
+    auto* shapePtr = input->getShapeAsVector();
+    std::vector<sd::LongType> shape = *shapePtr;
+    delete shapePtr;
     std::unique_ptr<NDArray> tempOutput(NDArrayFactory::create_('c', shape, FLOAT32, context));
     tempOutput->assign(input);
     cholesky__<float>(context, tempOutput.get(), tempOutput.get(), true);
