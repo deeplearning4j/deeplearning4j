@@ -139,20 +139,28 @@ CUSTOM_OP_IMPL(reduce_variance_bp, -1, 1, false, 0, 0) {
   auto grad0Length = gradO->isScalar() || gradO->lengthOf() < 1 ? 1  :  gradO->lengthOf();
   const sd::LongType N = inputLen / grad0Length;
   const sd::LongType NminusOne = biasCorrected ? N - 1 : N;
-  auto mean = input->reduceAlongDimension(reduce::Mean, &dimensions, true);
-  NDArray assign = (*input - mean) * (2.0f / NminusOne);
-  gradI->assign(&assign);  // automatic broadcasting happens here
+  
+  // Break down: (*input - mean) * (2.0f / NminusOne)
+  auto* mean = input->reduceAlongDimension(reduce::Mean, &dimensions, true);
+  auto* inputMinusMean = (*input) - (*mean);
+  delete mean;
+  auto* assign = (*inputMinusMean) * (2.0f / NminusOne);
+  delete inputMinusMean;
+  
+  gradI->assign(assign);  // automatic broadcasting happens here
+  delete assign;
+  
   if (!keepDims) {
     auto gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(gradO->ordering(), &dimensions, *input, true, false, block.getWorkspace());
-    auto grad0Shape =   ShapeUtils::pullShapeFromShapeInfo(gradOShapeKeepDims);
-    auto reshaped = !gradO->isScalar() ? gradO->reshape(gradO->ordering(),grad0Shape) : gradO;  // for example could be something like [a,b] -> [1,a,1,b];
-    *gradI *= *reshaped;  // for example could be something like [a,b] -> [1,a,1,b]
+    auto grad0Shape = ShapeUtils::pullShapeFromShapeInfo(gradOShapeKeepDims);
+    auto* reshaped = !gradO->isScalar() ? gradO->reshape(gradO->ordering(), grad0Shape) : gradO;  // for example could be something like [a,b] -> [1,a,1,b];
+    *gradI *= (*reshaped);  // for example could be something like [a,b] -> [1,a,1,b]
     //reshape can vary and may have the same buffer as the original
     if(reshaped != gradO && reshaped->buffer() != gradO->buffer() && reshaped->specialBuffer() != gradI->specialBuffer())
       delete reshaped;
 
   } else {
-    *gradI *= *gradO;  // automatic broadcasting happens here
+    *gradI *= (*gradO);  // automatic broadcasting happens here
   }
   return sd::Status::OK;
 }

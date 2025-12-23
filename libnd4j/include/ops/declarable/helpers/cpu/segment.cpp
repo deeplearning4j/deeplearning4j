@@ -156,27 +156,28 @@ static void segmentMeanFunctor_(NDArray* input, NDArray* indices, NDArray* outpu
     auto meanT = listOfOutTensors.at(idx);
     int count = 1;
     auto meanV = meanT->dup();
-    meanV.assign(listOfTensors.at(0));
+    meanV->assign(listOfTensors.at(0));
 
     for (sd::LongType i = 1; i < indices->lengthOf(); i++) {
       if (indices->e<sd::LongType>(i) == idx) {
         auto func = PRAGMA_THREADS_FOR {
           for (auto e = start; e < stop; e++) {
-            meanV.p<T>(e, meanV.e<T>(e) + listOfTensors.at(i)->e<T>(e));
+            meanV->p<T>(e, meanV->e<T>(e) + listOfTensors.at(i)->e<T>(e));
           }
         };
         samediff::Threads::parallel_for(func, 0, meanT->lengthOf());
 
         count++;
       } else {
-        meanV.applyScalar(scalar::Divide, count, meanT);
+        meanV->applyScalar(scalar::Divide, count, meanT);
         idx = indices->e<sd::LongType>(i);
         meanT = listOfOutTensors.at(idx);
-        meanV.assign(listOfTensors.at(i));
+        meanV->assign(listOfTensors.at(i));
         count = 1;
       }
-      meanV.applyScalar(scalar::Divide, count, meanT);
+      meanV->applyScalar(scalar::Divide, count, meanT);
     }
+    delete meanV;  // Clean up duped array
   }
 }
 
@@ -304,15 +305,15 @@ bool segmentIndicesValidate(sd::LaunchContext* context, NDArray* indices, NDArra
 }
 
 BUILD_SINGLE_TEMPLATE( void segmentProdFunctor_, (NDArray * input, NDArray* indices, NDArray* output),
-                      SD_NUMERIC_TYPES);
+                       SD_NUMERIC_TYPES);
 BUILD_SINGLE_TEMPLATE( void segmentSumFunctor_, (NDArray * input, NDArray* indices, NDArray* output),
-                      SD_NUMERIC_TYPES);
+                       SD_NUMERIC_TYPES);
 BUILD_SINGLE_TEMPLATE( void segmentMeanFunctor_, (NDArray * input, NDArray* indices, NDArray* output),
-                      SD_NUMERIC_TYPES);
+                       SD_NUMERIC_TYPES);
 BUILD_SINGLE_TEMPLATE( void segmentMinFunctor_, (NDArray * input, NDArray* indices, NDArray* output),
-                      SD_NUMERIC_TYPES);
+                       SD_NUMERIC_TYPES);
 BUILD_SINGLE_TEMPLATE( void segmentMaxFunctor_, (NDArray * input, NDArray* indices, NDArray* output),
-                      SD_NUMERIC_TYPES);
+                       SD_NUMERIC_TYPES);
 // -------------------------------------------------------------------------------------------------------------- //
 // Unsorted segment ops
 // -------------------------------------------------------------------------------------------------------------- //
@@ -382,8 +383,8 @@ void unsortedSegmentMaxFunctor(sd::LaunchContext* context, NDArray* input, NDArr
                         SD_NUMERIC_TYPES);
 }
 BUILD_SINGLE_TEMPLATE( void unsortedSegmentMaxFunctor_,
-                      (NDArray * input, NDArray* indices, sd::LongType numOfClasses, NDArray* output),
-                      SD_NUMERIC_TYPES);
+                       (NDArray * input, NDArray* indices, sd::LongType numOfClasses, NDArray* output),
+                       SD_NUMERIC_TYPES);
 
 template <typename T>
 static void unsortedSegmentMinFunctor_(NDArray* input, NDArray* indices, sd::LongType numOfClasses, NDArray* output) {
@@ -434,8 +435,8 @@ void unsortedSegmentMinFunctor(sd::LaunchContext* context, NDArray* input, NDArr
 }
 
 BUILD_SINGLE_TEMPLATE( void unsortedSegmentMinFunctor_,
-                      (NDArray * input, NDArray* indices, sd::LongType numOfClasses, NDArray* output),
-                      SD_NUMERIC_TYPES);
+                       (NDArray * input, NDArray* indices, sd::LongType numOfClasses, NDArray* output),
+                       SD_NUMERIC_TYPES);
 
 void unsortedSegmentMeanFunctor(sd::LaunchContext* context, NDArray* input, NDArray* indices, sd::LongType numOfClasses,
                                 NDArray* output) {
@@ -553,8 +554,8 @@ void unsortedSegmentProdFunctor(sd::LaunchContext* context, NDArray* input, NDAr
                         SD_NUMERIC_TYPES);
 }
 BUILD_SINGLE_TEMPLATE( void unsortedSegmentProdFunctor_,
-                      (NDArray * input, NDArray* indices, sd::LongType numOfClasses, NDArray* output),
-                      SD_NUMERIC_TYPES);
+                       (NDArray * input, NDArray* indices, sd::LongType numOfClasses, NDArray* output),
+                       SD_NUMERIC_TYPES);
 
 void unsortedSegmentSqrtNFunctor(sd::LaunchContext* context, NDArray* input, NDArray* indices,
                                  sd::LongType numOfClasses, NDArray* output) {
@@ -599,14 +600,14 @@ sd::Status segmentMaxFunctorBP_(sd::LaunchContext* context, NDArray* input, NDAr
                                 NDArray* output) {
   // if input is a vector: (as if in doc sample)
   auto tempRes = gradOut->dup();
-  segmentMaxFunctor_<T>(input, indices, &tempRes);
+  segmentMaxFunctor_<T>(input, indices, tempRes);
   if (input->isVector() || input->isScalar()) {
     sd::LongType loop_size = input->lengthOf();
 
     auto func = PRAGMA_THREADS_FOR {
       for (auto e = start; e < stop; e++) {
         auto classNum = indices->e<sd::LongType>(e);
-        if (sd::math::sd_abs<T,T>(tempRes.e<T>(classNum) - input->e<T>(e)) <= T(1.e-6))
+        if (sd::math::sd_abs<T,T>(tempRes->e<T>(classNum) - input->e<T>(e)) <= T(1.e-6))
           output->p(e, gradOut->e<T>(classNum));
       }
     };
@@ -614,7 +615,7 @@ sd::Status segmentMaxFunctorBP_(sd::LaunchContext* context, NDArray* input, NDAr
   } else {
     std::vector<sd::LongType> zeroVec = {0};
     std::vector<sd::LongType> *restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,zeroVec.data());
-    ResultSet listOfBPTensors = tempRes.allTensorsAlongDimension(*restDims);
+    ResultSet listOfBPTensors = tempRes->allTensorsAlongDimension(*restDims);
 
     ResultSet listOfGradOuts = gradOut->allTensorsAlongDimension(*restDims);
     ResultSet listOfTensors = input->allTensorsAlongDimension(*restDims);
@@ -638,6 +639,7 @@ sd::Status segmentMaxFunctorBP_(sd::LaunchContext* context, NDArray* input, NDAr
 
     samediff::Threads::parallel_tad(func, 0, indices->lengthOf());
   }
+  delete tempRes;  // Clean up duped array
 
   return sd::Status::OK;
 }
@@ -648,20 +650,20 @@ sd::Status segmentMaxFunctorBP(sd::LaunchContext* context, NDArray* input, NDArr
                         SD_NUMERIC_TYPES);
 }
 BUILD_SINGLE_TEMPLATE( sd::Status segmentMaxFunctorBP_,
-                      (sd::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut,
-                          NDArray* output),
-                      SD_NUMERIC_TYPES);
+                       (sd::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut,
+                           NDArray* output),
+                       SD_NUMERIC_TYPES);
 
 // segmen min
 sd::Status segmentMinFunctorBP(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                                NDArray* output) {
-  NDArray tempRes = gradOut->dup();
-  segmentMinFunctor(context, input, indices, &tempRes);
+  NDArray *tempRes = gradOut->dup();
+  segmentMinFunctor(context, input, indices, tempRes);
   if (input->isVector() || input->isScalar()) {
     auto func = PRAGMA_THREADS_FOR {
       for (auto e = start; e < stop; e++) {
         auto classNum = indices->e<sd::LongType>(e);
-        if (sd::math::sd_abs<double,double>(tempRes.e<double>(classNum) - input->e<double>(e)) < 1.e-5)
+        if (sd::math::sd_abs<double,double>(tempRes->e<double>(classNum) - input->e<double>(e)) < 1.e-5)
           output->p(e, gradOut->e<double>(classNum));
       }
     };
@@ -669,7 +671,7 @@ sd::Status segmentMinFunctorBP(sd::LaunchContext* context, NDArray* input, NDArr
   } else {
     std::vector<sd::LongType> zeroVec = {0};
     std::vector<sd::LongType> *restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,zeroVec.data());
-    ResultSet listOfBPTensors = tempRes.allTensorsAlongDimension(*restDims);
+    ResultSet listOfBPTensors = tempRes->allTensorsAlongDimension(*restDims);
     ResultSet listOfGradOuts = gradOut->allTensorsAlongDimension(*restDims);
     ResultSet listOfTensors = input->allTensorsAlongDimension(*restDims);
     ResultSet listOfOutTensors = output->allTensorsAlongDimension(*restDims);
@@ -694,6 +696,7 @@ sd::Status segmentMinFunctorBP(sd::LaunchContext* context, NDArray* input, NDArr
 
     samediff::Threads::parallel_tad(func, 0, indices->lengthOf());
   }
+  delete tempRes;  // Clean up duped array
   return sd::Status::OK;
 }
 
@@ -771,16 +774,16 @@ sd::Status segmentSumFunctorBP(sd::LaunchContext* context, NDArray* input, NDArr
 sd::Status segmentProdFunctorBP(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                                 NDArray* output) {
   auto tempRes = gradOut->dup();
-  segmentProdFunctor(context, input, indices, &tempRes);
+  segmentProdFunctor(context, input, indices, tempRes);
   if (input->isVector() || input->isScalar()) {
     for (sd::LongType e = 0; e < indices->lengthOf(); ++e) {
       sd::LongType classNum = indices->e<sd::LongType>(e);
-      output->p(e, gradOut->e<double>(classNum) * tempRes.e<double>(classNum) / input->e<double>(e));
+      output->p(e, gradOut->e<double>(classNum) * tempRes->e<double>(classNum) / input->e<double>(e));
     }
   } else {
     std::vector<sd::LongType> zeroVec = {0};
     std::vector<sd::LongType> *restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,zeroVec.data());
-    ResultSet listOfBPTensors = tempRes.allTensorsAlongDimension(*restDims);
+    ResultSet listOfBPTensors = tempRes->allTensorsAlongDimension(*restDims);
     ResultSet listOfGradOuts = gradOut->allTensorsAlongDimension(*restDims);
     ResultSet listOfTensors = input->allTensorsAlongDimension(*restDims);
     ResultSet listOfOutTensors = output->allTensorsAlongDimension(*restDims);
@@ -792,11 +795,15 @@ sd::Status segmentProdFunctorBP(sd::LaunchContext* context, NDArray* input, NDAr
       auto currentOut = listOfOutTensors.at(i);
       auto currentGradOut = listOfGradOuts.at(classNum);
       auto currentFFOut = listOfBPTensors.at(classNum);
-      auto assign = (*currentFFOut) * (*currentGradOut) / (*current);
-      currentOut->assign(&assign);
+      auto mul = (*currentFFOut) * (*currentGradOut);
+      auto assign = (*mul) / (*current);
+      currentOut->assign(assign);
+      delete mul;
+      delete assign;
     }
-
+    delete restDims;  // Clean up allocated vector
   }
+  delete tempRes;  // Clean up duped array
 
   return sd::Status::OK;
 }
@@ -811,17 +818,17 @@ static sd::Status unsortedSegmentMaxFunctorBP_(sd::LaunchContext* context, NDArr
   //        int numOfClasses = gradOut->sizeAt(0);
   // if input is a vector: (as if in doc sample)
   auto tempRes = gradOut->dup();
-  unsortedSegmentMaxFunctor(context, input, indices, numOfClasses, &tempRes);
+  unsortedSegmentMaxFunctor(context, input, indices, numOfClasses, tempRes);
   if (input->isVector() || input->isScalar()) {
     for (sd::LongType e = 0; e < input->lengthOf(); ++e) {
       sd::LongType classNum = indices->e<sd::LongType>(e);
-      if (sd::math::sd_abs<double,double>(tempRes.e<double>(classNum) - input->e<double>(e)) < 1.e-5)
+      if (sd::math::sd_abs<double,double>(tempRes->e<double>(classNum) - input->e<double>(e)) < 1.e-5)
         output->p(e, gradOut->e<T>(classNum));
     }
   } else {
     std::vector<sd::LongType> zeroVec = {0};
     std::vector<sd::LongType> *restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,zeroVec.data());
-    ResultSet listOfBPTensors = tempRes.allTensorsAlongDimension(*restDims);
+    ResultSet listOfBPTensors = tempRes->allTensorsAlongDimension(*restDims);
     ResultSet listOfGradOuts = gradOut->allTensorsAlongDimension(*restDims);
     ResultSet listOfTensors = input->allTensorsAlongDimension(*restDims);
     ResultSet listOfOutTensors = output->allTensorsAlongDimension(*restDims);
@@ -839,6 +846,7 @@ static sd::Status unsortedSegmentMaxFunctorBP_(sd::LaunchContext* context, NDArr
 
     delete restDims;
   }
+  delete tempRes;  // Clean up duped array
 
   return sd::Status::OK;
 }
@@ -849,20 +857,20 @@ sd::Status unsortedSegmentMaxFunctorBP(sd::LaunchContext* context, NDArray* inpu
                         (context, input, indices, gradOut, numOfClasses, output), SD_NUMERIC_TYPES);
 }
 BUILD_SINGLE_TEMPLATE( sd::Status unsortedSegmentMaxFunctorBP_,
-                      (sd::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut,
-                          sd::LongType numOfClasses, NDArray* output),
-                      SD_NUMERIC_TYPES);
+                       (sd::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut,
+                           sd::LongType numOfClasses, NDArray* output),
+                       SD_NUMERIC_TYPES);
 
 template <typename T>
 static sd::Status unsortedSegmentMinFunctorBP_(sd::LaunchContext* context, NDArray* input, NDArray* indices,
                                                NDArray* gradOut, sd::LongType numOfClasses, NDArray* output) {
   auto tempRes = gradOut->dup();
-  unsortedSegmentMinFunctor(context, input, indices, numOfClasses, &tempRes);
+  unsortedSegmentMinFunctor(context, input, indices, numOfClasses, tempRes);
   if (input->isVector() || input->isScalar()) {
     auto func = PRAGMA_THREADS_FOR {
       for (auto e = start; e < stop; e++) {
         auto classNum = indices->e<sd::LongType>(e);
-        if (sd::math::sd_abs<T,T>(tempRes.t<T>(classNum) - input->t<T>(e)) < 1.e-6)
+        if (sd::math::sd_abs<T,T>(tempRes->t<T>(classNum) - input->t<T>(e)) < 1.e-6)
           output->r<T>(e) = gradOut->t<T>(classNum);
       }
     };
@@ -871,7 +879,7 @@ static sd::Status unsortedSegmentMinFunctorBP_(sd::LaunchContext* context, NDArr
   } else {
     std::vector<sd::LongType> zeroVec = {0};
     std::vector<sd::LongType> *restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,zeroVec.data());
-    ResultSet listOfBPTensors = tempRes.allTensorsAlongDimension(*restDims);
+    ResultSet listOfBPTensors = tempRes->allTensorsAlongDimension(*restDims);
     ResultSet listOfGradOuts = gradOut->allTensorsAlongDimension(*restDims);
     ResultSet listOfTensors = input->allTensorsAlongDimension(*restDims);
     ResultSet listOfOutTensors = output->allTensorsAlongDimension(*restDims);
@@ -887,8 +895,9 @@ static sd::Status unsortedSegmentMinFunctorBP_(sd::LaunchContext* context, NDArr
           currentOut->r<T>(e) = currentGradOut->t<T>(e);
       }
     }
-
+    delete restDims;  // Clean up allocated vector
   }
+  delete tempRes;  // Clean up duped array
 
   return sd::Status::OK;
 }
@@ -899,9 +908,9 @@ sd::Status unsortedSegmentMinFunctorBP(sd::LaunchContext* context, NDArray* inpu
                         (context, input, indices, gradOut, numOfClasses, output), SD_NUMERIC_TYPES);
 }
 BUILD_SINGLE_TEMPLATE( sd::Status unsortedSegmentMinFunctorBP_,
-                      (sd::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut,
-                          sd::LongType numOfClasses, NDArray* output),
-                      SD_NUMERIC_TYPES);
+                       (sd::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut,
+                           sd::LongType numOfClasses, NDArray* output),
+                       SD_NUMERIC_TYPES);
 
 sd::Status unsortedSegmentMeanFunctorBP(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                                         sd::LongType numOfClasses, NDArray* output) {
@@ -934,7 +943,8 @@ sd::Status unsortedSegmentMeanFunctorBP(sd::LaunchContext* context, NDArray* inp
       NDArray* currentOut = listOfOutTensors.at(i);
       NDArray* currentGradOut = listOfGradOuts.at(classNum);
       auto assign = *currentGradOut / double(classCount[classNum]);
-      currentOut->assign(&assign);
+      currentOut->assign(assign);
+      delete assign;
     }
 
     delete restDims;
@@ -975,12 +985,12 @@ sd::Status unsortedSegmentSumFunctorBP(sd::LaunchContext* context, NDArray* inpu
 sd::Status unsortedSegmentProdFunctorBP(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                                         sd::LongType numOfClasses, NDArray* output) {
   auto tempRes = gradOut->dup();
-  unsortedSegmentProdFunctor(context, input, indices, numOfClasses, &tempRes);
+  unsortedSegmentProdFunctor(context, input, indices, numOfClasses, tempRes);
   if (input->isVector() || input->isScalar()) {
     auto func = PRAGMA_THREADS_FOR {
       for (auto e = start; e < stop; e++) {
         auto classNum = indices->e<sd::LongType>(e);
-        output->p<double>(e, gradOut->e<double>(classNum) * tempRes.e<double>(classNum) / input->e<double>(e));
+        output->p<double>(e, gradOut->e<double>(classNum) * tempRes->e<double>(classNum) / input->e<double>(e));
       }
     };
 
@@ -988,7 +998,7 @@ sd::Status unsortedSegmentProdFunctorBP(sd::LaunchContext* context, NDArray* inp
   } else {
     std::vector<sd::LongType> zeroVec = {0};
     std::vector<sd::LongType> *restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,zeroVec.data());
-    ResultSet listOfBPTensors = tempRes.allTensorsAlongDimension(*restDims);
+    ResultSet listOfBPTensors = tempRes->allTensorsAlongDimension(*restDims);
     ResultSet listOfGradOuts = gradOut->allTensorsAlongDimension(*restDims);
     ResultSet listOfTensors = input->allTensorsAlongDimension(*restDims);
     ResultSet listOfOutTensors = output->allTensorsAlongDimension(*restDims);
@@ -999,11 +1009,15 @@ sd::Status unsortedSegmentProdFunctorBP(sd::LaunchContext* context, NDArray* inp
       auto currentOut = listOfOutTensors.at(i);
       auto currentGradOut = listOfGradOuts.at(classNum);
       auto currentFFOut = listOfBPTensors.at(classNum);
-     auto assign = (*currentFFOut) * (*currentGradOut) / (*current);
-      currentOut->assign(&assign);
+      auto div = (*currentGradOut) / (*current);
+      auto assign = (*currentFFOut) * *div;
+      currentOut->assign(assign);
+      delete div;
+      delete assign;
     }
-
+    delete restDims;  // Clean up allocated vector
   }
+  delete tempRes;  // Clean up duped array
 
   return sd::Status::OK;
 }

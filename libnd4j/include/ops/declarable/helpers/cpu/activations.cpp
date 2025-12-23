@@ -84,10 +84,15 @@ void softmaxDerivative(sd::LaunchContext* context, NDArray& input, NDArray& outp
   } else {
     std::vector<sd::LongType> dimVec = {dimension};
     auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDimension(reduce::Max, &dimVec, true);
-    (input - maxAlongDim).applyTransform(transform::Exp, &output);  // output contains exponents temporarily
+    auto minus = (input - *maxAlongDim);
+     minus->applyTransform(transform::Exp, &output);  // output contains exponents temporarily
     auto sumAlongDim = output.reduceAlongDimension(reduce::Sum, &dimVec, true);
-    output /= sumAlongDim;
-    output *= (1.f - output);  // derivative
+    output /= *sumAlongDim;
+    auto oneMinus = (1.f - output);
+    output *= *oneMinus;  // derivative
+    delete sumAlongDim;
+    delete minus;
+    delete oneMinus;
   }
 }
 
@@ -240,11 +245,14 @@ void logSoftmax(LaunchContext* context, NDArray* input, NDArray* output, const i
   } else {
     std::vector<sd::LongType> dimVector = {dimension};
     auto maxAlongDim = input->reduceAlongDimension(reduce::Max, &dimVector, true);
-    auto maxMinusDim = *input - maxAlongDim;
-    maxMinusDim.applyTransform(transform::Exp, output);  // output contains exponents temporarily
+    auto maxMinusDim = *input - *maxAlongDim;
+    maxMinusDim->applyTransform(transform::Exp, output);  // output contains exponents temporarily
     auto sumAlongDim = output->reduceAlongDimension(reduce::Sum, &dimVector, true);
-    *output /= sumAlongDim;
+    *output /= *sumAlongDim;
     output->applyTransform(transform::Log, output);
+    delete maxAlongDim;
+    delete maxMinusDim;
+    delete sumAlongDim;
   }
 }
 

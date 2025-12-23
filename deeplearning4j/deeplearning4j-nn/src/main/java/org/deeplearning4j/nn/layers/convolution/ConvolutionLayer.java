@@ -23,8 +23,8 @@ package org.deeplearning4j.nn.layers.convolution;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -32,26 +32,17 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.util.ConvolutionUtils;
-import org.nd4j.common.util.ArrayUtil;
-import org.nd4j.enums.WeightsFormat;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.OpContext;
-import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2DDerivative;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
-import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.convolution.Convolution;
-import org.nd4j.linalg.exception.ND4JArraySizeException;
-import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
-
-import java.util.Arrays;
 
 
 @Slf4j
@@ -179,7 +170,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
      * non-4d preOutput method, while overriding this to return 4d activations (for use in backprop) without modifying
      * the public API
      */
-    protected Pair<INDArray, INDArray> preOutput4d(boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
+    @SneakyThrows
+    protected Pair<INDArray, INDArray> preOutput4d(boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) throws Exception {
         return preOutput(training, forBackprop, workspaceMgr);
     }
 
@@ -235,7 +227,11 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         } finally {
             // CRITICAL: Close OpContext to prevent native memory leak
             Nd4j.getExecutioner().clearOpContext();
-            ctx.close();
+            try {
+                ctx.close();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
         long outH = im2col.size(-1);
         long outW = im2col.size(-2);

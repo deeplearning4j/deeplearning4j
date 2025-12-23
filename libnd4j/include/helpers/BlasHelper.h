@@ -26,10 +26,13 @@
 // work around conflict with OpenBLAS
 struct bfloat16;
 #define BFLOAT16 BFLOAT16
-
-#include <cblas.h>
+#if !SD_CUDA
+#include <blas/cblas.h>
+#endif
 #include <helpers/logger.h>
 #include <types/float16.h>
+#include <mutex>
+#include <atomic>
 
 #ifdef _WIN32
 #define CUBLASWINAPI __stdcall
@@ -75,6 +78,7 @@ typedef enum {
   CUDA_C_32U = 13  /* complex as a pair of unsigned int numbers */
 } cublasDataType_t;
 
+#if !defined(SD_CUDA)
 typedef void (*CblasSgemv)(CBLAS_ORDER Layout, CBLAS_TRANSPOSE TransA, int M, int N, float alpha, float *A, int lda,
                            float *X, int incX, float beta, float *Y, int incY);
 
@@ -96,7 +100,7 @@ typedef void (*CblasDgemmBatch)(CBLAS_ORDER Layout, CBLAS_TRANSPOSE *TransA_Arra
                                 int *M_Array, int *N_Array, int *K_Array, double *alpha_Array, double **A_Array,
                                 int *lda_Array, double **B_Array, int *ldb_Array, double *beta_Array, double **C_Array,
                                 int *ldc_Array, int group_count, int *group_size);
-
+#endif
 #ifdef LAPACK_ROW_MAJOR
 #undef LAPACK_ROW_MAJOR
 #endif
@@ -117,6 +121,7 @@ typedef int (*LapackeSgesdd)(LAPACK_LAYOUT matrix_layout, char jobz, int m, int 
 typedef int (*LapackeDgesdd)(LAPACK_LAYOUT matrix_layout, char jobz, int m, int n, double *a, int lda, double *s,
                              double *u, int ldu, double *vt, int ldvt);
 
+#if defined(SD_CUDA)
 typedef cublasStatus_t(CUBLASWINAPI *CublasSgemv)(cublasHandle_t handle, cublasOperation_t trans, int m, int n,
                                                   float *alpha, /* host or device pointer */
                                                   float *A, int lda, float *x, int incx,
@@ -214,7 +219,7 @@ typedef cusolverStatus_t(CUSOLVERAPI *CusolverDnDgesvd)(cusolverDnHandle_t handl
                                                         int m, int n, double *A, int lda, double *S, double *U, int ldu,
                                                         double *VT, int ldvt, double *work, int lwork, double *rwork,
                                                         int *info);
-
+#endif
 enum BlasFunctions {
   GEMV = 0,
   GEMM = 1,
@@ -222,6 +227,9 @@ enum BlasFunctions {
 
 class BlasHelper {
  private:
+  // Private constructor for singleton pattern
+  BlasHelper();
+
   bool _hasHgemv = false;
   bool _hasHgemm = false;
   bool _hasHgemmBatch = false;
@@ -234,6 +242,17 @@ class BlasHelper {
   bool _hasDgemm = false;
   bool _hasDgemmBatch = false;
 
+  // Mutex for serializing BLAS calls to prevent OpenBLAS TLS corruption
+  // and race conditions when called from multiple threads concurrently
+  mutable std::mutex _blasMutex;
+
+  // Controls whether BLAS calls are serialized (default: true for safety)
+  // Can be disabled via SD_BLAS_SERIALIZE=0 for testing or if using a thread-safe BLAS
+  std::atomic<bool> _serializeBlasCalls{true};
+
+  // Number of threads OpenBLAS should use (0 = use OpenBLAS default)
+  std::atomic<int> _openblasThreads{0};
+#if !defined(SD_CUDA)
   CblasSgemv cblasSgemv;
   CblasDgemv cblasDgemv;
   CblasSgemm cblasSgemm;
@@ -244,7 +263,9 @@ class BlasHelper {
   LapackeDgesvd lapackeDgesvd;
   LapackeSgesdd lapackeSgesdd;
   LapackeDgesdd lapackeDgesdd;
+#endif
 
+#if defined(SD_CUDA)
   CublasSgemv cublasSgemv;
   CublasDgemv cublasDgemv;
   CublasHgemm cublasHgemm;
@@ -258,6 +279,7 @@ class BlasHelper {
   CusolverDnDgesvdBufferSize cusolverDnDgesvdBufferSize;
   CusolverDnSgesvd cusolverDnSgesvd;
   CusolverDnDgesvd cusolverDnDgesvd;
+#endif
 
  public:
   static BlasHelper &getInstance();
@@ -276,7 +298,7 @@ class BlasHelper {
 
   template <typename T>
   bool hasBatchedGEMM();
-
+#if !defined(SD_CUDA)
   CblasSgemv sgemv();
   CblasDgemv dgemv();
 
@@ -291,6 +313,51 @@ class BlasHelper {
 
   LapackeSgesdd sgesdd();
   LapackeDgesdd dgesdd();
+#endif
+
+  // BLAS call serialization methods to prevent OpenBLAS TLS corruption
+  // and race conditions in multi-threaded environments
+
+  /**
+   * Returns a lock guard that serializes BLAS calls.
+   * Use this before making any BLAS call to prevent concurrent access.
+   * Example:
+   *   auto lock = BlasHelper::getInstance().lockBlas();
+   *   sgemm()(...);
+   */
+  std::unique_lock<std::mutex> lockBlas() const;
+
+  /**
+   * Check if BLAS call serialization is enabled.
+   * Default is true for safety with OpenBLAS.
+   */
+  bool isSerializeBlasCalls() const;
+
+  /**
+   * Enable or disable BLAS call serialization.
+   * Disable only if using a thread-safe BLAS implementation (e.g., MKL).
+   */
+  void setSerializeBlasCalls(bool serialize);
+
+  /**
+   * Get the configured number of OpenBLAS threads.
+   * Returns 0 if using OpenBLAS default.
+   */
+  int getOpenblasThreads() const;
+
+  /**
+   * Set the number of threads OpenBLAS should use.
+   * Set to 0 to use OpenBLAS default, or a specific number for control.
+   * This is applied when BLAS is initialized.
+   */
+  void setOpenblasThreads(int threads);
+
+  /**
+   * Initialize OpenBLAS thread settings from environment variables.
+   * Checks SD_OPENBLAS_THREADS and SD_BLAS_SERIALIZE.
+   * Called automatically during getInstance() initialization.
+   */
+  void initializeBlasThreading();
 
   // destructor
   ~BlasHelper() noexcept;

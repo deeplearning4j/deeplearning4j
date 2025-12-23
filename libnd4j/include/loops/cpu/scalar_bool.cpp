@@ -79,8 +79,8 @@ void ScalarBoolTransform<X, Z>::transform(const void *vx, const sd::LongType *xS
   }
 }
 
-template <typename X, typename Y>
-void ScalarBoolTransform<X, Y>::transform(int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams,
+template <typename X, typename Z>
+void ScalarBoolTransform<X, Z>::transform(int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams,
                                           void *z, const sd::LongType *zShapeInfo, const void *scalars,
                                           sd::LongType *dimension,
                                           sd::LongType dimensionLength, const sd::LongType *xTadShapeInfo,
@@ -92,8 +92,8 @@ void ScalarBoolTransform<X, Y>::transform(int opNum, const void *x, const sd::Lo
                        SCALAR_BOOL_OPS);
 }
 
-template <typename X, typename Y>
-void ScalarBoolTransform<X, Y>::transform(const int opNum, const void *x, const sd::LongType *xShapeInfo, void *z,
+template <typename X, typename Z>
+void ScalarBoolTransform<X, Z>::transform(const int opNum, const void *x, const sd::LongType *xShapeInfo, void *z,
                                           const sd::LongType *zShapeInfo, const void *scalar, void *extraParams,
                                           const sd::LongType start, const sd::LongType stop) {
   DISPATCH_BY_OPNUM_TT(transform, PARAMS(x, xShapeInfo, z, zShapeInfo, scalar, extraParams, start, stop),

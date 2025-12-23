@@ -40,7 +40,6 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.DivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.SubOp;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.common.primitives.Pair;

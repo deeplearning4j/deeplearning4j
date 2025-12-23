@@ -57,10 +57,24 @@ CONFIGURABLE_OP_IMPL(adjust_hue, 1, 1, true, 0, 0) {
     delta = INPUT_VARIABLE(1);
   else {
     delta = new NDArray(output->dataType(), block.launchContext());
-    delta->p(0, T_ARG(0));
+#ifdef HAS_DOUBLE
+    delta->p(0, static_cast<double>(T_ARG(0)));
+#elif defined(HAS_FLOAT32)
+    delta->p(0, static_cast<float>(T_ARG(0)));
+#else
+#error "No floating-point type available for adjust_hue operation"
+#endif
   }
 
-  REQUIRE_TRUE(-1. <= delta->e<double>(0) && delta->e<double>(0) <= 1., 0,
+#ifdef HAS_DOUBLE
+  auto deltaVal = delta->e<double>(0);
+#elif defined(HAS_FLOAT32)
+  auto deltaVal = delta->e<float>(0);
+#else
+#error "No floating-point type available for adjust_hue operation"
+#endif
+
+  REQUIRE_TRUE(-1. <= deltaVal && deltaVal <= 1., 0,
                "ADJUST_HUE: parameter delta must be within [-1, 1] interval, but got %f instead", delta);
 
   helpers::adjustHue(block.launchContext(), input, delta, output, dimC);

@@ -42,8 +42,12 @@ CUSTOM_OP_IMPL(permute, 1, 1, true, 0, -2) {
   }
 
   if (block.width() == 1 && block.getIArguments()->size() == 0) {
-    NDArray t = x->transpose();
-    z->assign(&t);
+    NDArray *t = x->transpose();
+    z->assign(t);
+    // FIXED: transpose() returns a view - only delete if not a view
+    if (t != nullptr && !t->isView()) {
+      delete t;
+    }
     return Status::OK;
   }
 
@@ -53,7 +57,7 @@ CUSTOM_OP_IMPL(permute, 1, 1, true, 0, -2) {
   }
   REQUIRE_TRUE(permutationVector.size() == static_cast<size_t>(x->rankOf()),permutationVector.size(),"PERMUTE OP: number of permutations is less in size than input rank.");
 
-  z->assign(&x->permute(permutationVector, false, false));
+  z->assign(x->permute(permutationVector, false, false));
 
   return Status::OK;
 }

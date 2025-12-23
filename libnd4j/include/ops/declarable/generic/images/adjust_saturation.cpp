@@ -57,7 +57,13 @@ CONFIGURABLE_OP_IMPL(adjust_saturation, 1, 1, true, 0, 0) {
     factor = INPUT_VARIABLE(1);
   else {
     factor = new NDArray(output->dataType(), block.launchContext());
-    factor->p(0, T_ARG(0));
+#ifdef HAS_DOUBLE
+    factor->p(0, static_cast<double>(T_ARG(0)));
+#elif defined(HAS_FLOAT32)
+    factor->p(0, static_cast<float>(T_ARG(0)));
+#else
+#error "No floating-point type available for adjust_saturation operation"
+#endif
   }
 
   helpers::adjustSaturation(block.launchContext(), input, factor, output, dimC);

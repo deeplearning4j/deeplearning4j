@@ -563,34 +563,49 @@ static void execDefault(const X *x, const sd::LongType *xShapeInfo, const X *y, 
   // C-style arrays CANNOT be captured by value in lambdas - they decay to pointers
   // that point to stack memory. std::array CAN be captured by value, ensuring each
   // parallel thread gets its own copy of the data with guaranteed lifetime.
+  std::array<sd::LongType, SD_MAX_RANK> xShapeLocal;
   std::array<sd::LongType, SD_MAX_RANK> xStrideLocal;
+  std::array<sd::LongType, SD_MAX_RANK> yShapeLocal;
   std::array<sd::LongType, SD_MAX_RANK> yStrideLocal;
   std::array<sd::LongType, SD_MAX_RANK> zStrideLocal;
   std::array<sd::LongType, SD_MAX_RANK> zShapeLocal;
 
+  std::memcpy(xShapeLocal.data(), shape::shapeOf(xShapeInfo), xRank * sizeof(sd::LongType));
   std::memcpy(xStrideLocal.data(), shape::stride(xShapeInfo), xRank * sizeof(sd::LongType));
+  std::memcpy(yShapeLocal.data(), shape::shapeOf(yShapeInfo), yRank * sizeof(sd::LongType));
   std::memcpy(yStrideLocal.data(), shape::stride(yShapeInfo), yRank * sizeof(sd::LongType));
   std::memcpy(zStrideLocal.data(), shape::stride(zShapeInfo), zRank * sizeof(sd::LongType));
   std::memcpy(zShapeLocal.data(), shape::shapeOf(zShapeInfo), zRank * sizeof(sd::LongType));
 
   auto func = PRAGMA_THREADS_FOR {
-    sd::LongType coords[SD_MAX_RANK];
+    sd::LongType zCoords[SD_MAX_RANK];
+    sd::LongType xCoords[SD_MAX_RANK];
+    sd::LongType yCoords[SD_MAX_RANK];
     sd::LongType xOffset, yOffset, zOffset;
 
     for (auto i = start; i < stop; ++i) {
-      INDEX2COORDS(i, zRank, zShapeLocal.data(), coords);
-      COORDS2INDEX(zRank, zStrideLocal.data(), coords, zOffset);
+      // Convert linear index to coordinates based on Z (output) shape
+      INDEX2COORDS(i, zRank, zShapeLocal.data(), zCoords);
+      COORDS2INDEX(zRank, zStrideLocal.data(), zCoords, zOffset);
 
       if (xzSameOffsets) {
         xOffset = zOffset;
       } else {
-        COORDS2INDEX(xRank, xStrideLocal.data(), coords, xOffset);
+        // Broadcast Z coordinates to X shape
+        for (sd::LongType d = 0; d < xRank; d++) {
+          xCoords[d] = xShapeLocal[d] == 1 ? 0 : (zCoords[d] % xShapeLocal[d]);
+        }
+        COORDS2INDEX(xRank, xStrideLocal.data(), xCoords, xOffset);
       }
 
       if (yzSameOffsets) {
         yOffset = zOffset;
       } else {
-        COORDS2INDEX(yRank, yStrideLocal.data(), coords, yOffset);
+        // Broadcast Z coordinates to Y shape
+        for (sd::LongType d = 0; d < yRank; d++) {
+          yCoords[d] = yShapeLocal[d] == 1 ? 0 : (zCoords[d] % yShapeLocal[d]);
+        }
+        COORDS2INDEX(yRank, yStrideLocal.data(), yCoords, yOffset);
       }
       z[zOffset] = OpType::op(x[xOffset], y[yOffset]);
     }
