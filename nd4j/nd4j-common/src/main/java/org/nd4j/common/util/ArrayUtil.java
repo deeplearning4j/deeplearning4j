@@ -2785,6 +2785,11 @@ public class ArrayUtil {
      * @return the strides for a matrix of n dimensions
      */
     public static int[] calcStridesFortran(int[] shape, int startNum) {
+        if(shape.length <= 1) {
+            return new int[]{1};
+        }
+
+
         if (shape.length == 2 && (shape[0] == 1 || shape[1] == 1)) {
             int[] ret = new int[2];
             Arrays.fill(ret, startNum);
@@ -2975,6 +2980,9 @@ public class ArrayUtil {
     }
 
     public static long[] calcStrides(long[] shape) {
+        if(shape.length <= 1) {
+            return new long[]{1};
+        }
         return calcStrides(shape, 1);
     }
 
