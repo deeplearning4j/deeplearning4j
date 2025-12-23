@@ -346,11 +346,7 @@ public class DeallocatorService {
             boolean canRun = true;
             while (canRun) {
                 while(blockDeallocator.get()) {
-                    // Use a short sleep (1ms) instead of 1000ms to avoid massive memory buildup
-                    // During profiling, ops block deallocation briefly (milliseconds) but if the
-                    // deallocator sleeps for 1 second, it misses the unblock window and memory
-                    // accumulates rapidly. With thousands of ops per second, this causes OOM.
-                    Thread.sleep(1);
+                    Thread.sleep(1000);
                 }
                 // if periodicGc is enabled, only first thread will call for it
                 if (threadIdx == 0 && Nd4j.getMemoryManager().getAutoGcWindow() > 0) {
@@ -366,18 +362,16 @@ public class DeallocatorService {
                     } else {
                         // invoking deallocator
                         if (reference != null) {
-                            if(listeners.isEmpty()) {
+                            if(!listeners.isEmpty()) {
+                                // Has listeners, delegate to them for custom deallocation timing
+                                for(CustomDeallocatorListener listener : listeners)
+                                    listener.addForDeallocation(reference);
+                            } else {
                                 // No listeners, deallocate directly
                                 reference.deallocate();
                                 if(referenceMap.containsKey(reference.getId()))
                                     referenceMap.remove(reference.getId());
-                            } else {
-                                // Delegate to listeners for custom deallocation timing
-                                for(CustomDeallocatorListener listener : listeners)
-                                    listener.addForDeallocation(reference);
                             }
-
-
                         }
                     }
                 } else {
@@ -386,15 +380,15 @@ public class DeallocatorService {
                         if (reference == null)
                             continue;
 
-                        if(listeners.isEmpty()) {
+                        if(!listeners.isEmpty()) {
+                            // Has listeners, delegate to them for custom deallocation timing
+                            for(CustomDeallocatorListener listener : listeners)
+                                listener.addForDeallocation(reference);
+                        } else {
                             // No listeners, deallocate directly
                             reference.deallocate();
                             if(referenceMap.containsKey(reference.getId()))
                                 referenceMap.remove(reference.getId());
-                        } else {
-                            // Delegate to listeners for custom deallocation timing
-                            for(CustomDeallocatorListener listener : listeners)
-                                listener.addForDeallocation(reference);
                         }
 
                     } catch (InterruptedException e) {
