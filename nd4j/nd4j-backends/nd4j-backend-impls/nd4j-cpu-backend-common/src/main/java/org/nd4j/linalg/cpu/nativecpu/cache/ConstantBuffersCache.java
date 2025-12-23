@@ -119,7 +119,7 @@ public class ConstantBuffersCache extends BasicConstantHandler {
                 buffersCache.put(descriptor, buffer);
 
                 bytes.addAndGet(array.length * Nd4j.sizeOfDataType(DataType.FLOAT));
-                AllocationsTracker.getInstance().markAllocated(AllocationKind.CONSTANT, 0, array.length * Nd4j.sizeOfDataType(DataType.FLOAT));
+                AllocationsTracker.getInstance().markAllocated(AllocationKind.CONSTANT, 0, array.length * Nd4j.sizeOfDataType(dataType));
             }
             return buffer;
         }
