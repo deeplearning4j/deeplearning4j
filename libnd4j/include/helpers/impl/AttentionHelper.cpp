@@ -343,6 +343,12 @@ void AttentionHelper::attentionHelper(NDArray *query, NDArray *key, double scale
   if(scale != 0.0 && scale != 1.0) {
     *attentionLogits *= scale;
   }
+
+  // Clamp attention logits to prevent numerical overflow in subsequent softmax
+  // Values beyond this range would produce Inf in exp() which leads to NaN
+  // Use clipbyvalue op for proper clamping
+  ops::clipbyvalue clipOp;
+  clipOp.execute({attentionLogits}, {attentionLogits}, {-1e4, 1e4}, {});
 }
 
 

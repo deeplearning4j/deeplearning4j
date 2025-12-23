@@ -505,21 +505,24 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
   NDArray *yT = const_cast<NDArray *>(y);
   NDArray *zT = z;
 
+  // Handle transpose via permute + dup for contiguous data
+  // permute creates a view with swapped strides, dup() makes a contiguous copy
   if ((transX && xRank > 1) || (transY && yRank > 1)) {
     const int rank = xRank >= yRank ? xRank : yRank;
-    std::vector<LongType> permute(rank);
-    for (int i = 0; i < rank - 2; ++i) permute[i] = i;
-    permute[rank - 2] = rank - 1;
-    permute[rank - 1] = rank - 2;
+    std::vector<LongType> permut(rank);
+    for (int i = 0; i < rank - 2; ++i) permut[i] = i;
+    permut[rank - 2] = rank - 1;
+    permut[rank - 1] = rank - 2;
 
-    // OPTIMIZATION: Use reshape instead of dup+reshape to avoid unnecessary copy
     if (transX) {
-      NDArray *permuted = x->permute(permute, false, false);
-      xT = permuted;
+      NDArray *permutedView = x->permute(permut, false, false);  // Create view (non-contiguous)
+      xT = permutedView->dup();  // Make contiguous copy with proper data layout
+      delete permutedView;
     }
     if (transY) {
-      NDArray *yPermuted = y->permute(permute, false, false);
-      yT = yPermuted;
+      NDArray *permutedView = y->permute(permut, false, false);  // Create view (non-contiguous)
+      yT = permutedView->dup();  // Make contiguous copy with proper data layout
+      delete permutedView;
     }
   }
 
@@ -567,76 +570,34 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
     }
 
   } else {
-    // rest cases - batched mmul
-    const int batchRank = xRank - 2;
-    std::vector<LongType> dimsToExclude;
-    for (int i = 0; i < batchRank; ++i) {
-      dimsToExclude.push_back(i);
-    }
+    // Batched matmul: loop over batch dimensions and call 2D gemm for each slice
+    // This is more reliable than mmulNxN which has bugs in batch index calculation
 
-    const LongType numOfSubArrs = ShapeUtils::getNumOfSubArrs(xT->shapeInfo(), dimsToExclude);
+    // For 3D arrays [batch, M, K] x [batch, K, N] = [batch, M, N]
+    // We iterate over batch dimension and call 2D mmul for each slice
+    const int xRankT = xT->rankOf();
+    const int yRankT = yT->rankOf();
+    const int zRankT = zT->rankOf();
 
-    std::vector<NDArray*> vA(numOfSubArrs);
-    std::vector<NDArray*> vB(numOfSubArrs);
-    std::vector<NDArray*> vC(numOfSubArrs);
+    if (xRankT == 3 && yRankT == 3 && zRankT == 3) {
+      // Simple case: all 3D with matching batch dimension
+      const LongType batchSize = xT->sizeAt(0);
+      const LongType M = xT->sizeAt(1);
+      const LongType K = xT->sizeAt(2);
+      const LongType N = yT->sizeAt(2);
 
-    for (LongType i = 0; i < numOfSubArrs; ++i) {
-      vA[i] = (*xT)(i, dimsToExclude);
-      vB[i] = (*yT)(i, dimsToExclude);
-      vC[i] = (*zT)(i, dimsToExclude);
-    }
+      for (LongType b = 0; b < batchSize; ++b) {
+        // Get 2D slices for this batch using subarray
+        auto xSlice = (*xT)(b, {0});  // [M, K]
+        auto ySlice = (*yT)(b, {0});  // [K, N]
+        auto zSlice = (*zT)(b, {0});  // [M, N]
 
-    NDArray *alphaArr = NDArrayFactory::create<double>('c', {0}, {alpha});
-    NDArray *betaArr = NDArrayFactory::create<double>('c', {0}, {beta});
-
-    int M = vA[0]->sizeAt(0);
-    int N = vB[0]->sizeAt(1);
-    int K = vA[0]->sizeAt(1);
-    int lda = vA[0]->sizeAt(0);
-    int ldb = vB[0]->sizeAt(0);
-    int ldc = vC[0]->sizeAt(0);
-
-    bool transXResolve = transX == 1;
-    bool transYResolve = transY == 1;
-    if(!resolveTranspose(*vA[0], *vB[0], transXResolve, transYResolve)) {
-      // Build error message before cleanup (uses vA/vB/vC)
-      std::string errorMessage;
-      errorMessage = "NDArrayFactory::matmul static method: batch dimensions do not match";
-      errorMessage += "x shape: ";
-      errorMessage += ShapeUtils::shapeAsString(vA[0]).c_str();
-      errorMessage += " y shape: ";
-      errorMessage += ShapeUtils::shapeAsString(vB[0]).c_str();
-      errorMessage += " ! \n";
-      errorMessage += "z shape: ";
-      errorMessage += ShapeUtils::shapeAsString(vC[0]).c_str();
-
-      // CRITICAL: Clean up allocated arrays before throwing exception to prevent memory leaks
-      delete alphaArr;
-      delete betaArr;
-      for (LongType i = 0; i < numOfSubArrs; ++i) {
-        delete vA[i];
-        delete vB[i];
-        delete vC[i];
+        // Call 2D matmul - no transpose flags since we already handled them via permute+dup
+        mmul(xSlice, ySlice, zSlice, alpha, beta);
       }
-      // Clean up permuted arrays
-      if (xT != x && xT != nullptr) delete xT;
-      if (yT != y && yT != nullptr) delete yT;
-
-      THROW_EXCEPTION(errorMessage.c_str());
-    }
-
-    // Use correct CBLAS transpose constants: 111=CblasNoTrans, 112=CblasTrans
-    // Passing 0/1 instead causes "illegal value" errors in SGEMM_BATCH which produce NaN outputs
-    int transABlas = transXResolve ? 112 : 111;
-    int transBBlas = transYResolve ? 112 : 111;
-    ops::helpers::bgemm(vA, vB, vC, alphaArr, betaArr, transABlas, transBBlas, M, N, K, lda, ldb, ldc);
-    delete alphaArr;
-    delete betaArr;
-
-    for (LongType i = 0; i < numOfSubArrs; ++i) {
-      delete vA[i];
-      delete vB[i];
-      delete vC[i];
+    } else {
+      // Fall back to mmulNxN for other cases (4D+, mixed ranks, etc.)
+      mmulNxN(xT, yT, zT, alpha, beta, z->ordering());
     }
   }
 

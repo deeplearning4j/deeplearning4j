@@ -31,9 +31,9 @@ namespace helpers {
 
 class HHcolPivQR {
  public:
-  NDArray _qr;
-  NDArray _coeffs;
-  NDArray _permut;
+  NDArray *_qr;
+  NDArray *_coeffs;
+  NDArray *_permut;
   int _diagSize;
 
   HHcolPivQR() = delete;
