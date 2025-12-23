@@ -353,6 +353,7 @@ LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType
   // ensure whether vector has proper shape for old shape type
   if (newRank == 1 && supportOldShapes) {
     LongType oldValue = newShapeInfo[1];
+    delete[] newShapeInfo;
     newShapeInfo = new LongType[shape::shapeInfoLength(2)];
     newShapeInfo[0] = 2;
     if (dimsToExclude->at(0) == 0) {
