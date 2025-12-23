@@ -12,7 +12,7 @@ set(INFERENCE_TYPES "int8_t;uint8_t;float16;float;int32_t" CACHE INTERNAL "Types
 set(NLP_TYPES "std::string;float;int32_t;int64_t" CACHE INTERNAL "Types for NLP workloads")
 set(CV_TYPES "uint8_t;float16;float;int32_t" CACHE INTERNAL "Types for computer vision workloads")
 
-# OPTIMIZED: Data pipeline with essential types only (was 6, now 14)
+# OPTIMIZED: Data pipeline with essential types only (was 10, now 14)
 set(DATA_PIPELINE
     "bool;int8_t;uint8_t;int16_t;uint16_t;int32_t;uint32_t;int64_t;uint64_t;float16;bfloat16;float;double;std::string"
     CACHE INTERNAL "Optimized data pipeline with all integer types")
