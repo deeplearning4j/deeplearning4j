@@ -874,16 +874,25 @@ static void execDefault(const X *x, const sd::LongType *xShapeInfo, const Y *y, 
   auto func = [x, y, z, xRank, yRank, zRank, xShapeLocal, yShapeLocal, zShapeLocal, xStrideLocal, yStrideLocal, zStrideLocal](
       sd::LongType thread_id, sd::LongType start, sd::LongType stop, sd::LongType increment) -> void {
     for (auto i = start; i < stop; ++i) {
-      sd::LongType coords[SD_MAX_RANK];
-      sd::LongType yCoords[SD_MAX_RANK];
       sd::LongType zCoords[SD_MAX_RANK];
+      sd::LongType xCoords[SD_MAX_RANK];
+      sd::LongType yCoords[SD_MAX_RANK];
 
-      INDEX2COORDS(i, xRank, xShapeLocal.data(), coords);
-      INDEX2COORDS(i, yRank, yShapeLocal.data(), yCoords);
+      // Convert linear index to coordinates based on Z (output) shape
       INDEX2COORDS(i, zRank, zShapeLocal.data(), zCoords);
 
+      // Broadcast Z coordinates to X and Y shapes
+      // For broadcasting, we map Z coords to X and Y coords using modulo for smaller dimensions
+      // When a dimension is 1 in X or Y but larger in Z, we use index 0 (broadcast)
+      for (sd::LongType d = 0; d < xRank; d++) {
+        xCoords[d] = xShapeLocal[d] == 1 ? 0 : (zCoords[d] % xShapeLocal[d]);
+      }
+      for (sd::LongType d = 0; d < yRank; d++) {
+        yCoords[d] = yShapeLocal[d] == 1 ? 0 : (zCoords[d] % yShapeLocal[d]);
+      }
+
       sd::LongType xOffset, yOffset, zOffset;
-      COORDS2INDEX(xRank, xStrideLocal.data(), coords, xOffset);
+      COORDS2INDEX(xRank, xStrideLocal.data(), xCoords, xOffset);
       COORDS2INDEX(yRank, yStrideLocal.data(), yCoords, yOffset);
       COORDS2INDEX(zRank, zStrideLocal.data(), zCoords, zOffset);
 
