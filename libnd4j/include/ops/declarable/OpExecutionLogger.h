@@ -265,9 +265,6 @@ private:
     static thread_local std::string _currentOpName;
 };
 
-// Define thread-local storage
-inline thread_local std::string OpExecutionLogger::_currentOpName;
-
 } // namespace ops
 } // namespace sd
 
