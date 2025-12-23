@@ -589,47 +589,7 @@
                 <org.nd4j.noarraygc>false</org.nd4j.noarraygc>
             </properties>
         </profile>
-        <profile>
-            <id>cuda-dep</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-                <property>
-                    <name>backend.artifactId</name>
-                    <value>nd4j-cuda</value>
-                </property>
-            </activation>
-            <properties>
-                <cuda.version>12.3</cuda.version>
-                <cudnn.version>8.9</cudnn.version>
-                <javacpp-presets.cuda.version>1.5.10</javacpp-presets.cuda.version>
-                <test.heap.size>14g</test.heap.size>
-                <test.offheap.size>14g</test.offheap.size>
-                <surefire.threads>4</surefire.threads>
-                <org.nd4j.noarraygc>false</org.nd4j.noarraygc>
 
-                <!-- Uses the new system properties resolution on nd4j backend
-       to handle the backend selection. Note this only used to work via
-       environment variables.
-       -->
-                <org.nd4j.cpu.priority>0</org.nd4j.cpu.priority>
-                <org.nd4j.gpu.priority>10000</org.nd4j.gpu.priority>
-            </properties>
-            <dependencies>
-                <dependency>
-                    <groupId>org.eclipse.deeplearning4j</groupId>
-                    <artifactId>${backend.artifactId}</artifactId>
-                    <version>${dl4j.version}</version>
-                </dependency>
-                <dependency>
-                    <groupId>org.eclipse.deeplearning4j</groupId>
-                    <artifactId>nd4j-cuda</artifactId>
-                    <version>${dl4j.version}</version>
-                    <classifier>${platform.classifier}</classifier>
-                </dependency>
-
-            </dependencies>
-
-        </profile>
 
         <profile>
             <id>jemalloc</id>

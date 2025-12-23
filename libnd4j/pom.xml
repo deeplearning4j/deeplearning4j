@@ -48,7 +48,7 @@
         <libnd4j.types.show.impact>true</libnd4j.types.show.impact>
 
         <!-- Debug type configuration -->
-        <libnd4j.debug.types.profile>MINIMAL_INDEXING</libnd4j.debug.types.profile>
+        <libnd4j.debug.types.profile></libnd4j.debug.types.profile>
         <libnd4j.debug.types.custom></libnd4j.debug.types.custom>
         <libnd4j.debug.auto.reduce>false</libnd4j.debug.auto.reduce>
 
@@ -109,13 +109,20 @@
         <cpu.core.count></cpu.core.count>
         <libnd4j.preprocess>OFF</libnd4j.preprocess>
         <libnd4j.build.ppstep>OFF</libnd4j.build.ppstep>
-    <libnd4j.extract.instantiations>OFF</libnd4j.extract.instantiations>
+        <libnd4j.extract.instantiations>OFF</libnd4j.extract.instantiations>
         <libnd4j.generate.fix.files>OFF</libnd4j.generate.fix.files>
         <libnd4j.instantiation.report>OFF</libnd4j.instantiation.report>
         <libnd4j.instantiation.verbose>OFF</libnd4j.instantiation.verbose>
         <libnd4j.analyze.templates>OFF</libnd4j.analyze.templates>
-        
- </properties>
+        <libnd4j.cmake.only>OFF</libnd4j.cmake.only>
+        <libnd4j.compiler></libnd4j.compiler>
+        <libnd4j.link.only>OFF</libnd4j.link.only>
+        <libnd4j.dry.run>OFF</libnd4j.dry.run>
+
+        <!-- JNI Configuration for Java stack trace capture in lifecycle tracking -->
+        <libnd4j.build.with.java>ON</libnd4j.build.with.java>
+
+    </properties>
 
     <dependencies>
         <dependency>
@@ -504,6 +511,9 @@
 
                                 <configuration>
                                     <skip>${libnd4j.cuda.compile.skip}</skip>
+                                    <environmentVariables>
+                                        <BUILD_WITH_JAVA>${libnd4j.build.with.java}</BUILD_WITH_JAVA>
+                                    </environmentVariables>
                                     <buildCommand>
                                         <program>${libnd4j.buildprogram}</program>
                                         <argument>buildnativeoperations.sh</argument>
@@ -555,8 +565,8 @@
                                         <argument>--debug-custom-types</argument>
                                         <argument>${libnd4j.debug.types.custom}</argument>
                                         <argument>--debug-auto-reduce</argument>
-                                         <argument>${libnd4j.debug.auto.reduce}</argument>
-                                         <argument>--ppstep</argument>
+                                        <argument>${libnd4j.debug.auto.reduce}</argument>
+                                        <argument>--ppstep</argument>
                                         <argument>${libnd4j.build.ppstep}</argument>
                                         <argument>--extract-instantiations</argument>
                                         <argument>${libnd4j.extract.instantiations}</argument>
@@ -566,6 +576,14 @@
                                         <argument>${libnd4j.instantiation.report}</argument>
                                         <argument>--instantiation-verbose</argument>
                                         <argument>${libnd4j.instantiation.verbose}</argument>
+                                        <argument>--cmake-only</argument>
+                                        <argument>${libnd4j.cmake.only}</argument>
+                                        <argument>--compiler</argument>
+                                        <argument>${libnd4j.compiler}</argument>
+                                        <argument>--link-only</argument>
+                                        <argument>${libnd4j.link.only}</argument>
+                                        <argument>--dry-run</argument>
+                                        <argument>${libnd4j.dry.run}</argument>
 
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
@@ -659,6 +677,9 @@
                                 </goals>
                                 <configuration>
                                     <skip>${libnd4j.cpu.compile.skip}</skip>
+                                    <environmentVariables>
+                                        <BUILD_WITH_JAVA>${libnd4j.build.with.java}</BUILD_WITH_JAVA>
+                                    </environmentVariables>
                                     <buildCommand>
                                         <program>${libnd4j.buildprogram}</program>
                                         <argument>buildnativeoperations.sh</argument>
@@ -717,11 +738,19 @@
                                         <argument>${libnd4j.debug.types.custom}</argument>
                                         <argument>--debug-auto-reduce</argument>
                                         <argument>${libnd4j.debug.auto.reduce}</argument>
-                                       <argument>--ppstep</argument>
+                                        <argument>--ppstep</argument>
                                         <argument>${libnd4j.build.ppstep}</argument>
                                         <argument>--extract-instantiations</argument>
                                         <argument>${libnd4j.extract.instantiations}</argument>
-                                
+                                        <argument>--cmake-only</argument>
+                                        <argument>${libnd4j.cmake.only}</argument>
+                                        <argument>--compiler</argument>
+                                        <argument>${libnd4j.compiler}</argument>
+                                        <argument>--link-only</argument>
+                                        <argument>${libnd4j.link.only}</argument>
+                                        <argument>--dry-run</argument>
+                                        <argument>${libnd4j.dry.run}</argument>
+
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>
