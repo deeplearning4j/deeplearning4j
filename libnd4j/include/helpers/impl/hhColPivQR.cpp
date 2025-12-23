@@ -74,7 +74,7 @@ void HHcolPivQR::_evalData() {
     NDArray *indexNum = normsUpdViewPtr->indexReduceNumber(indexreduce::IndexMax);
     int biggestColIndex = indexNum->e<int>(0);
     auto max2 = normsUpdViewPtr->reduceNumber(reduce::Max);
-    T biggestColNorm = max->t<T>(0);
+    T biggestColNorm = max2->t<T>(0);
     delete normsUpdViewPtr;
     delete max2;
     
