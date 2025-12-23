@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.nd4j.autodiff.samediff.serde.SDZSerializer
+import org.nd4j.common.config.ND4JSystemProperties
 import org.nd4j.common.io.ClassPathResource
 import org.nd4j.common.tests.tags.TagNames
 import org.nd4j.linalg.api.buffer.DataType
@@ -16,6 +17,7 @@ import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
+import java.net.SocketTimeoutException
 import java.net.URL
 import java.nio.channels.Channels
 import java.util.*
@@ -171,24 +173,49 @@ class TestOnnxFrameworkImporter {
         )
 
         fun downloadFile(urlString: String, targetFile: File) {
-            val url = URL(urlString)
-            val connection = url.openConnection() as HttpURLConnection
-            connection.setRequestProperty("User-Agent", "Mozilla/5.0 Kompile-Model-Manager/1.0")
-            connection.instanceFollowRedirects = true
-            connection.connectTimeout = 30000
-            connection.readTimeout = 120000
-
-            val responseCode = connection.responseCode
-            if (responseCode != 200) {
-                throw RuntimeException("HTTP $responseCode for $urlString")
+            // Use configurable timeouts via system properties, with defaults of 60 seconds
+            // This follows the pattern used in ResourceFile and Downloader classes
+            val connTimeoutStr = System.getProperty(ND4JSystemProperties.RESOURCES_CONNECTION_TIMEOUT)
+            val readTimeoutStr = System.getProperty(ND4JSystemProperties.RESOURCES_READ_TIMEOUT)
+            
+            val connectTimeout = if (connTimeoutStr != null && connTimeoutStr.matches(Regex("\\d+"))) {
+                connTimeoutStr.toInt()
+            } else {
+                60000  // Default: 60 seconds (matching Downloader.DEFAULT_CONNECTION_TIMEOUT)
             }
+            
+            val readTimeout = if (readTimeoutStr != null && readTimeoutStr.matches(Regex("\\d+"))) {
+                readTimeoutStr.toInt()
+            } else {
+                60000  // Default: 60 seconds (matching Downloader.DEFAULT_READ_TIMEOUT)
+            }
+            
+            try {
+                val url = URL(urlString)
+                val connection = url.openConnection() as HttpURLConnection
+                connection.setRequestProperty("User-Agent", "Mozilla/5.0 Kompile-Model-Manager/1.0")
+                connection.instanceFollowRedirects = true
+                connection.connectTimeout = connectTimeout
+                connection.readTimeout = readTimeout
 
-            BufferedInputStream(connection.inputStream).use { input ->
-                Channels.newChannel(input).use { rbc ->
-                    FileOutputStream(targetFile).use { fos ->
-                        fos.channel.transferFrom(rbc, 0, Long.MAX_VALUE)
+                val responseCode = connection.responseCode
+                if (responseCode != 200) {
+                    throw RuntimeException("HTTP $responseCode for $urlString")
+                }
+
+                BufferedInputStream(connection.inputStream).use { input ->
+                    Channels.newChannel(input).use { rbc ->
+                        FileOutputStream(targetFile).use { fos ->
+                            fos.channel.transferFrom(rbc, 0, Long.MAX_VALUE)
+                        }
                     }
                 }
+            } catch (e: SocketTimeoutException) {
+                throw RuntimeException("Timeout downloading $urlString (connect timeout: ${connectTimeout}ms, read timeout: ${readTimeout}ms). " +
+                    "If network is slow, increase timeouts via system properties: " +
+                    "${ND4JSystemProperties.RESOURCES_CONNECTION_TIMEOUT} and ${ND4JSystemProperties.RESOURCES_READ_TIMEOUT}", e)
+            } catch (e: Exception) {
+                throw RuntimeException("Failed to download $urlString: ${e.message}", e)
             }
         }
     }
