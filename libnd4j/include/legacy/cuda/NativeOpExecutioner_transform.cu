@@ -98,7 +98,7 @@ void NativeOpExecutioner::execTransformFloat(sd::LaunchContext *lc, int opNum, c
   }
 
   if (xType != zType) {
-    THROW_EXCEPTION("NativeOpExecutioner::execTransformSame requires X & Z to have same type");
+    THROW_EXCEPTION("NativeOpExecutioner::execTransformFloat requires X & Z to have same type");
   }
 
   dim3 launchDims = getLaunchDims("transformScan");
