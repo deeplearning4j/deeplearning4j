@@ -20,7 +20,6 @@
 
 package org.deeplearning4j.nn.layers.recurrent;
 
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.RNNFormat;
@@ -30,7 +29,6 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.common.primitives.Pair;
