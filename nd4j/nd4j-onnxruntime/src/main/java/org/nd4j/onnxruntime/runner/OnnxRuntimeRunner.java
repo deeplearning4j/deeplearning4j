@@ -75,6 +75,8 @@ public class OnnxRuntimeRunner implements Closeable {
     private Map<String, Onnx.ValueInfoProto> allAvailableOutputs;
     
     // Map of output names that need casting to their cast node outputs
+    // NOTE: As of the fix for preserving original output names, this is no longer populated
+    // since cast nodes now output to the original name. Kept for backward compatibility.
     private Map<String, String> outputCastMapping = new HashMap<>();
 
     @Builder
@@ -319,13 +321,12 @@ public class OnnxRuntimeRunner implements Closeable {
                             parseDataType(mismatch.expectedType));
                     graphBuilder.addNode(castNode);
                     
-                    // Update the output to use the cast output
-                    Onnx.ValueInfoProto castOutputInfo = createOutputInfo(castOutputName, 
+                    // Update the output info with correct type (keeping original name)
+                    Onnx.ValueInfoProto castOutputInfo = createOutputInfo(outputName, 
                             parseDataType(mismatch.expectedType));
                     outputsToAdd.put(outputName, castOutputInfo);
                     
-                    // Store the mapping
-                    outputCastMapping.put(outputName, castOutputName);
+                    // No need to store mapping since output name remains the same
                 }
             }
         }
