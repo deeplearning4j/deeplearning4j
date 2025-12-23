@@ -595,13 +595,17 @@ NDArray* MmulHelper::mmulNxN( NDArray* A,  NDArray* B, NDArray* C, const double 
         if (i < cExpectedShape->size() - 1) errorMessage += ",";
       }
       errorMessage += "], but got: " + shapeToString(C) + ". A shape: " + shapeToString(A) + ", B shape: " + shapeToString(B);
+      delete cExpectedShape;
       THROW_EXCEPTION(errorMessage.c_str());
     }
   } else {
     C = new NDArray(outOrder, *cExpectedShape, B->dataType());
   }
 
-  if (C->isEmpty()) return C;
+  if (C->isEmpty()) {
+    delete cExpectedShape;
+    return C;
+  }
 
   const sd::LongType cRank = C->rankOf();
 
@@ -647,6 +651,8 @@ NDArray* MmulHelper::mmulNxN( NDArray* A,  NDArray* B, NDArray* C, const double 
     delete bBatchDims;
   if(cBatchDims != nullptr)
     delete cBatchDims;
+  
+  delete cExpectedShape;
 
   return C;
 }
