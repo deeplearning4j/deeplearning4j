@@ -16,19 +16,16 @@ if not exist "%JAR_FILE%" (
 )
 
 REM Run the analyzer with properly quoted arguments
-REM Build argument list with proper quoting to prevent command injection
-set "ARGS="
+REM Build command with proper quoting to prevent command injection
+set "CMD=java -jar "%JAR_FILE%""
 :parse_args
 if "%~1"=="" goto run_analyzer
-set "ARGS=!ARGS! "%~1""
+set "CMD=!CMD! "%~1""
 shift
 goto parse_args
 
 :run_analyzer
-if defined ARGS (
-    java -jar "%JAR_FILE%" %ARGS%
-) else (
-    java -jar "%JAR_FILE%"
-)
+REM Execute the built command
+!CMD!
 
 endlocal
