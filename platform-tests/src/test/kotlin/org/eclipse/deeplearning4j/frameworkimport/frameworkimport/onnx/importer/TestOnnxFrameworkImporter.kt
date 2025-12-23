@@ -181,13 +181,13 @@ class TestOnnxFrameworkImporter {
             val connectTimeout = if (connTimeoutStr != null && connTimeoutStr.matches(Regex("\\d+"))) {
                 connTimeoutStr.toInt()
             } else {
-                60000  // Default: 60 seconds (matching Downloader.DEFAULT_CONNECTION_TIMEOUT)
+                60000  // Default: 60 seconds (matching Downloader.DEFAULT_CONNECTION_TIMEOUT and codebase standard)
             }
             
             val readTimeout = if (readTimeoutStr != null && readTimeoutStr.matches(Regex("\\d+"))) {
                 readTimeoutStr.toInt()
             } else {
-                60000  // Default: 60 seconds (matching Downloader.DEFAULT_READ_TIMEOUT)
+                60000  // Default: 60 seconds (matching Downloader.DEFAULT_READ_TIMEOUT and codebase standard)
             }
             
             try {
