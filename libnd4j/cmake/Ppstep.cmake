@@ -14,14 +14,40 @@ if(BUILD_PPSTEP)
         list(REVERSE LINUXBREW_BOOST_DIRS)
         list(GET LINUXBREW_BOOST_DIRS 0 BOOST_ROOT)
         message(STATUS "🍺 Using linuxbrew Boost at: ${BOOST_ROOT}")
-        
+
         set(BOOST_INCLUDEDIR "${BOOST_ROOT}/include")
         set(BOOST_LIBRARYDIR "${BOOST_ROOT}/lib")
-        
+
         message(STATUS "   Include dir: ${BOOST_INCLUDEDIR}")
         message(STATUS "   Library dir: ${BOOST_LIBRARYDIR}")
     else()
-        message(FATAL_ERROR "❌ No Boost found in /home/linuxbrew/.linuxbrew/Cellar/boost/")
+        # Fallback: use CMake's find_package to locate Boost via system or user configuration
+        message(STATUS "No Boost found in /home/linuxbrew/.linuxbrew/Cellar/boost/ - falling back to find_package(Boost)")
+        find_package(Boost REQUIRED)
+
+        if(NOT Boost_FOUND)
+            message(FATAL_ERROR "❌ Boost not found. Please install Boost or provide appropriate CMake hints (e.g., BOOST_ROOT).")
+        endif()
+
+        # Derive include and library directories from find_package results
+        if(Boost_INCLUDE_DIRS)
+            list(GET Boost_INCLUDE_DIRS 0 BOOST_INCLUDEDIR)
+        endif()
+        if(Boost_LIBRARY_DIRS)
+            list(GET Boost_LIBRARY_DIRS 0 BOOST_LIBRARYDIR)
+        endif()
+
+        if(NOT BOOST_INCLUDEDIR OR NOT BOOST_LIBRARYDIR)
+            message(FATAL_ERROR "❌ Unable to determine Boost include/library directories from find_package(Boost).")
+        endif()
+
+        # Assume standard layout: BOOST_ROOT/include
+        get_filename_component(BOOST_ROOT "${BOOST_INCLUDEDIR}" DIRECTORY)
+
+        message(STATUS "Using system Boost")
+        message(STATUS "   Root dir:    ${BOOST_ROOT}")
+        message(STATUS "   Include dir: ${BOOST_INCLUDEDIR}")
+        message(STATUS "   Library dir: ${BOOST_LIBRARYDIR}")
     endif()
     
     include(ExternalProject)
