@@ -201,13 +201,35 @@ void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, ND
   uint8_t *inputWeightsData = nullptr;
   uint8_t *recurrentWeightsData = nullptr;
   if (inputWeights) {
-    inputWeightsT =
-        inputWeights->rankOf() == 3 ? inputWeights->permute({0, 2, 1}, 0, false)->dup('c') : inputWeights->transpose().dup('c');
+    if (inputWeights->rankOf() == 3) {
+      NDArray* tempPermute = inputWeights->permute({0, 2, 1}, 0, false);
+      inputWeightsT = tempPermute->dup('c');
+      if (tempPermute != nullptr && !tempPermute->isView()) {
+        delete tempPermute;
+      }
+    } else {
+      NDArray* tempTranspose = inputWeights->transpose();
+      inputWeightsT = tempTranspose->dup('c');
+      if (tempTranspose != nullptr && !tempTranspose->isView()) {
+        delete tempTranspose;
+      }
+    }
     inputWeightsData = (uint8_t *)inputWeightsT.specialBuffer();
   }
   if (recurrentWeights) {
-    recurrentWeightsT = recurrentWeights->rankOf() == 3 ? recurrentWeights->permute({0, 2, 1}, 0, false)->dup('c')
-                                                        : recurrentWeights->transpose()->dup('c');
+    if (recurrentWeights->rankOf() == 3) {
+      NDArray* tempPermute = recurrentWeights->permute({0, 2, 1}, 0, false);
+      recurrentWeightsT = tempPermute->dup('c');
+      if (tempPermute != nullptr && !tempPermute->isView()) {
+        delete tempPermute;
+      }
+    } else {
+      NDArray* tempTranspose = recurrentWeights->transpose();
+      recurrentWeightsT = tempTranspose->dup('c');
+      if (tempTranspose != nullptr && !tempTranspose->isView()) {
+        delete tempTranspose;
+      }
+    }
     recurrentWeightsData = (uint8_t *)recurrentWeightsT.specialBuffer();
   }
 
@@ -227,7 +249,11 @@ void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, ND
   }
 
   if (dataFormat == 1) {
-    permutedX = input->permute({1, 0, 2}, 0, false)->dup('c');
+    NDArray* tempPermute = input->permute({1, 0, 2}, 0, false);
+    permutedX = tempPermute->dup('c');
+    if (tempPermute != nullptr && !tempPermute->isView()) {
+      delete tempPermute;
+    }
     argX = &permutedX;
   }
 
