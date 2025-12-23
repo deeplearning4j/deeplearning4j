@@ -68,19 +68,27 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
 
   if (checkIndices) {
     NDArray* pIndices = indices;
+    bool ownsIndices = false;
+    
     if (indices == nullptr) {
-     std::vector<sd::LongType> shape =  {static_cast<sd::LongType>(intArgs.size()) - 1};
-     std::vector<double> inputVec =  std::vector<double>(intArgs.begin() + 1, intArgs.end());
-      pIndices =
-          new NDArray(input->ordering(), shape,
-                     inputVec, DataType::INT64, block.launchContext());
+      std::vector<sd::LongType> shape = {static_cast<sd::LongType>(intArgs.size()) - 1};
+      std::vector<double> inputVec = std::vector<double>(intArgs.begin() + 1, intArgs.end());
+      pIndices = new NDArray(input->ordering(), shape, inputVec, DataType::INT64, block.launchContext());
+      ownsIndices = true;
     }
-      const sd::LongType numOfBadIndx = helpers::checkIndices(block.launchContext(), *pIndices, *input, intArgs[0]);
+    
+    const sd::LongType numOfBadIndx = helpers::checkIndices(block.launchContext(), *pIndices, *input, intArgs[0]);
 
+    // FIXED: Cleanup BEFORE checking condition (REQUIRE_TRUE can throw)
+    if (ownsIndices) {
+      delete pIndices;
+      pIndices = nullptr;
+    }
+
+    // Check condition after cleanup
     REQUIRE_TRUE(numOfBadIndx == 0, 0,
                  "GATHER OP: please check elements of indices-array, total number of wrong elements is %lld!",
                  numOfBadIndx);
-    if (indices == nullptr) delete pIndices;
   }
 
   helpers::gather(block.launchContext(), input, indices, output, intArgs);
@@ -157,9 +165,8 @@ DECLARE_SHAPE_FN(gather) {
     ArrayOptions::setPropertyBit(outputShapeInfo, ARRAY_EMPTY);
   }
 
-
-
   auto result = ConstantShapeHelper::getInstance().bufferForShapeInfo(outputShapeInfo)->primary();
+  RELEASE(outputShapeInfo, block.getWorkspace());
   return SHAPELIST(result);
 }
 

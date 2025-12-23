@@ -41,8 +41,8 @@ BROADCASTABLE_OP_IMPL(assign, 0, 0) {
     return Status::OK;
   }
 
-  NDArray *castedX = x->dataType() == z->dataType() ? x : new NDArray(x->cast(z->dataType()));
-  NDArray *castedY = y->dataType() == z->dataType() ? y : new NDArray(y->cast(z->dataType()));
+  NDArray *castedX = x->dataType() == z->dataType() ? x : x->cast(z->dataType());
+  NDArray *castedY = y->dataType() == z->dataType() ? y : y->cast(z->dataType());
 
   ArrayOptions::validateSingleDataType(ArrayOptions::dataType(castedX->shapeInfo()));
   ArrayOptions::validateSingleDataType(ArrayOptions::extra(castedY->shapeInfo()));
@@ -54,6 +54,9 @@ BROADCASTABLE_OP_IMPL(assign, 0, 0) {
     OVERWRITE_RESULT(tZ);
   }
 
+  // Cleanup casted arrays if they were allocated
+  if (castedX != x) delete castedX;
+  if (castedY != y) delete castedY;
 
   return Status::OK;
 }
@@ -73,7 +76,7 @@ DECLARE_TYPES(assign_bp) {
 
 CUSTOM_OP_IMPL(assign_bp, 3, 2, false, 0, 0) {
   auto x = INPUT_VARIABLE(0);
-  auto y = block.width() < 2 ? new NDArray(x->dup(x->ordering(), false)) : INPUT_VARIABLE(1);
+  auto y = block.width() < 2 ? x->dup(x->ordering(), false) : INPUT_VARIABLE(1);  // dup() already returns NDArray*
   auto epsNext = INPUT_VARIABLE(2);
 
   auto gradX = OUTPUT_VARIABLE(0);
@@ -86,14 +89,16 @@ CUSTOM_OP_IMPL(assign_bp, 3, 2, false, 0, 0) {
     gradY->assign(epsNext);
   } else if (y->isScalar()) {
     auto sum = epsNext->reduceNumber(reduce::Sum);
-    gradY->assign(&sum);
+    gradY->assign(sum);
+    delete sum;
   } else {
     // broadcastable
     auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
     if (axisY.size() > 0) {
       auto sum = epsNext->reduceAlongDimension(reduce::Sum, &axisY);
-      gradY->assign(&sum);
+      gradY->assign(sum);
+      delete sum;
     } else
       gradY->assign(epsNext);
   }

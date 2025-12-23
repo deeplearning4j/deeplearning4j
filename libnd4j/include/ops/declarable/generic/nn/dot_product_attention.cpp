@@ -98,8 +98,9 @@ CUSTOM_OP_IMPL(dot_product_attention, 3, -1, false, 0, 2) {
     //
     // we are using 1e9 to mean effectively infinity
     auto applyMask = *reshapedMask  * 1e9;
-    *weights -= applyMask;
+    *weights -= *applyMask;
     delete reshapedMask;
+    delete applyMask;
 
   }
 
