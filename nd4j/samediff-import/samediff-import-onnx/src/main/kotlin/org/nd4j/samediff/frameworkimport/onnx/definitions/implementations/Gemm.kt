@@ -49,29 +49,42 @@ class Gemm : PreImportHook  {
     ): Map<String, List<SDVariable>> {
         // Parameter docs below are from the onnx operator docs:
         // https://github.com/onnx/onnx/blob/master/docs/Operators.md#gemm
+        // ONNX Gemm: Y = alpha * A' * B' + beta * C
         // This is actually linear - PyTorch exports nn.Linear as Gemm
 
         val inputA = sd.getVariable(op.inputsToOp[0])
+        val inputB = sd.getVariable(op.inputsToOp[1])
+        val alphaAttr = attributes.getOrDefault("alpha", 1.0f)
+        val betaAttr = attributes.getOrDefault("beta", 1.0f)
+        val alpha = if (alphaAttr is Float) alphaAttr.toDouble() else alphaAttr as Double
+        val beta = if (betaAttr is Float) betaAttr.toDouble() else betaAttr as Double
+        val transA = attributes.getOrDefault("transA", 0L) as Long
+        val transB = attributes.getOrDefault("transB", 0L) as Long
 
         if(op.inputsToOp.size > 2) {
-           val lastVar = sd.getVariable(op.inputsToOp[2])
-            val len = lastVar.length()
-            val transA = attributes.getOrDefault("transA",0L) as Long
-            val transB = attributes.getOrDefault("transB",0L) as Long
-            val outputVar = sd.nn().linear(outputNames[0],
-                inputA
-                ,sd.getVariable(op.inputsToOp[1])
-                ,lastVar,transA > 0,transB > 0,false)
-            return mapOf(outputVar.name() to listOf(outputVar))
+            val biasVar = sd.getVariable(op.inputsToOp[2])
 
+            // Compute: alpha * A' * B' + beta * C
+            // When alpha=1 and beta=1, this simplifies to linear (xw_plus_b)
+            if (alpha == 1.0 && beta == 1.0) {
+                val outputVar = sd.nn().linear(outputNames[0],
+                    inputA, inputB, biasVar, transA > 0, transB > 0, false)
+                return mapOf(outputVar.name() to listOf(outputVar))
+            } else {
+                // General case: alpha * matmul(A, B) + beta * C
+                // matmul signature: (a, b, alpha, beta, transA, transB)
+                // We use alpha for scaling the matmul result, beta=0 since we handle bias separately
+                var matmulResult = sd.linalg().matmul(inputA, inputB, alpha, 0.0, transA > 0, transB > 0)
+                var scaledBias = biasVar
+                if (beta != 1.0) {
+                    scaledBias = biasVar.mul(beta)
+                }
+                val outputVar = matmulResult.add(scaledBias)
+                return mapOf(outputNames[0] to listOf(sd.updateVariableNameAndReference(outputVar, outputNames[0])))
+            }
         } else {
-            val alpha = attributes.getOrDefault("alpha", 1.0) as Double
-            val beta = attributes.getOrDefault("beta",1.0) as Double
-            val transA = attributes.getOrDefault("transA",0L) as Long
-            val transB = attributes.getOrDefault("transB",0L) as Long
-
-            val outputVar = sd.linalg().matmul(inputA,
-                sd.getVariable(op.inputsToOp[1]),alpha,beta,transA > 0,transB > 0)
+            // No bias case - just matmul with alpha (beta not applicable without C)
+            val outputVar = sd.linalg().matmul(inputA, inputB, alpha, 0.0, transA > 0, transB > 0)
             return mapOf(outputVar.name() to listOf(outputVar))
         }
     }

@@ -1128,12 +1128,108 @@ std::vector<LongType> ShapeUtils::evalShapeForMatmul(const LongType* xShapeInfo,
   }
 
   // rest cases - usual 2Dx2D or batched mmul
+  // Handle rank mismatch when one input has singleton leading dimensions
+  // This supports ONNX Gemm patterns like [1,1,1,768] x [768,768] -> [1,1,1,768]
   if (xRank != yRank) {
-    sd_printf(
-        "ShapeUtils::evalShapeForMatmul static method: the ranks of arrays must be the same, but got xRank = %i and "
-        "yRank = %i ! \n",
-        xRank, yRank);
-    THROW_EXCEPTION("");
+    // Check if higher-rank input has all singleton leading dims that can be squeezed
+    const LongType* higherRankInfo = xRank > yRank ? xShapeInfo : yShapeInfo;
+    const LongType* lowerRankInfo = xRank > yRank ? yShapeInfo : xShapeInfo;
+    const auto higherRank = xRank > yRank ? xRank : yRank;
+    const auto lowerRank = xRank > yRank ? yRank : xRank;
+    const auto rankDiff = higherRank - lowerRank;
+
+    // Check if all leading dimensions are singletons (size 1)
+    bool allLeadingSingleton = true;
+    for (LongType i = 0; i < rankDiff; ++i) {
+      if (higherRankInfo[i + 1] != 1) {
+        allLeadingSingleton = false;
+        break;
+      }
+    }
+
+    if (allLeadingSingleton && lowerRank == 2) {
+      // Can treat as 2D matmul with singleton batch dims preserved in output
+      // For x having higher rank: x[1,1,...,M,K] @ y[K,N] -> [1,1,...,M,N]
+      // For y having higher rank: x[M,K] @ y[1,1,...,K,N] -> [1,1,...,M,N]
+
+      LongType outM, outN, xK, yK;
+
+      if (xRank > yRank) {
+        // x is higher rank [1,1,...,M,K], y is 2D [K,N]
+        // Get M and K from x's last 2 dimensions
+        const LongType xSecondLast = higherRankInfo[higherRank - 1];  // M (or K if transposed)
+        const LongType xLast = higherRankInfo[higherRank];            // K (or M if transposed)
+        // Get K and N from y
+        const LongType yFirst = lowerRankInfo[1];   // K (or N if transposed)
+        const LongType ySecond = lowerRankInfo[2];  // N (or K if transposed)
+
+        if (transX) {
+          outM = xLast;
+          xK = xSecondLast;
+        } else {
+          outM = xSecondLast;
+          xK = xLast;
+        }
+
+        if (transY) {
+          yK = ySecond;
+          outN = yFirst;
+        } else {
+          yK = yFirst;
+          outN = ySecond;
+        }
+      } else {
+        // y is higher rank [1,1,...,K,N], x is 2D [M,K]
+        // Get M and K from x
+        const LongType xFirst = lowerRankInfo[1];   // M (or K if transposed)
+        const LongType xSecond = lowerRankInfo[2];  // K (or M if transposed)
+        // Get K and N from y's last 2 dimensions
+        const LongType ySecondLast = higherRankInfo[higherRank - 1];  // K (or N if transposed)
+        const LongType yLast = higherRankInfo[higherRank];            // N (or K if transposed)
+
+        if (transX) {
+          outM = xSecond;
+          xK = xFirst;
+        } else {
+          outM = xFirst;
+          xK = xSecond;
+        }
+
+        if (transY) {
+          yK = yLast;
+          outN = ySecondLast;
+        } else {
+          yK = ySecondLast;
+          outN = yLast;
+        }
+      }
+
+      // Validate K dimensions match
+      if (xK != yK) {
+        std::string errorMessage;
+        errorMessage += "ShapeUtils::evalShapeForMatmul static method: the dimensions of arrays are inconsistent: ";
+        errorMessage += "xShape = " + shapeAsString(xShapeInfo) + ", ";
+        errorMessage += "yShape = " + shapeAsString(yShapeInfo);
+        errorMessage += " (xK=" + std::to_string(xK) + ", yK=" + std::to_string(yK) + ") ! \n";
+        THROW_EXCEPTION(errorMessage.c_str());
+      }
+
+      std::vector<LongType> cShape;
+      // Preserve leading singleton dimensions from the higher-rank input
+      for (LongType i = 0; i < rankDiff; ++i) {
+        cShape.push_back(1);
+      }
+      // Add the matrix dimensions [M, N]
+      cShape.push_back(outM);
+      cShape.push_back(outN);
+      return cShape;
+    } else {
+      sd_printf(
+          "ShapeUtils::evalShapeForMatmul static method: the ranks of arrays must be the same, but got xRank = %i and "
+          "yRank = %i ! \n",
+          xRank, yRank);
+      THROW_EXCEPTION("");
+    }
   }
 
   if (x1Dim != y0Dim) {

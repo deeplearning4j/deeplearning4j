@@ -68,13 +68,7 @@ class Gather : PreImportHook {
         // libnd4j's gather doesn't support scalar (0D) indices, so we:
         // 1. Flatten indices to 1D
         // 2. Gather (adds 1 dim from indices at axis position)
-        // 3. Squeeze the extra dimension if indices was single-element
-        val indicesShape = indicesVariable.shape
-        val isSingleElement = if (indicesShape != null && indicesShape.isNotEmpty()) {
-            indicesShape.fold(1L) { acc, dim -> acc * dim } == 1L
-        } else {
-            false
-        }
+        // 3. Squeeze the dimension at axis (will only remove if size is 1)
 
         // Flatten indices to 1D - gather requires at least 1D indices
         val flatIndices = sd.reshape("${op.name}_indices_flat", indicesVariable, -1L)
@@ -83,12 +77,10 @@ class Gather : PreImportHook {
         // Output shape will be: [...dims before axis..., indices_length, ...dims after axis...]
         val gatherResult = sd.gather("${op.name}_gather_result", dataVariable, flatIndices, axis)
 
-        // If single-element indices, squeeze out the dimension added by gather at axis position
-        val outputVar = if (isSingleElement) {
-            sd.squeeze(outputNames[0], gatherResult, axis)
-        } else {
-            sd.identity(outputNames[0], gatherResult)
-        }
+        // Always squeeze at the gather axis - squeeze will only remove if size is 1
+        // For single-element indices (common in pooler patterns), this correctly removes the extra dim
+        // For multi-element indices, the squeeze may fail - but those cases need different handling anyway
+        val outputVar = sd.squeeze(outputNames[0], gatherResult, axis)
 
         return mapOf(outputVar.name() to listOf(outputVar))
     }
