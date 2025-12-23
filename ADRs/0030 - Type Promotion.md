@@ -12,7 +12,7 @@ The current C++ library published via Java Maven supports multi-type arithmetic,
 
 ## Proposal
 
-We propose to publish a smaller Maven artifact of the C++ library that supports a limited set of data types. This specialized artifact will cater to users who do not require multi-type arithmetic, offering a more lightweight alternative. The key aspects of this proposal include:
+We propose to publish a ``smaller Maven artifact of the C++ library that supports a limited set of data types. This specialized artifact will cater to users who do not require multi-type arithmetic, offering a more lightweight alternative. The key aspects of this proposal include:
 
 1. **Create a Limited Type Support Artifact:**
     - Develop a separate build configuration using CMake that includes only the necessary type specializations.
