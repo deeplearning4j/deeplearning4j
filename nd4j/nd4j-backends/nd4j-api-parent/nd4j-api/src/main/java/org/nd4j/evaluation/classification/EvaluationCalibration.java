@@ -374,7 +374,30 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
 
         if (excludeEmptyBins) {
             val condition = new MatchCondition(totalCountBins, Conditions.equals(0));
-            int numZeroBins = Nd4j.getExecutioner().exec(condition).getInt(0);
+            INDArray zeroCheckResult = null;
+            int numZeroBins = 0;
+            try {
+                zeroCheckResult = Nd4j.getExecutioner().exec(condition);
+                numZeroBins = zeroCheckResult.getInt(0);
+            } finally {
+                // Clean up result array
+                if (zeroCheckResult != null) {
+                    try {
+                        if (zeroCheckResult.data() != null) {
+                            zeroCheckResult.data().close();
+                        }
+                        zeroCheckResult.close();
+                    } catch (Exception e) {
+                        // Ignore close errors
+                    }
+                }
+                // Clean up MatchCondition operation (closes internal dimensionz array)
+                try {
+                    condition.clearArrays();
+                } catch (Exception e) {
+                    // Ignore errors
+                }
+            }
             if (numZeroBins != 0) {
                 double[] mpb = meanPredictionBins;
                 double[] fp = fracPositives;
