@@ -2,7 +2,7 @@
 # Reduces compilation times by using focused type sets
 
 # ============================================================================
-# OPTIMIZED DEFAULT TYPES (10 types instead of 16+)
+# OPTIMIZED DEFAULT TYPES (14 types instead of 16+)
 # ============================================================================
 
 # Type profiles for different ML workloads
