@@ -466,58 +466,58 @@ public class OnnxTensorUtils {
 
     private static void addFloatData(Onnx.TensorProto.Builder builder, INDArray array) {
         INDArray flattened = array.reshape(-1);
-        for (long i = 0; i < flattened.length(); i++) {
+        for (int i = 0; i < flattened.length(); i++) {
             builder.addFloatData(flattened.getFloat(i));
         }
     }
 
     private static void addDoubleData(Onnx.TensorProto.Builder builder, INDArray array) {
         INDArray flattened = array.reshape(-1);
-        for (long i = 0; i < flattened.length(); i++) {
+        for (int i = 0; i < flattened.length(); i++) {
             builder.addDoubleData(flattened.getDouble(i));
         }
     }
 
     private static void addInt32Data(Onnx.TensorProto.Builder builder, INDArray array) {
         INDArray flattened = array.reshape(-1);
-        for (long i = 0; i < flattened.length(); i++) {
-            builder.addInt32Data(flattened.getInt((int) i));
+        for (int i = 0; i < flattened.length(); i++) {
+            builder.addInt32Data(flattened.getInt(i));
         }
     }
 
     private static void addInt64Data(Onnx.TensorProto.Builder builder, INDArray array) {
         INDArray flattened = array.reshape(-1);
-        for (long i = 0; i < flattened.length(); i++) {
+        for (int i = 0; i < flattened.length(); i++) {
             builder.addInt64Data(flattened.getLong(i));
         }
     }
 
     private static void addInt16Data(Onnx.TensorProto.Builder builder, INDArray array) {
         INDArray flattened = array.reshape(-1);
-        for (long i = 0; i < flattened.length(); i++) {
-            builder.addInt32Data(flattened.getInt((int) i)); // ONNX uses int32Data for int16
+        for (int i = 0; i < flattened.length(); i++) {
+            builder.addInt32Data(flattened.getInt(i)); // ONNX uses int32Data for int16
         }
     }
 
     private static void addByteData(Onnx.TensorProto.Builder builder, INDArray array) {
         INDArray flattened = array.reshape(-1);
         ByteBuffer buffer = ByteBuffer.allocate((int) flattened.length()).order(ByteOrder.LITTLE_ENDIAN);
-        for (long i = 0; i < flattened.length(); i++) {
-            buffer.put((byte) flattened.getInt((int) i));
+        for (int i = 0; i < flattened.length(); i++) {
+            buffer.put((byte) flattened.getInt(i));
         }
         builder.setRawData(ByteString.copyFrom(buffer.array()));
     }
 
     private static void addBoolData(Onnx.TensorProto.Builder builder, INDArray array) {
         INDArray flattened = array.reshape(-1);
-        for (long i = 0; i < flattened.length(); i++) {
-            builder.addInt32Data(flattened.getInt((int) i) != 0 ? 1 : 0); // ONNX uses int32Data for bool
+        for (int i = 0; i < flattened.length(); i++) {
+            builder.addInt32Data(flattened.getInt(i) != 0 ? 1 : 0); // ONNX uses int32Data for bool
         }
     }
 
     private static void addFloat16Data(Onnx.TensorProto.Builder builder, INDArray array) {
         INDArray flattened = array.reshape(-1);
-        for (long i = 0; i < flattened.length(); i++) {
+        for (int i = 0; i < flattened.length(); i++) {
             float val = flattened.getFloat(i);
             int halfBits = floatToHalf(Float.floatToIntBits(val));
             builder.addInt32Data(halfBits); // ONNX uses int32Data for float16
@@ -526,7 +526,7 @@ public class OnnxTensorUtils {
 
     private static void addBFloat16Data(Onnx.TensorProto.Builder builder, INDArray array) {
         INDArray flattened = array.reshape(-1);
-        for (long i = 0; i < flattened.length(); i++) {
+        for (int i = 0; i < flattened.length(); i++) {
             float val = flattened.getFloat(i);
             int bfloat16Bits = Float.floatToIntBits(val) >>> 16; // BFloat16 is top 16 bits of float32
             builder.addInt32Data(bfloat16Bits); // ONNX uses int32Data for bfloat16
@@ -535,21 +535,21 @@ public class OnnxTensorUtils {
 
     private static void addUInt16Data(Onnx.TensorProto.Builder builder, INDArray array) {
         INDArray flattened = array.reshape(-1);
-        for (long i = 0; i < flattened.length(); i++) {
-            builder.addInt32Data(flattened.getInt((int) i)); // ONNX uses int32Data for uint16
+        for (int i = 0; i < flattened.length(); i++) {
+            builder.addInt32Data(flattened.getInt(i)); // ONNX uses int32Data for uint16
         }
     }
 
     private static void addUInt32Data(Onnx.TensorProto.Builder builder, INDArray array) {
         INDArray flattened = array.reshape(-1);
-        for (long i = 0; i < flattened.length(); i++) {
+        for (int i = 0; i < flattened.length(); i++) {
             builder.addUint64Data(flattened.getLong(i)); // ONNX uses uint64Data for uint32
         }
     }
 
     private static void addUInt64Data(Onnx.TensorProto.Builder builder, INDArray array) {
         INDArray flattened = array.reshape(-1);
-        for (long i = 0; i < flattened.length(); i++) {
+        for (int i = 0; i < flattened.length(); i++) {
             builder.addUint64Data(flattened.getLong(i)); // ONNX uses uint64Data for uint64
         }
     }
