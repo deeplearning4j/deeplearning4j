@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.nd4j.autodiff.samediff.serde.SDZSerializer
+import org.nd4j.common.config.ND4JSystemProperties
 import org.nd4j.common.io.ClassPathResource
 import org.nd4j.common.tests.tags.TagNames
 import org.nd4j.linalg.api.buffer.DataType
@@ -16,6 +17,7 @@ import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
+import java.net.SocketTimeoutException
 import java.net.URL
 import java.nio.channels.Channels
 import java.util.*
@@ -170,25 +172,65 @@ class TestOnnxFrameworkImporter {
             "all-MiniLM-L12-v2" to "https://huggingface.co/sentence-transformers/all-MiniLM-L12-v2/resolve/main/config.json"
         )
 
-        fun downloadFile(urlString: String, targetFile: File) {
-            val url = URL(urlString)
-            val connection = url.openConnection() as HttpURLConnection
-            connection.setRequestProperty("User-Agent", "Mozilla/5.0 Kompile-Model-Manager/1.0")
-            connection.instanceFollowRedirects = true
-            connection.connectTimeout = 30000
-            connection.readTimeout = 120000
-
-            val responseCode = connection.responseCode
-            if (responseCode != 200) {
-                throw RuntimeException("HTTP $responseCode for $urlString")
+        /**
+         * Parse timeout value from system property, with validation and default fallback
+         * @param propertyName The system property name to read
+         * @param defaultValue The default timeout value in milliseconds
+         * @return The parsed timeout value, or default if property is not set or invalid
+         */
+        private fun parseTimeoutProperty(propertyName: String, defaultValue: Int): Int {
+            val propertyValue = System.getProperty(propertyName) ?: return defaultValue
+            
+            // Use toLongOrNull to safely parse - returns null if not a valid number
+            val timeoutLong = propertyValue.toLongOrNull() ?: return defaultValue
+            
+            // Ensure it's within valid Int range and positive (HttpURLConnection requires positive int)
+            return if (timeoutLong in 1..Int.MAX_VALUE) {
+                timeoutLong.toInt()
+            } else {
+                defaultValue
             }
+        }
 
-            BufferedInputStream(connection.inputStream).use { input ->
-                Channels.newChannel(input).use { rbc ->
-                    FileOutputStream(targetFile).use { fos ->
-                        fos.channel.transferFrom(rbc, 0, Long.MAX_VALUE)
+        fun downloadFile(urlString: String, targetFile: File) {
+            // Use configurable timeouts via system properties, with defaults of 60 seconds
+            // This follows the pattern used in ResourceFile and Downloader classes
+            val connectTimeout = parseTimeoutProperty(
+                ND4JSystemProperties.RESOURCES_CONNECTION_TIMEOUT, 
+                60000  // Default: 60 seconds (matching Downloader.DEFAULT_CONNECTION_TIMEOUT and codebase standard)
+            )
+            
+            val readTimeout = parseTimeoutProperty(
+                ND4JSystemProperties.RESOURCES_READ_TIMEOUT,
+                60000  // Default: 60 seconds (matching Downloader.DEFAULT_READ_TIMEOUT and codebase standard)
+            )
+            
+            try {
+                val url = URL(urlString)
+                val connection = url.openConnection() as HttpURLConnection
+                connection.setRequestProperty("User-Agent", "Mozilla/5.0 Kompile-Model-Manager/1.0")
+                connection.instanceFollowRedirects = true
+                connection.connectTimeout = connectTimeout
+                connection.readTimeout = readTimeout
+
+                val responseCode = connection.responseCode
+                if (responseCode != 200) {
+                    throw RuntimeException("HTTP $responseCode for $urlString")
+                }
+
+                BufferedInputStream(connection.inputStream).use { input ->
+                    Channels.newChannel(input).use { rbc ->
+                        FileOutputStream(targetFile).use { fos ->
+                            fos.channel.transferFrom(rbc, 0, Long.MAX_VALUE)
+                        }
                     }
                 }
+            } catch (e: SocketTimeoutException) {
+                throw RuntimeException("Timeout downloading $urlString (connect timeout: ${connectTimeout}ms, read timeout: ${readTimeout}ms). " +
+                    "If network is slow, increase timeouts via system properties: " +
+                    "${ND4JSystemProperties.RESOURCES_CONNECTION_TIMEOUT} and ${ND4JSystemProperties.RESOURCES_READ_TIMEOUT}", e)
+            } catch (e: Exception) {
+                throw RuntimeException("Failed to download $urlString: ${e.message}", e)
             }
         }
     }
