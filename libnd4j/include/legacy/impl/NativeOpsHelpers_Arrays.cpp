@@ -616,8 +616,24 @@ OpaqueRandomGenerator getGraphContextRandomGenerator(Context *ptr) { return &ptr
 void markGraphContextInplace(Context *ptr, bool reallyInplace) { ptr->markInplace(reallyInplace); }
 
 
-// OpaqueNDArrayArr is NDArray** (pointer to array of NDArray pointers).
-// Java passes this directly, so arr[i] gives the i-th NDArray*.
+// NOTE ABOUT SIGNATURE AND JAVACPP MAPPING
+// ----------------------------------------
+// OpaqueNDArrayArr represents `NDArray**` (a pointer to an array of NDArray*).
+//
+// Earlier versions of this function used the signature:
+//   void setGraphContextInputArraysArr(OpaqueContext* ptr, int numArrays, OpaqueNDArrayArr* arr)
+// which treated the argument as `NDArray***`. That required double‑dereferencing
+// (e.g. `(*arr)[i]`) and did not match how JavaCPP passes the native pointer.
+//
+// In the JavaCPP mapping, the Java side already passes an `NDArray**` directly for
+// this parameter. Using `OpaqueNDArrayArr*` added an extra level of indirection,
+// so the native code tried to dereference one level too many, leading to invalid
+// pointers and hard‑to‑debug crashes.
+//
+// The corrected signature below:
+//   void setGraphContextInputArraysArr(OpaqueContext* ptr, int numArrays, OpaqueNDArrayArr arr)
+// matches the JavaCPP mapping exactly: `arr` is already an `NDArray**`, so
+// `arr[i]` yields the i‑th `NDArray*` without any extra dereference.
 void setGraphContextInputArraysArr(OpaqueContext* ptr, int numArrays, OpaqueNDArrayArr arr) {
   if (arr == nullptr)
     THROW_EXCEPTION("setGraphContextInputArraysArr: Input arrays were null!");
