@@ -287,6 +287,28 @@ public class ND4JSystemProperties {
      */
     public final static String ND4J_EVENT_LOG_POINT_OF_ORIGIN_PATTERNS = "org.nd4j.linalg.profiler.pointoforigin.patterns";
 
+    /**
+     * Applicability: nd4j-common FileBatch class<br>
+     * Description: Maximum total decompressed size allowed when reading FileBatch from ZIP (in bytes).
+     * This limit protects against zip bomb attacks.
+     * Default: 1GB (1073741824 bytes)
+     */
+    public static final String FILEBATCH_MAX_ZIP_SIZE = "nd4j.filebatch.maxZipSize";
+
+    /**
+     * Applicability: nd4j-common FileBatch class<br>
+     * Description: Maximum allowed compression ratio (uncompressed/compressed size) for FileBatch ZIP entries.
+     * Default: 100.0
+     */
+    public static final String FILEBATCH_MAX_COMPRESSION_RATIO = "nd4j.filebatch.maxCompressionRatio";
+
+    /**
+     * Applicability: nd4j-common FileBatch class<br>
+     * Description: Maximum number of entries allowed in a FileBatch ZIP file.
+     * Default: 10000
+     */
+    public static final String FILEBATCH_MAX_ZIP_ENTRIES = "nd4j.filebatch.maxZipEntries";
+
     private ND4JSystemProperties() {
     }
 }
