@@ -181,15 +181,16 @@ bool cell_contains(NDArray* corner, NDArray* width, NDArray* point, sd::LongType
   auto cornerMinusWidth = *corner - *width;
   auto cornerPlusWidth = *corner + *width;
 
-  for (sd::LongType i = 0; i < dimension; i++) {
-    if (cornerMinusWidth->e<double>(i) > point->e<double>(i)) return false;
-    if (cornerPlusWidth->e<double>(i) < point->e<double>(i)) return false;
+  bool result = true;
+  for (sd::LongType i = 0; i < dimension && result; i++) {
+    if (cornerMinusWidth->e<double>(i) > point->e<double>(i)) result = false;
+    else if (cornerPlusWidth->e<double>(i) < point->e<double>(i)) result = false;
   }
 
   delete cornerPlusWidth;
   delete cornerMinusWidth;
 
-  return true;
+  return result;
 }
 }  // namespace helpers
 }  // namespace ops
