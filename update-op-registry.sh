@@ -72,7 +72,7 @@ This script builds the project and runs the OpRegistryUpdater utility.
 Usage: $0 [options]
 
 Options:
-  --framework <n>     Update specific framework only (tensorflow|onnx|all)
+  --framework <framework>     Update specific framework only (tensorflow|onnx|all)
                         Default: all
 
   --validate-only       Only validate existing configurations without saving
