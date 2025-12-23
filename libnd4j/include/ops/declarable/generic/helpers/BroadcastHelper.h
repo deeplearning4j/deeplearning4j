@@ -76,8 +76,9 @@ class BroadcastHelper {
         auto tZ = NDArrayFactory::valueOf(*yShapeVec, y, y->ordering());
         delete yShapeVec;
         tZ->applyPairwiseTransform(op.p, y, extraArgs);
-        // Caller must delete the returned pointer
-        return tZ;  // LEAK: tZ is never deleted by caller
+        z->assign(tZ);
+        delete tZ;
+        return z;
       }
     } else if (x->lengthOf() <= 1 && y->lengthOf() <= 1) {
       x->applyScalarArr(op.s, y, z);
