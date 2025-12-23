@@ -88,7 +88,11 @@ class SD_LIB_EXPORT TadCalculator {
     * 
     * Example Usage:
     * @code
-    *   TadCalculator calculator(originalShape);
+    *   // Assume we have a shape info pointer and dimensions vector
+    *   LongType* shapeInfo = ...;
+    *   std::vector<LongType> dimensions = {0, 1};
+    *   
+    *   TadCalculator calculator(shapeInfo);
     *   calculator.createTadPack(dimensions);
     *   auto pack = std::make_shared<TadPack>(
     *       calculator.tadShape(),
