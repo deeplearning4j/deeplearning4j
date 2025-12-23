@@ -124,7 +124,7 @@ TEST_F(ConstantShapeHelperTests, basic_test_3) {
 
   ASSERT_TRUE(array->shapeInfo() != nullptr);
 
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   ASSERT_TRUE(array->specialShapeInfo() != nullptr);
 #endif
 
@@ -134,11 +134,11 @@ TEST_F(ConstantShapeHelperTests, basic_test_3) {
 TEST_F(ConstantShapeHelperTests, basic_test_4) {
   auto array = NDArrayFactory::create_<float>('c', {128, 256});
 
-  auto dup = new NDArray(array->dup('f'));
+  auto dup = array->dup('f');
 
   ASSERT_TRUE(dup->shapeInfo() != nullptr);
 
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   ASSERT_TRUE(dup->specialShapeInfo() != nullptr);
   PointersManager manager(LaunchContext ::defaultContext(), "test");
 #endif
