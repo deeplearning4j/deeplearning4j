@@ -750,7 +750,10 @@ public class OnnxRuntimeRunner implements Closeable {
             LongVector longPointer = outValue.GetTensorTypeAndShapeInfo().GetShape();
             // shape info can be null
             if (longPointer != null) {
-                long[] shape = new long[(int)longPointer.size()];
+                long dims = longPointer.size();
+                Preconditions.checkArgument(dims >= 0 && dims <= Integer.MAX_VALUE,
+                        "Invalid tensor rank from ONNX runtime: " + dims);
+                long[] shape = new long[(int) dims];
                 for (int j = 0; j < shape.length; j++) {
                     shape[j] = longPointer.get(j);
                 }
