@@ -36,7 +36,7 @@ class SparseUtilsTest : public NDArrayTests {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(SparseUtilsTest, SortCOOindices_Test) {
-#ifndef __CUDABLAS__
+#ifndef SD_CUDA
 
   sd::LongType* indicesArr = new sd::LongType[nnz * rank]{
       0,  2,  7,  2,  36, 35, 3,  30, 17, 5,  12, 22, 5,  43, 45, 6,  32, 11, 8,  8,  32, 9,  29, 11,
@@ -79,7 +79,7 @@ TEST_F(SparseUtilsTest, SortCOOindices_Test) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(SparseUtilsTest, RavelIndices_Test) {
-#ifndef __CUDABLAS__
+#ifndef SD_CUDA
 
   sd::LongType* indicesArrExp = new sd::LongType[nnz * rank]{
       0,  2,  7,  2,  36, 35, 3,  30, 17, 5,  12, 22, 5,  43, 45, 6,  32, 11, 8,  8,  32, 9,  29, 11,

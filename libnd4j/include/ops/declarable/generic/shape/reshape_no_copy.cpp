@@ -14,7 +14,9 @@ CUSTOM_OP_IMPL(reshape_no_copy, -2, 1, false, 0, -2) {
   if (ArrayOptions::arrayNeedsCopy(const_cast<LongType *>(output->shapeInfo()))
       || output->dataBuffer() != input->dataBuffer()) {
     //immitate a reshape operation but without triggering a copy. These helpers are to prevent stack overflows with reshape -> assign -> reshape which used to exist
-    sd::LongType  *shapeInfo = NDArray::reshapeShapeInfo(output, output->ordering(), input->getShapeAsVector());
+    auto* inputShape = input->getShapeAsVector();
+    sd::LongType  *shapeInfo = NDArray::reshapeShapeInfo(output, output->ordering(), *inputShape);
+    delete inputShape;
     NDArray::copyDataForAssign(input, output, shapeInfo, false);
   }
   // the rest is no op, we don't need to copy we just needed the new shape
@@ -152,6 +154,7 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
 
 
   auto newShape2 = ConstantShapeHelper::getInstance().createFromExisting(newShapeInfo);
+  delete[] newShapeInfo;
   return SHAPELIST(CONSTANT(newShape2));
 }
 

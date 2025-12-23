@@ -86,23 +86,23 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
   std::vector<NDArray*> toDelete;
 
   for (int i = 0; i < bS; ++i) {
-      pA[i] = new NDArray(vA[i]->dup('f'));
+      pA[i] = vA[i]->dup('f');  // dup() already returns NDArray*
       toDelete.emplace_back(pA[i]);
 
 
-      pB[i] = new NDArray(vB[i]->dup('f'));
+      pB[i] = vB[i]->dup('f');  // dup() already returns NDArray*
       toDelete.emplace_back(pB[i]);
 
-      pC[i] = new NDArray(vC[i]->dup('f'));
+      pC[i] = vC[i]->dup('f');  // dup() already returns NDArray*
       toDelete.emplace_back(pC[i]);
 
 
     if (pC[i]->ordering() != 'f') {
       auto temp = pA[i];
       std::vector<sd::LongType> permute = {1,0};
-      pA[i] = new NDArray(pB[i]->permute(permute, false, false));
-      pB[i] = new NDArray(temp->permute(permute, false, false));
-      pC[i] = new NDArray(pC[i]->permute(permute, false, false));
+      pA[i] = pB[i]->permute(permute, false, false);  // permute() already returns NDArray*
+      pB[i] = temp->permute(permute, false, false);
+      pC[i] = pC[i]->permute(permute, false, false);
       toDelete.push_back(pA[i]);
       toDelete.push_back(pB[i]);
       toDelete.push_back(pC[i]);
@@ -158,29 +158,30 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
   const bool AB(aType == bType), AC(aType == cType), ABC(AB && AC);
 
   // choose appropriate cuda gemm api depending on data types
+  // Handle empty arrays by using default values (alpha=1.0, beta=0.0)
   if (ABC && aType == DOUBLE) {
-    double alpha = alphas->e<double>(0);
-    double beta = betas->e<double>(0);
+    double alpha = alphas->lengthOf() > 0 ? alphas->e<double>(0) : 1.0;
+    double beta = betas->lengthOf() > 0 ? betas->e<double>(0) : 0.0;
     status = cublasDgemmBatched(*handle, transAblas, transBblas, M, N, K, &alpha, (const double**)aBuffers, lda,
                                 (const double**)bBuffers, ldb, &beta, (double**)cBuffers, ldc, bS);
   } else if (ABC && aType == FLOAT32) {
-    float alpha = alphas->e<float>(0);
-    float beta = betas->e<float>(0);
+    float alpha = alphas->lengthOf() > 0 ? alphas->e<float>(0) : 1.0f;
+    float beta = betas->lengthOf() > 0 ? betas->e<float>(0) : 0.0f;
     status = cublasSgemmBatched(*handle, transAblas, transBblas, M, N, K, &alpha, (const float**)aBuffers, lda,
                                 (const float**)bBuffers, ldb, &beta, (float**)cBuffers, ldc, bS);
   } else if (ABC && aType == HALF) {
-    __half alpha = alphas->e<float>(0);
-    __half beta = betas->e<float>(0);
+    __half alpha = alphas->lengthOf() > 0 ? alphas->e<float>(0) : 1.0f;
+    __half beta = betas->lengthOf() > 0 ? betas->e<float>(0) : 0.0f;
     status = cublasHgemmBatched(*handle, transAblas, transBblas, M, N, K, &alpha, (const __half**)aBuffers, lda,
                                 (const __half**)bBuffers, ldb, &beta, (__half**)cBuffers, ldc, bS);
   } else if (AB && aType == INT8 && cType == FLOAT32) {
-    float alpha = alphas->e<float>(0);
-    float beta = betas->e<float>(0);
+    float alpha = alphas->lengthOf() > 0 ? alphas->e<float>(0) : 1.0f;
+    float beta = betas->lengthOf() > 0 ? betas->e<float>(0) : 0.0f;
     status = cublasGemmBatchedEx(*handle, transAblas, transBblas, M, N, K, &alpha, aBuffers, CUDA_R_8I, lda, bBuffers,
                                  CUDA_R_8I, ldb, &beta, cBuffers, CUDA_R_32F, ldc, bS, CUDA_R_32F, CUBLAS_GEMM_DEFAULT);
   } else if (AB && aType == HALF && cType == FLOAT32) {
-    float alpha = alphas->e<float>(0);
-    float beta = betas->e<float>(0);
+    float alpha = alphas->lengthOf() > 0 ? alphas->e<float>(0) : 1.0f;
+    float beta = betas->lengthOf() > 0 ? betas->e<float>(0) : 0.0f;
     status =
         cublasGemmBatchedEx(*handle, transAblas, transBblas, M, N, K, &alpha, aBuffers, CUDA_R_16F, lda, bBuffers,
                             CUDA_R_16F, ldb, &beta, cBuffers, CUDA_R_32F, ldc, bS, CUDA_R_32F, CUBLAS_GEMM_DEFAULT);

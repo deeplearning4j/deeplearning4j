@@ -58,8 +58,8 @@ CUSTOM_OP_IMPL(pnormpool2d, 1, 1, false, 0, 10) {
 
   if (!isNCHW) {
     std::vector<sd::LongType> perm = {0, 3, 1, 2};
-    input = new NDArray(input->permute(perm, false, false));    // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
-    output = new NDArray(output->permute(perm, false, false));  // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
+    input = input->permute(perm, false, false);    // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+    output = output->permute(perm, false, false);  // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
   }
 
   const LongType inY = static_cast<LongType>(input->sizeAt(2));
@@ -189,9 +189,9 @@ CUSTOM_OP_IMPL(pnormpool2d_bp, 2, 1, false, 1, 10) {
 
   if (!isNCHW) {
     std::vector<sd::LongType> perm2 = {0, 3, 1, 2};
-    input = new NDArray(input->permute(perm2, false, false));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
-    gradI = new NDArray(gradI->permute(perm2, false, false));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
-    gradO = new NDArray(gradO->permute(perm2, false, false));  // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
+    input = input->permute(perm2, false, false);  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+    gradI = gradI->permute(perm2, false, false);  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+    gradO = gradO->permute(perm2, false, false);  // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
   }
 
 

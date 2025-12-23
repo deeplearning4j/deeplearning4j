@@ -105,8 +105,11 @@ CUSTOM_OP_IMPL(reduce_sqnorm_bp, -1, 1, false, 0, 0) {
   auto gradI = OUTPUT_VARIABLE(0);
 
   if (gradO->lengthOf() == 1) {
-    NDArray assign = 2 * (*input) * gradO->e(0);
-    gradI->assign(&assign);
+    auto* temp1 = (*input) * 2.0;
+    auto* assign = (*temp1) * gradO->e(0);
+    delete temp1;
+    gradI->assign(assign);
+    delete assign;
   } else {
     bool keepDims = false;
     auto dimensions = *block.getIArguments();
@@ -139,17 +142,24 @@ CUSTOM_OP_IMPL(reduce_sqnorm_bp, -1, 1, false, 0, 0) {
           ShapeUtils::evalReduceShapeInfo(gradO->ordering(), &dimensions, *input, true, false, block.getWorkspace());
       std::vector<sd::LongType> shape =  ShapeUtils::pullShapeFromShapeInfo(
           gradOShapeKeepDims);
-      auto reshaped = gradO->reshape(gradO->ordering(),
-                                     shape);
-      // First case
-      NDArray gradITemp1 = 2. * (*input) * *reshaped;
-      // for example could be something like [a,b] -> [1,a,1,b]
+      auto* reshaped = gradO->reshape(gradO->ordering(), shape);
+      
+      // Break down: 2. * (*input) * *reshaped
+      auto* temp1 = (*input) * 2.0;
+      auto* gradITemp1 = (*temp1) * (*reshaped);
+      delete temp1;
       delete reshaped;
-      gradI->assign(&gradITemp1);
+      
+      gradI->assign(gradITemp1);
+      delete gradITemp1;
     } else {
-      // Second case
-      NDArray gradITemp2 = 2. * (*input) * *gradO;
-      gradI->assign(&gradITemp2);
+      // Break down: 2. * (*input) * *gradO
+      auto* temp2 = (*input) * 2.0;
+      auto* gradITemp2 = (*temp2) * (*gradO);
+      delete temp2;
+      
+      gradI->assign(gradITemp2);
+      delete gradITemp2;
     }
   }
   return sd::Status::OK;

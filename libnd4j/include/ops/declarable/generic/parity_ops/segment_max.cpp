@@ -38,9 +38,9 @@ CUSTOM_OP_IMPL(segment_max, 2, 1, false, 0, 0) {
   auto expected = NDArrayFactory::create(input->dataType(), 0.f, block.launchContext());
   auto wrong = NDArrayFactory::create(input->dataType(), 0.f, block.launchContext());
 
-  REQUIRE_TRUE(helpers::segmentIndicesValidate(block.launchContext(), idxSegments, expected, wrong), 0,
-               "segment_max: segment indices should be arranged, but %2.1f > %2.1f", expected.e<float>(0),
-               wrong.e<float>(0));
+  REQUIRE_TRUE(helpers::segmentIndicesValidate(block.launchContext(), idxSegments, *expected, *wrong), 0,
+               "segment_max: segment indices should be arranged, but %2.1f > %2.1f", expected->e<float>(0),
+               wrong->e<float>(0));
 
   segmentedOutput->nullify();
   helpers::segmentMaxFunctor(block.launchContext(), input, idxSegments, segmentedOutput);

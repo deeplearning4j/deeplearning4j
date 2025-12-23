@@ -37,16 +37,16 @@ CONFIGURABLE_OP_IMPL(fake_quant_with_min_max_vars, 1, 1, true, 0, 0) {
   REQUIRE_TRUE(block.width() == 3 || block.getTArguments()->size() == 2, 0,
                "fake_quant_with_min_max_vars: No minimum/maximum values provided by either input arrays or TArgs");
 
-  NDArray m;
-  NDArray m2;
+  NDArray *m;
+  NDArray *m2;
   if (block.width() == 3) {
     min = INPUT_VARIABLE(1);
     max = INPUT_VARIABLE(2);
   } else if (block.getTArguments()->size() == 2) {
     m = NDArrayFactory::create(x->dataType(), T_ARG(0), block.launchContext());
     m2 = NDArrayFactory::create(x->dataType(), T_ARG(1), block.launchContext());
-    min = &m;
-    max = &m2;
+    min = m;
+    max = m2;
   }
   auto output = OUTPUT_VARIABLE(0);
   REQUIRE_TRUE(x->dataType() == output->dataType(), 0,
@@ -59,10 +59,17 @@ CONFIGURABLE_OP_IMPL(fake_quant_with_min_max_vars, 1, 1, true, 0, 0) {
     narrowed = B_ARG(0);
   }
   REQUIRE_TRUE(numBits > 1 && numBits < 17, 0,
-               "fake_quant_with_min_max_vars: Number of \
-             bits for quantization should be in between 2 and 16, but %i was given.",
+               "fake_quant_with_min_max_vars: Number of bits for quantization should be in between 2 and 16, but %i was given.",
                numBits);
   helpers::fakeQuantWithMinMaxVars(x, min, max, numBits, narrowed, output);
+
+  if(m != nullptr) {
+    delete m;
+  }
+
+  if(m2 != nullptr) {
+    delete m2;
+  }
   return sd::Status::OK;
 }
 

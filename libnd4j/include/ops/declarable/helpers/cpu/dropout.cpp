@@ -88,8 +88,9 @@ sd::Status dropOutFunctor_(graph::Context& context, NDArray* input, NDArray* out
     mask->assign(assign);
 
     *mask += *chunk;
-    NDArray assign5 = *input * *mask;
-    output->assign(&assign5);
+    NDArray *assign5 = *input * *mask;
+    output->assign(assign5);
+    delete assign5;
   }
 
   return sd::Status::OK;
@@ -111,7 +112,9 @@ BUILD_SINGLE_TEMPLATE( sd::Status dropOutFunctor_, (graph::Context & context, ND
 template <typename T>
 static Status dropOutFunctorBP_(graph::Context& context, NDArray* input, NDArray* gradOut, NDArray* output,
                                 NDArray* reduceShape, int seed, double probValue, NDArray* mask) {
-  *output = *gradOut * *mask;
+  auto mask2 = *gradOut * *mask;
+  *output = *mask2;
+  delete mask2;
   return sd::Status::OK;
 }
 
@@ -142,7 +145,9 @@ sd::Status alphaDropOutFunctorBP_(graph::Context& context, NDArray* input, NDArr
                                   NDArray* reduceShape, int seed, double probValue, double alpha, double alpha1,
                                   double beta, NDArray* mask) {
 
-  *output *= *gradOut * *mask;
+  auto mask2 = *gradOut * *mask;
+  *output *= *mask2;
+  delete mask2;
   return sd::Status::OK;
 }
 

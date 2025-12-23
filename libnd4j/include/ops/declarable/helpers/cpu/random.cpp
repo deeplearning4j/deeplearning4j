@@ -45,7 +45,7 @@ T gammaLess(graph::RandomGenerator& rng, T const alpha, T const beta) {
   auto b = alpha * math::p_pow(d, alpha - T(1.f)) * exp(-d);
   auto c = a + b;
   T rawX;
-  static auto index = 0LL;
+  static sd::LongType index = 0;
   const T underAlpha = T(1.f) / alpha;
   const T powerAlpha = math::p_pow<T>(T(2.f), alpha - T(1.f));
 
@@ -84,7 +84,7 @@ template <typename T>
 T gammaGreat(graph::RandomGenerator& rng, T const alpha, T const beta) {
   auto decreasedAlpha = alpha - T(1.f / 3.f);
   auto c = T(1.) / math::p_sqrt(T(9.f) * decreasedAlpha);
-  static auto index = 0LL;
+  static sd::LongType index = 0;
   T x;
   auto normalDistributed = [](graph::RandomGenerator& rng, sd::LongType& index) {
     auto v1 = rng.relativeT(index++, T(0.f), T(1.f));

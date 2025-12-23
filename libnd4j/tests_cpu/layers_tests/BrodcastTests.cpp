@@ -38,7 +38,7 @@ class BroadcastMultiDimTest : public NDArrayTests {
   int dimensionLength = 2;
 };
 
-#ifndef __CUDABLAS__
+#ifndef SD_CUDA
 
 TEST_F(BroadcastMultiDimTest, MultimDimTest) {
   auto tad = new shape::TAD();
