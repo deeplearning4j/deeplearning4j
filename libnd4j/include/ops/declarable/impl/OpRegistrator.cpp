@@ -85,6 +85,12 @@ std::string OpRegistrator::local_to_string(int value) {
 }
 
 OpRegistrator::~OpRegistrator() {
+  // Clean up OpExecTrace objects - must happen in both debug and release builds
+  for (auto trace : opexecTrace) {
+    delete trace;
+  }
+  opexecTrace.clear();
+
 #ifndef _RELEASE
   _msvc.clear();
 
@@ -99,7 +105,6 @@ OpRegistrator::~OpRegistrator() {
   _declarablesD.clear();
 
   _declarablesLD.clear();
-
 #endif
 }
 
@@ -150,6 +155,9 @@ void OpRegistrator::toggleTraceOps(bool traceOps) {
 }
 
 void OpRegistrator::purgeOpExecs() {
+  for (auto trace : this->opexecTrace) {
+    delete trace;
+  }
   this->opexecTrace.clear();
 }
 

@@ -156,7 +156,8 @@ Context::~Context() {
   // Clean up handles - these are arrays explicitly marked as removable/owned
   for (auto v : _handles) delete v;
 
-  if (_context != nullptr) delete _context;
+  // Only delete _context if it's not a managed (intentionally leaked) context
+  if (_context != nullptr && !LaunchContext::isManagedContext(_context)) delete _context;
 }
 
 void Context::setTargetEngine(samediff::Engine engine) { _engine = engine; }
@@ -301,6 +302,7 @@ Variable *Context::variable(int node, int idx) {
 }
 
 Variable *Context::variable(std::pair<int, int> &p) {
+  // CRITICAL: Check for null variableSpace to prevent SIGSEGV
   if (_variableSpace == nullptr) {
     std::string errorMessage;
     errorMessage += "Node ";
@@ -508,9 +510,10 @@ NDArray *Context::array(int idx) {
     return result;
   }
 
+  // CRITICAL: Check if we're in fastpath mode with insufficient inputs
   // When using fastpath (from OpContext/Java), _variableSpace is null by design.
   // If the operation expects more inputs than were provided via setInputArrays(),
-  // throw an informative error instead of crashing in getVariable().
+  // we must throw an informative error instead of crashing in getVariable().
   if (!_fastpath_in.empty() && _variableSpace == nullptr) {
     // Fastpath has some inputs but not enough for the requested index
     std::string errorMessage;
@@ -568,7 +571,8 @@ memory::Workspace *Context::oWorkspace() { return nullptr; }
 LaunchContext *Context::launchContext() {
   // FIXME: we need proper context to be shared here
   if (_context == nullptr) {
-    return LaunchContext::defaultContext();
+    _context = LaunchContext::defaultContext(); // Assign default context
+    return _context;
   } else {
     return _context;
   }

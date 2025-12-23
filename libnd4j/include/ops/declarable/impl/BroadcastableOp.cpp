@@ -59,7 +59,8 @@ ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::grap
 
     sd::LongType *newshape = nullptr;
     ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
-    shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(newshape)->primary());
+    // NOTE: newshape is already a cached pointer from ConstantShapeHelper, don't delete it
+    shapeList->push_back(newshape);
   } else if (shape::isScalar(x) && shape::isScalar(y)) {
     if (shape::rank(x) >= shape::rank(y)) {
       shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(x)->primary());
@@ -75,7 +76,8 @@ ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::grap
   } else if (ShapeUtils::areShapesBroadcastable(x, y)) {
     sd::LongType *newshape = nullptr;
     ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
-    shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(newshape)->primary());
+    // NOTE: newshape is already a cached pointer from ConstantShapeHelper, don't delete it
+    shapeList->push_back(newshape);
   } else {
     shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(x)->primary());
 

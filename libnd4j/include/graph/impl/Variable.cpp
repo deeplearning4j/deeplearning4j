@@ -40,7 +40,7 @@ Variable *Variable::asT() {
   result->setName(&this->_name);
   result->setIndex(this->_index);
 
-  if (this->_ndarray != nullptr) result->setNDArray(new NDArray(this->_ndarray->template asT<N>()));
+  if (this->_ndarray != nullptr) result->setNDArray(this->_ndarray->template asT<N>());  // asT() already returns NDArray*
 
   // FIXME: add support for ArrayList
   if (this->_list != nullptr) {
@@ -61,7 +61,7 @@ Variable *Variable::clone() {
   result->_index = this->_index;
 
   if (this->_ndarray != nullptr) {
-    result->_ndarray = new NDArray(this->_ndarray->dup(this->_ndarray->ordering(), false));
+    result->_ndarray = this->_ndarray->dup(this->_ndarray->ordering(), false);
     result->_readOnly = false;
     result->_removable = true;
   }
@@ -259,8 +259,9 @@ void Variable::setId(int id, int idx) {
 flatbuffers::Offset<::graph::FlatVariable> Variable::asFlatVariable(flatbuffers::FlatBufferBuilder &builder) {
   if (this->hasNDArray()) {
     auto array = this->getNDArray();
-    auto fShape = builder.CreateVector(array->getShapeInfoAsFlatVector());
-
+    auto vec = array->getShapeInfoAsFlatVector();
+    auto fShape = builder.CreateVector(*vec);
+    delete vec;
     auto fBuffer = builder.CreateVector(array->asByteVector());
 
     // packing array

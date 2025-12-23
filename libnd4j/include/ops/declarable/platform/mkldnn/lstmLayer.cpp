@@ -422,33 +422,33 @@ PLATFORM_IMPL(lstmLayer, ENGINE_CPU) {
   NDArray *xP(const_cast<NDArray*>(x)), *hP(h);
   if (dataFormat == 1) {
     std::vector<sd::LongType> permute = {1,0,2};
-    xP = new NDArray(x->permute(permute.data(), 3, false, false));  // [bS, sL, nIn] -> [sL, bS, nIn]
-    hP = new NDArray(h->permute(permute.data(), 3, false, false));  // [bS, sL, dirDim*nOn] -> [sL, bS, dirDim*nOn]
+    xP = x->permute(permute.data(), 3, false, false);  // permute() already returns NDArray*
+    hP = h->permute(permute.data(), 3, false, false);
   }
 
   // reshape arrays in accordance to mkl allowed formats
   NDArray *WxR(nullptr), *WrR(nullptr), *bR(nullptr), *hIR(nullptr), *cIR(nullptr), *hLR(nullptr), *cLR(nullptr);
 
   std::vector<sd::LongType> shapeOne = {1, dirDim, nIn, 4, nOut};
-  WxR = new NDArray(Wx->reshape(Wx->ordering(), shapeOne));
-  WrR = new NDArray(Wr->reshape(Wr->ordering(), shapeOne));
+  WxR = Wx->reshape(Wx->ordering(), shapeOne);  // reshape() already returns NDArray*
+  WrR = Wr->reshape(Wr->ordering(), shapeOne);  // reshape() already returns NDArray*
 
   std::vector<sd::LongType> shapeTwo = {1, dirDim, 4, nOut};
   if (b)
-    bR = new NDArray(b->reshape(b->ordering(), shapeTwo));
+    bR = b->reshape(b->ordering(), shapeTwo);  // reshape() already returns NDArray*
   else
     bR =
         new NDArray(x->ordering(), shapeTwo, x->dataType(), x->getContext());  // already nullified
 
 
   std::vector<sd::LongType> shapeThree = {1, dirDim, bS, nOut};
-  if (hI) hIR = new NDArray(hI->reshape(hI->ordering(), shapeThree));
+  if (hI) hIR = hI->reshape(hI->ordering(), shapeThree);  // reshape() already returns NDArray*
 
-  if (cI) cIR = new NDArray(cI->reshape(cI->ordering(), shapeThree));
+  if (cI) cIR = cI->reshape(cI->ordering(), shapeThree);  // reshape() already returns NDArray*
 
-  if (hL) hLR = new NDArray(hL->reshape(hL->ordering(), shapeThree, false));
+  if (hL) hLR = hL->reshape(hL->ordering(), shapeThree, false);  // reshape() already returns NDArray*
 
-  if (cL) cLR = new NDArray(cL->reshape(cL->ordering(), shapeThree, false));
+  if (cL) cLR = cL->reshape(cL->ordering(), shapeThree, false);  // reshape() already returns NDArray*
 
   lstmLayerMKLDNN(xP, WxR, WrR, bR, hIR, cIR, params, hP, hLR, cLR);
 
