@@ -79,6 +79,12 @@ for %%i in (%*) do (
     if !errorlevel! == 0 (
         set "MAVEN_PROFILES=%%i"
         set "MAVEN_PROFILES=!MAVEN_PROFILES:--profiles==!"
+        REM Validate profiles to prevent command injection - only allow alphanumeric, comma, hyphen, underscore
+        echo !MAVEN_PROFILES! | findstr /R "^[a-zA-Z0-9,_-]*$" >nul
+        if !errorlevel! neq 0 (
+            echo %ERROR_PREFIX% Invalid characters in profiles. Only alphanumeric, comma, hyphen, and underscore are allowed.
+            exit /b 1
+        )
     )
 )
 
