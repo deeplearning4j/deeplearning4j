@@ -85,9 +85,9 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, con
     };
 
     samediff::Threads::parallel_do(
-        func, sd::math::sd_max<sd::LongType,sd::LongType,sd::LongType>(1,
-                                                                       sd::math::sd_min<sd::LongType,sd::LongType,sd::LongType>(shape::length(hZShapeInfo) / 1024,
-                                                                                                                                sd::Environment::getInstance().maxMasterThreads())));
+        func, sd::math::sd_max(static_cast<sd::LongType>(1),
+                               sd::math::sd_min(shape::length(hZShapeInfo) / 1024,
+                                                static_cast<sd::LongType>(sd::Environment::getInstance().maxMasterThreads()))));
   }
 }
 
