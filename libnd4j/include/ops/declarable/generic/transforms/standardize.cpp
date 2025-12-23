@@ -34,7 +34,7 @@ namespace ops {
 CONFIGURABLE_OP_IMPL(standardize, 1, 1, true, 0, -2) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
-
+  output->nullify();
   std::vector<sd::LongType> axis;
 
   if (block.width() > 1)
@@ -46,24 +46,33 @@ CONFIGURABLE_OP_IMPL(standardize, 1, 1, true, 0, -2) {
 
   shape::checkDimensions(input->rankOf(), &axis);
 
+  // Compute mean with keepDims=true for broadcasting
   auto means = input->reduceAlongDimension(reduce::Mean, &axis, true);
-  REQUIRE_TRUE(means != nullptr, 0, "STANDARDIZE OP: failed to compute mean along dimension");
 
-  auto base = input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, &axis);
-  REQUIRE_TRUE(base != nullptr, 0, "STANDARDIZE OP: failed to compute standard deviation along dimension");
+  // Compute VARIANCE (not stdev) - uses Welford's algorithm internally
+  // biasCorrected=false gives population variance (divide by N, not N-1)
+  auto varianceRaw = input->varianceAlongDimension(variance::SummaryStatsVariance, false, &axis);
 
-  auto stdev = *base  + 1e-12;
-  REQUIRE_TRUE(stdev != nullptr, 0, "STANDARDIZE OP: failed to add epsilon to standard deviation");
-  auto meansShape = means->getShapeAsVector();;
-  std::vector<sd::LongType> meansShapeVec = *meansShape;
-  stdev->reshapei(meansShapeVec);
+  // Reshape variance to match means shape for broadcasting (use reshape instead of reshapei)
+  auto meansShape = means->getShapeAsVector();
+  auto variance = varianceRaw->reshape(varianceRaw->ordering(), *meansShape);
   delete meansShape;
+  delete varianceRaw;
+
+  // Add epsilon BEFORE sqrt: stdev = sqrt(variance + epsilon)
+  // This is the numerically stable formula for LayerNorm
+  NDArray* varPlusEps = *variance + 1e-5;
+  NDArray* stdev = varPlusEps->transform(transform::Sqrt);
+
+  // output = (input - mean) / stdev
   input->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), means, output, false);
   output->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), stdev, output, false);
-  output->applyScalar(sd::scalar::ReplaceNans, 0, output);
+
   delete means;
-  delete base;
+  delete variance;
+  delete varPlusEps;
   delete stdev;
+
   return sd::Status::OK;
 }
 
@@ -93,13 +102,14 @@ CUSTOM_OP_IMPL(standardize_bp, 2, 1, false, 0, -2) {
   auto means = input->reduceAlongDimension(reduce::Mean, &axis, true);
   REQUIRE_TRUE(means != nullptr, 0, "STANDARDIZE_BP OP: failed to compute mean along dimension");
 
-  auto stdev = input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, &axis);
-  REQUIRE_TRUE(stdev != nullptr, 0, "STANDARDIZE_BP OP: failed to compute standard deviation along dimension");
+  auto stdevRaw = input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, &axis);
+  REQUIRE_TRUE(stdevRaw != nullptr, 0, "STANDARDIZE_BP OP: failed to compute standard deviation along dimension");
 
-  auto meansShape = means->getShapeAsVector();;
-  std::vector<sd::LongType> meansShapeVec = *meansShape;
-  stdev->reshapei(meansShapeVec);
+  // Reshape stdev to match means shape for broadcasting (use reshape instead of reshapei)
+  auto meansShape = means->getShapeAsVector();
+  auto stdev = stdevRaw->reshape(stdevRaw->ordering(), *meansShape);
   delete meansShape;
+  delete stdevRaw;
 
   eps->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), stdev, output, false);
 

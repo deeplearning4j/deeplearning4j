@@ -47,7 +47,13 @@ CUSTOM_OP_IMPL(select, 3, 1, false, 0, 0) {
     auto z = OUTPUT_VARIABLE(0);
 
     if (y->isR()) {
+#ifdef HAS_DOUBLE
       auto v = !cond->e<bool>(0) ? y->e<double>(0) : x->e<double>(0);
+#elif defined(HAS_FLOAT32)
+      auto v = !cond->e<bool>(0) ? y->e<float>(0) : x->e<float>(0);
+#else
+#error "No floating-point type available for select operation"
+#endif
       z->p(0, v);
     } else {
       auto v = !cond->e<bool>(0) ? y->e<LongType>(0) : x->e<LongType>(0);
@@ -62,7 +68,13 @@ CUSTOM_OP_IMPL(select, 3, 1, false, 0, 0) {
 
       for (int e = 0; e < cond->lengthOf(); e++) {
         if (y->isR()) {
+#ifdef HAS_DOUBLE
           auto r = !cond->e<bool>(e) ? y->e<double>(e) : x->e<double>(e);
+#elif defined(HAS_FLOAT32)
+          auto r = !cond->e<bool>(e) ? y->e<float>(e) : x->e<float>(e);
+#else
+#error "No floating-point type available for select operation"
+#endif
           z->p(e, r);
         } else {
           auto r = !cond->e<bool>(e) ? y->e<LongType>(e) : x->e<LongType>(e);

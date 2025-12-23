@@ -55,17 +55,26 @@ CUSTOM_OP_IMPL(randomuniform, -1, 1, true, 0, -2) {
   auto min = block.width() > 1 ? INPUT_VARIABLE(1) : (NDArray*)nullptr;
   auto max = block.width() > 2 ? INPUT_VARIABLE(2) : (NDArray*)nullptr;
 
+  bool localMin = false;
+  bool localMax = false;
+
   if ((min == nullptr && max == nullptr) || block.numT() >= 2) {
     min = NDArrayFactory::create_(dtype, block.launchContext());
     max = NDArrayFactory::create_(dtype, block.launchContext());
     min->p(0, T_ARG(0));
     max->p(0, T_ARG(1));
+    localMin = true;
+    localMax = true;
   }
 
   auto output = OUTPUT_VARIABLE(0);
   REQUIRE_TRUE(output->dataType() == dtype, 0, "RandomUniform: data type of output should be equals to given.");
 
   helpers::fillRandomUniform(block.launchContext(), rng, min, max, output);
+
+  if (localMin) delete min;
+  if (localMax) delete max;
+
   return Status::OK;
 }
 

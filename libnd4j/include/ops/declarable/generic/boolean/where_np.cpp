@@ -45,10 +45,16 @@ CUSTOM_OP_IMPL(where_np, -1, 1, false, 0, 0) {
       if (y->isScalar()) {
         if (y->isR()) {
           for (int e = 0; e < condition->lengthOf(); e++) {
+#ifdef HAS_DOUBLE
             auto r = condition->e<bool>(e) ? y->e<double>(0) : x->e<double>(e);
+#elif defined(HAS_FLOAT32)
+            auto r = condition->e<bool>(e) ? y->e<float>(0) : x->e<float>(e);
+#else
+#error "No floating-point type available for where_np operation"
+#endif
             z->p(e, r);
           }
-        } else {
+        } else{
           for (int e = 0; e < condition->lengthOf(); e++) {
             auto r = condition->e<bool>(e) ? y->e<LongType>(0) : x->e<LongType>(e);
             z->p(e, r);
@@ -58,11 +64,23 @@ CUSTOM_OP_IMPL(where_np, -1, 1, false, 0, 0) {
         if (y->isR()) {
           for (int e = 0; e < condition->lengthOf(); e++) {
             if (condition->e<bool>(e)) {
+#ifdef HAS_DOUBLE
               auto r = y->e<double>(numMatches);
+#elif defined(HAS_FLOAT32)
+              auto r = y->e<float>(numMatches);
+#else
+#error "No floating-point type available for where_np operation"
+#endif
               z->p(e, r);
               numMatches++;
             } else {
+#ifdef HAS_DOUBLE
               auto r = x->e<double>(e);
+#elif defined(HAS_FLOAT32)
+              auto r = x->e<float>(e);
+#else
+#error "No floating-point type available for where_np operation"
+#endif
               z->p(e, r);
             }
           }
