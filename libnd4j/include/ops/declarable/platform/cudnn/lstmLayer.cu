@@ -201,13 +201,27 @@ void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, ND
   uint8_t *inputWeightsData = nullptr;
   uint8_t *recurrentWeightsData = nullptr;
   if (inputWeights) {
-    inputWeightsT =
-        inputWeights->rankOf() == 3 ? inputWeights->permute({0, 2, 1}, 0, false).dup('c') : inputWeights->transpose().dup('c');
+    if (inputWeights->rankOf() == 3) {
+      NDArray* temp = inputWeights->permute({0, 2, 1}, 0, false);
+      inputWeightsT = temp->dup('c');
+      delete temp;
+    } else {
+      NDArray* temp = inputWeights->transpose();
+      inputWeightsT = temp->dup('c');
+      delete temp;
+    }
     inputWeightsData = (uint8_t *)inputWeightsT.specialBuffer();
   }
   if (recurrentWeights) {
-    recurrentWeightsT = recurrentWeights->rankOf() == 3 ? recurrentWeights->permute({0, 2, 1}, 0, false).dup('c')
-                                                        : recurrentWeights->transpose().dup('c');
+    if (recurrentWeights->rankOf() == 3) {
+      NDArray* temp = recurrentWeights->permute({0, 2, 1}, 0, false);
+      recurrentWeightsT = temp->dup('c');
+      delete temp;
+    } else {
+      NDArray* temp = recurrentWeights->transpose();
+      recurrentWeightsT = temp->dup('c');
+      delete temp;
+    }
     recurrentWeightsData = (uint8_t *)recurrentWeightsT.specialBuffer();
   }
 
@@ -227,7 +241,11 @@ void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, ND
   }
 
   if (dataFormat == 1) {
-    permutedX = input->permute({1, 0, 2}, 0, false).dup('c');
+    NDArray* tempPermute = input->permute({1, 0, 2}, 0, false);
+    permutedX = tempPermute->dup('c');
+    if (!tempPermute->isView()) {
+      delete tempPermute;
+    }
     argX = &permutedX;
   }
 
@@ -282,7 +300,7 @@ void cudnn_rnn_v8(LaunchContext *contextPtr, int dataFormat, NDArray *input, NDA
     } else {
       if (seqLengthArray->dataType() != INT32) {
         seqArrIntData = seqLengthArray->cast(INT32);
-        if (seqArrIntData.ews() != 1) seqArrIntData = seqArrIntData.dup('c');
+        if (seqArrIntData.ews() != 1) seqArrIntData = seqArrIntData->dup('c');
       } else {
         seqArrIntData = seqLengthArray->dup('c');
       }

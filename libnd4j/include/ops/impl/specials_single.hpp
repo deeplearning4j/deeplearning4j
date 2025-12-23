@@ -75,20 +75,19 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
   T *zBuff = output.bufferAsT<T>();
 
   bool shapeExtendedWithOnes = isShapeExtendedWithOnes(output, axis);
-  bool followEws1 = false;
   bool matchesOutputOrdering = true;
   for (int i = 0; i < numOfInArrs; ++i) {
     shapeExtendedWithOnes = shapeExtendedWithOnes && isShapeExtendedWithOnes(*inArrs[i], axis);
     matchesOutputOrdering = matchesOutputOrdering && inArrs[i]->ordering() == output.ordering();
   }
 
-  bool copyCaseEws1 = followEws1 & matchesOutputOrdering;
-  bool copyCase1 = numOfInArrs > 1 ? copyCaseEws1 & shapeExtendedWithOnes : copyCaseEws1;
+  // OPTIMIZATION: Removed ews (element-wise stride) checks as they're no longer used
+  bool copyCase1 = matchesOutputOrdering && shapeExtendedWithOnes;
 
-  if (copyCase1) {
+  if (copyCase1 && numOfInArrs > 1) {
     // copyCase1:
-    // When NdArrays follow the same order and unit elementwise stride and
-    // the concantneation axis is 0th or has only 1 before it {1, 1, ..., axis} for "c"
+    // When NdArrays follow the same order and
+    // the concatenation axis is 0th or has only 1 before it {1, 1, ..., axis} for "c"
     // or axis is (rank-1)th or has only 1 after it {axis, 1, 1, ..., 1} for "f"
     // we will concatenate them by sequential copying of the whole buffers
 
@@ -120,7 +119,9 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
     output.assign(inArrs[0]);
     return;
   }
-  bool copyCase2 = copyCaseEws1 && output.ordering() == 'c';
+  
+  // OPTIMIZATION: Simplified copyCase2 without ews checks
+  bool copyCase2 = matchesOutputOrdering && output.ordering() == 'c';
   if (copyCase2) {
     sd::LongType times = 1;
     auto shapes = shape::shapeOf(output.shapeInfo());
@@ -209,7 +210,7 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
   samediff::Threads::parallel_for(func, 0, output.lengthOf());
 }
 /**
- * Concatneate multi array of the same shape together
+ * Concatenate multi array of the same shape together
  * along a particular dimension
  */
 template <typename T>
@@ -431,7 +432,7 @@ void SpecialMethods<T>::sortTadGeneric(NDArray *input, sd::LongType *dimension, 
   auto func = PRAGMA_THREADS_FOR {
     for (auto r = start; r < stop; r++) {
       NDArray *dx = pack->extractTadView(input, r);
-      quickSort_parallel(dx,  xTadLength, descending);
+      quickSort_parallel(dx, xTadLength, descending);
       delete dx;
     }
   };

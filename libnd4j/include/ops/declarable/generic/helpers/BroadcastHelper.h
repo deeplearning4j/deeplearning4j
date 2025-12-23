@@ -72,10 +72,13 @@ class BroadcastHelper {
         }
         return z;
       } else {
-        auto v = y->getShapeAsVector();
-        auto tZ = NDArrayFactory::valueOf(v, y, y->ordering());
+        auto* yShapeVec = y->getShapeAsVector();
+        auto tZ = NDArrayFactory::valueOf(*yShapeVec, y, y->ordering());
+        delete yShapeVec;
         tZ->applyPairwiseTransform(op.p, y, extraArgs);
-        return tZ;
+        z->assign(tZ);
+        delete tZ;
+        return z;
       }
     } else if (x->lengthOf() <= 1 && y->lengthOf() <= 1) {
       x->applyScalarArr(op.s, y, z);
@@ -121,9 +124,16 @@ class BroadcastHelper {
         x->applyPairwiseTransform(op.p, y, z, extraArgs);
         return z;
       } else {
-        auto v = y->getShapeAsVector();
-        auto tZ = NDArrayFactory::valueOf(v, y, y->ordering());
-        return tZ;
+        std::string errorMessage;
+        errorMessage += "BroadcastHelper::broadcastApply: when x is scalar and y is non-scalar, ";
+        errorMessage += "the output array z must have the same shape as y. ";
+        errorMessage += "x shape: ";
+        errorMessage += ShapeUtils::shapeAsString(x);
+        errorMessage += ", y shape: ";
+        errorMessage += ShapeUtils::shapeAsString(y);
+        errorMessage += ", z shape: ";
+        errorMessage += ShapeUtils::shapeAsString(z);
+        THROW_EXCEPTION(errorMessage.c_str());
       }
     } else if (x->isScalar() && y->isScalar()) {  // x->isScalar() && y->isScalar()
       x->applyScalarArr(op.s, y, z);

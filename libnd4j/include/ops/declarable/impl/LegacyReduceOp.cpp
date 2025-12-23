@@ -20,6 +20,7 @@
 // Created by raver119 on 16.10.2017.
 //
 #include <helpers/ShapeUtils.h>
+#include <helpers/ConstantTadHelper.h>
 
 #include <ops/declarable/LegacyReduceOp.h>
 #include <ops/declarable/OpRegistrator.h>
@@ -65,13 +66,11 @@ sd::Status LegacyReduceOp::validateAndExecute(Context &block) {
 
       REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions required for reduction!");
 
-      shape::TAD tad(x->shapeInfo(), dims.data(), dims.size());
-      tad.createTadOnlyShapeInfo();
-      tad.createOffsets();
+      auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &dims);
 
       NativeOpExcutioner::execReduceFloat(opType, x->buffer(), x->shapeInfo(), block.getTArguments()->data(),
                                           z->buffer(), z->shapeInfo(), dims.data(), (int)dims.size(),
-                                          tad.tadOnlyShapeInfo, tad.tadOffsets);
+                                          tadPack->primaryShapeInfo(), tadPack->primaryOffsets());
     }
 
     STORE_RESULT(*z);
@@ -102,20 +101,20 @@ sd::Status LegacyReduceOp::validateAndExecute(Context &block) {
 
       REQUIRE_TRUE(axis.size() > 0, 0, "Some dimensions required for reduction!");
 
-      shape::TAD tad(x->shapeInfo(), axis.data(), axis.size());
-      tad.createTadOnlyShapeInfo();
-      tad.createOffsets();
+      auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &axis);
 
       auto newShape = ShapeUtils::evalReduceShapeInfo(x->ordering(), axis, *x);
       auto z = new NDArray(newShape, x->getWorkspace());
 
       NativeOpExcutioner::execReduceFloat(opType, x->buffer(), x->shapeInfo(), block.getTArguments()->data(),
                                           z->buffer(), z->shapeInfo(), axis.data(), (int)axis.size(),
-                                          tad.tadOnlyShapeInfo, tad.tadOffsets);
+                                          tadPack->primaryShapeInfo(), tadPack->primaryOffsets());
 
       // keepDims processing, for TF compatibility
       if (block.getIArguments()->size() > 0 && block.getIArguments()->at(0) == 1) {
-        std::vector<sd::LongType> newshape(z->getShapeAsVector());
+        auto* newshapePtr = z->getShapeAsVector();
+        std::vector<sd::LongType> newshape = *newshapePtr;
+        delete newshapePtr;
         for (int e = 0; e < axis.size(); e++) {
           auto a = axis.at(e);
           newshape.insert(newshape.begin() + a, 1);

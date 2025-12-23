@@ -36,7 +36,7 @@ LegacyScalarOp::LegacyScalarOp(int opNum) : LegacyOp(1, opNum) {
 LegacyOp *LegacyScalarOp::clone() { return new LegacyScalarOp(this->_opNum, *this->_scalar); }
 
 LegacyScalarOp::LegacyScalarOp(int opNum, NDArray &scalar) : LegacyOp(1, opNum) {
-  _scalar = new NDArray(scalar.dup(scalar.ordering(), false));
+  _scalar = scalar.dup(scalar.ordering(), false);
 }
 
 ShapeList *LegacyScalarOp::calculateOutputShape(ShapeList *inputShape, Context &block) {
@@ -71,8 +71,9 @@ Status LegacyScalarOp::validateAndExecute(Context &block) {
   } else if (block.getTArguments()->size() > 0) {
     auto y = NDArrayFactory::create(x->dataType(), T_ARG(0), block.launchContext());
 
-    x->applyScalarArr(static_cast<scalar::Ops>(opNum), &y, z);
+    x->applyScalarArr(static_cast<scalar::Ops>(opNum), y, z);
     manager.synchronize();
+    delete y;
   } else {
     NDArray::prepareSpecialUse({z}, {x, _scalar});
 
