@@ -232,8 +232,8 @@ public class FileBatch implements Serializable {
                         "FileBatch.setMaxTotalUncompressedSize() or system property 'nd4j.filebatch.maxZipSize'");
             }
 
-            if (totalRead > Integer.MAX_VALUE - 8) {
-                throw new IOException("Entry '" + entryName + "' exceeds maximum supported size (2GB)");
+            if (totalRead > Integer.MAX_VALUE) {
+                throw new IOException("Entry '" + entryName + "' exceeds maximum supported size (" + Integer.MAX_VALUE + " bytes)");
             }
 
             bout.write(buffer, 0, bytesRead);
