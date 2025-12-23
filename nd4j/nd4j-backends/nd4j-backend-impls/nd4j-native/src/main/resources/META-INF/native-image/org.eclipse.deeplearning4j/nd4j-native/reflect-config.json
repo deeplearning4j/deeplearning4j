@@ -153,14 +153,6 @@
     "allPublicFields": true
   },
   {
-    "name": "org.nd4j.linalg.cpu.nativecpu.buffer.DefaultDataBufferFactory",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
     "name": "org.nd4j.linalg.api.rng.distribution.factory.DefaultDistributionFactory",
     "allDeclaredFields":true,
     "allDeclaredMethods":true,
