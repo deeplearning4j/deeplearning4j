@@ -20,122 +20,92 @@
 // @author Yurii Shyrma, created on 21.09.2018
 // @author raver119@gmail.com
 //
+// CPU implementation of ismax helper
+//
 
 #include <execution/Threads.h>
 #include <helpers/ConstantTadHelper.h>
-
 #include <ops/declarable/helpers/ismax.h>
-#if NOT_EXCLUDED(OP_ismax)
+#include <system/op_boilerplate.h>
+
 namespace sd {
 namespace ops {
 namespace helpers {
 
-template <typename X, typename Z>
-static void ismax_(NDArray* input, NDArray* output, const std::vector<LongType>& dimensions) {
-  if (input->isVector()) {
-    int dimensionsLength = dimensions.size();
-    int length = input->lengthOf();
-    if (!dimensions.empty() && (input->shapeOf())[dimensions[0]] == 1) {
-      for (int i = 0; i < length; i++) output->p<Z>(i, static_cast<Z>(1));
+template <typename T>
+static void ismax_(LaunchContext* context, NDArray* input, NDArray* output,
+                   const std::vector<LongType>& dimensions) {
+    // Initialize output to zeros
+    output->nullify();
+
+    if (dimensions.size() == 0 || (dimensions.size() == 1 && dimensions[0] == sd::DataTypeUtils::max<int>())) {
+        // Scalar case - find the single maximum in the entire array
+        auto indexMax = input->applyIndexReduce(indexreduce::IndexMax, &dimensions);
+        auto targetIdx = indexMax->e<LongType>(0);
+
+        // Set the maximum position to 1
+        output->p(targetIdx, static_cast<T>(1));
+
+        delete indexMax;
     } else {
-      int maxIdx = 0;
-      auto currMax = input->e<X>(0);
-      if (length < ELEMENT_THRESHOLD) {
-        for (int i = 0; i < length; i++) {
-          if (currMax < input->e<X>(i)) {
-            currMax = input->e<X>(i);
-            maxIdx = i;
-          }
-          output->p<Z>(i, static_cast<Z>(0));
-        }
-      } else {
-        {
-          int maxIdxLocal = maxIdx;
-          auto currMaxLocal = currMax;
+        // Dimensional case - find maximum along specified dimensions
+        std::vector<LongType> copy(dimensions);
 
-          for (int i = 0; i < length; i++) {
-            if (currMaxLocal < input->e<X>(i)) {
-              currMaxLocal = input->e<X>(i);
-              maxIdxLocal = i;
-            }
-            output->p<Z>(i, static_cast<Z>(0));
-          }
+        // Get the indices of maximum values along the specified dimensions
+        auto indexMaxArr = input->applyIndexReduce(indexreduce::IndexMax, &dimensions);
 
-          PRAGMA_OMP_CRITICAL {
-            if (currMax < currMaxLocal) {
-              currMax = currMaxLocal;
-              maxIdx = maxIdxLocal;
+        // Get TAD information for the output
+        auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), copy.data(), copy.size());
+        auto zTadShapeInfo = packZ->primaryShapeInfo();
+        auto zTadOffsets = packZ->primaryOffsets();
+
+        auto numTads = packZ->numberOfTads();
+        auto tadLen = shape::length(zTadShapeInfo);
+
+        auto zBuffer = output->bufferAsT<T>();
+
+        // For each TAD, set the maximum index position to 1
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto t = start; t < stop; t++) {
+                auto zTadOffset = zTadOffsets[t];
+                auto maxIdx = indexMaxArr->e<LongType>(t);
+
+                // Calculate the actual offset within this TAD
+                if (maxIdx >= 0 && maxIdx < tadLen) {
+                    sd::LongType coords[SD_MAX_RANK];
+                    sd::LongType zOffset;
+
+                    const int tadRank = shape::rank(zTadShapeInfo);
+                    const sd::LongType* tadShape = shape::shapeOf(zTadShapeInfo);
+                    const sd::LongType* tadStride = shape::stride(zTadShapeInfo);
+
+                    INDEX2COORDS(maxIdx, tadRank, tadShape, coords);
+                    COORDS2INDEX(tadRank, tadStride, coords, zOffset);
+
+                    zBuffer[zTadOffset + zOffset] = static_cast<T>(1);
+                }
             }
-          }
-        }
-      }
-      output->p<Z>(maxIdx, static_cast<Z>(1));
+        };
+
+        samediff::Threads::parallel_for(func, 0, numTads);
+
+        delete indexMaxArr;
     }
-  } else {
-    int dimensionsLength = dimensions.size();
-    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(
-        input->shapeInfo(), const_cast<sd::LongType *>(dimensions.data()), dimensionsLength);
-    auto tadPackZ = sd::ConstantTadHelper::getInstance().tadForDimensions(
-        output->shapeInfo(), const_cast<sd::LongType *>(dimensions.data()), dimensionsLength);
-
-    auto tadShapeShapeInfo = tadPack->primaryShapeInfo();
-    auto tadOffsets = tadPack->primaryOffsets();
-    auto zOfsets = tadPackZ->platformOffsets();
-
-    int tadLength = shape::length(tadShapeShapeInfo);
-    int tads = tadPack->numberOfTads();
-
-    int tadsPerThread = tads / TAD_THRESHOLD;
-    int num_threads = sd::math::sd_max<int>(1, tadsPerThread);
-    num_threads = sd::math::sd_min<int>(num_threads, omp_get_max_threads());
-
-    int span = (tads / num_threads) + 8;
-
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto r = start; r < stop; r++) {
-        auto rX = const_cast<NDArray*>(input)->bufferAsT<X>() + tadOffsets[r];
-        auto rZ = output->bufferAsT<Z>() + zOfsets[r];
-
-        auto maxValue = rX[0];
-        int maxIdx = 0;
-        LongType xCoords[SD_MAX_RANK];
-        LongType zCoords[SD_MAX_RANK];
-        LongType xOffset;
-        LongType zOffset;
-        sd::LongType tadRank = shape::rank(tadShapeShapeInfo);
-        sd::LongType *tadShape = shape::shapeOf(tadShapeShapeInfo);
-        sd::LongType *tadStride = shape::stride(tadShapeShapeInfo);
-        for (sd::LongType i = 0; i < tadLength; i++) {
-          INDEX2COORDS(i,tadRank,tadShape, xCoords);
-          COORDS2INDEX(tadRank, tadStride, xCoords, xOffset);
-          if (rX[xOffset] > maxValue) {
-            maxIdx = i;
-            maxValue = rX[xOffset];
-          }
-        }
-
-        sd::LongType tadPackZRank = shape::rank(tadPackZ->primaryShapeInfo());
-        sd::LongType *tadPackZShape = shape::shapeOf(tadPackZ->primaryShapeInfo());
-        sd::LongType *tadPackZStride = shape::stride(tadPackZ->primaryShapeInfo());
-        PRAGMA_OMP_SIMD
-        for (sd::LongType i = 0; i < tadLength; i++) {
-          INDEX2COORDS(i, tadPackZRank, tadPackZShape, zCoords);
-          COORDS2INDEX(tadPackZRank, tadPackZStride, zCoords, zOffset);
-          rZ[zOffset] = maxIdx == i ? (Z)1 : (Z)0;
-        }
-      }
-    };
-
-    samediff::Threads::parallel_tad(func, 0, tads);
-  }
 }
 
-void ismax(sd::LaunchContext* context, NDArray* input, NDArray* output, const std::vector<LongType>& dimensions) {
-  BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), ismax_, (input, output, dimensions), SD_COMMON_TYPES,
-                        SD_COMMON_TYPES);
+void ismax(LaunchContext* context, NDArray* input, NDArray* output, const std::vector<LongType>& dimensions) {
+    NDArray::prepareSpecialUse({output}, {input});
+
+    BUILD_SINGLE_SELECTOR(input->dataType(), ismax_, (context, input, output, dimensions), SD_COMMON_TYPES);
+
+    NDArray::registerSpecialUse({output}, {input});
 }
+
+BUILD_SINGLE_TEMPLATE(void ismax_,
+                      (sd::LaunchContext* context, NDArray* input, NDArray* output,
+                       const std::vector<sd::LongType>& dimensions),
+                      SD_COMMON_TYPES);
 
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
-#endif

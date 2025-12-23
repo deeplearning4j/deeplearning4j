@@ -45,20 +45,46 @@ void clipByNorm(LaunchContext* context, NDArray* input, NDArray* output, const s
   if (dimensions.empty()) {
     std::vector<sd::LongType> emptyVec = {};
 
-    NDArray actualNorm = useAverage ? z->reduceAlongDimension(reduce::Norm2, &emptyVec) / z->lengthOf()
-                                          : z->reduceAlongDimension(reduce::Norm2, &emptyVec);
-    int idx = 0;
-    if (actualNorm.e<float>(0) > clipNorm->e<float>(0)) *z *= *clipNorm / actualNorm;
+    NDArray *norm2Result = z->reduceAlongDimension(reduce::Norm2, &emptyVec);
+    if (useAverage) {
+      NDArray *divResult = (*norm2Result) / z->lengthOf();
+      if (divResult->e<float>(0) > clipNorm->e<float>(0)) {
+        NDArray *clipDivResult = (*clipNorm) / (*divResult);
+        *z *= (*clipDivResult);
+        delete clipDivResult;
+      }
+      delete divResult;
+    } else {
+      if (norm2Result->e<float>(0) > clipNorm->e<float>(0)) {
+        NDArray *clipDivResult = (*clipNorm) / (*norm2Result);
+        *z *= (*clipDivResult);
+        delete clipDivResult;
+      }
+    }
+    delete norm2Result;
   } else {
     auto listOfSubArrs = z->allTensorsAlongDimension(dimensions);
 
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
         std::vector<sd::LongType> emptyVec = {};
-         NDArray actualNorm =
-            useAverage ? listOfSubArrs.at(i)->reduceAlongDimension(reduce::Norm2, &emptyVec) / listOfSubArrs.at(i)->lengthOf()
-                       : listOfSubArrs.at(i)->reduceAlongDimension(reduce::Norm2, &emptyVec);
-        if (actualNorm.e<float>(0) > clipNorm->e<float>(0)) *listOfSubArrs.at(i) *= *clipNorm / actualNorm;
+        NDArray *norm2Result = listOfSubArrs.at(i)->reduceAlongDimension(reduce::Norm2, &emptyVec);
+        if (useAverage) {
+          NDArray *divResult = (*norm2Result) / listOfSubArrs.at(i)->lengthOf();
+          if (divResult->e<float>(0) > clipNorm->e<float>(0)) {
+            NDArray *clipDivResult = (*clipNorm) / (*divResult);
+            *listOfSubArrs.at(i) *= (*clipDivResult);
+            delete clipDivResult;
+          }
+          delete divResult;
+        } else {
+          if (norm2Result->e<float>(0) > clipNorm->e<float>(0)) {
+            NDArray *clipDivResult = (*clipNorm) / (*norm2Result);
+            *listOfSubArrs.at(i) *= (*clipDivResult);
+            delete clipDivResult;
+          }
+        }
+        delete norm2Result;
       }
     };
     samediff::Threads::parallel_tad(func, 0, listOfSubArrs.size());
@@ -71,8 +97,10 @@ static void clipByNormBp_(NDArray *input, NDArray *gradO, NDArray *gradI,
                           const std::vector<LongType>& dimensions, NDArray *clipNorm, const bool useAverage) {
   const int rank = input->rankOf();
 
-  auto norm2 = input->reduceAlongDimension(reduce::Norm2, &dimensions);
-  auto sums = input->reduceAlongDimension(reduce::Sum, &dimensions);
+  auto *norm2Ptr = input->reduceAlongDimension(reduce::Norm2, &dimensions);
+  auto norm2 = *norm2Ptr;
+  auto *sumsPtr = input->reduceAlongDimension(reduce::Sum, &dimensions);
+  auto sums = *sumsPtr;
 
   if (norm2.lengthOf() == 1) {
     const T norm = useAverage ? norm2.e<T>(0) / input->lengthOf() : norm2.e<T>(0);
@@ -123,6 +151,9 @@ static void clipByNormBp_(NDArray *input, NDArray *gradO, NDArray *gradI,
     };
     samediff::Threads::parallel_tad(func, 0, gradISubArrs.size());
   }
+  
+  delete norm2Ptr;
+  delete sumsPtr;
 }
 BUILD_SINGLE_TEMPLATE(void clipByNormBp_,
                       (NDArray *input, NDArray *gradO, NDArray *gradI, const std::vector<sd::LongType>& dimensions,
@@ -142,8 +173,10 @@ static void clipByGlobalNorm_(std::vector<NDArray*>& inputs, double clipNorm, sd
   T globalNorm = static_cast<T>(0);
   for (size_t i = 0; i < inputs.size(); i++) {
     auto input = inputs[i];
-    auto l2norm = input->reduceNumber(reduce::Norm2);
-    globalNorm += l2norm.t<T>(0) * l2norm.t<T>(0);
+    auto* l2norm = input->reduceNumber(reduce::Norm2);
+    T normVal = l2norm->t<T>(0);
+    globalNorm += normVal * normVal;
+    delete l2norm;
   }
 
   auto normS = sd::math::sd_sqrt<T, T>(globalNorm);
