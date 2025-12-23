@@ -75,6 +75,8 @@ public class OnnxRuntimeRunner implements Closeable {
     private Map<String, Onnx.ValueInfoProto> allAvailableOutputs;
     
     // Map of output names that need casting to their cast node outputs
+    // NOTE: As of the fix for preserving original output names, this is no longer populated
+    // since cast nodes now output to the original name. Kept for backward compatibility.
     private Map<String, String> outputCastMapping = new HashMap<>();
 
     @Builder
