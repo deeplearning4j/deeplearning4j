@@ -29,8 +29,14 @@ import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
-@PreHookRule(nodeNames = [],opNames = ["Unsqueeze"],frameworkName = "onnx")
-class Unsqueeze  : PreImportHook {
+/**
+ * Implementation of Microsoft ONNX LayerNormalization operation.
+ * 
+ * @author Adam Gibson
+ */
+@PreHookRule(nodeNames = [], opNames = ["LayerNormalization"], frameworkName = "onnx")
+class LayerNormalization: PreImportHook {
+    
     override fun doImport(
         sd: SameDiff,
         attributes: Map<String, Any>,
@@ -40,29 +46,46 @@ class Unsqueeze  : PreImportHook {
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
         dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String, List<SDVariable>> {
-        // Parameter docs below are from the onnx operator docs:
-        // https://github.com/onnx/onnx/blob/master/docs/Operators.md#unsqueeze
-        val axes = if(op.inputsToOp.size < 2) attributes["axes"] as List<Int> else {
-            sd.getVariable(op.inputsToOp[1]).arr.toIntVector().toList()
-        }
-        var ret: SDVariable? = null
 
         val input = sd.getVariable(op.inputsToOp[0])
+        val scale = sd.getVariable(op.inputsToOp[1])
 
-        if(axes.size != 1) {
-            for(i in axes.indices) {
-                if(i < axes.size - 1)
-                    ret = sd.expandDims(outputNames[0],input,axes[i])
-                else {
-                    ret = sd.expandDims(outputNames[0],input,axes[i])
-                }
-            }
-        } else {
-            val input = sd.getVariable(op.inputsToOp[0])
-            ret = sd.expandDims(outputNames[0],input,axes[0])
-
+        // Bias is optional
+        var bias: SDVariable? = null
+        if (op.inputsToOp.size > 2 && op.inputsToOp[2] != null) {
+            bias = sd.getVariable(op.inputsToOp[2])
         }
 
-        return mapOf(ret!!.name() to listOf(ret!!))
+        val axis = (attributes.getOrDefault("axis", -1) as Number).toInt()
+        val epsilon = (attributes.getOrDefault("epsilon", 1e-5) as Number).toDouble()
+
+        // Use built-in layerNorm op - C++ standardize now correctly implements
+        // (x - mean) / sqrt(variance + epsilon)
+        val result = if (bias != null) {
+            sd.nn().layerNorm(outputNames[0], input, scale, bias, false, axis.toLong())
+        } else {
+            val zeroBias = sd.zerosLike(scale)
+            sd.nn().layerNorm(outputNames[0], input, scale, zeroBias, false, axis.toLong())
+        }
+
+        val outputs = mutableMapOf<String, List<SDVariable>>()
+        outputs[outputNames[0]] = listOf(result)
+
+        // If additional outputs are requested (mean and inverse std dev)
+        if (outputNames.size > 1) {
+            // Compute mean along the normalization axis
+            val actualAxis = if (axis < 0) -1L else axis.toLong()
+            val mean = sd.mean(input, false, actualAxis)
+            outputs[outputNames[1]] = listOf(mean.rename(outputNames[1]))
+
+            if (outputNames.size > 2) {
+                // Compute inverse standard deviation
+                val variance = sd.variance(input, false, actualAxis)
+                val invStdDev = sd.math().pow(variance.add(sd.constant(epsilon)), sd.constant(-0.5))
+                outputs[outputNames[2]] = listOf(invStdDev.rename(outputNames[2]))
+            }
+        }
+
+        return outputs
     }
 }

@@ -29,8 +29,25 @@ import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
-@PreHookRule(nodeNames = [],opNames = ["Unsqueeze"],frameworkName = "onnx")
-class Unsqueeze  : PreImportHook {
+/**
+ * Implementation of Microsoft ONNX BiasAdd operation.
+ * 
+ * BiasAdd adds a bias tensor to an input tensor along a specified axis.
+ * This is commonly used in neural networks where bias is added after
+ * linear transformations.
+ * 
+ * Inputs:
+ * - data: Input tensor
+ * - bias: Bias tensor to add
+ * 
+ * Attributes:
+ * - axis: Axis along which to add bias (default: 1)
+ * 
+ * @author Adam Gibson
+ */
+@PreHookRule(nodeNames = [], opNames = ["BiasAdd"], frameworkName = "onnx")
+class BiasAdd: PreImportHook {
+    
     override fun doImport(
         sd: SameDiff,
         attributes: Map<String, Any>,
@@ -40,29 +57,17 @@ class Unsqueeze  : PreImportHook {
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
         dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String, List<SDVariable>> {
-        // Parameter docs below are from the onnx operator docs:
-        // https://github.com/onnx/onnx/blob/master/docs/Operators.md#unsqueeze
-        val axes = if(op.inputsToOp.size < 2) attributes["axes"] as List<Int> else {
-            sd.getVariable(op.inputsToOp[1]).arr.toIntVector().toList()
-        }
-        var ret: SDVariable? = null
-
-        val input = sd.getVariable(op.inputsToOp[0])
-
-        if(axes.size != 1) {
-            for(i in axes.indices) {
-                if(i < axes.size - 1)
-                    ret = sd.expandDims(outputNames[0],input,axes[i])
-                else {
-                    ret = sd.expandDims(outputNames[0],input,axes[i])
-                }
-            }
-        } else {
-            val input = sd.getVariable(op.inputsToOp[0])
-            ret = sd.expandDims(outputNames[0],input,axes[0])
-
-        }
-
-        return mapOf(ret!!.name() to listOf(ret!!))
+        
+        val data = sd.getVariable(op.inputsToOp[0])
+        val bias = sd.getVariable(op.inputsToOp[1])
+        
+        val axis = (attributes.getOrDefault("axis", 1) as Number).toInt()
+        
+        // Simply add the bias to the data
+        // The broadcasting rules will handle the proper alignment along the specified axis
+        val result = data.add(bias)
+        
+        result.rename(outputNames[0])
+        return mapOf(outputNames[0] to listOf(result))
     }
 }

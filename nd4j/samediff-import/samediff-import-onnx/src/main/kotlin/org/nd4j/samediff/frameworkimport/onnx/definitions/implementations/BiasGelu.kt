@@ -29,8 +29,18 @@ import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
-@PreHookRule(nodeNames = [],opNames = ["Unsqueeze"],frameworkName = "onnx")
-class Unsqueeze  : PreImportHook {
+/**
+ * Implementation of Microsoft ONNX BiasGelu operation.
+ * 
+ * BiasGelu combines bias addition with GELU activation:
+ * 1. Add bias to input: x = input + bias
+ * 2. Apply GELU: output = GELU(x) = 0.5 * x * (1 + erf(x / sqrt(2)))
+ * 
+ * @author Adam Gibson
+ */
+@PreHookRule(nodeNames = [], opNames = ["BiasGelu"], frameworkName = "onnx")
+class BiasGelu: PreImportHook {
+    
     override fun doImport(
         sd: SameDiff,
         attributes: Map<String, Any>,
@@ -40,29 +50,20 @@ class Unsqueeze  : PreImportHook {
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
         dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String, List<SDVariable>> {
-        // Parameter docs below are from the onnx operator docs:
-        // https://github.com/onnx/onnx/blob/master/docs/Operators.md#unsqueeze
-        val axes = if(op.inputsToOp.size < 2) attributes["axes"] as List<Int> else {
-            sd.getVariable(op.inputsToOp[1]).arr.toIntVector().toList()
-        }
-        var ret: SDVariable? = null
-
+        
         val input = sd.getVariable(op.inputsToOp[0])
-
-        if(axes.size != 1) {
-            for(i in axes.indices) {
-                if(i < axes.size - 1)
-                    ret = sd.expandDims(outputNames[0],input,axes[i])
-                else {
-                    ret = sd.expandDims(outputNames[0],input,axes[i])
-                }
-            }
-        } else {
-            val input = sd.getVariable(op.inputsToOp[0])
-            ret = sd.expandDims(outputNames[0],input,axes[0])
-
-        }
-
-        return mapOf(ret!!.name() to listOf(ret!!))
+        val bias = sd.getVariable(op.inputsToOp[1])
+        
+        // Add bias to input
+        val biasedInput = input.add(bias)
+        
+        // Apply GELU activation: 0.5 * x * (1 + erf(x / sqrt(2)))
+        val x = biasedInput
+        val sqrt2 = sd.constant(kotlin.math.sqrt(2.0))
+        val erfInput = x.div(sqrt2)
+        val erfResult = sd.math().erf(erfInput)
+        val onePlusErf = erfResult.add(sd.constant(1.0))
+        val result = x.mul(onePlusErf).mul(outputNames[0],sd.constant(0.5))
+        return mapOf(outputNames[0] to listOf(result))
     }
 }

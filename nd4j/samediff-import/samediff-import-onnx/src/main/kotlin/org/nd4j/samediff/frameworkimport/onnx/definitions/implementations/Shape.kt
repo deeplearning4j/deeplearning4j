@@ -29,8 +29,20 @@ import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
-@PreHookRule(nodeNames = [],opNames = ["Unsqueeze"],frameworkName = "onnx")
-class Unsqueeze  : PreImportHook {
+/**
+ * Implementation of the ONNX Shape operator.
+ *
+ * The Shape operator takes a tensor as input and outputs an integer tensor
+ * containing the shape (dimensions) of the input tensor.
+ *
+ * ONNX Shape operator reference:
+ * https://github.com/onnx/onnx/blob/master/docs/Operators.md#shape
+ *
+ * @author Adam Gibson
+ */
+@PreHookRule(nodeNames = [], opNames = ["Shape"], frameworkName = "onnx")
+class Shape : PreImportHook {
+
     override fun doImport(
         sd: SameDiff,
         attributes: Map<String, Any>,
@@ -40,29 +52,35 @@ class Unsqueeze  : PreImportHook {
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
         dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String, List<SDVariable>> {
-        // Parameter docs below are from the onnx operator docs:
-        // https://github.com/onnx/onnx/blob/master/docs/Operators.md#unsqueeze
-        val axes = if(op.inputsToOp.size < 2) attributes["axes"] as List<Int> else {
-            sd.getVariable(op.inputsToOp[1]).arr.toIntVector().toList()
-        }
-        var ret: SDVariable? = null
+        // Get the input tensor whose shape we want to extract
+        val inputVariable = sd.getVariable(op.inputsToOp[0])
 
-        val input = sd.getVariable(op.inputsToOp[0])
+        // The ONNX Shape operator may have optional 'start' and 'end' attributes
+        val start = attributes["start"] as? Long ?: 0L
+        val end = attributes["end"] as? Long
 
-        if(axes.size != 1) {
-            for(i in axes.indices) {
-                if(i < axes.size - 1)
-                    ret = sd.expandDims(outputNames[0],input,axes[i])
-                else {
-                    ret = sd.expandDims(outputNames[0],input,axes[i])
-                }
+        val shapeVariable = if (start > 0 || end != null) {
+            // Handle slicing case
+            val fullShape = inputVariable.shape()
+
+            if (end != null) {
+                val sliceBegin = intArrayOf(start.toInt())
+                val sliceSize = intArrayOf((end - start).toInt())
+                sd.slice(fullShape, sliceBegin, *sliceSize)
+            } else {
+                val shapeRank = inputVariable.shape?.size ?: 1
+                val sliceBegin = intArrayOf(start.toInt())
+                val sliceSize = intArrayOf(shapeRank - start.toInt())
+                sd.slice(fullShape, sliceBegin, *sliceSize)
+
             }
         } else {
-            val input = sd.getVariable(op.inputsToOp[0])
-            ret = sd.expandDims(outputNames[0],input,axes[0])
-
+            // Default case: get the full shape of the input tensor
+            sd.shape(outputNames[0],inputVariable)
         }
 
-        return mapOf(ret!!.name() to listOf(ret!!))
+        return mapOf(outputNames[0] to listOf(shapeVariable))
+
+
     }
 }
