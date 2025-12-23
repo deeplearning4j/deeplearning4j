@@ -109,6 +109,10 @@ class OnnxIRAttr(inputAttributeDef: Onnx.AttributeProto, inputAttributeValue: On
     }
 
     override fun tensorValue(): IRTensor<Onnx.TensorProto, Onnx.TensorProto.DataType> {
+        //need to use raw data instead
+        if(attributeValue.tensorsCount < 1) {
+            return OnnxIRTensor(attributeValue.t)
+        }
         return OnnxIRTensor(attributeValue.tensorsList[0])
     }
 

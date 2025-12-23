@@ -22,6 +22,7 @@ package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
+import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
@@ -29,8 +30,14 @@ import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
-@PreHookRule(nodeNames = [],opNames = ["Unsqueeze"],frameworkName = "onnx")
-class Unsqueeze  : PreImportHook {
+/**
+ * ONNX LessOrEqual operation implementation that casts output to boolean.
+ *
+ * @author Adam Gibson
+ */
+@PreHookRule(nodeNames = [],opNames = ["LessOrEqual"],frameworkName = "onnx")
+class LessOrEqual : PreImportHook  {
+
     override fun doImport(
         sd: SameDiff,
         attributes: Map<String, Any>,
@@ -40,29 +47,15 @@ class Unsqueeze  : PreImportHook {
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
         dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String, List<SDVariable>> {
-        // Parameter docs below are from the onnx operator docs:
-        // https://github.com/onnx/onnx/blob/master/docs/Operators.md#unsqueeze
-        val axes = if(op.inputsToOp.size < 2) attributes["axes"] as List<Int> else {
-            sd.getVariable(op.inputsToOp[1]).arr.toIntVector().toList()
-        }
-        var ret: SDVariable? = null
-
-        val input = sd.getVariable(op.inputsToOp[0])
-
-        if(axes.size != 1) {
-            for(i in axes.indices) {
-                if(i < axes.size - 1)
-                    ret = sd.expandDims(outputNames[0],input,axes[i])
-                else {
-                    ret = sd.expandDims(outputNames[0],input,axes[i])
-                }
-            }
-        } else {
-            val input = sd.getVariable(op.inputsToOp[0])
-            ret = sd.expandDims(outputNames[0],input,axes[0])
-
-        }
-
-        return mapOf(ret!!.name() to listOf(ret!!))
+        val inputA = sd.getVariable(op.inputsToOp[0])
+        val inputB = sd.getVariable(op.inputsToOp[1])
+        
+        // Perform the less than or equal comparison
+        val lessEqualResult = sd.lte(inputA, inputB)
+        
+        // Cast the result to boolean
+        val outputVar = sd.castTo(outputNames[0], lessEqualResult, DataType.BOOL)
+        
+        return mapOf(outputVar.name() to listOf(outputVar))
     }
 }

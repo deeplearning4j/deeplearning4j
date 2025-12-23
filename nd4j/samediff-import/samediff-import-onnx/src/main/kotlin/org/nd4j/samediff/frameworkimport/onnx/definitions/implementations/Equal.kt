@@ -1,3 +1,4 @@
+package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 /*
  *  ******************************************************************************
  *  *
@@ -17,11 +18,12 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
+
 
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
+import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
@@ -29,8 +31,18 @@ import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
-@PreHookRule(nodeNames = [],opNames = ["Unsqueeze"],frameworkName = "onnx")
-class Unsqueeze  : PreImportHook {
+/**
+ * Implementation of ONNX Equal operation with type casting support.
+ *
+ * The Equal operation compares two input tensors element-wise for equality.
+ * This implementation automatically casts inputs to a common type before comparison
+ * based on data type width, promoting to the wider type.
+ *
+ * @author Adam Gibson
+ */
+@PreHookRule(nodeNames = [], opNames = ["Equal"], frameworkName = "onnx")
+class Equal : PreImportHook {
+
     override fun doImport(
         sd: SameDiff,
         attributes: Map<String, Any>,
@@ -40,29 +52,36 @@ class Unsqueeze  : PreImportHook {
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
         dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String, List<SDVariable>> {
-        // Parameter docs below are from the onnx operator docs:
-        // https://github.com/onnx/onnx/blob/master/docs/Operators.md#unsqueeze
-        val axes = if(op.inputsToOp.size < 2) attributes["axes"] as List<Int> else {
-            sd.getVariable(op.inputsToOp[1]).arr.toIntVector().toList()
-        }
-        var ret: SDVariable? = null
 
-        val input = sd.getVariable(op.inputsToOp[0])
+        val input1 = sd.getVariable(op.inputsToOp[0])
+        val input2 = sd.getVariable(op.inputsToOp[1])
 
-        if(axes.size != 1) {
-            for(i in axes.indices) {
-                if(i < axes.size - 1)
-                    ret = sd.expandDims(outputNames[0],input,axes[i])
-                else {
-                    ret = sd.expandDims(outputNames[0],input,axes[i])
-                }
-            }
+        // Determine common data type for casting
+        val commonDataType = determineCommonDataType(input1.dataType(), input2.dataType())
+
+        // Cast inputs to common type if needed
+        val castedInput1 = if (input1.dataType() != commonDataType) {
+            input1.castTo(commonDataType)
         } else {
-            val input = sd.getVariable(op.inputsToOp[0])
-            ret = sd.expandDims(outputNames[0],input,axes[0])
-
+            input1
         }
 
-        return mapOf(ret!!.name() to listOf(ret!!))
+        val castedInput2 = if (input2.dataType() != commonDataType) {
+            input2.castTo(commonDataType)
+        } else {
+            input2
+        }
+
+        // Perform equal comparison
+        val result = castedInput1.eq(castedInput2).castTo(DataType.BOOL).rename(outputNames[0])
+
+
+        return mapOf(outputNames[0] to listOf(result))
+    }
+
+    private fun determineCommonDataType(type1: DataType, type2: DataType): DataType {
+        if (type1 == type2) return type1
+
+        return if (type1.width() >= type2.width()) type1 else type2
     }
 }

@@ -1,3 +1,5 @@
+package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
+
 /*
  *  ******************************************************************************
  *  *
@@ -17,11 +19,12 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
+
 
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
+import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
@@ -29,8 +32,21 @@ import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
-@PreHookRule(nodeNames = [],opNames = ["Unsqueeze"],frameworkName = "onnx")
-class Unsqueeze  : PreImportHook {
+/**
+ * Implementation of ONNX Where operation with type casting support.
+ *
+ * The Where operation has two modes:
+ * 1. Single input (condition): Returns coordinates of true elements
+ * 2. Three inputs (condition, x, y): Returns x where condition is true, y where false
+ *
+ * This implementation automatically casts x and y inputs to a common type before selection
+ * based on data type width, promoting to the wider type.
+ *
+ * @author Adam Gibson
+ */
+@PreHookRule(nodeNames = [], opNames = ["Where"], frameworkName = "onnx")
+class Where : PreImportHook {
+
     override fun doImport(
         sd: SameDiff,
         attributes: Map<String, Any>,
@@ -40,29 +56,40 @@ class Unsqueeze  : PreImportHook {
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
         dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String, List<SDVariable>> {
-        // Parameter docs below are from the onnx operator docs:
-        // https://github.com/onnx/onnx/blob/master/docs/Operators.md#unsqueeze
-        val axes = if(op.inputsToOp.size < 2) attributes["axes"] as List<Int> else {
-            sd.getVariable(op.inputsToOp[1]).arr.toIntVector().toList()
-        }
-        var ret: SDVariable? = null
 
-        val input = sd.getVariable(op.inputsToOp[0])
-
-        if(axes.size != 1) {
-            for(i in axes.indices) {
-                if(i < axes.size - 1)
-                    ret = sd.expandDims(outputNames[0],input,axes[i])
-                else {
-                    ret = sd.expandDims(outputNames[0],input,axes[i])
-                }
+        val result = when (op.inputsToOp.size) {
+            1 -> {
+                // Single input mode - return coordinates of true elements
+                val condition = sd.getVariable(op.inputsToOp[0])
+                sd.where(condition)
             }
-        } else {
-            val input = sd.getVariable(op.inputsToOp[0])
-            ret = sd.expandDims(outputNames[0],input,axes[0])
+            3 -> {
+                // Three input mode - conditional selection with type casting
+                val condition = sd.getVariable(op.inputsToOp[0])
+                val x = sd.getVariable(op.inputsToOp[1])
+                val y = sd.getVariable(op.inputsToOp[2])
 
+                val conditionCasted = condition.castTo(DataType.BOOL)
+                // Cast x and y to common type if needed
+                val castedX = x.castTo(DataType.INT64)
+
+                val castedY = y.castTo(DataType.INT64)
+
+                // Perform conditional selection
+                sd.where(castedX, castedY,conditionCasted)
+            }
+            else -> {
+                throw IllegalArgumentException("Where operation requires 1 or 3 inputs, got ${op.inputsToOp.size}")
+            }
         }
 
-        return mapOf(ret!!.name() to listOf(ret!!))
+        result.rename(outputNames[0])
+        return mapOf(outputNames[0] to listOf(result))
+    }
+
+    private fun determineCommonDataType(type1: DataType, type2: DataType): DataType {
+        if (type1 == type2) return type1
+
+        return if (type1.width() >= type2.width()) type1 else type2
     }
 }

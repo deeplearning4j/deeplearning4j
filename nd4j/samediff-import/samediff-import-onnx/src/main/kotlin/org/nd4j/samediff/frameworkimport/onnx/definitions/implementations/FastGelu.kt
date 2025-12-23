@@ -22,6 +22,7 @@ package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
+import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
@@ -29,8 +30,19 @@ import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
-@PreHookRule(nodeNames = [],opNames = ["Unsqueeze"],frameworkName = "onnx")
-class Unsqueeze  : PreImportHook {
+/**
+ * Implementation of Microsoft ONNX FastGelu operation.
+ * 
+ * FastGelu is an approximation of GELU (Gaussian Error Linear Unit) activation function
+ * that provides faster computation compared to the exact GELU implementation.
+ * 
+ * FastGELU(x) = 0.5 * x * (1 + tanh(sqrt(2/π) * (x + 0.044715 * x^3)))
+ * 
+ * @author Adam Gibson
+ */
+@PreHookRule(nodeNames = [], opNames = ["FastGelu"], frameworkName = "onnx")
+class FastGelu: PreImportHook {
+    
     override fun doImport(
         sd: SameDiff,
         attributes: Map<String, Any>,
@@ -40,29 +52,20 @@ class Unsqueeze  : PreImportHook {
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
         dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String, List<SDVariable>> {
-        // Parameter docs below are from the onnx operator docs:
-        // https://github.com/onnx/onnx/blob/master/docs/Operators.md#unsqueeze
-        val axes = if(op.inputsToOp.size < 2) attributes["axes"] as List<Int> else {
-            sd.getVariable(op.inputsToOp[1]).arr.toIntVector().toList()
-        }
-        var ret: SDVariable? = null
-
+        
         val input = sd.getVariable(op.inputsToOp[0])
-
-        if(axes.size != 1) {
-            for(i in axes.indices) {
-                if(i < axes.size - 1)
-                    ret = sd.expandDims(outputNames[0],input,axes[i])
-                else {
-                    ret = sd.expandDims(outputNames[0],input,axes[i])
-                }
-            }
-        } else {
-            val input = sd.getVariable(op.inputsToOp[0])
-            ret = sd.expandDims(outputNames[0],input,axes[0])
-
-        }
-
-        return mapOf(ret!!.name() to listOf(ret!!))
+        
+        // FastGELU approximation: 0.5 * x * (1 + tanh(sqrt(2/π) * (x + 0.044715 * x^3)))
+        val x = input
+        val x3 = sd.math().pow(x, sd.constant(3.0))
+        val inner = x.add(x3.mul(sd.constant(0.044715)))
+        val sqrt2OverPi = sd.constant(kotlin.math.sqrt(2.0 / kotlin.math.PI))
+        val tanhInput = inner.mul(sqrt2OverPi)
+        val tanhResult = sd.math().tanh(tanhInput)
+        val onePlusTanh = tanhResult.add(sd.constant(1.0))
+        val result = x.mul(onePlusTanh).mul(sd.constant(0.5))
+        
+        result.rename(outputNames[0])
+        return mapOf(outputNames[0] to listOf(result))
     }
 }
