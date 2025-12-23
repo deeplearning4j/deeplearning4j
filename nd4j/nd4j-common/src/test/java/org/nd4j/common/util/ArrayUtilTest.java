@@ -43,4 +43,76 @@ public class ArrayUtilTest {
         );
     }
 
+    @Test
+    public void testCalcStridesFortranIntEmptyShape() {
+        // Test that calcStridesFortran returns [1] for empty shapes (length 0)
+        assertArrayEquals(
+                new int[]{1},
+                ArrayUtil.calcStridesFortran(new int[]{})
+        );
+    }
+
+    @Test
+    public void testCalcStridesFortranIntSingleElementShape() {
+        // Test that calcStridesFortran returns [1] for single-element shapes (length 1)
+        assertArrayEquals(
+                new int[]{1},
+                ArrayUtil.calcStridesFortran(new int[]{5})
+        );
+    }
+
+    @Test
+    public void testCalcStridesFortranLongEmptyShape() {
+        // Test that calcStridesFortran returns [1] for empty shapes (length 0)
+        assertArrayEquals(
+                new long[]{1},
+                ArrayUtil.calcStridesFortran(new long[]{})
+        );
+    }
+
+    @Test
+    public void testCalcStridesFortranLongSingleElementShape() {
+        // Test that calcStridesFortran returns [1] for single-element shapes (length 1)
+        assertArrayEquals(
+                new long[]{1},
+                ArrayUtil.calcStridesFortran(new long[]{5L})
+        );
+    }
+
+    @Test
+    public void testCalcStridesIntEmptyShape() {
+        // Test that calcStrides returns [1] for empty shapes (length 0)
+        assertArrayEquals(
+                new int[]{1},
+                ArrayUtil.calcStrides(new int[]{})
+        );
+    }
+
+    @Test
+    public void testCalcStridesIntSingleElementShape() {
+        // Test that calcStrides returns [1] for single-element shapes (length 1)
+        assertArrayEquals(
+                new int[]{1},
+                ArrayUtil.calcStrides(new int[]{5})
+        );
+    }
+
+    @Test
+    public void testCalcStridesLongEmptyShape() {
+        // Test that calcStrides returns [1] for empty shapes (length 0)
+        assertArrayEquals(
+                new long[]{1},
+                ArrayUtil.calcStrides(new long[]{})
+        );
+    }
+
+    @Test
+    public void testCalcStridesLongSingleElementShape() {
+        // Test that calcStrides returns [1] for single-element shapes (length 1)
+        assertArrayEquals(
+                new long[]{1},
+                ArrayUtil.calcStrides(new long[]{5L})
+        );
+    }
+
 }
