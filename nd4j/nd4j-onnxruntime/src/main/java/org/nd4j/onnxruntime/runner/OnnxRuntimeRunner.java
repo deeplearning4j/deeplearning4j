@@ -299,39 +299,25 @@ public class OnnxRuntimeRunner implements Closeable {
                     String outputName = entry.getKey();
                     TypeMismatchInfo mismatch = entry.getValue();
                     
-                    // Rename the original output to preserve it, using a unique suffix to avoid conflicts
-                    String originalOutputName = outputName + "_original_type_" + 
-                            mismatch.actualType.toLowerCase().replace("tensor(", "").replace(")", "");
-                    
-                    // Update all nodes in a single traversal (both producers and consumers)
-                    for (int i = 0; i < graphBuilder.getNodeCount(); i++) {
-                        Onnx.NodeProto node = graphBuilder.getNode(i);
-                        boolean needsUpdate = false;
-                        Onnx.NodeProto.Builder nodeBuilder = node.toBuilder();
-                        
-                        // Update outputs that match
-                        for (int j = 0; j < node.getOutputCount(); j++) {
-                            if (node.getOutput(j).equals(outputName)) {
-                                nodeBuilder.setOutput(j, originalOutputName);
-                                needsUpdate = true;
-                            }
-                        }
-                        
-                        // Update inputs that match
-                        for (int j = 0; j < node.getInputCount(); j++) {
-                            if (node.getInput(j).equals(outputName)) {
-                                nodeBuilder.setInput(j, originalOutputName);
-                                needsUpdate = true;
-                            }
-                        }
-                        
-                        if (needsUpdate) {
-                            graphBuilder.setNode(i, nodeBuilder.build());
+                    // Create a cast node with a sanitized and unique output name
+                    String typeSuffix = mismatch.expectedType.toLowerCase().replace("tensor(", "").replace(")", "");
+                    String rawCastOutputName = outputName + "_cast_to_" + typeSuffix + "_" +
+                            UUID.randomUUID().toString().replace("-", "");
+                    StringBuilder sanitizedNameBuilder = new StringBuilder(rawCastOutputName.length());
+                    for (int i = 0; i < rawCastOutputName.length(); i++) {
+                        char c = rawCastOutputName.charAt(i);
+                        if (Character.isLetterOrDigit(c) || c == '_') {
+                            sanitizedNameBuilder.append(c);
+                        } else {
+                            sanitizedNameBuilder.append('_');
                         }
                     }
-                    
-                    // Create a cast node that outputs to the original name
-                    Onnx.NodeProto castNode = createCastNode(originalOutputName, outputName, 
+                    if (sanitizedNameBuilder.length() == 0 ||
+                            !(Character.isLetter(sanitizedNameBuilder.charAt(0)) || sanitizedNameBuilder.charAt(0) == '_')) {
+                        sanitizedNameBuilder.insert(0, 'n');
+                    }
+                    String castOutputName = sanitizedNameBuilder.toString();
+                    Onnx.NodeProto castNode = createCastNode(outputName, castOutputName, 
                             parseDataType(mismatch.expectedType));
                     graphBuilder.addNode(castNode);
                     
@@ -406,7 +392,7 @@ public class OnnxRuntimeRunner implements Closeable {
         // of node (Attention_0) does not match expected type (tensor(float))."
         
         Pattern pattern = Pattern.compile(
-            "Type \\(tensor\\((\\w+)\\)\\) of output arg \\(([^)]+)\\) .* expected type \\(tensor\\((\\w+)\\)\\)"
+            "Type \\(tensor\\((\\w+)\\)\\) of output arg \\(([^)]+)\\) of node \\([^)]*\\) does not match expected type \\(tensor\\((\\w+)\\)\\)\\."
         );
         
         Matcher matcher = pattern.matcher(errorMessage);
@@ -781,7 +767,10 @@ public class OnnxRuntimeRunner implements Closeable {
             LongVector longPointer = outValue.GetTensorTypeAndShapeInfo().GetShape();
             // shape info can be null
             if (longPointer != null) {
-                long[] shape = new long[(int)longPointer.size()];
+                long dims = longPointer.size();
+                Preconditions.checkArgument(dims >= 0 && dims <= Integer.MAX_VALUE,
+                        "Invalid tensor rank from ONNX runtime: " + dims);
+                long[] shape = new long[(int) dims];
                 for (int j = 0; j < shape.length; j++) {
                     shape[j] = longPointer.get(j);
                 }
