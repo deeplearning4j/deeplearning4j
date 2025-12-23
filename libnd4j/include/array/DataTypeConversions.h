@@ -48,11 +48,24 @@ class SD_LIB_EXPORT DataTypeConversions {
       auto tmp = new T2[length];
       ops::safe_copy(tmp, static_cast<const T2*>(src), static_cast<size_t>(length));
 
-      // If any conversion from T2 to T is required, perform it here.
-      // For example, if T can be constructed from T2, you might do:
-       for (LongType i = 0; i < length; ++i) {
-           buffer[i] = static_cast<T>(tmp[i]);
-       }
+      // Perform type conversion from T2 to T, with byte order swapping if needed
+#if __GNUC__ <= 4
+      if (!canKeep) {
+        for (sd::LongType e = 0; e < length; e++)
+          buffer[e] = BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
+      } else {
+        for (sd::LongType e = 0; e < length; e++)
+          buffer[e] = static_cast<T>(tmp[e]);
+      }
+#else
+      auto func = PRAGMA_THREADS_FOR {
+        for (auto e = start; e < stop; e++)
+          buffer[e] = canKeep
+                          ? static_cast<T>(tmp[e])
+                          : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
+      };
+      samediff::Threads::parallel_for(func, 0, length);
+#endif
 
       // Free the temporary storage.
       delete[] tmp;
