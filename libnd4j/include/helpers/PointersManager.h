@@ -50,7 +50,7 @@ class SD_LIB_EXPORT PointersManager {
   template <typename T>
   void printDevContentOnHost(const void* pDev, const LongType len) const;
 
-#ifdef __CUDABLAS__
+#ifdef SD_CUDA
   template <typename T>
   static void printDevContentOnDevFromHost(const void* pDev, const LongType len, const int tid = 0);
 #endif
