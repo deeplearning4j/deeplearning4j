@@ -27,6 +27,8 @@ import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.impl.loss.BaseLoss;
 import org.nd4j.linalg.api.ops.impl.loss.bp.BaseLossBp;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
+import org.nd4j.linalg.exception.ND4JUnknownDataTypeException;
 import org.nd4j.shade.guava.primitives.Ints;
 import com.google.flatbuffers.FlatBufferBuilder;
 
@@ -591,144 +593,6 @@ public class FlatBuffersMapper {
 
     private static final byte[] EMPTY_BYTE = new byte[0];
 
-    public static int[] mapFunctionPropertiesToFlatProperties(FlatBufferBuilder fbb, Map<String, Object> fnProps) {
-
-        int[] outIdxs = new int[fnProps.size()];
-        int count = 0;
-        for (Map.Entry<String, Object> e : fnProps.entrySet()) {
-            //Possible types here: primitives (as Number objects), primitive arrays, Strings, String arrays, multi-dimensional string/primitives
-            Object v = e.getValue();
-            int iname = fbb.createString(e.getKey());
-
-            int[] i = null;
-            long[] l = null;
-            double[] d = null;
-            int[] aIdx = null;
-            boolean[] b = null;
-            int[] sIdx = null;
-            int[] shape = null;
-
-            if (v == null) {
-                //No op
-            } else if (v instanceof Boolean) {
-                b = new boolean[]{(Boolean) v};
-            } else if(v instanceof Character){
-                i = new int[]{(Character)v};
-            } else if (v instanceof Number) {
-                if (v instanceof Double) {
-                    d = new double[]{(Double) v};
-                } else if (v instanceof Float){
-                    d = new double[]{(Float) v};
-                } else if (v instanceof Integer) {
-                    i = new int[]{(Integer) v};
-                } else if (v instanceof Long) {
-                    l = new long[]{(Long) v};
-                } else {
-                    throw new UnsupportedOperationException(
-                            "Unable to map property \"" + e.getKey() + "\" of type " + v.getClass());
-                }
-            } else if (v instanceof String) {
-                String str = (String) v;
-                int strOffset = fbb.createString(str);
-                sIdx = new int[]{strOffset};
-            } else if (v instanceof DataType) {
-                String str = v.toString();
-                int strOffset = fbb.createString(str);
-                sIdx = new int[]{strOffset};
-            } else if(v instanceof SDVariable) {
-                //variables can be retrieved elsewhere, this is just to denote what variable names
-                //to retrieve when setting a field
-                SDVariable sdVariable = (SDVariable) v;
-                String str = sdVariable.name();
-                int strOffset = fbb.createString(str);
-                sIdx = new int[]{strOffset};
-            } else if (v instanceof Enum) {
-                String str = v.toString();
-                int strOffset = fbb.createString(str);
-                sIdx = new int[]{strOffset};
-            } else if (v instanceof INDArray) {
-                INDArray arr = (INDArray) v;
-                aIdx = new int[]{arr.toFlatArray(fbb)};
-            } else if (v.getClass().isArray()) {
-                if (v.getClass().getComponentType().isPrimitive()) {
-                    if (v instanceof boolean[]) {
-                        b = (boolean[]) v;
-                        shape = new int[]{b.length};
-                    } else if (v instanceof double[]) {
-                        d = (double[]) v;
-                        shape = new int[]{d.length};
-                    } else if (v instanceof int[]) {
-                        i = (int[]) v;
-                        shape = new int[]{i.length};
-                    } else if (v instanceof long[]) {
-                        l = (long[]) v;
-                        shape = new int[]{l.length};
-                    } else {
-                        throw new UnsupportedOperationException(
-                                "Unable to map property \"" + e.getKey() + "\" of type " + v.getClass());
-                    }
-                } else if (v instanceof String[]) {
-                    //String[]
-                    String[] strArr = (String[]) v;
-                    sIdx = new int[strArr.length];
-                    for (int j = 0; j < strArr.length; j++) {
-                        sIdx[j] = fbb.createString(strArr[j]);
-                    }
-                    shape = new int[]{strArr.length};
-                } else if (v instanceof INDArray[]) {
-                    INDArray[] arrArr = (INDArray[]) v;
-                    aIdx = new int[arrArr.length];
-                    for (int j = 0; j < arrArr.length; j++) {
-                        aIdx[j] = arrArr[j].toFlatArray(fbb);
-                    }
-                } else if(v instanceof SDVariable[]) {
-                    SDVariable[] vars = (SDVariable[]) v;
-                    sIdx = new int[vars.length];
-                    for (int j = 0; j < vars.length; j++) {
-                        sIdx[j] = fbb.createString(vars[j].name());
-                    }
-                    shape = new int[]{vars.length};
-                }  else if (v.getClass().getComponentType().isArray()) {
-                    shape = ArrayUtil.arrayShape(v, true);
-                    //Multi-dimensional array
-                    if (v instanceof boolean[][]) {
-                        b = ArrayUtil.flatten((boolean[][]) v);
-                    } else if (v instanceof boolean[][][]) {
-                        b = ArrayUtil.flatten((boolean[][][]) v);
-                    } else if (v instanceof double[][]) {
-                        d = ArrayUtil.flatten((double[][]) v);
-                    } else if (v instanceof double[][][]) {
-                        d = ArrayUtil.flatten((double[][][]) v);
-                    } else if (v instanceof int[][]) {
-                        i = ArrayUtil.flatten((int[][]) v);
-                    } else if (v instanceof int[][][]) {
-                        i = ArrayUtil.flatten((int[][][]) v);
-                    } else if (v instanceof long[][]) {
-                        l = ArrayUtil.flatten((long[][]) v);
-                    } else if (v instanceof long[][][]) {
-                        l = ArrayUtil.flatten((long[][][]) v);
-                    } else {
-                        throw new UnsupportedOperationException(
-                                "Unable to map multidimensional array property \"" + e.getKey() + "\" of type " + v
-                                        .getClass());
-                    }
-                }
-            }
-
-            int idxD = FlatProperties.createDVector(fbb, d != null ? d : EMPTY_DOUBLE);
-            int idxI = FlatProperties.createIVector(fbb, i != null ? i : EMPTY_INT);
-            int idxL = FlatProperties.createLVector(fbb, l != null ? l : EMPTY_LONG);
-            int idxA = FlatProperties.createAVector(fbb, aIdx != null ? aIdx : EMPTY_INT);
-            int idxB = FlatProperties.createBVector(fbb, b != null ? b : EMPTY_BOOLEAN);
-            int idxS = FlatProperties.createSVector(fbb, sIdx != null ? sIdx : EMPTY_INT);
-            int idxShape = FlatProperties.createShapeVector(fbb, shape != null ? shape : EMPTY_INT);
-
-            outIdxs[count++] = FlatProperties
-                    .createFlatProperties(fbb, iname, idxI, idxL, idxD, idxA, idxB, idxS, idxShape);
-        }
-        return outIdxs;
-    }
-
     public static Map<String, Object> mapFlatPropertiesToFunctionProperties(Iterable<FlatProperties> list) {
         Map<String, Object> out = new HashMap<>();
         for (FlatProperties p : list) {
@@ -829,7 +693,15 @@ public class FlatBuffersMapper {
                     out.put(name, p.l(0));
                 } else if (p.dLength() > 0) {
                     out.put(name, p.d(0));
-                } else if (p.sLength() > 0) {
+                } else if (p.sLength() > 1) {
+                    // FIXED: Multiple strings - return as array
+                    String[] sArr = new String[p.sLength()];
+                    for (int i = 0; i < sArr.length; i++) {
+                        sArr[i] = p.s(i);
+                    }
+                    out.put(name, sArr);
+                } else if (p.sLength() == 1) {
+                    // FIXED: Single string - return as string
                     out.put(name, p.s(0));
                 } else if (p.aLength() > 0) {
                     FlatArray fa = p.a(0);
@@ -870,79 +742,260 @@ public class FlatBuffersMapper {
         if (nodeOwnName == null) throw new ND4JIllegalStateException("Node ownName cannot be null for serialization.");
 
         // --- Extract Op Args ---
-        double[] extras = EMPTY_DOUBLE; boolean[] boolArgs = EMPTY_BOOLEAN; byte[] dtypeArgs = EMPTY_BYTE; long[] extraBits = EMPTY_LONG; int[] extraStringIds = EMPTY_INT;
+        double[] extras = EMPTY_DOUBLE;
+        boolean[] boolArgs = EMPTY_BOOLEAN;
+        byte[] dtypeArgs = EMPTY_BYTE;
+        long[] extraBits = EMPTY_LONG;
+        int[] extraStringIds = EMPTY_INT;
         if (node instanceof CustomOp) {
             CustomOp op = (CustomOp) node;
-            if(op.tArgs() != null) extras = op.tArgs(); if(op.iArgs() != null) extraBits = op.iArgs(); if(op.bArgs() != null) boolArgs = op.bArgs();
-            if (op.numDArguments() > 0) { DataType[] dTypes = op.dArgs(); if(dTypes != null) { dtypeArgs = new byte[dTypes.length]; for (int e = 0; e < dtypeArgs.length; e++) dtypeArgs[e] = getDataTypeAsByte(dTypes[e]); } }
-            if(op.numSArguments() > 0) { String[] sArgs = op.sArgs(); if(sArgs != null) { extraStringIds = new int[sArgs.length]; for(int i = 0; i < sArgs.length; i++) extraStringIds[i] = bufferBuilder.createString(sArgs[i] != null ? sArgs[i] : ""); } }
-        } else { Object[] eArgs = node.getExtraArgs(); if (eArgs != null) { extras = new double[eArgs.length]; for (int e = 0; e < extras.length; e++) { if(eArgs[e] instanceof Number) extras[e] = ((Number) eArgs[e]).doubleValue(); } } }
-        if (node instanceof Enter) { val frameName = ((Enter) node).getFrameName(); if (frameName != null) { if (!framesMap.containsKey(frameName)) framesMap.put(frameName, idCounter.incrementAndGet()); extraBits = new long[]{framesMap.get(frameName).intValue()}; extraStringIds = new int[]{bufferBuilder.createString(frameName)}; }}
-        if (node instanceof ReduceOp || node instanceof IndexAccumulation) { boolean currentKeepDims = false; if (node instanceof ReduceOp) currentKeepDims = ((ReduceOp) node).isKeepDims(); else if (node instanceof IndexAccumulation) currentKeepDims = ((IndexAccumulation) node).isKeepDims(); if (boolArgs == EMPTY_BOOLEAN) boolArgs = new boolean[2]; else if (boolArgs.length < 2) boolArgs = Arrays.copyOf(boolArgs, 2); boolArgs[0] = currentKeepDims; boolArgs[1] = true; }
+            if(op.tArgs() != null) extras = op.tArgs(); if(op.iArgs() != null)
+                extraBits = op.iArgs();
+            if(op.bArgs() != null)
+                boolArgs = op.bArgs();
+            if (op.numDArguments() > 0) {
+                DataType[] dTypes = op.dArgs();
+                if(dTypes != null) {
+                    dtypeArgs = new byte[dTypes.length];
+                    for (int e = 0; e < dtypeArgs.length; e++)
+                        dtypeArgs[e] = getDataTypeAsByte(dTypes[e]);
+                }
+            }
+            if(op.numSArguments() > 0) {
+                String[] sArgs = op.sArgs();
+                if(sArgs != null) {
+                    extraStringIds = new int[sArgs.length];
+                    for(int i = 0; i < sArgs.length; i++)
+                        extraStringIds[i] = bufferBuilder.createString(sArgs[i] != null ? sArgs[i] : "");
+                }
+            }
+        } else {
+            Object[] eArgs = node.getExtraArgs();
+            if (eArgs != null) {
+                extras = new double[eArgs.length];
+                for (int e = 0; e < extras.length; e++) {
+                    if(eArgs[e] instanceof Number)
+                        extras[e] = ((Number) eArgs[e]).doubleValue();
+                }
+            }
+        }
+        if (node instanceof Enter) {
+            val frameName = ((Enter) node).getFrameName();
+            if (frameName != null) {
+                if (!framesMap.containsKey(frameName))
+                    framesMap.put(frameName, idCounter.incrementAndGet());
+                extraBits = new long[]{framesMap.get(frameName).intValue()};
+                extraStringIds = new int[]{bufferBuilder.createString(frameName)};
+            }
+        }
+        if (node instanceof ReduceOp || node instanceof IndexAccumulation) {
+            boolean currentKeepDims = false;
+            if (node instanceof ReduceOp)
+                currentKeepDims = ((ReduceOp) node).isKeepDims();
+            else if (node instanceof IndexAccumulation)
+                currentKeepDims = ((IndexAccumulation) node).isKeepDims();
+            if (boolArgs == EMPTY_BOOLEAN)
+                boolArgs = new boolean[2];
+            else if (boolArgs.length < 2)
+                boolArgs = Arrays.copyOf(boolArgs, 2);
+            boolArgs[0] = currentKeepDims;
+            boolArgs[1] = true;
+        }
         // --- End Extract Op Args ---
 
         // --- Input Processing ---
-        val inPaired = new ArrayList<Integer>(); SDVariable[] inputs = null;
-        try { inputs = node.args(); } catch (Exception e) { log.error("Failed resolve inputs for op '{}'.", nodeOwnName, e); inputs = new SDVariable[0];}
-        if (inputs != null) { for (SDVariable input : inputs) { if (input == null || input.name() == null) continue; String varName = input.name(); int outIdx = 0; Variable inputMeta = sameDiff.getVariables().get(varName); if (inputMeta == null) { if (!reverseMap.containsKey(varName)) { int fwdNodeId = idCounter.incrementAndGet(); forwardMap.put(varName, fwdNodeId); reverseMap.put(varName, fwdNodeId); log.warn("Temp ID {} for missing input '{}'.", fwdNodeId, varName); } } else if (inputMeta.getOutputOfOp() != null) { SameDiffOp producingSdo = sameDiff.getOps().get(inputMeta.getOutputOfOp()); if (producingSdo != null) { List<String> pOuts = producingSdo.getOutputsOfOp(); if (pOuts != null) { int fIdx = pOuts.indexOf(varName); if (fIdx >= 0) outIdx = fIdx; }}} if (!reverseMap.containsKey(varName)) { if (varName != null && varName.startsWith("NextIteration")) { int fwdNodeId = idCounter.incrementAndGet(); forwardMap.put(varName, fwdNodeId); reverseMap.put(varName, fwdNodeId); } else { throw new ND4JIllegalStateException("Unknown input var: [" + varName + "] for op " + nodeOwnName); }} int nodeId = reverseMap.get(varName); inPaired.add(IntPair.createIntPair(bufferBuilder, nodeId, outIdx)); }}
+        val inPaired = new ArrayList<Integer>();
+        SDVariable[] inputs = null;
+        try { inputs = node.args(); }
+        catch (Exception e) {
+            log.error("Failed resolve inputs for op '{}'.", nodeOwnName, e);
+            inputs = new SDVariable[0];
+        }
+        if (inputs != null) {
+            for (SDVariable input : inputs) {
+                if (input == null || input.name() == null)
+                    continue;
+                String varName = input.name();
+                int outIdx = 0;
+                Variable inputMeta = sameDiff.getVariables().get(varName);
+                if (inputMeta == null) { if (!reverseMap.containsKey(varName)) {
+                    int fwdNodeId = idCounter.incrementAndGet(); forwardMap.put(varName, fwdNodeId);
+                    reverseMap.put(varName, fwdNodeId);
+                    log.warn("Temp ID {} for missing input '{}'.", fwdNodeId, varName);
+                }
+                } else if (inputMeta.getOutputOfOp() != null) {
+                    SameDiffOp producingSdo = sameDiff.getOps().get(inputMeta.getOutputOfOp());
+                    if (producingSdo != null) {
+                        List<String> pOuts = producingSdo.getOutputsOfOp();
+                        if (pOuts != null) { int fIdx = pOuts.indexOf(varName);
+                            if (fIdx >= 0) outIdx = fIdx;
+                        }
+                    }
+                }
+                if (!reverseMap.containsKey(varName)) {
+                    if (varName != null && varName.startsWith("NextIteration")) {
+                        int fwdNodeId = idCounter.incrementAndGet();
+                        forwardMap.put(varName, fwdNodeId); reverseMap.put(varName, fwdNodeId);
+                    } else {
+                        throw new ND4JIllegalStateException("Unknown input var: [" + varName + "] for op " + nodeOwnName);
+                    }
+                }
+                int nodeId = reverseMap.get(varName);
+                inPaired.add(IntPair.createIntPair(bufferBuilder, nodeId, outIdx));
+            }
+        }
         // --- End Input Processing ---
 
         // --- ID assignment & Output Name Mapping ---
-        int ownId = id != null ? id : (forwardMap.containsKey(nodeOwnName) ? forwardMap.get(nodeOwnName) : idCounter.incrementAndGet());
-        String[] outNames = node.outputVariablesNames(); if(outNames == null) outNames = new String[0];
-        for (String s : outNames) { if(s == null) continue; if (!reverseMap.containsKey(s)) reverseMap.put(s, ownId); }
+        int ownId = id != null ? id : (forwardMap.containsKey(nodeOwnName) ? forwardMap.get(nodeOwnName) :
+                idCounter.incrementAndGet());
+        String[] outNames = node.outputVariablesNames();
+        if(outNames == null) outNames = new String[0];
+        for (String s : outNames) {
+            if(s == null)
+                continue;
+            if (!reverseMap.containsKey(s))
+                reverseMap.put(s, ownId);
+        }
         // --- End ID assignment & Output Name Mapping ---
 
         // --- Dimension Processing ---
         int[] dims = EMPTY_INT; Op.Type t = node.opType();
-        if (t == Type.REDUCE_FLOAT || t == Type.REDUCE_SAME || t == Type.REDUCE_BOOL || t == Type.REDUCE_LONG || t == Type.INDEXREDUCE || t == Type.REDUCE3 || t == Type.VARIANCE || t == Type.SUMMARYSTATS) { long[] nodeDims = node.getDimensions(); if (nodeDims != null) dims = ArrayUtil.toInts(nodeDims); }
+        if (t == Type.REDUCE_FLOAT || t == Type.REDUCE_SAME ||
+                t == Type.REDUCE_BOOL || t == Type.REDUCE_LONG ||
+                t == Type.INDEXREDUCE || t == Type.REDUCE3 ||
+                t == Type.VARIANCE ||
+                t == Type.SUMMARYSTATS) {
+            long[] nodeDims = node.getDimensions();
+            if (nodeDims != null)
+                dims = ArrayUtil.toInts(nodeDims);
+        }
         // --- End Dimension Processing ---
 
         // --- Properties Processing ---
-        Map<String, Object> fnProps = node.propertiesForFunction(); int propIdx = 0;
-        if(fnProps != null && !fnProps.isEmpty()){ int[] flatProps = FlatBuffersMapper.mapFunctionPropertiesToFlatProperties(bufferBuilder, fnProps, isCloneContext); if (flatProps != null && flatProps.length > 0) { propIdx = FlatNode.createPropertiesVector(bufferBuilder, flatProps); }}
+        Map<String, Object> fnProps = node.propertiesForFunction();
+        int propIdx = 0;
+        if(fnProps != null && !fnProps.isEmpty()) {
+            int[] flatProps = FlatBuffersMapper.mapFunctionPropertiesToFlatProperties(bufferBuilder, fnProps, isCloneContext);
+            if (flatProps != null && flatProps.length > 0) {
+                propIdx = FlatNode.createPropertiesVector(bufferBuilder, flatProps);
+            }
+        }
         // --- End Properties Processing ---
 
         // --- Create FlatBuffer Vectors for Node ---
-        int nodesInPaired = FlatNode.createInputPairedVector(bufferBuilder, Ints.toArray(inPaired)); int nodesOut = FlatNode.createOutputVector(bufferBuilder, EMPTY_INT);
-        int extraz = FlatNode.createExtraParamsVector(bufferBuilder, extras); int integerArgs = FlatNode.createExtraIntegerVector(bufferBuilder, extraBits);
-        int bArgs = FlatNode.createExtraBoolsVector(bufferBuilder, boolArgs); int dArgsOffset = FlatNode.createExtraTypesVector(bufferBuilder, dtypeArgs);
-        int dimensionsOffset = FlatNode.createDimensionsVector(bufferBuilder, dims); int fname = bufferBuilder.createString(nodeOwnName);
-        int scopeNameOffset = bufferBuilder.createString(""); int sArgs3 = FlatNode.createExtraStringsVector(bufferBuilder, extraStringIds);
+        int nodesInPaired = FlatNode.createInputPairedVector(bufferBuilder, Ints.toArray(inPaired));
+        int nodesOut = FlatNode.createOutputVector(bufferBuilder, EMPTY_INT);
+        int extraz = FlatNode.createExtraParamsVector(bufferBuilder, extras);
+        int integerArgs = FlatNode.createExtraIntegerVector(bufferBuilder, extraBits);
+        int bArgs = FlatNode.createExtraBoolsVector(bufferBuilder, boolArgs);
+        int dArgsOffset = FlatNode.createExtraTypesVector(bufferBuilder, dtypeArgs);
+        int dimensionsOffset = FlatNode.createDimensionsVector(bufferBuilder, dims);
+        int fname = bufferBuilder.createString(nodeOwnName);
+        int scopeNameOffset = bufferBuilder.createString("");
+        int sArgs3 = FlatNode.createExtraStringsVector(bufferBuilder, extraStringIds);
 
         // --- Scalar Processing (Skip array if cloning) ---
         int scalarOffset = 0;
         if (node instanceof ScalarOp && !isCloneContext) { // Check flag
-            ScalarOp sOp = (ScalarOp) node; INDArray s = sOp.scalar();
+            ScalarOp sOp = (ScalarOp) node;
+            INDArray s = sOp.scalar();
             if (s != null) {
-                try { scalarOffset = SameDiffSerializer.serializeSmallNdArrayToFlatBuffer(s, bufferBuilder); } // Use helper directly
-                catch (Exception e) { log.warn("Failed to serialize scalar array for op '{}'.", nodeOwnName, e); scalarOffset = 0; }
+                try {
+                    scalarOffset = SameDiffSerializer.serializeSmallNdArrayToFlatBuffer(s, bufferBuilder); } // Use helper directly
+                catch (Exception e) {
+                    log.warn("Failed to serialize scalar array for op '{}'.", nodeOwnName, e); scalarOffset = 0;
+                }
             }
         }
         // --- End Scalar Processing ---
 
         // --- Output Variable Names and Types ---
-        List<String> currentOutVarNames = Collections.emptyList(); SameDiffOp currentSDO = sameDiff.getOps().get(nodeOwnName); if (currentSDO != null && currentSDO.getOutputsOfOp() != null) { currentOutVarNames = currentSDO.getOutputsOfOp(); } else if (outNames.length > 0) { currentOutVarNames = Arrays.asList(outNames); }
-        int[] outVarNamesStringsOffsets = new int[currentOutVarNames.size()]; List<Byte> outTypeList = new ArrayList<>();
-        for (int i = 0; i < currentOutVarNames.size(); i++) { String s = currentOutVarNames.get(i); if (s == null) { outVarNamesStringsOffsets[i] = bufferBuilder.createString(""); continue; } outVarNamesStringsOffsets[i] = bufferBuilder.createString(s); SDVariable v = sameDiff.getVariable(s); if (v != null) { outTypeList.add(FlatBuffersMapper.getDataTypeAsByte(v.dataType())); } else { log.warn("Output var '{}' for op '{}' not found for type lookup.", s, nodeOwnName); } }
-        int outVarNamesOffset = FlatNode.createOutputNamesVector(bufferBuilder, outVarNamesStringsOffsets); byte[] finalOutTypes = new byte[outTypeList.size()]; for (int k = 0; k < outTypeList.size(); k++) { finalOutTypes[k] = outTypeList.get(k); } int outTypesOffset = FlatNode.createOutputTypesVector(bufferBuilder, finalOutTypes);
+        List<String> currentOutVarNames = Collections.emptyList();
+        SameDiffOp currentSDO = sameDiff.getOps().get(nodeOwnName);
+        if (currentSDO != null && currentSDO.getOutputsOfOp() != null) {
+            currentOutVarNames = currentSDO.getOutputsOfOp();
+        }
+
+        else if (outNames.length > 0) {
+            currentOutVarNames = Arrays.asList(outNames);
+        }
+        int[] outVarNamesStringsOffsets = new int[currentOutVarNames.size()];
+        List<Byte> outTypeList = new ArrayList<>();
+        for (int i = 0; i < currentOutVarNames.size(); i++) {
+            String s = currentOutVarNames.get(i);
+            if (s == null) {
+                outVarNamesStringsOffsets[i] = bufferBuilder.createString("");
+                continue;
+            }
+            outVarNamesStringsOffsets[i] = bufferBuilder.createString(s);
+            SDVariable v = sameDiff.getVariable(s);
+            if (v != null) {
+                outTypeList.add(FlatBuffersMapper.getDataTypeAsByte(v.dataType()));
+            } else {
+                log.warn("Output var '{}' for op '{}' not found for type lookup.", s, nodeOwnName);
+            }
+        }
+        int outVarNamesOffset = FlatNode.createOutputNamesVector(bufferBuilder, outVarNamesStringsOffsets);
+        byte[] finalOutTypes = new byte[outTypeList.size()];
+        for (int k = 0; k < outTypeList.size(); k++) {
+            finalOutTypes[k] = outTypeList.get(k);
+        }
+        int outTypesOffset = FlatNode.createOutputTypesVector(bufferBuilder, finalOutTypes);
         // --- End Output Variable Handling ---
 
         int opNameOffset = bufferBuilder.createString(opName != null ? opName : "");
 
         // --- Control dependencies ---
         int opCdsOffset = 0, varCdsOffset = 0, cdsForOffset = 0;
-        if(currentSDO != null) { int[] opCdsArr = mapOrNull(currentSDO.getControlDeps(), bufferBuilder); if(opCdsArr != null) opCdsOffset = FlatNode.createControlDepsVector(bufferBuilder, opCdsArr); int[] varCdsArr = mapOrNull(currentSDO.getVarControlDeps(), bufferBuilder); if(varCdsArr != null) varCdsOffset = FlatNode.createVarControlDepsVector(bufferBuilder, varCdsArr); int[] cdsForArr = mapOrNull(currentSDO.getControlDepFor(), bufferBuilder); if(cdsForArr != null) cdsForOffset = FlatNode.createControlDepForVector(bufferBuilder, cdsForArr); }
-        else { log.warn("SameDiffOp metadata not found for op '{}'. Control dependencies missing.", nodeOwnName); }
+        if(currentSDO != null) {
+            int[] opCdsArr = mapOrNull(currentSDO.getControlDeps(), bufferBuilder);
+            if(opCdsArr != null) opCdsOffset = FlatNode.createControlDepsVector(bufferBuilder, opCdsArr);
+            int[] varCdsArr = mapOrNull(currentSDO.getVarControlDeps(), bufferBuilder);
+            if(varCdsArr != null)
+                varCdsOffset = FlatNode.createVarControlDepsVector(bufferBuilder, varCdsArr);
+            int[] cdsForArr = mapOrNull(currentSDO.getControlDepFor(), bufferBuilder);
+            if(cdsForArr != null)
+                cdsForOffset = FlatNode.createControlDepForVector(bufferBuilder, cdsForArr);
+        }
+        else {
+            log.warn("SameDiffOp metadata not found for op '{}'. Control dependencies missing.", nodeOwnName);
+        }
         // --- End Control dependencies ---
 
         // --- Determine Final OpType Byte ---
-        byte finalOpTypeByte; if (opTypeEnum != null) { finalOpTypeByte = FlatBuffersMapper.getFlatOpType(opTypeEnum); } else { log.warn("Op Type null for node '{}'. Defaulting to CUSTOM.", nodeOwnName); finalOpTypeByte = OpType.CUSTOM; }
+        byte finalOpTypeByte; if (opTypeEnum != null) {
+            finalOpTypeByte = FlatBuffersMapper.getFlatOpType(opTypeEnum);
+        } else {
+            log.warn("Op Type null for node '{}'. Defaulting to CUSTOM.", nodeOwnName);
+            finalOpTypeByte = OpType.CUSTOM;
+        }
         // --- End OpType Handling ---
 
         // *** Final createFlatNode call ***
         FlatNode.startFlatNode(bufferBuilder);
-        FlatNode.addId(bufferBuilder, ownId); FlatNode.addName(bufferBuilder, fname); FlatNode.addOpType(bufferBuilder, finalOpTypeByte); FlatNode.addOpNum(bufferBuilder, hash); FlatNode.addProperties(bufferBuilder, propIdx); FlatNode.addInputPaired(bufferBuilder, nodesInPaired); FlatNode.addOutput(bufferBuilder, nodesOut); FlatNode.addExtraParams(bufferBuilder, extraz); FlatNode.addExtraInteger(bufferBuilder, integerArgs); FlatNode.addExtraBools(bufferBuilder, bArgs); FlatNode.addDimensions(bufferBuilder, dimensionsOffset); FlatNode.addDevice(bufferBuilder, -1); FlatNode.addScopeId(bufferBuilder, 0); FlatNode.addScopeName(bufferBuilder, scopeNameOffset); FlatNode.addOutputNames(bufferBuilder, outVarNamesOffset); FlatNode.addOpName(bufferBuilder, opNameOffset); FlatNode.addOutputTypes(bufferBuilder, outTypesOffset); FlatNode.addScalar(bufferBuilder, scalarOffset); FlatNode.addControlDeps(bufferBuilder, opCdsOffset); FlatNode.addVarControlDeps(bufferBuilder, varCdsOffset); FlatNode.addControlDepFor(bufferBuilder, cdsForOffset); FlatNode.addExtraTypes(bufferBuilder, dArgsOffset); FlatNode.addExtraStrings(bufferBuilder, sArgs3);
+        FlatNode.addId(bufferBuilder, ownId); FlatNode.addName(bufferBuilder, fname);
+        FlatNode.addOpType(bufferBuilder, finalOpTypeByte);
+        FlatNode.addOpNum(bufferBuilder, hash);
+        FlatNode.addProperties(bufferBuilder, propIdx);
+        FlatNode.addInputPaired(bufferBuilder, nodesInPaired);
+        FlatNode.addOutput(bufferBuilder, nodesOut);
+        FlatNode.addExtraParams(bufferBuilder, extraz);
+        FlatNode.addExtraInteger(bufferBuilder, integerArgs);
+        FlatNode.addExtraBools(bufferBuilder, bArgs);
+        FlatNode.addDimensions(bufferBuilder, dimensionsOffset);
+        FlatNode.addDevice(bufferBuilder, -1);
+        FlatNode.addScopeId(bufferBuilder, 0);
+        FlatNode.addScopeName(bufferBuilder, scopeNameOffset);
+        FlatNode.addOutputNames(bufferBuilder, outVarNamesOffset);
+        FlatNode.addOpName(bufferBuilder, opNameOffset);
+        FlatNode.addOutputTypes(bufferBuilder, outTypesOffset);
+        FlatNode.addScalar(bufferBuilder, scalarOffset);
+        FlatNode.addControlDeps(bufferBuilder, opCdsOffset);
+        FlatNode.addVarControlDeps(bufferBuilder, varCdsOffset);
+        FlatNode.addControlDepFor(bufferBuilder, cdsForOffset);
+        FlatNode.addExtraTypes(bufferBuilder, dArgsOffset);
+        FlatNode.addExtraStrings(bufferBuilder, sArgs3);
         int flatNode = FlatNode.endFlatNode(bufferBuilder);
 
         return flatNode;
@@ -955,7 +1008,6 @@ public class FlatBuffersMapper {
                                  Map<String, Integer> reverseMap, Map<String, Integer> forwardMap, Map<String, Integer> framesMap, AtomicInteger idCounter, Integer id) throws IOException {
         return asFlatNode(sameDiff, node, bufferBuilder, variables, reverseMap, forwardMap, framesMap, idCounter, id, false); // Default isCloneContext to false
     }
-
     /**
      * Maps function properties to FlatBuffer property objects, optionally skipping INDArray/SDVariable properties
      * if in clone context, and validating INDArray rank/shape before serialization otherwise.
@@ -966,61 +1018,310 @@ public class FlatBuffersMapper {
      * @return Array of offsets to FlatProperties tables, or empty array if no valid properties found.
      */
     public static int[] mapFunctionPropertiesToFlatProperties(FlatBufferBuilder fbb, Map<String, Object> fnProps, boolean isCloneContext) {
-        if (fnProps == null || fnProps.isEmpty()) { return EMPTY_INT; }
+        if (fnProps == null || fnProps.isEmpty()) {
+            return EMPTY_INT;
+        }
         List<Integer> outOffsets = new ArrayList<>();
 
-        List<Map.Entry<String, Object>> sortedEntries = new ArrayList<>(fnProps.entrySet()); sortedEntries.sort(Map.Entry.comparingByKey());
+        List<Map.Entry<String, Object>> sortedEntries = new ArrayList<>(fnProps.entrySet());
+        sortedEntries.sort(Map.Entry.comparingByKey());
 
         for (Map.Entry<String, Object> e : sortedEntries) {
-            Object v = e.getValue(); String key = e.getKey(); if (key == null) { log.warn("Skipping null property key."); continue; }
+            Object v = e.getValue();
+            String key = e.getKey();
+            if (key == null) {
+                log.warn("Skipping null property key.");
+                continue;
+            }
 
             // --- Skip logic for Clone Context ---
-            if (isCloneContext) { if (v instanceof INDArray || v instanceof SDVariable || (v != null && v.getClass().isArray() && (v instanceof INDArray[] || v instanceof SDVariable[]))) { log.trace("Skipping Array/Variable property '{}' during op cloning.", key); continue; } }
+            if (isCloneContext) {
+                if (v instanceof INDArray || v instanceof SDVariable ||
+                        (v != null && v.getClass().isArray() && (v instanceof INDArray[] || v instanceof SDVariable[]))) {
+                    log.trace("Skipping Array/Variable property '{}' during op cloning.", key);
+                    continue;
+                }
+            }
             // --- End Skip logic ---
 
             int iname = fbb.createString(key);
-            int[] i_arr = null; long[] l_arr = null; double[] d_arr = null; int[] aIdx = null; boolean[] b_arr = null; int[] sIdx = null; int[] shape = null;
+            int[] i_arr = null;
+            long[] l_arr = null;
+            double[] d_arr = null;
+            int[] aIdx = null;
+            boolean[] b_arr = null;
+            int[] sIdx = null;
+            int[] shape = null;
 
             // --- Handle different property types ---
-            if (v == null) { /* Defaults handle */ }
-            else if (v instanceof Boolean) { b_arr = new boolean[]{(Boolean) v}; shape = EMPTY_INT; }
-            else if (v instanceof Character) { i_arr = new int[]{(Character) v}; shape = EMPTY_INT; }
-            else if (v instanceof Integer) { i_arr = new int[]{(Integer) v}; shape = EMPTY_INT; }
-            else if (v instanceof Long) { l_arr = new long[]{(Long) v}; shape = EMPTY_INT; }
-            else if (v instanceof Float) { d_arr = new double[]{(Float) v}; shape = EMPTY_INT; }
-            else if (v instanceof Double) { d_arr = new double[]{(Double) v}; shape = EMPTY_INT; }
-            else if (v instanceof Number) { d_arr = new double[]{((Number)v).doubleValue()}; shape = EMPTY_INT; }
-            else if (v instanceof String) { sIdx = new int[]{fbb.createString((String) v)}; shape = EMPTY_INT; }
-            else if (v instanceof DataType) { sIdx = new int[]{fbb.createString(v.toString())}; shape = EMPTY_INT; }
-            else if (v instanceof SDVariable) { sIdx = new int[]{fbb.createString(((SDVariable) v).name())}; shape = EMPTY_INT; }
-            else if (v instanceof Enum) { sIdx = new int[]{fbb.createString(v.toString())}; shape = EMPTY_INT; }
+            if (v == null) {
+                /* Defaults handle null case */
+            }
+            else if (v instanceof Boolean) {
+                b_arr = new boolean[]{(Boolean) v};
+                shape = EMPTY_INT;
+            }
+            else if (v instanceof Character) {
+                i_arr = new int[]{(Character) v};
+                shape = EMPTY_INT;
+            }
+            else if (v instanceof Integer) {
+                i_arr = new int[]{(Integer) v};
+                shape = EMPTY_INT;
+            }
+            else if (v instanceof Long) {
+                l_arr = new long[]{(Long) v};
+                shape = EMPTY_INT;
+            }
+            else if (v instanceof Float) {
+                d_arr = new double[]{(Float) v};
+                shape = EMPTY_INT;
+            }
+            else if (v instanceof Double) {
+                d_arr = new double[]{(Double) v};
+                shape = EMPTY_INT;
+            }
+            else if (v instanceof Number) {
+                d_arr = new double[]{((Number)v).doubleValue()};
+                shape = EMPTY_INT;
+            }
+            else if (v instanceof String) {
+                sIdx = new int[]{fbb.createString((String) v)};
+                shape = EMPTY_INT;
+            }
+            else if (v instanceof String[]) {
+                String[] stringArr = (String[]) v;
+                sIdx = new int[stringArr.length];
+                for (int i = 0; i < stringArr.length; i++) {
+                    sIdx[i] = fbb.createString(stringArr[i]);
+                }
+                shape = new int[]{stringArr.length};
+            }
+            else if (v instanceof DataType) {
+                sIdx = new int[]{fbb.createString(v.toString())};
+                shape = EMPTY_INT;
+            }
+            else if (v instanceof SDVariable) {
+                sIdx = new int[]{fbb.createString(((SDVariable) v).name())};
+                shape = EMPTY_INT;
+            }
+            else if (v instanceof SDVariable[]) {
+                SDVariable[] sdVarArr = (SDVariable[]) v;
+                sIdx = new int[sdVarArr.length];
+                for (int i = 0; i < sdVarArr.length; i++) {
+                    sIdx[i] = fbb.createString(sdVarArr[i] != null ? sdVarArr[i].name() : "");
+                }
+                shape = new int[]{sdVarArr.length};
+            }
+            else if (v instanceof Enum) {
+                sIdx = new int[]{fbb.createString(v.toString())};
+                shape = EMPTY_INT;
+            }
             else if (v instanceof INDArray) {
-                INDArray arr = (INDArray) v; int rank = -1; boolean skip = false;
-                try { rank = arr.rank(); if (rank > Shape.MAX_RANK || rank < 0) { log.warn("Skipping INDArray prop '{}' invalid rank: {}", key, rank); skip = true; } if(!skip && arr.shape()!=null) { for(long d : arr.shape()){ if(d > Integer.MAX_VALUE || d < 0){ log.warn("Skipping INDArray prop '{}' invalid dim size: {}", key, Arrays.toString(arr.shape())); skip=true; break;}}} } catch (Exception ex) { log.warn("Skipping INDArray prop '{}' error accessing rank/shape: {}", key, ex.getMessage()); skip = true; }
-                if (!skip) { try { aIdx = new int[]{SameDiffSerializer.serializeSmallNdArrayToFlatBuffer(arr, fbb)}; shape = EMPTY_INT; } catch (Exception serEx) { log.error("Failed serialize INDArray prop '{}'. Skipping.", key, serEx); continue; } }
-                else { continue; } // Skip if validation failed
+                INDArray arr = (INDArray) v;
+
+                // FATAL VALIDATION: Check shape buffer before calling toFlatArray
+                try {
+                    long[] shapeInfo = arr.shapeInfoDataBuffer().asLong();
+                    DataType extractedType = ArrayOptionsHelper.dataType(shapeInfo);
+                    if (extractedType == null || extractedType == DataType.UNKNOWN) {
+                        throw new IllegalStateException(String.format(
+                                "FATAL: INVALID SHAPE BUFFER in property '%s'. ArrayOptionsHelper.dataType() returned NULL/UNKNOWN. " +
+                                        "ShapeInfo: %s. TERMINATING TO PREVENT CORRUPTION.",
+                                e.getKey(), Arrays.toString(shapeInfo)));
+                    }
+                    if (extractedType != arr.dataType()) {
+                        throw new IllegalStateException(String.format(
+                                "FATAL: SHAPE BUFFER MISMATCH in property '%s'. Buffer says %s, array says %s. " +
+                                        "ShapeInfo: %s. TERMINATING TO PREVENT CORRUPTION.",
+                                e.getKey(), extractedType, arr.dataType(), Arrays.toString(shapeInfo)));
+                    }
+                } catch (ND4JUnknownDataTypeException ex) {
+                    throw new IllegalStateException(String.format(
+                            "FATAL: CORRUPT SHAPE BUFFER in property '%s'. %s. TERMINATING TO PREVENT CORRUPTION.",
+                            e.getKey(), ex.getMessage()), ex);
+                }
+
+                aIdx = new int[]{arr.toFlatArray(fbb)};
             }
             else if (v.getClass().isArray()) {
-                if (v.getClass().getComponentType().isPrimitive()) { /* ... handle primitive arrays ... */ }
-                else if (v instanceof String[]) { /* ... handle String[] ... */ }
-                else if (v instanceof INDArray[]) {
-                    INDArray[] arrArr = (INDArray[]) v; List<Integer> validOffsets = new ArrayList<>();
-                    for(INDArray arr : arrArr){ if(arr == null) { validOffsets.add(0); continue; } int rank = -1; boolean skip = false; try{ rank = arr.rank(); if(rank > Shape.MAX_RANK || rank < 0) {skip=true;} if(!skip && arr.shape()!=null){ for(long d : arr.shape()){ if(d>Integer.MAX_VALUE || d<0){skip=true; break;}}} } catch(Exception ex){ skip=true;} if(!skip){ try { validOffsets.add(SameDiffSerializer.serializeSmallNdArrayToFlatBuffer(arr, fbb)); } catch(Exception serEx){ validOffsets.add(0); } } else { validOffsets.add(0); } }
-                    aIdx = Ints.toArray(validOffsets); shape = new int[]{arrArr.length};
+                if (v.getClass().getComponentType().isPrimitive()) {
+                    if (v instanceof boolean[]) {
+                        b_arr = (boolean[]) v;
+                        shape = new int[]{b_arr.length};
+                    }
+                    else if (v instanceof int[]) {
+                        i_arr = (int[]) v;
+                        shape = new int[]{i_arr.length};
+                    }
+                    else if (v instanceof long[]) {
+                        l_arr = (long[]) v;
+                        shape = new int[]{l_arr.length};
+                    }
+                    else if (v instanceof float[]) {
+                        float[] fArr = (float[]) v;
+                        d_arr = new double[fArr.length];
+                        for (int i = 0; i < fArr.length; i++) {
+                            d_arr[i] = fArr[i];
+                        }
+                        shape = new int[]{fArr.length};
+                    }
+                    else if (v instanceof double[]) {
+                        d_arr = (double[]) v;
+                        shape = new int[]{d_arr.length};
+                    }
+                    else if (v instanceof char[]) {
+                        char[] cArr = (char[]) v;
+                        i_arr = new int[cArr.length];
+                        for (int i = 0; i < cArr.length; i++) {
+                            i_arr[i] = cArr[i];
+                        }
+                        shape = new int[]{cArr.length};
+                    }
+                    else if (v instanceof byte[]) {
+                        byte[] bArr = (byte[]) v;
+                        i_arr = new int[bArr.length];
+                        for (int i = 0; i < bArr.length; i++) {
+                            i_arr[i] = bArr[i];
+                        }
+                        shape = new int[]{bArr.length};
+                    }
+                    else if (v instanceof short[]) {
+                        short[] sArr = (short[]) v;
+                        i_arr = new int[sArr.length];
+                        for (int i = 0; i < sArr.length; i++) {
+                            i_arr[i] = sArr[i];
+                        }
+                        shape = new int[]{sArr.length};
+                    }
+                    else {
+                        log.warn("Unsupported primitive array property '{}': {}. Skipping.", key, v.getClass());
+                        continue;
+                    }
                 }
-                else if (v instanceof SDVariable[]) { /* ... handle SDVariable[] ... */ }
-                else if (v.getClass().getComponentType().isArray()) { /* ... handle multi-dim primitive arrays ... */ }
-                else { log.warn("Unsupported array prop '{}': {}. Skipping.", key, v.getClass()); continue; }
-            } else { log.warn("Unsupported property type '{}': {}. Skipping.", key, v.getClass()); continue; }
+                else if (v instanceof INDArray[]) {
+                    INDArray[] arrArr = (INDArray[]) v;
+                    List<Integer> validOffsets = new ArrayList<>();
+                    for(INDArray arr : arrArr){
+                        if(arr == null) {
+                            validOffsets.add(0);
+                            continue;
+                        }
+                        int rank = -1;
+                        boolean skip = false;
+                        try{
+                            rank = arr.rank();
+                            if(rank > Shape.MAX_RANK || rank < 0) {
+                                skip=true;
+                            }
+                            if(!skip && arr.shape()!=null) {
+                                for(long d : arr.shape()) {
+                                    if(d>Integer.MAX_VALUE || d<0) {
+                                        skip=true;
+                                        break;
+                                    }
+                                }
+                            }
+                        } catch(Exception ex){
+                            skip=true;
+                        }
+                        if(!skip){
+                            try {
+                                validOffsets.add(SameDiffSerializer.serializeSmallNdArrayToFlatBuffer(arr, fbb));
+                            } catch(Exception serEx){
+                                validOffsets.add(0);
+                            }
+                        } else {
+                            validOffsets.add(0);
+                        }
+                    }
+                    aIdx = Ints.toArray(validOffsets);
+                    shape = new int[]{arrArr.length};
+                }
+                else if (v.getClass().getComponentType().isArray()) {
+                    // Handle multi-dimensional primitive arrays
+                    if (v instanceof int[][]) {
+                        int[][] intArr2D = (int[][]) v;
+                        List<Integer> flatList = new ArrayList<>();
+                        for (int[] row : intArr2D) {
+                            for (int val : row) {
+                                flatList.add(val);
+                            }
+                        }
+                        i_arr = Ints.toArray(flatList);
+                        shape = new int[]{intArr2D.length, intArr2D[0].length};
+                    }
+                    else if (v instanceof double[][]) {
+                        double[][] doubleArr2D = (double[][]) v;
+                        List<Double> flatList = new ArrayList<>();
+                        for (double[] row : doubleArr2D) {
+                            for (double val : row) {
+                                flatList.add(val);
+                            }
+                        }
+                        d_arr = new double[flatList.size()];
+                        for (int i = 0; i < flatList.size(); i++) {
+                            d_arr[i] = flatList.get(i);
+                        }
+                        shape = new int[]{doubleArr2D.length, doubleArr2D[0].length};
+                    }
+                    else if (v instanceof long[][]) {
+                        long[][] longArr2D = (long[][]) v;
+                        List<Long> flatList = new ArrayList<>();
+                        for (long[] row : longArr2D) {
+                            for (long val : row) {
+                                flatList.add(val);
+                            }
+                        }
+                        l_arr = new long[flatList.size()];
+                        for (int i = 0; i < flatList.size(); i++) {
+                            l_arr[i] = flatList.get(i);
+                        }
+                        shape = new int[]{longArr2D.length, longArr2D[0].length};
+                    }
+                    else if (v instanceof boolean[][]) {
+                        boolean[][] boolArr2D = (boolean[][]) v;
+                        List<Boolean> flatList = new ArrayList<>();
+                        for (boolean[] row : boolArr2D) {
+                            for (boolean val : row) {
+                                flatList.add(val);
+                            }
+                        }
+                        b_arr = new boolean[flatList.size()];
+                        for (int i = 0; i < flatList.size(); i++) {
+                            b_arr[i] = flatList.get(i);
+                        }
+                        shape = new int[]{boolArr2D.length, boolArr2D[0].length};
+                    }
+                    else {
+                        log.warn("Unsupported multi-dimensional array property '{}': {}. Skipping.", key, v.getClass());
+                        continue;
+                    }
+                }
+                else {
+                    log.warn("Unsupported array property '{}': {}. Skipping.", key, v.getClass());
+                    continue;
+                }
+            }
+            else {
+                log.warn("Unsupported property type '{}': {}. Skipping.", key, v.getClass());
+                continue;
+            }
 
             // Create vectors
-            int idxD = FlatProperties.createDVector(fbb, d_arr != null ? d_arr : EMPTY_DOUBLE); int idxI = FlatProperties.createIVector(fbb, i_arr != null ? i_arr : EMPTY_INT); int idxL = FlatProperties.createLVector(fbb, l_arr != null ? l_arr : EMPTY_LONG); int idxA = FlatProperties.createAVector(fbb, aIdx != null ? aIdx : EMPTY_INT); int idxB = FlatProperties.createBVector(fbb, b_arr != null ? b_arr : EMPTY_BOOLEAN); int idxS = FlatProperties.createSVector(fbb, sIdx != null ? sIdx : EMPTY_INT); int idxShape = FlatProperties.createShapeVector(fbb, shape != null ? shape : EMPTY_INT);
+            int idxD = FlatProperties.createDVector(fbb, d_arr != null ? d_arr : EMPTY_DOUBLE);
+            int idxI = FlatProperties.createIVector(fbb, i_arr != null ? i_arr : EMPTY_INT);
+            int idxL = FlatProperties.createLVector(fbb, l_arr != null ? l_arr : EMPTY_LONG);
+            int idxA = FlatProperties.createAVector(fbb, aIdx != null ? aIdx : EMPTY_INT);
+            int idxB = FlatProperties.createBVector(fbb, b_arr != null ? b_arr : EMPTY_BOOLEAN);
+            int idxS = FlatProperties.createSVector(fbb, sIdx != null ? sIdx : EMPTY_INT);
+            int idxShape = FlatProperties.createShapeVector(fbb, shape != null ? shape : EMPTY_INT);
+
             outOffsets.add(FlatProperties.createFlatProperties(fbb, iname, idxI, idxL, idxD, idxA, idxB, idxS, idxShape));
         } // End loop
 
         return Ints.toArray(outOffsets);
     }
-
 
 
     /** Clones a DifferentialFunction via FlatBuffers serialization/deserialization. */

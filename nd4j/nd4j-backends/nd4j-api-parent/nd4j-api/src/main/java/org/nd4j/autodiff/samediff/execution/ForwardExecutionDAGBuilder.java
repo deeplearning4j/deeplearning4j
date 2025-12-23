@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
  * 
  * Supports both TensorFlow and ONNX import patterns.
  * 
- * @author Alex Gibson
+ * @author Adam Gibson
  */
 @Slf4j
 public class ForwardExecutionDAGBuilder {
