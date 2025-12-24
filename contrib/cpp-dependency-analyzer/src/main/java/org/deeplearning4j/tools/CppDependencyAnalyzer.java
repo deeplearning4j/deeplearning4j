@@ -154,9 +154,9 @@ public class CppDependencyAnalyzer implements Callable<Integer> {
             
             if (!deps.isEmpty()) {
                 System.out.println(file + " depends on:");
-                for (String dep : deps.stream().sorted().toArray(String[]::new)) {
+                deps.stream().sorted().forEach(dep -> {
                     System.out.println("  -> " + dep);
-                }
+                });
                 System.out.println();
             }
         }
