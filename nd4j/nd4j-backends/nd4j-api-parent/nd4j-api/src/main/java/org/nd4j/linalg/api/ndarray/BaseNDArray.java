@@ -6249,7 +6249,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public int toFlatArray(FlatBufferBuilder builder) {
         if(isView()) {
-            return dup(this.ordering()).toFlatArray(builder);
+            try (INDArray duped = dup(this.ordering())) {
+                return duped.toFlatArray(builder);
+            }
         }
         int shape = FlatArray.createShapeVector(builder, this.shapeInfoDataBuffer().asLong());
         int buffer = this.isEmpty() ? 0 : this.dataType() == DataType.UTF8 ? stringBuffer(builder, this.data()) : FlatArray.createBufferVector(builder, this.data().asBytes());
