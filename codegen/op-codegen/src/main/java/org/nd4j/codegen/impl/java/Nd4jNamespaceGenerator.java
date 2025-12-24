@@ -526,17 +526,43 @@ public class Nd4jNamespaceGenerator {
             }
         }
          else{
-            sb.append("return $T.exec(new ")
-                    .append(op.getJavaPackage())
-                    .append(".")
-                    .append(op.getJavaOpClass() == null ? GenUtil.ensureFirstIsCap(op.getOpName()) : op.getJavaOpClass())
-                    .append("(")
-                    .append(String.join(", ", parameters))
-                    .append("))");
-            if (!op.getLegacy() && singleOut)        //Note: legacy ops Nd4j.exec(Op) returns INDArray; Nd4j.exec(CustomOp) returns INDArray[]
-                sb.append("[0]");
-
-            c.addStatement(sb.toString(), Nd4j.class);
+            if (!op.getLegacy() && singleOut) {
+                // Generate code with proper cleanup for single output from CustomOp (returns INDArray[])
+                sb.append("INDArray[] __tmp = $T.exec(new ")
+                        .append(op.getJavaPackage())
+                        .append(".")
+                        .append(op.getJavaOpClass() == null ? GenUtil.ensureFirstIsCap(op.getOpName()) : op.getJavaOpClass())
+                        .append("(")
+                        .append(String.join(", ", parameters))
+                        .append("))");
+                c.addStatement(sb.toString(), Nd4j.class);
+                // Clean up non-returned arrays
+                c.beginControlFlow("try");
+                c.beginControlFlow("if(__tmp != null && __tmp.length > 0)");
+                c.addStatement("return __tmp[0]");
+                c.nextControlFlow("else");
+                c.addStatement("throw new IllegalStateException(\"CustomOp execution returned null or empty array\")");
+                c.endControlFlow();
+                c.nextControlFlow("finally");
+                c.beginControlFlow("if(__tmp != null)");
+                c.beginControlFlow("for(int __i = 1; __i < __tmp.length; __i++)");
+                c.beginControlFlow("if(__tmp[__i] != null)");
+                c.addStatement("__tmp[__i].close()");
+                c.endControlFlow();
+                c.endControlFlow();
+                c.endControlFlow();
+                c.endControlFlow();
+            } else {
+                // Legacy ops or multi-output: return directly (no cleanup needed)
+                sb.append("return $T.exec(new ")
+                        .append(op.getJavaPackage())
+                        .append(".")
+                        .append(op.getJavaOpClass() == null ? GenUtil.ensureFirstIsCap(op.getOpName()) : op.getJavaOpClass())
+                        .append("(")
+                        .append(String.join(", ", parameters))
+                        .append("))");
+                c.addStatement(sb.toString(), Nd4j.class);
+            }
         }
     }
 
@@ -735,9 +761,28 @@ public class Nd4jNamespaceGenerator {
                 .addModifiers(Modifier.PUBLIC)
                 .addJavadoc(CodeBlock.of(arg.getDescription()));
 
+        // Add enum constants with index values
+        int index = 0;
         for (String possibleValue : arg.getPossibleValues()) {
-            builder.addEnumConstant(possibleValue);
+            builder.addEnumConstant(possibleValue, TypeSpec.anonymousClassBuilder("$L", index).build());
+            index++;
         }
+
+        // Add private field for methodIndex
+        builder.addField(FieldSpec.builder(int.class, "methodIndex", Modifier.PRIVATE, Modifier.FINAL).build());
+
+        // Add constructor
+        builder.addMethod(MethodSpec.constructorBuilder()
+                .addParameter(int.class, "index")
+                .addStatement("this.methodIndex = index")
+                .build());
+
+        // Add methodIndex() getter
+        builder.addMethod(MethodSpec.methodBuilder("methodIndex")
+                .addModifiers(Modifier.PUBLIC)
+                .returns(int.class)
+                .addStatement("return methodIndex")
+                .build());
 
         TypeSpec ts = builder.build();
 
