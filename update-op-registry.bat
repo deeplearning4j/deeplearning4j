@@ -182,19 +182,30 @@ if "%VALIDATE_ONLY%"=="true" (
     set "EXEC_ARGS=%EXEC_ARGS% --validate-only"
 )
 
-set "MVN_EXEC_ARGS=exec:java -Dexec.mainClass=org.eclipse.deeplearning4j.frameworkimport.runner.OpRegistryUpdater -pl platform-tests -Dexec.args=\"%EXEC_ARGS%\""
+REM Build Maven command parts without concatenating user input into a single command string
+set "MVN_CMD_BASE=exec:java -Dexec.mainClass=org.eclipse.deeplearning4j.frameworkimport.runner.OpRegistryUpdater -pl platform-tests"
+set "MVN_CMD_EXEC_ARGS=-Dexec.args=\"%EXEC_ARGS%\""
+set "MVN_CMD_PROFILES="
+set "MVN_CMD_QUIET="
 
+REM If profiles are provided, validate allowed characters before using them
 if not "%MAVEN_PROFILES%"=="" (
-    set "MVN_EXEC_ARGS=%MVN_EXEC_ARGS% -P%MAVEN_PROFILES%"
+    REM Allow only letters, digits, underscore, comma, dot, and hyphen in profile names
+    echo(%MAVEN_PROFILES%| findstr /R /C:"[^A-Za-z0-9_,.-]" >nul
+    if not errorlevel 1 (
+        echo %ERROR_PREFIX% Invalid character in Maven profiles: "%MAVEN_PROFILES%"
+        exit /b 1
+    )
+    set "MVN_CMD_PROFILES=-P%MAVEN_PROFILES%"
 )
 
 if "%VERBOSE%"=="false" (
-    set "MVN_EXEC_ARGS=%MVN_EXEC_ARGS% -q"
+    set "MVN_CMD_QUIET=-q"
 )
 
-echo %INFO_PREFIX% Executing: mvn %MVN_EXEC_ARGS%
+echo %INFO_PREFIX% Executing: mvn %MVN_CMD_BASE% %MVN_CMD_EXEC_ARGS% %MVN_CMD_PROFILES% %MVN_CMD_QUIET%
 
-mvn %MVN_EXEC_ARGS%
+mvn %MVN_CMD_BASE% %MVN_CMD_EXEC_ARGS% %MVN_CMD_PROFILES% %MVN_CMD_QUIET%
 if errorlevel 1 (
     echo %ERROR_PREFIX% OP Registry Update failed!
     exit /b 1
