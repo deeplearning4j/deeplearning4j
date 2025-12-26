@@ -26,11 +26,6 @@ on:
         required: false
         default: central
 
-      releaseRepoId:
-        description: 'Release repository id'
-        required: false
-        default: ''
-
       mvnFlags:
         description: "Extra maven flags (must escape input yourself if used)"
         required: false
@@ -95,10 +90,6 @@ jobs:
           - server_id: ${{ github.event.inputs.serverId }}
             experimental: true
             name: Server id
-
-          - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
-            experimental: true
-            name: Release repository id
 
           - mvn_flags: ${{ github.event.inputs.mvnFlags }}
             experimental: true

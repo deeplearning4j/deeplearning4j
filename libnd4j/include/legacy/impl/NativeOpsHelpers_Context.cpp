@@ -187,32 +187,22 @@ void setGraphContextInputArray(OpaqueContext* ptr,int index,OpaqueNDArray arr) {
 }
 
 //note here for javacpp mapping we have to use this odd type alias as a pointer
-//to make the typedef work properly.
-void setGraphContextOutputArraysArr(OpaqueContext* ptr, int numArrays,OpaqueNDArrayArr *arr) {
-  if (arr == nullptr) THROW_EXCEPTION("setGraphContextOutputArraysArr: Input arrays were null!");
+// OpaqueNDArrayArr is NDArray** (pointer to array of NDArray pointers).
+// Java passes this directly, so arr[i] gives the i-th NDArray*.
+void setGraphContextOutputArraysArr(OpaqueContext* ptr, int numArrays, OpaqueNDArrayArr arr) {
+  if (arr == nullptr) THROW_EXCEPTION("setGraphContextOutputArraysArr: Output arrays were null!");
   if (ptr == nullptr) THROW_EXCEPTION("setGraphContextOutputArraysArr: Context was null!");
 
   for (int i = 0; i < numArrays; i++) {
     if (arr[i] == nullptr) {
       std::string errorMessage;
-      errorMessage += "setGraphContextOutputArraysArr: Input array at index ";
+      errorMessage += "setGraphContextOutputArraysArr: Output array at index ";
       errorMessage += std::to_string(i);
       errorMessage += " was null!";
       THROW_EXCEPTION(errorMessage.c_str());
     }
 
-    // Dereference the OpaqueNDArrayArr to get the OpaqueNDArray (NDArray*)
-    sd::NDArray* ndarray = *arr[i];
-    if (ndarray == nullptr) {
-      std::string errorMessage;
-      errorMessage += "setGraphContextOutputArraysArr: Dereferenced NDArray at index ";
-      errorMessage += std::to_string(i);
-      errorMessage += " was null!";
-      THROW_EXCEPTION(errorMessage.c_str());
-    }
-
-    // Set the output array at the correct index (was using wrong loop variable before)
-    ptr->setOutputArray(i, ndarray, false);
+    ptr->setOutputArray(i, arr[i], false);
   }
 }
 

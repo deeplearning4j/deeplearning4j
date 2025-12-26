@@ -485,13 +485,6 @@ SD_HOST_DEVICE SD_INLINE sd::LongType sd_abs<sd::LongType, sd::LongType>(sd::Lon
  SD_PRINT_MATH_FUNC("sd_abs<sd::LongType>", value, result,sd::LongType);
  return result;
 }
-
-template <>
-SD_HOST_DEVICE SD_INLINE long sd_abs<long, long>(long value) {
- long result = labs(value);
- SD_PRINT_MATH_FUNC("sd_abs<long>", value, result,long);
- return result;
-}
 #endif // HAS_LONG
 
 #ifdef HAS_BOOL
@@ -516,12 +509,6 @@ SD_HOST_DEVICE SD_INLINE uint16_t sd_abs<uint16_t>(uint16_t value) {
  SD_PRINT_MATH_FUNC("sd_abs<uint16_t>", value, value,uint16_t);
  return value;
 }
-
-template <>
-SD_HOST_DEVICE SD_INLINE unsigned short sd_abs<unsigned short, unsigned short>(unsigned short value) {
- SD_PRINT_MATH_FUNC("sd_abs<unsigned short>", value, value,unsigned short);
- return value;
-}
 #endif // HAS_UINT16
 
 #ifdef HAS_UINT32
@@ -530,20 +517,16 @@ SD_HOST_DEVICE SD_INLINE uint32_t sd_abs<uint32_t>(uint32_t value) {
  SD_PRINT_MATH_FUNC("sd_abs<uint32_t>", value, value,uint32_t);
  return value;
 }
-
-template <>
-SD_HOST_DEVICE SD_INLINE unsigned int sd_abs<unsigned int, unsigned int>(unsigned int value) {
- SD_PRINT_MATH_FUNC("sd_abs<unsigned int>", value, value,unsigned int);
- return value;
-}
 #endif // HAS_UINT32
 
 #ifdef HAS_UINT64
 template <>
 SD_HOST_DEVICE SD_INLINE sd::UnsignedLong sd_abs<sd::UnsignedLong>(sd::UnsignedLong value) {
- SD_PRINT_MATH_FUNC("sd_abs<sd::UnsignedLong>", value, value,sd::UnsignedLong);
+ SD_PRINT_MATH_FUNC("sd_abs<sd::UnsignedLong>", value, value, sd::UnsignedLong);
  return value;
 }
+
+
 #endif
 
 #ifdef HAS_INT8
@@ -567,13 +550,6 @@ template <>
 SD_HOST_DEVICE SD_INLINE int16_t sd_abs<int16_t>(int16_t value) {
  int16_t result = value < 0 ? -value : value;
  SD_PRINT_MATH_FUNC("sd_abs<int16_t>", value, result,int16_t);
- return result;
-}
-
-template <>
-SD_HOST_DEVICE SD_INLINE short sd_abs<short, short>(short value) {
- short result = value < 0 ? -value : value;
- SD_PRINT_MATH_FUNC("sd_abs<short>", value, result,short);
  return result;
 }
 #endif // HAS_INT16
@@ -631,13 +607,6 @@ SD_HOST_DEVICE SD_INLINE bool sd_isnan<uint32_t>(uint32_t value) {
   SD_PRINT_MATH_FUNC("sd_isnan<uint32_t>", value, result,uint32_t);
   return result;
 }
-
-template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isnan<unsigned int>(unsigned int value) {
-  bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isnan<unsigned int>", value, result,unsigned int);
-  return result;
-}
 #endif // HAS_UINT32
 
 #ifdef HAS_UINT16
@@ -645,13 +614,6 @@ template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<uint16_t>(uint16_t value) {
   bool result = false;
   SD_PRINT_MATH_FUNC("sd_isnan<uint16_t>", value, result,uint16_t);
-  return result;
-}
-
-template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isnan<unsigned short>(unsigned short value) {
-  bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isnan<unsigned short>", value, result,unsigned short);
   return result;
 }
 #endif // HAS_UINT16
@@ -670,13 +632,6 @@ template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<int16_t>(int16_t value) {
   bool result = false;
   SD_PRINT_MATH_FUNC("sd_isnan<int16_t>", value, result,int16_t);
-  return result;
-}
-
-template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isnan<short>(short value) {
-  bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isnan<short>", value, result,short);
   return result;
 }
 #endif // HAS_INT16
@@ -715,24 +670,18 @@ SD_HOST_DEVICE SD_INLINE bool sd_isnan<sd::LongType>(sd::LongType value) {
   return result;
 }
 
-template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isnan<long>(long value) {
-  bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isnan<long>", value, result,long);
-  return result;
-}
 #endif // HAS_LONG
 
 #ifdef HAS_UINT64
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<sd::UnsignedLong>(sd::UnsignedLong value) {
   bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isnan<sd::UnsignedLong>", value, result,sd::UnsignedLong);
+  SD_PRINT_MATH_FUNC("sd_isnan<sd::UnsignedLong>", value, result, sd::UnsignedLong);
   return result;
 }
 
 
-#endif // HAS_UNSIGNEDLONG
+#endif // HAS_UINT64
 
 // sd_isinf specializations with HAS_* guards
 
@@ -796,13 +745,6 @@ SD_HOST_DEVICE SD_INLINE bool sd_isinf<uint32_t>(uint32_t value) {
   SD_PRINT_MATH_FUNC("sd_isinf<uint32_t>", value, result,uint32_t);
   return result;
 }
-
-template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isinf<unsigned int>(unsigned int value) {
-  bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<unsigned int>", value, result,unsigned int);
-  return result;
-}
 #endif // HAS_UINT32
 
 #ifdef HAS_UINT16
@@ -810,13 +752,6 @@ template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<uint16_t>(uint16_t value) {
   bool result = false;
   SD_PRINT_MATH_FUNC("sd_isinf<uint16_t>", value, result,uint16_t);
-  return result;
-}
-
-template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isinf<unsigned short>(unsigned short value) {
-  bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<unsigned short>", value, result,unsigned short);
   return result;
 }
 #endif // HAS_UINT16
@@ -828,13 +763,6 @@ SD_HOST_DEVICE SD_INLINE bool sd_isinf<uint8_t>(uint8_t value) {
   SD_PRINT_MATH_FUNC("sd_isinf<uint8_t>", value, result,uint8_t);
   return result;
 }
-
-template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isinf<unsigned short>(unsigned short value) {
-  bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<unsigned short>", value, result,unsigned short);
-  return result;
-}
 #endif // HAS_UINT8
 
 #ifdef HAS_INT16
@@ -842,13 +770,6 @@ template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<int16_t>(int16_t value) {
   bool result = false;
   SD_PRINT_MATH_FUNC("sd_isinf<int16_t>", value, result,int16_t);
-  return result;
-}
-
-template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isinf<short>(short value) {
-  bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<short>", value, result,short);
   return result;
 }
 #endif // HAS_INT16
@@ -886,23 +807,16 @@ SD_HOST_DEVICE SD_INLINE bool sd_isinf<sd::LongType>(sd::LongType value) {
   return result;
 }
 
-template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isinf<long>(long value) {
-  bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<long>", value, result,long);
-  return result;
-}
-
-
 #endif // HAS_LONG
 
 #ifdef HAS_UINT64
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<sd::UnsignedLong>(sd::UnsignedLong value) {
   bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<sd::UnsignedLong>", value, result,sd::UnsignedLong);
+  SD_PRINT_MATH_FUNC("sd_isinf<sd::UnsignedLong>", value, result, sd::UnsignedLong);
   return result;
 }
+
 
 #endif // HAS_UINT64
 
@@ -1094,13 +1008,31 @@ SD_HOST_DEVICE SD_INLINE Z sd_cos(X val) {
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_exp(X val) {
+  // Clamp input to prevent overflow - exp(88) ≈ 1.6e38 (near float32 max)
+  // exp(89) overflows to Inf, which then propagates as NaN through the network
+  // This is critical for numerical stability in deep networks like BERT/transformers
+  const X maxExp = static_cast<X>(88.0f);
+  const X minExp = static_cast<X>(-88.0f);
+  X clampedVal = val;
+  if (clampedVal > maxExp) clampedVal = maxExp;
+  if (clampedVal < minExp) clampedVal = minExp;
+  return static_cast<Z>(p_exp<X>(clampedVal));
+}
+
+// Unclamped exp for cases where the caller handles bounds checking
+template <typename X, typename Z>
+SD_HOST_DEVICE SD_INLINE Z sd_exp_unclamped(X val) {
   return static_cast<Z>(p_exp<X>(val));
 }
 
 #ifdef HAS_BFLOAT16
 template <>
 SD_HOST_DEVICE SD_INLINE bfloat16 sd_exp<bfloat16, bfloat16>(bfloat16 val) {
-  bfloat16 result = (bfloat16)p_exp<float>((float)val);
+  // Clamp input to prevent overflow
+  float fval = (float)val;
+  if (fval > 88.0f) fval = 88.0f;
+  if (fval < -88.0f) fval = -88.0f;
+  bfloat16 result = (bfloat16)p_exp<float>(fval);
   SD_PRINT_MATH_FUNC("sd_exp<bfloat16>", val, result, bfloat16);
   return result;
 }
@@ -1109,8 +1041,12 @@ SD_HOST_DEVICE SD_INLINE bfloat16 sd_exp<bfloat16, bfloat16>(bfloat16 val) {
 #ifdef HAS_FLOAT16
 template <>
 SD_HOST_DEVICE SD_INLINE float16 sd_exp<float16, float16>(float16 val) {
-  float16 result = (float16)p_exp<float>((float)val);
-  SD_PRINT_MATH_FUNC("sd_exp<bfloat16>", val, result, float16);
+  // Clamp input to prevent overflow
+  float fval = (float)val;
+  if (fval > 88.0f) fval = 88.0f;
+  if (fval < -88.0f) fval = -88.0f;
+  float16 result = (float16)p_exp<float>(fval);
+  SD_PRINT_MATH_FUNC("sd_exp<float16>", val, result, float16);
   return result;
 }
 #endif // HAS_FLOAT16

@@ -80,7 +80,18 @@ public class NDBase {
   public INDArray argmax(INDArray in, boolean keepDims, long... dimensions) {
     NDValidation.validateNumerical("argmax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax(in, keepDims, dimensions))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax(in, keepDims, dimensions));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -102,7 +113,18 @@ public class NDBase {
   public INDArray argmax(INDArray in, long... dimensions) {
     NDValidation.validateNumerical("argmax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax(in, false, dimensions))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax(in, false, dimensions));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -128,7 +150,18 @@ public class NDBase {
   public INDArray argmin(INDArray in, boolean keepDims, long... dimensions) {
     NDValidation.validateNumerical("argmin", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin(in, keepDims, dimensions))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin(in, keepDims, dimensions));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -153,7 +186,18 @@ public class NDBase {
   public INDArray argmin(INDArray in, long... dimensions) {
     NDValidation.validateNumerical("argmin", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin(in, false, dimensions))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin(in, false, dimensions));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -165,7 +209,18 @@ public class NDBase {
    * @return output The newly assigned output (NUMERIC type)
    */
   public INDArray assign(INDArray x, INDArray y) {
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Assign(x, y))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Assign(x, y));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -228,7 +283,18 @@ public class NDBase {
    * @return output Output array (after casting) (NDARRAY type)
    */
   public INDArray castTo(INDArray arg, DataType datatype) {
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.dtype.Cast(arg, datatype))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.dtype.Cast(arg, datatype));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -241,7 +307,18 @@ public class NDBase {
    */
   public INDArray clipByNorm(INDArray x, double clipValue) {
     NDValidation.validateNumerical("clipByNorm", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm(x, clipValue))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm(x, clipValue));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -257,7 +334,18 @@ public class NDBase {
     NDValidation.validateNumerical("clipByNorm", "x", x);
     NDValidation.validateNumerical("clipByNorm", "clipValue", clipValue);
     NDValidation.validateNumerical("clipByNorm", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm(x, clipValue, dimensions))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm(x, clipValue, dimensions));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -270,7 +358,18 @@ public class NDBase {
    */
   public INDArray clipByValue(INDArray x, double clipValueMin, double clipValueMax) {
     NDValidation.validateNumerical("clipByValue", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue(x, clipValueMin, clipValueMax))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue(x, clipValueMin, clipValueMax));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -285,7 +384,18 @@ public class NDBase {
     NDValidation.validateNumerical("clipByValue", "x", x);
     NDValidation.validateNumerical("clipByValue", "clipValueMin", clipValueMin);
     NDValidation.validateNumerical("clipByValue", "clipValueMax", clipValueMax);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue(x, clipValueMin, clipValueMax))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue(x, clipValueMin, clipValueMax));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -304,7 +414,18 @@ public class NDBase {
     NDValidation.validateNumerical("concat", "inputs", inputs);
     Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
     Preconditions.checkArgument(isSameType(inputs), "Input arrays must all be the same datatype");
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Concat(inputs, dimension))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Concat(inputs, dimension));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -318,7 +439,18 @@ public class NDBase {
    */
   public INDArray create(INDArray shape, DataType dataType, String order, boolean initialize) {
     NDValidation.validateNumerical("create", "shape", shape);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Create(shape, dataType, order, initialize))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Create(shape, dataType, order, initialize));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -330,7 +462,18 @@ public class NDBase {
    */
   public INDArray create(INDArray shape, DataType dataType) {
     NDValidation.validateNumerical("create", "shape", shape);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Create(shape, dataType, "c", false))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Create(shape, dataType, "c", false));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -342,7 +485,18 @@ public class NDBase {
    */
   public INDArray createView(INDArray input, INDArray... indices) {
     Preconditions.checkArgument(indices.length >= 0, "indices has incorrect size/length. Expected: indices.length >= 0, got %s", indices.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.CreateView(input, indices))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.CreateView(input, indices));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -362,7 +516,18 @@ public class NDBase {
   public INDArray cumprod(INDArray in, boolean exclusive, boolean reverse, long... axis) {
     NDValidation.validateNumerical("cumprod", "in", in);
     Preconditions.checkArgument(axis.length >= 1, "axis has incorrect size/length. Expected: axis.length >= 1, got %s", axis.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CumProd(in, exclusive, reverse, axis))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CumProd(in, exclusive, reverse, axis));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -380,7 +545,18 @@ public class NDBase {
   public INDArray cumprod(INDArray in, long... axis) {
     NDValidation.validateNumerical("cumprod", "in", in);
     Preconditions.checkArgument(axis.length >= 1, "axis has incorrect size/length. Expected: axis.length >= 1, got %s", axis.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CumProd(in, false, false, axis))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CumProd(in, false, false, axis));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -400,7 +576,18 @@ public class NDBase {
   public INDArray cumsum(INDArray in, boolean exclusive, boolean reverse, long... axis) {
     NDValidation.validateNumerical("cumsum", "in", in);
     Preconditions.checkArgument(axis.length >= 1, "axis has incorrect size/length. Expected: axis.length >= 1, got %s", axis.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CumSum(in, exclusive, reverse, axis))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CumSum(in, exclusive, reverse, axis));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -418,7 +605,18 @@ public class NDBase {
   public INDArray cumsum(INDArray in, long... axis) {
     NDValidation.validateNumerical("cumsum", "in", in);
     Preconditions.checkArgument(axis.length >= 1, "axis has incorrect size/length. Expected: axis.length >= 1, got %s", axis.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CumSum(in, false, false, axis))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CumSum(in, false, false, axis));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -470,7 +668,18 @@ public class NDBase {
     Preconditions.checkArgument(indices.length >= 1, "indices has incorrect size/length. Expected: indices.length >= 1, got %s", indices.length);
     NDValidation.validateNumerical("dynamicStitch", "x", x);
     Preconditions.checkArgument(x.length >= 1, "x has incorrect size/length. Expected: x.length >= 1, got %s", x.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DynamicStitch(indices, x))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DynamicStitch(indices, x));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -502,7 +711,18 @@ public class NDBase {
    * @return output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
    */
   public INDArray eq(INDArray x, INDArray y) {
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.EqualTo(x, y))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.EqualTo(x, y));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -517,7 +737,18 @@ public class NDBase {
    * @return output Output variable (NUMERIC type)
    */
   public INDArray expandDims(INDArray x, int axis) {
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.ExpandDims(x, axis))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.ExpandDims(x, axis));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -530,7 +761,18 @@ public class NDBase {
    */
   public INDArray fill(INDArray shape, DataType dataType, double value) {
     NDValidation.validateInteger("fill", "shape", shape);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Fill(shape, dataType, value))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Fill(shape, dataType, value));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -542,7 +784,18 @@ public class NDBase {
    */
   public INDArray flatten(INDArray[] inputs, String order) {
     Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.custom.Flatten(inputs, order))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.custom.Flatten(inputs, order));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -553,7 +806,18 @@ public class NDBase {
    */
   public INDArray flatten(INDArray... inputs) {
     Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.custom.Flatten(inputs, "c"))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.custom.Flatten(inputs, "c"));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -567,7 +831,18 @@ public class NDBase {
    */
   public INDArray gather(INDArray df, int[] indices, int axis) {
     Preconditions.checkArgument(indices.length >= 1, "indices has incorrect size/length. Expected: indices.length >= 1, got %s", indices.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Gather(df, indices, axis))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Gather(df, indices, axis));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -581,7 +856,18 @@ public class NDBase {
    */
   public INDArray gather(INDArray df, INDArray indices, int axis) {
     NDValidation.validateInteger("gather", "indices", indices);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Gather(df, indices, axis))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Gather(df, indices, axis));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -593,7 +879,18 @@ public class NDBase {
    */
   public INDArray gatherNd(INDArray df, INDArray indices) {
     NDValidation.validateNumerical("gatherNd", "indices", indices);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.GatherNd(df, indices))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.GatherNd(df, indices));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -624,7 +921,18 @@ public class NDBase {
    * @return output Output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
    */
   public INDArray gt(INDArray x, INDArray y) {
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThan(x, y))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThan(x, y));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -655,7 +963,18 @@ public class NDBase {
    * @return output  (NDARRAY type)
    */
   public INDArray gte(INDArray x, INDArray y) {
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThanOrEqual(x, y))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThanOrEqual(x, y));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -665,7 +984,18 @@ public class NDBase {
    * @return output Output variable (NDARRAY type)
    */
   public INDArray identity(INDArray input) {
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.same.Identity(input))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.same.Identity(input));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -678,7 +1008,18 @@ public class NDBase {
    */
   public INDArray invertPermutation(INDArray input) {
     NDValidation.validateInteger("invertPermutation", "input", input);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.InvertPermutation(input))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.InvertPermutation(input));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -689,7 +1030,18 @@ public class NDBase {
    */
   public INDArray isNumericTensor(INDArray x) {
     NDValidation.validateNumerical("isNumericTensor", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.IsNumericTensor(x))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.IsNumericTensor(x));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -703,7 +1055,18 @@ public class NDBase {
    * @return output INDArray  with linearly spaced elements (NUMERIC type)
    */
   public INDArray linspace(DataType dataType, double start, double stop, long number) {
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Linspace(dataType, start, stop, number))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Linspace(dataType, start, stop, number));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -720,7 +1083,18 @@ public class NDBase {
     NDValidation.validateNumerical("linspace", "start", start);
     NDValidation.validateNumerical("linspace", "stop", stop);
     NDValidation.validateInteger("linspace", "number", number);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Linspace(start, stop, number, dataType))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Linspace(start, stop, number, dataType));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -751,7 +1125,18 @@ public class NDBase {
    * @return output Output Boolean array out, with values true/false based on where the condition is satisfied (NDARRAY type)
    */
   public INDArray lt(INDArray x, INDArray y) {
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LessThan(x, y))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LessThan(x, y));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -784,7 +1169,18 @@ public class NDBase {
   public INDArray lte(INDArray x, INDArray y) {
     NDValidation.validateNumerical("lte", "x", x);
     NDValidation.validateNumerical("lte", "y", y);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LessThanOrEqual(x, y))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LessThanOrEqual(x, y));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -910,7 +1306,18 @@ public class NDBase {
   public INDArray max(INDArray first, INDArray second) {
     NDValidation.validateNumerical("max", "first", first);
     NDValidation.validateNumerical("max", "second", second);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Max(first, second))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Max(first, second));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1005,7 +1412,18 @@ public class NDBase {
    * @return output Output (NDARRAY type)
    */
   public INDArray merge(INDArray x, INDArray y) {
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge(x, y))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge(x, y));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1063,7 +1481,18 @@ public class NDBase {
   public INDArray min(INDArray first, INDArray second) {
     NDValidation.validateNumerical("min", "first", first);
     NDValidation.validateNumerical("min", "second", second);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Min(first, second))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Min(first, second));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1074,7 +1503,18 @@ public class NDBase {
    * @return output Output array (after casting) (NDARRAY type)
    */
   public INDArray minMax(int datatype, int minOrMax) {
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.dtype.MinMaxDataType(datatype, minOrMax))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.dtype.MinMaxDataType(datatype, minOrMax));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1092,7 +1532,18 @@ public class NDBase {
       boolean transposeZ) {
     NDValidation.validateNumerical("mmul", "x", x);
     NDValidation.validateNumerical("mmul", "y", y);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.Mmul(x, y, transposeX, transposeY, transposeZ))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.Mmul(x, y, transposeX, transposeY, transposeZ));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1106,7 +1557,18 @@ public class NDBase {
   public INDArray mmul(INDArray x, INDArray y) {
     NDValidation.validateNumerical("mmul", "x", x);
     NDValidation.validateNumerical("mmul", "y", y);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.Mmul(x, y, false, false, false))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.Mmul(x, y, false, false, false));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1137,7 +1599,18 @@ public class NDBase {
    * @return output Boolean array out, with values true/false based on where the condition is satisfied (NDARRAY type)
    */
   public INDArray neq(INDArray x, INDArray y) {
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.NotEqualTo(x, y))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.NotEqualTo(x, y));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1287,7 +1760,18 @@ public class NDBase {
   public INDArray oneHot(INDArray indices, int depth, int axis, double on, double off,
       DataType dataType) {
     NDValidation.validateNumerical("oneHot", "indices", indices);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.OneHot(indices, depth, axis, on, off, dataType))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.OneHot(indices, depth, axis, on, off, dataType));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1304,7 +1788,18 @@ public class NDBase {
    */
   public INDArray oneHot(INDArray indices, int depth, int axis, double on, double off) {
     NDValidation.validateNumerical("oneHot", "indices", indices);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.OneHot(indices, depth, axis, on, off, DataType.FLOAT))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.OneHot(indices, depth, axis, on, off, DataType.FLOAT));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1319,7 +1814,18 @@ public class NDBase {
    */
   public INDArray oneHot(INDArray indices, int depth) {
     NDValidation.validateNumerical("oneHot", "indices", indices);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.OneHot(indices, depth))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.OneHot(indices, depth));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1330,7 +1836,18 @@ public class NDBase {
    * @return output A new INDArray  with the same (dynamic) shape as the input (NUMERIC type)
    */
   public INDArray onesLike(INDArray input) {
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.OnesLike(input))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.OnesLike(input));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1341,7 +1858,18 @@ public class NDBase {
    * @return output  (NUMERIC type)
    */
   public INDArray onesLike(INDArray input, DataType dataType) {
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.OnesLike(input, dataType))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.OnesLike(input, dataType));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1354,7 +1882,18 @@ public class NDBase {
    */
   public INDArray permute(INDArray x, INDArray dimensions) {
     NDValidation.validateInteger("permute", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Permute(x, dimensions))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Permute(x, dimensions));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1367,7 +1906,18 @@ public class NDBase {
    */
   public INDArray permute(INDArray x, long... dimensions) {
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Permute(x, dimensions))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Permute(x, dimensions));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1464,7 +2014,18 @@ public class NDBase {
    * @return output INDArray  with the specified values (NUMERIC type)
    */
   public INDArray range(double from, double to, double step, DataType dataType) {
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.random.impl.Range(from, to, step, dataType))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.random.impl.Range(from, to, step, dataType));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1482,7 +2043,18 @@ public class NDBase {
     NDValidation.validateNumerical("range", "from", from);
     NDValidation.validateNumerical("range", "to", to);
     NDValidation.validateNumerical("range", "step", step);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.random.impl.Range(from, to, step, dataType))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.random.impl.Range(from, to, step, dataType));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1492,7 +2064,18 @@ public class NDBase {
    * @return output (scalar) output variable with value equal to the rank of the input variable (NUMERIC type)
    */
   public INDArray rank(INDArray in) {
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Rank(in))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Rank(in));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1506,7 +2089,18 @@ public class NDBase {
   public INDArray repeat(INDArray input, INDArray repeats, int axis) {
     NDValidation.validateNumerical("repeat", "input", input);
     NDValidation.validateNumerical("repeat", "repeats", repeats);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Repeat(input, repeats, axis))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Repeat(input, repeats, axis));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1551,7 +2145,18 @@ public class NDBase {
    */
   public INDArray reshape(INDArray x, INDArray shape) {
     NDValidation.validateNumerical("reshape", "shape", shape);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Reshape(x, shape))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Reshape(x, shape));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1565,7 +2170,18 @@ public class NDBase {
    */
   public INDArray reshape(INDArray x, long... shape) {
     Preconditions.checkArgument(shape.length >= 0, "shape has incorrect size/length. Expected: shape.length >= 0, got %s", shape.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Reshape(x, shape))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Reshape(x, shape));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1587,7 +2203,18 @@ public class NDBase {
    */
   public INDArray reverse(INDArray x, long... dimensions) {
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Reverse(x, dimensions))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Reverse(x, dimensions));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1601,7 +2228,18 @@ public class NDBase {
    */
   public INDArray reverseSequence(INDArray x, INDArray seq_lengths, int seqDim, int batchDim) {
     NDValidation.validateInteger("reverseSequence", "seq_lengths", seq_lengths);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.ReverseSequence(x, seq_lengths, seqDim, batchDim))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.ReverseSequence(x, seq_lengths, seqDim, batchDim));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1613,7 +2251,18 @@ public class NDBase {
    */
   public INDArray reverseSequence(INDArray x, INDArray seq_lengths) {
     NDValidation.validateInteger("reverseSequence", "seq_lengths", seq_lengths);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.ReverseSequence(x, seq_lengths, -1, 0))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.ReverseSequence(x, seq_lengths, -1, 0));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1682,7 +2331,18 @@ public class NDBase {
     NDValidation.validateNumerical("scatterAdd", "ref", ref);
     NDValidation.validateNumerical("scatterAdd", "indices", indices);
     NDValidation.validateNumerical("scatterAdd", "updates", updates);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scatter.ScatterAdd(ref, indices, updates))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scatter.ScatterAdd(ref, indices, updates));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1702,7 +2362,18 @@ public class NDBase {
     NDValidation.validateNumerical("scatterDiv", "ref", ref);
     NDValidation.validateNumerical("scatterDiv", "indices", indices);
     NDValidation.validateNumerical("scatterDiv", "updates", updates);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scatter.ScatterDiv(ref, indices, updates))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scatter.ScatterDiv(ref, indices, updates));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1724,7 +2395,18 @@ public class NDBase {
     NDValidation.validateNumerical("scatterMax", "ref", ref);
     NDValidation.validateNumerical("scatterMax", "indices", indices);
     NDValidation.validateNumerical("scatterMax", "updates", updates);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scatter.ScatterMax(ref, indices, updates))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scatter.ScatterMax(ref, indices, updates));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1746,7 +2428,18 @@ public class NDBase {
     NDValidation.validateNumerical("scatterMin", "ref", ref);
     NDValidation.validateNumerical("scatterMin", "indices", indices);
     NDValidation.validateNumerical("scatterMin", "updates", updates);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scatter.ScatterMin(ref, indices, updates))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scatter.ScatterMin(ref, indices, updates));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1768,7 +2461,18 @@ public class NDBase {
     NDValidation.validateNumerical("scatterMul", "ref", ref);
     NDValidation.validateNumerical("scatterMul", "indices", indices);
     NDValidation.validateNumerical("scatterMul", "updates", updates);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scatter.ScatterMul(ref, indices, updates))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scatter.ScatterMul(ref, indices, updates));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1791,7 +2495,18 @@ public class NDBase {
     NDValidation.validateNumerical("scatterNdAdd", "ref", ref);
     NDValidation.validateNumerical("scatterNdAdd", "indices", indices);
     NDValidation.validateNumerical("scatterNdAdd", "updates", updates);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scatter.ScatterNdAdd(ref, indices, updates))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scatter.ScatterNdAdd(ref, indices, updates));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1814,7 +2529,18 @@ public class NDBase {
     NDValidation.validateNumerical("scatterNdSub", "ref", ref);
     NDValidation.validateNumerical("scatterNdSub", "indices", indices);
     NDValidation.validateNumerical("scatterNdSub", "updates", updates);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scatter.ScatterNdSub(ref, indices, updates))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scatter.ScatterNdSub(ref, indices, updates));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1837,7 +2563,18 @@ public class NDBase {
     NDValidation.validateNumerical("scatterNdUpdate", "ref", ref);
     NDValidation.validateNumerical("scatterNdUpdate", "indices", indices);
     NDValidation.validateNumerical("scatterNdUpdate", "updates", updates);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scatter.ScatterNdUpdate(ref, indices, updates))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scatter.ScatterNdUpdate(ref, indices, updates));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1859,7 +2596,18 @@ public class NDBase {
     NDValidation.validateNumerical("scatterSub", "ref", ref);
     NDValidation.validateNumerical("scatterSub", "indices", indices);
     NDValidation.validateNumerical("scatterSub", "updates", updates);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scatter.ScatterSub(ref, indices, updates))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scatter.ScatterSub(ref, indices, updates));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1881,7 +2629,18 @@ public class NDBase {
     NDValidation.validateNumerical("scatterUpdate", "ref", ref);
     NDValidation.validateNumerical("scatterUpdate", "indices", indices);
     NDValidation.validateNumerical("scatterUpdate", "updates", updates);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate(ref, indices, updates))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate(ref, indices, updates));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1900,7 +2659,18 @@ public class NDBase {
    */
   public INDArray segmentMax(INDArray data, INDArray segmentIds) {
     NDValidation.validateNumerical("segmentMax", "segmentIds", segmentIds);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.segment.SegmentMax(data, segmentIds))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.segment.SegmentMax(data, segmentIds));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1919,7 +2689,18 @@ public class NDBase {
    */
   public INDArray segmentMean(INDArray data, INDArray segmentIds) {
     NDValidation.validateNumerical("segmentMean", "segmentIds", segmentIds);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.segment.SegmentMean(data, segmentIds))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.segment.SegmentMean(data, segmentIds));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1938,7 +2719,18 @@ public class NDBase {
    */
   public INDArray segmentMin(INDArray data, INDArray segmentIds) {
     NDValidation.validateNumerical("segmentMin", "segmentIds", segmentIds);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.segment.SegmentMin(data, segmentIds))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.segment.SegmentMin(data, segmentIds));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1957,7 +2749,18 @@ public class NDBase {
    */
   public INDArray segmentProd(INDArray data, INDArray segmentIds) {
     NDValidation.validateNumerical("segmentProd", "segmentIds", segmentIds);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.segment.SegmentProd(data, segmentIds))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.segment.SegmentProd(data, segmentIds));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1976,7 +2779,18 @@ public class NDBase {
    */
   public INDArray segmentSum(INDArray data, INDArray segmentIds) {
     NDValidation.validateNumerical("segmentSum", "segmentIds", segmentIds);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.segment.SegmentSum(data, segmentIds))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.segment.SegmentSum(data, segmentIds));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1990,7 +2804,18 @@ public class NDBase {
    */
   public INDArray sequenceMask(INDArray lengths, int maxLen, DataType dataType) {
     NDValidation.validateNumerical("sequenceMask", "lengths", lengths);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.SequenceMask(lengths, maxLen, dataType))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.SequenceMask(lengths, maxLen, dataType));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2005,7 +2830,18 @@ public class NDBase {
   public INDArray sequenceMask(INDArray lengths, INDArray maxLen, DataType dataType) {
     NDValidation.validateNumerical("sequenceMask", "lengths", lengths);
     NDValidation.validateInteger("sequenceMask", "maxLen", maxLen);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.SequenceMask(lengths, maxLen, dataType))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.SequenceMask(lengths, maxLen, dataType));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2017,7 +2853,18 @@ public class NDBase {
    */
   public INDArray sequenceMask(INDArray lengths, DataType dataType) {
     NDValidation.validateNumerical("sequenceMask", "lengths", lengths);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.SequenceMask(lengths, dataType))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.SequenceMask(lengths, dataType));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2038,7 +2885,18 @@ public class NDBase {
    * @return output 1D output variable with contents equal to the shape of the input (NUMERIC type)
    */
   public INDArray shape(INDArray input) {
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Shape(input))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Shape(input));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2048,7 +2906,18 @@ public class NDBase {
    * @return output 0D (scalar) output variable with value equal to the number of elements in the specified array (NUMERIC type)
    */
   public INDArray size(INDArray in) {
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Size(in))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Size(in));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2060,7 +2929,18 @@ public class NDBase {
    * @return output Scalar INDArray  for size at specified variable (NUMERIC type)
    */
   public INDArray sizeAt(INDArray in, int dimension) {
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.SizeAt(in, dimension))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.SizeAt(in, dimension));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2081,7 +2961,18 @@ public class NDBase {
   public INDArray slice(INDArray input, int[] begin, int... size) {
     Preconditions.checkArgument(begin.length >= 1, "begin has incorrect size/length. Expected: begin.length >= 1, got %s", begin.length);
     Preconditions.checkArgument(size.length >= 1, "size has incorrect size/length. Expected: size.length >= 1, got %s", size.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Slice(input, begin, size))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Slice(input, begin, size));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2102,7 +2993,18 @@ public class NDBase {
   public INDArray slice(INDArray input, INDArray begin, INDArray size) {
     NDValidation.validateInteger("slice", "begin", begin);
     NDValidation.validateInteger("slice", "size", size);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Slice(input, begin, size))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Slice(input, begin, size));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2117,7 +3019,18 @@ public class NDBase {
     NDValidation.validateNumerical("sparseToDense", "indices", indices);
     NDValidation.validateNumerical("sparseToDense", "shape", shape);
     NDValidation.validateNumerical("sparseToDense", "values", values);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.compat.CompatSparseToDense(indices, shape, values))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.compat.CompatSparseToDense(indices, shape, values));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2135,7 +3048,18 @@ public class NDBase {
     NDValidation.validateNumerical("sparseToDense", "shape", shape);
     NDValidation.validateNumerical("sparseToDense", "values", values);
     NDValidation.validateNumerical("sparseToDense", "defaultValue", defaultValue);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.compat.CompatSparseToDense(indices, shape, values, defaultValue))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.compat.CompatSparseToDense(indices, shape, values, defaultValue));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2226,7 +3150,18 @@ public class NDBase {
    */
   public INDArray squeeze(INDArray x, int axis) {
     NDValidation.validateNumerical("squeeze", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Squeeze(x, axis))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Squeeze(x, axis));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2244,7 +3179,18 @@ public class NDBase {
    */
   public INDArray stack(int axis, INDArray... values) {
     Preconditions.checkArgument(values.length >= 1, "values has incorrect size/length. Expected: values.length >= 1, got %s", values.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Stack(values, axis))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Stack(values, axis));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2317,7 +3263,18 @@ public class NDBase {
     Preconditions.checkArgument(begin.length >= 1, "begin has incorrect size/length. Expected: begin.length >= 1, got %s", begin.length);
     Preconditions.checkArgument(end.length >= 1, "end has incorrect size/length. Expected: end.length >= 1, got %s", end.length);
     Preconditions.checkArgument(strides.length >= 1, "strides has incorrect size/length. Expected: strides.length >= 1, got %s", strides.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.StridedSlice(in, begin, end, strides, beginMask, endMask, ellipsisMask, newAxisMask, shrinkAxisMask))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.StridedSlice(in, begin, end, strides, beginMask, endMask, ellipsisMask, newAxisMask, shrinkAxisMask));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2340,7 +3297,18 @@ public class NDBase {
     Preconditions.checkArgument(begin.length >= 1, "begin has incorrect size/length. Expected: begin.length >= 1, got %s", begin.length);
     Preconditions.checkArgument(end.length >= 1, "end has incorrect size/length. Expected: end.length >= 1, got %s", end.length);
     Preconditions.checkArgument(strides.length >= 1, "strides has incorrect size/length. Expected: strides.length >= 1, got %s", strides.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.StridedSlice(in, begin, end, strides, 0, 0, 0, 0, 0))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.StridedSlice(in, begin, end, strides, 0, 0, 0, 0, 0));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2369,7 +3337,18 @@ public class NDBase {
     NDValidation.validateNumerical("stridedSlice", "begin", begin);
     NDValidation.validateNumerical("stridedSlice", "end", end);
     NDValidation.validateNumerical("stridedSlice", "strides", strides);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.StridedSlice(in, begin, end, strides, beginMask, endMask, ellipsisMask, newAxisMask, shrinkAxisMask))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.StridedSlice(in, begin, end, strides, beginMask, endMask, ellipsisMask, newAxisMask, shrinkAxisMask));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2392,7 +3371,18 @@ public class NDBase {
     NDValidation.validateNumerical("stridedSlice", "begin", begin);
     NDValidation.validateNumerical("stridedSlice", "end", end);
     NDValidation.validateNumerical("stridedSlice", "strides", strides);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.StridedSlice(in, begin, end, strides, 0, 0, 0, 0, 0))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.StridedSlice(in, begin, end, strides, 0, 0, 0, 0, 0));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2466,7 +3456,18 @@ public class NDBase {
     NDValidation.validateNumerical("tensorMmul", "y", y);
     Preconditions.checkArgument(dimensionsX.length >= 1, "dimensionsX has incorrect size/length. Expected: dimensionsX.length >= 1, got %s", dimensionsX.length);
     Preconditions.checkArgument(dimensionsY.length >= 1, "dimensionsY has incorrect size/length. Expected: dimensionsY.length >= 1, got %s", dimensionsY.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.TensorMmul(x, y, dimensionsX, dimensionsY, transposeX, transposeY, transposeZ))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.TensorMmul(x, y, dimensionsX, dimensionsY, transposeX, transposeY, transposeZ));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2483,7 +3484,18 @@ public class NDBase {
     NDValidation.validateNumerical("tensorMmul", "y", y);
     Preconditions.checkArgument(dimensionsX.length >= 1, "dimensionsX has incorrect size/length. Expected: dimensionsX.length >= 1, got %s", dimensionsX.length);
     Preconditions.checkArgument(dimensionsY.length >= 1, "dimensionsY has incorrect size/length. Expected: dimensionsY.length >= 1, got %s", dimensionsY.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.TensorMmul(x, y, dimensionsX, dimensionsY, false, false, false))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.TensorMmul(x, y, dimensionsX, dimensionsY, false, false, false));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2504,7 +3516,18 @@ public class NDBase {
    */
   public INDArray tile(INDArray x, INDArray repeat) {
     NDValidation.validateInteger("tile", "repeat", repeat);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Tile(x, repeat))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Tile(x, repeat));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2516,7 +3539,18 @@ public class NDBase {
    */
   public INDArray tile(INDArray x, int... repeat) {
     Preconditions.checkArgument(repeat.length >= 1, "repeat has incorrect size/length. Expected: repeat.length >= 1, got %s", repeat.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Tile(x, repeat))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Tile(x, repeat));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2526,7 +3560,18 @@ public class NDBase {
    * @return output transposed input (NDARRAY type)
    */
   public INDArray transpose(INDArray x) {
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Transpose(x))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Transpose(x));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2544,7 +3589,18 @@ public class NDBase {
   public INDArray unsortedSegmentMax(INDArray data, INDArray segmentIds, int numSegments) {
     NDValidation.validateNumerical("unsortedSegmentMax", "data", data);
     NDValidation.validateNumerical("unsortedSegmentMax", "segmentIds", segmentIds);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentMax(data, segmentIds, numSegments))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentMax(data, segmentIds, numSegments));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2563,7 +3619,18 @@ public class NDBase {
     NDValidation.validateNumerical("unsortedSegmentMax", "data", data);
     NDValidation.validateNumerical("unsortedSegmentMax", "segmentIds", segmentIds);
     NDValidation.validateInteger("unsortedSegmentMax", "numSegments", numSegments);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentMax(data, segmentIds, numSegments))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentMax(data, segmentIds, numSegments));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2581,7 +3648,18 @@ public class NDBase {
   public INDArray unsortedSegmentMean(INDArray data, INDArray segmentIds, int numSegments) {
     NDValidation.validateNumerical("unsortedSegmentMean", "data", data);
     NDValidation.validateNumerical("unsortedSegmentMean", "segmentIds", segmentIds);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentMean(data, segmentIds, numSegments))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentMean(data, segmentIds, numSegments));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2600,7 +3678,18 @@ public class NDBase {
     NDValidation.validateNumerical("unsortedSegmentMean", "data", data);
     NDValidation.validateNumerical("unsortedSegmentMean", "segmentIds", segmentIds);
     NDValidation.validateInteger("unsortedSegmentMean", "numSegments", numSegments);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentMean(data, segmentIds, numSegments))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentMean(data, segmentIds, numSegments));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2618,7 +3707,18 @@ public class NDBase {
   public INDArray unsortedSegmentMin(INDArray data, INDArray segmentIds, int numSegments) {
     NDValidation.validateNumerical("unsortedSegmentMin", "data", data);
     NDValidation.validateNumerical("unsortedSegmentMin", "segmentIds", segmentIds);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentMin(data, segmentIds, numSegments))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentMin(data, segmentIds, numSegments));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2637,7 +3737,18 @@ public class NDBase {
     NDValidation.validateNumerical("unsortedSegmentMin", "data", data);
     NDValidation.validateNumerical("unsortedSegmentMin", "segmentIds", segmentIds);
     NDValidation.validateInteger("unsortedSegmentMin", "numSegments", numSegments);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentMin(data, segmentIds, numSegments))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentMin(data, segmentIds, numSegments));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2655,7 +3766,18 @@ public class NDBase {
   public INDArray unsortedSegmentProd(INDArray data, INDArray segmentIds, int numSegments) {
     NDValidation.validateNumerical("unsortedSegmentProd", "data", data);
     NDValidation.validateNumerical("unsortedSegmentProd", "segmentIds", segmentIds);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentProd(data, segmentIds, numSegments))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentProd(data, segmentIds, numSegments));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2674,7 +3796,18 @@ public class NDBase {
     NDValidation.validateNumerical("unsortedSegmentProd", "data", data);
     NDValidation.validateNumerical("unsortedSegmentProd", "segmentIds", segmentIds);
     NDValidation.validateInteger("unsortedSegmentProd", "numSegments", numSegments);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentProd(data, segmentIds, numSegments))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentProd(data, segmentIds, numSegments));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2691,7 +3824,18 @@ public class NDBase {
   public INDArray unsortedSegmentSqrtN(INDArray data, INDArray segmentIds, int numSegments) {
     NDValidation.validateNumerical("unsortedSegmentSqrtN", "data", data);
     NDValidation.validateNumerical("unsortedSegmentSqrtN", "segmentIds", segmentIds);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentSqrtN(data, segmentIds, numSegments))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentSqrtN(data, segmentIds, numSegments));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2709,7 +3853,18 @@ public class NDBase {
     NDValidation.validateNumerical("unsortedSegmentSqrtN", "data", data);
     NDValidation.validateNumerical("unsortedSegmentSqrtN", "segmentIds", segmentIds);
     NDValidation.validateInteger("unsortedSegmentSqrtN", "numSegments", numSegments);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentSqrtN(data, segmentIds, numSegments))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentSqrtN(data, segmentIds, numSegments));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2727,7 +3882,18 @@ public class NDBase {
   public INDArray unsortedSegmentSum(INDArray data, INDArray segmentIds, int numSegments) {
     NDValidation.validateNumerical("unsortedSegmentSum", "data", data);
     NDValidation.validateNumerical("unsortedSegmentSum", "segmentIds", segmentIds);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentSum(data, segmentIds, numSegments))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentSum(data, segmentIds, numSegments));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2746,7 +3912,18 @@ public class NDBase {
     NDValidation.validateNumerical("unsortedSegmentSum", "data", data);
     NDValidation.validateNumerical("unsortedSegmentSum", "segmentIds", segmentIds);
     NDValidation.validateInteger("unsortedSegmentSum", "numSegments", numSegments);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentSum(data, segmentIds, numSegments))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentSum(data, segmentIds, numSegments));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2825,7 +4002,18 @@ public class NDBase {
    */
   public INDArray where(INDArray x, INDArray y, INDArray condition) {
     NDValidation.validateBool("where", "condition", condition);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.controlflow.Where(x, y, condition))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.controlflow.Where(x, y, condition));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2845,7 +4033,18 @@ public class NDBase {
   public INDArray where(INDArray x, INDArray condition) {
     NDValidation.validateNumerical("where", "x", x);
     NDValidation.validateBool("where", "condition", condition);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.controlflow.Where(x, condition))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.controlflow.Where(x, condition));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2863,7 +4062,18 @@ public class NDBase {
    */
   public INDArray where(INDArray condition) {
     NDValidation.validateBool("where", "condition", condition);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.controlflow.Where(condition))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.controlflow.Where(condition));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2883,7 +4093,18 @@ public class NDBase {
    */
   public INDArray whereNumpy(INDArray x, INDArray y, INDArray condition) {
     NDValidation.validateNumerical("whereNumpy", "condition", condition);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy(x, y, condition))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy(x, y, condition));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -2894,6 +4115,17 @@ public class NDBase {
    * @return output A new Variable with the same (dynamic) shape as the input (NUMERIC type)
    */
   public INDArray zerosLike(INDArray input) {
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.ZerosLike(input))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.ZerosLike(input));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 }

@@ -38,7 +38,7 @@ LegacyScalarBoolOp::LegacyScalarBoolOp(int opNum) : LegacyOp(1, opNum) {
 LegacyOp *LegacyScalarBoolOp::clone() { return new LegacyScalarBoolOp(this->_opNum, *this->_scalar); }
 
 LegacyScalarBoolOp::LegacyScalarBoolOp(int opNum, NDArray &scalar) : LegacyOp(1, opNum) {
-  _scalar = new NDArray(scalar.dup(scalar.ordering(), false));
+  _scalar = scalar.dup(scalar.ordering(), false);
 }
 
 ShapeList *LegacyScalarBoolOp::calculateOutputShape(ShapeList *inputShape, Context &block) {
@@ -67,13 +67,14 @@ Status LegacyScalarBoolOp::validateAndExecute(Context &block) {
   } else if (block.getTArguments()->size() > 0) {
     auto y = NDArrayFactory::create(T_ARG(0), block.launchContext());
 
-    NDArray::prepareSpecialUse({z}, {x, &y});
+    NDArray::prepareSpecialUse({z}, {x, y});
 
     NativeOpExecutioner::execScalarBool(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
                                         x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
-                                        z->specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(),
-                                        y.specialShapeInfo(), extras.argumentsAsT(x->dataType(), 1));
+                                        z->specialShapeInfo(), y->buffer(), y->shapeInfo(), y->specialBuffer(),
+                                        y->specialShapeInfo(), extras.argumentsAsT(x->dataType(), 1));
 
+    delete y;
     manager.synchronize();
   } else {
     NDArray::prepareSpecialUse({z}, {x, _scalar});

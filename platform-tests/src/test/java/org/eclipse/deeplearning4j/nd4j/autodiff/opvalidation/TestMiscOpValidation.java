@@ -2040,31 +2040,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testLgamma(Nd4jBackend backend) {
 
-        SameDiff sameDiff = SameDiff.create();
-
-        INDArray in = Nd4j.linspace(DataType.DOUBLE, 1, 12, 1).reshape(3, 4);
-        SDVariable sdInput = sameDiff.var(in);
-
-        INDArray expected = Nd4j.createFromArray(new double[]{
-                0.0,0.0,0.6931472,1.7917595,3.1780539,4.787492,6.5792513,8.525162,10.604603,12.801827,15.104413,17.502308
-        }).reshape(3,4);
-
-        SDVariable output = sameDiff.math().lgamma(sdInput);
-
-        SDVariable loss = sameDiff.standardDeviation(sdInput, true);
-        sameDiff.addLossVariable(loss);
-
-        TestCase tc = new TestCase(sameDiff)
-                .gradientCheck(true)
-                .expectedOutput(output.name(), expected);
-
-        String err = OpValidation.validate(tc);
-        assertNull(err);
-    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

@@ -33,6 +33,7 @@ import org.nd4j.evaluation.serde.ConfusionMatrixDeserializer;
 import org.nd4j.evaluation.serde.ConfusionMatrixSerializer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.ReduceOp;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
@@ -370,9 +371,21 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         Preconditions.checkState(maskArray == null, "Per-output masking for Evaluation is not supported");
 
         //Check for NaNs in predictions - without this, evaulation could silently be intepreted as class 0 prediction due to argmax
-        long count = Nd4j.getExecutioner().execAndReturn(new MatchCondition(predictions2d, Conditions.isNan())).getFinalResult().longValue();
-        Preconditions.checkState(count == 0, "Cannot perform evaluation with NaNs present in predictions:" +
-                " %s NaNs present in predictions INDArray", count);
+        MatchCondition nanCheck = new MatchCondition(predictions2d, Conditions.isNan());
+        ReduceOp nanResult = null;
+        try {
+            nanResult = Nd4j.getExecutioner().execAndReturn(nanCheck);
+            long count = nanResult.getFinalResult().longValue();
+            Preconditions.checkState(count == 0, "Cannot perform evaluation with NaNs present in predictions:" +
+                    " %s NaNs present in predictions INDArray", count);
+        } finally {
+            // Clean up MatchCondition operation (closes internal dimensionz array)
+            try {
+                nanCheck.clearArrays();
+            } catch (Exception e) {
+                // Ignore errors
+            }
+        }
 
         // Add the number of rows to numRowCounter
         numRowCounter += labels2d.size(0);
@@ -524,14 +537,26 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
                 int labelIdx = (int) realOutcomeIndex.getDouble(i);
                 double prob = predictions2d.getDouble(i, labelIdx);
                 INDArray row = predictions2d.getRow(i);
-                int countGreaterThan = (int) Nd4j.getExecutioner()
-                                .exec(new MatchCondition(row, Conditions.greaterThan(prob)))
-                                .getDouble(0);
-                if (countGreaterThan < topN) {
-                    //For example, for top 3 accuracy: can have at most 2 other probabilities larger
-                    topNCorrectCount++;
+                MatchCondition condition = new MatchCondition(row, Conditions.greaterThan(prob));
+                INDArray result = null;
+                try {
+                    result = Nd4j.getExecutioner().exec(condition);
+                    int countGreaterThan = (int) result.getDouble(0);
+                    if (countGreaterThan < topN) {
+                        //For example, for top 3 accuracy: can have at most 2 other probabilities larger
+                        topNCorrectCount++;
+                    }
+                    topNTotalCount++;
+                } finally {
+                    // Clean up result array
+                    if (result != null) {
+                        result.close();
+                    }
+                    // Clean up MatchCondition operation
+                    condition.clearArrays();
+                    // Clean up row - getRow creates a view that needs cleanup
+                    row.close();
                 }
-                topNTotalCount++;
             }
         }
     }

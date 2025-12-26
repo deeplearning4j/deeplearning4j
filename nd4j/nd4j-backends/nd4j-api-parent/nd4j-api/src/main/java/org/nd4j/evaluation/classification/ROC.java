@@ -31,6 +31,7 @@ import org.nd4j.evaluation.curves.RocCurve;
 import org.nd4j.evaluation.serde.ROCSerializer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.ReduceOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
@@ -587,9 +588,22 @@ public class ROC extends BaseEvaluation<ROC> {
             labels2d = labels2d.castTo(predictions2d.dataType());
 
         //Check for NaNs in predictions - without this, evaulation could silently be intepreted as class 0 prediction due to argmax
-        long count = Nd4j.getExecutioner().execAndReturn(new MatchCondition(predictions2d, Conditions.isNan())).getFinalResult().longValue();
-        Preconditions.checkState(count == 0, "Cannot perform evaluation with NaN(s) present:" +
-                " %s NaN(s) present in predictions INDArray", count);
+        MatchCondition nanCheck = new MatchCondition(predictions2d, Conditions.isNan());
+        ReduceOp nanResult = null;
+        try {
+            nanResult = Nd4j.getExecutioner().execAndReturn(nanCheck);
+            long count = nanResult.getFinalResult().longValue();
+            Preconditions.checkState(count == 0, "Cannot perform evaluation with NaN(s) present:" +
+                    " %s NaN(s) present in predictions INDArray", count);
+        } finally {
+            // Clean up result array
+            // Clean up MatchCondition operation (closes internal dimensionz array)
+            try {
+                nanCheck.clearArrays();
+            } catch (Exception e) {
+                // Ignore errors
+            }
+        }
 
         double step = 1.0 / thresholdSteps;
         boolean singleOutput = labels2d.size(1) == 1;

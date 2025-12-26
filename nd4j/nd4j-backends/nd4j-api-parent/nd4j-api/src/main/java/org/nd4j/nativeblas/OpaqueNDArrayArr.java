@@ -67,13 +67,34 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
     // Track the deallocator for this instance
     private OpaqueNDArrayArrDeallocator deallocator;
 
+    // Keep the memory pointer alive to prevent GC from freeing the native memory we're using
+    private org.bytedeco.javacpp.Pointer memoryPointer;
+
+    /**
+     * Default constructor for internal use.
+     * Creates an uninitialized OpaqueNDArrayArr that must be set up via direct field access.
+     */
+    public OpaqueNDArrayArr() {
+        super();
+    }
+
+    /**
+     * Constructor that wraps an existing Pointer's memory.
+     * This is used to share native memory with another Pointer (like LongPointer).
+     *
+     * @param p The Pointer whose memory to wrap
+     */
+    public OpaqueNDArrayArr(org.bytedeco.javacpp.Pointer p) {
+        super(p);
+    }
+
     /**
      * Basic constructor for internal use.
-     * 
+     *
      * @param array Array of OpaqueNDArray pointers
      */
-    public OpaqueNDArrayArr(OpaqueNDArray... array) { 
-        super(array); 
+    public OpaqueNDArrayArr(OpaqueNDArray... array) {
+        super(array);
     }
 
     /**
@@ -114,32 +135,52 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
             throw new IllegalArgumentException("Cannot create OpaqueNDArrayArr from null or empty array");
         }
 
-        // Convert INDArrays to OpaqueNDArrays using CACHED instances.
-        // CRITICAL: We use fromINDArray() (cached) instead of fromINDArrayUncached() because:
-        // 1. Uncached instances are independently registered with DeallocatorService
-        // 2. OpaqueNDArrayArrDeallocator also tries to close them, causing double-registration
-        // 3. This creates complex timing issues and potential heap corruption
-        //
-        // The original concern (parent INDArray being closed causing dangling pointers) is
-        // addressed by storing parent references in parentArrays field below. As long as
-        // this OpaqueNDArrayArr is alive, the parent INDArrays are kept alive, and their
-        // cached OpaqueNDArrays remain valid.
-        OpaqueNDArray[] inputs = Arrays.stream(array)
-                .map(OpaqueNDArray::fromINDArray)
-                .toArray(OpaqueNDArray[]::new);
+        // Add a comprehensive null check here, right before the native pointers are created.
+        // This is the last line of defense. If a null gets this far, it means upstream checks
+        // in OpContext/InferenceSession were bypassed.
+        for (int i = 0; i < array.length; i++) {
+            if (array[i] == null) {
+                throw new org.nd4j.linalg.exception.ND4JIllegalStateException(
+                        "OpaqueNDArrayArr.createFrom received a null INDArray at index " + i + " of " + array.length +
+                        ". This indicates a null array was passed to an OpContext, which should be prevented by upstream checks." +
+                        " Array contents: " + Arrays.toString(array));
+            }
+        }
 
-        // Create the OpaqueNDArrayArr using the constructor that properly handles native memory
+        // Convert INDArrays to OpaqueNDArrays.
+        // We create new OpaqueNDArray wrappers for each INDArray to ensure we have
+        // independent native sd::NDArray* objects that we fully control.
+        OpaqueNDArray[] inputs = new OpaqueNDArray[array.length];
+        for (int i = 0; i < array.length; i++) {
+            INDArray indArray = array[i];
+            // Create a new OpaqueNDArray wrapper - this creates a new sd::NDArray* in native code
+            // that wraps the same DataBuffer but is independent of any cached OpaqueNDArray
+            OpaqueNDArray opaque = OpaqueNDArray.fromINDArrayUncached(indArray);
+            if (opaque == null) {
+                throw new org.nd4j.linalg.exception.ND4JIllegalStateException(
+                    "Failed to create OpaqueNDArray for INDArray at index " + i +
+                    " (id=" + indArray.getId() + ", shape=" + java.util.Arrays.toString(indArray.shape()) + ")");
+            }
+            if (opaque.isNull()) {
+                throw new org.nd4j.linalg.exception.ND4JIllegalStateException(
+                    "OpaqueNDArray.fromINDArrayUncached returned object with null native pointer at index " + i +
+                    " (id=" + indArray.getId() + ", shape=" + java.util.Arrays.toString(indArray.shape()) + ")");
+            }
+            opaque.retainReference(); // Explicitly retain reference for this usage
+            inputs[i] = opaque;
+        }
+
+        // Use PointerPointer's native varargs constructor which is designed for this purpose.
+        // This uses JavaCPP's internal implementation rather than custom memory management.
         OpaqueNDArrayArr inputsOpaque = new OpaqueNDArrayArr(inputs);
+        inputsOpaque.retainReference();
 
-        // Store OpaqueNDArray references for access (these are cached and managed by parent INDArrays)
+        // Store references to prevent GC from freeing memory while we're using it
+        inputsOpaque.parentArrays = array;
         inputsOpaque.opaqueArrays = inputs;
 
-        // Store parent references to keep them alive
-        inputsOpaque.parentArrays = array.clone(); // Clone to prevent external modification
-        
-        // Register with DeallocatorService for automatic cleanup
-        registerWithDeallocatorService(inputsOpaque, array);
-        
+
+
         return inputsOpaque;
     }
 
@@ -199,8 +240,17 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
                 deallocate();
                 setNull();
             }
-            // Clear references to allow GC, but do NOT close the OpaqueNDArrays!
-            // They are CACHED instances managed by their parent INDArrays.
+            // Close the uncached OpaqueNDArrays we created
+            // Since we use fromINDArrayUncached(), these are owned by this OpaqueNDArrayArr
+            // and must be explicitly closed to free the native sd::NDArray* objects.
+            if (opaqueArrays != null) {
+                for (OpaqueNDArray opaque : opaqueArrays) {
+                    if (opaque != null) {
+                        opaque.releaseReference(); // Release the reference added in createFrom
+                        opaque.close(); // Close the uncached OpaqueNDArray to free native memory
+                    }
+                }
+            }
             parentArrays = null;
             opaqueArrays = null;
         }

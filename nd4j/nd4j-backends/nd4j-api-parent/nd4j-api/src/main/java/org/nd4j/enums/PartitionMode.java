@@ -26,7 +26,17 @@ package org.nd4j.enums;
  * partition_mode == 0 - i.e. 'mod' , 1 - 'div'
  */
 public enum PartitionMode {
-  MOD,
+  MOD(0),
 
-  DIV
+  DIV(1);
+
+  private final int methodIndex;
+
+  PartitionMode(int index) {
+    this.methodIndex = index;
+  }
+
+  public int methodIndex() {
+    return methodIndex;
+  }
 }

@@ -27,7 +27,6 @@
 #include <execution/Threads.h>
 #include <helpers/BlasHelper.h>
 #include <helpers/ShapeUtils.h>
-
 namespace sd {
 
 //////////////////////////////////////////////////////////////////////////////
@@ -252,17 +251,17 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
     bool cNcont = N == 1 || C->strideAt(1) == 1;
 
     if (!aMcont && !aKcont) {
-      pA = new NDArray(A->dup('f', false));
+      pA = A->dup('f', false);
       toDelete.push_back(pA);
       aMcont = true;
     }
     if (!bKcont && !bNcont) {
-      pB = new NDArray(B->dup('f', false));
+      pB = B->dup('f', false);
       toDelete.push_back(pB);
       bKcont = true;
     }
     if (!cMcont && !cNcont) {
-      pC = new NDArray(C->dup('f', false));
+      pC = C->dup('f', false);
       toDelete.push_back(pC);
       cMcont = true;
     }
@@ -278,6 +277,10 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
     const int lda = (aMcont && aKcont) ? M : !aMcont ? pA->strideAt(0) : pA->strideAt(1);
     const int ldb = (bKcont && bNcont) ? K : !bKcont ? pB->strideAt(0) : pB->strideAt(1);
     const int ldc = (cMcont && cNcont) ? M : !cMcont ? pC->strideAt(0) : pC->strideAt(1);
+
+    // Acquire BLAS lock to prevent OpenBLAS TLS corruption and race conditions
+    // This serializes external BLAS calls while allowing OpenBLAS to use multiple threads internally
+    auto blasLock = BlasHelper::getInstance().lockBlas();
 
     if (typeFloat) {
       BlasHelper::getInstance().sgemm()(blasOrder, transAblas, transBblas, M, N, K, (float)alpha,
@@ -362,12 +365,15 @@ NDArray* MmulHelper::mmulMxV( NDArray* A, NDArray* X, sd::NDArray* Y, const doub
     bool aNcont = N == 1 || A->strideAt(1) == 1;
 
     if (!aMcont && !aNcont) {
-      pA = new NDArray(A->dup('f', false));
+      pA = A->dup('f', false);  // dup() already returns NDArray*, no need for new
       aMcont = true;
     }
     const CBLAS_ORDER blasOrder = aMcont ? CblasColMajor : CblasRowMajor;
 
     const int lda = (aMcont && aNcont) ? M : !aMcont ? pA->strideAt(0) : pA->strideAt(1);
+
+    // Acquire BLAS lock to prevent OpenBLAS TLS corruption and race conditions
+    auto blasLock = BlasHelper::getInstance().lockBlas();
 
     // choose appropriate cuda gemm api depending on data types
     if (typeDouble) {
@@ -376,6 +382,11 @@ NDArray* MmulHelper::mmulMxV( NDArray* A, NDArray* X, sd::NDArray* Y, const doub
     } else if (typeFloat) {
       BlasHelper::getInstance().sgemv()(blasOrder, CblasNoTrans, M, N, (float)alpha, (float*)pA->buffer(), lda,
                                         (float*)X->buffer(), incx, (float)beta, (float*)Y->buffer(), incy);
+    }
+
+    // Clean up duplicated array
+    if (pA != A) {
+      delete pA;
     }
 
   }
@@ -452,9 +463,9 @@ NDArray* MmulHelper::dot(NDArray* X, NDArray* Y, sd::NDArray* Z, const double al
 //    [M,K] x [bS,K,N] = [bS,M,N]
 // bS could stand for several axes
 template <typename T1, typename T2, typename T3>
-static void batchedGemm(NDArray* vA, NDArray* vB, NDArray* vC, LongType* aBatchDims,
-                        const LongType* bBatchDims, const LongType* cBatchDims, LongType aMaxis, LongType aKaxis,
-                        LongType bKaxis, LongType bNaxis, LongType cMaxis, LongType cNaxis, const double alpha, const double beta) {
+static void batchedGemm(NDArray* vA, NDArray* vB, NDArray* vC, const sd::LongType* aBatchDims,
+                        const sd::LongType* bBatchDims, const sd::LongType* cBatchDims, sd::LongType aMaxis, sd::LongType aKaxis,
+                        sd::LongType bKaxis, sd::LongType bNaxis, sd::LongType cMaxis, sd::LongType cNaxis, const double alpha, const double beta) {
   T1* A = vA->bufferAsT<T1>();
   T2* B = vB->bufferAsT<T2>();
   T3* C = vC->bufferAsT<T3>();
@@ -506,8 +517,8 @@ static void batchedGemm(NDArray* vA, NDArray* vB, NDArray* vC, LongType* aBatchD
       bCoords[bNaxis] = cCoords[cNaxis];
 
       sd::LongType aOffset, bOffset, cOffset;
-      COORDS2INDEX(aRank, aShape, aCoords.data(), aOffset);
-      COORDS2INDEX(bRank, bShape, bCoords.data(), bOffset);
+      COORDS2INDEX(aRank, aStride, aCoords.data(), aOffset);
+      COORDS2INDEX(bRank, bStride, bCoords.data(), bOffset);
 
       T3 val = A[aOffset] * B[bOffset];  // first iteration
 
@@ -517,7 +528,7 @@ static void batchedGemm(NDArray* vA, NDArray* vB, NDArray* vC, LongType* aBatchD
         val = val + A[aOffset] * B[bOffset];
       }
 
-      COORDS2INDEX(cRank,cShape, cCoords.data(), cOffset);
+      COORDS2INDEX(cRank, cStride, cCoords.data(), cOffset);
 
       if (betaPersent)
         C[cOffset] = alphaZ * val + betaZ * C[cOffset];
@@ -571,23 +582,23 @@ NDArray* MmulHelper::mmulNxN( NDArray* A,  NDArray* B, NDArray* C, const double 
     THROW_EXCEPTION(errorMessage.c_str());
   }
   // validation of C array
-  std::vector<sd::LongType> cExpectedShape = aRank > bRank ? A->getShapeAsVector() : B->getShapeAsVector();
-  cExpectedShape[cExpectedShape.size() - 2] = A->sizeAt(-2);
-  cExpectedShape[cExpectedShape.size() - 1] = B->sizeAt(-1);
+  std::vector<sd::LongType> *cExpectedShape = aRank > bRank ? A->getShapeAsVector() : B->getShapeAsVector();
+  (*cExpectedShape)[cExpectedShape->size() - 2] = A->sizeAt(-2);
+  (*cExpectedShape)[cExpectedShape->size() - 1] = B->sizeAt(-1);
 
   if (C != nullptr) {
-    if (!C->isSameShape(cExpectedShape)) {
+    if (!C->isSameShape(*cExpectedShape)) {
       std::string errorMessage = "MmulHelper::mmulNxN: shape of C array is not suitable for AxB matrix multiplication! "
                                  "Expected shape: [";
-      for (size_t i = 0; i < cExpectedShape.size(); ++i) {
-        errorMessage += std::to_string(cExpectedShape[i]);
-        if (i < cExpectedShape.size() - 1) errorMessage += ",";
+      for (size_t i = 0; i < cExpectedShape->size(); ++i) {
+        errorMessage += std::to_string((*cExpectedShape)[i]);
+        if (i < cExpectedShape->size() - 1) errorMessage += ",";
       }
       errorMessage += "], but got: " + shapeToString(C) + ". A shape: " + shapeToString(A) + ", B shape: " + shapeToString(B);
       THROW_EXCEPTION(errorMessage.c_str());
     }
   } else {
-    C = new NDArray(outOrder, cExpectedShape, B->dataType());
+    C = new NDArray(outOrder, *cExpectedShape, B->dataType());
   }
 
   if (C->isEmpty()) return C;
@@ -626,7 +637,8 @@ NDArray* MmulHelper::mmulNxN( NDArray* A,  NDArray* B, NDArray* C, const double 
 
   BUILD_SINGLE_SELECTOR_THRICE(A->dataType(), batchedGemm,
                                (A, B, C, aBatchDims->data(), bBatchDims->data(), cBatchDims->data(), aMaxis, aKaxis,
-                                   bKaxis, bNaxis, cMaxis, cNaxis, alpha, beta),
+                                   bKaxis, bNaxis, cMaxis
+                                , cNaxis, alpha, beta),
                                SD_NUMERIC_TYPES);
 
   if(aBatchDims != nullptr)

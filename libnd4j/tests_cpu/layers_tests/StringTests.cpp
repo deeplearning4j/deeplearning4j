@@ -233,7 +233,7 @@ TEST_F(StringTests, Basic_dup_1) {
   ASSERT_EQ(1, array.lengthOf());
   ASSERT_EQ(0, array.rankOf());
 
-  auto dup = new NDArray(array.dup());
+  auto dup = array.dup();
 
   auto z0 = array.e<std::string>(0);
   auto z1 = dup->e<std::string>(0);

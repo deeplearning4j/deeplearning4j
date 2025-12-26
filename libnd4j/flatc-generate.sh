@@ -88,7 +88,8 @@ safe_copy_directory() {
 
 # Find flatbuffers directory in any subdirectory
 echo "🔍 Searching for flatbuffers directory..."
-FLATBUFFERS_DIR=$(find . -name "flatbuffers" -type d | head -1)
+# Use -quit to avoid broken pipe with head
+FLATBUFFERS_DIR=$(find . -name "flatbuffers" -type d -print -quit 2>/dev/null || true)
 
 if [ -z "$FLATBUFFERS_DIR" ]; then
     echo "⚠️  Warning: flatbuffers directory not found in any subdirectory"

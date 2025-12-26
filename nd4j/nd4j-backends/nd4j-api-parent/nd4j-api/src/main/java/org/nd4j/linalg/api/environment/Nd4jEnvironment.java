@@ -45,6 +45,7 @@ public class Nd4jEnvironment implements Serializable {
     private String blasVendor;
     private long blasThreads;
     private int ompThreads;
+    private boolean blasSerializationEnabled;
 
     public final static String MEMORY_BANDWIDTH_KEY = "memoryBandwidth";
 
@@ -66,6 +67,7 @@ public class Nd4jEnvironment implements Serializable {
 
     public final static String OMP_THREADS_KEY = "omp.threads";
     public final static String BLAS_THREADS_KEY = "blas.threads";
+    public final static String BLAS_SERIALIZATION_KEY = "blas.serialization";
 
     /**
      * Load an {@link Nd4jEnvironment} from
@@ -81,6 +83,7 @@ public class Nd4jEnvironment implements Serializable {
                         .blasVendor(envInfo.get(BLAS_VENDOR_KEY).toString())
                         .blasThreads(getLongOrZero(BLAS_THREADS_KEY, envInfo))
                         .ompThreads(getIntOrZero(OMP_THREADS_KEY, envInfo))
+                        .blasSerializationEnabled(getBooleanOrDefault(BLAS_SERIALIZATION_KEY, envInfo, true))
                         .numGpus(getIntOrZero(CUDA_NUM_GPUS_KEY, envInfo)).build();
         if (envInfo.containsKey(CUDA_DEVICE_INFORMATION_KEY)) {
             List<Map<String, Object>> deviceInfo = (List<Map<String, Object>>) envInfo.get(CUDA_DEVICE_INFORMATION_KEY);
@@ -108,6 +111,12 @@ public class Nd4jEnvironment implements Serializable {
         if (properties.get(key) == null)
             return 0;
         return Integer.parseInt(properties.get(key).toString());
+    }
+
+    private static boolean getBooleanOrDefault(String key, Properties properties, boolean defaultValue) {
+        if (properties.get(key) == null)
+            return defaultValue;
+        return Boolean.parseBoolean(properties.get(key).toString());
     }
 
 
