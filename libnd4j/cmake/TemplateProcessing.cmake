@@ -424,9 +424,10 @@ function(handle_specials_double t1 t2 content_var)
     # [existing validation code]
     
     string(APPEND content "namespace sd {\n")
-    
-    # Only generate TypeCast for actual conversions - using sd::LongType as canonical form
-    add_unique_instantiation("template void TypeCast::convertGeneric<${t1}, ${t2}>(void**, void*, sd::LongType, void*);" dedupe_set content)
+
+    # Only generate SpecialTypeConverter for actual conversions - using sd::LongType as canonical form
+    # Note: This is SpecialTypeConverter (from specials.h), NOT TypeCast (from type_conversions.h)
+    add_unique_instantiation("template void SpecialTypeConverter::convertGeneric<${t1}, ${t2}>(sd::Pointer*, void*, sd::LongType, void*);" dedupe_set content)
 
     # DoubleMethods instantiations for sorting operations
     add_unique_instantiation("template void DoubleMethods<${t1}, ${t2}>::sortByKey(sd::NDArray*, sd::NDArray*, bool);" dedupe_set content)
