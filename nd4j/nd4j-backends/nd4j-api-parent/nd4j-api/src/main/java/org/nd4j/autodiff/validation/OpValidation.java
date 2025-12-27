@@ -97,6 +97,8 @@ import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
 import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.api.ops.random.impl.Linspace;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.function.Function;
 import org.nd4j.linalg.indexing.conditions.Conditions;
@@ -426,16 +428,20 @@ public class OpValidation {
         for (int i = 0; i < outShapes.size(); i++) {
             val act = outShapes.get(i);
             val exp = testCase.expShapes().get(i);
-            if(!Objects.equals(exp.dataType(), act.dataType())) {
-                return "Shape function check failed for output " + i + ": expected shape " + exp + ", actual shape " + act;
-            }
             long[] shapeInfo = act.asLong();
-            long[] actShape = new long[(int) shapeInfo[0]];
-            for(int j = 1; j < shapeInfo.length; j++) {
-                actShape[j - 1] = shapeInfo[j];
+            // Extract the data type from the shape info buffer (stored in extras/flags field)
+            DataType actDataType = ArrayOptionsHelper.dataType(shapeInfo);
+            if(!Objects.equals(exp.dataType(), actDataType)) {
+                return "Shape function check failed for output " + i + ": expected data type " + exp.dataType() + ", actual data type " + actDataType;
+            }
+            // Extract shape from shapeInfo: [rank, shape0, shape1, ..., shapeN-1, stride0, ...]
+            int rank = (int) shapeInfo[0];
+            long[] actShape = new long[rank];
+            for(int j = 0; j < rank; j++) {
+                actShape[j] = shapeInfo[j + 1];
             }
             if(!Arrays.equals(actShape, exp.getShape())) {
-                return "Shape function check failed for output " + i + ": expected shape " + exp + ", actual shape " + act;
+                return "Shape function check failed for output " + i + ": expected shape " + Arrays.toString(exp.getShape()) + ", actual shape " + Arrays.toString(actShape);
             }
         }
 

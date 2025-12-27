@@ -581,24 +581,29 @@ NDArray* MmulHelper::mmulNxN( NDArray* A,  NDArray* B, NDArray* C, const double 
                                std::to_string(B->sizeAt(-2)) + "). Full shapes: A " + shapeToString(A) + ", B " + shapeToString(B);
     THROW_EXCEPTION(errorMessage.c_str());
   }
-  // validation of C array
-  std::vector<sd::LongType> *cExpectedShape = aRank > bRank ? A->getShapeAsVector() : B->getShapeAsVector();
-  (*cExpectedShape)[cExpectedShape->size() - 2] = A->sizeAt(-2);
-  (*cExpectedShape)[cExpectedShape->size() - 1] = B->sizeAt(-1);
+  // validation of C array - build expected shape without allocation
+  const sd::LongType maxRank = aRank > bRank ? aRank : bRank;
+  std::vector<sd::LongType> cExpectedShape(maxRank);
+  NDArray* sourceArr = aRank > bRank ? A : B;
+  for (sd::LongType i = 0; i < maxRank; ++i) {
+    cExpectedShape[i] = sourceArr->sizeAt(i);
+  }
+  cExpectedShape[maxRank - 2] = A->sizeAt(-2);
+  cExpectedShape[maxRank - 1] = B->sizeAt(-1);
 
   if (C != nullptr) {
-    if (!C->isSameShape(*cExpectedShape)) {
+    if (!C->isSameShape(cExpectedShape)) {
       std::string errorMessage = "MmulHelper::mmulNxN: shape of C array is not suitable for AxB matrix multiplication! "
                                  "Expected shape: [";
-      for (size_t i = 0; i < cExpectedShape->size(); ++i) {
-        errorMessage += std::to_string((*cExpectedShape)[i]);
-        if (i < cExpectedShape->size() - 1) errorMessage += ",";
+      for (size_t i = 0; i < cExpectedShape.size(); ++i) {
+        errorMessage += std::to_string(cExpectedShape[i]);
+        if (i < cExpectedShape.size() - 1) errorMessage += ",";
       }
       errorMessage += "], but got: " + shapeToString(C) + ". A shape: " + shapeToString(A) + ", B shape: " + shapeToString(B);
       THROW_EXCEPTION(errorMessage.c_str());
     }
   } else {
-    C = new NDArray(outOrder, *cExpectedShape, B->dataType());
+    C = new NDArray(outOrder, cExpectedShape, B->dataType());
   }
 
   if (C->isEmpty()) return C;

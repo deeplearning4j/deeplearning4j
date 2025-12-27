@@ -223,7 +223,7 @@ public class Nd4jTest extends BaseNd4jTestWithBackends {
             final String recreation = testMatrixPair.getSecond();
             final INDArray testMatrix = testMatrixPair.getFirst();
             final char ordering = testMatrix.ordering();
-            val shape = testMatrix.shape();
+            long[] shape = testMatrix.shape();
             final INDArray squeezed = Nd4j.squeeze(testMatrix, 1);
             final long[] expShape = ArrayUtil.removeIndex(shape, 1);
             final String message = "Squeezing in dimension 1; Shape before squeezing: " + Arrays.toString(shape) + " " + ordering + " Order; Shape after expanding: " + Arrays.toString(squeezed.shape()) +  " "+squeezed.ordering()+"; Input Created via: " + recreation;

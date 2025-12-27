@@ -31,10 +31,37 @@
 #include <loops/indexreduce.h>
 #include <ops/ops.h>
 
-
+#include <cstring>
 #include <functional>
 
 namespace sd {
+
+// Helper to check if array has contiguous (packed) memory layout without using EWS
+static inline bool isContiguousLayoutForLoops(const LongType* shapeInfo) {
+  const int rank = shape::rank(shapeInfo);
+  if (rank == 0) return true;  // Scalar is contiguous
+
+  const LongType* shapePtr = shape::shapeOf(shapeInfo);
+  const LongType* stridePtr = shape::stride(shapeInfo);
+  const char order = shape::order(shapeInfo);
+
+  if (order == 'c') {
+    LongType expectedStride = 1;
+    for (int i = rank - 1; i >= 0; --i) {
+      if (shapePtr[i] == 1) continue;
+      if (stridePtr[i] != expectedStride) return false;
+      expectedStride *= shapePtr[i];
+    }
+  } else {
+    LongType expectedStride = 1;
+    for (int i = 0; i < rank; ++i) {
+      if (shapePtr[i] == 1) continue;
+      if (stridePtr[i] != expectedStride) return false;
+      expectedStride *= shapePtr[i];
+    }
+  }
+  return true;
+}
 
 template <typename X, typename Z, typename E>
 class  ReductionLoops {
@@ -1117,6 +1144,23 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
     error += std::to_string(zLen);
     error += ". This indicates a shape mismatch between input and output arrays.";
     THROW_EXCEPTION(error.c_str());
+  }
+
+  // OPTIMIZATION: Fast path for Assign operation with contiguous same-type arrays
+  // Use memcpy when both arrays are contiguous and same type
+  constexpr bool isAssignOp = std::is_same_v<OpType, simdOps::Assign<X, Z>>;
+  if constexpr (isAssignOp && std::is_same_v<X, Z>) {
+    if (isContiguousLayoutForLoops(xShapeInfo) && isContiguousLayoutForLoops(zShapeInfo)) {
+      // Calculate this thread's portion of the data
+      auto span = samediff::Span::build(threadId, numThreads, 0, zLen, 1);
+      const LongType startIdx = span.startX();
+      const LongType stopIdx = span.stopX();
+      const LongType copyLen = stopIdx - startIdx;
+      if (copyLen > 0) {
+        std::memcpy(z + startIdx, x + startIdx, copyLen * sizeof(Z));
+      }
+      return;
+    }
   }
 
   const LongType* xShape = shape::shapeOf(const_cast<LongType*>(xShapeInfo));

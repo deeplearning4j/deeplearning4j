@@ -28,7 +28,6 @@
 #include <ops/ops.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
-#include <array/ArrayOptions.hXX>
 
 using namespace simdOps;
 
@@ -100,6 +99,7 @@ SD_INLINE void PairWiseTransform<X, Y, Z>::exec(const void *vx,
   auto y = reinterpret_cast<const Y *>(vy);
   auto z = reinterpret_cast<Z *>(vz);
   auto extraParams = reinterpret_cast<Z *>(vextraParams);
+
   sd::LongType  xRank = shape::rank(xShapeInfo);
   sd::LongType  yRank = shape::rank(yShapeInfo);
   sd::LongType  zRank = shape::rank(zShapeInfo);
@@ -116,15 +116,36 @@ SD_INLINE void PairWiseTransform<X, Y, Z>::exec(const void *vx,
       && !shape::isViewConst(xShapeInfo)
       &&  !shape::isViewConst(yShapeInfo) && !shape::isViewConst(zShapeInfo)
       && allSameOrder) {
-    sd::LongType zCoords[SD_MAX_RANK];
+    // Check if arrays are truly contiguous (strides match C-order pattern)
+    // For contiguous arrays, offset == index so we skip coordinate calculations
+    bool isContiguous = true;
+    if (zRank > 0) {
+      sd::LongType expectedStride = 1;
+      for (int i = zRank - 1; i >= 0; --i) {
+        if (zShape[i] == 1) continue;
+        if (zStride[i] != expectedStride) {
+          isContiguous = false;
+          break;
+        }
+        expectedStride *= zShape[i];
+      }
+    }
 
-
-    PRAGMA_OMP_SIMD
-    for (sd::LongType i = start; i < stop; i++) {
-      INDEX2COORDS(i, zRank,zShape, zCoords);
-      sd::LongType xOffset, yOffset, zOffset;
-      COORDS2INDEX(zRank, zStride, zCoords, zOffset);
-      z[zOffset] = OpType::op(x[zOffset], y[zOffset], extraParams);
+    if (isContiguous) {
+      // Fast path: direct indexing without coordinate calculations
+      PRAGMA_OMP_SIMD
+      for (sd::LongType i = start; i < stop; i++) {
+        z[i] = OpType::op(x[i], y[i], extraParams);
+      }
+    } else {
+      sd::LongType zCoords[SD_MAX_RANK];
+      PRAGMA_OMP_SIMD
+      for (sd::LongType i = start; i < stop; i++) {
+        INDEX2COORDS(i, zRank,zShape, zCoords);
+        sd::LongType xOffset, yOffset, zOffset;
+        COORDS2INDEX(zRank, zStride, zCoords, zOffset);
+        z[zOffset] = OpType::op(x[zOffset], y[zOffset], extraParams);
+      }
     }
   } else if ((shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)
               || shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo))

@@ -36,7 +36,18 @@ BROADCASTABLE_OP_IMPL(Pow, 0, 0) {
 
   BROADCAST_CHECK_EMPTY(x, y, z);
 
-  // REQUIRE_TRUE(!y->isB(), 0, "Pairwise OP: you can't divide by bool array!");
+  // Fast path: same shape - skip BroadcastHelper dispatch overhead
+  if (x->isSameShape(y)) {
+    x->applyPairwiseTransform(pairwise::Pow, y, z, nullptr);
+    return Status::OK;
+  }
+
+  // Fast path: scalar exponent - common for square (x^2), sqrt (x^0.5), etc.
+  if (y->isScalar()) {
+    x->applyScalarArr(scalar::Pow, y, z);
+    return Status::OK;
+  }
+  // Note: scalar base (x->isScalar()) is uncommon, use broadcast path
 
   auto tZ = BroadcastHelper::broadcastApply({scalar::Pow, pairwise::Pow, broadcast::Pow}, x, y, z);
   if (tZ == nullptr)

@@ -5131,7 +5131,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             Nd4j.exec(op);
             val diff = op.z().getDouble(0);
 
-            return Math.abs(1.0 - diff) < eps;
+            return Math.abs(1.0 - diff) <= eps;
         }
 
         if (!Arrays.equals(this.shape(), n.shape()))
@@ -5150,7 +5150,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         Nd4j.getExecutioner().exec(op);
         double diff = op.z().getDouble(0);
 
-        return Math.abs(1.0 - diff) < eps;
+        return Math.abs(1.0 - diff) <= eps;
     }
 
     @Override

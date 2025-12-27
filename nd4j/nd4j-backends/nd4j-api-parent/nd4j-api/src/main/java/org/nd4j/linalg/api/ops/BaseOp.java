@@ -693,8 +693,11 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
             }
         }
 
-        if (dimensions == null || dimensions.length == 0)
-            dimensions = new long[]{-1};
+        // Note: null/empty dimensions means "reduce all dimensions"
+        // We preserve this as an empty INDArray rather than converting to {-1}
+        // because -1 means "last dimension", not "reduce all".
+        // The execution code (Shape.normalizeAxis) will convert empty to {Integer.MAX_VALUE}
+        // which signals "reduce all" to the reduction logic.
 
         // Set allocation context so lifecycle tracking can associate
         // this allocation with the specific operation being constructed
@@ -703,7 +706,12 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
             Nd4j.getNativeOps().setAllocationContext(opName);
         }
         try {
-            this.dimensionz = Shape.ndArrayDimFromLong(dimensions).detach();
+            if (dimensions == null || dimensions.length == 0) {
+                // Empty dimensions = reduce all. Create an empty long array.
+                this.dimensionz = Nd4j.empty(DataType.LONG);
+            } else {
+                this.dimensionz = Shape.ndArrayDimFromLong(dimensions).detach();
+            }
         } finally {
             if (opName != null) {
                 Nd4j.getNativeOps().clearAllocationContext();

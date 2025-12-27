@@ -1017,4 +1017,90 @@ public interface NativeOps {
   * @param javaStackTrace The full Java stack trace as a string
   */
  void updateAllocationJavaStackTrace(OpaqueNDArray array, String javaStackTrace);
+
+ // ===============================
+ // Op Timing Tracker API
+ // Low-overhead op execution timing with phase breakdown,
+ // histograms, and export capabilities
+ // ===============================
+
+ /**
+  * Enable op timing tracker.
+  * @param enabled 1 to enable, 0 to disable
+  * @param detailed 1 for phase-level timing, 0 for total-only
+  */
+ void setOpTimingEnabled(int enabled, int detailed);
+
+ /**
+  * Enable op timing with Chrome trace export.
+  * @param detailed 1 for phase-level timing, 0 for total-only
+  */
+ void setOpTimingEnabledWithTrace(int detailed);
+
+ /**
+  * Check if op timing is enabled.
+  * @return 1 if enabled, 0 if disabled
+  */
+ int isOpTimingEnabled();
+
+ /**
+  * Flush ring buffer to aggregated stats.
+  * Call before reading any stats.
+  */
+ void flushOpTiming();
+
+ /**
+  * Print top N ops by total time to stdout.
+  * @param topN number of ops to show
+  */
+ void printOpTimingStats(int topN);
+
+ /**
+  * Print phase breakdown for a specific op to stdout.
+  * @param opName name of the op to analyze
+  */
+ void printOpTimingBreakdown(String opName);
+
+ /**
+  * Print timing histogram for a specific op to stdout.
+  * @param opName name of the op to analyze
+  */
+ void printOpTimingHistogram(String opName);
+
+ /**
+  * Print per-thread timing statistics to stdout.
+  */
+ void printOpTimingThreadStats();
+
+ /**
+  * Reset all timing data.
+  */
+ void resetOpTiming();
+
+ /**
+  * Get number of unique ops tracked.
+  * @return number of unique ops
+  */
+ int getOpTimingNumOps();
+
+ /**
+  * Get total number of op executions tracked.
+  * @return total execution count
+  */
+ long getOpTimingTotalExecutions();
+
+ /**
+  * Export timing data to Chrome trace JSON format.
+  * Visualizable in chrome://tracing or Perfetto.
+  * @param filename output file path
+  * @return 1 on success, 0 on failure
+  */
+ int exportOpTimingChromeTrace(String filename);
+
+ /**
+  * Export timing data to CSV format.
+  * @param filename output file path
+  * @return 1 on success, 0 on failure
+  */
+ int exportOpTimingCSV(String filename);
 }

@@ -265,7 +265,14 @@ static void softmax_(sd::LaunchContext* context, NDArray* input, NDArray* output
    const sd::LongType numOfSubArrs = tadPack->numberOfTads();
    const sd::LongType tadLen = shape::length(tadShapeInfo);
 
-   // Remove element-wise stride check, always use coordinate-based approach
+   // Fast path: use optimized softmax_loop when TAD is contiguous
+   const sd::LongType tadEws = shape::elementWiseStride(tadShapeInfo);
+   if (tadEws == 1 && input->ordering() == 'c' && output->ordering() == 'c') {
+     softmax_loop<T>(input->bufferAsT<T>(), output->bufferAsT<T>(), tadOffsets, numOfSubArrs, static_cast<uint32_t>(tadLen));
+     return;
+   }
+
+   // Fallback: coordinate-based approach for non-contiguous TADs
    sd::LongType tadRank = shape::rank(tadShapeInfo);
    sd::LongType *tadShape = shape::shapeOf(tadShapeInfo);
    sd::LongType *tadStride = shape::stride(tadShapeInfo);

@@ -24,8 +24,26 @@
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/helpers/gather.h>
 #include <legacy/NativeOpExecutioner.h>
+#include <cstring>
 
 #include <numeric>
+
+// Helper to check if TAD is contiguous for memcpy optimization
+static bool isTadContiguous(const sd::LongType* tadShapeInfo) {
+  const int rank = shape::rank(tadShapeInfo);
+  if (rank == 0) return true;
+
+  const sd::LongType* shapePtr = shape::shapeOf(tadShapeInfo);
+  const sd::LongType* stridePtr = shape::stride(tadShapeInfo);
+
+  sd::LongType expectedStride = 1;
+  for (int i = rank - 1; i >= 0; --i) {
+    if (shapePtr[i] == 1) continue;
+    if (stridePtr[i] != expectedStride) return false;
+    expectedStride *= shapePtr[i];
+  }
+  return true;
+}
 #if NOT_EXCLUDED(OP_gather)
 namespace sd {
 namespace ops {
@@ -45,42 +63,8 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
   bool is1DFlatGather = (inputRank == 1 && axis == 0);
 
   if (indices != nullptr) {
-    // Validate indices
-    for (sd::LongType i = 0; i < indices->lengthOf(); ++i) {
-      auto idx = indices->e<sd::LongType>(i);
-      
-      if (is1DFlatGather) {
-        // For 1D arrays with axis=0, treat as flat array access
-        if (idx >= input->lengthOf() || idx < 0) {
-          std::string error = "helpers::gather function: invalid flat index ";
-          error += std::to_string(idx);
-          error += " at position ";
-          error += std::to_string(i);
-          error += ". Input is 1D with length ";
-          error += std::to_string(input->lengthOf());
-          error += ", valid range is [0, ";
-          error += std::to_string(input->lengthOf() - 1);
-          error += "]";
-          THROW_EXCEPTION(error.c_str());
-        }
-      } else {
-        // Standard axis-based validation
-        if (idx >= input->sizeAt(axis) || idx < 0) {
-          std::string error = "helpers::gather function: invalid index ";
-          error += std::to_string(idx);
-          error += " at position ";
-          error += std::to_string(i);
-          error += ". Input shape ";
-          error += ShapeUtils::shapeAsString(input->shapeInfo());
-          error += ", axis ";
-          error += std::to_string(axis);
-          error += ", valid range is [0, ";
-          error += std::to_string(input->sizeAt(axis) - 1);
-          error += "]";
-          THROW_EXCEPTION(error.c_str());
-        }
-      }
-    }
+    // NOTE: Index validation is done in the main gather op when checkIndices=true
+    // We skip redundant validation here for performance
 
     if (is1DFlatGather) {
       // Special case: 1D input with axis=0 - treat as flat array gather
@@ -180,70 +164,57 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
         THROW_EXCEPTION(error.c_str());
       }
 
-      auto func = PRAGMA_THREADS_FOR {
-        for (auto i = start; i < stop; i++) {
-          auto idx = indices->e<sd::LongType>(i);
+      auto numInputTads = tadPack->numberOfTads();
 
-          // Bounds check for input TAD access
-          if (idx >= tadPack->numberOfTads() || idx < 0) {
-            continue;
+      // Check if we can use memcpy (contiguous TADs with same type)
+      bool canUseMemcpy = isTadContiguous(tadShapeInfo) &&
+                          isTadContiguous(tadShapeInfoOut) &&
+                          input->dataType() == output->dataType();
+      auto tadLength = shape::length(tadShapeInfo);
+      auto bytesToCopy = tadLength * input->sizeOfT();
+
+      if (canUseMemcpy) {
+        // Fast path: use memcpy for contiguous TADs
+        auto func = PRAGMA_THREADS_FOR {
+          for (auto i = start; i < stop; i++) {
+            auto idx = indices->e<sd::LongType>(i);
+            if (idx >= numInputTads || idx < 0) continue;
+
+            auto offsetIn = tadOffsets[idx];
+            auto offsetOut = tadOffsetsOut[i];
+            std::memcpy(output->bufferWithOffset(offsetOut),
+                       input->bufferWithOffset(offsetIn),
+                       bytesToCopy);
           }
+        };
+        samediff::Threads::parallel_tad(func, 0, numGatherOps);
+      } else {
+        // Fallback: use NativeOpExecutioner
+        auto func = PRAGMA_THREADS_FOR {
+          for (auto i = start; i < stop; i++) {
+            auto idx = indices->e<sd::LongType>(i);
+            if (idx >= numInputTads || idx < 0) continue;
 
-          // Bounds check for output TAD access
-          if (i >= tadPackOut->numberOfTads()) {
-            continue;
+            auto offsetIn = tadOffsets[idx];
+            auto offsetOut = tadOffsetsOut[i];
+
+            NativeOpExecutioner::execTransformAny(input->getContext(),
+                                                  transform::Assign,
+                                                  input->bufferWithOffset(offsetIn), tadShapeInfoCast,
+                                                  nullptr, nullptr,
+                                                  output->bufferWithOffset(offsetOut), tadShapeInfoOutCast,
+                                                  nullptr, nullptr,
+                                                  nullptr, false);
           }
-
-          auto offsetIn = tadOffsets[idx];
-          auto offsetOut = tadOffsetsOut[i];
-
-          NativeOpExecutioner::execTransformAny(input->getContext(),
-                                                transform::Assign,
-                                                input->bufferWithOffset(offsetIn), tadShapeInfoCast,
-                                                nullptr, nullptr,
-                                                output->bufferWithOffset(offsetOut), tadShapeInfoOutCast,
-                                                nullptr, nullptr,
-                                                nullptr, false);
-        }
-      };
-      samediff::Threads::parallel_tad(func, 0, numGatherOps);
+        };
+        samediff::Threads::parallel_tad(func, 0, numGatherOps);
+      }
     }
       
   } else {
     // Integer arguments case
-    for (int i = 1; i < numOfIntArgs; ++i) {
-      if (is1DFlatGather) {
-        // For 1D arrays with axis=0, validate against total length
-        if (intArgs[i] >= input->lengthOf() || intArgs[i] < 0) {
-          std::string error = "helpers::gather function: invalid flat index ";
-          error += std::to_string(intArgs[i]);
-          error += " at position ";
-          error += std::to_string(i-1);
-          error += ". Input is 1D with length ";
-          error += std::to_string(input->lengthOf());
-          error += ", valid range is [0, ";
-          error += std::to_string(input->lengthOf() - 1);
-          error += "]";
-          THROW_EXCEPTION(error.c_str());
-        }
-      } else {
-        // Standard validation
-        if (intArgs[i] >= input->sizeAt(axis) || intArgs[i] < 0) {
-          std::string error = "helpers::gather function: invalid index ";
-          error += std::to_string(intArgs[i]);
-          error += " at position ";
-          error += std::to_string(i-1);
-          error += ". Input shape ";
-          error += ShapeUtils::shapeAsString(input->shapeInfo());
-          error += ", axis ";
-          error += std::to_string(axis);
-          error += ", valid range is [0, ";
-          error += std::to_string(input->sizeAt(axis) - 1);
-          error += "]";
-          THROW_EXCEPTION(error.c_str());
-        }
-      }
-    }
+    // NOTE: Index validation is done in the main gather op when checkIndices=true
+    // We skip redundant validation here for performance
 
     if (numOfIntArgs == 2) {
       if (is1DFlatGather) {
@@ -317,33 +288,51 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
           THROW_EXCEPTION(error.c_str());
         }
 
-        auto func = PRAGMA_THREADS_FOR {
-          for (auto i = start; i < stop; i++) {
-            auto idx = intArgs[i + 1];
+        auto numInputTads = tadPack->numberOfTads();
 
-            // Bounds check for input TAD access
-            if (idx >= tadPack->numberOfTads() || idx < 0) {
-              continue;
+        // Check if we can use memcpy (contiguous TADs with same type)
+        bool canUseMemcpy = isTadContiguous(tadShapeInfo) &&
+                            isTadContiguous(tadShapeInfoOut) &&
+                            input->dataType() == output->dataType();
+        auto tadLength = shape::length(tadShapeInfo);
+        auto bytesToCopy = tadLength * input->sizeOfT();
+
+        if (canUseMemcpy) {
+          // Fast path: use memcpy for contiguous TADs
+          auto func = PRAGMA_THREADS_FOR {
+            for (auto i = start; i < stop; i++) {
+              auto idx = intArgs[i + 1];
+              if (idx >= numInputTads || idx < 0) continue;
+
+              auto offsetIn = tadOffsets[idx];
+              auto offsetOut = tadOffsetsOut[i];
+              std::memcpy(output->bufferWithOffset(offsetOut),
+                         input->bufferWithOffset(offsetIn),
+                         bytesToCopy);
             }
+          };
+          samediff::Threads::parallel_tad(func, 0, numGatherOps);
+        } else {
+          // Fallback: use NativeOpExecutioner
+          auto func = PRAGMA_THREADS_FOR {
+            for (auto i = start; i < stop; i++) {
+              auto idx = intArgs[i + 1];
+              if (idx >= numInputTads || idx < 0) continue;
 
-            // Bounds check for output TAD access
-            if (i >= tadPackOut->numberOfTads()) {
-              continue;
+              auto offsetIn = tadOffsets[idx];
+              auto offsetOut = tadOffsetsOut[i];
+
+              NativeOpExecutioner::execTransformAny(input->getContext(),
+                                                    transform::Assign,
+                                                    input->bufferWithOffset(offsetIn), const_cast<sd::LongType*>(tadShapeInfo),
+                                                    nullptr, nullptr,
+                                                    output->bufferWithOffset(offsetOut), const_cast<sd::LongType*>(tadShapeInfoOut),
+                                                    nullptr, nullptr,
+                                                    nullptr, false);
             }
-
-            auto offsetIn = tadOffsets[idx];
-            auto offsetOut = tadOffsetsOut[i];
-
-            NativeOpExecutioner::execTransformAny(input->getContext(),
-                                                  transform::Assign,
-                                                  input->bufferWithOffset(offsetIn), const_cast<sd::LongType*>(tadShapeInfo),
-                                                  nullptr, nullptr,
-                                                  output->bufferWithOffset(offsetOut), const_cast<sd::LongType*>(tadShapeInfoOut),
-                                                  nullptr, nullptr,
-                                                  nullptr, false);
-          }
-        };
-        samediff::Threads::parallel_tad(func, 0, numGatherOps);
+          };
+          samediff::Threads::parallel_tad(func, 0, numGatherOps);
+        }
       }
     }
   }

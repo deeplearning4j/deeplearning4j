@@ -23,6 +23,7 @@
 #include <exceptions/datatype_exception.h>
 #include <exceptions/graph_exception.h>
 #include <graph/exceptions/unresolved_input_exception.h>
+#include <graph/profiling/OpTimingTracker.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/StringUtils.h>
 #include <ops/declarable/DeclarableOp.h>
@@ -34,6 +35,7 @@
 #endif
 
 #include <cstdarg>
+#include <cstring>
 #include <sstream>
 
 namespace sd {
@@ -869,20 +871,47 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
   std::chrono::time_point<std::chrono::system_clock> timeEnter, timeStart, timeEnd;
   sd::LongType prepTime, outerTime;
 
+  // Op Timing Tracker setup
+  auto& timingTracker = graph::OpTimingTracker::getInstance();
+  const bool doTiming = timingTracker.isEnabled();
+  const bool doDetailedTiming = doTiming && timingTracker.isDetailedMode();
+  graph::OpTimingRecord timingRecord{};
+  std::chrono::high_resolution_clock::time_point timingStart;
+
+  if (doTiming) {
+    timingRecord.hash = this->getOpHash();
+    const std::string* opNamePtr = this->getOpName();
+    if (opNamePtr != nullptr) {
+      size_t copyLen = std::min(opNamePtr->length(), graph::OP_NAME_MAX_LEN - 1);
+      std::memcpy(timingRecord.name, opNamePtr->c_str(), copyLen);
+      timingRecord.name[copyLen] = '\0';
+    }
+    timingRecord.threadId = std::this_thread::get_id();
+    timingRecord.timestampNanos = timingTracker.getTraceTimestamp();
+    timingStart = std::chrono::high_resolution_clock::now();
+  }
+
   sd::LongType memoryBefore =
       block->workspace() == nullptr ? 0L : block->workspace()->getSpilledSize() + block->workspace()->getUsedSize();
   if (Environment::getInstance().isProfiling()) timeEnter = std::chrono::system_clock::now();
-  // basic validation: ensure inputs are set
-  REQUIRE_OK(this->validateNonEmptyInput(*block));
 
-  // ensure number of IArgs, TArgs match our expectations
-  REQUIRE_OK(this->validateArguments(*block));
-  // validating data types for inputs and (optionally) outputs
-  REQUIRE_OK(this->validateDataTypes(*block));
+  // Phase: VALIDATION
+  {
+    graph::OpPhaseTimer validationTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::VALIDATION);
+    // basic validation: ensure inputs are set
+    REQUIRE_OK(this->validateNonEmptyInput(*block));
+    // ensure number of IArgs, TArgs match our expectations
+    REQUIRE_OK(this->validateArguments(*block));
+    // validating data types for inputs and (optionally) outputs
+    REQUIRE_OK(this->validateDataTypes(*block));
+  }
 
-  // this method will allocate output NDArrays for this op
-  auto numOutputs = this->prepareOutputs(*block);
-
+  // Phase: MEMORY_ALLOC - allocate output NDArrays
+  int numOutputs;
+  {
+    graph::OpPhaseTimer allocTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::MEMORY_ALLOC);
+    numOutputs = this->prepareOutputs(*block);
+  }
 
   if (Environment::getInstance().isProfiling()) {
     timeStart = std::chrono::system_clock::now();
@@ -909,14 +938,27 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
       // if we have platform-specific helper for this op - invoke it
       if (OpRegistrator::getInstance().hasHelper(this->getOpHash(), block->engine())) {
         auto helper = OpRegistrator::getInstance().getPlatformHelper(this->getOpHash(), block->engine());
-        if (helper->isUsable(*block)) {
+        // Phase: HELPER_CHECK
+        bool helperUsable;
+        {
+          graph::OpPhaseTimer helperCheckTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::HELPER_CHECK);
+          helperUsable = helper->isUsable(*block);
+        }
+        if (helperUsable) {
+          // Phase: HELPER_EXEC
+          graph::OpPhaseTimer helperExecTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::HELPER_EXEC);
           status = helper->invokeHelper(*block);
           hasHelper = true;
+          timingRecord.usedHelper = true;
         }
       }
     }
 
-    if (!hasHelper) status = this->validateAndExecute(*block);
+    if (!hasHelper) {
+      // Phase: NATIVE_EXEC
+      graph::OpPhaseTimer nativeExecTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::NATIVE_EXEC);
+      status = this->validateAndExecute(*block);
+    }
 
 #if defined(SD_GCC_FUNCTRACE)
     // Log successful execution
@@ -971,14 +1013,27 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
     // if we have platform-specific helper for this op - invoke it
     if (OpRegistrator::getInstance().hasHelper(this->getOpHash(), block->engine())) {
       auto helper = OpRegistrator::getInstance().getPlatformHelper(this->getOpHash(), block->engine());
-      if (helper->isUsable(*block)) {
+      // Phase: HELPER_CHECK
+      bool helperUsable;
+      {
+        graph::OpPhaseTimer helperCheckTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::HELPER_CHECK);
+        helperUsable = helper->isUsable(*block);
+      }
+      if (helperUsable) {
+        // Phase: HELPER_EXEC
+        graph::OpPhaseTimer helperExecTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::HELPER_EXEC);
         status = helper->invokeHelper(*block);
         hasHelper = true;
+        timingRecord.usedHelper = true;
       }
     }
   }
 
-  if (!hasHelper) status = this->validateAndExecute(*block);
+  if (!hasHelper) {
+    // Phase: NATIVE_EXEC
+    graph::OpPhaseTimer nativeExecTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::NATIVE_EXEC);
+    status = this->validateAndExecute(*block);
+  }
 
 #if defined(SD_GCC_FUNCTRACE)
   // Log result (no exceptions in this path)
@@ -1080,6 +1135,13 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
 
   traceExecIfNeeded(*block);
 
+  // Record timing if enabled
+  if (doTiming) {
+    auto timingEnd = std::chrono::high_resolution_clock::now();
+    timingRecord.phaseNanos[static_cast<int>(graph::OpPhase::TOTAL)] =
+        std::chrono::duration_cast<std::chrono::nanoseconds>(timingEnd - timingStart).count();
+    timingTracker.record(timingRecord);
+  }
 
   return status;
 }

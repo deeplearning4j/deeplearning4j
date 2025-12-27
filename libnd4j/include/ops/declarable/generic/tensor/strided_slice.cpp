@@ -394,10 +394,15 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
   int delta = 0;
   int elements = 0;
 
-  std::vector<LongType> *begin = new std::vector<LongType>();
-  std::vector<LongType> *end = new std::vector<LongType>();
-  std::vector<LongType> *strides = new std::vector<LongType>();
-  std::vector<LongType> *args = new std::vector<LongType>();
+  // Use stack-based vectors to avoid heap allocation overhead
+  std::vector<LongType> beginVec;
+  std::vector<LongType> endVec;
+  std::vector<LongType> stridesVec;
+  std::vector<LongType> argsVec;
+  std::vector<LongType> *begin = &beginVec;
+  std::vector<LongType> *end = &endVec;
+  std::vector<LongType> *strides = &stridesVec;
+  std::vector<LongType> *args = &argsVec;
 
   // statically evaluated
   if (block.getIArguments()->size() > 5) {
@@ -408,10 +413,6 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
     for (size_t e = 5; e < block.getIArguments()->size(); e++) args->emplace_back(INT_ARG(e));
 
     if (delta != 0) {
-      delete begin;
-      delete end;
-      delete strides;
-      delete args;
       REQUIRE_TRUE(false, 0,
                    "StridedSlice: Number of Integer arguments should be equal to input rank x 3 = %i, but got %i instead",
                    (x->rankOf() * 3), dim_values);
@@ -428,10 +429,6 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
     elements = v_begin->lengthOf();
 
     if (v_begin->lengthOf() != v_end->lengthOf()) {
-      delete begin;
-      delete end;
-      delete strides;
-      delete args;
       REQUIRE_TRUE(false, 0,
                    "StridedSlice: Length of begin/end should match, but got %i vs %i instead", v_begin->lengthOf(),
                    v_end->lengthOf());
@@ -457,10 +454,6 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
       auto v_stride = INPUT_VARIABLE(3);
 
       if (v_stride->lengthOf() != v_begin->lengthOf()) {
-        delete begin;
-        delete end;
-        delete strides;
-        delete args;
         REQUIRE_TRUE(false, 0,
                      "StridedSlice: Length of begin/end/stride should match, but got %i vs %i vs %i instead",
                      v_begin->lengthOf(), v_end->lengthOf(), v_stride->lengthOf());
@@ -471,10 +464,6 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
       for (int e = 0; e < v_begin->lengthOf(); e++) strides->emplace_back(1);
     }
   } else {
-    delete begin;
-    delete end;
-    delete strides;
-    delete args;
     REQUIRE_TRUE(false, 0,
                  "StridedSlice: Can't find begin/end/stride information neither in IArguments or in input arrays");
   }
@@ -491,10 +480,6 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
       if (b < begin->size() && !ignoreBegin[b] && !addAxes[dim]) {
         int first = strides->at(b) > 0 ? begin->at(b) : math::sd_abs<int,int>(begin->at(b)) - 1;
         if (first > x->sizeAt(dim)) {
-          delete begin;
-          delete end;
-          delete strides;
-          delete args;
           REQUIRE_TRUE(false, 0,
                        "StridedSlice: begin index should be <= corresponding dimension of input array, but got end_index "
                        "= %i for dimension %i!",
@@ -504,10 +489,6 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
       if (e < end->size() && !ignoreEnd[e] && !addAxes[dim]) {
         int last = strides->at(e) > 0 ? end->at(e) : math::sd_abs<int,int>(end->at(e)) - 1;
         if (last > x->sizeAt(dim)) {
-          delete begin;
-          delete end;
-          delete strides;
-          delete args;
           REQUIRE_TRUE(false, 0,
                        "StridedSlice: end index should be <= corresponding dimension of input array, but got end_index = "
                        "%i for dimension %i!",
@@ -518,28 +499,28 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
       ++e;
     }
 
-  std::vector<LongType> *indices = new std::vector<sd::LongType>();
-  auto* input_shape_ptr = x->getShapeAsVector();
-  std::vector<LongType> input_shape = *input_shape_ptr;
-  delete input_shape_ptr;
-  std::vector<LongType> *final_shape = new std::vector<sd::LongType>();
+  // Use stack-based vectors to avoid heap allocation overhead
+  std::vector<LongType> indicesVec;
+  std::vector<LongType> *indices = &indicesVec;
+  // Avoid heap allocation for input shape
+  auto rank = x->rankOf();
+  std::vector<LongType> input_shape(rank);
+  for (int i = 0; i < rank; i++) {
+    input_shape[i] = x->sizeAt(i);
+  }
+  std::vector<LongType> final_shapeVec;
+  std::vector<LongType> *final_shape = &final_shapeVec;
   bool is_identity;
   bool is_simple_slice;
   bool is_dim0;
 
   bool preprocessResult = _preprocess_strided_slice(indices, final_shape, input_shape, *begin, *end, *strides, begin_mask, ellipsis_mask,
                                 end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0);
-  
+
   if (!preprocessResult) {
-    delete indices;
-    delete final_shape;
-    delete begin;
-    delete end;
-    delete strides;
-    delete args;
     REQUIRE_TRUE(false, 0, "StridedSlice: shape calculation failed");
   }
-  
+
   if (indices->size()) {
     LongType* subArrShapeInfo = nullptr;
     ALLOCATE(subArrShapeInfo, block.getWorkspace(), shape::shapeInfoLength(x->rankOf()) * 8, sd::LongType);
@@ -564,12 +545,7 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
     z->assign(&get);
   }
 
-  delete indices;
-  delete final_shape;
-  delete begin;
-  delete end;
-  delete strides;
-  delete args;
+  // Stack-based vectors are automatically cleaned up
 
   return Status::OK;
 }
@@ -612,53 +588,41 @@ DECLARE_SHAPE_FN(strided_slice) {
 
     strides = INPUT_VARIABLE(3)->template asVectorT<LongType>();
   } else if (dim_values > 0) {
+    // Use stack-based vector
+    std::vector<LongType> args;
+    for (size_t e = 5; e < block.getIArguments()->size(); e++) args.emplace_back(INT_ARG(e));
 
-    std::vector<LongType> *args = new std::vector<LongType>();
-    for (size_t e = 5; e < block.getIArguments()->size(); e++) args->emplace_back(INT_ARG(e));
-
-    // FIXME: probably template required here
-    ShapeUtils::copyVectorPart(begin, *args, elements, 0);
-    ShapeUtils::copyVectorPart(end, *args, elements, elements);
-    ShapeUtils::copyVectorPart(strides, *args, elements, elements * 2);
-
-    delete args;
+    ShapeUtils::copyVectorPart(begin, args, elements, 0);
+    ShapeUtils::copyVectorPart(end, args, elements, elements);
+    ShapeUtils::copyVectorPart(strides, args, elements, elements * 2);
   }
 
   REQUIRE_TRUE(begin.size() > 0 && end.size() > 0 && strides.size() > 0, 0, "Strided_Slice: empty arguments");
 
-
-  std::vector<LongType> *input_shape = new std::vector<LongType>();
-  std::vector<LongType> *shape = new std::vector<LongType>();
-
+  // Use stack-based vectors for better performance
   auto rank = shape::rank(inShape);
   auto shortShape = shape::shapeOf(inShape);
-  for (auto e = 0; e < rank; e++) input_shape->emplace_back(shortShape[e]);
+  std::vector<LongType> input_shape(rank);
+  for (auto e = 0; e < rank; e++) input_shape[e] = shortShape[e];
 
+  std::vector<LongType> outputShape;
   bool is_identity;
   bool is_simple_slice;
   bool is_dim0;
 
-  std::vector<LongType> *indices = new std::vector<sd::LongType>();
+  std::vector<LongType> indices;
   bool result =
-      _preprocess_strided_slice(indices, shape, *input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask,
+      _preprocess_strided_slice(&indices, &outputShape, input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask,
                                 new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0);
 
-
-  if (indices->size()) {
+  if (indices.size()) {
     auto retDtype = block.numD() > 0 ? block.getDArguments()->at(0) : ArrayOptions::dataType(inShape);
-    auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(retDtype, 'c', *shape);
-    delete input_shape;
-    delete shape;
-    delete indices;
+    auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(retDtype, 'c', outputShape);
     return SHAPELIST(newShape);
   }
 
-  std::vector<LongType> *retShape = new std::vector<sd::LongType>{0};
-  auto result2 = ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(ArrayOptions::dataType(inShape),*retShape);
-  delete input_shape;
-  delete shape;
-  delete indices;
-  delete retShape;
+  std::vector<LongType> retShape{0};
+  auto result2 = ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(ArrayOptions::dataType(inShape), retShape);
   return SHAPELIST(result2);
 }
 

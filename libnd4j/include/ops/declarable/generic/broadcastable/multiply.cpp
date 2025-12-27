@@ -25,6 +25,7 @@
 #if NOT_EXCLUDED(OP_multiply)
 
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/generic/helpers/BroadcastHelper.h>
 
 namespace sd {
 namespace ops {
@@ -36,7 +37,24 @@ BROADCASTABLE_OP_IMPL(multiply, 0, 0) {
 
   BROADCAST_CHECK_EMPTY(x, y, z);
 
-   LongType* zShapeInfo = nullptr;
+  // Fast path: same shape - skip BroadcastHelper dispatch overhead
+  // This is a common case in BERT (element-wise operations)
+  if (x->isSameShape(y)) {
+    x->applyPairwiseTransform(pairwise::Multiply, y, z, nullptr);
+    return Status::OK;
+  }
+
+  // Fast path: scalar broadcast - common for scaling operations
+  if (y->isScalar()) {
+    x->applyScalarArr(scalar::Multiply, y, z);
+    return Status::OK;
+  }
+  if (x->isScalar()) {
+    y->applyScalarArr(scalar::Multiply, x, z);
+    return Status::OK;
+  }
+
+  LongType* zShapeInfo = nullptr;
   const bool areShapesBroadcastable =
       ShapeUtils::evalBroadcastShapeInfo(x->shapeInfo(), y->shapeInfo(), true, zShapeInfo, block.getWorkspace());
   REQUIRE_TRUE(areShapesBroadcastable, 0, "MULTIPLY OP: the shapes of x %s and y %s are not suitable for broadcast !",

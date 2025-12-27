@@ -118,13 +118,18 @@ DECLARE_SHAPE_FN(transpose) {
   }
 
 
-  //note: do not deallocate this buffer. they are kept around.
-  auto permEvalShapeInfo = ShapeUtils::evalPermShapeInfo(permutationVector.data(), x->rankOf(), x, nullptr, true);
   if(x->isEmpty()) {
+    // For empty arrays, create shape with ARRAY_EMPTY flag set
+    auto permEvalShapeInfo = ShapeUtils::evalPermShapeInfo(permutationVector.data(), x->rankOf(), x, nullptr, false);
     ArrayOptions::setPropertyBit(permEvalShapeInfo, ARRAY_EMPTY);
+    auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(permEvalShapeInfo)->primary();
+    delete[] permEvalShapeInfo;
+    return SHAPELIST(ret);
   }
-  auto ret = CONSTANT(permEvalShapeInfo);
-  return SHAPELIST(ret);
+
+  // Non-empty case: use cached shape directly
+  auto permEvalShapeInfo = ShapeUtils::evalPermShapeInfo(permutationVector.data(), x->rankOf(), x, nullptr, true);
+  return SHAPELIST(CONSTANT(permEvalShapeInfo));
 }
 
 }  // namespace ops

@@ -190,7 +190,6 @@ public class TestShapeOpValidation extends BaseOpValidation {
                 INDArray exp = inArr.permute(perm);
                 INDArray expOut = in.getArr().std(true, Integer.MAX_VALUE);
 
-
                 TestCase tc = new TestCase(sd);
                 tc.testName(msg)
                         .expected("out", expOut)

@@ -33,6 +33,12 @@ BROADCASTABLE_BOOL_OP_IMPL(equals, 0, 0) {
 
   BROADCAST_CHECK_EMPTY(x, y, z);
 
+  // Fast path: same shape - skip BroadcastHelper dispatch overhead
+  if (x->isSameShape(y)) {
+    x->applyPairwiseTransform(pairwise::EqualTo, y, z, nullptr);
+    return Status::OK;
+  }
+
   auto tZ = BroadcastHelper::broadcastApply(
       BroadcastBoolOpsTuple::custom(scalar::EqualTo, pairwise::EqualTo, broadcast::EqualTo), x, y, z);
   if (tZ == nullptr)

@@ -264,6 +264,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             profilingConfigurableHookOut(op, oc, st);
             // Periodic TAD cache cleanup to prevent memory leaks
             Nd4j.getNativeOps().checkAndCleanupCaches();
+            // When using OpContext, op.x() may be null so set it before calling noOp()
+            if (op.x() == null) {
+                op.setX(x);
+            }
             return op.noOp();
         }
 

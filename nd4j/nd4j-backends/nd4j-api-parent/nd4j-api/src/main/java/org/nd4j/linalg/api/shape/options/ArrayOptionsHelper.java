@@ -100,7 +100,65 @@ public class ArrayOptionsHelper {
             ARRAY_COPY_OFFSET_INPUT_10
     };
 
+    /**
+     * Check if the shape info has a copy offset flag set for the given input index.
+     * When set, the output should be created as a view sharing the input's buffer and offset.
+     * @param shapeInfo the shape info to check
+     * @param inputIndex the input index (0-10)
+     * @return true if the copy offset flag is set for the given input index
+     */
+    public static boolean hasCopyOffset(long[] shapeInfo, int inputIndex) {
+        if (inputIndex < 0 || inputIndex >= ARRAY_COPY_OFFSET_INDEXES.length) {
+            return false;
+        }
+        return hasBitSet(shapeInfo, ARRAY_COPY_OFFSET_INDEXES[inputIndex]);
+    }
 
+    /**
+     * Check if the shape info has a copy offset flag set for the given input index.
+     * When set, the output should be created as a view sharing the input's buffer and offset.
+     * @param options the options value from shape info
+     * @param inputIndex the input index (0-10)
+     * @return true if the copy offset flag is set for the given input index
+     */
+    public static boolean hasCopyOffset(long options, int inputIndex) {
+        if (inputIndex < 0 || inputIndex >= ARRAY_COPY_OFFSET_INDEXES.length) {
+            return false;
+        }
+        return hasBitSet(options, ARRAY_COPY_OFFSET_INDEXES[inputIndex]);
+    }
+
+    /**
+     * Get the input index for which the copy offset flag is set.
+     * This is used to determine which input's buffer and offset should be shared
+     * when creating a view output.
+     * @param shapeInfo the shape info to check
+     * @return the input index (0-10) if a copy offset flag is set, -1 if no flag is set
+     */
+    public static int getCopyOffsetInputIndex(long[] shapeInfo) {
+        for (int i = 0; i < ARRAY_COPY_OFFSET_INDEXES.length; i++) {
+            if (hasBitSet(shapeInfo, ARRAY_COPY_OFFSET_INDEXES[i])) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Get the input index for which the copy offset flag is set.
+     * This is used to determine which input's buffer and offset should be shared
+     * when creating a view output.
+     * @param options the options value from shape info
+     * @return the input index (0-10) if a copy offset flag is set, -1 if no flag is set
+     */
+    public static int getCopyOffsetInputIndex(long options) {
+        for (int i = 0; i < ARRAY_COPY_OFFSET_INDEXES.length; i++) {
+            if (hasBitSet(options, ARRAY_COPY_OFFSET_INDEXES[i])) {
+                return i;
+            }
+        }
+        return -1;
+    }
 
     /**
      * Perform typical checks and compose them into a single flag.

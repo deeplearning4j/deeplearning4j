@@ -1111,4 +1111,87 @@ SD_LIB_EXPORT sd::LongType getDeallocatorServiceLiveCount();
  */
 SD_LIB_EXPORT sd::LongType getDeallocatorServiceBytesInUse();
 
+// =====================================================
+// Op Timing Tracker API
+// =====================================================
+
+/**
+ * Enable op timing tracker.
+ * @param enabled 1 to enable, 0 to disable
+ * @param detailed 1 for phase-level timing, 0 for total-only
+ */
+SD_LIB_EXPORT void setOpTimingEnabled(int enabled, int detailed);
+
+/**
+ * Enable op timing with Chrome trace export.
+ * @param detailed 1 for phase-level timing, 0 for total-only
+ */
+SD_LIB_EXPORT void setOpTimingEnabledWithTrace(int detailed);
+
+/**
+ * Check if op timing is enabled.
+ * @return 1 if enabled, 0 if disabled
+ */
+SD_LIB_EXPORT int isOpTimingEnabled();
+
+/**
+ * Flush ring buffer to aggregated stats.
+ * Call before reading any stats.
+ */
+SD_LIB_EXPORT void flushOpTiming();
+
+/**
+ * Print top N ops by total time.
+ * @param topN number of ops to show
+ */
+SD_LIB_EXPORT void printOpTimingStats(int topN);
+
+/**
+ * Print phase breakdown for a specific op.
+ * @param opName name of the op to analyze
+ */
+SD_LIB_EXPORT void printOpTimingBreakdown(const char* opName);
+
+/**
+ * Print timing histogram for a specific op.
+ * @param opName name of the op to analyze
+ */
+SD_LIB_EXPORT void printOpTimingHistogram(const char* opName);
+
+/**
+ * Print per-thread timing statistics.
+ */
+SD_LIB_EXPORT void printOpTimingThreadStats();
+
+/**
+ * Reset all timing data.
+ */
+SD_LIB_EXPORT void resetOpTiming();
+
+/**
+ * Get number of unique ops tracked.
+ * @return number of unique ops
+ */
+SD_LIB_EXPORT int getOpTimingNumOps();
+
+/**
+ * Get total number of op executions tracked.
+ * @return total execution count
+ */
+SD_LIB_EXPORT sd::LongType getOpTimingTotalExecutions();
+
+/**
+ * Export timing data to Chrome trace JSON format.
+ * @param filename output file path
+ * @return 1 on success, 0 on failure
+ */
+SD_LIB_EXPORT int exportOpTimingChromeTrace(const char* filename);
+
+/**
+ * Export timing data to CSV format.
+ * @param filename output file path
+ * @return 1 on success, 0 on failure
+ */
+SD_LIB_EXPORT int exportOpTimingCSV(const char* filename);
+
 #endif // NATIVEOPS_H

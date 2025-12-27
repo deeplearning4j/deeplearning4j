@@ -851,6 +851,42 @@ static void execDefault(const X *x, const sd::LongType *xShapeInfo, const Y *y, 
   sd::LongType yRank = shape::rank(yShapeInfo);
   sd::LongType zRank = shape::rank(zShapeInfo);
 
+  // Check if all arrays have same shape and are contiguous (no broadcasting needed, direct pairwise op)
+  bool allSameShapeContiguous = (xRank == yRank && yRank == zRank);
+  if (allSameShapeContiguous && zRank > 0) {
+    const sd::LongType *xShape = shape::shapeOf(xShapeInfo);
+    const sd::LongType *yShape = shape::shapeOf(yShapeInfo);
+    const sd::LongType *zShape = shape::shapeOf(zShapeInfo);
+    const sd::LongType *xStride = shape::stride(xShapeInfo);
+    const sd::LongType *yStride = shape::stride(yShapeInfo);
+    const sd::LongType *zStride = shape::stride(zShapeInfo);
+
+    sd::LongType expectedStride = 1;
+    for (int i = zRank - 1; i >= 0; --i) {
+      if (zShape[i] == 1) continue;
+      // Check shape equality and contiguous strides for all arrays
+      if (xShape[i] != zShape[i] || yShape[i] != zShape[i] ||
+          xStride[i] != expectedStride || yStride[i] != expectedStride || zStride[i] != expectedStride) {
+        allSameShapeContiguous = false;
+        break;
+      }
+      expectedStride *= zShape[i];
+    }
+  }
+
+  if (allSameShapeContiguous) {
+    // Fast path: all arrays same shape and contiguous - direct indexing
+    sd::LongType length = shape::length(zShapeInfo);
+    auto func = [x, y, z, length](sd::LongType thread_id, sd::LongType start, sd::LongType stop, sd::LongType increment) -> void {
+      PRAGMA_OMP_SIMD
+      for (auto i = start; i < stop; ++i) {
+        z[i] = OpType::op(x[i], y[i]);
+      }
+    };
+    samediff::Threads::parallel_for(func, static_cast<sd::LongType>(0), length);
+    return;
+  }
+
   // C-style arrays CANNOT be captured by value in lambdas - they decay to pointers
   // that point to stack memory. std::array CAN be captured by value, ensuring each
   // parallel thread gets its own copy of the data with guaranteed lifetime.

@@ -25,6 +25,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -110,4 +111,7 @@ public class Squeeze extends DynamicCustomOp {
         //Output type is same as input type
         return Arrays.asList(dataTypes.get(0));
     }
+
+    // Note: initializeOutputs is handled by the default CustomOp implementation which
+    // automatically creates views when the C++ shape function sets ARRAY_COPY_OFFSET_INPUT_X flags
 }

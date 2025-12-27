@@ -24,8 +24,37 @@
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/helpers/stack.h>
+#include <cstring>
 
 #include <legacy/NativeOpExecutioner.h>
+
+// Helper to check if array has contiguous (packed) memory layout
+static bool isContiguousLayout(const sd::LongType* shapeInfo) {
+  const int rank = shape::rank(shapeInfo);
+  if (rank == 0) return true;  // Scalar is contiguous
+
+  const sd::LongType* shapePtr = shape::shapeOf(shapeInfo);
+  const sd::LongType* stridePtr = shape::stride(shapeInfo);
+  const char order = shape::order(shapeInfo);
+
+  if (order == 'c') {
+    sd::LongType expectedStride = 1;
+    for (int i = rank - 1; i >= 0; --i) {
+      if (shapePtr[i] == 1) continue;
+      if (stridePtr[i] != expectedStride) return false;
+      expectedStride *= shapePtr[i];
+    }
+  } else {
+    sd::LongType expectedStride = 1;
+    for (int i = 0; i < rank; ++i) {
+      if (shapePtr[i] == 1) continue;
+      if (stridePtr[i] != expectedStride) return false;
+      expectedStride *= shapePtr[i];
+    }
+  }
+  return true;
+}
+
 #if NOT_EXCLUDED(OP_stack)
 namespace sd {
 namespace ops {
@@ -50,18 +79,38 @@ static void stack_(LaunchContext* context, const std::vector<NDArray*>& inArrs, 
         output.shapeInfo(), vec);
     auto zTadShapeInfo = zTadPack->primaryShapeInfo();
     delete vec;
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++) {
-        void* zBuff = output.bufferWithOffset(zTadPack->primaryOffsets()[i]);
 
-        NativeOpExecutioner::execTransformAny(
-            inArrs[0]->getContext(), transform::Assign, inArrs[i]->buffer(), inArrs[i]->shapeInfo(),
-            nullptr /*input specialBuffer*/, nullptr /*input special*/, zBuff, zTadShapeInfo,
-            nullptr /*output specialBuffer*/, nullptr /*output special*/, nullptr, false /*allowParallelism*/);
-      }
-    };
+    // Check if we can use memcpy (all inputs contiguous and TAD contiguous)
+    bool canUseMemcpy = isContiguousLayout(zTadShapeInfo);
+    if (canUseMemcpy && numOfSubArrs > 0) {
+      canUseMemcpy = isContiguousLayout(inArrs[0]->shapeInfo());
+    }
+    const sd::LongType tadLength = shape::length(zTadShapeInfo);
+    const size_t bytesToCopy = tadLength * sizeof(T);
 
-    samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
+    if (canUseMemcpy) {
+      // Fast path: use memcpy for contiguous data
+      auto func = PRAGMA_THREADS_FOR {
+        for (auto i = start; i < stop; i++) {
+          void* zBuff = output.bufferWithOffset(zTadPack->primaryOffsets()[i]);
+          std::memcpy(zBuff, inArrs[i]->buffer(), bytesToCopy);
+        }
+      };
+      samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
+    } else {
+      // Fallback: use transform for non-contiguous data
+      auto func = PRAGMA_THREADS_FOR {
+        for (auto i = start; i < stop; i++) {
+          void* zBuff = output.bufferWithOffset(zTadPack->primaryOffsets()[i]);
+
+          NativeOpExecutioner::execTransformAny(
+              inArrs[0]->getContext(), transform::Assign, inArrs[i]->buffer(), inArrs[i]->shapeInfo(),
+              nullptr /*input specialBuffer*/, nullptr /*input special*/, zBuff, zTadShapeInfo,
+              nullptr /*output specialBuffer*/, nullptr /*output special*/, nullptr, false /*allowParallelism*/);
+        }
+      };
+      samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
+    }
   }
 }
 
@@ -91,18 +140,38 @@ static void unstack_(LaunchContext* context, NDArray& input, const std::vector<N
         input.shapeInfo(), vec);
     auto xTadShapeInfo = xTadPack->primaryShapeInfo();
     delete vec;
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++) {
-        auto xBuff = input.bufferWithOffset(xTadPack->primaryOffsets()[i]);
 
-        NativeOpExecutioner::execTransformAny(
-            input.getContext(), transform::Assign, xBuff, xTadShapeInfo, nullptr /*input specialBuffer*/,
-            nullptr /*input special*/, outArrs[i]->buffer(), outArrs[i]->shapeInfo(), nullptr /*output specialBuffer*/,
-            nullptr /*output special*/, nullptr, false /*allowParallelism*/);
-      }
-    };
+    // Check if we can use memcpy (TAD contiguous and outputs contiguous)
+    bool canUseMemcpy = isContiguousLayout(xTadShapeInfo);
+    if (canUseMemcpy && numOfSubArrs > 0) {
+      canUseMemcpy = isContiguousLayout(outArrs[0]->shapeInfo());
+    }
+    const sd::LongType tadLength = shape::length(xTadShapeInfo);
+    const size_t bytesToCopy = tadLength * sizeof(T);
 
-    samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
+    if (canUseMemcpy) {
+      // Fast path: use memcpy for contiguous data
+      auto func = PRAGMA_THREADS_FOR {
+        for (auto i = start; i < stop; i++) {
+          auto xBuff = input.bufferWithOffset(xTadPack->primaryOffsets()[i]);
+          std::memcpy(outArrs[i]->buffer(), xBuff, bytesToCopy);
+        }
+      };
+      samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
+    } else {
+      // Fallback: use transform for non-contiguous data
+      auto func = PRAGMA_THREADS_FOR {
+        for (auto i = start; i < stop; i++) {
+          auto xBuff = input.bufferWithOffset(xTadPack->primaryOffsets()[i]);
+
+          NativeOpExecutioner::execTransformAny(
+              input.getContext(), transform::Assign, xBuff, xTadShapeInfo, nullptr /*input specialBuffer*/,
+              nullptr /*input special*/, outArrs[i]->buffer(), outArrs[i]->shapeInfo(), nullptr /*output specialBuffer*/,
+              nullptr /*output special*/, nullptr, false /*allowParallelism*/);
+        }
+      };
+      samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
+    }
   }
 }
 

@@ -56,8 +56,10 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
                         long[] dimensions, boolean keepDims) {
         super(sameDiff, null);
         if (i_v != null) {
-            if(dimensions == null || dimensions.length < 1)
-                dimensions = new long[] {-1};
+            // Don't convert null/empty to {-1}. Empty dimensions means "reduce all".
+            // -1 means "last dimension", not "reduce all".
+            if(dimensions == null)
+                dimensions = new long[0];
 
             this.dimensions = dimensions;
             SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v, this);
@@ -77,8 +79,10 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
                         long[] dimensions, boolean keepDims) {
         super(sameDiff,null);
         if (i_v != null) {
-            if(dimensions == null || dimensions.length < 1)
-                dimensions = new long[] {-1};
+            // Don't convert null/empty to {-1}. Empty dimensions means "reduce all".
+            // -1 means "last dimension", not "reduce all".
+            if(dimensions == null)
+                dimensions = new long[0];
 
             this.dimensions = dimensions;
 
@@ -132,8 +136,10 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
                         boolean keepDims) {
         super(sameDiff, null);
         if (i_v != null) {
-            if(dimensions == null || dimensions.length < 1)
-                dimensions = new long[] {-1};
+            // Don't convert null/empty to {-1}. Empty dimensions means "reduce all".
+            // -1 means "last dimension", not "reduce all".
+            if(dimensions == null)
+                dimensions = new long[0];
 
             SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v, this);
             this.keepDims = keepDims;
@@ -246,7 +252,9 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         if (!attributesForNode.containsKey("axis") && !hasReductionIndices(nodeDef)) {
-            this.dimensions = new long[] { -1 };
+            // No axis specified = reduce all dimensions. Use empty array, not {-1}.
+            // -1 means "last dimension", not "reduce all".
+            this.dimensions = new long[0];
         }   //Otherwise: dimensions are dynamically set during execution in InferenceSession
 
         if(attributesForNode.containsKey("keep_dims")) {

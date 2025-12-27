@@ -36,6 +36,13 @@ BROADCASTABLE_OP_IMPL(floordiv, 0, 0) {
   BROADCAST_CHECK_EMPTY(x, y, z);
 
   REQUIRE_TRUE(!y->isB(), 0, "FLOORDIV OP: you can't divide by bool array!");
+
+  // Fast path: same shape - skip BroadcastHelper dispatch overhead
+  if (x->isSameShape(y)) {
+    x->applyPairwiseTransform(pairwise::FloorDiv, y, z, nullptr);
+    return Status::OK;
+  }
+
   auto tZ = BroadcastHelper::broadcastApply(
       BroadcastOpsTuple::custom(scalar::FloorDiv, pairwise::FloorDiv, broadcast::FloorDiv), x, y, z);
   if (tZ == nullptr)

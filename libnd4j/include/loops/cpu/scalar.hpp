@@ -61,18 +61,46 @@ void ScalarTransform<X, Y, Z>::transform(const void *vx, const sd::LongType *xSh
   sd::LongType *zTadStride = shape::stride(zTadShapeInfo);
 
   const int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-  for (auto r = start; r < stop; r++) {
-    auto oZ = z + zTadOffsets[r];
-    auto oX = x + xTadOffsets[r];
-    PRAGMA_OMP_SIMD
-    for (int f = 0; f < tadLength; f++) {
-      sd::LongType coords[SD_MAX_RANK];
-      sd::LongType xOffset, zOffset;
-      INDEX2COORDS(f, xTadRank, xTadShape, coords);
-      INDEX2COORDS(f, zTadRank, zTadShape, coords);
-      COORDS2INDEX(xTadRank, xTadStride, coords, xOffset);
-      COORDS2INDEX(zTadRank, zTadStride, coords, zOffset);
-      oZ[zOffset] = OpType::op(oX[xOffset], scalars[0], extraParams);
+
+  // Check if TADs are contiguous
+  bool isContiguous = (xTadRank == zTadRank);
+  if (isContiguous && xTadRank > 0) {
+    sd::LongType expectedStride = 1;
+    for (int i = xTadRank - 1; i >= 0; --i) {
+      if (xTadShape[i] == 1) continue;
+      if (xTadStride[i] != expectedStride || zTadStride[i] != expectedStride || xTadShape[i] != zTadShape[i]) {
+        isContiguous = false;
+        break;
+      }
+      expectedStride *= xTadShape[i];
+    }
+  }
+
+  if (isContiguous) {
+    // Fast path: direct indexing for contiguous TADs
+    for (auto r = start; r < stop; r++) {
+      auto oZ = z + zTadOffsets[r];
+      auto oX = x + xTadOffsets[r];
+      PRAGMA_OMP_SIMD
+      for (int f = 0; f < tadLength; f++) {
+        oZ[f] = OpType::op(oX[f], scalars[0], extraParams);
+      }
+    }
+  } else {
+    // General path with coordinate calculation
+    for (auto r = start; r < stop; r++) {
+      auto oZ = z + zTadOffsets[r];
+      auto oX = x + xTadOffsets[r];
+      PRAGMA_OMP_SIMD
+      for (int f = 0; f < tadLength; f++) {
+        sd::LongType coords[SD_MAX_RANK];
+        sd::LongType xOffset, zOffset;
+        INDEX2COORDS(f, xTadRank, xTadShape, coords);
+        INDEX2COORDS(f, zTadRank, zTadShape, coords);
+        COORDS2INDEX(xTadRank, xTadStride, coords, xOffset);
+        COORDS2INDEX(zTadRank, zTadStride, coords, zOffset);
+        oZ[zOffset] = OpType::op(oX[xOffset], scalars[0], extraParams);
+      }
     }
   }
 }
@@ -125,17 +153,40 @@ void ScalarTransform<X, Y, Z>::transform(const void *vx, const sd::LongType *xSh
   sd::LongType *xStride = shape::stride(xShapeInfo);
   sd::LongType *zStride = shape::stride(zShapeInfo);
 
-  PRAGMA_OMP_SIMD
-  for (auto i = start; i < stop; i++) {
-    sd::LongType coords[SD_MAX_RANK];
-    sd::LongType zCoords[SD_MAX_RANK];
-    sd::LongType xOffset, zOffset;
-    INDEX2COORDS(i, xRank, xShape, coords);
-    INDEX2COORDS(i, zRank, zShape, zCoords);
-    COORDS2INDEX(xRank, xStride, coords, xOffset);
-    COORDS2INDEX(zRank, zStride, zCoords, zOffset);
-    z[zOffset] = OpType::op(x[xOffset], scalar[0], extraParams);
-  };
+  // Check if both arrays are contiguous with same shape
+  bool isContiguous = (xRank == zRank);
+  if (isContiguous && xRank > 0) {
+    sd::LongType expectedStride = 1;
+    for (int i = xRank - 1; i >= 0; --i) {
+      if (xShape[i] == 1) continue;
+      if (xStride[i] != expectedStride || zStride[i] != expectedStride || xShape[i] != zShape[i]) {
+        isContiguous = false;
+        break;
+      }
+      expectedStride *= xShape[i];
+    }
+  }
+
+  if (isContiguous) {
+    // Fast path: direct indexing for contiguous arrays
+    PRAGMA_OMP_SIMD
+    for (auto i = start; i < stop; i++) {
+      z[i] = OpType::op(x[i], scalar[0], extraParams);
+    }
+  } else {
+    // General path with coordinate calculation
+    PRAGMA_OMP_SIMD
+    for (auto i = start; i < stop; i++) {
+      sd::LongType coords[SD_MAX_RANK];
+      sd::LongType zCoords[SD_MAX_RANK];
+      sd::LongType xOffset, zOffset;
+      INDEX2COORDS(i, xRank, xShape, coords);
+      INDEX2COORDS(i, zRank, zShape, zCoords);
+      COORDS2INDEX(xRank, xStride, coords, xOffset);
+      COORDS2INDEX(zRank, zStride, zCoords, zOffset);
+      z[zOffset] = OpType::op(x[xOffset], scalar[0], extraParams);
+    }
+  }
 }
 ////////////////////////////////////////////////////////////////////////
 

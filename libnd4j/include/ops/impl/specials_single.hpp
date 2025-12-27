@@ -23,6 +23,7 @@
 
 #include <array/NDArray.h>
 #include <helpers/Loops.h>
+#include <cstring>
 
 #include <helpers/shape.h>
 #include <ops/declarable/CustomOperations.h>
@@ -104,9 +105,8 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
         const auto inputPtr = inArrs[i]->bufferAsT<T>();
 
         auto zPtr = zPtrList[i];
-        for (int j = 0; j < memAmountToCopy; j++) {
-          zPtr[j] = inputPtr[j];
-        }
+        // Use memcpy for contiguous data - much faster than element-by-element
+        std::memcpy(zPtr, inputPtr, memAmountToCopy * sizeof(T));
       }
     };
 
@@ -149,11 +149,48 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
           auto inputCopySize = inputArgs[j].size;
           const T *inputBasePtr = inputArgs[j].ptr;
           auto inputPtr = &(inputBasePtr[i * inputCopySize]);
-          // copy
-          PRAGMA_OMP_SIMD
-          for (int k = 0; k < inputCopySize; k++) {
-            outPtr[k] = inputPtr[k];
-          }
+          // Use memcpy for faster copy - data is contiguous and non-overlapping
+          std::memcpy(outPtr, inputPtr, inputCopySize * sizeof(T));
+          outPtr += inputCopySize;
+        }
+      }
+    };
+    samediff::Threads::parallel_tad(func, 0, times, 1);
+    return;
+  }
+
+  // OPTIMIZATION: copyCase3 for F-order (mirrors copyCase2)
+  bool copyCase3 = matchesOutputOrdering && output.ordering() == 'f';
+  if (copyCase3) {
+    sd::LongType times = 1;
+    auto shapes = shape::shapeOf(output.shapeInfo());
+    auto rank = output.rankOf();
+
+    T *z = output.bufferAsT<T>();
+    // For F-order, count dimensions after the axis
+    for (int i = axis + 1; i < rank; i++) {
+      times = times * shapes[i];
+    }
+
+    sd::LongType totalCopySize = output.lengthOf() / times;
+
+    std::vector<InputArgsCase2<T>> inputArgs;
+    for (sd::LongType i = 0; i < numOfInArrs; i++) {
+      InputArgsCase2<T> input = {inArrs[i]->bufferAsT<T>(),
+                                 static_cast<int>(inArrs[i]->lengthOf()) / static_cast<int>(times)};
+      inputArgs.push_back(input);
+    }
+
+    auto func = [&inputArgs, z, totalCopySize](uint64_t thread_id, int64_t start, int64_t stop,
+                                               int64_t increment) -> void {
+      auto outPtr = &(z[start * totalCopySize]);
+      auto numOfInArrs = inputArgs.size();
+      for (int i = start; i < stop; i++) {
+        for (size_t j = 0; j < numOfInArrs; j++) {
+          auto inputCopySize = inputArgs[j].size;
+          const T *inputBasePtr = inputArgs[j].ptr;
+          auto inputPtr = &(inputBasePtr[i * inputCopySize]);
+          std::memcpy(outPtr, inputPtr, inputCopySize * sizeof(T));
           outPtr += inputCopySize;
         }
       }

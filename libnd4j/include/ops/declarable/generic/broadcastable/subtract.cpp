@@ -35,6 +35,24 @@ BROADCASTABLE_OP_IMPL(subtract, 0, 0) {
 
   BROADCAST_CHECK_EMPTY(x, y, z);
 
+  // Fast path: same shape - skip BroadcastHelper dispatch overhead
+  if (x->isSameShape(y)) {
+    x->applyPairwiseTransform(pairwise::Subtract, y, z, nullptr);
+    return Status::OK;
+  }
+
+  // Fast path: scalar broadcast - common for bias subtraction
+  if (y->isScalar()) {
+    x->applyScalarArr(scalar::Subtract, y, z);
+    return Status::OK;
+  }
+  if (x->isScalar()) {
+    // x - y where x is scalar: negate y then add scalar
+    y->applyTransform(transform::Neg, z);
+    z->applyScalarArr(scalar::Add, x, z);
+    return Status::OK;
+  }
+
   auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::Subtract(), x, y, z);
   if (tZ == nullptr)
     return Status::KERNEL_FAILURE;

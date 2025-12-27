@@ -50,6 +50,8 @@
         <platform.compiler.flag.debug>-g</platform.compiler.flag.debug>
         <platform.functrace.libs.unix>-ldl -lunwind -lbfd -ldw</platform.functrace.libs.unix>
         <libnd4j.outputPath>${project.build.directory}/../../../../../libnd4j/blasbuild/cpu</libnd4j.outputPath>
+        <!-- Default libnd4jhome for include paths - can be overridden by LIBND4J_HOME env var or libnd4j-assembly profile -->
+        <libnd4jhome>${project.build.directory}/../../../../../libnd4j</libnd4jhome>
         <!-- NDK specific: https://github.com/android/ndk/issues/1690-->
         <javacpp.compiler.crtoption></javacpp.compiler.crtoption>
 

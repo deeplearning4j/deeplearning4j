@@ -82,20 +82,44 @@ void Reduce3<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, v
     }
   }
 
+  // Check if both arrays are contiguous with same shape
+  bool isContiguous = (xRank == yRank);
+  if (isContiguous && xRank > 0) {
+    sd::LongType expectedStride = 1;
+    for (int i = xRank - 1; i >= 0; --i) {
+      if (xShape[i] == 1) continue;
+      if (xStride[i] != expectedStride || yStride[i] != expectedStride || xShape[i] != yShape[i]) {
+        isContiguous = false;
+        break;
+      }
+      expectedStride *= xShape[i];
+    }
+  }
+
   auto func = PRAGMA_THREADS_FOR {
-    for (auto i = start; i < stop; i++) {
-      sd::LongType xCoords[SD_MAX_RANK];
-      sd::LongType yCoords[SD_MAX_RANK];
+    if (isContiguous) {
+      // Fast path: direct indexing for contiguous arrays
+      for (auto i = start; i < stop; i++) {
+        intermediate[thread_id] = OpType::update(intermediate[thread_id],
+                                                 OpType::op(x[i], y[i], extraParamsLocal + 3 * thread_id),
+                                                 extraParamsLocal + 3 * thread_id);
+      }
+    } else {
+      // General path with coordinate calculation
+      for (auto i = start; i < stop; i++) {
+        sd::LongType xCoords[SD_MAX_RANK];
+        sd::LongType yCoords[SD_MAX_RANK];
 
-      INDEX2COORDS(i, xRank, xShape, xCoords);
-      INDEX2COORDS(i, yRank, yShape, yCoords);
-      sd::LongType xOffset = 0, yOffset = 0;
-      COORDS2INDEX(xRank, xStride, xCoords, xOffset);
-      COORDS2INDEX(yRank, yStride, yCoords, yOffset);
+        INDEX2COORDS(i, xRank, xShape, xCoords);
+        INDEX2COORDS(i, yRank, yShape, yCoords);
+        sd::LongType xOffset = 0, yOffset = 0;
+        COORDS2INDEX(xRank, xStride, xCoords, xOffset);
+        COORDS2INDEX(yRank, yStride, yCoords, yOffset);
 
-      intermediate[thread_id] = OpType::update(intermediate[thread_id],
-                                               OpType::op(x[xOffset], y[yOffset], extraParamsLocal + 3 * thread_id),
-                                               extraParamsLocal + 3 * thread_id);
+        intermediate[thread_id] = OpType::update(intermediate[thread_id],
+                                                 OpType::op(x[xOffset], y[yOffset], extraParamsLocal + 3 * thread_id),
+                                                 extraParamsLocal + 3 * thread_id);
+      }
     }
   };
 

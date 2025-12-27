@@ -34,6 +34,19 @@ BROADCASTABLE_OP_IMPL(realdiv, 0, 0) {
   auto z = OUTPUT_VARIABLE(0);
 
   BROADCAST_CHECK_EMPTY(x, y, z);
+
+  // Fast path: same shape - skip BroadcastHelper dispatch overhead
+  if (x->isSameShape(y)) {
+    x->applyPairwiseTransform(pairwise::Divide, y, z, nullptr);
+    return Status::OK;
+  }
+
+  // Fast path: scalar divisor - common for normalization
+  if (y->isScalar()) {
+    x->applyScalarArr(scalar::Divide, y, z);
+    return Status::OK;
+  }
+
   auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::Divide(), x, y, z);
   if (tZ == nullptr) {
     return Status::KERNEL_FAILURE;

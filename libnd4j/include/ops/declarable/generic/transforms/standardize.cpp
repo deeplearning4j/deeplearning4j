@@ -53,7 +53,8 @@ CONFIGURABLE_OP_IMPL(standardize, 1, 1, true, 0, -2) {
   // biasCorrected=false gives population variance (divide by N, not N-1)
   auto varianceRaw = input->varianceAlongDimension(variance::SummaryStatsVariance, false, &axis);
 
-  // Reshape variance to match means shape for broadcasting (use reshape instead of reshapei)
+  // Reshape variance to match means shape for broadcasting
+  // Must use copyToNewBuff=true (default) since we modify in-place and delete varianceRaw
   auto meansShape = means->getShapeAsVector();
   auto variance = varianceRaw->reshape(varianceRaw->ordering(), *meansShape);
   delete meansShape;
@@ -61,17 +62,17 @@ CONFIGURABLE_OP_IMPL(standardize, 1, 1, true, 0, -2) {
 
   // Add epsilon BEFORE sqrt: stdev = sqrt(variance + epsilon)
   // This is the numerically stable formula for LayerNorm
-  NDArray* varPlusEps = *variance + 1e-5;
-  NDArray* stdev = varPlusEps->transform(transform::Sqrt);
+  // Use in-place operations to avoid temporaries
+  variance->applyScalar(scalar::Add, 1e-5, variance);
+  variance->applyTransform(transform::Sqrt, variance);
+  // variance now contains stdev
 
   // output = (input - mean) / stdev
   input->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), means, output, false);
-  output->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), stdev, output, false);
+  output->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), variance, output, false);
 
   delete means;
   delete variance;
-  delete varPlusEps;
-  delete stdev;
 
   return sd::Status::OK;
 }

@@ -34,6 +34,24 @@ BROADCASTABLE_OP_IMPL(add, 0, 0) {
   auto z = OUTPUT_VARIABLE(0);
   BROADCAST_CHECK_EMPTY(x, y, z);
 
+  // Fast path: same shape - skip BroadcastHelper dispatch overhead
+  // This is the most common case in BERT (residual connections, etc.)
+  if (x->isSameShape(y)) {
+    x->applyPairwiseTransform(pairwise::Add, y, z, nullptr);
+    return Status::OK;
+  }
+
+  // Fast path: scalar broadcast - very common for bias addition
+  if (y->isScalar()) {
+    x->applyScalarArr(scalar::Add, y, z);
+    return Status::OK;
+  }
+  if (x->isScalar()) {
+    y->applyScalarArr(scalar::Add, x, z);
+    return Status::OK;
+  }
+
+  // Standard path with broadcasting support
   auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::Add(), x, y, z);
   if (tZ == nullptr)
     return Status::KERNEL_FAILURE;

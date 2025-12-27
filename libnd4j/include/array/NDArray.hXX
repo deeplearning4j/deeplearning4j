@@ -22,6 +22,7 @@
 //
 #ifndef __NDARRAY__HPP__
 #define __NDARRAY__HPP__
+#include <cstring>
 #include <array/ShapeDescriptor.h>
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/ConstantTadHelper.h>
@@ -2935,6 +2936,35 @@ void NDArray::validateAssign(NDArray *thisArray,  NDArray *other) {
   }
 }
 
+// Helper to check if array has contiguous (packed) memory layout
+static bool isContiguousLayout(const sd::LongType* shapeInfo) {
+  const int rank = shape::rank(shapeInfo);
+  if (rank == 0) return true;  // Scalar is contiguous
+
+  const sd::LongType* shapePtr = shape::shapeOf(shapeInfo);
+  const sd::LongType* stridePtr = shape::stride(shapeInfo);
+  const char order = shape::order(shapeInfo);
+
+  if (order == 'c') {
+    // C-order: last stride should be 1, each preceding = next * next_shape
+    sd::LongType expectedStride = 1;
+    for (int i = rank - 1; i >= 0; --i) {
+      if (shapePtr[i] == 1) continue;  // Skip size-1 dimensions
+      if (stridePtr[i] != expectedStride) return false;
+      expectedStride *= shapePtr[i];
+    }
+  } else {
+    // F-order: first stride should be 1, each following = prev * prev_shape
+    sd::LongType expectedStride = 1;
+    for (int i = 0; i < rank; ++i) {
+      if (shapePtr[i] == 1) continue;  // Skip size-1 dimensions
+      if (stridePtr[i] != expectedStride) return false;
+      expectedStride *= shapePtr[i];
+    }
+  }
+  return true;
+}
+
 // Performs the data copy for assignment
 void NDArray::copyDataForAssign(NDArray *thisArray, NDArray *other, const sd::LongType* otherShapeInfo, bool allowParallelism) {
   if (other->lengthOf() <= 1) {
@@ -2956,6 +2986,18 @@ void NDArray::copyDataForAssign(NDArray *thisArray, NDArray *other, const sd::Lo
     thisArray->registerSpecialUse({thisArray}, {other});
 
   } else {
+    // Fast path: use memcpy when both arrays are contiguous with same type and length
+    bool canUseMemcpy = (thisArray->dataType() == other->dataType()) &&
+                        (thisArray->lengthOf() == other->lengthOf()) &&
+                        isContiguousLayout(thisArray->shapeInfo()) &&
+                        isContiguousLayout(otherShapeInfo);
+
+    if (canUseMemcpy) {
+      // Direct memcpy - much faster for contiguous arrays
+      std::memcpy(other->buffer(), thisArray->buffer(), thisArray->lengthOf() * thisArray->sizeOfT());
+      return;
+    }
+
     thisArray->prepareSpecialUse({thisArray}, {other});
 
     NativeOpExecutioner::execTransformAny(thisArray->getContext(),

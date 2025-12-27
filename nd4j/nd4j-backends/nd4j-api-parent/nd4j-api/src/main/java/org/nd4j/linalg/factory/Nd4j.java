@@ -468,8 +468,8 @@ public class Nd4j {
         Preconditions.checkState(shape[dimension] == 1, String.format("Squeeze: Only dimension of size 1 can be squeezed. " +
                 "Attempted to squeeze dimension %d of array with shape %s (size %d).", dimension, ArrayUtils.toString(shape), shape[dimension]));
 
-        long[] newShape = ArrayUtil.removeIndex(shape, dimension);
-        return input.reshape(input.ordering(), newShape);
+        org.nd4j.linalg.api.ops.impl.shape.Squeeze squeeze = new org.nd4j.linalg.api.ops.impl.shape.Squeeze(input, dimension);
+        return getExecutioner().exec(squeeze)[0];
     }
 
     /**
@@ -6143,12 +6143,6 @@ public class Nd4j {
         DataBuffer shapeInfoBuffer = Nd4j.createBufferDetached(shapeBuffer);
         // --- 9. Get and Process Data Buffer ---
         java.nio.ByteBuffer bb = array.bufferAsByteBuffer();
-        bb.rewind();
-        //only direct buffers work not heap
-        java.nio.ByteBuffer direct  = ByteBuffer.allocateDirect(array.bufferLength());
-        direct.order(bb.order());
-        bb.put(direct);
-        direct.rewind();
         DataBuffer dataBuffer;
 
         if (bb == null) {
@@ -6157,20 +6151,93 @@ public class Nd4j {
         } else {
             java.nio.ByteOrder dataByteBufferOrder = FlatBuffersMapper.getOrderFromByte(array.byteOrder());
             int bytesPerElement = Nd4j.sizeOfDataType(dtype);
-            long expectedBytes = (bytesPerElement > 0) ? length * bytesPerElement : direct.remaining();
+            int bufLen = array.bufferLength();
+            long expectedBytes = (bytesPerElement > 0) ? length * bytesPerElement : bufLen;
 
-            if (direct.remaining() < expectedBytes) {
-                log.warn("FlatArray buffer remaining bytes ({}) is less than expected ({}) for shape {} and dtype {}. Data may be incomplete.",
-                        bb.remaining(), expectedBytes, Arrays.toString(shape), dtype);
+            if (bufLen < expectedBytes) {
+                log.warn("FlatArray buffer length ({}) is less than expected ({}) for shape {} and dtype {}. Data may be incomplete.",
+                        bufLen, expectedBytes, Arrays.toString(shape), dtype);
             }
 
-            // Ensure we read from the beginning of the buffer content
-            direct.order(dataByteBufferOrder);
-            if(bb.position() != 0) bb.position(0); // Reset position
+            // Read bytes from the FlatBuffer source buffer
+            // FlatBuffer's bufferAsByteBuffer returns a slice with position=0, limit=bufLen
+            // Use bufLen as the authoritative size
+            byte[] bytes = new byte[bufLen];
+            if (bb.remaining() >= bufLen) {
+                bb.get(bytes, 0, bufLen);
+            } else {
+                // Buffer might have wrong position, try resetting
+                bb.position(0);
+                if (bb.remaining() >= bufLen) {
+                    bb.get(bytes, 0, bufLen);
+                } else {
+                    // Read whatever is available
+                    int available = bb.remaining();
+                    bb.get(bytes, 0, available);
+                    log.warn("FlatBuffer bb.remaining() ({}) is less than bufLen ({}). Read {} bytes.", available, bufLen, available);
+                }
+            }
 
-            // Create DataBuffer by copying data
+            // Create a direct buffer in native order for the native code
+            java.nio.ByteBuffer direct = ByteBuffer.allocateDirect(bufLen);
+            direct.order(java.nio.ByteOrder.nativeOrder());  // Native order for native code
+
+            // If byte orders differ, we need to convert the data
+            if (dataByteBufferOrder != java.nio.ByteOrder.nativeOrder()) {
+                // Read values in source order and write in native order
+                java.nio.ByteBuffer srcBuf = java.nio.ByteBuffer.wrap(bytes).order(dataByteBufferOrder);
+                switch (dtype) {
+                    case DOUBLE:
+                        java.nio.DoubleBuffer srcDouble = srcBuf.asDoubleBuffer();
+                        java.nio.DoubleBuffer dstDouble = direct.asDoubleBuffer();
+                        while (srcDouble.hasRemaining()) {
+                            dstDouble.put(srcDouble.get());
+                        }
+                        break;
+                    case FLOAT:
+                        java.nio.FloatBuffer srcFloat = srcBuf.asFloatBuffer();
+                        java.nio.FloatBuffer dstFloat = direct.asFloatBuffer();
+                        while (srcFloat.hasRemaining()) {
+                            dstFloat.put(srcFloat.get());
+                        }
+                        break;
+                    case LONG:
+                        java.nio.LongBuffer srcLong = srcBuf.asLongBuffer();
+                        java.nio.LongBuffer dstLong = direct.asLongBuffer();
+                        while (srcLong.hasRemaining()) {
+                            dstLong.put(srcLong.get());
+                        }
+                        break;
+                    case INT:
+                        java.nio.IntBuffer srcInt = srcBuf.asIntBuffer();
+                        java.nio.IntBuffer dstInt = direct.asIntBuffer();
+                        while (srcInt.hasRemaining()) {
+                            dstInt.put(srcInt.get());
+                        }
+                        break;
+                    case SHORT:
+                    case HALF:
+                    case BFLOAT16:
+                        java.nio.ShortBuffer srcShort = srcBuf.asShortBuffer();
+                        java.nio.ShortBuffer dstShort = direct.asShortBuffer();
+                        while (srcShort.hasRemaining()) {
+                            dstShort.put(srcShort.get());
+                        }
+                        break;
+                    default:
+                        // For single-byte types, byte order doesn't matter
+                        direct.put(bytes);
+                        break;
+                }
+            } else {
+                // Same byte order, just copy
+                direct.put(bytes);
+            }
+            direct.rewind();
+
+            // Create DataBuffer from the direct buffer
             try {
-                dataBuffer = Nd4j.createBuffer(direct, dtype, (int) length); // Use createBuffer(ByteBuffer, ...)
+                dataBuffer = Nd4j.createBuffer(direct, dtype, (int) length);
             } catch (Exception e) {
                 log.error("Error creating DataBuffer from ByteBuffer for dtype {} shape {}", dtype, Arrays.toString(shape), e);
                 throw new RuntimeException("Failed to create data buffer from FlatArray ByteBuffer", e);

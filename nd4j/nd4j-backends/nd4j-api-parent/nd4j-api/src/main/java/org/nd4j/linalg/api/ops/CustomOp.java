@@ -25,6 +25,8 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -199,6 +201,9 @@ public interface CustomOp  {
 
  /**
   * Initialize the output arrays, if required.
+  * This method checks for view flags (ARRAY_COPY_OFFSET_INPUT_X) set by the C++ shape function.
+  * When a view flag is set, the output is created as a view sharing the input's buffer and offset
+  * instead of allocating a new buffer.
   * @return True if the output arrays were initialized (and hence should be calculated), false otherwise
   */
  default boolean initializeOutputs(OpContext ctx) {
@@ -209,9 +214,28 @@ public interface CustomOp  {
     if (list.isEmpty())
      throw new ND4JIllegalStateException("Op name " + opName() + " failed to calculate output shape and data types.");
 
-    for (DataBuffer shape : list) {
-     INDArray newOut = Nd4j.createFromDescriptor(shape);
-     addOutputArgument(newOut);
+    List<INDArray> inputs = inputArguments();
+    for (DataBuffer shapeBuffer : list) {
+     long[] shapeInfo = shapeBuffer.asLong();
+
+     // Check if a copy offset flag is set (indicates view should be created)
+     int copyOffsetInputIndex = ArrayOptionsHelper.getCopyOffsetInputIndex(shapeInfo);
+
+     if (copyOffsetInputIndex >= 0 && inputs != null && copyOffsetInputIndex < inputs.size()) {
+      // View case: create output sharing the specified input's buffer and offset
+      INDArray input = inputs.get(copyOffsetInputIndex);
+      long[] shape = Shape.shape(shapeInfo);
+      long[] strides = Shape.stride(shapeInfo);
+      char ordering = Shape.order(shapeInfo);
+
+      // Create output as a view sharing the input's buffer at the input's offset
+      INDArray newOut = Nd4j.create(input.data(), shape, strides, input.offset(), ordering);
+      addOutputArgument(newOut);
+     } else {
+      // Standard case: create new array
+      INDArray newOut = Nd4j.createFromDescriptor(shapeBuffer);
+      addOutputArgument(newOut);
+     }
     }
     shapeOverride = true;
    } catch (ND4JIllegalStateException e) {

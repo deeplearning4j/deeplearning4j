@@ -36,6 +36,13 @@ BROADCASTABLE_OP_IMPL(floormod, 0, 0) {
   BROADCAST_CHECK_EMPTY(x, y, z);
 
   REQUIRE_TRUE(!y->isB(), 0, "FLOORMOD OP: you can't divide by bool array!");
+
+  // Fast path: same shape - skip BroadcastHelper dispatch overhead
+  if (x->isSameShape(y)) {
+    x->applyPairwiseTransform(pairwise::FloorMod, y, z, nullptr);
+    return Status::OK;
+  }
+
   auto tZ = BroadcastHelper::broadcastApply(BROADCAST(FloorMod), x, y, z);
   if (tZ == nullptr)
     return Status::KERNEL_FAILURE;

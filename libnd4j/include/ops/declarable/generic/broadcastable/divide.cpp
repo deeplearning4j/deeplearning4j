@@ -36,6 +36,20 @@ BROADCASTABLE_OP_IMPL(divide, 0, 0) {
   BROADCAST_CHECK_EMPTY(x, y, z);
 
   REQUIRE_TRUE(!y->isB(), 0, "DIVIDE OP: you can't divide by bool array!");
+
+  // Fast path: same shape - skip BroadcastHelper dispatch overhead
+  if (x->isSameShape(y)) {
+    x->applyPairwiseTransform(pairwise::Divide, y, z, nullptr);
+    return Status::OK;
+  }
+
+  // Fast path: scalar divisor - common for normalization
+  if (y->isScalar()) {
+    x->applyScalarArr(scalar::Divide, y, z);
+    return Status::OK;
+  }
+  // Note: x->isScalar() case is rare for divide, use broadcast path
+
   auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::Divide(), x, y, z);
   if (tZ == nullptr)
     return Status::KERNEL_FAILURE;

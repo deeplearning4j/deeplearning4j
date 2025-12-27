@@ -1974,28 +1974,28 @@ public class ArrayUtil {
 
 
     public static short[] toShorts(boolean[] ints) {
-        val ret = new short[ints.length];
+        short[] ret = new short[ints.length];
         for (int i = 0; i < ints.length; i++)
             ret[i] = (short) (ints[i] ? 1 : 0);
         return ret;
     }
 
     public static short[] toShorts(int[] ints) {
-        val ret = new short[ints.length];
+        short[] ret = new short[ints.length];
         for (int i = 0; i < ints.length; i++)
             ret[i] = (short) ints[i];
         return ret;
     }
 
     public static short[] toShorts(float[] ints) {
-        val ret = new short[ints.length];
+        short[] ret = new short[ints.length];
         for (int i = 0; i < ints.length; i++)
             ret[i] = (short) ints[i];
         return ret;
     }
 
     public static short[] toShorts(double[] ints) {
-        val ret = new short[ints.length];
+        short[] ret = new short[ints.length];
         for (int i = 0; i < ints.length; i++)
             ret[i] = (short) ints[i];
         return ret;

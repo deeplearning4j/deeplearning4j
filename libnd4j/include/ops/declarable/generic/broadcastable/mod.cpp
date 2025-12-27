@@ -35,6 +35,12 @@ BROADCASTABLE_OP_IMPL(mod, 0, 0) {
 
   BROADCAST_CHECK_EMPTY(x, y, z);
 
+  // Fast path: same shape - skip BroadcastHelper dispatch overhead
+  if (x->isSameShape(y)) {
+    x->applyPairwiseTransform(pairwise::Mod, y, z, nullptr);
+    return Status::OK;
+  }
+
   auto tZ = BroadcastHelper::broadcastApply(BROADCAST(Mod), x, y, z);
   if (tZ == nullptr)
     return Status::KERNEL_FAILURE;

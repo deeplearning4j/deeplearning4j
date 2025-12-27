@@ -3735,6 +3735,20 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             duped = true;
         }
 
+        // Views (sub-arrays, tensor-along-dimension, etc.) need to be duplicated to avoid
+        // StackOverflowError during gradient computation. This is due to a native memory
+        // handling issue where view arrays can cause infinite recursion when creating
+        // shape info buffers.
+        // Note: dup() alone is not sufficient because it copies the entire backing buffer.
+        // We need to create a compact copy with a properly-sized buffer.
+        if (!duped && arr.isView()) {
+            // Create a new array with exactly the right buffer size and copy values
+            INDArray compactCopy = Nd4j.createUninitialized(arr.dataType(), arr.shape(), arr.ordering());
+            compactCopy.assign(arr);
+            arr = compactCopy;
+            duped = true;
+        }
+
         if (!duped) {
             for (String s : variablesArrays.arrayNames()) {
                 if (variablesArrays.getArray(s) == arr) {    //Check for exact same object, to avoid array reuse (can result in unexpected behaviour)

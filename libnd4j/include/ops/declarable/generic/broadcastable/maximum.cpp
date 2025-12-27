@@ -35,6 +35,22 @@ BROADCASTABLE_OP_IMPL(maximum, 0, 0) {
 
   BROADCAST_CHECK_EMPTY(x, y, z);
 
+  // Fast path: same shape - skip BroadcastHelper dispatch overhead
+  if (x->isSameShape(y)) {
+    x->applyPairwiseTransform(pairwise::MaxPairwise, y, z, nullptr);
+    return Status::OK;
+  }
+
+  // Fast path: scalar broadcast - common for clamping (e.g., maximum(x, 0))
+  if (y->isScalar()) {
+    x->applyScalarArr(scalar::MaxPairwise, y, z);
+    return Status::OK;
+  }
+  if (x->isScalar()) {
+    y->applyScalarArr(scalar::MaxPairwise, x, z);
+    return Status::OK;
+  }
+
   auto tZ = BroadcastHelper::broadcastApply(BROADCAST(MaxPairwise), x, y, z);
   if (tZ == nullptr)
     return Status::KERNEL_FAILURE;
