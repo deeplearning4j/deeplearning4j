@@ -25,6 +25,7 @@
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/helpers/activations.h>
 
+#include <cmath>
 #include <numeric>
 #if NOT_EXCLUDED(OP_softmax)
 namespace sd {
@@ -50,12 +51,26 @@ static void softMaxForVector_(void const* input, sd::LongType const* inShapeInfo
 
  sd::LongType coords[SD_MAX_RANK];
 
- // Find max
+ // Clamp value for numerical stability - prevents Inf from propagating
+ // exp(88) ≈ 1.6e38 which is close to float max, exp(89) overflows
+ const T clampMax = static_cast<T>(88.0f);
+ const T clampMin = static_cast<T>(-88.0f);
+
+ // Find max (skip Inf/NaN values)
  for (int i = 0; i < length; i++) {
    INDEX2COORDS(i, inRank, inShape, coords);
    sd::LongType inOffset;
    COORDS2INDEX(inRank, inStride, coords, inOffset);
-   max = sd::math::sd_max<T>(max, inBuff[inOffset]);
+   T val = inBuff[inOffset];
+   // Skip Inf and NaN when finding max
+   if (!std::isinf(val) && !std::isnan(val)) {
+     max = sd::math::sd_max<T>(max, val);
+   }
+ }
+
+ // If max is still at initial value (all values were Inf/NaN), use 0
+ if (max == -DataTypeUtils::max<T>()) {
+   max = static_cast<T>(0.0f);
  }
 
  // Calculate exp and sum
@@ -65,10 +80,21 @@ static void softMaxForVector_(void const* input, sd::LongType const* inShapeInfo
    COORDS2INDEX(inRank, inStride, coords, inOffset);
    COORDS2INDEX(outRank, outStride, coords, outOffset);
 
-   T r = sd::math::sd_exp<T, T>(inBuff[inOffset] - max);
+   T val = inBuff[inOffset];
+   // Handle Inf/NaN inputs - treat as very large/small values
+   if (std::isinf(val) || std::isnan(val)) {
+     val = (val > 0 || std::isnan(val)) ? clampMax + max : clampMin + max;
+   }
+   // Clamp the difference to prevent overflow in exp
+   T diff = val - max;
+   diff = sd::math::sd_max<T>(clampMin, sd::math::sd_min<T>(clampMax, diff));
+   T r = sd::math::sd_exp<T, T>(diff);
    outBuff[outOffset] = r;
    sum += r;
  }
+
+ // Add small epsilon to prevent division by zero
+ sum = sd::math::sd_max<T>(sum, static_cast<T>(1e-6f));
 
  // Normalize
  for (int i = 0; i < length; i++) {
@@ -92,6 +118,11 @@ void softMaxForVector(sd::LaunchContext* context, NDArray& input, NDArray& outpu
 template <typename T>
 void softmax_loop(const T* input, T* output, const sd::LongType* offsets, sd::LongType numOfSubArrs, uint32_t tadLen);
 
+// Clamp constants for numerical stability
+static constexpr float SOFTMAX_CLAMP_MAX = 88.0f;
+static constexpr float SOFTMAX_CLAMP_MIN = -88.0f;
+static constexpr float SOFTMAX_SUM_EPS = 1e-6f;
+
 #if defined(_OPENMP)
 template <>
 SD_INLINE void softmax_loop(const float* input, float* output, const sd::LongType* offsets, sd::LongType numOfSubArrs,
@@ -104,16 +135,28 @@ SD_INLINE void softmax_loop(const float* input, float* output, const sd::LongTyp
    float max = -DataTypeUtils::max<float>();
    float sum = 0.f;
 
-#pragma omp simd reduction(max : max)
-   for (sd::LongType j = 0; j < tadLen; ++j) max = sd::math::sd_max<float>(max, inBuff[j]);
-
-#pragma omp simd reduction(+ : sum)
+   // Find max (skip Inf/NaN)
    for (sd::LongType j = 0; j < tadLen; ++j) {
-     float temp = sd::math::sd_exp<float, float>(inBuff[j] - max);
+     float val = inBuff[j];
+     if (!std::isinf(val) && !std::isnan(val)) {
+       max = sd::math::sd_max<float>(max, val);
+     }
+   }
+   if (max == -DataTypeUtils::max<float>()) max = 0.0f;
+
+   for (sd::LongType j = 0; j < tadLen; ++j) {
+     float val = inBuff[j];
+     if (std::isinf(val) || std::isnan(val)) {
+       val = (val > 0 || std::isnan(val)) ? SOFTMAX_CLAMP_MAX + max : SOFTMAX_CLAMP_MIN + max;
+     }
+     float diff = val - max;
+     diff = sd::math::sd_max<float>(SOFTMAX_CLAMP_MIN, sd::math::sd_min<float>(SOFTMAX_CLAMP_MAX, diff));
+     float temp = sd::math::sd_exp<float, float>(diff);
      outBuff[j] = temp;
      sum += temp;
    }
 
+   sum = sd::math::sd_max<float>(sum, SOFTMAX_SUM_EPS);
    for (sd::LongType j = 0; j < tadLen; ++j) outBuff[j] /= sum;
  }
 }
@@ -129,14 +172,28 @@ SD_INLINE void softmax_loop(const float* input, float* output, const sd::LongTyp
      float max = -DataTypeUtils::max<float>();
      float sum = 0.f;
 
-     for (sd::LongType j = 0; j < tadLen; ++j) max = sd::math::sd_max<float>(max, inBuff[j]);
+     // Find max (skip Inf/NaN)
+     for (sd::LongType j = 0; j < tadLen; ++j) {
+       float val = inBuff[j];
+       if (!std::isinf(val) && !std::isnan(val)) {
+         max = sd::math::sd_max<float>(max, val);
+       }
+     }
+     if (max == -DataTypeUtils::max<float>()) max = 0.0f;
 
      for (sd::LongType j = 0; j < tadLen; ++j) {
-       float temp = sd::math::sd_exp<float, float>(inBuff[j] - max);
+       float val = inBuff[j];
+       if (std::isinf(val) || std::isnan(val)) {
+         val = (val > 0 || std::isnan(val)) ? SOFTMAX_CLAMP_MAX + max : SOFTMAX_CLAMP_MIN + max;
+       }
+       float diff = val - max;
+       diff = sd::math::sd_max<float>(SOFTMAX_CLAMP_MIN, sd::math::sd_min<float>(SOFTMAX_CLAMP_MAX, diff));
+       float temp = sd::math::sd_exp<float, float>(diff);
        outBuff[j] = temp;
        sum += temp;
      }
 
+     sum = sd::math::sd_max<float>(sum, SOFTMAX_SUM_EPS);
      for (sd::LongType j = 0; j < tadLen; ++j) outBuff[j] /= sum;
    }
  };
@@ -149,6 +206,10 @@ SD_INLINE void softmax_loop(const float* input, float* output, const sd::LongTyp
 template <typename T>
 SD_INLINE void softmax_loop(const T* input, T* output, const sd::LongType* offsets, sd::LongType numOfSubArrs,
                            uint32_t tadLen) {
+ const T clampMax = static_cast<T>(SOFTMAX_CLAMP_MAX);
+ const T clampMin = static_cast<T>(SOFTMAX_CLAMP_MIN);
+ const T sumEps = static_cast<T>(SOFTMAX_SUM_EPS);
+
  auto func = PRAGMA_THREADS_FOR {
    for (auto i = start; i < stop; i++) {
      auto inBuff = input + offsets[i];
@@ -157,13 +218,28 @@ SD_INLINE void softmax_loop(const T* input, T* output, const sd::LongType* offse
      T max = -DataTypeUtils::max<T>();
      T sum(0.f);
 
-     for (sd::LongType j = 0; j < tadLen; ++j) max = sd::math::sd_max<T>(max, inBuff[j]);
+     // Find max (skip Inf/NaN)
      for (sd::LongType j = 0; j < tadLen; ++j) {
-       T temp = sd::math::sd_exp<T, T>(inBuff[j] - max);
+       T val = inBuff[j];
+       if (!std::isinf(static_cast<float>(val)) && !std::isnan(static_cast<float>(val))) {
+         max = sd::math::sd_max<T>(max, val);
+       }
+     }
+     if (max == -DataTypeUtils::max<T>()) max = static_cast<T>(0.0f);
+
+     for (sd::LongType j = 0; j < tadLen; ++j) {
+       T val = inBuff[j];
+       if (std::isinf(static_cast<float>(val)) || std::isnan(static_cast<float>(val))) {
+         val = (val > 0 || std::isnan(static_cast<float>(val))) ? clampMax + max : clampMin + max;
+       }
+       T diff = val - max;
+       diff = sd::math::sd_max<T>(clampMin, sd::math::sd_min<T>(clampMax, diff));
+       T temp = sd::math::sd_exp<T, T>(diff);
        outBuff[j] = temp;
        sum += temp;
      }
 
+     sum = sd::math::sd_max<T>(sum, sumEps);
      for (sd::LongType j = 0; j < tadLen; ++j) outBuff[j] /= sum;
    }
  };
@@ -194,6 +270,11 @@ static void softmax_(sd::LaunchContext* context, NDArray* input, NDArray* output
    sd::LongType *tadShape = shape::shapeOf(tadShapeInfo);
    sd::LongType *tadStride = shape::stride(tadShapeInfo);
 
+   // Clamp value for numerical stability - prevents Inf from propagating
+   // exp(88) ≈ 1.6e38 which is close to float max, exp(89) overflows
+   const T clampMax = static_cast<T>(88.0f);
+   const T clampMin = static_cast<T>(-88.0f);
+
    auto func = PRAGMA_THREADS_FOR {
      sd::LongType tadCoords[SD_MAX_RANK];
 
@@ -204,12 +285,20 @@ static void softmax_(sd::LaunchContext* context, NDArray* input, NDArray* output
        T max = -DataTypeUtils::max<T>();
        T sum = static_cast<T>(0.f);
 
-       // Find max using INDEX2COORDS/COORDS2INDEX
+       // Find max using INDEX2COORDS/COORDS2INDEX (skip Inf/NaN values)
        for (sd::LongType j = 0; j < tadLen; ++j) {
          INDEX2COORDS(j, tadRank, tadShape, tadCoords);
          sd::LongType offset;
          COORDS2INDEX(tadRank, tadStride, tadCoords, offset);
-         max = sd::math::sd_max<T>(max, inBuff[offset]);
+         T val = inBuff[offset];
+         if (!std::isinf(val) && !std::isnan(val)) {
+           max = sd::math::sd_max<T>(max, val);
+         }
+       }
+
+       // If max is still at initial value (all values were Inf/NaN), use 0
+       if (max == -DataTypeUtils::max<T>()) {
+         max = static_cast<T>(0.0f);
        }
 
        // Calculate exp and sum using INDEX2COORDS/COORDS2INDEX
@@ -217,10 +306,21 @@ static void softmax_(sd::LaunchContext* context, NDArray* input, NDArray* output
          INDEX2COORDS(j, tadRank, tadShape, tadCoords);
          sd::LongType offset;
          COORDS2INDEX(tadRank, tadStride, tadCoords, offset);
-         T temp = sd::math::sd_exp<T, T>(inBuff[offset] - max);
+         T val = inBuff[offset];
+         // Handle Inf/NaN inputs
+         if (std::isinf(val) || std::isnan(val)) {
+           val = (val > 0 || std::isnan(val)) ? clampMax + max : clampMin + max;
+         }
+         // Clamp the difference to prevent overflow in exp
+         T diff = val - max;
+         diff = sd::math::sd_max<T>(clampMin, sd::math::sd_min<T>(clampMax, diff));
+         T temp = sd::math::sd_exp<T, T>(diff);
          outBuff[offset] = temp;
          sum += temp;
        }
+
+       // Add small epsilon to prevent division by zero
+       sum = sd::math::sd_max<T>(sum, static_cast<T>(1e-6f));
 
        // Normalize using INDEX2COORDS/COORDS2INDEX
        for (sd::LongType j = 0; j < tadLen; ++j) {

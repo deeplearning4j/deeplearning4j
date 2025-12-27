@@ -17,91 +17,81 @@
  ******************************************************************************/
 
 //
-// @author raver119@gmail.com
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 30.05.2019
 //
-#include "../one_hot.h"
+// CPU implementation of one_hot helper
+//
 
 #include <execution/Threads.h>
-#include <helpers/ConstantTadHelper.h>
+#include <ops/declarable/helpers/one_hot.h>
+#include <system/op_boilerplate.h>
 
-#if NOT_EXCLUDED(OP_onehot)
 namespace sd {
 namespace ops {
 namespace helpers {
-template <typename Z, typename I>
-static void onehot_(void* voutput, sd::LongType const* zShapeInfo, void const* vindices, sd::LongType const* iShapeInfo,
-                    int axis, double on, double off) {
-  auto output = reinterpret_cast<Z*>(voutput);
-  auto indices = reinterpret_cast<I const*>(vindices);
 
+template <typename X, typename Z>
+static void onehotImpl_(NDArray* indices, NDArray* output,
+                        const LongType axis, const LongType depth,
+                        const double on, const double off) {
+    auto xBuffer = indices->bufferAsT<X>();
+    auto zBuffer = output->bufferAsT<Z>();
 
-  // Get TAD pack once
-  auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType *>(zShapeInfo),
-                                                                       reinterpret_cast<LongType*>(&axis),1);
+    auto xShapeInfo = indices->shapeInfo();
+    auto zShapeInfo = output->shapeInfo();
 
-  // Cache TAD shape information
-  const auto tadShapeInfo = tadPack->primaryShapeInfo();
-  const int tadRank = shape::rank(tadShapeInfo);
-  const sd::LongType* tadShape = shape::shapeOf(tadShapeInfo);
-  const sd::LongType* tadStride = shape::stride(tadShapeInfo);
+    const int xRank = shape::rank(xShapeInfo);
+    const int zRank = shape::rank(zShapeInfo);
+    const sd::LongType* xShape = shape::shapeOf(xShapeInfo);
+    const sd::LongType* zShape = shape::shapeOf(zShapeInfo);
+    const sd::LongType* xStride = shape::stride(xShapeInfo);
+    const sd::LongType* zStride = shape::stride(zShapeInfo);
+    const sd::LongType zLen = output->lengthOf();
 
-  // Cache lengths and counts
-  const auto iLen = static_cast<sd::LongType>(shape::length(iShapeInfo));
-  const auto tLen = static_cast<sd::LongType>(shape::length(tadShapeInfo));
-  const auto numTads = static_cast<unsigned int>(tadPack->numberOfTads());
+    const Z onVal = static_cast<Z>(on);
+    const Z offVal = static_cast<Z>(off);
 
-  // Get TAD offsets pointer
-  const auto tadOffsets = tadPack->primaryOffsets();
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto i = start; i < stop; i++) {
+            sd::LongType coord[SD_MAX_RANK];
 
-  if (iLen != numTads)
-    THROW_EXCEPTION("OneHot: number of TADs should be equal to number of indices");
+            // Compute output coordinate and offset
+            INDEX2COORDS(i, zRank, zShape, coord);
+            sd::LongType zOffset;
+            COORDS2INDEX(zRank, zStride, coord, zOffset);
 
-  // Cache constant values
-  const Z zero = static_cast<Z>(off);
-  const Z one = static_cast<Z>(on);
+            // Extract depth coordinate and shift axis
+            const auto depthCoord = coord[axis];
+            for (int j = axis; j < zRank - 1; ++j) {
+                coord[j] = coord[j + 1];
+            }
 
-  auto func = PRAGMA_THREADS_FOR {
-    // Pre-allocate coords array outside the loop
-    sd::LongType coords[SD_MAX_RANK];
+            // Compute input offset
+            sd::LongType xOffset;
+            COORDS2INDEX(xRank, xStride, coord, xOffset);
 
-    for (auto e = start; e < stop; e++) {
-      auto cO = output + tadOffsets[e];
-      auto idx2 = static_cast<sd::LongType>(indices[e]);
-
-      if (idx2 < 0 || idx2 >= tLen) {
-        // Fill with zeros using cached shape data
-        PRAGMA_OMP_SIMD
-        for (sd::LongType t2 = 0; t2 < tLen; t2++) {
-          INDEX2COORDS(t2, tadRank, tadShape, coords);
-          LongType offset;
-          COORDS2INDEX(tadRank, tadStride, coords, offset);
-          cO[offset] = zero;
+            // Check if the depth matches the index
+            const LongType idx = static_cast<LongType>(xBuffer[xOffset]);
+            zBuffer[zOffset] = (depthCoord == idx) ? onVal : offVal;
         }
-      } else {
-        // One-hot encode using cached shape data
-        PRAGMA_OMP_SIMD
-        for (sd::LongType t2 = 0; t2 < tLen; t2++) {
-          INDEX2COORDS(t2, tadRank, tadShape, coords);
-          LongType offset;
-          COORDS2INDEX(tadRank, tadStride, coords, offset);
-          cO[offset] = idx2 == t2 ? one : zero;
-        }
-      }
-    }
-  };
+    };
 
-  samediff::Threads::parallel_tad(func, 0, numTads);
+    samediff::Threads::parallel_for(func, 0, zLen);
 }
-void onehot(const sd::LaunchContext* context, NDArray* indices, NDArray* output, const sd::LongType axis,
-            const sd::LongType depth, const double on, const double off) {
-  auto zType = output->dataType();
-  auto iType = indices->dataType();
 
-  BUILD_DOUBLE_SELECTOR(zType, iType, helpers::onehot_,
-                        (output->buffer(), output->shapeInfo(), indices->buffer(), indices->shapeInfo(), axis, on, off),
-                        SD_COMMON_TYPES, SD_COMMON_TYPES);
+void onehot(const LaunchContext* context, NDArray* indices, NDArray* output,
+            const LongType axis, const LongType depth, const double on, const double off) {
+    const auto xType = indices->dataType();
+    const auto zType = output->dataType();
+
+    NDArray::prepareSpecialUse({output}, {indices});
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, onehotImpl_, (indices, output, axis, depth, on, off),
+                          SD_COMMON_TYPES, SD_COMMON_TYPES);
+
+    NDArray::registerSpecialUse({output}, {indices});
+}
+
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
-}
-#endif

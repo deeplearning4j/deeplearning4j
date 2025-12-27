@@ -47,10 +47,6 @@ CUSTOM_OP_IMPL(matmul, 2, 1, false, 0, -2) {
   double alpha = iSize > 0 ? T_ARG(0) : 1.0;
   double beta = iSize > 1 ? T_ARG(1) : 0.0;
 
-  const int xRank = x->rankOf();
-  const int yRank = y->rankOf();
-  const int zRank = z->rankOf();
-
   if (transZ) {
     x = INPUT_VARIABLE(1);
     y = INPUT_VARIABLE(0);
@@ -58,6 +54,11 @@ CUSTOM_OP_IMPL(matmul, 2, 1, false, 0, -2) {
     transX = !transY;
     transY = !temp;
   }
+
+  // Compute ranks AFTER potential transZ swap
+  const int xRank = x->rankOf();
+  const int yRank = y->rankOf();
+  const int zRank = z->rankOf();
 
   const int xLastDim = transX ? -2 : -1;
   const int yLastDim = transY ? -2 : -1;
@@ -70,32 +71,83 @@ CUSTOM_OP_IMPL(matmul, 2, 1, false, 0, -2) {
                "= %i, y rank = %i !",
                xRank, yRank);
 
-  if (xRank == 1 && yRank == 1) {  // dot case, output is scalar (or vector with length = 1)
+  // Handle rank mismatch when one input has singleton leading dimensions
+  // This supports ONNX Gemm patterns like [1,1,1,768] x [768,768] -> [1,1,1,768]
+  NDArray* xReshaped = nullptr;
+  NDArray* yReshaped = nullptr;
+  NDArray* zReshaped = nullptr;
+
+  if (xRank != yRank && xRank > 2 && yRank == 2) {
+    // Check if x has all singleton leading dims
+    bool allLeadingSingleton = true;
+    for (int i = 0; i < xRank - 2; ++i) {
+      if (x->sizeAt(i) != 1) {
+        allLeadingSingleton = false;
+        break;
+      }
+    }
+    if (allLeadingSingleton) {
+      // Reshape x from [1,1,...,M,K] to [M,K] for matmul
+      std::vector<LongType> newXShape = {x->sizeAt(-2), x->sizeAt(-1)};
+      xReshaped = new NDArray(x->reshape(x->ordering(), newXShape));
+      // Reshape z from [1,1,...,M,N] to [M,N]
+      std::vector<LongType> newZShape = {z->sizeAt(-2), z->sizeAt(-1)};
+      zReshaped = new NDArray(z->reshape(z->ordering(), newZShape));
+      x = xReshaped;
+      z = zReshaped;
+    }
+  } else if (xRank != yRank && yRank > 2 && xRank == 2) {
+    // Check if y has all singleton leading dims
+    bool allLeadingSingleton = true;
+    for (int i = 0; i < yRank - 2; ++i) {
+      if (y->sizeAt(i) != 1) {
+        allLeadingSingleton = false;
+        break;
+      }
+    }
+    if (allLeadingSingleton) {
+      // Reshape y from [1,1,...,K,N] to [K,N] for matmul
+      std::vector<LongType> newYShape = {y->sizeAt(-2), y->sizeAt(-1)};
+      yReshaped = new NDArray(y->reshape(y->ordering(), newYShape));
+      // Reshape z from [1,1,...,M,N] to [M,N]
+      std::vector<LongType> newZShape = {z->sizeAt(-2), z->sizeAt(-1)};
+      zReshaped = new NDArray(z->reshape(z->ordering(), newZShape));
+      y = yReshaped;
+      z = zReshaped;
+    }
+  }
+
+  // Update ranks after potential reshaping
+  const int xRankFinal = x->rankOf();
+  const int yRankFinal = y->rankOf();
+  const int zRankFinal = z->rankOf();
+
+  if (xRankFinal == 1 && yRankFinal == 1) {  // dot case, output is scalar (or vector with length = 1)
     REQUIRE_TRUE(x->lengthOf() == y->lengthOf(), 0,
                  "MATMUL OP: since input arrays are vectors they must have the same length, but got x length = %i, y "
                  "length = %i !",
                  x->lengthOf(), y->lengthOf());
-  } else if (xRank == 1 && yRank == 2) {  // vector x matrix, i.e. [4] x [4,5] = [5], output is vector
+  } else if (xRankFinal == 1 && yRankFinal == 2) {  // vector x matrix, i.e. [4] x [4,5] = [5], output is vector
     REQUIRE_TRUE(x->lengthOf() == y->sizeAt(yLastButOneDim), 0,
                  "MATMUL OP: input arrays have inconsistent shapes for vector-matrix product: x %s, y %s !",
                  ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str());
-  } else if (xRank == 2 && yRank == 1) {  // matrix x vector , i.e. [4,5] x [5] = [4], output is vector
+  } else if (xRankFinal == 2 && yRankFinal == 1) {  // matrix x vector , i.e. [4,5] x [5] = [4], output is vector
     REQUIRE_TRUE(x->sizeAt(xLastDim) == y->lengthOf(), 0,
                  "MATMUL OP: input arrays have inconsistent shapes for matrix-vector product: x %s, y %s !",
                  ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str());
   } else {
-    REQUIRE_TRUE(xRank == yRank && yRank == zRank, 0,
+    REQUIRE_TRUE(xRankFinal == yRankFinal && yRankFinal == zRankFinal, 0,
                  "MATMUL OP: input and output arrays must have the same rank, but got instead: x rank = %i, y rank = "
                  "%i, z rank = %i !",
-                 xRank, yRank, zRank);
+                 xRankFinal, yRankFinal, zRankFinal);
     REQUIRE_TRUE(x->sizeAt(xLastDim) == y->sizeAt(yLastButOneDim) && x->sizeAt(xLastButOneDim) == z->sizeAt(-2) &&
                  y->sizeAt(yLastDim) == z->sizeAt(-1),
                  0, "MATMUL OP: input/output arrays have inconsistent shapes for matrix product: x %s, y %s, z %s !",
                  ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str(),
                  ShapeUtils::shapeAsString(z).c_str());
 
-    if (xRank > 2)  // outer dims must be the same
-      for (int i = 0; i < xRank - 2; ++i)
+    if (xRankFinal > 2)  // outer dims must be the same
+      for (int i = 0; i < xRankFinal - 2; ++i)
     REQUIRE_TRUE(x->sizeAt(i) == y->sizeAt(i) && y->sizeAt(i) == z->sizeAt(i), 0,
                  "MATMUL OP: input/output arrays have inconsistent shapes for matrix product: x %s, y %s, z %s !",
                  ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str(),
@@ -104,6 +156,11 @@ CUSTOM_OP_IMPL(matmul, 2, 1, false, 0, -2) {
   // ******* end of input validation ******* //
 
   MmulHelper::matmul(x, y, z, transX, transY, alpha, beta, z);
+
+  // Clean up reshaped arrays
+  delete xReshaped;
+  delete yReshaped;
+  delete zReshaped;
 
   return Status::OK;
 }
@@ -196,53 +253,72 @@ CUSTOM_OP_IMPL(matmul_bp, 3, 2, false, 0, -2) {
   if (eps->isScalar()) {
     if (x->isVector() && y->isVector()) {
       if (x->isRowVector() && y->isRowVector()) {
-        NDArray dldxAssign = (*eps) * y->sumNumber();
-        dldx->assign(&dldxAssign);
-        NDArray dldyAssign = (*eps) * x->sumNumber();
-        dldy->assign(&dldyAssign);
+        float ySum = y->sumNumber().e<float>(0);
+        NDArray *dldxTemp = (*eps) * ySum;
+        dldx->assign(dldxTemp);
+        delete dldxTemp;
+
+        float xSum = x->sumNumber().e<float>(0);
+        NDArray *dldyTemp = (*eps) * xSum;
+        dldy->assign(dldyTemp);
+        delete dldyTemp;
       } else if (x->isColumnVector() && y->isColumnVector()) {
-        NDArray dldxAssign = (*eps) * y->sumNumber();
-        dldx->assign(&dldxAssign);
-        NDArray dldyAssign = (*eps) * x->sumNumber();
-        dldy->assign(&dldyAssign);
+        float ySum = y->sumNumber().e<float>(0);
+        NDArray *dldxTemp = (*eps) * ySum;
+        dldx->assign(dldxTemp);
+        delete dldxTemp;
+        float xSum = x->sumNumber().e<float>(0);
+        NDArray *dldyTemp = (*eps) * xSum;
+        dldy->assign(dldyTemp);
+        delete dldyTemp;
       } else {
-        NDArray dldxAssign = (*eps) * (*y);
-        dldx->assign(&dldxAssign);
-        NDArray dldyAssign = (*eps) * (*x);
-        dldy->assign(&dldyAssign);
+        NDArray *dldxTemp = (*eps) * (*y);
+        dldx->assign(dldxTemp);
+        delete dldxTemp;
+        NDArray *dldyTemp = (*eps) * (*x);
+        dldy->assign(dldyTemp);
+        delete dldyTemp;
       }
     } else {
       // assign all ones to shape as baseline
-      auto alphaBetaBase = 1.0;
-      if (alpha > 0.0) {
+      auto alphaBetaBase = 1.0f;
+      if (alpha > 0.0f) {
         alphaBetaBase *= alpha;
       }
 
-      if (beta > 0.0) {
+      if (beta > 0.0f) {
         alphaBetaBase += beta;
       }
 
       dldx->assign(alphaBetaBase);
       dldy->assign(alphaBetaBase);
+      
       // match the dimensions for reduction for matrix multiply: columns on first input, rows on second input
       // the dimensions should match the matching dimensions to compute proper gradients wrt each input
       // core gradient for each is sum(input) * eps as scalar
       std::vector<LongType> axesZero({0});
-      auto xSum = x->reduceAlongDimension(reduce::Sum, &axesZero);
-      xSum *= *eps;
-      std::vector<sd::LongType> xSumShape = {xSum.lengthOf(), 1};
-      // ensure we have proper shape for broadcasted multiplication
-      auto xSumRow = xSum.reshape(xSum.ordering(), xSumShape);
+      NDArray *xSum = x->reduceAlongDimension(reduce::Sum, &axesZero);
+      NDArray *xSumScaled = *xSum * (*eps);
+      std::vector<sd::LongType> xSumShape = {xSumScaled->lengthOf(), 1};
+      NDArray* xSumRow = xSumScaled->reshape(xSumScaled->ordering(), xSumShape);
+      
       std::vector<LongType> axes({1});
-      auto ySum = y->reduceAlongDimension(reduce::Sum, &axes);
-      ySum *= *eps;
-      std::vector<sd::LongType> ySumShape = {1,ySum.lengthOf()};
-      auto ySumRow = ySum.reshape(ySum.ordering(),ySumShape);
+      NDArray *ySum = y->reduceAlongDimension(reduce::Sum, &axes);
+      NDArray *ySumScaled = *ySum * (*eps);
+      std::vector<sd::LongType> ySumShape = {1, ySumScaled->lengthOf()};
+      NDArray* ySumRow = ySumScaled->reshape(ySumScaled->ordering(), ySumShape);
+
       // execute proper multiplication: rows for first input, columns for second
       dldx->mulRowVector(ySumRow, dldx);
       dldy->muliColumnVector(xSumRow);
+
+      // FIXED: Proper cleanup - delete each allocated array once, add missing cleanup
       delete xSumRow;
+      delete xSumScaled;
+      delete xSum;
       delete ySumRow;
+      delete ySumScaled;
+      delete ySum;
     }
 
     return Status::OK;

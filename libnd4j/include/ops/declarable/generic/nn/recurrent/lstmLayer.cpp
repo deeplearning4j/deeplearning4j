@@ -263,38 +263,39 @@ CUSTOM_OP_IMPL(lstmLayer, 3, 1, false, 1, 5) {
     helpers::lstmLayerTimeLoop(x, Wx, Wr, b, seqLen, hI, cI, Wp, params, false, h, hL, cL);
   } else {  // bidirectional
 
-    NDArray WxFwd = (*Wx)({0, 1, 0, 0, 0, 0});
-    NDArray WxBwd = (*Wx)({1, 2, 0, 0, 0, 0});
-    NDArray WrFwd = (*Wr)({0, 1, 0, 0, 0, 0});
-    NDArray WrBwd = (*Wr)({1, 2, 0, 0, 0, 0});
+    NDArray *WxFwd = (*Wx)({0, 1, 0, 0, 0, 0});
+    NDArray *WxBwd = (*Wx)({1, 2, 0, 0, 0, 0});
+    NDArray *WrFwd = (*Wr)({0, 1, 0, 0, 0, 0});
+    NDArray *WrBwd = (*Wr)({1, 2, 0, 0, 0, 0});
+
 
     NDArray *WpFwd(nullptr), *WpBwd(nullptr), *bFwd(nullptr), *bBwd(nullptr), *hIFwd(nullptr), *hIBwd(nullptr),
         *cIFwd(nullptr), *cIBwd(nullptr), *hLFwd(nullptr), *hLBwd(nullptr), *cLFwd(nullptr), *cLBwd(nullptr),
         *hFwd(nullptr), *hBwd(nullptr);
 
     if (Wp) {
-      WpFwd = new NDArray((*Wp)({0, 1, 0, 0}));
-      WpBwd = new NDArray((*Wp)({1, 2, 0, 0}));
+      WpFwd = (*Wp)({0, 1, 0, 0});
+      WpBwd = (*Wp)({1, 2, 0, 0});
     }
     if (b) {
-      bFwd = new NDArray((*b)({0, 1, 0, 0}));
-      bBwd = new NDArray((*b)({1, 2, 0, 0}));
+      bFwd = (*b)({0, 1, 0, 0});
+      bBwd = (*b)({1, 2, 0, 0});
     }
     if (hI) {
-      hIFwd = new NDArray((*hI)({0, 1, 0, 0, 0, 0}));
-      hIBwd = new NDArray((*hI)({1, 2, 0, 0, 0, 0}));
+      hIFwd = (*hI)({0, 1, 0, 0, 0, 0});
+      hIBwd = (*hI)({1, 2, 0, 0, 0, 0});
     }
     if (cI) {
-      cIFwd = new NDArray((*cI)({0, 1, 0, 0, 0, 0}));
-      cIBwd = new NDArray((*cI)({1, 2, 0, 0, 0, 0}));
+      cIFwd =(*cI)({0, 1, 0, 0, 0, 0});
+      cIBwd = (*cI)({1, 2, 0, 0, 0, 0});
     }
     if (hL) {
-      hLFwd = new NDArray((*hL)({0, 1, 0, 0, 0, 0}));
-      hLBwd = new NDArray((*hL)({1, 2, 0, 0, 0, 0}));
+      hLFwd = (*hL)({0, 1, 0, 0, 0, 0});
+      hLBwd = (*hL)({1, 2, 0, 0, 0, 0});
     }
     if (cL) {
-      cLFwd = new NDArray((*cL)({0, 1, 0, 0, 0, 0}));
-      cLBwd = new NDArray((*cL)({1, 2, 0, 0, 0, 0}));
+      cLFwd = (*cL)({0, 1, 0, 0, 0, 0});
+      cLBwd = (*cL)({1, 2, 0, 0, 0, 0});
     }
 
     if (h) {
@@ -302,17 +303,17 @@ CUSTOM_OP_IMPL(lstmLayer, 3, 1, false, 1, 5) {
         hFwd = h;
         hBwd = new NDArray(h, false, h->getContext());
       } else if (directionMode == 3) {  // concat
-        hFwd = new NDArray(dataFormat <= 1 ? (*h)({0, 0, 0, 0, 0, nOut}) : (*h)({0, 0, 0, nOut, 0, 0}));
-        hBwd = new NDArray(dataFormat <= 1 ? (*h)({0, 0, 0, 0, nOut, 2 * nOut}) : (*h)({0, 0, nOut, 2 * nOut, 0, 0}));
+        hFwd = dataFormat <= 1 ? (*h)({0, 0, 0, 0, 0, nOut}) : (*h)({0, 0, 0, nOut, 0, 0});
+        hBwd = dataFormat <= 1 ? (*h)({0, 0, 0, 0, nOut, 2 * nOut}) : (*h)({0, 0, nOut, 2 * nOut, 0, 0});
       } else {  // directionMode == 4
-        hFwd = new NDArray((*h)({0, 0, 0, 1, 0, 0, 0, 0}));
-        hBwd = new NDArray((*h)({0, 0, 1, 2, 0, 0, 0, 0}));
+        hFwd = (*h)({0, 0, 0, 1, 0, 0, 0, 0});
+        hBwd = (*h)({0, 0, 1, 2, 0, 0, 0, 0});
       }
     }
 
     // FIXME - following two calls are independent and may run in different streams
-    helpers::lstmLayerTimeLoop(x, &WxFwd, &WrFwd, bFwd, seqLen, hIFwd, cIFwd, WpFwd, params, true, hFwd, hLFwd, cLFwd);
-    helpers::lstmLayerTimeLoop(x, &WxBwd, &WrBwd, bBwd, seqLen, hIBwd, cIBwd, WpBwd, params, false, hBwd, hLBwd, cLBwd);
+    helpers::lstmLayerTimeLoop(x, WxFwd, WrFwd, bFwd, seqLen, hIFwd, cIFwd, WpFwd, params, true, hFwd, hLFwd, cLFwd);
+    helpers::lstmLayerTimeLoop(x, WxBwd, WrBwd, bBwd, seqLen, hIBwd, cIBwd, WpBwd, params, false, hBwd, hLBwd, cLBwd);
 
     if (h && directionMode == 2) *h += *hBwd;
 
@@ -329,6 +330,10 @@ CUSTOM_OP_IMPL(lstmLayer, 3, 1, false, 1, 5) {
     delete cLFwd;
     delete cLBwd;
     delete hBwd;
+    delete WxFwd;
+    delete WxBwd;
+    delete WrFwd;
+    delete WrBwd;
     if (hFwd != h) delete hFwd;
   }
 
@@ -793,15 +798,17 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
 
   } else {  // bidirectional
 
-    NDArray WxFwd = (*Wx)({0, 1, 0, 0, 0, 0});
-    NDArray WxBwd = (*Wx)({1, 2, 0, 0, 0, 0});
-    NDArray dLdWxFwd = (*dLdWx)({0, 1, 0, 0, 0, 0});
-    NDArray dLdWxBwd = (*dLdWx)({1, 2, 0, 0, 0, 0});
+    NDArray *WxFwd = (*Wx)({0, 1, 0, 0, 0, 0});
+    NDArray *WxBwd = (*Wx)({1, 2, 0, 0, 0, 0});
+    NDArray *dLdWxFwd = (*dLdWx)({0, 1, 0, 0, 0, 0});
+    NDArray *dLdWxBwd = (*dLdWx)({1, 2, 0, 0, 0, 0});
 
-    NDArray WrFwd = (*Wr)({0, 1, 0, 0, 0, 0});
-    NDArray WrBwd = (*Wr)({1, 2, 0, 0, 0, 0});
-    NDArray dLdWrFwd = (*dLdWr)({0, 1, 0, 0, 0, 0});
-    NDArray dLdWrBwd = (*dLdWr)({1, 2, 0, 0, 0, 0});
+    NDArray *WrFwd = (*Wr)({0, 1, 0, 0, 0, 0});
+    NDArray *WrBwd = (*Wr)({1, 2, 0, 0, 0, 0});
+    NDArray *dLdWrFwd = (*dLdWr)({0, 1, 0, 0, 0, 0});
+    NDArray *dLdWrBwd = (*dLdWr)({1, 2, 0, 0, 0, 0});
+
+
 
     NDArray *WpFwd(nullptr), *WpBwd(nullptr), *bFwd(nullptr), *bBwd(nullptr), *hIFwd(nullptr), *hIBwd(nullptr),
         *cIFwd(nullptr), *cIBwd(nullptr), *dLdhFwd(nullptr), *dLdhBwd(nullptr), *dLdhLFwd(nullptr), *dLdhLBwd(nullptr),
@@ -809,36 +816,36 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
         *dLdbBwd(nullptr), *dLdhIFwd(nullptr), *dLdhIBwd(nullptr), *dLdcIFwd(nullptr), *dLdcIBwd(nullptr);
 
     if (Wp) {
-      WpFwd = new NDArray((*Wp)({0, 1, 0, 0}));
-      WpBwd = new NDArray((*Wp)({1, 2, 0, 0}));
-      dLdWpFwd = new NDArray((*dLdWp)({0, 1, 0, 0}));
-      dLdWpBwd = new NDArray((*dLdWp)({1, 2, 0, 0}));
+      WpFwd = (*Wp)({0, 1, 0, 0});
+      WpBwd = (*Wp)({1, 2, 0, 0});
+      dLdWpFwd = (*dLdWp)({0, 1, 0, 0});
+      dLdWpBwd = (*dLdWp)({1, 2, 0, 0});
     }
     if (b) {
-      bFwd = new NDArray((*b)({0, 1, 0, 0}));
-      bBwd = new NDArray((*b)({1, 2, 0, 0}));
-      dLdbFwd = new NDArray((*dLdb)({0, 1, 0, 0}));
-      dLdbBwd = new NDArray((*dLdb)({1, 2, 0, 0}));
+      bFwd = (*b)({0, 1, 0, 0});
+      bBwd = (*b)({1, 2, 0, 0});
+      dLdbFwd = (*dLdb)({0, 1, 0, 0});
+      dLdbBwd = (*dLdb)({1, 2, 0, 0});
     }
     if (hI) {
-      hIFwd = new NDArray((*hI)({0, 1, 0, 0, 0, 0}));
-      hIBwd = new NDArray((*hI)({1, 2, 0, 0, 0, 0}));
-      dLdhIFwd = new NDArray((*dLdhI)({0, 1, 0, 0, 0, 0}));
-      dLdhIBwd = new NDArray((*dLdhI)({1, 2, 0, 0, 0, 0}));
+      hIFwd = (*hI)({0, 1, 0, 0, 0, 0});
+      hIBwd = (*hI)({1, 2, 0, 0, 0, 0});
+      dLdhIFwd = (*dLdhI)({0, 1, 0, 0, 0, 0});
+      dLdhIBwd = (*dLdhI)({1, 2, 0, 0, 0, 0});
     }
     if (cI) {
-      cIFwd = new NDArray((*cI)({0, 1, 0, 0, 0, 0}));
-      cIBwd = new NDArray((*cI)({1, 2, 0, 0, 0, 0}));
-      dLdcIFwd = new NDArray((*dLdcI)({0, 1, 0, 0, 0, 0}));
-      dLdcIBwd = new NDArray((*dLdcI)({1, 2, 0, 0, 0, 0}));
+      cIFwd = (*cI)({0, 1, 0, 0, 0, 0});
+      cIBwd = (*cI)({1, 2, 0, 0, 0, 0});
+      dLdcIFwd = (*dLdcI)({0, 1, 0, 0, 0, 0});
+      dLdcIBwd = (*dLdcI)({1, 2, 0, 0, 0, 0});
     }
     if (dLdhL) {
-      dLdhLFwd = new NDArray((*dLdhL)({0, 1, 0, 0, 0, 0}));
-      dLdhLBwd = new NDArray((*dLdhL)({1, 2, 0, 0, 0, 0}));
+      dLdhLFwd = (*dLdhL)({0, 1, 0, 0, 0, 0});
+      dLdhLBwd = (*dLdhL)({1, 2, 0, 0, 0, 0});
     }
     if (dLdcL) {
-      dLdcLFwd = new NDArray((*dLdcL)({0, 1, 0, 0, 0, 0}));
-      dLdcLBwd = new NDArray((*dLdcL)({1, 2, 0, 0, 0, 0}));
+      dLdcLFwd = (*dLdcL)({0, 1, 0, 0, 0, 0});
+      dLdcLBwd = (*dLdcL)({1, 2, 0, 0, 0, 0});
     }
 
     if (dLdh) {
@@ -846,22 +853,24 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
         dLdhFwd = dLdh;
         dLdhBwd = dLdh;
       } else if (directionMode == 3) {  // concat
-        dLdhFwd = new NDArray(dataFormat <= 1 ? (*dLdh)({0, 0, 0, 0, 0, nOut}) : (*dLdh)({0, 0, 0, nOut, 0, 0}));
-        dLdhBwd = new NDArray(dataFormat <= 1 ? (*dLdh)({0, 0, 0, 0, nOut, 2 * nOut})
-                                              : (*dLdh)({0, 0, nOut, 2 * nOut, 0, 0}));
+        dLdhFwd = dataFormat <= 1 ? (*dLdh)({0, 0, 0, 0, 0, nOut}) : (*dLdh)({0, 0, 0, nOut, 0, 0});
+        dLdhBwd = dataFormat <= 1 ? (*dLdh)({0, 0, 0, 0, nOut, 2 * nOut})
+                                              : (*dLdh)({0, 0, nOut, 2 * nOut, 0, 0});
       } else {  // directionMode == 4
-        dLdhFwd = new NDArray((*dLdh)({0, 0, 0, 1, 0, 0, 0, 0}));
-        dLdhBwd = new NDArray((*dLdh)({0, 0, 1, 2, 0, 0, 0, 0}));
+        dLdhFwd = (*dLdh)({0, 0, 0, 1, 0, 0, 0, 0});
+        dLdhBwd = (*dLdh)({0, 0, 1, 2, 0, 0, 0, 0});
       }
     }
+
+
 
     NDArray *dLdxBwd = dLdx->ulike();
 
     // FIXME - following two calls are independent and may run in different streams
-    helpers::lstmLayerTimeLoopBp(x, &WxFwd, &WrFwd, bFwd, seqLen, hIFwd, cIFwd, WpFwd, dLdhFwd, dLdhLFwd, dLdcLFwd,
-                                 params, true, dLdx, &dLdWxFwd, &dLdWrFwd, dLdbFwd, dLdhIFwd, dLdcIFwd, dLdWpFwd);
-    helpers::lstmLayerTimeLoopBp(x, &WxBwd, &WrBwd, bBwd, seqLen, hIBwd, cIBwd, WpBwd, dLdhBwd, dLdhLBwd, dLdcLBwd,
-                                 params, false, dLdxBwd, &dLdWxBwd, &dLdWrBwd, dLdbBwd, dLdhIBwd, dLdcIBwd, dLdWpBwd);
+    helpers::lstmLayerTimeLoopBp(x, WxFwd, WrFwd, bFwd, seqLen, hIFwd, cIFwd, WpFwd, dLdhFwd, dLdhLFwd, dLdcLFwd,
+                                 params, true, dLdx,dLdWxFwd, dLdWrFwd, dLdbFwd, dLdhIFwd, dLdcIFwd, dLdWpFwd);
+    helpers::lstmLayerTimeLoopBp(x, WxBwd, WrBwd, bBwd, seqLen, hIBwd, cIBwd, WpBwd, dLdhBwd, dLdhLBwd, dLdcLBwd,
+                                 params, false, dLdxBwd, dLdWxBwd, dLdWrBwd, dLdbBwd, dLdhIBwd, dLdcIBwd, dLdWpBwd);
 
     *dLdx += *dLdxBwd;
 
@@ -885,11 +894,25 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
     delete dLdhIBwd;
     delete dLdcIFwd;
     delete dLdcIBwd;
+    delete WxFwd;
+    delete WxBwd;
+    delete dLdWxFwd;
+    delete dLdWxBwd;
 
+    delete dLdWrBwd;
+    delete WrFwd;
+    delete WrBwd;
+    delete dLdWrFwd;
     if (!(dLdh && directionMode == 2)) {
       delete dLdhFwd;
       delete dLdhBwd;
     }
+
+    if(directionMode > 2) {
+      delete dLdhFwd;
+      delete dLdhBwd;
+    }
+
   }
 
   return Status::OK;

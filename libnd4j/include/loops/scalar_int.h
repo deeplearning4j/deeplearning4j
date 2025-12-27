@@ -35,8 +35,6 @@
 #include <ops/ops.h>
 #include <system/op_boilerplate.h>
 
-#include "helpers/logger.h"
-
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>

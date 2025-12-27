@@ -124,16 +124,16 @@ Z SD_HOST ReduceBoolFunction<X, Z>::execScalar(const void *vx, const sd::LongTyp
   return OpType::postProcess(startingValue, length, extraParams);
 }
 
-template <typename X, typename Y>
-Y ReduceBoolFunction<X, Y>::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo,
+template <typename X, typename Z>
+Z ReduceBoolFunction<X, Z>::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo,
                                        void *extraParams) {
   RETURNING_DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams), REDUCE_BOOL_OPS);
 
 
 }
 
-template <typename X, typename Y>
-void ReduceBoolFunction<X, Y>::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo,
+template <typename X, typename Z>
+void ReduceBoolFunction<X, Z>::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo,
                                           void *extraParams, void *z, const sd::LongType *zShapeInfo) {
   DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo), REDUCE_BOOL_OPS);
 
@@ -188,8 +188,8 @@ void SD_HOST ReduceBoolFunction<X, Z>::exec(sd::memory::Workspace *workspace, co
 #endif
 }
 
-template <typename X, typename Y>
-void ReduceBoolFunction<X, Y>::exec(int opNum, sd::memory::Workspace *workspace, const void *vx,
+template <typename X, typename Z>
+void ReduceBoolFunction<X, Z>::exec(int opNum, sd::memory::Workspace *workspace, const void *vx,
                                     const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
                                     const sd::LongType *zShapeInfo, const sd::LongType *dims) {
   DISPATCH_BY_OPNUM_TT(exec, PARAMS(workspace, vx, xShapeInfo, vextraParams, vz, zShapeInfo, dims), REDUCE_BOOL_OPS);

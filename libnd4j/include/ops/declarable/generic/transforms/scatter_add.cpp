@@ -56,20 +56,26 @@ OP_IMPL(scatter_add, 3, 1, true) {
         REQUIRE_TRUE(indices->isSameShape(updates), 0, "SCATTER_ADD OP: when input array has rank = 1 then indices and updates must have the same shapes, but got %s and %s correspondingly !", ShapeUtils::shapeAsString(indices).c_str(), ShapeUtils::shapeAsString(updates).c_str());
     }
     else if (inRank == updRank && indices->isVector()) {
-        std::vector<LongType> updShape = updates->getShapeAsVector();
-        std::vector<LongType> inShape  = input->getShapeAsVector();
+        auto* updShapeVec = updates->getShapeAsVector();
+        auto* inShapeVec  = input->getShapeAsVector();
         std::vector<LongType> expectedUpdShape = {indices->lengthOf()};
-        expectedUpdShape.insert(expectedUpdShape.end(), inShape.begin()+1, inShape.end());
+        expectedUpdShape.insert(expectedUpdShape.end(), inShapeVec->begin()+1, inShapeVec->end());
+        delete updShapeVec;
+        delete inShapeVec;
 
     }
     else {
 
         REQUIRE_TRUE(updRank == indRank + inRank - 1, 0, "SCATTER_ADD OP: wrong rank of updates array, expected is %i, but got %i instead !", indRank + inRank - 1 , updRank);
 
-        std::vector<LongType> updShape = updates->getShapeAsVector();
-        std::vector<LongType> inShape  = input->getShapeAsVector();
-        std::vector<LongType> expectedUpdShape = indices->getShapeAsVector();
-        expectedUpdShape.insert(expectedUpdShape.end(), inShape.begin() + LongType(1L), inShape.end());
+        auto* updShapeVec = updates->getShapeAsVector();
+        auto* inShapeVec  = input->getShapeAsVector();
+        auto* indShapeVec = indices->getShapeAsVector();
+        std::vector<LongType> expectedUpdShape = *indShapeVec;
+        expectedUpdShape.insert(expectedUpdShape.end(), inShapeVec->begin() + LongType(1L), inShapeVec->end());
+        delete updShapeVec;
+        delete inShapeVec;
+        delete indShapeVec;
 
     }
 

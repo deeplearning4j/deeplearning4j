@@ -79,7 +79,7 @@ DECLARE_SHAPE_FN(broadcast_to) {
   if(shape->isScalar()) {
     std::vector<LongType> outShape;
     outShape.reserve(1);
-    auto firstVal = shape->cast(INT64).e<LongType>(0);
+    auto firstVal = shape->cast(INT64)->e<LongType>(0);
     outShape[0] = firstVal;
     ShapeDescriptor shapeDescriptor(ArrayOptions::dataType(inputShapeInfo), shape::order(inputShapeInfo), {firstVal});
 

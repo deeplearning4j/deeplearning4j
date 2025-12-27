@@ -113,7 +113,7 @@ LongType checkIndices(LaunchContext *context, NDArray&indices, NDArray&output, c
       (scatterDimsIndices.y, scatterDimsIndices.x, scatterDimsIndices.z, context->getCudaStream(),
        indices.specialBuffer(), indices.specialShapeInfo(),
        reinterpret_cast<sd::LongType *>(numOfBadIndx.specialBuffer()), output.specialShapeInfo(), axis),
-      SD_INDEXING_TYPES);
+      SD_INTEGER_TYPES);
   NDArray::registerSpecialUse({&numOfBadIndx}, {&indices});
 
   manager.synchronize();

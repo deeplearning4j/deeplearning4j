@@ -73,10 +73,16 @@ CONFIGURABLE_OP_IMPL(log_softmax_bp, 3, 1, true, 0, 0) {
 
   std::vector<sd::LongType> dimVec;
   dimVec.push_back(dim);
-  auto sumGradOj = gradO->reduceAlongDimension(reduce::Sum,&dimVec, true);
-  //we stored softmax inside gradI
-  NDArray assign = *gradO - *gradI * sumGradOj;
-  gradI->assign(&assign);
+  auto* sumGradOj = gradO->reduceAlongDimension(reduce::Sum, &dimVec, true);
+  
+  // Break down: *gradO - *gradI * sumGradOj
+  auto* product = (*gradI) * (*sumGradOj);
+  auto* assign = (*gradO) - (*product);
+  delete product;
+  delete sumGradOj;
+  
+  gradI->assign(assign);
+  delete assign;
 
   return sd::Status::OK;
 }

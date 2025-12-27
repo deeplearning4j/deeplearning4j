@@ -73,11 +73,12 @@ CUSTOM_OP_IMPL(create_view, -2, -1, true, 0, -2) {
 
   auto numIndices = block.width() - 1;
 
+  auto all = NDIndexUtils::createAll();
   // Padding remaining dimensions with all() index if too few indices provided
   if (numIndices - numNewAxis < static_cast<size_t>(inputBase->rankOf())) {
     for (int e = numIndices; e < inputBase->rankOf() + numNewAxis; e++) {
       indexTypes.push_back(ALL_TYPE);
-      indexVectors.push_back(NDIndexUtils::createAll().asVectorT<LongType>());
+      indexVectors.push_back(all->asVectorT<LongType>());
     }
   }
 
@@ -147,6 +148,8 @@ CUSTOM_OP_IMPL(create_view, -2, -1, true, 0, -2) {
       outIdx++;
     }
   }
+
+  delete all;
 
 
   auto outputLength = shape::prodLong(outputShape.data(),outRank);
