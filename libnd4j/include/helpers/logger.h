@@ -118,12 +118,19 @@ SD_INLINE void _printHostBuffer(void* bufferVoid, sd::DataType dataType, sd::Lon
  * @param dataType   The data type of the elements in the buffer.
  * @param length     The total number of elements in the buffer.
  * @param offset     The starting index from which to begin printing.
+ *
+ * NOTE: This function uses BUILD_SINGLE_SELECTOR with SD_COMMON_TYPES, so it cannot
+ * be compiled in files that use selective rendering with limited type sets.
+ * Files using selective rendering should not include logger.h or should provide their
+ * own printBuffer implementation.
  */
+#ifndef SD_SELECTIVE_RENDERING_H
 SD_INLINE void printBuffer(void* buffer, sd::DataType dataType, sd::LongType length, sd::LongType offset) {
   // Invoke the BUILD_SINGLE_SELECTOR macro to instantiate and call _printHostBuffer with the appropriate type
   //T* buffer, sd::DataType dataType, sd::LongType length, sd::LongType offset
-  BUILD_SINGLE_SELECTOR(dataType, _printHostBuffer,(buffer,dataType,length,offset),SD_COMMON_TYPES_ALL);
+  BUILD_SINGLE_SELECTOR(dataType, _printHostBuffer,(buffer,dataType,length,offset),SD_COMMON_TYPES);
 }
+#endif
 
 namespace sd {
 class SD_LIB_EXPORT Logger {
