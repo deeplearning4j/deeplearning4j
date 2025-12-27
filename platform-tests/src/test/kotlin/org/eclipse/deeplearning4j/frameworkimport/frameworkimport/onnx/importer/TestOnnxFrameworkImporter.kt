@@ -24,62 +24,7 @@ import java.util.*
 
 @Tag(TagNames.ONNX)
 class TestOnnxFrameworkImporter {
-    @Test
-    fun testOther2() {
-        Nd4j.getEnvironment().isFuncTracePrintJavaOnly = true
-        val importer = OnnxFrameworkImporter()
-        val filePath = "/home/agibsonccc/Documents/GitHub/deeplearning4j/bge-base-en-v1.5-optimized.onnx";
-        val runner = OnnxRuntimeRunner(filePath)
-        val imported = importer.runImport(filePath);
-
-        // DEBUG: Print variable counts after import
-        println("=== DEBUG: After ONNX Import ===")
-        println("Total variables: ${imported.variables().size}")
-        println("Constants: ${imported.variables().filter { it.isConstant }.size}")
-        println("Placeholders: ${imported.variables().filter { it.isPlaceHolder }.size}")
-        println("Variables with arrays: ${imported.variables().filter { it.arr != null }.size}")
-        println("Variable names (first 20): ${imported.variables().take(20).map { it.name() }}")
-
-        // Check internal variables map
-        println("Internal variables map size: ${imported.getVariables().size}")
-        println("Ops count: ${imported.ops.size}")
-
-        val arr = Nd4j.readBinary(File("inputs.bin"))
-        val inputPlaceHolder = mutableMapOf<String, INDArray>()
-        inputPlaceHolder["input_ids"] = arr
-        val initMatmUl = runner.getConstantOrInitializer("onnx::MatMul_1509")
-        val runnerOutput = runner.exec(
-            inputPlaceHolder, listOf(
-                "/encoder/layer.0/attention/self/Reshape_3_output_0",
-                "1492"
-            )
-        )
-        val output = imported.output(inputPlaceHolder, "1492")
-        val dryRun = imported.dryRunExecutionDAG("1492")
-
-        // DEBUG: Print counts before save
-        println("=== DEBUG: Before Save ===")
-        println("Total variables: ${imported.variables().size}")
-        println("Constants: ${imported.variables().filter { it.isConstant }.size}")
-        println("Variables with arrays: ${imported.variables().filter { it.arr != null }.size}")
-
-        val finalFile = File("bge-base-en-v1.5.sdz")
-        SDZSerializer.save(imported, finalFile, true, Collections.emptyMap())
-
-        println("=== DEBUG: After Save, Before Load ===")
-        println("SDZ file size: ${finalFile.length()} bytes")
-
-        val sd = SDZSerializer.load(finalFile, true)
-
-        println("=== DEBUG: After Load ===")
-        println("Loaded variables: ${sd.variables().size}")
-        println("Loaded constants: ${sd.variables().filter { it.isConstant }.size}")
-        println("Loaded variables with arrays: ${sd.variables().filter { it.arr != null }.size}")
-
-        println(sd.summary())
-        println()
-    }
-
+   
     @Test
     fun testOther() {
         Nd4j.getRandom().setSeed(12345)
