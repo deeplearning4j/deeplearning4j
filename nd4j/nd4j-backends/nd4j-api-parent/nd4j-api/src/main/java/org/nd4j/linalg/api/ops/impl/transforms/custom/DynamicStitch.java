@@ -108,10 +108,8 @@ public class DynamicStitch extends DynamicCustomOp {
 
     @Override
     public Map<String, Object> propertiesForFunction() {
-        Map<String,Object> base =  super.propertiesForFunction();
-        base.put("numPartitions",numPartitions);
-        base.put("indices",indices);
-        return base;
+        throw new RuntimeException();
+
     }
 
     @Override

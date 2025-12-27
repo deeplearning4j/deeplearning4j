@@ -725,10 +725,14 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         List<INDArray> inArgs = inputsFromOp(op,oc);
         List<INDArray> outArgs = outputsFromOp(op,oc);
         logCustomOpArrayEventIfNeccessary(inArgs, outArgs,NDArrayEventType.OP_INPUT , NDArrayEventType.OP_OUTPUT);
+        // CRITICAL: Check for BOTH Inf and NaN when both are enabled
+        // Previously used "else if" which meant Inf check was skipped when NaN check was enabled
+        // This allowed Inf values to silently propagate until they caused NaN
+        if(profilerConfig.isCheckForINF()) {
+            OpExecutionerUtil.checkForInf(op,oc);
+        }
         if(profilerConfig.isCheckForNAN()) {
             OpExecutionerUtil.checkForNaN(op,oc);
-        } else if(profilerConfig.isCheckForINF()) {
-            OpExecutionerUtil.checkForInf(op,oc);
         }
     }
 

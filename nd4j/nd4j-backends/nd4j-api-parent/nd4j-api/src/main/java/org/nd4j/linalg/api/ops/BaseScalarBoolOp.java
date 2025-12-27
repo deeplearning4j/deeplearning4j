@@ -36,20 +36,42 @@ import java.util.List;
 
 @Slf4j
 public abstract class BaseScalarBoolOp extends BaseOp implements ScalarOp {
+
+    /**
+     * Helper method to safely close existing scalarValue before creating a new one.
+     * This prevents DataBuffer memory leaks.
+     */
+    protected void closeScalarValue() {
+        if (this.scalarValue != null) {
+            try {
+                if (this.scalarValue.data() != null) {
+                    this.scalarValue.data().close();
+                }
+                this.scalarValue.close();
+            } catch (Exception e) {
+                // Ignore close errors
+            }
+            this.scalarValue = null;
+        }
+    }
+
     public BaseScalarBoolOp() {}
 
     public BaseScalarBoolOp(INDArray x, INDArray y, INDArray z, Number num) {
         super(x, y, z);
+        closeScalarValue();
         this.scalarValue = Nd4j.scalar(x.dataType(), num);
     }
 
     public BaseScalarBoolOp(INDArray x, Number num) {
         super(x);
+        closeScalarValue();
         this.scalarValue = Nd4j.scalar(x.dataType(), num);
     }
 
     public BaseScalarBoolOp(INDArray x, INDArray z, Number set) {
         super(x, null, z);
+        closeScalarValue();
         this.scalarValue= Nd4j.scalar(x.dataType(), set);
     }
 
@@ -70,6 +92,7 @@ public abstract class BaseScalarBoolOp extends BaseOp implements ScalarOp {
                             boolean inPlace,
                             Object[] extraArgs) {
         super(sameDiff,inPlace,extraArgs);
+        closeScalarValue();
         this.scalarValue = Nd4j.scalar(i_v.dataType(), scalar);
         if (i_v != null) {
             this.xVertexId = i_v.name();
@@ -120,11 +143,13 @@ public abstract class BaseScalarBoolOp extends BaseOp implements ScalarOp {
 
     @Override
     public void setScalar(Number scalar) {
+        closeScalarValue();
         this.scalarValue = Nd4j.scalar(scalar);
     }
 
     @Override
     public void setScalar(INDArray scalar){
+        closeScalarValue();
         this.scalarValue = scalar;
     }
 
