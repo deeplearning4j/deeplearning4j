@@ -260,6 +260,37 @@ public interface NativeOps {
  int ompGetMaxThreads();
  int ompGetNumThreads();
  void setOmpNumThreads(int threads);
+ /**
+  * Sets the number of threads used by OpenBLAS for BLAS operations.
+  * This is separate from OMP threads and specifically controls OpenBLAS's internal threading.
+  * Default should be 1 to prevent TLS corruption crashes in multi-threaded Java applications.
+  * @param threads number of threads for OpenBLAS to use
+  */
+ void setOpenBlasThreads(int threads);
+
+ /**
+  * Gets the number of threads OpenBLAS is configured to use.
+  * @return number of threads, 0 if using default
+  */
+ int getOpenBlasThreads();
+
+ /**
+  * Check if BLAS call serialization is enabled.
+  * When enabled, external BLAS calls are serialized to prevent OpenBLAS
+  * TLS corruption and race conditions in multi-threaded environments.
+  * @return true if serialization is enabled
+  */
+ boolean isSerializeBlasCalls();
+
+ /**
+  * Enable or disable BLAS call serialization.
+  * When enabled, external BLAS calls are serialized to prevent OpenBLAS
+  * TLS corruption and race conditions in multi-threaded environments.
+  * Disable only if using a thread-safe BLAS implementation (e.g., MKL).
+  * @param serialize true to enable serialization, false to disable
+  */
+ void setSerializeBlasCalls(boolean serialize);
+
  void enableVerboseMode(boolean reallyEnable);
  int getDeviceMajor(int device);
  int getDeviceMinor(int device);
@@ -957,6 +988,19 @@ public interface NativeOps {
   * </p>
   */
  void clearAllocationContext();
+
+
+ void recordJavaNDArrayAllocation(OpaqueNDArray array, long size, int dataType, boolean isView);
+
+ void recordJavaNDArrayDeallocation(OpaqueNDArray array);
+
+ void recordJavaDataBufferAllocation(OpaqueDataBuffer buffer, long size, int dataType, boolean isWorkspace);
+
+ void recordJavaDataBufferDeallocation(OpaqueDataBuffer buffer);
+
+ void recordJavaOpContextAllocation(OpaqueContext context, int nodeId, long fastpathInSize, long fastpathOutSize, long intermediateResultsSize, long handlesSize, boolean hasWorkspace, boolean isFastPath);
+
+ void recordJavaOpContextDeallocation(OpaqueContext context);
 
  /**
   * Update the Java stack trace for an existing NDArray allocation record.

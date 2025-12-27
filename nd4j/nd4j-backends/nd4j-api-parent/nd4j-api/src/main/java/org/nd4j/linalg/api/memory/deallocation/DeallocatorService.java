@@ -363,17 +363,15 @@ public class DeallocatorService {
                         // invoking deallocator
                         if (reference != null) {
                             if(!listeners.isEmpty()) {
+                                // Has listeners, delegate to them for custom deallocation timing
+                                for(CustomDeallocatorListener listener : listeners)
+                                    listener.addForDeallocation(reference);
+                            } else {
+                                // No listeners, deallocate directly
                                 reference.deallocate();
                                 if(referenceMap.containsKey(reference.getId()))
                                     referenceMap.remove(reference.getId());
                             }
-
-                            else {
-                                for(CustomDeallocatorListener listener : listeners)
-                                    listener.addForDeallocation(reference);
-                            }
-
-
                         }
                     }
                 } else {
@@ -383,15 +381,14 @@ public class DeallocatorService {
                             continue;
 
                         if(!listeners.isEmpty()) {
+                            // Has listeners, delegate to them for custom deallocation timing
+                            for(CustomDeallocatorListener listener : listeners)
+                                listener.addForDeallocation(reference);
+                        } else {
+                            // No listeners, deallocate directly
                             reference.deallocate();
                             if(referenceMap.containsKey(reference.getId()))
                                 referenceMap.remove(reference.getId());
-
-                        }
-
-                        else {
-                            for(CustomDeallocatorListener listener : listeners)
-                                listener.addForDeallocation(reference);
                         }
 
                     } catch (InterruptedException e) {

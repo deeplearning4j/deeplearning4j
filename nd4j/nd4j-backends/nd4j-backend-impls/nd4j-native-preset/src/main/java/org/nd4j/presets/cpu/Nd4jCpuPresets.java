@@ -35,6 +35,8 @@ import static org.nd4j.presets.OpExclusionUtils.getSkipClasses;
 @Properties(inherit = openblas.class, target = "org.nd4j.linalg.cpu.nativecpu.bindings.Nd4jCpu", helper = "org.nd4j.presets.cpu.Nd4jCpuHelper",
         value = {@Platform(define = {"SD_ALL_OPS"}, include = {
                 //note, order matters here
+                //config.h MUST come first to define type availability macros (SD_SELECTIVE_TYPES, HAS_*)
+                "config.h",
                 //this particular header file is either
                 //going to be the source of ops, see also:
                 //https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/blas/CMakeLists.txt#L76
@@ -122,6 +124,7 @@ import static org.nd4j.presets.OpExclusionUtils.getSkipClasses;
                 "array/ShapeDescriptor.h",
                 "array/TadDescriptor.h",
                 "helpers/DebugInfo.h",
+
                 //note: this is for the generated operations
                 //libnd4j should be built with an include/generated/include_ops.h
                 //before initiating a build, generally this will just default to
@@ -151,15 +154,19 @@ import static org.nd4j.presets.OpExclusionUtils.getSkipClasses;
                         "lapack.h",
                         "lapacke.h",
                         "lapacke_utils.h",
-                        "cnpy/cnpy.h"
+                        "cnpy/cnpy.h",
+
                 },
-                compiler = {"cpp11", "nowarnings"},
+                compiler = {"cpp17", "nowarnings"},
                 library = "jnind4jcpu", link = "nd4jcpu", preload = "libnd4jcpu"),
                 @Platform(value = "linux", preload = "gomp@.1", preloadpath = {"/lib64/", "/lib/", "/usr/lib64/", "/usr/lib/"}),
                 @Platform(value = "linux-armhf",preload = "gomp@.1", preloadpath = {"/usr/arm-linux-gnueabihf/lib/", "/usr/lib/arm-linux-gnueabihf/"}),
                 @Platform(value = "linux-arm64",preload = "gomp@.1", preloadpath = {"/usr/aarch64-linux-gnu/lib/", "/usr/lib/aarch64-linux-gnu/"}),
                 @Platform(value = "linux-ppc64", preloadpath = {"/usr/powerpc64-linux-gnu/lib/", "/usr/powerpc64le-linux-gnu/lib/", "/usr/lib/powerpc64-linux-gnu/", "/usr/lib/powerpc64le-linux-gnu/"}),
                 @Platform(value = "windows", preload = {"libwinpthread-1", "libgcc_s_seh-1", "libgomp-1", "libstdc++-6", "libnd4jcpu"}),
+                @Platform(value = "android-arm64",
+                        preload = { "libnd4jcpu"}),
+
                 @Platform(extension = {"-onednn", "-onednn-avx512","-onednn-avx2", "-","-avx2","-avx512", "-compat"})
         })
 public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
@@ -173,19 +180,36 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
         this.logger = logger;
         this.properties = properties;
         this.encoding = encoding;
+
+        // Only apply sanitizer configuration during build/link phase, not parser phase
+        // During parser phase, config.h doesn't exist yet, so skip sanitizer setup
+        String builderName = properties.getProperty("platform.builder", "");
+        boolean isBuilderPhase = builderName != null && !builderName.isEmpty();
+
+        // Check if sanitizers are enabled
+        // Sanitizer flags are handled by the Maven POM configuration
+        // No manual RPATH manipulation needed - clang's -fsanitize flag handles everything
     }
 
     @Override
     public void map(InfoMap infoMap) {
         //whether to include the SD_GCC_FUNCTRACE definition in the build. Not needed if we're not enabling the profiler.
-        boolean funcTrace = System.getProperty("libnd4j.calltrace","OFF").equalsIgnoreCase("ON");
-        System.out.println("Func trace: " + funcTrace);
+        // Maven properties are passed via System.getProperty during JavaCPP execution
+        String calltraceProperty = System.getProperty("libnd4j.calltrace", "OFF");
+        boolean funcTrace = calltraceProperty.equalsIgnoreCase("ON");
+
+        System.out.println("==============================================");
+        System.out.println("JavaCPP Preset - Functrace Configuration:");
+        System.out.println("  libnd4j.calltrace property: " + calltraceProperty);
+        System.out.println("  SD_GCC_FUNCTRACE will be: " + (funcTrace ? "DEFINED" : "UNDEFINED"));
+        System.out.println("==============================================");
         infoMap.put(new Info("thread_local", "SD_LIB_EXPORT", "SD_INLINE", "CUBLASWINAPI",
-                        "SD_HOST", "SD_DEVICE", "SD_KERNEL", "SD_HOST_DEVICE", "SD_ALL_OPS", "NOT_EXCLUDED").cppTypes().annotations())
+                        "SD_HOST", "SD_DEVICE", "SD_KERNEL", "SD_HOST_DEVICE", "SD_ALL_OPS", "NOT_EXCLUDED", "DEFAULT_ENGINE").cppTypes().annotations())
                 .put(new Info("openblas_config.h", "cblas.h", "lapacke_config.h", "lapacke_mangling.h", "lapack.h", "lapacke.h", "lapacke_utils.h").skip())
                 .put(new Info("NativeOps.h", "build_info.h").objectify())
                 .put(new Info("OpaqueNDArray").pointerTypes("org.nd4j.nativeblas.OpaqueNDArray"))
                 .put(new Info("OpaqueNDArrayArr").pointerTypes("org.nd4j.nativeblas.OpaqueNDArrayArr"))
+               //android arm64
 
                 .put(new Info("createOpaqueNDArray").javaNames("create"))
                 .put(new Info("OpaqueTadPack").pointerTypes("org.nd4j.nativeblas.OpaqueTadPack"))
@@ -211,18 +235,55 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                 .put(new Info("sd::Pointer").cast().valueTypes("Pointer").pointerTypes("PointerPointer"))
                 .put(new Info("sd::LongType").cast().valueTypes("long").pointerTypes("LongPointer", "LongBuffer",
                         "long[]"))
+                .put(new Info("sd::UnsignedLong").cast().valueTypes("long").pointerTypes("LongPointer", "LongBuffer",
+                        "long[]"))
                 .put(new Info("sd::Status").cast().valueTypes("int").pointerTypes("IntPointer", "IntBuffer",
                         "int[]"))
                 .put(new Info("sd::Unsigned").cast()
                         .valueTypes("int").pointerTypes("IntPointer", "IntBuffer", "int[]"))
                 .put(new Info("float16").cast().valueTypes("short").pointerTypes("ShortPointer", "ShortBuffer",
                         "short[]"))
-                .put(new Info("bfloat16").cast().valueTypes("short").pointerTypes("ShortPointer", "ShortBuffer", "short[]"));
+                .put(new Info("bfloat16").cast().valueTypes("short").pointerTypes("ShortPointer", "ShortBuffer", "short[]"))
+
+                // Map types.h typedefs - these are the CANONICAL types used in generated instantiations
+                .put(new Info("SignedChar").cast().valueTypes("byte").pointerTypes("BytePointer", "ByteBuffer", "byte[]"))
+                .put(new Info("UnsignedChar").cast().valueTypes("byte").pointerTypes("BytePointer", "ByteBuffer", "byte[]"))
+                .put(new Info("Int8Type").cast().valueTypes("byte").pointerTypes("BytePointer", "ByteBuffer", "byte[]"))
+                .put(new Info("UInt8Type").cast().valueTypes("byte").pointerTypes("BytePointer", "ByteBuffer", "byte[]"))
+                .put(new Info("Int16Type").cast().valueTypes("short").pointerTypes("ShortPointer", "ShortBuffer", "short[]"))
+                .put(new Info("UInt16Type").cast().valueTypes("short").pointerTypes("ShortPointer", "ShortBuffer", "short[]"))
+                .put(new Info("Int32Type").cast().valueTypes("int").pointerTypes("IntPointer", "IntBuffer", "int[]"))
+                .put(new Info("UInt32Type").cast().valueTypes("int").pointerTypes("IntPointer", "IntBuffer", "int[]"))
+                .put(new Info("UInt64Type").cast().valueTypes("long").pointerTypes("LongPointer", "LongBuffer", "long[]"));
 
         infoMap.put(funcTrace ? new Info("__CUDACC__", "MAX_UINT", "HAVE_ONEDNN", "__CUDABLAS__", "__NEC__").define(false)
                         : new Info("__CUDACC__", "MAX_UINT", "HAVE_ONEDNN", "__CUDABLAS__", "__NEC__","SD_GCC_FUNCTRACE").define(false))
                 .put(funcTrace ?  new Info("__JAVACPP_HACK__", "SD_ALL_OPS","SD_GCC_FUNCTRACE").define(true) :
                         new Info("__JAVACPP_HACK__", "SD_ALL_OPS").define(true))
+                // Skip raw template class definitions from loop headers
+                // JavaCPP should only see explicit instantiations from javacpp_instantiations.h
+                .put(new Info("functions::scalar::ScalarTransform",
+                        "functions::scalar::ScalarBoolTransform",
+                        "functions::scalar::ScalarIntTransform",
+                        "functions::pairwise_transforms::PairWiseTransform",
+                        "functions::pairwise_transforms::PairWiseBoolTransform",
+                        "functions::pairwise_transforms::PairWiseIntTransform",
+                        "functions::broadcast::Broadcast",
+                        "functions::broadcast::BroadcastBool",
+                        "functions::broadcast::BroadcastInt",
+                        "functions::transform::TransformAny",
+                        "functions::transform::TransformBool",
+                        "functions::transform::TransformFloat",
+                        "functions::transform::TransformSame",
+                        "functions::transform::TransformStrict",
+                        "functions::reduce::ReduceFloatFunction",
+                        "functions::reduce::ReduceSameFunction",
+                        "functions::reduce::ReduceBoolFunction",
+                        "functions::reduce::ReduceLongFunction",
+                        "functions::reduce::Reduce3",
+                        "functions::indexreduce::IndexReduce",
+                        "functions::summarystats::SummaryStatsReduce",
+                        "functions::random::RandomFunction").purify())
                 .put(funcTrace ? new Info("std::initializer_list", "cnpy::NpyArray", "sd::NDArray::applyLambda", "sd::NDArray::applyPairwiseLambda",
                         "sd::graph::FlatResult",
                         "sd::graph::FlatVariable", "sd::NDArray::subarray", "std::shared_ptr", "sd::PointerWrapper",

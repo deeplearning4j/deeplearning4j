@@ -2215,6 +2215,18 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     protected void release() {
         this.released.set(true);
+
+        // CRITICAL: Actually deallocate native memory immediately when close() is called
+        // Previously this only removed from tracking but left native memory allocated until GC
+        if (deallocator != null && !deallocator.isConstant()) {
+            try {
+                deallocator.deallocate();
+            } catch (Exception e) {
+                // Log but don't throw - we still want to clean up Java references
+                log.debug("Error during deallocation: {}", e.getMessage());
+            }
+        }
+
         this.indexer = null;
         this.pointer = null;
         this.ptrDataBuffer = null;  // Clear opaque buffer to prevent stale pointer access

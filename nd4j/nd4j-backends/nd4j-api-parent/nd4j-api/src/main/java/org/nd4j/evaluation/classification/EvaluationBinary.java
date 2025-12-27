@@ -30,6 +30,7 @@ import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.IMetric;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.ReduceOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastGreaterThan;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.factory.Nd4j;
@@ -170,9 +171,22 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
     public void eval(INDArray labelsArr, INDArray predictionsArr, INDArray maskArr) {
 
         //Check for NaNs in predictions - without this, evaulation could silently be intepreted as class 0 prediction due to argmax
-        long count = Nd4j.getExecutioner().execAndReturn(new MatchCondition(predictionsArr, Conditions.isNan())).getFinalResult().longValue();
-        Preconditions.checkState(count == 0, "Cannot perform evaluation with NaNs present in predictions:" +
-                " %s NaNs present in predictions INDArray", count);
+        MatchCondition nanCheck = new MatchCondition(predictionsArr, Conditions.isNan());
+        ReduceOp nanResult = null;
+        try {
+            nanResult = Nd4j.getExecutioner().execAndReturn(nanCheck);
+            long count = nanResult.getFinalResult().longValue();
+            Preconditions.checkState(count == 0, "Cannot perform evaluation with NaNs present in predictions:" +
+                    " %s NaNs present in predictions INDArray", count);
+        } finally {
+            // Clean up result array
+            // Clean up MatchCondition operation (closes internal dimensionz array)
+            try {
+                nanCheck.clearArrays();
+            } catch (Exception e) {
+                // Ignore errors
+            }
+        }
 
         if (countTruePositive != null && countTruePositive.length != labelsArr.size(axis)) {
             throw new IllegalStateException("Labels array does not match stored state size. Expected labels array with "

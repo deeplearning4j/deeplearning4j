@@ -21,6 +21,7 @@
 package org.nd4j.linalg.api.shape;
 
 import lombok.*;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
@@ -190,6 +191,8 @@ public class LongShapeDescriptor {
     public boolean isScalar() {
         return !isEmpty() && rank() < 1;
     }
+
+
 
 
     /**
