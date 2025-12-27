@@ -596,6 +596,76 @@
         </profile>
 
         <profile>
+            <id>clang-to-clangxx</id>
+            <activation>
+                <property>
+                    <name>libnd4j.compiler</name>
+                    <value>clang</value>
+                </property>
+            </activation>
+            <properties>
+                <platform.compiler.actual>clang++</platform.compiler.actual>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>use-specified-compiler</id>
+            <properties>
+                <platform.compiler.actual>${libnd4j.compiler}</platform.compiler.actual>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>sanitizer</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>libnd4j.sanitize</name>
+                    <value>ON</value>
+                </property>
+            </activation>
+            <properties>
+                <!-- Sanitizer compile/link flags - dynamically set from libnd4j.sanitizers property -->
+                <platform.sanitizer.flag>-fsanitize=${libnd4j.sanitizers}</platform.sanitizer.flag>
+                <!-- Set compiler to the resolved value (clang -> clang++) -->
+                <javacpp.platform.compiler>${platform.compiler.actual}</javacpp.platform.compiler>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <version>${javacpp.version}</version>
+                        <configuration>
+                            <compilerOptions>
+                                <compilerOption>${compiler.flag.cpp.standard}</compilerOption>
+                                <compilerOption>${platform.sanitizer.flag}</compilerOption>
+                            </compilerOptions>
+                            <propertyKeysAndValues>
+                                <property>
+                                    <name>platform.compiler</name>
+                                    <value>${platform.compiler.actual}</value>
+                                </property>
+                                <property>
+                                    <name>platform.compiler.output</name>
+                                    <value>-Wl,-rpath,$ORIGIN/ -Wl,-z,noexecstack -Wl,-Bsymbolic -Wall -fPIC -pthread ${platform.sanitizer.flag} -shared -o </value>
+                                </property>
+                                <property>
+                                    <name>libnd4j.sanitizers</name>
+                                    <value>${libnd4j.sanitizers}</value>
+                                </property>
+                                <property>
+                                    <name>libnd4j.compiler</name>
+                                    <value>${platform.compiler.actual}</value>
+                                </property>
+                            </propertyKeysAndValues>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
             <id>compat-profile</id>
             <activation>
                 <property>

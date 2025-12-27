@@ -63,11 +63,10 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND SD_X86_BUILD)
     )
 endif()
 
-# Use large memory model (required for your template scale) - FIXED: Only for x86-64, not ARM
+# Memory model is now configured in CompilerFlags.cmake to avoid conflicts
+# (Sanitizer builds use -mcmodel=large, non-sanitizer builds use -mcmodel=medium)
 if(SD_X86_BUILD AND NOT WIN32)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=medium -fPIC")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcmodel=medium")
-    message(STATUS "Applied large memory model for x86-64 architecture")
+    message(STATUS "Memory model configuration deferred to CompilerFlags.cmake")
 else()
     if(SD_ARM_BUILD OR SD_ANDROID_BUILD)
         message(STATUS "Skipping large memory model for ARM/Android architecture (not supported)")

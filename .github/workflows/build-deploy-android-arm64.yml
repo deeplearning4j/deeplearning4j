@@ -44,7 +44,7 @@ on:
       runsOn:
         description: 'System to run on'
         required: false
-        default: 'ubuntu-22.04-arm'
+        default: 'ubuntu-22.04'
 
       debug_enabled:
         description: 'Enable debug session'
@@ -217,7 +217,6 @@ jobs:
         run: |
           export PATH="/opt/protobuf/bin:/opt/cmake/bin:/usr/bin:$PATH"
           export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${OPENBLAS_PATH}"
-          # JAVA_HOME is set by setup-java action or the runner environment
           find /opt -name java
           echo "✅ Using Android NDK at: ${ANDROID_NDK}"
           echo "✅ Cross-compiling from Intel x86_64 to ARM64"

@@ -55,7 +55,7 @@
         <dependency>
             <groupId>org.bytedeco</groupId>
             <artifactId>openblas-platform</artifactId>
-            <version>0.3.26-1.5.10</version>
+            <version>0.3.30-1.5.12</version>
         </dependency>
 
         <dependency>

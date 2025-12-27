@@ -34,11 +34,23 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
     # - More efficient for libraries loaded at runtime
     # - Better handles libraries with many TLS variables
     # This is a DIFFERENT approach from session #310's global-dynamic alone
-    # Supported on x86-64 by both GCC and Clang (requires glibc 2.10+, widely available)
+    # Supported on x86-64 by GCC and Clang 15+ (requires glibc 2.10+, widely available)
+    # Note: -mtls-dialect=gnu2 is NOT supported by Clang < 15
     if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|amd64")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mtls-dialect=gnu2")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mtls-dialect=gnu2")
-        message(STATUS "Applied GNU2 TLS dialect (TLSDESC) for improved dlopen() compatibility")
+        # Check if compiler supports -mtls-dialect=gnu2
+        # GCC supports it, Clang only from version 15+
+        set(_supports_gnu2_tls TRUE)
+        if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+            if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "15.0")
+                set(_supports_gnu2_tls FALSE)
+                message(STATUS "Skipping -mtls-dialect=gnu2 (Clang ${CMAKE_CXX_COMPILER_VERSION} < 15 does not support it)")
+            endif()
+        endif()
+        if(_supports_gnu2_tls)
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mtls-dialect=gnu2")
+            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mtls-dialect=gnu2")
+            message(STATUS "Applied GNU2 TLS dialect (TLSDESC) for improved dlopen() compatibility")
+        endif()
     endif()
 
     message(STATUS "Applied global-dynamic TLS model for dlopen() compatibility (JavaCPP requirement)")
