@@ -616,9 +616,25 @@ OpaqueRandomGenerator getGraphContextRandomGenerator(Context *ptr) { return &ptr
 void markGraphContextInplace(Context *ptr, bool reallyInplace) { ptr->markInplace(reallyInplace); }
 
 
-//note here for javacpp mapping we have to use this odd type alias as a pointer
-//to make the typedef work properly.
-void setGraphContextInputArraysArr(OpaqueContext* ptr, int numArrays,OpaqueNDArrayArr *arr) {
+// NOTE ABOUT SIGNATURE AND JAVACPP MAPPING
+// ----------------------------------------
+// OpaqueNDArrayArr represents `NDArray**` (a pointer to an array of NDArray*).
+//
+// Earlier versions of this function used the signature:
+//   void setGraphContextInputArraysArr(OpaqueContext* ptr, int numArrays, OpaqueNDArrayArr* arr)
+// which treated the argument as `NDArray***`. That required double‑dereferencing
+// (e.g. `(*arr)[i]`) and did not match how JavaCPP passes the native pointer.
+//
+// In the JavaCPP mapping, the Java side already passes an `NDArray**` directly for
+// this parameter. Using `OpaqueNDArrayArr*` added an extra level of indirection,
+// so the native code tried to dereference one level too many, leading to invalid
+// pointers and hard‑to‑debug crashes.
+//
+// The corrected signature below:
+//   void setGraphContextInputArraysArr(OpaqueContext* ptr, int numArrays, OpaqueNDArrayArr arr)
+// matches the JavaCPP mapping exactly: `arr` is already an `NDArray**`, so
+// `arr[i]` yields the i‑th `NDArray*` without any extra dereference.
+void setGraphContextInputArraysArr(OpaqueContext* ptr, int numArrays, OpaqueNDArrayArr arr) {
   if (arr == nullptr)
     THROW_EXCEPTION("setGraphContextInputArraysArr: Input arrays were null!");
   if (ptr == nullptr)
@@ -633,17 +649,7 @@ void setGraphContextInputArraysArr(OpaqueContext* ptr, int numArrays,OpaqueNDArr
       THROW_EXCEPTION(errorMessage.c_str());
     }
 
-    // Dereference the OpaqueNDArrayArr to get the OpaqueNDArray (NDArray*)
-    sd::NDArray* ndarray = *arr[i];
-    if (ndarray == nullptr) {
-      std::string errorMessage;
-      errorMessage += "setGraphContextInputArraysArr: Dereferenced NDArray at index ";
-      errorMessage += std::to_string(i);
-      errorMessage += " was null!";
-      THROW_EXCEPTION(errorMessage.c_str());
-    }
-
-    ptr->setInputArray(i, ndarray, false);
+    ptr->setInputArray(i, arr[i], false);
   }
 }
 
