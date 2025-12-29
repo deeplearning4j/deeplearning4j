@@ -51,7 +51,11 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     @Override
     public void gemm(char Order, char TransA, char TransB, double alpha, INDArray A, INDArray B, double beta,
                     INDArray C) {
-        Nd4j.exec(new Mmul(A, B, C, alpha, beta, MMulTranspose.builder().transposeA(false).transposeB(false).build()));
+        // Convert char transpose flags to boolean
+        // 'T' or 't' means transpose, anything else (typically 'N' or 'n') means no transpose
+        boolean transposeA = (TransA == 'T' || TransA == 't');
+        boolean transposeB = (TransB == 'T' || TransB == 't');
+        Nd4j.exec(new Mmul(A, B, C, alpha, beta, MMulTranspose.builder().transposeA(transposeA).transposeB(transposeB).build()));
         OpExecutionerUtil.checkForAny(C);
     }
 

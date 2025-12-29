@@ -184,6 +184,8 @@ public class TestShapeOpValidation extends BaseOpValidation {
                 SameDiff sd = SameDiff.create();
                 SDVariable in = sd.var("in", inArr);
                 SDVariable permute = sd.permute(in, perm);
+                // Print iArgs immediately after creation
+                System.out.println("  iArgs after creation: " + java.util.Arrays.toString(((Permute) sd.getOps().get(permute.getCreator().getOwnName()).getOp()).iArgs()));
                 //Using stdev here: mean/sum would backprop the same gradient for each input...
                 SDVariable stdev = sd.standardDeviation("out", permute, true);
 
@@ -195,8 +197,29 @@ public class TestShapeOpValidation extends BaseOpValidation {
                         .expected("out", expOut)
                         .expected(permute, exp);
 
+                // Debug: Compare expected vs actual permute output
+                // Check the iArguments in the permute op
+                try {
+                    Permute permuteOp = (Permute) sd.getOps().get(permute.getCreator().getOwnName()).getOp();
+                    System.out.println("  Permute op iArguments: " + Arrays.toString(permuteOp.iArgs()));
+                } catch (Exception e) {
+                    System.out.println("  ERROR getting iArgs: " + e.getMessage());
+                }
+
+                Map<String, INDArray> outputs = sd.output((Map<String, INDArray>)null, permute.name());
+                INDArray actual = outputs.get(permute.name());
+                System.out.println("  Expected shape: " + Arrays.toString(exp.shape()) + ", Actual shape: " + Arrays.toString(actual.shape()));
+                if (!exp.equals(actual)) {
+                    System.out.println("  Shapes match: " + Arrays.equals(exp.shape(), actual.shape()));
+                    System.out.println("  Expected [0,0,0]: " + exp.getDouble(0, 0, 0) + ", Actual [0,0,0]: " + actual.getDouble(0, 0, 0));
+                    if (exp.shape()[1] > 1 && exp.shape()[2] > 0) {
+                        System.out.println("  Expected [0,1,0]: " + exp.getDouble(0, 1, 0) + ", Actual [0,1,0]: " + actual.getDouble(0, 1, 0));
+                    }
+                }
+
                 String error = OpValidation.validate(tc, true);
                 if(error != null){
+                    System.out.println("VALIDATION FAILED: " + error);
                     failed.add(msg);
                 }
             }

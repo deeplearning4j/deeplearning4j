@@ -50,10 +50,15 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
   if (block.width() > 2) {
     intArgs = INPUT_VARIABLE(2)->template asVectorT<sd::LongType>();
   } else {
-    if (numOfIntArgs == 0)
+    if (numOfIntArgs == 0) {
       intArgs.emplace_back(0);
-    else
-      for (sd::LongType i = 0; i < numOfIntArgs; i++) intArgs.emplace_back(block.getIArguments()->at(i));
+    } else {
+      intArgs.reserve(numOfIntArgs);
+      auto iArgs = block.getIArguments();
+      for (sd::LongType i = 0; i < numOfIntArgs; i++) {
+        intArgs.emplace_back(iArgs->at(i));
+      }
+    }
   }
 
   const sd::LongType inputRank = input->rankOf();

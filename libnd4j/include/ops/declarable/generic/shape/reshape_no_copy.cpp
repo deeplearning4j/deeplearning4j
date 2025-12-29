@@ -37,12 +37,12 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
   if (block.width() > 1) {
     auto shapeArg = INPUT_VARIABLE(1);
     auto shapeBuffLong = shapeArg->getBufferAsVector<sd::LongType>();
-    // last is the ordering
-    for (size_t i = 0; i < shapeBuffLong.size() - 1; i++) {
+    // Copy all elements from the shape array - order is passed separately via iArgs
+    for (size_t i = 0; i < shapeBuffLong.size(); i++) {
       newShape.push_back(shapeBuffLong[i]);
     }
 
-    // Handle order when shape is provided as input
+    // Handle order when shape is provided as input - order comes from iArgs, not from shape array
     if (block.numI() > 0) {
       auto orderArg = INT_ARG(0);
       if (orderArg == RESHAPE_NO_COPY_F_ORDER_MARKER) {
@@ -56,8 +56,15 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
     }
   } else {
     std::vector<sd::LongType> *iArgs = block.getIArguments();
-    for (size_t i = 0; i < block.numI() - 1; i++) {
-      newShape.push_back(iArgs->at(i));
+    // Need at least 1 integer argument (the order marker) to proceed
+    if (block.numI() == 0) {
+      THROW_EXCEPTION("reshape_no_copy: No shape arguments provided. Need at least shape dimensions and order marker.");
+    }
+    // All but the last argument are shape dimensions; the last is the order marker
+    if (block.numI() > 1) {
+      for (size_t i = 0; i < block.numI() - 1; i++) {
+        newShape.push_back(iArgs->at(i));
+      }
     }
     order = iArgs->at(iArgs->size() - 1) == RESHAPE_NO_COPY_F_ORDER_MARKER ? 'f' : 'c';
   }

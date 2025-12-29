@@ -66,18 +66,58 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
     // NOTE: Index validation is done in the main gather op when checkIndices=true
     // We skip redundant validation here for performance
 
+    // Pre-fetch all indices to avoid virtual function calls in hot loop
+    const sd::LongType numIndices = indices->lengthOf();
+    std::vector<sd::LongType> indicesVec(numIndices);
+    for (sd::LongType i = 0; i < numIndices; i++) {
+      indicesVec[i] = indices->e<sd::LongType>(i);
+    }
+
     if (is1DFlatGather) {
       // Special case: 1D input with axis=0 - treat as flat array gather
-      // This handles gathering from shape arrays like [1, 512] -> gather index 1 -> get 512
-      auto func = PRAGMA_THREADS_FOR {
-        for (auto i = start; i < stop; i++) {
-          auto idx = indices->e<sd::LongType>(i);
-          auto value = input->e<double>(idx);  // Get value at flat index
-          output->p(i, value);  // Put in output at position i
-        }
-      };
-      samediff::Threads::parallel_for(func, 0, indices->lengthOf());
-      
+      // Use direct buffer access for better performance
+      const auto inputType = input->dataType();
+      const auto outputType = output->dataType();
+
+      // Fast path for common type combinations
+      if (inputType == outputType && inputType == sd::DataType::FLOAT32) {
+        auto inBuff = input->bufferAsT<float>();
+        auto outBuff = output->bufferAsT<float>();
+        auto func = PRAGMA_THREADS_FOR {
+          for (auto i = start; i < stop; i++) {
+            outBuff[i] = inBuff[indicesVec[i]];
+          }
+        };
+        samediff::Threads::parallel_for(func, 0, numIndices);
+      } else if (inputType == outputType && inputType == sd::DataType::DOUBLE) {
+        auto inBuff = input->bufferAsT<double>();
+        auto outBuff = output->bufferAsT<double>();
+        auto func = PRAGMA_THREADS_FOR {
+          for (auto i = start; i < stop; i++) {
+            outBuff[i] = inBuff[indicesVec[i]];
+          }
+        };
+        samediff::Threads::parallel_for(func, 0, numIndices);
+      } else if (inputType == outputType && inputType == sd::DataType::INT64) {
+        auto inBuff = input->bufferAsT<sd::LongType>();
+        auto outBuff = output->bufferAsT<sd::LongType>();
+        auto func = PRAGMA_THREADS_FOR {
+          for (auto i = start; i < stop; i++) {
+            outBuff[i] = inBuff[indicesVec[i]];
+          }
+        };
+        samediff::Threads::parallel_for(func, 0, numIndices);
+      } else {
+        // Fallback for other types
+        auto func = PRAGMA_THREADS_FOR {
+          for (auto i = start; i < stop; i++) {
+            auto value = input->e<double>(indicesVec[i]);
+            output->p(i, value);
+          }
+        };
+        samediff::Threads::parallel_for(func, 0, numIndices);
+      }
+
     } else {
       // Standard gather implementation
       //
@@ -97,15 +137,18 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
       // Output shape = input[0:axis] + indices_shape + input[axis+1:]
       // Output TAD dims should be: dims 0 to axis-1, then dims axis+indicesRank to end
       // This gives TAD shape matching input's TAD shape
+      const sd::LongType indicesRank = indices->rankOf();
+      const sd::LongType outputRank = output->rankOf();
+
       std::vector<sd::LongType> outputTadDims;
-      sd::LongType indicesRank = indices->rankOf();
+      outputTadDims.reserve(outputRank - indicesRank);
 
       // Add dimensions before the indices dimensions (0 to axis-1)
       for (sd::LongType d = 0; d < axis; d++) {
         outputTadDims.push_back(d);
       }
       // Add dimensions after the indices dimensions (axis+indicesRank to outputRank-1)
-      for (sd::LongType d = axis + indicesRank; d < output->rankOf(); d++) {
+      for (sd::LongType d = axis + indicesRank; d < outputRank; d++) {
         outputTadDims.push_back(d);
       }
 
@@ -173,17 +216,22 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
       auto tadLength = shape::length(tadShapeInfo);
       auto bytesToCopy = tadLength * input->sizeOfT();
 
+      // Cache buffer pointers for faster access in loop
+      auto inputBuffer = input->buffer();
+      auto outputBuffer = output->buffer();
+      auto elementSize = input->sizeOfT();
+
       if (canUseMemcpy) {
         // Fast path: use memcpy for contiguous TADs
         auto func = PRAGMA_THREADS_FOR {
           for (auto i = start; i < stop; i++) {
-            auto idx = indices->e<sd::LongType>(i);
+            auto idx = indicesVec[i];
             if (idx >= numInputTads || idx < 0) continue;
 
             auto offsetIn = tadOffsets[idx];
             auto offsetOut = tadOffsetsOut[i];
-            std::memcpy(output->bufferWithOffset(offsetOut),
-                       input->bufferWithOffset(offsetIn),
+            std::memcpy(reinterpret_cast<int8_t*>(outputBuffer) + offsetOut * elementSize,
+                       reinterpret_cast<const int8_t*>(inputBuffer) + offsetIn * elementSize,
                        bytesToCopy);
           }
         };
@@ -192,7 +240,7 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
         // Fallback: use NativeOpExecutioner
         auto func = PRAGMA_THREADS_FOR {
           for (auto i = start; i < stop; i++) {
-            auto idx = indices->e<sd::LongType>(i);
+            auto idx = indicesVec[i];
             if (idx >= numInputTads || idx < 0) continue;
 
             auto offsetIn = tadOffsets[idx];
@@ -210,7 +258,7 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
         samediff::Threads::parallel_tad(func, 0, numGatherOps);
       }
     }
-      
+
   } else {
     // Integer arguments case
     // NOTE: Index validation is done in the main gather op when checkIndices=true

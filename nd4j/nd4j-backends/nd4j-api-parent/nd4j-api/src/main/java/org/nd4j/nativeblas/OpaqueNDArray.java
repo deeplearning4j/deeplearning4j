@@ -292,10 +292,15 @@ public class OpaqueNDArray extends Pointer {
         DataBuffer buffer = array.data();
         DataBuffer shapeInfo = array.shapeInfoDataBuffer();
 
+        // CRITICAL FIX: For reduce operations that produce scalar results, the shape info
+        // may incorrectly have the EMPTY bit set even though the buffer is valid.
+        // Use the actual buffer state rather than isEmpty() which may be stale.
+        boolean bufferIsEmpty = buffer == null || buffer.length() < 1;
+
         return create(
                 shapeInfo.opaqueBuffer(),
-                array.isEmpty() ? null : buffer.opaqueBuffer(),
-                array.isEmpty() ? null : buffer.opaqueBuffer(),
+                bufferIsEmpty ? null : buffer.opaqueBuffer(),
+                bufferIsEmpty ? null : buffer.opaqueBuffer(),
                 array.offset()
         );
     }

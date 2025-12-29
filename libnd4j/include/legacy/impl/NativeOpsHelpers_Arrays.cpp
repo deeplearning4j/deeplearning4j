@@ -170,6 +170,11 @@ OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer *shapeInfo,
     THROW_EXCEPTION("createOpaqueNDArray: Shape info was not empty but buffer was null!");
   }
 
+  // Validate buffer integrity before using - catches use-after-free issues early
+  if(buffer != nullptr && buffer->getDataBuffer() != nullptr) {
+    buffer->getDataBuffer()->validateIntegrity();
+  }
+
   sd::NDArray* ret = new sd::NDArray(
     buffer != nullptr ? buffer->getDataBuffer() : nullptr,
     shapeInfoCast,

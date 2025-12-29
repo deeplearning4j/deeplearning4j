@@ -30,6 +30,7 @@
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/headers/shape.h>
 #include <ops/declarable/helpers/batched_gemm.h>
+#include <system/openmp_pragmas.h>
 
 #include <algorithm>
 #include <iterator>
@@ -526,23 +527,60 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
     // This is more reliable than mmulNxN which has bugs in batch index calculation
 
     // For 3D arrays [batch, M, K] x [batch, K, N] = [batch, M, N]
-    // We iterate over batch dimension and call 2D mmul for each slice
+    // For 4D arrays [b1, b2, M, K] x [b1, b2, K, N] = [b1, b2, M, N] (treat as [b1*b2, M, K])
+    // We iterate over batch dimension(s) and call 2D mmul for each slice
     const int xRankT = xT->rankOf();
     const int yRankT = yT->rankOf();
     const int zRankT = zT->rankOf();
 
-    if (xRankT == 3 && yRankT == 3 && zRankT == 3) {
-      // Simple case: all 3D with matching batch dimension
-      const LongType batchSize = xT->sizeAt(0);
-      const int M = static_cast<int>(xT->sizeAt(1));
-      const int K = static_cast<int>(xT->sizeAt(2));
-      const int N = static_cast<int>(yT->sizeAt(2));
+    // Support both 3D and 4D batched matmul with BLAS
+    if ((xRankT == 3 || xRankT == 4) && xRankT == yRankT && yRankT == zRankT) {
+      // Compute total batch size (product of all batch dimensions)
+      LongType batchSize = 1;
+      for (int i = 0; i < xRankT - 2; ++i) {
+        batchSize *= xT->sizeAt(i);
+      }
+      const int M = static_cast<int>(xT->sizeAt(-2));
+      const int K = static_cast<int>(xT->sizeAt(-1));
+      const int N = static_cast<int>(yT->sizeAt(-1));
 
-      const auto dtype = xT->dataType();
-      const bool hasBatchedFloat = (dtype == DataType::FLOAT32) && BlasHelper::getInstance().hasBatchedGEMM<float>();
-      const bool hasBatchedDouble = (dtype == DataType::DOUBLE) && BlasHelper::getInstance().hasBatchedGEMM<double>();
+      const auto xType = xT->dataType();
+      const auto yType = yT->dataType();
+      const auto zType = zT->dataType();
 
-      if ((hasBatchedFloat || hasBatchedDouble) && Environment::getInstance().isEnableBlas()) {
+      // All arrays must have same type for BLAS
+      const bool sameTypes = (xType == yType) && (yType == zType);
+
+      // Check if 2D matrices within the batch are contiguous (required for BLAS)
+      // For row-major [batch..., M, K], we need stride(-1)=1 and stride(-2)=K
+      const bool xRowMajor = (xT->strideAt(-1) == 1) && (xT->strideAt(-2) == K);
+      const bool yRowMajor = (yT->strideAt(-1) == 1) && (yT->strideAt(-2) == N);
+      const bool zRowMajor = (zT->strideAt(-1) == 1) && (zT->strideAt(-2) == N);
+      const bool allRowMajor = xRowMajor && yRowMajor && zRowMajor;
+
+      const bool hasBatchedFloat = sameTypes && allRowMajor && (xType == DataType::FLOAT32) && BlasHelper::getInstance().hasBatchedGEMM<float>();
+      const bool hasBatchedDouble = sameTypes && allRowMajor && (xType == DataType::DOUBLE) && BlasHelper::getInstance().hasBatchedGEMM<double>();
+
+      // Validate buffers before attempting batched GEMM
+      // After permute+dup, the buffers might be null or invalid
+      const bool validBuffers = (xT->buffer() != nullptr) &&
+                                 (yT->buffer() != nullptr) &&
+                                 (zT->buffer() != nullptr) &&
+                                 (M > 0) && (N > 0) && (K > 0);
+
+      // Also validate that batched GEMM function pointers are actually available
+      // (some OpenBLAS builds don't have cblas_sgemm_batch)
+      bool batchedFuncAvailable = false;
+      if (hasBatchedFloat) {
+        auto func = BlasHelper::getInstance().sgemmBatched();
+        batchedFuncAvailable = (func != nullptr);
+      } else if (hasBatchedDouble) {
+        auto func = BlasHelper::getInstance().dgemmBatched();
+        batchedFuncAvailable = (func != nullptr);
+      }
+
+      if ((hasBatchedFloat || hasBatchedDouble) && Environment::getInstance().isEnableBlas() &&
+          validBuffers && batchedFuncAvailable) {
         // Use batched GEMM - process all batches in single BLAS call
         const int batchCount = static_cast<int>(batchSize);
 
@@ -562,22 +600,32 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
         std::vector<float> alpha_arr_f, beta_arr_f;
         std::vector<double> alpha_arr_d, beta_arr_d;
 
+        // Calculate the stride per matrix (works for both 3D and 4D)
+        // For 3D [batch, M, K]: strideA = M*K, for 4D [b1, b2, M, K]: strideA = M*K
+        const LongType strideA = static_cast<LongType>(M) * K;
+        const LongType strideB = static_cast<LongType>(K) * N;
+        const LongType strideC = static_cast<LongType>(M) * N;
+
+        // Leading dimensions for row-major layout
+        const int ldaVal = K;  // For row-major [M, K], lda = K
+        const int ldbVal = N;  // For row-major [K, N], ldb = N
+        const int ldcVal = N;  // For row-major [M, N], ldc = N
+
         for (int b = 0; b < batchCount; ++b) {
-          // Calculate strides for this batch
-          lda_arr[b] = static_cast<int>(xT->strideAt(1));  // stride along M
-          ldb_arr[b] = static_cast<int>(yT->strideAt(1));  // stride along K
-          ldc_arr[b] = static_cast<int>(zT->strideAt(1));  // stride along M
+          lda_arr[b] = ldaVal;
+          ldb_arr[b] = ldbVal;
+          ldc_arr[b] = ldcVal;
 
           if (hasBatchedFloat) {
-            A_arr_f.push_back(xT->bufferAsT<float>() + b * xT->strideAt(0));
-            B_arr_f.push_back(yT->bufferAsT<float>() + b * yT->strideAt(0));
-            C_arr_f.push_back(zT->bufferAsT<float>() + b * zT->strideAt(0));
+            A_arr_f.push_back(xT->bufferAsT<float>() + b * strideA);
+            B_arr_f.push_back(yT->bufferAsT<float>() + b * strideB);
+            C_arr_f.push_back(zT->bufferAsT<float>() + b * strideC);
             alpha_arr_f.push_back(static_cast<float>(alpha));
             beta_arr_f.push_back(static_cast<float>(beta));
           } else {
-            A_arr_d.push_back(xT->bufferAsT<double>() + b * xT->strideAt(0));
-            B_arr_d.push_back(yT->bufferAsT<double>() + b * yT->strideAt(0));
-            C_arr_d.push_back(zT->bufferAsT<double>() + b * zT->strideAt(0));
+            A_arr_d.push_back(xT->bufferAsT<double>() + b * strideA);
+            B_arr_d.push_back(yT->bufferAsT<double>() + b * strideB);
+            C_arr_d.push_back(zT->bufferAsT<double>() + b * strideC);
             alpha_arr_d.push_back(alpha);
             beta_arr_d.push_back(beta);
           }
@@ -604,24 +652,137 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
               1, &groupSize);
         }
       } else {
-        // Fallback: serial BLAS loop or parallel element-wise
-        const LongType matrixSize = M * K * N;
-        if (matrixSize > 50000) {
-          for (LongType b = 0; b < batchSize; ++b) {
-            auto xSlice = (*xT)(b, {0});
-            auto ySlice = (*yT)(b, {0});
-            auto zSlice = (*zT)(b, {0});
-            mmul(xSlice, ySlice, zSlice, alpha, beta);
-            delete xSlice;
-            delete ySlice;
-            delete zSlice;
+        // No batched BLAS available - use optimized direct computation
+        // For contiguous row-major 3D arrays, compute directly without slicing
+        // Also verify buffers are valid before direct buffer access
+        if (xRankT == 3 && allRowMajor && sameTypes && validBuffers &&
+            (xType == DataType::FLOAT32 || xType == DataType::DOUBLE)) {
+          // Fast path: contiguous 3D batched matmul
+          // Parallelize over batch*M (all output rows) for better load balancing
+          const LongType totalRows = batchSize * M;
+          const LongType strideA = static_cast<LongType>(M) * K;
+          const LongType strideB = static_cast<LongType>(K) * N;
+          const LongType strideC = static_cast<LongType>(M) * N;
+
+          if (xType == DataType::FLOAT32) {
+            float* A = xT->bufferAsT<float>();
+            float* B = yT->bufferAsT<float>();
+            float* C = zT->bufferAsT<float>();
+            const float alphaF = static_cast<float>(alpha);
+            const float betaF = static_cast<float>(beta);
+            const bool betaPresent = (beta != 0.0);
+
+            auto func = PRAGMA_THREADS_FOR {
+              for (auto rowIdx = start; rowIdx < stop; ++rowIdx) {
+                const LongType b = rowIdx / M;
+                const LongType m = rowIdx % M;
+                float* aRow = A + b * strideA + m * K;
+                float* bBase = B + b * strideB;
+                float* cRow = C + b * strideC + m * N;
+
+                // Initialize output row
+                if (betaPresent) {
+                  PRAGMA_OMP_SIMD
+                  for (int n = 0; n < N; ++n) {
+                    cRow[n] *= betaF;
+                  }
+                } else {
+                  PRAGMA_OMP_SIMD
+                  for (int n = 0; n < N; ++n) {
+                    cRow[n] = 0.0f;
+                  }
+                }
+
+                // Cache-friendly loop order: k outer, n inner
+                // This makes B[k*N + n] access sequential for each k
+                for (int k = 0; k < K; ++k) {
+                  const float aVal = alphaF * aRow[k];
+                  const float* bRow = bBase + k * N;
+                  PRAGMA_OMP_SIMD
+                  for (int n = 0; n < N; ++n) {
+                    cRow[n] += aVal * bRow[n];
+                  }
+                }
+              }
+            };
+            samediff::Threads::parallel_tad(func, 0, totalRows);
+          } else {
+            double* A = xT->bufferAsT<double>();
+            double* B = yT->bufferAsT<double>();
+            double* C = zT->bufferAsT<double>();
+            const bool betaPresent = (beta != 0.0);
+
+            auto func = PRAGMA_THREADS_FOR {
+              for (auto rowIdx = start; rowIdx < stop; ++rowIdx) {
+                const LongType b = rowIdx / M;
+                const LongType m = rowIdx % M;
+                double* aRow = A + b * strideA + m * K;
+                double* bBase = B + b * strideB;
+                double* cRow = C + b * strideC + m * N;
+
+                // Initialize output row
+                if (betaPresent) {
+                  PRAGMA_OMP_SIMD
+                  for (int n = 0; n < N; ++n) {
+                    cRow[n] *= beta;
+                  }
+                } else {
+                  PRAGMA_OMP_SIMD
+                  for (int n = 0; n < N; ++n) {
+                    cRow[n] = 0.0;
+                  }
+                }
+
+                // Cache-friendly loop order: k outer, n inner
+                for (int k = 0; k < K; ++k) {
+                  const double aVal = alpha * aRow[k];
+                  const double* bRow = bBase + k * N;
+                  PRAGMA_OMP_SIMD
+                  for (int n = 0; n < N; ++n) {
+                    cRow[n] += aVal * bRow[n];
+                  }
+                }
+              }
+            };
+            samediff::Threads::parallel_tad(func, 0, totalRows);
           }
         } else {
-          mmulNxN(xT, yT, zT, alpha, beta, z->ordering());
+          // Fallback: serial loop over batches (slicing has overhead)
+          if (xRankT == 3) {
+            for (LongType b = 0; b < batchSize; ++b) {
+              auto xSlice = (*xT)(b, {0});
+              auto ySlice = (*yT)(b, {0});
+              auto zSlice = (*zT)(b, {0});
+              mmul(xSlice, ySlice, zSlice, alpha, beta);
+              delete xSlice;
+              delete ySlice;
+              delete zSlice;
+            }
+          } else {
+            // 4D case: need to slice with two indices
+            const LongType dim1 = xT->sizeAt(1);
+            for (LongType b = 0; b < batchSize; ++b) {
+              const LongType b0 = b / dim1;
+              const LongType b1 = b % dim1;
+              auto xTemp = (*xT)(b0, {0});
+              auto yTemp = (*yT)(b0, {0});
+              auto zTemp = (*zT)(b0, {0});
+              auto xSlice = (*xTemp)(b1, {0});
+              auto ySlice = (*yTemp)(b1, {0});
+              auto zSlice = (*zTemp)(b1, {0});
+              mmul(xSlice, ySlice, zSlice, alpha, beta);
+              delete xSlice;
+              delete ySlice;
+              delete zSlice;
+              delete xTemp;
+              delete yTemp;
+              delete zTemp;
+            }
+          }
         }
       }
     } else {
-      // Fall back to mmulNxN for other cases (4D+, mixed ranks, etc.)
+      // Fall back to mmulNxN for other cases (5D+, mixed ranks, etc.)
       mmulNxN(xT, yT, zT, alpha, beta, z->ordering());
     }
   }

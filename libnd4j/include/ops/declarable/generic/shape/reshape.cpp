@@ -23,6 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_reshape)
 #include <ops/declarable/CustomOperations.h>
+#include <cstring>
 namespace sd {
 namespace ops {
 
@@ -33,39 +34,39 @@ CUSTOM_OP_IMPL(reshape, 1, 1, false, 0, -2) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
+  // Fast path: if same buffer, this is just a view change - nothing to copy
+  if (x->dataBuffer() == z->dataBuffer()) {
+    return Status::OK;
+  }
+
   // Special case: empty.reshape(<other empty shape>) -> return empty
   if (x->isEmpty()) {
     REQUIRE_TRUE(z->isEmpty(), 0, "Reshape: when input is empty, output must also be empty");
-    return Status::OK;  // No op
+    return Status::OK;
   }
+
+  // Ensure data is synced to host before reshape operations
   x->syncToHost();
 
-  //scalars can either be 0 or 1
-  if(!x->isScalar() && !x->isEmpty())
-  REQUIRE_TRUE(x->lengthOf() == z->lengthOf(), 0,
-               "Reshape: lengths before and after reshape should match, but "
-               "got %i vs %i",
-               x->lengthOf(), z->lengthOf());
+  const sd::LongType len = x->lengthOf();
 
-  auto* zShapeVec = z->getShapeAsVector();
-  if (Environment::getInstance().isDebugAndVerbose()) sd_printv("Reshape: new shape", *zShapeVec);
-  if(z->ordering() != 'c' && z->ordering() != 'f') {
-    std::string errorMessage;
-    errorMessage += "Reshape: new shape has unknown order: [";
-    errorMessage += z->ordering();
-    errorMessage += "]";
-    delete zShapeVec;
-    THROW_EXCEPTION(errorMessage.c_str());
+  // Validate lengths match
+  if (!x->isScalar()) {
+    REQUIRE_TRUE(len == z->lengthOf(), 0,
+                 "Reshape: lengths before and after reshape should match, but "
+                 "got %i vs %i",
+                 len, z->lengthOf());
   }
 
-  //only perform assign when we aren't using a view
-  if(x->dataBuffer() != z->dataBuffer()) {
-    NDArray *reshapedX = x->reshape(z->ordering(), *zShapeVec, true);
-    delete zShapeVec;
-    z->assign(reshapedX);
-    delete reshapedX;
+  // Fast path: contiguous arrays can use direct memcpy
+  const bool xContiguous = x->ordering() == 'c' && shape::strideDescendingCAscendingF(x->shapeInfo());
+  const bool zContiguous = z->ordering() == 'c' && shape::strideDescendingCAscendingF(z->shapeInfo());
+
+  if (xContiguous && zContiguous) {
+    std::memcpy(z->buffer(), x->buffer(), len * x->sizeOfT());
   } else {
-    delete zShapeVec;
+    // General case: use assign which handles non-contiguous layouts
+    z->assign(x);
   }
 
   return Status::OK;

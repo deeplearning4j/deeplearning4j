@@ -161,7 +161,9 @@ ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfoWithView(LongType* s
    THROW_EXCEPTION("shapeInfo is nullptr");
  }
 
- LongType* newShapeInfo = ShapeBuilders::copyShapeInfo(shapeInfo, false, nullptr);
+ // BUGFIX: Must pass true to preserve strides (e.g., for transposed/permuted views)
+ // Previously passed false which caused strides to be reset to contiguous
+ LongType* newShapeInfo = ShapeBuilders::copyShapeInfo(shapeInfo, true, nullptr);
 
 
 

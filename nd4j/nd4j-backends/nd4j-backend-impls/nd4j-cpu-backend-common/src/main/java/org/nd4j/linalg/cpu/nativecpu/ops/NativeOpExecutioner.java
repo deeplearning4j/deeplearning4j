@@ -397,7 +397,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         } else {
             if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
-            OpaqueNDArray dims = OpaqueNDArray.fromINDArray(op.dimensions());
+            // CRITICAL FIX: For reduce operations, use the normalized dimension array.
+            // op.dimensions() may return an empty array for reduce-all operations,
+            // which has isEmpty()=true and data()=null. We need to use the normalized
+            // dimension array which contains {Integer.MAX_VALUE} for reduce-all.
+            // Create a proper INDArray from the dimension long[] to pass to native code.
+            INDArray dimsArray = Nd4j.createFromArray(dimension);
+            OpaqueNDArray dims = OpaqueNDArray.fromINDArray(dimsArray);
 
             if (ret.isScalar()) {
                 if (extraz.get() == null)
@@ -421,18 +427,19 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             } else {
                 if (extraz.get() == null)
                     extraz.set(new PointerPointer(32));
+                // Use the normalized dims array for non-scalar reductions too
                 switch (op.getOpType()) {
                     case REDUCE_FLOAT:
-                        Nd4j.getNativeOps().execReduceFloat2(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()), zb,OpaqueNDArray.fromINDArray(op.dimensions()));
+                        Nd4j.getNativeOps().execReduceFloat2(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()), zb, dims);
                         break;
                     case REDUCE_LONG:
-                        Nd4j.getNativeOps().execReduceLong2(extraz.get(), op.opNum(), xb,getPointerForExtraArgs(op, x.dataType()), zb, OpaqueNDArray.fromINDArray(op.dimensions()));
+                        Nd4j.getNativeOps().execReduceLong2(extraz.get(), op.opNum(), xb,getPointerForExtraArgs(op, x.dataType()), zb, dims);
                         break;
                     case REDUCE_SAME:
-                        Nd4j.getNativeOps().execReduceSame2(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb, OpaqueNDArray.fromINDArray(op.dimensions()));
+                        Nd4j.getNativeOps().execReduceSame2(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb, dims);
                         break;
                     case REDUCE_BOOL:
-                        Nd4j.getNativeOps().execReduceBool2(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb, OpaqueNDArray.fromINDArray(op.dimensions()));
+                        Nd4j.getNativeOps().execReduceBool2(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb, dims);
                         break;
 
                     default:

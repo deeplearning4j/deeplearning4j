@@ -26,6 +26,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
+#include <ops/declarable/helpers/broadcastableFused.h>
 
 namespace sd {
 namespace ops {
@@ -40,26 +41,115 @@ BROADCASTABLE_OP_IMPL(multiply, 0, 0) {
   // Fast path: same shape - skip BroadcastHelper dispatch overhead
   // This is a common case in BERT (element-wise operations)
   if (x->isSameShape(y)) {
+    // Ultra-fast path for contiguous same-shape
+    const bool xContiguous = x->ordering() == 'c' && shape::strideDescendingCAscendingF(x->shapeInfo());
+    const bool yContiguous = y->ordering() == 'c' && shape::strideDescendingCAscendingF(y->shapeInfo());
+    const bool zContiguous = z->ordering() == 'c' && shape::strideDescendingCAscendingF(z->shapeInfo());
+
+    if (xContiguous && yContiguous && zContiguous) {
+      helpers::fusedMultiplyContiguous(*x, *y, *z);
+      return Status::OK;
+    }
+
     x->applyPairwiseTransform(pairwise::Multiply, y, z, nullptr);
     return Status::OK;
   }
 
-  // Fast path: scalar broadcast - common for scaling operations
-  if (y->isScalar()) {
+  // Fast path: scalar or effectively-scalar (length 1) broadcast
+  const auto xLen = x->lengthOf();
+  const auto yLen = y->lengthOf();
+
+  if (yLen == 1) {
     x->applyScalarArr(scalar::Multiply, y, z);
     return Status::OK;
   }
-  if (x->isScalar()) {
+  if (xLen == 1) {
     y->applyScalarArr(scalar::Multiply, x, z);
     return Status::OK;
   }
 
-  LongType* zShapeInfo = nullptr;
-  const bool areShapesBroadcastable =
-      ShapeUtils::evalBroadcastShapeInfo(x->shapeInfo(), y->shapeInfo(), true, zShapeInfo, block.getWorkspace());
-  REQUIRE_TRUE(areShapesBroadcastable, 0, "MULTIPLY OP: the shapes of x %s and y %s are not suitable for broadcast !",
-               ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str());
+  // Fast path: 1D-like array broadcast along last dimension
+  const auto xRank = x->rankOf();
+  const auto yRank = y->rankOf();
 
+  if (xRank > 1 && yLen == x->sizeAt(-1)) {
+    bool compatible = true;
+    for (int i = 0; i < yRank - 1; i++) {
+      if (y->sizeAt(i) != 1) { compatible = false; break; }
+    }
+    if (compatible && (yRank == 1 || y->sizeAt(-1) == x->sizeAt(-1))) {
+      std::vector<sd::LongType> dims = {xRank - 1};
+      x->applyBroadcast(broadcast::Multiply, &dims, y, z);
+      return Status::OK;
+    }
+  }
+  if (yRank > 1 && xLen == y->sizeAt(-1)) {
+    bool compatible = true;
+    for (int i = 0; i < xRank - 1; i++) {
+      if (x->sizeAt(i) != 1) { compatible = false; break; }
+    }
+    if (compatible && (xRank == 1 || x->sizeAt(-1) == y->sizeAt(-1))) {
+      std::vector<sd::LongType> dims = {yRank - 1};
+      y->applyBroadcast(broadcast::Multiply, &dims, x, z);
+      return Status::OK;
+    }
+  }
+
+  // Fast path: y has leading 1s, trailing dims match x
+  if (xRank == yRank && yRank >= 2) {
+    int leadingOnes = 0;
+    bool allTrailingMatch = true;
+    for (int i = 0; i < yRank; i++) {
+      if (y->sizeAt(i) == 1 && x->sizeAt(i) != 1) {
+        if (allTrailingMatch && leadingOnes == i) {
+          leadingOnes++;
+        } else {
+          allTrailingMatch = false;
+          break;
+        }
+      } else if (y->sizeAt(i) != x->sizeAt(i)) {
+        allTrailingMatch = false;
+        break;
+      }
+    }
+    if (allTrailingMatch && leadingOnes > 0 && leadingOnes < yRank) {
+      std::vector<sd::LongType> dims;
+      for (int i = leadingOnes; i < xRank; i++) {
+        dims.push_back(i);
+      }
+      x->applyBroadcast(broadcast::Multiply, &dims, y, z);
+      return Status::OK;
+    }
+  }
+
+  // Fast path: x has leading 1s, trailing dims match y
+  if (xRank == yRank && xRank >= 2) {
+    int leadingOnes = 0;
+    bool allTrailingMatch = true;
+    for (int i = 0; i < xRank; i++) {
+      if (x->sizeAt(i) == 1 && y->sizeAt(i) != 1) {
+        if (allTrailingMatch && leadingOnes == i) {
+          leadingOnes++;
+        } else {
+          allTrailingMatch = false;
+          break;
+        }
+      } else if (x->sizeAt(i) != y->sizeAt(i)) {
+        allTrailingMatch = false;
+        break;
+      }
+    }
+    if (allTrailingMatch && leadingOnes > 0 && leadingOnes < xRank) {
+      std::vector<sd::LongType> dims;
+      for (int i = leadingOnes; i < yRank; i++) {
+        dims.push_back(i);
+      }
+      y->applyBroadcast(broadcast::Multiply, &dims, x, z);
+      return Status::OK;
+    }
+  }
+
+  // Standard path with broadcasting support (BroadcastHelper handles shape validation)
   auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::Multiply(), x, y, z);
   if (tZ == nullptr)
     return Status::KERNEL_FAILURE;

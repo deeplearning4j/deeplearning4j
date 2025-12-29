@@ -78,8 +78,20 @@ public class Permute extends Transpose {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable ret;
+        System.out.println("[Permute.doDiff] args().length=" + args().length + ", permuteDims=" + java.util.Arrays.toString(permuteDims) + ", reverseDims=" + java.util.Arrays.toString(reverseDims));
         if(args().length == 1) {
             //Static dimensions
+            if(reverseDims == null) {
+                System.out.println("[Permute.doDiff] ERROR: reverseDims is null! Recomputing from iArguments...");
+                if(!iArguments.isEmpty()) {
+                    long[] dims = Longs.toArray(iArguments);
+                    this.reverseDims = new long[dims.length];
+                    for (int i = 0; i < reverseDims.length; i++) {
+                        reverseDims[i] = ArrayUtils.indexOf(dims, i);
+                    }
+                    System.out.println("[Permute.doDiff] Recomputed reverseDims=" + java.util.Arrays.toString(reverseDims));
+                }
+            }
             ret = sameDiff.permute(i_v.get(0), reverseDims);
         } else {
             //Dynamic dimensions

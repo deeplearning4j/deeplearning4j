@@ -46,6 +46,8 @@ public class GraphOptimizer {
                 new ConstantFunctionOptimizations(),
                 new IdentityFunctionOptimizations(),
                 new ShapeFunctionOptimizations(),
+                new LinearFusionOptimizations(),
+                new AttentionFusionOptimizations(),  // Fuse attention patterns
                 new UnusedFunctionOptimizations(),
                 new CuDNNFunctionOptimizations()
         );

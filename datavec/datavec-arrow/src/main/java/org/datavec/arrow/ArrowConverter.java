@@ -134,6 +134,7 @@ public class ArrowConverter {
                 byte[] bytes = valueVectors.get(i);
                 ByteBuffer direct = ByteBuffer.allocateDirect(bytes.length);
                 direct.put(bytes);
+                direct.flip(); // Reset position to 0 for reading
                 INDArray fromTensor = BinarySerde.toArray(direct);
                 toConcat[i] = fromTensor;
             }
@@ -1198,6 +1199,7 @@ public class ArrowConverter {
                 byte[] bytes = valueVector.get(item);
                 ByteBuffer direct = ByteBuffer.allocateDirect(bytes.length);
                 direct.put(bytes);
+                direct.flip(); // Reset position to 0 for reading
                 INDArray fromTensor = BinarySerde.toArray(direct);
                 return new NDArrayWritable(fromTensor);
             default:

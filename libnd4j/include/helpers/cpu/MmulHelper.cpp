@@ -27,6 +27,7 @@
 #include <execution/Threads.h>
 #include <helpers/BlasHelper.h>
 #include <helpers/ShapeUtils.h>
+#include <system/openmp_pragmas.h>
 namespace sd {
 
 //////////////////////////////////////////////////////////////////////////////
@@ -48,7 +49,7 @@ static void usualGemm(NDArray* vA, NDArray* vB, NDArray* vC, const int aMaxis, c
     THROW_EXCEPTION("usualGemm: C is nullptr");
   }
 
-  const T3 alphaZ = static_cast<T3> (alpha);
+  const T3 alphaZ = static_cast<T3>(alpha);
   const T3 betaZ = static_cast<T3>(beta);
 
   const bool betaPresent = beta;
@@ -60,52 +61,127 @@ static void usualGemm(NDArray* vA, NDArray* vB, NDArray* vC, const int aMaxis, c
   const int aRank = vA->rankOf();
   const int bRank = vB->rankOf();
   const int cRank = vC->rankOf();
-  const sd::LongType cLen = vC->lengthOf();
+  const int M = vC->sizeAt(cMaxis);
+  const int N = vC->sizeAt(cNaxis);
   const int K = vA->sizeAt(aKaxis);
 
-  sd::LongType *cShape = shape::shapeOf(cShapeInfo);
-  sd::LongType *aShape = shape::shapeOf(aShapeInfo);
-  sd::LongType *bShape = shape::shapeOf(bShapeInfo);
   sd::LongType *aStride = shape::stride(aShapeInfo);
   sd::LongType *bStride = shape::stride(bShapeInfo);
   sd::LongType *cStride = shape::stride(cShapeInfo);
 
-  auto func = PRAGMA_THREADS_FOR {
-    std::vector<sd::LongType> aCoords(aRank), bCoords(bRank), cCoords(cRank);
+  // Check array layouts for fast paths
+  // Row-major: stride[last]=1, stride[first]=num_cols
+  // Column-major: stride[first]=1, stride[last]=num_rows
+  const bool aRowMajor = (aStride[aKaxis] == 1) && (aStride[aMaxis] == K);
+  const bool bRowMajor = (bStride[bNaxis] == 1) && (bStride[bKaxis] == N);
+  const bool cRowMajor = (cStride[cNaxis] == 1) && (cStride[cMaxis] == N);
+  const bool cColMajor = (cStride[cMaxis] == 1) && (cStride[cNaxis] == M);
 
-    for (auto i = start; i < stop; i++) {
-      // evaluate C coordinates
-      INDEX2COORDS(i, cRank, shape::shapeOf(cShapeInfo), cCoords.data());
+  if (aRowMajor && bRowMajor && cRowMajor) {
+    // Fast path: all row-major - cache-friendly loop order
+    auto func = PRAGMA_THREADS_FOR {
+      for (auto m = start; m < stop; ++m) {
+        T1* aRow = A + m * K;
+        T3* cRow = C + m * N;
 
-      // evaluate A coordinates
-      aCoords[aMaxis] = cCoords[cMaxis];
-      aCoords[aKaxis] = 0;
+        // Initialize output row
+        if (betaPresent) {
+          PRAGMA_OMP_SIMD
+          for (int n = 0; n < N; ++n) {
+            cRow[n] *= betaZ;
+          }
+        } else {
+          PRAGMA_OMP_SIMD
+          for (int n = 0; n < N; ++n) {
+            cRow[n] = static_cast<T3>(0);
+          }
+        }
 
-      // evaluate B coordinates
-      bCoords[bKaxis] = 0;
-      bCoords[bNaxis] = cCoords[cNaxis];
-
-      sd::LongType aOffset, bOffset, cOffset;
-      COORDS2INDEX(aRank, aStride, aCoords.data(), aOffset);
-      COORDS2INDEX(bRank, bStride, bCoords.data(), bOffset);
-
-      T3 val = A[aOffset] * B[bOffset];  // first iteration
-
-      for (int j = 1; j < K; j++) {  // rest iterations
-        aOffset += aStride[aKaxis];
-        bOffset += bStride[bKaxis];
-        val += A[aOffset] * B[bOffset];
+        // Cache-friendly loop order: k outer, n inner
+        for (int k = 0; k < K; ++k) {
+          const T3 aVal = alphaZ * static_cast<T3>(aRow[k]);
+          const T2* bRow = B + k * N;
+          PRAGMA_OMP_SIMD
+          for (int n = 0; n < N; ++n) {
+            cRow[n] += aVal * static_cast<T3>(bRow[n]);
+          }
+        }
       }
+    };
+    samediff::Threads::parallel_tad(func, 0, M);
+  } else if (aRowMajor && bRowMajor && cColMajor) {
+    // Fast path: A,B row-major, C column-major (common from tensorDot)
+    // C column-major means C[m,n] is at offset m + n*M
+    auto func = PRAGMA_THREADS_FOR {
+      for (auto m = start; m < stop; ++m) {
+        T1* aRow = A + m * K;
 
-      COORDS2INDEX(cRank, cStride, cCoords.data(), cOffset);
-      if (betaPresent) {
-        C[cOffset] = alphaZ * val + betaZ * C[cOffset];
-      } else {
-        C[cOffset] = alphaZ * val;
+        // Initialize output column elements for this row
+        if (betaPresent) {
+          PRAGMA_OMP_SIMD
+          for (int n = 0; n < N; ++n) {
+            C[m + n * M] *= betaZ;
+          }
+        } else {
+          PRAGMA_OMP_SIMD
+          for (int n = 0; n < N; ++n) {
+            C[m + n * M] = static_cast<T3>(0);
+          }
+        }
+
+        // k outer for A cache locality, n inner for B cache locality
+        for (int k = 0; k < K; ++k) {
+          const T3 aVal = alphaZ * static_cast<T3>(aRow[k]);
+          const T2* bRow = B + k * N;
+          PRAGMA_OMP_SIMD
+          for (int n = 0; n < N; ++n) {
+            C[m + n * M] += aVal * static_cast<T3>(bRow[n]);
+          }
+        }
       }
-    }
-  };
-  samediff::Threads::parallel_tad(func, 0, cLen);
+    };
+    samediff::Threads::parallel_tad(func, 0, M);
+  } else {
+    // General strided path - original implementation
+    const sd::LongType cLen = vC->lengthOf();
+
+    auto func = PRAGMA_THREADS_FOR {
+      std::vector<sd::LongType> aCoords(aRank), bCoords(bRank), cCoords(cRank);
+
+      for (auto i = start; i < stop; i++) {
+        // evaluate C coordinates
+        INDEX2COORDS(i, cRank, shape::shapeOf(cShapeInfo), cCoords.data());
+
+        // evaluate A coordinates
+        aCoords[aMaxis] = cCoords[cMaxis];
+        aCoords[aKaxis] = 0;
+
+        // evaluate B coordinates
+        bCoords[bKaxis] = 0;
+        bCoords[bNaxis] = cCoords[cNaxis];
+
+        sd::LongType aOffset, bOffset, cOffset;
+        COORDS2INDEX(aRank, aStride, aCoords.data(), aOffset);
+        COORDS2INDEX(bRank, bStride, bCoords.data(), bOffset);
+
+        T3 val = A[aOffset] * B[bOffset];  // first iteration
+
+        for (int j = 1; j < K; j++) {  // rest iterations
+          aOffset += aStride[aKaxis];
+          bOffset += bStride[bKaxis];
+          val += A[aOffset] * B[bOffset];
+        }
+
+        COORDS2INDEX(cRank, cStride, cCoords.data(), cOffset);
+        if (betaPresent) {
+          C[cOffset] = alphaZ * val + betaZ * C[cOffset];
+        } else {
+          C[cOffset] = alphaZ * val;
+        }
+      }
+    };
+    samediff::Threads::parallel_tad(func, 0, cLen);
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -190,37 +266,24 @@ static void usualDot(const sd::LongType length, const double alpha, const void* 
 NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double alpha, const double beta,
                               const char outOrder) {
 
-  auto M = A->sizeAt(0);
-  auto K = A->sizeAt(1);
-  auto N = B->sizeAt(1);
+  // Cache dimensions to avoid repeated virtual calls
+  const auto M = A->sizeAt(0);
+  const auto K = A->sizeAt(1);
+  const auto N = B->sizeAt(1);
 
+  // Validate inputs (lazy error message construction)
   if (C != nullptr && C->rankOf() != 2) {
-    std::string errorMessage = "MmulHelper::mmulMxM: rank of C array should be equal to 2, but got " +
-                               std::to_string(C->rankOf()) + ". ";
-    errorMessage += "C datatype: " + DataTypeUtils::asString(C->dataType());
-    THROW_EXCEPTION(errorMessage.c_str());
+    THROW_EXCEPTION("MmulHelper::mmulMxM: rank of C array should be equal to 2");
   }
   if (B->sizeAt(0) != K) {
-    std::string errorMessage = "MmulHelper::mmulMxM: B array should have the same number of rows as A has columns. ";
-    errorMessage += "A columns: " + std::to_string(K) + ", ";
-    errorMessage += "B rows: " + std::to_string(B->sizeAt(0));
-    THROW_EXCEPTION(errorMessage.c_str());
+    THROW_EXCEPTION("MmulHelper::mmulMxM: B rows must equal A columns");
   }
-  if (C != nullptr && C->sizeAt(0) != M) {
-    std::string errorMessage = "MmulHelper::mmulMxM: C array should have the same number of rows as A. ";
-    errorMessage += "A rows: " + std::to_string(M) + ", ";
-    errorMessage += "C rows: " + std::to_string(C->sizeAt(0));
-    THROW_EXCEPTION(errorMessage.c_str());}
-
-  if (C != nullptr && C->sizeAt(1) != N) {
-    std::string errorMessage = "MmulHelper::mmulMxM: C array should have the same number of columns as B. ";
-    errorMessage += "B columns: " + std::to_string(N) + ", ";
-    errorMessage += "C columns: " + std::to_string(C->sizeAt(1));
-    THROW_EXCEPTION(errorMessage.c_str());
+  if (C != nullptr && (C->sizeAt(0) != M || C->sizeAt(1) != N)) {
+    THROW_EXCEPTION("MmulHelper::mmulMxM: C shape must match [M, N]");
   }
 
   if (C == nullptr) {
-    std::vector<sd::LongType> shape = {M,N};
+    std::vector<sd::LongType> shape = {M, N};
     C = new NDArray(outOrder, shape, DataTypeUtils::pickPairwiseResultType(A->dataType(), B->dataType()),
                     A->getContext());
   }
@@ -230,18 +293,44 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
   const auto bType = B->dataType();
   const auto cType = C->dataType();
 
-  const bool AB(aType == bType), AC(aType == cType), ABC(AB && AC);
-  const bool hasGemm = BlasHelper::getInstance().hasGEMM(aType);
+  const bool ABC = (aType == bType) && (aType == cType);
 
+  // Fast path: check for row-major contiguous arrays (most common case in BERT)
+  // Row-major means stride(-1)=1 and stride(-2)=ncols
+  const bool aRowMajor = (A->strideAt(1) == 1) && (A->strideAt(0) == K);
+  const bool bRowMajor = (B->strideAt(1) == 1) && (B->strideAt(0) == N);
+  const bool cRowMajor = (C->strideAt(1) == 1) && (C->strideAt(0) == N);
+
+  if (ABC && aRowMajor && bRowMajor && cRowMajor && Environment::getInstance().isEnableBlas()) {
+    // Optimized fast path for contiguous row-major arrays
+    auto& blasHelper = BlasHelper::getInstance();
+    auto blasLock = blasHelper.lockBlas();
+
+    if (aType == DataType::FLOAT32 && blasHelper.hasGEMM(aType)) {
+      blasHelper.sgemm()(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, (float)alpha,
+                         A->bufferAsT<float>(), K, B->bufferAsT<float>(), N, (float)beta,
+                         C->bufferAsT<float>(), N);
+      return C;
+    } else if (aType == DataType::DOUBLE && blasHelper.hasGEMM(aType)) {
+      blasHelper.dgemm()(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, alpha,
+                         A->bufferAsT<double>(), K, B->bufferAsT<double>(), N, beta,
+                         C->bufferAsT<double>(), N);
+      return C;
+    }
+  }
+
+  // General path for non-contiguous or non-standard layouts
+  const bool hasGemm = BlasHelper::getInstance().hasGEMM(aType);
   const bool typeDouble = hasGemm && ABC && aType == DataType::DOUBLE;
   const bool typeFloat = hasGemm && ABC && aType == DataType::FLOAT32;
 
   if ((!typeFloat && !typeDouble) || !Environment::getInstance().isEnableBlas()) {
     BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm, (A, B, C, 0, 1, 0, 1, 0, 1, alpha, beta), SD_NUMERIC_TYPES);
   } else {
-    std::vector<NDArray*> toDelete;
-
-    NDArray *pA(const_cast<NDArray*>(A)), *pB(const_cast<NDArray*>(B)), *pC(const_cast<NDArray*>(C));
+    NDArray *pA = const_cast<NDArray*>(A);
+    NDArray *pB = const_cast<NDArray*>(B);
+    NDArray *pC = const_cast<NDArray*>(C);
+    NDArray *tempA = nullptr, *tempB = nullptr, *tempC = nullptr;
 
     bool aMcont = M == 1 || A->strideAt(0) == 1;
     bool aKcont = K == 1 || A->strideAt(1) == 1;
@@ -251,18 +340,15 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
     bool cNcont = N == 1 || C->strideAt(1) == 1;
 
     if (!aMcont && !aKcont) {
-      pA = A->dup('f', false);
-      toDelete.push_back(pA);
+      tempA = pA = A->dup('f', false);
       aMcont = true;
     }
     if (!bKcont && !bNcont) {
-      pB = B->dup('f', false);
-      toDelete.push_back(pB);
+      tempB = pB = B->dup('f', false);
       bKcont = true;
     }
     if (!cMcont && !cNcont) {
-      pC = C->dup('f', false);
-      toDelete.push_back(pC);
+      tempC = pC = C->dup('f', false);
       cMcont = true;
     }
 
@@ -279,7 +365,6 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
     const int ldc = (cMcont && cNcont) ? M : !cMcont ? pC->strideAt(0) : pC->strideAt(1);
 
     // Acquire BLAS lock to prevent OpenBLAS TLS corruption and race conditions
-    // This serializes external BLAS calls while allowing OpenBLAS to use multiple threads internally
     auto blasLock = BlasHelper::getInstance().lockBlas();
 
     if (typeFloat) {
@@ -296,9 +381,9 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
       C->assign(pC);
     }
 
-    for (auto* arr : toDelete) {
-      delete arr;
-    }
+    delete tempA;
+    delete tempB;
+    delete tempC;
   }
 
   return C;
@@ -473,7 +558,7 @@ static void batchedGemm(NDArray* vA, NDArray* vB, NDArray* vC, const sd::LongTyp
   const T3 alphaZ = static_cast<T3>(alpha);
   const T3 betaZ = static_cast<T3>(beta);
 
-  const bool betaPersent = beta;
+  const bool betaPresent = beta;
 
   const sd::LongType* aShapeInfo = vA->shapeInfo();
   const sd::LongType* bShapeInfo = vB->shapeInfo();
@@ -483,61 +568,121 @@ static void batchedGemm(NDArray* vA, NDArray* vB, NDArray* vC, const sd::LongTyp
   const sd::LongType bRank = vB->rankOf();
   const sd::LongType cRank = vC->rankOf();
 
-  const sd::LongType cLen = vC->lengthOf();
-
+  const sd::LongType M = vC->sizeAt(cMaxis);
+  const sd::LongType N = vC->sizeAt(cNaxis);
   const sd::LongType K = vA->sizeAt(aKaxis);
 
-  sd::LongType *cShape = shape::shapeOf(cShapeInfo);
-  sd::LongType *aShape = shape::shapeOf(aShapeInfo);
-  sd::LongType *bShape = shape::shapeOf(bShapeInfo);
   sd::LongType *aStride = shape::stride(aShapeInfo);
   sd::LongType *bStride = shape::stride(bShapeInfo);
   sd::LongType *cStride = shape::stride(cShapeInfo);
 
+  // Check for contiguous 3D case: [batch, M, K] x [batch, K, N] = [batch, M, N]
+  // All arrays must be rank 3 with row-major layout (last dim stride=1, second-to-last=N or K)
+  const bool is3D = (aRank == 3) && (bRank == 3) && (cRank == 3);
+  const bool aRowMajor = (aStride[aKaxis] == 1) && (aStride[aMaxis] == K);
+  const bool bRowMajor = (bStride[bNaxis] == 1) && (bStride[bKaxis] == N);
+  const bool cRowMajor = (cStride[cNaxis] == 1) && (cStride[cMaxis] == N);
+  const bool allRowMajor = aRowMajor && bRowMajor && cRowMajor;
 
-  auto func = PRAGMA_THREADS_FOR {
-    std::vector<sd::LongType> aCoords(aRank), bCoords(bRank), cCoords(cRank);
+  // Check batch strides for contiguity
+  const bool aBatchContiguous = is3D && (aStride[0] == M * K);
+  const bool bBatchContiguous = is3D && (bStride[0] == K * N);
+  const bool cBatchContiguous = is3D && (cStride[0] == M * N);
+  const bool allBatchContiguous = aBatchContiguous && bBatchContiguous && cBatchContiguous;
 
-    for (sd::LongType i = start; i < stop; ++i) {
-      // evaluate C coordinates
-      INDEX2COORDS(i, cRank,cShape, cCoords.data());
+  if (is3D && allRowMajor && allBatchContiguous) {
+    // Fast path for contiguous 3D: parallelize over (batch * M) rows
+    const sd::LongType batchSize = vA->sizeAt(0);
+    const sd::LongType totalRows = batchSize * M;
+    const sd::LongType strideA = M * K;
+    const sd::LongType strideB = K * N;
+    const sd::LongType strideC = M * N;
 
-      // calculate index of current batch
-      sd::LongType batchInd;
-      if (cRank > 2) COORDS2INDEX(cRank, cStride, cCoords.data(), batchInd);
+    auto func = PRAGMA_THREADS_FOR {
+      for (auto rowIdx = start; rowIdx < stop; ++rowIdx) {
+        const sd::LongType b = rowIdx / M;
+        const sd::LongType m = rowIdx % M;
+        T1* aRow = A + b * strideA + m * K;
+        T2* bBase = B + b * strideB;
+        T3* cRow = C + b * strideC + m * N;
 
-      // evaluate A coordinates
-      if (aRank > 2) INDEX2COORDS(batchInd, aRank, aShape, aCoords.data());
-      aCoords[aMaxis] = cCoords[cMaxis];
-      aCoords[aKaxis] = 0;
+        // Initialize output row
+        if (betaPresent) {
+          PRAGMA_OMP_SIMD
+          for (sd::LongType n = 0; n < N; ++n) {
+            cRow[n] *= betaZ;
+          }
+        } else {
+          PRAGMA_OMP_SIMD
+          for (sd::LongType n = 0; n < N; ++n) {
+            cRow[n] = static_cast<T3>(0);
+          }
+        }
 
-      // evaluate B coordinates
-      if (bRank > 2) INDEX2COORDS(batchInd, bRank, bShape, bCoords.data());
-      bCoords[bKaxis] = 0;
-      bCoords[bNaxis] = cCoords[cNaxis];
-
-      sd::LongType aOffset, bOffset, cOffset;
-      COORDS2INDEX(aRank, aStride, aCoords.data(), aOffset);
-      COORDS2INDEX(bRank, bStride, bCoords.data(), bOffset);
-
-      T3 val = A[aOffset] * B[bOffset];  // first iteration
-
-      for (int j = 1; j < K; ++j) {  // rest iterations
-        aOffset += aStride[aKaxis];
-        bOffset += bStride[bKaxis];
-        val = val + A[aOffset] * B[bOffset];
+        // Cache-friendly loop order: k outer, n inner
+        for (sd::LongType k = 0; k < K; ++k) {
+          const T3 aVal = alphaZ * static_cast<T3>(aRow[k]);
+          const T2* bRow = bBase + k * N;
+          PRAGMA_OMP_SIMD
+          for (sd::LongType n = 0; n < N; ++n) {
+            cRow[n] += aVal * static_cast<T3>(bRow[n]);
+          }
+        }
       }
+    };
+    samediff::Threads::parallel_tad(func, 0, totalRows);
+  } else {
+    // General strided path - original implementation
+    const sd::LongType cLen = vC->lengthOf();
 
-      COORDS2INDEX(cRank, cStride, cCoords.data(), cOffset);
+    sd::LongType *cShape = shape::shapeOf(cShapeInfo);
+    sd::LongType *aShape = shape::shapeOf(aShapeInfo);
+    sd::LongType *bShape = shape::shapeOf(bShapeInfo);
 
-      if (betaPersent)
-        C[cOffset] = alphaZ * val + betaZ * C[cOffset];
-      else
-        C[cOffset] = alphaZ * val;
-    }
-  };
+    auto func = PRAGMA_THREADS_FOR {
+      std::vector<sd::LongType> aCoords(aRank), bCoords(bRank), cCoords(cRank);
 
-  samediff::Threads::parallel_tad(func, 0, cLen);
+      for (sd::LongType i = start; i < stop; ++i) {
+        // evaluate C coordinates
+        INDEX2COORDS(i, cRank, cShape, cCoords.data());
+
+        // calculate index of current batch
+        sd::LongType batchInd;
+        if (cRank > 2) COORDS2INDEX(cRank, cStride, cCoords.data(), batchInd);
+
+        // evaluate A coordinates
+        if (aRank > 2) INDEX2COORDS(batchInd, aRank, aShape, aCoords.data());
+        aCoords[aMaxis] = cCoords[cMaxis];
+        aCoords[aKaxis] = 0;
+
+        // evaluate B coordinates
+        if (bRank > 2) INDEX2COORDS(batchInd, bRank, bShape, bCoords.data());
+        bCoords[bKaxis] = 0;
+        bCoords[bNaxis] = cCoords[cNaxis];
+
+        sd::LongType aOffset, bOffset, cOffset;
+        COORDS2INDEX(aRank, aStride, aCoords.data(), aOffset);
+        COORDS2INDEX(bRank, bStride, bCoords.data(), bOffset);
+
+        T3 val = A[aOffset] * B[bOffset];  // first iteration
+
+        for (sd::LongType j = 1; j < K; ++j) {  // rest iterations
+          aOffset += aStride[aKaxis];
+          bOffset += bStride[bKaxis];
+          val = val + A[aOffset] * B[bOffset];
+        }
+
+        COORDS2INDEX(cRank, cStride, cCoords.data(), cOffset);
+
+        if (betaPresent)
+          C[cOffset] = alphaZ * val + betaZ * C[cOffset];
+        else
+          C[cOffset] = alphaZ * val;
+      }
+    };
+
+    samediff::Threads::parallel_tad(func, 0, cLen);
+  }
 }
 //////////////////////////////////////////////////////////////////////////
 NDArray* MmulHelper::mmulNxN( NDArray* A,  NDArray* B, NDArray* C, const double alpha, const double beta,

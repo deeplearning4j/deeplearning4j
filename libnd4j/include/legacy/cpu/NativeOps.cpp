@@ -337,7 +337,7 @@ void setOmpNumThreads(int threads) { omp_set_num_threads(threads); }
  * Default should be 1 to prevent TLS corruption crashes in multi-threaded Java applications.
  */
 void setOpenBlasThreads(int threads) {
-#if defined(__OPENBLAS)
+#if defined(__OPENBLAS) || defined(HAVE_OPENBLAS)
   openblas_set_num_threads(threads);
 #elif defined(__MKL)
   // MKL uses a different function

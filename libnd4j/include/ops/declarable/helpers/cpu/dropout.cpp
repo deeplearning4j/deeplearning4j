@@ -38,12 +38,25 @@ static void dropoutSimple(NDArray* input, NDArray* output, double probValue, int
   std::vector<sd::LongType> outShape = {output->lengthOf()};
   auto flattenedInput = input->reshape('c',inShape,false);
   auto flattenedOutput = output->reshape('c',outShape,false);
+
+  // Flatten mask to properly use linear indexing
+  NDArray* flattenedMask = nullptr;
+  if (mask != nullptr) {
+    std::vector<sd::LongType> maskShape = {mask->lengthOf()};
+    flattenedMask = mask->reshape('c', maskShape, false);
+  }
+
   auto func = PRAGMA_THREADS_FOR {
     for (auto e = start; e < stop; e++) {
       float val = nodeRng.relativeT<T>(e, T(0.f), T(1.f));
-      //dropout mask might not be the same length
-      if (mask != nullptr && e < mask->lengthOf()) mask->p<T>(e, static_cast<T>(val));
-      if (val < probValue) flattenedOutput->p<T>(e, flattenedInput->e<T>(e));
+      // Keep the value if val < probValue (probValue is keep probability)
+      bool keep = val < probValue;
+      // Store binary mask: 1 if kept, 0 if dropped
+      if (flattenedMask != nullptr && e < flattenedMask->lengthOf()) {
+        flattenedMask->p<T>(e, keep ? static_cast<T>(1) : static_cast<T>(0));
+      }
+      // Output is input when kept, 0 otherwise (OUTPUT_NULLIFIED already zeros it)
+      if (keep) flattenedOutput->p<T>(e, flattenedInput->e<T>(e));
     }
   };
 
@@ -51,6 +64,9 @@ static void dropoutSimple(NDArray* input, NDArray* output, double probValue, int
 
   delete flattenedInput;
   delete flattenedOutput;
+  if (flattenedMask != nullptr) {
+    delete flattenedMask;
+  }
 }
 BUILD_SINGLE_TEMPLATE( void dropoutSimple, (NDArray* input, NDArray* output, double probValue, int seed,NDArray *mask),
                       SD_FLOAT_TYPES);
@@ -112,9 +128,10 @@ BUILD_SINGLE_TEMPLATE( sd::Status dropOutFunctor_, (graph::Context & context, ND
 template <typename T>
 static Status dropOutFunctorBP_(graph::Context& context, NDArray* input, NDArray* gradOut, NDArray* output,
                                 NDArray* reduceShape, int seed, double probValue, NDArray* mask) {
-  auto mask2 = *gradOut * *mask;
-  *output = *mask2;
-  delete mask2;
+  // Use assign and in-place multiply to avoid temporary NDArray creation
+  // which can cause ownership issues with the assignment operator
+  output->assign(gradOut);
+  *output *= *mask;
   return sd::Status::OK;
 }
 
@@ -144,10 +161,10 @@ template <typename T>
 sd::Status alphaDropOutFunctorBP_(graph::Context& context, NDArray* input, NDArray* gradOut, NDArray* output,
                                   NDArray* reduceShape, int seed, double probValue, double alpha, double alpha1,
                                   double beta, NDArray* mask) {
-
-  auto mask2 = *gradOut * *mask;
-  *output *= *mask2;
-  delete mask2;
+  // Use in-place operations to avoid temporary NDArray creation
+  // which can cause ownership issues with the assignment operator
+  *output *= *gradOut;
+  *output *= *mask;
   return sd::Status::OK;
 }
 

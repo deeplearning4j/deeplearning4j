@@ -27,6 +27,26 @@
 #if HAVE_OPENBLAS
 extern "C" void openblas_set_num_threads(int num_threads);
 extern "C" int openblas_get_num_threads(void);
+
+// Global constructor that runs at library load time
+// This ensures OpenBLAS is set to single-threaded mode BEFORE any other code runs,
+// preventing TLS corruption crashes with OpenMP threading.
+namespace {
+  struct OpenBlasThreadInitializer {
+    OpenBlasThreadInitializer() {
+      // Check if user explicitly set OpenBLAS threads
+      const char* env = std::getenv("OPENBLAS_NUM_THREADS");
+      const char* sdEnv = std::getenv("SD_OPENBLAS_THREADS");
+
+      if (env == nullptr && sdEnv == nullptr) {
+        // No explicit thread count - default to single-threaded for safety
+        openblas_set_num_threads(1);
+      }
+    }
+  };
+  // This global variable's constructor runs at library load time
+  static OpenBlasThreadInitializer __openblas_thread_init;
+}
 #endif
 
 namespace sd {
@@ -292,7 +312,17 @@ template <>
 bool BlasHelper::hasBatchedGEMM<float>() {
   if (Environment::getInstance().blasFallback()) return false;
 
+  // Note: cblas_sgemm_batch may not be available in all OpenBLAS builds
+  // Only enable for __EXTERNAL_BLAS__ which is typically MKL
+#if __EXTERNAL_BLAS__
+  return true;
+#elif HAVE_OPENBLAS
+  // OpenBLAS batched GEMM can crash with invalid function pointers
+  // Use the fallback path which is reliable
+  return false;
+#else
   return _hasSgemmBatch;
+#endif
 }
 #endif
 
@@ -301,7 +331,17 @@ template <>
 bool BlasHelper::hasBatchedGEMM<double>() {
   if (Environment::getInstance().blasFallback()) return false;
 
+  // Note: cblas_dgemm_batch may not be available in all OpenBLAS builds
+  // Only enable for __EXTERNAL_BLAS__ which is typically MKL
+#if __EXTERNAL_BLAS__
+  return true;
+#elif HAVE_OPENBLAS
+  // OpenBLAS batched GEMM can crash with invalid function pointers
+  // Use the fallback path which is reliable
+  return false;
+#else
   return _hasDgemmBatch;
+#endif
 }
 #endif
 
@@ -379,7 +419,13 @@ CblasSgemm BlasHelper::sgemm() {
 #endif
 }
 
-CblasSgemmBatch BlasHelper::sgemmBatched() { return this->cblasSgemmBatch; }
+CblasSgemmBatch BlasHelper::sgemmBatched() {
+#if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
+  return (CblasSgemmBatch)&cblas_sgemm_batch;
+#else
+  return this->cblasSgemmBatch;
+#endif
+}
 
 LapackeSgesvd BlasHelper::sgesvd() { return this->lapackeSgesvd; }
 
@@ -403,7 +449,13 @@ CblasDgemm BlasHelper::dgemm() {
 #endif
 }
 
-CblasDgemmBatch BlasHelper::dgemmBatched() { return this->cblasDgemmBatch; }
+CblasDgemmBatch BlasHelper::dgemmBatched() {
+#if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
+  return (CblasDgemmBatch)&cblas_dgemm_batch;
+#else
+  return this->cblasDgemmBatch;
+#endif
+}
 
 LapackeDgesvd BlasHelper::dgesvd() { return this->lapackeDgesvd; }
 
@@ -515,6 +567,18 @@ void BlasHelper::initializeBlasThreading() {
       }
 #endif
     }
+  }
+
+  // CRITICAL: If no thread count was specified, default OpenBLAS to single-threaded
+  // This prevents TLS (thread-local storage) corruption crashes when OpenBLAS's
+  // internal threading conflicts with the application's OpenMP threading.
+  // Users who want multi-threaded OpenBLAS can set OPENBLAS_NUM_THREADS or SD_OPENBLAS_THREADS.
+  if (_openblasThreads.load() == 0) {
+    _openblasThreads.store(1);
+#if HAVE_OPENBLAS
+    openblas_set_num_threads(1);
+    sd_debug("OpenBLAS threads defaulted to 1 to prevent TLS corruption (set OPENBLAS_NUM_THREADS to override)\n", "");
+#endif
   }
 }
 

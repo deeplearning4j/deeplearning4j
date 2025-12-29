@@ -39,9 +39,12 @@ CUSTOM_OP_IMPL(expand_dims, 1, 1, false, 0, -2) {
                axis);
 
 
-  //note we used to have a specific copy case here but we should
-  //be abstracting away data copy and reshape details like buffer copying
   if(input->isEmpty()) {
+    return Status::OK;
+  }
+
+  // Fast path: if same buffer, this is just a view change - nothing to copy
+  if (input->dataBuffer() == output->dataBuffer()) {
     return Status::OK;
   }
 

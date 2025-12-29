@@ -38,7 +38,12 @@ CUSTOM_OP_IMPL(cast, 1, 1, false, 0, -2) {
     return sd::Status::OK;
   }
 
-  if (!block.isInplace()) {
+  // Fast path: same data type - no conversion needed
+  if (input->dataType() == output->dataType()) {
+    if (!block.isInplace()) {
+      output->assign(input);
+    }
+  } else if (!block.isInplace()) {
     helpers::assign(block.launchContext(), output, input);
   }
 

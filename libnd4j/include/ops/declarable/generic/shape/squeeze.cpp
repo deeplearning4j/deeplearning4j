@@ -72,7 +72,14 @@ CUSTOM_OP_IMPL(squeeze, 1, 1, false, 0, -2) {
   if (block.isInplace()) {
     output->reshapei(input->ordering(), shape);
   } else {
-    if (input->ews() == 1 && output->ews() == 1 && input->ordering() == output->ordering()) {
+    // Fast path: if same buffer, this is just a view change - nothing to copy
+    if (input->dataBuffer() == output->dataBuffer()) {
+      return Status::OK;
+    }
+
+    const bool inputContiguous = shape::strideDescendingCAscendingF(input->shapeInfo());
+    const bool outputContiguous = shape::strideDescendingCAscendingF(output->shapeInfo());
+    if (inputContiguous && outputContiguous && input->ordering() == output->ordering()) {
       output->dataBuffer()->copyBufferFrom(*input->dataBuffer(),
                                            output->lengthOf() * DataTypeUtils::sizeOfElement(output->dataType()), 0,
                                            input->offset());

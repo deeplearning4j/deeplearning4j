@@ -1310,19 +1310,22 @@ std::vector<LongType>* ShapeUtils::evalDimsForReduceOp(const LongType rank,
   LongType dimsExcludeLen = static_cast<LongType>(dimsToExclude->size());
   for (LongType j = 0; j < dimsExcludeLen; j++) {
     LongType currElement = dimsToExclude->at(j);
+    // Normalize negative dimensions to positive equivalents
+    if (currElement < 0) {
+      currElement += rank;
+    }
+
     bool contains = false;
     for (size_t i = 0; i < output->size(); i++) {
       if (output->at(i) == currElement) {
         contains = true;
         break;
-      } else {
-        contains = false;
       }
     }
 
-    bool elementLess = currElement < rank;
-    if (!contains && elementLess) {
-      output->push_back(dimsToExclude->at(j));
+    bool elementValid = currElement >= 0 && currElement < rank;
+    if (!contains && elementValid) {
+      output->push_back(currElement);
     }
   }
 

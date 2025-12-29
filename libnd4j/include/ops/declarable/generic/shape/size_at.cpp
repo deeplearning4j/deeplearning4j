@@ -31,13 +31,16 @@ CUSTOM_OP_IMPL(size_at, 1, 1, false, 0, 1) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
+  const int rank = input->rankOf();
   auto dim = INT_ARG(0);
-  if (dim < 0) dim += input->rankOf();
+  if (dim < 0) dim += rank;
 
-  REQUIRE_TRUE(dim < input->rankOf(), 0, "Size_At: Dim can't be higher then input rank")
+  REQUIRE_TRUE(dim < rank, 0, "Size_At: Dim can't be higher then input rank")
 
-  output->p(0, input->sizeAt(dim));
-  output->syncToDevice();
+  // Direct buffer write - output is always INT64 scalar
+  const sd::LongType* inputShape = shape::shapeOf(input->shapeInfo());
+  auto outBuff = output->bufferAsT<sd::LongType>();
+  outBuff[0] = inputShape[dim];
 
   return Status::OK;
 }

@@ -38,36 +38,58 @@ import java.util.List;
 
 @NoArgsConstructor
 public class DotProductAttentionV2 extends DynamicCustomOp {
-    private boolean withWeights,useCausalMask,training;
-    private double scaleFactor;
-    private double dropout;
+    private boolean useCausalMask;
+    private boolean training;
+    private double scaleFactor = 1.0;
+    private double dropout = 0.0;
 
-    private int scoreMode;
+    private SDVariable queryMask;
+    private SDVariable valueMask;
 
-    private SDVariable queryMask,valueMask;
-
-
-
-    public DotProductAttentionV2(INDArray queries, INDArray values, INDArray keys, INDArray queryMask, INDArray valueMask, double scaleFactor, double dropoutProbability, boolean useCausalMask, boolean training) {
-        addInputArgument(wrapFilterNull(queries,values,keys,queryMask,valueMask));
-        addTArgument(scaleFactor,dropoutProbability);
-        addIArgument(scoreMode);
-        addBArgument(useCausalMask,withWeights,training);
-    }
-
-    public DotProductAttentionV2(SameDiff sd, SDVariable queries, SDVariable values, SDVariable keys, SDVariable queryMask, SDVariable valueMask, double scaleFactor, double dropoutProbability,  boolean useCausalMask,boolean training) {
-        super(null, sd, inputs(sd,queries, values, keys, queryMask, valueMask), false);
+    /**
+     * Create a dot product attention operation.
+     *
+     * @param queries Query tensor [batch, Tq, dim] or [Tq, dim]
+     * @param values Value tensor [batch, Tv, dim] or [Tv, dim]
+     * @param keys Key tensor [batch, Tv, dim] or [Tv, dim], or null to use values
+     * @param queryMask Query mask [batch, Tq] or null
+     * @param valueMask Value mask [batch, Tv] or null
+     * @param scaleFactor Scale factor for attention scores (typically 1/sqrt(dim))
+     * @param dropoutProbability Dropout probability (0 = no dropout)
+     * @param useCausalMask Whether to apply causal (lower triangular) mask
+     * @param training Whether in training mode (affects dropout)
+     */
+    public DotProductAttentionV2(INDArray queries, INDArray values, INDArray keys, INDArray queryMask, INDArray valueMask,
+                                 double scaleFactor, double dropoutProbability, boolean useCausalMask, boolean training) {
+        super(wrapFilterNull(queries, values, keys, queryMask, valueMask), null);
         this.scaleFactor = scaleFactor;
         this.dropout = dropoutProbability;
-        this.scoreMode = scoreMode;
         this.useCausalMask = useCausalMask;
-        this.withWeights = withWeights;
+        this.training = training;
+        // T_ARG order: scale, dropout
+        addTArgument(scaleFactor, dropoutProbability);
+        // B_ARG order: useCausalMask, training
+        addBArgument(useCausalMask, training);
+    }
+
+    /**
+     * Create a dot product attention operation for SameDiff.
+     */
+    public DotProductAttentionV2(SameDiff sd, SDVariable queries, SDVariable values, SDVariable keys,
+                                 SDVariable queryMask, SDVariable valueMask,
+                                 double scaleFactor, double dropoutProbability,
+                                 boolean useCausalMask, boolean training) {
+        super(null, sd, inputs(sd, queries, values, keys, queryMask, valueMask), false);
+        this.scaleFactor = scaleFactor;
+        this.dropout = dropoutProbability;
+        this.useCausalMask = useCausalMask;
         this.training = training;
         this.queryMask = queryMask;
         this.valueMask = valueMask;
-        addIArgument(scoreMode);
-        addBArgument(useCausalMask,training);
-        addTArgument(scaleFactor,dropoutProbability);
+        // T_ARG order: scale, dropout
+        addTArgument(scaleFactor, dropoutProbability);
+        // B_ARG order: useCausalMask, training
+        addBArgument(useCausalMask, training);
     }
 
     private static SDVariable[] inputs(SameDiff sd,
@@ -89,22 +111,19 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
     @Override
     public void configureFromArguments() {
         super.configureFromArguments();
+        // B_ARG order: useCausalMask, training
         if(bArguments.size() > 0)
             this.useCausalMask = bArguments.get(0);
 
         if(bArguments.size() > 1)
             this.training = bArguments.get(1);
 
-        if(iArguments.size() > 0)
-            this.scoreMode = iArguments.get(0).intValue();
-
-
+        // T_ARG order: scale, dropout
         if(tArguments.size() > 0)
             this.scaleFactor = tArguments.get(0);
 
         if(tArguments.size() > 1)
             this.dropout = tArguments.get(1);
-
     }
 
     @Override
@@ -124,23 +143,25 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradient) {
+        // Forward outputs: [attentionOutput, attentionWeights, attentionLogits, dropoutMask?]
         SDVariable[] outs = outputVariables();
+        // BP inputs order: queries, values, keys, eps, queryMask, valueMask,
+        //                  attentionScoresOut, attentionScoreWeights, attentionScoresLogits, dropoutMask,
+        //                  scaleFactor, dropout, useCausalMask, training
         return Arrays.asList(new DotProductAttentionV2Bp(sameDiff,
-                arg(0),
-                arg(1),
-                arg(2),
-                gradient.get(0),
-                queryMask,
-                valueMask,
-                outs[0],
-                outs[1],
-                outs[2],
-                dropout > 0.0 ? outs[3] : null,
+                arg(0),                              // queries
+                arg(1),                              // values
+                arg(2),                              // keys
+                gradient.get(0),                     // eps (gradient from upstream)
+                queryMask,                           // queryMask
+                valueMask,                           // valueMask
+                outs[0],                             // attentionScoresOut (attention output)
+                outs[1],                             // attentionScoreWeights (after softmax)
+                outs[2],                             // attentionScoresLogits (before softmax)
+                dropout > 0.0 ? outs[3] : null,      // dropoutMask
                 scaleFactor,
                 dropout,
-                scoreMode,
                 useCausalMask,
-                withWeights,
                 training).outputVariables());
     }
 

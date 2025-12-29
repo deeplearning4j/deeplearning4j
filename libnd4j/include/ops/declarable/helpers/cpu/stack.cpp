@@ -65,18 +65,22 @@ template <typename T>
 static void stack_(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output, const int dim) {
   const int numOfSubArrs = inArrs.size();
 
-  //no op on empty
+  // no op on empty
   if (inArrs[0]->rankOf() == 0 && !inArrs[0]->isEmpty()) {
+    // Scalar case - use direct buffer access
+    T* outBuff = output.bufferAsT<T>();
     auto func = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++) if(!output.isEmpty() && !inArrs[i]->isEmpty()) output.p<T>(i, inArrs[i]->t<T>(0));
+      for (auto i = start; i < stop; i++) {
+        if (!inArrs[i]->isEmpty()) {
+          outBuff[i] = inArrs[i]->bufferAsT<T>()[0];
+        }
+      }
     };
-
     samediff::Threads::parallel_for(func, 0, numOfSubArrs);
-  } else if(!output.isEmpty()) {
+  } else if (!output.isEmpty()) {
     std::vector<sd::LongType> dimVec = {dim};
-    auto vec = ShapeUtils::evalDimsToExclude(output.rankOf(),1,dimVec.data());
-    auto zTadPack = ConstantTadHelper::getInstance().tadForDimensions(
-        output.shapeInfo(), vec);
+    auto vec = ShapeUtils::evalDimsToExclude(output.rankOf(), 1, dimVec.data());
+    auto zTadPack = ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), vec);
     auto zTadShapeInfo = zTadPack->primaryShapeInfo();
     delete vec;
 
@@ -88,11 +92,15 @@ static void stack_(LaunchContext* context, const std::vector<NDArray*>& inArrs, 
     const sd::LongType tadLength = shape::length(zTadShapeInfo);
     const size_t bytesToCopy = tadLength * sizeof(T);
 
+    // Cache pointers and offsets for faster access in loop
+    auto outBuffer = reinterpret_cast<int8_t*>(output.buffer());
+    auto tadOffsets = zTadPack->primaryOffsets();
+
     if (canUseMemcpy) {
       // Fast path: use memcpy for contiguous data
       auto func = PRAGMA_THREADS_FOR {
         for (auto i = start; i < stop; i++) {
-          void* zBuff = output.bufferWithOffset(zTadPack->primaryOffsets()[i]);
+          void* zBuff = outBuffer + tadOffsets[i] * sizeof(T);
           std::memcpy(zBuff, inArrs[i]->buffer(), bytesToCopy);
         }
       };
@@ -101,7 +109,7 @@ static void stack_(LaunchContext* context, const std::vector<NDArray*>& inArrs, 
       // Fallback: use transform for non-contiguous data
       auto func = PRAGMA_THREADS_FOR {
         for (auto i = start; i < stop; i++) {
-          void* zBuff = output.bufferWithOffset(zTadPack->primaryOffsets()[i]);
+          void* zBuff = outBuffer + tadOffsets[i] * sizeof(T);
 
           NativeOpExecutioner::execTransformAny(
               inArrs[0]->getContext(), transform::Assign, inArrs[i]->buffer(), inArrs[i]->shapeInfo(),

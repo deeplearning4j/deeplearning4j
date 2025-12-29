@@ -27,6 +27,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/reverse.h>
+#include <helpers/ShapeUtils.h>
 
 namespace sd {
 namespace ops {
@@ -46,33 +47,30 @@ CONFIGURABLE_OP_IMPL(standardize, 1, 1, true, 0, -2) {
 
   shape::checkDimensions(input->rankOf(), &axis);
 
-  // Compute mean with keepDims=true for broadcasting
-  auto means = input->reduceAlongDimension(reduce::Mean, &axis, true);
+  // Pre-compute shape for mean/stdev with keepDims=true to avoid heap allocations
+  // This creates the shape [1, ..., 1, dim, 1, ..., 1] where reduced dims are 1
+  auto reducedShapeInfo = ShapeUtils::evalReduceShapeInfo('c', &axis, input->shapeInfo(), true, false, block.getWorkspace());
 
-  // Compute VARIANCE (not stdev) - uses Welford's algorithm internally
-  // biasCorrected=false gives population variance (divide by N, not N-1)
-  auto varianceRaw = input->varianceAlongDimension(variance::SummaryStatsVariance, false, &axis);
+  // Create mean and stdev arrays on stack with pre-computed shape
+  NDArray means(reducedShapeInfo, true, block.launchContext());
+  NDArray stdev(reducedShapeInfo, true, block.launchContext());
 
-  // Reshape variance to match means shape for broadcasting
-  // Must use copyToNewBuff=true (default) since we modify in-place and delete varianceRaw
-  auto meansShape = means->getShapeAsVector();
-  auto variance = varianceRaw->reshape(varianceRaw->ordering(), *meansShape);
-  delete meansShape;
-  delete varianceRaw;
+  // Compute mean directly into pre-allocated array
+  input->reduceAlongDimension(reduce::Mean, &means, &axis, true, false);
+
+  // Compute variance directly into stdev array (we'll transform it to stdev in-place)
+  // Note: varianceAlongDimension doesn't have keepDims, so we need to use the correct shape
+  // The target already has the right shape due to reducedShapeInfo with keepDims=true
+  input->varianceAlongDimension(variance::SummaryStatsVariance, stdev, false, &axis);
 
   // Add epsilon BEFORE sqrt: stdev = sqrt(variance + epsilon)
   // This is the numerically stable formula for LayerNorm
-  // Use in-place operations to avoid temporaries
-  variance->applyScalar(scalar::Add, 1e-5, variance);
-  variance->applyTransform(transform::Sqrt, variance);
-  // variance now contains stdev
+  stdev.applyScalar(scalar::Add, 1e-5, &stdev);
+  stdev.applyTransform(transform::Sqrt, &stdev);
 
   // output = (input - mean) / stdev
-  input->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), means, output, false);
-  output->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), variance, output, false);
-
-  delete means;
-  delete variance;
+  input->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), &means, output, false);
+  output->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), &stdev, output, false);
 
   return sd::Status::OK;
 }

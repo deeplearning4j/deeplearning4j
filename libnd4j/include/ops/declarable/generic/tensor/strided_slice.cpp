@@ -21,8 +21,8 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_strided_slice)
 
-#include <helpers/BitwiseUtils.h>
 #include <helpers/ShapeUtils.h>
+#include <cstring>  // for memcpy
 #include <ops/declarable/CustomOperations.h>
 #include <legacy/NativeOpExecutioner.h>
 #include <array>
@@ -468,16 +468,12 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
                  "StridedSlice: Can't find begin/end/stride information neither in IArguments or in input arrays");
   }
 
-  // validation of begin and start
-  std::vector<LongType> ignoreBegin = BitwiseUtils::valueBits(begin_mask);
-  std::vector<LongType> ignoreEnd = BitwiseUtils::valueBits(end_mask);
-  std::vector<LongType> addAxes = BitwiseUtils::valueBits(new_axis_mask);
-  std::vector<LongType> moveAxes = BitwiseUtils::valueBits(shrink_axis_mask);
+  // validation of begin and start - use inline bit testing to avoid heap allocations
   if (shrink_axis_mask == 0)
     for (size_t dim = 0, b = 0, e = 0; dim < static_cast<size_t>(x->rankOf()); ++dim) {
-      if (moveAxes[dim]) continue;
+      if (shrink_axis_mask & (1 << dim)) continue;
 
-      if (b < begin->size() && !ignoreBegin[b] && !addAxes[dim]) {
+      if (b < begin->size() && !(begin_mask & (1 << b)) && !(new_axis_mask & (1 << dim))) {
         int first = strides->at(b) > 0 ? begin->at(b) : math::sd_abs<int,int>(begin->at(b)) - 1;
         if (first > x->sizeAt(dim)) {
           REQUIRE_TRUE(false, 0,
@@ -486,7 +482,7 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
                        begin->at(b), dim);
         }
       }
-      if (e < end->size() && !ignoreEnd[e] && !addAxes[dim]) {
+      if (e < end->size() && !(end_mask & (1 << e)) && !(new_axis_mask & (1 << dim))) {
         int last = strides->at(e) > 0 ? end->at(e) : math::sd_abs<int,int>(end->at(e)) - 1;
         if (last > x->sizeAt(dim)) {
           REQUIRE_TRUE(false, 0,
@@ -527,16 +523,32 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
     LongType offset;
 
     shape::calcSubArrShapeInfoAndOffset(indices->data(), x->shapeInfo(), subArrShapeInfo, offset, true, true);
-    auto subArrShapeInfoPack = ConstantShapeHelper::getInstance().bufferForShapeInfo(subArrShapeInfo);
 
-    NDArray::prepareSpecialUse({z}, {x});
+    // Fast path: check if both source slice and destination are contiguous
+    // For contiguous memory, use memcpy instead of transform
+    const LongType length = z->lengthOf();
+    const bool subContiguous = shape::order(subArrShapeInfo) == 'c' &&
+                                shape::strideDescendingCAscendingF(subArrShapeInfo);
+    const bool zContiguous = z->ordering() == 'c' &&
+                              shape::strideDescendingCAscendingF(z->shapeInfo());
 
-    NativeOpExecutioner::execTransformAny(block.launchContext(), transform::Assign, x->bufferWithOffset(offset),
-                                          subArrShapeInfoPack->primary(), x->specialBufferWithOffset(offset),
-                                          subArrShapeInfoPack->special(), z->buffer(), z->shapeInfo(),
-                                          z->specialBuffer(), z->specialShapeInfo(), nullptr, true);
+    if (subContiguous && zContiguous && length > 0) {
+      // Both contiguous - use direct memcpy
+      const auto sizeBytes = length * x->sizeOfT();
+      std::memcpy(z->buffer(), x->bufferWithOffset(offset), sizeBytes);
+    } else {
+      // Non-contiguous - use transform
+      auto subArrShapeInfoPack = ConstantShapeHelper::getInstance().bufferForShapeInfo(subArrShapeInfo);
 
-    NDArray::registerSpecialUse({z}, {x});
+      NDArray::prepareSpecialUse({z}, {x});
+
+      NativeOpExecutioner::execTransformAny(block.launchContext(), transform::Assign, x->bufferWithOffset(offset),
+                                            subArrShapeInfoPack->primary(), x->specialBufferWithOffset(offset),
+                                            subArrShapeInfoPack->special(), z->buffer(), z->shapeInfo(),
+                                            z->specialBuffer(), z->specialShapeInfo(), nullptr, true);
+
+      NDArray::registerSpecialUse({z}, {x});
+    }
 
     RELEASE(subArrShapeInfo, block.getWorkspace());
 
@@ -700,23 +712,18 @@ CUSTOM_OP_IMPL(strided_slice_bp, 2, 1, false, 0, 5) {
                  "StridedSliceBP: Can't find begin/end/stride information neither in IArguments or in input arrays");
   }
 
-  // validation of begin and start
-  std::vector<LongType> ignoreBegin = BitwiseUtils::valueBits(begin_mask);
-  std::vector<LongType> ignoreEnd = BitwiseUtils::valueBits(end_mask);
-  std::vector<LongType> addAxes = BitwiseUtils::valueBits(new_axis_mask);
-  std::vector<LongType> moveAxes = BitwiseUtils::valueBits(shrink_axis_mask);
-
+  // validation of begin and start - use inline bit testing to avoid heap allocations
   for (size_t dim = 0, b = 0, e = 0; dim < static_cast<size_t>(x->rankOf()); ++dim) {
-    if (moveAxes[dim]) continue;
+    if (shrink_axis_mask & (1 << dim)) continue;
 
-    if (b < begin.size() && !ignoreBegin[b] && !addAxes[dim]) {
+    if (b < begin.size() && !(begin_mask & (1 << b)) && !(new_axis_mask & (1 << dim))) {
       int first = strides[b] > 0 ? begin[b] : math::sd_abs<int,int>(begin[b]) - 1;
       REQUIRE_TRUE(first <= x->sizeAt(dim), 0,
                    "StridedSlice: begin index should be <= corresponding dimension of input array, but got end_index = "
                    "%i for dimension %i!",
                    begin[b], dim);
     }
-    if (e < end.size() && !ignoreEnd[e] && !addAxes[dim]) {
+    if (e < end.size() && !(end_mask & (1 << e)) && !(new_axis_mask & (1 << dim))) {
       int last = strides[e] > 0 ? end[e] : math::sd_abs<int,int>(end[e]) - 1;
       REQUIRE_TRUE(last <= x->sizeAt(dim), 0,
                    "StridedSlice: end index should be <= corresponding dimension of input array, but got end_index = "

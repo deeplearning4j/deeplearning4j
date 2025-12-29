@@ -26,6 +26,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
+import org.nd4j.autodiff.samediff.optimize.OptimizerSet;
 import org.nd4j.common.base.Preconditions;
 
 import java.io.*;
@@ -187,6 +189,99 @@ public class SDZSerializer {
             }
         }
         log.info("Successfully saved SameDiff model to ZIP archive: {}", outputZipFile.getAbsolutePath());
+    }
+
+    /**
+     * Saves the SameDiff model to a ZIP archive with graph optimization applied.
+     * The model is first optimized using the default optimization passes, then saved.
+     * This produces a more efficient model for inference.
+     *
+     * @param sameDiff         The SameDiff instance to save.
+     * @param outputZipFile    The path to the output ZIP file (should end with .sdz).
+     * @param saveUpdaterState If true, include updater state in the internal shards.
+     * @param metadata         Optional metadata passed to the internal SameDiffSerializer.
+     * @param requiredOutputs  The output variable names that must be preserved during optimization.
+     *                         These are the outputs you will use for inference.
+     * @throws IOException If saving or zipping fails.
+     */
+    @SneakyThrows
+    public static void saveOptimized(@NonNull SameDiff sameDiff, @NonNull File outputZipFile,
+                                     boolean saveUpdaterState, Map<String, String> metadata,
+                                     @NonNull List<String> requiredOutputs) throws IOException {
+        saveOptimized(sameDiff, outputZipFile, saveUpdaterState, metadata, requiredOutputs,
+                GraphOptimizer.defaultOptimizations());
+    }
+
+    /**
+     * Saves the SameDiff model to a ZIP archive with custom graph optimizations applied.
+     * The model is first optimized using the provided optimization passes, then saved.
+     *
+     * @param sameDiff         The SameDiff instance to save.
+     * @param outputZipFile    The path to the output ZIP file (should end with .sdz).
+     * @param saveUpdaterState If true, include updater state in the internal shards.
+     * @param metadata         Optional metadata passed to the internal SameDiffSerializer.
+     * @param requiredOutputs  The output variable names that must be preserved during optimization.
+     * @param optimizations    The list of optimization passes to apply.
+     * @throws IOException If saving or zipping fails.
+     */
+    @SneakyThrows
+    public static void saveOptimized(@NonNull SameDiff sameDiff, @NonNull File outputZipFile,
+                                     boolean saveUpdaterState, Map<String, String> metadata,
+                                     @NonNull List<String> requiredOutputs,
+                                     @NonNull List<OptimizerSet> optimizations) throws IOException {
+        Preconditions.checkNotNull(sameDiff, "SameDiff instance cannot be null");
+        Preconditions.checkNotNull(outputZipFile, "Output ZIP file path cannot be null.");
+        Preconditions.checkNotNull(requiredOutputs, "Required outputs cannot be null");
+        Preconditions.checkArgument(!requiredOutputs.isEmpty(), "At least one required output must be specified");
+
+        log.info("Applying graph optimizations before saving...");
+        log.info("Required outputs: {}", requiredOutputs);
+        log.info("Number of optimization passes: {}", optimizations.size());
+
+        // Apply graph optimization - this creates a new optimized SameDiff instance
+        SameDiff optimizedSd = GraphOptimizer.optimize(sameDiff, requiredOutputs, optimizations);
+
+        int originalOps = sameDiff.getOps().size();
+        int optimizedOps = optimizedSd.getOps().size();
+        int originalVars = sameDiff.getVariables().size();
+        int optimizedVars = optimizedSd.getVariables().size();
+
+        log.info("Optimization complete. Original ops: {}, Optimized ops: {} (reduced by {})",
+                originalOps, optimizedOps, originalOps - optimizedOps);
+        log.info("Original variables: {}, Optimized variables: {} (reduced by {})",
+                originalVars, optimizedVars, originalVars - optimizedVars);
+
+        // Add optimization metadata
+        Map<String, String> fullMetadata = new java.util.HashMap<>();
+        if (metadata != null) {
+            fullMetadata.putAll(metadata);
+        }
+        fullMetadata.put("optimized", "true");
+        fullMetadata.put("optimization_timestamp", String.valueOf(System.currentTimeMillis()));
+        fullMetadata.put("original_ops", String.valueOf(originalOps));
+        fullMetadata.put("optimized_ops", String.valueOf(optimizedOps));
+        fullMetadata.put("original_variables", String.valueOf(originalVars));
+        fullMetadata.put("optimized_variables", String.valueOf(optimizedVars));
+        fullMetadata.put("required_outputs", String.join(",", requiredOutputs));
+
+        // Save the optimized model with metadata
+        save(optimizedSd, outputZipFile, saveUpdaterState, fullMetadata);
+    }
+
+    /**
+     * Convenience method to save an optimized model with a single output.
+     *
+     * @param sameDiff         The SameDiff instance to save.
+     * @param outputZipFile    The path to the output ZIP file.
+     * @param saveUpdaterState If true, include updater state.
+     * @param requiredOutput   The single output variable name to preserve.
+     * @throws IOException If saving fails.
+     */
+    @SneakyThrows
+    public static void saveOptimized(@NonNull SameDiff sameDiff, @NonNull File outputZipFile,
+                                     boolean saveUpdaterState, @NonNull String requiredOutput) throws IOException {
+        saveOptimized(sameDiff, outputZipFile, saveUpdaterState, null,
+                java.util.Collections.singletonList(requiredOutput));
     }
 
     /**

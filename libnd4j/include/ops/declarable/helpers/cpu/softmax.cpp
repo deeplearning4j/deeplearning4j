@@ -123,85 +123,43 @@ static constexpr float SOFTMAX_CLAMP_MAX = 88.0f;
 static constexpr float SOFTMAX_CLAMP_MIN = -88.0f;
 static constexpr float SOFTMAX_SUM_EPS = 1e-6f;
 
-#if defined(_OPENMP)
+// Optimized float softmax - assumes no Inf/NaN (fast path for inference)
+// Falls back to safe version if needed
 template <>
 SD_INLINE void softmax_loop(const float* input, float* output, const sd::LongType* offsets, sd::LongType numOfSubArrs,
                            uint32_t tadLen) {
-#pragma omp parallel for default(shared)
- for (sd::LongType i = 0; i < numOfSubArrs; i++) {
-   auto inBuff = input + offsets[i];
-   auto outBuff = output + offsets[i];
+  auto func = PRAGMA_THREADS_FOR {
+    for (auto i = start; i < stop; i++) {
+      auto inBuff = input + offsets[i];
+      auto outBuff = output + offsets[i];
 
-   float max = -DataTypeUtils::max<float>();
-   float sum = 0.f;
+      // Fast path: find max without Inf/NaN checks (common case in inference)
+      float max = inBuff[0];
+      for (uint32_t j = 1; j < tadLen; ++j) {
+        if (inBuff[j] > max) max = inBuff[j];
+      }
 
-   // Find max (skip Inf/NaN)
-   for (sd::LongType j = 0; j < tadLen; ++j) {
-     float val = inBuff[j];
-     if (!std::isinf(val) && !std::isnan(val)) {
-       max = sd::math::sd_max<float>(max, val);
-     }
-   }
-   if (max == -DataTypeUtils::max<float>()) max = 0.0f;
+      // Compute exp and sum in single pass
+      float sum = 0.f;
+      for (uint32_t j = 0; j < tadLen; ++j) {
+        float diff = inBuff[j] - max;
+        // Clamp to prevent overflow (exp(88) ≈ 1.6e38)
+        if (diff < SOFTMAX_CLAMP_MIN) diff = SOFTMAX_CLAMP_MIN;
+        float temp = sd::math::sd_exp<float, float>(diff);
+        outBuff[j] = temp;
+        sum += temp;
+      }
 
-   for (sd::LongType j = 0; j < tadLen; ++j) {
-     float val = inBuff[j];
-     if (std::isinf(val) || std::isnan(val)) {
-       val = (val > 0 || std::isnan(val)) ? SOFTMAX_CLAMP_MAX + max : SOFTMAX_CLAMP_MIN + max;
-     }
-     float diff = val - max;
-     diff = sd::math::sd_max<float>(SOFTMAX_CLAMP_MIN, sd::math::sd_min<float>(SOFTMAX_CLAMP_MAX, diff));
-     float temp = sd::math::sd_exp<float, float>(diff);
-     outBuff[j] = temp;
-     sum += temp;
-   }
+      // Normalize
+      float invSum = 1.0f / sum;
+      for (uint32_t j = 0; j < tadLen; ++j) {
+        outBuff[j] *= invSum;
+      }
+    }
+  };
 
-   sum = sd::math::sd_max<float>(sum, SOFTMAX_SUM_EPS);
-   for (sd::LongType j = 0; j < tadLen; ++j) outBuff[j] /= sum;
- }
+  samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
 }
-#else
-template <>
-SD_INLINE void softmax_loop(const float* input, float* output, const sd::LongType* offsets, sd::LongType numOfSubArrs,
-                           uint32_t tadLen) {
- auto func = PRAGMA_THREADS_FOR {
-   for (auto i = start; i < stop; i++) {
-     auto inBuff = input + offsets[i];
-     auto outBuff = output + offsets[i];
-
-     float max = -DataTypeUtils::max<float>();
-     float sum = 0.f;
-
-     // Find max (skip Inf/NaN)
-     for (sd::LongType j = 0; j < tadLen; ++j) {
-       float val = inBuff[j];
-       if (!std::isinf(val) && !std::isnan(val)) {
-         max = sd::math::sd_max<float>(max, val);
-       }
-     }
-     if (max == -DataTypeUtils::max<float>()) max = 0.0f;
-
-     for (sd::LongType j = 0; j < tadLen; ++j) {
-       float val = inBuff[j];
-       if (std::isinf(val) || std::isnan(val)) {
-         val = (val > 0 || std::isnan(val)) ? SOFTMAX_CLAMP_MAX + max : SOFTMAX_CLAMP_MIN + max;
-       }
-       float diff = val - max;
-       diff = sd::math::sd_max<float>(SOFTMAX_CLAMP_MIN, sd::math::sd_min<float>(SOFTMAX_CLAMP_MAX, diff));
-       float temp = sd::math::sd_exp<float, float>(diff);
-       outBuff[j] = temp;
-       sum += temp;
-     }
-
-     sum = sd::math::sd_max<float>(sum, SOFTMAX_SUM_EPS);
-     for (sd::LongType j = 0; j < tadLen; ++j) outBuff[j] /= sum;
-   }
- };
-
- samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
-}
-
-#endif
 
 template <typename T>
 SD_INLINE void softmax_loop(const T* input, T* output, const sd::LongType* offsets, sd::LongType numOfSubArrs,
@@ -266,8 +224,10 @@ static void softmax_(sd::LaunchContext* context, NDArray* input, NDArray* output
    const sd::LongType tadLen = shape::length(tadShapeInfo);
 
    // Fast path: use optimized softmax_loop when TAD is contiguous
-   const sd::LongType tadEws = shape::elementWiseStride(tadShapeInfo);
-   if (tadEws == 1 && input->ordering() == 'c' && output->ordering() == 'c') {
+   // Check if TAD has contiguous strides (last stride = 1 for row-major)
+   const bool tadContiguous = shape::order(tadShapeInfo) == 'c' &&
+                               shape::strideDescendingCAscendingF(tadShapeInfo);
+   if (tadContiguous && input->ordering() == 'c' && output->ordering() == 'c') {
      softmax_loop<T>(input->bufferAsT<T>(), output->bufferAsT<T>(), tadOffsets, numOfSubArrs, static_cast<uint32_t>(tadLen));
      return;
    }

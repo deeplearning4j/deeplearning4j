@@ -840,7 +840,12 @@ NDArray::NDArray(DataBuffer *buffer,
 
   }
 
-  if(buffer->getNumElements() < 1 && !shape::isEmptyConst(shapeInfo)) {
+  // Validate buffer integrity before accessing - catches use-after-free
+  if(buffer != nullptr) {
+    buffer->validateIntegrity();
+  }
+
+  if(buffer != nullptr && buffer->getNumElements() < 1 && !shape::isEmptyConst(shapeInfo)) {
     THROW_EXCEPTION("NDArray::NDArray(DataBuffer *  buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const sd::LongType offset) - buffer is empty !");
   }
 
@@ -2986,28 +2991,41 @@ void NDArray::copyDataForAssign(NDArray *thisArray, NDArray *other, const sd::Lo
     thisArray->registerSpecialUse({thisArray}, {other});
 
   } else {
-    // Fast path: use memcpy when both arrays are contiguous with same type and length
+    // Fast path: use memcpy when both arrays are contiguous with same type, length, and order
+    // CRITICAL: Must check that source (thisArray) and destination (other) have the same order,
+    // and that both are contiguous and neither is a view.
+    // Note: otherShapeInfo is the SOURCE's (possibly reshaped) shapeInfo, NOT the destination's!
+    // We must use other->shapeInfo() for destination checks.
+    bool sameOrder = (shape::order(thisArray->shapeInfo()) == shape::order(other->shapeInfo()));
+    bool neitherIsView = !thisArray->isView() && !other->isView();
     bool canUseMemcpy = (thisArray->dataType() == other->dataType()) &&
                         (thisArray->lengthOf() == other->lengthOf()) &&
+                        sameOrder &&
+                        neitherIsView &&
                         isContiguousLayout(thisArray->shapeInfo()) &&
-                        isContiguousLayout(otherShapeInfo);
+                        isContiguousLayout(other->shapeInfo());
 
     if (canUseMemcpy) {
-      // Direct memcpy - much faster for contiguous arrays
+      // Direct memcpy - much faster for contiguous arrays with same order
       std::memcpy(other->buffer(), thisArray->buffer(), thisArray->lengthOf() * thisArray->sizeOfT());
       return;
     }
 
     thisArray->prepareSpecialUse({thisArray}, {other});
 
+    // FIX: Use source's shapeInfo for reading (thisArray->shapeInfo()) and
+    // destination's shapeInfo for writing (other->shapeInfo()).
+    // The old code used otherShapeInfo (source's possibly-reshaped shapeInfo) for
+    // the destination, causing data to be written to wrong locations when source
+    // and destination have different strides (e.g., permute/transpose operations).
     NativeOpExecutioner::execTransformAny(thisArray->getContext(),
                                           transform::Assign,
                                           thisArray->buffer(),
-                                          thisArray->shapeInfo(),
+                                          thisArray->shapeInfo(),     // Source's shapeInfo for reading
                                           thisArray->specialBuffer(),
                                           thisArray->specialShapeInfo(),
                                           other->buffer(),
-                                          otherShapeInfo,
+                                          other->shapeInfo(),         // Destination's actual shapeInfo for writing
                                           other->specialBuffer(),
                                           other->specialShapeInfo(),
                                           nullptr,
@@ -3196,7 +3214,7 @@ bool NDArray::permutei(const std::initializer_list<LongType> &dimensions, const 
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::permutei(std::vector<LongType> &dimensions, const bool copyToNewBuff, const bool resetStrides) {
-  return permutei(dimensions.data(), rankOf());
+  return permutei(dimensions.data(), rankOf(), resetStrides);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -6244,7 +6262,13 @@ BUILD_SINGLE_TEMPLATE(void NDArray::templatedAssign,
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::permutei(sd::LongType *dimensions, const int rank) {
-  auto shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, this, getContext()->getWorkspace(),true);
+  // Default to resetting strides for backwards compatibility
+  return permutei(dimensions, rank, true);
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool NDArray::permutei(sd::LongType *dimensions, const int rank, const bool resetStrides) {
+  auto shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, this, getContext()->getWorkspace(), resetStrides);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfoWithView(shapeInfo);
   // BUGFIX: Must update _shapeInfoBuffer for proper lifecycle management
   if (_shapeInfoBuffer != nullptr) {

@@ -52,7 +52,7 @@ public class StringListToIndicesNDArrayTransform extends StringListToCountsNDArr
 
     @Override
     protected INDArray makeBOWNDArray(Collection<Integer> indices) {
-        INDArray counts = Nd4j.zeros(1, indices.size());
+        INDArray counts = Nd4j.zeros(Nd4j.dataType(), 1, indices.size());
         List<Integer> indicesSorted = new ArrayList<>(indices);
         Collections.sort(indicesSorted);
         for (int i = 0; i < indicesSorted.size(); i++)

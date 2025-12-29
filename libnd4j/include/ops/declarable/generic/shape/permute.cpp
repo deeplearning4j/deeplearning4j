@@ -57,7 +57,21 @@ CUSTOM_OP_IMPL(permute, 1, 1, true, 0, -2) {
   }
   REQUIRE_TRUE(permutationVector.size() == static_cast<size_t>(x->rankOf()),permutationVector.size(),"PERMUTE OP: number of permutations is less in size than input rank.");
 
-  z->assign(x->permute(permutationVector, false, false));
+  // Fast path: check if permutation is identity [0, 1, 2, ...]
+  bool isIdentity = true;
+  for (size_t i = 0; i < permutationVector.size(); ++i) {
+    if (permutationVector[i] != static_cast<LongType>(i)) {
+      isIdentity = false;
+      break;
+    }
+  }
+
+  if (isIdentity) {
+    // No permutation needed - direct assign
+    z->assign(x);
+  } else {
+    z->assign(x->permute(permutationVector, false, false));
+  }
 
   return Status::OK;
 }

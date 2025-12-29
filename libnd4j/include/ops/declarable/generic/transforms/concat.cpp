@@ -42,10 +42,17 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
   // also if scalar is present -> copy its value to vector with length=1
   std::vector<NDArray*> nonEmptyArrs;
   std::vector<NDArray*> arrsToDelete;  // Track allocated arrays for cleanup
-  LongType index = 0;
+
+  // Pre-reserve capacity to avoid repeated reallocations
+  nonEmptyArrs.reserve(numOfInArrs);
+  arrsToDelete.reserve(numOfInArrs);  // Worst case: all inputs are scalars
+
   bool allOfSameType = true;
   auto rankOfFirstArr = block.width() > 0 ? INPUT_VARIABLE(0)->rankOf() : 0;
   auto typeOfFirstArr = block.width() > 0 ? INPUT_VARIABLE(0)->dataType() : block.dataType();
+
+  // Shape for scalar-to-vector conversion
+  std::vector<sd::LongType> scalarShape = {1};
 
   for (LongType i = 0; i < numOfInArrs; ++i) {
     auto input = INPUT_VARIABLE(i);
@@ -53,11 +60,10 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
       allOfSameType &= (typeOfFirstArr == input->dataType());
 
       if (input->rankOf() == 0) {
-        std::vector<sd::LongType> shape = {1};
         NDArray* vec = nullptr;
 #ifdef __cpp_exceptions
         try {
-          vec = new NDArray('c', shape, input->dataType(), block.launchContext());
+          vec = new NDArray('c', scalarShape, input->dataType(), block.launchContext());
           vec->assign(input);
           nonEmptyArrs.push_back(vec);
           arrsToDelete.push_back(vec);  // Mark for cleanup
@@ -70,7 +76,7 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
           throw;
         }
 #else
-        vec = new NDArray('c', shape, input->dataType(), block.launchContext());
+        vec = new NDArray('c', scalarShape, input->dataType(), block.launchContext());
         vec->assign(input);
         nonEmptyArrs.push_back(vec);
         arrsToDelete.push_back(vec);  // Mark for cleanup
@@ -78,7 +84,6 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
       } else {
         nonEmptyArrs.push_back(input);
       }
-      ++index;
     }
   }
 
@@ -119,6 +124,9 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
     REQUIRE_TRUE(false, 0, "CONCAT op: input axis must be in range [0, %i], but got %i instead!", rank - 1, axis);
   }
 
+  // Cache first array's shape to avoid repeated sizeAt() calls
+  const sd::LongType* firstShape = shape::shapeOf(nonEmptyArrs[0]->shapeInfo());
+
   for (LongType i = 1; i < numOfNonEmptyArrs; ++i) {
     if (nonEmptyArrs[i]->rankOf() != rank) {
       std::string error;
@@ -128,25 +136,26 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
       error += std::to_string(rank);
       error += " but was: ";
       error += std::to_string(nonEmptyArrs[i]->rankOf());
-      
+
       // Cleanup before throwing
       for (auto arr : arrsToDelete) delete arr;
       REQUIRE_TRUE(false, 0, error.c_str());
     }
 
+    const sd::LongType* currentShape = shape::shapeOf(nonEmptyArrs[i]->shapeInfo());
     for (LongType dim = 0; dim < rank; ++dim) {
       if (dim != axis) {
-        if (nonEmptyArrs[i]->sizeAt(dim) != nonEmptyArrs[0]->sizeAt(dim)) {
+        if (currentShape[dim] != firstShape[dim]) {
           std::string error;
           error += "CONCAT op: array at index ";
           error += std::to_string(i);
           error += " did not have same dimension at position ";
           error += std::to_string(dim);
           error += ". Expected dimension: ";
-          error += std::to_string(nonEmptyArrs[0]->sizeAt(dim));
+          error += std::to_string(firstShape[dim]);
           error += " but was: ";
-          error += std::to_string(nonEmptyArrs[i]->sizeAt(dim));
-          
+          error += std::to_string(currentShape[dim]);
+
           // Cleanup before throwing
           for (auto arr : arrsToDelete) delete arr;
           REQUIRE_TRUE(false, 0, error.c_str());
@@ -200,36 +209,36 @@ DECLARE_SHAPE_FN(concat) {
   }
 
   for (LongType i = 0; i < numOfInArrs; i++) {
-    if (shape::rank(inputShape->at(i)) <= 1) {
-      if (shape::isEmptyConst(inputShape->at(i))) {
-        int isScalar = shape::isScalar(inputShape->at(i));
-        int len = isScalar ? 1 : shape::length(inputShape->at(i));
-        newDim += len;
-        arrShapes.push_back(inputShape->at(i));
-      } else {
-        int isScalar = shape::isScalar(inputShape->at(i));
-        int len = isScalar ? 1 : shape::length(inputShape->at(i));
-        newDim += len;
-        arrShapes.push_back(ConstantShapeHelper::getInstance().vectorShapeInfo(len, INPUT_VARIABLE(0)->dataType()));
+    // Cache inputShape->at(i) to avoid repeated lookups
+    const sd::LongType* currentShapeInfo = inputShape->at(i);
+    const int currentRank = shape::rank(currentShapeInfo);
 
+    if (currentRank <= 1) {
+      const bool isEmpty = shape::isEmptyConst(currentShapeInfo);
+      const bool isScalar = shape::isScalar(currentShapeInfo);
+      const int len = isScalar ? 1 : shape::length(currentShapeInfo);
+      newDim += len;
+
+      if (isEmpty) {
+        arrShapes.push_back(const_cast<sd::LongType*>(currentShapeInfo));
+      } else {
+        arrShapes.push_back(ConstantShapeHelper::getInstance().vectorShapeInfo(len, INPUT_VARIABLE(0)->dataType()));
         if (firstNonEmptyShapeIdx < 0)
           firstNonEmptyShapeIdx = i;
         numOfNonEmptyArrs++;
       }
     } else {
-      if (!shape::isEmptyConst(inputShape->at(i))) {
+      const bool isEmpty = shape::isEmptyConst(currentShapeInfo);
+      const sd::LongType* currShape = shape::shapeOf(currentShapeInfo);
+      newDim += currShape[axis];
+
+      if (!isEmpty) {
         numOfNonEmptyArrs++;
         if (firstNonEmptyShapeIdx < 0)
           firstNonEmptyShapeIdx = i;
-        auto currShape = shape::shapeOf(inputShape->at(i));
-        newDim += currShape[axis];
-      } else {
-        //empty arrays can still have a shape and should be accounted for
-        auto currShape = shape::shapeOf(inputShape->at(i));
-        newDim += currShape[axis];
       }
 
-      arrShapes.push_back(inputShape->at(i));
+      arrShapes.push_back(const_cast<sd::LongType*>(currentShapeInfo));
     }
   }
 
@@ -244,9 +253,9 @@ DECLARE_SHAPE_FN(concat) {
     COPY_SHAPE(arrShapes.at(0), outShapeInfo);
     auto currShape = shape::shapeOf(outShapeInfo);
     currShape[axis] = newDim;
-    std::vector<LongType> shapeVec;
+    std::vector<LongType> shapeVec(rank);
     for (int i = 0; i < rank; i++) {
-      shapeVec.push_back(currShape[i]);
+      shapeVec[i] = currShape[i];
     }
 
     // All inputs are empty arrays -> return empty, mainly for TF import compatibility (no op)

@@ -25,6 +25,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
+#include <ops/declarable/helpers/broadcastableFused.h>
 
 namespace sd {
 namespace ops {
@@ -37,20 +38,48 @@ BROADCASTABLE_OP_IMPL(subtract, 0, 0) {
 
   // Fast path: same shape - skip BroadcastHelper dispatch overhead
   if (x->isSameShape(y)) {
+    // Ultra-fast path for contiguous same-shape
+    const bool xContiguous = x->ordering() == 'c' && shape::strideDescendingCAscendingF(x->shapeInfo());
+    const bool yContiguous = y->ordering() == 'c' && shape::strideDescendingCAscendingF(y->shapeInfo());
+    const bool zContiguous = z->ordering() == 'c' && shape::strideDescendingCAscendingF(z->shapeInfo());
+
+    if (xContiguous && yContiguous && zContiguous) {
+      helpers::fusedSubtractContiguous(*x, *y, *z);
+      return Status::OK;
+    }
+
     x->applyPairwiseTransform(pairwise::Subtract, y, z, nullptr);
     return Status::OK;
   }
 
-  // Fast path: scalar broadcast - common for bias subtraction
-  if (y->isScalar()) {
+  // Fast path: scalar or effectively-scalar (length 1) broadcast
+  const auto xLen = x->lengthOf();
+  const auto yLen = y->lengthOf();
+
+  if (yLen == 1) {
     x->applyScalarArr(scalar::Subtract, y, z);
     return Status::OK;
   }
-  if (x->isScalar()) {
-    // x - y where x is scalar: negate y then add scalar
-    y->applyTransform(transform::Neg, z);
-    z->applyScalarArr(scalar::Add, x, z);
+  if (xLen == 1) {
+    // x - y where x is scalar: use ReverseSubtract
+    y->applyScalarArr(scalar::ReverseSubtract, x, z);
     return Status::OK;
+  }
+
+  // Fast path: 1D-like array broadcast along last dimension
+  const auto xRank = x->rankOf();
+  const auto yRank = y->rankOf();
+
+  if (xRank > 1 && yLen == x->sizeAt(-1)) {
+    bool compatible = true;
+    for (int i = 0; i < yRank - 1; i++) {
+      if (y->sizeAt(i) != 1) { compatible = false; break; }
+    }
+    if (compatible && (yRank == 1 || y->sizeAt(-1) == x->sizeAt(-1))) {
+      std::vector<sd::LongType> dims = {xRank - 1};
+      x->applyBroadcast(broadcast::Subtract, &dims, y, z);
+      return Status::OK;
+    }
   }
 
   auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::Subtract(), x, y, z);

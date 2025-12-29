@@ -40,10 +40,13 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.learning.config.Sgd;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 
 @Getter
+@Slf4j
 public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater {
 
     protected final T network;
@@ -88,7 +91,13 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                     String var = variables.get(j);
                     long paramSizeThisVariable = layerParamTable.get(var).length();
                     IUpdater u = layers[i].getConfig().getUpdaterByParam(var);
-                    Preconditions.checkNotNull(u, "Updater for parameter %s, layer \"%s\" was null", var, layers[i].getConfig().getLayerName());
+                    if (u == null) {
+                        // Fall back to a default Sgd updater if none is configured
+                        // This can happen when loading models saved without updater configuration
+                        u = new Sgd();
+                        log.warn("No updater configured for parameter {} in layer \"{}\". Using default Sgd updater.",
+                                var, layers[i].getConfig().getLayerName());
+                    }
                     int updaterStateSizeThisVariable = (int) u.stateSize(paramSizeThisVariable);
 
                     INDArray gradientViewSubset = null;

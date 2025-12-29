@@ -43,6 +43,29 @@ BROADCASTABLE_OP_IMPL(floordiv, 0, 0) {
     return Status::OK;
   }
 
+  // Fast path: scalar or effectively-scalar (length 1) divisor
+  const auto yLen = y->lengthOf();
+  if (yLen == 1) {
+    x->applyScalarArr(scalar::FloorDiv, y, z);
+    return Status::OK;
+  }
+
+  // Fast path: 1D-like divisor broadcast along last dimension
+  const auto xRank = x->rankOf();
+  const auto yRank = y->rankOf();
+
+  if (xRank > 1 && yLen == x->sizeAt(-1)) {
+    bool compatible = true;
+    for (int i = 0; i < yRank - 1; i++) {
+      if (y->sizeAt(i) != 1) { compatible = false; break; }
+    }
+    if (compatible && (yRank == 1 || y->sizeAt(-1) == x->sizeAt(-1))) {
+      std::vector<sd::LongType> dims = {xRank - 1};
+      x->applyBroadcast(broadcast::FloorDiv, &dims, y, z);
+      return Status::OK;
+    }
+  }
+
   auto tZ = BroadcastHelper::broadcastApply(
       BroadcastOpsTuple::custom(scalar::FloorDiv, pairwise::FloorDiv, broadcast::FloorDiv), x, y, z);
   if (tZ == nullptr)

@@ -22,6 +22,7 @@
 
 #include <system/op_boilerplate.h>
 #include <ops/declarable/CustomOperations.h>
+#include <cstring>
 
 #if NOT_EXCLUDED(OP_shape_of)
 
@@ -33,7 +34,26 @@ CUSTOM_OP_IMPL(shape_of, 1, 1, false, 0, 0) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
-  for (int e = 0; e < x->rankOf(); e++) z->p(e, x->sizeAt(e));
+  // Cache rank and get direct pointer to shape array for better performance
+  const int rank = x->rankOf();
+  const sd::LongType* xShape = shape::shapeOf(x->shapeInfo());
+
+  // Use direct buffer write based on output type
+  if (z->dataType() == sd::DataType::INT64) {
+    // Fast path: direct memcpy for INT64 (most common case)
+    auto zBuff = z->bufferAsT<sd::LongType>();
+    std::memcpy(zBuff, xShape, rank * sizeof(sd::LongType));
+  } else if (z->dataType() == sd::DataType::INT32) {
+    auto zBuff = z->bufferAsT<int>();
+    for (int e = 0; e < rank; e++) {
+      zBuff[e] = static_cast<int>(xShape[e]);
+    }
+  } else {
+    // Fallback for other int types
+    for (int e = 0; e < rank; e++) {
+      z->p(e, xShape[e]);
+    }
+  }
 
   STORE_RESULT(z);
 

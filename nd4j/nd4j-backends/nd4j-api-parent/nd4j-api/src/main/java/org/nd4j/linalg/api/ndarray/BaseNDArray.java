@@ -300,10 +300,29 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         // operations don't write - though this does have a small performance cost.
         // This was changed after memory management updates caused sporadic NaN outputs
         // in reduce operations like norm2() where the native code wasn't writing to output.
-        this(descriptor.isEmpty() ? null :
-                        Nd4j.createBuffer(descriptor.dataType(),descriptor.length(),true)
-                , descriptor);
+        //
+        // CRITICAL FIX 2: For scalars (rank 0), we must always create a buffer even if
+        // descriptor.isEmpty() returns true. Scalars have shape [] but still need 1 element
+        // of storage. The isEmpty flag can be incorrectly set for scalars created via
+        // Nd4j.create(dt, new long[]{}) or reduce operations.
+        // A truly empty array has shape containing a 0 dimension (like [0, 5]).
+        // A scalar has rank 0 (shape.length == 0) and always needs a buffer of size 1.
+        this(createBufferForDescriptor(descriptor), descriptor);
         this.offset = descriptor.getOffset();
+    }
+
+    /**
+     * Helper method to create buffer for a LongShapeDescriptor.
+     * Scalars (rank 0) always get a buffer of size 1, even if isEmpty() returns true.
+     */
+    private static DataBuffer createBufferForDescriptor(LongShapeDescriptor descriptor) {
+        boolean isRankZero = descriptor.rank() == 0;
+        boolean needsBuffer = isRankZero || !descriptor.isEmpty();
+        if (!needsBuffer) {
+            return null;
+        }
+        long bufferLength = isRankZero ? 1 : descriptor.length();
+        return Nd4j.createBuffer(descriptor.dataType(), bufferLength, true);
     }
 
     /**
@@ -6436,10 +6455,19 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             DataBuffer buffer = data();
             DataBuffer shapeInfo = shapeInfoDataBuffer();
 
+            // CRITICAL FIX: For reduce operations that produce scalar results, the shape info
+            // may incorrectly have the EMPTY bit set even though the buffer is valid.
+            // This happens because isEmpty(buffer, shape) can return true when buffer.length() < 1,
+            // but for scalars created via Nd4j.scalar(), the buffer should have exactly 1 element.
+            // We should only pass null for the buffer if it's actually null or has zero elements.
+            // The isEmpty() flag in shape info may be stale/incorrect, so we use the actual buffer state.
+            boolean bufferIsEmpty = buffer == null || buffer.length() < 1;
+
+
             OpaqueNDArray ret = OpaqueNDArray.create(
                     shapeInfo.opaqueBuffer(),
-                    isEmpty() ? null : buffer.opaqueBuffer(),
-                    isEmpty() ? null : buffer.opaqueBuffer(),
+                    bufferIsEmpty ? null : buffer.opaqueBuffer(),
+                    bufferIsEmpty ? null : buffer.opaqueBuffer(),
                     offset()
             );
             opaqueNDArray = ret;

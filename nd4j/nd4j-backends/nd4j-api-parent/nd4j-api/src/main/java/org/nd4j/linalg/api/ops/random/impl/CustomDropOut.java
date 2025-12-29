@@ -100,7 +100,11 @@ public class CustomDropOut extends DynamicCustomOp {
     @Override
     public List<DataBuffer> calculateOutputShape(OpContext oc) {
         INDArray input = oc.getInputArray(0);
-        return Arrays.asList(input.shapeInfoDataBuffer());
+        // Return 2 shapes: one for dropout output, one for mask (both same shape as input)
+        // Create separate buffer copies to avoid sharing issues
+        DataBuffer shape1 = input.shapeInfoDataBuffer().dup();
+        DataBuffer shape2 = input.shapeInfoDataBuffer().dup();
+        return Arrays.asList(shape1, shape2);
     }
 
     @Override

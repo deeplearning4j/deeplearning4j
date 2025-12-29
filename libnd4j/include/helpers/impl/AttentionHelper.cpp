@@ -29,6 +29,7 @@
 #include <indexing/NDIndexUtils.h>
 #include <helpers/AttentionHelper.h>
 #include <ops/declarable/CustomOperations.h>
+#include <array/ResultSet.h>
 #include <ops/declarable/helpers/batched_gemm.h>
 #if NOT_EXCLUDED(OP_multi_head_dot_product_attention)
 
@@ -75,6 +76,12 @@ NDArray * AttentionHelper::lowerTriangularMask(std::vector<LongType> *shape) {
   auto colsCumSum = cumsum.evaluate({colIndexOnes}, {}, {-1, 0}, {});
   ops::greater_equal greaterEqual;
   auto ret = greaterEqual.evaluate({rowCumSum.at(0),colsCumSum.at(0)});
+  ret.setNonRemovable();
+
+  // Clean up temporary arrays that were created
+  delete rowIndexOnes;
+  delete colIndexOnes;
+
   return ret[0];
 }
 
@@ -131,20 +138,41 @@ NDArray *AttentionHelper::computeAttentionMask(NDArray *query, NDArray *value, N
   auto all = NDIndexUtils::createAll();
   auto newAxis = NDIndexUtils::createNewAxis();
 
+  // Track whether we created casted arrays (need to delete them later)
+  bool castedQueryMask = false;
+  bool castedValueMask = false;
+
+  // Store ResultSets to keep arrays alive - use setNonRemovable so returned pointers remain valid
+  ResultSet queryViewResult;
+  ResultSet valueViewResult;
+  ResultSet boolAndResult1;
+  ResultSet boolAndResult2;
+  ResultSet boolAndResult3;
+
   if (internalQueryMask != nullptr && !internalQueryMask->isEmpty()) {
-    internalQueryMask = queryMask->cast(BOOL);
-    if (autoMask != nullptr && !autoMask->isEmpty()) {
-      autoMask = createView.evaluate({internalQueryMask, all, all, newAxis}).at(0);
+    if(queryMask->dataType() != BOOL) {
+      internalQueryMask = queryMask->cast(BOOL);
+      castedQueryMask = true;
     }
+    queryViewResult = createView.evaluate({internalQueryMask, all, all, newAxis});
+    queryViewResult.setNonRemovable();
+    autoMask = queryViewResult.at(0);
   }
 
   if (valueMask != nullptr && !valueMask->isEmpty()) {
-    internalValueMask = valueMask->cast(BOOL);
-    auto mask = createView.evaluate({internalValueMask, all, newAxis, all}).at(0);
+    if(valueMask->dataType() != BOOL) {
+      internalValueMask = valueMask->cast(BOOL);
+      castedValueMask = true;
+    }
+    valueViewResult = createView.evaluate({internalValueMask, all, newAxis, all});
+    valueViewResult.setNonRemovable();
+    auto mask = valueViewResult.at(0);
     if (autoMask == nullptr || autoMask->isEmpty()) {
       autoMask = mask;
     } else {
-      autoMask = booleanAnd.evaluate({autoMask, mask}).at(0);
+      boolAndResult1 = booleanAnd.evaluate({autoMask, mask});
+      boolAndResult1.setNonRemovable();
+      autoMask = boolAndResult1.at(0);
     }
   }
 
@@ -153,21 +181,34 @@ NDArray *AttentionHelper::computeAttentionMask(NDArray *query, NDArray *value, N
     if (autoMask == nullptr) {
       autoMask = mask;
     } else {
-      autoMask = booleanAnd.evaluate({autoMask, mask}).at(0);
+      boolAndResult2 = booleanAnd.evaluate({autoMask, mask});
+      boolAndResult2.setNonRemovable();
+      autoMask = boolAndResult2.at(0);
     }
+  }
+
+  // Always clean up the index objects
+  delete all;
+  delete newAxis;
+
+  // Clean up casted arrays
+  if(castedQueryMask && internalQueryMask != nullptr) {
+    delete internalQueryMask;
+  }
+  if(castedValueMask && internalValueMask != nullptr) {
+    delete internalValueMask;
   }
 
   if (autoMask != nullptr && !autoMask->isEmpty()) {
     if (attentionMask == nullptr || attentionMask->isEmpty()) {
       return autoMask;
     } else {
-      auto ret = booleanAnd.evaluate({attentionMask, autoMask}).at(0);
+      boolAndResult3 = booleanAnd.evaluate({attentionMask, autoMask});
+      boolAndResult3.setNonRemovable();
+      auto ret = boolAndResult3.at(0);
       return ret;
     }
   }
-
-  delete all;
-  delete newAxis;
 
   return autoMask;
 }
@@ -183,6 +224,7 @@ NDArray * AttentionHelper::mergeMasks(NDArray *x, NDArray *y) {
 
   ops::boolean_and booleanAnd;
   auto ret = booleanAnd.evaluate({x,y});
+  ret.setNonRemovable();
   return ret.at(0);
 }
 
@@ -203,7 +245,8 @@ void AttentionHelper::applyAttentionScores(NDArray *scores, NDArray *value, NDAr
                  "Scores mask must be either broadcastable or equal to scores shape. scores size at -1: was: %i scores size at -1 was: %i",scoresMask->sizeAt(-1),scores->sizeAt(-1));
 
     auto castedScoresMask = scoresMask->cast(BOOL);
-    auto paddingMask = booleanNot.evaluate({castedScoresMask}).at(0);
+    auto paddingMaskResult = booleanNot.evaluate({castedScoresMask});
+    auto paddingMask = paddingMaskResult.at(0);
     auto paddingMaskCast = paddingMask->cast(scores->dataType());
     if (attentionLogits->dataType() == BFLOAT16) {
       auto minus =  65504 * *paddingMaskCast;
@@ -276,29 +319,20 @@ void AttentionHelper::dotProductAttentionBpHelper(NDArray *query, NDArray *key, 
     dropoutOp.execute(inputs,{&dldW},{dropout},{dropoutSeed},{false});
   }
 
-
   softmaxBp.execute({attentionLogits,&dldW,attentionScoresWeights},{&dldS},{},{-1},{});
-
-
 
   if(scale != 0.0 && scale != 1.0) {
     dldS *= scale;
   }
 
-  // Initialize times as a scalar placeholder (will be reassigned if mask is present)
-  NDArray times(query->dataType(), query->getContext(), true);
   if(mask != nullptr && !mask->isEmpty()) {
-    ops::expand_dims expandDims;
     auto maskCast = mask->cast(query->dataType());
-    auto mask2 = *maskCast * 1e9;
-    times = *mask2;
-    dldS *= times;
-    delete mask2;
-    delete maskCast;
-
+    dldS *= *maskCast;
+    // Only delete maskCast if it's a different array than mask (i.e., cast created a new array)
+    if(maskCast != mask) {
+      delete maskCast;
+    }
   }
-
-
 
   matMulBp.execute({query,key,&dldS},{dLdq,dLdk},{},{0,1,0});
 }
@@ -383,12 +417,22 @@ void AttentionHelper::doAttentionBp(std::vector<NDArray *> &inputs, std::vector<
   auto vMask = masks.size() > 1 ? masks[1] : nullptr;
   auto vmaskInternal = vMask;
   auto qMaskInternal = qMask;
+
+  // Store ResultSets to keep expanded masks alive for the duration of this function
+  ResultSet vMaskExpandResult;
+  ResultSet qMaskExpandResult;
+
   if(vMask != nullptr && !vMask->isEmpty() && vMask->rankOf() < v->rankOf()) {
-    vmaskInternal = expandDims.evaluate({vMask},{},{-2}).at(0);
+    // Insert dimension before the last one: for [batch, Tv] -> [batch, 1, Tv]
+    // Using vMask->rankOf() - 1 gives position 1 for rank 2, position 2 for rank 3
+    int expandDim = static_cast<int>(vMask->rankOf()) - 1;
+    vMaskExpandResult = expandDims.evaluate({vMask},{},{expandDim});
+    vmaskInternal = vMaskExpandResult.at(0);
   }
 
   if(qMask != nullptr && !qMask->isEmpty()) {
-    qMaskInternal = expandDims.evaluate({qMaskInternal},{},{-1}).at(0);
+    qMaskExpandResult = expandDims.evaluate({qMaskInternal},{},{-1});
+    qMaskInternal = qMaskExpandResult.at(0);
   }
 
 
@@ -427,6 +471,10 @@ void AttentionHelper::doAttention(std::vector<NDArray *> &inputs, std::vector<ND
   auto vmaskInternal = vMask;
   auto qMaskInternal = qMask;
 
+  // Store ResultSets to keep expanded masks alive for the duration of this function
+  ResultSet vMaskExpandResult;
+  ResultSet qMaskExpandResult;
+
   NDArray *casualPointer = nullptr;
   //inputs: query and value
   //shape: batch_size Tq dim (batch_size Tv dim)
@@ -434,7 +482,11 @@ void AttentionHelper::doAttention(std::vector<NDArray *> &inputs, std::vector<ND
   attentionHelper(q, k, scale, attentionLogits);
 
   if(vMask != nullptr && !vMask->isEmpty() && vMask->rankOf() < v->rankOf()) {
-    vmaskInternal = expandDims.evaluate({vMask},{},{-2}).at(0);
+    // Insert dimension before the last one: for [batch, Tv] -> [batch, 1, Tv]
+    // Using vMask->rankOf() - 1 gives position 1 for rank 2, position 2 for rank 3
+    int expandDim = static_cast<int>(vMask->rankOf()) - 1;
+    vMaskExpandResult = expandDims.evaluate({vMask},{},{expandDim});
+    vmaskInternal = vMaskExpandResult.at(0);
   }
 
   if(useCausalMask) {
@@ -461,9 +513,14 @@ void AttentionHelper::doAttention(std::vector<NDArray *> &inputs, std::vector<ND
   }
   //inputs: scores:  batch size tq tv value:batch size, tv,dim scoresmask: batch size 1 tv or batch size tq tv
   if(qMask != nullptr && !qMask->isEmpty()) {
-    qMaskInternal = expandDims.evaluate({qMaskInternal},{},{-1}).at(0);
+    qMaskExpandResult = expandDims.evaluate({qMaskInternal},{},{-1});
+    qMaskInternal = qMaskExpandResult.at(0);
     auto casted = qMaskInternal->cast(attentionScores->dataType());
     *attentionScores *= *casted;
+    // Clean up casted array if it's different from qMaskInternal
+    if(casted != qMaskInternal) {
+      delete casted;
+    }
   }
 
 }

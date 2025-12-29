@@ -581,6 +581,7 @@ class SD_LIB_EXPORT NDArray {
   bool permutei(const std::initializer_list<LongType> &dimensions, const bool copyToNewBuff, const bool resetStrides);
   bool permutei(std::vector<LongType> &dimensions, const bool copyToNewBuff, const bool resetStrides);
   bool permutei(sd::LongType *dimensions, const int rank);
+  bool permutei(sd::LongType *dimensions, const int rank, const bool resetStrides);
 
 
   bool isFinite();
@@ -1792,17 +1793,22 @@ bool NDArray::isSameShape(NDArray *other)  {
   // Safety: check for null/invalid pointer
   if (other == nullptr) return false;
 
+  // Fast path: same object
+  if (this == other) return true;
+
+  // Use shapeInfo() accessor instead of raw _shapeInfo to allow fallback logic
+  const sd::LongType* thisShape = this->shapeInfo();
+  const sd::LongType* otherShape = other->shapeInfo();
+
+  // Fast path: same shape info pointer (common for views/shared shapes)
+  if (thisShape == otherShape && thisShape != nullptr) return true;
+
   // Check if both arrays are empty - empty arrays are always same shape
   bool thisEmpty = this->isEmpty();
   bool otherEmpty = other->isEmpty();
 
   if (thisEmpty != otherEmpty) return false;
   if (thisEmpty && otherEmpty) return true;  // Both empty = same shape
-
-  // Use shapeInfo() accessor instead of raw _shapeInfo to allow fallback logic
-  // shapeInfo() returns valid fallback shape even when _shapeInfo is nullptr
-  const sd::LongType* thisShape = this->shapeInfo();
-  const sd::LongType* otherShape = other->shapeInfo();
 
   // If both have valid shapes (even fallback), compare them
   if (thisShape != nullptr && otherShape != nullptr) {

@@ -6578,6 +6578,50 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     }
 
     /**
+     * Save an optimized SameDiff instance to a ZIP file (.sdz format).
+     * Graph optimizations are applied before saving to produce a more efficient model for inference.
+     * This includes operator fusion (e.g., matmul+add -> xw_plus_b), constant folding, and dead code elimination.
+     *
+     * @param file             The file to save to (should end with .sdz)
+     * @param saveUpdaterState Whether to save updater state (typically false for inference)
+     * @param requiredOutputs  The output variable names that must be preserved during optimization.
+     *                         These are the outputs you will use for inference.
+     * @throws IOException If saving fails
+     */
+    public void saveShardedOptimized(File file, boolean saveUpdaterState, List<String> requiredOutputs) throws IOException {
+        SDZSerializer.saveOptimized(this, file, saveUpdaterState, null, requiredOutputs);
+    }
+
+    /**
+     * Save an optimized SameDiff instance to a ZIP file with a single output.
+     * Graph optimizations are applied before saving.
+     *
+     * @param file             The file to save to (should end with .sdz)
+     * @param saveUpdaterState Whether to save updater state
+     * @param requiredOutput   The single output variable name to preserve
+     * @throws IOException If saving fails
+     */
+    public void saveShardedOptimized(File file, boolean saveUpdaterState, String requiredOutput) throws IOException {
+        SDZSerializer.saveOptimized(this, file, saveUpdaterState, requiredOutput);
+    }
+
+    /**
+     * Save an optimized SameDiff instance with custom optimization passes.
+     *
+     * @param file             The file to save to
+     * @param saveUpdaterState Whether to save updater state
+     * @param metaData         Optional metadata to include
+     * @param requiredOutputs  The output variable names to preserve
+     * @param optimizations    Custom list of optimization passes to apply
+     * @throws IOException If saving fails
+     */
+    public void saveShardedOptimized(File file, boolean saveUpdaterState, Map<String, String> metaData,
+                                     List<String> requiredOutputs,
+                                     List<org.nd4j.autodiff.samediff.optimize.OptimizerSet> optimizations) throws IOException {
+        SDZSerializer.saveOptimized(this, file, saveUpdaterState, metaData, requiredOutputs, optimizations);
+    }
+
+    /**
      * Save the SameDiff instance to a file. Files can be loaded using {@link #load(File, boolean)}
      *
      * @param file             File to save to

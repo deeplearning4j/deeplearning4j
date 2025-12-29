@@ -113,7 +113,11 @@ public class KerasConvolutionUtils {
     public static long[] getDilationRateLong(Map<String, Object> layerConfig, int dimension, KerasLayerConfiguration conf,
                                         boolean forceDilation)
             throws InvalidKerasConfigurationException {
-        return Arrays.stream(getDilationRate(layerConfig, dimension, conf, forceDilation)).mapToLong(i -> i).toArray();
+        int[] dilationRate = getDilationRate(layerConfig, dimension, conf, forceDilation);
+        if (dilationRate == null) {
+            return null;
+        }
+        return Arrays.stream(dilationRate).mapToLong(i -> i).toArray();
     }
     /**
      * Get atrous / dilation rate from config
