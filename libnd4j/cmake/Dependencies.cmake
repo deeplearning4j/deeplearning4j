@@ -517,3 +517,269 @@ function(setup_cudnn)
     endif()
 endfunction()
 
+# =============================================================================
+# MLIR / LLVM (Optional)
+# Provides JIT compilation support via MLIR for optimized kernel execution
+# =============================================================================
+function(setup_mlir)
+    if(NOT HELPERS_mlir STREQUAL "ON")
+        message(STATUS "MLIR helper is disabled (HELPERS_mlir=${HELPERS_mlir})")
+        set(HAVE_MLIR FALSE PARENT_SCOPE)
+        set(MLIR "" PARENT_SCOPE)
+        return()
+    endif()
+
+    message(STATUS "MLIR/LLVM helper is enabled")
+
+    # Include the FindMLIR module
+    include(${CMAKE_CURRENT_LIST_DIR}/FindMLIR.cmake)
+
+    if(NOT MLIR_FOUND)
+        message(WARNING "MLIR/LLVM ${MLIR_VERSION}+ not found. MLIR support will be disabled.")
+        message(WARNING "To enable MLIR support:")
+        message(WARNING "  1. Install LLVM ${MLIR_VERSION}+ with MLIR enabled")
+        message(WARNING "  2. Set LLVM_DIR or LLVM_ROOT to your LLVM installation")
+        set(HAVE_MLIR FALSE PARENT_SCOPE)
+        set(MLIR "" PARENT_SCOPE)
+        return()
+    endif()
+
+    set(HAVE_MLIR TRUE PARENT_SCOPE)
+    set(MLIR MLIR::MLIR PARENT_SCOPE)
+
+    # Configure GPU support if requested and CUDA is enabled
+    if(MLIR_ENABLE_GPU AND SD_CUDA)
+        if(TARGET MLIR::GPU)
+            message(STATUS "   MLIR GPU dialect: enabled")
+        else()
+            message(WARNING "   MLIR GPU libraries not found. GPU dialect will not be available.")
+        endif()
+    endif()
+
+    # Add compile definitions for conditional compilation
+    add_compile_definitions(HAVE_MLIR=1)
+    if(MLIR_ENABLE_GPU AND SD_CUDA)
+        add_compile_definitions(MLIR_ENABLE_GPU=1)
+    endif()
+    if(MLIR_JIT_CACHE)
+        add_compile_definitions(MLIR_JIT_CACHE=1)
+    endif()
+    if(MLIR_DEBUG_DUMPS)
+        add_compile_definitions(MLIR_DEBUG_DUMPS=1)
+    endif()
+
+    message(STATUS "✅ MLIR/LLVM setup complete")
+    message(STATUS "   LLVM Version: ${LLVM_VERSION}")
+    message(STATUS "   GPU Support: ${MLIR_ENABLE_GPU}")
+    message(STATUS "   JIT Cache: ${MLIR_JIT_CACHE}")
+endfunction()
+
+# =============================================================================
+# METAL PERFORMANCE SHADERS (Optional, for macOS/iOS builds)
+# =============================================================================
+# =============================================================================
+# ZLUDA Transpiler (Optional, for AMD/Intel GPU support via CUDA translation)
+# Downloads ZLUDA and optionally MIOpen for AMD targets
+# =============================================================================
+function(setup_zluda_download)
+    if(NOT SD_ZLUDA)
+        message(STATUS "ZLUDA is disabled (SD_ZLUDA=${SD_ZLUDA})")
+        set(HAVE_ZLUDA FALSE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Check if ZLUDA is already available via environment
+    if(DEFINED ENV{ZLUDA_PATH} AND EXISTS "$ENV{ZLUDA_PATH}")
+        message(STATUS "Using existing ZLUDA installation: $ENV{ZLUDA_PATH}")
+        set(ZLUDA_ROOT "$ENV{ZLUDA_PATH}")
+        set(HAVE_ZLUDA TRUE PARENT_SCOPE)
+        set(ZLUDA_PATH "${ZLUDA_ROOT}" PARENT_SCOPE)
+        return()
+    endif()
+
+    message(STATUS "ZLUDA automatic download enabled")
+
+    # ZLUDA release configuration
+    # ZLUDA v3 supports both AMD (ROCm/HIP) and Intel (Level Zero) GPUs
+    set(ZLUDA_VERSION "3")
+    set(ZLUDA_INSTALL_DIR "${CMAKE_BINARY_DIR}/zluda_install")
+
+    # Determine platform-specific download
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+            set(ZLUDA_PLATFORM "linux-x86_64")
+            set(ZLUDA_ARCHIVE_EXT "tar.gz")
+        else()
+            message(WARNING "ZLUDA: Unsupported processor ${CMAKE_SYSTEM_PROCESSOR} on Linux")
+            set(HAVE_ZLUDA FALSE PARENT_SCOPE)
+            return()
+        endif()
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+        if(CMAKE_SYSTEM_PROCESSOR MATCHES "AMD64|x86_64")
+            set(ZLUDA_PLATFORM "windows-x86_64")
+            set(ZLUDA_ARCHIVE_EXT "zip")
+        else()
+            message(WARNING "ZLUDA: Unsupported processor ${CMAKE_SYSTEM_PROCESSOR} on Windows")
+            set(HAVE_ZLUDA FALSE PARENT_SCOPE)
+            return()
+        endif()
+    else()
+        message(WARNING "ZLUDA: Unsupported platform ${CMAKE_SYSTEM_NAME}")
+        set(HAVE_ZLUDA FALSE PARENT_SCOPE)
+        return()
+    endif()
+
+    # ZLUDA GitHub releases URL
+    # Note: ZLUDA releases may vary in naming convention - adjust as needed
+    set(ZLUDA_URL "https://github.com/vosen/ZLUDA/releases/download/v${ZLUDA_VERSION}/zluda-${ZLUDA_PLATFORM}.${ZLUDA_ARCHIVE_EXT}")
+
+    message(STATUS "ZLUDA download URL: ${ZLUDA_URL}")
+
+    # Download and extract ZLUDA
+    ExternalProject_Add(zluda_external
+            PREFIX            "${CMAKE_BINARY_DIR}/zluda_external"
+            URL               "${ZLUDA_URL}"
+            DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads"
+            SOURCE_DIR        "${ZLUDA_INSTALL_DIR}"
+            CONFIGURE_COMMAND ""
+            BUILD_COMMAND     ""
+            INSTALL_COMMAND   ""
+            BUILD_BYPRODUCTS  "${ZLUDA_INSTALL_DIR}/lib/libcuda.so"
+            TIMEOUT           300
+    )
+
+    # Create interface library for ZLUDA
+    add_library(zluda_interface INTERFACE)
+    target_include_directories(zluda_interface INTERFACE "${ZLUDA_INSTALL_DIR}/include")
+    if(WIN32)
+        target_link_directories(zluda_interface INTERFACE "${ZLUDA_INSTALL_DIR}/lib")
+    else()
+        target_link_directories(zluda_interface INTERFACE "${ZLUDA_INSTALL_DIR}/lib")
+    endif()
+    add_dependencies(zluda_interface zluda_external)
+
+    set(HAVE_ZLUDA TRUE PARENT_SCOPE)
+    set(ZLUDA_PATH "${ZLUDA_INSTALL_DIR}" PARENT_SCOPE)
+    set(ZLUDA zluda_interface PARENT_SCOPE)
+
+    # Set environment variable for runtime
+    set(ENV{ZLUDA_PATH} "${ZLUDA_INSTALL_DIR}")
+
+    message(STATUS "ZLUDA setup complete")
+    message(STATUS "   Install directory: ${ZLUDA_INSTALL_DIR}")
+    message(STATUS "   Platform: ${ZLUDA_PLATFORM}")
+
+    # Setup MIOpen for AMD targets
+    if(SD_ZLUDA_TARGET STREQUAL "AMD" OR SD_ZLUDA_TARGET STREQUAL "amd")
+        setup_miopen_download()
+    endif()
+endfunction()
+
+# =============================================================================
+# MIOpen Download (Optional, for AMD GPU DNN operations via ZLUDA)
+# =============================================================================
+function(setup_miopen_download)
+    if(NOT HELPERS_miopen STREQUAL "ON")
+        message(STATUS "MIOpen helper is disabled (HELPERS_miopen=${HELPERS_miopen})")
+        set(HAVE_MIOPEN FALSE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Check if MIOpen is already available via ROCm
+    set(ROCM_SEARCH_PATHS
+        $ENV{ROCM_PATH}
+        $ENV{ROCM_HOME}
+        /opt/rocm
+        /opt/rocm-6.0
+        /opt/rocm-5.7
+        /opt/rocm-5.6
+    )
+
+    foreach(rocm_path ${ROCM_SEARCH_PATHS})
+        if(EXISTS "${rocm_path}/lib/libMIOpen.so")
+            message(STATUS "Using existing MIOpen from ROCm: ${rocm_path}")
+            set(HAVE_MIOPEN TRUE PARENT_SCOPE)
+            set(MIOPEN_PATH "${rocm_path}" PARENT_SCOPE)
+            set(MIOPEN_LIBRARY "${rocm_path}/lib/libMIOpen.so" PARENT_SCOPE)
+            set(MIOPEN_INCLUDE_DIR "${rocm_path}/include" PARENT_SCOPE)
+            return()
+        endif()
+    endforeach()
+
+    # MIOpen requires ROCm to be installed - we can't download it standalone easily
+    # because it has complex dependencies on HIP runtime and other ROCm components
+    message(STATUS "MIOpen automatic download:")
+    message(STATUS "   MIOpen is part of ROCm and cannot be downloaded standalone.")
+    message(STATUS "   Please install ROCm toolkit from: https://rocm.docs.amd.com/")
+    message(STATUS "   After installation, MIOpen will be automatically detected.")
+
+    # For now, we'll create a stub that warns about missing MIOpen
+    set(HAVE_MIOPEN FALSE PARENT_SCOPE)
+
+    # Alternative: Try to build MIOpen from source (complex due to dependencies)
+    if(FALSE)  # Disabled for now - ROCm installation is recommended
+        set(MIOPEN_VERSION "3.0.0")
+        set(MIOPEN_INSTALL_DIR "${CMAKE_BINARY_DIR}/miopen_install")
+        set(MIOPEN_URL "https://github.com/ROCm/MIOpen/archive/refs/tags/rocm-${MIOPEN_VERSION}.tar.gz")
+
+        ExternalProject_Add(miopen_external
+                PREFIX            "${CMAKE_BINARY_DIR}/miopen_external"
+                URL               "${MIOPEN_URL}"
+                DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads"
+                SOURCE_DIR        "${CMAKE_BINARY_DIR}/miopen_external/src"
+                BINARY_DIR        "${CMAKE_BINARY_DIR}/miopen_external/build"
+                CMAKE_ARGS
+                    -DCMAKE_INSTALL_PREFIX=${MIOPEN_INSTALL_DIR}
+                    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                    -DMIOPEN_BACKEND=HIP
+                BUILD_COMMAND     ${CMAKE_COMMAND} --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel
+                INSTALL_COMMAND   ${CMAKE_COMMAND} --build <BINARY_DIR> --target install --config ${CMAKE_BUILD_TYPE}
+                TIMEOUT           1200
+        )
+
+        add_library(miopen_interface INTERFACE)
+        target_include_directories(miopen_interface INTERFACE "${MIOPEN_INSTALL_DIR}/include")
+        target_link_libraries(miopen_interface INTERFACE "${MIOPEN_INSTALL_DIR}/lib/libMIOpen.so")
+        add_dependencies(miopen_interface miopen_external)
+
+        set(HAVE_MIOPEN TRUE PARENT_SCOPE)
+        set(MIOPEN miopen_interface PARENT_SCOPE)
+    endif()
+endfunction()
+
+function(setup_mps)
+    set(HAVE_MPS FALSE PARENT_SCOPE)
+
+    if(NOT HELPERS_mps STREQUAL "ON")
+        message(STATUS "MPS helper is disabled (HELPERS_mps=${HELPERS_mps})")
+        return()
+    endif()
+
+    # Check if we're on Apple platform
+    if(NOT APPLE)
+        message(STATUS "MPS helper requires macOS/iOS (current platform: ${CMAKE_SYSTEM_NAME})")
+        return()
+    endif()
+
+    # Check for Metal framework availability
+    find_library(METAL_FRAMEWORK Metal)
+    find_library(MPS_FRAMEWORK MetalPerformanceShaders)
+    find_library(FOUNDATION_FRAMEWORK Foundation)
+
+    if(NOT METAL_FRAMEWORK OR NOT MPS_FRAMEWORK)
+        message(WARNING "Metal or MetalPerformanceShaders framework not found")
+        return()
+    endif()
+
+    message(STATUS "✅ Metal Performance Shaders setup:")
+    message(STATUS "   Metal Framework: ${METAL_FRAMEWORK}")
+    message(STATUS "   MPS Framework: ${MPS_FRAMEWORK}")
+
+    set(HAVE_MPS TRUE PARENT_SCOPE)
+    set(MPS_LIBRARIES ${METAL_FRAMEWORK} ${MPS_FRAMEWORK} ${FOUNDATION_FRAMEWORK} PARENT_SCOPE)
+
+    add_compile_definitions(HAVE_MPS=1)
+
+    message(STATUS "✅ MPS setup complete")
+endfunction()
+

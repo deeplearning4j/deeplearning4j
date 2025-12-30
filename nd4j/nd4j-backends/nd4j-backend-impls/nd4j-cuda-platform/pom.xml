@@ -70,5 +70,56 @@
 
     </dependencies>
 
+    <profiles>
+        <!-- llama.cpp CUDA classifier profile for LLM/GGML model support with GPU acceleration -->
+        <profile>
+            <id>llamacpp</id>
+            <activation>
+                <property>
+                    <name>libnd4j.extension</name>
+                    <value>llamacpp</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>${nd4j.backend}</artifactId>
+                    <version>${project.version}</version>
+                    <classifier>${javacpp.platform.linux-x86_64}-llamacpp</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>${nd4j.backend}</artifactId>
+                    <version>${project.version}</version>
+                    <classifier>${javacpp.platform.windows-x86_64}-llamacpp</classifier>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <!-- cuDNN classifier profile for optimized CUDA deep learning operations -->
+        <profile>
+            <id>cudnn</id>
+            <activation>
+                <property>
+                    <name>libnd4j.extension</name>
+                    <value>cudnn</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>${nd4j.backend}</artifactId>
+                    <version>${project.version}</version>
+                    <classifier>${javacpp.platform.linux-x86_64}-cudnn</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>${nd4j.backend}</artifactId>
+                    <version>${project.version}</version>
+                    <classifier>${javacpp.platform.windows-x86_64}-cudnn</classifier>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 
 </project>

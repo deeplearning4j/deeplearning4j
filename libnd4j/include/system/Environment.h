@@ -49,6 +49,7 @@ class SD_LIB_EXPORT Environment {
   std::atomic<sd::DataType> _dataType;
   std::atomic<bool> _precBoost;
   std::atomic<bool> _useONEDNN{true};
+  std::atomic<bool> _useMPS{true};
   std::atomic<bool> _allowHelpers{true};
   std::atomic<bool> funcTracePrintDeallocate;
   std::atomic<bool> funcTracePrintAllocate;
@@ -287,6 +288,9 @@ class SD_LIB_EXPORT Environment {
 
   bool isUseONEDNN() { return _useONEDNN.load(); }
   void setUseONEDNN(bool useMKLDNN) { _useONEDNN.store(useMKLDNN); }
+
+  bool isUseMPS() { return _useMPS.load(); }
+  void setUseMPS(bool useMPS) { _useMPS.store(useMPS); }
 
   sd::DataType defaultFloatDataType();
   void setDefaultFloatDataType(sd::DataType dtype);

@@ -98,6 +98,7 @@
         <libnd4j.vectorization>OFF</libnd4j.vectorization>
         <libnd4j.cpu.compile.skip>false</libnd4j.cpu.compile.skip>
         <libnd4j.cuda.compile.skip>false</libnd4j.cuda.compile.skip>
+        <libnd4j.tpu.compile.skip>true</libnd4j.tpu.compile.skip>
         <libnd4j.test.filter>none</libnd4j.test.filter>
         <libnd4j.log>none</libnd4j.log>
         <libnd4j.test.runner></libnd4j.test.runner>
@@ -615,6 +616,128 @@
             </build>
         </profile>
 
+        <profile>
+            <id>tpu</id>
+            <activation>
+                <property>
+                    <name>libnd4j.tpu</name>
+                </property>
+            </activation>
+            <properties>
+                <libnd4j.cpu.compile.skip>true</libnd4j.cpu.compile.skip>
+                <libnd4j.cuda.compile.skip>true</libnd4j.cuda.compile.skip>
+                <libnd4j.tpu.compile.skip>false</libnd4j.tpu.compile.skip>
+                <libnd4j.chip>tpu</libnd4j.chip>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <version>${javacpp.version}</version>
+                        <configuration>
+                            <properties>${libnd4j.platform}</properties>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>javacpp-cppbuild-compile-tpu</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>build</goal>
+                                </goals>
+                                <configuration>
+                                    <skip>${libnd4j.tpu.compile.skip}</skip>
+                                    <environmentVariables>
+                                        <BUILD_WITH_JAVA>${libnd4j.build.with.java}</BUILD_WITH_JAVA>
+                                    </environmentVariables>
+                                    <buildCommand>
+                                        <program>${libnd4j.buildprogram}</program>
+                                        <argument>buildnativeoperations.sh</argument>
+                                        <argument>--output-path</argument>
+                                        <argument>${libnd4j.outputPath}</argument>
+                                        <argument>--build-type</argument>
+                                        <argument>${libnd4j.build}</argument>
+                                        <argument>--chip</argument>
+                                        <argument>tpu</argument>
+                                        <argument>--platform</argument>
+                                        <argument>${libnd4j.platform}</argument>
+                                        <argument>--chip-extension</argument>
+                                        <argument>${libnd4j.extension}</argument>
+                                        <argument>${libnd4j.tests}</argument>
+                                        <argument>-j</argument>
+                                        <argument>${libnd4j.buildthreads}</argument>
+                                        <argument>-h</argument>
+                                        <argument>pjrt</argument>
+                                        <argument>--operations</argument>
+                                        <argument>${libnd4j.operations}</argument>
+                                        <argument>--datatypes</argument>
+                                        <argument>${libnd4j.datatypes}</argument>
+                                        <argument>--sanitize</argument>
+                                        <argument>${libnd4j.sanitize}</argument>
+                                        <argument>--sanitizers</argument>
+                                        <argument>${libnd4j.sanitizers}</argument>
+                                        <argument>--use_lto</argument>
+                                        <argument>${libnd4j.lto}</argument>
+                                        <argument>--functrace</argument>
+                                        <argument>${libnd4j.calltrace}</argument>
+                                        <argument>--log-output</argument>
+                                        <argument>${libnd4j.log}</argument>
+                                        <argument>--optimization-level</argument>
+                                        <argument>${libnd4j.optimization}</argument>
+                                        <argument>--print-indices</argument>
+                                        <argument>${libnd4j.printindices}</argument>
+                                        <argument>--print-math</argument>
+                                        <argument>${libnd4j.printmath}</argument>
+                                        <argument>--preprocess</argument>
+                                        <argument>${libnd4j.preprocess}</argument>
+                                        <argument>--generate-flatc</argument>
+                                        <argument>${libnd4j.generate.flatc}</argument>
+                                        <argument>--debug-type-profile</argument>
+                                        <argument>${libnd4j.debug.types.profile}</argument>
+                                        <argument>--debug-custom-types</argument>
+                                        <argument>${libnd4j.debug.types.custom}</argument>
+                                        <argument>--debug-auto-reduce</argument>
+                                        <argument>${libnd4j.debug.auto.reduce}</argument>
+                                        <argument>--ppstep</argument>
+                                        <argument>${libnd4j.build.ppstep}</argument>
+                                        <argument>--extract-instantiations</argument>
+                                        <argument>${libnd4j.extract.instantiations}</argument>
+                                        <argument>--cmake-only</argument>
+                                        <argument>${libnd4j.cmake.only}</argument>
+                                        <argument>--compiler</argument>
+                                        <argument>${libnd4j.compiler}</argument>
+                                        <argument>--link-only</argument>
+                                        <argument>${libnd4j.link.only}</argument>
+                                        <argument>--dry-run</argument>
+                                        <argument>${libnd4j.dry.run}</argument>
+                                    </buildCommand>
+                                    <workingDirectory>${project.basedir}</workingDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>3.6.0</version>
+                        <executions>
+                            <execution>
+                                <id>libnd4j-package-tpu</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly-tpu.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
 
         <profile>
             <id>build-cpu</id>

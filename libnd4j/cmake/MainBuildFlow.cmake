@@ -206,6 +206,13 @@ function(collect_all_sources out_source_list)
             list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_CUDNN_SOURCES})
         endif()
 
+        # ZLUDA MIOpen support for AMD GPUs (cuDNN alternative)
+        if(HAVE_ZLUDA AND ZLUDA_TARGET_BACKEND STREQUAL "AMD" AND HAVE_MIOPEN)
+            file(GLOB_RECURSE CUSTOMOPS_MIOPEN_SOURCES ./include/ops/declarable/platform/miopen/*.cpp)
+            list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_MIOPEN_SOURCES})
+            message(STATUS "✅ Added MIOpen platform sources for ZLUDA AMD")
+        endif()
+
         message(STATUS "🚀 CUDA build: Enhanced template system will generate additional CUDA instantiations")
     else()
         file(GLOB_RECURSE EXEC_SOURCES ./include/execution/*.cpp)
@@ -230,6 +237,16 @@ function(collect_all_sources out_source_list)
         if(HAVE_ARMCOMPUTE)
             file(GLOB_RECURSE CUSTOMOPS_ARMCOMPUTE_SOURCES ./include/ops/declarable/platform/armcompute/*.cpp)
             list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_ARMCOMPUTE_SOURCES})
+        endif()
+        if(HAVE_MLIR)
+            file(GLOB_RECURSE CUSTOMOPS_MLIR_SOURCES ./include/ops/declarable/platform/mlir/*.cpp)
+            file(GLOB_RECURSE MLIR_DIALECT_SOURCES ./include/mlir/**/*.cpp)
+            list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_MLIR_SOURCES} ${MLIR_DIALECT_SOURCES})
+        endif()
+        if(HAVE_MPS)
+            file(GLOB_RECURSE CUSTOMOPS_MPS_SOURCES ./include/ops/declarable/platform/mps/*.mm)
+            list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_MPS_SOURCES})
+            message(STATUS "✅ Added MPS platform sources: ${CUSTOMOPS_MPS_SOURCES}")
         endif()
 
         message(STATUS "🖥️  CPU build: Enhanced template system will generate optimized CPU instantiations")
@@ -259,7 +276,7 @@ endfunction()
 
 function(configure_cpu_linking main_target_name)
     target_link_libraries(${main_target_name} PUBLIC
-            ${ONEDNN} ${ARMCOMPUTE_LIBRARIES} ${OPENBLAS_LIBRARIES}
+            ${ONEDNN} ${ARMCOMPUTE_LIBRARIES} ${MLIR} ${MPS_LIBRARIES} ${OPENBLAS_LIBRARIES}
             ${BLAS_LIBRARIES} ${JVM_LIBRARY} flatbuffers_interface)
 
     # Add debug libraries when SD_GCC_FUNCTRACE is enabled
@@ -284,7 +301,7 @@ function(configure_cpu_linking main_target_name)
     endif()
 endfunction()
 
-# UPDATED: Modern CUDA linking with improved cuDNN detection
+# UPDATED: Modern CUDA linking with improved cuDNN detection and ZLUDA support
 function(configure_cuda_linking main_target_name)
     # Find the CUDAToolkit to define the CUDA::toolkit target
     find_package(CUDAToolkit REQUIRED)
@@ -318,6 +335,11 @@ function(configure_cuda_linking main_target_name)
 
     target_include_directories("${main_target_name}" PUBLIC "${CUDA_INCLUDE_DIRS}")
     target_link_libraries(${main_target_name} PUBLIC flatbuffers_interface)
+
+    # ZLUDA linking configuration
+    if(HAVE_ZLUDA)
+        configure_zluda_linking(${main_target_name})
+    endif()
 endfunction()
 
 # --- Enhanced library creation function ---
@@ -545,6 +567,19 @@ if(SD_CUDA)
     print_status_colored("SUCCESS" "CUDA initialization complete with enhanced template support")
 endif()
 
+# --- ZLUDA Transpiler Configuration ---
+if(SD_ZLUDA)
+    print_status_colored("INFO" "=== ZLUDA TRANSPILER CONFIGURATION ===")
+    include(ZludaConfiguration)
+    setup_zluda()
+    if(HAVE_ZLUDA)
+        configure_zluda_cuda_flags()
+        print_status_colored("SUCCESS" "ZLUDA configuration complete (target: ${ZLUDA_TARGET_BACKEND})")
+    else()
+        print_status_colored("WARNING" "ZLUDA configuration failed - falling back to standard CUDA if available")
+    endif()
+endif()
+
 # --- Phase 2: Handle Dependencies & Operations ---
 print_status_colored("INFO" "=== 2. INITIALIZING DEPENDENCIES & OPERATIONS ===")
 
@@ -574,12 +609,12 @@ else()
 endif()
 
 setup_blas()
-setup_blas()
+setup_mlir()
+setup_mps()
 message(STATUS "🔍 DEBUG: After setup_blas() - OPENBLAS_PATH='${OPENBLAS_PATH}', HAVE_OPENBLAS='${HAVE_OPENBLAS}'")
 message(STATUS "Dependencies initialization complete.")
-message(STATUS "Dependencies initialization complete.")
 
-message(STATUS "🔧 Helper Configuration: ONEDNN=${HAVE_ONEDNN}, ARMCOMPUTE=${HAVE_ARMCOMPUTE}, CUDNN=${HAVE_CUDNN}")
+message(STATUS "🔧 Helper Configuration: ONEDNN=${HAVE_ONEDNN}, ARMCOMPUTE=${HAVE_ARMCOMPUTE}, CUDNN=${HAVE_CUDNN}, MLIR=${HAVE_MLIR}, MPS=${HAVE_MPS}")
 
 # --- Build TYPE_DEFINES string before generating config.h ---
 # This ensures config.h has all HAS_* macros defined from the start

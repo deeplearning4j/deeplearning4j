@@ -1286,6 +1286,8 @@ elif [ "$CHIP" == "aurora" ]; then
     BLAS_ARG="-DSD_AURORA=true -DBLAS=TRUE"
 elif [ "$CHIP" == "cuda" ]; then
     BLAS_ARG="-DSD_CUDA=true -DBLAS=TRUE"
+elif [ "$CHIP" == "tpu" ]; then
+    BLAS_ARG="-DSD_TPU=true -DBLAS=TRUE"
 fi
 
 if [ -z "$NAME" ]; then
@@ -1295,6 +1297,8 @@ if [ -z "$NAME" ]; then
         NAME="nd4jcuda"
     elif [ "$CHIP" == "aurora" ]; then
         NAME="nd4jaurora"
+    elif [ "$CHIP" == "tpu" ]; then
+        NAME="nd4jtpu"
     fi
 fi
 
@@ -1842,6 +1846,8 @@ if [ "$LINK_ONLY" == "ON" ]; then
         LINK_TARGET="nd4jcpu"
     elif [ "$CHIP" == "cuda" ]; then
         LINK_TARGET="nd4jcuda"
+    elif [ "$CHIP" == "tpu" ]; then
+        LINK_TARGET="nd4jtpu"
     else
         LINK_TARGET="nd4j${CHIP}"
     fi

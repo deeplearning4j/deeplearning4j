@@ -57,6 +57,9 @@ import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.concurrency.BasicAffinityManager;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.MemoryWorkspaceManager;
+import org.nd4j.linalg.api.memory.MultiBackendWorkspace;
+import org.nd4j.linalg.api.memory.MultiBackendWorkspaceManager;
+import org.nd4j.linalg.api.memory.conf.DeviceAwareWorkspaceConfiguration;
 import org.nd4j.linalg.api.ndarray.*;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -5722,6 +5725,79 @@ public class Nd4j {
      */
     public static MemoryWorkspaceManager getWorkspaceManager() {
         return workspaceManager;
+    }
+
+    // ========================
+    // Multi-Backend Workspace APIs
+    // ========================
+
+    /**
+     * Get the multi-backend workspace manager for device-aware workspace management.
+     *
+     * @return the multi-backend workspace manager
+     */
+    public static MultiBackendWorkspaceManager getMultiBackendWorkspaceManager() {
+        return MultiBackendWorkspaceManager.getInstance();
+    }
+
+    /**
+     * Create a multi-backend workspace with GPU preference.
+     *
+     * @param initialSize initial workspace size
+     * @param id the workspace ID
+     * @return the created workspace
+     */
+    public static MultiBackendWorkspace createGpuPreferredWorkspace(long initialSize, String id) {
+        return getMultiBackendWorkspaceManager().createWorkspace(
+                DeviceAwareWorkspaceConfiguration.gpuPreferred(initialSize), id);
+    }
+
+    /**
+     * Create a CPU-only multi-backend workspace.
+     *
+     * @param initialSize initial workspace size
+     * @param id the workspace ID
+     * @return the created workspace
+     */
+    public static MultiBackendWorkspace createCpuOnlyWorkspace(long initialSize, String id) {
+        return getMultiBackendWorkspaceManager().createWorkspace(
+                DeviceAwareWorkspaceConfiguration.cpuOnly(initialSize), id);
+    }
+
+    /**
+     * Create a mirrored multi-backend workspace (data on both CPU and GPU).
+     *
+     * @param initialSize initial workspace size
+     * @param id the workspace ID
+     * @return the created workspace
+     */
+    public static MultiBackendWorkspace createMirroredWorkspace(long initialSize, String id) {
+        return getMultiBackendWorkspaceManager().createWorkspace(
+                DeviceAwareWorkspaceConfiguration.mirrored(initialSize), id);
+    }
+
+    /**
+     * Get or create a multi-backend workspace.
+     *
+     * @param configuration the workspace configuration
+     * @param id the workspace ID
+     * @return the workspace
+     */
+    public static MultiBackendWorkspace getOrCreateMultiBackendWorkspace(
+            DeviceAwareWorkspaceConfiguration configuration, String id) {
+        return getMultiBackendWorkspaceManager().getOrCreateWorkspace(configuration, id);
+    }
+
+    /**
+     * Get and activate a multi-backend workspace (enter scope).
+     *
+     * @param configuration the workspace configuration
+     * @param id the workspace ID
+     * @return the activated workspace
+     */
+    public static MultiBackendWorkspace getAndActivateMultiBackendWorkspace(
+            DeviceAwareWorkspaceConfiguration configuration, String id) {
+        return getMultiBackendWorkspaceManager().getAndActivateWorkspace(configuration, id);
     }
 
     /**

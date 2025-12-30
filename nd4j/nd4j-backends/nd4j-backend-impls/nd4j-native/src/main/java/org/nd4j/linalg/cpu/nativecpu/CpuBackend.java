@@ -21,6 +21,10 @@
 package org.nd4j.linalg.cpu.nativecpu;
 
 import org.nd4j.common.config.ND4JSystemProperties;
+import org.nd4j.linalg.api.device.CpuDeviceDescriptor;
+import org.nd4j.linalg.api.device.DeviceDescriptor;
+import org.nd4j.linalg.api.memory.MemoryManager;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -28,6 +32,9 @@ import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.common.io.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collections;
+import java.util.List;
 
 public class CpuBackend extends Nd4jBackend {
 
@@ -121,6 +128,29 @@ public class CpuBackend extends Nd4jBackend {
                 log.debug("Error logging CPU backend ", t);
             }
         }
+    }
+
+    // ============ Multi-Backend Support ============
+
+    @Override
+    public List<DeviceDescriptor> discoverDevices() {
+        CpuDeviceDescriptor cpuDevice = CpuDeviceDescriptor.fromSystem(getBackendId());
+        return Collections.singletonList(cpuDevice);
+    }
+
+    @Override
+    public OpExecutioner createExecutioner() {
+        return Nd4j.getExecutioner();
+    }
+
+    @Override
+    public MemoryManager createMemoryManager() {
+        return Nd4j.getMemoryManager();
+    }
+
+    @Override
+    public String getBackendId() {
+        return "native";
     }
 
 }

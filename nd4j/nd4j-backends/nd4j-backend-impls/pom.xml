@@ -188,6 +188,53 @@
 
         </profile>
         <profile>
+            <id>tpu</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <modules>
+                <module>nd4j-tpu</module>
+                <module>nd4j-tpu-preset</module>
+            </modules>
+
+        </profile>
+        <profile>
+            <id>zluda</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <modules>
+                <module>nd4j-zluda</module>
+            </modules>
+
+        </profile>
+        <profile>
+            <id>zluda-amd</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <modules>
+                <module>nd4j-zluda</module>
+            </modules>
+            <properties>
+                <zluda.target>AMD</zluda.target>
+            </properties>
+
+        </profile>
+        <profile>
+            <id>zluda-intel</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <modules>
+                <module>nd4j-zluda</module>
+            </modules>
+            <properties>
+                <zluda.target>INTEL</zluda.target>
+            </properties>
+
+        </profile>
+        <profile>
             <id>libnd4j-cuda</id>
             <activation>
                 <property>

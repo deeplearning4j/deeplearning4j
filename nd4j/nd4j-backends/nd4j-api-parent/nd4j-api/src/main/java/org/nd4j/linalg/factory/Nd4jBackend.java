@@ -385,6 +385,68 @@ public abstract class Nd4jBackend {
 
     public abstract void logBackendInit();
 
+    // ============ Multi-Backend Support Methods ============
+
+    /**
+     * Initialize the backend for multi-backend support.
+     * Called once when the backend is registered with BackendRegistry.
+     */
+    public void initialize() {
+        // Default: no additional initialization needed
+    }
+
+    /**
+     * Discover devices available through this backend.
+     * @return list of device descriptors
+     */
+    public java.util.List<org.nd4j.linalg.api.device.DeviceDescriptor> discoverDevices() {
+        return java.util.Collections.emptyList();
+    }
+
+    /**
+     * Create an OpExecutioner for this backend.
+     * @return a new executioner instance
+     */
+    public org.nd4j.linalg.api.ops.executioner.OpExecutioner createExecutioner() {
+        return null;
+    }
+
+    /**
+     * Create a MemoryManager for this backend.
+     * @return a new memory manager instance
+     */
+    public org.nd4j.linalg.api.memory.MemoryManager createMemoryManager() {
+        return null;
+    }
+
+    /**
+     * Get a unique identifier for this backend.
+     * @return backend identifier
+     */
+    public String getBackendId() {
+        String className = getClass().getSimpleName();
+        if (className.endsWith("Backend")) {
+            className = className.substring(0, className.length() - 7);
+        }
+        return className.toLowerCase();
+    }
+
+    /**
+     * Check if this backend supports multi-backend coordination.
+     * @return true if multi-backend is supported
+     */
+    public boolean supportsMultiBackend() {
+        return true;
+    }
+
+    /**
+     * Get the maximum number of devices this backend can support.
+     * @return max devices, or -1 for unlimited
+     */
+    public int getMaxDevices() {
+        return -1;
+    }
+
     /**
      * Check if a backend is currently loaded
      * @return true if a backend is loaded

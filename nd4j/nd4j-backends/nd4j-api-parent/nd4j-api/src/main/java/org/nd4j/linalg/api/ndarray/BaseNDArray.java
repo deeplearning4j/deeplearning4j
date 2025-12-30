@@ -2094,7 +2094,20 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         Nd4j.getCompressor().autoDecompress(this);
 
-        val z = Nd4j.create(data().dup(), shape(), stride(), offset(), order);
+        // For views, we need to create a new contiguous array and copy the data
+        // Simply duplicating the underlying buffer doesn't work because:
+        // 1. The view may reference only a subset of the buffer
+        // 2. The view's strides/offset don't make sense with a copied buffer when serialized
+        INDArray z;
+        if (isView()) {
+            // Create a new contiguous array with the proper shape and ordering
+            z = Nd4j.create(dataType(), shape(), order);
+            // Copy all elements from this view to the new contiguous array
+            z.assign(this);
+        } else {
+            z = Nd4j.create(data().dup(), shape(), stride(), offset(), order);
+        }
+
         if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
             NDArrayMetaData metaData = NDArrayMetaData.from(this);
             NDArrayEvent event = NDArrayEvent.builder()
@@ -5012,41 +5025,41 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (!isMatrix() && !isVector())
             throw new IllegalArgumentException("Unable to get columns from a non matrix or vector");
         logBeforeViewCreationIfNeccessary();
-        if (isVector()) {
-            INDArray ret =  Nd4j.pullRows(this, 0, cindices, this.ordering());
-            if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
-                NDArrayEvent event = NDArrayEvent.builder()
-                        .dataAtEvent(NDArrayMetaData.from(ret))
-                        .parentDataAtEvent(NDArrayMetaData.fromArr(this))
-                        .ndArrayEventType(NDArrayEventType.VIEW_CREATION)
-                        .stackTrace(Thread.currentThread().getStackTrace())
-                        .build();
-                ret.addEvent(event);
 
+        INDArray ret;
+        if (isRowVector()) {
+            // For row vectors with shape [1, n], we extract specific column values
+            // Result shape: [1, cindices.length]
+            ret = Nd4j.createUninitialized(this.dataType(), 1, cindices.length);
+            for (int i = 0; i < cindices.length; i++) {
+                ret.putScalar(0, i, getDouble(0, cindices[i]));
             }
-
-            logViewCreationIfNeccessary();
-
-            return ret;
+        } else if (isColumnVector()) {
+            // For column vectors with shape [n, 1], getColumns doesn't make sense
+            // but we can treat column 0 requests as returning the vector
+            if (cindices.length == 1 && cindices[0] == 0) {
+                ret = this.dup();
+            } else {
+                throw new IllegalArgumentException("Column vector only has column 0");
+            }
         } else {
-            INDArray ret = Nd4j.createUninitialized(this.dataType(), rows(), cindices.length);
+            // For matrices: create result and copy each column
+            ret = Nd4j.createUninitialized(this.dataType(), rows(), cindices.length);
             for (int i = 0; i < cindices.length; i++)
                 ret.putColumn(i, getColumn(cindices[i]));
-
-            if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
-                NDArrayEvent event = NDArrayEvent.builder()
-                        .parentDataAtEvent(NDArrayMetaData.fromArr(this))
-                        .ndArrayEventType(NDArrayEventType.PUT)
-                        .stackTrace(Thread.currentThread().getStackTrace())
-                        .build();
-                ret.addEvent(event);
-
-            }
-
-            logViewCreationIfNeccessary();
-            return ret;
         }
 
+        if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
+            NDArrayEvent event = NDArrayEvent.builder()
+                    .parentDataAtEvent(NDArrayMetaData.fromArr(this))
+                    .ndArrayEventType(NDArrayEventType.PUT)
+                    .stackTrace(Thread.currentThread().getStackTrace())
+                    .build();
+            ret.addEvent(event);
+        }
+
+        logViewCreationIfNeccessary();
+        return ret;
     }
 
     protected INDArray create(int rows, int length) {

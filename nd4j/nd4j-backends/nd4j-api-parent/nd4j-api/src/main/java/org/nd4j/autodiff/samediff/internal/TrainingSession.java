@@ -20,6 +20,8 @@
 
 package org.nd4j.autodiff.samediff.internal;
 
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.Listener;
@@ -31,7 +33,9 @@ import org.nd4j.autodiff.samediff.TrainingConfig;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.config.ExecutionResult;
 import org.nd4j.autodiff.samediff.config.SDValue;
+import org.nd4j.autodiff.samediff.training.LossScaler;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -52,6 +56,12 @@ public class TrainingSession extends InferenceSession {
     protected double[] currIterLoss;
     protected Map<Class<?>, AtomicDouble> currIterRegLoss;
     protected List<Listener> listeners;
+
+    // Mixed precision training support
+    @Getter @Setter
+    protected LossScaler lossScaler;
+    @Getter
+    protected boolean currentIterationOverflow;
 
 
     public TrainingSession(SameDiff sameDiff) {
@@ -75,6 +85,13 @@ public class TrainingSession extends InferenceSession {
                                   MultiDataSet batch, List<String> lossVariables, List<Listener> listeners, At at) {
         this.config = config;
         this.updaters = updaters;
+        this.currentIterationOverflow = false;
+
+        // Initialize loss scaler if loss scaling is enabled
+        if (config.isLossScalingEnabled() && this.lossScaler == null) {
+            this.lossScaler = new LossScaler(config.getLossScaleConfig());
+        }
+
         if(batch != null) {
             batch.setCloseable(false);
         }
@@ -168,6 +185,11 @@ public class TrainingSession extends InferenceSession {
             }
         }
 
+        // Update loss scaler after iteration
+        if (lossScaler != null) {
+            lossScaler.update(!currentIterationOverflow);
+        }
+
         return loss;
     }
 
@@ -209,6 +231,19 @@ public class TrainingSession extends InferenceSession {
                 Variable var = sameDiff.getVariables().get(varName);
                 INDArray gradArr = out.resultAt(outIdx);
                 INDArray paramArr = var.getVariable().getArr();
+
+                // Unscale gradients if loss scaling is enabled
+                if (lossScaler != null) {
+                    lossScaler.unscaleGradients(gradArr);
+
+                    // Check for overflow
+                    if (!lossScaler.areGradientsFinite(gradArr)) {
+                        log.debug("Gradient overflow detected for variable: {}", varName);
+                        currentIterationOverflow = true;
+                        outIdx++;
+                        continue; // Skip this parameter update
+                    }
+                }
 
                 //Pre-updater regularization (L1, L2)
                 List<Regularization> r = config.getRegularization();
@@ -260,6 +295,7 @@ public class TrainingSession extends InferenceSession {
                 } else {
                     paramArr.addi(gradArr);
                 }
+
                 log.trace("Applied updater to gradient and updated variable: {}", varName);
             }
 
@@ -267,5 +303,16 @@ public class TrainingSession extends InferenceSession {
         }
 
         return out;
+    }
+
+    /**
+     * Check if the current iteration had a gradient overflow.
+     * This is useful for mixed precision training to detect when gradients
+     * have become too large (inf/nan) due to loss scaling.
+     *
+     * @return true if overflow was detected in this iteration
+     */
+    public boolean hadOverflow() {
+        return currentIterationOverflow;
     }
 }

@@ -43,7 +43,8 @@ public interface OpExecutioner {
     // in case of adding new executioner - list it here
     enum ExecutionerType {
         NATIVE_CPU,
-        CUDA
+        CUDA,
+        MULTI_BACKEND
     }
 
     enum ProfilingMode {

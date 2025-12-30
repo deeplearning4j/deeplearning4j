@@ -81,6 +81,170 @@ DECLARE_PLATFORM(conv2d, ENGINE_CPU);
 
 DECLARE_PLATFORM(deconv2d, ENGINE_CPU);
 
+// Depthwise convolution
+DECLARE_PLATFORM(depthwise_conv2d, ENGINE_CPU);
+
+// Activation functions
+DECLARE_PLATFORM(relu, ENGINE_CPU);
+DECLARE_PLATFORM(sigmoid, ENGINE_CPU);
+DECLARE_PLATFORM(tanh, ENGINE_CPU);
+DECLARE_PLATFORM(softmax, ENGINE_CPU);
+DECLARE_PLATFORM(elu, ENGINE_CPU);
+DECLARE_PLATFORM(lrelu, ENGINE_CPU);
+DECLARE_PLATFORM(relu6, ENGINE_CPU);
+DECLARE_PLATFORM(abs, ENGINE_CPU);
+DECLARE_PLATFORM(softplus, ENGINE_CPU);
+DECLARE_PLATFORM(hardsigmoid, ENGINE_CPU);
+DECLARE_PLATFORM(prelu, ENGINE_CPU);
+DECLARE_PLATFORM(log_softmax, ENGINE_CPU);
+
+// Normalization
+DECLARE_PLATFORM(batchnorm, ENGINE_CPU);
+DECLARE_PLATFORM(lrn, ENGINE_CPU);
+
+// Fully connected / Linear
+DECLARE_PLATFORM(xw_plus_b, ENGINE_CPU);
+
+// Matrix operations
+DECLARE_PLATFORM(matmul, ENGINE_CPU);
+
+// Concatenation
+DECLARE_PLATFORM(concat, ENGINE_CPU);
+
+// Reduce operations
+DECLARE_PLATFORM(reduce_mean, ENGINE_CPU);
+DECLARE_PLATFORM(reduce_sum, ENGINE_CPU);
+
+// Transpose/Permute
+DECLARE_PLATFORM(transpose, ENGINE_CPU);
+
+// Elementwise operations
+DECLARE_PLATFORM(add, ENGINE_CPU);
+DECLARE_PLATFORM(subtract, ENGINE_CPU);
+DECLARE_PLATFORM(multiply, ENGINE_CPU);
+DECLARE_PLATFORM(divide, ENGINE_CPU);
+DECLARE_PLATFORM(maximum, ENGINE_CPU);
+DECLARE_PLATFORM(minimum, ENGINE_CPU);
+
+// Math operations
+DECLARE_PLATFORM(exp, ENGINE_CPU);
+DECLARE_PLATFORM(log, ENGINE_CPU);
+DECLARE_PLATFORM(sqrt, ENGINE_CPU);
+DECLARE_PLATFORM(neg, ENGINE_CPU);
+DECLARE_PLATFORM(floor, ENGINE_CPU);
+DECLARE_PLATFORM(ceil, ENGINE_CPU);
+DECLARE_PLATFORM(round, ENGINE_CPU);
+DECLARE_PLATFORM(rsqrt, ENGINE_CPU);
+
+// Argmax/Argmin
+DECLARE_PLATFORM(argmax, ENGINE_CPU);
+DECLARE_PLATFORM(argmin, ENGINE_CPU);
+
+// Pad
+DECLARE_PLATFORM(pad, ENGINE_CPU);
+
+// Split
+DECLARE_PLATFORM(split, ENGINE_CPU);
+
+// Tile
+DECLARE_PLATFORM(tile, ENGINE_CPU);
+
+// Gather
+DECLARE_PLATFORM(gather, ENGINE_CPU);
+
+// Sign
+DECLARE_PLATFORM(sign, ENGINE_CPU);
+
+// Squeeze/Reshape
+DECLARE_PLATFORM(squeeze, ENGINE_CPU);
+
+// Stack
+DECLARE_PLATFORM(stack, ENGINE_CPU);
+
+// Reverse
+DECLARE_PLATFORM(reverse, ENGINE_CPU);
+
+// Additional reduction operations
+DECLARE_PLATFORM(reduce_max, ENGINE_CPU);
+DECLARE_PLATFORM(reduce_min, ENGINE_CPU);
+DECLARE_PLATFORM(reduce_prod, ENGINE_CPU);
+DECLARE_PLATFORM(mean, ENGINE_CPU);
+
+// Power operations
+DECLARE_PLATFORM(pow, ENGINE_CPU);
+DECLARE_PLATFORM(square, ENGINE_CPU);
+DECLARE_PLATFORM(reciprocal, ENGINE_CPU);
+
+// Comparison operations
+DECLARE_PLATFORM(greater, ENGINE_CPU);
+DECLARE_PLATFORM(less, ENGINE_CPU);
+DECLARE_PLATFORM(equals, ENGINE_CPU);
+DECLARE_PLATFORM(greater_equal, ENGINE_CPU);
+DECLARE_PLATFORM(less_equal, ENGINE_CPU);
+DECLARE_PLATFORM(not_equals, ENGINE_CPU);
+
+// Shape operations
+DECLARE_PLATFORM(reshape, ENGINE_CPU);
+DECLARE_PLATFORM(flatten, ENGINE_CPU);
+DECLARE_PLATFORM(slice, ENGINE_CPU);
+DECLARE_PLATFORM(expand_dims, ENGINE_CPU);
+
+// Clip operation
+DECLARE_PLATFORM(clip_by_value, ENGINE_CPU);
+
+// Trigonometric operations
+DECLARE_PLATFORM(sin, ENGINE_CPU);
+DECLARE_PLATFORM(cos, ENGINE_CPU);
+
+// Normalization
+DECLARE_PLATFORM(l2_normalize, ENGINE_CPU);
+
+// Copy operation
+DECLARE_PLATFORM(copy, ENGINE_CPU);
+
+// Modern activations
+DECLARE_PLATFORM(silu, ENGINE_CPU);
+DECLARE_PLATFORM(gelu, ENGINE_CPU);
+DECLARE_PLATFORM(hardswish, ENGINE_CPU);
+
+// Resize/Scale
+DECLARE_PLATFORM(resize_bilinear, ENGINE_CPU);
+DECLARE_PLATFORM(resize_nearest_neighbor, ENGINE_CPU);
+DECLARE_PLATFORM(crop_and_resize, ENGINE_CPU);
+
+// Logical operations
+DECLARE_PLATFORM(boolean_and, ENGINE_CPU);
+DECLARE_PLATFORM(boolean_or, ENGINE_CPU);
+DECLARE_PLATFORM(boolean_not, ENGINE_CPU);
+
+// Depth/Space operations
+DECLARE_PLATFORM(depth_to_space, ENGINE_CPU);
+DECLARE_PLATFORM(space_to_depth, ENGINE_CPU);
+DECLARE_PLATFORM(batch_to_space, ENGINE_CPU);
+DECLARE_PLATFORM(space_to_batch, ENGINE_CPU);
+
+// Shape operations
+DECLARE_PLATFORM(unstack, ENGINE_CPU);
+DECLARE_PLATFORM(strided_slice, ENGINE_CPU);
+
+// Utility operations
+DECLARE_PLATFORM(fill, ENGINE_CPU);
+
+// Statistical operations
+DECLARE_PLATFORM(moments, ENGINE_CPU);
+DECLARE_PLATFORM(top_k, ENGINE_CPU);
+
+// Normalization
+DECLARE_PLATFORM(instance_normalization, ENGINE_CPU);
+
+// More activations
+DECLARE_PLATFORM(mish, ENGINE_CPU);
+DECLARE_PLATFORM(leaky_relu, ENGINE_CPU);
+
+// Linear/GEMM operations
+DECLARE_PLATFORM(linear, ENGINE_CPU);
+DECLARE_PLATFORM(gemm, ENGINE_CPU);
+
 // utils
 Arm_DataType getArmType(const sd::DataType& dType);
 

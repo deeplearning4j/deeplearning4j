@@ -1903,6 +1903,43 @@ DECLARE_CUSTOM_OP(compare_and_bitpack, 2, 1, false, 0, 0);
 DECLARE_CUSTOM_OP(eig, 1, 2, false, 0, 0);
 #endif
 
+/**
+ * check_numerics - Check if all values in the input tensor are finite (not inf/nan)
+ *
+ * Used for mixed precision training to detect gradient overflow.
+ *
+ * input params:
+ *    0 - NDArray (input) - tensor to check
+ *
+ * output:
+ *    0 - Scalar DOUBLE: 1.0 if all values are finite, 0.0 if any inf/nan present
+ */
+#if NOT_EXCLUDED(OP_check_numerics)
+DECLARE_CUSTOM_OP(check_numerics, 1, 1, false, 0, 0);
+#endif
+
+/**
+ * cast_and_scale - Fused cast and scale operation for mixed precision training
+ *
+ * Casts input to target data type and multiplies by scale factor in a single pass.
+ * More efficient than separate cast + multiply operations.
+ *
+ * input params:
+ *    0 - NDArray (input) - tensor to cast and scale
+ *
+ * T_ARG params:
+ *    0 - scale factor (double)
+ *
+ * int params:
+ *    0 - target data type (as integer, use DataTypeUtils::fromInt)
+ *
+ * output:
+ *    0 - NDArray with target data type, values = input * scale
+ */
+#if NOT_EXCLUDED(OP_cast_and_scale)
+DECLARE_CUSTOM_OP(cast_and_scale, 1, 1, false, 1, 1);
+#endif
+
 }  // namespace ops
 }  // namespace sd
 

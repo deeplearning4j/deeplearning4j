@@ -12,6 +12,18 @@ option(SD_EXTRACT_INSTANTIATIONS "Extract template instantiations and exit" OFF)
 option(SD_GENERATE_FIX_FILES "Generate fix files for missing instantiations" OFF)
 option(SD_INSTANTIATION_VERBOSE "Verbose instantiation extraction" OFF)
 
+# --- Backend Options ---
+option(SD_CPU "Build CPU backend" ON)
+option(SD_CUDA "Build CUDA/GPU backend" OFF)
+option(SD_TPU "Build TPU backend using PJRT" OFF)
+set(TPU_VERSION "v5" CACHE STRING "TPU version (v4, v5)")
+
+# --- ZLUDA Transpiler Options ---
+# ZLUDA enables running CUDA code on AMD/Intel GPUs via runtime translation
+option(SD_ZLUDA "Enable ZLUDA transpiler support for AMD/Intel GPUs" OFF)
+set(SD_ZLUDA_TARGET "AUTO" CACHE STRING "ZLUDA target backend (AMD, INTEL, AUTO)")
+set_property(CACHE SD_ZLUDA_TARGET PROPERTY STRINGS AUTO AMD INTEL)
+
 # --- COMPILATION OPTIMIZATION OPTIONS (NEW) ---
 # These dramatically affect template compilation time
 option(SD_FAST_BUILD "Enable fast build mode with minimal templates" OFF)
@@ -22,16 +34,34 @@ set(SD_PARALLEL_COMPILE_JOBS "0" CACHE STRING "Number of parallel compile jobs (
 option(HELPERS_armcompute "Enable ARM Compute Library helper" OFF)
 option(HELPERS_onednn "Enable OneDNN helper" OFF)
 option(HELPERS_cudnn "Enable cuDNN helper" OFF)
+option(HELPERS_mlir "Enable MLIR/LLVM JIT compilation helper" OFF)
+option(HELPERS_mps "Enable Metal Performance Shaders helper (macOS/iOS)" OFF)
+option(HELPERS_pjrt "Enable PJRT/TPU helper" OFF)
+option(HELPERS_miopen "Enable MIOpen helper (AMD GPUs via ZLUDA)" OFF)
+
+# --- MLIR Configuration Options ---
+set(MLIR_VERSION "18" CACHE STRING "MLIR/LLVM minimum version (18+)")
+option(MLIR_ENABLE_GPU "Enable MLIR GPU dialect and NVVM backend" OFF)
+option(MLIR_JIT_CACHE "Enable caching of JIT-compiled kernels" ON)
+option(MLIR_DEBUG_DUMPS "Enable MLIR IR dump during lowering (debug)" OFF)
 
 # Force all helpers OFF by default to prevent compilation issues
 set(HELPERS_armcompute OFF CACHE BOOL "Force disable ARM Compute Library helper" FORCE)
 set(HELPERS_onednn OFF CACHE BOOL "Force disable OneDNN helper" FORCE)
 set(HELPERS_cudnn OFF CACHE BOOL "Force disable cuDNN helper" FORCE)
+set(HELPERS_mlir OFF CACHE BOOL "Force disable MLIR helper" FORCE)
+set(HELPERS_mps OFF CACHE BOOL "Force disable MPS helper" FORCE)
+set(HELPERS_miopen OFF CACHE BOOL "Force disable MIOpen helper" FORCE)
 
 # Set corresponding HAVE_* variables
 set(HAVE_ARMCOMPUTE OFF CACHE BOOL "ARM Compute Library availability" FORCE)
 set(HAVE_ONEDNN OFF CACHE BOOL "OneDNN availability" FORCE)
 set(HAVE_CUDNN OFF CACHE BOOL "cuDNN availability" FORCE)
+set(HAVE_MLIR OFF CACHE BOOL "MLIR availability" FORCE)
+set(HAVE_MPS OFF CACHE BOOL "MPS availability" FORCE)
+set(HAVE_PJRT OFF CACHE BOOL "PJRT/TPU availability" FORCE)
+set(HAVE_MIOPEN OFF CACHE BOOL "MIOpen availability" FORCE)
+set(HAVE_ZLUDA OFF CACHE BOOL "ZLUDA availability" FORCE)
 set(GENERATED_TYPE_COMBINATIONS "" CACHE INTERNAL "Generated type combinations")
 set(PROCESSED_TEMPLATE_FILES "" CACHE INTERNAL "Processed template files")
 

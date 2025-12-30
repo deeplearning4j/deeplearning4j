@@ -70,6 +70,107 @@ DECLARE_PLATFORM(lstmLayer, ENGINE_CUDA);
 DECLARE_PLATFORM(ctc_loss, ENGINE_CUDA);
 DECLARE_PLATFORM(ctc_loss_grad, ENGINE_CUDA);
 
+// Softmax operations
+DECLARE_PLATFORM(softmax, ENGINE_CUDA);
+DECLARE_PLATFORM(softmax_bp, ENGINE_CUDA);
+DECLARE_PLATFORM(log_softmax, ENGINE_CUDA);
+
+// LRN (Local Response Normalization) operations
+DECLARE_PLATFORM(lrn, ENGINE_CUDA);
+DECLARE_PLATFORM(lrn_bp, ENGINE_CUDA);
+
+// Deconvolution (Transposed Convolution) operations
+DECLARE_PLATFORM(deconv2d, ENGINE_CUDA);
+DECLARE_PLATFORM(deconv2d_bp, ENGINE_CUDA);
+DECLARE_PLATFORM(deconv3d, ENGINE_CUDA);
+DECLARE_PLATFORM(deconv3d_bp, ENGINE_CUDA);
+
+// Activation functions
+DECLARE_PLATFORM(relu, ENGINE_CUDA);
+DECLARE_PLATFORM(relu_bp, ENGINE_CUDA);
+DECLARE_PLATFORM(sigmoid, ENGINE_CUDA);
+DECLARE_PLATFORM(sigmoid_bp, ENGINE_CUDA);
+DECLARE_PLATFORM(tanh, ENGINE_CUDA);
+DECLARE_PLATFORM(tanh_bp, ENGINE_CUDA);
+DECLARE_PLATFORM(elu, ENGINE_CUDA);
+DECLARE_PLATFORM(elu_bp, ENGINE_CUDA);
+DECLARE_PLATFORM(relu6, ENGINE_CUDA);
+DECLARE_PLATFORM(relu6_bp, ENGINE_CUDA);
+DECLARE_PLATFORM(selu, ENGINE_CUDA);
+
+// Conv1D operations
+DECLARE_PLATFORM(conv1d, ENGINE_CUDA);
+DECLARE_PLATFORM(conv1d_bp, ENGINE_CUDA);
+
+// RNN operations
+DECLARE_PLATFORM(gru, ENGINE_CUDA);
+
+// Separable convolution
+DECLARE_PLATFORM(sconv2d, ENGINE_CUDA);
+DECLARE_PLATFORM(sconv2d_bp, ENGINE_CUDA);
+
+// Reduce operations
+DECLARE_PLATFORM(reduce_sum, ENGINE_CUDA);
+DECLARE_PLATFORM(reduce_mean, ENGINE_CUDA);
+DECLARE_PLATFORM(reduce_max, ENGINE_CUDA);
+DECLARE_PLATFORM(reduce_min, ENGINE_CUDA);
+DECLARE_PLATFORM(reduce_prod, ENGINE_CUDA);
+DECLARE_PLATFORM(reduce_norm1, ENGINE_CUDA);
+DECLARE_PLATFORM(reduce_norm2, ENGINE_CUDA);
+
+// Bias add
+DECLARE_PLATFORM(biasadd, ENGINE_CUDA);
+DECLARE_PLATFORM(biasadd_bp, ENGINE_CUDA);
+
+// Element-wise operations
+DECLARE_PLATFORM(add, ENGINE_CUDA);
+DECLARE_PLATFORM(subtract, ENGINE_CUDA);
+DECLARE_PLATFORM(multiply, ENGINE_CUDA);
+DECLARE_PLATFORM(maximum, ENGINE_CUDA);
+DECLARE_PLATFORM(minimum, ENGINE_CUDA);
+DECLARE_PLATFORM(sqrt, ENGINE_CUDA);
+
+// Transform operations
+DECLARE_PLATFORM(identity, ENGINE_CUDA);
+DECLARE_PLATFORM(neg, ENGINE_CUDA);
+#if CUDNN_VERSION >= 8000
+DECLARE_PLATFORM(swish, ENGINE_CUDA);
+#endif
+
+// Instance normalization
+DECLARE_PLATFORM(instance_norm, ENGINE_CUDA);
+
+// Simple RNN
+DECLARE_PLATFORM(simple_rnn, ENGINE_CUDA);
+
+// Extended activations (cuDNN 8+)
+#if CUDNN_VERSION >= 8500
+DECLARE_PLATFORM(softplus, ENGINE_CUDA);
+#endif
+#if CUDNN_VERSION >= 8300
+DECLARE_PLATFORM(gelu, ENGINE_CUDA);
+#endif
+#if CUDNN_VERSION >= 8000
+DECLARE_PLATFORM(mish, ENGINE_CUDA);
+DECLARE_PLATFORM(hardsigmoid, ENGINE_CUDA);
+#endif
+#if CUDNN_VERSION >= 8200
+DECLARE_PLATFORM(hardswish, ENGINE_CUDA);
+#endif
+
+// Global pooling operations
+DECLARE_PLATFORM(avgpool2d_global, ENGINE_CUDA);
+DECLARE_PLATFORM(avgpool2d_global_bp, ENGINE_CUDA);
+DECLARE_PLATFORM(maxpool2d_global, ENGINE_CUDA);
+DECLARE_PLATFORM(maxpool2d_global_bp, ENGINE_CUDA);
+DECLARE_PLATFORM(avgpool3d_global, ENGINE_CUDA);
+DECLARE_PLATFORM(maxpool3d_global, ENGINE_CUDA);
+
+// Dropout operations
+DECLARE_PLATFORM(dropout, ENGINE_CUDA);
+DECLARE_PLATFORM(dropout_bp, ENGINE_CUDA);
+DECLARE_PLATFORM(alpha_dropout, ENGINE_CUDA);
+
 //////////////////////////////////////////////////////////////////////////
 
 inline void throwIfCudnnFailed(cudnnStatus_t result_status,

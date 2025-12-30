@@ -51,6 +51,8 @@ class SD_LIB_EXPORT ContextPrototype {
 #endif
   bool _isInplace;
 
+  bool _useMPS = Environment::getInstance().isUseMPS();
+
   // opNum for legacy XYZ ops
   int _opNum = -1;
   uint64_t _rootSeed;
@@ -115,6 +117,9 @@ class SD_LIB_EXPORT ContextPrototype {
 
   bool isUseONEDNN() { return _useONEDNN; }
   void setUseONEDNN(bool useONEDNN) { _useONEDNN = useONEDNN; }
+
+  bool isUseMPS() { return _useMPS; }
+  void setUseMPS(bool useMPS) { _useMPS = useMPS; }
 
   /**
    * This method returns number of inputs available in this block

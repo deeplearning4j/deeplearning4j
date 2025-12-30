@@ -7232,6 +7232,22 @@ opList {
   }
 }
 opList {
+  name: "einsum"
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "equation"
+    argType: STRING
+  }
+  argDescriptor {
+    name: "inputs"
+    argType: INPUT_TENSOR
+  }
+  opDeclarationType: CUSTOM_OP_IMPL
+}
+opList {
   name: "elu"
   argDescriptor {
     name: "outputs"
