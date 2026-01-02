@@ -1651,6 +1651,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         } else if (isColumnVector() && rank() == 2) {
             return putScalar(i, 0, value);
         }
+
+        // Convert linear index to subscripts based on ordering, then use putScalar with subscripts
         long[] indexes = ordering() == 'c' ? Shape.ind2subC(this, i) : Shape.ind2sub(this, i);
         return putScalar(indexes, value);
     }
@@ -2847,7 +2849,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (i < 0)
             i += this.length();
 
-        long idx = this.isScalar() ? 0 : Shape.getOffset(jvmShapeInfo.javaShapeInformation, Shape.ind2subC(this.shape(), i));
+        // Convert linear index to subscripts based on ordering, then calculate buffer offset
+        long idx;
+        if (this.isScalar()) {
+            idx = 0;
+        } else {
+            long[] subs = ordering() == 'c' ? Shape.ind2subC(this.shape(), i) : Shape.ind2sub(this.shape(), i);
+            idx = Shape.getOffset(jvmShapeInfo.javaShapeInformation, subs);
+        }
         INDArray ret =  Nd4j.scalar(data().getDouble(offset + idx)).castTo(dataType());
 
         if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
@@ -4371,9 +4380,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         autoProcessScalarCall();
 
-        if (i == 0)
-            return data().getDouble(offset + i);
-
+        // Convert linear index to subscripts based on array ordering, then calculate buffer offset
+        // For F-order, linear index traverses column-first; for C-order, row-first
         long[] dimensions = ordering() == 'c' ? Shape.ind2subC(this, i) : Shape.ind2sub(this, i);
         Shape.assertShapeLessThan(dimensions, shape());
         return getDouble(dimensions);
@@ -4719,13 +4727,25 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray getColumn(long c) {
         Nd4j.getCompressor().autoDecompress(this);
 
-        if (isColumnVector() && c == 0)
-            return this;
-        else if (isColumnVector() && c > 0)
+        if (isColumnVector() && c == 0) {
+            // For a column vector [n,1], return a 1D copy with the same data
+            long len = rows();
+            INDArray result = Nd4j.createUninitialized(dataType(), len);
+            for (long i = 0; i < len; i++) {
+                result.putScalar(i, getScalar(i, 0).getDouble(0));
+            }
+            return result;
+        } else if (isColumnVector() && c > 0)
             throw new IllegalArgumentException("Illegal index for column");
         Preconditions.checkArgument(this.rank() == 2, "getColumn() can be called on 2D arrays only");
-        INDArray ret =  tensorAlongDimension(c, 0);
-        return ret.reshape(ret.length(),1);
+        // Extract column as 1D array using getScalar for each element
+        long numRows = rows();
+        INDArray result = Nd4j.createUninitialized(dataType(), numRows);
+        for (long i = 0; i < numRows; i++) {
+            double value = getScalar(i, c).getDouble(0);
+            result.putScalar(i, value);
+        }
+        return result;
     }
 
     @Override
@@ -5043,10 +5063,16 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 throw new IllegalArgumentException("Column vector only has column 0");
             }
         } else {
-            // For matrices: create result and copy each column
-            ret = Nd4j.createUninitialized(this.dataType(), rows(), cindices.length);
-            for (int i = 0; i < cindices.length; i++)
-                ret.putColumn(i, getColumn(cindices[i]));
+            // For matrices: create result and copy each column element by element
+            // to avoid potential issues with views and putColumn
+            long numRows = rows();
+            ret = Nd4j.createUninitialized(this.dataType(), numRows, cindices.length);
+            for (int colIdx = 0; colIdx < cindices.length; colIdx++) {
+                int srcCol = cindices[colIdx];
+                for (long row = 0; row < numRows; row++) {
+                    ret.putScalar(row, colIdx, getDouble(row, srcCol));
+                }
+            }
         }
 
         if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {

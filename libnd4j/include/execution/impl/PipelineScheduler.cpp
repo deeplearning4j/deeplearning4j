@@ -54,8 +54,12 @@ bool PipelineScheduler::initialize(const std::vector<PipelineStage>& stages) {
     }
 
     _stages = stages;
-    _stageMutexes.resize(stages.size());
-    _stageConditions.resize(stages.size());
+    _stageMutexes.clear();
+    _stageConditions.clear();
+    for (size_t i = 0; i < stages.size(); ++i) {
+        _stageMutexes.push_back(std::make_unique<std::mutex>());
+        _stageConditions.push_back(std::make_unique<std::condition_variable>());
+    }
 
     // Generate initial schedule
     _scheduleEntries = generateSchedule();
@@ -550,7 +554,8 @@ size_t PipelineScheduler::getCheckpointMemory() const {
         for (const auto& [layerId, info] : layers) {
             for (const auto* tensor : info.activations) {
                 if (tensor) {
-                    total += tensor->lengthOf() * DataTypeUtils::sizeOf(tensor->dataType());
+                    auto tensorNonConst = const_cast<NDArray*>(tensor);
+                    total += tensorNonConst->lengthOf() * DataTypeUtils::sizeOf(tensorNonConst->dataType());
                 }
             }
         }

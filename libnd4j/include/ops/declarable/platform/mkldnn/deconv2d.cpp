@@ -114,11 +114,11 @@ static void deconv2dMKLDNN(NDArray* input, NDArray* weights, NDArray* bias, NDAr
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
-  // operation primitive description
-  dnnl::deconvolution_forward::desc op_desc(dnnl::prop_kind::forward_inference, dnnl::algorithm::deconvolution_direct,
-                                            x_mkl_md, w_mkl_md, b_mkl_md, z_mkl_md, strides, dilation, padding,
-                                            padding_r);
-  dnnl::deconvolution_forward::primitive_desc op_prim_desc(op_desc, engine);
+  // operation primitive description (OneDNN 3.x API)
+  dnnl::deconvolution_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                            dnnl::algorithm::deconvolution_direct,
+                                                            x_mkl_md, w_mkl_md, b_mkl_md, z_mkl_md,
+                                                            strides, dilation, padding, padding_r);
 
   // arguments (memory buffers) necessary for calculations
   std::unordered_map<int, dnnl::memory> args;
@@ -242,23 +242,24 @@ static void deconv2dBpMKLDNN(NDArray* input, NDArray* weights, NDArray* gradO, N
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
-  // forward primitive description
-  dnnl::deconvolution_forward::desc op_ff_desc(dnnl::prop_kind::forward_inference,
-                                               dnnl::algorithm::deconvolution_direct, x_mkl_md, w_mkl_md, gradB_mkl_md,
-                                               gradO_mkl_md, strides, dilation, padding, padding_r);
-  dnnl::deconvolution_forward::primitive_desc op_ff_prim_desc(op_ff_desc, engine);
+  // forward primitive description (OneDNN 3.x API) - used as hint for backward
+  dnnl::deconvolution_forward::primitive_desc op_ff_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                               dnnl::algorithm::deconvolution_direct,
+                                                               x_mkl_md, w_mkl_md, gradB_mkl_md, gradO_mkl_md,
+                                                               strides, dilation, padding, padding_r);
 
-  // backward data primitive description
-  dnnl::deconvolution_backward_data::desc op_data_bp_desc(dnnl::algorithm::deconvolution_direct, gradI_mkl_md, w_mkl_md,
-                                                          gradO_mkl_md, strides, dilation, padding, padding_r);
-  dnnl::deconvolution_backward_data::primitive_desc op_data_bp_prim_desc(op_data_bp_desc, engine, op_ff_prim_desc);
+  // backward data primitive description (OneDNN 3.x API)
+  dnnl::deconvolution_backward_data::primitive_desc op_data_bp_prim_desc(engine, dnnl::algorithm::deconvolution_direct,
+                                                                          gradI_mkl_md, w_mkl_md, gradO_mkl_md,
+                                                                          strides, dilation, padding, padding_r,
+                                                                          op_ff_prim_desc);
 
-  // backward weights primitive description
-  dnnl::deconvolution_backward_weights::desc op_weights_bp_desc(dnnl::algorithm::deconvolution_direct, x_mkl_md,
-                                                                gradW_mkl_md, gradB_mkl_md, gradO_mkl_md, strides,
-                                                                dilation, padding, padding_r);
-  dnnl::deconvolution_backward_weights::primitive_desc op_weights_bp_prim_desc(op_weights_bp_desc, engine,
-                                                                               op_ff_prim_desc);
+  // backward weights primitive description (OneDNN 3.x API)
+  dnnl::deconvolution_backward_weights::primitive_desc op_weights_bp_prim_desc(engine,
+                                                                                dnnl::algorithm::deconvolution_direct,
+                                                                                x_mkl_md, gradW_mkl_md, gradB_mkl_md,
+                                                                                gradO_mkl_md, strides, dilation,
+                                                                                padding, padding_r, op_ff_prim_desc);
 
   // arguments (memory buffers) necessary for calculations
   std::unordered_map<int, dnnl::memory> args;

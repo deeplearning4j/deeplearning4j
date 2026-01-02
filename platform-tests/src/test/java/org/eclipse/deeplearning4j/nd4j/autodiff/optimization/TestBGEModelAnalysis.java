@@ -48,7 +48,7 @@ public class TestBGEModelAnalysis {
         }
 
         System.out.println("Loading model from: " + MODEL_PATH);
-        SameDiff sd = SameDiff.load(modelFile, true);
+        SameDiff sd = SameDiff.loadSharded(modelFile);
 
         System.out.println("\n=== MODEL SUMMARY ===");
         System.out.println("Total ops: " + sd.getOps().size());
@@ -455,6 +455,8 @@ public class TestBGEModelAnalysis {
         } else {
             System.out.println("\n*** ATTENTION FUSION NOT APPLIED ***");
         }
+
+        System.out.println();
     }
 
     private void traceBackFromSoftmaxInput(SameDiff sd, String varName, String indent) {

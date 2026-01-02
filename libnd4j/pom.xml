@@ -83,7 +83,22 @@
         <libnd4j.compute></libnd4j.compute>
         <libnd4j.classifier>${libnd4j.platform}</libnd4j.classifier>
         <libnd4j.buildthreads></libnd4j.buildthreads>
+        <!-- Single helper (legacy, still supported) -->
         <libnd4j.helper></libnd4j.helper>
+        <!-- Multi-helper support: comma-separated list of helpers to enable -->
+        <!-- Available helpers: onednn, cudnn, armcompute, mlir, mps, accelerate, miopen, pjrt -->
+        <!-- Example: -Dlibnd4j.helpers=onednn,cudnn -->
+        <libnd4j.helpers></libnd4j.helpers>
+
+        <!-- Dynamic Kernel Selection Configuration -->
+        <libnd4j.dynamic.kernel.selection>ON</libnd4j.dynamic.kernel.selection>
+        <libnd4j.kernel.strategy>fastest</libnd4j.kernel.strategy>
+        <libnd4j.kernel.autotuning>OFF</libnd4j.kernel.autotuning>
+        <libnd4j.kernel.caching>ON</libnd4j.kernel.caching>
+        <!-- Helper priority order (comma-separated, highest priority first) -->
+        <!-- Example: -Dlibnd4j.helper.priority=cudnn,onednn,cpu -->
+        <libnd4j.helper.priority></libnd4j.helper.priority>
+
         <libnd4j.buildprogram>bash</libnd4j.buildprogram>
         <libnd4j.operations></libnd4j.operations>
         <libnd4j.datatypes></libnd4j.datatypes>
@@ -122,6 +137,11 @@
 
         <!-- JNI Configuration for Java stack trace capture in lifecycle tracking -->
         <libnd4j.build.with.java>ON</libnd4j.build.with.java>
+
+        <!-- MLIR Configuration -->
+        <libnd4j.mlir>OFF</libnd4j.mlir>
+        <libnd4j.mlir.version>18</libnd4j.mlir.version>
+        <libnd4j.mlir.gpu>OFF</libnd4j.mlir.gpu>
 
     </properties>
 
@@ -537,6 +557,18 @@
                                         <argument>${libnd4j.buildthreads}</argument>
                                         <argument>-h</argument>
                                         <argument>${libnd4j.helper}</argument>
+                                        <argument>--helpers</argument>
+                                        <argument>${libnd4j.helpers}</argument>
+                                        <argument>--dynamic-kernel-selection</argument>
+                                        <argument>${libnd4j.dynamic.kernel.selection}</argument>
+                                        <argument>--kernel-strategy</argument>
+                                        <argument>${libnd4j.kernel.strategy}</argument>
+                                        <argument>--kernel-autotuning</argument>
+                                        <argument>${libnd4j.kernel.autotuning}</argument>
+                                        <argument>--kernel-caching</argument>
+                                        <argument>${libnd4j.kernel.caching}</argument>
+                                        <argument>--helper-priority</argument>
+                                        <argument>${libnd4j.helper.priority}</argument>
                                         <argument>--operations</argument>
                                         <argument>${libnd4j.operations}</argument>
                                         <argument>--datatypes</argument>
@@ -585,6 +617,12 @@
                                         <argument>${libnd4j.link.only}</argument>
                                         <argument>--dry-run</argument>
                                         <argument>${libnd4j.dry.run}</argument>
+                                        <argument>--mlir</argument>
+                                        <argument>${libnd4j.mlir}</argument>
+                                        <argument>--mlir-version</argument>
+                                        <argument>${libnd4j.mlir.version}</argument>
+                                        <argument>--mlir-gpu</argument>
+                                        <argument>${libnd4j.mlir.gpu}</argument>
 
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
@@ -710,6 +748,12 @@
                                         <argument>${libnd4j.link.only}</argument>
                                         <argument>--dry-run</argument>
                                         <argument>${libnd4j.dry.run}</argument>
+                                        <argument>--mlir</argument>
+                                        <argument>${libnd4j.mlir}</argument>
+                                        <argument>--mlir-version</argument>
+                                        <argument>${libnd4j.mlir.version}</argument>
+                                        <argument>--mlir-gpu</argument>
+                                        <argument>${libnd4j.mlir.gpu}</argument>
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>
@@ -827,6 +871,18 @@
                                         <argument>${libnd4j.buildthreads}</argument>
                                         <argument>-h</argument>
                                         <argument>${libnd4j.helper}</argument>
+                                        <argument>--helpers</argument>
+                                        <argument>${libnd4j.helpers}</argument>
+                                        <argument>--dynamic-kernel-selection</argument>
+                                        <argument>${libnd4j.dynamic.kernel.selection}</argument>
+                                        <argument>--kernel-strategy</argument>
+                                        <argument>${libnd4j.kernel.strategy}</argument>
+                                        <argument>--kernel-autotuning</argument>
+                                        <argument>${libnd4j.kernel.autotuning}</argument>
+                                        <argument>--kernel-caching</argument>
+                                        <argument>${libnd4j.kernel.caching}</argument>
+                                        <argument>--helper-priority</argument>
+                                        <argument>${libnd4j.helper.priority}</argument>
                                         <argument>--operations</argument>
                                         <argument>${libnd4j.operations}</argument>
                                         <argument>--datatypes</argument>
@@ -873,6 +929,12 @@
                                         <argument>${libnd4j.link.only}</argument>
                                         <argument>--dry-run</argument>
                                         <argument>${libnd4j.dry.run}</argument>
+                                        <argument>--mlir</argument>
+                                        <argument>${libnd4j.mlir}</argument>
+                                        <argument>--mlir-version</argument>
+                                        <argument>${libnd4j.mlir.version}</argument>
+                                        <argument>--mlir-gpu</argument>
+                                        <argument>${libnd4j.mlir.gpu}</argument>
 
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
@@ -931,6 +993,37 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <!-- MLIR JIT Compilation Profile -->
+        <profile>
+            <id>mlir</id>
+            <activation>
+                <property>
+                    <name>libnd4j.mlir</name>
+                    <value>ON</value>
+                </property>
+            </activation>
+            <properties>
+                <libnd4j.mlir>ON</libnd4j.mlir>
+                <!-- MLIR requires LLVM 18+ -->
+                <libnd4j.mlir.version>18</libnd4j.mlir.version>
+            </properties>
+        </profile>
+
+        <!-- MLIR with GPU Support Profile -->
+        <profile>
+            <id>mlir-gpu</id>
+            <activation>
+                <property>
+                    <name>libnd4j.mlir.gpu</name>
+                    <value>ON</value>
+                </property>
+            </activation>
+            <properties>
+                <libnd4j.mlir>ON</libnd4j.mlir>
+                <libnd4j.mlir.gpu>ON</libnd4j.mlir.gpu>
+            </properties>
         </profile>
 
     </profiles>

@@ -121,15 +121,11 @@ static void depthwiseConv2dMKLDNN(NDArray* input, NDArray* weights, NDArray* bia
   dnnl::memory::desc x_user_md = dnnl::memory::desc(xDims, xType, xzFormatMkl);
   onednnUtils::setBlockStrides(*input, x_user_md);
 
-  // weights
+  // weights - create with custom strides for permutation (OneDNN 3.x API)
   dnnl::memory::desc w_mkl_md = dnnl::memory::desc(wDims, wType, dnnl::memory::format_tag::any);
-  dnnl::memory::desc w_user_md = dnnl::memory::desc(wDims, wType, wFormatMkl);
-  w_user_md.data.format_kind = dnnl_blocked;                               // overrides format
-  w_user_md.data.format_desc.blocking.strides[0] = weights->strideAt(i0);  // permute
-  w_user_md.data.format_desc.blocking.strides[1] = weights->strideAt(i1);
-  w_user_md.data.format_desc.blocking.strides[2] = 0;
-  w_user_md.data.format_desc.blocking.strides[3] = weights->strideAt(i2);
-  w_user_md.data.format_desc.blocking.strides[4] = weights->strideAt(i3);
+  dnnl::memory::dims w_strides = {weights->strideAt(i0), weights->strideAt(i1), 0,
+                                   weights->strideAt(i2), weights->strideAt(i3)};
+  dnnl::memory::desc w_user_md = dnnl::memory::desc(wDims, wType, w_strides);
 
   // bias
   dnnl::memory::desc b_mkl_md;
@@ -142,11 +138,11 @@ static void depthwiseConv2dMKLDNN(NDArray* input, NDArray* weights, NDArray* bia
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
-  // operation primitive description
-  dnnl::convolution_forward::desc op_desc(dnnl::prop_kind::forward_inference, dnnl::algorithm::convolution_auto,
-                                          x_mkl_md, w_mkl_md, b_mkl_md, z_mkl_md, strides, dilation, padding,
-                                          padding_r);
-  dnnl::convolution_forward::primitive_desc op_prim_desc(op_desc, engine);
+  // operation primitive description (OneDNN 3.x API)
+  dnnl::convolution_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                          dnnl::algorithm::convolution_auto,
+                                                          x_mkl_md, w_mkl_md, b_mkl_md, z_mkl_md,
+                                                          strides, dilation, padding, padding_r);
 
   // arguments (memory buffers) necessary for calculations
   std::unordered_map<int, dnnl::memory> args;
@@ -261,15 +257,11 @@ static void depthwiseConv2dBpMKLDNN(NDArray* input, NDArray* weights, NDArray* g
   dnnl::memory::desc x_user_md = dnnl::memory::desc(xDims, xType, xzFormatMkl);
   onednnUtils::setBlockStrides(*input, x_user_md);
 
-  // weights
+  // weights - create with custom strides for permutation (OneDNN 3.x API)
   dnnl::memory::desc w_mkl_md = dnnl::memory::desc(wDims, wType, dnnl::memory::format_tag::any);
-  dnnl::memory::desc w_user_md = dnnl::memory::desc(wDims, wType, wFormatMkl);
-  w_user_md.data.format_kind = dnnl_blocked;                               // overrides format
-  w_user_md.data.format_desc.blocking.strides[0] = weights->strideAt(i0);  // permute
-  w_user_md.data.format_desc.blocking.strides[1] = weights->strideAt(i1);
-  w_user_md.data.format_desc.blocking.strides[2] = 0;
-  w_user_md.data.format_desc.blocking.strides[3] = weights->strideAt(i2);
-  w_user_md.data.format_desc.blocking.strides[4] = weights->strideAt(i3);
+  dnnl::memory::dims w_strides = {weights->strideAt(i0), weights->strideAt(i1), 0,
+                                   weights->strideAt(i2), weights->strideAt(i3)};
+  dnnl::memory::desc w_user_md = dnnl::memory::desc(wDims, wType, w_strides);
 
   // gradO
   dnnl::memory::desc gradO_mkl_md = dnnl::memory::desc(zDims, gradOType, dnnl::memory::format_tag::any);
@@ -281,15 +273,11 @@ static void depthwiseConv2dBpMKLDNN(NDArray* input, NDArray* weights, NDArray* g
   dnnl::memory::desc gradI_user_md = dnnl::memory::desc(xDims, gradIType, xzFormatMkl);
   onednnUtils::setBlockStrides(*gradI, gradI_user_md);
 
-  // gradW
+  // gradW - create with custom strides for permutation (OneDNN 3.x API)
   dnnl::memory::desc gradW_mkl_md = dnnl::memory::desc(wDims, gradWType, dnnl::memory::format_tag::any);
-  dnnl::memory::desc gradW_user_md = dnnl::memory::desc(wDims, gradWType, wFormatMkl);
-  gradW_user_md.data.format_kind = dnnl_blocked;                             // overrides format
-  gradW_user_md.data.format_desc.blocking.strides[0] = gradW->strideAt(i0);  // permute
-  gradW_user_md.data.format_desc.blocking.strides[1] = gradW->strideAt(i1);
-  gradW_user_md.data.format_desc.blocking.strides[2] = 0;
-  gradW_user_md.data.format_desc.blocking.strides[3] = gradW->strideAt(i2);
-  gradW_user_md.data.format_desc.blocking.strides[4] = gradW->strideAt(i3);
+  dnnl::memory::dims gradW_strides = {gradW->strideAt(i0), gradW->strideAt(i1), 0,
+                                       gradW->strideAt(i2), gradW->strideAt(i3)};
+  dnnl::memory::desc gradW_user_md = dnnl::memory::desc(wDims, gradWType, gradW_strides);
 
   // gradB
   dnnl::memory::desc gradB_mkl_md;
@@ -297,23 +285,23 @@ static void depthwiseConv2dBpMKLDNN(NDArray* input, NDArray* weights, NDArray* g
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
-  // forward primitive description
-  dnnl::convolution_forward::desc op_ff_desc(dnnl::prop_kind::forward_inference, dnnl::algorithm::convolution_auto,
-                                             x_mkl_md, w_mkl_md, gradB_mkl_md, gradO_mkl_md, strides, dilation, padding,
-                                             padding_r);
-  dnnl::convolution_forward::primitive_desc op_ff_prim_desc(op_ff_desc, engine);
+  // forward primitive description (OneDNN 3.x API) - used as hint for backward
+  dnnl::convolution_forward::primitive_desc op_ff_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                             dnnl::algorithm::convolution_auto,
+                                                             x_mkl_md, w_mkl_md, gradB_mkl_md, gradO_mkl_md,
+                                                             strides, dilation, padding, padding_r);
 
-  // backward data primitive description
-  dnnl::convolution_backward_data::desc op_data_bp_desc(dnnl::algorithm::convolution_auto, gradI_mkl_md, w_mkl_md,
-                                                        gradO_mkl_md, strides, dilation, padding, padding_r);
-  dnnl::convolution_backward_data::primitive_desc op_data_bp_prim_desc(op_data_bp_desc, engine, op_ff_prim_desc);
+  // backward data primitive description (OneDNN 3.x API)
+  dnnl::convolution_backward_data::primitive_desc op_data_bp_prim_desc(engine, dnnl::algorithm::convolution_auto,
+                                                                        gradI_mkl_md, w_mkl_md, gradO_mkl_md,
+                                                                        strides, dilation, padding, padding_r,
+                                                                        op_ff_prim_desc);
 
-  // backward weights primitive description
-  dnnl::convolution_backward_weights::desc op_weights_bp_desc(dnnl::algorithm::convolution_auto, x_mkl_md, gradW_mkl_md,
-                                                              gradB_mkl_md, gradO_mkl_md, strides, dilation, padding,
-                                                              padding_r);
-  dnnl::convolution_backward_weights::primitive_desc op_weights_bp_prim_desc(op_weights_bp_desc, engine,
-                                                                             op_ff_prim_desc);
+  // backward weights primitive description (OneDNN 3.x API)
+  dnnl::convolution_backward_weights::primitive_desc op_weights_bp_prim_desc(engine, dnnl::algorithm::convolution_auto,
+                                                                              x_mkl_md, gradW_mkl_md, gradB_mkl_md,
+                                                                              gradO_mkl_md, strides, dilation,
+                                                                              padding, padding_r, op_ff_prim_desc);
 
   // arguments (memory buffers) necessary for calculations
   std::unordered_map<int, dnnl::memory> args;

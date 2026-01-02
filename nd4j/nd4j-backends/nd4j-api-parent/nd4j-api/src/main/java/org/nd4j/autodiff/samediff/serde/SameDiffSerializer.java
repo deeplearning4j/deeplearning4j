@@ -2379,12 +2379,13 @@ public class SameDiffSerializer {
             if (shape != null) shapeOffset = FlatVariable.createShapeVector(bufferBuilder, shape);
 
             // Serialize inline data only for variables marked for small inline inclusion
+            // Note: Empty arrays (like attention masks) ARE serialized - serializeSmallNdArrayToFlatBuffer handles them
             if (smallArrayNamesToIncludeData.contains(varName)) {
                 INDArray arr = variable.getArr();
-                if (arr != null && !arr.isEmpty()) {
+                if (arr != null) {
                     try {
                         arrayOffset = serializeSmallNdArrayToFlatBuffer(arr, bufferBuilder);
-                        log.info("Serialized small array inline for '{}', offset={}", varName, arrayOffset);
+                        log.info("Serialized small array inline for '{}' (empty={}), offset={}", varName, arr.isEmpty(), arrayOffset);
                     } catch (Exception e) {
                         log.warn("Error serializing small array inline for '{}'.", varName, e);
                         arrayOffset = 0;
@@ -2868,7 +2869,29 @@ public class SameDiffSerializer {
             return null;
         }
 
-        // Handle empty array case first (based on shape, no data buffer expected/needed)
+        // Handle TRUE empty array case first: shapeLength == 0 AND bufferLength == 0
+        // This is an empty array created via Nd4j.empty(DataType) - has EMPTY flag set
+        // Distinguished from scalar (shapeLength == 0, bufferLength > 0)
+        if (fa.shapeLength() == 0 && fa.bufferLength() == 0 && fa.bufferChunksLength() == 0 && !fa.isExternal()) {
+            byte dtypeByte = fa.dtype();
+            DataType dataType = FlatBuffersMapper.getDataTypeFromByte(dtypeByte);
+            if (dataType == null || dataType == DataType.UNKNOWN) {
+                log.info("LOAD_INLINE [{}]: True empty array has unrecognized dtype ({}). Defaulting to FLOAT.", varName, dtypeByte);
+                dataType = DataType.FLOAT;
+            }
+            log.info("LOAD_INLINE [{}]: Creating true empty array with fresh instance (DataType={})", varName, dataType);
+            // Create a FRESH empty array (not the cached Nd4j.empty() singleton) to ensure the EMPTY flag
+            // is definitely preserved. Using the NDArrayFactory directly creates a new instance each time.
+            // This avoids any potential issues with the cached instance having its shape info modified.
+            INDArray emptyArr = Nd4j.getNDArrayFactory().empty(dataType);
+            // Log isEmpty() status to help debug any issues
+            log.info("LOAD_INLINE [{}]: Created empty array isEmpty()={}, rank={}, shape={}, shapeInfo={}",
+                    varName, emptyArr.isEmpty(), emptyArr.rank(), Arrays.toString(emptyArr.shape()),
+                    Arrays.toString(emptyArr.shapeInfoDataBuffer().asLong()));
+            return emptyArr;
+        }
+
+        // Handle empty array case based on shape with zero-product (shape like [0, 10], no data buffer)
         if (fa.shapeLength() > 0 && fa.bufferLength() == 0 && fa.bufferChunksLength() == 0 && !fa.isExternal()) {
             // This case means shape info exists, but data buffer vector is explicitly empty.
             try {
@@ -3133,22 +3156,27 @@ public class SameDiffSerializer {
     }
     /**
      * Helper to get variables with data, sorted descending by approximate byte size.
+     * Note: Empty arrays (like those used for optional attention masks) are included
+     * to ensure they are serialized properly.
      */
     private static List<SDVariable> getVariablesWithDataSorted(SameDiff sameDiff) {
         List<SDVariable> varsWithData = new ArrayList<>();
         if (sameDiff == null || sameDiff.variables() == null) return varsWithData;
 
         for (SDVariable var : sameDiff.variables()) {
-            // Include only VARIABLE and CONSTANT types with actual, non-empty data
+            // Include VARIABLE and CONSTANT types that have arrays (including empty arrays)
+            // Empty arrays are important for operations like attention that use empty masks
             if ((var.getVariableType() == VariableType.VARIABLE || var.getVariableType() == VariableType.CONSTANT)
-                    && var.getArr() != null && !var.getArr().isEmpty()) {
+                    && var.getArr() != null) {
                 varsWithData.add(var);
             }
         }
-        // Sort descending by approximate size in bytes
+        // Sort descending by approximate size in bytes (empty arrays will have size 0)
         varsWithData.sort((a, b) -> {
-            long sizeA = a.getArr().length() * a.dataType().width();
-            long sizeB = b.getArr().length() * b.dataType().width();
+            INDArray arrA = a.getArr();
+            INDArray arrB = b.getArr();
+            long sizeA = (arrA != null && !arrA.isEmpty()) ? arrA.length() * a.dataType().width() : 0;
+            long sizeB = (arrB != null && !arrB.isEmpty()) ? arrB.length() * b.dataType().width() : 0;
             return Long.compare(sizeB, sizeA); // Descending
         });
         return varsWithData;

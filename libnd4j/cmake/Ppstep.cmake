@@ -51,7 +51,15 @@ if(BUILD_PPSTEP)
     if(CMAKE_C_COMPILER)
         list(APPEND PPSTEP_CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER})
     endif()
-    
+
+    # Pass compiler launcher (ccache/sccache) to ppstep build if available
+    if(CMAKE_C_COMPILER_LAUNCHER)
+        list(APPEND PPSTEP_CMAKE_ARGS -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER})
+    endif()
+    if(CMAKE_CXX_COMPILER_LAUNCHER)
+        list(APPEND PPSTEP_CMAKE_ARGS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER})
+    endif()
+
     ExternalProject_Add(ppstep_build
         PREFIX            "${PPSTEP_PREFIX}"
         GIT_REPOSITORY    "https://github.com/agibsonccc/ppstep.git"
@@ -63,7 +71,7 @@ if(BUILD_PPSTEP)
         TMP_DIR           "${PPSTEP_PREFIX}/tmp"
         DOWNLOAD_DIR      "${PPSTEP_PREFIX}/download"
         CMAKE_ARGS        ${PPSTEP_CMAKE_ARGS}
-        BUILD_COMMAND     make
+        BUILD_COMMAND     ${CMAKE_COMMAND} --build . --parallel
         INSTALL_COMMAND   ""
         BUILD_BYPRODUCTS  "${PPSTEP_BUILD_DIR}/ppstep"
         LOG_DOWNLOAD      TRUE

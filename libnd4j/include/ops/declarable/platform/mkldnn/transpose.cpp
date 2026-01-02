@@ -41,7 +41,7 @@ static void transposeMKLDNN(NDArray* x, NDArray* z, const std::vector<LongType>&
   auto xRank = x->rankOf();
 
   // Build source and destination dimensions
-  dnnl::memory::dims srcDims = x->getShapeAsFlatVector();
+  dnnl::memory::dims srcDims = *x->getShapeAsFlatVector();
   dnnl::memory::dims dstDims(xRank);
 
   for (int i = 0; i < xRank; i++) {

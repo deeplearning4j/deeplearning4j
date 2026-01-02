@@ -77,14 +77,14 @@ class LpNormalization : PreImportHook {
             1 -> {
                 // L1 normalization: x / (sum(|x|) + epsilon)
                 val absInput = sd.math.abs("${opName}_abs", input)
-                val l1Norm = sd.sum("${opName}_l1norm", absInput, true, axis)
+                val l1Norm = sd.sum("${opName}_l1norm", absInput, true, axis.toLong())
                 val l1NormSafe = sd.math.add("${opName}_l1safe", l1Norm, sd.constant(epsilon))
                 sd.math.div(outputNames[0], input, l1NormSafe)
             }
             2 -> {
                 // L2 normalization: x / (sqrt(sum(x^2)) + epsilon)
                 val squared = sd.math.square("${opName}_sq", input)
-                val sumSquared = sd.sum("${opName}_sumSq", squared, true, axis)
+                val sumSquared = sd.sum("${opName}_sumSq", squared, true, axis.toLong())
                 val l2Norm = sd.math.sqrt("${opName}_l2norm", sumSquared)
                 val l2NormSafe = sd.math.add("${opName}_l2safe", l2Norm, sd.constant(epsilon))
                 sd.math.div(outputNames[0], input, l2NormSafe)
@@ -93,7 +93,7 @@ class LpNormalization : PreImportHook {
                 // General Lp normalization: x / (sum(|x|^p)^(1/p) + epsilon)
                 val absInput = sd.math.abs("${opName}_abs", input)
                 val powered = sd.math.pow("${opName}_pow", absInput, sd.constant(p.toDouble()))
-                val sumPowered = sd.sum("${opName}_sumPow", powered, true, axis)
+                val sumPowered = sd.sum("${opName}_sumPow", powered, true, axis.toLong())
                 val lpNorm = sd.math.pow("${opName}_lpnorm", sumPowered, sd.constant(1.0 / p))
                 val lpNormSafe = sd.math.add("${opName}_lpsafe", lpNorm, sd.constant(epsilon))
                 sd.math.div(outputNames[0], input, lpNormSafe)

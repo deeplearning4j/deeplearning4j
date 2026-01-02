@@ -38,7 +38,7 @@ namespace platforms {
 
 //////////////////////////////////////////////////////////////////////
 static void shuffleChannelMKLDNN(NDArray* x, NDArray* z, int groups, int axis) {
-  dnnl::memory::dims xDims = x->getShapeAsFlatVector();
+  dnnl::memory::dims xDims = *x->getShapeAsFlatVector();
 
   dnnl::memory::desc x_md = dnnl::memory::desc(xDims, dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
   dnnl::memory::desc z_md = dnnl::memory::desc(xDims, dnnl::memory::data_type::f32, onednnUtils::getFormat(*z));
@@ -50,8 +50,8 @@ static void shuffleChannelMKLDNN(NDArray* x, NDArray* z, int groups, int axis) {
   int axisSize = x->sizeAt(axis);
   int groupSize = axisSize / groups;
 
-  dnnl::shuffle_forward::desc op_desc(dnnl::prop_kind::forward_inference, x_md, axis, groupSize);
-  dnnl::shuffle_forward::primitive_desc op_prim_desc(op_desc, engine);
+  // OneDNN 3.x API - requires both src_desc and dst_desc
+  dnnl::shuffle_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference, x_md, z_md, axis, groupSize);
 
   std::unordered_map<int, dnnl::memory> args;
   dnnl::stream stream(engine);
@@ -110,7 +110,7 @@ PLATFORM_CHECK(shuffle_channel, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 static void shuffleChannelBpMKLDNN(NDArray* dLdz, NDArray* dLdx, int groups, int axis) {
-  dnnl::memory::dims dims = dLdz->getShapeAsFlatVector();
+  dnnl::memory::dims dims = *dLdz->getShapeAsFlatVector();
 
   dnnl::memory::desc dLdz_md = dnnl::memory::desc(dims, dnnl::memory::data_type::f32, onednnUtils::getFormat(*dLdz));
   dnnl::memory::desc dLdx_md = dnnl::memory::desc(dims, dnnl::memory::data_type::f32, onednnUtils::getFormat(*dLdx));
@@ -120,13 +120,11 @@ static void shuffleChannelBpMKLDNN(NDArray* dLdz, NDArray* dLdx, int groups, int
   int axisSize = dLdz->sizeAt(axis);
   int groupSize = axisSize / groups;
 
-  // Forward descriptor for hint
-  dnnl::shuffle_forward::desc op_ff_desc(dnnl::prop_kind::forward_training, dLdz_md, axis, groupSize);
-  dnnl::shuffle_forward::primitive_desc op_ff_prim_desc(op_ff_desc, engine);
+  // Forward descriptor for hint (OneDNN 3.x API) - requires both src_desc and dst_desc
+  dnnl::shuffle_forward::primitive_desc op_ff_prim_desc(engine, dnnl::prop_kind::forward_training, dLdx_md, dLdz_md, axis, groupSize);
 
-  // Backward descriptor
-  dnnl::shuffle_backward::desc op_desc(dLdz_md, axis, groupSize);
-  dnnl::shuffle_backward::primitive_desc op_prim_desc(op_desc, engine, op_ff_prim_desc);
+  // Backward descriptor (OneDNN 3.x API) - requires diff_src_desc and diff_dst_desc
+  dnnl::shuffle_backward::primitive_desc op_prim_desc(engine, dLdx_md, dLdz_md, axis, groupSize, op_ff_prim_desc);
 
   std::unordered_map<int, dnnl::memory> args;
   dnnl::stream stream(engine);

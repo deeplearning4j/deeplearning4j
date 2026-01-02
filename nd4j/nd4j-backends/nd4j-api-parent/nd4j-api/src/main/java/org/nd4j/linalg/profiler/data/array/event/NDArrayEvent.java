@@ -21,7 +21,9 @@ package org.nd4j.linalg.profiler.data.array.event;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.val;
 import org.nd4j.common.util.StackTraceUtils;
 import org.nd4j.linalg.factory.Nd4j;

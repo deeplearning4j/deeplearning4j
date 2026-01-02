@@ -529,7 +529,7 @@ static void whereMPS(const NDArray* condition, const NDArray* x, const NDArray* 
     }
 }
 
-PLATFORM_IMPL(where, ENGINE_CPU) {
+PLATFORM_IMPL(where_np, ENGINE_CPU) {
     auto condition = INPUT_VARIABLE(0);
     auto x = INPUT_VARIABLE(1);
     auto y = INPUT_VARIABLE(2);
@@ -542,7 +542,7 @@ PLATFORM_IMPL(where, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(where, ENGINE_CPU) {
+PLATFORM_CHECK(where_np, ENGINE_CPU) {
     auto condition = INPUT_VARIABLE(0);
     auto x = INPUT_VARIABLE(1);
 

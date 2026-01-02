@@ -74,7 +74,13 @@ public class SDValue implements IDependeeGroup<INDArray> {
     }
 
     public Collection<INDArray> getCollection() {
-        return getListValue();
+        if (tensorValue != null)
+            return Arrays.asList(tensorValue);
+        if (listValue != null)
+            return listValue;
+        if (dictValue != null)
+            return dictValue.values();
+        return Collections.emptyList();
     }
 
     /**

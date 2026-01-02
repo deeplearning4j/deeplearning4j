@@ -36,7 +36,7 @@
       (7, Pow), (13, MinPairwise), (14, MaxPairwise), (15, AMinPairwise), (16, AMaxPairwise), (17, SquaredSubtract), \
       (18, FloorMod), (19, FloorDiv), (20, ReverseMod), (21, SafeDivide), (22, Mod), (23, TruncateDiv), (26, Atan2), \
       (27, LogicalOr), (28, LogicalXor), (29, LogicalNot), (30, LogicalAnd), (31, DivideNoNan), (32, IGamma),        \
-      (33, IGammac), (34, PowDerivative)
+      (33, IGammac), (34, PowDerivative), (35, Xdivy), (36, Xlogy), (37, Xlog1py)
 
 // these ops return same data type as input
 #define TRANSFORM_SAME_OPS                                                                                      \
@@ -83,7 +83,7 @@
       (30, LogicalAnd), (31, Pow), (32, PowDerivative), (33, CompareAndSet), (34, SXELogitsSmoother), (35, LeakyRELU), \
       (36, LeakyRELUDerivative), (37, ReplaceNans), (38, LogX), (39, RELU), (40, RELU6), (41, Step), (42, LstmClip),   \
       (43, TruncateMod), (44, SquaredReverseSubtract), (45, ReversePow), (46, DivideNoNan), (47, IGamma),              \
-      (48, IGammac), (49, RELUDerivative)
+      (48, IGammac), (49, RELUDerivative), (50, Xdivy), (51, Xlogy), (52, Xlog1py)
 
 #define SCALAR_STRING_OPS                                                                                                     \
   (0, AssignString)
@@ -126,7 +126,7 @@
       (25, BinaryRelativeError), (26, BinaryMinimumAbsoluteRelativeError), (27, LogicalOr), (28, LogicalXor),          \
       (29, LogicalNot), (30, LogicalAnd), (31, PowDerivative), (32, LogPoissonLoss), (33, LogPoissonLossFull),         \
       (34, AMaxPairwise), (35, AMinPairwise), (36, TruncateMod), (37, ReplaceNans), (38, DivideNoNan), (39, IGamma),   \
-      (40, IGammac)
+      (40, IGammac), (41, Xdivy), (42, Xlogy), (43, Xlog1py)
 
 #define INDEX_REDUCE_OPS \
   (0, IndexMax), (1, IndexMin), (2, IndexAbsoluteMax), (3, IndexAbsoluteMin), (4, FirstIndex), (5, LastIndex)

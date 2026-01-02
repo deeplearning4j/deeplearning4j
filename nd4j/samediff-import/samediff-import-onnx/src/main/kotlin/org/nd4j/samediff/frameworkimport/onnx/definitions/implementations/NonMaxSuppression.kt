@@ -92,21 +92,25 @@ class NonMaxSuppression : PreImportHook {
         // For multi-class NMS, we need to process each class separately
         // This is a simplified implementation for single-class or first-class NMS
         val scoresFirstClass = sd.stridedSlice("${opName}_scores_slice", scores,
-            intArrayOf(0, 0, 0), intArrayOf(Int.MAX_VALUE, 1, Int.MAX_VALUE), intArrayOf(1, 1, 1))
+            longArrayOf(0, 0, 0), longArrayOf(Long.MAX_VALUE, 1, Long.MAX_VALUE), 1L, 1L, 1L)
         val scoresSqueeezed = sd.squeeze("${opName}_scores_squeeze", scoresFirstClass, 1)
 
-        // Apply NMS
+        // Apply NMS with default values as primitives
+        val maxBoxesInt = 0  // Will be computed at runtime
+        val iouThreshFloat = 0.5
+        val scoreThreshFloat = Float.NEGATIVE_INFINITY.toDouble()
+
         val selectedIndices = sd.image.nonMaxSuppression(
             "${opName}_nms",
             boxes,
             scoresSqueeezed,
-            maxBoxes,
-            iouThresh,
-            scoreThresh
+            maxBoxesInt,
+            iouThreshFloat,
+            scoreThreshFloat
         )
 
-        // Reshape output to [num_selected, 3] format
-        val numSelected = sd.shape("${opName}_num_selected", selectedIndices)[0]
+        // Get shape for reshaping output
+        val selectedShape = sd.shape("${opName}_shape", selectedIndices)
         val batchIndices = sd.zerosLike("${opName}_batch_idx", selectedIndices)
         val classIndices = sd.zerosLike("${opName}_class_idx", selectedIndices)
 

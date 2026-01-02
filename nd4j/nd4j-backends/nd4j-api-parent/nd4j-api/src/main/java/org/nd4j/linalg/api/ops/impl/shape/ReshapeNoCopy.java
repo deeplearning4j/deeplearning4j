@@ -104,10 +104,11 @@ public class ReshapeNoCopy extends DynamicCustomOp {
 
                 DataBuffer needsCopyShape = list.get(0);
                 if(ArrayOptionsHelper.arrayNeedsCopy(needsCopyShape.asLong())) {
+                    // When a copy is needed, create a new array. The native op will handle
+                    // the memcpy to preserve linear element order (which is correct for reshape).
                     INDArray newOut = Nd4j.createFromDescriptor(needsCopyShape);
                     addOutputArgument(newOut);
                 } else {
-
                     INDArray newOut = Nd4j.createFromDescriptor(inputArguments.get(0).data(),needsCopyShape);
                     addOutputArgument(newOut);
                 }

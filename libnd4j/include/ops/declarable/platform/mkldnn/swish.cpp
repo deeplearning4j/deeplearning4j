@@ -37,7 +37,7 @@ namespace platforms {
 
 //////////////////////////////////////////////////////////////////////
 static void swishMKLDNN(NDArray* x, NDArray* z) {
-  dnnl::memory::dims shape = x->getShapeAsFlatVector();
+  dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
   dnnl::memory::desc x_mkl_md, x_user_md, z_mkl_md, z_user_md;
 
@@ -52,9 +52,9 @@ static void swishMKLDNN(NDArray* x, NDArray* z) {
   dnnl::primitive_attr attr;
 
   // swish/silu: x * sigmoid(x), alpha parameter is typically 1.0
-  dnnl::eltwise_forward::desc op_desc(dnnl::prop_kind::forward_inference, algorithm::eltwise_swish, x_mkl_md, 1.0f, 0);
-
-  dnnl::eltwise_forward::primitive_desc op_prim_desc(op_desc, attr, engine);
+  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  dnnl::eltwise_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                      algorithm::eltwise_swish, x_mkl_md, z_mkl_md, 1.0f, 0.f);
 
   std::unordered_map<int, dnnl::memory> args;
 
@@ -73,12 +73,12 @@ static void swishMKLDNN(NDArray* x, NDArray* z) {
   stream.wait();
 }
 
-PLATFORM_IMPL(silu, ENGINE_CPU) {
+PLATFORM_IMPL(swish, ENGINE_CPU) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
   const sd::LongType rank = input->rankOf();
-  REQUIRE_TRUE(rank <= 6, 0, "SILU_MKLDNN OP: the rank of input must be less or equal 6, but got rank = %i instead !",
+  REQUIRE_TRUE(rank <= 6, 0, "SWISH_MKLDNN OP: the rank of input must be less or equal 6, but got rank = %i instead !",
                rank);
 
   swishMKLDNN(input, output);
@@ -86,11 +86,11 @@ PLATFORM_IMPL(silu, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(silu, ENGINE_CPU) {
+PLATFORM_CHECK(swish, ENGINE_CPU) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
-  Requirements req("ONEDNN SILU OP");
+  Requirements req("ONEDNN SWISH OP");
   req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
       req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
@@ -103,7 +103,7 @@ PLATFORM_CHECK(silu, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 static void swishBpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx) {
-  dnnl::memory::dims shape = x->getShapeAsFlatVector();
+  dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
   dnnl::memory::desc x_mkl_md, x_user_md, dLdx_mkl_md, dLdx_user_md, dLdz_mkl_md, dLdz_user_md;
 
@@ -122,11 +122,13 @@ static void swishBpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx) {
 
   dnnl::stream stream(engine);
 
-  dnnl::eltwise_forward::desc op_ff_desc(dnnl::prop_kind::forward_inference, algorithm::eltwise_swish, x_mkl_md, 1.0f, 0);
-  dnnl::eltwise_forward::primitive_desc op_ff_prim_desc(op_ff_desc, engine);
+  // OneDNN 3.x API for forward hint: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  dnnl::eltwise_forward::primitive_desc op_ff_prim_desc(engine, dnnl::prop_kind::forward_training,
+                                                         algorithm::eltwise_swish, x_mkl_md, x_mkl_md, 1.0f, 0.f);
 
-  dnnl::eltwise_backward::desc op_desc(algorithm::eltwise_swish, dLdz_mkl_md, x_mkl_md, 1.0f, 0);
-  dnnl::eltwise_backward::primitive_desc op_prim_desc(op_desc, engine, op_ff_prim_desc);
+  // OneDNN 3.x API for backward: primitive_desc(engine, algorithm, diff_src_md, diff_dst_md, data_md, alpha, beta, hint_fwd_pd)
+  dnnl::eltwise_backward::primitive_desc op_prim_desc(engine, algorithm::eltwise_swish,
+                                                       dLdx_mkl_md, dLdz_mkl_md, x_mkl_md, 1.0f, 0.f, op_ff_prim_desc);
 
   onednnUtils::loadDataToMklStream(*x, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
 
@@ -144,7 +146,7 @@ static void swishBpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx) {
   stream.wait();
 }
 
-PLATFORM_IMPL(silu_bp, ENGINE_CPU) {
+PLATFORM_IMPL(swish_bp, ENGINE_CPU) {
   auto input = INPUT_VARIABLE(0);
   auto dLdz = INPUT_VARIABLE(1);
   auto dLdx = OUTPUT_VARIABLE(0);
@@ -153,7 +155,7 @@ PLATFORM_IMPL(silu_bp, ENGINE_CPU) {
   const sd::LongType dLdzRank = dLdz->rankOf();
 
   REQUIRE_TRUE(rank <= 6 && dLdzRank <= 6, 0,
-               "SILU_BP_MKLDNN OP: the rank of input and dLdz must be less or equal 6, but got input rank = %i and dLdz "
+               "SWISH_BP_MKLDNN OP: the rank of input and dLdz must be less or equal 6, but got input rank = %i and dLdz "
                "rank = %i instead !",
                rank, dLdzRank);
 
@@ -162,12 +164,12 @@ PLATFORM_IMPL(silu_bp, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(silu_bp, ENGINE_CPU) {
+PLATFORM_CHECK(swish_bp, ENGINE_CPU) {
   auto x = INPUT_VARIABLE(0);
   auto dLdz = INPUT_VARIABLE(1);
   auto dLdx = OUTPUT_VARIABLE(0);
 
-  Requirements req("ONEDNN SILU BP OP");
+  Requirements req("ONEDNN SWISH BP OP");
   req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
       req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
       req.expectFalse(makeInfoVariable(dLdz->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&

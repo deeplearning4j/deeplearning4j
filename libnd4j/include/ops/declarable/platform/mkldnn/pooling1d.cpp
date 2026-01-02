@@ -70,9 +70,9 @@ static void pooling1dMKLDNN(NDArray* input, NDArray* output,
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
   dnnl::stream stream(engine);
 
-  dnnl::pooling_forward::desc op_desc(dnnl::prop_kind::forward_inference, alg,
-                                       src_md, dst_md, strides, kernel, padding, padding);
-  dnnl::pooling_forward::primitive_desc op_prim_desc(op_desc, engine);
+  // OneDNN 3.x API
+  dnnl::pooling_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference, alg,
+                                                      src_md, dst_md, strides, kernel, dilation, padding, padding);
 
   std::unordered_map<int, dnnl::memory> args;
 
@@ -193,14 +193,14 @@ static void pooling1dBpMKLDNN(NDArray* input, NDArray* gradO, NDArray* gradI,
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
   dnnl::stream stream(engine);
 
-  // Forward descriptor for hint
-  dnnl::pooling_forward::desc op_ff_desc(dnnl::prop_kind::forward_training, alg,
-                                          src_md, dst_md, strides, kernel, padding, padding);
-  dnnl::pooling_forward::primitive_desc op_ff_prim_desc(op_ff_desc, engine);
+  // Forward descriptor for hint (OneDNN 3.x API)
+  dnnl::memory::dims dilation = {0};  // No dilation for backward
+  dnnl::pooling_forward::primitive_desc op_ff_prim_desc(engine, dnnl::prop_kind::forward_training, alg,
+                                                         src_md, dst_md, strides, kernel, dilation, padding, padding);
 
-  // Backward descriptor
-  dnnl::pooling_backward::desc op_desc(alg, src_md, dst_md, strides, kernel, padding, padding);
-  dnnl::pooling_backward::primitive_desc op_prim_desc(op_desc, engine, op_ff_prim_desc);
+  // Backward descriptor (OneDNN 3.x API)
+  dnnl::pooling_backward::primitive_desc op_prim_desc(engine, alg, src_md, dst_md, strides, kernel,
+                                                       dilation, padding, padding, op_ff_prim_desc);
 
   std::unordered_map<int, dnnl::memory> args;
 

@@ -49,7 +49,8 @@
         <module>nd4j-tvm</module>
         <module>samediff-import</module>
         <module>nd4j-web</module>
-
+        <module>nd4j-ggml</module>
+        <module>nd4j-torchscript</module>
     </modules>
 
     <profiles>

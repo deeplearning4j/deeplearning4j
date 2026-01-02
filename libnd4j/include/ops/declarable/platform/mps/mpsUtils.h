@@ -224,6 +224,7 @@ DECLARE_PLATFORM(expand_dims, ENGINE_CPU);
 
 // Permute/Transpose
 DECLARE_PLATFORM(permute, ENGINE_CPU);
+DECLARE_PLATFORM(transpose, ENGINE_CPU);
 
 // Split
 DECLARE_PLATFORM(split, ENGINE_CPU);
@@ -347,9 +348,12 @@ DECLARE_PLATFORM(tile, ENGINE_CPU);
 DECLARE_PLATFORM(repeat, ENGINE_CPU);
 DECLARE_PLATFORM(reverse_sequence, ENGINE_CPU);
 DECLARE_PLATFORM(pad, ENGINE_CPU);
+DECLARE_PLATFORM(slice, ENGINE_CPU);
 DECLARE_PLATFORM(strided_slice, ENGINE_CPU);
 DECLARE_PLATFORM(scatter_update, ENGINE_CPU);
+DECLARE_PLATFORM(gather, ENGINE_CPU);
 DECLARE_PLATFORM(gather_nd, ENGINE_CPU);
+DECLARE_PLATFORM(reverse, ENGINE_CPU);
 
 // ============================================================================
 // Extended Activation Operations (from mps_activations_ext.mm)

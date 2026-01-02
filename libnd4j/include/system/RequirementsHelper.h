@@ -19,6 +19,7 @@
 #ifndef LIBND4J_REQUIREMENTSHELPER_H
 #define LIBND4J_REQUIREMENTSHELPER_H
 #include <ConstMessages.h>
+#include <helpers/HelperVersionRegistry.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/logger.h>
 #include <system/Environment.h>
@@ -350,6 +351,98 @@ class Requirements {
     if (this->ok && sd::Environment::getInstance().isDebug() && sd::Environment::getInstance().isVerbose()) {
       sd::Logger::info("%s: %s\n", prefix, REQUIREMENTS_MEETS_MSG);
     }
+  }
+
+  // ============================================================================
+  // Version Checking Methods
+  // ============================================================================
+
+  /**
+   * Check if a helper version meets the minimum required version
+   */
+  Requirements& expectVersion(const ops::platforms::HelperVersion& actual,
+                              const ops::platforms::HelperVersion& min,
+                              const char* msg = "Version requirement not met") {
+    if (!this->ok) return *this;
+    bool cmp = actual.meetsMinimum(min);
+    if (!cmp && sd::Environment::getInstance().isDebug() && sd::Environment::getInstance().isVerbose()) {
+      std::stringstream stream;
+      stream << prefix << ": " << msg << " - have v" << actual.toString()
+             << ", need v" << min.toString() << "+";
+      sd::Logger::info("%s\n", stream.str().c_str());
+    }
+    this->ok = this->ok && cmp;
+    return *this;
+  }
+
+  /**
+   * Check if a helper version is within a supported range
+   */
+  Requirements& expectVersionRange(const ops::platforms::HelperVersion& actual,
+                                   const ops::platforms::HelperVersion& min,
+                                   const ops::platforms::HelperVersion& max,
+                                   const char* msg = "Version not in supported range") {
+    if (!this->ok) return *this;
+    bool cmp = actual.inRange(min, max);
+    if (!cmp && sd::Environment::getInstance().isDebug() && sd::Environment::getInstance().isVerbose()) {
+      std::stringstream stream;
+      stream << prefix << ": " << msg << " - have v" << actual.toString()
+             << ", supported range: v" << min.toString() << " - v" << max.toString();
+      sd::Logger::info("%s\n", stream.str().c_str());
+    }
+    this->ok = this->ok && cmp;
+    return *this;
+  }
+
+  /**
+   * Check if required capabilities are present
+   */
+  Requirements& expectCapability(ops::platforms::HelperCapability available,
+                                 ops::platforms::HelperCapability required,
+                                 const char* msg = "Required capability not available") {
+    if (!this->ok) return *this;
+    bool cmp = ops::platforms::hasCapability(available, required);
+    if (!cmp && sd::Environment::getInstance().isDebug() && sd::Environment::getInstance().isVerbose()) {
+      std::stringstream stream;
+      stream << prefix << ": " << msg;
+      sd::Logger::info("%s\n", stream.str().c_str());
+    }
+    this->ok = this->ok && cmp;
+    return *this;
+  }
+
+  /**
+   * Check if a helper is usable (available, version compatible, and has capabilities)
+   */
+  Requirements& expectHelperUsable(const std::string& helperName,
+                                   const char* msg = "Helper not usable") {
+    if (!this->ok) return *this;
+    bool cmp = ops::platforms::HelperVersionRegistry::getInstance().isHelperUsable(helperName);
+    if (!cmp && sd::Environment::getInstance().isDebug() && sd::Environment::getInstance().isVerbose()) {
+      std::stringstream stream;
+      auto info = ops::platforms::HelperVersionRegistry::getInstance().getHelperInfo(helperName);
+      stream << prefix << ": " << msg << " - " << helperName << ": " << info.statusMessage;
+      sd::Logger::info("%s\n", stream.str().c_str());
+    }
+    this->ok = this->ok && cmp;
+    return *this;
+  }
+
+  /**
+   * Check if a helper has a specific capability
+   */
+  Requirements& expectHelperCapability(const std::string& helperName,
+                                       ops::platforms::HelperCapability required,
+                                       const char* msg = "Helper missing required capability") {
+    if (!this->ok) return *this;
+    bool cmp = ops::platforms::HelperVersionRegistry::getInstance().hasCapability(helperName, required);
+    if (!cmp && sd::Environment::getInstance().isDebug() && sd::Environment::getInstance().isVerbose()) {
+      std::stringstream stream;
+      stream << prefix << ": " << msg << " - " << helperName;
+      sd::Logger::info("%s\n", stream.str().c_str());
+    }
+    this->ok = this->ok && cmp;
+    return *this;
   }
 
  private:

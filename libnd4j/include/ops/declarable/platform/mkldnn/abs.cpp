@@ -33,7 +33,7 @@ namespace platforms {
 
 //////////////////////////////////////////////////////////////////////
 static void absMKLDNN(NDArray* x, NDArray* z) {
-  dnnl::memory::dims shape = x->getShapeAsFlatVector();
+  dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
   dnnl::memory::desc x_mkl_md, x_user_md, z_mkl_md, z_user_md;
 
@@ -49,10 +49,9 @@ static void absMKLDNN(NDArray* x, NDArray* z) {
   // Create attributes
   dnnl::primitive_attr attr;
 
-  // operation primitive description - absolute value
-  dnnl::eltwise_forward::desc op_desc(dnnl::prop_kind::forward_inference, algorithm::eltwise_abs, x_mkl_md, 0, 0);
-
-  dnnl::eltwise_forward::primitive_desc op_prim_desc(op_desc, attr, engine);
+  // operation primitive description - absolute value (OneDNN 3.x API)
+  dnnl::eltwise_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                      algorithm::eltwise_abs, x_mkl_md, z_mkl_md, 0.f, 0.f);
 
   // arguments (memory buffers) necessary for calculations
   std::unordered_map<int, dnnl::memory> args;
@@ -77,7 +76,7 @@ static void absMKLDNN(NDArray* x, NDArray* z) {
   stream.wait();
 }
 
-PLATFORM_IMPL(abs, ENGINE_CPU) {
+PLATFORM_IMPL(Abs, ENGINE_CPU) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -90,7 +89,7 @@ PLATFORM_IMPL(abs, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(abs, ENGINE_CPU) {
+PLATFORM_CHECK(Abs, ENGINE_CPU) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -107,7 +106,7 @@ PLATFORM_CHECK(abs, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 static void absBpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx) {
-  dnnl::memory::dims shape = x->getShapeAsFlatVector();
+  dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
   dnnl::memory::desc x_mkl_md, x_user_md, dLdx_mkl_md, dLdx_user_md, dLdz_mkl_md, dLdz_user_md;
 
@@ -130,14 +129,14 @@ static void absBpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx) {
 
   dnnl::stream stream(engine);
 
-  // operation primitive description
-  // forward
-  dnnl::eltwise_forward::desc op_ff_desc(dnnl::prop_kind::forward_inference, algorithm::eltwise_abs, x_mkl_md, 0, 0);
-  dnnl::eltwise_forward::primitive_desc op_ff_prim_desc(op_ff_desc, engine);
+  // operation primitive description (OneDNN 3.x API)
+  // forward hint
+  dnnl::eltwise_forward::primitive_desc op_ff_prim_desc(engine, dnnl::prop_kind::forward_training,
+                                                         algorithm::eltwise_abs, x_mkl_md, x_mkl_md, 0.f, 0.f);
 
   // backward description
-  dnnl::eltwise_backward::desc op_desc(algorithm::eltwise_abs, dLdz_mkl_md, x_mkl_md, 0, 0);
-  dnnl::eltwise_backward::primitive_desc op_prim_desc(op_desc, engine, op_ff_prim_desc);
+  dnnl::eltwise_backward::primitive_desc op_prim_desc(engine, algorithm::eltwise_abs,
+                                                       dLdx_mkl_md, dLdz_mkl_md, x_mkl_md, 0.f, 0.f, op_ff_prim_desc);
 
   // provide memory buffers and check whether reorder is required for forward
   // input
@@ -161,7 +160,7 @@ static void absBpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx) {
   stream.wait();
 }
 
-PLATFORM_IMPL(abs_bp, ENGINE_CPU) {
+PLATFORM_IMPL(Abs_bp, ENGINE_CPU) {
   auto input = INPUT_VARIABLE(0);
   auto dLdz = INPUT_VARIABLE(1);
   auto dLdx = OUTPUT_VARIABLE(0);
@@ -179,7 +178,7 @@ PLATFORM_IMPL(abs_bp, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(abs_bp, ENGINE_CPU) {
+PLATFORM_CHECK(Abs_bp, ENGINE_CPU) {
   auto x = INPUT_VARIABLE(0);
   auto dLdz = INPUT_VARIABLE(1);
   auto dLdx = OUTPUT_VARIABLE(0);

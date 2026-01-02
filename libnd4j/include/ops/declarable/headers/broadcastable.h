@@ -382,6 +382,34 @@ DECLARE_BROADCASTABLE_OP(igamma, 0, 0);
 #if NOT_EXCLUDED(OP_igammac)
 DECLARE_BROADCASTABLE_OP(igammac, 0, 0);
 #endif
+
+/**
+ * Broadcastable xdivy implementation
+ * xdivy(x, y) = x / y if x != 0, else 0
+ * Safe division that returns 0 when x is 0
+ */
+#if NOT_EXCLUDED(OP_xdivy)
+DECLARE_BROADCASTABLE_OP(xdivy, 0, 0);
+#endif
+
+/**
+ * Broadcastable xlogy implementation
+ * xlogy(x, y) = x * log(y) if x != 0, else 0
+ * Safe multiply-log that returns 0 when x is 0
+ */
+#if NOT_EXCLUDED(OP_xlogy)
+DECLARE_BROADCASTABLE_OP(xlogy, 0, 0);
+#endif
+
+/**
+ * Broadcastable xlog1py implementation
+ * xlog1py(x, y) = x * log(1 + y) if x != 0, else 0
+ * Safe multiply-log1p that returns 0 when x is 0
+ */
+#if NOT_EXCLUDED(OP_xlog1py)
+DECLARE_BROADCASTABLE_OP(xlog1py, 0, 0);
+#endif
+
 }  // namespace ops
 }  // namespace sd
 

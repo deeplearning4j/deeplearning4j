@@ -77,14 +77,14 @@ class EyeLike : PreImportHook {
             input.dataType()
         }
 
-        // Get shape of input
-        val inputShape = sd.shape(input)
-        val rows = sd.gather("${opName}_rows", inputShape, sd.constant(0L), 0)
-        val cols = sd.gather("${opName}_cols", inputShape, sd.constant(1L), 0)
+        // Get shape of input - need static shape for eye operation
+        val inputShapeArr = input.shape ?: throw IllegalStateException("EyeLike requires static input shape")
+        val rows = inputShapeArr[0].toInt()
+        val cols = inputShapeArr[1].toInt()
 
         // Create identity-like matrix with diagonal offset k
-        // Use eye operation if available, otherwise construct manually
-        val eye = sd.math.eye("${opName}_eye", rows, cols, dtype, longArrayOf(k.toLong()))
+        // Use eye operation with static shape parameters
+        val eye = sd.math.eye("${opName}_eye", rows, cols, dtype)
 
         val output = eye.rename(outputNames[0])
         return mapOf(outputNames[0] to listOf(output))

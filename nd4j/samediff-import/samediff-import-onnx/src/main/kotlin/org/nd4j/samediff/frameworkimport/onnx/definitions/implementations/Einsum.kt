@@ -70,8 +70,8 @@ class Einsum : PreImportHook {
             sd.getVariable(inputName)
         }.toTypedArray()
 
-        // Call SameDiff's einsum operation with the equation and inputs
-        val output = sd.linalg().einsum(outputNames[0], equation, *inputs)
+        // Call SameDiff's einsum operation with the inputs and equation
+        val output = sd.linalg().einsum(outputNames[0], inputs, equation)
 
         return mapOf(outputNames[0] to listOf(output))
     }

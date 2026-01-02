@@ -39,7 +39,7 @@ namespace platforms {
 //////////////////////////////////////////////////////////////////////
 // Generic eltwise operation helper
 static void eltwiseMKLDNN(NDArray* x, NDArray* z, dnnl::algorithm alg, float alpha = 0.0f, float beta = 0.0f) {
-  dnnl::memory::dims shape = x->getShapeAsFlatVector();
+  dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
   dnnl::memory::desc x_mkl_md, x_user_md, z_mkl_md, z_user_md;
 
@@ -53,9 +53,9 @@ static void eltwiseMKLDNN(NDArray* x, NDArray* z, dnnl::algorithm alg, float alp
 
   dnnl::primitive_attr attr;
 
-  dnnl::eltwise_forward::desc op_desc(dnnl::prop_kind::forward_inference, alg, x_mkl_md, alpha, beta);
-
-  dnnl::eltwise_forward::primitive_desc op_prim_desc(op_desc, attr, engine);
+  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  dnnl::eltwise_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                      alg, x_mkl_md, z_mkl_md, alpha, beta);
 
   std::unordered_map<int, dnnl::memory> args;
 
@@ -78,7 +78,7 @@ static void eltwiseMKLDNN(NDArray* x, NDArray* z, dnnl::algorithm alg, float alp
 // EXPM1: exp(x) - 1
 // Implemented as: exp(x) - 1 using two operations
 static void expm1MKLDNN(NDArray* x, NDArray* z) {
-  dnnl::memory::dims shape = x->getShapeAsFlatVector();
+  dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
   dnnl::memory::desc x_mkl_md, x_user_md, z_mkl_md, z_user_md;
 
@@ -93,8 +93,9 @@ static void expm1MKLDNN(NDArray* x, NDArray* z) {
   dnnl::stream stream(engine);
 
   // Step 1: exp(x)
-  dnnl::eltwise_forward::desc exp_desc(dnnl::prop_kind::forward_inference, algorithm::eltwise_exp, x_mkl_md, 0, 0);
-  dnnl::eltwise_forward::primitive_desc exp_prim_desc(exp_desc, attr, engine);
+  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  dnnl::eltwise_forward::primitive_desc exp_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                       algorithm::eltwise_exp, x_mkl_md, x_mkl_md, 0.f, 0.f);
 
   dnnl::memory exp_mem(exp_prim_desc.dst_desc(), engine);
 
@@ -105,9 +106,9 @@ static void expm1MKLDNN(NDArray* x, NDArray* z) {
   dnnl::eltwise_forward(exp_prim_desc).execute(stream, exp_args);
 
   // Step 2: exp(x) - 1 using linear: y = 1*x + (-1)
-  dnnl::eltwise_forward::desc sub_desc(dnnl::prop_kind::forward_inference, algorithm::eltwise_linear,
-                                        exp_prim_desc.dst_desc(), 1.0f, -1.0f);
-  dnnl::eltwise_forward::primitive_desc sub_prim_desc(sub_desc, attr, engine);
+  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  dnnl::eltwise_forward::primitive_desc sub_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                       algorithm::eltwise_linear, exp_prim_desc.dst_desc(), z_mkl_md, 1.0f, -1.0f);
 
   std::unordered_map<int, dnnl::memory> sub_args;
   sub_args[DNNL_ARG_SRC] = exp_mem;
@@ -155,7 +156,7 @@ PLATFORM_CHECK(expm1, ENGINE_CPU) {
 // LOG1P: log(1 + x)
 // Implemented as: log(1 + x) using linear then log
 static void log1pMKLDNN(NDArray* x, NDArray* z) {
-  dnnl::memory::dims shape = x->getShapeAsFlatVector();
+  dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
   dnnl::memory::desc x_mkl_md, x_user_md, z_mkl_md, z_user_md;
 
@@ -170,8 +171,9 @@ static void log1pMKLDNN(NDArray* x, NDArray* z) {
   dnnl::stream stream(engine);
 
   // Step 1: 1 + x using linear: y = 1*x + 1
-  dnnl::eltwise_forward::desc add_desc(dnnl::prop_kind::forward_inference, algorithm::eltwise_linear, x_mkl_md, 1.0f, 1.0f);
-  dnnl::eltwise_forward::primitive_desc add_prim_desc(add_desc, attr, engine);
+  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  dnnl::eltwise_forward::primitive_desc add_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                       algorithm::eltwise_linear, x_mkl_md, x_mkl_md, 1.0f, 1.0f);
 
   dnnl::memory add_mem(add_prim_desc.dst_desc(), engine);
 
@@ -182,9 +184,9 @@ static void log1pMKLDNN(NDArray* x, NDArray* z) {
   dnnl::eltwise_forward(add_prim_desc).execute(stream, add_args);
 
   // Step 2: log(1 + x)
-  dnnl::eltwise_forward::desc log_desc(dnnl::prop_kind::forward_inference, algorithm::eltwise_log,
-                                        add_prim_desc.dst_desc(), 0, 0);
-  dnnl::eltwise_forward::primitive_desc log_prim_desc(log_desc, attr, engine);
+  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  dnnl::eltwise_forward::primitive_desc log_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                       algorithm::eltwise_log, add_prim_desc.dst_desc(), z_mkl_md, 0.f, 0.f);
 
   std::unordered_map<int, dnnl::memory> log_args;
   log_args[DNNL_ARG_SRC] = add_mem;

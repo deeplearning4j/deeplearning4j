@@ -212,7 +212,7 @@ static void lstmLayerMKLDNN(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, ND
   if (hL) {
     hL_lstm_md = dnnl::memory::desc({1, dirDim, bS, nOut}, hType, dnnl::memory::format_tag::any);
     hL_user_md = dnnl::memory::desc({1, dirDim, bS, nOut}, hType, dnnl::memory::format_tag::ldnc);
-    hL_user_md.data.format_kind = dnnl_blocked;  // overrides format
+    // setBlockStrides will create a new memory descriptor with explicit strides
     onednnUtils::setBlockStrides(*hL, hL_user_md);
   }
 
@@ -222,14 +222,12 @@ static void lstmLayerMKLDNN(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, ND
     onednnUtils::setBlockStrides(*cL, cL_user_md);
   }
 
-  // lstm memory description
-  lstm_forward::desc lstm_desc(prop_kind::forward_inference, direction, x_lstm_md, hI_lstm_md, cI_lstm_md, wx_lstm_md,
-                               wr_lstm_md, b_lstm_md, h_lstm_md, hL_lstm_md, cL_lstm_md);
-
+  // lstm primitive description (OneDNN 3.x API)
   dnnl::stream stream(engine);
 
-  // lstm primitive description
-  lstm_forward::primitive_desc lstm_prim_desc(lstm_desc, engine);
+  lstm_forward::primitive_desc lstm_prim_desc(engine, prop_kind::forward_inference, direction, x_lstm_md, hI_lstm_md,
+                                               cI_lstm_md, wx_lstm_md, wr_lstm_md, b_lstm_md, h_lstm_md,
+                                               hL_lstm_md, cL_lstm_md);
 
   // arguments (memory buffers) necessary for calculations
   std::unordered_map<int, dnnl::memory> args;

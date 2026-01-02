@@ -33,7 +33,7 @@ namespace platforms {
 
 //////////////////////////////////////////////////////////////////////
 static void reluMKLDNN(NDArray* x, NDArray* z, float negativeSlope) {
-  dnnl::memory::dims shape = x->getShapeAsFlatVector();
+  dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
   dnnl::memory::desc x_mkl_md, x_user_md, z_mkl_md, z_user_md;
 
@@ -50,9 +50,9 @@ static void reluMKLDNN(NDArray* x, NDArray* z, float negativeSlope) {
   dnnl::primitive_attr attr;
 
   // operation primitive description
-  dnnl::eltwise_forward::desc op_desc(dnnl::prop_kind::forward_inference, algorithm::eltwise_relu, x_mkl_md, negativeSlope, 0);
-
-  dnnl::eltwise_forward::primitive_desc op_prim_desc(op_desc, attr, engine);
+  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  dnnl::eltwise_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                      algorithm::eltwise_relu, x_mkl_md, z_mkl_md, negativeSlope, 0.f);
 
   // arguments (memory buffers) necessary for calculations
   std::unordered_map<int, dnnl::memory> args;
@@ -110,7 +110,7 @@ PLATFORM_CHECK(relu, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 static void reluBpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx, float negativeSlope) {
-  dnnl::memory::dims shape = x->getShapeAsFlatVector();
+  dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
   dnnl::memory::desc x_mkl_md, x_user_md, dLdx_mkl_md, dLdx_user_md, dLdz_mkl_md, dLdz_user_md;
 
@@ -134,13 +134,13 @@ static void reluBpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx, float negativ
   dnnl::stream stream(engine);
 
   // operation primitive description
-  // forward
-  dnnl::eltwise_forward::desc op_ff_desc(dnnl::prop_kind::forward_inference, algorithm::eltwise_relu, x_mkl_md, negativeSlope, 0);
-  dnnl::eltwise_forward::primitive_desc op_ff_prim_desc(op_ff_desc, engine);
+  // OneDNN 3.x API for forward hint: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  dnnl::eltwise_forward::primitive_desc op_ff_prim_desc(engine, dnnl::prop_kind::forward_training,
+                                                         algorithm::eltwise_relu, x_mkl_md, x_mkl_md, negativeSlope, 0.f);
 
-  // backward description
-  dnnl::eltwise_backward::desc op_desc(algorithm::eltwise_relu, dLdz_mkl_md, x_mkl_md, negativeSlope, 0);
-  dnnl::eltwise_backward::primitive_desc op_prim_desc(op_desc, engine, op_ff_prim_desc);
+  // OneDNN 3.x API for backward: primitive_desc(engine, algorithm, diff_src_md, diff_dst_md, data_md, alpha, beta, hint_fwd_pd)
+  dnnl::eltwise_backward::primitive_desc op_prim_desc(engine, algorithm::eltwise_relu,
+                                                       dLdx_mkl_md, dLdz_mkl_md, x_mkl_md, negativeSlope, 0.f, op_ff_prim_desc);
 
   // provide memory buffers and check whether reorder is required for forward
   // input

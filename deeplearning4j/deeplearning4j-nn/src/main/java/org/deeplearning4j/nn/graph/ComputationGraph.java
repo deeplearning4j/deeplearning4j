@@ -82,6 +82,7 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.api.memory.abstracts.DummyWorkspace;
@@ -4817,6 +4818,32 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         if (cg.getUpdater() != null && cg.getUpdater(false).getStateViewArray() != null)
             this.getUpdater(true).getStateViewArray().assign(cg.getUpdater(false).getStateViewArray());
+    }
+
+    /**
+     * Convert this ComputationGraph to a SameDiff graph.
+     * This creates a SameDiff graph that is functionally equivalent to this ComputationGraph,
+     * copying all parameters and maintaining the same structure.
+     * <p>
+     * The conversion supports common layer types including:
+     * <ul>
+     *     <li>DenseLayer</li>
+     *     <li>OutputLayer</li>
+     *     <li>ConvolutionLayer</li>
+     *     <li>SubsamplingLayer (pooling)</li>
+     *     <li>BatchNormalization</li>
+     *     <li>ActivationLayer</li>
+     *     <li>DropoutLayer</li>
+     *     <li>GlobalPoolingLayer</li>
+     *     <li>EmbeddingLayer</li>
+     * </ul>
+     * <p>
+     * Graph vertices such as MergeVertex and ElementWiseVertex are also supported.
+     *
+     * @return A SameDiff instance with equivalent structure and parameters
+     */
+    public SameDiff toSameDiff() {
+        return ComputationGraphSameDiffConverter.toSameDiff(this);
     }
 
     /**

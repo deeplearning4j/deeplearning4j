@@ -51,7 +51,10 @@ PartitionResult TensorPartitioner::partition(
         return result;
     }
 
-    const auto& shape = tensor->getShapeAsVector();
+    auto tensorNonConst = const_cast<NDArray*>(tensor);
+    auto shapePtr = tensorNonConst->getShapeAsVector();
+    const auto shape = *shapePtr;
+    delete shapePtr;
     LongType dimSize = shape[dimension];
 
     // Calculate partition sizes
@@ -66,7 +69,7 @@ PartitionResult TensorPartitioner::partition(
         desc.deviceIndex = devices.empty() ? i : devices[i % devices.size()];
 
         desc.sourceShape = shape;
-        desc.dataType = tensor->dataType();
+        desc.dataType = tensorNonConst->dataType();
         desc.splitDimension = dimension;
         desc.splitOffset = offset;
         desc.splitSize = partitionSizes[i];
@@ -80,7 +83,7 @@ PartitionResult TensorPartitioner::partition(
         for (auto dim : desc.partitionShape) {
             elements *= dim;
         }
-        desc.bytesRequired = elements * DataTypeUtils::sizeOf(tensor->dataType());
+        desc.bytesRequired = elements * DataTypeUtils::sizeOf(tensorNonConst->dataType());
 
         result.descriptors.push_back(desc);
         offset += partitionSizes[i];
@@ -113,7 +116,11 @@ PartitionResult TensorPartitioner::partition(
     const TensorPartitionSpec& spec,
     const std::vector<int>& devices
 ) {
-    int dimension = resolveDimension(spec.dimension, tensor->getShapeAsVector());
+    auto tensorNonConst = const_cast<NDArray*>(tensor);
+    auto shapePtr = tensorNonConst->getShapeAsVector();
+    auto shapeVec = *shapePtr;
+    delete shapePtr;
+    int dimension = resolveDimension(spec.dimension, shapeVec);
     int numPartitions = spec.numPartitions > 0 ? spec.numPartitions :
                         (devices.empty() ? 2 : static_cast<int>(devices.size()));
 
@@ -126,15 +133,16 @@ PartitionResult TensorPartitioner::partitionColumnParallel(
     int numPartitions
 ) {
     PartitionResult result;
+    auto weightNonConst = const_cast<NDArray*>(weight);
 
-    if (weight->rankOf() < 2) {
+    if (weightNonConst->rankOf() < 2) {
         result.success = false;
         result.errorMessage = "Weight must have at least 2 dimensions for column-parallel";
         return result;
     }
 
     // Column-parallel: split along the output dimension (last dim for linear layers)
-    int outDim = weight->rankOf() - 1;
+    int outDim = weightNonConst->rankOf() - 1;
     result = partition(weight, outDim, numPartitions);
 
     if (!result.success) {
@@ -142,7 +150,8 @@ PartitionResult TensorPartitioner::partitionColumnParallel(
     }
 
     // Also partition bias if provided
-    if (bias != nullptr && bias->lengthOf() > 0) {
+    auto biasNonConst = const_cast<NDArray*>(bias);
+    if (bias != nullptr && biasNonConst->lengthOf() > 0) {
         auto biasResult = partition(bias, 0, numPartitions);
         if (biasResult.success) {
             // Merge bias partitions into result
@@ -160,7 +169,8 @@ PartitionResult TensorPartitioner::partitionRowParallel(
     const NDArray* weight,
     int numPartitions
 ) {
-    if (weight->rankOf() < 2) {
+    auto weightNonConst = const_cast<NDArray*>(weight);
+    if (weightNonConst->rankOf() < 2) {
         PartitionResult result;
         result.success = false;
         result.errorMessage = "Weight must have at least 2 dimensions for row-parallel";
@@ -168,7 +178,7 @@ PartitionResult TensorPartitioner::partitionRowParallel(
     }
 
     // Row-parallel: split along the input dimension (second-to-last dim)
-    int inDim = weight->rankOf() - 2;
+    int inDim = weightNonConst->rankOf() - 2;
     return partition(weight, inDim, numPartitions);
 }
 
@@ -178,10 +188,11 @@ PartitionResult TensorPartitioner::partitionAttentionHeads(
     int numPartitions
 ) {
     PartitionResult result;
+    auto qkvNonConst = const_cast<NDArray*>(qkv);
 
     // Attention heads are typically in dimension 1 or 2
     // Assuming shape: [batch, seq, num_heads, head_dim] or [batch, num_heads, seq, head_dim]
-    if (qkv->rankOf() < 3) {
+    if (qkvNonConst->rankOf() < 3) {
         result.success = false;
         result.errorMessage = "QKV tensor must have at least 3 dimensions";
         return result;
@@ -189,7 +200,9 @@ PartitionResult TensorPartitioner::partitionAttentionHeads(
 
     // Find the head dimension (looking for dimension that equals numHeads)
     int headDim = -1;
-    auto shape = qkv->getShapeAsVector();
+    auto shapePtr = qkvNonConst->getShapeAsVector();
+    auto shape = *shapePtr;
+    delete shapePtr;
     for (int i = 1; i < static_cast<int>(shape.size()) - 1; ++i) {
         if (shape[i] == numHeads || shape[i] % numHeads == 0) {
             headDim = i;
@@ -216,7 +229,8 @@ PartitionResult TensorPartitioner::partitionSequence(
     int numPartitions
 ) {
     // Sequence is typically dimension 1
-    int seqDim = (tensor->rankOf() > 1) ? 1 : 0;
+    auto tensorNonConst = const_cast<NDArray*>(tensor);
+    int seqDim = (tensorNonConst->rankOf() > 1) ? 1 : 0;
     return partition(tensor, seqDim, numPartitions);
 }
 
@@ -234,40 +248,40 @@ GatherResult TensorPartitioner::gather(
     }
 
     // Calculate output shape
-    std::vector<LongType> outputShape = partitions[0]->getShapeAsVector();
+    auto shapePtr = partitions[0]->getShapeAsVector();
+    std::vector<LongType> outputShape = *shapePtr;
+    delete shapePtr;
     LongType totalDimSize = 0;
-    for (const auto* partition : partitions) {
+    for (auto* partition : partitions) {
         totalDimSize += partition->sizeAt(dimension);
     }
     outputShape[dimension] = totalDimSize;
 
     // Allocate output tensor
-    result.result = std::make_shared<NDArray>('c', outputShape, partitions[0]->dataType());
+    result.result = std::shared_ptr<NDArray>(new NDArray('c', outputShape, partitions[0]->dataType()));
 
     // Copy from each partition
     LongType offset = 0;
     for (size_t i = 0; i < partitions.size(); ++i) {
-        const auto* partition = partitions[i];
+        auto* partition = partitions[i];
         LongType partSize = partition->sizeAt(dimension);
 
-        // Create view into output for this partition's data
-        std::vector<LongType> starts(outputShape.size(), 0);
-        std::vector<LongType> ends = outputShape;
-        starts[dimension] = offset;
-        ends[dimension] = offset + partSize;
-
-        // Create index range
-        std::vector<NDIndex> indices;
+        // Create index range for operator()
+        // Format: {dim0Start, dim0End, dim1Start, dim1End, ...}
+        std::vector<LongType> indices;
         for (size_t d = 0; d < outputShape.size(); ++d) {
             if (static_cast<int>(d) == dimension) {
-                indices.push_back(NDIndex::interval(starts[d], ends[d]));
+                indices.push_back(offset);
+                indices.push_back(offset + partSize);
             } else {
-                indices.push_back(NDIndex::all());
+                indices.push_back(0);
+                indices.push_back(outputShape[d]);
             }
         }
 
-        auto view = result.result->subarray(indices);
-        view.assign(partition);
+        NDArray* view = (*result.result)(indices);
+        view->assign(partition);
+        delete view;
 
         offset += partSize;
     }
@@ -310,7 +324,7 @@ GatherResult TensorPartitioner::reduce(
     }
 
     // Create output with same shape as first partition
-    result.result = std::make_shared<NDArray>(partitions[0]->shapeInfo(), partitions[0]->dataType());
+    result.result = std::shared_ptr<NDArray>(new NDArray(partitions[0]->shapeInfo(), partitions[0]->dataType()));
     result.result->assign(partitions[0]);
 
     // Sum all partitions
@@ -389,10 +403,11 @@ bool TensorPartitioner::canPartitionEvenly(
     int dimension,
     int numPartitions
 ) {
-    if (dimension < 0 || dimension >= tensor->rankOf()) {
+    auto tensorNonConst = const_cast<NDArray*>(tensor);
+    if (dimension < 0 || dimension >= tensorNonConst->rankOf()) {
         return false;
     }
-    return tensor->sizeAt(dimension) % numPartitions == 0;
+    return tensorNonConst->sizeAt(dimension) % numPartitions == 0;
 }
 
 int TensorPartitioner::getOptimalPartitionCount(
@@ -404,7 +419,8 @@ int TensorPartitioner::getOptimalPartitionCount(
         return 1;
     }
 
-    LongType dimSize = tensor->sizeAt(dimension);
+    auto tensorNonConst = const_cast<NDArray*>(tensor);
+    LongType dimSize = tensorNonConst->sizeAt(dimension);
     int numDevices = static_cast<int>(devices.size());
 
     // Find largest divisor <= numDevices
@@ -428,7 +444,8 @@ bool TensorPartitioner::validatePartition(
         return false;
     }
 
-    if (dimension < 0 || dimension >= tensor->rankOf()) {
+    auto tensorNonConst = const_cast<NDArray*>(tensor);
+    if (dimension < 0 || dimension >= tensorNonConst->rankOf()) {
         errorMessage = "Invalid dimension: " + std::to_string(dimension);
         return false;
     }
@@ -438,8 +455,8 @@ bool TensorPartitioner::validatePartition(
         return false;
     }
 
-    if (tensor->sizeAt(dimension) < numPartitions) {
-        errorMessage = "Dimension size " + std::to_string(tensor->sizeAt(dimension)) +
+    if (tensorNonConst->sizeAt(dimension) < numPartitions) {
+        errorMessage = "Dimension size " + std::to_string(tensorNonConst->sizeAt(dimension)) +
                        " is smaller than number of partitions " + std::to_string(numPartitions);
         return false;
     }
@@ -453,11 +470,12 @@ size_t TensorPartitioner::getPartitionMemoryRequired(
     int numPartitions,
     bool includeGather
 ) {
-    size_t perPartition = tensor->lengthOf() / numPartitions * DataTypeUtils::sizeOf(tensor->dataType());
+    auto tensorNonConst = const_cast<NDArray*>(tensor);
+    size_t perPartition = tensorNonConst->lengthOf() / numPartitions * DataTypeUtils::sizeOf(tensorNonConst->dataType());
     size_t total = perPartition * numPartitions;
 
     if (includeGather) {
-        total += tensor->lengthOf() * DataTypeUtils::sizeOf(tensor->dataType());
+        total += tensorNonConst->lengthOf() * DataTypeUtils::sizeOf(tensorNonConst->dataType());
     }
 
     return total;
@@ -499,7 +517,8 @@ std::shared_ptr<NDArray> TensorPartitioner::createPartitionArray(
     const PartitionDescriptor& desc,
     int deviceIndex
 ) {
-    return std::make_shared<NDArray>('c', desc.partitionShape, desc.dataType);
+    std::vector<LongType> shape = desc.partitionShape;
+    return std::shared_ptr<NDArray>(new NDArray('c', shape, desc.dataType));
 }
 
 void TensorPartitioner::copyToPartition(
@@ -508,17 +527,22 @@ void TensorPartitioner::copyToPartition(
     const PartitionDescriptor& desc
 ) {
     // Create view into source for this partition's range
-    std::vector<NDIndex> indices;
+    // Format: {dim0Start, dim0End, dim1Start, dim1End, ...}
+    std::vector<LongType> indices;
     for (size_t d = 0; d < desc.sourceShape.size(); ++d) {
         if (static_cast<int>(d) == desc.splitDimension) {
-            indices.push_back(NDIndex::interval(desc.splitOffset, desc.splitOffset + desc.splitSize));
+            indices.push_back(desc.splitOffset);
+            indices.push_back(desc.splitOffset + desc.splitSize);
         } else {
-            indices.push_back(NDIndex::all());
+            indices.push_back(0);
+            indices.push_back(desc.sourceShape[d]);
         }
     }
 
-    auto view = source->subarray(indices);
+    auto sourceNonConst = const_cast<NDArray*>(source);
+    NDArray* view = (*sourceNonConst)(indices);
     partition->assign(view);
+    delete view;
 }
 
 void TensorPartitioner::copyFromPartition(
@@ -526,17 +550,21 @@ void TensorPartitioner::copyFromPartition(
     NDArray* destination,
     const PartitionDescriptor& desc
 ) {
-    std::vector<NDIndex> indices;
+    // Format: {dim0Start, dim0End, dim1Start, dim1End, ...}
+    std::vector<LongType> indices;
     for (size_t d = 0; d < desc.sourceShape.size(); ++d) {
         if (static_cast<int>(d) == desc.splitDimension) {
-            indices.push_back(NDIndex::interval(desc.splitOffset, desc.splitOffset + desc.splitSize));
+            indices.push_back(desc.splitOffset);
+            indices.push_back(desc.splitOffset + desc.splitSize);
         } else {
-            indices.push_back(NDIndex::all());
+            indices.push_back(0);
+            indices.push_back(desc.sourceShape[d]);
         }
     }
 
-    auto view = destination->subarray(indices);
-    view.assign(partition);
+    NDArray* view = (*destination)(indices);
+    view->assign(const_cast<NDArray*>(partition));
+    delete view;
 }
 
 // PartitionedTensor implementation
@@ -564,7 +592,10 @@ PartitionedTensor::PartitionedTensor(
 
     if (_valid && !_descriptors.empty()) {
         _splitDimension = dimension;
-        _originalShape = tensor->getShapeAsVector();
+        auto tensorNonConst = const_cast<NDArray*>(tensor);
+        auto shapePtr = tensorNonConst->getShapeAsVector();
+        _originalShape = *shapePtr;
+        delete shapePtr;
     }
 }
 

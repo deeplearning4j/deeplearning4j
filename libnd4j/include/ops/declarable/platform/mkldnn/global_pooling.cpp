@@ -44,8 +44,8 @@ static void globalPoolingMKLDNN(NDArray* x, NDArray* z, dnnl::algorithm alg, boo
   // Expected format: [N, C, H, W] for 4D or [N, C, D, H, W] for 5D (NCHW/NCDHW)
   // or [N, H, W, C] for 4D or [N, D, H, W, C] for 5D (NHWC/NDHWC)
 
-  dnnl::memory::dims xDims = x->getShapeAsFlatVector();
-  dnnl::memory::dims zDims = z->getShapeAsFlatVector();
+  dnnl::memory::dims xDims = *x->getShapeAsFlatVector();
+  dnnl::memory::dims zDims = *z->getShapeAsFlatVector();
 
   // Determine spatial dimensions based on format
   dnnl::memory::dims kernel, strides, padding;
@@ -74,10 +74,11 @@ static void globalPoolingMKLDNN(NDArray* x, NDArray* z, dnnl::algorithm alg, boo
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
-  // Create pooling descriptor
-  dnnl::pooling_forward::desc op_desc(dnnl::prop_kind::forward_inference, alg,
-                                       x_md, z_md, strides, kernel, padding, padding);
-  dnnl::pooling_forward::primitive_desc op_prim_desc(op_desc, engine);
+  // Create pooling descriptor (OneDNN 3.x API)
+  // For global pooling, dilation is typically not used, so we pass zeros
+  dnnl::memory::dims dilation(kernel.size(), 0);
+  dnnl::pooling_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference, alg,
+                                                      x_md, z_md, strides, kernel, dilation, padding, padding);
 
   std::unordered_map<int, dnnl::memory> args;
   dnnl::stream stream(engine);
@@ -94,35 +95,6 @@ static void globalPoolingMKLDNN(NDArray* x, NDArray* z, dnnl::algorithm alg, boo
   dnnl::pooling_forward(op_prim_desc).execute(stream, args);
 
   stream.wait();
-}
-
-//////////////////////////////////////////////////////////////////////
-// GLOBAL_AVGPOOL2D
-PLATFORM_IMPL(avgpool2d, ENGINE_CPU) {
-  auto input = INPUT_VARIABLE(0);
-  auto output = OUTPUT_VARIABLE(0);
-
-  // Check if this is global pooling (kernel size equals input spatial dimensions)
-  int kH = INT_ARG(0);
-  int kW = INT_ARG(1);
-  int isNCHW = block.numI() > 10 ? INT_ARG(10) : 1;
-
-  int hIdx = isNCHW ? 2 : 1;
-  int wIdx = isNCHW ? 3 : 2;
-
-  bool isGlobal = (kH == input->sizeAt(hIdx) && kW == input->sizeAt(wIdx));
-
-  if (!isGlobal) {
-    // Use standard pooling implementation
-    return sd::Status::OK;  // Fall back to regular implementation
-  }
-
-  REQUIRE_TRUE(input->rankOf() == 4, 0, "GLOBAL_AVGPOOL2D_MKLDNN OP: input rank must be 4, but got rank = %i",
-               input->rankOf());
-
-  globalPoolingMKLDNN(input, output, dnnl::algorithm::pooling_avg_exclude_padding, isNCHW);
-
-  return sd::Status::OK;
 }
 
 //////////////////////////////////////////////////////////////////////

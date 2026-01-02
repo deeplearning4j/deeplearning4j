@@ -24,6 +24,7 @@ import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
@@ -100,7 +101,7 @@ class QLinearConv : PreImportHook {
             wScale)
         
         // Build conv config
-        val isSameMode = autoPad == "SAME_UPPER" || autoPad == "SAME_LOWER"
+        val paddingMode = if (autoPad == "SAME_UPPER" || autoPad == "SAME_LOWER") PaddingMode.SAME else PaddingMode.VALID
         val config = Conv2DConfig.builder()
             .kH(kernelShape.getOrElse(0) { 0 }.toLong())
             .kW(kernelShape.getOrElse(1) { 0 }.toLong())
@@ -110,7 +111,7 @@ class QLinearConv : PreImportHook {
             .pW(pads.getOrElse(1) { 0 }.toLong())
             .dH(dilations.getOrElse(0) { 1 }.toLong())
             .dW(dilations.getOrElse(1) { 1 }.toLong())
-            .isSameMode(isSameMode)
+            .paddingMode(paddingMode)
             .dataFormat("NCHW")
             .build()
         

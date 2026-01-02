@@ -54,15 +54,21 @@ if(CCACHE_PROGRAM)
     else()
         message(STATUS "✅ Found ccache: ${CCACHE_PROGRAM}")
 
-        # Configure ccache to avoid race conditions with directory creation
-        execute_process(COMMAND ${CCACHE_PROGRAM} --set-config=compiler_check=mtime ERROR_QUIET)
-        execute_process(COMMAND ${CCACHE_PROGRAM} --set-config=sloppiness=include_file_mtime,include_file_ctime ERROR_QUIET)
+        # IMPORTANT: Don't use sloppiness settings - they cause stale cache issues
+        # Instead, we use depend_mode for accurate dependency tracking
+        # and file_clone for faster cache operations on supported filesystems
+        execute_process(COMMAND ${CCACHE_PROGRAM} --set-config=compiler_check=content ERROR_QUIET)
+        execute_process(COMMAND ${CCACHE_PROGRAM} --set-config=depend_mode=true ERROR_QUIET)
+        execute_process(COMMAND ${CCACHE_PROGRAM} --set-config=file_clone=true ERROR_QUIET)
+        execute_process(COMMAND ${CCACHE_PROGRAM} --set-config=inode_cache=false ERROR_QUIET)
+        # Remove any old sloppiness settings that might cause stale caches
+        execute_process(COMMAND ${CCACHE_PROGRAM} --set-config=sloppiness= ERROR_QUIET)
 
         # Use FORCE to ensure cache is always updated and avoid inconsistent builds
         set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" CACHE STRING "C compiler launcher" FORCE)
         set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" CACHE STRING "C++ compiler launcher" FORCE)
         # CUDA launcher will be set after project() if needed
-        message(STATUS "✅ Ccache enabled - builds will be significantly faster after first compilation")
+        message(STATUS "✅ Ccache enabled with depend_mode for accurate change detection")
     endif()
 else()
     message(STATUS "ℹ️  Ccache not found - install with: sudo apt-get install ccache (or brew install ccache)")
@@ -122,6 +128,9 @@ if(CCACHE_PROGRAM AND SD_CUDA AND CMAKE_CUDA_COMPILER)
     message(STATUS "📊 Ccache statistics:\n${CCACHE_STATS}")
 endif()
 
+# Enable smart ccache wrapper that forces recompile for modified files
+# This solves stale cache issues when source files change
+include(SmartCcache)
 
 if(NOT SD_CUDA AND NOT SD_TPU)
     if(NOT SD_CPU)

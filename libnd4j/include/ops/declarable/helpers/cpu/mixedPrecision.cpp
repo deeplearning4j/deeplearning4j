@@ -36,21 +36,22 @@ void scaleGradients(sd::LaunchContext* context, NDArray* gradients, double scale
   }
 
   // Use in-place scalar multiply
-  gradients->applyScalar(sd::scalar::Multiply, scale, *gradients);
+  gradients->applyScalar(sd::scalar::Multiply, scale, gradients);
 }
 
 bool hasInfOrNan(sd::LaunchContext* context, const NDArray* arr) {
-  if (arr == nullptr || arr->isEmpty()) {
+  auto arrNonConst = const_cast<NDArray*>(arr);
+  if (arr == nullptr || arrNonConst->isEmpty()) {
     return false;  // Empty arrays are considered valid
   }
 
-  auto length = arr->lengthOf();
+  auto length = arrNonConst->lengthOf();
   bool foundBad = false;
 
   // Use atomic for thread-safe detection
   auto func = PRAGMA_THREADS_FOR {
     for (auto i = start; i < stop && !foundBad; i++) {
-      double val = arr->e<double>(i);
+      double val = arrNonConst->e<double>(i);
       if (sd::math::sd_isnan<double>(val) || sd::math::sd_isinf<double>(val)) {
         foundBad = true;
       }
@@ -60,7 +61,7 @@ bool hasInfOrNan(sd::LaunchContext* context, const NDArray* arr) {
   // For small arrays, just do sequential check
   if (length < 1024) {
     for (sd::LongType i = 0; i < length; i++) {
-      double val = arr->e<double>(i);
+      double val = arrNonConst->e<double>(i);
       if (sd::math::sd_isnan<double>(val) || sd::math::sd_isinf<double>(val)) {
         return true;
       }
@@ -79,28 +80,29 @@ void castAndScale(sd::LaunchContext* context, const NDArray* input,
     return;
   }
 
-  if (input->isEmpty()) {
+  auto inputNonConst = const_cast<NDArray*>(input);
+  if (inputNonConst->isEmpty()) {
     return;
   }
 
-  auto length = input->lengthOf();
+  auto length = inputNonConst->lengthOf();
 
   // Fast path: same type and no scaling needed
-  if (input->dataType() == output->dataType() && scale == 1.0) {
-    output->assign(input);
+  if (inputNonConst->dataType() == output->dataType() && scale == 1.0) {
+    output->assign(inputNonConst);
     return;
   }
 
   // Fast path: same type, just scale
-  if (input->dataType() == output->dataType()) {
-    input->applyScalar(sd::scalar::Multiply, scale, *output);
+  if (inputNonConst->dataType() == output->dataType()) {
+    inputNonConst->applyScalar(sd::scalar::Multiply, scale, output);
     return;
   }
 
   // Different types: cast and scale
   auto func = PRAGMA_THREADS_FOR {
     for (auto i = start; i < stop; i++) {
-      double val = input->e<double>(i) * scale;
+      double val = inputNonConst->e<double>(i) * scale;
       output->p(i, val);
     }
   };
@@ -158,7 +160,8 @@ void updateMasterWeight(sd::LaunchContext* context, NDArray* masterWeight,
     return;
   }
 
-  if (masterWeight->isEmpty() || gradient->isEmpty()) {
+  auto gradientNonConst = const_cast<NDArray*>(gradient);
+  if (masterWeight->isEmpty() || gradientNonConst->isEmpty()) {
     return;
   }
 
@@ -168,7 +171,7 @@ void updateMasterWeight(sd::LaunchContext* context, NDArray* masterWeight,
   auto func = PRAGMA_THREADS_FOR {
     for (auto i = start; i < stop; i++) {
       double w = masterWeight->e<double>(i);
-      double g = gradient->e<double>(i);
+      double g = gradientNonConst->e<double>(i);
       // w = w - lr * (g / lossScale) = w - (lr/lossScale) * g
       masterWeight->p(i, w - scaledLr * g);
     }
@@ -183,22 +186,23 @@ void syncMasterToCompute(sd::LaunchContext* context, const NDArray* masterWeight
     return;
   }
 
-  if (masterWeight->isEmpty()) {
+  auto masterNonConst = const_cast<NDArray*>(masterWeight);
+  if (masterNonConst->isEmpty()) {
     return;
   }
 
   // If same type, just assign
-  if (masterWeight->dataType() == computeWeight->dataType()) {
-    computeWeight->assign(masterWeight);
+  if (masterNonConst->dataType() == computeWeight->dataType()) {
+    computeWeight->assign(masterNonConst);
     return;
   }
 
   // Different types - need to cast
-  auto length = masterWeight->lengthOf();
+  auto length = masterNonConst->lengthOf();
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto i = start; i < stop; i++) {
-      computeWeight->p(i, masterWeight->e<double>(i));
+      computeWeight->p(i, masterNonConst->e<double>(i));
     }
   };
 

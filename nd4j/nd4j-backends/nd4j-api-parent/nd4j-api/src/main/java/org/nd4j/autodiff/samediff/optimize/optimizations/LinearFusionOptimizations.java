@@ -74,7 +74,8 @@ public class LinearFusionOptimizations extends BaseOptimizerSet {
 
             for (int i = 0; i < 2; i++) {
                 String inputVar = addInputs.get(i);
-                Variable v = sd.getVariables().get(inputVar);
+                // Use fast O(1) lookup via helper instead of PatriciaTrie O(k)
+                Variable v = helper.getVariable(inputVar);
                 if (v == null) continue;
 
                 String producerOpName = v.getOutputOfOp();
@@ -94,7 +95,8 @@ public class LinearFusionOptimizations extends BaseOptimizerSet {
             }
 
             // Check that the matmul output is only used by this add
-            Variable matmulOutVariable = sd.getVariables().get(matmulOutputVar);
+            // Use fast O(1) lookup via helper
+            Variable matmulOutVariable = helper.getVariable(matmulOutputVar);
             if (matmulOutVariable == null) return false;
 
             List<String> matmulOutputUsers = matmulOutVariable.getInputsForOp();
@@ -104,7 +106,8 @@ public class LinearFusionOptimizations extends BaseOptimizerSet {
             }
 
             // Check bias is 1D or compatible shape
-            Variable biasVariable = sd.getVariables().get(biasVar);
+            // Use fast O(1) lookup via helper
+            Variable biasVariable = helper.getVariable(biasVar);
             if (biasVariable == null) return false;
 
             SDVariable biasSDVar = sd.getVariable(biasVar);
@@ -149,17 +152,17 @@ public class LinearFusionOptimizations extends BaseOptimizerSet {
                 SDVariable fusedOutput = new XwPlusB(sd, xSDVar, wSDVar, biasSDVar).outputVariable();
 
                 // Replace all uses of the add output with the fused output
-                OptimizationUtils.replaceOpInputsWith(sd, addOutputVar, fusedOutput.name());
+                OptimizationUtils.replaceOpInputsWith(sd, helper, addOutputVar, fusedOutput.name());
 
                 // Remove the old add and matmul operations
-                OptimizationUtils.removeOp(sd, op.getName());
-                OptimizationUtils.removeOp(sd, matmulOp.getName());
+                OptimizationUtils.removeOp(sd, helper, op.getName());
+                OptimizationUtils.removeOp(sd, helper, matmulOp.getName());
 
                 // Remove intermediate matmul output variable (no longer used)
-                OptimizationUtils.removeVariable(sd, matmulOutputVar);
+                OptimizationUtils.removeVariable(sd, helper, matmulOutputVar);
 
                 // Remove the old add output variable (replaced by fusedOutput)
-                OptimizationUtils.removeVariable(sd, addOutputVar);
+                OptimizationUtils.removeVariable(sd, helper, addOutputVar);
 
                 return true;
             } catch (Exception e) {
@@ -197,7 +200,8 @@ public class LinearFusionOptimizations extends BaseOptimizerSet {
 
             for (int i = 0; i < 2; i++) {
                 String inputVar = addInputs.get(i);
-                Variable v = sd.getVariables().get(inputVar);
+                // Use fast O(1) lookup via helper instead of PatriciaTrie O(k)
+                Variable v = helper.getVariable(inputVar);
                 if (v == null) continue;
 
                 String producerOpName = v.getOutputOfOp();
@@ -217,7 +221,8 @@ public class LinearFusionOptimizations extends BaseOptimizerSet {
             }
 
             // Check that the tensormmul output is only used by this add
-            Variable tensorMmulOutVariable = sd.getVariables().get(tensorMmulOutputVar);
+            // Use fast O(1) lookup via helper
+            Variable tensorMmulOutVariable = helper.getVariable(tensorMmulOutputVar);
             if (tensorMmulOutVariable == null) return false;
 
             List<String> tensorMmulOutputUsers = tensorMmulOutVariable.getInputsForOp();
@@ -264,15 +269,15 @@ public class LinearFusionOptimizations extends BaseOptimizerSet {
                 SDVariable fusedOutput = new XwPlusB(sd, xSDVar, wSDVar, biasSDVar).outputVariable();
 
                 // Replace all uses of the add output with the fused output
-                OptimizationUtils.replaceOpInputsWith(sd, addOutputVar, fusedOutput.name());
+                OptimizationUtils.replaceOpInputsWith(sd, helper, addOutputVar, fusedOutput.name());
 
                 // Remove the old add and tensormmul operations
-                OptimizationUtils.removeOp(sd, op.getName());
-                OptimizationUtils.removeOp(sd, tensorMmulOp.getName());
+                OptimizationUtils.removeOp(sd, helper, op.getName());
+                OptimizationUtils.removeOp(sd, helper, tensorMmulOp.getName());
 
                 // Remove old variables
-                OptimizationUtils.removeVariable(sd, tensorMmulOutputVar);
-                OptimizationUtils.removeVariable(sd, addOutputVar);
+                OptimizationUtils.removeVariable(sd, helper, tensorMmulOutputVar);
+                OptimizationUtils.removeVariable(sd, helper, addOutputVar);
 
                 return true;
             } catch (Exception e) {

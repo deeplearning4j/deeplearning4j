@@ -75,18 +75,20 @@ class SoftmaxCrossEntropyLoss : PreImportHook {
         // Compute log softmax for numerical stability
         // log_softmax = scores - log(sum(exp(scores)))
         val logSoftmax = sd.nn.logSoftmax("${opName}_logsoftmax", scores, 1)
-        
+
         // Gather log probabilities for correct classes
-        val batchSize = sd.shape(labels).getScalar(0)
-        val batchIndices = sd.range(sd.constant(0L), batchSize, sd.constant(1L), DataType.INT64)
+        // Get batch size from shape - extract first dimension
+        val labelsShape = sd.shape(labels)
+        val batchSize = sd.slice("${opName}_batch_size", labelsShape, intArrayOf(0), 1)
+        val batchIndices = sd.range("${opName}_range", sd.constant(0L), batchSize, sd.constant(1L), DataType.INT64)
         val labelsLong = labels.castTo(DataType.INT64)
-        
+
         // Create gather indices
         val gatherIndices = sd.stack("${opName}_indices", 1, batchIndices, labelsLong)
-        
+
         // Gather log probabilities for the target classes
         val selectedLogProbs = sd.gatherNd("${opName}_gather", logSoftmax, gatherIndices)
-        
+
         // Negate to get cross entropy loss
         var loss = sd.math.neg("${opName}_neg", selectedLogProbs)
         
@@ -98,10 +100,11 @@ class SoftmaxCrossEntropyLoss : PreImportHook {
         
         // Handle ignore_index
         if (ignoreIndex != null) {
-            val mask = sd.neq("${opName}_mask", labels, ignoreIndex.toLong()).castTo(loss.dataType())
+            val ignoreIndexConst = sd.constant(ignoreIndex.toDouble())
+            val mask = sd.neq("${opName}_mask", labels.castTo(DataType.DOUBLE), ignoreIndexConst).castTo(loss.dataType())
             loss = sd.math.mul("${opName}_masked", loss, mask)
         }
-        
+
         // Apply reduction
         val output = when (reduction) {
             "none" -> loss.rename(outputNames[0])
@@ -109,7 +112,8 @@ class SoftmaxCrossEntropyLoss : PreImportHook {
             "mean" -> {
                 if (ignoreIndex != null) {
                     // Mean over non-ignored elements
-                    val mask = sd.neq("${opName}_mask2", labels, ignoreIndex.toLong()).castTo(DataType.FLOAT)
+                    val ignoreIndexConst2 = sd.constant(ignoreIndex.toDouble())
+                    val mask = sd.neq("${opName}_mask2", labels.castTo(DataType.DOUBLE), ignoreIndexConst2).castTo(DataType.FLOAT)
                     val count = sd.math.sum("${opName}_count", mask)
                     sd.math.div(outputNames[0], sd.math.sum(loss), count)
                 } else {

@@ -661,4 +661,34 @@ public class DefaultMultiBackendWorkspace implements MultiBackendWorkspace {
     public MemoryWorkspace tagOutOfScopeUse() {
         return this;
     }
+
+    @Override
+    public Enum getAssociatedEnumType() {
+        return null;
+    }
+
+    @Override
+    public void setAssociatedEnumType(Enum associatedEnumType) {
+        // Not used in multi-backend workspace
+    }
+
+    @Override
+    public void setWorkspaceMgr(org.nd4j.linalg.workspace.WorkspaceMgr mgr) {
+        // Not used in multi-backend workspace
+    }
+
+    @Override
+    public int targetDevice() {
+        return primaryDevice != null ? primaryDevice.getDeviceIndex() : 0;
+    }
+
+    @Override
+    public Deallocator deallocator() {
+        return null; // Multi-backend workspace does not use Deallocator pattern
+    }
+
+    @Override
+    public long getUniqueId() {
+        return generationId.get();
+    }
 }

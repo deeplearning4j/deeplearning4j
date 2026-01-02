@@ -40,6 +40,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.learning.GradientUpdater;
+import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.common.primitives.AtomicDouble;
 import org.nd4j.common.primitives.Pair;
@@ -246,9 +247,12 @@ public class TrainingSession extends InferenceSession {
                 }
 
                 //Pre-updater regularization (L1, L2)
-                List<Regularization> r = config.getRegularization();
+                // Use per-variable regularization if available
+                List<Regularization> r = config.getRegularizationForVariable(varName);
+                // Get learning rate from per-variable updater if available
+                IUpdater varUpdater = config.getUpdaterForVariable(varName);
                 if (r != null && r.size() > 0) {
-                    double lr = config.getUpdater().hasLearningRate() ? config.getUpdater().getLearningRate(at.iteration(), at.epoch()) : 1.0;
+                    double lr = varUpdater.hasLearningRate() ? varUpdater.getLearningRate(at.iteration(), at.epoch()) : 1.0;
                     for (Regularization reg : r) {
                         if (reg.applyStep() == Regularization.ApplyStep.BEFORE_UPDATER) {
                             if (this.listeners != null) {
@@ -267,7 +271,7 @@ public class TrainingSession extends InferenceSession {
 
                 //Post-apply regularization (weight decay)
                 if (r != null && r.size() > 0) {
-                    double lr = config.getUpdater().hasLearningRate() ? config.getUpdater().getLearningRate(at.iteration(), at.epoch()) : 1.0;
+                    double lr = varUpdater.hasLearningRate() ? varUpdater.getLearningRate(at.iteration(), at.epoch()) : 1.0;
                     for (Regularization reg : r) {
                         if (reg.applyStep() == Regularization.ApplyStep.POST_UPDATER) {
                             if (this.listeners != null) {

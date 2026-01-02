@@ -74,12 +74,12 @@ class Imputer : PreImportHook {
         val replacedInt = attributes["replaced_value_int64"] as? Number
         
         // Create mask for values to replace
-        val mask = if (replacedFloat != null && !replacedFloat.toDouble().isNaN()) {
+        val mask = if (replacedFloat != null && !java.lang.Double.isNaN(replacedFloat.toDouble())) {
             // Replace specific value
             sd.eq("${opName}_mask", input, replacedFloat.toDouble())
         } else {
             // Replace NaN values
-            sd.isNaN("${opName}_mask", input)
+            sd.math.isNaN("${opName}_mask", input)
         }
         
         // Create imputed values tensor
@@ -108,8 +108,9 @@ class Imputer : PreImportHook {
         
         // Apply imputation: where mask is true, use imputed value; otherwise keep original
         val maskFloat = mask.castTo(input.dataType())
-        val invMask = sd.math.sub("${opName}_invMask", 1.0, maskFloat)
-        
+        val oneConst = sd.constant("${opName}_one", 1.0)
+        val invMask = sd.math.sub("${opName}_invMask", oneConst, maskFloat)
+
         // output = input * (1 - mask) + imputed * mask
         val kept = sd.math.mul("${opName}_kept", input, invMask)
         val replaced = sd.math.mul("${opName}_replaced", imputedVar, maskFloat)

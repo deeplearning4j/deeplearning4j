@@ -58,8 +58,8 @@ CONFIGURABLE_OP_IMPL(lrelu_bp, 2, 1, true, -2, 0) {
 DECLARE_TYPES(lrelu_bp) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
-      ->setAllowedInputTypes(1, {FLOAT32, DOUBLE, HALF})
-      ->setAllowedOutputTypes(0, {FLOAT32, DOUBLE, HALF});
+      ->setAllowedInputTypes(1, {ALL_FLOATS})
+      ->setAllowedOutputTypes(0, {ALL_FLOATS});
 }
 }  // namespace ops
 }  // namespace sd

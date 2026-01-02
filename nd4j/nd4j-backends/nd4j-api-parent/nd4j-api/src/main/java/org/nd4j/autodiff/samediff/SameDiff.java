@@ -1800,6 +1800,52 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     }
 
     /**
+     * Get a kernel configuration object for this SameDiff instance.
+     * <p>
+     * The kernel configuration allows fine-grained control over which backend implementations
+     * (CPU, CUDA, oneDNN, cuDNN, MPS, etc.) are used for each operation.
+     * </p>
+     *
+     * <h3>Example Usage:</h3>
+     * <pre>{@code
+     * SameDiff sd = SameDiff.create();
+     *
+     * // Configure kernels for this model
+     * sd.kernelConfiguration()
+     *     .preferCuda()                              // Use CUDA when available
+     *     .forConvolutions().useCudnn()              // Use cuDNN for convolutions
+     *     .forLinearAlgebra().useOneDnn()            // Use oneDNN for matmul
+     *     .apply();
+     *
+     * // Or use presets
+     * sd.kernelConfiguration()
+     *     .usePreset(KernelConfiguration.Preset.GPU_OPTIMIZED)
+     *     .apply();
+     *
+     * // Query available kernels
+     * String summary = sd.kernelConfiguration().getSummary();
+     * }</pre>
+     *
+     * @return a KernelConfiguration object for configuring backend kernels
+     */
+    public KernelConfiguration kernelConfiguration() {
+        return new KernelConfiguration(this);
+    }
+
+    /**
+     * Get the global kernel manager instance.
+     * <p>
+     * The kernel manager provides lower-level control over kernel selection
+     * and allows querying available kernels for all operations.
+     * </p>
+     *
+     * @return the global KernelManager instance
+     */
+    public static org.nd4j.linalg.api.ops.executioner.KernelManager getKernelManager() {
+        return org.nd4j.linalg.api.ops.executioner.KernelManager.getInstance();
+    }
+
+    /**
      * Fit the SameDiff instance based on a single DataSet (i.e., a single minibatch for one iteration).<br>
      * This method can only be used for singe input, single output SameDiff instances as DataSet only supports a
      * single input and a single output.<br>
@@ -6710,6 +6756,117 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         }
     }
 
+    // ============================================================================================
+    // ONNX Export Methods
+    // ============================================================================================
+
+    /**
+     * Export this SameDiff instance to ONNX format.
+     * <p>
+     * This method exports the computation graph to the Open Neural Network Exchange (ONNX) format,
+     * enabling interoperability with other ML frameworks like PyTorch, TensorFlow, and ONNX Runtime.
+     * <p>
+     * Example usage:
+     * <pre>
+     * SameDiff sd = SameDiff.create();
+     * // ... build your graph ...
+     * sd.exportToOnnx(new File("model.onnx"));
+     * </pre>
+     *
+     * @param file The output file (typically with .onnx extension)
+     * @throws IOException If export fails
+     */
+    public void exportToOnnx(@NonNull File file) throws IOException {
+        org.nd4j.samediff.frameworkimport.onnx.export.OnnxExporter.export(this, file);
+    }
+
+    /**
+     * Export this SameDiff instance to ONNX format with custom configuration.
+     * <p>
+     * The configuration allows control over:
+     * <ul>
+     *   <li>ONNX opset version (default: 13)</li>
+     *   <li>IR version (default: 7)</li>
+     *   <li>Producer name and version</li>
+     *   <li>Whether to include training state</li>
+     * </ul>
+     *
+     * @param file   The output file
+     * @param config Export configuration
+     * @throws IOException If export fails
+     */
+    public void exportToOnnx(@NonNull File file,
+                             @NonNull org.nd4j.samediff.frameworkimport.onnx.export.OnnxExportConfig config) throws IOException {
+        org.nd4j.samediff.frameworkimport.onnx.export.OnnxExporter.export(this, file, config);
+    }
+
+    /**
+     * Export this SameDiff instance to ONNX format, writing to an output stream.
+     *
+     * @param outputStream The output stream to write to
+     * @throws IOException If export fails
+     */
+    public void exportToOnnx(@NonNull OutputStream outputStream) throws IOException {
+        org.nd4j.samediff.frameworkimport.onnx.export.OnnxExporter.export(this, outputStream);
+    }
+
+    /**
+     * Export this SameDiff instance to ONNX format with training state.
+     * <p>
+     * This creates two files:
+     * <ul>
+     *   <li>The main ONNX model file</li>
+     *   <li>A companion .training file with optimizer state</li>
+     * </ul>
+     * <p>
+     * The training state can be reimported to continue training.
+     *
+     * @param file The output file
+     * @throws IOException If export fails
+     */
+    public void exportToOnnxWithTraining(@NonNull File file) throws IOException {
+        org.nd4j.samediff.frameworkimport.onnx.export.OnnxExportConfig config =
+            org.nd4j.samediff.frameworkimport.onnx.export.OnnxExportConfig.WITH_TRAINING;
+        org.nd4j.samediff.frameworkimport.onnx.export.OnnxExporter.export(this, file, config);
+    }
+
+    /**
+     * Convert this SameDiff instance to ONNX bytes.
+     * <p>
+     * Useful for serving models or sending over network.
+     *
+     * @return The ONNX model as a byte array
+     */
+    public byte[] toOnnxBytes() {
+        return org.nd4j.samediff.frameworkimport.onnx.export.OnnxExporter.toBytes(this);
+    }
+
+    /**
+     * Check if this SameDiff instance can be fully exported to ONNX.
+     * <p>
+     * Returns true only if all operations in the graph have ONNX equivalents.
+     *
+     * @return true if the graph can be exported, false otherwise
+     */
+    public boolean canExportToOnnx() {
+        return org.nd4j.samediff.frameworkimport.onnx.export.OnnxExporter.canExport(this);
+    }
+
+    /**
+     * Get a list of operations that cannot be exported to ONNX.
+     * <p>
+     * Useful for debugging when {@link #canExportToOnnx()} returns false.
+     *
+     * @return List of unsupported operation names
+     */
+    public java.util.List<String> getUnsupportedOnnxOps() {
+        return org.nd4j.samediff.frameworkimport.onnx.export.OnnxExporter.validateForExport(this);
+    }
+
+    // ============================================================================================
+    // End ONNX Export Methods
+    // ============================================================================================
+
     /**
      * This method converts SameDiff instance to FlatBuffers and saves it to file which can be restored later<br>
      * This includes the updater state, if applicable.
@@ -7206,6 +7363,125 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         return clone;
     }
 
+    /**
+     * Selectively freeze specific variables by converting them from VARIABLE to CONSTANT type.
+     * Unlike {@link #freeze(boolean)} which freezes all variables, this method allows selective freezing.
+     * Frozen variables will not be updated during training.
+     *
+     * @param variableNames Names of variables to freeze
+     */
+    public void freezeVariables(Collection<String> variableNames) {
+        for (String name : variableNames) {
+            Variable varMeta = variables.get(name);
+            if (varMeta == null) {
+                log.warn("Variable '{}' not found, skipping freeze", name);
+                continue;
+            }
+            SDVariable var = varMeta.getVariable();
+            if (var.getVariableType() == VariableType.VARIABLE) {
+                var.setVariableType(VariableType.CONSTANT);
+                log.debug("Froze variable: {}", name);
+            }
+        }
+    }
+
+    /**
+     * Selectively freeze specific variables by name.
+     *
+     * @param variableNames Names of variables to freeze
+     */
+    public void freezeVariables(String... variableNames) {
+        freezeVariables(Arrays.asList(variableNames));
+    }
+
+    /**
+     * Freeze variables matching the given regex patterns.
+     *
+     * @param patterns Regex patterns to match variable names
+     */
+    public void freezeMatching(String... patterns) {
+        List<Pattern> compiled = new ArrayList<>();
+        for (String pattern : patterns) {
+            compiled.add(Pattern.compile(pattern));
+        }
+
+        List<String> toFreeze = new ArrayList<>();
+        for (SDVariable var : variables()) {
+            if (var.getVariableType() == VariableType.VARIABLE) {
+                for (Pattern p : compiled) {
+                    if (p.matcher(var.name()).matches()) {
+                        toFreeze.add(var.name());
+                        break;
+                    }
+                }
+            }
+        }
+        freezeVariables(toFreeze);
+    }
+
+    /**
+     * Freeze all variables whose names start with the given prefix.
+     *
+     * @param prefix Prefix to match
+     */
+    public void freezePrefix(String prefix) {
+        freezeMatching("^" + Pattern.quote(prefix) + ".*");
+    }
+
+    /**
+     * Unfreeze variables (convert from CONSTANT back to VARIABLE).
+     * This allows previously frozen variables to be trained again.
+     *
+     * @param variableNames Names of variables to unfreeze
+     */
+    public void unfreezeVariables(Collection<String> variableNames) {
+        for (String name : variableNames) {
+            Variable varMeta = variables.get(name);
+            if (varMeta == null) {
+                log.warn("Variable '{}' not found, skipping unfreeze", name);
+                continue;
+            }
+            SDVariable var = varMeta.getVariable();
+            if (var.getVariableType() == VariableType.CONSTANT) {
+                var.setVariableType(VariableType.VARIABLE);
+                log.debug("Unfroze variable: {}", name);
+            }
+        }
+    }
+
+    /**
+     * Unfreeze variables by name.
+     *
+     * @param variableNames Names of variables to unfreeze
+     */
+    public void unfreezeVariables(String... variableNames) {
+        unfreezeVariables(Arrays.asList(variableNames));
+    }
+
+    /**
+     * Unfreeze variables matching the given regex patterns.
+     *
+     * @param patterns Regex patterns to match variable names
+     */
+    public void unfreezeMatching(String... patterns) {
+        List<Pattern> compiled = new ArrayList<>();
+        for (String pattern : patterns) {
+            compiled.add(Pattern.compile(pattern));
+        }
+
+        List<String> toUnfreeze = new ArrayList<>();
+        for (SDVariable var : variables()) {
+            if (var.getVariableType() == VariableType.CONSTANT) {
+                for (Pattern p : compiled) {
+                    if (p.matcher(var.name()).matches()) {
+                        toUnfreeze.add(var.name());
+                        break;
+                    }
+                }
+            }
+        }
+        unfreezeVariables(toUnfreeze);
+    }
 
     /**
      * All constants are converted to variables, also called unfreezing a graph.

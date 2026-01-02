@@ -145,7 +145,7 @@ PLATFORM_IMPL(dot_product_attention, ENGINE_CPU) {
                 }
 
                 // Optionally output attention weights
-                if (block.numOutputs() > 1) {
+                if (block.outputWidth() > 1) {
                     auto attentionWeights = OUTPUT_VARIABLE(1);
                     float* awPtr = attentionWeights->bufferAsT<float>();
                     for (LongType q = 0; q < seqQ; q++) {

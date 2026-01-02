@@ -37,7 +37,7 @@ namespace platforms {
 
 //////////////////////////////////////////////////////////////////////
 static void sqrtMKLDNN(NDArray* x, NDArray* z) {
-  dnnl::memory::dims shape = x->getShapeAsFlatVector();
+  dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
   dnnl::memory::desc x_mkl_md, x_user_md, z_mkl_md, z_user_md;
 
@@ -52,9 +52,9 @@ static void sqrtMKLDNN(NDArray* x, NDArray* z) {
   dnnl::primitive_attr attr;
 
   // sqrt: sqrt(x)
-  dnnl::eltwise_forward::desc op_desc(dnnl::prop_kind::forward_inference, algorithm::eltwise_sqrt, x_mkl_md, 0, 0);
-
-  dnnl::eltwise_forward::primitive_desc op_prim_desc(op_desc, attr, engine);
+  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  dnnl::eltwise_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                      algorithm::eltwise_sqrt, x_mkl_md, z_mkl_md, 0.f, 0.f);
 
   std::unordered_map<int, dnnl::memory> args;
 

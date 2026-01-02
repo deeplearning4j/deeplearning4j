@@ -79,19 +79,13 @@ class RandomNormalLike : PreImportHook {
             input.dataType()
         }
 
-        // Get shape of input
-        val inputShape = sd.shape(input)
+        // Get shape of input - for RandomNormalLike we need a static shape
+        // Since sd.random.normal expects long... shape, we'll use the input's static shape
+        val inputShapeArr = input.shape ?: throw IllegalStateException("RandomNormalLike requires static input shape")
 
-        // Generate standard normal (mean=0, std=1) and transform
-        // output = mean + scale * standard_normal
-        val standardNormal = sd.random.standardNormal("${opName}_stdNorm", inputShape, dtype)
-
-        val output = if (mean == 0.0 && scale == 1.0) {
-            standardNormal.rename(outputNames[0])
-        } else {
-            val scaled = sd.math.mul("${opName}_scaled", standardNormal, sd.constant(scale))
-            sd.math.add(outputNames[0], scaled, sd.constant(mean))
-        }
+        // Generate normal distribution with specified mean and scale (stddev)
+        val output = sd.random.normal("${opName}_normal", mean, scale, dtype, *inputShapeArr)
+        output.rename(outputNames[0])
 
         return mapOf(outputNames[0] to listOf(output))
     }

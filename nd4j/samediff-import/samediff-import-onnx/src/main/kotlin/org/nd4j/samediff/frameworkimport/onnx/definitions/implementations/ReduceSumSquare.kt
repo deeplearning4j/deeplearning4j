@@ -92,7 +92,8 @@ class ReduceSumSquare : PreImportHook {
         val output = if (axes.isEmpty()) {
             sd.sum(outputNames[0], squared, keepDims)
         } else {
-            sd.sum(outputNames[0], squared, keepDims, *axes)
+            val axesLong = axes.map { it.toLong() }.toLongArray()
+            sd.sum(outputNames[0], squared, keepDims, *axesLong)
         }
 
         return mapOf(outputNames[0] to listOf(output))

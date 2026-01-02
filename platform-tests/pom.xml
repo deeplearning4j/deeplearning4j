@@ -121,6 +121,13 @@
         <jemalloc.mallocconf></jemalloc.mallocconf>
         <!-- Used with the testing script when the valgrind script can't automatically identify where the libjvm.so is. -->
         <libjvm.path></libjvm.path>
+
+        <!-- libnd4j Native Test Configuration -->
+        <libnd4j.test.enabled>true</libnd4j.test.enabled>
+        <libnd4j.test.chip>cpu</libnd4j.test.chip>
+        <libnd4j.test.filter>*</libnd4j.test.filter>
+        <libnd4j.test.timeout>30</libnd4j.test.timeout>
+        <libnd4j.autobuild>false</libnd4j.autobuild>
     </properties>
 
 
@@ -788,6 +795,307 @@
                 <surefire.threads>1</surefire.threads>
             </properties>
         </profile>
+
+        <!-- Profile for running libnd4j native C++ tests only -->
+        <profile>
+            <id>native-tests</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <libnd4j.test.enabled>true</libnd4j.test.enabled>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <includes>
+                                <include>**/LibNd4jNativeTestRunner.java</include>
+                                <include>**/LibNd4jCategoryTests.java</include>
+                            </includes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for running native tests with CUDA backend -->
+        <profile>
+            <id>native-tests-cuda</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <libnd4j.test.enabled>true</libnd4j.test.enabled>
+                <libnd4j.test.chip>cuda</libnd4j.test.chip>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <includes>
+                                <include>**/LibNd4jNativeTestRunner.java</include>
+                                <include>**/LibNd4jCategoryTests.java</include>
+                            </includes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for running all tests including native -->
+        <profile>
+            <id>all-tests</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <libnd4j.test.enabled>true</libnd4j.test.enabled>
+            </properties>
+        </profile>
+
+        <!-- Profile to disable native tests -->
+        <profile>
+            <id>skip-native-tests</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <libnd4j.test.enabled>false</libnd4j.test.enabled>
+            </properties>
+        </profile>
+
+        <!-- ============================================================= -->
+        <!-- Multi-Backend Testing Profiles                                 -->
+        <!-- ============================================================= -->
+
+        <!-- Profile for multi-backend testing with all available helpers -->
+        <profile>
+            <id>multi-backend</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <!-- Enable all available helpers for testing -->
+                <sd.test.enable.all.helpers>true</sd.test.enable.all.helpers>
+                <sd.test.kernel.strategy>fastest</sd.test.kernel.strategy>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.enable.all.helpers>${sd.test.enable.all.helpers}</sd.test.enable.all.helpers>
+                                <sd.test.kernel.strategy>${sd.test.kernel.strategy}</sd.test.kernel.strategy>
+                            </systemPropertyVariables>
+                            <!-- Include multi-backend tests -->
+                            <groups>multi-backend</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for OneDNN-specific testing -->
+        <profile>
+            <id>test-onednn</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <sd.test.helpers>onednn</sd.test.helpers>
+                <sd.test.helper.priority>onednn,cpu</sd.test.helper.priority>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.helpers>${sd.test.helpers}</sd.test.helpers>
+                                <sd.test.helper.priority>${sd.test.helper.priority}</sd.test.helper.priority>
+                            </systemPropertyVariables>
+                            <groups>onednn</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for cuDNN-specific testing -->
+        <profile>
+            <id>test-cudnn</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <sd.test.helpers>cudnn</sd.test.helpers>
+                <sd.test.helper.priority>cudnn,cpu</sd.test.helper.priority>
+                <sd.test.backend>cuda</sd.test.backend>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.helpers>${sd.test.helpers}</sd.test.helpers>
+                                <sd.test.helper.priority>${sd.test.helper.priority}</sd.test.helper.priority>
+                                <sd.test.backend>${sd.test.backend}</sd.test.backend>
+                            </systemPropertyVariables>
+                            <groups>cudnn</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for ARM Compute-specific testing -->
+        <profile>
+            <id>test-armcompute</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <sd.test.helpers>armcompute</sd.test.helpers>
+                <sd.test.helper.priority>armcompute,cpu</sd.test.helper.priority>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.helpers>${sd.test.helpers}</sd.test.helpers>
+                                <sd.test.helper.priority>${sd.test.helper.priority}</sd.test.helper.priority>
+                            </systemPropertyVariables>
+                            <groups>armcompute</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for MPS (Metal Performance Shaders) testing on macOS -->
+        <profile>
+            <id>test-mps</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+                <os>
+                    <family>mac</family>
+                </os>
+            </activation>
+            <properties>
+                <sd.test.helpers>mps,accelerate</sd.test.helpers>
+                <sd.test.helper.priority>mps,accelerate,cpu</sd.test.helper.priority>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.helpers>${sd.test.helpers}</sd.test.helpers>
+                                <sd.test.helper.priority>${sd.test.helper.priority}</sd.test.helper.priority>
+                            </systemPropertyVariables>
+                            <groups>mps</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for testing with kernel auto-tuning enabled -->
+        <profile>
+            <id>test-autotuning</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <sd.test.enable.all.helpers>true</sd.test.enable.all.helpers>
+                <sd.test.kernel.strategy>benchmark</sd.test.kernel.strategy>
+                <sd.test.kernel.autotuning>true</sd.test.kernel.autotuning>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.enable.all.helpers>${sd.test.enable.all.helpers}</sd.test.enable.all.helpers>
+                                <sd.test.kernel.strategy>${sd.test.kernel.strategy}</sd.test.kernel.strategy>
+                                <SD_KERNEL_AUTOTUNING>1</SD_KERNEL_AUTOTUNING>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for helper comparison testing - runs same test on multiple helpers -->
+        <profile>
+            <id>test-helper-comparison</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <sd.test.enable.all.helpers>true</sd.test.enable.all.helpers>
+                <sd.test.kernel.strategy>roundrobin</sd.test.kernel.strategy>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.enable.all.helpers>${sd.test.enable.all.helpers}</sd.test.enable.all.helpers>
+                                <sd.test.kernel.strategy>${sd.test.kernel.strategy}</sd.test.kernel.strategy>
+                            </systemPropertyVariables>
+                            <!-- Only run tests tagged for multi-backend comparison -->
+                            <groups>multi-backend</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for CPU-only testing (skip all accelerated helpers) -->
+        <profile>
+            <id>test-cpu-only</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <sd.test.helpers>cpu</sd.test.helpers>
+                <sd.test.skip.helpers>onednn,cudnn,armcompute,mps,accelerate,mlir</sd.test.skip.helpers>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.helpers>${sd.test.helpers}</sd.test.helpers>
+                                <sd.test.skip.helpers>${sd.test.skip.helpers}</sd.test.skip.helpers>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 
     <build>
@@ -1014,6 +1322,14 @@
                         <LIBJVM_PATH>${libjvm.path}</LIBJVM_PATH>
                         <TEST_FILTER></TEST_FILTER>
                     </environmentVariables>
+                    <systemPropertyVariables>
+                        <!-- libnd4j native test configuration -->
+                        <org.nd4j.libnd4j.test.enabled>${libnd4j.test.enabled}</org.nd4j.libnd4j.test.enabled>
+                        <org.nd4j.libnd4j.chip>${libnd4j.test.chip}</org.nd4j.libnd4j.chip>
+                        <org.nd4j.libnd4j.test.filter>${libnd4j.test.filter}</org.nd4j.libnd4j.test.filter>
+                        <org.nd4j.libnd4j.test.timeout>${libnd4j.test.timeout}</org.nd4j.libnd4j.test.timeout>
+                        <org.nd4j.libnd4j.autobuild>${libnd4j.autobuild}</org.nd4j.libnd4j.autobuild>
+                    </systemPropertyVariables>
                     <classpathDependencyExcludes>
                         <classpathDependencyExclude>org.junit:junit</classpathDependencyExclude>
                         <classpathDependencyExclude>com.google.android:android

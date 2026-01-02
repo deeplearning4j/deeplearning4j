@@ -37,8 +37,8 @@ namespace platforms {
 
 //////////////////////////////////////////////////////////////////////
 static void resampleMKLDNN(NDArray* x, NDArray* z, dnnl::algorithm alg) {
-  dnnl::memory::dims xDims = x->getShapeAsFlatVector();
-  dnnl::memory::dims zDims = z->getShapeAsFlatVector();
+  dnnl::memory::dims xDims = *x->getShapeAsFlatVector();
+  dnnl::memory::dims zDims = *z->getShapeAsFlatVector();
 
   // Create memory descriptors
   dnnl::memory::desc x_md = dnnl::memory::desc(xDims, dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
@@ -46,9 +46,8 @@ static void resampleMKLDNN(NDArray* x, NDArray* z, dnnl::algorithm alg) {
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
-  // Create resampling primitive descriptor
-  dnnl::resampling_forward::desc op_desc(dnnl::prop_kind::forward_inference, alg, x_md, z_md);
-  dnnl::resampling_forward::primitive_desc op_prim_desc(op_desc, engine);
+  // Create resampling primitive descriptor (OneDNN 3.x API)
+  dnnl::resampling_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference, alg, x_md, z_md);
 
   std::unordered_map<int, dnnl::memory> args;
   dnnl::stream stream(engine);
@@ -69,8 +68,8 @@ static void resampleMKLDNN(NDArray* x, NDArray* z, dnnl::algorithm alg) {
 
 //////////////////////////////////////////////////////////////////////
 static void resampleBpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx, dnnl::algorithm alg) {
-  dnnl::memory::dims xDims = x->getShapeAsFlatVector();
-  dnnl::memory::dims dLdzDims = dLdz->getShapeAsFlatVector();
+  dnnl::memory::dims xDims = *x->getShapeAsFlatVector();
+  dnnl::memory::dims dLdzDims = *dLdz->getShapeAsFlatVector();
 
   dnnl::memory::desc x_md = dnnl::memory::desc(xDims, dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
   dnnl::memory::desc dLdz_md = dnnl::memory::desc(dLdzDims, dnnl::memory::data_type::f32, onednnUtils::getFormat(*dLdz));
@@ -78,13 +77,11 @@ static void resampleBpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx, dnnl::alg
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
-  // Forward descriptor for hint
-  dnnl::resampling_forward::desc op_ff_desc(dnnl::prop_kind::forward_training, alg, x_md, dLdz_md);
-  dnnl::resampling_forward::primitive_desc op_ff_prim_desc(op_ff_desc, engine);
+  // Forward descriptor for hint (OneDNN 3.x API)
+  dnnl::resampling_forward::primitive_desc op_ff_prim_desc(engine, dnnl::prop_kind::forward_training, alg, x_md, dLdz_md);
 
-  // Backward descriptor
-  dnnl::resampling_backward::desc op_desc(alg, dLdz_md, dLdx_md);
-  dnnl::resampling_backward::primitive_desc op_prim_desc(op_desc, engine, op_ff_prim_desc);
+  // Backward descriptor (OneDNN 3.x API)
+  dnnl::resampling_backward::primitive_desc op_prim_desc(engine, alg, dLdz_md, dLdx_md, op_ff_prim_desc);
 
   std::unordered_map<int, dnnl::memory> args;
   dnnl::stream stream(engine);

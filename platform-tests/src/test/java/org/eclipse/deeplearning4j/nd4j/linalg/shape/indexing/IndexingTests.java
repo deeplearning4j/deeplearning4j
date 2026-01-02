@@ -263,6 +263,7 @@ public class IndexingTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLinearIndex(Nd4jBackend backend) {
         INDArray linspace = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+
         for (int i = 0; i < linspace.length(); i++) {
             assertEquals(i + 1, linspace.getDouble(i), 1e-1);
         }

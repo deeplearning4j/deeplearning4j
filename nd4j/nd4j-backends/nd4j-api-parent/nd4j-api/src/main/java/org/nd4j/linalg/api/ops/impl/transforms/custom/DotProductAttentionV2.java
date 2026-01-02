@@ -40,21 +40,25 @@ import java.util.List;
 public class DotProductAttentionV2 extends DynamicCustomOp {
     private boolean useCausalMask;
     private boolean training;
+    private boolean useFlashAttention = true;  // Enable flash attention by default
     private double scaleFactor = 1.0;
     private double dropout = 0.0;
+    private int kvCachePosition = 0;
 
     private SDVariable queryMask;
     private SDVariable valueMask;
+    private SDVariable keyCache;
+    private SDVariable valueCache;
 
     /**
      * Create a dot product attention operation.
      *
-     * @param queries Query tensor [batch, Tq, dim] or [Tq, dim]
-     * @param values Value tensor [batch, Tv, dim] or [Tv, dim]
-     * @param keys Key tensor [batch, Tv, dim] or [Tv, dim], or null to use values
+     * @param queries Query tensor [batch, Tq, dim] or [batch, Tq, heads, dim] for flash attention
+     * @param values Value tensor [batch, Tv, dim] or [batch, Tv, heads, dim]
+     * @param keys Key tensor [batch, Tv, dim] or [batch, Tv, heads, dim], or null to use values
      * @param queryMask Query mask [batch, Tq] or null
      * @param valueMask Value mask [batch, Tv] or null
-     * @param scaleFactor Scale factor for attention scores (typically 1/sqrt(dim))
+     * @param scaleFactor Scale factor for attention scores (0 = auto: 1/sqrt(dim))
      * @param dropoutProbability Dropout probability (0 = no dropout)
      * @param useCausalMask Whether to apply causal (lower triangular) mask
      * @param training Whether in training mode (affects dropout)
@@ -68,8 +72,40 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
         this.training = training;
         // T_ARG order: scale, dropout
         addTArgument(scaleFactor, dropoutProbability);
-        // B_ARG order: useCausalMask, training
-        addBArgument(useCausalMask, training);
+        // B_ARG order: useCausalMask, training, useFlashAttention
+        addBArgument(useCausalMask, training, useFlashAttention);
+    }
+
+    /**
+     * Create a dot product attention operation with KV cache support.
+     *
+     * @param queries Query tensor [batch, Tq, heads, dim]
+     * @param values Value tensor [batch, Tv, heads, dim]
+     * @param keys Key tensor [batch, Tv, heads, dim]
+     * @param queryMask Query mask or null
+     * @param valueMask Value mask or null
+     * @param keyCache Key cache [batch, maxSeq, heads, dim] for autoregressive decoding
+     * @param valueCache Value cache [batch, maxSeq, heads, dim] for autoregressive decoding
+     * @param kvCachePosition Current position in the KV cache
+     * @param scaleFactor Scale factor (0 = auto)
+     * @param useCausalMask Whether to apply causal mask
+     */
+    public DotProductAttentionV2(INDArray queries, INDArray values, INDArray keys,
+                                 INDArray queryMask, INDArray valueMask,
+                                 INDArray keyCache, INDArray valueCache, int kvCachePosition,
+                                 double scaleFactor, boolean useCausalMask) {
+        super(wrapFilterNull(queries, values, keys, queryMask, valueMask, keyCache, valueCache), null);
+        this.scaleFactor = scaleFactor;
+        this.dropout = 0.0;
+        this.useCausalMask = useCausalMask;
+        this.training = false;
+        this.kvCachePosition = kvCachePosition;
+        // T_ARG order: scale, dropout
+        addTArgument(scaleFactor, 0.0);
+        // B_ARG order: useCausalMask, training, useFlashAttention
+        addBArgument(useCausalMask, false, true);
+        // I_ARG order: kvCachePosition
+        addIArgument(kvCachePosition);
     }
 
     /**
@@ -88,8 +124,33 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
         this.valueMask = valueMask;
         // T_ARG order: scale, dropout
         addTArgument(scaleFactor, dropoutProbability);
-        // B_ARG order: useCausalMask, training
-        addBArgument(useCausalMask, training);
+        // B_ARG order: useCausalMask, training, useFlashAttention
+        addBArgument(useCausalMask, training, useFlashAttention);
+    }
+
+    /**
+     * Create a dot product attention operation for SameDiff with KV cache.
+     */
+    public DotProductAttentionV2(SameDiff sd, SDVariable queries, SDVariable values, SDVariable keys,
+                                 SDVariable queryMask, SDVariable valueMask,
+                                 SDVariable keyCache, SDVariable valueCache, int kvCachePosition,
+                                 double scaleFactor, boolean useCausalMask) {
+        super(null, sd, inputsWithCache(sd, queries, values, keys, queryMask, valueMask, keyCache, valueCache), false);
+        this.scaleFactor = scaleFactor;
+        this.dropout = 0.0;
+        this.useCausalMask = useCausalMask;
+        this.training = false;
+        this.queryMask = queryMask;
+        this.valueMask = valueMask;
+        this.keyCache = keyCache;
+        this.valueCache = valueCache;
+        this.kvCachePosition = kvCachePosition;
+        // T_ARG order: scale, dropout
+        addTArgument(scaleFactor, 0.0);
+        // B_ARG order: useCausalMask, training, useFlashAttention
+        addBArgument(useCausalMask, false, true);
+        // I_ARG order: kvCachePosition
+        addIArgument(kvCachePosition);
     }
 
     private static SDVariable[] inputs(SameDiff sd,
@@ -105,18 +166,43 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
         inputs.add(queryMask == null ? sd.constant(Nd4j.empty(queries.dataType())) : queryMask);
         inputs.add(valueMask == null ? sd.constant(Nd4j.empty(queries.dataType())) : valueMask);
         return inputs.toArray(new SDVariable[inputs.size()]);
+    }
 
+    private static SDVariable[] inputsWithCache(SameDiff sd,
+                                                SDVariable queries,
+                                                SDVariable values,
+                                                SDVariable keys,
+                                                SDVariable queryMask,
+                                                SDVariable valueMask,
+                                                SDVariable keyCache,
+                                                SDVariable valueCache) {
+        List<SDVariable> inputs = new ArrayList<>();
+        inputs.add(queries);
+        inputs.add(values);
+        inputs.add(keys == null ? values : keys);
+        inputs.add(queryMask == null ? sd.constant(Nd4j.empty(queries.dataType())) : queryMask);
+        inputs.add(valueMask == null ? sd.constant(Nd4j.empty(queries.dataType())) : valueMask);
+        if (keyCache != null) {
+            inputs.add(keyCache);
+        }
+        if (valueCache != null) {
+            inputs.add(valueCache);
+        }
+        return inputs.toArray(new SDVariable[inputs.size()]);
     }
 
     @Override
     public void configureFromArguments() {
         super.configureFromArguments();
-        // B_ARG order: useCausalMask, training
+        // B_ARG order: useCausalMask, training, useFlashAttention
         if(bArguments.size() > 0)
             this.useCausalMask = bArguments.get(0);
 
         if(bArguments.size() > 1)
             this.training = bArguments.get(1);
+
+        if(bArguments.size() > 2)
+            this.useFlashAttention = bArguments.get(2);
 
         // T_ARG order: scale, dropout
         if(tArguments.size() > 0)
@@ -124,6 +210,10 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
 
         if(tArguments.size() > 1)
             this.dropout = tArguments.get(1);
+
+        // I_ARG order: kvCachePosition
+        if(iArguments.size() > 0)
+            this.kvCachePosition = iArguments.get(0).intValue();
     }
 
     @Override
@@ -134,6 +224,12 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
 
         if(args().length > 4)
             this.valueMask = arg(4);
+
+        if(args().length > 5)
+            this.keyCache = arg(5);
+
+        if(args().length > 6)
+            this.valueCache = arg(6);
     }
 
     @Override

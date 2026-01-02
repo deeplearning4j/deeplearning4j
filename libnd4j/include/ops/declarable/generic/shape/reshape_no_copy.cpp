@@ -13,11 +13,12 @@ CUSTOM_OP_IMPL(reshape_no_copy, -2, 1, false, 0, -2) {
   //note that the calculate output shape that sets this flag does not have access to the data buffer
   if (ArrayOptions::arrayNeedsCopy(const_cast<LongType *>(output->shapeInfo()))
       || output->dataBuffer() != input->dataBuffer()) {
-    //immitate a reshape operation but without triggering a copy. These helpers are to prevent stack overflows with reshape -> assign -> reshape which used to exist
-    auto* inputShape = input->getShapeAsVector();
-    sd::LongType  *shapeInfo = NDArray::reshapeShapeInfo(output, output->ordering(), *inputShape);
-    delete inputShape;
-    NDArray::copyDataForAssign(input, output, shapeInfo, false);
+    // For reshape, we want to preserve LINEAR element order (not logical positions).
+    // This means we can use memcpy which preserves the raw byte order.
+    // The new shape/strides will correctly interpret the data in the new order.
+    if (input->lengthOf() == output->lengthOf()) {
+      std::memcpy(output->buffer(), input->buffer(), input->lengthOf() * input->sizeOfT());
+    }
   }
   // the rest is no op, we don't need to copy we just needed the new shape
 

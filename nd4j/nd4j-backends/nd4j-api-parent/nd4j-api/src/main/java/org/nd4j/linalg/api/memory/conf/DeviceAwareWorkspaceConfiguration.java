@@ -180,11 +180,11 @@ public class DeviceAwareWorkspaceConfiguration extends WorkspaceConfiguration {
     }
 
     /**
-     * Create a builder from an existing WorkspaceConfiguration
+     * Create a configuration from an existing WorkspaceConfiguration
      * @param base the base configuration
-     * @return builder pre-populated with base values
+     * @return configuration pre-populated with base values
      */
-    public static DeviceAwareWorkspaceConfigurationBuilder<?, ?> fromBase(WorkspaceConfiguration base) {
+    public static DeviceAwareWorkspaceConfiguration fromBase(WorkspaceConfiguration base) {
         return DeviceAwareWorkspaceConfiguration.builder()
                 .policyAllocation(base.getPolicyAllocation())
                 .policySpill(base.getPolicySpill())
@@ -196,7 +196,8 @@ public class DeviceAwareWorkspaceConfiguration extends WorkspaceConfiguration {
                 .minSize(base.getMinSize())
                 .maxSize(base.getMaxSize())
                 .overallocationLimit(base.getOverallocationLimit())
-                .cyclesBeforeInitialization(base.getCyclesBeforeInitialization());
+                .cyclesBeforeInitialization(base.getCyclesBeforeInitialization())
+                .build();
     }
 
     /**

@@ -69,20 +69,15 @@ NDArray AttentionHelper::multiHeadProject(NDArray *input, NDArray *projectionMat
  * @return
  */
 NDArray * AttentionHelper::lowerTriangularMask(std::vector<LongType> *shape) {
-  auto rowIndexOnes = NDArrayFactory::valueOf(*shape,1,'c');
-  auto colIndexOnes = NDArrayFactory::valueOf(*shape, 1, 'c');
-  ops::cumsum cumsum;
-  auto rowCumSum = cumsum.evaluate({rowIndexOnes},{},{-2,0},{});
-  auto colsCumSum = cumsum.evaluate({colIndexOnes}, {}, {-1, 0}, {});
-  ops::greater_equal greaterEqual;
-  auto ret = greaterEqual.evaluate({rowCumSum.at(0),colsCumSum.at(0)});
-  ret.setNonRemovable();
-
-  // Clean up temporary arrays that were created
-  delete rowIndexOnes;
-  delete colIndexOnes;
-
-  return ret[0];
+  // Optimized: use matrix_band_part directly instead of cumsum + greater_equal
+  // matrix_band_part with (-1, 0) keeps the lower triangular part
+  ops::matrix_band_part matrixBandPart;
+  auto ones = NDArrayFactory::valueOf(*shape, 1, 'c');  // Creates INT32 array filled with 1s
+  auto lower = matrixBandPart.evaluate({ones}, {}, {-1, 0});
+  auto ret = lower.at(0)->cast(BOOL);
+  lower.setNonRemovable();
+  delete ones;
+  return ret;
 }
 
 /**
@@ -222,16 +217,16 @@ NDArray * AttentionHelper::mergeMasks(NDArray *x, NDArray *y) {
     return x;
   }
 
-  ops::boolean_and booleanAnd;
-  auto ret = booleanAnd.evaluate({x,y});
-  ret.setNonRemovable();
-  return ret.at(0);
+  // Optimized: use multiplication instead of boolean_and.evaluate()
+  // For boolean/0-1 masks: x AND y = x * y
+  // This avoids the evaluate() overhead and ResultSet allocation
+  auto result = (*x) * (*y);
+  return result;
 }
 
 void AttentionHelper::applyAttentionScores(NDArray *scores, NDArray *value, NDArray *scoresMask,
                                            double dropout, int randomSeed, NDArray *applyScoresOut, NDArray *attentionLogits,
                                            NDArray *dropoutMask) {
-  ops::boolean_not booleanNot;
   ops::softmax softmax;
   ops::dropout dropoutOp;
   ops::matmul matmul;
@@ -244,26 +239,37 @@ void AttentionHelper::applyAttentionScores(NDArray *scores, NDArray *value, NDAr
     REQUIRE_TRUE(scoresMask->sizeAt(-1) == scores->sizeAt(-1),0,
                  "Scores mask must be either broadcastable or equal to scores shape. scores size at -1: was: %i scores size at -1 was: %i",scoresMask->sizeAt(-1),scores->sizeAt(-1));
 
-    auto castedScoresMask = scoresMask->cast(BOOL);
-    auto paddingMaskResult = booleanNot.evaluate({castedScoresMask});
-    auto paddingMask = paddingMaskResult.at(0);
-    auto paddingMaskCast = paddingMask->cast(scores->dataType());
-    if (attentionLogits->dataType() == BFLOAT16) {
-      auto minus =  65504 * *paddingMaskCast;
-      *attentionLogits -= *minus;
-      delete minus;
+    // Optimized mask application: instead of boolean_not + multiply + subtract,
+    // we use arithmetic: logits -= (1 - mask) * largeVal = logits - largeVal + mask * largeVal
+    // This avoids the boolean_not.evaluate() call and reduces allocations from 4 to 2.
+
+    // Cast mask to scores datatype (ensures 0.0/1.0 values)
+    NDArray* numericMask;
+    bool needsDeleteMask = false;
+
+    if(scoresMask->dataType() == scores->dataType()) {
+      // Already correct type - if it's a float type, assume 0/1 values
+      // If it was BOOL, it would have been caught by the else branch
+      numericMask = scoresMask;
     } else {
-      auto minus = 1.0e9 * *paddingMask;
-      *attentionLogits -= *minus;
-      delete minus;
+      // Cast to scores datatype (BOOL->FLOAT gives 0.0/1.0)
+      numericMask = scoresMask->cast(scores->dataType());
+      needsDeleteMask = true;
     }
 
-    if(paddingMaskCast != paddingMask) {
-      delete paddingMaskCast;
-    }
+    // Use appropriate large value for masking
+    float largeVal = (attentionLogits->dataType() == BFLOAT16) ? 65504.0f : 1.0e9f;
 
-    if(scoresMask != castedScoresMask) {
-      delete castedScoresMask;
+    // Step 1: Subtract largeVal from all positions
+    attentionLogits->applyScalar(sd::scalar::Subtract, largeVal, attentionLogits);
+
+    // Step 2: Add back largeVal * mask (restores unmasked positions where mask=1)
+    auto restore = largeVal * (*numericMask);
+    *attentionLogits += *restore;
+    delete restore;
+
+    if(needsDeleteMask) {
+      delete numericMask;
     }
   }
 
@@ -322,7 +328,8 @@ void AttentionHelper::dotProductAttentionBpHelper(NDArray *query, NDArray *key, 
   softmaxBp.execute({attentionLogits,&dldW,attentionScoresWeights},{&dldS},{},{-1},{});
 
   if(scale != 0.0 && scale != 1.0) {
-    dldS *= scale;
+    // Use applyScalar instead of *= to avoid type mismatch between FLOAT arrays and double scalar
+    dldS.applyScalar(sd::scalar::Multiply, scale, &dldS);
   }
 
   if(mask != nullptr && !mask->isEmpty()) {
@@ -375,14 +382,12 @@ void AttentionHelper::attentionHelper(NDArray *query, NDArray *key, double scale
   ops::matmul matmul3;
   matmul3.execute({query,key},{attentionLogits},{},{0,1});
   if(scale != 0.0 && scale != 1.0) {
-    *attentionLogits *= scale;
+    // Use applyScalar instead of *= to avoid type mismatch between FLOAT arrays and double scalar
+    attentionLogits->applyScalar(sd::scalar::Multiply, scale, attentionLogits);
   }
-
-  // Clamp attention logits to prevent numerical overflow in subsequent softmax
-  // Values beyond this range would produce Inf in exp() which leads to NaN
-  // Use clipbyvalue op for proper clamping
-  ops::clipbyvalue clipOp;
-  clipOp.execute({attentionLogits}, {attentionLogits}, {-1e4, 1e4}, {});
+  // Note: No clipping needed here - softmax already handles numerical stability by:
+  // 1. Subtracting max before exp()
+  // 2. Clamping differences to [-88, 88] to prevent overflow
 }
 
 
@@ -421,6 +426,7 @@ void AttentionHelper::doAttentionBp(std::vector<NDArray *> &inputs, std::vector<
   // Store ResultSets to keep expanded masks alive for the duration of this function
   ResultSet vMaskExpandResult;
   ResultSet qMaskExpandResult;
+  NDArray *squeezedVMask = nullptr;  // Track squeezed mask for cleanup
 
   if(vMask != nullptr && !vMask->isEmpty() && vMask->rankOf() < v->rankOf()) {
     // Insert dimension before the last one: for [batch, Tv] -> [batch, 1, Tv]
@@ -428,6 +434,25 @@ void AttentionHelper::doAttentionBp(std::vector<NDArray *> &inputs, std::vector<
     int expandDim = static_cast<int>(vMask->rankOf()) - 1;
     vMaskExpandResult = expandDims.evaluate({vMask},{},{expandDim});
     vmaskInternal = vMaskExpandResult.at(0);
+  } else if(vMask != nullptr && !vMask->isEmpty() && vMask->rankOf() > attentionScoresLogits->rankOf()) {
+    // Squeeze extra leading dimensions from mask to match attention logits rank
+    // e.g., mask [1, 1, 1, 512] with attention logits [12, 512, 512] -> squeeze to [1, 512] or [512]
+    auto targetRank = attentionScoresLogits->rankOf();
+    std::vector<sd::LongType> newShape;
+
+    // Build new shape by skipping leading 1s until we reach target rank
+    int skipDims = static_cast<int>(vMask->rankOf()) - static_cast<int>(targetRank);
+    for(int i = 0; i < vMask->rankOf(); i++) {
+      if(i < skipDims && vMask->sizeAt(i) == 1) {
+        continue;
+      }
+      newShape.push_back(vMask->sizeAt(i));
+    }
+
+    if(newShape.size() < static_cast<size_t>(vMask->rankOf())) {
+      squeezedVMask = vMask->reshape('c', newShape);
+      vmaskInternal = squeezedVMask;
+    }
   }
 
   if(qMask != nullptr && !qMask->isEmpty()) {
@@ -442,6 +467,10 @@ void AttentionHelper::doAttentionBp(std::vector<NDArray *> &inputs, std::vector<
   attentionBpHelper(q, k, v, scale, dLdq, dLdk, dLdv, eps, dropoutSeed, qMaskInternal, vmaskInternal, useCausalMask,
                     dropout, training, attentionScoresOut, attentionScoresWeights, attentionScoresLogits, dropoutMask);
 
+  // Clean up squeezed mask if we created one
+  if(squeezedVMask != nullptr) {
+    delete squeezedVMask;
+  }
 }
 
 
@@ -476,6 +505,7 @@ void AttentionHelper::doAttention(std::vector<NDArray *> &inputs, std::vector<ND
   ResultSet qMaskExpandResult;
 
   NDArray *casualPointer = nullptr;
+  NDArray *squeezedVMask = nullptr;  // Track squeezed mask for cleanup
   //inputs: query and value
   //shape: batch_size Tq dim (batch_size Tv dim)
   //note this does not apply softmax yet, we are just computing logits here
@@ -487,6 +517,28 @@ void AttentionHelper::doAttention(std::vector<NDArray *> &inputs, std::vector<ND
     int expandDim = static_cast<int>(vMask->rankOf()) - 1;
     vMaskExpandResult = expandDims.evaluate({vMask},{},{expandDim});
     vmaskInternal = vMaskExpandResult.at(0);
+  } else if(vMask != nullptr && !vMask->isEmpty() && vMask->rankOf() > attentionLogits->rankOf()) {
+    // Squeeze extra leading dimensions from mask to match attention logits rank
+    // e.g., mask [1, 1, 1, 512] with attention logits [12, 512, 512] -> squeeze to [1, 512] or [512]
+    // We squeeze from the front until ranks match or we can't squeeze anymore
+    auto targetRank = attentionLogits->rankOf();
+    std::vector<sd::LongType> newShape;
+
+    // Build new shape by skipping leading 1s until we reach target rank
+    int skipDims = static_cast<int>(vMask->rankOf()) - static_cast<int>(targetRank);
+    for(int i = 0; i < vMask->rankOf(); i++) {
+      if(i < skipDims && vMask->sizeAt(i) == 1) {
+        // Skip this dimension (squeeze it)
+        continue;
+      }
+      newShape.push_back(vMask->sizeAt(i));
+    }
+
+    // If we successfully reduced dimensions, reshape
+    if(newShape.size() < static_cast<size_t>(vMask->rankOf())) {
+      squeezedVMask = vMask->reshape('c', newShape);
+      vmaskInternal = squeezedVMask;
+    }
   }
 
   if(useCausalMask) {
@@ -523,6 +575,10 @@ void AttentionHelper::doAttention(std::vector<NDArray *> &inputs, std::vector<ND
     }
   }
 
+  // Clean up squeezed mask if we created one
+  if(squeezedVMask != nullptr) {
+    delete squeezedVMask;
+  }
 }
 
 

@@ -96,14 +96,14 @@ class MaxUnpool : PreImportHook {
             val padLeft = pads.getOrElse(1) { 0 }
             
             // Get N, C, H, W from input shape
-            val n = sd.squeeze(sd.stridedSlice("${opName}_n", inputShape, intArrayOf(0), intArrayOf(1), intArrayOf(1)))
-            val c = sd.squeeze(sd.stridedSlice("${opName}_c", inputShape, intArrayOf(1), intArrayOf(2), intArrayOf(1)))
-            val h = sd.squeeze(sd.stridedSlice("${opName}_h", inputShape, intArrayOf(2), intArrayOf(3), intArrayOf(1)))
-            val w = sd.squeeze(sd.stridedSlice("${opName}_w", inputShape, intArrayOf(3), intArrayOf(4), intArrayOf(1)))
+            val n = sd.squeeze(sd.stridedSlice("${opName}_n", inputShape, longArrayOf(0), longArrayOf(1), 1L), 0)
+            val c = sd.squeeze(sd.stridedSlice("${opName}_c", inputShape, longArrayOf(1), longArrayOf(2), 1L), 0)
+            val h = sd.squeeze(sd.stridedSlice("${opName}_h", inputShape, longArrayOf(2), longArrayOf(3), 1L), 0)
+            val w = sd.squeeze(sd.stridedSlice("${opName}_w", inputShape, longArrayOf(3), longArrayOf(4), 1L), 0)
             
             // out_H = (in_H - 1) * stride_H + kernel_H - 2 * pad_top
-            val outH = h.sub(1).mul(sH.toDouble()).add(kH.toDouble()).sub(2.0 * padTop)
-            val outW = w.sub(1).mul(sW.toDouble()).add(kW.toDouble()).sub(2.0 * padLeft)
+            val outH = h.sub(1.0).mul(sH.toDouble()).add(kH.toDouble()).sub(2.0 * padTop)
+            val outW = w.sub(1.0).mul(sW.toDouble()).add(kW.toDouble()).sub(2.0 * padLeft)
             
             sd.stack("${opName}_outshape", 0, n, c, outH, outW).castTo(DataType.INT64)
         }

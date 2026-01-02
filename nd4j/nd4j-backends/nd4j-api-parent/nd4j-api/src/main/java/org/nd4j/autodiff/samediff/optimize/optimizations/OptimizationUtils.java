@@ -24,6 +24,7 @@ import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
+import org.nd4j.autodiff.samediff.optimize.OptimizationHelper;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,7 +34,10 @@ public class OptimizationUtils {
 
     private OptimizationUtils(){ }
 
-    public static void replaceOpInputsWith(SameDiff sd, @NonNull String replaceInput, @NonNull String newInput){
+    /**
+     * Replace op inputs with a new variable using fast O(1) lookups via helper.
+     */
+    public static void replaceOpInputsWith(SameDiff sd, OptimizationHelper helper, @NonNull String replaceInput, @NonNull String newInput){
         if(replaceInput.equals(newInput))
             return;
 
@@ -47,24 +51,88 @@ public class OptimizationUtils {
             }
         }
 
-        //Update variable structure
-        Variable v = sd.getVariables().get(replaceInput);
-        Variable v2 = sd.getVariables().get(newInput);
-        //NOTE: this only works if we carefully control the order in which replaceOpInputsWith is called!
-        v2.setInputsForOp(v.getInputsForOp());
-        v.setInputsForOp(new ArrayList<String>());
-    }
+        //Update variable structure - use fast O(1) lookup via helper, with fallback to graph
+        Variable v = helper != null ? helper.getVariable(replaceInput) : null;
+        if (v == null) {
+            v = sd.getVariables().get(replaceInput);
+        }
 
-    public static void removeOp(@NonNull SameDiff sd, @NonNull String opToRemove){
-        SameDiffOp op = sd.getOps().remove(opToRemove);
-        for(String s : op.getInputsToOp()){
-            Variable v = sd.getVariables().get(s);
-            v.getInputsForOp().remove(op.getName());
+        Variable v2 = helper != null ? helper.getVariable(newInput) : null;
+        if (v2 == null) {
+            // New variables created during optimization won't be in the cache
+            v2 = sd.getVariables().get(newInput);
+            // Add to cache for future lookups
+            if (helper != null && v2 != null) {
+                helper.updateVariable(newInput, v2);
+            }
+        }
+
+        //NOTE: this only works if we carefully control the order in which replaceOpInputsWith is called!
+        if (v != null && v2 != null) {
+            v2.setInputsForOp(v.getInputsForOp());
+            v.setInputsForOp(new ArrayList<String>());
         }
     }
 
-    public static void removeVariable(@NonNull SameDiff sd, @NonNull String varToRemove){
+    /**
+     * @deprecated Use {@link #replaceOpInputsWith(SameDiff, OptimizationHelper, String, String)} for better performance
+     */
+    @Deprecated
+    public static void replaceOpInputsWith(SameDiff sd, @NonNull String replaceInput, @NonNull String newInput){
+        replaceOpInputsWith(sd, null, replaceInput, newInput);
+    }
+
+    /**
+     * Remove an op from the graph using fast O(1) lookups via helper.
+     */
+    public static void removeOp(@NonNull SameDiff sd, OptimizationHelper helper, @NonNull String opToRemove){
+        SameDiffOp op = sd.getOps().remove(opToRemove);
+        if (op == null) {
+            return; // Op already removed or doesn't exist
+        }
+        if (helper != null) {
+            helper.updateOp(opToRemove, null);
+        }
+        List<String> inputs = op.getInputsToOp();
+        if (inputs == null) {
+            return;
+        }
+        for(String s : inputs){
+            // Use fast O(1) lookup via helper, with fallback to graph
+            Variable v = helper != null ? helper.getVariable(s) : null;
+            if (v == null) {
+                v = sd.getVariables().get(s);
+            }
+            if (v != null && v.getInputsForOp() != null) {
+                v.getInputsForOp().remove(op.getName());
+            }
+        }
+    }
+
+    /**
+     * @deprecated Use {@link #removeOp(SameDiff, OptimizationHelper, String)} for better performance
+     */
+    @Deprecated
+    public static void removeOp(@NonNull SameDiff sd, @NonNull String opToRemove){
+        removeOp(sd, null, opToRemove);
+    }
+
+    /**
+     * Remove a variable from the graph using helper to update caches.
+     */
+    public static void removeVariable(@NonNull SameDiff sd, OptimizationHelper helper, @NonNull String varToRemove){
         sd.getVariables().remove(varToRemove);
+        if (helper != null) {
+            helper.updateVariable(varToRemove, null);
+        }
+    }
+
+    /**
+     * @deprecated Use {@link #removeVariable(SameDiff, OptimizationHelper, String)} for better performance
+     */
+    @Deprecated
+    public static void removeVariable(@NonNull SameDiff sd, @NonNull String varToRemove){
+        removeVariable(sd, null, varToRemove);
     }
 
 }

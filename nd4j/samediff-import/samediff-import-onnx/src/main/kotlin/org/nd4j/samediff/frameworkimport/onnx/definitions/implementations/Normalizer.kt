@@ -72,26 +72,26 @@ class Normalizer : PreImportHook {
         val output = when (normType.uppercase()) {
             "MAX" -> {
                 // Divide by max absolute value
-                val maxVal = sd.math.max("${opName}_max", sd.math.abs(input), true, axis)
+                val maxVal = sd.max("${opName}_max", sd.math.abs(input), true, axis.toLong())
                 val safeMax = sd.math.add("${opName}_safeMax", maxVal, epsilon)
                 sd.math.div(outputNames[0], input, safeMax)
             }
             "L1" -> {
                 // Divide by L1 norm (sum of absolute values)
-                val l1Norm = sd.math.sum("${opName}_l1", sd.math.abs(input), true, axis)
+                val l1Norm = sd.sum("${opName}_l1", sd.math.abs(input), true, axis.toLong())
                 val safeL1 = sd.math.add("${opName}_safeL1", l1Norm, epsilon)
                 sd.math.div(outputNames[0], input, safeL1)
             }
             "L2" -> {
                 // Divide by L2 norm (sqrt of sum of squares)
-                val l2NormSq = sd.math.sum("${opName}_l2sq", sd.math.square(input), true, axis)
+                val l2NormSq = sd.sum("${opName}_l2sq", sd.math.square(input), true, axis.toLong())
                 val l2Norm = sd.math.sqrt("${opName}_l2", l2NormSq)
                 val safeL2 = sd.math.add("${opName}_safeL2", l2Norm, epsilon)
                 sd.math.div(outputNames[0], input, safeL2)
             }
             else -> {
                 // Default to MAX
-                val maxVal = sd.math.max("${opName}_max", sd.math.abs(input), true, axis)
+                val maxVal = sd.max("${opName}_max", sd.math.abs(input), true, axis.toLong())
                 val safeMax = sd.math.add("${opName}_safeMax", maxVal, epsilon)
                 sd.math.div(outputNames[0], input, safeMax)
             }

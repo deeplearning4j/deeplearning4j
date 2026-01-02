@@ -33,7 +33,7 @@ namespace platforms {
 
 //////////////////////////////////////////////////////////////////////
 static void logSoftmaxMKLDNN(NDArray* x, NDArray* z, const sd::LongType axis) {
-  dnnl::memory::dims shape = x->getShapeAsFlatVector();
+  dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
   const sd::LongType xRank = x->rankOf();
 
@@ -62,13 +62,11 @@ static void logSoftmaxMKLDNN(NDArray* x, NDArray* z, const sd::LongType axis) {
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
-  // Create attributes (to handle alpha and beta if necessary)
-  dnnl::primitive_attr attr;
-
   // operation primitive description - log_softmax
-  dnnl::logsoftmax_forward::desc op_desc(dnnl::prop_kind::forward_inference, x_mkl_md, axis);
-
-  dnnl::logsoftmax_forward::primitive_desc op_prim_desc(op_desc, attr, engine);
+  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, axis)
+  // For logsoftmax, we use softmax_forward with algorithm::softmax_log
+  dnnl::softmax_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                      dnnl::algorithm::softmax_log, x_mkl_md, z_mkl_md, axis);
 
   // arguments (memory buffers) necessary for calculations
   std::unordered_map<int, dnnl::memory> args;
@@ -85,7 +83,7 @@ static void logSoftmaxMKLDNN(NDArray* x, NDArray* z, const sd::LongType axis) {
       onednnUtils::loadDataToMklStream(*z, engine, stream, z_user_md, op_prim_desc.dst_desc(), args[DNNL_ARG_DST]);
 
   // run calculations
-  dnnl::logsoftmax_forward(op_prim_desc).execute(stream, args);
+  dnnl::softmax_forward(op_prim_desc).execute(stream, args);
 
   // reorder outputs if necessary
   if (op_prim_desc.dst_desc() != z_user_mem.get_desc())
@@ -139,29 +137,30 @@ static void logSoftmaxBpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx, const s
 
   // x
   x_mkl_md = x_user_md =
-      dnnl::memory::desc(x->getShapeAsFlatVector(), dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
+      dnnl::memory::desc(*x->getShapeAsFlatVector(), dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
   onednnUtils::setBlockStrides(*x, x_user_md);
 
   // dLdx
   dLdx_mkl_md = dLdx_user_md =
-      dnnl::memory::desc(dLdx->getShapeAsFlatVector(), dnnl::memory::data_type::f32, onednnUtils::getFormat(*dLdx));
+      dnnl::memory::desc(*dLdx->getShapeAsFlatVector(), dnnl::memory::data_type::f32, onednnUtils::getFormat(*dLdx));
   onednnUtils::setBlockStrides(*dLdx, dLdx_user_md);
 
   // dLdz
   dLdz_mkl_md = dLdz_user_md =
-      dnnl::memory::desc(dLdz->getShapeAsFlatVector(), dnnl::memory::data_type::f32, onednnUtils::getFormat(*dLdz));
+      dnnl::memory::desc(*dLdz->getShapeAsFlatVector(), dnnl::memory::data_type::f32, onednnUtils::getFormat(*dLdz));
   onednnUtils::setBlockStrides(*dLdz, dLdz_user_md);
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
   // operation primitive description
-  // forward description
-  dnnl::logsoftmax_forward::desc op_ff_desc(dnnl::prop_kind::forward_inference, x_mkl_md, axis);
-  dnnl::logsoftmax_forward::primitive_desc op_ff_prim_desc(op_ff_desc, engine);
+  // OneDNN 3.x API: forward primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, axis)
+  // For logsoftmax, we use softmax_forward/backward with algorithm::softmax_log
+  dnnl::softmax_forward::primitive_desc op_ff_prim_desc(engine, dnnl::prop_kind::forward_training,
+                                                         dnnl::algorithm::softmax_log, x_mkl_md, x_mkl_md, axis);
 
-  // backward description
-  dnnl::logsoftmax_backward::desc op_bp_desc(dLdz_mkl_md, dLdx_mkl_md, axis);
-  dnnl::logsoftmax_backward::primitive_desc op_bp_prim_desc(op_bp_desc, engine, op_ff_prim_desc);
+  // OneDNN 3.x API: backward primitive_desc(engine, algorithm, diff_src_md, diff_dst_md, dst_md, axis, hint_fwd_pd)
+  dnnl::softmax_backward::primitive_desc op_bp_prim_desc(engine, dnnl::algorithm::softmax_log,
+                                                          dLdx_mkl_md, dLdz_mkl_md, x_mkl_md, axis, op_ff_prim_desc);
 
   // arguments (memory buffers) necessary for calculations
   std::unordered_map<int, dnnl::memory> argsbp, argsff;
@@ -185,7 +184,7 @@ static void logSoftmaxBpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx, const s
   argsbp[DNNL_ARG_DST] = argsff[DNNL_ARG_DST];
 
   // run calculations backward
-  dnnl::logsoftmax_backward(op_bp_prim_desc).execute(stream, argsbp);
+  dnnl::softmax_backward(op_bp_prim_desc).execute(stream, argsbp);
 
   // reorder outputs if necessary
   if (op_ff_prim_desc.dst_desc() != dLdx_user_mem.get_desc())

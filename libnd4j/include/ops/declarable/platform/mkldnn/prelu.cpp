@@ -40,8 +40,8 @@ namespace platforms {
 //////////////////////////////////////////////////////////////////////
 static void preluMKLDNN(NDArray* x, NDArray* alpha, NDArray* z) {
   // Get dimensions
-  dnnl::memory::dims xDims = x->getShapeAsFlatVector();
-  dnnl::memory::dims alphaDims = alpha->getShapeAsFlatVector();
+  dnnl::memory::dims xDims = *x->getShapeAsFlatVector();
+  dnnl::memory::dims alphaDims = *alpha->getShapeAsFlatVector();
 
   // For OneDNN PReLU, alpha needs to be broadcastable to x
   // Create memory descriptors
@@ -55,9 +55,8 @@ static void preluMKLDNN(NDArray* x, NDArray* alpha, NDArray* z) {
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
-  // Create PReLU primitive descriptor
-  dnnl::prelu_forward::desc op_desc(dnnl::prop_kind::forward_inference, x_md, alpha_md);
-  dnnl::prelu_forward::primitive_desc op_prim_desc(op_desc, engine);
+  // Create PReLU primitive descriptor (OneDNN 3.x API) - requires dst_desc
+  dnnl::prelu_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference, x_md, alpha_md, z_md);
 
   std::unordered_map<int, dnnl::memory> args;
   dnnl::stream stream(engine);
@@ -147,8 +146,8 @@ PLATFORM_CHECK(prelu, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 static void preluBpMKLDNN(NDArray* x, NDArray* alpha, NDArray* dLdz, NDArray* dLdx, NDArray* dLdAlpha) {
-  dnnl::memory::dims xDims = x->getShapeAsFlatVector();
-  dnnl::memory::dims alphaDims = alpha->getShapeAsFlatVector();
+  dnnl::memory::dims xDims = *x->getShapeAsFlatVector();
+  dnnl::memory::dims alphaDims = *alpha->getShapeAsFlatVector();
 
   dnnl::memory::desc x_md = dnnl::memory::desc(xDims, dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
   dnnl::memory::desc alpha_md = dnnl::memory::desc(alphaDims, dnnl::memory::data_type::f32,
@@ -160,13 +159,14 @@ static void preluBpMKLDNN(NDArray* x, NDArray* alpha, NDArray* dLdz, NDArray* dL
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
-  // Forward descriptor needed for backward
-  dnnl::prelu_forward::desc op_ff_desc(dnnl::prop_kind::forward_training, x_md, alpha_md);
-  dnnl::prelu_forward::primitive_desc op_ff_prim_desc(op_ff_desc, engine);
+  // Forward output has same shape as input
+  dnnl::memory::desc dst_md = dnnl::memory::desc(xDims, dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
 
-  // Backward descriptor
-  dnnl::prelu_backward::desc op_desc(x_md, alpha_md, dLdz_md, dLdx_md, dLdAlpha_md);
-  dnnl::prelu_backward::primitive_desc op_prim_desc(op_desc, engine, op_ff_prim_desc);
+  // Forward descriptor needed for backward (OneDNN 3.x API) - requires dst_desc
+  dnnl::prelu_forward::primitive_desc op_ff_prim_desc(engine, dnnl::prop_kind::forward_training, x_md, alpha_md, dst_md);
+
+  // Backward descriptor (OneDNN 3.x API)
+  dnnl::prelu_backward::primitive_desc op_prim_desc(engine, x_md, alpha_md, dLdz_md, dLdx_md, dLdAlpha_md, op_ff_prim_desc);
 
   std::unordered_map<int, dnnl::memory> args;
   dnnl::stream stream(engine);

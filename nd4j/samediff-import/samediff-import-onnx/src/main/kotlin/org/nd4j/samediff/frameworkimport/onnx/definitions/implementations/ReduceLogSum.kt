@@ -93,7 +93,8 @@ class ReduceLogSum : PreImportHook {
             // Reduce all dimensions
             sd.sum("${opName}_sum", data, keepDims)
         } else {
-            sd.sum("${opName}_sum", data, keepDims, *axes)
+            val axesLong = axes.map { it.toLong() }.toLongArray()
+            sd.sum("${opName}_sum", data, keepDims, *axesLong)
         }
 
         // Compute log of sum

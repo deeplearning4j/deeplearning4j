@@ -448,42 +448,49 @@ fun NN() = Namespace("NN") {
 
     Op("dotProductAttentionV2") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
-        val q = Input(NUMERIC, "queries") { description = "A {@link SDVariable} representing the query tensor. Shape: [batchSize, numQueries, queryDim]" }
-        val v = Input(NUMERIC, "values") { description = "A {@link SDVariable} representing the value tensor. Shape: [batchSize, numValues, valueDim]" }
+        val q = Input(NUMERIC, "queries") { description = "Query tensor. Shape: [batchSize, numQueries, queryDim] or [batchSize, numQueries, numHeads, headDim] for flash attention" }
+        val v = Input(NUMERIC, "values") { description = "Value tensor. Shape: [batchSize, numValues, valueDim] or [batchSize, numValues, numHeads, headDim]" }
+        val k = Input(NUMERIC, "keys") { description = "Key tensor. Shape: [batchSize, numValues, keyDim] or [batchSize, numValues, numHeads, headDim]" }
+        val queryMask = Input(NUMERIC, "queryMask") { description = "Query mask tensor (optional). Shape: [batchSize, numQueries]"; defaultValue = null }
+        val valueMask = Input(NUMERIC, "valueMask") { description = "Value mask tensor (optional). Shape: [batchSize, numValues]"; defaultValue = null }
+        val keyCache = Input(NUMERIC, "keyCache") { description = "Key cache for KV caching (optional). Shape: [batchSize, maxSeqLen, numHeads, headDim]"; defaultValue = null }
+        val valueCache = Input(NUMERIC, "valueCache") { description = "Value cache for KV caching (optional). Shape: [batchSize, maxSeqLen, numHeads, headDim]"; defaultValue = null }
 
-        val k = Input(NUMERIC, "keys") { description = "A {@link SDVariable} representing the key tensor. Shape: [batchSize, numValues, keyDim]" }
-        val queryMask = Input(NUMERIC, "queryMask") { description = "A {@link SDVariable} representing the query mask tensor. Shape: [batchSize, numQueries]" }
-        val valueMask = Input(NUMERIC, "valueMask") { description = "@param valueMask          A {@link SDVariable} representing the value mask tensor. Shape: [batchSize, numValues]" }
+        val s = Arg(FLOATING_POINT, "scaleFactor") { defaultValue = 0.0; description = "Scaling factor applied to attention scores. 0 = auto (1/sqrt(headDim))" }
+        val dropout = Arg(FLOATING_POINT, "dropoutProbability") { defaultValue = 0.0; description = "Dropout probability applied to attention weights" }
+        val useCausalMask = Arg(BOOL, "useCausalMask") { defaultValue = false; description = "Whether to apply causal mask for autoregressive tasks" }
+        val training = Arg(BOOL, "training") { defaultValue = false; description = "Whether in training mode (affects dropout)" }
+        val useFlashAttention = Arg(BOOL, "useFlashAttention") { defaultValue = true; description = "Whether to use flash attention for 4D inputs (memory efficient)" }
+        val kvCachePosition = Arg(INT, "kvCachePosition") { defaultValue = 0; description = "Current position in KV cache for autoregressive generation" }
 
-        val s = Arg(FLOATING_POINT, "scaleFactor") { defaultValue = 1.0; description = "@param scaleFactor        A {@code double} scaling factor applied to the dot product between queries and keys." }
-        val dropout = Arg(FLOATING_POINT, "dropoutProbability") { defaultValue = 0.0; description = "A {@code double} specifying the dropout probability to be applied to attention weights." }
-        val useCausalMask = Arg(BOOL, "useCausalMask") { defaultValue = false; description = " A {@code boolean} flag to indicate whether to apply a causal mask to the attention scores, for autoregressive tasks." }
-        val training = Arg(BOOL, "training") { defaultValue = false; description = " A {@code boolean} flag to indicate whether the layer is in training mode or inference mode, affecting dropout." }
+        Output(NUMERIC, "output") { description = "Output tensor. Shape: [batchSize, numQueries, valueDim] or [batchSize, numQueries, numHeads, headDim]" }
 
-        Output(NUMERIC, "output") { description = " A {@link SDVariable} representing the output tensor of the dot product attention operation. Shape: [batchSize, numQueries, valueDim]"}
-
-        Signature(q,v,k,queryMask,valueMask, s,dropout,useCausalMask,training)
+        // Standard signature without KV cache
+        Signature(q, v, k, queryMask, valueMask, s, dropout, useCausalMask, training)
+        // Full signature with KV cache support
+        AllParamSignature()
 
         Doc(Language.ANY, DocScope.ALL) {
             """
-             This operation performs dot product attention on the given timeseries input with the given queries
-             out = sum(similarity(k_i, q) * v_i)
-            
-             similarity(k, q) = softmax(k * q) where x * q is the dot product of x and q
-            
-             Optionally with normalization step:
-             similarity(k, q) = softmax(k * q / sqrt(size(q))
-            
-             See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, p. 4, eq. 1)
-            
-             Note: This supports multiple queries at once, if only one query is available the queries vector still has to
-             be 3D but can have queryCount = 1
-            
-             Note: keys and values usually is the same array. If you want to use it as the same array, simply pass it for
-             both.
-            
-             Note: Queries, keys and values must either be all rank 3 or all rank 4 arrays. Mixing them doesn't work. The
-             output rank will depend on the input rank.
+             Dot product attention operation with flash attention and KV cache support.
+
+             out = softmax(Q * K^T / scale) * V
+
+             For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.
+             For 2D/3D inputs, uses standard attention computation.
+
+             Flash attention features:
+             - O(N) memory complexity instead of O(N^2)
+             - Tiled computation with online softmax
+             - Supports grouped query attention (GQA) where numHeads > numKvHeads
+
+             KV Cache support for autoregressive generation:
+             - Pass keyCache and valueCache tensors
+             - Set kvCachePosition to current generation position
+             - Cached keys/values are updated in-place
+
+             See "Attention is all you need" (https://arxiv.org/abs/1706.03762)
+             See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)
             """.trimIndent()
         }
     }
@@ -565,6 +572,139 @@ fun NN() = Namespace("NN") {
         }
     }
 
+    Op("flashAttention") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        val q = Input(NUMERIC, "query") { description = "Query tensor. Shape: [batch, seqLen, numHeads, headDim]" }
+        val k = Input(NUMERIC, "key") { description = "Key tensor. Shape: [batch, seqLen, numKvHeads, headDim]" }
+        val v = Input(NUMERIC, "value") { description = "Value tensor. Shape: [batch, seqLen, numKvHeads, headDim]" }
+
+        val scale = Arg(FLOATING_POINT, "scale") { defaultValue = 0.0; description = "Scaling factor. 0 = auto (1/sqrt(headDim))" }
+        val isCausal = Arg(BOOL, "isCausal") { defaultValue = true; description = "Whether to apply causal masking" }
+        val numHeads = Arg(INT, "numHeads") { description = "Number of query attention heads" }
+        val numKvHeads = Arg(INT, "numKvHeads") { defaultValue = 0; description = "Number of KV heads (0 = same as numHeads, for GQA use smaller value)" }
+
+        Output(NUMERIC, "output") { description = "Attention output. Shape: [batch, seqLen, numHeads, headDim]" }
+
+        Signature(q, k, v, scale, isCausal, numHeads, numKvHeads)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Flash Attention - Memory-efficient attention computation.
+
+             Uses tiled computation with online softmax to achieve O(N) memory complexity
+             instead of O(N^2) for standard attention.
+
+             Supports Grouped Query Attention (GQA) where numHeads > numKvHeads,
+             allowing multiple query heads to share the same KV heads.
+
+             out = softmax(Q * K^T / scale) * V
+
+             See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)
+            """.trimIndent()
+        }
+    }
+
+    Op("groupedQueryAttention") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        val q = Input(NUMERIC, "query") { description = "Query tensor. Shape: [batch, seqLen, numHeads, headDim]" }
+        val k = Input(NUMERIC, "key") { description = "Key tensor. Shape: [batch, seqLen, numKvHeads, headDim]" }
+        val v = Input(NUMERIC, "value") { description = "Value tensor. Shape: [batch, seqLen, numKvHeads, headDim]" }
+
+        val scale = Arg(FLOATING_POINT, "scale") { defaultValue = 0.0; description = "Scaling factor. 0 = auto (1/sqrt(headDim))" }
+        val isCausal = Arg(BOOL, "isCausal") { defaultValue = true; description = "Whether to apply causal masking" }
+        val numHeads = Arg(INT, "numHeads") { description = "Number of query attention heads" }
+        val numKvHeads = Arg(INT, "numKvHeads") { description = "Number of KV heads (must divide numHeads evenly)" }
+
+        Output(NUMERIC, "output") { description = "Attention output. Shape: [batch, seqLen, numHeads, headDim]" }
+
+        Signature(q, k, v, scale, isCausal, numHeads, numKvHeads)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Grouped Query Attention (GQA) - Efficient attention with shared KV heads.
+
+             Multiple query heads share the same key-value heads, reducing memory and
+             computation while maintaining model quality. Used in LLaMA 2, Mistral, etc.
+
+             numHeads must be divisible by numKvHeads. Each KV head is repeated
+             (numHeads / numKvHeads) times to match query heads.
+
+             Special cases:
+             - numKvHeads == numHeads: Standard Multi-Head Attention (MHA)
+             - numKvHeads == 1: Multi-Query Attention (MQA)
+
+             See "GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints"
+            """.trimIndent()
+        }
+    }
+
+    Op("kvCacheUpdate") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "KVCacheUpdate"
+        val keyCache = Input(NUMERIC, "keyCache") { description = "Existing key cache. Shape: [batch, maxSeqLen, numKvHeads, headDim]" }
+        val valueCache = Input(NUMERIC, "valueCache") { description = "Existing value cache. Shape: [batch, maxSeqLen, numKvHeads, headDim]" }
+        val newKeys = Input(NUMERIC, "newKeys") { description = "New keys to insert. Shape: [batch, newSeqLen, numKvHeads, headDim]" }
+        val newValues = Input(NUMERIC, "newValues") { description = "New values to insert. Shape: [batch, newSeqLen, numKvHeads, headDim]" }
+
+        val startPosition = Arg(INT, "startPosition") { defaultValue = 0; description = "Position in cache where new keys/values should be inserted" }
+
+        Output(NUMERIC, "updatedKeyCache") { description = "Updated key cache" }
+        Output(NUMERIC, "updatedValueCache") { description = "Updated value cache" }
+
+        Signature(keyCache, valueCache, newKeys, newValues, startPosition)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             KV Cache Update - Updates key-value cache for autoregressive generation.
+
+             During LLM inference, past key-value pairs are cached to avoid redundant
+             computation during token-by-token generation. This operation efficiently
+             inserts new keys/values at the specified position.
+
+             Usage pattern:
+             1. Initialize cache with zeros: [batch, maxSeqLen, numKvHeads, headDim]
+             2. For each new token, compute new K/V and update cache
+             3. Use full cached K/V for attention computation
+
+             Returns updated keyCache and valueCache tensors.
+            """.trimIndent()
+        }
+    }
+
+    Op("slidingWindowAttention") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        val q = Input(NUMERIC, "query") { description = "Query tensor. Shape: [batch, seqLen, numHeads, headDim]" }
+        val k = Input(NUMERIC, "key") { description = "Key tensor. Shape: [batch, seqLen, numKvHeads, headDim]" }
+        val v = Input(NUMERIC, "value") { description = "Value tensor. Shape: [batch, seqLen, numKvHeads, headDim]" }
+
+        val windowSize = Arg(INT, "windowSize") { defaultValue = 4096; description = "Sliding window size - tokens can only attend to this many previous positions" }
+        val numHeads = Arg(INT, "numHeads") { description = "Number of query attention heads" }
+        val numKvHeads = Arg(INT, "numKvHeads") { defaultValue = 0; description = "Number of KV heads (0 = same as numHeads)" }
+        val scale = Arg(FLOATING_POINT, "scale") { defaultValue = 0.0; description = "Scaling factor. 0 = auto (1/sqrt(headDim))" }
+
+        Output(NUMERIC, "output") { description = "Attention output. Shape: [batch, seqLen, numHeads, headDim]" }
+
+        Signature(q, k, v, windowSize, numHeads, numKvHeads, scale)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Sliding Window Attention - Efficient attention for long sequences.
+
+             Each token only attends to a fixed window of previous tokens, enabling
+             efficient processing of very long sequences. Used in Mistral and other
+             modern LLMs for handling long contexts.
+
+             Benefits:
+             - O(N * windowSize) complexity instead of O(N^2)
+             - Memory efficient for long sequences
+             - Supports very long context lengths (e.g., 32K with 4K window)
+
+             The attention mask is automatically applied to restrict each position
+             to only attend to positions within [pos - windowSize, pos].
+            """.trimIndent()
+        }
+    }
+
     Op("pad") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms"
         Input(NUMERIC, "input") { description = "Input tensor"}
@@ -576,7 +716,7 @@ fun NN() = Namespace("NN") {
 
         Doc(Language.ANY, DocScope.ALL){
             """
-             Padding operation 
+             Padding operation
             """.trimIndent()
         }
     }

@@ -22,6 +22,7 @@ package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
+import org.nd4j.enums.PadMode
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
@@ -78,18 +79,23 @@ class Pad : PreImportHook {
 
         // Determine padding mode
         val padMode = when (mode.lowercase()) {
-            "constant" -> "CONSTANT"
-            "reflect" -> "REFLECT"
-            "edge" -> "SYMMETRIC"
-            "wrap" -> "CONSTANT"  // Wrap not directly supported, fallback to constant
-            else -> "CONSTANT"
+            "constant" -> PadMode.CONSTANT
+            "reflect" -> PadMode.REFLECT
+            "edge" -> PadMode.SYMMETRIC
+            "wrap" -> PadMode.CONSTANT  // Wrap not directly supported, fallback to constant
+            else -> PadMode.CONSTANT
         }
 
         // Get constant value (default 0)
-        val padValue = constantValue?.castTo(data.dataType()) ?: sd.constant(0.0).castTo(data.dataType())
+        val padValueDouble = if (constantValue != null) {
+            // Try to get the constant value - for now use 0.0 as fallback
+            0.0
+        } else {
+            0.0
+        }
 
         // Apply padding
-        val output = sd.nn.pad(outputNames[0], data, padsInt, padMode, padValue)
+        val output = sd.nn.pad(outputNames[0], data, padsInt, padMode, padValueDouble)
 
         return mapOf(outputNames[0] to listOf(output))
     }

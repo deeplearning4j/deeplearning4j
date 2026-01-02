@@ -248,7 +248,50 @@ bool OpRegistrator::hasHelper(LongType hash, samediff::Engine engine) {
   return _helpersLH.count(p) > 0;
 }
 
+bool OpRegistrator::hasAnyHelper(LongType hash) {
+  for (const auto& entry : _helpersLH) {
+    if (entry.first.first == hash) {
+      return true;
+    }
+  }
+  return false;
+}
+
+std::vector<platforms::PlatformHelper*> OpRegistrator::getAllHelpersForOp(LongType hash) {
+  std::vector<platforms::PlatformHelper*> result;
+
+  for (const auto& entry : _helpersLH) {
+    if (entry.first.first == hash) {
+      result.push_back(entry.second);
+    }
+  }
+
+  return result;
+}
+
+std::vector<samediff::Engine> OpRegistrator::getAvailableEnginesForOp(LongType hash) {
+  std::vector<samediff::Engine> result;
+
+  for (const auto& entry : _helpersLH) {
+    if (entry.first.first == hash) {
+      result.push_back(entry.first.second);
+    }
+  }
+
+  return result;
+}
+
 int OpRegistrator::numberOfOperations() { return (int)_declarablesLD.size(); }
+
+std::vector<std::string> OpRegistrator::getAllRegisteredOpNames() {
+  std::vector<std::string> result;
+
+  for (const auto& entry : _declarablesD) {
+    result.push_back(entry.first);
+  }
+
+  return result;
+}
 
 std::vector<LongType> OpRegistrator::getAllHashes() {
   std::vector<LongType> result;

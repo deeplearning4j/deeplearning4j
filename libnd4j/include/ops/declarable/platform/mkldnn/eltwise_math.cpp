@@ -39,7 +39,7 @@ namespace platforms {
 //////////////////////////////////////////////////////////////////////
 // Helper for generic eltwise backward pass
 static void eltwiseBpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx, dnnl::algorithm alg, float alpha = 0.0f, float beta = 0.0f) {
-  dnnl::memory::dims shape = x->getShapeAsFlatVector();
+  dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
   dnnl::memory::desc x_mkl_md, x_user_md, dLdx_mkl_md, dLdx_user_md, dLdz_mkl_md, dLdz_user_md;
 
@@ -58,11 +58,13 @@ static void eltwiseBpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx, dnnl::algo
 
   dnnl::stream stream(engine);
 
-  dnnl::eltwise_forward::desc op_ff_desc(dnnl::prop_kind::forward_inference, alg, x_mkl_md, alpha, beta);
-  dnnl::eltwise_forward::primitive_desc op_ff_prim_desc(op_ff_desc, engine);
+  // OneDNN 3.x API for forward hint: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  dnnl::eltwise_forward::primitive_desc op_ff_prim_desc(engine, dnnl::prop_kind::forward_training,
+                                                         alg, x_mkl_md, x_mkl_md, alpha, beta);
 
-  dnnl::eltwise_backward::desc op_desc(alg, dLdz_mkl_md, x_mkl_md, alpha, beta);
-  dnnl::eltwise_backward::primitive_desc op_prim_desc(op_desc, engine, op_ff_prim_desc);
+  // OneDNN 3.x API for backward: primitive_desc(engine, algorithm, diff_src_md, diff_dst_md, data_md, alpha, beta, hint_fwd_pd)
+  dnnl::eltwise_backward::primitive_desc op_prim_desc(engine, alg,
+                                                       dLdx_mkl_md, dLdz_mkl_md, x_mkl_md, alpha, beta, op_ff_prim_desc);
 
   onednnUtils::loadDataToMklStream(*x, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
 
@@ -200,72 +202,6 @@ PLATFORM_CHECK(Sqrt_bp, ENGINE_CPU) {
   auto dLdx = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN SQRT_BP OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
-      req.expectFalse(makeInfoVariable(dLdz->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&
-      req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), 7) &&
-      req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), 0) &&
-      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(dLdz->dataType(), TYPE_MSG_INPUT1), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(dLdx->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
-  req.logTheSuccess();
-  return req;
-}
-
-//////////////////////////////////////////////////////////////////////
-// ABS BACKWARD
-PLATFORM_IMPL(Abs_bp, ENGINE_CPU) {
-  auto input = INPUT_VARIABLE(0);
-  auto dLdz = INPUT_VARIABLE(1);
-  auto dLdx = OUTPUT_VARIABLE(0);
-
-  const sd::LongType rank = input->rankOf();
-  REQUIRE_TRUE(rank <= 6, 0, "ABS_BP_MKLDNN OP: the rank must be <= 6, but got rank = %i", rank);
-
-  eltwiseBpMKLDNN(input, dLdz, dLdx, algorithm::eltwise_abs);
-
-  return sd::Status::OK;
-}
-
-PLATFORM_CHECK(Abs_bp, ENGINE_CPU) {
-  auto x = INPUT_VARIABLE(0);
-  auto dLdz = INPUT_VARIABLE(1);
-  auto dLdx = OUTPUT_VARIABLE(0);
-
-  Requirements req("ONEDNN ABS_BP OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
-      req.expectFalse(makeInfoVariable(dLdz->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&
-      req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), 7) &&
-      req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), 0) &&
-      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(dLdz->dataType(), TYPE_MSG_INPUT1), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(dLdx->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
-  req.logTheSuccess();
-  return req;
-}
-
-//////////////////////////////////////////////////////////////////////
-// HARDSIGMOID BACKWARD
-PLATFORM_IMPL(hardsigmoid_bp, ENGINE_CPU) {
-  auto input = INPUT_VARIABLE(0);
-  auto dLdz = INPUT_VARIABLE(1);
-  auto dLdx = OUTPUT_VARIABLE(0);
-
-  const sd::LongType rank = input->rankOf();
-  REQUIRE_TRUE(rank <= 6, 0, "HARDSIGMOID_BP_MKLDNN OP: the rank must be <= 6, but got rank = %i", rank);
-
-  eltwiseBpMKLDNN(input, dLdz, dLdx, algorithm::eltwise_hardsigmoid);
-
-  return sd::Status::OK;
-}
-
-PLATFORM_CHECK(hardsigmoid_bp, ENGINE_CPU) {
-  auto x = INPUT_VARIABLE(0);
-  auto dLdz = INPUT_VARIABLE(1);
-  auto dLdx = OUTPUT_VARIABLE(0);
-
-  Requirements req("ONEDNN HARDSIGMOID_BP OP");
   req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
       req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
       req.expectFalse(makeInfoVariable(dLdz->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&

@@ -189,6 +189,36 @@ DECLARE_PLATFORM(pad, ENGINE_CPU);
 DECLARE_PLATFORM(tile, ENGINE_CPU);
 DECLARE_PLATFORM(concat, ENGINE_CPU);
 
+// Gradient/backward operations
+DECLARE_PLATFORM(relu_bp, ENGINE_CPU);
+DECLARE_PLATFORM(sigmoid_bp, ENGINE_CPU);
+DECLARE_PLATFORM(tanh_bp, ENGINE_CPU);
+DECLARE_PLATFORM(elu_bp, ENGINE_CPU);
+DECLARE_PLATFORM(softplus_bp, ENGINE_CPU);
+DECLARE_PLATFORM(lrelu_bp, ENGINE_CPU);
+DECLARE_PLATFORM(selu_bp, ENGINE_CPU);
+DECLARE_PLATFORM(softmax_bp, ENGINE_CPU);
+DECLARE_PLATFORM(swish_bp, ENGINE_CPU);
+DECLARE_PLATFORM(hardsigmoid_bp, ENGINE_CPU);
+DECLARE_PLATFORM(softsign_bp, ENGINE_CPU);
+
+// Statistical reductions (via vDSP)
+DECLARE_PLATFORM(reduce_variance, ENGINE_CPU);
+DECLARE_PLATFORM(reduce_stdev, ENGINE_CPU);
+DECLARE_PLATFORM(reduce_logsumexp, ENGINE_CPU);
+DECLARE_PLATFORM(moments, ENGINE_CPU);
+
+// Normalization operations
+DECLARE_PLATFORM(layer_norm, ENGINE_CPU);
+DECLARE_PLATFORM(layer_norm_bp, ENGINE_CPU);
+
+// Cumulative operations (via vDSP)
+DECLARE_PLATFORM(cumsum, ENGINE_CPU);
+DECLARE_PLATFORM(cumprod, ENGINE_CPU);
+
+// Batch operations (via vecLib)
+DECLARE_PLATFORM(batched_gemm, ENGINE_CPU);
+
 }  // namespace platforms
 
 namespace accelerateUtils {

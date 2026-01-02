@@ -71,15 +71,26 @@ dnnl::memory::format_tag getFormat(NDArray& arr) {
 //////////////////////////////////////////////////////////////////////
 void setBlockStrides(NDArray& array, dnnl::memory::desc& mklMd, const std::vector<int>& permut) {
   if ((array.rankOf() > 3 && array.ordering() == 'f') || !permut.empty()) {
-    mklMd.data.format_kind = dnnl_blocked;  // overrides format
+    // OneDNN 3.x: create new memory descriptor with explicit strides
+    dnnl::memory::dims dims = mklMd.get_dims();
+    dnnl::memory::data_type dtype = mklMd.get_data_type();
 
-    if (permut.empty())
-      for (auto i = 0; i < array.rankOf(); ++i) mklMd.data.format_desc.blocking.strides[i] = array.strideAt(i);
-    else {
+    // Build strides vector
+    dnnl::memory::dims strides(array.rankOf());
+    if (permut.empty()) {
+      for (auto i = 0; i < array.rankOf(); ++i) {
+        strides[i] = array.strideAt(i);
+      }
+    } else {
       if (static_cast<size_t>(array.rankOf()) != permut.size())
         THROW_EXCEPTION("mkldnnUtils::setBlockStrides: size of permut vector is not equal to array rank !");
-      for (auto i = 0; i < array.rankOf(); ++i) mklMd.data.format_desc.blocking.strides[i] = array.strideAt(permut[i]);
+      for (auto i = 0; i < array.rankOf(); ++i) {
+        strides[i] = array.strideAt(permut[i]);
+      }
     }
+
+    // Create new memory descriptor with strides
+    mklMd = dnnl::memory::desc(dims, dtype, strides);
   }
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -152,10 +163,12 @@ void poolingONEDNN(NDArray* input, NDArray* output, const sd::LongType kD, const
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
-  // operation primitive description
-  dnnl::pooling_forward::desc op_desc(dnnl::prop_kind::forward_inference, mode, x_mkl_md, z_mkl_md, strides, kernel,
-                                      padding, padding_r);
-  dnnl::pooling_forward::primitive_desc op_prim_desc(op_desc, engine);
+  // OneDNN 3.x requires dilation parameter
+  dnnl::memory::dims dilation(strides.size(), 0);
+
+  // operation primitive description (OneDNN 3.x API)
+  dnnl::pooling_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference, mode,
+                                                      x_mkl_md, z_mkl_md, strides, kernel, dilation, padding, padding_r);
 
   // arguments (memory buffers) necessary for calculations
   std::unordered_map<int, dnnl::memory> args;
@@ -246,14 +259,16 @@ void poolingBpONEDNN(NDArray* input, NDArray* gradO, NDArray* gradI, const sd::L
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
   dnnl::stream stream(engine);
 
-  // forward primitive description
-  dnnl::pooling_forward::desc op_ff_desc(dnnl::prop_kind::forward, mode, x_mkl_md, gradO_mkl_md, strides, kernel,
-                                         padding, padding_r);
-  dnnl::pooling_forward::primitive_desc op_ff_prim_desc(op_ff_desc, engine);
+  // OneDNN 3.x requires dilation parameter
+  dnnl::memory::dims dilation(strides.size(), 0);
 
-  // backward primitive description
-  dnnl::pooling_backward::desc op_bp_desc(mode, gradI_mkl_md, gradO_mkl_md, strides, kernel, padding, padding_r);
-  dnnl::pooling_backward::primitive_desc op_bp_prim_desc(op_bp_desc, engine, op_ff_prim_desc);
+  // forward primitive description (OneDNN 3.x API)
+  dnnl::pooling_forward::primitive_desc op_ff_prim_desc(engine, dnnl::prop_kind::forward, mode,
+                                                         x_mkl_md, gradO_mkl_md, strides, kernel, dilation, padding, padding_r);
+
+  // backward primitive description (OneDNN 3.x API)
+  dnnl::pooling_backward::primitive_desc op_bp_prim_desc(engine, mode, gradI_mkl_md, gradO_mkl_md,
+                                                          strides, kernel, dilation, padding, padding_r, op_ff_prim_desc);
 
   // arguments (memory buffers) necessary for calculations
   std::unordered_map<int, dnnl::memory> args;
@@ -311,32 +326,38 @@ void getONEDNNMemoryDescLrn(NDArray* src, NDArray* diff_src, NDArray* dst,
 
   if (src != nullptr && src->buffer() != nullptr && lrn_src_md != nullptr) {
     *lrn_src_md = dnnl::memory::desc({lrn_src_tz}, type, supposed_to_be_any_format);
-    *user_src_md = dnnl::memory::desc({lrn_src_tz}, type, format);
-    user_src_md->data.format_kind = dnnl_blocked;
-    user_src_md->data.format_desc.blocking.strides[0] = src->stridesOf()[0];
-    user_src_md->data.format_desc.blocking.strides[1] = src->stridesOf()[dim1];
-    user_src_md->data.format_desc.blocking.strides[2] = rank > 2 ? src->stridesOf()[dim2] : 1;
-    user_src_md->data.format_desc.blocking.strides[3] = rank > 3 ? src->stridesOf()[dim3] : 1;
+    // OneDNN 3.x: use strides-based memory descriptor constructor
+    dnnl::memory::dims src_strides = {
+      src->stridesOf()[0],
+      src->stridesOf()[dim1],
+      rank > 2 ? src->stridesOf()[dim2] : 1,
+      rank > 3 ? src->stridesOf()[dim3] : 1
+    };
+    *user_src_md = dnnl::memory::desc({lrn_src_tz}, type, src_strides);
   }
 
   if (diff_src != nullptr && diff_src->buffer() != nullptr && lrn_diff_src_md != nullptr) {
     *lrn_diff_src_md = dnnl::memory::desc({lrn_src_tz}, type, supposed_to_be_any_format);
-    *user_diff_src_md = dnnl::memory::desc({lrn_src_tz}, type, format);
-    user_diff_src_md->data.format_kind = dnnl_blocked;
-    user_diff_src_md->data.format_desc.blocking.strides[0] = diff_src->stridesOf()[0];
-    user_diff_src_md->data.format_desc.blocking.strides[1] = diff_src->stridesOf()[dim1];
-    user_diff_src_md->data.format_desc.blocking.strides[2] = rank > 2 ? diff_src->stridesOf()[dim2] : 1;
-    user_diff_src_md->data.format_desc.blocking.strides[3] = rank > 3 ? diff_src->stridesOf()[dim3] : 1;
+    // OneDNN 3.x: use strides-based memory descriptor constructor
+    dnnl::memory::dims diff_src_strides = {
+      diff_src->stridesOf()[0],
+      diff_src->stridesOf()[dim1],
+      rank > 2 ? diff_src->stridesOf()[dim2] : 1,
+      rank > 3 ? diff_src->stridesOf()[dim3] : 1
+    };
+    *user_diff_src_md = dnnl::memory::desc({lrn_src_tz}, type, diff_src_strides);
   }
 
   if (dst != nullptr && dst->buffer() != nullptr && lrn_dst_md != nullptr) {
     *lrn_dst_md = dnnl::memory::desc({lrn_src_tz}, type, supposed_to_be_any_format);
-    *user_dst_md = dnnl::memory::desc({lrn_src_tz}, type, format);
-    user_dst_md->data.format_kind = dnnl_blocked;
-    user_dst_md->data.format_desc.blocking.strides[0] = dst->stridesOf()[0];
-    user_dst_md->data.format_desc.blocking.strides[1] = dst->stridesOf()[dim1];
-    user_dst_md->data.format_desc.blocking.strides[2] = rank > 2 ? dst->stridesOf()[dim2] : 1;
-    user_dst_md->data.format_desc.blocking.strides[3] = rank > 3 ? dst->stridesOf()[dim3] : 1;
+    // OneDNN 3.x: use strides-based memory descriptor constructor
+    dnnl::memory::dims dst_strides = {
+      dst->stridesOf()[0],
+      dst->stridesOf()[dim1],
+      rank > 2 ? dst->stridesOf()[dim2] : 1,
+      rank > 3 ? dst->stridesOf()[dim3] : 1
+    };
+    *user_dst_md = dnnl::memory::desc({lrn_src_tz}, type, dst_strides);
   }
 }
 

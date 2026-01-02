@@ -39,7 +39,7 @@ namespace platforms {
 //////////////////////////////////////////////////////////////////////
 // SCALAR ADD: x + scalar
 static void scalarAddMKLDNN(NDArray* x, float scalar, NDArray* z) {
-  dnnl::memory::dims shape = x->getShapeAsFlatVector();
+  dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
   dnnl::memory::desc x_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
   dnnl::memory::desc z_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*z));
@@ -49,8 +49,9 @@ static void scalarAddMKLDNN(NDArray* x, float scalar, NDArray* z) {
   dnnl::stream stream(engine);
 
   // x + scalar using linear: y = 1*x + scalar
-  dnnl::eltwise_forward::desc op_desc(dnnl::prop_kind::forward_inference, algorithm::eltwise_linear, x_md, 1.0f, scalar);
-  dnnl::eltwise_forward::primitive_desc op_prim_desc(op_desc, attr, engine);
+  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  dnnl::eltwise_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                      algorithm::eltwise_linear, x_md, z_md, 1.0f, scalar);
 
   std::unordered_map<int, dnnl::memory> args;
 
@@ -97,7 +98,7 @@ PLATFORM_CHECK(add_scalar, ENGINE_CPU) {
 //////////////////////////////////////////////////////////////////////
 // SCALAR MULTIPLY: x * scalar
 static void scalarMulMKLDNN(NDArray* x, float scalar, NDArray* z) {
-  dnnl::memory::dims shape = x->getShapeAsFlatVector();
+  dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
   dnnl::memory::desc x_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
   dnnl::memory::desc z_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*z));
@@ -107,8 +108,9 @@ static void scalarMulMKLDNN(NDArray* x, float scalar, NDArray* z) {
   dnnl::stream stream(engine);
 
   // x * scalar using linear: y = scalar*x + 0
-  dnnl::eltwise_forward::desc op_desc(dnnl::prop_kind::forward_inference, algorithm::eltwise_linear, x_md, scalar, 0.0f);
-  dnnl::eltwise_forward::primitive_desc op_prim_desc(op_desc, attr, engine);
+  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  dnnl::eltwise_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                      algorithm::eltwise_linear, x_md, z_md, scalar, 0.0f);
 
   std::unordered_map<int, dnnl::memory> args;
 
@@ -155,7 +157,7 @@ PLATFORM_CHECK(multiply_scalar, ENGINE_CPU) {
 //////////////////////////////////////////////////////////////////////
 // AXPY: alpha * x + y
 static void axpyMKLDNN(NDArray* x, NDArray* y, float alpha, NDArray* z) {
-  dnnl::memory::dims shape = x->getShapeAsFlatVector();
+  dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
   dnnl::memory::desc x_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
   dnnl::memory::desc y_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*y));
@@ -165,9 +167,9 @@ static void axpyMKLDNN(NDArray* x, NDArray* y, float alpha, NDArray* z) {
   dnnl::stream stream(engine);
 
   // Step 1: alpha * x using linear
-  dnnl::primitive_attr attr;
-  dnnl::eltwise_forward::desc scale_desc(dnnl::prop_kind::forward_inference, algorithm::eltwise_linear, x_md, alpha, 0.0f);
-  dnnl::eltwise_forward::primitive_desc scale_prim_desc(scale_desc, attr, engine);
+  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  dnnl::eltwise_forward::primitive_desc scale_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                         algorithm::eltwise_linear, x_md, x_md, alpha, 0.0f);
 
   dnnl::memory scaled_x_mem(scale_prim_desc.dst_desc(), engine);
 
@@ -179,8 +181,9 @@ static void axpyMKLDNN(NDArray* x, NDArray* y, float alpha, NDArray* z) {
   dnnl::eltwise_forward(scale_prim_desc).execute(stream, scale_args);
 
   // Step 2: scaled_x + y using binary add
-  dnnl::binary::desc add_desc(dnnl::algorithm::binary_add, scale_prim_desc.dst_desc(), y_md, z_md);
-  dnnl::binary::primitive_desc add_prim_desc(add_desc, engine);
+  // OneDNN 3.x API: binary::primitive_desc(engine, algorithm, src0_md, src1_md, dst_md)
+  dnnl::binary::primitive_desc add_prim_desc(engine, dnnl::algorithm::binary_add,
+                                              scale_prim_desc.dst_desc(), y_md, z_md);
 
   std::unordered_map<int, dnnl::memory> add_args;
   add_args[DNNL_ARG_SRC_0] = scaled_x_mem;

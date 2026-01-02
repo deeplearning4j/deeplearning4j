@@ -146,7 +146,7 @@ static void topkLlamaCpp(NDArray* input, NDArray* values, NDArray* indices, int 
 PLATFORM_IMPL(top_k, ENGINE_CPU) {
     auto input = INPUT_VARIABLE(0);
     auto values = OUTPUT_VARIABLE(0);
-    NDArray* indices = block.numOutputs() > 1 ? OUTPUT_VARIABLE(1) : nullptr;
+    NDArray* indices = block.outputWidth() > 1 ? OUTPUT_VARIABLE(1) : nullptr;
 
     if (input->isEmpty()) return sd::Status::OK;
 

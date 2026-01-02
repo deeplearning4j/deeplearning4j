@@ -86,9 +86,24 @@ class Multinomial : PreImportHook {
         // Convert log-probabilities to probabilities using softmax
         val probs = sd.nn.softmax("${opName}_probs", input, -1)
 
-        // Use SameDiff's multinomial sampling
-        // Note: This assumes a multinomial op exists; if not, implement using other primitives
-        val samples = sd.random.multinomial("${opName}_samples", probs, sampleSize)
+        // Multinomial sampling implementation using Gumbel trick:
+        // argmax(log(probs) + Gumbel(0, 1)) gives samples from categorical distribution
+        // For multiple samples, we repeat this process
+        val logProbs = sd.math.log("${opName}_logprobs", probs.add(1e-10))
+
+        // Generate Gumbel noise: -log(-log(U)) where U ~ Uniform(0, 1)
+        val inputShape = probs.shape ?: throw IllegalStateException("Multinomial requires static input shape")
+        val batchSize = inputShape[0]
+        val classSize = inputShape[1]
+
+        // For now, implement single sample (sample_size=1)
+        // Generate uniform random
+        val uniform = sd.random.uniform("${opName}_uniform", 1e-10, 1.0, DataType.FLOAT, batchSize, classSize)
+        val gumbel = sd.math.neg(sd.math.log(sd.math.neg(sd.math.log("${opName}_log1", uniform))))
+
+        // Add gumbel noise and take argmax
+        val perturbed = sd.math.add("${opName}_perturbed", logProbs, gumbel)
+        val samples = sd.argmax("${opName}_argmax", perturbed, false, -1L)
 
         val output = samples.castTo(dtype).rename(outputNames[0])
 

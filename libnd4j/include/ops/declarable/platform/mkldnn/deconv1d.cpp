@@ -59,7 +59,7 @@ static void deconv1dMKLDNN(NDArray* input, NDArray* weights, NDArray* bias, NDAr
   }
 
   dnnl::memory::dims srcDims = {bS, iC, iW};
-  dnnl::memory::dims wDims = {iC, oC, kW};  // Note: deconv weights are [iC, oC, kW]
+  dnnl::memory::dims wDims = {oC, iC, kW};  // Note: deconv weights are [oC, iC, kW] for oiw format
   dnnl::memory::dims bDims = {oC};
   dnnl::memory::dims dstDims = {bS, oC, oW};
   dnnl::memory::dims strides = {sW};
@@ -70,7 +70,7 @@ static void deconv1dMKLDNN(NDArray* input, NDArray* weights, NDArray* bias, NDAr
   auto dstFormat = isNCW ? dnnl::memory::format_tag::ncw : dnnl::memory::format_tag::nwc;
 
   dnnl::memory::desc src_md = dnnl::memory::desc(srcDims, dnnl::memory::data_type::f32, srcFormat);
-  dnnl::memory::desc w_md = dnnl::memory::desc(wDims, dnnl::memory::data_type::f32, dnnl::memory::format_tag::iow);
+  dnnl::memory::desc w_md = dnnl::memory::desc(wDims, dnnl::memory::data_type::f32, dnnl::memory::format_tag::oiw);
   dnnl::memory::desc dst_md = dnnl::memory::desc(dstDims, dnnl::memory::data_type::f32, dstFormat);
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
@@ -81,11 +81,11 @@ static void deconv1dMKLDNN(NDArray* input, NDArray* weights, NDArray* bias, NDAr
   if (hasBias && bias != nullptr) {
     dnnl::memory::desc b_md = dnnl::memory::desc(bDims, dnnl::memory::data_type::f32, dnnl::memory::format_tag::x);
 
-    dnnl::deconvolution_forward::desc op_desc(dnnl::prop_kind::forward_inference,
-                                               dnnl::algorithm::deconvolution_direct,
-                                               src_md, w_md, b_md, dst_md,
-                                               strides, dilation, padding, padding);
-    dnnl::deconvolution_forward::primitive_desc op_prim_desc(op_desc, engine);
+    // OneDNN 3.x API
+    dnnl::deconvolution_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                              dnnl::algorithm::deconvolution_direct,
+                                                              src_md, w_md, b_md, dst_md,
+                                                              strides, dilation, padding, padding);
 
     dnnl::memory src_mem(src_md, engine, input->buffer());
     args[DNNL_ARG_SRC] = src_mem;
@@ -101,11 +101,11 @@ static void deconv1dMKLDNN(NDArray* input, NDArray* weights, NDArray* bias, NDAr
 
     dnnl::deconvolution_forward(op_prim_desc).execute(stream, args);
   } else {
-    dnnl::deconvolution_forward::desc op_desc(dnnl::prop_kind::forward_inference,
-                                               dnnl::algorithm::deconvolution_direct,
-                                               src_md, w_md, dst_md,
-                                               strides, dilation, padding, padding);
-    dnnl::deconvolution_forward::primitive_desc op_prim_desc(op_desc, engine);
+    // OneDNN 3.x API
+    dnnl::deconvolution_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                              dnnl::algorithm::deconvolution_direct,
+                                                              src_md, w_md, dst_md,
+                                                              strides, dilation, padding, padding);
 
     dnnl::memory src_mem(src_md, engine, input->buffer());
     args[DNNL_ARG_SRC] = src_mem;

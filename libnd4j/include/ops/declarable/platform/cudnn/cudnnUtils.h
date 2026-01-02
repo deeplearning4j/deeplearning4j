@@ -28,14 +28,29 @@
 #include <helpers/PointersManager.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/PlatformHelper.h>
+#include <ops/declarable/platform/cudnn/CudnnVersionProvider.h>
 #include <system/platform_boilerplate.h>
 
 #include <memory>
 #include <tuple>
 #include <vector>
 
-#define CUDNN_NEW_RNN_API_VER 8001
-#define CUDNN_CLIPPING_API_VER 7201
+// ============================================================================
+// cuDNN Version Constants (now centralized in CudnnVersionProvider.h)
+// These macros are kept for backward compatibility but should be replaced
+// with CudnnVersionProvider methods in new code.
+// ============================================================================
+#define CUDNN_NEW_RNN_API_VER CUDNN_NEW_RNN_API_VERSION
+#define CUDNN_CLIPPING_API_VER CUDNN_CLIPPING_API_VERSION
+
+// Use CudnnVersionProvider for runtime version checks:
+//   CudnnVersionProvider::hasSwish()
+//   CudnnVersionProvider::hasSoftplus()
+//   CudnnVersionProvider::hasGelu()
+//   CudnnVersionProvider::hasHardswish()
+//   CudnnVersionProvider::hasMish()
+//   CudnnVersionProvider::hasNewRnnApi()
+//   CudnnVersionProvider::isVersionCompatible()
 
 namespace sd {
 namespace ops {
@@ -133,7 +148,9 @@ DECLARE_PLATFORM(sqrt, ENGINE_CUDA);
 // Transform operations
 DECLARE_PLATFORM(identity, ENGINE_CUDA);
 DECLARE_PLATFORM(neg, ENGINE_CUDA);
-#if CUDNN_VERSION >= 8000
+
+// Swish (cuDNN 8.0+) - Use CudnnVersionProvider::hasSwish() for runtime check
+#if CUDNN_VERSION >= CUDNN_SWISH_VERSION
 DECLARE_PLATFORM(swish, ENGINE_CUDA);
 #endif
 
@@ -143,18 +160,29 @@ DECLARE_PLATFORM(instance_norm, ENGINE_CUDA);
 // Simple RNN
 DECLARE_PLATFORM(simple_rnn, ENGINE_CUDA);
 
-// Extended activations (cuDNN 8+)
-#if CUDNN_VERSION >= 8500
+// Extended activations - Use CudnnVersionProvider methods for runtime checks
+// Softplus (cuDNN 8.5+) - Use CudnnVersionProvider::hasSoftplus()
+#if CUDNN_VERSION >= CUDNN_SOFTPLUS_VERSION
 DECLARE_PLATFORM(softplus, ENGINE_CUDA);
 #endif
-#if CUDNN_VERSION >= 8300
+
+// GELU (cuDNN 8.3+) - Use CudnnVersionProvider::hasGelu()
+#if CUDNN_VERSION >= CUDNN_GELU_VERSION
 DECLARE_PLATFORM(gelu, ENGINE_CUDA);
 #endif
-#if CUDNN_VERSION >= 8000
+
+// Mish (cuDNN 8.0+) - Use CudnnVersionProvider::hasMish()
+#if CUDNN_VERSION >= CUDNN_MISH_VERSION
 DECLARE_PLATFORM(mish, ENGINE_CUDA);
+#endif
+
+// Hardsigmoid (cuDNN 8.0+) - Use CudnnVersionProvider::hasHardsigmoid()
+#if CUDNN_VERSION >= CUDNN_HARDSIGMOID_VERSION
 DECLARE_PLATFORM(hardsigmoid, ENGINE_CUDA);
 #endif
-#if CUDNN_VERSION >= 8200
+
+// Hardswish (cuDNN 8.2+) - Use CudnnVersionProvider::hasHardswish()
+#if CUDNN_VERSION >= CUDNN_HARDSWISH_VERSION
 DECLARE_PLATFORM(hardswish, ENGINE_CUDA);
 #endif
 
@@ -170,6 +198,42 @@ DECLARE_PLATFORM(maxpool3d_global, ENGINE_CUDA);
 DECLARE_PLATFORM(dropout, ENGINE_CUDA);
 DECLARE_PLATFORM(dropout_bp, ENGINE_CUDA);
 DECLARE_PLATFORM(alpha_dropout, ENGINE_CUDA);
+
+// Layer normalization
+DECLARE_PLATFORM(layer_norm, ENGINE_CUDA);
+DECLARE_PLATFORM(layer_norm_bp, ENGINE_CUDA);
+
+// Attention operations
+DECLARE_PLATFORM(dot_product_attention, ENGINE_CUDA);
+DECLARE_PLATFORM(multi_head_attention, ENGINE_CUDA);
+
+// Spatial transformer operations
+DECLARE_PLATFORM(affine_grid, ENGINE_CUDA);
+DECLARE_PLATFORM(affine_grid_bp, ENGINE_CUDA);
+DECLARE_PLATFORM(grid_sample, ENGINE_CUDA);
+DECLARE_PLATFORM(grid_sample_bp, ENGINE_CUDA);
+
+// Scale and power operations
+DECLARE_PLATFORM(scale, ENGINE_CUDA);
+DECLARE_PLATFORM(scalar_add, ENGINE_CUDA);
+DECLARE_PLATFORM(affine_transform, ENGINE_CUDA);
+DECLARE_PLATFORM(square, ENGINE_CUDA);
+DECLARE_PLATFORM(reciprocal, ENGINE_CUDA);
+DECLARE_PLATFORM(rsqrt, ENGINE_CUDA);
+
+// Upsampling operations
+DECLARE_PLATFORM(upsampling2d, ENGINE_CUDA);
+DECLARE_PLATFORM(upsampling2d_bp, ENGINE_CUDA);
+DECLARE_PLATFORM(upsampling3d, ENGINE_CUDA);
+DECLARE_PLATFORM(resize_bilinear, ENGINE_CUDA);
+
+// Leaky ReLU and PReLU
+DECLARE_PLATFORM(leakyrelu, ENGINE_CUDA);
+DECLARE_PLATFORM(leakyrelu_bp, ENGINE_CUDA);
+DECLARE_PLATFORM(prelu, ENGINE_CUDA);
+DECLARE_PLATFORM(prelu_bp, ENGINE_CUDA);
+DECLARE_PLATFORM(thresholdedrelu, ENGINE_CUDA);
+DECLARE_PLATFORM(thresholdedrelu_bp, ENGINE_CUDA);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -311,7 +375,8 @@ struct DropoutDesc {
   }
 };
 
-#if CUDNN_VERSION > CUDNN_NEW_RNN_API_VER
+// RNN Data Descriptor (cuDNN 8.0.1+) - Use CudnnVersionProvider::hasNewRnnApi()
+#if CUDNN_VERSION >= CUDNN_NEW_RNN_API_VERSION
 struct RnnDataDesc {
   MOVEONLY_DESC_FULL_IMPL(RnnDataDesc, RNNDataDescriptor)
 
@@ -347,7 +412,8 @@ struct RnnDesc {
     setRnnDescriptorOldApi(desc, std::forward<Args>(args)...);
   }
 
-#if CUDNN_VERSION >= CUDNN_NEW_RNN_API_VER
+  // New RNN API (cuDNN 8.0.1+) - Use CudnnVersionProvider::hasNewRnnApi()
+#if CUDNN_VERSION >= CUDNN_NEW_RNN_API_VERSION
   template <typename... Args>
   void set(Args&&... args) {
     CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetRNNDescriptor_v8),

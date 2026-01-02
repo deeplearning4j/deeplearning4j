@@ -31,6 +31,7 @@ option(SD_UNITY_BUILD "Enable Unity build for faster compilation" OFF)
 set(SD_PARALLEL_COMPILE_JOBS "0" CACHE STRING "Number of parallel compile jobs (0 = auto)")
 
 # --- Helper Library Toggles ---
+# Individual helper enable flags (can enable multiple simultaneously)
 option(HELPERS_armcompute "Enable ARM Compute Library helper" OFF)
 option(HELPERS_onednn "Enable OneDNN helper" OFF)
 option(HELPERS_cudnn "Enable cuDNN helper" OFF)
@@ -38,6 +39,56 @@ option(HELPERS_mlir "Enable MLIR/LLVM JIT compilation helper" OFF)
 option(HELPERS_mps "Enable Metal Performance Shaders helper (macOS/iOS)" OFF)
 option(HELPERS_pjrt "Enable PJRT/TPU helper" OFF)
 option(HELPERS_miopen "Enable MIOpen helper (AMD GPUs via ZLUDA)" OFF)
+option(HELPERS_accelerate "Enable Apple Accelerate framework helper (macOS/iOS)" OFF)
+option(HELPERS_llamacpp "Enable LlamaCpp helper for LLM operations" OFF)
+option(HELPERS_vlm "Enable VLM (Vision-Language Model) helper" OFF)
+
+# --- Multi-Backend Helper Configuration ---
+# HELPERS_LIST: Semicolon-separated list of helpers to enable (alternative to individual flags)
+# Example: -DHELPERS_LIST="onednn;cudnn" or from pom.xml: -Dlibnd4j.helpers=onednn,cudnn
+set(HELPERS_LIST "" CACHE STRING "Semicolon-separated list of helpers to enable (onednn;cudnn;armcompute;mlir;mps;pjrt;miopen;accelerate;llamacpp;vlm)")
+
+# Parse HELPERS_LIST and set individual HELPERS_* flags
+if(HELPERS_LIST)
+    message(STATUS "🔧 Processing HELPERS_LIST: ${HELPERS_LIST}")
+    foreach(helper ${HELPERS_LIST})
+        string(TOUPPER "${helper}" helper_upper)
+        string(TOLOWER "${helper}" helper_lower)
+        # Normalize common variations
+        if(helper_lower STREQUAL "mkldnn" OR helper_lower STREQUAL "dnnl")
+            set(helper_lower "onednn")
+        endif()
+        set(HELPERS_${helper_lower} ON CACHE BOOL "Enable ${helper_lower} helper (from HELPERS_LIST)" FORCE)
+        message(STATUS "   ✓ Enabled helper: ${helper_lower}")
+    endforeach()
+endif()
+
+# --- Dynamic Kernel Selection Configuration ---
+option(SD_DYNAMIC_KERNEL_SELECTION "Enable dynamic kernel selection at runtime" ON)
+option(SD_KERNEL_AUTOTUNING "Enable kernel auto-tuning for performance optimization" OFF)
+option(SD_KERNEL_BENCHMARKING "Enable kernel benchmarking during execution" OFF)
+option(SD_KERNEL_CACHING "Enable caching of kernel selection decisions" ON)
+
+# Kernel selection strategy: fastest, first, roundrobin, memory, power
+set(SD_KERNEL_STRATEGY "fastest" CACHE STRING "Default kernel selection strategy")
+set_property(CACHE SD_KERNEL_STRATEGY PROPERTY STRINGS fastest first roundrobin memory power)
+
+# Helper priority order for kernel dispatch (semicolon-separated, highest priority first)
+# Default priority: platform-specific optimized helpers first, then generic
+set(SD_HELPER_PRIORITY "" CACHE STRING "Helper priority order for kernel dispatch (e.g., 'cudnn;onednn;cpu')")
+
+# Auto-detect and set default helper priority based on platform
+if(NOT SD_HELPER_PRIORITY)
+    if(SD_CUDA)
+        set(SD_HELPER_PRIORITY "cudnn;cpu" CACHE STRING "Default CUDA helper priority" FORCE)
+    elseif(APPLE)
+        set(SD_HELPER_PRIORITY "mps;accelerate;cpu" CACHE STRING "Default macOS helper priority" FORCE)
+    elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64")
+        set(SD_HELPER_PRIORITY "armcompute;onednn;cpu" CACHE STRING "Default ARM64 helper priority" FORCE)
+    else()
+        set(SD_HELPER_PRIORITY "onednn;cpu" CACHE STRING "Default x86 helper priority" FORCE)
+    endif()
+endif()
 
 # --- MLIR Configuration Options ---
 set(MLIR_VERSION "18" CACHE STRING "MLIR/LLVM minimum version (18+)")
@@ -45,15 +96,11 @@ option(MLIR_ENABLE_GPU "Enable MLIR GPU dialect and NVVM backend" OFF)
 option(MLIR_JIT_CACHE "Enable caching of JIT-compiled kernels" ON)
 option(MLIR_DEBUG_DUMPS "Enable MLIR IR dump during lowering (debug)" OFF)
 
-# Force all helpers OFF by default to prevent compilation issues
-set(HELPERS_armcompute OFF CACHE BOOL "Force disable ARM Compute Library helper" FORCE)
-set(HELPERS_onednn OFF CACHE BOOL "Force disable OneDNN helper" FORCE)
-set(HELPERS_cudnn OFF CACHE BOOL "Force disable cuDNN helper" FORCE)
-set(HELPERS_mlir OFF CACHE BOOL "Force disable MLIR helper" FORCE)
-set(HELPERS_mps OFF CACHE BOOL "Force disable MPS helper" FORCE)
-set(HELPERS_miopen OFF CACHE BOOL "Force disable MIOpen helper" FORCE)
+# Note: Helper defaults are already set by option() above (lines 34-40)
+# Do NOT force them OFF here - that would override command-line settings like -DHELPERS_onednn=ON
+# The option() command already defaults them to OFF but allows override
 
-# Set corresponding HAVE_* variables
+# Set corresponding HAVE_* variables (will be updated by helper setup functions)
 set(HAVE_ARMCOMPUTE OFF CACHE BOOL "ARM Compute Library availability" FORCE)
 set(HAVE_ONEDNN OFF CACHE BOOL "OneDNN availability" FORCE)
 set(HAVE_CUDNN OFF CACHE BOOL "cuDNN availability" FORCE)
@@ -62,6 +109,50 @@ set(HAVE_MPS OFF CACHE BOOL "MPS availability" FORCE)
 set(HAVE_PJRT OFF CACHE BOOL "PJRT/TPU availability" FORCE)
 set(HAVE_MIOPEN OFF CACHE BOOL "MIOpen availability" FORCE)
 set(HAVE_ZLUDA OFF CACHE BOOL "ZLUDA availability" FORCE)
+set(HAVE_ACCELERATE OFF CACHE BOOL "Apple Accelerate availability" FORCE)
+set(HAVE_LLAMACPP OFF CACHE BOOL "LlamaCpp availability" FORCE)
+set(HAVE_VLM OFF CACHE BOOL "VLM availability" FORCE)
+
+# --- Enabled Helpers Tracking ---
+# This list is populated by helper setup functions and used for dynamic kernel selection
+set(SD_ENABLED_HELPERS "" CACHE INTERNAL "List of successfully configured helpers")
+
+# Function to register an enabled helper
+function(sd_register_helper helper_name)
+    set(current_helpers "${SD_ENABLED_HELPERS}")
+    list(FIND current_helpers "${helper_name}" helper_index)
+    if(helper_index EQUAL -1)
+        list(APPEND current_helpers "${helper_name}")
+        set(SD_ENABLED_HELPERS "${current_helpers}" CACHE INTERNAL "List of successfully configured helpers" FORCE)
+        message(STATUS "✅ Registered helper: ${helper_name}")
+    endif()
+endfunction()
+
+# Function to print helper configuration summary
+function(print_helper_configuration)
+    message(STATUS "")
+    message(STATUS "=== Helper Configuration Summary ===")
+    message(STATUS "Dynamic Kernel Selection: ${SD_DYNAMIC_KERNEL_SELECTION}")
+    message(STATUS "Kernel Strategy: ${SD_KERNEL_STRATEGY}")
+    message(STATUS "Kernel Auto-tuning: ${SD_KERNEL_AUTOTUNING}")
+    message(STATUS "Helper Priority: ${SD_HELPER_PRIORITY}")
+    message(STATUS "")
+    message(STATUS "Individual Helper Status:")
+    message(STATUS "  OneDNN:       REQUESTED=${HELPERS_onednn}, AVAILABLE=${HAVE_ONEDNN}")
+    message(STATUS "  cuDNN:        REQUESTED=${HELPERS_cudnn}, AVAILABLE=${HAVE_CUDNN}")
+    message(STATUS "  ARM Compute:  REQUESTED=${HELPERS_armcompute}, AVAILABLE=${HAVE_ARMCOMPUTE}")
+    message(STATUS "  MPS:          REQUESTED=${HELPERS_mps}, AVAILABLE=${HAVE_MPS}")
+    message(STATUS "  Accelerate:   REQUESTED=${HELPERS_accelerate}, AVAILABLE=${HAVE_ACCELERATE}")
+    message(STATUS "  MLIR:         REQUESTED=${HELPERS_mlir}, AVAILABLE=${HAVE_MLIR}")
+    message(STATUS "  PJRT:         REQUESTED=${HELPERS_pjrt}, AVAILABLE=${HAVE_PJRT}")
+    message(STATUS "  MIOpen:       REQUESTED=${HELPERS_miopen}, AVAILABLE=${HAVE_MIOPEN}")
+    message(STATUS "  LlamaCpp:     REQUESTED=${HELPERS_llamacpp}, AVAILABLE=${HAVE_LLAMACPP}")
+    message(STATUS "  VLM:          REQUESTED=${HELPERS_vlm}, AVAILABLE=${HAVE_VLM}")
+    message(STATUS "")
+    message(STATUS "Enabled Helpers: ${SD_ENABLED_HELPERS}")
+    message(STATUS "====================================")
+    message(STATUS "")
+endfunction()
 set(GENERATED_TYPE_COMBINATIONS "" CACHE INTERNAL "Generated type combinations")
 set(PROCESSED_TEMPLATE_FILES "" CACHE INTERNAL "Processed template files")
 
@@ -120,8 +211,9 @@ if(DEFINED SD_GCC_FUNCTRACE AND SD_GCC_FUNCTRACE)
         set(MULTI_PASS_CHUNK_SIZE "200" CACHE STRING "Very large direct chunks for call tracing only" FORCE)
         message(STATUS "🔍 Call tracing only: Using very large chunks (80/200) for maximum build speed")
     endif()
-elseif((DEFINED SD_SANITIZE AND SD_SANITIZE) OR (DEFINED SD_SANITIZERS AND NOT SD_SANITIZERS STREQUAL ""))
-    # Sanitizers only: Small chunks to prevent OOM (sanitizer builds use massive RAM per file)
+elseif(DEFINED SD_SANITIZE AND SD_SANITIZE)
+    # Sanitizers enabled: Small chunks to prevent OOM (sanitizer builds use massive RAM per file)
+    # Note: Only trigger on SD_SANITIZE=ON, not just SD_SANITIZERS being set (it has a default value)
     set(CHUNK_TARGET_INSTANTIATIONS "6" CACHE STRING "Small chunks for sanitizers (prevents OOM)" FORCE)
     set(MULTI_PASS_CHUNK_SIZE "8" CACHE STRING "Small direct chunks for sanitizers (prevents OOM)" FORCE)
     message(STATUS "⚠️  Sanitizers: Using small chunks (6/8) to prevent out-of-memory during compilation")

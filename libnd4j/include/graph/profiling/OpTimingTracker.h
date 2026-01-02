@@ -363,6 +363,41 @@ class CudaEventTimer {
 #endif
 
 /**
+ * Thread-local state for tracking indirect helper usage.
+ * When an op internally calls other ops that use helpers,
+ * this tracks that usage so it propagates to the parent op.
+ */
+struct IndirectHelperTracker {
+  int depth;              // Nesting depth of op execution
+  bool anyHelperUsed;     // Was any helper used at current depth or below?
+
+  IndirectHelperTracker() : depth(0), anyHelperUsed(false) {}
+
+  // Call when entering an op execution
+  void enter() { depth++; }
+
+  // Call when exiting an op execution, returns true if any helper was used
+  bool exit() {
+    depth--;
+    if (depth == 0) {
+      bool result = anyHelperUsed;
+      anyHelperUsed = false;  // Reset for next top-level op
+      return result;
+    }
+    return anyHelperUsed;
+  }
+
+  // Call when a helper is used (direct or indirect)
+  void markHelperUsed() { anyHelperUsed = true; }
+
+  // Check if we're in a nested op (not top-level)
+  bool isNested() const { return depth > 1; }
+};
+
+// Thread-local tracker for indirect helper usage
+SD_LIB_EXPORT IndirectHelperTracker& getIndirectHelperTracker();
+
+/**
  * Main timing tracker singleton
  *
  * Provides low-overhead op timing with:
@@ -371,6 +406,7 @@ class CudaEventTimer {
  * - Histogram and percentile analysis
  * - Chrome trace export
  * - Per-thread statistics
+ * - Indirect helper usage tracking (when ops call other ops that use helpers)
  */
 class SD_LIB_EXPORT OpTimingTracker {
  private:

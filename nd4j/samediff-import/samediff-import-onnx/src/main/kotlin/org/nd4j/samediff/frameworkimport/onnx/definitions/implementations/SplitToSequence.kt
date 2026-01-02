@@ -70,14 +70,19 @@ class SplitToSequence : PreImportHook {
         
         // Perform split
         val outputs = if (split != null) {
-            // Split with specified sizes
-            sd.splitV("${opName}_split", input, split, outputNames.size, axis)
+            // Split with specified sizes - use splitV without names
+            sd.splitV(input, split, outputNames.size, axis)
         } else {
             // Split into equal parts (one element per split)
-            val inputShape = sd.shape(input)
-            val axisSize = sd.slice(inputShape, intArrayOf(axis), intArrayOf(1))
-            val numSplits = axisSize.getArr().getInt(0)
-            sd.split("${opName}_split", input, numSplits, axis)
+            // For dynamic split, we need to determine numSplits at runtime
+            // Use a reasonable default or extract from shape if possible
+            val inputShape = input.shape
+            val numSplits = if (inputShape != null && axis < inputShape.size) {
+                inputShape[axis].toInt()
+            } else {
+                1 // fallback
+            }
+            sd.split(input, numSplits, axis)
         }
         
         // If keepdims is 0, squeeze the split dimension

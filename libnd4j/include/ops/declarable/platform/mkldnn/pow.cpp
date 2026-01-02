@@ -38,7 +38,7 @@ namespace platforms {
 
 //////////////////////////////////////////////////////////////////////
 static void powScalarMKLDNN(NDArray* x, NDArray* z, float alpha, float beta, float scale) {
-  dnnl::memory::dims shape = x->getShapeAsFlatVector();
+  dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
   dnnl::memory::desc x_mkl_md, x_user_md, z_mkl_md, z_user_md;
 
@@ -54,9 +54,9 @@ static void powScalarMKLDNN(NDArray* x, NDArray* z, float alpha, float beta, flo
 
   // pow: scale * (alpha * x + beta)^exponent
   // For simple x^exponent: scale=1, alpha=1, beta=0
-  dnnl::eltwise_forward::desc op_desc(dnnl::prop_kind::forward_inference, algorithm::eltwise_pow, x_mkl_md, alpha, beta);
-
-  dnnl::eltwise_forward::primitive_desc op_prim_desc(op_desc, attr, engine);
+  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  dnnl::eltwise_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                      algorithm::eltwise_pow, x_mkl_md, z_mkl_md, alpha, beta);
 
   std::unordered_map<int, dnnl::memory> args;
 
@@ -75,10 +75,10 @@ static void powScalarMKLDNN(NDArray* x, NDArray* z, float alpha, float beta, flo
   stream.wait();
 }
 
-// Note: Pow_pairwise is a binary op with two array inputs - OneDNN binary operations handle this differently
+// Note: Pow is a binary op with two array inputs - OneDNN binary operations handle this differently
 // This implementation is for the scalar power case
 
-PLATFORM_IMPL(Pow_pairwise, ENGINE_CPU) {
+PLATFORM_IMPL(Pow, ENGINE_CPU) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);  // exponent array
   auto z = OUTPUT_VARIABLE(0);
@@ -99,7 +99,7 @@ PLATFORM_IMPL(Pow_pairwise, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(Pow_pairwise, ENGINE_CPU) {
+PLATFORM_CHECK(Pow, ENGINE_CPU) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);

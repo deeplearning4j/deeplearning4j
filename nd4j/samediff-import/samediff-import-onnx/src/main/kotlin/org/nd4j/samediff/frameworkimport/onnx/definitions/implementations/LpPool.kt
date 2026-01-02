@@ -22,6 +22,7 @@ package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
@@ -86,9 +87,9 @@ class LpPool : PreImportHook {
         val pH = pads.getOrElse(0) { 0 }.toLong()
         val pW = pads.getOrElse(1) { 0 }.toLong()
         
-        // Determine if same mode
-        val isSameMode = autoPad == "SAME_UPPER" || autoPad == "SAME_LOWER"
-        
+        // Determine padding mode
+        val paddingMode = if (autoPad == "SAME_UPPER" || autoPad == "SAME_LOWER") PaddingMode.SAME else PaddingMode.VALID
+
         // LpPool is implemented as:
         // For p=2: sqrt(avgPool(x^2) * kernel_size)
         // For general p: (avgPool(|x|^p) * kernel_size)^(1/p)
@@ -99,7 +100,7 @@ class LpPool : PreImportHook {
             .sW(sW)
             .pH(pH)
             .pW(pW)
-            .isSameMode(isSameMode)
+            .paddingMode(paddingMode)
             .isNHWC(false)
             .build()
         

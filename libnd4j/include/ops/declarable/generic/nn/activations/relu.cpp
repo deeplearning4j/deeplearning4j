@@ -56,8 +56,8 @@ DECLARE_SYN(ReluGrad, relu_bp);
 DECLARE_TYPES(relu_bp) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
-      ->setAllowedInputTypes(1, {FLOAT32, DOUBLE, HALF})
-      ->setAllowedOutputTypes(0, {FLOAT32, DOUBLE, HALF});
+      ->setAllowedInputTypes(1, {ALL_FLOATS})
+      ->setAllowedOutputTypes(0, {ALL_FLOATS});
 }
 }  // namespace ops
 }  // namespace sd

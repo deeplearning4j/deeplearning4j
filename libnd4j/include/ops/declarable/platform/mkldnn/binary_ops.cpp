@@ -39,9 +39,9 @@ namespace platforms {
 // Generic binary operation using OneDNN
 static void binaryOpMKLDNN(NDArray* x, NDArray* y, NDArray* z, dnnl::algorithm alg) {
   // Get shapes - OneDNN requires same shapes for binary ops (broadcasting handled elsewhere)
-  dnnl::memory::dims xDims = x->getShapeAsFlatVector();
-  dnnl::memory::dims yDims = y->getShapeAsFlatVector();
-  dnnl::memory::dims zDims = z->getShapeAsFlatVector();
+  dnnl::memory::dims xDims = *x->getShapeAsFlatVector();
+  dnnl::memory::dims yDims = *y->getShapeAsFlatVector();
+  dnnl::memory::dims zDims = *z->getShapeAsFlatVector();
 
   // Create memory descriptors
   dnnl::memory::desc x_md = dnnl::memory::desc(xDims, dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
@@ -51,8 +51,8 @@ static void binaryOpMKLDNN(NDArray* x, NDArray* y, NDArray* z, dnnl::algorithm a
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
   // Create binary primitive descriptor
-  dnnl::binary::desc op_desc(alg, x_md, y_md, z_md);
-  dnnl::binary::primitive_desc op_prim_desc(op_desc, engine);
+  // OneDNN 3.x API: binary::primitive_desc(engine, algorithm, src0_md, src1_md, dst_md)
+  dnnl::binary::primitive_desc op_prim_desc(engine, alg, x_md, y_md, z_md);
 
   std::unordered_map<int, dnnl::memory> args;
   dnnl::stream stream(engine);

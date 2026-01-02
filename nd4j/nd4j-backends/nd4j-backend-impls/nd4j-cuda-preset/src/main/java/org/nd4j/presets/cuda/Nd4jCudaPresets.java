@@ -88,6 +88,7 @@ import org.nd4j.presets.OpExclusionUtils;
                 "system/CudaLimitType.h",
                 "ops/InputType.h",
                 "ops/declarable/OpDescriptor.h",
+                "helpers/HelperVersionRegistry.h",
                 "ops/declarable/PlatformHelper.h",
                 "ops/declarable/BroadcastableOp.h",
                 "ops/declarable/BroadcastableBoolOp.h",
@@ -270,6 +271,12 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
         infoMap.put(new Info("sd::ops::OpRegistrator::updateMSVC").skip());
         //skip in case header definition not working
         infoMap.put(new Info("calculateOutputShapesNec").skip());
+        infoMap.put(new Info("sd::ops::platforms::VersionProviderCallback",
+                "sd::ops::platforms::VersionProviderRegistrar",
+                "sd::ops::platforms::HelperVersionRegistry::registerProvider",
+                "sd::ops::platforms::HelperVersionRegistry::getAllHelperInfo").skip());
+        infoMap.put(new Info("sd::ops::platforms::HelperVersion::toString").javaNames("toVersionString"));
+        infoMap.put(new Info("sd::ops::platforms::HelperInfo::getDetailedStatus").javaNames("getDetailedStatusString"));
 
 
     }

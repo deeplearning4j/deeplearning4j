@@ -119,13 +119,34 @@ class SD_LIB_EXPORT OpRegistrator {
 
   bool hasHelper(LongType hash, samediff::Engine engine);
 
+  /**
+   * Check if any helper exists for this operation (any engine)
+   */
+  bool hasAnyHelper(LongType hash);
+
   DeclarableOp* getOperation(const char* name);
   DeclarableOp* getOperation(LongType hash);
   DeclarableOp* getOperation(std::string& name);
 
   platforms::PlatformHelper* getPlatformHelper(LongType hash, samediff::Engine engine);
 
+  /**
+   * Get all registered helpers for an operation across all engines.
+   * Used by MultiPlatformDispatcher for kernel selection.
+   */
+  std::vector<platforms::PlatformHelper*> getAllHelpersForOp(LongType hash);
+
+  /**
+   * Get all available engines that have helpers for an operation
+   */
+  std::vector<samediff::Engine> getAvailableEnginesForOp(LongType hash);
+
   std::vector<LongType> getAllHashes();
+
+  /**
+   * Get all registered operation names
+   */
+  std::vector<std::string> getAllRegisteredOpNames();
 
   int numberOfOperations();
 };

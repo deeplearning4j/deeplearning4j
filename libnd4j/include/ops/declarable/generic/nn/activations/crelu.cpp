@@ -95,8 +95,8 @@ CUSTOM_OP_IMPL(crelu_bp, 2, 1, false, 0, 0) {
 DECLARE_TYPES(crelu_bp) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
-      ->setAllowedInputTypes(1, {FLOAT32, DOUBLE, HALF})
-      ->setAllowedOutputTypes(0, {FLOAT32, DOUBLE, HALF});
+      ->setAllowedInputTypes(1, {ALL_FLOATS})
+      ->setAllowedOutputTypes(0, {ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(crelu_bp) {

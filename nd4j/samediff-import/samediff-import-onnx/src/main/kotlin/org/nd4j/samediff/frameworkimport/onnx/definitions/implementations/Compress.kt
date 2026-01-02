@@ -68,14 +68,12 @@ class Compress : PreImportHook {
         // Get axis attribute (optional)
         val axisAttr = attributes["axis"]
 
-        // Convert condition to indices using where/nonzero
+        // Convert condition to boolean and find indices where condition is true
         // condition should be 1D boolean tensor
-        val conditionInt = condition.castTo(DataType.INT64)
+        val conditionBool = condition.castTo(DataType.BOOL)
 
-        // Find indices where condition is true (non-zero)
-        // We'll use the nonzero operation or implement with a workaround
-        val indices = sd.matchConditionIdx("${opName}_indices", conditionInt,
-            org.nd4j.linalg.indexing.conditions.Conditions.notEquals(0.0))
+        // Find indices where condition is true using where operation
+        val indices = sd.where("${opName}_indices", conditionBool)
 
         val output = if (axisAttr != null) {
             val axis = (axisAttr as Number).toInt()

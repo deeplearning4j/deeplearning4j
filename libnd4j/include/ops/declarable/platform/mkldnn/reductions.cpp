@@ -38,8 +38,8 @@ namespace platforms {
 //////////////////////////////////////////////////////////////////////
 // Generic reduction operation using OneDNN
 static void reductionMKLDNN(NDArray* x, NDArray* z, const std::vector<LongType>& axes, dnnl::algorithm alg) {
-  dnnl::memory::dims xDims = x->getShapeAsFlatVector();
-  dnnl::memory::dims zDims = z->getShapeAsFlatVector();
+  dnnl::memory::dims xDims = *x->getShapeAsFlatVector();
+  dnnl::memory::dims zDims = *z->getShapeAsFlatVector();
 
   // Create source memory descriptor
   dnnl::memory::desc x_md = dnnl::memory::desc(xDims, dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
@@ -47,9 +47,8 @@ static void reductionMKLDNN(NDArray* x, NDArray* z, const std::vector<LongType>&
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
-  // Create reduction primitive descriptor
-  dnnl::reduction::desc op_desc(alg, x_md, z_md, 0.f, 0.f);
-  dnnl::reduction::primitive_desc op_prim_desc(op_desc, engine);
+  // Create reduction primitive descriptor (OneDNN 3.x API)
+  dnnl::reduction::primitive_desc op_prim_desc(engine, alg, x_md, z_md, 0.f, 0.f);
 
   std::unordered_map<int, dnnl::memory> args;
   dnnl::stream stream(engine);

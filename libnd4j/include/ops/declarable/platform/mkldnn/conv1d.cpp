@@ -82,11 +82,12 @@ static void conv1dMKLDNN(NDArray* input, NDArray* weights, NDArray* bias, NDArra
   if (hasBias && bias != nullptr) {
     dnnl::memory::desc b_md = dnnl::memory::desc(bDims, dnnl::memory::data_type::f32, dnnl::memory::format_tag::x);
 
-    dnnl::convolution_forward::desc op_desc(dnnl::prop_kind::forward_inference,
+    // OneDNN 3.x API: primitive_desc takes all parameters directly
+    dnnl::convolution_forward::primitive_desc op_prim_desc(engine,
+                                             dnnl::prop_kind::forward_inference,
                                              dnnl::algorithm::convolution_direct,
                                              src_md, w_md, b_md, dst_md,
                                              strides, dilation, padding, padding);
-    dnnl::convolution_forward::primitive_desc op_prim_desc(op_desc, engine);
 
     dnnl::memory src_mem(src_md, engine, input->buffer());
     args[DNNL_ARG_SRC] = src_mem;
@@ -102,11 +103,12 @@ static void conv1dMKLDNN(NDArray* input, NDArray* weights, NDArray* bias, NDArra
 
     dnnl::convolution_forward(op_prim_desc).execute(stream, args);
   } else {
-    dnnl::convolution_forward::desc op_desc(dnnl::prop_kind::forward_inference,
+    // OneDNN 3.x API: primitive_desc takes all parameters directly (no bias version)
+    dnnl::convolution_forward::primitive_desc op_prim_desc(engine,
+                                             dnnl::prop_kind::forward_inference,
                                              dnnl::algorithm::convolution_direct,
                                              src_md, w_md, dst_md,
                                              strides, dilation, padding, padding);
-    dnnl::convolution_forward::primitive_desc op_prim_desc(op_desc, engine);
 
     dnnl::memory src_mem(src_md, engine, input->buffer());
     args[DNNL_ARG_SRC] = src_mem;
@@ -201,19 +203,21 @@ static void conv1dBpMKLDNN(NDArray* input, NDArray* weights, NDArray* gradO,
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
   dnnl::stream stream(engine);
 
-  // Forward descriptor for hint
-  dnnl::convolution_forward::desc op_ff_desc(dnnl::prop_kind::forward_training,
+  // Forward descriptor for hint (OneDNN 3.x API)
+  dnnl::convolution_forward::primitive_desc op_ff_prim_desc(engine,
+                                              dnnl::prop_kind::forward_training,
                                               dnnl::algorithm::convolution_direct,
                                               src_md, w_md, dst_md,
                                               strides, dilation, padding, padding);
-  dnnl::convolution_forward::primitive_desc op_ff_prim_desc(op_ff_desc, engine);
 
   // Backward data
   if (gradI != nullptr) {
-    dnnl::convolution_backward_data::desc op_data_desc(dnnl::algorithm::convolution_direct,
+    // OneDNN 3.x API: primitive_desc takes all parameters directly
+    dnnl::convolution_backward_data::primitive_desc op_data_prim_desc(engine,
+                                                        dnnl::algorithm::convolution_direct,
                                                         src_md, w_md, dst_md,
-                                                        strides, dilation, padding, padding);
-    dnnl::convolution_backward_data::primitive_desc op_data_prim_desc(op_data_desc, engine, op_ff_prim_desc);
+                                                        strides, dilation, padding, padding,
+                                                        op_ff_prim_desc);
 
     std::unordered_map<int, dnnl::memory> data_args;
 
@@ -236,10 +240,12 @@ static void conv1dBpMKLDNN(NDArray* input, NDArray* weights, NDArray* gradO,
     if (gradB != nullptr) {
       dnnl::memory::desc b_md = dnnl::memory::desc(bDims, dnnl::memory::data_type::f32, dnnl::memory::format_tag::x);
 
-      dnnl::convolution_backward_weights::desc op_weights_desc(dnnl::algorithm::convolution_direct,
+      // OneDNN 3.x API: primitive_desc takes all parameters directly
+      dnnl::convolution_backward_weights::primitive_desc op_weights_prim_desc(engine,
+                                                                dnnl::algorithm::convolution_direct,
                                                                 src_md, diff_w_md, b_md, dst_md,
-                                                                strides, dilation, padding, padding);
-      dnnl::convolution_backward_weights::primitive_desc op_weights_prim_desc(op_weights_desc, engine, op_ff_prim_desc);
+                                                                strides, dilation, padding, padding,
+                                                                op_ff_prim_desc);
 
       std::unordered_map<int, dnnl::memory> weights_args;
 
@@ -257,10 +263,12 @@ static void conv1dBpMKLDNN(NDArray* input, NDArray* weights, NDArray* gradO,
 
       dnnl::convolution_backward_weights(op_weights_prim_desc).execute(stream, weights_args);
     } else {
-      dnnl::convolution_backward_weights::desc op_weights_desc(dnnl::algorithm::convolution_direct,
+      // OneDNN 3.x API: primitive_desc takes all parameters directly (no bias version)
+      dnnl::convolution_backward_weights::primitive_desc op_weights_prim_desc(engine,
+                                                                dnnl::algorithm::convolution_direct,
                                                                 src_md, diff_w_md, dst_md,
-                                                                strides, dilation, padding, padding);
-      dnnl::convolution_backward_weights::primitive_desc op_weights_prim_desc(op_weights_desc, engine, op_ff_prim_desc);
+                                                                strides, dilation, padding, padding,
+                                                                op_ff_prim_desc);
 
       std::unordered_map<int, dnnl::memory> weights_args;
 

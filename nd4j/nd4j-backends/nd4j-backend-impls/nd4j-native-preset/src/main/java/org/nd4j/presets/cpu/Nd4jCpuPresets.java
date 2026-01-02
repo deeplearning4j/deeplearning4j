@@ -92,6 +92,7 @@ import static org.nd4j.presets.OpExclusionUtils.getSkipClasses;
                 "system/op_boilerplate.h",
                 "ops/InputType.h",
                 "ops/declarable/OpDescriptor.h",
+                "helpers/HelperVersionRegistry.h",
                 "ops/declarable/PlatformHelper.h",
                 "ops/declarable/BroadcastableOp.h",
                 "ops/declarable/BroadcastableBoolOp.h",
@@ -159,7 +160,7 @@ import static org.nd4j.presets.OpExclusionUtils.getSkipClasses;
                 },
                 compiler = {"cpp17", "nowarnings"},
                 library = "jnind4jcpu", link = "nd4jcpu", preload = "libnd4jcpu"),
-                @Platform(value = "linux", preload = "gomp@.1", preloadpath = {"/lib64/", "/lib/", "/usr/lib64/", "/usr/lib/"}),
+                @Platform(value = "linux", preload = {"gomp@.1", "omp"}, preloadpath = {"/lib64/", "/lib/", "/usr/lib64/", "/usr/lib/"}),
                 @Platform(value = "linux-armhf",preload = "gomp@.1", preloadpath = {"/usr/arm-linux-gnueabihf/lib/", "/usr/lib/arm-linux-gnueabihf/"}),
                 @Platform(value = "linux-arm64",preload = "gomp@.1", preloadpath = {"/usr/aarch64-linux-gnu/lib/", "/usr/lib/aarch64-linux-gnu/"}),
                 @Platform(value = "linux-ppc64", preloadpath = {"/usr/powerpc64-linux-gnu/lib/", "/usr/powerpc64le-linux-gnu/lib/", "/usr/lib/powerpc64-linux-gnu/", "/usr/lib/powerpc64le-linux-gnu/"}),
@@ -318,6 +319,12 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
 
 
         infoMap.put(new Info("sd::ops::OpRegistrator::updateMSVC").skip());
+        infoMap.put(new Info("sd::ops::platforms::VersionProviderCallback",
+                "sd::ops::platforms::VersionProviderRegistrar",
+                "sd::ops::platforms::HelperVersionRegistry::registerProvider",
+                "sd::ops::platforms::HelperVersionRegistry::getAllHelperInfo").skip());
+        infoMap.put(new Info("sd::ops::platforms::HelperVersion::toString").javaNames("toVersionString"));
+        infoMap.put(new Info("sd::ops::platforms::HelperInfo::getDetailedStatus").javaNames("getDetailedStatusString"));
 
     }
 

@@ -39,9 +39,9 @@ namespace platforms {
 //////////////////////////////////////////////////////////////////////
 // Generic binary comparison using OneDNN
 static void binaryComparisonMKLDNN(NDArray* x, NDArray* y, NDArray* z, dnnl::algorithm alg) {
-  dnnl::memory::dims xDims = x->getShapeAsFlatVector();
-  dnnl::memory::dims yDims = y->getShapeAsFlatVector();
-  dnnl::memory::dims zDims = z->getShapeAsFlatVector();
+  dnnl::memory::dims xDims = *x->getShapeAsFlatVector();
+  dnnl::memory::dims yDims = *y->getShapeAsFlatVector();
+  dnnl::memory::dims zDims = *z->getShapeAsFlatVector();
 
   dnnl::memory::desc x_md = dnnl::memory::desc(xDims, dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
   dnnl::memory::desc y_md = dnnl::memory::desc(yDims, dnnl::memory::data_type::f32, onednnUtils::getFormat(*y));
@@ -49,8 +49,8 @@ static void binaryComparisonMKLDNN(NDArray* x, NDArray* y, NDArray* z, dnnl::alg
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
-  dnnl::binary::desc op_desc(alg, x_md, y_md, z_md);
-  dnnl::binary::primitive_desc op_prim_desc(op_desc, engine);
+  // OneDNN 3.x API
+  dnnl::binary::primitive_desc op_prim_desc(engine, alg, x_md, y_md, z_md);
 
   std::unordered_map<int, dnnl::memory> args;
   dnnl::stream stream(engine);

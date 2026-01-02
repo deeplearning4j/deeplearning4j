@@ -66,6 +66,9 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
+import org.nd4j.linalg.api.ops.executioner.KernelPluginManager;
+import org.nd4j.linalg.api.ops.executioner.KernelSelectionConfig;
+import org.nd4j.linalg.api.ops.executioner.KernelSelector;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.api.ops.impl.scalar.ReplaceNans;
@@ -237,6 +240,9 @@ public class Nd4j {
     private static BLASLapackDelegator BLAS_HANDLER;
 
     private static INDArrayStatisticsProvider STATS_PROVIDER;
+
+    private static KernelSelector KERNEL_SELECTOR_INSTANCE;
+    private static KernelPluginManager KERNEL_PLUGIN_MANAGER_INSTANCE;
 
     private static AtomicBoolean fallbackMode;
 
@@ -690,6 +696,104 @@ public class Nd4j {
      */
     public static DeviceIDProvider getDeviceIdProvider() {
         return DEVICE_ID_PROVIDER;
+    }
+
+    /**
+     * Get the kernel selector for configuring kernel selection and auto-tuning.
+     * <p>
+     * The kernel selector allows you to:
+     * <ul>
+     *   <li>Configure auto-tuning to find the fastest kernel implementations</li>
+     *   <li>Force specific backends (CUDA, oneDNN, etc.)</li>
+     *   <li>Disable certain engines</li>
+     *   <li>View performance statistics</li>
+     * </ul>
+     * </p>
+     * <p>
+     * Example usage:
+     * <pre>{@code
+     * KernelSelector selector = Nd4j.getKernelSelector();
+     * selector.setAutoTuneEnabled(true);
+     * selector.setStrategy(KernelSelectionConfig.Strategy.FASTEST);
+     * }</pre>
+     * </p>
+     *
+     * @return the kernel selector instance, or null if not supported by backend
+     */
+    public static KernelSelector getKernelSelector() {
+        return KERNEL_SELECTOR_INSTANCE;
+    }
+
+    /**
+     * Set the kernel selector instance (used by backend initialization).
+     *
+     * @param kernelSelector the kernel selector instance
+     */
+    public static void setKernelSelector(KernelSelector kernelSelector) {
+        KERNEL_SELECTOR_INSTANCE = kernelSelector;
+    }
+
+    /**
+     * Get the kernel plugin manager for loading custom kernel plugins.
+     * <p>
+     * The plugin manager allows you to:
+     * <ul>
+     *   <li>Load custom kernel implementations from shared libraries</li>
+     *   <li>Hot-reload plugins during development</li>
+     *   <li>Query available plugins and kernels</li>
+     * </ul>
+     * </p>
+     * <p>
+     * Example usage:
+     * <pre>{@code
+     * KernelPluginManager manager = Nd4j.getKernelPluginManager();
+     * manager.loadPlugin("/path/to/my_kernels.so");
+     * }</pre>
+     * </p>
+     *
+     * @return the kernel plugin manager instance, or null if not supported
+     */
+    public static KernelPluginManager getKernelPluginManager() {
+        return KERNEL_PLUGIN_MANAGER_INSTANCE;
+    }
+
+    /**
+     * Set the kernel plugin manager instance (used by backend initialization).
+     *
+     * @param pluginManager the kernel plugin manager instance
+     */
+    public static void setKernelPluginManager(KernelPluginManager pluginManager) {
+        KERNEL_PLUGIN_MANAGER_INSTANCE = pluginManager;
+    }
+
+    /**
+     * Configure kernel selection with the specified configuration.
+     * Convenience method equivalent to {@code getKernelSelector().configure(config)}.
+     *
+     * @param config the kernel selection configuration
+     * @throws IllegalStateException if kernel selector is not available
+     */
+    public static void configureKernelSelection(KernelSelectionConfig config) {
+        if (KERNEL_SELECTOR_INSTANCE == null) {
+            throw new IllegalStateException("Kernel selector not available for this backend");
+        }
+        KERNEL_SELECTOR_INSTANCE.configure(config);
+    }
+
+    /**
+     * Load a kernel plugin from a shared library.
+     * Convenience method equivalent to {@code getKernelPluginManager().loadPlugin(path)}.
+     *
+     * @param path path to the shared library
+     * @return true if plugin was loaded successfully
+     * @throws KernelPluginManager.KernelPluginException if loading fails
+     * @throws IllegalStateException if kernel plugin manager is not available
+     */
+    public static boolean loadKernelPlugin(String path) throws KernelPluginManager.KernelPluginException {
+        if (KERNEL_PLUGIN_MANAGER_INSTANCE == null) {
+            throw new IllegalStateException("Kernel plugin manager not available for this backend");
+        }
+        return KERNEL_PLUGIN_MANAGER_INSTANCE.loadPlugin(path);
     }
 
     /**
@@ -6217,6 +6321,14 @@ public class Nd4j {
 
         // --- 7. Create ND4J Shape Info Buffer ---
         DataBuffer shapeInfoBuffer = Nd4j.createBufferDetached(shapeBuffer);
+
+        // --- 8. Check for empty array ---
+        // Empty arrays are serialized with buffer = 0 and have the empty flag in shape info
+        if (Shape.isEmpty(shapeBuffer)) {
+            // Return an empty array of the correct data type
+            return Nd4j.empty(dtype);
+        }
+
         // --- 9. Get and Process Data Buffer ---
         java.nio.ByteBuffer bb = array.bufferAsByteBuffer();
         DataBuffer dataBuffer;

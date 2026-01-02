@@ -596,15 +596,15 @@ private:
     std::unique_ptr<std::thread> _workerThread;
 
     // P2P state
-    mutable std::mutex _p2pMutex;
-    std::unordered_map<std::pair<int,int>, bool, struct PairHash> _p2pEnabled;
-    std::unordered_map<std::pair<int,int>, float, struct PairHash> _p2pBandwidth;
-
     struct PairHash {
         size_t operator()(const std::pair<int,int>& p) const {
             return std::hash<int>()(p.first) ^ (std::hash<int>()(p.second) << 16);
         }
     };
+
+    mutable std::mutex _p2pMutex;
+    std::unordered_map<std::pair<int,int>, bool, PairHash> _p2pEnabled;
+    std::unordered_map<std::pair<int,int>, float, PairHash> _p2pBandwidth;
 
     // Staging buffers
     mutable std::mutex _stagingMutex;

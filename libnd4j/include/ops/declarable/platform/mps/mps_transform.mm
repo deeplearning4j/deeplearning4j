@@ -237,7 +237,7 @@ PLATFORM_CHECK(permute, ENGINE_CPU) {
 
 PLATFORM_IMPL(split, ENGINE_CPU) {
     auto x = INPUT_VARIABLE(0);
-    int numOutputs = block.numOutputs();
+    int numOutputs = block.outputWidth();
     int axis = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
 
     if (x->isEmpty()) return sd::Status::OK;

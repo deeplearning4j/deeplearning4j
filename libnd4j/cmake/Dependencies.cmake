@@ -2,6 +2,41 @@
 # Manages all third-party dependencies. Logic is encapsulated in functions.
 
 include(ExternalProject)
+include(ProcessorCount)
+
+# =============================================================================
+# PARALLEL BUILD CONFIGURATION FOR DEPENDENCIES
+# =============================================================================
+# Compute optimal parallel jobs for dependency builds based on:
+# 1. User-specified SD_PARALLEL_COMPILE_JOBS (if set)
+# 2. Available memory (each compile uses ~1-2GB for deps, less than main build)
+# 3. Available CPU cores
+
+ProcessorCount(NPROC)
+if(NPROC EQUAL 0)
+    set(NPROC 4)  # Fallback
+endif()
+
+# Use SD_PARALLEL_COMPILE_JOBS if specified, otherwise compute from memory
+if(DEFINED SD_PARALLEL_COMPILE_JOBS AND NOT SD_PARALLEL_COMPILE_JOBS STREQUAL "" AND NOT SD_PARALLEL_COMPILE_JOBS STREQUAL "0")
+    set(DEP_PARALLEL_JOBS ${SD_PARALLEL_COMPILE_JOBS})
+else()
+    # Dependencies use less memory per compile (~1GB vs 2GB for main build)
+    # So we can be more aggressive with parallelism
+    cmake_host_system_information(RESULT AVAILABLE_MEMORY QUERY AVAILABLE_PHYSICAL_MEMORY)
+    math(EXPR MEM_BASED_JOBS "${AVAILABLE_MEMORY} / 1000")  # 1GB per job for deps
+
+    # Cap at processor count and ensure at least 4
+    if(MEM_BASED_JOBS GREATER NPROC)
+        set(DEP_PARALLEL_JOBS ${NPROC})
+    elseif(MEM_BASED_JOBS LESS 4)
+        set(DEP_PARALLEL_JOBS 4)
+    else()
+        set(DEP_PARALLEL_JOBS ${MEM_BASED_JOBS})
+    endif()
+endif()
+
+message(STATUS "🔧 Dependency builds will use ${DEP_PARALLEL_JOBS} parallel jobs (${NPROC} cores, ${AVAILABLE_MEMORY}MB available)")
 function(setup_android_arm_openblas)
     set(is_android_or_arm FALSE)
 
@@ -199,14 +234,27 @@ function(setup_flatbuffers)
                 -DCMAKE_CXX_COMPILER=${HOST_CXX_COMPILER}
         )
 
+        # Pass compiler launcher (ccache/sccache) to host build if available
+        if(CMAKE_C_COMPILER_LAUNCHER)
+            list(APPEND HOST_CMAKE_ARGS -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER})
+        endif()
+        if(CMAKE_CXX_COMPILER_LAUNCHER)
+            list(APPEND HOST_CMAKE_ARGS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER})
+        endif()
+
         ExternalProject_Add(flatbuffers_host
                 URL               ${FLATBUFFERS_URL}
                 SOURCE_DIR        "${FLATC_HOST_DIR}"
                 BINARY_DIR        "${FLATC_HOST_BUILD_DIR}"
                 CMAKE_ARGS        ${HOST_CMAKE_ARGS}
-                BUILD_COMMAND     ${CMAKE_COMMAND} --build . --target flatc --config Release
+                BUILD_COMMAND     ${CMAKE_COMMAND} --build . --target flatc --config Release --parallel ${DEP_PARALLEL_JOBS}
                 INSTALL_COMMAND   ""
                 BUILD_BYPRODUCTS  "${FLATC_EXECUTABLE}"
+                DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+                LOG_DOWNLOAD      OFF
+                LOG_CONFIGURE     OFF
+                LOG_BUILD         OFF
+                LOG_INSTALL       OFF
         )
 
         # Stage 2: Build FlatBuffers library for target
@@ -220,6 +268,14 @@ function(setup_flatbuffers)
                 -DFLATBUFFERS_BUILD_TESTS=OFF
                 -DFLATBUFFERS_BUILD_SAMPLES=OFF
         )
+
+        # Pass compiler launcher (ccache/sccache) to target build if available
+        if(CMAKE_C_COMPILER_LAUNCHER)
+            list(APPEND TARGET_CMAKE_ARGS -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER})
+        endif()
+        if(CMAKE_CXX_COMPILER_LAUNCHER)
+            list(APPEND TARGET_CMAKE_ARGS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER})
+        endif()
 
         # Only add cross-compilation arguments if they are defined
         if(CMAKE_TOOLCHAIN_FILE)
@@ -258,6 +314,11 @@ function(setup_flatbuffers)
                 INSTALL_COMMAND   ""
                 BUILD_BYPRODUCTS  "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-target-build/libflatbuffers.a"
                 DEPENDS           flatbuffers_host
+                DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+                LOG_DOWNLOAD      OFF
+                LOG_CONFIGURE     OFF
+                LOG_BUILD         OFF
+                LOG_INSTALL       OFF
         )
 
         # DO NOT use include_directories() - use target_include_directories on flatbuffers_interface instead
@@ -307,11 +368,8 @@ function(setup_flatbuffers)
             set(FLATBUFFERS_BUILD_FLATC "OFF")
         endif()
 
-        ExternalProject_Add(flatbuffers_external
-                URL               ${FLATBUFFERS_URL}
-                SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src"
-                BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build"
-                CMAKE_ARGS
+        # Build CMAKE_ARGS list for native build
+        set(NATIVE_CMAKE_ARGS
                 -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                 -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
                 -DCMAKE_BUILD_TYPE=Release
@@ -319,15 +377,32 @@ function(setup_flatbuffers)
                 -DFLATBUFFERS_BUILD_FLATLIB=ON
                 -DFLATBUFFERS_BUILD_TESTS=OFF
                 -DFLATBUFFERS_BUILD_SAMPLES=OFF
-                # Explicit BUILD_COMMAND to prevent race conditions with GRPC generator
-                # source files (swift_generator.cc, python_generator.cc, ts_generator.cc)
-                # during parallel compilation where dependency file directories may not
-                # exist. Using -j4 as a balance between build speed and avoiding races.
-                BUILD_COMMAND     ${CMAKE_COMMAND} --build . --config Release -- -j4
+        )
+
+        # Pass compiler launcher (ccache/sccache) to native build if available
+        if(CMAKE_C_COMPILER_LAUNCHER)
+            list(APPEND NATIVE_CMAKE_ARGS -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER})
+        endif()
+        if(CMAKE_CXX_COMPILER_LAUNCHER)
+            list(APPEND NATIVE_CMAKE_ARGS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER})
+        endif()
+
+        ExternalProject_Add(flatbuffers_external
+                URL               ${FLATBUFFERS_URL}
+                SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src"
+                BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build"
+                CMAKE_ARGS        ${NATIVE_CMAKE_ARGS}
+                # Use computed parallel jobs for faster dependency builds
+                BUILD_COMMAND     ${CMAKE_COMMAND} --build . --config Release --parallel ${DEP_PARALLEL_JOBS}
                 INSTALL_COMMAND   ""
                 BUILD_BYPRODUCTS
                 "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/flatc"
                 "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/libflatbuffers.a"
+                DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+                LOG_DOWNLOAD      OFF
+                LOG_CONFIGURE     OFF
+                LOG_BUILD         OFF
+                LOG_INSTALL       OFF
         )
 
         # DO NOT use include_directories() - use target_include_directories on flatbuffers_interface instead
@@ -408,33 +483,85 @@ endfunction()
 function(setup_onednn)
     if(NOT HELPERS_onednn STREQUAL "ON")
         message(STATUS "OneDNN helper is disabled (HELPERS_onednn=${HELPERS_onednn})")
-        set(HAVE_ONEDNN FALSE PARENT_SCOPE)
+        set(HAVE_ONEDNN OFF CACHE BOOL "OneDNN availability" FORCE)
         set(ONEDNN "" PARENT_SCOPE)
         return()
     endif()
 
     if(TARGET onednn_external)
         message(STATUS "OneDNN helper is enabled (target already exists)")
-        set(HAVE_ONEDNN TRUE PARENT_SCOPE)
+        set(HAVE_ONEDNN ON CACHE BOOL "OneDNN availability" FORCE)
         set(ONEDNN onednn_interface PARENT_SCOPE)
         return()
     endif()
 
     message(STATUS "OneDNN helper is enabled")
-    set(HAVE_ONEDNN TRUE PARENT_SCOPE)
+    set(HAVE_ONEDNN ON CACHE BOOL "OneDNN availability" FORCE)
     set(ONEDNN_INSTALL_DIR "${CMAKE_BINARY_DIR}/onednn_install")
+    set(ONEDNN_PREFIX "${CMAKE_BINARY_DIR}/onednn_external")
+    set(ONEDNN_VERSION "3.8.1")
+    set(ONEDNN_STAMP_DIR "${ONEDNN_PREFIX}/stamp")
+
+    # Ensure stamp directory exists to prevent "cmake -E touch: failed to update" errors
+    # This can happen when parallel builds race on directory creation
+    file(MAKE_DIRECTORY "${ONEDNN_STAMP_DIR}")
+    file(MAKE_DIRECTORY "${ONEDNN_PREFIX}/src")
+    file(MAKE_DIRECTORY "${ONEDNN_PREFIX}/build")
+    file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/downloads")
+
+    # Clean up stale stamp files that can cause "Failed to copy script-last-run stamp file" errors
+    if(EXISTS "${ONEDNN_STAMP_DIR}")
+        file(GLOB STALE_STAMPS "${ONEDNN_STAMP_DIR}/*-lastrun.txt" "${ONEDNN_STAMP_DIR}/*.txt")
+        foreach(stamp ${STALE_STAMPS})
+            message(STATUS "Cleaning stale OneDNN stamp file: ${stamp}")
+            file(REMOVE "${stamp}")
+        endforeach()
+    endif()
+
+    # Use URL download instead of git clone for more robust downloads
+    set(ONEDNN_URL "https://github.com/uxlfoundation/oneDNN/archive/refs/tags/v${ONEDNN_VERSION}.tar.gz")
+
+    # Build CMAKE_ARGS list for OneDNN
+    set(ONEDNN_CMAKE_ARGS
+            -DCMAKE_INSTALL_PREFIX=${ONEDNN_INSTALL_DIR}
+            -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+            -DDNNL_LIBRARY_TYPE=STATIC
+            -DDNNL_BUILD_TESTS=OFF
+            -DDNNL_BUILD_EXAMPLES=OFF
+            -DDNNL_VERBOSE=OFF
+            -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+            -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+    )
+
+    # Pass compiler launcher (ccache/sccache) to OneDNN build if available
+    if(CMAKE_C_COMPILER_LAUNCHER)
+        list(APPEND ONEDNN_CMAKE_ARGS -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER})
+    endif()
+    if(CMAKE_CXX_COMPILER_LAUNCHER)
+        list(APPEND ONEDNN_CMAKE_ARGS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER})
+    endif()
 
     ExternalProject_Add(onednn_external
-            PREFIX            "${CMAKE_BINARY_DIR}/onednn_external"
-            GIT_REPOSITORY    "https://github.com/uxlfoundation/oneDNN.git"
-            GIT_TAG           "v3.8.1"
-            SOURCE_DIR        "${CMAKE_BINARY_DIR}/onednn_external/src"
-            BINARY_DIR        "${CMAKE_BINARY_DIR}/onednn_external/build"
-            CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${ONEDNN_INSTALL_DIR} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DDNNL_LIBRARY_TYPE=STATIC -DDNNL_BUILD_TESTS=OFF -DDNNL_BUILD_EXAMPLES=OFF -DDNNL_VERBOSE=OFF -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-            BUILD_COMMAND     ${CMAKE_COMMAND} --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel
+            PREFIX            "${ONEDNN_PREFIX}"
+            URL               "${ONEDNN_URL}"
+            DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads"
+            SOURCE_DIR        "${ONEDNN_PREFIX}/src/oneDNN-${ONEDNN_VERSION}"
+            BINARY_DIR        "${ONEDNN_PREFIX}/build"
+            STAMP_DIR         "${ONEDNN_STAMP_DIR}"
+            DOWNLOAD_NO_PROGRESS FALSE
+            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+            CMAKE_ARGS        ${ONEDNN_CMAKE_ARGS}
+            BUILD_COMMAND     ${CMAKE_COMMAND} --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${DEP_PARALLEL_JOBS}
             INSTALL_COMMAND   ${CMAKE_COMMAND} --build <BINARY_DIR> --target install --config ${CMAKE_BUILD_TYPE}
-            BUILD_BYPRODUCTS "${ONEDNN_INSTALL_DIR}/include/dnnl.h" "${ONEDNN_INSTALL_DIR}/lib/libdnnl.a" "${ONEDNN_INSTALL_DIR}/lib/dnnl.lib"
-            TIMEOUT           600
+            BUILD_BYPRODUCTS
+                "${ONEDNN_INSTALL_DIR}/include/dnnl.h"
+                "${ONEDNN_INSTALL_DIR}/lib64/libdnnl.a"
+                "${ONEDNN_INSTALL_DIR}/lib/dnnl.lib"
+            TIMEOUT           900
+            LOG_DOWNLOAD      OFF
+            LOG_CONFIGURE     OFF
+            LOG_BUILD         OFF
+            LOG_INSTALL       OFF
     )
 
     add_library(onednn_interface INTERFACE)
@@ -442,10 +569,12 @@ function(setup_onednn)
     if(WIN32)
         target_link_libraries(onednn_interface INTERFACE "${ONEDNN_INSTALL_DIR}/lib/dnnl.lib")
     else()
-        target_link_libraries(onednn_interface INTERFACE "${ONEDNN_INSTALL_DIR}/lib/libdnnl.a")
+        target_link_libraries(onednn_interface INTERFACE "${ONEDNN_INSTALL_DIR}/lib64/libdnnl.a")
     endif()
     add_dependencies(onednn_interface onednn_external)
     set(ONEDNN onednn_interface PARENT_SCOPE)
+
+    message(STATUS "✅ OneDNN ${ONEDNN_VERSION} setup complete (using URL download)")
 endfunction()
 
 # =============================================================================
@@ -481,6 +610,11 @@ function(setup_armcompute)
                 BUILD_COMMAND     ""
                 INSTALL_COMMAND   ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/${ARMCOMPUTE_PKG_NAME} ${ARMCOMPUTE_INSTALL_DIR}
                 BUILD_BYPRODUCTS "${ARMCOMPUTE_INSTALL_DIR}/include/arm_compute/core/CL/CLKernelLibrary.h"
+                DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+                LOG_DOWNLOAD      OFF
+                LOG_CONFIGURE     OFF
+                LOG_BUILD         OFF
+                LOG_INSTALL       OFF
         )
 
         add_library(armcompute_interface INTERFACE)
@@ -646,6 +780,11 @@ function(setup_zluda_download)
             INSTALL_COMMAND   ""
             BUILD_BYPRODUCTS  "${ZLUDA_INSTALL_DIR}/lib/libcuda.so"
             TIMEOUT           300
+            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+            LOG_DOWNLOAD      OFF
+            LOG_CONFIGURE     OFF
+            LOG_BUILD         OFF
+            LOG_INSTALL       OFF
     )
 
     # Create interface library for ZLUDA
@@ -732,9 +871,14 @@ function(setup_miopen_download)
                     -DCMAKE_INSTALL_PREFIX=${MIOPEN_INSTALL_DIR}
                     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                     -DMIOPEN_BACKEND=HIP
-                BUILD_COMMAND     ${CMAKE_COMMAND} --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel
+                BUILD_COMMAND     ${CMAKE_COMMAND} --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${DEP_PARALLEL_JOBS}
                 INSTALL_COMMAND   ${CMAKE_COMMAND} --build <BINARY_DIR> --target install --config ${CMAKE_BUILD_TYPE}
                 TIMEOUT           1200
+                DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+                LOG_DOWNLOAD      OFF
+                LOG_CONFIGURE     OFF
+                LOG_BUILD         OFF
+                LOG_INSTALL       OFF
         )
 
         add_library(miopen_interface INTERFACE)

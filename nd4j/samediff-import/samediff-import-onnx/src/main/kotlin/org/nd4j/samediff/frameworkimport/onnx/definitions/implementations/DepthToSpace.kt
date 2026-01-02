@@ -22,6 +22,7 @@ package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
+import org.nd4j.enums.DataFormat
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
@@ -68,15 +69,15 @@ class DepthToSpace : PreImportHook {
 
         // Get attributes
         val blockSize = (attributes["blocksize"] as? Number)?.toInt() ?: 1
-        val mode = attributes.getOrDefault("mode", "DCR") as? String ?: "DCR"
+        // Note: ONNX has a "mode" attribute (DCR/CRD), but SameDiff's depthToSpace
+        // doesn't support this directly. ONNX uses NCHW format by default.
 
-        // Use SameDiff's depth_to_space operation
-        // isNHWC = false since ONNX uses NCHW
+        // Use SameDiff's depth_to_space operation with NCHW format (ONNX default)
         val output = sd.cnn.depthToSpace(
             outputNames[0],
             input,
             blockSize,
-            if (mode.uppercase() == "CRD") "CRD" else "DCR"
+            DataFormat.NCHW
         )
 
         return mapOf(outputNames[0] to listOf(output))

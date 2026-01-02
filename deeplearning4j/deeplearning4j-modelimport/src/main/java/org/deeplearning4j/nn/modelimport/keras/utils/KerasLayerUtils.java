@@ -28,20 +28,29 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurat
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasInput;
 import org.deeplearning4j.nn.modelimport.keras.layers.attention.KerasAttentionLayer;
+import org.deeplearning4j.nn.modelimport.keras.layers.attention.KerasMultiHeadAttention;
+import org.deeplearning4j.nn.modelimport.keras.layers.attention.KerasAdditiveAttention;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.core.*;
+import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.Keras2DEmbedding;
 import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.KerasEmbedding;
 import org.deeplearning4j.nn.modelimport.keras.layers.local.KerasLocallyConnected1D;
+import org.deeplearning4j.nn.modelimport.keras.layers.local.KerasLocallyConnected2D;
 import org.deeplearning4j.nn.modelimport.keras.layers.noise.KerasAlphaDropout;
 import org.deeplearning4j.nn.modelimport.keras.layers.noise.KerasGaussianDropout;
 import org.deeplearning4j.nn.modelimport.keras.layers.noise.KerasGaussianNoise;
 import org.deeplearning4j.nn.modelimport.keras.layers.normalization.KerasBatchNormalization;
+import org.deeplearning4j.nn.modelimport.keras.layers.normalization.KerasGroupNormalization;
+import org.deeplearning4j.nn.modelimport.keras.layers.normalization.KerasLayerNormalization;
+import org.deeplearning4j.nn.modelimport.keras.layers.normalization.KerasUnitNormalization;
 import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasGlobalPooling;
 import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPooling1D;
 import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPooling2D;
 import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPooling3D;
 import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasLSTM;
 import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasSimpleRnn;
+import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasGRU;
+import org.deeplearning4j.nn.modelimport.keras.layers.regularization.KerasActivityRegularization;
 import org.deeplearning4j.nn.modelimport.keras.layers.wrappers.KerasBidirectional;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
 import org.deeplearning4j.nn.conf.layers.Layer;
@@ -219,6 +228,8 @@ public class KerasLayerUtils {
             layer = new KerasLSTM(layerConfig, enforceTrainingConfig, previousLayers);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_SIMPLE_RNN())) {
             layer = new KerasSimpleRnn(layerConfig, enforceTrainingConfig, previousLayers);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_GRU())) {
+            layer = new KerasGRU(layerConfig, enforceTrainingConfig, previousLayers);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CONVOLUTION_3D())) {
             layer = new KerasConvolution3D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CONVOLUTION_2D())) {
@@ -237,6 +248,8 @@ public class KerasLayerUtils {
             layer = new KerasDepthwiseConvolution2D(layerConfig, previousLayers, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_SEPARABLE_CONVOLUTION_2D())) {
             layer = new KerasSeparableConvolution2D(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_SEPARABLE_CONVOLUTION_1D())) {
+            layer = new KerasSeparableConvolution1D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_MAX_POOLING_3D()) ||
                 layerClassName.equals(conf.getLAYER_CLASS_NAME_AVERAGE_POOLING_3D())) {
             layer = new KerasPooling3D(layerConfig, enforceTrainingConfig);
@@ -255,8 +268,16 @@ public class KerasLayerUtils {
             layer = new KerasGlobalPooling(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_BATCHNORMALIZATION())) {
             layer = new KerasBatchNormalization(layerConfig, enforceTrainingConfig, previousLayers);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_GROUP_NORMALIZATION())) {
+            layer = new KerasGroupNormalization(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_UNIT_NORMALIZATION())) {
+            layer = new KerasUnitNormalization(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LAYER_NORMALIZATION())) {
+            layer = new KerasLayerNormalization(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_EMBEDDING())) {
             layer = new KerasEmbedding(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_EMBEDDING_2D())) {
+            layer = new Keras2DEmbedding(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_INPUT())) {
             layer = new KerasInput(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_REPEAT())) {
@@ -307,6 +328,10 @@ public class KerasLayerUtils {
             layer = new KerasCropping1D(layerConfig, enforceTrainingConfig);
         } else if(layerClassName.equals(conf.getLAYER_CLASS_NAME_ATTENTION())) {
             layer = new KerasAttentionLayer(layerConfig,enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_MULTI_HEAD_ATTENTION())) {
+            layer = new KerasMultiHeadAttention(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ADDITIVE_ATTENTION())) {
+            layer = new KerasAdditiveAttention(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LAMBDA())) {
             String lambdaLayerName = KerasLayerUtils.getLayerNameFromConfig(layerConfig, conf);
             if (!lambdaLayers.containsKey(lambdaLayerName) && !customLayers.containsKey(layerClassName)) {
@@ -327,6 +352,18 @@ public class KerasLayerUtils {
             layer = new KerasSoftmax(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LOCALLY_CONNECTED_1D())) {
             layer = new KerasLocallyConnected1D(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LOCALLY_CONNECTED_2D())) {
+            layer = new KerasLocallyConnected2D(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_EINSUM_DENSE())) {
+            layer = new KerasEinsumDense(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_DECONVOLUTION_1D())) {
+            layer = new KerasDeconvolution1D(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_SPACE_TO_DEPTH())) {
+            layer = new KerasSpaceToDepth(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_IDENTITY())) {
+            layer = new KerasIdentity(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ACTIVITY_REGULARIZATION())) {
+            layer = new KerasActivityRegularization(layerConfig, enforceTrainingConfig);
         } else if (conf instanceof Keras2LayerConfiguration) {
             Keras2LayerConfiguration k2conf = (Keras2LayerConfiguration) conf;
             if (layerClassName.equals(k2conf.getTENSORFLOW_OP_LAYER())) {

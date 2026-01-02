@@ -109,8 +109,7 @@ public class MultiBackendWorkspaceManager {
      */
     public MultiBackendWorkspace createWorkspace(@NonNull WorkspaceConfiguration configuration,
                                                   @NonNull String id) {
-        DeviceAwareWorkspaceConfiguration deviceConfig = DeviceAwareWorkspaceConfiguration.fromBase(configuration)
-                .build();
+        DeviceAwareWorkspaceConfiguration deviceConfig = DeviceAwareWorkspaceConfiguration.fromBase(configuration);
         return createWorkspace(deviceConfig, id);
     }
 
@@ -172,8 +171,23 @@ public class MultiBackendWorkspaceManager {
     public MultiBackendWorkspace createWorkspaceOnDevice(@NonNull DeviceAwareWorkspaceConfiguration configuration,
                                                           @NonNull String id,
                                                           @NonNull DeviceDescriptor device) {
-        DeviceAwareWorkspaceConfiguration deviceConfig = DeviceAwareWorkspaceConfiguration.fromBase(configuration)
+        // Create a new configuration with the specified primary device
+        DeviceAwareWorkspaceConfiguration deviceConfig = DeviceAwareWorkspaceConfiguration.builder()
+                .policyAllocation(configuration.getPolicyAllocation())
+                .policySpill(configuration.getPolicySpill())
+                .policyMirroring(configuration.getPolicyMirroring())
+                .policyLearning(configuration.getPolicyLearning())
+                .policyReset(configuration.getPolicyReset())
+                .policyLocation(configuration.getPolicyLocation())
+                .initialSize(configuration.getInitialSize())
+                .minSize(configuration.getMinSize())
+                .maxSize(configuration.getMaxSize())
+                .overallocationLimit(configuration.getOverallocationLimit())
+                .cyclesBeforeInitialization(configuration.getCyclesBeforeInitialization())
                 .primaryDevice(device)
+                .preferredDeviceTypes(configuration.getPreferredDeviceTypes())
+                .transferPolicy(configuration.getTransferPolicy())
+                .deviceSelectionPolicy(configuration.getDeviceSelectionPolicy())
                 .build();
         return createWorkspace(deviceConfig, id);
     }

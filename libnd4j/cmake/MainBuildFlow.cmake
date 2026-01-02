@@ -230,23 +230,85 @@ function(collect_all_sources out_source_list)
                 ${LOOPS_SOURCES}
         )
 
+        # --- Multi-Helper Source Collection (CPU Build) ---
+        # All enabled helpers are compiled simultaneously for dynamic kernel selection
+
+        # OneDNN / MKL-DNN helper
         if(HAVE_ONEDNN)
             file(GLOB_RECURSE CUSTOMOPS_ONEDNN_SOURCES ./include/ops/declarable/platform/mkldnn/*.cpp)
             list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_ONEDNN_SOURCES})
+            list(LENGTH CUSTOMOPS_ONEDNN_SOURCES onednn_count)
+            message(STATUS "✅ Added OneDNN platform sources: ${onednn_count} files")
         endif()
+
+        # ARM Compute Library helper
         if(HAVE_ARMCOMPUTE)
             file(GLOB_RECURSE CUSTOMOPS_ARMCOMPUTE_SOURCES ./include/ops/declarable/platform/armcompute/*.cpp)
             list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_ARMCOMPUTE_SOURCES})
+            list(LENGTH CUSTOMOPS_ARMCOMPUTE_SOURCES armcompute_count)
+            message(STATUS "✅ Added ARM Compute platform sources: ${armcompute_count} files")
         endif()
+
+        # MLIR/LLVM JIT helper
         if(HAVE_MLIR)
             file(GLOB_RECURSE CUSTOMOPS_MLIR_SOURCES ./include/ops/declarable/platform/mlir/*.cpp)
             file(GLOB_RECURSE MLIR_DIALECT_SOURCES ./include/mlir/**/*.cpp)
             list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_MLIR_SOURCES} ${MLIR_DIALECT_SOURCES})
+            list(LENGTH CUSTOMOPS_MLIR_SOURCES mlir_count)
+            message(STATUS "✅ Added MLIR platform sources: ${mlir_count} files")
         endif()
+
+        # Metal Performance Shaders helper (macOS/iOS)
         if(HAVE_MPS)
             file(GLOB_RECURSE CUSTOMOPS_MPS_SOURCES ./include/ops/declarable/platform/mps/*.mm)
             list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_MPS_SOURCES})
-            message(STATUS "✅ Added MPS platform sources: ${CUSTOMOPS_MPS_SOURCES}")
+            list(LENGTH CUSTOMOPS_MPS_SOURCES mps_count)
+            message(STATUS "✅ Added MPS platform sources: ${mps_count} files")
+        endif()
+
+        # Apple Accelerate framework helper (macOS/iOS)
+        if(HAVE_ACCELERATE)
+            file(GLOB_RECURSE CUSTOMOPS_ACCELERATE_SOURCES ./include/ops/declarable/platform/accelerate/*.cpp ./include/ops/declarable/platform/accelerate/*.mm)
+            list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_ACCELERATE_SOURCES})
+            list(LENGTH CUSTOMOPS_ACCELERATE_SOURCES accelerate_count)
+            message(STATUS "✅ Added Accelerate platform sources: ${accelerate_count} files")
+        endif()
+
+        # LlamaCpp helper (for LLM operations)
+        if(HAVE_LLAMACPP)
+            file(GLOB_RECURSE CUSTOMOPS_LLAMACPP_SOURCES ./include/ops/declarable/platform/llamacpp/*.cpp)
+            if(CUSTOMOPS_LLAMACPP_SOURCES)
+                list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_LLAMACPP_SOURCES})
+                list(LENGTH CUSTOMOPS_LLAMACPP_SOURCES llamacpp_count)
+                message(STATUS "✅ Added LlamaCpp platform sources: ${llamacpp_count} files")
+            endif()
+        endif()
+
+        # VLM (Vision-Language Model) operations
+        if(HAVE_VLM)
+            file(GLOB_RECURSE CUSTOMOPS_VLM_SOURCES ./include/ops/declarable/platform/vlm/*.cpp)
+            if(CUSTOMOPS_VLM_SOURCES)
+                list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_VLM_SOURCES})
+                list(LENGTH CUSTOMOPS_VLM_SOURCES vlm_count)
+                message(STATUS "✅ Added VLM platform sources: ${vlm_count} files")
+            endif()
+        endif()
+
+        # --- Multi-Backend Dispatcher Sources ---
+        # Always include multi-platform dispatcher for dynamic kernel selection
+        if(SD_DYNAMIC_KERNEL_SELECTION)
+            file(GLOB_RECURSE MULTI_PLATFORM_DISPATCHER_SOURCES
+                ./include/ops/declarable/MultiPlatformDispatcher.h
+                ./include/ops/declarable/impl/MultiPlatformDispatcher.cpp
+                ./include/helpers/KernelSelectionEnvironment.h
+                ./include/helpers/impl/KernelSelectionEnvironment.cpp
+                ./include/helpers/KernelAutoTuner.h
+                ./include/helpers/impl/KernelAutoTuner.cpp
+                ./include/helpers/KernelPerformanceRegistry.h
+                ./include/helpers/impl/KernelPerformanceRegistry.cpp
+            )
+            list(APPEND ALL_SOURCES_LIST ${MULTI_PLATFORM_DISPATCHER_SOURCES})
+            message(STATUS "✅ Added Multi-Platform Dispatcher sources for dynamic kernel selection")
         endif()
 
         message(STATUS "🖥️  CPU build: Enhanced template system will generate optimized CPU instantiations")
@@ -275,9 +337,67 @@ function(collect_all_sources out_source_list)
 endfunction()
 
 function(configure_cpu_linking main_target_name)
+    # Core libraries
     target_link_libraries(${main_target_name} PUBLIC
-            ${ONEDNN} ${ARMCOMPUTE_LIBRARIES} ${MLIR} ${MPS_LIBRARIES} ${OPENBLAS_LIBRARIES}
-            ${BLAS_LIBRARIES} ${JVM_LIBRARY} flatbuffers_interface)
+            ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${JVM_LIBRARY} flatbuffers_interface)
+
+    # --- Multi-Helper Library Linking ---
+    # Link all enabled helper libraries for multi-backend support
+
+    # OneDNN/MKL-DNN
+    if(HAVE_ONEDNN AND DEFINED ONEDNN)
+        target_link_libraries(${main_target_name} PUBLIC ${ONEDNN})
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_ONEDNN=1)
+        message(STATUS "🔗 Linking OneDNN helper")
+    endif()
+
+    # ARM Compute Library
+    if(HAVE_ARMCOMPUTE AND DEFINED ARMCOMPUTE_LIBRARIES)
+        target_link_libraries(${main_target_name} PUBLIC ${ARMCOMPUTE_LIBRARIES})
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_ARMCOMPUTE=1)
+        message(STATUS "🔗 Linking ARM Compute helper")
+    endif()
+
+    # MLIR/LLVM JIT
+    if(HAVE_MLIR AND DEFINED MLIR)
+        target_link_libraries(${main_target_name} PUBLIC ${MLIR})
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_MLIR=1)
+        message(STATUS "🔗 Linking MLIR helper")
+    endif()
+
+    # Metal Performance Shaders (macOS/iOS)
+    if(HAVE_MPS AND DEFINED MPS_LIBRARIES)
+        target_link_libraries(${main_target_name} PUBLIC ${MPS_LIBRARIES})
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_MPS=1)
+        message(STATUS "🔗 Linking MPS helper")
+    endif()
+
+    # Apple Accelerate Framework (macOS/iOS)
+    if(HAVE_ACCELERATE)
+        find_library(ACCELERATE_FRAMEWORK Accelerate)
+        if(ACCELERATE_FRAMEWORK)
+            target_link_libraries(${main_target_name} PUBLIC ${ACCELERATE_FRAMEWORK})
+            target_compile_definitions(${main_target_name} PUBLIC HAVE_ACCELERATE=1)
+            message(STATUS "🔗 Linking Accelerate helper")
+        endif()
+    endif()
+
+    # Dynamic kernel selection compile definitions
+    if(SD_DYNAMIC_KERNEL_SELECTION)
+        target_compile_definitions(${main_target_name} PUBLIC SD_DYNAMIC_KERNEL_SELECTION=1)
+        target_compile_definitions(${main_target_name} PUBLIC SD_KERNEL_STRATEGY="${SD_KERNEL_STRATEGY}")
+        if(SD_KERNEL_AUTOTUNING)
+            target_compile_definitions(${main_target_name} PUBLIC SD_KERNEL_AUTOTUNING=1)
+        endif()
+        if(SD_KERNEL_CACHING)
+            target_compile_definitions(${main_target_name} PUBLIC SD_KERNEL_CACHING=1)
+        endif()
+        # Pass helper priority as compile definition
+        if(SD_HELPER_PRIORITY)
+            string(REPLACE ";" "," HELPER_PRIORITY_CSV "${SD_HELPER_PRIORITY}")
+            target_compile_definitions(${main_target_name} PUBLIC SD_HELPER_PRIORITY="${HELPER_PRIORITY_CSV}")
+        endif()
+    endif()
 
     # Add debug libraries when SD_GCC_FUNCTRACE is enabled
     if(SD_GCC_FUNCTRACE)
@@ -291,13 +411,20 @@ function(configure_cpu_linking main_target_name)
         message(STATUS "✅ Added debug libraries for SD_GCC_FUNCTRACE (using libgcc_s for unwinding, JVM compatible)")
     endif()
 
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        find_package(OpenMP)
-        if(OpenMP_CXX_FOUND)
-            target_link_libraries(${main_target_name} PUBLIC OpenMP::OpenMP_CXX)
-        else()
-            target_link_libraries(${main_target_name} PUBLIC "-fopenmp")
+    find_package(OpenMP)
+    if(OpenMP_CXX_FOUND)
+        target_link_libraries(${main_target_name} PUBLIC OpenMP::OpenMP_CXX)
+
+        # Bundle OpenMP runtime library for cross-platform deployment
+        if(NOT WIN32 AND OpenMP_omp_LIBRARY AND EXISTS "${OpenMP_omp_LIBRARY}")
+            message(STATUS "📦 Bundling OpenMP library: ${OpenMP_omp_LIBRARY}")
+            add_custom_command(TARGET ${main_target_name} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OpenMP_omp_LIBRARY}" "${CMAKE_BINARY_DIR}/libomp.so"
+                COMMENT "Copying libomp.so to output directory for bundling"
+            )
         endif()
+    else()
+        target_link_libraries(${main_target_name} PUBLIC "-fopenmp")
     endif()
 endfunction()
 
@@ -351,6 +478,70 @@ function(create_and_link_library)
         add_library(${OBJECT_LIB_NAME} OBJECT ${ALL_SOURCES})
         add_dependencies(${OBJECT_LIB_NAME} flatbuffers_interface)
         target_link_libraries(${OBJECT_LIB_NAME} PUBLIC flatbuffers_interface)
+
+        # =========================================================================
+        # EXTERNAL DEPENDENCY BLOCKING
+        # =========================================================================
+        # External helper libraries MUST complete building before object files compile.
+        # This prevents "header not found" errors (e.g., dnnl.hpp) when helpers are enabled.
+        # =========================================================================
+
+        # OneDNN helper - MUST complete before object files that include dnnl.hpp
+        if(HELPERS_onednn STREQUAL "ON" AND TARGET onednn_external)
+            message(STATUS "")
+            message(STATUS "╔═══════════════════════════════════════════════════════════════════╗")
+            message(STATUS "║  🔒 DEPENDENCY BLOCK: OneDNN                                      ║")
+            message(STATUS "║  ${OBJECT_LIB_NAME} compilation will WAIT for OneDNN to finish    ║")
+            message(STATUS "║  OneDNN build may take 5-15 minutes...                            ║")
+            message(STATUS "╚═══════════════════════════════════════════════════════════════════╝")
+            message(STATUS "")
+            add_dependencies(${OBJECT_LIB_NAME} onednn_external)
+            if(TARGET onednn_interface)
+                target_link_libraries(${OBJECT_LIB_NAME} PUBLIC onednn_interface)
+            endif()
+        endif()
+
+        # ARM Compute helper
+        if(HELPERS_armcompute STREQUAL "ON" AND TARGET armcompute_external)
+            message(STATUS "")
+            message(STATUS "╔═══════════════════════════════════════════════════════════════════╗")
+            message(STATUS "║  🔒 DEPENDENCY BLOCK: ARM Compute Library                         ║")
+            message(STATUS "║  ${OBJECT_LIB_NAME} compilation will WAIT for ARM Compute         ║")
+            message(STATUS "╚═══════════════════════════════════════════════════════════════════╝")
+            message(STATUS "")
+            add_dependencies(${OBJECT_LIB_NAME} armcompute_external)
+            if(TARGET armcompute_interface)
+                target_link_libraries(${OBJECT_LIB_NAME} PUBLIC armcompute_interface)
+            endif()
+        endif()
+
+        # ZLUDA helper
+        if(SD_ZLUDA AND TARGET zluda_external)
+            message(STATUS "")
+            message(STATUS "╔═══════════════════════════════════════════════════════════════════╗")
+            message(STATUS "║  🔒 DEPENDENCY BLOCK: ZLUDA                                       ║")
+            message(STATUS "║  ${OBJECT_LIB_NAME} compilation will WAIT for ZLUDA               ║")
+            message(STATUS "╚═══════════════════════════════════════════════════════════════════╝")
+            message(STATUS "")
+            add_dependencies(${OBJECT_LIB_NAME} zluda_external)
+            if(TARGET zluda_interface)
+                target_link_libraries(${OBJECT_LIB_NAME} PUBLIC zluda_interface)
+            endif()
+        endif()
+
+        # MIOpen helper
+        if(HELPERS_miopen STREQUAL "ON" AND TARGET miopen_external)
+            message(STATUS "")
+            message(STATUS "╔═══════════════════════════════════════════════════════════════════╗")
+            message(STATUS "║  🔒 DEPENDENCY BLOCK: MIOpen                                      ║")
+            message(STATUS "║  ${OBJECT_LIB_NAME} compilation will WAIT for MIOpen              ║")
+            message(STATUS "╚═══════════════════════════════════════════════════════════════════╝")
+            message(STATUS "")
+            add_dependencies(${OBJECT_LIB_NAME} miopen_external)
+            if(TARGET miopen_interface)
+                target_link_libraries(${OBJECT_LIB_NAME} PUBLIC miopen_interface)
+            endif()
+        endif()
 
         # picking up incomplete flatbuffers.h from libnd4j/include/flatbuffers/
         # The ExternalProject downloads full headers to flatbuffers-src/include
@@ -586,9 +777,12 @@ print_status_colored("INFO" "=== 2. INITIALIZING DEPENDENCIES & OPERATIONS ===")
 include(DuplicateInstantiationDetection)
 include(TemplateProcessing)
 include(CompilerFlags)
+include(HelperConfiguration)
 setup_platform_optimizations()
 setup_onednn()
 setup_armcompute()
+setup_llamacpp()
+setup_vlm()
 
 # UPDATED: Modern cuDNN setup
 if(SD_CUDA)
@@ -614,7 +808,26 @@ setup_mps()
 message(STATUS "🔍 DEBUG: After setup_blas() - OPENBLAS_PATH='${OPENBLAS_PATH}', HAVE_OPENBLAS='${HAVE_OPENBLAS}'")
 message(STATUS "Dependencies initialization complete.")
 
-message(STATUS "🔧 Helper Configuration: ONEDNN=${HAVE_ONEDNN}, ARMCOMPUTE=${HAVE_ARMCOMPUTE}, CUDNN=${HAVE_CUDNN}, MLIR=${HAVE_MLIR}, MPS=${HAVE_MPS}")
+# Print comprehensive helper configuration summary
+message(STATUS "")
+message(STATUS "🔧 === Helper Configuration ===")
+message(STATUS "   ONEDNN:      ${HAVE_ONEDNN}")
+message(STATUS "   ARMCOMPUTE:  ${HAVE_ARMCOMPUTE}")
+message(STATUS "   CUDNN:       ${HAVE_CUDNN}")
+message(STATUS "   MLIR:        ${HAVE_MLIR}")
+message(STATUS "   MPS:         ${HAVE_MPS}")
+message(STATUS "   ACCELERATE:  ${HAVE_ACCELERATE}")
+message(STATUS "   MIOPEN:      ${HAVE_MIOPEN}")
+message(STATUS "   PJRT:        ${HAVE_PJRT}")
+message(STATUS "   LLAMACPP:    ${HAVE_LLAMACPP}")
+message(STATUS "   VLM:         ${HAVE_VLM}")
+message(STATUS "")
+message(STATUS "🔧 === Dynamic Kernel Selection ===")
+message(STATUS "   Enabled:     ${SD_DYNAMIC_KERNEL_SELECTION}")
+message(STATUS "   Strategy:    ${SD_KERNEL_STRATEGY}")
+message(STATUS "   Auto-tuning: ${SD_KERNEL_AUTOTUNING}")
+message(STATUS "   Priority:    ${SD_HELPER_PRIORITY}")
+message(STATUS "")
 
 # --- Build TYPE_DEFINES string before generating config.h ---
 # This ensures config.h has all HAS_* macros defined from the start

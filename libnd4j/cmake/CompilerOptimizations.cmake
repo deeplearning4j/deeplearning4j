@@ -18,7 +18,7 @@ elseif(SD_ARCH MATCHES "armv7")
     set(ARCH_TUNE "-march=${SD_ARCH} -mfpu=neon")
 elseif(SD_EXTENSION MATCHES "avx2")
     message("Building AVX2 binary...")
-    set(ARCH_TUNE "-mmmx -msse -msse2 -msse3 -msse4.1 -msse4.2 -mavx -mavx2 -mfma -mf16c -mprefetchwt1 -DSD_F16C=true -DF_AVX2=true")
+    set(ARCH_TUNE "-mmmx -msse -msse2 -msse3 -msse4.1 -msse4.2 -mavx -mavx2 -mfma -mf16c -DSD_F16C=true -DF_AVX2=true")
     if(NO_AVX256_SPLIT)
         set(ARCH_TUNE "${ARCH_TUNE} -mno-avx256-split-unaligned-load -mno-avx256-split-unaligned-store")
     endif()
@@ -32,8 +32,14 @@ else()
     endif()
 
     if(SD_EXTENSION MATCHES "avx512")
-        message("Building AVX512 binary...")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmmx -msse -msse2 -msse3 -msse4.1 -msse4.2 -mavx -mavx2 -mfma -mf16c -mavx512f -mavx512vl -mavx512bw -mavx512dq -mavx512cd -mbmi -mbmi2 -mprefetchwt1 -mclflushopt -mxsavec -mxsaves -DSD_F16C=true -DF_AVX512=true")
+        message("Building AVX512-capable binary with runtime feature detection...")
+        # IMPORTANT: Do NOT add -mavx512* flags globally - they cause SIGILL on CPUs without AVX-512
+        # Instead, compile base library with AVX2 (safe for all modern x86-64) and define F_AVX512
+        # so that code can use runtime CPU feature detection before executing AVX-512 paths.
+        # AVX-512 intrinsics should be in separate compilation units with target attributes.
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmmx -msse -msse2 -msse3 -msse4.1 -msse4.2 -mavx -mavx2 -mfma -mf16c -mbmi -mbmi2 -DSD_F16C=true -DF_AVX512=true")
+        # Store AVX-512 flags for use with specific optimized kernel files only
+        set(SD_AVX512_FLAGS "-mavx512f -mavx512vl -mavx512bw -mavx512dq -mavx512cd -mclflushopt -mxsavec -mxsaves" CACHE STRING "AVX-512 flags for optimized kernels")
     endif()
 
     # FIXED: Only set architecture flags if we have valid values

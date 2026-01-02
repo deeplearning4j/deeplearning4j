@@ -81,15 +81,17 @@ class Hardmax : PreImportHook {
         }
 
         // Compute argmax along the axis
-        val argmaxResult = sd.argmax("${opName}_argmax", input, false, axis.toInt())
+        val argmaxResult = sd.argmax("${opName}_argmax", input, false, axis)
 
-        // Get the depth (size of the axis dimension)
-        val depth = sd.gather("${opName}_depth", inputShape, normalizedAxis.castTo(DataType.INT64), 0)
+        // Get the depth (size of the axis dimension) - need static shape for oneHot
+        val inputShapeArr = input.shape ?: throw IllegalStateException("Hardmax requires static input shape")
+        val normalizedAxisInt = if (axis < 0) (inputShapeArr.size + axis.toInt()) else axis.toInt()
+        val depthInt = inputShapeArr[normalizedAxisInt].toInt()
 
         // Create one-hot encoding
         // Note: oneHot places the new dimension at 'axis' position
         val oneHot = sd.oneHot("${opName}_onehot", argmaxResult.castTo(DataType.INT64),
-            depth.castTo(DataType.INT32), axis.toInt(), 1.0, 0.0, input.dataType())
+            depthInt, axis.toInt(), 1.0, 0.0, input.dataType())
 
         val output = oneHot.rename(outputNames[0])
 

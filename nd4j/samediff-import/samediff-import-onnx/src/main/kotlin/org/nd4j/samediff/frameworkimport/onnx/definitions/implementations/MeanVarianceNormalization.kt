@@ -75,11 +75,14 @@ class MeanVarianceNormalization : PreImportHook {
         // Small epsilon for numerical stability
         val epsilon = 1e-9
 
+        // Convert axes to Long array for vararg
+        val axesLong = axes.map { it.toLong() }.toLongArray()
+
         // Compute mean along specified axes (keep dims for broadcasting)
-        val mean = sd.mean("${opName}_mean", input, true, *axes)
+        val mean = sd.mean("${opName}_mean", input, true, *axesLong)
 
         // Compute variance along specified axes
-        val variance = sd.variance("${opName}_var", input, false, true, *axes)
+        val variance = sd.variance("${opName}_var", input, false, true, *axesLong)
 
         // Normalize: (x - mean) / sqrt(variance + epsilon)
         val centered = sd.math.sub("${opName}_centered", input, mean)

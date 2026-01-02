@@ -31,6 +31,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/headers/vlm.h>
+#include <ops/declarable/helpers/transforms.h>
 #include <helpers/MmulHelper.h>
 #include <cmath>
 
@@ -49,25 +50,39 @@ CUSTOM_OP_IMPL(vlm_vision_encode, 1, 1, false, 0, 0) {
 
     // Simple layer normalization as fallback
     // Normalize along the last dimension
-    int axis = input->rankOf() - 1;
+    std::vector<LongType> axis = {input->rankOf() - 1};
 
-    auto mean = input->reduceAlongDimension(reduce::Mean, {axis}, true);
-    auto variance = input->varianceAlongDimension(variance::SummaryStatsVariance, false, {axis});
-    variance.reshapei(mean.shapeInfo());
+    NDArray* mean = input->reduceAlongDimension(reduce::Mean, &axis, true);
+    NDArray* variance = input->varianceAlongDimension(variance::SummaryStatsVariance, false, &axis);
+
+    // Reshape variance to match mean shape for broadcasting
+    std::vector<LongType> meanShape;
+    for (int i = 0; i < mean->rankOf(); i++) {
+        meanShape.push_back(mean->sizeAt(i));
+    }
+    NDArray* varianceReshaped = variance->reshape(variance->ordering(), meanShape);
 
     // output = (input - mean) / sqrt(variance + eps)
-    auto centered = *input - mean;
-    auto stddev = (variance + eps).transform(transform::Sqrt);
-    output->assign(centered / stddev);
+    NDArray* centered = (*input) - (*mean);
+    NDArray* varPlusEps = (*varianceReshaped) + eps;
+    NDArray* stddev = varPlusEps->transform(transform::Sqrt);
+    NDArray* result = (*centered) / (*stddev);
+    output->assign(result);
+
+    delete mean;
+    delete variance;
+    delete varianceReshaped;
+    delete centered;
+    delete varPlusEps;
+    delete stddev;
+    delete result;
 
     return Status::OK;
 }
 
 DECLARE_SHAPE_FN(vlm_vision_encode) {
-    auto inputShape = inputShape->at(0);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
-        ArrayOptions::dataType(inputShape), shape::order(inputShape),
-        shape::rank(inputShape), shape::shapeOf(inputShape)));
+    auto inShape = inputShape->at(0);
+    return SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary());
 }
 
 DECLARE_TYPES(vlm_vision_encode) {
@@ -99,22 +114,25 @@ CUSTOM_OP_IMPL(vlm_image_embed, 1, 1, false, 0, 0) {
 
     // For the generic implementation, just reshape
     // Platform helpers will do proper projection
-    output->assign(input->reshape(input->ordering(), {batch, numPatches, patchDim}));
+    std::vector<LongType> newShape = {batch, numPatches, patchDim};
+    NDArray* reshaped = input->reshape(input->ordering(), newShape);
+    output->assign(reshaped);
+    delete reshaped;
 
     return Status::OK;
 }
 
 DECLARE_SHAPE_FN(vlm_image_embed) {
-    auto inputShape = inputShape->at(0);
-    auto dtype = ArrayOptions::dataType(inputShape);
+    auto inShape = inputShape->at(0);
+    auto dtype = ArrayOptions::dataType(inShape);
 
     int patchSize = block.getIArguments()->size() > 0 ? INT_ARG(0) : 16;
     int embeddingDim = block.getIArguments()->size() > 1 ? INT_ARG(1) : 768;
 
-    auto batch = shape::sizeAt(inputShape, static_cast<LongType>(0));
-    auto channels = shape::sizeAt(inputShape, static_cast<LongType>(1));
-    auto height = shape::sizeAt(inputShape, static_cast<LongType>(2));
-    auto width = shape::sizeAt(inputShape, static_cast<LongType>(3));
+    auto batch = shape::sizeAt(inShape, static_cast<LongType>(0));
+    auto channels = shape::sizeAt(inShape, static_cast<LongType>(1));
+    auto height = shape::sizeAt(inShape, static_cast<LongType>(2));
+    auto width = shape::sizeAt(inShape, static_cast<LongType>(3));
 
     auto numPatches = (height / patchSize) * (width / patchSize);
     auto patchDim = channels * patchSize * patchSize;
@@ -159,6 +177,7 @@ CUSTOM_OP_IMPL(vlm_patch_embed, 1, 1, false, 0, 0) {
 
         // Initialize CLS token to zeros if included
         if (includeCls) {
+            PRAGMA_OMP_SIMD
             for (LongType i = 0; i < patchDim; ++i) {
                 outputBuf[b * numPatches * patchDim + i] = 0.0f;
             }
@@ -170,12 +189,12 @@ CUSTOM_OP_IMPL(vlm_patch_embed, 1, 1, false, 0, 0) {
 
                 for (LongType c = 0; c < channels; ++c) {
                     for (LongType i = 0; i < patchSize; ++i) {
+                        LongType inH = ph * stride + i;
+                        LongType inBase = ((b * channels + c) * height + inH) * width + pw * stride;
+                        LongType patchBase = (c * patchSize + i) * patchSize;
+                        PRAGMA_OMP_SIMD
                         for (LongType j = 0; j < patchSize; ++j) {
-                            LongType inH = ph * stride + i;
-                            LongType inW = pw * stride + j;
-                            LongType inOffset = ((b * channels + c) * height + inH) * width + inW;
-                            LongType patchOffset = (c * patchSize + i) * patchSize + j;
-                            outputBuf[outOffset + patchOffset] = inputBuf[inOffset];
+                            outputBuf[outOffset + patchBase + j] = inputBuf[inBase + j];
                         }
                     }
                 }
@@ -188,17 +207,17 @@ CUSTOM_OP_IMPL(vlm_patch_embed, 1, 1, false, 0, 0) {
 }
 
 DECLARE_SHAPE_FN(vlm_patch_embed) {
-    auto inputShape = inputShape->at(0);
-    auto dtype = ArrayOptions::dataType(inputShape);
+    auto inShape = inputShape->at(0);
+    auto dtype = ArrayOptions::dataType(inShape);
 
     int patchSize = block.getIArguments()->size() > 0 ? INT_ARG(0) : 16;
     int stride = block.getIArguments()->size() > 1 ? INT_ARG(1) : patchSize;
     bool includeCls = block.getIArguments()->size() > 2 ? INT_ARG(2) != 0 : true;
 
-    auto batch = shape::sizeAt(inputShape, static_cast<LongType>(0));
-    auto channels = shape::sizeAt(inputShape, static_cast<LongType>(1));
-    auto height = shape::sizeAt(inputShape, static_cast<LongType>(2));
-    auto width = shape::sizeAt(inputShape, static_cast<LongType>(3));
+    auto batch = shape::sizeAt(inShape, static_cast<LongType>(0));
+    auto channels = shape::sizeAt(inShape, static_cast<LongType>(1));
+    auto height = shape::sizeAt(inShape, static_cast<LongType>(2));
+    auto width = shape::sizeAt(inShape, static_cast<LongType>(3));
 
     auto numPatchesH = (height - patchSize) / stride + 1;
     auto numPatchesW = (width - patchSize) / stride + 1;
@@ -230,39 +249,45 @@ CUSTOM_OP_IMPL(vlm_cross_attention, 3, 1, false, 0, 0) {
         T_ARG(0) : 1.0f / std::sqrt(static_cast<float>(query->sizeAt(-1) / numHeads));
 
     // Compute Q * K^T
-    auto kT = key->transpose();
-    auto scores = MmulHelper::mmul(query, &kT, nullptr, 1.0f, 0.0f);
+    NDArray* kT = key->transpose();
+    NDArray* scores = MmulHelper::mmul(query, kT, nullptr, 1.0f, 0.0f);
+    delete kT;
 
     // Scale
-    scores->applyScalar(scalar::Multiply, scale, *scores);
+    (*scores) *= scale;
 
     // Apply causal mask if needed
     if (isCausal) {
         auto seqLen = query->sizeAt(1);
         auto kvLen = key->sizeAt(1);
+        auto scoresBuf = scores->bufferAsT<float>();
         for (LongType i = 0; i < seqLen; ++i) {
             for (LongType j = i + 1; j < kvLen; ++j) {
                 // Mask future positions
-                scores->p(i, j, -1e9f);
+                scoresBuf[i * kvLen + j] = -1e9f;
             }
         }
     }
 
-    // Softmax
-    scores->applyTransform(transform::SoftMax, *scores);
+    // Softmax - use exp and normalize manually
+    NDArray* expScores = scores->transform(transform::Exp);
+    std::vector<LongType> lastAxis = {scores->rankOf() - 1};
+    NDArray* sumExp = expScores->reduceAlongDimension(reduce::Sum, &lastAxis, true);
+    NDArray* softmaxScores = (*expScores) / (*sumExp);
+    delete scores;
+    delete expScores;
+    delete sumExp;
 
     // Attention output: scores * V
-    MmulHelper::mmul(scores, value, output, 1.0f, 0.0f);
+    MmulHelper::mmul(softmaxScores, value, output, 1.0f, 0.0f);
 
-    delete scores;
+    delete softmaxScores;
     return Status::OK;
 }
 
 DECLARE_SHAPE_FN(vlm_cross_attention) {
     auto queryShape = inputShape->at(0);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
-        ArrayOptions::dataType(queryShape), shape::order(queryShape),
-        shape::rank(queryShape), shape::shapeOf(queryShape)));
+    return SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(queryShape)->primary());
 }
 
 DECLARE_TYPES(vlm_cross_attention) {
@@ -283,19 +308,23 @@ CUSTOM_OP_IMPL(vlm_multimodal_fusion, 2, 1, false, 0, 0) {
 
     switch (fusionType) {
         case 0: {  // Concatenation along sequence dimension
-            std::vector<const NDArray*> inputs = {vision, language};
-            helpers::concat(block.launchContext(), inputs, *output, 1);
+            helpers::concat(block.launchContext(), {vision, language}, *output, 1);
             break;
         }
-        case 1:  // Addition (requires same shape)
-            output->assign(*vision + *language);
+        case 1: {  // Addition (requires same shape)
+            NDArray* sum = (*vision) + (*language);
+            output->assign(sum);
+            delete sum;
             break;
-        case 2:  // Element-wise multiplication
-            output->assign(*vision * *language);
+        }
+        case 2: {  // Element-wise multiplication
+            NDArray* prod = (*vision) * (*language);
+            output->assign(prod);
+            delete prod;
             break;
+        }
         default:
-            std::vector<const NDArray*> inputs = {vision, language};
-            helpers::concat(block.launchContext(), inputs, *output, 1);
+            helpers::concat(block.launchContext(), {vision, language}, *output, 1);
     }
 
     return Status::OK;
@@ -318,9 +347,7 @@ DECLARE_SHAPE_FN(vlm_multimodal_fusion) {
             dtype, 'c', {batch, visionLen + languageLen, dim}));
     } else {
         // Same shape as input for add/multiply
-        return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
-            dtype, shape::order(visionShape),
-            shape::rank(visionShape), shape::shapeOf(visionShape)));
+        return SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(visionShape)->primary());
     }
 }
 
@@ -345,12 +372,12 @@ CUSTOM_OP_IMPL(vlm_vision_projection, 2, 1, false, 0, 0) {
 }
 
 DECLARE_SHAPE_FN(vlm_vision_projection) {
-    auto inputShape = inputShape->at(0);
+    auto inShape = inputShape->at(0);
     auto weightsShape = inputShape->at(1);
-    auto dtype = ArrayOptions::dataType(inputShape);
+    auto dtype = ArrayOptions::dataType(inShape);
 
-    auto batch = shape::sizeAt(inputShape, static_cast<LongType>(0));
-    auto seqLen = shape::sizeAt(inputShape, static_cast<LongType>(1));
+    auto batch = shape::sizeAt(inShape, static_cast<LongType>(0));
+    auto seqLen = shape::sizeAt(inShape, static_cast<LongType>(1));
     auto outDim = shape::sizeAt(weightsShape, static_cast<LongType>(1));
 
     return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
@@ -383,24 +410,37 @@ CUSTOM_OP_IMPL(vlm_image_preprocess, 1, 1, false, 0, 0) {
 
     if (channels == 3) {
         // Per-channel normalization
-        NDArray means('c', {1, 3, 1, 1}, {meanR, meanG, meanB}, input->dataType(), block.launchContext());
-        NDArray stds('c', {1, 3, 1, 1}, {stdR, stdG, stdB}, input->dataType(), block.launchContext());
-        output->assign((*input - means) / stds);
+        std::vector<LongType> normShape = {1, 3, 1, 1};
+        NDArray means('c', normShape, input->dataType(), block.launchContext());
+        NDArray stds('c', normShape, input->dataType(), block.launchContext());
+        means.p(0, meanR);
+        means.p(1, meanG);
+        means.p(2, meanB);
+        stds.p(0, stdR);
+        stds.p(1, stdG);
+        stds.p(2, stdB);
+        NDArray* centered = (*input) - means;
+        NDArray* normalized = (*centered) / stds;
+        output->assign(normalized);
+        delete centered;
+        delete normalized;
     } else {
         // Generic normalization
         float meanAvg = (meanR + meanG + meanB) / 3.0f;
         float stdAvg = (stdR + stdG + stdB) / 3.0f;
-        output->assign((*input - meanAvg) / stdAvg);
+        NDArray* centered = (*input) - meanAvg;
+        NDArray* normalized = (*centered) / stdAvg;
+        output->assign(normalized);
+        delete centered;
+        delete normalized;
     }
 
     return Status::OK;
 }
 
 DECLARE_SHAPE_FN(vlm_image_preprocess) {
-    auto inputShape = inputShape->at(0);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
-        ArrayOptions::dataType(inputShape), shape::order(inputShape),
-        shape::rank(inputShape), shape::shapeOf(inputShape)));
+    auto inShape = inputShape->at(0);
+    return SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary());
 }
 
 DECLARE_TYPES(vlm_image_preprocess) {
@@ -440,6 +480,7 @@ CUSTOM_OP_IMPL(vlm_2d_position_encode, 1, 1, false, 0, 0) {
             LongType outOffset = (b * numPatches + p) * dim;
 
             // Height position encoding
+            PRAGMA_OMP_SIMD
             for (int i = 0; i < quarterDim; ++i) {
                 float freq = 1.0f / std::pow(temperature, (2.0f * i) / quarterDim);
                 outputBuf[outOffset + i] += std::sin(py * freq);
@@ -447,6 +488,7 @@ CUSTOM_OP_IMPL(vlm_2d_position_encode, 1, 1, false, 0, 0) {
             }
 
             // Width position encoding
+            PRAGMA_OMP_SIMD
             for (int i = 0; i < quarterDim; ++i) {
                 float freq = 1.0f / std::pow(temperature, (2.0f * i) / quarterDim);
                 outputBuf[outOffset + halfDim + i] += std::sin(px * freq);
@@ -459,10 +501,8 @@ CUSTOM_OP_IMPL(vlm_2d_position_encode, 1, 1, false, 0, 0) {
 }
 
 DECLARE_SHAPE_FN(vlm_2d_position_encode) {
-    auto inputShape = inputShape->at(0);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
-        ArrayOptions::dataType(inputShape), shape::order(inputShape),
-        shape::rank(inputShape), shape::shapeOf(inputShape)));
+    auto inShape = inputShape->at(0);
+    return SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary());
 }
 
 DECLARE_TYPES(vlm_2d_position_encode) {

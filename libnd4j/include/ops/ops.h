@@ -232,6 +232,45 @@ DECLARE_BINARY_MATH_OP(FMod, sd_fmod)
 DECLARE_SAFE_DIVISION_OP(DivideNoNan, d2 == static_cast<Y>(0))
 DECLARE_SAFE_DIVISION_OP(SafeDivide, d2 == static_cast<Y>(0))
 
+// Xdivy: returns 0 where x == 0, otherwise x / y (TensorFlow compatible)
+DECLARE_SAFE_DIVISION_OP(Xdivy, d1 == static_cast<X>(0))
+
+// Xlogy: returns 0 where x == 0, otherwise x * log(y)
+template <typename X, typename Y, typename Z>
+class Xlogy {
+ public:
+  no_op_exec_special no_op_exec_special_cuda;
+  SD_OP_DEF static SD_HOST_DEVICE Z op(X d1, Y d2) {
+    return d1 == static_cast<X>(0) ? static_cast<Z>(0) : static_cast<Z>(d1) * sd::math::sd_log<Y, Z>(d2);
+  }
+  SD_OP_DEF static SD_HOST_DEVICE Z op(X d1, Y d2, Z *params) {
+    return op(d1, d2);
+  }
+  SD_OP_DEF static SD_HOST_DEVICE Z op(X d1) { return static_cast<Z>(d1); }
+  SD_OP_DEF static SD_HOST_DEVICE Z op(X d1, Y *params) {
+    return d1 == static_cast<X>(0) ? static_cast<Z>(0) : static_cast<Z>(d1) * sd::math::sd_log<Y, Z>(params[0]);
+  }
+  SD_OP_DEF static SD_HOST_DEVICE X startingValue() { return static_cast<X>(0); }
+};
+
+// Xlog1py: returns 0 where x == 0, otherwise x * log(1 + y)
+template <typename X, typename Y, typename Z>
+class Xlog1py {
+ public:
+  no_op_exec_special no_op_exec_special_cuda;
+  SD_OP_DEF static SD_HOST_DEVICE Z op(X d1, Y d2) {
+    return d1 == static_cast<X>(0) ? static_cast<Z>(0) : static_cast<Z>(d1) * sd::math::sd_log<Y, Z>(static_cast<Y>(1) + d2);
+  }
+  SD_OP_DEF static SD_HOST_DEVICE Z op(X d1, Y d2, Z *params) {
+    return op(d1, d2);
+  }
+  SD_OP_DEF static SD_HOST_DEVICE Z op(X d1) { return static_cast<Z>(d1); }
+  SD_OP_DEF static SD_HOST_DEVICE Z op(X d1, Y *params) {
+    return d1 == static_cast<X>(0) ? static_cast<Z>(0) : static_cast<Z>(d1) * sd::math::sd_log<Y, Z>(static_cast<Y>(1) + params[0]);
+  }
+  SD_OP_DEF static SD_HOST_DEVICE X startingValue() { return static_cast<X>(0); }
+};
+
 // Floor division:
 DECLARE_FLOOR_DIVISION_OP(FloorDiv, sd_floor)
 

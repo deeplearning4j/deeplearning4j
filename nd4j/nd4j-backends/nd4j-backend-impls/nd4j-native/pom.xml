@@ -186,6 +186,27 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-native-deps</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <!-- Copy any additional .so files from libnd4j build dir (e.g., libomp.so) -->
+                                <copy todir="${javacpp.build.output.path}" failonerror="false" verbose="true">
+                                    <fileset dir="${libnd4j.outputPath}">
+                                        <include name="*.so"/>
+                                        <include name="*.so.*"/>
+                                        <exclude name="libnd4jcpu.so"/>
+                                    </fileset>
+                                </copy>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>

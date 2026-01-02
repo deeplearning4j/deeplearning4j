@@ -38,7 +38,7 @@ namespace platforms {
 
 //////////////////////////////////////////////////////////////////////
 static void logSigmoidMKLDNN(NDArray* x, NDArray* z) {
-  dnnl::memory::dims shape = x->getShapeAsFlatVector();
+  dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
   dnnl::memory::desc x_mkl_md, x_user_md, z_mkl_md, z_user_md;
 
@@ -54,8 +54,9 @@ static void logSigmoidMKLDNN(NDArray* x, NDArray* z) {
   dnnl::stream stream(engine);
 
   // Step 1: Compute -x using eltwise_linear with alpha=-1, beta=0
-  dnnl::eltwise_forward::desc neg_desc(dnnl::prop_kind::forward_inference, algorithm::eltwise_linear, x_mkl_md, -1.0f, 0.0f);
-  dnnl::eltwise_forward::primitive_desc neg_prim_desc(neg_desc, attr, engine);
+  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  dnnl::eltwise_forward::primitive_desc neg_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                       algorithm::eltwise_linear, x_mkl_md, x_mkl_md, -1.0f, 0.0f);
 
   dnnl::memory neg_x_mem(neg_prim_desc.dst_desc(), engine);
 
@@ -66,8 +67,9 @@ static void logSigmoidMKLDNN(NDArray* x, NDArray* z) {
   dnnl::eltwise_forward(neg_prim_desc).execute(stream, neg_args);
 
   // Step 2: Compute softplus(-x) = log(1 + exp(-x))
-  dnnl::eltwise_forward::desc softplus_desc(dnnl::prop_kind::forward_inference, algorithm::eltwise_soft_relu, neg_prim_desc.dst_desc(), 0, 0);
-  dnnl::eltwise_forward::primitive_desc softplus_prim_desc(softplus_desc, attr, engine);
+  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  dnnl::eltwise_forward::primitive_desc softplus_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                            algorithm::eltwise_soft_relu, neg_prim_desc.dst_desc(), neg_prim_desc.dst_desc(), 0.f, 0.f);
 
   dnnl::memory softplus_mem(softplus_prim_desc.dst_desc(), engine);
 
@@ -78,8 +80,9 @@ static void logSigmoidMKLDNN(NDArray* x, NDArray* z) {
   dnnl::eltwise_forward(softplus_prim_desc).execute(stream, softplus_args);
 
   // Step 3: Compute -softplus(-x) to get log(sigmoid(x))
-  dnnl::eltwise_forward::desc neg2_desc(dnnl::prop_kind::forward_inference, algorithm::eltwise_linear, softplus_prim_desc.dst_desc(), -1.0f, 0.0f);
-  dnnl::eltwise_forward::primitive_desc neg2_prim_desc(neg2_desc, attr, engine);
+  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  dnnl::eltwise_forward::primitive_desc neg2_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                        algorithm::eltwise_linear, softplus_prim_desc.dst_desc(), z_mkl_md, -1.0f, 0.0f);
 
   std::unordered_map<int, dnnl::memory> neg2_args;
   neg2_args[DNNL_ARG_SRC] = softplus_mem;

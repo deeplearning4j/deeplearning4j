@@ -32,6 +32,8 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/headers/llm.h>
 #include <helpers/MmulHelper.h>
+#include <helpers/FlashAttentionHelper.h>
+#include <math/templatemath.h>
 #include <cmath>
 
 namespace sd {
@@ -48,29 +50,34 @@ CUSTOM_OP_IMPL(rms_norm, 1, 1, false, 0, 0) {
     float eps = block.getTArguments()->size() > 0 ? T_ARG(0) : 1e-5f;
 
     // RMS = sqrt(mean(x^2))
-    auto squared = *input * *input;
-    int axis = input->rankOf() - 1;
-    auto meanSquared = squared.reduceAlongDimension(reduce::Mean, {axis}, true);
+    NDArray* squared = (*input) * (*input);
+    std::vector<LongType> axis = {input->rankOf() - 1};
+    NDArray* meanSquared = squared->reduceAlongDimension(reduce::Mean, &axis, true);
+    delete squared;
 
     // rsqrt = 1 / sqrt(mean + eps)
-    auto rsqrt = (meanSquared + eps).transform(transform::RSqrt);
+    NDArray* meanPlusEps = (*meanSquared) + eps;
+    delete meanSquared;
+    NDArray* rsqrt = meanPlusEps->transform(transform::RSqrt);
+    delete meanPlusEps;
 
     // output = input * rsqrt
-    output->assign(*input * rsqrt);
+    NDArray* result = (*input) * (*rsqrt);
+    output->assign(result);
+    delete result;
+    delete rsqrt;
 
     // Apply gamma if provided
     if (gamma != nullptr) {
-        output->applyBroadcast(broadcast::Multiply, {axis}, *gamma, *output);
+        output->applyBroadcast(broadcast::Multiply, &axis, gamma, output);
     }
 
     return Status::OK;
 }
 
 DECLARE_SHAPE_FN(rms_norm) {
-    auto inputShape = inputShape->at(0);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
-        ArrayOptions::dataType(inputShape), shape::order(inputShape),
-        shape::rank(inputShape), shape::shapeOf(inputShape)));
+    auto inShape = inputShape->at(0);
+    return SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary());
 }
 
 DECLARE_TYPES(rms_norm) {
@@ -84,29 +91,53 @@ CUSTOM_OP_IMPL(rms_norm_bp, 2, 1, false, 0, 0) {
     auto gradIn = OUTPUT_VARIABLE(0);
 
     float eps = block.getTArguments()->size() > 0 ? T_ARG(0) : 1e-5f;
-    int axis = input->rankOf() - 1;
-    auto n = input->sizeAt(axis);
+    std::vector<LongType> axis = {input->rankOf() - 1};
+    auto n = input->sizeAt(axis[0]);
 
     // Forward pass values
-    auto squared = *input * *input;
-    auto meanSquared = squared.reduceAlongDimension(reduce::Mean, {axis}, true);
-    auto rsqrt = (meanSquared + eps).transform(transform::RSqrt);
+    NDArray* squared = (*input) * (*input);
+    NDArray* meanSquared = squared->reduceAlongDimension(reduce::Mean, &axis, true);
+    delete squared;
+
+    NDArray* meanPlusEps = (*meanSquared) + eps;
+    delete meanSquared;
+    NDArray* rsqrt = meanPlusEps->transform(transform::RSqrt);
+    delete meanPlusEps;
 
     // Gradient computation
-    auto gradNorm = *gradOut * rsqrt;
-    auto dotProduct = (*input * *gradOut).reduceAlongDimension(reduce::Sum, {axis}, true);
-    auto gradMean = dotProduct * rsqrt * rsqrt * rsqrt / static_cast<float>(n);
+    NDArray* gradNorm = (*gradOut) * (*rsqrt);
+    NDArray* inputGrad = (*input) * (*gradOut);
+    NDArray* dotProduct = inputGrad->reduceAlongDimension(reduce::Sum, &axis, true);
+    delete inputGrad;
 
-    gradIn->assign(gradNorm - *input * gradMean);
+    NDArray* rsqrt2 = (*rsqrt) * (*rsqrt);
+    NDArray* rsqrt3 = (*rsqrt2) * (*rsqrt);
+    delete rsqrt2;
+    delete rsqrt;
+
+    NDArray* gradMean = (*dotProduct) * (*rsqrt3);
+    delete dotProduct;
+    delete rsqrt3;
+
+    NDArray* gradMeanScaled = (*gradMean) / static_cast<float>(n);
+    delete gradMean;
+
+    NDArray* inputScaled = (*input) * (*gradMeanScaled);
+    delete gradMeanScaled;
+
+    NDArray* result = (*gradNorm) - (*inputScaled);
+    delete gradNorm;
+    delete inputScaled;
+
+    gradIn->assign(result);
+    delete result;
 
     return Status::OK;
 }
 
 DECLARE_SHAPE_FN(rms_norm_bp) {
-    auto inputShape = inputShape->at(0);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
-        ArrayOptions::dataType(inputShape), shape::order(inputShape),
-        shape::rank(inputShape), shape::shapeOf(inputShape)));
+    auto inShape = inputShape->at(0);
+    return SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary());
 }
 
 DECLARE_TYPES(rms_norm_bp) {
@@ -164,10 +195,8 @@ CUSTOM_OP_IMPL(rope, 1, 1, false, 0, 0) {
 }
 
 DECLARE_SHAPE_FN(rope) {
-    auto inputShape = inputShape->at(0);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
-        ArrayOptions::dataType(inputShape), shape::order(inputShape),
-        shape::rank(inputShape), shape::shapeOf(inputShape)));
+    auto inShape = inputShape->at(0);
+    return SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary());
 }
 
 DECLARE_TYPES(rope) {
@@ -222,10 +251,8 @@ CUSTOM_OP_IMPL(rope_bp, 2, 1, false, 0, 0) {
 }
 
 DECLARE_SHAPE_FN(rope_bp) {
-    auto inputShape = inputShape->at(0);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
-        ArrayOptions::dataType(inputShape), shape::order(inputShape),
-        shape::rank(inputShape), shape::shapeOf(inputShape)));
+    auto inShape = inputShape->at(0);
+    return SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary());
 }
 
 DECLARE_TYPES(rope_bp) {
@@ -242,8 +269,11 @@ CONFIGURABLE_OP_IMPL(silu, 1, 1, true, 0, 0) {
     auto output = OUTPUT_VARIABLE(0);
 
     // silu(x) = x * sigmoid(x)
-    auto sigmoid = input->transform(transform::Sigmoid);
-    output->assign(*input * sigmoid);
+    NDArray* sigmoid = input->transform(transform::Sigmoid);
+    NDArray* result = (*input) * (*sigmoid);
+    output->assign(result);
+    delete sigmoid;
+    delete result;
 
     return Status::OK;
 }
@@ -260,11 +290,32 @@ CONFIGURABLE_OP_IMPL(silu_bp, 2, 1, true, 0, 0) {
 
     // d/dx[x * sigmoid(x)] = sigmoid(x) + x * sigmoid(x) * (1 - sigmoid(x))
     //                      = sigmoid(x) * (1 + x * (1 - sigmoid(x)))
-    auto sigmoid = input->transform(transform::Sigmoid);
-    auto sigmoidDeriv = sigmoid * (1.0f - sigmoid);
-    auto grad = sigmoid + *input * sigmoidDeriv;
+    NDArray* sigmoid = input->transform(transform::Sigmoid);
 
-    gradIn->assign(*gradOut * grad);
+    // (1 - sigmoid)
+    NDArray* oneMinusSigmoid = (*sigmoid) * (-1.0f);
+    NDArray* oneMinusSigmoid2 = (*oneMinusSigmoid) + 1.0f;
+    delete oneMinusSigmoid;
+
+    // sigmoid * (1 - sigmoid)
+    NDArray* sigmoidDeriv = (*sigmoid) * (*oneMinusSigmoid2);
+    delete oneMinusSigmoid2;
+
+    // x * sigmoid'
+    NDArray* xSigmoidDeriv = (*input) * (*sigmoidDeriv);
+    delete sigmoidDeriv;
+
+    // sigmoid + x * sigmoid'
+    NDArray* grad = (*sigmoid) + (*xSigmoidDeriv);
+    delete sigmoid;
+    delete xSigmoidDeriv;
+
+    // gradOut * grad
+    NDArray* result = (*gradOut) * (*grad);
+    delete grad;
+
+    gradIn->assign(result);
+    delete result;
 
     return Status::OK;
 }
@@ -310,7 +361,7 @@ DECLARE_TYPES(quantized_matmul) {
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-// grouped_query_attention - Grouped Query Attention
+// grouped_query_attention - Grouped Query Attention using FlashAttentionHelper
 #if NOT_EXCLUDED(OP_grouped_query_attention)
 CUSTOM_OP_IMPL(grouped_query_attention, 3, 1, false, 0, 0) {
     auto query = INPUT_VARIABLE(0);   // [batch, seq_len, num_heads, head_dim]
@@ -318,90 +369,25 @@ CUSTOM_OP_IMPL(grouped_query_attention, 3, 1, false, 0, 0) {
     auto value = INPUT_VARIABLE(2);   // [batch, kv_len, num_kv_heads, head_dim]
     auto output = OUTPUT_VARIABLE(0);
 
-    int numHeads = block.getIArguments()->size() > 0 ? INT_ARG(0) : 8;
-    int numKvHeads = block.getIArguments()->size() > 1 ? INT_ARG(1) : numHeads;
-    bool isCausal = block.getIArguments()->size() > 2 ? INT_ARG(2) != 0 : true;
+    // Parse configuration
+    // T_ARG: scale
+    // B_ARG: isCausal
+    // I_ARG: numHeads, numKvHeads
+    FlashAttentionHelper::Config config;
+    config.scale = block.getTArguments()->size() > 0 ? T_ARG(0) : 0.0f;
+    config.isCausal = block.numB() > 0 ? B_ARG(0) : true;
+    config.numHeads = block.getIArguments()->size() > 0 ? INT_ARG(0) : query->sizeAt(2);
+    config.numKvHeads = block.getIArguments()->size() > 1 ? INT_ARG(1) : config.numHeads;
 
-    auto headDim = query->sizeAt(-1);
-    float scale = block.getTArguments()->size() > 0 ?
-        T_ARG(0) : 1.0f / std::sqrt(static_cast<float>(headDim));
-
-    auto batch = query->sizeAt(0);
-    auto seqLen = query->sizeAt(1);
-    auto kvLen = key->sizeAt(1);
-
-    // Reshape for attention computation
-    auto qReshaped = query->reshape(query->ordering(), {batch * numHeads, seqLen, headDim});
-    auto kReshaped = key->reshape(key->ordering(), {batch * numKvHeads, kvLen, headDim});
-    auto vReshaped = value->reshape(value->ordering(), {batch * numKvHeads, kvLen, headDim});
-
-    // Handle GQA by repeating KV heads
-    int headsPerKv = numHeads / numKvHeads;
-
-    // Compute attention for each batch
-    auto outputBuf = output->bufferAsT<float>();
-    auto queryBuf = query->bufferAsT<float>();
-    auto keyBuf = key->bufferAsT<float>();
-    auto valueBuf = value->bufferAsT<float>();
-
-    // Simple nested loop implementation
-    for (LongType b = 0; b < batch; ++b) {
-        for (LongType h = 0; h < numHeads; ++h) {
-            int kvHead = h / headsPerKv;
-
-            for (LongType sq = 0; sq < seqLen; ++sq) {
-                // Compute attention scores
-                std::vector<float> scores(kvLen);
-                float maxScore = -1e9f;
-
-                for (LongType sk = 0; sk < kvLen; ++sk) {
-                    if (isCausal && sk > sq) {
-                        scores[sk] = -1e9f;
-                        continue;
-                    }
-
-                    float score = 0.0f;
-                    for (LongType d = 0; d < headDim; ++d) {
-                        LongType qIdx = ((b * seqLen + sq) * numHeads + h) * headDim + d;
-                        LongType kIdx = ((b * kvLen + sk) * numKvHeads + kvHead) * headDim + d;
-                        score += queryBuf[qIdx] * keyBuf[kIdx];
-                    }
-                    scores[sk] = score * scale;
-                    maxScore = std::max(maxScore, scores[sk]);
-                }
-
-                // Softmax
-                float sumExp = 0.0f;
-                for (LongType sk = 0; sk < kvLen; ++sk) {
-                    scores[sk] = std::exp(scores[sk] - maxScore);
-                    sumExp += scores[sk];
-                }
-                for (LongType sk = 0; sk < kvLen; ++sk) {
-                    scores[sk] /= sumExp;
-                }
-
-                // Weighted sum of values
-                for (LongType d = 0; d < headDim; ++d) {
-                    float sum = 0.0f;
-                    for (LongType sk = 0; sk < kvLen; ++sk) {
-                        LongType vIdx = ((b * kvLen + sk) * numKvHeads + kvHead) * headDim + d;
-                        sum += scores[sk] * valueBuf[vIdx];
-                    }
-                    LongType outIdx = ((b * seqLen + sq) * numHeads + h) * headDim + d;
-                    outputBuf[outIdx] = sum;
-                }
-            }
-        }
-    }
+    // Use FlashAttentionHelper which handles GQA automatically
+    FlashAttentionHelper::forward(query, key, value, output, config, nullptr, block.launchContext());
 
     return Status::OK;
 }
 
 DECLARE_SHAPE_FN(grouped_query_attention) {
     auto queryShape = inputShape->at(0);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
-        ArrayOptions::dataType(queryShape), shape::order(queryShape),
-        shape::rank(queryShape), shape::shapeOf(queryShape)));
+    return SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(queryShape)->primary());
 }
 
 DECLARE_TYPES(grouped_query_attention) {
@@ -410,14 +396,43 @@ DECLARE_TYPES(grouped_query_attention) {
 }
 
 CUSTOM_OP_IMPL(grouped_query_attention_bp, 4, 3, false, 0, 0) {
-    // Placeholder - actual implementation needed for training
+    auto query = INPUT_VARIABLE(0);
+    auto key = INPUT_VARIABLE(1);
+    auto value = INPUT_VARIABLE(2);
+    auto gradOutput = INPUT_VARIABLE(3);
+
     auto gradQ = OUTPUT_VARIABLE(0);
     auto gradK = OUTPUT_VARIABLE(1);
     auto gradV = OUTPUT_VARIABLE(2);
 
-    gradQ->assign(0.0f);
-    gradK->assign(0.0f);
-    gradV->assign(0.0f);
+    // Parse configuration
+    // T_ARG: scale
+    // B_ARG: isCausal
+    // I_ARG: numHeads, numKvHeads
+    FlashAttentionHelper::Config config;
+    config.scale = block.getTArguments()->size() > 0 ? T_ARG(0) : 0.0f;
+    config.isCausal = block.numB() > 0 ? B_ARG(0) : true;
+    config.numHeads = block.getIArguments()->size() > 0 ? INT_ARG(0) : query->sizeAt(2);
+    config.numKvHeads = block.getIArguments()->size() > 1 ? INT_ARG(1) : config.numHeads;
+
+    // Compute forward pass to get output and LSE for backward
+    auto queryShape = query->getShapeAsVector();
+    auto computedOutput = NDArrayFactory::create_<float>('c', *queryShape);
+    delete queryShape;
+    auto seqLen = query->sizeAt(1);
+    auto numHeads = query->sizeAt(2);
+    auto batch = query->sizeAt(0);
+    std::vector<sd::LongType> lseShape = {batch, numHeads, seqLen};
+    auto computedLse = NDArrayFactory::create_<float>('c', lseShape);
+
+    FlashAttentionHelper::forward(query, key, value, computedOutput, config, computedLse, block.launchContext());
+
+    // Run backward pass
+    FlashAttentionHelper::backward(gradOutput, query, key, value, computedOutput, computedLse,
+                                   gradQ, gradK, gradV, config, block.launchContext());
+
+    delete computedOutput;
+    delete computedLse;
 
     return Status::OK;
 }
@@ -427,17 +442,10 @@ DECLARE_SHAPE_FN(grouped_query_attention_bp) {
     auto keyShape = inputShape->at(1);
     auto valueShape = inputShape->at(2);
 
-    auto gradQShape = ConstantShapeHelper::getInstance().createShapeInfo(
-        ArrayOptions::dataType(queryShape), shape::order(queryShape),
-        shape::rank(queryShape), shape::shapeOf(queryShape));
-    auto gradKShape = ConstantShapeHelper::getInstance().createShapeInfo(
-        ArrayOptions::dataType(keyShape), shape::order(keyShape),
-        shape::rank(keyShape), shape::shapeOf(keyShape));
-    auto gradVShape = ConstantShapeHelper::getInstance().createShapeInfo(
-        ArrayOptions::dataType(valueShape), shape::order(valueShape),
-        shape::rank(valueShape), shape::shapeOf(valueShape));
-
-    return SHAPELIST(gradQShape, gradKShape, gradVShape);
+    return SHAPELIST(
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(queryShape)->primary(),
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(keyShape)->primary(),
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(valueShape)->primary());
 }
 
 DECLARE_TYPES(grouped_query_attention_bp) {
@@ -447,7 +455,7 @@ DECLARE_TYPES(grouped_query_attention_bp) {
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-// flash_attention - Memory-efficient attention
+// flash_attention - Memory-efficient attention using FlashAttentionHelper
 #if NOT_EXCLUDED(OP_flash_attention)
 CUSTOM_OP_IMPL(flash_attention, 3, 1, false, 0, 0) {
     auto query = INPUT_VARIABLE(0);
@@ -455,75 +463,25 @@ CUSTOM_OP_IMPL(flash_attention, 3, 1, false, 0, 0) {
     auto value = INPUT_VARIABLE(2);
     auto output = OUTPUT_VARIABLE(0);
 
-    bool isCausal = block.getIArguments()->size() > 0 ? INT_ARG(0) != 0 : true;
-    float scale = block.getTArguments()->size() > 0 ?
-        T_ARG(0) : 1.0f / std::sqrt(static_cast<float>(query->sizeAt(-1)));
+    // Parse configuration
+    // T_ARG: scale
+    // B_ARG: isCausal
+    // I_ARG: numHeads, numKvHeads
+    FlashAttentionHelper::Config config;
+    config.scale = block.getTArguments()->size() > 0 ? T_ARG(0) : 0.0f;  // 0 = auto-compute scale
+    config.isCausal = block.numB() > 0 ? B_ARG(0) : true;
+    config.numHeads = block.getIArguments()->size() > 0 ? INT_ARG(0) : query->sizeAt(2);
+    config.numKvHeads = block.getIArguments()->size() > 1 ? INT_ARG(1) : key->sizeAt(2);
 
-    // For generic implementation, fall back to standard attention
-    // Platform helpers will use optimized flash attention
-    auto batch = query->sizeAt(0);
-    auto seqLen = query->sizeAt(1);
-    auto numHeads = query->sizeAt(2);
-    auto headDim = query->sizeAt(3);
-    auto kvLen = key->sizeAt(1);
-
-    auto queryBuf = query->bufferAsT<float>();
-    auto keyBuf = key->bufferAsT<float>();
-    auto valueBuf = value->bufferAsT<float>();
-    auto outputBuf = output->bufferAsT<float>();
-
-    for (LongType b = 0; b < batch; ++b) {
-        for (LongType h = 0; h < numHeads; ++h) {
-            for (LongType sq = 0; sq < seqLen; ++sq) {
-                std::vector<float> scores(kvLen);
-                float maxScore = -1e9f;
-
-                for (LongType sk = 0; sk < kvLen; ++sk) {
-                    if (isCausal && sk > sq) {
-                        scores[sk] = -1e9f;
-                        continue;
-                    }
-
-                    float score = 0.0f;
-                    for (LongType d = 0; d < headDim; ++d) {
-                        LongType qIdx = ((b * seqLen + sq) * numHeads + h) * headDim + d;
-                        LongType kIdx = ((b * kvLen + sk) * numHeads + h) * headDim + d;
-                        score += queryBuf[qIdx] * keyBuf[kIdx];
-                    }
-                    scores[sk] = score * scale;
-                    maxScore = std::max(maxScore, scores[sk]);
-                }
-
-                float sumExp = 0.0f;
-                for (LongType sk = 0; sk < kvLen; ++sk) {
-                    scores[sk] = std::exp(scores[sk] - maxScore);
-                    sumExp += scores[sk];
-                }
-                for (LongType sk = 0; sk < kvLen; ++sk) {
-                    scores[sk] /= sumExp;
-                }
-
-                for (LongType d = 0; d < headDim; ++d) {
-                    float sum = 0.0f;
-                    for (LongType sk = 0; sk < kvLen; ++sk) {
-                        LongType vIdx = ((b * kvLen + sk) * numHeads + h) * headDim + d;
-                        sum += scores[sk] * valueBuf[vIdx];
-                    }
-                    LongType outIdx = ((b * seqLen + sq) * numHeads + h) * headDim + d;
-                    outputBuf[outIdx] = sum;
-                }
-            }
-        }
-    }
+    // Use FlashAttentionHelper for memory-efficient computation
+    FlashAttentionHelper::forward(query, key, value, output, config, nullptr, block.launchContext());
 
     return Status::OK;
 }
 
 DECLARE_SHAPE_FN(flash_attention) {
     auto queryShape = inputShape->at(0);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
-        ArrayOptions::dataType(queryShape), shape::order(queryShape),
-        shape::rank(queryShape), shape::shapeOf(queryShape)));
+    return SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(queryShape)->primary());
 }
 
 DECLARE_TYPES(flash_attention) {
@@ -532,13 +490,58 @@ DECLARE_TYPES(flash_attention) {
 }
 
 CUSTOM_OP_IMPL(flash_attention_bp, 4, 3, false, 0, 0) {
+    auto query = INPUT_VARIABLE(0);
+    auto key = INPUT_VARIABLE(1);
+    auto value = INPUT_VARIABLE(2);
+    auto gradOutput = INPUT_VARIABLE(3);
+
+    // Optional inputs for backward pass
+    NDArray* output = block.width() > 4 ? INPUT_VARIABLE(4) : nullptr;
+    NDArray* softmaxLse = block.width() > 5 ? INPUT_VARIABLE(5) : nullptr;
+
     auto gradQ = OUTPUT_VARIABLE(0);
     auto gradK = OUTPUT_VARIABLE(1);
     auto gradV = OUTPUT_VARIABLE(2);
 
-    gradQ->assign(0.0f);
-    gradK->assign(0.0f);
-    gradV->assign(0.0f);
+    // Parse configuration
+    // T_ARG: scale
+    // B_ARG: isCausal
+    // I_ARG: numHeads, numKvHeads
+    FlashAttentionHelper::Config config;
+    config.scale = block.getTArguments()->size() > 0 ? T_ARG(0) : 0.0f;
+    config.isCausal = block.numB() > 0 ? B_ARG(0) : true;
+    config.numHeads = block.getIArguments()->size() > 0 ? INT_ARG(0) : query->sizeAt(2);
+    config.numKvHeads = block.getIArguments()->size() > 1 ? INT_ARG(1) : key->sizeAt(2);
+
+    // If output and softmaxLse not provided, we need to recompute forward pass
+    NDArray* computedOutput = nullptr;
+    NDArray* computedLse = nullptr;
+
+    if (output == nullptr || softmaxLse == nullptr) {
+        // Allocate temporary arrays for forward pass results
+        auto queryShapeVec = query->getShapeAsVector();
+        computedOutput = NDArrayFactory::create_<float>('c', *queryShapeVec);
+        delete queryShapeVec;
+        auto seqLen = query->sizeAt(1);
+        auto numHeads = query->sizeAt(2);
+        auto batch = query->sizeAt(0);
+        std::vector<sd::LongType> lseShapeVec = {batch, numHeads, seqLen};
+        computedLse = NDArrayFactory::create_<float>('c', lseShapeVec);
+
+        // Run forward pass to get output and LSE
+        FlashAttentionHelper::forward(query, key, value, computedOutput, config, computedLse, block.launchContext());
+
+        output = computedOutput;
+        softmaxLse = computedLse;
+    }
+
+    // Run backward pass
+    FlashAttentionHelper::backward(gradOutput, query, key, value, output, softmaxLse,
+                                   gradQ, gradK, gradV, config, block.launchContext());
+
+    // Cleanup temporary arrays
+    if (computedOutput) delete computedOutput;
+    if (computedLse) delete computedLse;
 
     return Status::OK;
 }
@@ -549,15 +552,9 @@ DECLARE_SHAPE_FN(flash_attention_bp) {
     auto valueShape = inputShape->at(2);
 
     return SHAPELIST(
-        ConstantShapeHelper::getInstance().createShapeInfo(
-            ArrayOptions::dataType(queryShape), shape::order(queryShape),
-            shape::rank(queryShape), shape::shapeOf(queryShape)),
-        ConstantShapeHelper::getInstance().createShapeInfo(
-            ArrayOptions::dataType(keyShape), shape::order(keyShape),
-            shape::rank(keyShape), shape::shapeOf(keyShape)),
-        ConstantShapeHelper::getInstance().createShapeInfo(
-            ArrayOptions::dataType(valueShape), shape::order(valueShape),
-            shape::rank(valueShape), shape::shapeOf(valueShape)));
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(queryShape)->primary(),
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(keyShape)->primary(),
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(valueShape)->primary());
 }
 
 DECLARE_TYPES(flash_attention_bp) {
@@ -584,19 +581,31 @@ CUSTOM_OP_IMPL(kv_cache_update, 4, 2, false, 0, 0) {
     outputKeyCache->assign(keyCache);
     outputValueCache->assign(valueCache);
 
-    // Update with new keys/values at position
+    // Update with new keys/values at position using raw buffer copy
     auto newSeqLen = newKeys->sizeAt(1);
+    auto batch = newKeys->sizeAt(0);
+    auto numHeads = newKeys->rankOf() > 2 ? newKeys->sizeAt(2) : 1;
+    auto headDim = newKeys->rankOf() > 3 ? newKeys->sizeAt(3) : newKeys->sizeAt(-1);
+    auto cacheSeqLen = keyCache->sizeAt(1);
 
-    // Copy new values into cache at the specified position
-    for (LongType i = 0; i < newSeqLen; ++i) {
-        auto keySlice = newKeys->subarray({{}, {i, i + 1}});
-        auto valueSlice = newValues->subarray({{}, {i, i + 1}});
+    auto newKeyBuf = newKeys->bufferAsT<float>();
+    auto newValueBuf = newValues->bufferAsT<float>();
+    auto outKeyBuf = outputKeyCache->bufferAsT<float>();
+    auto outValueBuf = outputValueCache->bufferAsT<float>();
 
-        auto outKeySlice = outputKeyCache->subarray({{}, {startPos + i, startPos + i + 1}});
-        auto outValueSlice = outputValueCache->subarray({{}, {startPos + i, startPos + i + 1}});
-
-        outKeySlice.assign(keySlice);
-        outValueSlice.assign(valueSlice);
+    // Copy new keys/values into cache at the specified position
+    for (LongType b = 0; b < batch; ++b) {
+        for (LongType i = 0; i < newSeqLen; ++i) {
+            for (LongType h = 0; h < numHeads; ++h) {
+                LongType srcBase = ((b * newSeqLen + i) * numHeads + h) * headDim;
+                LongType dstBase = ((b * cacheSeqLen + startPos + i) * numHeads + h) * headDim;
+                PRAGMA_OMP_SIMD
+                for (LongType d = 0; d < headDim; ++d) {
+                    outKeyBuf[dstBase + d] = newKeyBuf[srcBase + d];
+                    outValueBuf[dstBase + d] = newValueBuf[srcBase + d];
+                }
+            }
+        }
     }
 
     return Status::OK;
@@ -607,12 +616,8 @@ DECLARE_SHAPE_FN(kv_cache_update) {
     auto valueCacheShape = inputShape->at(1);
 
     return SHAPELIST(
-        ConstantShapeHelper::getInstance().createShapeInfo(
-            ArrayOptions::dataType(keyCacheShape), shape::order(keyCacheShape),
-            shape::rank(keyCacheShape), shape::shapeOf(keyCacheShape)),
-        ConstantShapeHelper::getInstance().createShapeInfo(
-            ArrayOptions::dataType(valueCacheShape), shape::order(valueCacheShape),
-            shape::rank(valueCacheShape), shape::shapeOf(valueCacheShape)));
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(keyCacheShape)->primary(),
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(valueCacheShape)->primary());
 }
 
 DECLARE_TYPES(kv_cache_update) {
@@ -664,9 +669,7 @@ CUSTOM_OP_IMPL(apply_alibi, 1, 1, false, 0, 0) {
 
 DECLARE_SHAPE_FN(apply_alibi) {
     auto scoresShape = inputShape->at(0);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
-        ArrayOptions::dataType(scoresShape), shape::order(scoresShape),
-        shape::rank(scoresShape), shape::shapeOf(scoresShape)));
+    return SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(scoresShape)->primary());
 }
 
 DECLARE_TYPES(apply_alibi) {
@@ -676,7 +679,7 @@ DECLARE_TYPES(apply_alibi) {
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-// sliding_window_attention - Sliding Window Attention
+// sliding_window_attention - Sliding Window Attention using FlashAttentionHelper
 #if NOT_EXCLUDED(OP_sliding_window_attention)
 CUSTOM_OP_IMPL(sliding_window_attention, 3, 1, false, 0, 0) {
     auto query = INPUT_VARIABLE(0);
@@ -684,77 +687,23 @@ CUSTOM_OP_IMPL(sliding_window_attention, 3, 1, false, 0, 0) {
     auto value = INPUT_VARIABLE(2);
     auto output = OUTPUT_VARIABLE(0);
 
-    int windowSize = block.getIArguments()->size() > 0 ? INT_ARG(0) : 4096;
-    int numHeads = block.getIArguments()->size() > 1 ? INT_ARG(1) : static_cast<int>(query->sizeAt(2));
-    int numKvHeads = block.getIArguments()->size() > 2 ? INT_ARG(2) : numHeads;
-    float scale = block.getTArguments()->size() > 0 ?
-        T_ARG(0) : 1.0f / std::sqrt(static_cast<float>(query->sizeAt(-1)));
+    // Parse configuration
+    FlashAttentionHelper::Config config;
+    config.windowSize = block.getIArguments()->size() > 0 ? INT_ARG(0) : 4096;
+    config.numHeads = block.getIArguments()->size() > 1 ? INT_ARG(1) : query->sizeAt(2);
+    config.numKvHeads = block.getIArguments()->size() > 2 ? INT_ARG(2) : config.numHeads;
+    config.scale = block.getTArguments()->size() > 0 ? T_ARG(0) : 0.0f;
+    config.isCausal = true;  // Sliding window is typically causal
 
-    auto batch = query->sizeAt(0);
-    auto seqLen = query->sizeAt(1);
-    auto headDim = query->sizeAt(3);
-    auto kvLen = key->sizeAt(1);
-
-    int headsPerKv = numHeads / numKvHeads;
-
-    auto queryBuf = query->bufferAsT<float>();
-    auto keyBuf = key->bufferAsT<float>();
-    auto valueBuf = value->bufferAsT<float>();
-    auto outputBuf = output->bufferAsT<float>();
-
-    for (LongType b = 0; b < batch; ++b) {
-        for (LongType h = 0; h < numHeads; ++h) {
-            int kvHead = h / headsPerKv;
-
-            for (LongType sq = 0; sq < seqLen; ++sq) {
-                // Sliding window: only attend to positions within window
-                LongType windowStart = std::max(0LL, sq - windowSize + 1);
-                LongType windowEnd = sq + 1;
-
-                std::vector<float> scores(kvLen, -1e9f);
-                float maxScore = -1e9f;
-
-                for (LongType sk = windowStart; sk < windowEnd && sk < kvLen; ++sk) {
-                    float score = 0.0f;
-                    for (LongType d = 0; d < headDim; ++d) {
-                        LongType qIdx = ((b * seqLen + sq) * numHeads + h) * headDim + d;
-                        LongType kIdx = ((b * kvLen + sk) * numKvHeads + kvHead) * headDim + d;
-                        score += queryBuf[qIdx] * keyBuf[kIdx];
-                    }
-                    scores[sk] = score * scale;
-                    maxScore = std::max(maxScore, scores[sk]);
-                }
-
-                float sumExp = 0.0f;
-                for (LongType sk = 0; sk < kvLen; ++sk) {
-                    scores[sk] = std::exp(scores[sk] - maxScore);
-                    sumExp += scores[sk];
-                }
-                for (LongType sk = 0; sk < kvLen; ++sk) {
-                    scores[sk] /= sumExp;
-                }
-
-                for (LongType d = 0; d < headDim; ++d) {
-                    float sum = 0.0f;
-                    for (LongType sk = windowStart; sk < windowEnd && sk < kvLen; ++sk) {
-                        LongType vIdx = ((b * kvLen + sk) * numKvHeads + kvHead) * headDim + d;
-                        sum += scores[sk] * valueBuf[vIdx];
-                    }
-                    LongType outIdx = ((b * seqLen + sq) * numHeads + h) * headDim + d;
-                    outputBuf[outIdx] = sum;
-                }
-            }
-        }
-    }
+    // Use FlashAttentionHelper which handles sliding window via windowSize config
+    FlashAttentionHelper::forward(query, key, value, output, config, nullptr, block.launchContext());
 
     return Status::OK;
 }
 
 DECLARE_SHAPE_FN(sliding_window_attention) {
     auto queryShape = inputShape->at(0);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
-        ArrayOptions::dataType(queryShape), shape::order(queryShape),
-        shape::rank(queryShape), shape::shapeOf(queryShape)));
+    return SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(queryShape)->primary());
 }
 
 DECLARE_TYPES(sliding_window_attention) {

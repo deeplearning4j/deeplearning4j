@@ -54,11 +54,7 @@ CUSTOM_OP_IMPL(cast_and_scale, 1, 1, false, 1, 1) {
 
   // Fast path: same data type, just scale
   if (input->dataType() == output->dataType()) {
-    if (block.isInplace()) {
-      input->applyScalar(sd::scalar::Multiply, scale, *output);
-    } else {
-      input->applyScalar(sd::scalar::Multiply, scale, *output);
-    }
+    input->applyScalar(sd::scalar::Multiply, scale, output);
     return sd::Status::OK;
   }
 

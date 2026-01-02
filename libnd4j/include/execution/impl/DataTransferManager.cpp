@@ -299,10 +299,11 @@ TransferResult DataTransferManager::copyToDevice(
     int targetDevice,
     bool async
 ) {
+    auto srcNonConst = const_cast<NDArray*>(src);
     return transfer(
-        src->buffer(),
+        srcNonConst->buffer(),
         dst->buffer(),
-        src->lengthOf() * DataTypeUtils::sizeOf(src->dataType()),
+        srcNonConst->lengthOf() * DataTypeUtils::sizeOf(srcNonConst->dataType()),
         -1,  // Host
         targetDevice,
         async
@@ -314,18 +315,19 @@ TransferResult DataTransferManager::copyToHost(
     NDArray* dst,
     bool async
 ) {
+    auto srcNonConst = const_cast<NDArray*>(src);
     int srcDevice = 0;  // Would need device tracking in NDArray
 #ifdef SD_CUDA
     // Get device from CUDA pointer
     cudaPointerAttributes attrs;
-    if (cudaPointerGetAttributes(&attrs, src->buffer()) == cudaSuccess) {
+    if (cudaPointerGetAttributes(&attrs, srcNonConst->buffer()) == cudaSuccess) {
         srcDevice = attrs.device;
     }
 #endif
     return transfer(
-        src->buffer(),
+        srcNonConst->buffer(),
         dst->buffer(),
-        src->lengthOf() * DataTypeUtils::sizeOf(src->dataType()),
+        srcNonConst->lengthOf() * DataTypeUtils::sizeOf(srcNonConst->dataType()),
         srcDevice,
         -1,  // Host
         async
@@ -338,10 +340,11 @@ TransferResult DataTransferManager::copyFromHost(
     int targetDevice,
     bool async
 ) {
+    auto srcNonConst = const_cast<NDArray*>(src);
     return transfer(
-        src->buffer(),
+        srcNonConst->buffer(),
         dst->buffer(),
-        src->lengthOf() * DataTypeUtils::sizeOf(src->dataType()),
+        srcNonConst->lengthOf() * DataTypeUtils::sizeOf(srcNonConst->dataType()),
         -1,  // Host
         targetDevice,
         async
@@ -404,10 +407,11 @@ TransferResult DataTransferManager::p2pCopy(
     int dstDevice,
     bool async
 ) {
+    auto srcNonConst = const_cast<NDArray*>(src);
     return p2pTransfer(
-        src->buffer(),
+        srcNonConst->buffer(),
         dst->buffer(),
-        src->lengthOf() * DataTypeUtils::sizeOf(src->dataType()),
+        srcNonConst->lengthOf() * DataTypeUtils::sizeOf(srcNonConst->dataType()),
         srcDevice,
         dstDevice,
         async

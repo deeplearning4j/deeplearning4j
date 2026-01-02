@@ -72,8 +72,9 @@ static void denseLayerMKLDNN(NDArray* x, NDArray* weights, NDArray* bias, NDArra
   if (hasBias && bias != nullptr) {
     dnnl::memory::desc b_md = dnnl::memory::desc(bDims, dnnl::memory::data_type::f32, dnnl::memory::format_tag::x);
 
-    dnnl::inner_product_forward::desc op_desc(dnnl::prop_kind::forward_inference, x_md, w_md, b_md, z_md);
-    dnnl::inner_product_forward::primitive_desc op_prim_desc(op_desc, engine);
+    // OneDNN 3.x API
+    dnnl::inner_product_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                              x_md, w_md, b_md, z_md);
 
     // Source memory
     dnnl::memory x_mem(x_md, engine, x->buffer());
@@ -93,8 +94,9 @@ static void denseLayerMKLDNN(NDArray* x, NDArray* weights, NDArray* bias, NDArra
 
     dnnl::inner_product_forward(op_prim_desc).execute(stream, args);
   } else {
-    dnnl::inner_product_forward::desc op_desc(dnnl::prop_kind::forward_inference, x_md, w_md, z_md);
-    dnnl::inner_product_forward::primitive_desc op_prim_desc(op_desc, engine);
+    // OneDNN 3.x API
+    dnnl::inner_product_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                              x_md, w_md, z_md);
 
     // Source memory
     dnnl::memory x_mem(x_md, engine, x->buffer());
@@ -134,21 +136,9 @@ PLATFORM_IMPL(dense, ENGINE_CPU) {
 }
 
 PLATFORM_CHECK(dense, ENGINE_CPU) {
-  auto x = INPUT_VARIABLE(0);
-  auto w = INPUT_VARIABLE(1);
-  auto z = OUTPUT_VARIABLE(0);
-
-  Requirements req("ONEDNN DENSE OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
-      req.expectFalse(makeInfoVariable(w->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&
-      req.expectGreaterEq(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), 2) &&
-      req.expectEq(makeInfoVariable(w->rankOf(), RANK_MSG_INPUT1), 2) &&
-      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(w->dataType(), TYPE_MSG_INPUT1), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
-  req.logTheSuccess();
-  return req;
+  // DISABLED: OneDNN inner_product has significant primitive creation overhead
+  // that makes it slower than OpenBLAS for typical workloads.
+  return Requirements("ONEDNN DENSE OP - DISABLED");
 }
 
 }  // namespace platforms

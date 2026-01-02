@@ -47,8 +47,8 @@ PLATFORM_IMPL(lstmLayer, ENGINE_CPU) {
     auto* Wp = block.width() > 6 ? INPUT_VARIABLE(6) : nullptr;  // peephole weights
 
     auto* h = OUTPUT_VARIABLE(0);         // all hidden states
-    auto* hL = block.numOutputs() > 1 ? OUTPUT_VARIABLE(1) : nullptr;  // last hidden
-    auto* cL = block.numOutputs() > 2 ? OUTPUT_VARIABLE(2) : nullptr;  // last cell
+    auto* hL = block.outputWidth() > 1 ? OUTPUT_VARIABLE(1) : nullptr;  // last hidden
+    auto* cL = block.outputWidth() > 2 ? OUTPUT_VARIABLE(2) : nullptr;  // last cell
 
     // dataFormat: 0 = [time, batch, input], 1 = [batch, time, input]
     int dataFormat = INT_ARG(0);
@@ -114,8 +114,8 @@ PLATFORM_IMPL(lstmLayer_bp, ENGINE_CPU) {
     auto* gradWx = OUTPUT_VARIABLE(1);
     auto* gradWr = OUTPUT_VARIABLE(2);
     auto* gradB = OUTPUT_VARIABLE(3);
-    auto* gradHI = block.numOutputs() > 4 ? OUTPUT_VARIABLE(4) : nullptr;
-    auto* gradCI = block.numOutputs() > 5 ? OUTPUT_VARIABLE(5) : nullptr;
+    auto* gradHI = block.outputWidth() > 4 ? OUTPUT_VARIABLE(4) : nullptr;
+    auto* gradCI = block.outputWidth() > 5 ? OUTPUT_VARIABLE(5) : nullptr;
 
     std::vector<NDArray*> inputs = {x, Wx, Wr, b, hI, cI, gradH};
     if (gradHL != nullptr) inputs.push_back(gradHL);
@@ -207,7 +207,7 @@ PLATFORM_IMPL(gru, ENGINE_CPU) {
     auto* b = block.width() > 4 ? INPUT_VARIABLE(4) : nullptr;
 
     auto* h = OUTPUT_VARIABLE(0);    // all hidden states
-    auto* hL = block.numOutputs() > 1 ? OUTPUT_VARIABLE(1) : nullptr;  // last hidden
+    auto* hL = block.outputWidth() > 1 ? OUTPUT_VARIABLE(1) : nullptr;  // last hidden
 
     int dataFormat = block.numI() > 0 ? INT_ARG(0) : 0;
 
@@ -298,7 +298,7 @@ PLATFORM_IMPL(simple_rnn, ENGINE_CPU) {
     auto* b = block.width() > 4 ? INPUT_VARIABLE(4) : nullptr;
 
     auto* h = OUTPUT_VARIABLE(0);    // all hidden states
-    auto* hL = block.numOutputs() > 1 ? OUTPUT_VARIABLE(1) : nullptr;  // last hidden
+    auto* hL = block.outputWidth() > 1 ? OUTPUT_VARIABLE(1) : nullptr;  // last hidden
 
     int dataFormat = block.numI() > 0 ? INT_ARG(0) : 0;
 

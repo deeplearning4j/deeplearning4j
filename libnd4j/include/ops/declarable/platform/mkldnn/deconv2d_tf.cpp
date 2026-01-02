@@ -84,15 +84,17 @@ static void deconv2TFdBpMKLDNN(NDArray* weights, NDArray* gradO, NDArray* gradI,
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
-  // forward primitive description
-  dnnl::convolution_forward::desc op_ff_desc(dnnl::prop_kind::forward_inference, dnnl::algorithm::convolution_auto,
-                                             x_mkl_md, w_mkl_md, gradO_mkl_md, strides, dilation, padding, padding_r);
-  dnnl::convolution_forward::primitive_desc op_ff_prim_desc(op_ff_desc, engine);
+  // forward primitive description (OneDNN 3.x API) - used as hint for backward
+  dnnl::convolution_forward::primitive_desc op_ff_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                             dnnl::algorithm::convolution_auto,
+                                                             x_mkl_md, w_mkl_md, gradO_mkl_md,
+                                                             strides, dilation, padding, padding_r);
 
-  // backward data primitive description
-  dnnl::convolution_backward_data::desc op_data_bp_desc(dnnl::algorithm::convolution_auto, gradI_mkl_md, w_mkl_md,
-                                                        gradO_mkl_md, strides, dilation, padding, padding_r);
-  dnnl::convolution_backward_data::primitive_desc op_data_bp_prim_desc(op_data_bp_desc, engine, op_ff_prim_desc);
+  // backward data primitive description (OneDNN 3.x API)
+  dnnl::convolution_backward_data::primitive_desc op_data_bp_prim_desc(engine, dnnl::algorithm::convolution_auto,
+                                                                        gradI_mkl_md, w_mkl_md, gradO_mkl_md,
+                                                                        strides, dilation, padding, padding_r,
+                                                                        op_ff_prim_desc);
 
   // arguments (memory buffers) necessary for calculations
   std::unordered_map<int, dnnl::memory> args;

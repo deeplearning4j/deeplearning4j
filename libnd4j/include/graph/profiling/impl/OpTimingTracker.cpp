@@ -27,6 +27,13 @@
 namespace sd {
 namespace graph {
 
+// Thread-local storage for indirect helper tracking
+static thread_local IndirectHelperTracker tls_indirectHelperTracker;
+
+IndirectHelperTracker& getIndirectHelperTracker() {
+  return tls_indirectHelperTracker;
+}
+
 OpTimingTracker& OpTimingTracker::getInstance() {
   static OpTimingTracker instance;
   return instance;

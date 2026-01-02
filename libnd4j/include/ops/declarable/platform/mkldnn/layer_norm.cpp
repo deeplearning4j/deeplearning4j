@@ -42,7 +42,7 @@ static void layerNormMKLDNN(NDArray* x, NDArray* gain, NDArray* bias, NDArray* z
   const int lastDim = x->sizeAt(-1);
 
   // Get shapes
-  dnnl::memory::dims xDims = x->getShapeAsFlatVector();
+  dnnl::memory::dims xDims = *x->getShapeAsFlatVector();
   dnnl::memory::dims statsDims = xDims;
   statsDims[rank - 1] = 1;  // Stats are computed over the last dimension
 
@@ -60,9 +60,9 @@ static void layerNormMKLDNN(NDArray* x, NDArray* gain, NDArray* bias, NDArray* z
   // Layer norm flags
   dnnl::normalization_flags flags = dnnl::normalization_flags::use_scale | dnnl::normalization_flags::use_shift;
 
-  // Create layer norm primitive descriptor
-  dnnl::layer_normalization_forward::desc op_desc(dnnl::prop_kind::forward_inference, x_md, z_md, epsilon, flags);
-  dnnl::layer_normalization_forward::primitive_desc op_prim_desc(op_desc, engine);
+  // Create layer norm primitive descriptor (OneDNN 3.x API)
+  dnnl::layer_normalization_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                                  x_md, z_md, epsilon, flags);
 
   std::unordered_map<int, dnnl::memory> args;
   dnnl::stream stream(engine);

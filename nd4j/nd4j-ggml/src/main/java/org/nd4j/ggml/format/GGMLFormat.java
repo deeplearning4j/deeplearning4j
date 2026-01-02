@@ -25,10 +25,22 @@ package org.nd4j.ggml.format;
  */
 public enum GGMLFormat {
     /**
-     * Legacy GGML format (pre-GGUF).
-     * Includes GGML, GGMF, and GGJT variants.
+     * Original GGML format (legacy).
+     * The earliest format, with minimal header.
      */
     GGML,
+
+    /**
+     * GGMF format (legacy).
+     * Adds version information to the header.
+     */
+    GGMF,
+
+    /**
+     * GGJT format (legacy).
+     * Adds more parameters and tensor alignment.
+     */
+    GGJT,
 
     /**
      * Modern GGUF format (GGML Universal Format).

@@ -27,7 +27,6 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_xw_plus_b)
 
-#include <helpers/MmulHelper.h>
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/matmul.h>
 
@@ -113,7 +112,9 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
                zEffective->rankOf());
 
   // Perform matrix multiplication: z = x @ w
-  MmulHelper::mmul(xEffective, wEffective, zEffective, 1.0, 0.0);
+  // Use ops::matmul to leverage OneDNN platform helper for acceleration
+  matmul mmulOp;
+  mmulOp.execute({xEffective, wEffective}, {zEffective}, {}, {0, 0}, {});
 
   // Add bias - ALWAYS as a row vector since output is [batch, features]
   // The bias vector has shape [features] and should broadcast across the batch dimension

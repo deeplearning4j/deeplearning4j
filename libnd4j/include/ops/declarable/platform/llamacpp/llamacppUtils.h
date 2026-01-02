@@ -991,6 +991,298 @@ void syncModelParallel();
  */
 size_t getModelParallelMemoryUsage(int deviceId);
 
+//////////////////////////////////////////////////////////////////////////
+// Backend Capability Tracking
+//////////////////////////////////////////////////////////////////////////
+
+/**
+ * Detailed capability information for a backend
+ */
+struct BackendCapability {
+    GgmlBackend type;
+    std::string name;
+    bool available;
+    bool supportsQuantization;
+    bool supportsFlashAttention;
+    bool supportsModelParallel;
+    bool supportsP2P;
+    bool supportsAsyncCopy;
+    bool supportsUnifiedMemory;
+    std::vector<ggml_type> supportedQuantTypes;
+    float relativeMatmulSpeed;
+    size_t maxMemoryBytes;
+    int computeCapability;
+};
+
+/**
+ * Get list of all available backends
+ */
+std::vector<GgmlBackend> getAvailableBackendsList();
+
+/**
+ * Check if a specific backend is available
+ */
+bool isBackendAvailable(GgmlBackend backend);
+
+/**
+ * Get human-readable name for a backend
+ */
+const char* getBackendName(GgmlBackend backend);
+
+/**
+ * Check if a backend supports model parallelism
+ */
+bool backendSupportsModelParallel(GgmlBackend backend);
+
+/**
+ * Check if a backend supports flash attention
+ */
+bool backendSupportsFlashAttention(GgmlBackend backend);
+
+/**
+ * Check if a backend supports quantization
+ */
+bool backendSupportsQuantization(GgmlBackend backend);
+
+/**
+ * Check if a backend supports P2P transfers
+ */
+bool backendSupportsP2P(GgmlBackend backend);
+
+/**
+ * Get the full capability struct for a backend
+ */
+BackendCapability getBackendCapability(GgmlBackend backend);
+
+/**
+ * Select best backend based on requirements and data locality
+ * @param input Input array to check locality
+ * @param requiresQuantization Whether operation needs quantization
+ * @param requiresFlashAttention Whether operation needs flash attention
+ * @param requiresModelParallel Whether operation needs model parallelism
+ * @return Best available backend meeting requirements
+ */
+GgmlBackend selectBestBackend(
+    const NDArray* input = nullptr,
+    bool requiresQuantization = false,
+    bool requiresFlashAttention = false,
+    bool requiresModelParallel = false
+);
+
+/**
+ * Discover and initialize all available backends
+ * Call once at startup
+ */
+void discoverBackends();
+
+/**
+ * Print capabilities of all available backends
+ * Useful for debugging and diagnostics
+ */
+void printAllBackendCapabilities();
+
+//////////////////////////////////////////////////////////////////////////
+// Device Locality Management
+//////////////////////////////////////////////////////////////////////////
+
+/**
+ * Represents where data is currently valid/authoritative
+ */
+enum class DataLocation {
+    UNKNOWN = 0,
+    HOST_ONLY = 1,      // Data only valid in primary buffer (CPU)
+    DEVICE_ONLY = 2,    // Data only valid in special buffer (GPU)
+    SYNCHRONIZED = 3,   // Data valid in both buffers
+    STALE = 4           // Data needs refresh from source
+};
+
+/**
+ * Execution context that tracks data locality for GGML operations
+ */
+struct LocalityContext {
+    int targetDeviceId;
+    GgmlBackend targetBackend;
+    bool requiresHostData;
+    bool requiresDeviceData;
+    bool allowDataMovement;
+    size_t estimatedMemoryUsage;
+
+    // Statistics
+    size_t hostToDeviceTransfers;
+    size_t deviceToHostTransfers;
+    size_t deviceToDeviceTransfers;
+};
+
+/**
+ * Get the current valid location of an NDArray's data
+ */
+DataLocation getDataLocation(const NDArray* array);
+
+/**
+ * Get string representation of data location
+ */
+const char* getDataLocationString(DataLocation loc);
+
+/**
+ * Get the current thread's locality context
+ */
+LocalityContext& getLocalityContext();
+
+/**
+ * Set up locality context for an operation
+ */
+void setupLocalityContext(int deviceId, GgmlBackend backend, size_t memoryNeeded);
+
+/**
+ * Ensure NDArray data is available on host (primary buffer)
+ * @param array NDArray to synchronize
+ * @param forWrite Whether data will be modified
+ * @return Pointer to host data or nullptr on failure
+ */
+void* ensureDataOnHost(NDArray* array, bool forWrite);
+
+/**
+ * Ensure NDArray data is available on device (special buffer)
+ * @param array NDArray to synchronize
+ * @param deviceId Target device
+ * @param forWrite Whether data will be modified
+ * @return Pointer to device data or nullptr on failure
+ */
+void* ensureDataOnDevice(NDArray* array, int deviceId, bool forWrite);
+
+/**
+ * Prepare an NDArray for a GGML operation based on target backend
+ * Handles data synchronization to ensure data is in the right place
+ * @param array Array to prepare
+ * @param backend Target GGML backend
+ * @param isInput Whether array is input (read-only) or output
+ * @return true on success
+ */
+bool prepareArrayForGgml(NDArray* array, GgmlBackend backend, bool isInput);
+
+/**
+ * Finalize array after GGML operation (mark output location)
+ */
+void finalizeArrayAfterGgml(NDArray* array, GgmlBackend backend);
+
+/**
+ * Transfer data between devices
+ * Handles the primary/special buffer synchronization
+ * @param array Array to transfer
+ * @param sourceDevice Source device ID
+ * @param targetDevice Target device ID
+ * @return true on success
+ */
+bool transferDataBetweenDevices(NDArray* array, int sourceDevice, int targetDevice);
+
+/**
+ * Check if P2P transfer is possible between devices
+ */
+bool canDoP2PTransfer(int sourceDevice, int targetDevice);
+
+/**
+ * Create a GGML tensor that wraps NDArray data with proper locality
+ * This is the key integration point with ND4J's buffer system
+ * @param ctx GGML context
+ * @param array Source NDArray
+ * @param backend Target backend
+ * @param name Optional tensor name
+ * @return GGML tensor or nullptr on failure
+ */
+struct ggml_tensor* createGgmlTensorWithLocality(
+    struct ggml_context* ctx,
+    NDArray* array,
+    GgmlBackend backend,
+    const char* name = nullptr
+);
+
+/**
+ * Copy GGML tensor result back to NDArray with proper locality handling
+ * @param tensor Source GGML tensor
+ * @param array Destination NDArray
+ * @param backend Backend that produced the result
+ */
+void copyGgmlResultWithLocality(
+    const struct ggml_tensor* tensor,
+    NDArray* array,
+    GgmlBackend backend
+);
+
+/**
+ * Get locality transfer statistics for current thread
+ * @param h2d Host to device transfer count (output)
+ * @param d2h Device to host transfer count (output)
+ * @param d2d Device to device transfer count (output)
+ */
+void getLocalityStatistics(size_t* h2d, size_t* d2h, size_t* d2d);
+
+/**
+ * Reset locality statistics
+ */
+void resetLocalityStatistics();
+
+/**
+ * Print locality information for an array
+ * Useful for debugging data movement issues
+ */
+void printArrayLocalityInfo(const NDArray* array, const char* name = nullptr);
+
+/**
+ * Validate that all inputs are on the expected device for an operation
+ * @param inputs Input arrays to check
+ * @param expectedDevice Expected device ID
+ * @return true if all inputs are on expected device
+ */
+bool validateInputLocality(const std::vector<const NDArray*>& inputs, int expectedDevice);
+
+//////////////////////////////////////////////////////////////////////////
+// Per-Device Backend State
+//////////////////////////////////////////////////////////////////////////
+
+/**
+ * State tracking for a backend on a specific device
+ */
+struct DeviceBackendState {
+    GgmlBackend backend;
+    int deviceId;
+    bool initialized;
+    size_t memoryAllocated;
+    size_t memoryUsed;
+    size_t peakMemoryUsed;
+    int activeComputeGraphs;
+    bool busy;
+};
+
+/**
+ * Get or create backend state for a device
+ */
+DeviceBackendState& getDeviceBackendState(GgmlBackend backend, int deviceId);
+
+/**
+ * Initialize a backend for a specific device
+ */
+bool initializeBackendForDevice(GgmlBackend backend, int deviceId);
+
+/**
+ * Shutdown backend on a device and release resources
+ */
+void shutdownBackendForDevice(GgmlBackend backend, int deviceId);
+
+/**
+ * Get memory usage for a backend on a device
+ */
+size_t getBackendMemoryUsage(GgmlBackend backend, int deviceId);
+
+/**
+ * Get peak memory usage for a backend on a device
+ */
+size_t getBackendPeakMemoryUsage(GgmlBackend backend, int deviceId);
+
+/**
+ * Reset peak memory tracking for a backend
+ */
+void resetBackendPeakMemory(GgmlBackend backend, int deviceId);
+
 #endif  // HAVE_LLAMACPP
 
 }  // namespace llamacppUtils

@@ -388,7 +388,7 @@ DECLARE_PLATFORM(split, ENGINE_CPU)
 PLATFORM_IMPL(split, ENGINE_CPU) {
     auto* input = INPUT_VARIABLE(0);
 
-    int numSplits = block.numOutputs();
+    int numSplits = block.outputWidth();
     int axis = block.numI() > 0 ? INT_ARG(0) : 0;
 
     std::vector<NDArray*> inputs = {input};
@@ -469,7 +469,7 @@ PLATFORM_IMPL(unstack, ENGINE_CPU) {
 
     std::vector<NDArray*> inputs = {input};
     std::vector<NDArray*> outputs;
-    for (int i = 0; i < block.numOutputs(); i++) {
+    for (int i = 0; i < block.outputWidth(); i++) {
         outputs.push_back(OUTPUT_VARIABLE(i));
     }
 

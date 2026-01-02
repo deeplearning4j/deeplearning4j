@@ -22,6 +22,7 @@ package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
+import org.nd4j.enums.DataFormat
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
@@ -68,13 +69,12 @@ class SpaceToDepth : PreImportHook {
         // Get attributes
         val blockSize = (attributes["blocksize"] as? Number)?.toInt() ?: 1
 
-        // Use SameDiff's space_to_depth operation
-        // isNHWC = false since ONNX uses NCHW
+        // Use SameDiff's space_to_depth operation with NCHW format (ONNX default)
         val output = sd.cnn.spaceToDepth(
             outputNames[0],
             input,
             blockSize,
-            "NCHW"
+            DataFormat.NCHW
         )
 
         return mapOf(outputNames[0] to listOf(output))

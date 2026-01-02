@@ -279,9 +279,9 @@ public:
     std::vector<ScheduleEntry> generateSchedule();
 
     /**
-     * Get the generated schedule
+     * Get the generated schedule entries
      */
-    const std::vector<ScheduleEntry>& getSchedule() const { return _scheduleEntries; }
+    const std::vector<ScheduleEntry>& getScheduleEntries() const { return _scheduleEntries; }
 
     /**
      * Estimate pipeline bubble ratio
@@ -463,8 +463,8 @@ private:
 
     // Synchronization
     mutable std::mutex _mutex;
-    std::vector<std::mutex> _stageMutexes;
-    std::vector<std::condition_variable> _stageConditions;
+    std::vector<std::unique_ptr<std::mutex>> _stageMutexes;
+    std::vector<std::unique_ptr<std::condition_variable>> _stageConditions;
 
     // State
     std::atomic<bool> _initialized{false};

@@ -54,7 +54,8 @@ public class ConstantFunctionOptimizations extends BaseOptimizerSet {
             if (in == null || in.isEmpty())
                 return false;
             for (String s : in) {
-                if (!sd.getVariable(s).isConstant())
+                var v = sd.getVariable(s);
+                if (v == null || !v.isConstant())
                     return false;
             }
 
@@ -104,11 +105,12 @@ public class ConstantFunctionOptimizations extends BaseOptimizerSet {
                 String n = outputNames.get(i);
                 sd.getVariable(n).setVariableType(VariableType.CONSTANT);
                 constantArrays.setArray(n, outputs[i]);
-                sd.getVariables().get(n).setOutputOfOp(null);
+                // Use fast O(1) lookup via helper instead of PatriciaTrie O(k)
+                helper.getVariable(n).setOutputOfOp(null);
             }
 
-            //Remove the op
-            OptimizationUtils.removeOp(sd, df.getOwnName());
+            //Remove the op with fast lookup
+            OptimizationUtils.removeOp(sd, helper, df.getOwnName());
 
             return true;
         }

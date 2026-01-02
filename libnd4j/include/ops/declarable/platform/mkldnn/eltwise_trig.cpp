@@ -40,7 +40,7 @@ namespace platforms {
 //////////////////////////////////////////////////////////////////////
 // Helper for generic eltwise forward pass
 static void eltwiseMKLDNN(NDArray* x, NDArray* z, dnnl::algorithm alg, float alpha = 0.0f, float beta = 0.0f) {
-  dnnl::memory::dims shape = x->getShapeAsFlatVector();
+  dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
   dnnl::memory::desc x_mkl_md, x_user_md, z_mkl_md, z_user_md;
 
@@ -54,9 +54,9 @@ static void eltwiseMKLDNN(NDArray* x, NDArray* z, dnnl::algorithm alg, float alp
 
   dnnl::primitive_attr attr;
 
-  dnnl::eltwise_forward::desc op_desc(dnnl::prop_kind::forward_inference, alg, x_mkl_md, alpha, beta);
-
-  dnnl::eltwise_forward::primitive_desc op_prim_desc(op_desc, attr, engine);
+  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  dnnl::eltwise_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                      alg, x_mkl_md, z_mkl_md, alpha, beta);
 
   std::unordered_map<int, dnnl::memory> args;
 
@@ -79,7 +79,7 @@ static void eltwiseMKLDNN(NDArray* x, NDArray* z, dnnl::algorithm alg, float alp
 // COSH: (exp(x) + exp(-x)) / 2
 // Implemented using exp operations
 static void coshMKLDNN(NDArray* x, NDArray* z) {
-  dnnl::memory::dims shape = x->getShapeAsFlatVector();
+  dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
   dnnl::memory::desc x_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
   dnnl::memory::desc z_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*z));
@@ -89,8 +89,9 @@ static void coshMKLDNN(NDArray* x, NDArray* z) {
   dnnl::stream stream(engine);
 
   // Step 1: exp(x)
-  dnnl::eltwise_forward::desc exp_desc(dnnl::prop_kind::forward_inference, algorithm::eltwise_exp, x_md, 0, 0);
-  dnnl::eltwise_forward::primitive_desc exp_prim_desc(exp_desc, attr, engine);
+  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  dnnl::eltwise_forward::primitive_desc exp_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                       algorithm::eltwise_exp, x_md, x_md, 0.f, 0.f);
 
   dnnl::memory exp_x_mem(exp_prim_desc.dst_desc(), engine);
 
@@ -102,8 +103,9 @@ static void coshMKLDNN(NDArray* x, NDArray* z) {
   dnnl::eltwise_forward(exp_prim_desc).execute(stream, exp_args);
 
   // Step 2: -x using linear: y = -1*x + 0
-  dnnl::eltwise_forward::desc neg_desc(dnnl::prop_kind::forward_inference, algorithm::eltwise_linear, x_md, -1.0f, 0.0f);
-  dnnl::eltwise_forward::primitive_desc neg_prim_desc(neg_desc, attr, engine);
+  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  dnnl::eltwise_forward::primitive_desc neg_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                       algorithm::eltwise_linear, x_md, x_md, -1.0f, 0.0f);
 
   dnnl::memory neg_x_mem(neg_prim_desc.dst_desc(), engine);
 
@@ -123,9 +125,9 @@ static void coshMKLDNN(NDArray* x, NDArray* z) {
   dnnl::eltwise_forward(exp_prim_desc).execute(stream, exp_neg_args);
 
   // Step 4: exp(x) + exp(-x) using binary add
-  dnnl::binary::desc add_desc(dnnl::algorithm::binary_add, exp_prim_desc.dst_desc(),
-                               exp_prim_desc.dst_desc(), exp_prim_desc.dst_desc());
-  dnnl::binary::primitive_desc add_prim_desc(add_desc, engine);
+  // OneDNN 3.x API: binary::primitive_desc(engine, algorithm, src0_md, src1_md, dst_md)
+  dnnl::binary::primitive_desc add_prim_desc(engine, dnnl::algorithm::binary_add,
+                                              exp_prim_desc.dst_desc(), exp_prim_desc.dst_desc(), exp_prim_desc.dst_desc());
 
   dnnl::memory sum_mem(add_prim_desc.dst_desc(), engine);
 
@@ -137,9 +139,9 @@ static void coshMKLDNN(NDArray* x, NDArray* z) {
   dnnl::binary(add_prim_desc).execute(stream, add_args);
 
   // Step 5: divide by 2 using linear: y = 0.5*x + 0
-  dnnl::eltwise_forward::desc div_desc(dnnl::prop_kind::forward_inference, algorithm::eltwise_linear,
-                                        add_prim_desc.dst_desc(), 0.5f, 0.0f);
-  dnnl::eltwise_forward::primitive_desc div_prim_desc(div_desc, attr, engine);
+  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  dnnl::eltwise_forward::primitive_desc div_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                       algorithm::eltwise_linear, add_prim_desc.dst_desc(), z_md, 0.5f, 0.0f);
 
   std::unordered_map<int, dnnl::memory> div_args;
   div_args[DNNL_ARG_SRC] = sum_mem;
@@ -182,7 +184,7 @@ PLATFORM_CHECK(cosh, ENGINE_CPU) {
 //////////////////////////////////////////////////////////////////////
 // SINH: (exp(x) - exp(-x)) / 2
 static void sinhMKLDNN(NDArray* x, NDArray* z) {
-  dnnl::memory::dims shape = x->getShapeAsFlatVector();
+  dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
   dnnl::memory::desc x_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
   dnnl::memory::desc z_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*z));
@@ -192,8 +194,9 @@ static void sinhMKLDNN(NDArray* x, NDArray* z) {
   dnnl::stream stream(engine);
 
   // Step 1: exp(x)
-  dnnl::eltwise_forward::desc exp_desc(dnnl::prop_kind::forward_inference, algorithm::eltwise_exp, x_md, 0, 0);
-  dnnl::eltwise_forward::primitive_desc exp_prim_desc(exp_desc, attr, engine);
+  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  dnnl::eltwise_forward::primitive_desc exp_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                       algorithm::eltwise_exp, x_md, x_md, 0.f, 0.f);
 
   dnnl::memory exp_x_mem(exp_prim_desc.dst_desc(), engine);
 
@@ -205,8 +208,9 @@ static void sinhMKLDNN(NDArray* x, NDArray* z) {
   dnnl::eltwise_forward(exp_prim_desc).execute(stream, exp_args);
 
   // Step 2: -x using linear
-  dnnl::eltwise_forward::desc neg_desc(dnnl::prop_kind::forward_inference, algorithm::eltwise_linear, x_md, -1.0f, 0.0f);
-  dnnl::eltwise_forward::primitive_desc neg_prim_desc(neg_desc, attr, engine);
+  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  dnnl::eltwise_forward::primitive_desc neg_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                       algorithm::eltwise_linear, x_md, x_md, -1.0f, 0.0f);
 
   dnnl::memory neg_x_mem(neg_prim_desc.dst_desc(), engine);
 
@@ -226,9 +230,9 @@ static void sinhMKLDNN(NDArray* x, NDArray* z) {
   dnnl::eltwise_forward(exp_prim_desc).execute(stream, exp_neg_args);
 
   // Step 4: exp(x) - exp(-x) using binary sub
-  dnnl::binary::desc sub_desc(dnnl::algorithm::binary_sub, exp_prim_desc.dst_desc(),
-                               exp_prim_desc.dst_desc(), exp_prim_desc.dst_desc());
-  dnnl::binary::primitive_desc sub_prim_desc(sub_desc, engine);
+  // OneDNN 3.x API: binary::primitive_desc(engine, algorithm, src0_md, src1_md, dst_md)
+  dnnl::binary::primitive_desc sub_prim_desc(engine, dnnl::algorithm::binary_sub,
+                                              exp_prim_desc.dst_desc(), exp_prim_desc.dst_desc(), exp_prim_desc.dst_desc());
 
   dnnl::memory diff_mem(sub_prim_desc.dst_desc(), engine);
 
@@ -240,9 +244,9 @@ static void sinhMKLDNN(NDArray* x, NDArray* z) {
   dnnl::binary(sub_prim_desc).execute(stream, sub_args);
 
   // Step 5: divide by 2
-  dnnl::eltwise_forward::desc div_desc(dnnl::prop_kind::forward_inference, algorithm::eltwise_linear,
-                                        sub_prim_desc.dst_desc(), 0.5f, 0.0f);
-  dnnl::eltwise_forward::primitive_desc div_prim_desc(div_desc, attr, engine);
+  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  dnnl::eltwise_forward::primitive_desc div_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                       algorithm::eltwise_linear, sub_prim_desc.dst_desc(), z_md, 0.5f, 0.0f);
 
   std::unordered_map<int, dnnl::memory> div_args;
   div_args[DNNL_ARG_SRC] = diff_mem;

@@ -22,7 +22,9 @@ package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMConfiguration
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMLayerConfig
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMDataFormat
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMLayerWeights
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
@@ -100,29 +102,30 @@ class LSTM : PreImportHook {
 
         // Extract weights for first direction
         val wSlice = sd.squeeze(sd.stridedSlice("${opName}_w_slice", w,
-            intArrayOf(0), intArrayOf(1), intArrayOf(1)), 0)
+            longArrayOf(0), longArrayOf(1), 1L), 0)
         val rSlice = sd.squeeze(sd.stridedSlice("${opName}_r_slice", r,
-            intArrayOf(0), intArrayOf(1), intArrayOf(1)), 0)
+            longArrayOf(0), longArrayOf(1), 1L), 0)
 
         // Build LSTM configuration
-        val config = LSTMConfiguration.builder()
-            .peepHole(peepholes != null)
-            .forgetBias(1.0)
-            .clippingCellValue(0.0)
-            .dataFormat(1)  // NTS format
+        val config = LSTMLayerConfig.builder()
+            .lstmdataformat(LSTMDataFormat.NTS)
+            .retFullSequence(true)
+            .retLastH(true)
+            .retLastC(true)
+            .build()
+
+        // Build LSTM weights
+        val weights = LSTMLayerWeights.builder()
+            .weights(wSlice)
+            .rWeights(rSlice)
+            .bias(b)
+            .peepholeWeights(peepholes)
             .build()
 
         // Use SameDiff LSTM layer
         val lstmOutputs = sd.rnn.lstmLayer(
-            "${opName}_lstm",
             xTransposed,
-            initialC,
-            initialH,
-            null,  // maxTSLength
-            wSlice.reshape(hiddenSize.toLong(), 4, -1),
-            rSlice.reshape(hiddenSize.toLong(), 4, hiddenSize.toLong()),
-            b,
-            peepholes,
+            weights,
             config
         )
 

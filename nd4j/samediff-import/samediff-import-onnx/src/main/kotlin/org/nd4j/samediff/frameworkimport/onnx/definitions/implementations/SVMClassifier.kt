@@ -134,7 +134,8 @@ class SVMClassifier : PreImportHook {
         val predictions = if (numClasses == 2) {
             // Binary classification: sign of score
             val sign = sd.math.sign(scores)
-            sd.math.max("${opName}_pred", sign, 0.0).castTo(DataType.INT64)
+            val zero = sd.constant(0.0)
+            sd.math.max("${opName}_pred", sign, zero).castTo(DataType.INT64)
         } else {
             sd.argmax("${opName}_pred", scores, false, -1)
         }

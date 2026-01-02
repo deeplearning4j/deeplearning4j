@@ -91,7 +91,7 @@ PLATFORM_IMPL(conv1d_bp, ENGINE_CPU) {
 
     auto* gradI = OUTPUT_VARIABLE(0);
     auto* gradW = OUTPUT_VARIABLE(1);
-    auto* gradB = block.numOutputs() > 2 ? OUTPUT_VARIABLE(2) : nullptr;
+    auto* gradB = block.outputWidth() > 2 ? OUTPUT_VARIABLE(2) : nullptr;
 
     std::vector<NDArray*> inputs = {input, weights, gradO};
     std::vector<NDArray*> outputs = {gradI, gradW};
@@ -187,7 +187,7 @@ PLATFORM_IMPL(conv3dnew_bp, ENGINE_CPU) {
 
     auto* gradI = OUTPUT_VARIABLE(0);
     auto* gradW = OUTPUT_VARIABLE(1);
-    auto* gradB = block.numOutputs() > 2 ? OUTPUT_VARIABLE(2) : nullptr;
+    auto* gradB = block.outputWidth() > 2 ? OUTPUT_VARIABLE(2) : nullptr;
 
     std::vector<NDArray*> inputs = {input, weights, gradO};
     std::vector<NDArray*> outputs = {gradI, gradW};
@@ -279,7 +279,7 @@ PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CPU) {
 
     auto* gradI = OUTPUT_VARIABLE(0);
     auto* gradW = OUTPUT_VARIABLE(1);
-    auto* gradB = block.numOutputs() > 2 ? OUTPUT_VARIABLE(2) : nullptr;
+    auto* gradB = block.outputWidth() > 2 ? OUTPUT_VARIABLE(2) : nullptr;
 
     std::vector<NDArray*> inputs = {input, weights, gradO};
     std::vector<NDArray*> outputs = {gradI, gradW};

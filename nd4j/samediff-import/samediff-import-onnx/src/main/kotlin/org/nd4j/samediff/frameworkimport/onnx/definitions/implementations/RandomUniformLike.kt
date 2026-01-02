@@ -79,14 +79,12 @@ class RandomUniformLike : PreImportHook {
             input.dataType()
         }
 
-        // Get shape of input
-        val inputShape = sd.shape(input)
+        // Get shape of input - for RandomUniformLike we need a static shape
+        // Since sd.random.uniform expects long... shape, we'll use the input's static shape
+        val inputShapeArr = input.shape ?: throw IllegalStateException("RandomUniformLike requires static input shape")
 
-        // Generate uniform random in [0, 1) and transform to [low, high)
-        // output = low + (high - low) * uniform
-        val uniform = sd.random.uniform("${opName}_uniform", low, high, dtype, inputShape)
-
-        val output = uniform.rename(outputNames[0])
+        // Generate uniform random in [low, high)
+        val output = sd.random.uniform("${opName}_uniform", low, high, dtype, *inputShapeArr)
 
         return mapOf(outputNames[0] to listOf(output))
     }

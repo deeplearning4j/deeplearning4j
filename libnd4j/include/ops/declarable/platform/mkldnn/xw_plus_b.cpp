@@ -36,6 +36,18 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////
+static dnnl::memory::data_type getOneDNNDataType(DataType dt) {
+  switch (dt) {
+    case DataType::FLOAT32: return dnnl::memory::data_type::f32;
+    case DataType::BFLOAT16: return dnnl::memory::data_type::bf16;
+    case DataType::HALF: return dnnl::memory::data_type::f16;
+    case DataType::INT8: return dnnl::memory::data_type::s8;
+    case DataType::UINT8: return dnnl::memory::data_type::u8;
+    case DataType::INT32: return dnnl::memory::data_type::s32;
+    default: return dnnl::memory::data_type::f32;
+  }
+}
+
 static void xwPlusBiasMKLDNN(NDArray* x, NDArray* weights, NDArray* bias, NDArray* z,
                              const bool bShouldTransp) {
   // mkl works with following
@@ -54,34 +66,11 @@ static void xwPlusBiasMKLDNN(NDArray* x, NDArray* weights, NDArray* bias, NDArra
 
   dnnl::memory::format_tag format = dnnl::memory::format_tag::ab;
 
-  // x type
-  dnnl::memory::data_type xType = dnnl::memory::data_type::f32;
-  if (x->dataType() == DataType::UINT8)
-    xType = dnnl::memory::data_type::u8;
-  else if (x->dataType() == DataType::INT8)
-    xType = dnnl::memory::data_type::s8;
-
-  // weights type
-  dnnl::memory::data_type wType = (weights->dataType() == DataType::FLOAT32) ? wType = dnnl::memory::data_type::f32
-                                                                             : wType = dnnl::memory::data_type::s8;
-
-  // bias type need add description for bias
-  dnnl::memory::data_type bType = dnnl::memory::data_type::f32;
-  if (bias->dataType() == DataType::INT32)
-    bType = dnnl::memory::data_type::s32;
-  else if (bias->dataType() == DataType::UINT8)
-    bType = dnnl::memory::data_type::u8;
-  else if (bias->dataType() == DataType::INT8)
-    bType = dnnl::memory::data_type::s8;
-
-  // z type
-  dnnl::memory::data_type zType = dnnl::memory::data_type::f32;
-  if (z->dataType() == DataType::INT32)
-    zType = dnnl::memory::data_type::s32;
-  else if (z->dataType() == DataType::UINT8)
-    zType = dnnl::memory::data_type::u8;
-  else if (z->dataType() == DataType::INT8)
-    zType = dnnl::memory::data_type::s8;
+  // Get data types from arrays - supports F32, BF16, F16, INT8, UINT8
+  dnnl::memory::data_type xType = getOneDNNDataType(x->dataType());
+  dnnl::memory::data_type wType = getOneDNNDataType(weights->dataType());
+  dnnl::memory::data_type bType = getOneDNNDataType(bias->dataType());
+  dnnl::memory::data_type zType = getOneDNNDataType(z->dataType());
 
   // memory descriptors for arrays
   // x
@@ -107,11 +96,9 @@ static void xwPlusBiasMKLDNN(NDArray* x, NDArray* weights, NDArray* bias, NDArra
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
-  // operation primitive description
-  dnnl::inner_product_forward::desc op_desc(dnnl::prop_kind::forward_inference, x_mkl_md, weights_mkl_md, bias_mkl_md,
-                                            z_mkl_md);
-
-  dnnl::inner_product_forward::primitive_desc op_prim_desc(op_desc, engine);
+  // operation primitive description (OneDNN 3.x API)
+  dnnl::inner_product_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                            x_mkl_md, weights_mkl_md, bias_mkl_md, z_mkl_md);
 
   // arguments (memory buffers) necessary for calculations
   std::unordered_map<int, dnnl::memory> args;
@@ -167,7 +154,8 @@ static void xwPlusBiasBp(NDArray* x, NDArray* weights, NDArray* bias, NDArray* d
   dnnl::memory::dims dLdxShape = xShape;
   dnnl::memory::dims dLdwShape = wShape;
 
-  dnnl::memory::data_type dataType = dnnl::memory::data_type::f32;
+  // Get data type from input - supports F32, BF16, F16
+  dnnl::memory::data_type dataType = getOneDNNDataType(x->dataType());
 
   // memory descriptors for arrays
   // x
@@ -209,21 +197,17 @@ static void xwPlusBiasBp(NDArray* x, NDArray* weights, NDArray* bias, NDArray* d
   // create engine
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
-  // forward
-  // operation primitive description
-  dnnl::inner_product_forward::desc op_ff_desc(dnnl::prop_kind::forward_inference, x_mkl_md, weights_mkl_md,
-                                               bias_mkl_md, dLdz_mkl_md);
-  dnnl::inner_product_forward::primitive_desc op_ff_prim_desc(op_ff_desc, engine);
+  // forward primitive description (OneDNN 3.x API) - used as hint for backward
+  dnnl::inner_product_forward::primitive_desc op_ff_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                               x_mkl_md, weights_mkl_md, bias_mkl_md, dLdz_mkl_md);
 
-  // backprob
-  // dLdw
-  auto op_bpdw_desc = inner_product_backward_weights::desc(x_mkl_md, dLdw_mkl_md, dLdb_mkl_md, dLdz_mkl_md);
-  auto op_bpdw_prim_desc = inner_product_backward_weights::primitive_desc(op_bpdw_desc, engine, op_ff_prim_desc);
+  // backprob dLdw (OneDNN 3.x API)
+  auto op_bpdw_prim_desc = inner_product_backward_weights::primitive_desc(engine, x_mkl_md, dLdw_mkl_md,
+                                                                           dLdb_mkl_md, dLdz_mkl_md, op_ff_prim_desc);
 
-  // backprob
-  // dLdx
-  auto op_bpdx_desc = inner_product_backward_data::desc(dLdx_mkl_md, weights_mkl_md, dLdz_mkl_md);
-  auto op_bpdx_prim_desc = inner_product_backward_data::primitive_desc(op_bpdx_desc, engine, op_ff_prim_desc);
+  // backprob dLdx (OneDNN 3.x API)
+  auto op_bpdx_prim_desc = inner_product_backward_data::primitive_desc(engine, dLdx_mkl_md, weights_mkl_md,
+                                                                        dLdz_mkl_md, op_ff_prim_desc);
 
   // arguments (memory buffers) necessary for calculations
   std::unordered_map<int, dnnl::memory> argsDw, argsDx;
@@ -316,6 +300,10 @@ PLATFORM_CHECK(xw_plus_b, ENGINE_CPU) {
 
   Requirements req("ONEDNN XW_PLUS_B OP");
   req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
+      // OneDNN inner_product only supports rank-2 inputs (batch x features)
+      req.expectEq(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), 2) &&
+      req.expectEq(makeInfoVariable(w->rankOf(), RANK_MSG_INPUT1), 2) &&
+      req.expectEq(makeInfoVariable(z->rankOf(), RANK_MSG_OUTPUT), 2) &&
       req.expectTrue(makeInfoVariable(
                          [x, w, b, z] {
                            const DataType xType = x->dataType();
@@ -323,18 +311,32 @@ PLATFORM_CHECK(xw_plus_b, ENGINE_CPU) {
                            const DataType bType = b->dataType();
                            const DataType zType = z->dataType();
 
-                           return ((xType == DataType::FLOAT32 && wType == DataType::FLOAT32 &&
-                                    bType == DataType::FLOAT32 && zType == DataType::FLOAT32) ||
-                                   (  // x
-                                       (xType == DataType::UINT8 || xType == DataType::INT8) &&
-                                       // w
-                                       (wType == DataType::UINT8 || wType == DataType::INT8) &&
-                                       // b
-                                       (bType == DataType::UINT8 || bType == DataType::INT8 ||
-                                        bType == DataType::INT32 || bType == DataType::FLOAT32) &&
-                                       // z
-                                       (zType == DataType::UINT8 || zType == DataType::INT8 ||
-                                        zType == DataType::INT32 || zType == DataType::FLOAT32)));
+                           // FLOAT32 - full precision
+                           bool isFloat32 = (xType == DataType::FLOAT32 && wType == DataType::FLOAT32 &&
+                                             bType == DataType::FLOAT32 && zType == DataType::FLOAT32);
+
+                           // BFLOAT16 - supported by OneDNN on CPUs with AMX/AVX512_BF16
+                           bool isBFloat16 = (xType == DataType::BFLOAT16 && wType == DataType::BFLOAT16 &&
+                                              bType == DataType::BFLOAT16 && zType == DataType::BFLOAT16);
+
+                           // FLOAT16 - limited support, but OneDNN can handle it
+                           bool isFloat16 = (xType == DataType::HALF && wType == DataType::HALF &&
+                                             bType == DataType::HALF && zType == DataType::HALF);
+
+                           // INT8 quantized
+                           bool isQuantized = (
+                               // x
+                               (xType == DataType::UINT8 || xType == DataType::INT8) &&
+                               // w
+                               (wType == DataType::UINT8 || wType == DataType::INT8) &&
+                               // b
+                               (bType == DataType::UINT8 || bType == DataType::INT8 ||
+                                bType == DataType::INT32 || bType == DataType::FLOAT32) &&
+                               // z
+                               (zType == DataType::UINT8 || zType == DataType::INT8 ||
+                                zType == DataType::INT32 || zType == DataType::FLOAT32));
+
+                           return isFloat32 || isBFloat16 || isFloat16 || isQuantized;
                          },
                          TYPECHECK_MSG),
                      NO_MSG);
@@ -390,6 +392,10 @@ PLATFORM_CHECK(xw_plus_b_bp, ENGINE_CPU) {
 
   Requirements req("ONEDNN XW_PLUS_B_BP OP");
   req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
+      // OneDNN inner_product only supports rank-2 inputs (batch x features)
+      req.expectEq(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), 2) &&
+      req.expectEq(makeInfoVariable(w->rankOf(), RANK_MSG_INPUT1), 2) &&
+      req.expectEq(makeInfoVariable(dLdz->rankOf(), RANK_MSG_INPUT), 2) &&
       req.expectTrue(makeInfoVariable(
                          [x, w, b, dLdz, dLdx, dLdw, dLdb] {
                            const DataType xType = x->dataType();
@@ -399,10 +405,26 @@ PLATFORM_CHECK(xw_plus_b_bp, ENGINE_CPU) {
                            const DataType dLdxType = dLdx->dataType();
                            const DataType dLdwType = dLdw->dataType();
                            const DataType dLdbType = dLdb->dataType();
-                           return (xType == DataType::FLOAT32 && wType == DataType::FLOAT32 &&
-                                   bType == DataType::FLOAT32 && dLdzType == DataType::FLOAT32 &&
-                                   dLdbType == DataType::FLOAT32 && dLdxType == DataType::FLOAT32 &&
-                                   dLdwType == DataType::FLOAT32);
+
+                           // All types must match - FLOAT32
+                           bool isFloat32 = (xType == DataType::FLOAT32 && wType == DataType::FLOAT32 &&
+                                             bType == DataType::FLOAT32 && dLdzType == DataType::FLOAT32 &&
+                                             dLdbType == DataType::FLOAT32 && dLdxType == DataType::FLOAT32 &&
+                                             dLdwType == DataType::FLOAT32);
+
+                           // All types must match - BFLOAT16
+                           bool isBFloat16 = (xType == DataType::BFLOAT16 && wType == DataType::BFLOAT16 &&
+                                              bType == DataType::BFLOAT16 && dLdzType == DataType::BFLOAT16 &&
+                                              dLdbType == DataType::BFLOAT16 && dLdxType == DataType::BFLOAT16 &&
+                                              dLdwType == DataType::BFLOAT16);
+
+                           // All types must match - FLOAT16
+                           bool isFloat16 = (xType == DataType::HALF && wType == DataType::HALF &&
+                                             bType == DataType::HALF && dLdzType == DataType::HALF &&
+                                             dLdbType == DataType::HALF && dLdxType == DataType::HALF &&
+                                             dLdwType == DataType::HALF);
+
+                           return isFloat32 || isBFloat16 || isFloat16;
                          },
                          TYPECHECK_MSG),
                      NO_MSG);

@@ -86,24 +86,27 @@ class GridSample : PreImportHook {
 
         // Denormalize grid coordinates from [-1, 1] to [0, H-1] and [0, W-1]
         val gridX = sd.stridedSlice("${opName}_grid_x", grid,
-            intArrayOf(0, 0, 0, 0), intArrayOf(Int.MAX_VALUE, Int.MAX_VALUE, Int.MAX_VALUE, 1), intArrayOf(1, 1, 1, 1))
+            longArrayOf(0, 0, 0, 0), longArrayOf(Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE, 1), 1L, 1L, 1L, 1L)
         val gridY = sd.stridedSlice("${opName}_grid_y", grid,
-            intArrayOf(0, 0, 0, 1), intArrayOf(Int.MAX_VALUE, Int.MAX_VALUE, Int.MAX_VALUE, 2), intArrayOf(1, 1, 1, 1))
+            longArrayOf(0, 0, 0, 1), longArrayOf(Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE, 2), 1L, 1L, 1L, 1L)
 
         // Convert from [-1, 1] to pixel coordinates
         val halfW = (wIn - 1).toDouble() / 2.0
         val halfH = (hIn - 1).toDouble() / 2.0
 
+        val gridXSq = sd.squeeze("${opName}_gridX_sq", gridX, -1)
+        val gridYSq = sd.squeeze("${opName}_gridY_sq", gridY, -1)
+
         val pixelX = if (alignCorners) {
-            sd.math.add(sd.math.mul(gridX.squeeze(-1), halfW), halfW)
+            sd.math.add(sd.math.mul(gridXSq, halfW), halfW)
         } else {
-            sd.math.add(sd.math.mul(gridX.squeeze(-1), wIn.toDouble() / 2.0), (wIn.toDouble() - 1) / 2.0)
+            sd.math.add(sd.math.mul(gridXSq, wIn.toDouble() / 2.0), (wIn.toDouble() - 1) / 2.0)
         }
 
         val pixelY = if (alignCorners) {
-            sd.math.add(sd.math.mul(gridY.squeeze(-1), halfH), halfH)
+            sd.math.add(sd.math.mul(gridYSq, halfH), halfH)
         } else {
-            sd.math.add(sd.math.mul(gridY.squeeze(-1), hIn.toDouble() / 2.0), (hIn.toDouble() - 1) / 2.0)
+            sd.math.add(sd.math.mul(gridYSq, hIn.toDouble() / 2.0), (hIn.toDouble() - 1) / 2.0)
         }
 
         // For bilinear interpolation, we need to sample 4 neighboring pixels

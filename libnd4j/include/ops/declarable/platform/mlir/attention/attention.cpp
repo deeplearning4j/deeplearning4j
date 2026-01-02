@@ -44,7 +44,7 @@ PLATFORM_IMPL(dot_product_attention, ENGINE_CPU) {
     auto* mask = block.width() > 3 ? INPUT_VARIABLE(3) : nullptr;  // optional attention mask
 
     auto* output = OUTPUT_VARIABLE(0);   // attention output
-    auto* weights = block.numOutputs() > 1 ? OUTPUT_VARIABLE(1) : nullptr; // optional attention weights
+    auto* weights = block.outputWidth() > 1 ? OUTPUT_VARIABLE(1) : nullptr; // optional attention weights
 
     // Scale factor (usually 1/sqrt(dk))
     double scale = block.numT() > 0 ? T_ARG(0) : 0.0;  // 0 means auto-compute
@@ -156,7 +156,7 @@ PLATFORM_IMPL(multi_head_attention, ENGINE_CPU) {
     auto* bo = block.width() > 11 ? INPUT_VARIABLE(11) : nullptr; // output bias
 
     auto* output = OUTPUT_VARIABLE(0);
-    auto* weights = block.numOutputs() > 1 ? OUTPUT_VARIABLE(1) : nullptr;
+    auto* weights = block.outputWidth() > 1 ? OUTPUT_VARIABLE(1) : nullptr;
 
     int numHeads = INT_ARG(0);
     double dropout = block.numT() > 0 ? T_ARG(0) : 0.0;

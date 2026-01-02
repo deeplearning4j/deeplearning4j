@@ -31,7 +31,6 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.reduce.Einsum;
 
 import java.util.*;
 
@@ -127,7 +126,7 @@ public class EinsumDense extends SameDiffLayer {
         String[] inputSubscripts = inputPart.split(",");
 
         // Perform einsum: input tensor contracted with weight tensor
-        SDVariable output = sameDiff.linalg().einsum(equation, layerInput, weights);
+        SDVariable output = sameDiff.linalg().einsum(new SDVariable[]{layerInput, weights}, equation);
 
         // Add bias if present
         if (hasBias && paramTable.containsKey(BIAS_KEY)) {

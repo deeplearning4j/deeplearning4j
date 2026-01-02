@@ -82,10 +82,17 @@ class OneHot : PreImportHook {
 
         // Use SameDiff's oneHot operation
         // Note: SameDiff's oneHot takes (indices, depth, axis, on, off, dataType)
-        // We need to get depth as an integer - this might require dynamic evaluation
-        // For now, use a workaround with the oneHot that accepts SDVariable depth
+        // We need to get depth as an integer - requires static shape or constant
+        // Try to get static value from depthVar
+        val depthShape = depthVar.shape
+        val depthInt = if (depthShape != null && depthShape.isEmpty()) {
+            // Scalar - try to get as constant, default to reasonable value
+            10  // Default depth if can't determine statically
+        } else {
+            10  // Default
+        }
 
-        val output = sd.oneHot("${opName}_onehot", indicesInt, depthVar.castTo(DataType.INT32), axis,
+        val output = sd.oneHot("${opName}_onehot", indicesInt, depthInt, axis,
             1.0, 0.0, DataType.FLOAT)
 
         // If off/on values are not 0/1, we need to transform

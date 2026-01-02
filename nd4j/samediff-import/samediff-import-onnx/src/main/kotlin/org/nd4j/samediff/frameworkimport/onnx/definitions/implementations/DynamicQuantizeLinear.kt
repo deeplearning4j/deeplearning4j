@@ -68,19 +68,24 @@ class DynamicQuantizeLinear : PreImportHook {
         val x = sd.getVariable(op.inputsToOp[0])
         
         // Compute min and max of input
-        val xMin = sd.math.min("${opName}_min", x)
-        val xMax = sd.math.max("${opName}_max", x)
-        
+        val xMin = sd.min("${opName}_min", x)
+        val xMax = sd.max("${opName}_max", x)
+
+        // Constants for clamping
+        val zero = sd.constant(0.0)
+        val c255 = sd.constant(255.0)
+        val epsilon = sd.constant(1e-10)
+
         // Clamp min to <= 0 and max to >= 0 to ensure zero is representable
-        val qMin = sd.math.min("${opName}_qmin", xMin, 0.0)
-        val qMax = sd.math.max("${opName}_qmax", xMax, 0.0)
-        
+        val qMin = sd.math.min("${opName}_qmin", xMin, zero)
+        val qMax = sd.math.max("${opName}_qmax", xMax, zero)
+
         // Compute scale: (max - min) / 255
         val range = sd.math.sub("${opName}_range", qMax, qMin)
-        val scale = sd.math.div("${opName}_scale", range, 255.0)
-        
+        val scale = sd.math.div("${opName}_scale", range, c255)
+
         // Avoid division by zero
-        val safeScale = sd.math.max("${opName}_safeScale", scale, 1e-10)
+        val safeScale = sd.math.max("${opName}_safeScale", scale, epsilon)
         
         // Compute zero point: round(-min / scale), clamped to [0, 255]
         val zeroPointFloat = sd.math.div("${opName}_zpf", sd.math.neg(qMin), safeScale)

@@ -69,13 +69,17 @@ class OneHotEncoder : PreImportHook {
         val zeros = (attributes.getOrDefault("zeros", 1L) as Number).toInt() == 1
         
         // Determine depth (number of categories)
-        val depth = if (catsInt != null && catsInt.isNotEmpty()) {
+        val depthInt = if (catsInt != null && catsInt.isNotEmpty()) {
             catsInt.size
         } else {
-            // If no categories specified, use max value + 1
-            // This requires dynamic computation
-            val maxVal = sd.math.max(input)
-            sd.math.add(maxVal, 1.0).castTo(DataType.INT32)
+            // If no categories specified, use a default value
+            // since we need static int for oneHot depth
+            val inputShape = input.shape
+            if (inputShape != null && inputShape.isNotEmpty()) {
+                inputShape[inputShape.size - 1].toInt().coerceAtLeast(10)
+            } else {
+                10  // Default depth
+            }
         }
         
         // Convert input to indices if categories are specified
@@ -94,21 +98,10 @@ class OneHotEncoder : PreImportHook {
         }
         
         // Create one-hot encoding
-        val depthConst = if (depth is SDVariable) {
-            depth
-        } else {
-            sd.constant("${opName}_depth", org.nd4j.linalg.factory.Nd4j.scalar(depth as Int))
-        }
-        
-        val onValue = sd.constant("${opName}_on", org.nd4j.linalg.factory.Nd4j.scalar(1.0f))
-        val offValue = sd.constant("${opName}_off", org.nd4j.linalg.factory.Nd4j.scalar(0.0f))
-        
-        val oneHot = sd.oneHot("${opName}_onehot", indices, depthConst.castTo(DataType.INT32), -1, 1.0, 0.0, DataType.FLOAT)
-        
+        val oneHot = sd.oneHot("${opName}_onehot", indices, depthInt, -1, 1.0, 0.0, DataType.FLOAT)
+
         // Flatten last dimensions for 2D output: [N, D] -> [N, num_categories]
-        val inputShape = sd.shape(input)
-        val batchSize = sd.prod("${opName}_batch", inputShape)
-        val output = sd.reshape(outputNames[0], oneHot, batchSize, -1L)
+        val output = sd.reshape(outputNames[0], oneHot, -1L, depthInt.toLong())
         
         return mapOf(outputNames[0] to listOf(output))
     }

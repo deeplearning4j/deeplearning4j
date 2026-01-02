@@ -75,11 +75,12 @@ class NegativeLogLikelihoodLoss : PreImportHook {
         // Gather log probabilities for correct class
         // For 2D: gather input[i, target[i]] for each i
         val inputRank = sd.rank(input)
-        
+
         // Use gather_nd to select the log probability of the correct class
         // Create indices of shape [N, 2] where each row is [batch_idx, class_idx]
-        val batchSize = sd.shape(target).getScalar(0)
-        val batchIndices = sd.range(sd.constant(0L), batchSize, sd.constant(1L), DataType.INT64)
+        val targetShape = target.shape ?: throw IllegalStateException("NegativeLogLikelihoodLoss requires static target shape")
+        val batchSize = targetShape[0]
+        val batchIndices = sd.range("${opName}_range", sd.constant(0L), sd.constant(batchSize), sd.constant(1L), DataType.INT64)
         val targetLong = target.castTo(DataType.INT64)
         
         // Stack batch indices with target indices: [[0, t0], [1, t1], ...]
@@ -99,10 +100,10 @@ class NegativeLogLikelihoodLoss : PreImportHook {
         
         // Handle ignore_index
         if (ignoreIndex != null) {
-            val mask = sd.neq("${opName}_mask", target, ignoreIndex.toLong()).castTo(loss.dataType())
+            val mask = sd.neq("${opName}_mask", target, ignoreIndex.toDouble()).castTo(loss.dataType())
             loss = sd.math.mul("${opName}_masked", loss, mask)
         }
-        
+
         // Apply reduction
         val output = when (reduction) {
             "none" -> loss.rename(outputNames[0])
@@ -110,7 +111,7 @@ class NegativeLogLikelihoodLoss : PreImportHook {
             "mean" -> {
                 if (ignoreIndex != null) {
                     // Mean over non-ignored elements
-                    val mask = sd.neq("${opName}_mask2", target, ignoreIndex.toLong()).castTo(DataType.FLOAT)
+                    val mask = sd.neq("${opName}_mask2", target, ignoreIndex.toDouble()).castTo(DataType.FLOAT)
                     val count = sd.math.sum("${opName}_count", mask)
                     sd.math.div(outputNames[0], sd.math.sum(loss), count)
                 } else {

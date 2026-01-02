@@ -99,7 +99,7 @@ class InstanceNormalization : PreImportHook {
 
         // Build broadcast shape: [1, C, 1, 1, ...]
         val onesVec = sd.onesLike("${opName}_ones", inputShape)
-        val cIdx = sd.constant("${opName}_cIdx", longArrayOf(1))
+        val cIdx = sd.constant("${opName}_cIdx", 1L)
         val cVal = sd.expandDims("${opName}_cVal", c, 0)
         val broadcastShape = sd.scatterNdUpdate("${opName}_bcastShape", onesVec,
             sd.expandDims(cIdx, 1), cVal)

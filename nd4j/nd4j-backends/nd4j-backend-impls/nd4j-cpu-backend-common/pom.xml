@@ -18,6 +18,15 @@
         <module.name>nd4j.cpu.backend.common</module.name>
     </properties>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
     <dependencies>
         <dependency>
             <groupId>org.eclipse.deeplearning4j</groupId>

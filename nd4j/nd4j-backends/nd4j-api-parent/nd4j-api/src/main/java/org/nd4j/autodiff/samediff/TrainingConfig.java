@@ -690,4 +690,50 @@ public class TrainingConfig {
             throw new RuntimeException(e);
         }
     }
+
+    /**
+     * Check if per-variable updater configuration is available.
+     * Subclasses can override this to indicate they support per-variable settings.
+     *
+     * @return true if this config supports per-variable updaters
+     */
+    public boolean hasPerVariableConfig() {
+        return false;
+    }
+
+    /**
+     * Get updater for a specific variable.
+     * Default implementation returns the global updater.
+     * Subclasses can override this for per-variable support.
+     *
+     * @param variableName The name of the variable
+     * @return The updater to use for this variable
+     */
+    public IUpdater getUpdaterForVariable(String variableName) {
+        return updater;
+    }
+
+    /**
+     * Get regularization for a specific variable.
+     * Default implementation returns the global regularization list.
+     * Subclasses can override this for per-variable support.
+     *
+     * @param variableName The name of the variable
+     * @return The regularization list for this variable
+     */
+    public List<Regularization> getRegularizationForVariable(String variableName) {
+        return regularization;
+    }
+
+    /**
+     * Check if a variable should be trained.
+     * Default implementation returns true for all variables.
+     * Subclasses can override this to support freezing.
+     *
+     * @param variableName The name of the variable
+     * @return true if the variable should be trained, false if frozen
+     */
+    public boolean isTrainable(String variableName) {
+        return true;
+    }
 }

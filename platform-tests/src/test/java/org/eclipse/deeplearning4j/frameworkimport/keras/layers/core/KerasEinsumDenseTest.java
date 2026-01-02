@@ -22,7 +22,6 @@ package org.eclipse.deeplearning4j.frameworkimport.keras.layers.core;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.layers.EinsumDense;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
-import org.deeplearning4j.nn.modelimport.keras.config.Keras3LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -61,7 +60,6 @@ import static org.junit.jupiter.api.Assertions.*;
 class KerasEinsumDenseTest extends BaseDL4JTest {
 
     private Keras2LayerConfiguration conf2 = new Keras2LayerConfiguration();
-    private Keras3LayerConfiguration conf3 = new Keras3LayerConfiguration();
 
     private final String LAYER_NAME = "einsum_dense";
     private final String EQUATION = "ab,bc->ac";
@@ -70,12 +68,6 @@ class KerasEinsumDenseTest extends BaseDL4JTest {
     @DisplayName("Test EinsumDense Layer Import - Keras 2")
     void testEinsumDenseLayerKeras2() throws Exception {
         buildEinsumDenseLayer(conf2, 2);
-    }
-
-    @Test
-    @DisplayName("Test EinsumDense Layer Import - Keras 3")
-    void testEinsumDenseLayerKeras3() throws Exception {
-        buildEinsumDenseLayer(conf3, 3);
     }
 
     private void buildEinsumDenseLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
@@ -507,8 +499,7 @@ class KerasEinsumDenseTest extends BaseDL4JTest {
 
     static Stream<Arguments> kerasVersionProvider() {
         return Stream.of(
-                Arguments.of(new Keras2LayerConfiguration(), 2),
-                Arguments.of(new Keras3LayerConfiguration(), 3)
+                Arguments.of(new Keras2LayerConfiguration(), 2)
         );
     }
 
@@ -724,13 +715,13 @@ class KerasEinsumDenseTest extends BaseDL4JTest {
     }
 
     @Test
-    @DisplayName("Test EinsumDense Keras 3 Specific Fields")
-    void testEinsumDenseKeras3SpecificFields() throws Exception {
+    @DisplayName("Test EinsumDense Keras 2 Specific Fields")
+    void testEinsumDenseKeras2SpecificFields() throws Exception {
         Map<String, Object> layerConfig = new HashMap<>();
-        layerConfig.put(conf3.getLAYER_FIELD_CLASS_NAME(), conf3.getLAYER_CLASS_NAME_EINSUM_DENSE());
+        layerConfig.put(conf2.getLAYER_FIELD_CLASS_NAME(), conf2.getLAYER_CLASS_NAME_EINSUM_DENSE());
 
         Map<String, Object> config = new HashMap<>();
-        config.put(conf3.getLAYER_FIELD_NAME(), "keras3_einsum");
+        config.put(conf2.getLAYER_FIELD_NAME(), "keras2_einsum");
         config.put("equation", EQUATION);
 
         List<Integer> outputShape = new ArrayList<>();
@@ -738,17 +729,17 @@ class KerasEinsumDenseTest extends BaseDL4JTest {
         config.put("output_shape", outputShape);
         config.put("bias_axes", "c");
 
-        // Keras 3 specific fields
+        // Keras 2 specific fields
         config.put("kernel_initializer", createInitializerConfig("glorot_uniform"));
         config.put("bias_initializer", createInitializerConfig("zeros"));
 
-        layerConfig.put(conf3.getLAYER_FIELD_CONFIG(), config);
-        layerConfig.put(conf3.getLAYER_FIELD_KERAS_VERSION(), 3);
+        layerConfig.put(conf2.getLAYER_FIELD_CONFIG(), config);
+        layerConfig.put(conf2.getLAYER_FIELD_KERAS_VERSION(), 2);
 
         KerasEinsumDense kerasLayer = new KerasEinsumDense(layerConfig, false);
 
         assertNotNull(kerasLayer);
-        assertEquals("keras3_einsum", kerasLayer.getLayerName());
+        assertEquals("keras2_einsum", kerasLayer.getLayerName());
     }
 
     private Map<String, Object> createInitializerConfig(String className) {

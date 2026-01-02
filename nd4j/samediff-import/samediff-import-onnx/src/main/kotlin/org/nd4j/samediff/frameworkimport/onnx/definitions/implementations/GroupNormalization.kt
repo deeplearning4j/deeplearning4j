@@ -139,7 +139,7 @@ class GroupNormalization : PreImportHook {
         // Scale and bias are [C], need to reshape to [1, C, 1, 1, ...] for broadcasting
         // Build broadcast shape based on input rank
         val onesVec = sd.onesLike("${opName}_onesVec", inputShape)
-        val cIndex = sd.constant("${opName}_cIdx", longArrayOf(1))
+        val cIndex = sd.constant("${opName}_cIdx", 1L)
         val cValue = sd.expandDims("${opName}_cVal", c, 0)
         val broadcastShape = sd.scatterNdUpdate("${opName}_bcastShape", onesVec,
             sd.expandDims(cIndex, 1), cValue)

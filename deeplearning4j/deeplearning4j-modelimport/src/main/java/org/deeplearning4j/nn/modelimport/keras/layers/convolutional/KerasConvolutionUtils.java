@@ -424,10 +424,13 @@ public class KerasConvolutionUtils {
             throw new InvalidKerasConfigurationException("Could not determine convolution border mode: no "
                     + conf.getLAYER_FIELD_BORDER_MODE() + " field found");
         String borderMode = (String) innerConfig.get(conf.getLAYER_FIELD_BORDER_MODE());
-        if (borderMode.equals(conf.getLAYER_FIELD_BORDER_MODE())) {
+        if (borderMode.equals(conf.getLAYER_BORDER_MODE_SAME())) {
             padding = getKernelSizeFromConfig(layerConfig, dimension, conf, kerasMajorVersion);
             for (int i = 0; i < padding.length; i++)
                 padding[i]--;
+        } else if (borderMode.equals(conf.getLAYER_BORDER_MODE_VALID())) {
+            // valid mode means no padding
+            padding = new int[dimension];
         }
         return padding;
     }

@@ -29,8 +29,6 @@
         <module.name>omnihub</module.name>
     </properties>
 
-
-
     <dependencies>
 
         <dependency>
@@ -147,7 +145,10 @@
 
     <build>
         <plugins>
-
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
             <plugin>
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-maven-plugin</artifactId>

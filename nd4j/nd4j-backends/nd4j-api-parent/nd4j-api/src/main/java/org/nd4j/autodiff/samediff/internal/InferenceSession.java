@@ -1021,9 +1021,15 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         //TODO we shouldn't be clearing this on every single iteration, in 99.5% of cases variables will be same as last iteration...
         for (SDVariable v : sameDiff.variables()) {
             if (v.getVariableType() == VariableType.CONSTANT) {
-                arrayUseTracker.addDependency(SDValue.create(v.getArr()), new ConstantDep(v.name()));
+                INDArray arr = v.getArr();
+                if (arr != null) {
+                    arrayUseTracker.addDependency(SDValue.create(arr), new ConstantDep(v.name()));
+                }
             } else if (v.getVariableType() == VariableType.VARIABLE) {
-                arrayUseTracker.addDependency(SDValue.create(v.getArr()), new VariableDep(v.name()));
+                INDArray arr = v.getArr();
+                if (arr != null) {
+                    arrayUseTracker.addDependency(SDValue.create(arr), new VariableDep(v.name()));
+                }
             }
         }
 

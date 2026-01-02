@@ -444,7 +444,7 @@ PLATFORM_CHECK(atanh, ENGINE_CPU) {
 // Floor
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(floor, ENGINE_CPU) {
+PLATFORM_IMPL(Floor, ENGINE_CPU) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -461,7 +461,7 @@ PLATFORM_IMPL(floor, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(floor, ENGINE_CPU) {
+PLATFORM_CHECK(Floor, ENGINE_CPU) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS FLOOR OP");
@@ -477,7 +477,7 @@ PLATFORM_CHECK(floor, ENGINE_CPU) {
 // Ceiling
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(ceil, ENGINE_CPU) {
+PLATFORM_IMPL(Ceil, ENGINE_CPU) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -494,7 +494,7 @@ PLATFORM_IMPL(ceil, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(ceil, ENGINE_CPU) {
+PLATFORM_CHECK(Ceil, ENGINE_CPU) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS CEIL OP");
@@ -510,7 +510,7 @@ PLATFORM_CHECK(ceil, ENGINE_CPU) {
 // Round
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(round, ENGINE_CPU) {
+PLATFORM_IMPL(Round, ENGINE_CPU) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -527,7 +527,7 @@ PLATFORM_IMPL(round, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(round, ENGINE_CPU) {
+PLATFORM_CHECK(Round, ENGINE_CPU) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS ROUND OP");
@@ -543,7 +543,7 @@ PLATFORM_CHECK(round, ENGINE_CPU) {
 // Sign
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(sign, ENGINE_CPU) {
+PLATFORM_IMPL(Sign, ENGINE_CPU) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -563,7 +563,7 @@ PLATFORM_IMPL(sign, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(sign, ENGINE_CPU) {
+PLATFORM_CHECK(Sign, ENGINE_CPU) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS SIGN OP");

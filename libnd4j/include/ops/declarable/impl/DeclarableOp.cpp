@@ -24,6 +24,7 @@
 #include <exceptions/graph_exception.h>
 #include <graph/exceptions/unresolved_input_exception.h>
 #include <graph/profiling/OpTimingTracker.h>
+#include <helpers/KernelSelectionEnvironment.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/StringUtils.h>
 #include <ops/declarable/DeclarableOp.h>
@@ -889,6 +890,9 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
     timingRecord.threadId = std::this_thread::get_id();
     timingRecord.timestampNanos = timingTracker.getTraceTimestamp();
     timingStart = std::chrono::high_resolution_clock::now();
+
+    // Enter indirect helper tracking - track when nested ops use helpers
+    graph::getIndirectHelperTracker().enter();
   }
 
   sd::LongType memoryBefore =
@@ -935,21 +939,20 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
   try {
     // platform helpers use might be forbidden for various reasons, so we'll check it out first
     if (block->helpersAllowed() && sd::Environment::getInstance().helpersAllowed()) {
-      // if we have platform-specific helper for this op - invoke it
-      if (OpRegistrator::getInstance().hasHelper(this->getOpHash(), block->engine())) {
-        auto helper = OpRegistrator::getInstance().getPlatformHelper(this->getOpHash(), block->engine());
-        // Phase: HELPER_CHECK
-        bool helperUsable;
-        {
-          graph::OpPhaseTimer helperCheckTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::HELPER_CHECK);
-          helperUsable = helper->isUsable(*block);
-        }
-        if (helperUsable) {
-          // Phase: HELPER_EXEC
-          graph::OpPhaseTimer helperExecTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::HELPER_EXEC);
-          status = helper->invokeHelper(*block);
+      // Use the new multi-backend kernel selection infrastructure
+      // This will auto-tune and select the best available backend helper
+      {
+        graph::OpPhaseTimer helperCheckTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::HELPER_CHECK);
+        graph::OpPhaseTimer helperExecTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::HELPER_EXEC);
+
+        auto dispatchResult = platforms::KernelDispatchHelper::dispatchWithAutoTune(this, *block);
+        if (dispatchResult.first) {
+          // A helper was used successfully
+          status = dispatchResult.second;
           hasHelper = true;
           timingRecord.usedHelper = true;
+          // Mark helper used for indirect tracking - parent ops will see this
+          graph::getIndirectHelperTracker().markHelperUsed();
         }
       }
     }
@@ -1010,21 +1013,20 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
 #else
   // platform helpers use might be forbidden for various reasons, so we'll check it out first
   if (block->helpersAllowed() && sd::Environment::getInstance().helpersAllowed()) {
-    // if we have platform-specific helper for this op - invoke it
-    if (OpRegistrator::getInstance().hasHelper(this->getOpHash(), block->engine())) {
-      auto helper = OpRegistrator::getInstance().getPlatformHelper(this->getOpHash(), block->engine());
-      // Phase: HELPER_CHECK
-      bool helperUsable;
-      {
-        graph::OpPhaseTimer helperCheckTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::HELPER_CHECK);
-        helperUsable = helper->isUsable(*block);
-      }
-      if (helperUsable) {
-        // Phase: HELPER_EXEC
-        graph::OpPhaseTimer helperExecTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::HELPER_EXEC);
-        status = helper->invokeHelper(*block);
+    // Use the new multi-backend kernel selection infrastructure
+    // This will auto-tune and select the best available backend helper
+    {
+      graph::OpPhaseTimer helperCheckTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::HELPER_CHECK);
+      graph::OpPhaseTimer helperExecTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::HELPER_EXEC);
+
+      auto dispatchResult = platforms::KernelDispatchHelper::dispatchWithAutoTune(this, *block);
+      if (dispatchResult.first) {
+        // A helper was used successfully
+        status = dispatchResult.second;
         hasHelper = true;
         timingRecord.usedHelper = true;
+        // Mark helper used for indirect tracking - parent ops will see this
+        graph::getIndirectHelperTracker().markHelperUsed();
       }
     }
   }
@@ -1140,6 +1142,14 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
     auto timingEnd = std::chrono::high_resolution_clock::now();
     timingRecord.phaseNanos[static_cast<int>(graph::OpPhase::TOTAL)] =
         std::chrono::duration_cast<std::chrono::nanoseconds>(timingEnd - timingStart).count();
+
+    // Exit indirect helper tracking - check if any nested ops used helpers
+    bool indirectHelperUsed = graph::getIndirectHelperTracker().exit();
+    // If this op didn't directly use a helper, but nested ops did, mark it as using helper
+    if (!timingRecord.usedHelper && indirectHelperUsed) {
+      timingRecord.usedHelper = true;
+    }
+
     timingTracker.record(timingRecord);
   }
 

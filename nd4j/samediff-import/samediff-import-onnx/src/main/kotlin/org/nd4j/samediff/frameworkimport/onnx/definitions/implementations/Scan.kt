@@ -108,7 +108,7 @@ class Scan : PreImportHook {
 
                 // If reverse direction, reverse along the axis
                 val processedInput = if (direction == 1) {
-                    sd.reverse("${opName}_reverse_$idx", scanInput, axis)
+                    sd.reverse("${opName}_reverse_$idx", scanInput, axis.toLong())
                 } else {
                     scanInput
                 }
@@ -118,7 +118,7 @@ class Scan : PreImportHook {
                 val outputDirection = scanOutputDirections?.getOrNull(idx)?.toInt() ?: 0
 
                 val finalOutput = if (outputDirection == 1) {
-                    sd.reverse("${opName}_out_reverse_$idx", processedInput, outputAxis)
+                    sd.reverse("${opName}_out_reverse_$idx", processedInput, outputAxis.toLong())
                 } else {
                     processedInput
                 }

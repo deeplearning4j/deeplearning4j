@@ -529,6 +529,14 @@ PRINT_INDICES="${PRINT_INDICES:-OFF}"
 VERBOSE="${VERBOSE:-true}"
 VERBOSE_ARG="${VERBOSE_ARG:-VERBOSE=1}"
 HELPER="${HELPER:-}"
+# Multi-helper support: comma-separated list of helpers
+HELPERS="${HELPERS:-}"
+# Dynamic kernel selection configuration
+DYNAMIC_KERNEL_SELECTION="${DYNAMIC_KERNEL_SELECTION:-ON}"
+KERNEL_STRATEGY="${KERNEL_STRATEGY:-fastest}"
+KERNEL_AUTOTUNING="${KERNEL_AUTOTUNING:-OFF}"
+KERNEL_CACHING="${KERNEL_CACHING:-ON}"
+HELPER_PRIORITY="${HELPER_PRIORITY:-}"
 CHECK_VECTORIZATION="${CHECK_VECTORIZATION:-OFF}"
 NAME="${NAME:-}"
 OP_OUTPUT_FILE="${OP_OUTPUT_FILE:-include/generated/include_ops.h}"
@@ -558,6 +566,11 @@ DEBUG_AUTO_REDUCE="${DEBUG_AUTO_REDUCE:-true}"
 STRICT_TYPE_VALIDATION="${STRICT_TYPE_VALIDATION:-false}"
 SD_TYPES_VALIDATED="${SD_TYPES_VALIDATED:-false}"
 SD_VALIDATED_TYPES="${SD_VALIDATED_TYPES:-}"
+
+# MLIR JIT compilation variables
+MLIR="${MLIR:-OFF}"
+MLIR_VERSION="${MLIR_VERSION:-18}"
+MLIR_GPU="${MLIR_GPU:-OFF}"
 
 # =============================================================================
 # COMMAND LINE ARGUMENT PARSING
@@ -642,6 +655,54 @@ do
             ;;
         -h|--helper)
             HELPER="$value"
+            shift # past argument
+            ;;
+        --helpers)
+            HELPERS="$value"
+            print_colored "green" "✓ Multi-helper mode: $value"
+            shift # past argument
+            ;;
+        --dynamic-kernel-selection)
+            DYNAMIC_KERNEL_SELECTION="$value"
+            shift # past argument
+            ;;
+        --kernel-strategy)
+            KERNEL_STRATEGY="$value"
+            print_colored "blue" "✓ Kernel strategy: $value"
+            shift # past argument
+            ;;
+        --kernel-autotuning)
+            KERNEL_AUTOTUNING="$value"
+            shift # past argument
+            ;;
+        --kernel-caching)
+            KERNEL_CACHING="$value"
+            shift # past argument
+            ;;
+        --helper-priority)
+            HELPER_PRIORITY="$value"
+            if [ -n "$value" ]; then
+                print_colored "blue" "✓ Helper priority: $value"
+            fi
+            shift # past argument
+            ;;
+        --mlir)
+            MLIR="$value"
+            if [[ "$value" == "ON" ]]; then
+                print_colored "green" "✓ MLIR JIT compilation enabled"
+            fi
+            shift # past argument
+            ;;
+        --mlir-version)
+            MLIR_VERSION="$value"
+            print_colored "blue" "✓ MLIR/LLVM version: $value"
+            shift # past argument
+            ;;
+        --mlir-gpu)
+            MLIR_GPU="$value"
+            if [[ "$value" == "ON" ]]; then
+                print_colored "green" "✓ MLIR GPU backend enabled"
+            fi
             shift # past argument
             ;;
         -o|-platform|--platform)
@@ -794,6 +855,9 @@ done
 # =============================================================================
 # POST-ARGUMENT PROCESSING AND TYPE VALIDATION
 # =============================================================================
+
+# Re-export MAKE_COMMAND with the parsed MAKEJ value (was set before arg parsing)
+export MAKE_COMMAND="make -j${MAKEJ} -l${LOAD_LIMIT}"
 
 print_colored "blue" "\n🔍 PROCESSING TYPE CONFIGURATION"
 
@@ -1386,29 +1450,74 @@ mkbuilddir() {
     cd "$BUILD_DIR"
 }
 
-HELPERS=""
-if [ "$HELPER" == "" ]; then
-    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-    echo "!!                                                                                                           !!"
-    echo "!!                                                                                                           !!"
-    echo "!!                                                                                                           !!"
-    echo "!!                                                                                                           !!"
-    echo "!!                                                 WARNING!                                                  !!"
-    echo "!!                                      No helper packages configured!                                       !!"
-    echo "!!                          You can specify helper by using -h key. I.e. <-h onednn>                         !!"
-    echo "!!                                                                                                           !!"
-    echo "!!                                                                                                           !!"
-    echo "!!                                                                                                           !!"
-    echo "!!                                                                                                           !!"
-    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-else
-    # If helpers were defined, we'll propagate them to CMake
+HELPERS_CMAKE=""
+
+# Process multi-helper configuration (--helpers flag)
+if [ -n "$HELPERS" ]; then
+    print_colored "blue" "=== Multi-Helper Configuration ==="
+    # Convert comma-separated list to CMake semicolon-separated list
+    HELPERS_LIST_CMAKE=$(echo "$HELPERS" | tr ',' ';')
+    HELPERS_CMAKE="-DHELPERS_LIST=\"${HELPERS_LIST_CMAKE}\""
+
+    # Also set individual helper flags for backwards compatibility
+    IFS=','
+    read -ra HLP <<< "$HELPERS"
+    for i in "${HLP[@]}"; do
+        # Trim whitespace
+        i=$(echo "$i" | tr -d ' ')
+        HELPERS_CMAKE="${HELPERS_CMAKE} -DHELPERS_$i=ON"
+        print_colored "green" "   ✓ Enabling helper: $i"
+    done
+    IFS=' '
+    print_colored "blue" "==================================="
+# Fallback to legacy single helper mode (-h flag)
+elif [ -n "$HELPER" ]; then
+    print_colored "yellow" "Using legacy single-helper mode (consider using --helpers for multi-backend support)"
     IFS=','
     read -ra HLP <<< "$HELPER"
     for i in "${HLP[@]}"; do
-        HELPERS="${HELPERS} -DHELPERS_$i=true"
+        HELPERS_CMAKE="${HELPERS_CMAKE} -DHELPERS_$i=ON"
     done
     IFS=' '
+else
+    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    echo "!!                                                                                                           !!"
+    echo "!!                                                 WARNING!                                                  !!"
+    echo "!!                                      No helper packages configured!                                       !!"
+    echo "!!         You can specify helpers using --helpers key. I.e. <--helpers onednn,cudnn>                        !!"
+    echo "!!         Or use legacy mode with -h key. I.e. <-h onednn>                                                  !!"
+    echo "!!                                                                                                           !!"
+    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+fi
+
+# Dynamic kernel selection CMake arguments
+KERNEL_CMAKE=""
+if [ "$DYNAMIC_KERNEL_SELECTION" == "ON" ]; then
+    KERNEL_CMAKE="-DSD_DYNAMIC_KERNEL_SELECTION=ON"
+    KERNEL_CMAKE="${KERNEL_CMAKE} -DSD_KERNEL_STRATEGY=${KERNEL_STRATEGY}"
+
+    if [ "$KERNEL_AUTOTUNING" == "ON" ]; then
+        KERNEL_CMAKE="${KERNEL_CMAKE} -DSD_KERNEL_AUTOTUNING=ON"
+    fi
+    if [ "$KERNEL_CACHING" == "ON" ]; then
+        KERNEL_CMAKE="${KERNEL_CMAKE} -DSD_KERNEL_CACHING=ON"
+    fi
+    if [ -n "$HELPER_PRIORITY" ]; then
+        # Convert comma-separated to semicolon-separated for CMake
+        HELPER_PRIORITY_CMAKE=$(echo "$HELPER_PRIORITY" | tr ',' ';')
+        KERNEL_CMAKE="${KERNEL_CMAKE} -DSD_HELPER_PRIORITY=\"${HELPER_PRIORITY_CMAKE}\""
+    fi
+else
+    KERNEL_CMAKE="-DSD_DYNAMIC_KERNEL_SELECTION=OFF"
+fi
+
+# Build MLIR CMake arguments
+MLIR_ARG=""
+if [ "$MLIR" == "ON" ]; then
+    MLIR_ARG="-DHELPERS_mlir=ON -DMLIR_VERSION=${MLIR_VERSION}"
+    if [ "$MLIR_GPU" == "ON" ]; then
+        MLIR_ARG="${MLIR_ARG} -DMLIR_ENABLE_GPU=ON"
+    fi
 fi
 
 echo PACKAGING           = "${PACKAGING}"
@@ -1427,7 +1536,17 @@ echo TESTS               = "${TESTS_ARG}"
 echo NAME                = "${NAME_ARG}"
 echo OPENBLAS_PATH       = "$OPENBLAS_PATH"
 echo CHECK_VECTORIZATION = "$CHECK_VECTORIZATION"
+echo HELPER              = "$HELPER"
 echo HELPERS             = "$HELPERS"
+echo HELPERS_CMAKE       = "$HELPERS_CMAKE"
+echo DYNAMIC_KERNEL_SEL  = "$DYNAMIC_KERNEL_SELECTION"
+echo KERNEL_STRATEGY     = "$KERNEL_STRATEGY"
+echo KERNEL_AUTOTUNING   = "$KERNEL_AUTOTUNING"
+echo KERNEL_CACHING      = "$KERNEL_CACHING"
+echo HELPER_PRIORITY     = "$HELPER_PRIORITY"
+echo MLIR                = "$MLIR"
+echo MLIR_VERSION        = "$MLIR_VERSION"
+echo MLIR_GPU            = "$MLIR_GPU"
 echo OP_OUTPUT_FILE      = "$OP_OUTPUT_FILE"
 echo USE_LTO             = "$USE_LTO"
 echo SANITIZE            = "$SANITIZE"
@@ -1464,7 +1583,7 @@ if [ -n "$COMPILER" ]; then
 fi
 
 # Configure CMake
-echo "$CMAKE_COMMAND - -DSD_KEEP_NVCC_OUTPUT=$KEEP_NVCC -DSD_GCC_FUNCTRACE=$FUNC_TRACE $BLAS_ARG $ARCH_ARG $NAME_ARG $OP_OUTPUT_FILE_ARG -DSD_SANITIZERS=${SANITIZERS} -DSD_SANITIZE=${SANITIZE} -DSD_CHECK_VECTORIZATION=${CHECK_VECTORIZATION} $USE_LTO $HELPERS $SHARED_LIBS_ARG $MINIFIER_ARG $OPERATIONS_ARG $DATATYPES_ARG $BUILD_TYPE $PACKAGING_ARG $EXPERIMENTAL_ARG $TESTS_ARG $CUDA_COMPUTE -DOPENBLAS_PATH=$OPENBLAS_PATH -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE $COMPILER_ARG $SOURCE_PATH"
+echo "$CMAKE_COMMAND - -DSD_KEEP_NVCC_OUTPUT=$KEEP_NVCC -DSD_GCC_FUNCTRACE=$FUNC_TRACE $BLAS_ARG $ARCH_ARG $NAME_ARG $OP_OUTPUT_FILE_ARG -DSD_SANITIZERS=${SANITIZERS} -DSD_SANITIZE=${SANITIZE} -DSD_CHECK_VECTORIZATION=${CHECK_VECTORIZATION} $USE_LTO $HELPERS $MLIR_ARG $SHARED_LIBS_ARG $MINIFIER_ARG $OPERATIONS_ARG $DATATYPES_ARG $BUILD_TYPE $PACKAGING_ARG $EXPERIMENTAL_ARG $TESTS_ARG $CUDA_COMPUTE -DOPENBLAS_PATH=$OPENBLAS_PATH -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE $COMPILER_ARG $SOURCE_PATH"
 
 # Handle the PREPROCESS flag first - before any build
 if [ "$PREPROCESS" == "ON" ]; then
@@ -1480,7 +1599,9 @@ if [ "$PREPROCESS" == "ON" ]; then
             -DSD_SANITIZE="${SANITIZE}" \
             -DSD_BUILD_WITH_JAVA="${BUILD_WITH_JAVA}" \
             "$USE_LTO" \
-            "$HELPERS" \
+            $HELPERS_CMAKE \
+            $KERNEL_CMAKE \
+            $MLIR_ARG \
             "$SHARED_LIBS_ARG" \
             "$OPERATIONS_ARG" \
             "$DATATYPES_ARG" \
@@ -1504,7 +1625,9 @@ if [ "$PREPROCESS" == "ON" ]; then
             -DSD_SANITIZE="${SANITIZE}" \
             -DSD_BUILD_WITH_JAVA="${BUILD_WITH_JAVA}" \
             "$USE_LTO" \
-            "$HELPERS" \
+            $HELPERS_CMAKE \
+            $KERNEL_CMAKE \
+            $MLIR_ARG \
             "$SHARED_LIBS_ARG" \
             "$OPERATIONS_ARG" \
             "$DATATYPES_ARG" \
@@ -1562,7 +1685,9 @@ if [ "$LOG_OUTPUT" == "none" ]; then
         -DSD_CHECK_VECTORIZATION="${CHECK_VECTORIZATION}" \
         -DSD_BUILD_WITH_JAVA="${BUILD_WITH_JAVA}" \
         "$USE_LTO" \
-        "$HELPERS" \
+        $HELPERS_CMAKE \
+        $KERNEL_CMAKE \
+        $MLIR_ARG \
         "$SHARED_LIBS_ARG" \
         "$MINIFIER_ARG" \
         "$OPERATIONS_ARG" \
@@ -1594,7 +1719,9 @@ else
         -DSD_CHECK_VECTORIZATION="${CHECK_VECTORIZATION}" \
         -DSD_BUILD_WITH_JAVA="${BUILD_WITH_JAVA}" \
         "$USE_LTO" \
-        "$HELPERS" \
+        $HELPERS_CMAKE \
+        $KERNEL_CMAKE \
+        $MLIR_ARG \
         "$SHARED_LIBS_ARG" \
         "$MINIFIER_ARG" \
         "$OPERATIONS_ARG" \

@@ -89,7 +89,8 @@ class LabelEncoder : PreImportHook {
                 val value = values.getOrElse(i) { i.toLong() }
                 val mask = sd.eq("${opName}_mask_$i", input, key.toDouble())
                 val maskFloat = mask.castTo(result.dataType())
-                val invMask = sd.math.sub("${opName}_inv_$i", 1.0, maskFloat)
+                val oneVar = sd.constant("${opName}_one_$i", 1.0)
+                val invMask = sd.math.sub("${opName}_inv_$i", oneVar, maskFloat)
                 result = sd.math.add("${opName}_upd_$i",
                     sd.math.mul(result, invMask),
                     sd.math.mul(maskFloat, value.toDouble())
@@ -111,7 +112,8 @@ class LabelEncoder : PreImportHook {
                 val value = values.getOrElse(i) { i.toFloat() }
                 val mask = sd.eq("${opName}_mask_$i", input, key.toDouble())
                 val maskFloat = mask.castTo(result.dataType())
-                val invMask = sd.math.sub("${opName}_inv_$i", 1.0, maskFloat)
+                val oneVar = sd.constant("${opName}_one_$i", 1.0)
+                val invMask = sd.math.sub("${opName}_inv_$i", oneVar, maskFloat)
                 result = sd.math.add("${opName}_upd_$i",
                     sd.math.mul(result, invMask),
                     sd.math.mul(maskFloat, value.toDouble())

@@ -233,7 +233,6 @@ public static native @MemberGetter int HAVE_ONEDNN();
 public static final int HAVE_ONEDNN = HAVE_ONEDNN();
 public static final int HAVE_ARMCOMPUTE = 0;
 public static final int HAVE_CUDNN = 0;
-public static final int HAVE_LLAMACPP = 0;
 public static final int HAVE_OPENBLAS = 1;
 public static final int HAVE_FLATBUFFERS = 0;
 
@@ -1015,12 +1014,118 @@ public static final int
 
 // #ifndef SD_ENGINE_H
 // #define SD_ENGINE_H
+
+/**
+ * Engine types for platform-specific operation dispatch.
+ *
+ * ENGINE_CPU: Standard CPU execution
+ * ENGINE_CUDA: NVIDIA CUDA GPU execution
+ * ENGINE_TPU: Google Cloud TPU execution via PJRT
+ * ENGINE_ZLUDA_AMD: ZLUDA transpiler on AMD GPUs (ROCm/HIP backend)
+ * ENGINE_ZLUDA_INTEL: ZLUDA transpiler on Intel GPUs (Level Zero backend)
+ */
 /** enum samediff::Engine */
 public static final int
   ENGINE_CPU = 0,
   ENGINE_CUDA = 1,
-  ENGINE_TPU = 2;
+  ENGINE_TPU = 2,
+  ENGINE_ZLUDA_AMD = 3,
+  ENGINE_ZLUDA_INTEL = 4,
+  ENGINE_METAL = 5,        // Apple Metal GPU backend
+  ENGINE_VULKAN = 6,       // Vulkan GPU backend
+  ENGINE_OPENCL = 7,       // OpenCL GPU backend
+  ENGINE_LLAMACPP = 8,     // llama.cpp/GGML backend for LLM inference
+  ENGINE_VLM = 9,          // Vision-Language Model backend
+  ENGINE_MPS = 10,         // Apple Metal Performance Shaders
+  ENGINE_ACCELERATE = 11,  // Apple Accelerate framework
+  ENGINE_ONEDNN = 12,      // Intel oneDNN (MKL-DNN) backend
+  ENGINE_ARM = 13,         // ARM Compute Library backend
+  ENGINE_ANY = 99;          // Let system choose best available
 
+/**
+ * Model parallelism capability flags
+ * Used to indicate what parallelism features an engine supports
+ */
+/** enum samediff::ParallelCapabilityFlags */
+public static final int
+  PARALLEL_NONE = 0,
+  PARALLEL_TENSOR = 1 << 0,      // Tensor parallelism (split tensors across devices)
+  PARALLEL_PIPELINE = 1 << 1,    // Pipeline parallelism (different layers on different devices)
+  PARALLEL_DATA = 1 << 2,        // Data parallelism (same model, different data)
+  PARALLEL_EXPERT = 1 << 3,      // Expert parallelism (for MoE models)
+  PARALLEL_SEQUENCE = 1 << 4,    // Sequence parallelism (split sequence dimension)
+  PARALLEL_P2P = 1 << 5,         // Peer-to-peer device communication
+  PARALLEL_ASYNC = 1 << 6,       // Asynchronous execution
+  PARALLEL_UNIFIED_MEM = 1 << 7, // Unified memory support
+  PARALLEL_QUANTIZED = 1 << 8,   // Quantized operation support
+  PARALLEL_MIXED_PRECISION = 1 << 9;  // Mixed precision support
+
+/**
+ * Check if the engine is a ZLUDA variant.
+ * @param e The engine to check
+ * @return true if engine is ENGINE_ZLUDA_AMD or ENGINE_ZLUDA_INTEL
+ */
+@Namespace("samediff") public static native @Cast("bool") boolean isZludaEngine(@Cast("samediff::Engine") int e);
+
+/**
+ * Get the effective CUDA-compatible engine for ZLUDA.
+ * ZLUDA engines use CUDA code, so for compatibility checks
+ * they should be treated as CUDA.
+ * @param e The engine to check
+ * @return ENGINE_CUDA if e is a ZLUDA engine, otherwise returns e unchanged
+ */
+@Namespace("samediff") public static native @Cast("samediff::Engine") int getEffectiveCudaEngine(@Cast("samediff::Engine") int e);
+
+/**
+ * Get the name of the engine as a string.
+ * @param e The engine
+ * @return Human-readable name of the engine
+ */
+@Namespace("samediff") public static native @Cast("char*") String getEngineName(@Cast("samediff::Engine") int e);
+
+/**
+ * Get the parallel capabilities of an engine
+ * @param e The engine
+ * @return Bitmask of ParallelCapabilityFlags
+ */
+@Namespace("samediff") public static native int getEngineParallelCapabilities(@Cast("samediff::Engine") int e);
+
+/**
+ * Check if an engine supports a specific parallel capability
+ * @param e The engine
+ * @param capability The capability flag to check
+ * @return true if the engine supports the capability
+ */
+@Namespace("samediff") public static native @Cast("bool") boolean engineSupportsParallel(@Cast("samediff::Engine") int e, @Cast("samediff::ParallelCapabilityFlags") int capability);
+
+/**
+ * Check if an engine supports model parallelism (tensor or pipeline)
+ * @param e The engine
+ * @return true if the engine supports some form of model parallelism
+ */
+@Namespace("samediff") public static native @Cast("bool") boolean engineSupportsModelParallel(@Cast("samediff::Engine") int e);
+
+/**
+ * Check if an engine is GPU-based
+ * @param e The engine
+ * @return true if the engine runs on GPU hardware
+ */
+@Namespace("samediff") public static native @Cast("bool") boolean isGpuEngine(@Cast("samediff::Engine") int e);
+
+/**
+ * Check if an engine is suitable for LLM/VLM workloads
+ * @param e The engine
+ * @return true if the engine is optimized for LLM/VLM inference
+ */
+@Namespace("samediff") public static native @Cast("bool") boolean isLlmEngine(@Cast("samediff::Engine") int e);
+
+/**
+ * Get the preferred engine for multi-GPU model parallelism
+ * @return The best available engine for model parallelism
+ */
+@Namespace("samediff") public static native @Cast("samediff::Engine") int getPreferredParallelEngine();
+
+  // namespace samediff
 
 // #endif  // SD_ENGINE_H
 
@@ -1287,15 +1392,6 @@ public static final int
 
   public native @Cast("bool") boolean isUseONEDNN();
   public native void setUseONEDNN(@Cast("bool") boolean useMKLDNN);
-
-  public native @Cast("bool") boolean isUseLLAMACPP();
-  public native void setUseLLAMACPP(@Cast("bool") boolean useLLAMACPP);
-
-  public native @Cast("bool") boolean isUseVLM();
-  public native void setUseVLM(@Cast("bool") boolean useVLM);
-
-  public native @Cast("bool") boolean isUseAccelerate();
-  public native void setUseAccelerate(@Cast("bool") boolean useAccelerate);
 
   public native @Cast("bool") boolean isUseMPS();
   public native void setUseMPS(@Cast("bool") boolean useMPS);
@@ -5943,15 +6039,6 @@ public static final int
 
   public native @Cast("bool") boolean isUseONEDNN();
   public native void setUseONEDNN(@Cast("bool") boolean useONEDNN);
-
-  public native @Cast("bool") boolean isUseLLAMACPP();
-  public native void setUseLLAMACPP(@Cast("bool") boolean useLLAMACPP);
-
-  public native @Cast("bool") boolean isUseVLM();
-  public native void setUseVLM(@Cast("bool") boolean useVLM);
-
-  public native @Cast("bool") boolean isUseAccelerate();
-  public native void setUseAccelerate(@Cast("bool") boolean useAccelerate);
 
   public native @Cast("bool") boolean isUseMPS();
   public native void setUseMPS(@Cast("bool") boolean useMPS);
@@ -12596,6 +12683,394 @@ public static final int
 // #endif  // LIBND4J_OPDESCRIPTOR_H
 
 
+// Parsed from helpers/HelperVersionRegistry.h
+
+/* ******************************************************************************
+ *
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+// @author Adam Gibson
+//
+// Unified helper version registry for tracking library versions and capabilities
+// across all platform helpers (cuDNN, OneDNN, ARM Compute, MPS, Accelerate, llama.cpp)
+//
+
+// #ifndef SD_HELPER_VERSION_REGISTRY_H
+// #define SD_HELPER_VERSION_REGISTRY_H
+
+// #include <system/common.h>
+
+// #include <cstdint>
+// #include <functional>
+// #include <map>
+// #include <mutex>
+// #include <string>
+// #include <vector>
+
+/**
+ * Version structure representing major.minor.patch versioning
+ */
+@Namespace("sd::ops::platforms") @NoOffset public static class HelperVersion extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public HelperVersion(Pointer p) { super(p); }
+    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+    public HelperVersion(long size) { super((Pointer)null); allocateArray(size); }
+    private native void allocateArray(long size);
+    @Override public HelperVersion position(long position) {
+        return (HelperVersion)super.position(position);
+    }
+    @Override public HelperVersion getPointer(long i) {
+        return new HelperVersion((Pointer)this).offsetAddress(i);
+    }
+
+  public native int major(); public native HelperVersion major(int setter);
+  public native int minor(); public native HelperVersion minor(int setter);
+  public native int patch(); public native HelperVersion patch(int setter);
+  public native @StdString BytePointer buildInfo(); public native HelperVersion buildInfo(BytePointer setter);  // Additional build info (e.g., "CUDA 12.0", "AVX512")
+
+  public HelperVersion() { super((Pointer)null); allocate(); }
+  private native void allocate();
+  public HelperVersion(int maj, int min, int pat, @StdString BytePointer info/*=""*/) { super((Pointer)null); allocate(maj, min, pat, info); }
+  private native void allocate(int maj, int min, int pat, @StdString BytePointer info/*=""*/);
+  public HelperVersion(int maj, int min, int pat) { super((Pointer)null); allocate(maj, min, pat); }
+  private native void allocate(int maj, int min, int pat);
+  public HelperVersion(int maj, int min, int pat, @StdString String info/*=""*/) { super((Pointer)null); allocate(maj, min, pat, info); }
+  private native void allocate(int maj, int min, int pat, @StdString String info/*=""*/);
+
+  /**
+   * Check if this version meets the minimum required version
+   * @param min Minimum required version
+   * @return true if this version >= min
+   */
+  public native @Cast("bool") boolean meetsMinimum(@Const @ByRef HelperVersion min);
+
+  /**
+   * Check if this version is within a range [min, max]
+   * @param min Minimum version (inclusive)
+   * @param max Maximum version (inclusive)
+   * @return true if min <= this <= max
+   */
+  public native @Cast("bool") boolean inRange(@Const @ByRef HelperVersion min, @Const @ByRef HelperVersion max);
+
+  /**
+   * Convert version to string representation
+   */
+  public native @StdString @Name("toString") BytePointer toVersionString();
+
+  /**
+   * Convert version to integer for comparison (major*10000 + minor*100 + patch)
+   */
+  public native int toInt();
+
+  /**
+   * Create version from integer representation
+   */
+  public native @ByVal HelperVersion fromInt(int version);
+
+  public native @Cast("bool") @Name("operator ==") boolean equals(@Const @ByRef HelperVersion other);
+
+  public native @Cast("bool") @Name("operator !=") boolean notEquals(@Const @ByRef HelperVersion other);
+
+  public native @Cast("bool") @Name("operator <") boolean lessThan(@Const @ByRef HelperVersion other);
+
+  public native @Cast("bool") @Name("operator <=") boolean lessThanEquals(@Const @ByRef HelperVersion other);
+
+  public native @Cast("bool") @Name("operator >") boolean greaterThan(@Const @ByRef HelperVersion other);
+
+  public native @Cast("bool") @Name("operator >=") boolean greaterThanEquals(@Const @ByRef HelperVersion other);
+}
+
+/**
+ * Capability flags for helper libraries
+ * Used for feature detection independent of version numbers
+ */
+/** enum class sd::ops::platforms::HelperCapability */
+public static final long
+  NONE = 0,
+
+  // Data type support
+  FLOAT16_COMPUTE = 1L << 0,
+  BFLOAT16_COMPUTE = 1L << 1,
+  INT8_COMPUTE = 1L << 2,
+  INT4_COMPUTE = 1L << 3,
+
+  // Attention/Transformer features
+  FLASH_ATTENTION = 1L << 4,
+  MULTI_HEAD_ATTENTION = 1L << 5,
+  GROUPED_QUERY_ATTENTION = 1L << 6,
+  KV_CACHE = 1L << 7,
+
+  // Hardware acceleration
+  TENSOR_CORES = 1L << 8,
+  MATRIX_CORES = 1L << 9,
+  AMX = 1L << 10,  // Apple Matrix Extension / Intel AMX
+  SVE = 1L << 11,  // ARM Scalable Vector Extension
+  SVE2 = 1L << 12,
+  NEON = 1L << 13,
+  AVX2 = 1L << 14,
+  AVX512 = 1L << 15,
+
+  // Memory features
+  UNIFIED_MEMORY = 1L << 16,
+  P2P_TRANSFER = 1L << 17,
+  ASYNC_COPY = 1L << 18,
+
+  // Execution features
+  GRAPH_EXECUTION = 1L << 19,
+  DYNAMIC_SHAPES = 1L << 20,
+  MODEL_PARALLEL = 1L << 21,
+
+  // Quantization
+  QUANTIZATION_Q4 = 1L << 22,
+  QUANTIZATION_Q8 = 1L << 23,
+  QUANTIZATION_DYNAMIC = 1L << 24,
+
+  // Normalization variants
+  LAYER_NORM = 1L << 25,
+  RMS_NORM = 1L << 26,
+  GROUP_NORM = 1L << 27,
+  INSTANCE_NORM = 1L << 28,
+
+  // Activation variants
+  GELU = 1L << 29,
+  SWISH = 1L << 30,
+  MISH = 1L << 31,
+  HARDSWISH = 1L << 32,
+  SOFTPLUS = 1L << 33,
+
+  // RNN features
+  NEW_RNN_API = 1L << 34,
+  LSTM_PEEPHOLE = 1L << 35,
+  GRU = 1L << 36,
+
+  // Convolution features
+  WINOGRAD = 1L << 37,
+  FFT_CONV = 1L << 38,
+  DEPTHWISE_CONV = 1L << 39,
+
+  // Backend-specific
+  CUDA_GRAPHS = 1L << 40,
+  METAL_SHADERS = 1L << 41,
+  VULKAN_COMPUTE = 1L << 42,
+  SYCL_BACKEND = 1L << 43;
+
+/**
+ * Bitwise OR operator for combining capabilities
+ */
+@Namespace("sd::ops::platforms") public native @Cast("sd::ops::platforms::HelperCapability") @Name("operator |") long or(@Cast("sd::ops::platforms::HelperCapability") long a, @Cast("sd::ops::platforms::HelperCapability") long b);
+
+/**
+ * Bitwise AND operator for checking capabilities
+ */
+@Namespace("sd::ops::platforms") public native @Cast("sd::ops::platforms::HelperCapability") @Name("operator &") long and(@Cast("sd::ops::platforms::HelperCapability") long a, @Cast("sd::ops::platforms::HelperCapability") long b);
+
+/**
+ * Check if a capability set contains a specific capability
+ */
+@Namespace("sd::ops::platforms") public native @Cast("bool") boolean hasCapability(@Cast("sd::ops::platforms::HelperCapability") long capabilities, @Cast("sd::ops::platforms::HelperCapability") long check);
+
+/**
+ * Known helper library names
+ */
+@Namespace("sd::ops::platforms") public static class HelperNames extends Pointer {
+    static { Loader.load(); }
+    /** Default native constructor. */
+    public HelperNames() { super((Pointer)null); allocate(); }
+    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+    public HelperNames(long size) { super((Pointer)null); allocateArray(size); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public HelperNames(Pointer p) { super(p); }
+    private native void allocate();
+    private native void allocateArray(long size);
+    @Override public HelperNames position(long position) {
+        return (HelperNames)super.position(position);
+    }
+    @Override public HelperNames getPointer(long i) {
+        return new HelperNames((Pointer)this).offsetAddress(i);
+    }
+
+  @MemberGetter public static native @Cast("char*") String CUDNN();
+  @MemberGetter public static native @Cast("char*") String ONEDNN();
+  @MemberGetter public static native @Cast("char*") String ARM_COMPUTE();
+  @MemberGetter public static native @Cast("char*") String MPS();
+  @MemberGetter public static native @Cast("char*") String ACCELERATE();
+  @MemberGetter public static native @Cast("char*") String GGML();
+  @MemberGetter public static native @Cast("char*") String LLAMA_CPP();
+  @MemberGetter public static native @Cast("char*") String ZLUDA();
+  @MemberGetter public static native @Cast("char*") String MIOPEN();
+}
+
+/**
+ * Information about a helper library
+ */
+@Namespace("sd::ops::platforms") @NoOffset public static class HelperInfo extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public HelperInfo(Pointer p) { super(p); }
+    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+    public HelperInfo(long size) { super((Pointer)null); allocateArray(size); }
+    private native void allocateArray(long size);
+    @Override public HelperInfo position(long position) {
+        return (HelperInfo)super.position(position);
+    }
+    @Override public HelperInfo getPointer(long i) {
+        return new HelperInfo((Pointer)this).offsetAddress(i);
+    }
+
+  public native @StdString BytePointer name(); public native HelperInfo name(BytePointer setter);                    // Library name (e.g., "cuDNN", "oneDNN")
+  public native @ByRef HelperVersion compileTime(); public native HelperInfo compileTime(HelperVersion setter);           // Version at compile time
+  public native @ByRef HelperVersion runtime(); public native HelperInfo runtime(HelperVersion setter);               // Version detected at runtime
+  public native @ByRef HelperVersion minSupported(); public native HelperInfo minSupported(HelperVersion setter);          // Minimum supported version
+  public native @ByRef HelperVersion maxSupported(); public native HelperInfo maxSupported(HelperVersion setter);          // Maximum supported version
+  public native @Cast("sd::ops::platforms::HelperCapability") long capabilities(); public native HelperInfo capabilities(long setter);       // Available capabilities
+  public native @Cast("bool") boolean available(); public native HelperInfo available(boolean setter);              // Whether the helper is available
+  public native @Cast("bool") boolean versionCompatible(); public native HelperInfo versionCompatible(boolean setter);      // Whether runtime version is compatible
+  public native @StdString BytePointer statusMessage(); public native HelperInfo statusMessage(BytePointer setter);           // Human-readable status
+  public native @StdString BytePointer libraryPath(); public native HelperInfo libraryPath(BytePointer setter);             // Path to loaded library (if applicable)
+
+  public HelperInfo() { super((Pointer)null); allocate(); }
+  private native void allocate();
+
+  /**
+   * Check if the runtime version is compatible with supported range
+   */
+  public native @Cast("bool") boolean isCompatible();
+
+  /**
+   * Get a detailed status string
+   */
+  public native @StdString @Name("getDetailedStatus") BytePointer getDetailedStatusString();
+}
+
+/**
+ * Callback type for version providers
+ * Each library registers a function that returns its HelperInfo
+ */
+
+/**
+ * Central registry for helper library versions and capabilities
+ * Thread-safe singleton that manages all helper version information
+ */
+@Namespace("sd::ops::platforms") @NoOffset public static class HelperVersionRegistry extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public HelperVersionRegistry(Pointer p) { super(p); }
+
+  /**
+   * Get the singleton instance
+   */
+  public native @ByRef HelperVersionRegistry getInstance();
+
+  /**
+   * Register a version provider for a helper library
+   * @param name Library name
+   * @param provider Callback that returns HelperInfo
+   */
+  
+
+  /**
+   * Get information about a helper library
+   * @param name Library name
+   * @return HelperInfo for the library, or empty info if not found
+   */
+  public native @ByVal HelperInfo getHelperInfo(@StdString BytePointer name);
+  public native @ByVal HelperInfo getHelperInfo(@StdString String name);
+
+  /**
+   * Get information about all registered helpers
+   * @return Map of library name to HelperInfo
+   */
+  
+
+  /**
+   * Check if a helper meets minimum version requirements
+   * @param name Library name
+   * @param minVersion Minimum required version
+   * @return true if available and version >= minVersion
+   */
+  public native @Cast("bool") boolean checkVersion(@StdString BytePointer name, @Const @ByRef HelperVersion minVersion);
+  public native @Cast("bool") boolean checkVersion(@StdString String name, @Const @ByRef HelperVersion minVersion);
+
+  /**
+   * Check if a helper has a specific capability
+   * @param name Library name
+   * @param capability Capability to check
+   * @return true if helper has the capability
+   */
+  public native @Cast("bool") boolean hasCapability(@StdString BytePointer name, @Cast("sd::ops::platforms::HelperCapability") long capability);
+  public native @Cast("bool") boolean hasCapability(@StdString String name, @Cast("sd::ops::platforms::HelperCapability") long capability);
+
+  /**
+   * Check if a helper is available and version-compatible
+   * @param name Library name
+   * @return true if helper is usable
+   */
+  public native @Cast("bool") boolean isHelperUsable(@StdString BytePointer name);
+  public native @Cast("bool") boolean isHelperUsable(@StdString String name);
+
+  /**
+   * Get a list of all available helper names
+   */
+  public native @ByVal @Cast("std::vector<std::string>*") PointerPointer getAvailableHelpers();
+
+  /**
+   * Get a summary of all helper statuses
+   */
+  public native @StdString BytePointer getStatusSummary();
+
+  /**
+   * Refresh cached helper information (re-queries all providers)
+   */
+  public native void refresh();
+
+  /**
+   * Enable or disable strict version enforcement
+   * When enabled, helpers with version mismatches will not be used
+   */
+  public native void setStrictVersionEnforcement(@Cast("bool") boolean strict);
+  public native @Cast("bool") boolean isStrictVersionEnforcement();
+
+  /**
+   * Enable or disable verbose logging of version checks
+   */
+  public native void setVerboseLogging(@Cast("bool") boolean verbose);
+  public native @Cast("bool") boolean isVerboseLogging();
+}
+
+/**
+ * RAII helper for registering version providers at static initialization time
+ */
+
+/**
+ * Macro for registering a version provider
+ * Usage: REGISTER_VERSION_PROVIDER("cuDNN", getCudnnVersionInfo)
+ */
+// #define REGISTER_VERSION_PROVIDER(name, provider)
+//   static sd::ops::platforms::VersionProviderRegistrar _versionProvider_##__LINE__(name, provider)
+
+  // namespace platforms
+  // namespace ops
+  // namespace sd
+
+// #endif  // SD_HELPER_VERSION_REGISTRY_H
+
+
 // Parsed from ops/declarable/PlatformHelper.h
 
 /* ******************************************************************************
@@ -12624,6 +13099,7 @@ public static final int
 // #define SD_PLATFORMHELPER_H
 // #include <execution/Engine.h>
 // #include <graph/Context.h>
+// #include <helpers/HelperVersionRegistry.h>
 // #include <helpers/ShapeUtils.h>
 // #include <system/RequirementsHelper.h>
 
@@ -12636,6 +13112,10 @@ public static final int
     /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
     public PlatformHelper(Pointer p) { super(p); }
 
+
+  /**
+   * Constructor with version requirements
+   */
 
   public native @StdString BytePointer name();
 
@@ -12674,6 +13154,71 @@ public static final int
    * @return
    */
   public native NDArray getNullifiedZ(@ByRef Context ctx, int inputId);
+
+  // ============================================================================
+  // Version Validation Methods
+  // ============================================================================
+
+  /**
+   * Get the helper library name (e.g., "cuDNN", "OneDNN")
+   */
+  public native @StdString BytePointer helperLibraryName();
+
+  /**
+   * Get minimum required version
+   */
+  public native @ByVal HelperVersion minVersion();
+
+  /**
+   * Get maximum supported version
+   */
+  public native @ByVal HelperVersion maxVersion();
+
+  /**
+   * Get required capabilities
+   */
+  public native @Cast("sd::ops::platforms::HelperCapability") long requiredCapabilities();
+
+  /**
+   * Set version requirements (for helpers that need to configure this dynamically)
+   */
+  public native void setVersionRequirements(@Const @ByRef HelperVersion minVersion, @Const @ByRef HelperVersion maxVersion);
+
+  /**
+   * Set required capabilities
+   */
+  public native void setRequiredCapabilities(@Cast("sd::ops::platforms::HelperCapability") long capabilities);
+
+  /**
+   * Set helper library name
+   */
+  public native void setHelperLibraryName(@StdString BytePointer name);
+  public native void setHelperLibraryName(@StdString String name);
+
+  /**
+   * Validate that the runtime version of the helper library meets requirements
+   * @return true if version is compatible, false otherwise
+   */
+  public native @Cast("bool") boolean validateRuntimeVersion();
+
+  /**
+   * Check if the helper has all required capabilities
+   * @return true if all required capabilities are present
+   */
+  public native @Cast("bool") boolean hasRequiredCapabilities();
+
+  /**
+   * Combined check: version compatible AND has required capabilities
+   * Use this in isUsable() implementations for complete validation
+   * @param context The execution context
+   * @return true if the helper is usable with version checks
+   */
+  public native @Cast("bool") boolean isUsableWithVersionCheck(@ByRef Context context);
+
+  /**
+   * Get a detailed status message about version compatibility
+   */
+  public native @StdString BytePointer getVersionStatusMessage();
 }
   // namespace platforms
   // namespace ops
@@ -12806,6 +13351,15 @@ public static final int
 // #include <ctime>
 // #include <mutex>
 // #include <sstream>
+
+// Forward declaration for friend class
+@Namespace("sd::ops::platforms") @Opaque public static class MultiPlatformDispatcher extends Pointer {
+    /** Empty constructor. Calls {@code super((Pointer)null)}. */
+    public MultiPlatformDispatcher() { super((Pointer)null); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public MultiPlatformDispatcher(Pointer p) { super(p); }
+}
+
 
 /**
  * This class is the basic building block of Graph Operations. Any CustomOp out there is built on top of this "abstract"
@@ -13310,13 +13864,34 @@ public static final int
 
   public native @Cast("bool") boolean hasHelper(@Cast("sd::LongType") long hash, @Cast("samediff::Engine") int engine);
 
+  /**
+   * Check if any helper exists for this operation (any engine)
+   */
+  public native @Cast("bool") boolean hasAnyHelper(@Cast("sd::LongType") long hash);
+
   public native DeclarableOp getOperation(@Cast("char*") String name);
   public native DeclarableOp getOperation(@Cast("char*") BytePointer name);
   public native DeclarableOp getOperation(@Cast("sd::LongType") long hash);
 
   public native PlatformHelper getPlatformHelper(@Cast("sd::LongType") long hash, @Cast("samediff::Engine") int engine);
 
+  /**
+   * Get all registered helpers for an operation across all engines.
+   * Used by MultiPlatformDispatcher for kernel selection.
+   */
+  public native @Cast("sd::ops::platforms::PlatformHelper**") @StdVector PointerPointer getAllHelpersForOp(@Cast("sd::LongType") long hash);
+
+  /**
+   * Get all available engines that have helpers for an operation
+   */
+  public native @Cast("samediff::Engine*") @StdVector IntPointer getAvailableEnginesForOp(@Cast("sd::LongType") long hash);
+
   public native @Cast("sd::LongType*") @StdVector LongPointer getAllHashes();
+
+  /**
+   * Get all registered operation names
+   */
+  public native @ByVal @Cast("std::vector<std::string>*") PointerPointer getAllRegisteredOpNames();
 
   public native int numberOfOperations();
 }
@@ -14234,25 +14809,29 @@ public static final int
 // #endif
 
 /**
- * Xdivy: returns 0 where x == 0, otherwise x / y
- * TensorFlow compatible implementation
+ * Broadcastable xdivy implementation
+ * xdivy(x, y) = x / y if x != 0, else 0
+ * Safe division that returns 0 when x is 0
  */
 // #if NOT_EXCLUDED(OP_xdivy)
 // #endif
 
 /**
- * Xlogy: returns 0 where x == 0, otherwise x * log(y)
- * TensorFlow compatible implementation
+ * Broadcastable xlogy implementation
+ * xlogy(x, y) = x * log(y) if x != 0, else 0
+ * Safe multiply-log that returns 0 when x is 0
  */
 // #if NOT_EXCLUDED(OP_xlogy)
 // #endif
 
 /**
- * Xlog1py: returns 0 where x == 0, otherwise x * log(1 + y)
- * TensorFlow compatible implementation
+ * Broadcastable xlog1py implementation
+ * xlog1py(x, y) = x * log(1 + y) if x != 0, else 0
+ * Safe multiply-log1p that returns 0 when x is 0
  */
 // #if NOT_EXCLUDED(OP_xlog1py)
 // #endif
+
   // namespace ops
   // namespace sd
 
@@ -16108,6 +16687,93 @@ public static final int
 // #endif
 
 /**
+ * LoRA (Low-Rank Adaptation) fused matrix multiplication.
+ * Computes: output = input \ weight^T + scaling * (input \ A^T \ B^T)
+ *
+ * This fused operation is more efficient than computing the two matmuls
+ * separately and supports automatic differentiation for training LoRA adapters.
+ *
+ * Input params:
+ *   0: input   - [batch, in_features]
+ *   1: weight  - [out_features, in_features] (frozen base weight)
+ *   2: loraA   - [r, in_features] (trainable, Kaiming initialized)
+ *   3: loraB   - [out_features, r] (trainable, zero initialized)
+ *
+ * T Arguments:
+ *   0: scaling - alpha/r scaling factor (default: 1.0)
+ *   1: dropout - dropout probability (default: 0.0)
+ *
+ * B Arguments:
+ *   0: transposeWeight - whether weight needs transpose (default: true)
+ *
+ * Output:
+ *   0: output  - [batch, out_features]
+ */
+// #if NOT_EXCLUDED(OP_lora_matmul)
+// #endif
+
+/**
+ * LoHa (Low-Rank Hadamard Product) fused matrix multiplication.
+ * Computes: output = input \ weight^T + scaling * input \ ((B1 \ A1) ⊙ (B2 \ A2))^T
+ *
+ * Uses two low-rank decompositions with Hadamard product for effective rank up to dim².
+ *
+ * Input params:
+ *   0: input   - [batch, in_features]
+ *   1: weight  - [out_features, in_features]
+ *   2: lohaA1  - [dim, in_features]
+ *   3: lohaB1  - [out_features, dim]
+ *   4: lohaA2  - [dim, in_features]
+ *   5: lohaB2  - [out_features, dim]
+ *
+ * T Arguments:
+ *   0: scaling - alpha/dim scaling factor
+ */
+// #if NOT_EXCLUDED(OP_loha_matmul)
+// #endif
+
+/**
+ * LoKr (Low-Rank Kronecker Product) fused matrix multiplication.
+ * Computes: output = input \ weight^T + scaling * input \ (C ⊗ (B \ A))^T
+ *
+ * Uses Kronecker products for weight updates with controllable factorization.
+ *
+ * Input params:
+ *   0: input   - [batch, in_features]
+ *   1: weight  - [out_features, in_features]
+ *   2: lokrC   - [f1, f2] Kronecker factor
+ *   3: lokrA   - [dim, d2]
+ *   4: lokrB   - [d1, dim]
+ *
+ * I Arguments:
+ *   0: factor1 - Kronecker factor dimension 1
+ *   1: factor2 - Kronecker factor dimension 2
+ */
+// #if NOT_EXCLUDED(OP_lokr_matmul)
+// #endif
+
+/**
+ * DoRA (Weight-Decomposed Low-Rank Adaptation) fused matrix multiplication.
+ * Computes: output = input \ (m * (W + scaling * B \ A) / ||W + scaling * B \ A||)^T
+ *
+ * Decomposes updates into magnitude and direction components.
+ *
+ * Input params:
+ *   0: input     - [batch, in_features]
+ *   1: weight    - [out_features, in_features]
+ *   2: loraA     - [r, in_features]
+ *   3: loraB     - [out_features, r]
+ *   4: magnitude - [out_features]
+ *
+ * T Arguments:
+ *   0: scaling - alpha/r scaling factor
+ *   1: dropout - dropout probability
+ *   2: eps     - epsilon for numerical stability
+ */
+// #if NOT_EXCLUDED(OP_dora_matmul)
+// #endif
+
+/**
  * This operation is missed due it simplicy.
  * Input and output params are the same after operation.
  * Input - NDArray, output - NDArray with the same shape.
@@ -17021,6 +17687,28 @@ public static final int
  *    1 - NDArray for eigenvectors with the shape as {input.dim0, input.dim0, 2} , type: the same as input
  */
 // #if NOT_EXCLUDED(OP_eig)
+// #endif
+
+
+/**
+ * cast_and_scale - Fused cast and scale operation for mixed precision training
+ *
+ * Casts input to target data type and multiplies by scale factor in a single pass.
+ * More efficient than separate cast + multiply operations.
+ *
+ * input params:
+ *    0 - NDArray (input) - tensor to cast and scale
+ *
+ * T_ARG params:
+ *    0 - scale factor (double)
+ *
+ * int params:
+ *    0 - target data type (as integer, use DataTypeUtils::fromInt)
+ *
+ * output:
+ *    0 - NDArray with target data type, values = input * scale
+ */
+// #if NOT_EXCLUDED(OP_cast_and_scale)
 // #endif
 
   // namespace ops
@@ -18424,10 +19112,6 @@ public static final int RESHAPE_NO_COPY_C_ORDER_MARKER = -99;
 // #include <cuda_runtime.h>
 // #include <cuda_runtime_api.h>
 
-// #include "config.h"
-// #endif
-
-// #ifdef SD_TPU
 // #include "config.h"
 // #endif
 

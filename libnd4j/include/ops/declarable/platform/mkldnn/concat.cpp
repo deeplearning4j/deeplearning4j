@@ -51,13 +51,13 @@ static void concatMKLDNN(const std::vector<NDArray*>& inArrs, NDArray& output, c
 
   // inputs
   for (size_t i = 0; i < inArrs.size(); ++i) {
-    dnnl::memory::dims dims = inArrs[i]->getShapeAsFlatVector();
+    dnnl::memory::dims dims = *inArrs[i]->getShapeAsFlatVector();
     x_user_md[i] = x_mkl_md[i] = dnnl::memory::desc(dims, type, onednnUtils::getFormat(*inArrs[i]));
     onednnUtils::setBlockStrides(*inArrs[i], x_user_md[i]);
   }
 
   // output
-  dnnl::memory::dims dims = output.getShapeAsFlatVector();
+  dnnl::memory::dims dims = *output.getShapeAsFlatVector();
   dnnl::memory::desc z_mkl_md = dnnl::memory::desc(dims, type, dnnl::memory::format_tag::any);
   dnnl::memory::desc z_user_md = dnnl::memory::desc(dims, type, onednnUtils::getFormat(output));
   onednnUtils::setBlockStrides(output, z_user_md);
@@ -66,7 +66,8 @@ static void concatMKLDNN(const std::vector<NDArray*>& inArrs, NDArray& output, c
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
-  dnnl::concat::primitive_desc op_prim_desc(axis, x_mkl_md, engine);
+  // OneDNN 3.x API: primitive_desc(engine, dst_md, concat_dimension, srcs)
+  dnnl::concat::primitive_desc op_prim_desc(engine, z_mkl_md, axis, x_mkl_md);
 
   dnnl::stream stream(engine);
 

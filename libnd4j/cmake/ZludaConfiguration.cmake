@@ -253,52 +253,48 @@ endfunction()
 
 ################################################################################
 # oneDNN Setup for Intel ZLUDA (cuDNN replacement)
+# This function ensures ZLUDA Intel uses the existing oneDNN setup from
+# Dependencies.cmake (setup_onednn) rather than configuring separately.
 ################################################################################
 
 function(setup_onednn_for_zluda)
     message(STATUS "Configuring oneDNN for Intel ZLUDA...")
 
-    # Check if oneDNN is already configured
+    # Check if oneDNN is already configured via the main build system
+    if(HAVE_ONEDNN AND TARGET onednn_interface)
+        message(STATUS "✅ Reusing existing oneDNN configuration for ZLUDA Intel")
+        message(STATUS "   oneDNN target: onednn_interface")
+        add_compile_definitions(ZLUDA_USE_ONEDNN=1)
+        set(ZLUDA_ONEDNN_TARGET onednn_interface PARENT_SCOPE)
+        return()
+    endif()
+
+    # Check if HAVE_ONEDNN is set but target doesn't exist yet
+    # (might be configured but not yet built)
     if(HAVE_ONEDNN)
-        message(STATUS "oneDNN already configured, enabling GPU support for ZLUDA")
+        message(STATUS "✅ oneDNN is enabled, ZLUDA Intel will use it when available")
         add_compile_definitions(ZLUDA_USE_ONEDNN=1)
         return()
     endif()
 
-    # Enable oneDNN helper if not already enabled
+    # oneDNN not enabled - enable it via HELPERS_onednn
+    # The main build system (setup_onednn in Dependencies.cmake) will handle
+    # downloading and configuring oneDNN with auto-download support
     if(NOT HELPERS_onednn)
         message(STATUS "Enabling oneDNN helper for Intel ZLUDA support")
         set(HELPERS_onednn ON CACHE BOOL "Enable oneDNN for ZLUDA Intel" FORCE)
-    endif()
-
-    # Find oneDNN
-    find_package(dnnl QUIET)
-    if(dnnl_FOUND)
-        message(STATUS "Found oneDNN (dnnl): ${dnnl_DIR}")
-        set(HAVE_ONEDNN TRUE PARENT_SCOPE)
-        add_compile_definitions(HAVE_ONEDNN=1)
-        add_compile_definitions(ZLUDA_USE_ONEDNN=1)
+        message(STATUS "   HELPERS_onednn set to ON - oneDNN will be auto-downloaded")
+        message(STATUS "   The main build system (setup_onednn) will configure oneDNN")
     else()
-        # Try to find oneDNN in oneAPI installation
-        if(ONEAPI_PATH)
-            find_library(ONEDNN_LIBRARY
-                NAMES dnnl mkldnn
-                HINTS ${ONEAPI_PATH}
-                PATH_SUFFIXES lib lib64 dnnl/latest/lib mkl/latest/lib
-                NO_DEFAULT_PATH
-            )
-            if(ONEDNN_LIBRARY)
-                message(STATUS "Found oneDNN in oneAPI: ${ONEDNN_LIBRARY}")
-                set(HAVE_ONEDNN TRUE PARENT_SCOPE)
-                add_compile_definitions(HAVE_ONEDNN=1)
-                add_compile_definitions(ZLUDA_USE_ONEDNN=1)
-            endif()
-        endif()
+        message(STATUS "   HELPERS_onednn already enabled")
     endif()
 
-    if(NOT HAVE_ONEDNN)
-        print_status_colored("WARNING" "oneDNN not found. Intel ZLUDA DNN operations may fall back to CPU.")
-    endif()
+    # Mark that ZLUDA will use oneDNN once it's configured
+    add_compile_definitions(ZLUDA_USE_ONEDNN=1)
+
+    # Note: The actual oneDNN setup happens in MainBuildFlow.cmake via setup_onednn()
+    # which is called AFTER ZLUDA configuration. This just ensures the flag is set.
+    message(STATUS "   Intel ZLUDA will link against project's oneDNN (onednn_interface)")
 endfunction()
 
 ################################################################################
@@ -456,19 +452,19 @@ function(configure_zluda_linking target_name)
         endif()
 
     elseif(ZLUDA_TARGET_BACKEND STREQUAL "INTEL")
-        # Link oneDNN for Intel
-        if(HAVE_ONEDNN)
-            if(TARGET dnnl::dnnl)
-                target_link_libraries(${target_name} PUBLIC dnnl::dnnl)
-            elseif(ONEDNN_LIBRARY)
-                target_link_libraries(${target_name} PUBLIC ${ONEDNN_LIBRARY})
-            endif()
-            message(STATUS "   Linked oneDNN for Intel ZLUDA")
-        endif()
-
-        # Add oneAPI library path
-        if(ONEAPI_PATH)
-            target_link_directories(${target_name} PUBLIC ${ONEAPI_PATH}/lib)
+        # Link against the project's existing oneDNN (onednn_interface target)
+        # This target is created by setup_onednn() in Dependencies.cmake
+        if(TARGET onednn_interface)
+            target_link_libraries(${target_name} PUBLIC onednn_interface)
+            message(STATUS "   Linked onednn_interface for Intel ZLUDA")
+        elseif(HAVE_ONEDNN AND DEFINED ONEDNN)
+            # Fallback to ONEDNN variable if set
+            target_link_libraries(${target_name} PUBLIC ${ONEDNN})
+            message(STATUS "   Linked ${ONEDNN} for Intel ZLUDA")
+        elseif(HAVE_ONEDNN)
+            message(STATUS "   oneDNN enabled but target not yet available - will be linked by main build")
+        else()
+            message(WARNING "   oneDNN not available for Intel ZLUDA - DNN ops will use fallback")
         endif()
     endif()
 
@@ -499,9 +495,13 @@ function(print_zluda_summary)
             message(STATUS "MIOpen: Not available (cuDNN ops will use fallback)")
         endif()
     elseif(ZLUDA_TARGET_BACKEND STREQUAL "INTEL")
-        message(STATUS "oneAPI Path: ${ONEAPI_PATH}")
-        if(HAVE_ONEDNN)
-            message(STATUS "oneDNN: Enabled")
+        if(ONEAPI_PATH)
+            message(STATUS "oneAPI Path: ${ONEAPI_PATH}")
+        endif()
+        if(TARGET onednn_interface)
+            message(STATUS "oneDNN: Enabled (using project's onednn_interface)")
+        elseif(HAVE_ONEDNN)
+            message(STATUS "oneDNN: Enabled (via ONEDNN=${ONEDNN})")
         else()
             message(STATUS "oneDNN: Not available (cuDNN ops will use fallback)")
         endif()

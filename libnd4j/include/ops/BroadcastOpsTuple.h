@@ -55,6 +55,9 @@ class SD_LIB_EXPORT BroadcastOpsTuple {
 
   static BroadcastOpsTuple Pow();
   static BroadcastOpsTuple PowDerivative();
+  static BroadcastOpsTuple Xdivy();
+  static BroadcastOpsTuple Xlogy();
+  static BroadcastOpsTuple Xlog1py();
 };
 }  // namespace sd
 

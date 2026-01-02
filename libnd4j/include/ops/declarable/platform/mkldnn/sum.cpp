@@ -41,7 +41,7 @@ namespace platforms {
 static void multiSumMKLDNN(std::vector<NDArray*>& inputs, NDArray* z) {
   if (inputs.empty()) return;
 
-  dnnl::memory::dims shape = inputs[0]->getShapeAsFlatVector();
+  dnnl::memory::dims shape = *inputs[0]->getShapeAsFlatVector();
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
   dnnl::stream stream(engine);
@@ -58,8 +58,8 @@ static void multiSumMKLDNN(std::vector<NDArray*>& inputs, NDArray* z) {
   // Output memory descriptor
   dnnl::memory::desc z_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*z));
 
-  // Create sum primitive descriptor
-  dnnl::sum::primitive_desc op_prim_desc(z_md, scales, src_mds, engine);
+  // Create sum primitive descriptor - OneDNN 3.x API: engine first
+  dnnl::sum::primitive_desc op_prim_desc(engine, z_md, scales, src_mds);
 
   std::unordered_map<int, dnnl::memory> args;
 
