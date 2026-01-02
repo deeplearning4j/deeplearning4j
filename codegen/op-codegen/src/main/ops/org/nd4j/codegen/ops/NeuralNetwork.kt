@@ -453,22 +453,16 @@ fun NN() = Namespace("NN") {
         val k = Input(NUMERIC, "keys") { description = "Key tensor. Shape: [batchSize, numValues, keyDim] or [batchSize, numValues, numHeads, headDim]" }
         val queryMask = Input(NUMERIC, "queryMask") { description = "Query mask tensor (optional). Shape: [batchSize, numQueries]"; defaultValue = null }
         val valueMask = Input(NUMERIC, "valueMask") { description = "Value mask tensor (optional). Shape: [batchSize, numValues]"; defaultValue = null }
-        val keyCache = Input(NUMERIC, "keyCache") { description = "Key cache for KV caching (optional). Shape: [batchSize, maxSeqLen, numHeads, headDim]"; defaultValue = null }
-        val valueCache = Input(NUMERIC, "valueCache") { description = "Value cache for KV caching (optional). Shape: [batchSize, maxSeqLen, numHeads, headDim]"; defaultValue = null }
 
         val s = Arg(FLOATING_POINT, "scaleFactor") { defaultValue = 0.0; description = "Scaling factor applied to attention scores. 0 = auto (1/sqrt(headDim))" }
         val dropout = Arg(FLOATING_POINT, "dropoutProbability") { defaultValue = 0.0; description = "Dropout probability applied to attention weights" }
         val useCausalMask = Arg(BOOL, "useCausalMask") { defaultValue = false; description = "Whether to apply causal mask for autoregressive tasks" }
         val training = Arg(BOOL, "training") { defaultValue = false; description = "Whether in training mode (affects dropout)" }
-        val useFlashAttention = Arg(BOOL, "useFlashAttention") { defaultValue = true; description = "Whether to use flash attention for 4D inputs (memory efficient)" }
-        val kvCachePosition = Arg(INT, "kvCachePosition") { defaultValue = 0; description = "Current position in KV cache for autoregressive generation" }
 
         Output(NUMERIC, "output") { description = "Output tensor. Shape: [batchSize, numQueries, valueDim] or [batchSize, numQueries, numHeads, headDim]" }
 
-        // Standard signature without KV cache
+        // Standard signature matching Java constructor
         Signature(q, v, k, queryMask, valueMask, s, dropout, useCausalMask, training)
-        // Full signature with KV cache support
-        AllParamSignature()
 
         Doc(Language.ANY, DocScope.ALL) {
             """
@@ -734,6 +728,172 @@ fun NN() = Namespace("NN") {
         Doc(Language.ANY, DocScope.ALL) {
             """
              Find values and indices for the largest k entries along the last dimension.<br>
+            """.trimIndent()
+        }
+    }
+
+    Op("windowedAttention") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        val q = Input(NUMERIC, "query") { description = "Query tensor. Shape: [batch, seqLen, numHeads, headDim] for 1D or [batch, height, width, numHeads, headDim] for 2D" }
+        val k = Input(NUMERIC, "key") { description = "Key tensor. Same shape as query" }
+        val v = Input(NUMERIC, "value") { description = "Value tensor. Same shape as query" }
+        val rpb = Input(NUMERIC, "relativePositionBias") { description = "Optional relative position bias. Shape: [numHeads, windowSize, windowSize]"; defaultValue = null }
+        val mask = Input(NUMERIC, "attentionMask") { description = "Optional attention mask"; defaultValue = null }
+
+        val windowSize = Arg(INT, "windowSize") { description = "Size of attention window" }
+        val numHeads = Arg(INT, "numHeads") { description = "Number of attention heads" }
+        val shiftSize = Arg(INT, "shiftSize") { defaultValue = 0; description = "Shift size for shifted window attention (Swin style). 0 = no shift" }
+        val scale = Arg(FLOATING_POINT, "scale") { defaultValue = 0.0; description = "Attention scale factor. 0 = auto (1/sqrt(headDim))" }
+        val returnWeights = Arg(BOOL, "returnWeights") { defaultValue = false; description = "Whether to return attention weights" }
+
+        Output(NUMERIC, "output") { description = "Attention output. Same shape as query" }
+
+        Signature(q, k, v, windowSize, numHeads)
+        Signature(q, k, v, rpb, mask, windowSize, numHeads, shiftSize, scale, returnWeights)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Windowed Attention - Local/Sliding Window Attention.
+
+             Implements windowed attention mechanisms used in efficient transformers like
+             Longformer, BigBird, Swin Transformer, and SAM (Segment Anything Model).
+
+             Supports both:
+             - 1D windowed attention: for sequences [batch, seqLen, heads, dim]
+             - 2D windowed attention: for images [batch, height, width, heads, dim]
+
+             Shifted window attention (shiftSize > 0) enables cross-window connections
+             as used in Swin Transformer.
+
+             Benefits:
+             - O(N * windowSize) complexity instead of O(N^2)
+             - Efficient for long sequences and high-resolution images
+             - Supports relative position bias for position-aware attention
+            """.trimIndent()
+        }
+    }
+
+    Op("relativePositionBias") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        val biasTable = Input(NUMERIC, "biasTable") { description = "Learned bias table. Shape: [numRelativePositions, numHeads] for learned mode, or scalar/tensor for ALiBi mode" }
+        val relPosIndex = Input(NUMERIC, "relativePositionIndex") { description = "Optional precomputed relative position index. Shape: [windowSize^2, windowSize^2]"; defaultValue = null }
+
+        val numHeads = Arg(INT, "numHeads") { description = "Number of attention heads" }
+        val windowSize = Arg(INT, "windowSize") { defaultValue = 0; description = "Window size for 2D position encoding (used if generating index)" }
+        val useAlibi = Arg(BOOL, "useAlibi") { defaultValue = false; description = "Use ALiBi (Attention with Linear Biases) instead of learned bias" }
+
+        Output(NUMERIC, "output") { description = "Position bias. Shape: [numHeads, windowSize^2, windowSize^2] or [numHeads, seqLen, seqLen]" }
+
+        Signature(biasTable, numHeads, windowSize)
+        Signature(biasTable, relPosIndex, numHeads, windowSize)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Relative Position Bias - Compute relative position bias for attention.
+
+             Supports two modes:
+             1. Learned bias (Swin/SAM style): Looks up bias values from a learned table
+                based on relative positions between query and key positions.
+
+             2. ALiBi (Attention with Linear Biases): Computes linear position-based bias
+                without learned parameters. More efficient for very long sequences.
+
+             For learned bias mode:
+             - biasTable shape: [(2*windowSize-1)^2, numHeads] for 2D
+             - Output is gathered based on relative position indices
+
+             For ALiBi mode:
+             - biasTable can be sequence length (scalar) or input tensor
+             - Computes m_h * |i - j| where m_h = 2^(-8*h/H)
+
+             Reference: "Swin Transformer" (Liu et al., 2021)
+                        "Train Short, Test Long" (Press et al., 2021) for ALiBi
+            """.trimIndent()
+        }
+    }
+
+    Op("mixtureOfExperts") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        val input = Input(NUMERIC, "input") { description = "Input embeddings. Shape: [batch, seqLen, hiddenSize]" }
+        val routerWeights = Input(NUMERIC, "routerWeights") { description = "Router projection weights. Shape: [hiddenSize, numExperts]" }
+        val expertWeights = Input(NUMERIC, "expertWeights") { description = "Expert weight matrices. Shape: [numExperts, hiddenSize, expertHiddenSize]" }
+        val expertBias = Input(NUMERIC, "expertBias") { description = "Optional expert biases. Shape: [numExperts, expertHiddenSize]"; defaultValue = null }
+
+        val numExperts = Arg(INT, "numExperts") { description = "Total number of experts" }
+        val topK = Arg(INT, "topK") { defaultValue = 2; description = "Number of experts to route to per token" }
+        val normalizeProbs = Arg(BOOL, "normalizeProbs") { defaultValue = true; description = "Whether to normalize router probabilities for selected experts" }
+        val capacityFactor = Arg(FLOATING_POINT, "capacityFactor") { defaultValue = 1.0; description = "Expert capacity factor for load balancing" }
+
+        Output(NUMERIC, "output") { description = "Combined expert outputs. Shape: [batch, seqLen, expertHiddenSize]" }
+        Output(NUMERIC, "routerProbs") { description = "Router probabilities. Shape: [batch, seqLen, numExperts]" }
+        Output(NUMERIC, "expertIndices") { description = "Selected expert indices. Shape: [batch, seqLen, topK]" }
+
+        Signature(input, routerWeights, expertWeights, numExperts, topK)
+        Signature(input, routerWeights, expertWeights, expertBias, numExperts, topK, normalizeProbs, capacityFactor)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Mixture of Experts (MoE) Layer.
+
+             Implements sparse MoE routing where each token is processed by only the top-k
+             selected experts out of a larger pool. This enables scaling model capacity
+             without proportionally increasing computation.
+
+             Used in large language models like:
+             - DeepSeek (DeepSeekMoE)
+             - Mixtral (Mistral AI)
+             - Switch Transformer (Google)
+             - GShard (Google)
+
+             The router computes expert selection probabilities:
+             router_probs = softmax(input @ routerWeights)
+
+             Top-k experts are selected and their outputs are weighted by normalized probs:
+             output = sum(normalized_prob[i] * expert[i](input) for i in top_k)
+
+             Benefits:
+             - Scales model capacity with sublinear compute increase
+             - Enables very large models with efficient inference
+             - Supports expert parallelism across devices
+            """.trimIndent()
+        }
+    }
+
+    Op("ctcGreedyDecoder") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "CTCGreedyDecoder"
+        val logits = Input(NUMERIC, "logits") { description = "Log probabilities from CTC output. Shape: [batch, timeSteps, numClasses]" }
+        val sequenceLength = Input(NUMERIC, "sequenceLength") { description = "Optional actual sequence lengths. Shape: [batch]"; defaultValue = null }
+
+        val mergeRepeated = Arg(BOOL, "mergeRepeated") { defaultValue = true; description = "Whether to merge repeated characters in output" }
+        val blankIndex = Arg(INT, "blankIndex") { defaultValue = 0; description = "Index of the blank label in the vocabulary" }
+
+        Output(NUMERIC, "decoded") { description = "Decoded sequences. Shape: [batch, timeSteps] (padded with blank)" }
+        Output(NUMERIC, "logProbability") { description = "Log probability of decoded sequences. Shape: [batch]" }
+
+        Signature(logits, mergeRepeated, blankIndex)
+        Signature(logits, sequenceLength, mergeRepeated, blankIndex)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             CTC Greedy Decoder - Connectionist Temporal Classification decoding.
+
+             Performs greedy (best path) decoding on CTC output. Used in:
+             - OCR (Optical Character Recognition) - PaddleOCR, CRNN
+             - Speech recognition - DeepSpeech, Wav2Vec
+             - Handwriting recognition
+
+             Algorithm:
+             1. At each timestep, select the class with highest probability
+             2. Optionally merge consecutive repeated characters
+             3. Remove blank labels from the output
+
+             For example, with mergeRepeated=true and blankIndex=0:
+             Input:  [0, 1, 1, 0, 2, 2, 2, 0] (0=blank, 1='a', 2='b')
+             Output: [1, 2] -> "ab"
+
+             Note: This is greedy decoding. For better accuracy with language models,
+             use beam search decoding instead.
             """.trimIndent()
         }
     }

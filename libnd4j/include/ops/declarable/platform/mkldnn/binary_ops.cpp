@@ -20,11 +20,14 @@
 
 //
 // OneDNN implementation of binary operations: add, subtract, multiply, divide
+// Supports broadcasting and multiple data types
 //
 
 #include <helpers/MKLDNNStream.h>
+#include <legacy/NativeOps.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/PlatformHelper.h>
+#include <system/Environment.h>
 #include <system/platform_boilerplate.h>
 
 #include "mkldnnUtils.h"
@@ -36,58 +39,166 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////
-// Generic binary operation using OneDNN
+// Get OneDNN data type from NDArray
+static dnnl::memory::data_type getOneDnnDataType(DataType dt) {
+  switch (dt) {
+    case DataType::FLOAT32:
+      return dnnl::memory::data_type::f32;
+    case DataType::BFLOAT16:
+      return dnnl::memory::data_type::bf16;
+    case DataType::HALF:
+      return dnnl::memory::data_type::f16;
+    default:
+      return dnnl::memory::data_type::f32;
+  }
+}
+
+//////////////////////////////////////////////////////////////////////
+// Check if data type is supported by OneDNN binary ops
+static bool isSupportedType(DataType dt) {
+  return dt == DataType::FLOAT32 || dt == DataType::BFLOAT16 || dt == DataType::HALF;
+}
+
+//////////////////////////////////////////////////////////////////////
+// Create broadcast-compatible dimensions for OneDNN
+// OneDNN requires dimensions to be padded to match for broadcasting
+static dnnl::memory::dims getBroadcastDims(NDArray* arr, int targetRank) {
+  dnnl::memory::dims dims(targetRank, 1);
+  int arrRank = arr->rankOf();
+  int offset = targetRank - arrRank;
+
+  for (int i = 0; i < arrRank; i++) {
+    dims[offset + i] = arr->sizeAt(i);
+  }
+  return dims;
+}
+
+//////////////////////////////////////////////////////////////////////
+// Get plain format tag based on rank
+static dnnl::memory::format_tag getPlainFormat(int rank) {
+  switch (rank) {
+    case 1: return dnnl::memory::format_tag::a;
+    case 2: return dnnl::memory::format_tag::ab;
+    case 3: return dnnl::memory::format_tag::abc;
+    case 4: return dnnl::memory::format_tag::abcd;
+    case 5: return dnnl::memory::format_tag::abcde;
+    case 6: return dnnl::memory::format_tag::abcdef;
+    default: return dnnl::memory::format_tag::a;
+  }
+}
+
+//////////////////////////////////////////////////////////////////////
+// Generic binary operation using OneDNN with broadcasting support
 static void binaryOpMKLDNN(NDArray* x, NDArray* y, NDArray* z, dnnl::algorithm alg) {
-  // Get shapes - OneDNN requires same shapes for binary ops (broadcasting handled elsewhere)
-  dnnl::memory::dims xDims = *x->getShapeAsFlatVector();
-  dnnl::memory::dims yDims = *y->getShapeAsFlatVector();
-  dnnl::memory::dims zDims = *z->getShapeAsFlatVector();
-
-  // Create memory descriptors
-  dnnl::memory::desc x_md = dnnl::memory::desc(xDims, dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
-  dnnl::memory::desc y_md = dnnl::memory::desc(yDims, dnnl::memory::data_type::f32, onednnUtils::getFormat(*y));
-  dnnl::memory::desc z_md = dnnl::memory::desc(zDims, dnnl::memory::data_type::f32, onednnUtils::getFormat(*z));
-
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
+  dnnl::stream stream(engine);
+
+  auto dType = getOneDnnDataType(z->dataType());
+
+  // Get output dimensions (result of broadcast)
+  dnnl::memory::dims zDims = *z->getShapeAsFlatVector();
+  int maxRank = z->rankOf();
+
+  // Create broadcast-compatible dimensions
+  dnnl::memory::dims xDims = getBroadcastDims(x, maxRank);
+  dnnl::memory::dims yDims = getBroadcastDims(y, maxRank);
+
+  // Create memory descriptors - use plain format for broadcasting
+  auto plainFormat = getPlainFormat(maxRank);
+  dnnl::memory::desc x_md = dnnl::memory::desc(xDims, dType, plainFormat);
+  dnnl::memory::desc y_md = dnnl::memory::desc(yDims, dType, plainFormat);
+  dnnl::memory::desc z_md = dnnl::memory::desc(zDims, dType, plainFormat);
 
   // Create binary primitive descriptor
-  // OneDNN 3.x API: binary::primitive_desc(engine, algorithm, src0_md, src1_md, dst_md)
   dnnl::binary::primitive_desc op_prim_desc(engine, alg, x_md, y_md, z_md);
 
   std::unordered_map<int, dnnl::memory> args;
-  dnnl::stream stream(engine);
 
-  // Source memories
-  dnnl::memory x_mem(x_md, engine, x->buffer());
-  args[DNNL_ARG_SRC_0] = x_mem;
-
-  dnnl::memory y_mem(y_md, engine, y->buffer());
-  args[DNNL_ARG_SRC_1] = y_mem;
-
-  // Destination memory
+  // Handle case where input needs to be broadcast - may need to reshape view
+  dnnl::memory x_mem(x_md, engine, const_cast<void*>(x->buffer()));
+  dnnl::memory y_mem(y_md, engine, const_cast<void*>(y->buffer()));
   dnnl::memory z_mem(z_md, engine, z->buffer());
+
+  args[DNNL_ARG_SRC_0] = x_mem;
+  args[DNNL_ARG_SRC_1] = y_mem;
   args[DNNL_ARG_DST] = z_mem;
 
   // Execute binary operation
   dnnl::binary(op_prim_desc).execute(stream, args);
-
   stream.wait();
 }
 
 //////////////////////////////////////////////////////////////////////
-// Check if shapes are compatible for OneDNN binary operations
-static bool shapesCompatible(NDArray* x, NDArray* y, NDArray* z) {
-  // For simplest case: all shapes must match exactly
-  if (x->rankOf() != y->rankOf() || x->rankOf() != z->rankOf()) {
+// Check if shapes are broadcast-compatible
+static bool canBroadcast(NDArray* x, NDArray* y, NDArray* z) {
+  // Output shape should match the broadcast result
+  auto xShape = x->shapeOf();
+  auto yShape = y->shapeOf();
+  auto zShape = z->shapeOf();
+
+  int xRank = x->rankOf();
+  int yRank = y->rankOf();
+  int zRank = z->rankOf();
+
+  // z rank should be max of x and y ranks
+  if (zRank != std::max(xRank, yRank)) {
     return false;
   }
 
-  for (int i = 0; i < x->rankOf(); i++) {
-    if (x->sizeAt(i) != y->sizeAt(i) || x->sizeAt(i) != z->sizeAt(i)) {
+  // Check each dimension from the right
+  for (int i = 0; i < zRank; i++) {
+    int xIdx = xRank - 1 - i;
+    int yIdx = yRank - 1 - i;
+    int zIdx = zRank - 1 - i;
+
+    sd::LongType xDim = (xIdx >= 0) ? xShape[xIdx] : 1;
+    sd::LongType yDim = (yIdx >= 0) ? yShape[yIdx] : 1;
+    sd::LongType zDim = zShape[zIdx];
+
+    // Check broadcast compatibility
+    if (xDim != yDim && xDim != 1 && yDim != 1) {
+      return false;
+    }
+
+    // Check output matches broadcast result
+    sd::LongType expectedDim = std::max(xDim, yDim);
+    if (zDim != expectedDim) {
       return false;
     }
   }
+
   return true;
+}
+
+//////////////////////////////////////////////////////////////////////
+// Common check for binary operations
+static Requirements binaryOpCheck(const char* opName, graph::Context& block,
+                                   NDArray* x, NDArray* y, NDArray* z) {
+  Requirements req(opName);
+  req.expectTrue(makeInfoVariable(sd::Environment::getInstance().helpersAllowed(), "HELPERS_ALLOWED"), EXPECTED_TRUE) &&
+      req.expectTrue(makeInfoVariable(canBroadcast(x, y, z), "BROADCAST_COMPATIBLE"),
+                     "Shapes must be broadcast-compatible") &&
+      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
+      req.expectFalse(makeInfoVariable(y->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&
+      req.expectLessEq(makeInfoVariable(z->rankOf(), RANK_MSG_OUTPUT), 6) &&
+      req.expectGreater(makeInfoVariable(z->rankOf(), RANK_MSG_OUTPUT), 0) &&
+      // Require contiguous (EWS=1) arrays for correct memory layout
+      req.expectEq(makeInfoVariable(x->ews(), "X_EWS"), 1) &&
+      req.expectEq(makeInfoVariable(y->ews(), "Y_EWS"), 1) &&
+      req.expectEq(makeInfoVariable(z->ews(), "Z_EWS"), 1) &&
+      req.expectTrue(makeInfoVariable(isSupportedType(x->dataType()), TYPE_MSG_INPUT0),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectTrue(makeInfoVariable(isSupportedType(y->dataType()), TYPE_MSG_INPUT1),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectTrue(makeInfoVariable(isSupportedType(z->dataType()), TYPE_MSG_OUTPUT),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      // All types should match for OneDNN binary ops
+      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0),
+                   makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT)) &&
+      req.expectEq(makeInfoVariable(y->dataType(), TYPE_MSG_INPUT1),
+                   makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT));
+  req.logTheSuccess();
+  return req;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -97,11 +208,7 @@ PLATFORM_IMPL(add, ENGINE_CPU) {
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
 
-  REQUIRE_TRUE(shapesCompatible(x, y, z), 0, "ADD_MKLDNN OP: shapes must be equal for OneDNN implementation");
-  REQUIRE_TRUE(x->rankOf() <= 6, 0, "ADD_MKLDNN OP: the rank must be <= 6, but got rank = %i", x->rankOf());
-
   binaryOpMKLDNN(x, y, z, dnnl::algorithm::binary_add);
-
   return sd::Status::OK;
 }
 
@@ -109,19 +216,7 @@ PLATFORM_CHECK(add, ENGINE_CPU) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
-
-  Requirements req("ONEDNN ADD OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(makeInfoVariable(shapesCompatible(x, y, z), "SHAPES_COMPATIBLE"), "Shapes must be equal") &&
-      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
-      req.expectFalse(makeInfoVariable(y->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&
-      req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
-      req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
-      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(y->dataType(), TYPE_MSG_INPUT1), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
-  req.logTheSuccess();
-  return req;
+  return binaryOpCheck("ONEDNN ADD OP", block, x, y, z);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -131,11 +226,7 @@ PLATFORM_IMPL(subtract, ENGINE_CPU) {
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
 
-  REQUIRE_TRUE(shapesCompatible(x, y, z), 0, "SUBTRACT_MKLDNN OP: shapes must be equal for OneDNN implementation");
-  REQUIRE_TRUE(x->rankOf() <= 6, 0, "SUBTRACT_MKLDNN OP: the rank must be <= 6, but got rank = %i", x->rankOf());
-
   binaryOpMKLDNN(x, y, z, dnnl::algorithm::binary_sub);
-
   return sd::Status::OK;
 }
 
@@ -143,19 +234,7 @@ PLATFORM_CHECK(subtract, ENGINE_CPU) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
-
-  Requirements req("ONEDNN SUBTRACT OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(makeInfoVariable(shapesCompatible(x, y, z), "SHAPES_COMPATIBLE"), "Shapes must be equal") &&
-      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
-      req.expectFalse(makeInfoVariable(y->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&
-      req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
-      req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
-      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(y->dataType(), TYPE_MSG_INPUT1), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
-  req.logTheSuccess();
-  return req;
+  return binaryOpCheck("ONEDNN SUBTRACT OP", block, x, y, z);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -165,11 +244,7 @@ PLATFORM_IMPL(multiply, ENGINE_CPU) {
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
 
-  REQUIRE_TRUE(shapesCompatible(x, y, z), 0, "MULTIPLY_MKLDNN OP: shapes must be equal for OneDNN implementation");
-  REQUIRE_TRUE(x->rankOf() <= 6, 0, "MULTIPLY_MKLDNN OP: the rank must be <= 6, but got rank = %i", x->rankOf());
-
   binaryOpMKLDNN(x, y, z, dnnl::algorithm::binary_mul);
-
   return sd::Status::OK;
 }
 
@@ -177,19 +252,7 @@ PLATFORM_CHECK(multiply, ENGINE_CPU) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
-
-  Requirements req("ONEDNN MULTIPLY OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(makeInfoVariable(shapesCompatible(x, y, z), "SHAPES_COMPATIBLE"), "Shapes must be equal") &&
-      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
-      req.expectFalse(makeInfoVariable(y->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&
-      req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
-      req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
-      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(y->dataType(), TYPE_MSG_INPUT1), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
-  req.logTheSuccess();
-  return req;
+  return binaryOpCheck("ONEDNN MULTIPLY OP", block, x, y, z);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -199,11 +262,7 @@ PLATFORM_IMPL(divide, ENGINE_CPU) {
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
 
-  REQUIRE_TRUE(shapesCompatible(x, y, z), 0, "DIVIDE_MKLDNN OP: shapes must be equal for OneDNN implementation");
-  REQUIRE_TRUE(x->rankOf() <= 6, 0, "DIVIDE_MKLDNN OP: the rank must be <= 6, but got rank = %i", x->rankOf());
-
   binaryOpMKLDNN(x, y, z, dnnl::algorithm::binary_div);
-
   return sd::Status::OK;
 }
 
@@ -211,87 +270,7 @@ PLATFORM_CHECK(divide, ENGINE_CPU) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
-
-  Requirements req("ONEDNN DIVIDE OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(makeInfoVariable(shapesCompatible(x, y, z), "SHAPES_COMPATIBLE"), "Shapes must be equal") &&
-      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
-      req.expectFalse(makeInfoVariable(y->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&
-      req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
-      req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
-      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(y->dataType(), TYPE_MSG_INPUT1), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
-  req.logTheSuccess();
-  return req;
-}
-
-//////////////////////////////////////////////////////////////////////
-// MAXIMUM
-PLATFORM_IMPL(maximum, ENGINE_CPU) {
-  auto x = INPUT_VARIABLE(0);
-  auto y = INPUT_VARIABLE(1);
-  auto z = OUTPUT_VARIABLE(0);
-
-  REQUIRE_TRUE(shapesCompatible(x, y, z), 0, "MAXIMUM_MKLDNN OP: shapes must be equal for OneDNN implementation");
-  REQUIRE_TRUE(x->rankOf() <= 6, 0, "MAXIMUM_MKLDNN OP: the rank must be <= 6, but got rank = %i", x->rankOf());
-
-  binaryOpMKLDNN(x, y, z, dnnl::algorithm::binary_max);
-
-  return sd::Status::OK;
-}
-
-PLATFORM_CHECK(maximum, ENGINE_CPU) {
-  auto x = INPUT_VARIABLE(0);
-  auto y = INPUT_VARIABLE(1);
-  auto z = OUTPUT_VARIABLE(0);
-
-  Requirements req("ONEDNN MAXIMUM OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(makeInfoVariable(shapesCompatible(x, y, z), "SHAPES_COMPATIBLE"), "Shapes must be equal") &&
-      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
-      req.expectFalse(makeInfoVariable(y->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&
-      req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
-      req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
-      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(y->dataType(), TYPE_MSG_INPUT1), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
-  req.logTheSuccess();
-  return req;
-}
-
-//////////////////////////////////////////////////////////////////////
-// MINIMUM
-PLATFORM_IMPL(minimum, ENGINE_CPU) {
-  auto x = INPUT_VARIABLE(0);
-  auto y = INPUT_VARIABLE(1);
-  auto z = OUTPUT_VARIABLE(0);
-
-  REQUIRE_TRUE(shapesCompatible(x, y, z), 0, "MINIMUM_MKLDNN OP: shapes must be equal for OneDNN implementation");
-  REQUIRE_TRUE(x->rankOf() <= 6, 0, "MINIMUM_MKLDNN OP: the rank must be <= 6, but got rank = %i", x->rankOf());
-
-  binaryOpMKLDNN(x, y, z, dnnl::algorithm::binary_min);
-
-  return sd::Status::OK;
-}
-
-PLATFORM_CHECK(minimum, ENGINE_CPU) {
-  auto x = INPUT_VARIABLE(0);
-  auto y = INPUT_VARIABLE(1);
-  auto z = OUTPUT_VARIABLE(0);
-
-  Requirements req("ONEDNN MINIMUM OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(makeInfoVariable(shapesCompatible(x, y, z), "SHAPES_COMPATIBLE"), "Shapes must be equal") &&
-      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
-      req.expectFalse(makeInfoVariable(y->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&
-      req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
-      req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
-      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(y->dataType(), TYPE_MSG_INPUT1), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
-  req.logTheSuccess();
-  return req;
+  return binaryOpCheck("ONEDNN DIVIDE OP", block, x, y, z);
 }
 
 }  // namespace platforms

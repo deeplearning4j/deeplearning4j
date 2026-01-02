@@ -193,6 +193,73 @@ public class SDImage extends SDOps {
   }
 
   /**
+   * Generates a 2D or 3D sampling grid from affine transformation matrices.<br>
+   * Used with grid_sample for spatial transformer networks.<br>
+   * The grid contains normalized coordinates in range [-1, 1].<br>
+   *
+   * @param theta Affine transformation matrix with shape [N, 2, 3] for 2D or [N, 3, 4] for 3D (NUMERIC type)
+   * @param size Output size - 1D array specifying [N, H, W] for 2D or [N, D, H, W] for 3D (INT type)
+   * @param alignCorners If true, align corners of input and output
+   * @return output Sampling grid with shape [N, H, W, 2] for 2D or [N, D, H, W, 3] for 3D (NUMERIC type)
+   */
+  public SDVariable affineGrid(SDVariable theta, SDVariable size, boolean alignCorners) {
+    SDValidation.validateNumerical("affineGrid", "theta", theta);
+    SDValidation.validateInteger("affineGrid", "size", size);
+    return new org.nd4j.linalg.api.ops.impl.image.AffineGrid(sd,theta, size, alignCorners).outputVariable();
+  }
+
+  /**
+   * Generates a 2D or 3D sampling grid from affine transformation matrices.<br>
+   * Used with grid_sample for spatial transformer networks.<br>
+   * The grid contains normalized coordinates in range [-1, 1].<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param theta Affine transformation matrix with shape [N, 2, 3] for 2D or [N, 3, 4] for 3D (NUMERIC type)
+   * @param size Output size - 1D array specifying [N, H, W] for 2D or [N, D, H, W] for 3D (INT type)
+   * @param alignCorners If true, align corners of input and output
+   * @return output Sampling grid with shape [N, H, W, 2] for 2D or [N, D, H, W, 3] for 3D (NUMERIC type)
+   */
+  public SDVariable affineGrid(String name, SDVariable theta, SDVariable size,
+      boolean alignCorners) {
+    SDValidation.validateNumerical("affineGrid", "theta", theta);
+    SDValidation.validateInteger("affineGrid", "size", size);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.image.AffineGrid(sd,theta, size, alignCorners).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Generates a 2D or 3D sampling grid from affine transformation matrices.<br>
+   * Used with grid_sample for spatial transformer networks.<br>
+   * The grid contains normalized coordinates in range [-1, 1].<br>
+   *
+   * @param theta Affine transformation matrix with shape [N, 2, 3] for 2D or [N, 3, 4] for 3D (NUMERIC type)
+   * @param size Output size - 1D array specifying [N, H, W] for 2D or [N, D, H, W] for 3D (INT type)
+   * @return output Sampling grid with shape [N, H, W, 2] for 2D or [N, D, H, W, 3] for 3D (NUMERIC type)
+   */
+  public SDVariable affineGrid(SDVariable theta, SDVariable size) {
+    SDValidation.validateNumerical("affineGrid", "theta", theta);
+    SDValidation.validateInteger("affineGrid", "size", size);
+    return new org.nd4j.linalg.api.ops.impl.image.AffineGrid(sd,theta, size, false).outputVariable();
+  }
+
+  /**
+   * Generates a 2D or 3D sampling grid from affine transformation matrices.<br>
+   * Used with grid_sample for spatial transformer networks.<br>
+   * The grid contains normalized coordinates in range [-1, 1].<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param theta Affine transformation matrix with shape [N, 2, 3] for 2D or [N, 3, 4] for 3D (NUMERIC type)
+   * @param size Output size - 1D array specifying [N, H, W] for 2D or [N, D, H, W] for 3D (INT type)
+   * @return output Sampling grid with shape [N, H, W, 2] for 2D or [N, D, H, W, 3] for 3D (NUMERIC type)
+   */
+  public SDVariable affineGrid(String name, SDVariable theta, SDVariable size) {
+    SDValidation.validateNumerical("affineGrid", "theta", theta);
+    SDValidation.validateInteger("affineGrid", "size", size);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.image.AffineGrid(sd,theta, size, false).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Given an input image, extract out image patches (of size kSizes - h x w) and place them in the depth dimension. <br>
    *
    * @param image Input image to extract image patches from - shape [batch, height, width, channels] (NUMERIC type)

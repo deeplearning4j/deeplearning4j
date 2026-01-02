@@ -271,6 +271,56 @@ DECLARE_CUSTOM_OP(resize_area, 1, 1, false, 0, -2);
 DECLARE_CUSTOM_OP(image_resize, 2, 1, false, -2, -2);
 #endif
 
+/**
+ * Affine Grid Generator
+ *
+ * Generates a 2D or 3D sampling grid from affine transformation matrices.
+ * Used with grid_sample for spatial transformer networks.
+ *
+ * Input arrays:
+ *   0 - theta: Affine transformation matrix
+ *              2D: [N, 2, 3] for transformations
+ *              3D: [N, 3, 4] for transformations
+ *   1 - size: Target output size
+ *              2D: [N, C, H, W]
+ *              3D: [N, C, D, H, W]
+ *
+ * Int arguments:
+ *   0 - align_corners: If 1, treat -1 and 1 as corner centers (default: 0)
+ *
+ * Output:
+ *   0 - Sampling grid
+ *       2D: [N, H, W, 2] with (x, y) coordinates
+ *       3D: [N, D, H, W, 3] with (x, y, z) coordinates
+ */
+#if NOT_EXCLUDED(OP_affine_grid)
+DECLARE_CUSTOM_OP(affine_grid, 2, 1, false, 0, -2);
+#endif
+
+/**
+ * Grid Sample
+ *
+ * Samples input tensor using grid coordinates.
+ * Implements bilinear/nearest/bicubic interpolation with various padding modes.
+ *
+ * Input arrays:
+ *   0 - input: Input tensor [N, C, H, W] for 2D or [N, C, D, H, W] for 3D
+ *   1 - grid: Sampling grid from affine_grid
+ *             2D: [N, H_out, W_out, 2]
+ *             3D: [N, D_out, H_out, W_out, 3]
+ *
+ * Int arguments:
+ *   0 - mode: Interpolation mode (0=bilinear, 1=nearest, 2=bicubic)
+ *   1 - padding_mode: Padding mode (0=zeros, 1=border, 2=reflection)
+ *   2 - align_corners: If 1, treat -1 and 1 as corner centers
+ *
+ * Output:
+ *   0 - Sampled tensor with shape matching grid spatial dimensions
+ */
+#if NOT_EXCLUDED(OP_grid_sample)
+DECLARE_CUSTOM_OP(grid_sample, 2, 1, false, 0, -2);
+#endif
+
 }  // namespace ops
 }  // namespace sd
 #endif

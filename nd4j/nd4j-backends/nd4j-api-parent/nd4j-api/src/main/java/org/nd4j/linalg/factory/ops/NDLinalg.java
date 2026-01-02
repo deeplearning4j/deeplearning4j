@@ -24,6 +24,8 @@ package org.nd4j.linalg.factory.ops;
 
 import static org.nd4j.linalg.factory.NDValidation.isSameType;
 
+import java.lang.String;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.NDValidation;
@@ -365,6 +367,42 @@ public class NDLinalg {
   public INDArray[] eig(INDArray input) {
     NDValidation.validateNumerical("eig", "input", input);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.custom.Eig(input));
+  }
+
+  /**
+   * Einsum (Einstein summation) operation.<br>
+   * <br>
+   * Provides a powerful way to express tensor operations using Einstein summation notation.<br>
+   * The equation string specifies the subscripts for each input tensor and the output tensor.<br>
+   * <br>
+   * Examples:<br>
+   * - Matrix multiplication: "ij,jk->ik"<br>
+   * - Transpose: "ij->ji"<br>
+   * - Diagonal: "ii->i"<br>
+   * - Trace: "ii->"<br>
+   * - Batch matmul: "bij,bjk->bik"<br>
+   * - Dot product: "i,i->"<br>
+   * - Outer product: "i,j->ij"<br>
+   *
+   * @param inputs Input tensors (NUMERIC type)
+   * @param equation Einstein summation equation string
+   * @return output Output tensor (NUMERIC type)
+   */
+  public INDArray einsum(INDArray[] inputs, String equation) {
+    NDValidation.validateNumerical("einsum", "inputs", inputs);
+    Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Einsum(inputs, equation));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**

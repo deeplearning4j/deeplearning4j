@@ -213,6 +213,11 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      */
     public final SDLinalg linalg = new SDLinalg(this);
 
+    /**
+     * Op creator object for signal processing operations
+     */
+    public final SDSignal signal = new SDSignal(this);
+
     public final static String INFERENCE_FACTORY_CLASS = "inferencefactory.class";
     private static InferenceFactory INFERENCE_FACTORY;
 
@@ -358,6 +363,13 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      */
     public SDLinalg linalg(){
         return linalg;
+    }
+
+    /**
+     * Op creator object for signal processing operations
+     */
+    public SDSignal signal(){
+        return signal;
     }
 
 

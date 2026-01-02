@@ -164,6 +164,59 @@ public class NDImage {
   }
 
   /**
+   * Generates a 2D or 3D sampling grid from affine transformation matrices.<br>
+   * Used with grid_sample for spatial transformer networks.<br>
+   * The grid contains normalized coordinates in range [-1, 1].<br>
+   *
+   * @param theta Affine transformation matrix with shape [N, 2, 3] for 2D or [N, 3, 4] for 3D (NUMERIC type)
+   * @param size Output size - 1D array specifying [N, H, W] for 2D or [N, D, H, W] for 3D (INT type)
+   * @param alignCorners If true, align corners of input and output
+   * @return output Sampling grid with shape [N, H, W, 2] for 2D or [N, D, H, W, 3] for 3D (NUMERIC type)
+   */
+  public INDArray affineGrid(INDArray theta, INDArray size, boolean alignCorners) {
+    NDValidation.validateNumerical("affineGrid", "theta", theta);
+    NDValidation.validateInteger("affineGrid", "size", size);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.AffineGrid(theta, size, alignCorners));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Generates a 2D or 3D sampling grid from affine transformation matrices.<br>
+   * Used with grid_sample for spatial transformer networks.<br>
+   * The grid contains normalized coordinates in range [-1, 1].<br>
+   *
+   * @param theta Affine transformation matrix with shape [N, 2, 3] for 2D or [N, 3, 4] for 3D (NUMERIC type)
+   * @param size Output size - 1D array specifying [N, H, W] for 2D or [N, D, H, W] for 3D (INT type)
+   * @return output Sampling grid with shape [N, H, W, 2] for 2D or [N, D, H, W, 3] for 3D (NUMERIC type)
+   */
+  public INDArray affineGrid(INDArray theta, INDArray size) {
+    NDValidation.validateNumerical("affineGrid", "theta", theta);
+    NDValidation.validateInteger("affineGrid", "size", size);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.AffineGrid(theta, size, false));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Given an input image, extract out image patches (of size kSizes - h x w) and place them in the depth dimension. <br>
    *
    * @param image Input image to extract image patches from - shape [batch, height, width, channels] (NUMERIC type)

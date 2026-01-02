@@ -160,9 +160,27 @@ function(setup_blas)
     # Use global include_directories for compatibility
     include_directories(${OPENBLAS_PATH}/include/)
 
-    # Set up library directories
-    if(EXISTS "${OPENBLAS_PATH}/lib")
-        link_directories(${OPENBLAS_PATH}/)
+    # Find the actual OpenBLAS library file
+    set(OPENBLAS_LIB_FOUND "")
+    foreach(lib_candidate
+            "${OPENBLAS_PATH}/lib/libopenblas.so"
+            "${OPENBLAS_PATH}/libopenblas.so"
+            "${OPENBLAS_PATH}/lib/libopenblas.a"
+            "${OPENBLAS_PATH}/libopenblas.a")
+        if(EXISTS "${lib_candidate}" AND NOT OPENBLAS_LIB_FOUND)
+            set(OPENBLAS_LIB_FOUND "${lib_candidate}")
+            message(STATUS "   Found OpenBLAS library: ${OPENBLAS_LIB_FOUND}")
+        endif()
+    endforeach()
+
+    if(NOT OPENBLAS_LIB_FOUND)
+        message(WARNING "⚠️  Could not find libopenblas.so or libopenblas.a in ${OPENBLAS_PATH}")
+        # Fallback to link_directories approach
+        if(EXISTS "${OPENBLAS_PATH}/lib")
+            link_directories(${OPENBLAS_PATH}/lib)
+        endif()
+        link_directories(${OPENBLAS_PATH})
+        set(OPENBLAS_LIB_FOUND "openblas")
     endif()
 
     add_compile_definitions(HAVE_OPENBLAS=1)
@@ -174,7 +192,7 @@ function(setup_blas)
 
     # Set parent scope variables
     set(HAVE_OPENBLAS 1 PARENT_SCOPE)
-    set(OPENBLAS_LIBRARIES openblas PARENT_SCOPE)
+    set(OPENBLAS_LIBRARIES "${OPENBLAS_LIB_FOUND}" PARENT_SCOPE)
 
     set(OPENBLAS_PATH "${OPENBLAS_PATH}" PARENT_SCOPE)
 
@@ -235,11 +253,12 @@ function(setup_flatbuffers)
         )
 
         # Pass compiler launcher (ccache/sccache) to host build if available
-        if(CMAKE_C_COMPILER_LAUNCHER)
-            list(APPEND HOST_CMAKE_ARGS -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER})
+        # Use quotes to handle paths with spaces and prevent list expansion issues
+        if(CMAKE_C_COMPILER_LAUNCHER AND EXISTS "${CMAKE_C_COMPILER_LAUNCHER}")
+            list(APPEND HOST_CMAKE_ARGS "-DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${CMAKE_C_COMPILER_LAUNCHER}")
         endif()
-        if(CMAKE_CXX_COMPILER_LAUNCHER)
-            list(APPEND HOST_CMAKE_ARGS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER})
+        if(CMAKE_CXX_COMPILER_LAUNCHER AND EXISTS "${CMAKE_CXX_COMPILER_LAUNCHER}")
+            list(APPEND HOST_CMAKE_ARGS "-DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${CMAKE_CXX_COMPILER_LAUNCHER}")
         endif()
 
         ExternalProject_Add(flatbuffers_host
@@ -271,10 +290,10 @@ function(setup_flatbuffers)
 
         # Pass compiler launcher (ccache/sccache) to target build if available
         if(CMAKE_C_COMPILER_LAUNCHER)
-            list(APPEND TARGET_CMAKE_ARGS -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER})
+            list(APPEND TARGET_CMAKE_ARGS -DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${CMAKE_C_COMPILER_LAUNCHER})
         endif()
         if(CMAKE_CXX_COMPILER_LAUNCHER)
-            list(APPEND TARGET_CMAKE_ARGS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER})
+            list(APPEND TARGET_CMAKE_ARGS -DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${CMAKE_CXX_COMPILER_LAUNCHER})
         endif()
 
         # Only add cross-compilation arguments if they are defined
@@ -381,10 +400,10 @@ function(setup_flatbuffers)
 
         # Pass compiler launcher (ccache/sccache) to native build if available
         if(CMAKE_C_COMPILER_LAUNCHER)
-            list(APPEND NATIVE_CMAKE_ARGS -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER})
+            list(APPEND NATIVE_CMAKE_ARGS -DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${CMAKE_C_COMPILER_LAUNCHER})
         endif()
         if(CMAKE_CXX_COMPILER_LAUNCHER)
-            list(APPEND NATIVE_CMAKE_ARGS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER})
+            list(APPEND NATIVE_CMAKE_ARGS -DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${CMAKE_CXX_COMPILER_LAUNCHER})
         endif()
 
         ExternalProject_Add(flatbuffers_external
@@ -534,11 +553,15 @@ function(setup_onednn)
     )
 
     # Pass compiler launcher (ccache/sccache) to OneDNN build if available
-    if(CMAKE_C_COMPILER_LAUNCHER)
-        list(APPEND ONEDNN_CMAKE_ARGS -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER})
+    # Use quotes to handle paths with spaces and prevent list expansion issues
+    # Also verify the launcher exists (it could be the smart_ccache.sh wrapper)
+    if(CMAKE_C_COMPILER_LAUNCHER AND EXISTS "${CMAKE_C_COMPILER_LAUNCHER}")
+        list(APPEND ONEDNN_CMAKE_ARGS "-DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${CMAKE_C_COMPILER_LAUNCHER}")
+        message(STATUS "   Passing C compiler launcher to OneDNN: ${CMAKE_C_COMPILER_LAUNCHER}")
     endif()
-    if(CMAKE_CXX_COMPILER_LAUNCHER)
-        list(APPEND ONEDNN_CMAKE_ARGS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER})
+    if(CMAKE_CXX_COMPILER_LAUNCHER AND EXISTS "${CMAKE_CXX_COMPILER_LAUNCHER}")
+        list(APPEND ONEDNN_CMAKE_ARGS "-DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${CMAKE_CXX_COMPILER_LAUNCHER}")
+        message(STATUS "   Passing CXX compiler launcher to OneDNN: ${CMAKE_CXX_COMPILER_LAUNCHER}")
     endif()
 
     ExternalProject_Add(onednn_external

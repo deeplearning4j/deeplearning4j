@@ -112,6 +112,21 @@ fun SDCNN() =  Namespace("CNN"){
         javaClassOverride = "org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv3DConfig"
     }
 
+    val deformableConv2DConfig = Config("DeformableConv2DConfig"){
+        Arg(LONG, "kH"){ description = "Kernel height"; defaultValue=1}
+        Arg(LONG, "kW"){ description = "Kernel width"; defaultValue=1}
+        Arg(LONG, "sH"){ description = "Stride height"; defaultValue=1}
+        Arg(LONG, "sW"){ description = "Stride width"; defaultValue=1}
+        Arg(LONG, "pH"){ description = "Padding height"; defaultValue=0}
+        Arg(LONG, "pW"){ description = "Padding width"; defaultValue=0}
+        Arg(LONG, "dH"){ description = "Dilation height"; defaultValue=1}
+        Arg(LONG, "dW"){ description = "Dilation width"; defaultValue=1}
+        Arg(LONG, "groups"){ description = "Convolution groups"; defaultValue=1}
+        Arg(LONG, "deformableGroups"){ description = "Number of deformable/offset groups"; defaultValue=1}
+        Arg(BOOL, "isNCHW"){ description = "Data format: true for NCHW, false for NHWC"; defaultValue=true}
+        javaClassOverride = "org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeformableConv2DConfig"
+    }
+
 
 
 
@@ -579,7 +594,103 @@ fun SDCNN() =  Namespace("CNN"){
 
         Doc(Language.ANY, DocScope.ALL){
             """
-             3D Convolution layer operation - Upsampling 3d 
+             3D Convolution layer operation - Upsampling 3d
+            """.trimIndent()
+        }
+    }
+
+    Op("adaptiveAvgPooling2d") {
+        javaPackage = namespaceJavaPackage
+        javaOpClass = "AdaptiveAvgPooling2D"
+        Input(NUMERIC, "input") { description = "Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])" }
+        Arg(INT, "outputHeight") { description = "Target output height" }
+        Arg(INT, "outputWidth") { description = "Target output width" }
+        Arg(BOOL, "nchw") { description = "If true: input is in NCHW format. False: NHWC format"; defaultValue = true }
+
+        Output(NUMERIC, "output") { description = "Result after applying adaptive average pooling on the input" }
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Adaptive Average Pooling 2D operation.
+
+             Automatically computes kernel size and stride to produce output of the specified
+             spatial dimensions. Common in vision models like ResNet, VGG for global pooling.
+
+             For global average pooling, use outputHeight=1, outputWidth=1.
+            """.trimIndent()
+        }
+    }
+
+    Op("adaptiveMaxPooling2d") {
+        javaPackage = namespaceJavaPackage
+        javaOpClass = "AdaptiveMaxPooling2D"
+        Input(NUMERIC, "input") { description = "Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])" }
+        Arg(INT, "outputHeight") { description = "Target output height" }
+        Arg(INT, "outputWidth") { description = "Target output width" }
+        Arg(BOOL, "nchw") { description = "If true: input is in NCHW format. False: NHWC format"; defaultValue = true }
+
+        Output(NUMERIC, "output") { description = "Result after applying adaptive max pooling on the input" }
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Adaptive Max Pooling 2D operation.
+
+             Automatically computes kernel size and stride to produce output of the specified
+             spatial dimensions. Common in vision models for flexible output sizing.
+
+             For global max pooling, use outputHeight=1, outputWidth=1.
+            """.trimIndent()
+        }
+    }
+
+    Op("adaptiveAvgPooling3d") {
+        javaPackage = namespaceJavaPackage
+        javaOpClass = "AdaptiveAvgPooling3D"
+        Input(NUMERIC, "input") { description = "Input tensor - 5d activations in NCDHW format (shape [minibatch, channels, depth, height, width]) or NDHWC format" }
+        Arg(INT, "outputDepth") { description = "Target output depth" }
+        Arg(INT, "outputHeight") { description = "Target output height" }
+        Arg(INT, "outputWidth") { description = "Target output width" }
+        Arg(BOOL, "ncdhw") { description = "If true: input is in NCDHW format. False: NDHWC format"; defaultValue = true }
+
+        Output(NUMERIC, "output") { description = "Result after applying adaptive average pooling on the input" }
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Adaptive Average Pooling 3D operation.
+
+             Automatically computes kernel size and stride to produce output of the specified
+             spatial dimensions. For 3D data like video or volumetric data.
+
+             For global average pooling, use outputDepth=1, outputHeight=1, outputWidth=1.
+            """.trimIndent()
+        }
+    }
+
+    Op("deformableConv2d") {
+        javaPackage = namespaceJavaPackage
+        javaOpClass = "DeformableConv2D"
+        Input(NUMERIC, "input") { description = "Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format" }
+        Input(NUMERIC, "weights") { description = "Convolution weights. Shape: [outputChannels, inputChannels/groups, kernelHeight, kernelWidth]" }
+        Input(NUMERIC, "offset") { description = "Learned offsets. Shape: [batch, 2*kH*kW*deformableGroups, outputHeight, outputWidth]" }
+        Input(NUMERIC, "bias") { description = "Optional 1D bias array with shape [outputChannels]. May be null."; defaultValue = null }
+        Input(NUMERIC, "mask") { description = "Optional modulation mask for Deformable Conv v2. Shape: [batch, kH*kW*deformableGroups, outputHeight, outputWidth]. May be null."; defaultValue = null }
+        useConfig(deformableConv2DConfig)
+
+        Output(NUMERIC, "output") { description = "Result of deformable convolution" }
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Deformable Convolution 2D operation.
+
+             Implements deformable convolution where learned offsets are added to the regular
+             sampling grid, allowing the convolution to adapt to geometric transformations
+             in the input. Used in object detection models like Deformable DETR.
+
+             v1 (without mask): Uses only offsets for deformation
+             v2 (with mask): Adds modulation mask for learnable importance weights
+
+             Reference: "Deformable Convolutional Networks" (Dai et al., 2017)
+                        "Deformable ConvNets v2" (Zhu et al., 2019)
             """.trimIndent()
         }
     }

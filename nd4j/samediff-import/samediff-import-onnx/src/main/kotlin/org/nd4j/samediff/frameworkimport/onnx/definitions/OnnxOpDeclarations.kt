@@ -1412,6 +1412,323 @@ val zipMap = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry
 )
 
+// OCR-related operators for PaddleOCR and DeepSeek-OCR support
+
+val ctcGreedyDecoder = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "CTCGreedyDecoder",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val ctcGreedyDecoderAlt = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "CTC_greedy_decoder",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val adaptiveAvgPool1d = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "AdaptiveAvgPool1d",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val adaptiveAvgPool2d = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "AdaptiveAvgPool2d",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val adaptiveAvgPool2dAlt = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "adaptive_avg_pool2d",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val adaptiveAvgPool3d = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "AdaptiveAvgPool3d",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val adaptiveMaxPool1d = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "AdaptiveMaxPool1d",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val adaptiveMaxPool2d = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "AdaptiveMaxPool2d",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val adaptiveMaxPool2dAlt = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "adaptive_max_pool2d",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val adaptiveMaxPool3d = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "AdaptiveMaxPool3d",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val mixtureOfExperts = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "MixtureOfExperts",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val moe = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "MoE",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val sparseMoe = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "SparseMoE",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val deformConv = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "DeformConv",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val deformableConv2d = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "DeformableConv2d",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val modulatedDeformConv = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "ModulatedDeformConv",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val windowedAttention = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "WindowedAttention",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val windowAttention = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "WindowAttention",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val localAttention = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "LocalAttention",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val swinAttention = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "SwinAttention",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val relativePositionBias = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "RelativePositionBias",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val relativePosEmb = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "RelativePosEmb",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val relativePositionEmbedding = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "RelativePositionEmbedding",
+        opMappingRegistry = onnxOpRegistry
+)
+
+// Additional ops for Docling model support (transformers, vision models)
+
+val trilu = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Trilu",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val col2Im = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Col2Im",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val im2Col = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Im2Col",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val unfold = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Unfold",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val centerCropPad = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "CenterCropPad",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val affineGrid = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "AffineGrid",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val unique = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Unique",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val scatterElements = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "ScatterElements",
+        opMappingRegistry = onnxOpRegistry
+)
+
+// Signal processing ops for audio models
+val stft = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "STFT",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val dft = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "DFT",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val melWeightMatrix = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "MelWeightMatrix",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val hannWindow = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "HannWindow",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val hammingWindow = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "HammingWindow",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val blackmanWindow = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "BlackmanWindow",
+        opMappingRegistry = onnxOpRegistry
+)
+
+// Optional handling ops
+val optionalGetElement = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "OptionalGetElement",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val optionalHasElement = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "OptionalHasElement",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val optional = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Optional",
+        opMappingRegistry = onnxOpRegistry
+)
+
+// Quantization ops
+val qAttention = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "QAttention",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val qOrderedMatMul = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "QOrderedMatMul",
+        opMappingRegistry = onnxOpRegistry
+)
+
+// Grid sampling variants
+val gridSample3d = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "GridSample3d",
+        opMappingRegistry = onnxOpRegistry
+)
+
+// LayerNormalization variants
+val layerNormalization = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "LayerNormalization",
+        opMappingRegistry = onnxOpRegistry
+)
+
+// Upsample (deprecated but still used in some models)
+val upsample = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Upsample",
+        opMappingRegistry = onnxOpRegistry
+)
+
+// Microsoft ONNX Runtime transformer ops
+val attention = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Attention",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val multiHeadAttention = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "MultiHeadAttention",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val groupQueryAttention = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "GroupQueryAttention",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val rotaryEmbedding = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "RotaryEmbedding",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val simplifiedLayerNormalization = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "SimplifiedLayerNormalization",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val skipLayerNormalization = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "SkipLayerNormalization",
+        opMappingRegistry = onnxOpRegistry
+)
+
 object OnnxOpDeclarations {
 
         fun init() {

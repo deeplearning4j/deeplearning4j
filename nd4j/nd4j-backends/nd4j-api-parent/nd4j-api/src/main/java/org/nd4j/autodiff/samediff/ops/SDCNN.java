@@ -44,6 +44,254 @@ public class SDCNN extends SDOps {
   }
 
   /**
+   * Adaptive Average Pooling 2D operation.<br>
+   * <br>
+   * Automatically computes kernel size and stride to produce output of the specified<br>
+   * spatial dimensions. Common in vision models like ResNet, VGG for global pooling.<br>
+   * <br>
+   * For global average pooling, use outputHeight=1, outputWidth=1.<br>
+   *
+   * @param input Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param outputHeight Target output height
+   * @param outputWidth Target output width
+   * @param nchw If true: input is in NCHW format. False: NHWC format
+   * @return output Result after applying adaptive average pooling on the input (NUMERIC type)
+   */
+  public SDVariable adaptiveAvgPooling2d(SDVariable input, int outputHeight, int outputWidth,
+      boolean nchw) {
+    SDValidation.validateNumerical("adaptiveAvgPooling2d", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveAvgPooling2D(sd,input, outputHeight, outputWidth, nchw).outputVariable();
+  }
+
+  /**
+   * Adaptive Average Pooling 2D operation.<br>
+   * <br>
+   * Automatically computes kernel size and stride to produce output of the specified<br>
+   * spatial dimensions. Common in vision models like ResNet, VGG for global pooling.<br>
+   * <br>
+   * For global average pooling, use outputHeight=1, outputWidth=1.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param outputHeight Target output height
+   * @param outputWidth Target output width
+   * @param nchw If true: input is in NCHW format. False: NHWC format
+   * @return output Result after applying adaptive average pooling on the input (NUMERIC type)
+   */
+  public SDVariable adaptiveAvgPooling2d(String name, SDVariable input, int outputHeight,
+      int outputWidth, boolean nchw) {
+    SDValidation.validateNumerical("adaptiveAvgPooling2d", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveAvgPooling2D(sd,input, outputHeight, outputWidth, nchw).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Adaptive Average Pooling 2D operation.<br>
+   * <br>
+   * Automatically computes kernel size and stride to produce output of the specified<br>
+   * spatial dimensions. Common in vision models like ResNet, VGG for global pooling.<br>
+   * <br>
+   * For global average pooling, use outputHeight=1, outputWidth=1.<br>
+   *
+   * @param input Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param outputHeight Target output height
+   * @param outputWidth Target output width
+   * @return output Result after applying adaptive average pooling on the input (NUMERIC type)
+   */
+  public SDVariable adaptiveAvgPooling2d(SDVariable input, int outputHeight, int outputWidth) {
+    SDValidation.validateNumerical("adaptiveAvgPooling2d", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveAvgPooling2D(sd,input, outputHeight, outputWidth, true).outputVariable();
+  }
+
+  /**
+   * Adaptive Average Pooling 2D operation.<br>
+   * <br>
+   * Automatically computes kernel size and stride to produce output of the specified<br>
+   * spatial dimensions. Common in vision models like ResNet, VGG for global pooling.<br>
+   * <br>
+   * For global average pooling, use outputHeight=1, outputWidth=1.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param outputHeight Target output height
+   * @param outputWidth Target output width
+   * @return output Result after applying adaptive average pooling on the input (NUMERIC type)
+   */
+  public SDVariable adaptiveAvgPooling2d(String name, SDVariable input, int outputHeight,
+      int outputWidth) {
+    SDValidation.validateNumerical("adaptiveAvgPooling2d", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveAvgPooling2D(sd,input, outputHeight, outputWidth, true).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Adaptive Average Pooling 3D operation.<br>
+   * <br>
+   * Automatically computes kernel size and stride to produce output of the specified<br>
+   * spatial dimensions. For 3D data like video or volumetric data.<br>
+   * <br>
+   * For global average pooling, use outputDepth=1, outputHeight=1, outputWidth=1.<br>
+   *
+   * @param input Input tensor - 5d activations in NCDHW format (shape [minibatch, channels, depth, height, width]) or NDHWC format (NUMERIC type)
+   * @param outputDepth Target output depth
+   * @param outputHeight Target output height
+   * @param outputWidth Target output width
+   * @param ncdhw If true: input is in NCDHW format. False: NDHWC format
+   * @return output Result after applying adaptive average pooling on the input (NUMERIC type)
+   */
+  public SDVariable adaptiveAvgPooling3d(SDVariable input, int outputDepth, int outputHeight,
+      int outputWidth, boolean ncdhw) {
+    SDValidation.validateNumerical("adaptiveAvgPooling3d", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveAvgPooling3D(sd,input, outputDepth, outputHeight, outputWidth, ncdhw).outputVariable();
+  }
+
+  /**
+   * Adaptive Average Pooling 3D operation.<br>
+   * <br>
+   * Automatically computes kernel size and stride to produce output of the specified<br>
+   * spatial dimensions. For 3D data like video or volumetric data.<br>
+   * <br>
+   * For global average pooling, use outputDepth=1, outputHeight=1, outputWidth=1.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor - 5d activations in NCDHW format (shape [minibatch, channels, depth, height, width]) or NDHWC format (NUMERIC type)
+   * @param outputDepth Target output depth
+   * @param outputHeight Target output height
+   * @param outputWidth Target output width
+   * @param ncdhw If true: input is in NCDHW format. False: NDHWC format
+   * @return output Result after applying adaptive average pooling on the input (NUMERIC type)
+   */
+  public SDVariable adaptiveAvgPooling3d(String name, SDVariable input, int outputDepth,
+      int outputHeight, int outputWidth, boolean ncdhw) {
+    SDValidation.validateNumerical("adaptiveAvgPooling3d", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveAvgPooling3D(sd,input, outputDepth, outputHeight, outputWidth, ncdhw).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Adaptive Average Pooling 3D operation.<br>
+   * <br>
+   * Automatically computes kernel size and stride to produce output of the specified<br>
+   * spatial dimensions. For 3D data like video or volumetric data.<br>
+   * <br>
+   * For global average pooling, use outputDepth=1, outputHeight=1, outputWidth=1.<br>
+   *
+   * @param input Input tensor - 5d activations in NCDHW format (shape [minibatch, channels, depth, height, width]) or NDHWC format (NUMERIC type)
+   * @param outputDepth Target output depth
+   * @param outputHeight Target output height
+   * @param outputWidth Target output width
+   * @return output Result after applying adaptive average pooling on the input (NUMERIC type)
+   */
+  public SDVariable adaptiveAvgPooling3d(SDVariable input, int outputDepth, int outputHeight,
+      int outputWidth) {
+    SDValidation.validateNumerical("adaptiveAvgPooling3d", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveAvgPooling3D(sd,input, outputDepth, outputHeight, outputWidth, true).outputVariable();
+  }
+
+  /**
+   * Adaptive Average Pooling 3D operation.<br>
+   * <br>
+   * Automatically computes kernel size and stride to produce output of the specified<br>
+   * spatial dimensions. For 3D data like video or volumetric data.<br>
+   * <br>
+   * For global average pooling, use outputDepth=1, outputHeight=1, outputWidth=1.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor - 5d activations in NCDHW format (shape [minibatch, channels, depth, height, width]) or NDHWC format (NUMERIC type)
+   * @param outputDepth Target output depth
+   * @param outputHeight Target output height
+   * @param outputWidth Target output width
+   * @return output Result after applying adaptive average pooling on the input (NUMERIC type)
+   */
+  public SDVariable adaptiveAvgPooling3d(String name, SDVariable input, int outputDepth,
+      int outputHeight, int outputWidth) {
+    SDValidation.validateNumerical("adaptiveAvgPooling3d", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveAvgPooling3D(sd,input, outputDepth, outputHeight, outputWidth, true).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Adaptive Max Pooling 2D operation.<br>
+   * <br>
+   * Automatically computes kernel size and stride to produce output of the specified<br>
+   * spatial dimensions. Common in vision models for flexible output sizing.<br>
+   * <br>
+   * For global max pooling, use outputHeight=1, outputWidth=1.<br>
+   *
+   * @param input Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param outputHeight Target output height
+   * @param outputWidth Target output width
+   * @param nchw If true: input is in NCHW format. False: NHWC format
+   * @return output Result after applying adaptive max pooling on the input (NUMERIC type)
+   */
+  public SDVariable adaptiveMaxPooling2d(SDVariable input, int outputHeight, int outputWidth,
+      boolean nchw) {
+    SDValidation.validateNumerical("adaptiveMaxPooling2d", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveMaxPooling2D(sd,input, outputHeight, outputWidth, nchw).outputVariable();
+  }
+
+  /**
+   * Adaptive Max Pooling 2D operation.<br>
+   * <br>
+   * Automatically computes kernel size and stride to produce output of the specified<br>
+   * spatial dimensions. Common in vision models for flexible output sizing.<br>
+   * <br>
+   * For global max pooling, use outputHeight=1, outputWidth=1.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param outputHeight Target output height
+   * @param outputWidth Target output width
+   * @param nchw If true: input is in NCHW format. False: NHWC format
+   * @return output Result after applying adaptive max pooling on the input (NUMERIC type)
+   */
+  public SDVariable adaptiveMaxPooling2d(String name, SDVariable input, int outputHeight,
+      int outputWidth, boolean nchw) {
+    SDValidation.validateNumerical("adaptiveMaxPooling2d", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveMaxPooling2D(sd,input, outputHeight, outputWidth, nchw).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Adaptive Max Pooling 2D operation.<br>
+   * <br>
+   * Automatically computes kernel size and stride to produce output of the specified<br>
+   * spatial dimensions. Common in vision models for flexible output sizing.<br>
+   * <br>
+   * For global max pooling, use outputHeight=1, outputWidth=1.<br>
+   *
+   * @param input Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param outputHeight Target output height
+   * @param outputWidth Target output width
+   * @return output Result after applying adaptive max pooling on the input (NUMERIC type)
+   */
+  public SDVariable adaptiveMaxPooling2d(SDVariable input, int outputHeight, int outputWidth) {
+    SDValidation.validateNumerical("adaptiveMaxPooling2d", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveMaxPooling2D(sd,input, outputHeight, outputWidth, true).outputVariable();
+  }
+
+  /**
+   * Adaptive Max Pooling 2D operation.<br>
+   * <br>
+   * Automatically computes kernel size and stride to produce output of the specified<br>
+   * spatial dimensions. Common in vision models for flexible output sizing.<br>
+   * <br>
+   * For global max pooling, use outputHeight=1, outputWidth=1.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param outputHeight Target output height
+   * @param outputWidth Target output width
+   * @return output Result after applying adaptive max pooling on the input (NUMERIC type)
+   */
+  public SDVariable adaptiveMaxPooling2d(String name, SDVariable input, int outputHeight,
+      int outputWidth) {
+    SDValidation.validateNumerical("adaptiveMaxPooling2d", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveMaxPooling2D(sd,input, outputHeight, outputWidth, true).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * 2D Convolution layer operation - average pooling 2d<br>
    *
    * @param input the input to average pooling 2d operation - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
@@ -496,6 +744,150 @@ public class SDCNN extends SDOps {
     SDValidation.validateNumerical("deconv3d", "input", input);
     SDValidation.validateNumerical("deconv3d", "weights", weights);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3D(sd,input, weights, null, DeConv3DConfig).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Deformable Convolution 2D operation.<br>
+   * <br>
+   * Implements deformable convolution where learned offsets are added to the regular<br>
+   * sampling grid, allowing the convolution to adapt to geometric transformations<br>
+   * in the input. Used in object detection models like Deformable DETR.<br>
+   * <br>
+   * v1 (without mask): Uses only offsets for deformation<br>
+   * v2 (with mask): Adds modulation mask for learnable importance weights<br>
+   * <br>
+   * Reference: "Deformable Convolutional Networks" (Dai et al., 2017)<br>
+   *            "Deformable ConvNets v2" (Zhu et al., 2019)<br>
+   *
+   * @param input Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (NUMERIC type)
+   * @param weights Convolution weights. Shape: [outputChannels, inputChannels/groups, kernelHeight, kernelWidth] (NUMERIC type)
+   * @param offset Learned offsets. Shape: [batch, 2*kH*kW*deformableGroups, outputHeight, outputWidth] (NUMERIC type)
+   * @param bias Optional 1D bias array with shape [outputChannels]. May be null. (NUMERIC type)
+   * @param mask Optional modulation mask for Deformable Conv v2. Shape: [batch, kH*kW*deformableGroups, outputHeight, outputWidth]. May be null. (NUMERIC type)
+   * @param kH Kernel height
+   * @param kW Kernel width
+   * @param sH Stride height
+   * @param sW Stride width
+   * @param pH Padding height
+   * @param pW Padding width
+   * @param dH Dilation height
+   * @param dW Dilation width
+   * @param groups Convolution groups
+   * @param deformableGroups Number of deformable/offset groups
+   * @param nchw If true: input is in NCHW format. False: NHWC format
+   * @return output Result of deformable convolution (NUMERIC type)
+   */
+  public SDVariable deformableConv2d(SDVariable input, SDVariable weights, SDVariable offset,
+      SDVariable bias, SDVariable mask, int kH, int kW, int sH, int sW, int pH, int pW, int dH,
+      int dW, int groups, int deformableGroups, boolean nchw) {
+    SDValidation.validateNumerical("deformableConv2d", "input", input);
+    SDValidation.validateNumerical("deformableConv2d", "weights", weights);
+    SDValidation.validateNumerical("deformableConv2d", "offset", offset);
+    SDValidation.validateNumerical("deformableConv2d", "bias", bias);
+    SDValidation.validateNumerical("deformableConv2d", "mask", mask);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.DeformableConv2D(sd,input, weights, offset, bias, mask, kH, kW, sH, sW, pH, pW, dH, dW, groups, deformableGroups, nchw).outputVariable();
+  }
+
+  /**
+   * Deformable Convolution 2D operation.<br>
+   * <br>
+   * Implements deformable convolution where learned offsets are added to the regular<br>
+   * sampling grid, allowing the convolution to adapt to geometric transformations<br>
+   * in the input. Used in object detection models like Deformable DETR.<br>
+   * <br>
+   * v1 (without mask): Uses only offsets for deformation<br>
+   * v2 (with mask): Adds modulation mask for learnable importance weights<br>
+   * <br>
+   * Reference: "Deformable Convolutional Networks" (Dai et al., 2017)<br>
+   *            "Deformable ConvNets v2" (Zhu et al., 2019)<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (NUMERIC type)
+   * @param weights Convolution weights. Shape: [outputChannels, inputChannels/groups, kernelHeight, kernelWidth] (NUMERIC type)
+   * @param offset Learned offsets. Shape: [batch, 2*kH*kW*deformableGroups, outputHeight, outputWidth] (NUMERIC type)
+   * @param bias Optional 1D bias array with shape [outputChannels]. May be null. (NUMERIC type)
+   * @param mask Optional modulation mask for Deformable Conv v2. Shape: [batch, kH*kW*deformableGroups, outputHeight, outputWidth]. May be null. (NUMERIC type)
+   * @param kH Kernel height
+   * @param kW Kernel width
+   * @param sH Stride height
+   * @param sW Stride width
+   * @param pH Padding height
+   * @param pW Padding width
+   * @param dH Dilation height
+   * @param dW Dilation width
+   * @param groups Convolution groups
+   * @param deformableGroups Number of deformable/offset groups
+   * @param nchw If true: input is in NCHW format. False: NHWC format
+   * @return output Result of deformable convolution (NUMERIC type)
+   */
+  public SDVariable deformableConv2d(String name, SDVariable input, SDVariable weights,
+      SDVariable offset, SDVariable bias, SDVariable mask, int kH, int kW, int sH, int sW, int pH,
+      int pW, int dH, int dW, int groups, int deformableGroups, boolean nchw) {
+    SDValidation.validateNumerical("deformableConv2d", "input", input);
+    SDValidation.validateNumerical("deformableConv2d", "weights", weights);
+    SDValidation.validateNumerical("deformableConv2d", "offset", offset);
+    SDValidation.validateNumerical("deformableConv2d", "bias", bias);
+    SDValidation.validateNumerical("deformableConv2d", "mask", mask);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.DeformableConv2D(sd,input, weights, offset, bias, mask, kH, kW, sH, sW, pH, pW, dH, dW, groups, deformableGroups, nchw).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Deformable Convolution 2D operation.<br>
+   * <br>
+   * Implements deformable convolution where learned offsets are added to the regular<br>
+   * sampling grid, allowing the convolution to adapt to geometric transformations<br>
+   * in the input. Used in object detection models like Deformable DETR.<br>
+   * <br>
+   * v1 (without mask): Uses only offsets for deformation<br>
+   * v2 (with mask): Adds modulation mask for learnable importance weights<br>
+   * <br>
+   * Reference: "Deformable Convolutional Networks" (Dai et al., 2017)<br>
+   *            "Deformable ConvNets v2" (Zhu et al., 2019)<br>
+   *
+   * @param input Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (NUMERIC type)
+   * @param weights Convolution weights. Shape: [outputChannels, inputChannels/groups, kernelHeight, kernelWidth] (NUMERIC type)
+   * @param offset Learned offsets. Shape: [batch, 2*kH*kW*deformableGroups, outputHeight, outputWidth] (NUMERIC type)
+   * @param kH Kernel height
+   * @param kW Kernel width
+   * @return output Result of deformable convolution (NUMERIC type)
+   */
+  public SDVariable deformableConv2d(SDVariable input, SDVariable weights, SDVariable offset,
+      int kH, int kW) {
+    SDValidation.validateNumerical("deformableConv2d", "input", input);
+    SDValidation.validateNumerical("deformableConv2d", "weights", weights);
+    SDValidation.validateNumerical("deformableConv2d", "offset", offset);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.DeformableConv2D(sd,input, weights, offset, null, null, kH, kW, 1, 1, 0, 0, 1, 1, 1, 1, true).outputVariable();
+  }
+
+  /**
+   * Deformable Convolution 2D operation.<br>
+   * <br>
+   * Implements deformable convolution where learned offsets are added to the regular<br>
+   * sampling grid, allowing the convolution to adapt to geometric transformations<br>
+   * in the input. Used in object detection models like Deformable DETR.<br>
+   * <br>
+   * v1 (without mask): Uses only offsets for deformation<br>
+   * v2 (with mask): Adds modulation mask for learnable importance weights<br>
+   * <br>
+   * Reference: "Deformable Convolutional Networks" (Dai et al., 2017)<br>
+   *            "Deformable ConvNets v2" (Zhu et al., 2019)<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (NUMERIC type)
+   * @param weights Convolution weights. Shape: [outputChannels, inputChannels/groups, kernelHeight, kernelWidth] (NUMERIC type)
+   * @param offset Learned offsets. Shape: [batch, 2*kH*kW*deformableGroups, outputHeight, outputWidth] (NUMERIC type)
+   * @param kH Kernel height
+   * @param kW Kernel width
+   * @return output Result of deformable convolution (NUMERIC type)
+   */
+  public SDVariable deformableConv2d(String name, SDVariable input, SDVariable weights,
+      SDVariable offset, int kH, int kW) {
+    SDValidation.validateNumerical("deformableConv2d", "input", input);
+    SDValidation.validateNumerical("deformableConv2d", "weights", weights);
+    SDValidation.validateNumerical("deformableConv2d", "offset", offset);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.DeformableConv2D(sd,input, weights, offset, null, null, kH, kW, 1, 1, 0, 0, 1, 1, 1, 1, true).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -1024,7 +1416,7 @@ public class SDCNN extends SDOps {
   }
 
   /**
-   * 3D Convolution layer operation - Upsampling 3d <br>
+   * 3D Convolution layer operation - Upsampling 3d<br>
    *
    * @param input Input in NCHW format (NUMERIC type)
    * @param ncdhw If true: input is in NCDHW (minibatch, channels, depth, height, width) format. False: NDHWC format
@@ -1040,7 +1432,7 @@ public class SDCNN extends SDOps {
   }
 
   /**
-   * 3D Convolution layer operation - Upsampling 3d <br>
+   * 3D Convolution layer operation - Upsampling 3d<br>
    *
    * @param name name May be null. Name for the output variable
    * @param input Input in NCHW format (NUMERIC type)

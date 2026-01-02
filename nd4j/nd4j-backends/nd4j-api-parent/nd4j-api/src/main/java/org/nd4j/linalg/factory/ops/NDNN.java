@@ -120,6 +120,67 @@ public class NDNN {
   }
 
   /**
+   * CTC Greedy Decoder - Connectionist Temporal Classification decoding.<br>
+   * <br>
+   * Performs greedy (best path) decoding on CTC output. Used in:<br>
+   * - OCR (Optical Character Recognition) - PaddleOCR, CRNN<br>
+   * - Speech recognition - DeepSpeech, Wav2Vec<br>
+   * - Handwriting recognition<br>
+   * <br>
+   * Algorithm:<br>
+   * 1. At each timestep, select the class with highest probability<br>
+   * 2. Optionally merge consecutive repeated characters<br>
+   * 3. Remove blank labels from the output<br>
+   * <br>
+   * For example, with mergeRepeated=true and blankIndex=0:<br>
+   * Input:  [0, 1, 1, 0, 2, 2, 2, 0] (0=blank, 1='a', 2='b')<br>
+   * Output: [1, 2] -> "ab"<br>
+   * <br>
+   * Note: This is greedy decoding. For better accuracy with language models,<br>
+   * use beam search decoding instead.<br>
+   *
+   * @param logits Log probabilities from CTC output. Shape: [batch, timeSteps, numClasses] (NUMERIC type)
+   * @param mergeRepeated Whether to merge repeated characters in output
+   * @param blankIndex Index of the blank label in the vocabulary
+   */
+  public INDArray[] ctcGreedyDecoder(INDArray logits, boolean mergeRepeated, int blankIndex) {
+    NDValidation.validateNumerical("ctcGreedyDecoder", "logits", logits);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CTCGreedyDecoder(logits, null, mergeRepeated, blankIndex));
+  }
+
+  /**
+   * CTC Greedy Decoder - Connectionist Temporal Classification decoding.<br>
+   * <br>
+   * Performs greedy (best path) decoding on CTC output. Used in:<br>
+   * - OCR (Optical Character Recognition) - PaddleOCR, CRNN<br>
+   * - Speech recognition - DeepSpeech, Wav2Vec<br>
+   * - Handwriting recognition<br>
+   * <br>
+   * Algorithm:<br>
+   * 1. At each timestep, select the class with highest probability<br>
+   * 2. Optionally merge consecutive repeated characters<br>
+   * 3. Remove blank labels from the output<br>
+   * <br>
+   * For example, with mergeRepeated=true and blankIndex=0:<br>
+   * Input:  [0, 1, 1, 0, 2, 2, 2, 0] (0=blank, 1='a', 2='b')<br>
+   * Output: [1, 2] -> "ab"<br>
+   * <br>
+   * Note: This is greedy decoding. For better accuracy with language models,<br>
+   * use beam search decoding instead.<br>
+   *
+   * @param logits Log probabilities from CTC output. Shape: [batch, timeSteps, numClasses] (NUMERIC type)
+   * @param sequenceLength Optional actual sequence lengths. Shape: [batch] (NUMERIC type)
+   * @param mergeRepeated Whether to merge repeated characters in output
+   * @param blankIndex Index of the blank label in the vocabulary
+   */
+  public INDArray[] ctcGreedyDecoder(INDArray logits, INDArray sequenceLength,
+      boolean mergeRepeated, int blankIndex) {
+    NDValidation.validateNumerical("ctcGreedyDecoder", "logits", logits);
+    NDValidation.validateNumerical("ctcGreedyDecoder", "sequenceLength", sequenceLength);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CTCGreedyDecoder(logits, sequenceLength, mergeRepeated, blankIndex));
+  }
+
+  /**
    * This operation performs dot product attention on the given timeseries input with the given queries<br>
    * out = sum(similarity(k_i, q) * v_i)<br>
    * <br>
@@ -171,35 +232,36 @@ public class NDNN {
   }
 
   /**
-   * This operation performs dot product attention on the given timeseries input with the given queries<br>
-   * out = sum(similarity(k_i, q) * v_i)<br>
+   * Dot product attention operation with flash attention and KV cache support.<br>
    * <br>
-   * similarity(k, q) = softmax(k * q) where x * q is the dot product of x and q<br>
+   * out = softmax(Q * K^T / scale) * V<br>
    * <br>
-   * Optionally with normalization step:<br>
-   * similarity(k, q) = softmax(k * q / sqrt(size(q))<br>
+   * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.<br>
+   * For 2D/3D inputs, uses standard attention computation.<br>
    * <br>
-   * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, p. 4, eq. 1)<br>
+   * Flash attention features:<br>
+   * - O(N) memory complexity instead of O(N^2)<br>
+   * - Tiled computation with online softmax<br>
+   * - Supports grouped query attention (GQA) where numHeads > numKvHeads<br>
    * <br>
-   * Note: This supports multiple queries at once, if only one query is available the queries vector still has to<br>
-   * be 3D but can have queryCount = 1<br>
+   * KV Cache support for autoregressive generation:<br>
+   * - Pass keyCache and valueCache tensors<br>
+   * - Set kvCachePosition to current generation position<br>
+   * - Cached keys/values are updated in-place<br>
    * <br>
-   * Note: keys and values usually is the same array. If you want to use it as the same array, simply pass it for<br>
-   * both.<br>
-   * <br>
-   * Note: Queries, keys and values must either be all rank 3 or all rank 4 arrays. Mixing them doesn't work. The<br>
-   * output rank will depend on the input rank.<br>
+   * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)<br>
+   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
    *
-   * @param queries A {@link SDVariable} representing the query tensor. Shape: [batchSize, numQueries, queryDim] (NUMERIC type)
-   * @param values A {@link SDVariable} representing the value tensor. Shape: [batchSize, numValues, valueDim] (NUMERIC type)
-   * @param keys A {@link SDVariable} representing the key tensor. Shape: [batchSize, numValues, keyDim] (NUMERIC type)
-   * @param queryMask A {@link SDVariable} representing the query mask tensor. Shape: [batchSize, numQueries] (NUMERIC type)
-   * @param valueMask @param valueMask          A {@link SDVariable} representing the value mask tensor. Shape: [batchSize, numValues] (NUMERIC type)
-   * @param scaleFactor @param scaleFactor        A {@code double} scaling factor applied to the dot product between queries and keys.
-   * @param dropoutProbability A {@code double} specifying the dropout probability to be applied to attention weights.
-   * @param useCausalMask  A {@code boolean} flag to indicate whether to apply a causal mask to the attention scores, for autoregressive tasks.
-   * @param training  A {@code boolean} flag to indicate whether the layer is in training mode or inference mode, affecting dropout.
-   * @return output  A {@link SDVariable} representing the output tensor of the dot product attention operation. Shape: [batchSize, numQueries, valueDim] (NUMERIC type)
+   * @param queries Query tensor. Shape: [batchSize, numQueries, queryDim] or [batchSize, numQueries, numHeads, headDim] for flash attention (NUMERIC type)
+   * @param values Value tensor. Shape: [batchSize, numValues, valueDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
+   * @param keys Key tensor. Shape: [batchSize, numValues, keyDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
+   * @param queryMask Query mask tensor (optional). Shape: [batchSize, numQueries] (NUMERIC type)
+   * @param valueMask Value mask tensor (optional). Shape: [batchSize, numValues] (NUMERIC type)
+   * @param scaleFactor Scaling factor applied to attention scores. 0 = auto (1/sqrt(headDim))
+   * @param dropoutProbability Dropout probability applied to attention weights
+   * @param useCausalMask Whether to apply causal mask for autoregressive tasks
+   * @param training Whether in training mode (affects dropout)
+   * @return output Output tensor. Shape: [batchSize, numQueries, valueDim] or [batchSize, numQueries, numHeads, headDim] (NUMERIC type)
    */
   public INDArray dotProductAttentionV2(INDArray queries, INDArray values, INDArray keys,
       INDArray queryMask, INDArray valueMask, double scaleFactor, double dropoutProbability,
@@ -209,7 +271,68 @@ public class NDNN {
     NDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
     NDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
     NDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(queries, values, keys, queryMask, valueMask, scaleFactor, dropoutProbability, useCausalMask, training));
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(queries, values, keys, queryMask, valueMask, null, null, scaleFactor, dropoutProbability, useCausalMask, training, true, 0));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Dot product attention operation with flash attention and KV cache support.<br>
+   * <br>
+   * out = softmax(Q * K^T / scale) * V<br>
+   * <br>
+   * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.<br>
+   * For 2D/3D inputs, uses standard attention computation.<br>
+   * <br>
+   * Flash attention features:<br>
+   * - O(N) memory complexity instead of O(N^2)<br>
+   * - Tiled computation with online softmax<br>
+   * - Supports grouped query attention (GQA) where numHeads > numKvHeads<br>
+   * <br>
+   * KV Cache support for autoregressive generation:<br>
+   * - Pass keyCache and valueCache tensors<br>
+   * - Set kvCachePosition to current generation position<br>
+   * - Cached keys/values are updated in-place<br>
+   * <br>
+   * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)<br>
+   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
+   *
+   * @param queries Query tensor. Shape: [batchSize, numQueries, queryDim] or [batchSize, numQueries, numHeads, headDim] for flash attention (NUMERIC type)
+   * @param values Value tensor. Shape: [batchSize, numValues, valueDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
+   * @param keys Key tensor. Shape: [batchSize, numValues, keyDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
+   * @param queryMask Query mask tensor (optional). Shape: [batchSize, numQueries] (NUMERIC type)
+   * @param valueMask Value mask tensor (optional). Shape: [batchSize, numValues] (NUMERIC type)
+   * @param keyCache Key cache for KV caching (optional). Shape: [batchSize, maxSeqLen, numHeads, headDim] (NUMERIC type)
+   * @param valueCache Value cache for KV caching (optional). Shape: [batchSize, maxSeqLen, numHeads, headDim] (NUMERIC type)
+   * @param scaleFactor Scaling factor applied to attention scores. 0 = auto (1/sqrt(headDim))
+   * @param dropoutProbability Dropout probability applied to attention weights
+   * @param useCausalMask Whether to apply causal mask for autoregressive tasks
+   * @param training Whether in training mode (affects dropout)
+   * @param useFlashAttention Whether to use flash attention for 4D inputs (memory efficient)
+   * @param kvCachePosition Current position in KV cache for autoregressive generation
+   * @return output Output tensor. Shape: [batchSize, numQueries, valueDim] or [batchSize, numQueries, numHeads, headDim] (NUMERIC type)
+   */
+  public INDArray dotProductAttentionV2(INDArray queries, INDArray values, INDArray keys,
+      INDArray queryMask, INDArray valueMask, INDArray keyCache, INDArray valueCache,
+      double scaleFactor, double dropoutProbability, boolean useCausalMask, boolean training,
+      boolean useFlashAttention, int kvCachePosition) {
+    NDValidation.validateNumerical("dotProductAttentionV2", "queries", queries);
+    NDValidation.validateNumerical("dotProductAttentionV2", "values", values);
+    NDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
+    NDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
+    NDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
+    NDValidation.validateNumerical("dotProductAttentionV2", "keyCache", keyCache);
+    NDValidation.validateNumerical("dotProductAttentionV2", "valueCache", valueCache);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(queries, values, keys, queryMask, valueMask, keyCache, valueCache, scaleFactor, dropoutProbability, useCausalMask, training, useFlashAttention, kvCachePosition));
     try {
       return __tmp[0];
     } finally {
@@ -300,6 +423,47 @@ public class NDNN {
   }
 
   /**
+   * Flash Attention - Memory-efficient attention computation.<br>
+   * <br>
+   * Uses tiled computation with online softmax to achieve O(N) memory complexity<br>
+   * instead of O(N^2) for standard attention.<br>
+   * <br>
+   * Supports Grouped Query Attention (GQA) where numHeads > numKvHeads,<br>
+   * allowing multiple query heads to share the same KV heads.<br>
+   * <br>
+   * out = softmax(Q * K^T / scale) * V<br>
+   * <br>
+   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
+   *
+   * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param key Key tensor. Shape: [batch, seqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param value Value tensor. Shape: [batch, seqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param scale Scaling factor. 0 = auto (1/sqrt(headDim))
+   * @param isCausal Whether to apply causal masking
+   * @param numHeads Number of query attention heads
+   * @param numKvHeads Number of KV heads (0 = same as numHeads, for GQA use smaller value)
+   * @return output Attention output. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public INDArray flashAttention(INDArray query, INDArray key, INDArray value, double scale,
+      boolean isCausal, int numHeads, int numKvHeads) {
+    NDValidation.validateNumerical("flashAttention", "query", query);
+    NDValidation.validateNumerical("flashAttention", "key", key);
+    NDValidation.validateNumerical("flashAttention", "value", value);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FlashAttention(query, key, value, scale, isCausal, numHeads, numKvHeads));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * GELU activation function - Gaussian Error Linear Units<br>
    * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a><br>
    * This method uses the sigmoid approximation<br>
@@ -310,6 +474,49 @@ public class NDNN {
   public INDArray gelu(INDArray x) {
     NDValidation.validateNumerical("gelu", "x", x);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.GELU(x));
+  }
+
+  /**
+   * Grouped Query Attention (GQA) - Efficient attention with shared KV heads.<br>
+   * <br>
+   * Multiple query heads share the same key-value heads, reducing memory and<br>
+   * computation while maintaining model quality. Used in LLaMA 2, Mistral, etc.<br>
+   * <br>
+   * numHeads must be divisible by numKvHeads. Each KV head is repeated<br>
+   * (numHeads / numKvHeads) times to match query heads.<br>
+   * <br>
+   * Special cases:<br>
+   * - numKvHeads == numHeads: Standard Multi-Head Attention (MHA)<br>
+   * - numKvHeads == 1: Multi-Query Attention (MQA)<br>
+   * <br>
+   * See "GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints"<br>
+   *
+   * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param key Key tensor. Shape: [batch, seqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param value Value tensor. Shape: [batch, seqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param scale Scaling factor. 0 = auto (1/sqrt(headDim))
+   * @param isCausal Whether to apply causal masking
+   * @param numHeads Number of query attention heads
+   * @param numKvHeads Number of KV heads (must divide numHeads evenly)
+   * @return output Attention output. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public INDArray groupedQueryAttention(INDArray query, INDArray key, INDArray value, double scale,
+      boolean isCausal, int numHeads, int numKvHeads) {
+    NDValidation.validateNumerical("groupedQueryAttention", "query", query);
+    NDValidation.validateNumerical("groupedQueryAttention", "key", key);
+    NDValidation.validateNumerical("groupedQueryAttention", "value", value);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GroupedQueryAttention(query, key, value, scale, isCausal, numHeads, numKvHeads));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -349,6 +556,35 @@ public class NDNN {
   public INDArray hardTanhDerivative(INDArray x) {
     NDValidation.validateNumerical("hardTanhDerivative", "x", x);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.gradient.HardTanhDerivative(x));
+  }
+
+  /**
+   * KV Cache Update - Updates key-value cache for autoregressive generation.<br>
+   * <br>
+   * During LLM inference, past key-value pairs are cached to avoid redundant<br>
+   * computation during token-by-token generation. This operation efficiently<br>
+   * inserts new keys/values at the specified position.<br>
+   * <br>
+   * Usage pattern:<br>
+   * 1. Initialize cache with zeros: [batch, maxSeqLen, numKvHeads, headDim]<br>
+   * 2. For each new token, compute new K/V and update cache<br>
+   * 3. Use full cached K/V for attention computation<br>
+   * <br>
+   * Returns updated keyCache and valueCache tensors.<br>
+   *
+   * @param keyCache Existing key cache. Shape: [batch, maxSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param valueCache Existing value cache. Shape: [batch, maxSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param newKeys New keys to insert. Shape: [batch, newSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param newValues New values to insert. Shape: [batch, newSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param startPosition Position in cache where new keys/values should be inserted
+   */
+  public INDArray[] kvCacheUpdate(INDArray keyCache, INDArray valueCache, INDArray newKeys,
+      INDArray newValues, int startPosition) {
+    NDValidation.validateNumerical("kvCacheUpdate", "keyCache", keyCache);
+    NDValidation.validateNumerical("kvCacheUpdate", "valueCache", valueCache);
+    NDValidation.validateNumerical("kvCacheUpdate", "newKeys", newKeys);
+    NDValidation.validateNumerical("kvCacheUpdate", "newValues", newValues);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheUpdate(keyCache, valueCache, newKeys, newValues, startPosition));
   }
 
   /**
@@ -555,6 +791,87 @@ public class NDNN {
   }
 
   /**
+   * Mixture of Experts (MoE) Layer.<br>
+   * <br>
+   * Implements sparse MoE routing where each token is processed by only the top-k<br>
+   * selected experts out of a larger pool. This enables scaling model capacity<br>
+   * without proportionally increasing computation.<br>
+   * <br>
+   * Used in large language models like:<br>
+   * - DeepSeek (DeepSeekMoE)<br>
+   * - Mixtral (Mistral AI)<br>
+   * - Switch Transformer (Google)<br>
+   * - GShard (Google)<br>
+   * <br>
+   * The router computes expert selection probabilities:<br>
+   * router_probs = softmax(input @ routerWeights)<br>
+   * <br>
+   * Top-k experts are selected and their outputs are weighted by normalized probs:<br>
+   * output = sum(normalized_prob[i] * expert[i](input) for i in top_k)<br>
+   * <br>
+   * Benefits:<br>
+   * - Scales model capacity with sublinear compute increase<br>
+   * - Enables very large models with efficient inference<br>
+   * - Supports expert parallelism across devices<br>
+   *
+   * @param input Input embeddings. Shape: [batch, seqLen, hiddenSize] (NUMERIC type)
+   * @param routerWeights Router projection weights. Shape: [hiddenSize, numExperts] (NUMERIC type)
+   * @param expertWeights Expert weight matrices. Shape: [numExperts, hiddenSize, expertHiddenSize] (NUMERIC type)
+   * @param numExperts Total number of experts
+   * @param topK Number of experts to route to per token
+   */
+  public INDArray[] mixtureOfExperts(INDArray input, INDArray routerWeights, INDArray expertWeights,
+      int numExperts, int topK) {
+    NDValidation.validateNumerical("mixtureOfExperts", "input", input);
+    NDValidation.validateNumerical("mixtureOfExperts", "routerWeights", routerWeights);
+    NDValidation.validateNumerical("mixtureOfExperts", "expertWeights", expertWeights);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MixtureOfExperts(input, routerWeights, expertWeights, null, numExperts, topK, true, 1.0));
+  }
+
+  /**
+   * Mixture of Experts (MoE) Layer.<br>
+   * <br>
+   * Implements sparse MoE routing where each token is processed by only the top-k<br>
+   * selected experts out of a larger pool. This enables scaling model capacity<br>
+   * without proportionally increasing computation.<br>
+   * <br>
+   * Used in large language models like:<br>
+   * - DeepSeek (DeepSeekMoE)<br>
+   * - Mixtral (Mistral AI)<br>
+   * - Switch Transformer (Google)<br>
+   * - GShard (Google)<br>
+   * <br>
+   * The router computes expert selection probabilities:<br>
+   * router_probs = softmax(input @ routerWeights)<br>
+   * <br>
+   * Top-k experts are selected and their outputs are weighted by normalized probs:<br>
+   * output = sum(normalized_prob[i] * expert[i](input) for i in top_k)<br>
+   * <br>
+   * Benefits:<br>
+   * - Scales model capacity with sublinear compute increase<br>
+   * - Enables very large models with efficient inference<br>
+   * - Supports expert parallelism across devices<br>
+   *
+   * @param input Input embeddings. Shape: [batch, seqLen, hiddenSize] (NUMERIC type)
+   * @param routerWeights Router projection weights. Shape: [hiddenSize, numExperts] (NUMERIC type)
+   * @param expertWeights Expert weight matrices. Shape: [numExperts, hiddenSize, expertHiddenSize] (NUMERIC type)
+   * @param expertBias Optional expert biases. Shape: [numExperts, expertHiddenSize] (NUMERIC type)
+   * @param numExperts Total number of experts
+   * @param topK Number of experts to route to per token
+   * @param normalizeProbs Whether to normalize router probabilities for selected experts
+   * @param capacityFactor Expert capacity factor for load balancing
+   */
+  public INDArray[] mixtureOfExperts(INDArray input, INDArray routerWeights, INDArray expertWeights,
+      INDArray expertBias, int numExperts, int topK, boolean normalizeProbs,
+      double capacityFactor) {
+    NDValidation.validateNumerical("mixtureOfExperts", "input", input);
+    NDValidation.validateNumerical("mixtureOfExperts", "routerWeights", routerWeights);
+    NDValidation.validateNumerical("mixtureOfExperts", "expertWeights", expertWeights);
+    NDValidation.validateNumerical("mixtureOfExperts", "expertBias", expertBias);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MixtureOfExperts(input, routerWeights, expertWeights, expertBias, numExperts, topK, normalizeProbs, capacityFactor));
+  }
+
+  /**
    * This performs multi-headed dot product attention on the given timeseries input<br>
    * out = concat(head_1, head_2, ..., head_n) * Wo<br>
    * head_i = dot_product_attention(Wq_i*q, Wk_i*k, Wv_i*v)<br>
@@ -603,7 +920,7 @@ public class NDNN {
   }
 
   /**
-   * Padding operation <br>
+   * Padding operation<br>
    *
    * @param input Input tensor (NUMERIC type)
    * @param padding Padding value (NUMERIC type)
@@ -629,7 +946,7 @@ public class NDNN {
   }
 
   /**
-   * Padding operation <br>
+   * Padding operation<br>
    *
    * @param input Input tensor (NUMERIC type)
    * @param padding Padding value (NUMERIC type)
@@ -686,6 +1003,93 @@ public class NDNN {
     NDValidation.validateNumerical("prelu", "alpha", alpha);
     Preconditions.checkArgument(sharedAxes.length >= 1, "sharedAxes has incorrect size/length. Expected: sharedAxes.length >= 1, got %s", sharedAxes.length);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.PRelu(input, alpha, sharedAxes));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Relative Position Bias - Compute relative position bias for attention.<br>
+   * <br>
+   * Supports two modes:<br>
+   * 1. Learned bias (Swin/SAM style): Looks up bias values from a learned table<br>
+   *    based on relative positions between query and key positions.<br>
+   * <br>
+   * 2. ALiBi (Attention with Linear Biases): Computes linear position-based bias<br>
+   *    without learned parameters. More efficient for very long sequences.<br>
+   * <br>
+   * For learned bias mode:<br>
+   * - biasTable shape: [(2*windowSize-1)^2, numHeads] for 2D<br>
+   * - Output is gathered based on relative position indices<br>
+   * <br>
+   * For ALiBi mode:<br>
+   * - biasTable can be sequence length (scalar) or input tensor<br>
+   * - Computes m_h * |i - j| where m_h = 2^(-8*h/H)<br>
+   * <br>
+   * Reference: "Swin Transformer" (Liu et al., 2021)<br>
+   *            "Train Short, Test Long" (Press et al., 2021) for ALiBi<br>
+   *
+   * @param biasTable Learned bias table. Shape: [numRelativePositions, numHeads] for learned mode, or scalar/tensor for ALiBi mode (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param windowSize Window size for 2D position encoding (used if generating index)
+   * @return output Position bias. Shape: [numHeads, windowSize^2, windowSize^2] or [numHeads, seqLen, seqLen] (NUMERIC type)
+   */
+  public INDArray relativePositionBias(INDArray biasTable, int numHeads, int windowSize) {
+    NDValidation.validateNumerical("relativePositionBias", "biasTable", biasTable);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RelativePositionBias(biasTable, null, numHeads, windowSize, false));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Relative Position Bias - Compute relative position bias for attention.<br>
+   * <br>
+   * Supports two modes:<br>
+   * 1. Learned bias (Swin/SAM style): Looks up bias values from a learned table<br>
+   *    based on relative positions between query and key positions.<br>
+   * <br>
+   * 2. ALiBi (Attention with Linear Biases): Computes linear position-based bias<br>
+   *    without learned parameters. More efficient for very long sequences.<br>
+   * <br>
+   * For learned bias mode:<br>
+   * - biasTable shape: [(2*windowSize-1)^2, numHeads] for 2D<br>
+   * - Output is gathered based on relative position indices<br>
+   * <br>
+   * For ALiBi mode:<br>
+   * - biasTable can be sequence length (scalar) or input tensor<br>
+   * - Computes m_h * |i - j| where m_h = 2^(-8*h/H)<br>
+   * <br>
+   * Reference: "Swin Transformer" (Liu et al., 2021)<br>
+   *            "Train Short, Test Long" (Press et al., 2021) for ALiBi<br>
+   *
+   * @param biasTable Learned bias table. Shape: [numRelativePositions, numHeads] for learned mode, or scalar/tensor for ALiBi mode (NUMERIC type)
+   * @param relativePositionIndex Optional precomputed relative position index. Shape: [windowSize^2, windowSize^2] (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param windowSize Window size for 2D position encoding (used if generating index)
+   * @return output Position bias. Shape: [numHeads, windowSize^2, windowSize^2] or [numHeads, seqLen, seqLen] (NUMERIC type)
+   */
+  public INDArray relativePositionBias(INDArray biasTable, INDArray relativePositionIndex,
+      int numHeads, int windowSize) {
+    NDValidation.validateNumerical("relativePositionBias", "biasTable", biasTable);
+    NDValidation.validateNumerical("relativePositionBias", "relativePositionIndex", relativePositionIndex);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RelativePositionBias(biasTable, relativePositionIndex, numHeads, windowSize, false));
     try {
       return __tmp[0];
     } finally {
@@ -788,6 +1192,49 @@ public class NDNN {
     NDValidation.validateNumerical("sigmoidDerivative", "x", x);
     NDValidation.validateNumerical("sigmoidDerivative", "wrt", wrt);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative(x, wrt));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Sliding Window Attention - Efficient attention for long sequences.<br>
+   * <br>
+   * Each token only attends to a fixed window of previous tokens, enabling<br>
+   * efficient processing of very long sequences. Used in Mistral and other<br>
+   * modern LLMs for handling long contexts.<br>
+   * <br>
+   * Benefits:<br>
+   * - O(N * windowSize) complexity instead of O(N^2)<br>
+   * - Memory efficient for long sequences<br>
+   * - Supports very long context lengths (e.g., 32K with 4K window)<br>
+   * <br>
+   * The attention mask is automatically applied to restrict each position<br>
+   * to only attend to positions within [pos - windowSize, pos].<br>
+   *
+   * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param key Key tensor. Shape: [batch, seqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param value Value tensor. Shape: [batch, seqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param windowSize Sliding window size - tokens can only attend to this many previous positions
+   * @param numHeads Number of query attention heads
+   * @param numKvHeads Number of KV heads (0 = same as numHeads)
+   * @param scale Scaling factor. 0 = auto (1/sqrt(headDim))
+   * @return output Attention output. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public INDArray slidingWindowAttention(INDArray query, INDArray key, INDArray value,
+      int windowSize, int numHeads, int numKvHeads, double scale) {
+    NDValidation.validateNumerical("slidingWindowAttention", "query", query);
+    NDValidation.validateNumerical("slidingWindowAttention", "key", key);
+    NDValidation.validateNumerical("slidingWindowAttention", "value", value);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SlidingWindowAttention(query, key, value, windowSize, numHeads, numKvHeads, scale));
     try {
       return __tmp[0];
     } finally {
@@ -912,5 +1359,101 @@ public class NDNN {
   public INDArray[] topK(INDArray input, double k, boolean sorted) {
     NDValidation.validateNumerical("topK", "input", input);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.TopK(input, k, sorted));
+  }
+
+  /**
+   * Windowed Attention - Local/Sliding Window Attention.<br>
+   * <br>
+   * Implements windowed attention mechanisms used in efficient transformers like<br>
+   * Longformer, BigBird, Swin Transformer, and SAM (Segment Anything Model).<br>
+   * <br>
+   * Supports both:<br>
+   * - 1D windowed attention: for sequences [batch, seqLen, heads, dim]<br>
+   * - 2D windowed attention: for images [batch, height, width, heads, dim]<br>
+   * <br>
+   * Shifted window attention (shiftSize > 0) enables cross-window connections<br>
+   * as used in Swin Transformer.<br>
+   * <br>
+   * Benefits:<br>
+   * - O(N * windowSize) complexity instead of O(N^2)<br>
+   * - Efficient for long sequences and high-resolution images<br>
+   * - Supports relative position bias for position-aware attention<br>
+   *
+   * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] for 1D or [batch, height, width, numHeads, headDim] for 2D (NUMERIC type)
+   * @param key Key tensor. Same shape as query (NUMERIC type)
+   * @param value Value tensor. Same shape as query (NUMERIC type)
+   * @param windowSize Size of attention window
+   * @param numHeads Number of attention heads
+   * @return output Attention output. Same shape as query (NUMERIC type)
+   */
+  public INDArray windowedAttention(INDArray query, INDArray key, INDArray value, int windowSize,
+      int numHeads) {
+    NDValidation.validateNumerical("windowedAttention", "query", query);
+    NDValidation.validateNumerical("windowedAttention", "key", key);
+    NDValidation.validateNumerical("windowedAttention", "value", value);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.WindowedAttention(query, key, value, null, null, windowSize, numHeads, 0, 0.0, false));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Windowed Attention - Local/Sliding Window Attention.<br>
+   * <br>
+   * Implements windowed attention mechanisms used in efficient transformers like<br>
+   * Longformer, BigBird, Swin Transformer, and SAM (Segment Anything Model).<br>
+   * <br>
+   * Supports both:<br>
+   * - 1D windowed attention: for sequences [batch, seqLen, heads, dim]<br>
+   * - 2D windowed attention: for images [batch, height, width, heads, dim]<br>
+   * <br>
+   * Shifted window attention (shiftSize > 0) enables cross-window connections<br>
+   * as used in Swin Transformer.<br>
+   * <br>
+   * Benefits:<br>
+   * - O(N * windowSize) complexity instead of O(N^2)<br>
+   * - Efficient for long sequences and high-resolution images<br>
+   * - Supports relative position bias for position-aware attention<br>
+   *
+   * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] for 1D or [batch, height, width, numHeads, headDim] for 2D (NUMERIC type)
+   * @param key Key tensor. Same shape as query (NUMERIC type)
+   * @param value Value tensor. Same shape as query (NUMERIC type)
+   * @param relativePositionBias Optional relative position bias. Shape: [numHeads, windowSize, windowSize] (NUMERIC type)
+   * @param attentionMask Optional attention mask (NUMERIC type)
+   * @param windowSize Size of attention window
+   * @param numHeads Number of attention heads
+   * @param shiftSize Shift size for shifted window attention (Swin style). 0 = no shift
+   * @param scale Attention scale factor. 0 = auto (1/sqrt(headDim))
+   * @param returnWeights Whether to return attention weights
+   * @return output Attention output. Same shape as query (NUMERIC type)
+   */
+  public INDArray windowedAttention(INDArray query, INDArray key, INDArray value,
+      INDArray relativePositionBias, INDArray attentionMask, int windowSize, int numHeads,
+      int shiftSize, double scale, boolean returnWeights) {
+    NDValidation.validateNumerical("windowedAttention", "query", query);
+    NDValidation.validateNumerical("windowedAttention", "key", key);
+    NDValidation.validateNumerical("windowedAttention", "value", value);
+    NDValidation.validateNumerical("windowedAttention", "relativePositionBias", relativePositionBias);
+    NDValidation.validateNumerical("windowedAttention", "attentionMask", attentionMask);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.WindowedAttention(query, key, value, relativePositionBias, attentionMask, windowSize, numHeads, shiftSize, scale, returnWeights));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 }

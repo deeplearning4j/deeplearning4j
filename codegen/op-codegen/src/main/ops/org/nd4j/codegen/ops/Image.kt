@@ -310,4 +310,22 @@ fun SDImage() =  Namespace("Image"){
         }
     }
 
+    Op("affineGrid") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.image"
+        javaOpClass = "AffineGrid"
+        Input(NUMERIC, "theta") { description = "Affine transformation matrix with shape [N, 2, 3] for 2D or [N, 3, 4] for 3D" }
+        Input(INT, "size") { description = "Output size - 1D array specifying [N, H, W] for 2D or [N, D, H, W] for 3D" }
+        Arg(BOOL, "alignCorners") { description = "If true, align corners of input and output"; defaultValue = false }
+
+        Output(NUMERIC, "output") { description = "Sampling grid with shape [N, H, W, 2] for 2D or [N, D, H, W, 3] for 3D" }
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Generates a 2D or 3D sampling grid from affine transformation matrices.
+             Used with grid_sample for spatial transformer networks.
+             The grid contains normalized coordinates in range [-1, 1].
+            """.trimIndent()
+        }
+    }
+
 }

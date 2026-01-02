@@ -287,6 +287,176 @@ DECLARE_CUSTOM_OP(dot_product_attention_v2_bp, -2, -3, false, -2, 1);
 DECLARE_CUSTOM_OP(multi_head_dot_product_attention, 7, -1, false, 0, 2);
 DECLARE_CUSTOM_OP(multi_head_dot_product_attention_bp, 8, 7, false, 0, 1);
 #endif
+
+/**
+ * CTC Greedy Decoder - Connectionist Temporal Classification decoding
+ *
+ * Used in OCR and speech recognition to decode CTC output to text sequences.
+ *
+ * Inputs:
+ *   0: logits [batch, time, num_classes] - log probabilities from CTC output
+ *   1: sequence_length [batch] (optional) - actual sequence lengths
+ *
+ * Integer args:
+ *   0: merge_repeated - whether to merge repeated characters (default 1)
+ *   1: blank_index - index of blank label (default 0)
+ *
+ * Outputs:
+ *   0: decoded [batch, time] - decoded sequences (padded with blank)
+ *   1: log_probability [batch] - log probability of decoded sequences
+ */
+#if NOT_EXCLUDED(OP_ctc_greedy_decoder)
+DECLARE_CUSTOM_OP(ctc_greedy_decoder, 1, 2, false, 0, 2);
+#endif
+
+/**
+ * Adaptive Average Pooling 2D
+ *
+ * Automatically computes kernel size and stride to produce output
+ * of the specified spatial dimensions. Common in vision models.
+ *
+ * Inputs:
+ *   0: input [batch, channels, height, width] (NCHW) or [batch, height, width, channels] (NHWC)
+ *
+ * Integer args:
+ *   0: output_height - target output height
+ *   1: output_width - target output width
+ *   2: isNCHW - 1 for NCHW format, 0 for NHWC (default 1)
+ *
+ * Outputs:
+ *   0: output [batch, channels, output_height, output_width] or corresponding NHWC
+ */
+#if NOT_EXCLUDED(OP_adaptive_avgpool2d)
+DECLARE_CUSTOM_OP(adaptive_avgpool2d, 1, 1, false, 0, 3);
+DECLARE_CUSTOM_OP(adaptive_avgpool2d_bp, 2, 1, false, 0, 3);
+DECLARE_CUSTOM_OP(adaptive_maxpool2d, 1, 1, false, 0, 3);
+DECLARE_CUSTOM_OP(adaptive_maxpool2d_bp, 2, 1, false, 0, 3);
+DECLARE_CUSTOM_OP(adaptive_avgpool3d, 1, 1, false, 0, 4);
+#endif
+
+/**
+ * Mixture of Experts (MoE) layer
+ *
+ * Implements sparse MoE routing where each token is processed by top-k
+ * selected experts. Used in models like DeepSeek, Mixtral, etc.
+ *
+ * Inputs:
+ *   0: input [batch, seq_len, hidden_size] - input embeddings
+ *   1: router_weights [hidden_size, num_experts] - router projection
+ *   2: expert_weights [num_experts, hidden_size, expert_hidden] - expert weight matrices
+ *   3: expert_bias [num_experts, expert_hidden] (optional) - expert biases
+ *
+ * Integer args:
+ *   0: num_experts - total number of experts
+ *   1: top_k - number of experts to route to per token (default 2)
+ *   2: normalize_probs - whether to normalize router probs (default 1)
+ *
+ * T args:
+ *   0: capacity_factor - expert capacity factor (default 1.0)
+ *
+ * Outputs:
+ *   0: output [batch, seq_len, expert_hidden] - combined expert outputs
+ *   1: router_probs [batch, seq_len, num_experts] - router probabilities
+ *   2: expert_indices [batch, seq_len, top_k] - selected expert indices
+ */
+#if NOT_EXCLUDED(OP_mixture_of_experts)
+DECLARE_CUSTOM_OP(mixture_of_experts, 3, 3, false, -2, 3);
+#endif
+
+/**
+ * Deformable Convolution 2D
+ *
+ * Implements deformable convolution where learned offsets are added to
+ * the regular sampling grid, allowing the convolution to adapt to
+ * geometric transformations in the input.
+ *
+ * Reference: "Deformable Convolutional Networks" (Dai et al., 2017)
+ *            "Deformable ConvNets v2" (Zhu et al., 2019)
+ *
+ * Inputs:
+ *   0: input [batch, channels, height, width] (NCHW) or NHWC
+ *   1: weights [out_channels, in_channels/groups, kernel_h, kernel_w]
+ *   2: offset [batch, 2*kernel_h*kernel_w*offset_groups, out_h, out_w]
+ *   3: bias [out_channels] (optional)
+ *   4: mask [batch, kernel_h*kernel_w*offset_groups, out_h, out_w] (optional, for v2)
+ *
+ * Integer args:
+ *   0: kernel_h
+ *   1: kernel_w
+ *   2: stride_h
+ *   3: stride_w
+ *   4: pad_h
+ *   5: pad_w
+ *   6: dilation_h
+ *   7: dilation_w
+ *   8: groups
+ *   9: offset_groups (deformable groups)
+ *   10: isNCHW (1 for NCHW, 0 for NHWC)
+ *
+ * Outputs:
+ *   0: output [batch, out_channels, out_h, out_w] or corresponding NHWC
+ */
+#if NOT_EXCLUDED(OP_deformable_conv2d)
+DECLARE_CUSTOM_OP(deformable_conv2d, 3, 1, false, 0, 11);
+#endif
+
+/**
+ * Windowed Attention - Local/Sliding Window Attention
+ *
+ * Implements windowed attention mechanisms used in efficient transformers
+ * like Longformer, BigBird, Swin Transformer, and SAM.
+ *
+ * Supports both 1D (sequence) and 2D (spatial) windowed attention.
+ *
+ * Inputs:
+ *   0: query [batch, seq_len, num_heads, head_dim] or [batch, height, width, num_heads, head_dim]
+ *   1: key [batch, seq_len, num_heads, head_dim] or corresponding 2D
+ *   2: value [batch, seq_len, num_heads, head_dim] or corresponding 2D
+ *   3: relative_position_bias [num_heads, window_size, window_size] (optional)
+ *   4: attention_mask [batch, num_heads, window_size, window_size] (optional)
+ *
+ * Integer args:
+ *   0: window_size - size of attention window
+ *   1: num_heads - number of attention heads
+ *   2: shift_size - shift for shifted window attention (default 0)
+ *
+ * T args:
+ *   0: scale - attention scale factor (default 1/sqrt(head_dim))
+ *
+ * Outputs:
+ *   0: output - same shape as query
+ *   1: attention_weights (optional) [batch, num_windows, num_heads, window_size, window_size]
+ */
+#if NOT_EXCLUDED(OP_windowed_attention)
+DECLARE_CUSTOM_OP(windowed_attention, 3, -1, false, -2, 2);
+#endif
+
+/**
+ * Relative Position Bias - Compute relative position bias for attention
+ *
+ * Supports two modes:
+ * 1. Learned bias (Swin/SAM style): looks up bias values from a learned table
+ * 2. ALiBi: computes linear position-based bias
+ *
+ * Inputs (for learned bias):
+ *   0: bias_table [num_relative_positions, num_heads] - learned bias values
+ *   1: relative_position_index [window_size^2, window_size^2] (optional)
+ *
+ * Inputs (for ALiBi):
+ *   0: sequence_length (scalar) - length of sequence
+ *
+ * Integer args:
+ *   0: num_heads - number of attention heads
+ *   1: window_size - window size for 2D position encoding
+ *   2: use_alibi - 1 for ALiBi mode, 0 for learned bias mode
+ *
+ * Outputs:
+ *   0: bias [num_heads, window_size^2, window_size^2] or [num_heads, seq_len, seq_len]
+ */
+#if NOT_EXCLUDED(OP_relative_position_bias)
+DECLARE_CUSTOM_OP(relative_position_bias, 1, 1, false, 0, 3);
+#endif
+
 }  // namespace ops
 }  // namespace sd
 

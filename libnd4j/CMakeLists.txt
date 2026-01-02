@@ -132,6 +132,15 @@ endif()
 # This solves stale cache issues when source files change
 include(SmartCcache)
 
+# Verify ccache configuration for external projects
+if(CMAKE_C_COMPILER_LAUNCHER)
+    if(EXISTS "${CMAKE_C_COMPILER_LAUNCHER}")
+        message(STATUS "   Compiler launcher (for external projects): ${CMAKE_C_COMPILER_LAUNCHER}")
+    else()
+        message(WARNING "   Compiler launcher path does not exist: ${CMAKE_C_COMPILER_LAUNCHER}")
+    endif()
+endif()
+
 if(NOT SD_CUDA AND NOT SD_TPU)
     if(NOT SD_CPU)
         set(SD_CUDA FALSE)

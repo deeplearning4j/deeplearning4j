@@ -77,6 +77,33 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
     }
 
     /**
+     * Full constructor for codegen compatibility.
+     * Supports all parameters including KV cache and flash attention settings.
+     */
+    public DotProductAttentionV2(INDArray queries, INDArray values, INDArray keys,
+                                 INDArray queryMask, INDArray valueMask,
+                                 INDArray keyCache, INDArray valueCache,
+                                 double scaleFactor, double dropoutProbability,
+                                 boolean useCausalMask, boolean training,
+                                 boolean useFlashAttention, int kvCachePosition) {
+        super(wrapFilterNull(queries, values, keys, queryMask, valueMask, keyCache, valueCache), null);
+        this.scaleFactor = scaleFactor;
+        this.dropout = dropoutProbability;
+        this.useCausalMask = useCausalMask;
+        this.training = training;
+        this.useFlashAttention = useFlashAttention;
+        this.kvCachePosition = kvCachePosition;
+        // T_ARG order: scale, dropout
+        addTArgument(scaleFactor, dropoutProbability);
+        // B_ARG order: useCausalMask, training, useFlashAttention
+        addBArgument(useCausalMask, training, useFlashAttention);
+        // I_ARG order: kvCachePosition
+        if (kvCachePosition > 0 || keyCache != null || valueCache != null) {
+            addIArgument(kvCachePosition);
+        }
+    }
+
+    /**
      * Create a dot product attention operation with KV cache support.
      *
      * @param queries Query tensor [batch, Tq, heads, dim]
@@ -151,6 +178,37 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
         addBArgument(useCausalMask, false, true);
         // I_ARG order: kvCachePosition
         addIArgument(kvCachePosition);
+    }
+
+    /**
+     * Full constructor for SameDiff (for codegen compatibility).
+     * Supports all parameters including KV cache and flash attention settings.
+     */
+    public DotProductAttentionV2(SameDiff sd, SDVariable queries, SDVariable values, SDVariable keys,
+                                 SDVariable queryMask, SDVariable valueMask,
+                                 SDVariable keyCache, SDVariable valueCache,
+                                 double scaleFactor, double dropoutProbability,
+                                 boolean useCausalMask, boolean training,
+                                 boolean useFlashAttention, int kvCachePosition) {
+        super(null, sd, inputsWithCache(sd, queries, values, keys, queryMask, valueMask, keyCache, valueCache), false);
+        this.scaleFactor = scaleFactor;
+        this.dropout = dropoutProbability;
+        this.useCausalMask = useCausalMask;
+        this.training = training;
+        this.useFlashAttention = useFlashAttention;
+        this.queryMask = queryMask;
+        this.valueMask = valueMask;
+        this.keyCache = keyCache;
+        this.valueCache = valueCache;
+        this.kvCachePosition = kvCachePosition;
+        // T_ARG order: scale, dropout
+        addTArgument(scaleFactor, dropoutProbability);
+        // B_ARG order: useCausalMask, training, useFlashAttention
+        addBArgument(useCausalMask, training, useFlashAttention);
+        // I_ARG order: kvCachePosition
+        if (kvCachePosition > 0 || keyCache != null || valueCache != null) {
+            addIArgument(kvCachePosition);
+        }
     }
 
     private static SDVariable[] inputs(SameDiff sd,
