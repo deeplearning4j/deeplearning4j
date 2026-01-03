@@ -48,11 +48,43 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public class ForwardExecutionDAGBuilder {
-    
+
     private final SameDiff sameDiff;
-    
+
+    // Cached reverse lookup map: variable name -> producer operation name
+    // This eliminates O(N) linear scans through all operations for each variable lookup
+    private Map<String, String> variableToProducerOpCache;
+
     public ForwardExecutionDAGBuilder(SameDiff sameDiff) {
         this.sameDiff = sameDiff;
+        buildVariableToProducerCache();
+    }
+
+    /**
+     * Build the reverse lookup cache mapping variables to their producer operations.
+     * This is built once at construction time and provides O(1) lookups instead of O(N) scans.
+     */
+    private void buildVariableToProducerCache() {
+        variableToProducerOpCache = new HashMap<>();
+
+        for (Map.Entry<String, SameDiffOp> entry : sameDiff.getOps().entrySet()) {
+            String opName = entry.getKey();
+            SameDiffOp op = entry.getValue();
+            List<String> outputs = op.getOutputsOfOp();
+
+            if (outputs != null) {
+                for (String output : outputs) {
+                    variableToProducerOpCache.put(output, opName);
+                    // Also cache the base name for multi-output ops
+                    String baseName = stripVariableSuffix(output);
+                    if (!baseName.equals(output)) {
+                        variableToProducerOpCache.putIfAbsent(baseName, opName);
+                    }
+                }
+            }
+        }
+
+        log.debug("Built variable-to-producer cache with {} entries", variableToProducerOpCache.size());
     }
     
     /**
@@ -415,50 +447,49 @@ public class ForwardExecutionDAGBuilder {
     
     /**
      * Find the operation that produces a given variable.
-     * This fixes the core lookup logic that was causing the mixed dependencies.
-     * 
+     * Uses cached reverse lookup map for O(1) performance instead of O(N) linear scan.
+     *
      * Handles both TensorFlow and ONNX import patterns:
      * - TensorFlow: multi-output ops use ":0", ":1" suffixes
      * - ONNX: different naming patterns
      */
     private String findProducerOperation(String variableName) {
-        // Strip variable suffix for multi-output operations (e.g., "split:1" -> "split")
+        // Fast path: direct cache lookup
+        String producer = variableToProducerOpCache.get(variableName);
+        if (producer != null) {
+            return producer;
+        }
+
+        // Try base name lookup for multi-output operations (e.g., "split:1" -> "split")
         String baseVarName = stripVariableSuffix(variableName);
-        
-        // Check all operations to find the producer
-        for (Map.Entry<String, SameDiffOp> entry : sameDiff.getOps().entrySet()) {
-            SameDiffOp op = entry.getValue();
-            List<String> outputs = op.getOutputsOfOp();
-            
-            if (outputs != null) {
-                // Direct match
-                if (outputs.contains(variableName)) {
-                    return entry.getKey();
-                }
-                
-                // Base name match (for multi-output ops)
-                if (outputs.contains(baseVarName)) {
-                    return entry.getKey();
-                }
-                
-                // Handle TensorFlow import patterns where output might be "op_name:index"
-                for (String output : outputs) {
-                    if (variableName.startsWith(output + ":")) {
-                        return entry.getKey();
-                    }
+        if (!baseVarName.equals(variableName)) {
+            producer = variableToProducerOpCache.get(baseVarName);
+            if (producer != null) {
+                return producer;
+            }
+        }
+
+        // Handle TensorFlow import patterns where variable might be "op_output:index"
+        // but cache has "op_output" without the index
+        int colonIndex = variableName.lastIndexOf(':');
+        if (colonIndex > 0) {
+            // Check if any cached output is a prefix of this variable name
+            for (Map.Entry<String, String> entry : variableToProducerOpCache.entrySet()) {
+                if (variableName.startsWith(entry.getKey() + ":")) {
+                    return entry.getValue();
                 }
             }
         }
-        
-        // Check if it's a variable/constant/placeholder
+
+        // Check if it's a variable/constant/placeholder (these don't have producers)
         Variable var = sameDiff.getVariables().get(variableName);
         if (var != null) {
             VariableType type = var.getVariable().getVariableType();
             if (type == VariableType.CONSTANT || type == VariableType.VARIABLE || type == VariableType.PLACEHOLDER) {
-                return null; // These don't have producer operations
+                return null;
             }
         }
-        
+
         log.trace("No producer operation found for variable: {}", variableName);
         return null;
     }

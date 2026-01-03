@@ -299,7 +299,7 @@ PLATFORM_CHECK(xw_plus_b, ENGINE_CPU) {
   auto z = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN XW_PLUS_B OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
+  
       // OneDNN inner_product only supports rank-2 inputs (batch x features)
       req.expectEq(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), 2) &&
       req.expectEq(makeInfoVariable(w->rankOf(), RANK_MSG_INPUT1), 2) &&
@@ -391,7 +391,7 @@ PLATFORM_CHECK(xw_plus_b_bp, ENGINE_CPU) {
   auto dLdb = OUTPUT_VARIABLE(2);
 
   Requirements req("ONEDNN XW_PLUS_B_BP OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
+  
       // OneDNN inner_product only supports rank-2 inputs (batch x features)
       req.expectEq(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), 2) &&
       req.expectEq(makeInfoVariable(w->rankOf(), RANK_MSG_INPUT1), 2) &&

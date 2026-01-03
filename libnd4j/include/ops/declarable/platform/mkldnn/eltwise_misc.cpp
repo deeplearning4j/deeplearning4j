@@ -99,8 +99,7 @@ PLATFORM_CHECK(squaredsubtract, ENGINE_CPU) {
   auto z = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN SQUAREDSUBTRACT OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(makeInfoVariable(x->isSameShape(y), "SAME_SHAPE"), "x and y must have same shape") &&
+  req.expectTrue(makeInfoVariable(x->isSameShape(y), "SAME_SHAPE"), "x and y must have same shape") &&
       req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
       req.expectFalse(makeInfoVariable(y->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
@@ -170,8 +169,7 @@ PLATFORM_CHECK(rsqrt, ENGINE_CPU) {
   auto z = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN RSQRT OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
+  req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
       req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
@@ -225,8 +223,7 @@ PLATFORM_CHECK(Reciprocal, ENGINE_CPU) {
   auto z = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN RECIPROCAL OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
+  req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
       req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
@@ -280,8 +277,7 @@ PLATFORM_CHECK(cube, ENGINE_CPU) {
   auto z = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN CUBE OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
+  req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
       req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
@@ -326,8 +322,7 @@ PLATFORM_CHECK(identity, ENGINE_CPU) {
   auto z = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN IDENTITY OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
+  req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
       req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&

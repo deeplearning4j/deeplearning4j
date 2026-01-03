@@ -73,15 +73,11 @@ PLATFORM_IMPL(reshape, ENGINE_CPU) {
 }
 
 PLATFORM_CHECK(reshape, ENGINE_CPU) {
-  auto x = INPUT_VARIABLE(0);
-  auto z = OUTPUT_VARIABLE(0);
-
+  // Disable OneDNN for reshape - the generic implementation has a fast path
+  // for same-buffer views that avoids copying entirely, which is faster than
+  // OneDNN reorder. Reshape should ideally be a zero-cost view change.
   Requirements req("ONEDNN RESHAPE OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
-      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
-  req.logTheSuccess();
+  req.expectFalse(makeInfoVariable(true, "DISABLED"), "OneDNN reshape disabled - generic has view optimization");
   return req;
 }
 
@@ -104,8 +100,7 @@ PLATFORM_CHECK(squeeze, ENGINE_CPU) {
   auto z = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN SQUEEZE OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
+  req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
       req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
   req.logTheSuccess();
@@ -127,15 +122,10 @@ PLATFORM_IMPL(expand_dims, ENGINE_CPU) {
 }
 
 PLATFORM_CHECK(expand_dims, ENGINE_CPU) {
-  auto x = INPUT_VARIABLE(0);
-  auto z = OUTPUT_VARIABLE(0);
-
+  // Disable OneDNN for expand_dims - the generic implementation can use views
+  // to avoid copying entirely, which is faster than OneDNN reorder.
   Requirements req("ONEDNN EXPAND_DIMS OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
-      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
-  req.logTheSuccess();
+  req.expectFalse(makeInfoVariable(true, "DISABLED"), "OneDNN expand_dims disabled - generic has view optimization");
   return req;
 }
 
@@ -158,8 +148,7 @@ PLATFORM_CHECK(flatten, ENGINE_CPU) {
   auto z = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN FLATTEN OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
+  req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
       req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
   req.logTheSuccess();
@@ -185,8 +174,7 @@ PLATFORM_CHECK(flatten_2d, ENGINE_CPU) {
   auto z = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN FLATTEN_2D OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
+  req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
       req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
   req.logTheSuccess();

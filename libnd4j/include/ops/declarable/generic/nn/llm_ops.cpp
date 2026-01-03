@@ -380,7 +380,7 @@ CUSTOM_OP_IMPL(grouped_query_attention, 3, 1, false, 0, 0) {
     config.numKvHeads = block.getIArguments()->size() > 1 ? INT_ARG(1) : config.numHeads;
 
     // Use FlashAttentionHelper which handles GQA automatically
-    FlashAttentionHelper::forward(query, key, value, output, config, nullptr, block.launchContext());
+    FlashAttentionHelper::forward(query, key, value, output, config, nullptr, nullptr, nullptr, block.launchContext());
 
     return Status::OK;
 }
@@ -425,7 +425,7 @@ CUSTOM_OP_IMPL(grouped_query_attention_bp, 4, 3, false, 0, 0) {
     std::vector<sd::LongType> lseShape = {batch, numHeads, seqLen};
     auto computedLse = NDArrayFactory::create_<float>('c', lseShape);
 
-    FlashAttentionHelper::forward(query, key, value, computedOutput, config, computedLse, block.launchContext());
+    FlashAttentionHelper::forward(query, key, value, computedOutput, config, computedLse, nullptr, nullptr, block.launchContext());
 
     // Run backward pass
     FlashAttentionHelper::backward(gradOutput, query, key, value, computedOutput, computedLse,
@@ -474,7 +474,7 @@ CUSTOM_OP_IMPL(flash_attention, 3, 1, false, 0, 0) {
     config.numKvHeads = block.getIArguments()->size() > 1 ? INT_ARG(1) : key->sizeAt(2);
 
     // Use FlashAttentionHelper for memory-efficient computation
-    FlashAttentionHelper::forward(query, key, value, output, config, nullptr, block.launchContext());
+    FlashAttentionHelper::forward(query, key, value, output, config, nullptr, nullptr, nullptr, block.launchContext());
 
     return Status::OK;
 }
@@ -529,7 +529,7 @@ CUSTOM_OP_IMPL(flash_attention_bp, 4, 3, false, 0, 0) {
         computedLse = NDArrayFactory::create_<float>('c', lseShapeVec);
 
         // Run forward pass to get output and LSE
-        FlashAttentionHelper::forward(query, key, value, computedOutput, config, computedLse, block.launchContext());
+        FlashAttentionHelper::forward(query, key, value, computedOutput, config, computedLse, nullptr, nullptr, block.launchContext());
 
         output = computedOutput;
         softmaxLse = computedLse;
@@ -696,7 +696,7 @@ CUSTOM_OP_IMPL(sliding_window_attention, 3, 1, false, 0, 0) {
     config.isCausal = true;  // Sliding window is typically causal
 
     // Use FlashAttentionHelper which handles sliding window via windowSize config
-    FlashAttentionHelper::forward(query, key, value, output, config, nullptr, block.launchContext());
+    FlashAttentionHelper::forward(query, key, value, output, config, nullptr, nullptr, nullptr, block.launchContext());
 
     return Status::OK;
 }

@@ -125,8 +125,7 @@ PLATFORM_CHECK(reduce_sum, ENGINE_CPU) {
   }
 
   Requirements req("ONEDNN REDUCE_SUM OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(makeInfoVariable(isReductionSuitable(x, z, axes), "REDUCTION_SUITABLE"), "Reduction must keep dims") &&
+  req.expectTrue(makeInfoVariable(isReductionSuitable(x, z, axes), "REDUCTION_SUITABLE"), "Reduction must keep dims") &&
       req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
@@ -175,8 +174,7 @@ PLATFORM_CHECK(reduce_mean, ENGINE_CPU) {
   }
 
   Requirements req("ONEDNN REDUCE_MEAN OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(makeInfoVariable(isReductionSuitable(x, z, axes), "REDUCTION_SUITABLE"), "Reduction must keep dims") &&
+  req.expectTrue(makeInfoVariable(isReductionSuitable(x, z, axes), "REDUCTION_SUITABLE"), "Reduction must keep dims") &&
       req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
@@ -225,8 +223,7 @@ PLATFORM_CHECK(reduce_max, ENGINE_CPU) {
   }
 
   Requirements req("ONEDNN REDUCE_MAX OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(makeInfoVariable(isReductionSuitable(x, z, axes), "REDUCTION_SUITABLE"), "Reduction must keep dims") &&
+  req.expectTrue(makeInfoVariable(isReductionSuitable(x, z, axes), "REDUCTION_SUITABLE"), "Reduction must keep dims") &&
       req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
@@ -275,8 +272,7 @@ PLATFORM_CHECK(reduce_min, ENGINE_CPU) {
   }
 
   Requirements req("ONEDNN REDUCE_MIN OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(makeInfoVariable(isReductionSuitable(x, z, axes), "REDUCTION_SUITABLE"), "Reduction must keep dims") &&
+  req.expectTrue(makeInfoVariable(isReductionSuitable(x, z, axes), "REDUCTION_SUITABLE"), "Reduction must keep dims") &&
       req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
@@ -325,8 +321,7 @@ PLATFORM_CHECK(reduce_prod, ENGINE_CPU) {
   }
 
   Requirements req("ONEDNN REDUCE_PROD OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(makeInfoVariable(isReductionSuitable(x, z, axes), "REDUCTION_SUITABLE"), "Reduction must keep dims") &&
+  req.expectTrue(makeInfoVariable(isReductionSuitable(x, z, axes), "REDUCTION_SUITABLE"), "Reduction must keep dims") &&
       req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&

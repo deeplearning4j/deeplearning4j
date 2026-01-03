@@ -29,6 +29,12 @@
 #include <graph/GraphHolder.h>
 #include <helpers/BlasHelper.h>
 #include <helpers/helper_ptrmap.h>
+
+// Include MKL service header for thread control when MKL is available
+#ifdef HAVE_MKL
+#include <mkl_service.h>
+#endif
+
 #include <helpers/logger.h>
 #include <legacy/NativeOps.h>
 #include <loops/type_conversions.h>
@@ -327,9 +333,12 @@ int ompGetMaxThreads() { return omp_get_max_threads(); }
 int ompGetNumThreads() { return omp_get_num_threads(); }
 
 /**
- * Sets the number of openmp threads
+ * Sets the number of openmp threads.
+ * MKL and OneDNN built with OpenMP runtime will automatically use OpenMP thread settings.
  */
-void setOmpNumThreads(int threads) { omp_set_num_threads(threads); }
+void setOmpNumThreads(int threads) {
+  omp_set_num_threads(threads);
+}
 
 /**
  * Sets the number of threads used by OpenBLAS for BLAS operations.
@@ -337,14 +346,16 @@ void setOmpNumThreads(int threads) { omp_set_num_threads(threads); }
  * Default should be 1 to prevent TLS corruption crashes in multi-threaded Java applications.
  */
 void setOpenBlasThreads(int threads) {
-#if defined(__OPENBLAS) || defined(HAVE_OPENBLAS)
+#if defined(HAVE_MKL) || defined(__MKL)
+  // MKL uses mkl_set_num_threads
+  mkl_set_num_threads(threads);
+#elif defined(__OPENBLAS) || defined(HAVE_OPENBLAS)
+  // OpenBLAS thread control
   openblas_set_num_threads(threads);
-#elif defined(__MKL)
-  // MKL uses a different function
-  MKL_Set_Num_Threads(threads);
 #else
   // No OpenBLAS or MKL - this is a no-op
   // The OMP thread setting may still affect BLAS behavior in some configurations
+  (void)threads;  // Suppress unused parameter warning
 #endif
   // Also update the Environment setting
   sd::Environment::getInstance().setOpenBlasThreads(threads);

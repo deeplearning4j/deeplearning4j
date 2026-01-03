@@ -87,8 +87,7 @@ PLATFORM_CHECK(lrn, ENGINE_CPU) {
   auto output = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN LRN OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(sd::ONEDNNStream::isSupported({input, output}), ONEDNN_STREAM_NOT_SUPPORTED);
+  req.expectTrue(sd::ONEDNNStream::isSupported({input, output}), ONEDNN_STREAM_NOT_SUPPORTED);
   req.logTheSuccess();
   return req;
 }

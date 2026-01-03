@@ -105,8 +105,7 @@ PLATFORM_CHECK(Pow, ENGINE_CPU) {
   auto z = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN POW OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(makeInfoVariable(y->isScalar(), "SCALAR_EXPONENT"), "Exponent must be scalar for OneDNN") &&
+  req.expectTrue(makeInfoVariable(y->isScalar(), "SCALAR_EXPONENT"), "Exponent must be scalar for OneDNN") &&
       req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&

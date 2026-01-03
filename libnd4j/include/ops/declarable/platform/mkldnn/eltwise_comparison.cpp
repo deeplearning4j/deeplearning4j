@@ -103,8 +103,7 @@ PLATFORM_CHECK(greater, ENGINE_CPU) {
   auto z = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN GREATER OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(makeInfoVariable(shapesCompatible(x, y, z), "SHAPES_COMPATIBLE"), "Shapes must be equal") &&
+  req.expectTrue(makeInfoVariable(shapesCompatible(x, y, z), "SHAPES_COMPATIBLE"), "Shapes must be equal") &&
       req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
       req.expectFalse(makeInfoVariable(y->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
@@ -137,8 +136,7 @@ PLATFORM_CHECK(greater_equal, ENGINE_CPU) {
   auto z = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN GREATER_EQUAL OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(makeInfoVariable(shapesCompatible(x, y, z), "SHAPES_COMPATIBLE"), "Shapes must be equal") &&
+  req.expectTrue(makeInfoVariable(shapesCompatible(x, y, z), "SHAPES_COMPATIBLE"), "Shapes must be equal") &&
       req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
       req.expectFalse(makeInfoVariable(y->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
@@ -171,8 +169,7 @@ PLATFORM_CHECK(less, ENGINE_CPU) {
   auto z = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN LESS OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(makeInfoVariable(shapesCompatible(x, y, z), "SHAPES_COMPATIBLE"), "Shapes must be equal") &&
+  req.expectTrue(makeInfoVariable(shapesCompatible(x, y, z), "SHAPES_COMPATIBLE"), "Shapes must be equal") &&
       req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
       req.expectFalse(makeInfoVariable(y->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
@@ -205,8 +202,7 @@ PLATFORM_CHECK(less_equal, ENGINE_CPU) {
   auto z = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN LESS_EQUAL OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(makeInfoVariable(shapesCompatible(x, y, z), "SHAPES_COMPATIBLE"), "Shapes must be equal") &&
+  req.expectTrue(makeInfoVariable(shapesCompatible(x, y, z), "SHAPES_COMPATIBLE"), "Shapes must be equal") &&
       req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
       req.expectFalse(makeInfoVariable(y->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
@@ -239,8 +235,7 @@ PLATFORM_CHECK(equals, ENGINE_CPU) {
   auto z = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN EQUALS OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(makeInfoVariable(shapesCompatible(x, y, z), "SHAPES_COMPATIBLE"), "Shapes must be equal") &&
+  req.expectTrue(makeInfoVariable(shapesCompatible(x, y, z), "SHAPES_COMPATIBLE"), "Shapes must be equal") &&
       req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
       req.expectFalse(makeInfoVariable(y->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
@@ -273,8 +268,7 @@ PLATFORM_CHECK(not_equals, ENGINE_CPU) {
   auto z = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN NOT_EQUALS OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(makeInfoVariable(shapesCompatible(x, y, z), "SHAPES_COMPATIBLE"), "Shapes must be equal") &&
+  req.expectTrue(makeInfoVariable(shapesCompatible(x, y, z), "SHAPES_COMPATIBLE"), "Shapes must be equal") &&
       req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
       req.expectFalse(makeInfoVariable(y->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&

@@ -36,6 +36,27 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////
+// Get OneDNN data type from NDArray
+static dnnl::memory::data_type getOneDnnDataType(DataType dt) {
+  switch (dt) {
+    case DataType::FLOAT32:
+      return dnnl::memory::data_type::f32;
+    case DataType::BFLOAT16:
+      return dnnl::memory::data_type::bf16;
+    case DataType::HALF:
+      return dnnl::memory::data_type::f16;
+    default:
+      return dnnl::memory::data_type::f32;
+  }
+}
+
+//////////////////////////////////////////////////////////////////////
+// Check if data type is supported by OneDNN conv2d
+static bool isSupportedConv2dType(DataType dt) {
+  return dt == DataType::FLOAT32 || dt == DataType::BFLOAT16 || dt == DataType::HALF;
+}
+
+//////////////////////////////////////////////////////////////////////
 static void conv2dMKLDNN(NDArray *input, NDArray *weights, NDArray *bias, NDArray *output,
                          const sd::LongType kH, const sd::LongType kW, const sd::LongType sH, const sd::LongType sW, const sd::LongType pH, const sd::LongType pW,
                          const sd::LongType dH, const sd::LongType dW, const int paddingMode, const int isNCHW, const int wFormat) {
@@ -63,7 +84,8 @@ static void conv2dMKLDNN(NDArray *input, NDArray *weights, NDArray *bias, NDArra
   dnnl::memory::dims wDims = {oC, iC, kH, kW};
   dnnl::memory::dims zDims = {bS, oC, oH, oW};
 
-  auto type = dnnl::memory::data_type::f32;
+  // Use actual input data type - OneDNN supports f32, bf16, f16 for convolution
+  auto type = getOneDnnDataType(input->dataType());
 
   std::vector<int> permut;
   if (0 == wFormat)
@@ -174,7 +196,8 @@ static void conv2dBpMKLDNN(NDArray *input, NDArray *weights, NDArray *bias, NDAr
   dnnl::memory::dims wDims = {oC, iC, kH, kW};
   dnnl::memory::dims zDims = {bS, oC, oH, oW};
 
-  auto type = dnnl::memory::data_type::f32;
+  // Use actual input data type - OneDNN supports f32, bf16, f16 for convolution backward
+  auto type = getOneDnnDataType(input->dataType());
 
   std::vector<int> permut;
   if (0 == wFormat)
@@ -342,12 +365,18 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
 PLATFORM_CHECK(conv2d, ENGINE_CPU) {
   auto input = INPUT_VARIABLE(0);
   auto weights = INPUT_VARIABLE(1);
+  auto output = OUTPUT_VARIABLE(0);
 
-  // conv2d is only available for float32 dtype
+  // conv2d is available for float32, bfloat16, and float16 dtypes
   Requirements req("ONEDNN CONV2d OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectEq(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0), sd::DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(weights->dataType(), TYPE_MSG_INPUT1), sd::DataType::FLOAT32);
+  req.expectTrue(makeInfoVariable(isSupportedConv2dType(input->dataType()), TYPE_MSG_INPUT0),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectTrue(makeInfoVariable(isSupportedConv2dType(weights->dataType()), TYPE_MSG_INPUT1),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectTrue(makeInfoVariable(isSupportedConv2dType(output->dataType()), TYPE_MSG_OUTPUT),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectEq(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
+                   makeInfoVariable(weights->dataType(), TYPE_MSG_INPUT1));
   req.logTheSuccess();
   return req;
 }
@@ -425,10 +454,16 @@ PLATFORM_CHECK(conv2d_bp, ENGINE_CPU) {
   auto gradW = OUTPUT_VARIABLE(1);  // [kH, kW, iC, oC] always
   auto gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;  // [oC]
 
+  // conv2d_bp is available for float32, bfloat16, and float16 dtypes
   Requirements req("ONEDNN CONV2d_BP OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(sd::ONEDNNStream::isSupported({input, weights, bias, gradO, gradI, gradW, gradB}),
-                     ONEDNN_STREAM_NOT_SUPPORTED);
+  req.expectTrue(makeInfoVariable(isSupportedConv2dType(input->dataType()), TYPE_MSG_INPUT0),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectTrue(makeInfoVariable(isSupportedConv2dType(weights->dataType()), TYPE_MSG_INPUT1),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectTrue(makeInfoVariable(isSupportedConv2dType(gradO->dataType()), TYPE_MSG_INPUT),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectEq(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
+                   makeInfoVariable(weights->dataType(), TYPE_MSG_INPUT1));
   req.logTheSuccess();
   return req;
 }

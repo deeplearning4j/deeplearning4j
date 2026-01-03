@@ -49,6 +49,10 @@
 #include <ops/declarable/platform/mkldnn/mkldnnUtils.h>
 #endif
 
+#if defined(HAVE_MKL) && !defined(SD_CUDA)
+#include <helpers/MklBlasHelper.h>
+#endif
+
 namespace sd {
 
 // ============================================================================
@@ -205,6 +209,112 @@ bool MmulHelper::tryOneDnnBatched(NDArray* A, NDArray* B, NDArray* C,
   return false;  // OneDNN not available
 }
 #endif
+
+//////////////////////////////////////////////////////////////////////////
+// Strided batch GEMM - most efficient for contiguous batched data
+// Uses cblas_sgemm_batch_strided/cblas_dgemm_batch_strided (MKL on CPU)
+// Only handles simple row-major contiguous case for reliability
+// Non-standard layouts fall through to tryBlasBatched/tryBlasPerBatch
+//////////////////////////////////////////////////////////////////////////
+bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
+                                        double alpha, double beta) {
+#if defined(HAVE_MKL) && !defined(SD_CUDA)
+  if (!Environment::getInstance().isEnableBlas()) {
+    return false;
+  }
+
+  // Check if strided batch GEMM is available
+  if (!BlasHelper::getInstance().hasStridedBatchGEMM()) {
+    return false;
+  }
+
+  const int aRank = A->rankOf();
+  const int bRank = B->rankOf();
+  const int cRank = C->rankOf();
+
+  // Only handle 3D tensors for simplicity (most common case)
+  if (aRank != 3 || bRank != 3 || cRank != 3) {
+    return false;
+  }
+
+  const auto xType = A->dataType();
+  const auto yType = B->dataType();
+  const auto zType = C->dataType();
+
+  // Types must match
+  if (xType != yType || yType != zType) {
+    return false;
+  }
+
+  // Only float and double supported for strided batch
+  if (xType != DataType::FLOAT32 && xType != DataType::DOUBLE) {
+    return false;
+  }
+
+  // Validate buffers
+  if (A->buffer() == nullptr || B->buffer() == nullptr || C->buffer() == nullptr) {
+    return false;
+  }
+
+  // Get dimensions: A[bS,M,K] @ B[bS,K,N] = C[bS,M,N]
+  const int batchSize = static_cast<int>(A->sizeAt(0));
+  const int M = static_cast<int>(A->sizeAt(1));
+  const int K = static_cast<int>(A->sizeAt(2));
+  const int K2 = static_cast<int>(B->sizeAt(1));
+  const int N = static_cast<int>(B->sizeAt(2));
+
+  // Validate dimensions
+  if (M <= 0 || K <= 0 || N <= 0 || batchSize <= 0 || K != K2) {
+    return false;
+  }
+
+  // Require strict row-major contiguous layout for all matrices
+  // A: stride[2]=1, stride[1]=K, stride[0]=M*K
+  // B: stride[2]=1, stride[1]=N, stride[0]=K*N
+  // C: stride[2]=1, stride[1]=N, stride[0]=M*N
+  const LongType expectedStrideA = static_cast<LongType>(M) * K;
+  const LongType expectedStrideB = static_cast<LongType>(K) * N;
+  const LongType expectedStrideC = static_cast<LongType>(M) * N;
+
+  const bool aValid = (A->strideAt(2) == 1) && (A->strideAt(1) == K) && (A->strideAt(0) == expectedStrideA);
+  const bool bValid = (B->strideAt(2) == 1) && (B->strideAt(1) == N) && (B->strideAt(0) == expectedStrideB);
+  const bool cValid = (C->strideAt(2) == 1) && (C->strideAt(1) == N) && (C->strideAt(0) == expectedStrideC);
+
+  if (!aValid || !bValid || !cValid) {
+    return false;  // Non-contiguous or non-row-major - let other backends handle it
+  }
+
+  // Use MKL's strided batch GEMM
+  auto blasLock = BlasHelper::getInstance().lockBlas();
+
+  if (xType == DataType::FLOAT32) {
+    sd::mkl::sgemmBatchStrided(
+        CblasRowMajor, CblasNoTrans, CblasNoTrans,
+        M, N, K,
+        static_cast<float>(alpha),
+        A->bufferAsT<float>(), K, static_cast<MKL_INT>(expectedStrideA),
+        B->bufferAsT<float>(), N, static_cast<MKL_INT>(expectedStrideB),
+        static_cast<float>(beta),
+        C->bufferAsT<float>(), N, static_cast<MKL_INT>(expectedStrideC),
+        batchSize);
+  } else {
+    sd::mkl::dgemmBatchStrided(
+        CblasRowMajor, CblasNoTrans, CblasNoTrans,
+        M, N, K,
+        alpha,
+        A->bufferAsT<double>(), K, static_cast<MKL_INT>(expectedStrideA),
+        B->bufferAsT<double>(), N, static_cast<MKL_INT>(expectedStrideB),
+        beta,
+        C->bufferAsT<double>(), N, static_cast<MKL_INT>(expectedStrideC),
+        batchSize);
+  }
+
+  return true;
+#else
+  // MKL not available or running on CUDA - strided batch not supported here
+  return false;
+#endif
+}
 
 //////////////////////////////////////////////////////////////////////////
 bool MmulHelper::tryBlasBatched(NDArray* A, NDArray* B, NDArray* C,
@@ -581,22 +691,28 @@ void MmulHelper::manualBatchedGemm(NDArray* A, NDArray* B, NDArray* C,
 bool MmulHelper::mmulBatched(NDArray* A, NDArray* B, NDArray* C,
                               double alpha, double beta) {
   // Try backends in order of preference:
-  // 1. OneDNN (single batched primitive - most efficient)
+  // 1. OneDNN (single batched primitive - most efficient for bf16/f16)
   if (tryOneDnnBatched(A, B, C, alpha, beta)) {
     return true;
   }
 
-  // 2. BLAS batched GEMM (cblas_sgemm_batch)
+  // 2. MKL strided batch GEMM (cblas_sgemm_batch_strided) - most efficient for f32/f64
+  //    This is faster than pointer-array batch GEMM as it avoids building pointer arrays
+  if (tryBlasStridedBatched(A, B, C, alpha, beta)) {
+    return true;
+  }
+
+  // 3. BLAS pointer-array batched GEMM (cblas_sgemm_batch)
   if (tryBlasBatched(A, B, C, alpha, beta)) {
     return true;
   }
 
-  // 3. Per-batch BLAS calls
+  // 4. Per-batch BLAS calls
   if (tryBlasPerBatch(A, B, C, alpha, beta)) {
     return true;
   }
 
-  // 4. Manual parallel implementation (always works)
+  // 5. Manual parallel implementation (always works)
   manualBatchedGemm(A, B, C, alpha, beta);
   return true;
 }

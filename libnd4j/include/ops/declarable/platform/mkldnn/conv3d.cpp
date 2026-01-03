@@ -350,8 +350,7 @@ PLATFORM_CHECK(conv3dnew, ENGINE_CPU) {
   auto bias = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;  // [oC]
   auto output = OUTPUT_VARIABLE(0);  // [bS, oD, oH, oW, oC] (NDHWC) or [bS, oC, oD, oH, oW] (NCDHW)
   Requirements req("ONEDNN CONV3d OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(sd::ONEDNNStream::isSupported({input, weights, bias, output}), ONEDNN_STREAM_NOT_SUPPORTED);
+  req.expectTrue(sd::ONEDNNStream::isSupported({input, weights, bias, output}), ONEDNN_STREAM_NOT_SUPPORTED);
   req.logTheSuccess();
   return req;
 }
@@ -446,8 +445,7 @@ PLATFORM_CHECK(conv3dnew_bp, ENGINE_CPU) {
   auto gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;  // [oC]
 
   Requirements req("ONEDNN CONV3d_BP OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(sd::ONEDNNStream::isSupported({input, weights, bias, gradO, gradI, gradW, gradB}),
+  req.expectTrue(sd::ONEDNNStream::isSupported({input, weights, bias, gradO, gradI, gradW, gradB}),
                      ONEDNN_STREAM_NOT_SUPPORTED);
   req.logTheSuccess();
   return req;

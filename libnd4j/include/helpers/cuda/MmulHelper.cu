@@ -23,6 +23,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 #include <cublas_v2.h>
+#include <cuda_fp16.h>
 #include <exceptions/cuda_exception.h>
 #include <helpers/PointersManager.h>
 #include <helpers/ShapeUtils.h>
@@ -723,6 +724,13 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
 
  if (C->isEmpty()) return C;
 
+ // Try cuBLAS strided batch GEMM first for 3D tensors - much faster than custom kernel
+ if (aRank == 3 && bRank == 3) {
+   if (tryBlasStridedBatched(A, B, C, alpha, beta)) {
+     return C;
+   }
+ }
+
  const LongType cRank = C->rankOf();
 
  const LongType aMaxis(aRank - 2), aKaxis(aRank - 1), bKaxis(bRank - 2), bNaxis(bRank - 1), cMaxis(cRank - 2),
@@ -771,6 +779,158 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
  delete cDims;
 
  return C;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// cuBLAS Strided Batch GEMM - most efficient for contiguous batched data on GPU
+// Uses cublasSgemmStridedBatched/cublasDgemmStridedBatched/cublasHgemmStridedBatched
+// This avoids kernel launch overhead for each batch element
+//////////////////////////////////////////////////////////////////////////
+bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
+                                        double alpha, double beta) {
+  const int aRank = A->rankOf();
+  const int bRank = B->rankOf();
+  const int cRank = C->rankOf();
+
+  // Only handle 3D tensors for now (simplest case)
+  if (aRank != 3 || bRank != 3 || cRank != 3) {
+    return false;
+  }
+
+  const auto xType = A->dataType();
+  const auto yType = B->dataType();
+  const auto zType = C->dataType();
+
+  // Types must match for cuBLAS strided batched
+  if (xType != yType || yType != zType) {
+    return false;
+  }
+
+  // Only float, double, and half supported
+  if (xType != DataType::FLOAT32 && xType != DataType::DOUBLE && xType != DataType::HALF) {
+    return false;
+  }
+
+  // Validate buffers
+  if (A->specialBuffer() == nullptr || B->specialBuffer() == nullptr || C->specialBuffer() == nullptr) {
+    return false;
+  }
+
+  const LongType batchSize = A->sizeAt(0);
+  const LongType M = A->sizeAt(1);
+  const LongType K = A->sizeAt(2);
+  const LongType N = B->sizeAt(2);
+
+  if (M <= 0 || K <= 0 || N <= 0 || batchSize <= 0) {
+    return false;
+  }
+
+  // Check B dimensions match
+  if (B->sizeAt(0) != batchSize || B->sizeAt(1) != K) {
+    return false;
+  }
+
+  // Check C dimensions match
+  if (C->sizeAt(0) != batchSize || C->sizeAt(1) != M || C->sizeAt(2) != N) {
+    return false;
+  }
+
+  // cuBLAS is column-major, so we need to check for compatible memory layouts
+  // For row-major [batch, M, K]: stride[2]=1, stride[1]=K, stride[0]=M*K
+  // We'll use the trick: C = A*B in row-major is equivalent to C^T = B^T * A^T in col-major
+  // So we swap A and B and compute B * A instead
+
+  // Check for contiguous row-major layout
+  const bool aRowMajor = (A->strideAt(2) == 1) && (A->strideAt(1) == K);
+  const bool bRowMajor = (B->strideAt(2) == 1) && (B->strideAt(1) == N);
+  const bool cRowMajor = (C->strideAt(2) == 1) && (C->strideAt(1) == N);
+
+  if (!aRowMajor || !bRowMajor || !cRowMajor) {
+    return false;
+  }
+
+  // Check batch strides are contiguous
+  const LongType expectedStrideA = M * K;
+  const LongType expectedStrideB = K * N;
+  const LongType expectedStrideC = M * N;
+
+  if (A->strideAt(0) < expectedStrideA || B->strideAt(0) < expectedStrideB || C->strideAt(0) < expectedStrideC) {
+    return false;
+  }
+
+  const long long strideA = A->strideAt(0);
+  const long long strideB = B->strideAt(0);
+  const long long strideC = C->strideAt(0);
+
+  // Get cuBLAS handle
+  auto handle = reinterpret_cast<cublasHandle_t*>(A->getContext()->getCublasHandle());
+  auto stream = A->getContext()->getCudaStream();
+  cublasSetStream(*handle, *stream);
+
+  NDArray::prepareSpecialUse({C}, {A, B});
+
+  cublasStatus_t status;
+
+  // cuBLAS uses column-major, so we compute C^T = B^T * A^T
+  // In terms of our row-major arrays: C = A * B becomes computing with swapped order
+  // cublas: C_col = B_col * A_col where our row-major A is cublas's A^T
+  // So we call cublas with (B, A) to get A*B in row-major
+
+  if (xType == DataType::DOUBLE) {
+    status = cublasDgemmStridedBatched(
+        *handle,
+        CUBLAS_OP_N, CUBLAS_OP_N,
+        N, M, K,  // Swapped M,N for row-major
+        &alpha,
+        reinterpret_cast<const double*>(B->specialBuffer()), N, strideB,
+        reinterpret_cast<const double*>(A->specialBuffer()), K, strideA,
+        &beta,
+        reinterpret_cast<double*>(C->specialBuffer()), N, strideC,
+        batchSize);
+  } else if (xType == DataType::FLOAT32) {
+    float alphaF = static_cast<float>(alpha);
+    float betaF = static_cast<float>(beta);
+    status = cublasSgemmStridedBatched(
+        *handle,
+        CUBLAS_OP_N, CUBLAS_OP_N,
+        N, M, K,  // Swapped M,N for row-major
+        &alphaF,
+        reinterpret_cast<const float*>(B->specialBuffer()), N, strideB,
+        reinterpret_cast<const float*>(A->specialBuffer()), K, strideA,
+        &betaF,
+        reinterpret_cast<float*>(C->specialBuffer()), N, strideC,
+        batchSize);
+  } else if (xType == DataType::HALF) {
+    __half alphaH = __float2half(static_cast<float>(alpha));
+    __half betaH = __float2half(static_cast<float>(beta));
+    status = cublasHgemmStridedBatched(
+        *handle,
+        CUBLAS_OP_N, CUBLAS_OP_N,
+        N, M, K,  // Swapped M,N for row-major
+        &alphaH,
+        reinterpret_cast<const __half*>(B->specialBuffer()), N, strideB,
+        reinterpret_cast<const __half*>(A->specialBuffer()), K, strideA,
+        &betaH,
+        reinterpret_cast<__half*>(C->specialBuffer()), N, strideC,
+        batchSize);
+  } else {
+    NDArray::registerSpecialUse({C}, {A, B});
+    return false;
+  }
+
+  if (status != CUBLAS_STATUS_SUCCESS) {
+    NDArray::registerSpecialUse({C}, {A, B});
+    return false;
+  }
+
+  NDArray::registerSpecialUse({C}, {A, B});
+
+  auto cudaResult = cudaStreamSynchronize(*stream);
+  if (cudaResult != 0) {
+    return false;
+  }
+
+  return true;
 }
 
 } // namespace sd

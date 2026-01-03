@@ -23,8 +23,41 @@
 #include <cstdlib>
 #include <string>
 
-// OpenBLAS thread control function declaration
-#if HAVE_OPENBLAS
+// MKL VML detection - only include VML functions, not full MKL (to avoid CBLAS conflicts with OpenBLAS)
+// Note: We use MklVmlHelper.h for VML functions, which handles HAVE_MKL_VML internally
+// Do NOT include mkl.h here as it conflicts with OpenBLAS cblas.h
+#ifdef HAVE_MKL
+#define MKL_AVAILABLE 1
+#else
+#define MKL_AVAILABLE 0
+#endif
+
+// BLAS thread control function declarations
+// When MKL is available, use MKL thread functions; otherwise use OpenBLAS
+#if defined(HAVE_MKL)
+// MKL is primary BLAS - use MKL thread control
+#include <mkl_service.h>
+
+// Global constructor that runs at library load time
+namespace {
+  struct MklThreadInitializer {
+    MklThreadInitializer() {
+      // Check if user explicitly set MKL threads
+      const char* env = std::getenv("MKL_NUM_THREADS");
+      const char* sdEnv = std::getenv("SD_OPENBLAS_THREADS");  // Also check SD env var
+
+      if (env == nullptr && sdEnv == nullptr) {
+        // No explicit thread count - MKL is thread-safe, but limit threads for consistency
+        // Note: MKL handles threading better than OpenBLAS, so we can be less restrictive
+        mkl_set_num_threads(1);
+      }
+    }
+  };
+  static MklThreadInitializer __mkl_thread_init;
+}
+
+#elif defined(HAVE_OPENBLAS)
+// OpenBLAS is primary BLAS
 extern "C" void openblas_set_num_threads(int num_threads);
 extern "C" int openblas_get_num_threads(void);
 
@@ -52,8 +85,32 @@ namespace {
 namespace sd {
 
 BlasHelper::BlasHelper() {
+  // Detect MKL availability at compile time
+#if MKL_AVAILABLE
+  _hasMkl = true;
+  _hasMklBatchStrided = true;  // MKL always has strided batch GEMM
+  _hasBf16gemm = true;         // MKL supports bf16 GEMM
+  _hasBf16gemmBatch = true;    // MKL supports batched bf16 GEMM
+  sd_debug("Intel MKL detected - enabling extended BLAS features\n", "");
+#else
+  _hasMkl = false;
+  _hasMklBatchStrided = false;
+  _hasBf16gemm = false;
+  _hasBf16gemmBatch = false;
+#endif
+
   // Initialize BLAS threading configuration from environment
   initializeBlasThreading();
+
+  // If MKL is available, disable serialization by default since MKL is thread-safe
+#if MKL_AVAILABLE
+  // Don't override if user explicitly set SD_BLAS_SERIALIZE
+  const char* serializeEnv = std::getenv("SD_BLAS_SERIALIZE");
+  if (serializeEnv == nullptr) {
+    _serializeBlasCalls.store(false);
+    sd_debug("BLAS serialization disabled (MKL is thread-safe)\n", "");
+  }
+#endif
 }
 
 BlasHelper &BlasHelper::getInstance() {
@@ -228,14 +285,22 @@ bool BlasHelper::hasGEMM<double>() {
 #if defined(HAS_FLOAT16)
 template <>
 bool BlasHelper::hasGEMM<float16>() {
+  if (Environment::getInstance().blasFallback()) return false;
+  // MKL supports float16 GEMM via cblas_gemm_f16f16f32
+#if MKL_AVAILABLE
+  return true;
+#else
   return false;
+#endif
 }
 #endif
 
 #if defined(HAS_BFLOAT16)
 template <>
 bool BlasHelper::hasGEMM<bfloat16>() {
-  return false;
+  if (Environment::getInstance().blasFallback()) return false;
+  // MKL supports bfloat16 GEMM via cblas_gemm_bf16bf16f32
+  return _hasBf16gemm;
 }
 #endif
 
@@ -304,6 +369,22 @@ bool BlasHelper::hasGEMM(const DataType dtype) {
 #endif
   }
 #endif
+#if defined(HAS_FLOAT16)
+  if (dtype == HALF) {
+    if (Environment::getInstance().blasFallback()) return false;
+#if MKL_AVAILABLE
+    return true;
+#else
+    return false;
+#endif
+  }
+#endif
+#if defined(HAS_BFLOAT16)
+  if (dtype == BFLOAT16) {
+    if (Environment::getInstance().blasFallback()) return false;
+    return _hasBf16gemm;
+  }
+#endif
   return false;
 }
 
@@ -348,14 +429,22 @@ bool BlasHelper::hasBatchedGEMM<double>() {
 #if defined(HAS_FLOAT16)
 template <>
 bool BlasHelper::hasBatchedGEMM<float16>() {
+  if (Environment::getInstance().blasFallback()) return false;
+  // MKL supports batched float16 GEMM via cblas_gemm_bf16bf16f32_batch
+#if MKL_AVAILABLE
+  return true;
+#else
   return false;
+#endif
 }
 #endif
 
 #if defined(HAS_BFLOAT16)
 template <>
 bool BlasHelper::hasBatchedGEMM<bfloat16>() {
-  return false;
+  if (Environment::getInstance().blasFallback()) return false;
+  // MKL supports batched bfloat16 GEMM
+  return _hasBf16gemmBatch;
 }
 #endif
 
@@ -487,12 +576,15 @@ int BlasHelper::getOpenblasThreads() const {
 
 void BlasHelper::setOpenblasThreads(int threads) {
   _openblasThreads.store(threads);
-#if HAVE_OPENBLAS
   if (threads > 0) {
+#if defined(HAVE_MKL)
+    mkl_set_num_threads(threads);
+    sd_debug("MKL threads set to %d\n", threads);
+#elif defined(HAVE_OPENBLAS)
     openblas_set_num_threads(threads);
     sd_debug("OpenBLAS threads set to %d\n", threads);
-  }
 #endif
+  }
 }
 
 void BlasHelper::initializeBlasThreading() {
@@ -514,10 +606,10 @@ void BlasHelper::initializeBlasThreading() {
     sd_debug("BLAS call serialization ENABLED by default (set SD_BLAS_SERIALIZE=0 to disable)\n", "");
   }
 
-  // Check SD_OPENBLAS_THREADS environment variable for OpenBLAS thread count
+  // Check SD_OPENBLAS_THREADS environment variable for BLAS thread count
   // This is separate from the serialization - you can have both:
-  // - Serialization ON + multi-threaded OpenBLAS = safe concurrent BLAS with internal parallelism
-  // - Serialization OFF + single-threaded OpenBLAS = original behavior
+  // - Serialization ON + multi-threaded BLAS = safe concurrent BLAS with internal parallelism
+  // - Serialization OFF + single-threaded BLAS = original behavior
   const char* threadsEnv = std::getenv("SD_OPENBLAS_THREADS");
   if (threadsEnv != nullptr) {
 #ifdef __cpp_exceptions
@@ -525,7 +617,10 @@ void BlasHelper::initializeBlasThreading() {
       int threads = std::stoi(std::string(threadsEnv));
       if (threads > 0) {
         _openblasThreads.store(threads);
-#if HAVE_OPENBLAS
+#if defined(HAVE_MKL)
+        mkl_set_num_threads(threads);
+        sd_debug("MKL threads set to %d via SD_OPENBLAS_THREADS\n", threads);
+#elif defined(HAVE_OPENBLAS)
         openblas_set_num_threads(threads);
         sd_debug("OpenBLAS threads set to %d via SD_OPENBLAS_THREADS\n", threads);
 #endif
@@ -537,7 +632,10 @@ void BlasHelper::initializeBlasThreading() {
     int threads = std::atoi(threadsEnv);
     if (threads > 0) {
       _openblasThreads.store(threads);
-#if HAVE_OPENBLAS
+#if defined(HAVE_MKL)
+      mkl_set_num_threads(threads);
+      sd_debug("MKL threads set to %d via SD_OPENBLAS_THREADS\n", threads);
+#elif defined(HAVE_OPENBLAS)
       openblas_set_num_threads(threads);
       sd_debug("OpenBLAS threads set to %d via SD_OPENBLAS_THREADS\n", threads);
 #endif
@@ -569,13 +667,17 @@ void BlasHelper::initializeBlasThreading() {
     }
   }
 
-  // CRITICAL: If no thread count was specified, default OpenBLAS to single-threaded
-  // This prevents TLS (thread-local storage) corruption crashes when OpenBLAS's
+  // CRITICAL: If no thread count was specified, default BLAS to single-threaded
+  // For OpenBLAS, this prevents TLS (thread-local storage) corruption crashes when OpenBLAS's
   // internal threading conflicts with the application's OpenMP threading.
-  // Users who want multi-threaded OpenBLAS can set OPENBLAS_NUM_THREADS or SD_OPENBLAS_THREADS.
+  // For MKL, this is for consistency, though MKL handles threading better.
+  // Users who want multi-threaded BLAS can set OPENBLAS_NUM_THREADS/MKL_NUM_THREADS or SD_OPENBLAS_THREADS.
   if (_openblasThreads.load() == 0) {
     _openblasThreads.store(1);
-#if HAVE_OPENBLAS
+#if defined(HAVE_MKL)
+    mkl_set_num_threads(1);
+    sd_debug("MKL threads defaulted to 1 (set MKL_NUM_THREADS to override)\n", "");
+#elif defined(HAVE_OPENBLAS)
     openblas_set_num_threads(1);
     sd_debug("OpenBLAS threads defaulted to 1 to prevent TLS corruption (set OPENBLAS_NUM_THREADS to override)\n", "");
 #endif

@@ -177,18 +177,17 @@ PLATFORM_CHECK(concat, ENGINE_CPU) {
 
   const bool isAxisInLastArr = block.getBArguments()->size() == 0 ? false : B_ARG(0);
   const int numOfInArrs = isAxisInLastArr ? block.width() - 1 : block.width();
+
+  // Check if output type is supported by OneDNN
+  const auto zType = z->dataType();
+  const bool isSupportedType = (zType == DataType::FLOAT32 || zType == DataType::HALF ||
+                                zType == DataType::BFLOAT16 || zType == DataType::UINT8 || zType == DataType::INT8);
+
   Requirements req("ONEDNN CONCAT OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectLess(makeInfoVariable(z->rankOf(), RANK_MSG_OUTPUT), 7) &&
-      req.expectLessEq(makeInfoVariable(numOfInArrs, "numOfinArrs"), 3072) &&
-      req.expectTrue(makeInfoVariable(
-                         [z] {
-                           const auto zType = z->dataType();
-                           return (zType == DataType::FLOAT32 || zType == DataType::HALF ||
-                                   zType == DataType::BFLOAT16 || zType == DataType::UINT8 || zType == DataType::INT8);
-                         },
-                         TYPECHECK_MSG),
-                     NO_MSG);
+  req.expectLess(makeInfoVariable(z->rankOf(), RANK_MSG_OUTPUT), 7) &&
+      req.expectLessEq(makeInfoVariable(numOfInArrs, "NUM_INPUTS"), 3072) &&
+      req.expectTrue(makeInfoVariable(isSupportedType, TYPE_MSG_OUTPUT),
+                     "Must be FLOAT32, HALF, BFLOAT16, UINT8, or INT8");
   req.logTheSuccess();
   return req;
 }

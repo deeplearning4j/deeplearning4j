@@ -108,6 +108,13 @@
         <libnd4j.arch></libnd4j.arch>
         <openblas.artifactId></openblas.artifactId>
         <openblas.classifier></openblas.classifier>
+        <!-- MKL configuration for VML (Vector Math Library) support -->
+        <mkl.artifactId></mkl.artifactId>
+        <mkl.classifier></mkl.classifier>
+        <!-- BLAS implementation selection: 'openblas', 'mkl', or empty for auto-detect -->
+        <!-- When using oneDNN helper, defaults to MKL. Set to 'openblas' to override. -->
+        <!-- Example: -Dlibnd4j.blas=openblas -->
+        <libnd4j.blas></libnd4j.blas>
         <libnd4j.calltrace>OFF</libnd4j.calltrace>
         <libnd4j.lto>OFF</libnd4j.lto>
         <libnd4j.vectorization>OFF</libnd4j.vectorization>
@@ -361,6 +368,246 @@
                 <libnd4j.classifier>${libnd4j.platform}-${libnd4j.chip}-${cuda.version}
                 </libnd4j.classifier>
             </properties>
+        </profile>
+
+        <!-- MKL profile - explicitly enabled with -Dlibnd4j.blas=mkl -->
+        <!-- Provides MKL VML (Vector Math Library) for optimized math functions like vsErf/vdErf -->
+        <!-- Use this when you want MKL BLAS and VML functions -->
+        <profile>
+            <id>mkl-explicit</id>
+            <activation>
+                <property>
+                    <name>libnd4j.blas</name>
+                    <value>mkl</value>
+                </property>
+            </activation>
+            <properties>
+                <mkl.artifactId>mkl</mkl.artifactId>
+                <mkl.classifier>${javacpp.platform}</mkl.classifier>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.bytedeco</groupId>
+                                <artifactId>mkl</artifactId>
+                                <version>${mkl.version}-${javacpp-presets.version}</version>
+                                <classifier>${mkl.classifier}</classifier>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <buildResources>
+                                <buildResource>/org/bytedeco/mkl/${javacpp.platform}/</buildResource>
+                            </buildResources>
+                            <includeResources>
+                                <includeResource>/org/bytedeco/mkl/${javacpp.platform}/include/</includeResource>
+                            </includeResources>
+                            <linkResources>
+                                <linkResource>/org/bytedeco/mkl/${javacpp.platform}/</linkResource>
+                                <linkResource>/org/bytedeco/mkl/${javacpp.platform}/lib/</linkResource>
+                            </linkResources>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- OpenBLAS explicit profile - use -Dlibnd4j.blas=openblas to force OpenBLAS even with oneDNN -->
+        <!-- This overrides the default MKL behavior when using oneDNN helper -->
+        <profile>
+            <id>openblas-explicit</id>
+            <activation>
+                <property>
+                    <name>libnd4j.blas</name>
+                    <value>openblas</value>
+                </property>
+            </activation>
+            <properties>
+                <!-- Explicitly disable MKL when OpenBLAS is requested -->
+                <mkl.artifactId></mkl.artifactId>
+                <mkl.classifier></mkl.classifier>
+            </properties>
+        </profile>
+
+        <!-- MKL default profile for x86_64 Linux - enables MKL VML when oneDNN is likely used -->
+        <!-- This profile activates by default on x86_64 Linux unless libnd4j.blas=openblas -->
+        <!-- MKL provides optimized VML functions (vsErf, vdErf, etc.) for oneDNN platform helpers -->
+        <!-- Note: MKL headers are in the -redist JAR, not the platform JAR -->
+        <profile>
+            <id>mkl-default-linux-x86_64</id>
+            <activation>
+                <os>
+                    <name>Linux</name>
+                    <arch>amd64</arch>
+                </os>
+                <!-- Only activate if libnd4j.blas is not explicitly set -->
+                <property>
+                    <name>!libnd4j.blas</name>
+                </property>
+            </activation>
+            <properties>
+                <mkl.artifactId>mkl</mkl.artifactId>
+                <mkl.classifier>linux-x86_64</mkl.classifier>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.bytedeco</groupId>
+                                <artifactId>mkl</artifactId>
+                                <version>${mkl.version}-${javacpp-presets.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>org.bytedeco</groupId>
+                                <artifactId>mkl</artifactId>
+                                <version>${mkl.version}-${javacpp-presets.version}</version>
+                                <classifier>linux-x86_64</classifier>
+                            </dependency>
+                            <!-- Redist JAR contains the actual headers and libraries -->
+                            <dependency>
+                                <groupId>org.bytedeco</groupId>
+                                <artifactId>mkl</artifactId>
+                                <version>${mkl.version}-${javacpp-presets.version}</version>
+                                <classifier>linux-x86_64-redist</classifier>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <buildResources>
+                                <buildResource>/org/bytedeco/mkl/linux-x86_64/</buildResource>
+                            </buildResources>
+                            <includeResources>
+                                <includeResource>/org/bytedeco/mkl/linux-x86_64/include/</includeResource>
+                            </includeResources>
+                            <linkResources>
+                                <linkResource>/org/bytedeco/mkl/linux-x86_64/</linkResource>
+                                <linkResource>/org/bytedeco/mkl/linux-x86_64/lib/</linkResource>
+                            </linkResources>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- MKL default profile for Windows x86_64 -->
+        <profile>
+            <id>mkl-default-windows-x86_64</id>
+            <activation>
+                <os>
+                    <family>Windows</family>
+                    <arch>amd64</arch>
+                </os>
+                <property>
+                    <name>!libnd4j.blas</name>
+                </property>
+            </activation>
+            <properties>
+                <mkl.artifactId>mkl</mkl.artifactId>
+                <mkl.classifier>windows-x86_64</mkl.classifier>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.bytedeco</groupId>
+                                <artifactId>mkl</artifactId>
+                                <version>${mkl.version}-${javacpp-presets.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>org.bytedeco</groupId>
+                                <artifactId>mkl</artifactId>
+                                <version>${mkl.version}-${javacpp-presets.version}</version>
+                                <classifier>windows-x86_64</classifier>
+                            </dependency>
+                            <!-- Redist JAR contains the actual headers and libraries -->
+                            <dependency>
+                                <groupId>org.bytedeco</groupId>
+                                <artifactId>mkl</artifactId>
+                                <version>${mkl.version}-${javacpp-presets.version}</version>
+                                <classifier>windows-x86_64-redist</classifier>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <buildResources>
+                                <buildResource>/org/bytedeco/mkl/windows-x86_64/</buildResource>
+                            </buildResources>
+                            <includeResources>
+                                <includeResource>/org/bytedeco/mkl/windows-x86_64/include/</includeResource>
+                            </includeResources>
+                            <linkResources>
+                                <linkResource>/org/bytedeco/mkl/windows-x86_64/</linkResource>
+                                <linkResource>/org/bytedeco/mkl/windows-x86_64/lib/</linkResource>
+                            </linkResources>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- MKL default profile for macOS x86_64 -->
+        <profile>
+            <id>mkl-default-macosx-x86_64</id>
+            <activation>
+                <os>
+                    <name>Mac OS X</name>
+                    <arch>x86_64</arch>
+                </os>
+                <property>
+                    <name>!libnd4j.blas</name>
+                </property>
+            </activation>
+            <properties>
+                <mkl.artifactId>mkl</mkl.artifactId>
+                <mkl.classifier>macosx-x86_64</mkl.classifier>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.bytedeco</groupId>
+                                <artifactId>mkl</artifactId>
+                                <version>${mkl.version}-${javacpp-presets.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>org.bytedeco</groupId>
+                                <artifactId>mkl</artifactId>
+                                <version>${mkl.version}-${javacpp-presets.version}</version>
+                                <classifier>macosx-x86_64</classifier>
+                            </dependency>
+                            <!-- Redist JAR contains the actual headers and libraries -->
+                            <dependency>
+                                <groupId>org.bytedeco</groupId>
+                                <artifactId>mkl</artifactId>
+                                <version>${mkl.version}-${javacpp-presets.version}</version>
+                                <classifier>macosx-x86_64-redist</classifier>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <buildResources>
+                                <buildResource>/org/bytedeco/mkl/macosx-x86_64/</buildResource>
+                            </buildResources>
+                            <includeResources>
+                                <includeResource>/org/bytedeco/mkl/macosx-x86_64/include/</includeResource>
+                            </includeResources>
+                            <linkResources>
+                                <linkResource>/org/bytedeco/mkl/macosx-x86_64/</linkResource>
+                                <linkResource>/org/bytedeco/mkl/macosx-x86_64/lib/</linkResource>
+                            </linkResources>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
 
         <!-- Add these profiles to pom.xml for each platform -->

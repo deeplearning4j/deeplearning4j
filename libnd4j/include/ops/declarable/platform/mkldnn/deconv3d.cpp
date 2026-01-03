@@ -395,8 +395,7 @@ PLATFORM_CHECK(deconv3d, ENGINE_CPU) {
   int isSameMode = INT_ARG(12);  // 0-SAME,  1-VALID
 
   Requirements req("ONEDNN DECONV3d OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectLessEq(makeInfoVariable(dD, "Dilation depth"), 1) &&
+  req.expectLessEq(makeInfoVariable(dD, "Dilation depth"), 1) &&
       req.expectLessEq(makeInfoVariable(dH, "Dilation height"), 1) &&
       req.expectLessEq(makeInfoVariable(dW, "Dilation width"), 1) &&
       req.expectFalse(makeInfoVariable(isSameMode, "isSameMode")) &&
@@ -515,8 +514,7 @@ PLATFORM_CHECK(deconv3d_bp, ENGINE_CPU) {
   int isSameMode = INT_ARG(12);  // 0-SAME,  1-VALID
 
   Requirements req("ONEDNN DECONV3d_BP OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectLessEq(makeInfoVariable(dD, "Dilation depth"), 1) &&
+  req.expectLessEq(makeInfoVariable(dD, "Dilation depth"), 1) &&
       req.expectLessEq(makeInfoVariable(dH, "Dilation height"), 1) &&
       req.expectLessEq(makeInfoVariable(dW, "Dilation width"), 1) &&
       req.expectFalse(makeInfoVariable(isSameMode, "isSameMode")) &&

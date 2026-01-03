@@ -510,8 +510,7 @@ PLATFORM_CHECK(lstmLayer, ENGINE_CPU) {
   DataType hLType = hL != nullptr ? hL->dataType() : xType;
   DataType cLType = cL != nullptr ? cL->dataType() : xType;
   Requirements req("ONEDNN LstmLayer OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectEq(makeInfoVariable(cellClip, MSG_CELL_CLIPPING), 0) &&
+  req.expectEq(makeInfoVariable(cellClip, MSG_CELL_CLIPPING), 0) &&
       req.expectTrue(makeInfoVariable(retFullSeq, "Return full sequence")) &&
       req.expectFalse(makeInfoVariable(hasPH, HAVE_PEEPHOLE), EXPECTED_NOT_SUPPORTED) &&
       req.expectFalse(makeInfoVariable(hasSeqLen, HAVE_SEQLENARR), EXPECTED_NOT_SUPPORTED) &&

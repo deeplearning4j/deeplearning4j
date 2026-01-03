@@ -531,6 +531,10 @@ VERBOSE_ARG="${VERBOSE_ARG:-VERBOSE=1}"
 HELPER="${HELPER:-}"
 # Multi-helper support: comma-separated list of helpers
 HELPERS="${HELPERS:-}"
+# BLAS implementation selection: 'openblas', 'mkl', or empty for auto-detect
+# When using oneDNN, defaults to auto-detect (prefers MKL if available)
+# Set to 'openblas' to force OpenBLAS even with oneDNN
+BLAS_IMPL="${BLAS_IMPL:-}"
 # Dynamic kernel selection configuration
 DYNAMIC_KERNEL_SELECTION="${DYNAMIC_KERNEL_SELECTION:-ON}"
 KERNEL_STRATEGY="${KERNEL_STRATEGY:-fastest}"
@@ -684,6 +688,27 @@ do
             if [ -n "$value" ]; then
                 print_colored "blue" "✓ Helper priority: $value"
             fi
+            shift # past argument
+            ;;
+        --blas)
+            BLAS_IMPL="$value"
+            case "$value" in
+                openblas)
+                    print_colored "green" "✓ BLAS implementation: OpenBLAS (MKL disabled)"
+                    ;;
+                mkl)
+                    print_colored "green" "✓ BLAS implementation: Intel MKL"
+                    ;;
+                ""|auto)
+                    print_colored "blue" "✓ BLAS implementation: auto-detect"
+                    BLAS_IMPL=""
+                    ;;
+                *)
+                    print_colored "red" "❌ ERROR: Invalid BLAS implementation '$value'"
+                    print_colored "yellow" "    Valid options: openblas, mkl, auto (or empty)"
+                    exit 1
+                    ;;
+            esac
             shift # past argument
             ;;
         --mlir)
@@ -1272,6 +1297,139 @@ if [[ -z "$OPENBLAS_PATH" ]]; then
     fi
 fi
 
+# ============================================================================
+# MKL PATH DETECTION (for VML - Vector Math Library)
+# ============================================================================
+# MKL provides vectorized math functions (vsErf, vdErf, etc.) when used with oneDNN
+#
+# BLAS_IMPL controls which BLAS library to use:
+#   - "openblas": Force OpenBLAS, skip MKL detection entirely
+#   - "mkl": Force MKL (will error if not found)
+#   - "" or "auto": Auto-detect (prefer MKL if available, fallback to OpenBLAS)
+
+if [ -v MKL_PATH ]; then
+  echo "MKL_PATH is set: $MKL_PATH"
+else
+  MKL_PATH=""
+fi
+
+# Skip MKL detection if explicitly using OpenBLAS
+if [[ "$BLAS_IMPL" == "openblas" ]]; then
+    echo "ℹ️  BLAS implementation set to OpenBLAS - skipping MKL detection"
+    MKL_PATH=""
+# Auto-detect MKL path from JavaCPP cache when onednn helper is enabled
+elif [[ -z "$MKL_PATH" ]]; then
+    # Check if onednn is in HELPERS or HELPER
+    if [[ "$HELPERS" == *"onednn"* ]] || [[ "$HELPER" == *"onednn"* ]]; then
+        echo "Attempting to auto-detect MKL path for VML support..."
+
+        # Platform-specific subpaths
+        MKL_SUBPATHS=("linux-x86_64" "linux-aarch64" "macosx-x86_64" "macosx-arm64" "windows-x86_64")
+
+        # Search for MKL in JavaCPP cache locations
+        for JAVACPP_CACHE in "$HOME/.javacpp/cache" ".javacpp/cache" "../.javacpp/cache"; do
+            if [[ -d "$JAVACPP_CACHE" ]]; then
+                echo "  Searching in cache: $JAVACPP_CACHE"
+
+                # New JavaCPP cache structure: org.bytedeco/mkl/<version>/
+                if [[ -d "$JAVACPP_CACHE/org.bytedeco/mkl" ]]; then
+                    for MKL_VERSION_DIR in "$JAVACPP_CACHE/org.bytedeco/mkl"/*; do
+                        if [[ -d "$MKL_VERSION_DIR" ]]; then
+                            for subpath in "${MKL_SUBPATHS[@]}"; do
+                                # Check for include directory with mkl.h
+                                if [[ -f "$MKL_VERSION_DIR/$subpath/include/mkl.h" ]]; then
+                                    export MKL_PATH="$MKL_VERSION_DIR/$subpath"
+                                    echo "✅ Auto-detected MKL_PATH (new structure): $MKL_PATH"
+                                    break 3
+                                fi
+                                # Check nested org/bytedeco/mkl structure (from JAR extraction)
+                                if [[ -f "$MKL_VERSION_DIR/org/bytedeco/mkl/$subpath/include/mkl.h" ]]; then
+                                    export MKL_PATH="$MKL_VERSION_DIR/org/bytedeco/mkl/$subpath"
+                                    echo "✅ Auto-detected MKL_PATH (JAR structure): $MKL_PATH"
+                                    break 3
+                                fi
+                            done
+                        fi
+                    done
+                fi
+
+                # Old structure: mkl-<version>/ at top level
+                MKL_JAR=$(find "$JAVACPP_CACHE" -maxdepth 1 -name "mkl-*" -type d 2>/dev/null | head -1)
+                if [[ -n "$MKL_JAR" && -d "$MKL_JAR" ]]; then
+                    for subpath in "${MKL_SUBPATHS[@]}"; do
+                        if [[ -f "$MKL_JAR/org/bytedeco/mkl/$subpath/include/mkl.h" ]]; then
+                            export MKL_PATH="$MKL_JAR/org/bytedeco/mkl/$subpath"
+                            echo "✅ Auto-detected MKL_PATH (legacy structure): $MKL_PATH"
+                            break 2
+                        fi
+                    done
+                fi
+            fi
+        done
+
+        if [[ -z "$MKL_PATH" ]]; then
+            if [[ "$BLAS_IMPL" == "mkl" ]]; then
+                print_colored "red" "❌ ERROR: MKL explicitly requested but not found in JavaCPP cache"
+                print_colored "yellow" "    Ensure mkl artifact is in dependencies when using --blas mkl"
+                exit 1
+            else
+                echo "ℹ️  MKL not found in JavaCPP cache - VML will use scalar fallback"
+                echo "   To enable MKL VML, add -Dlibnd4j.blas=mkl to your build command"
+            fi
+        fi
+    fi
+fi
+
+# If MKL_PATH not found in JavaCPP cache, try to extract from Maven repository
+if [[ -z "$MKL_PATH" ]]; then
+    M2_MKL_DIR="$HOME/.m2/repository/org/bytedeco/mkl"
+    if [[ -d "$M2_MKL_DIR" ]]; then
+        echo "  Searching for MKL redist JAR in Maven repository..."
+        # Find the latest MKL version directory
+        MKL_VERSION_DIR=$(find "$M2_MKL_DIR" -maxdepth 1 -type d -name "*-1.5.*" | sort -V | tail -1)
+        if [[ -n "$MKL_VERSION_DIR" ]]; then
+            # Platform-specific redist JAR
+            case "$(uname -s)-$(uname -m)" in
+                Linux-x86_64)  PLATFORM_SUFFIX="linux-x86_64" ;;
+                Darwin-x86_64) PLATFORM_SUFFIX="macosx-x86_64" ;;
+                Darwin-arm64)  PLATFORM_SUFFIX="macosx-arm64" ;;
+                MINGW*|MSYS*|CYGWIN*) PLATFORM_SUFFIX="windows-x86_64" ;;
+                *) PLATFORM_SUFFIX="" ;;
+            esac
+
+            if [[ -n "$PLATFORM_SUFFIX" ]]; then
+                MKL_REDIST_JAR=$(find "$MKL_VERSION_DIR" -name "mkl-*-${PLATFORM_SUFFIX}-redist.jar" | head -1)
+                if [[ -f "$MKL_REDIST_JAR" ]]; then
+                    EXTRACT_DIR="${MKL_VERSION_DIR}/mkl-redist-extracted"
+                    if [[ ! -d "$EXTRACT_DIR/org/bytedeco/mkl/${PLATFORM_SUFFIX}/include" ]]; then
+                        echo "  Extracting MKL redist JAR: $MKL_REDIST_JAR"
+                        mkdir -p "$EXTRACT_DIR"
+                        unzip -q -o "$MKL_REDIST_JAR" -d "$EXTRACT_DIR" 2>/dev/null
+                    fi
+                    if [[ -f "$EXTRACT_DIR/org/bytedeco/mkl/${PLATFORM_SUFFIX}/include/mkl.h" ]]; then
+                        export MKL_PATH="$EXTRACT_DIR/org/bytedeco/mkl/${PLATFORM_SUFFIX}"
+                        echo "✅ Extracted MKL headers to: $MKL_PATH"
+                    fi
+                fi
+            fi
+        fi
+    fi
+fi
+
+# Export MKL_PATH for CMake
+if [[ -n "$MKL_PATH" ]]; then
+    MKL_CMAKE="-DMKL_ROOT=$MKL_PATH"
+    echo "✅ MKL VML enabled: $MKL_PATH"
+else
+    MKL_CMAKE=""
+fi
+
+# Also pass BLAS_IMPL to CMake for conditional compilation
+if [[ -n "$BLAS_IMPL" ]]; then
+    BLAS_CMAKE="-DBLAS_IMPL=$BLAS_IMPL"
+else
+    BLAS_CMAKE=""
+fi
 
 if [ ! -d "include/generated" ]; then
     mkdir -p "include/generated"
@@ -1609,6 +1767,8 @@ if [ "$PREPROCESS" == "ON" ]; then
             "$PACKAGING_ARG" \
             "$CUDA_COMPUTE" \
             -DOPENBLAS_PATH="$OPENBLAS_PATH" \
+            $MKL_CMAKE \
+            $BLAS_CMAKE \
             -DDEV=FALSE \
             -DCMAKE_NEED_RESPONSE=YES \
             -DMKL_MULTI_THREADED=TRUE \
@@ -1635,6 +1795,8 @@ if [ "$PREPROCESS" == "ON" ]; then
             "$PACKAGING_ARG" \
             "$CUDA_COMPUTE" \
             -DOPENBLAS_PATH="$OPENBLAS_PATH" \
+            $MKL_CMAKE \
+            $BLAS_CMAKE \
             -DDEV=FALSE \
             -DCMAKE_NEED_RESPONSE=YES \
             -DMKL_MULTI_THREADED=TRUE \
@@ -1697,6 +1859,8 @@ if [ "$LOG_OUTPUT" == "none" ]; then
         "$TESTS_ARG" \
         "$CUDA_COMPUTE" \
         -DOPENBLAS_PATH="$OPENBLAS_PATH" \
+        $MKL_CMAKE \
+        $BLAS_CMAKE \
         -DDEV=FALSE \
         -DCMAKE_NEED_RESPONSE=YES \
         -DMKL_MULTI_THREADED=TRUE \
@@ -1731,6 +1895,8 @@ else
         "$TESTS_ARG" \
         "$CUDA_COMPUTE" \
         -DOPENBLAS_PATH="$OPENBLAS_PATH" \
+        $MKL_CMAKE \
+        $BLAS_CMAKE \
         -DDEV=FALSE \
         -DCMAKE_NEED_RESPONSE=YES \
         -DMKL_MULTI_THREADED=TRUE \
@@ -1912,6 +2078,8 @@ if [ "$BUILD_PPSTEP" == "ON" ]; then
             "$ARCH_ARG" \
             "$NAME_ARG" \
             -DOPENBLAS_PATH="$OPENBLAS_PATH" \
+            $MKL_CMAKE \
+            $BLAS_CMAKE \
             $COMPILER_ARG \
             "$SOURCE_PATH"
     else
@@ -1921,10 +2089,12 @@ if [ "$BUILD_PPSTEP" == "ON" ]; then
             "$ARCH_ARG" \
             "$NAME_ARG" \
             -DOPENBLAS_PATH="$OPENBLAS_PATH" \
+            $MKL_CMAKE \
+            $BLAS_CMAKE \
             $COMPILER_ARG \
             "$SOURCE_PATH" >> "$LOG_OUTPUT" 2>&1
     fi
-    
+
     # Build ppstep
     if [ "$LOG_OUTPUT" == "none" ]; then
         eval "$MAKE_COMMAND" ppstep

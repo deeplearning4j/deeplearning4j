@@ -55,7 +55,7 @@ NDArray AttentionHelper::multiHeadProject(NDArray *input, NDArray *projectionMat
   NDArray projected('c',projectedShape, input->dataType(),
                     context);  //[nHeads*hS, batch*timeSteps]
   ops::matmul mmul;
-  mmul.execute({&projectionPrep, &inputPrep}, {&projected});
+  mmul.execute({projectionPrep, inputPrep}, {&projected});
 
   projected.reshapei({numHeads, projectedSize, miniBatchSize, seqLength});
   projected.permutei({2, 0, 1, 3}, false, false);  //[minibatch, numHeads, projectedSize, seqLength]

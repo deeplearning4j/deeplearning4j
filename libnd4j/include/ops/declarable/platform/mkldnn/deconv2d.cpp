@@ -387,8 +387,7 @@ PLATFORM_CHECK(deconv2d, ENGINE_CPU) {
   int paddingMode = INT_ARG(8);  // 0-VALID, 1-SAME
 
   Requirements req("ONEDNN DECONV2d OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectLessEq(makeInfoVariable(dH, "Dilation height"), 1) &&
+  req.expectLessEq(makeInfoVariable(dH, "Dilation height"), 1) &&
       req.expectLessEq(makeInfoVariable(dW, "Dilation width"), 1) &&
       req.expectFalse(makeInfoVariable(paddingMode, "paddingMode")) &&
       req.expectTrue(makeInfoVariable(
@@ -502,8 +501,7 @@ PLATFORM_CHECK(deconv2d_bp, ENGINE_CPU) {
   int paddingMode = INT_ARG(8);  // 0-VALID, 1-SAME
 
   Requirements req("ONEDNN DECONV2d_BP OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectLessEq(makeInfoVariable(dH, "Dilation height"), 1) &&
+  req.expectLessEq(makeInfoVariable(dH, "Dilation height"), 1) &&
       req.expectLessEq(makeInfoVariable(dW, "Dilation width"), 1) &&
       req.expectFalse(makeInfoVariable(paddingMode, "paddingMode")) &&
       req.expectTrue(makeInfoVariable(

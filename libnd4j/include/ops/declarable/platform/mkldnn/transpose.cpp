@@ -37,6 +37,19 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////
+static dnnl::memory::data_type getDnnlDataType(DataType dt) {
+  switch (dt) {
+    case DataType::FLOAT32: return dnnl::memory::data_type::f32;
+    case DataType::BFLOAT16: return dnnl::memory::data_type::bf16;
+    case DataType::HALF: return dnnl::memory::data_type::f16;
+    case DataType::DOUBLE: return dnnl::memory::data_type::f64;
+    case DataType::INT8: return dnnl::memory::data_type::s8;
+    case DataType::UINT8: return dnnl::memory::data_type::u8;
+    case DataType::INT32: return dnnl::memory::data_type::s32;
+    default: return dnnl::memory::data_type::f32;
+  }
+}
+
 static void transposeMKLDNN(NDArray* x, NDArray* z, const std::vector<LongType>& permutation) {
   auto xRank = x->rankOf();
 
@@ -48,13 +61,16 @@ static void transposeMKLDNN(NDArray* x, NDArray* z, const std::vector<LongType>&
     dstDims[i] = srcDims[permutation[i]];
   }
 
+  // Get the appropriate OneDNN data type
+  auto dnnlType = getDnnlDataType(x->dataType());
+
   // Create memory descriptors
   // Source uses standard format
-  dnnl::memory::desc src_md = dnnl::memory::desc(srcDims, dnnl::memory::data_type::f32,
+  dnnl::memory::desc src_md = dnnl::memory::desc(srcDims, dnnlType,
                                                   onednnUtils::getFormat(*x));
 
   // Destination uses standard format based on output shape
-  dnnl::memory::desc dst_md = dnnl::memory::desc(dstDims, dnnl::memory::data_type::f32,
+  dnnl::memory::desc dst_md = dnnl::memory::desc(dstDims, dnnlType,
                                                   onednnUtils::getFormat(*z));
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
@@ -84,7 +100,7 @@ static void transposeMKLDNN(NDArray* x, NDArray* z, const std::vector<LongType>&
   }
 
   // Create source descriptor with permuted strides (this is our "transposed view")
-  dnnl::memory::desc src_permuted_md = dnnl::memory::desc(dstDims, dnnl::memory::data_type::f32, permutedStrides);
+  dnnl::memory::desc src_permuted_md = dnnl::memory::desc(dstDims, dnnlType, permutedStrides);
 
   // Create source memory with permuted view
   dnnl::memory src_permuted_mem(src_permuted_md, engine, x->buffer());
@@ -130,13 +146,18 @@ PLATFORM_CHECK(transpose, ENGINE_CPU) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
+  // OneDNN supports f32, bf16, f16, and integer types for reorder
+  auto xType = x->dataType();
+  bool isSupportedType = (xType == DataType::FLOAT32 || xType == DataType::BFLOAT16 ||
+                          xType == DataType::HALF || xType == DataType::DOUBLE ||
+                          xType == DataType::INT8 || xType == DataType::UINT8 ||
+                          xType == DataType::INT32);
+
   Requirements req("ONEDNN TRANSPOSE OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
+  req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
-      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
+      req.expectTrue(makeInfoVariable(isSupportedType, TYPE_MSG_INPUT), EXPECTED_TRUE);
   req.logTheSuccess();
   return req;
 }
@@ -174,13 +195,20 @@ PLATFORM_CHECK(permute, ENGINE_CPU) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
+  // OneDNN supports f32, bf16, f16, and integer types for reorder
+  auto xType = x->dataType();
+  bool isSupportedType = (xType == DataType::FLOAT32 || xType == DataType::BFLOAT16 ||
+                          xType == DataType::HALF || xType == DataType::DOUBLE ||
+                          xType == DataType::INT8 || xType == DataType::UINT8 ||
+                          xType == DataType::INT32);
+  bool typesMatch = (x->dataType() == z->dataType());
+
   Requirements req("ONEDNN PERMUTE OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
+  req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
-      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
+      req.expectTrue(makeInfoVariable(isSupportedType, TYPE_MSG_INPUT), EXPECTED_TRUE) &&
+      req.expectTrue(makeInfoVariable(typesMatch, "TYPES MATCH"), EXPECTED_TRUE);
   req.logTheSuccess();
   return req;
 }

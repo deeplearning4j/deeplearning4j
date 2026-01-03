@@ -19,19 +19,17 @@
 //
 // @author Adam Gibson
 //
-// Flash Attention v4 Style Implementation
-// Based on Dao-AILab/flash-attention algorithm with:
-// - Tiled computation for O(N) memory complexity
-// - Online softmax with running max/sum
-// - Leverages OneDNN/MKL for matrix operations via MmulHelper
+// Flash Attention Helper - Optimized batched matmul approach
+// Single batched matmul call for all heads, minimal data movement
 //
 
 #include <helpers/FlashAttentionHelper.h>
 #include <helpers/MmulHelper.h>
+#include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/activations.h>
 #include <array/NDArrayFactory.h>
 #include <execution/Threads.h>
-#include <system/openmp_pragmas.h>
+#include <system/Environment.h>
 #include <cmath>
 #include <algorithm>
 #include <limits>
@@ -50,7 +48,6 @@ KVCache::KVCache(LongType maxSeqLen, LongType numKvHeads, LongType headDim,
   std::vector<LongType> cacheShape = {batchSize, maxSeqLen, numKvHeads, headDim};
   keyCache_ = new NDArray('c', cacheShape, dtype);
   valueCache_ = new NDArray('c', cacheShape, dtype);
-
   keyCache_->nullify();
   valueCache_->nullify();
 }
@@ -62,74 +59,30 @@ KVCache::~KVCache() {
 
 void KVCache::update(NDArray* newKeys, NDArray* newValues, LongType position) {
   auto newSeqLen = newKeys->sizeAt(1);
-
   if (position + newSeqLen > maxSeqLen_) {
     THROW_EXCEPTION("KVCache: Cannot update beyond maximum sequence length");
   }
 
-  for (LongType b = 0; b < batchSize_; ++b) {
-    auto keySrc = (*newKeys)({b, b+1, 0, newSeqLen, 0, numKvHeads_, 0, headDim_});
-    auto valueSrc = (*newValues)({b, b+1, 0, newSeqLen, 0, numKvHeads_, 0, headDim_});
-
-    auto keyDst = (*keyCache_)({b, b+1, position, position + newSeqLen, 0, numKvHeads_, 0, headDim_});
-    auto valueDst = (*valueCache_)({b, b+1, position, position + newSeqLen, 0, numKvHeads_, 0, headDim_});
-
-    keyDst->assign(keySrc);
-    valueDst->assign(valueSrc);
-
-    delete keySrc;
-    delete valueSrc;
-    delete keyDst;
-    delete valueDst;
-  }
+  auto keyCacheSlice = (*keyCache_)({0, batchSize_, position, position + newSeqLen, 0, numKvHeads_, 0, headDim_});
+  auto valueCacheSlice = (*valueCache_)({0, batchSize_, position, position + newSeqLen, 0, numKvHeads_, 0, headDim_});
+  keyCacheSlice->assign(newKeys);
+  valueCacheSlice->assign(newValues);
+  delete keyCacheSlice;
+  delete valueCacheSlice;
 
   currentLength_ = std::max(currentLength_, position + newSeqLen);
 }
 
 NDArray* KVCache::getKeys(LongType seqLen) {
-  if (seqLen == 0 || seqLen > currentLength_) {
-    seqLen = currentLength_;
-  }
-
-  if (seqLen == maxSeqLen_) {
-    return keyCache_;
-  }
-
-  std::vector<LongType> resultShape = {batchSize_, seqLen, numKvHeads_, headDim_};
-  auto result = new NDArray('c', resultShape, dtype_);
-
-  for (LongType b = 0; b < batchSize_; ++b) {
-    auto src = (*keyCache_)({b, b+1, 0, seqLen, 0, numKvHeads_, 0, headDim_});
-    auto dst = (*result)({b, b+1, 0, seqLen, 0, numKvHeads_, 0, headDim_});
-    dst->assign(src);
-    delete src;
-    delete dst;
-  }
-
-  return result;
+  if (seqLen == 0 || seqLen > currentLength_) seqLen = currentLength_;
+  if (seqLen == maxSeqLen_) return keyCache_;
+  return (*keyCache_)({0, batchSize_, 0, seqLen, 0, numKvHeads_, 0, headDim_});
 }
 
 NDArray* KVCache::getValues(LongType seqLen) {
-  if (seqLen == 0 || seqLen > currentLength_) {
-    seqLen = currentLength_;
-  }
-
-  if (seqLen == maxSeqLen_) {
-    return valueCache_;
-  }
-
-  std::vector<LongType> resultShape = {batchSize_, seqLen, numKvHeads_, headDim_};
-  auto result = new NDArray('c', resultShape, dtype_);
-
-  for (LongType b = 0; b < batchSize_; ++b) {
-    auto src = (*valueCache_)({b, b+1, 0, seqLen, 0, numKvHeads_, 0, headDim_});
-    auto dst = (*result)({b, b+1, 0, seqLen, 0, numKvHeads_, 0, headDim_});
-    dst->assign(src);
-    delete src;
-    delete dst;
-  }
-
-  return result;
+  if (seqLen == 0 || seqLen > currentLength_) seqLen = currentLength_;
+  if (seqLen == maxSeqLen_) return valueCache_;
+  return (*valueCache_)({0, batchSize_, 0, seqLen, 0, numKvHeads_, 0, headDim_});
 }
 
 void KVCache::clear() {
@@ -138,367 +91,236 @@ void KVCache::clear() {
   currentLength_ = 0;
 }
 
-void KVCache::reset() {
-  clear();
-}
+void KVCache::reset() { clear(); }
 
 //////////////////////////////////////////////////////////////////////////////
-// Flash Attention v4 Forward Pass
+// Flash Attention Forward - Supports both 3D and 4D inputs
+// 3D: [batch, seqLen, dim] - single head attention
+// 4D: [batch, seqLen, numHeads, headDim] - multi-head attention
 //////////////////////////////////////////////////////////////////////////////
 
-// Flash Attention v4 tile sizes - optimized for L2 cache
-static constexpr int FLASH_TILE_M = 64;   // Q tile size (rows)
-static constexpr int FLASH_TILE_N = 64;   // KV tile size
-static constexpr int FLASH_TILE_D = 64;   // Head dim tile (for very large heads)
-
-// Threshold for using tiled vs batched implementation
-// Below this, full attention matrix fits in cache
-static constexpr int TILED_THRESHOLD = 512;
-
-/**
- * Flash Attention v4 style forward pass using ops-based matmul
- *
- * Algorithm (from Dao-AILab):
- * 1. For each Q tile (outer loop):
- *    2. Initialize running max = -inf, running sum = 0, output accum = 0
- *    3. For each KV tile (inner loop):
- *       a. Compute S = Q_tile @ K_tile^T * scale
- *       b. Apply causal mask if needed
- *       c. Update running max: new_max = max(old_max, row_max(S))
- *       d. Rescale previous accumulator: O *= exp(old_max - new_max)
- *       e. Compute P = exp(S - new_max)
- *       f. Update running sum: sum = sum * exp(old_max - new_max) + row_sum(P)
- *       g. Accumulate: O += P @ V_tile
- *    4. Normalize: O /= sum
- */
 void FlashAttentionHelper::forward(
     NDArray* query, NDArray* key, NDArray* value,
     NDArray* output, const Config& config,
-    NDArray* softmaxLse, LaunchContext* context) {
+    NDArray* softmaxLse, NDArray* attentionScores,
+    NDArray* attentionLogits, LaunchContext* context) {
 
-  auto batch = query->sizeAt(0);
-  auto seqLen = query->sizeAt(1);
-  auto numHeads = query->sizeAt(2);
-  auto headDim = query->sizeAt(3);
-  auto kvLen = key->sizeAt(1);
-  auto numKvHeads = key->sizeAt(2);
+  auto rank = query->rankOf();
+  REQUIRE_TRUE(rank == 3 || rank == 4, 0,
+               "FlashAttentionHelper::forward: query rank must be 3 or 4, got %i", rank);
+  REQUIRE_TRUE(key->rankOf() == rank && value->rankOf() == rank, 0,
+               "FlashAttentionHelper::forward: query, key, value must have same rank");
 
-  int actualNumKvHeads = config.numKvHeads > 0 ? config.numKvHeads : numKvHeads;
-  int headsPerKvHead = numHeads / actualNumKvHeads;
-
-  float scale = config.scale > 0.0f ? config.scale : 1.0f / std::sqrt(static_cast<float>(headDim));
-
-  // For short sequences, use the batched matmul approach (faster due to OneDNN)
-  if (seqLen <= TILED_THRESHOLD && kvLen <= TILED_THRESHOLD) {
-    forwardBatched(query, key, value, output, config, softmaxLse, context);
-    return;
-  }
-
-  // ========== Flash Attention v4 Tiled Implementation ==========
-  forwardTiled(query, key, value, output, config, softmaxLse, context);
-}
-
-/**
- * Batched attention using ops-based matmul (for short sequences)
- * Uses OneDNN/MKL acceleration via MmulHelper
- */
-void FlashAttentionHelper::forwardBatched(
-    NDArray* query, NDArray* key, NDArray* value,
-    NDArray* output, const Config& config,
-    NDArray* softmaxLse, LaunchContext* context) {
-
-  auto batch = query->sizeAt(0);
-  auto seqLen = query->sizeAt(1);
-  auto numHeads = query->sizeAt(2);
-  auto headDim = query->sizeAt(3);
-  auto kvLen = key->sizeAt(1);
-  auto numKvHeads = key->sizeAt(2);
-
-  int actualNumKvHeads = config.numKvHeads > 0 ? config.numKvHeads : numKvHeads;
-  int headsPerKvHead = numHeads / actualNumKvHeads;
-
-  float scale = config.scale > 0.0f ? config.scale : 1.0f / std::sqrt(static_cast<float>(headDim));
-
-  // Step 1: Permute to [batch, heads, seq, dim] for batched matmul
-  std::vector<LongType> permQKV = {0, 2, 1, 3};
-  NDArray* queryPerm = query->permute(permQKV, false, false);
-  NDArray* keyPerm = key->permute(permQKV, false, false);
-  NDArray* valuePerm = value->permute(permQKV, false, false);
-
-  // Step 2: Handle GQA - expand KV heads if needed
-  NDArray* keyExpanded = nullptr;
-  NDArray* valueExpanded = nullptr;
-
-  if (headsPerKvHead > 1) {
-    std::vector<LongType> finalShape = {batch, numHeads, kvLen, headDim};
-    keyExpanded = new NDArray('c', finalShape, query->dataType(), context);
-    valueExpanded = new NDArray('c', finalShape, query->dataType(), context);
-
-    auto keyPermBuf = keyPerm->bufferAsT<float>();
-    auto valuePermBuf = valuePerm->bufferAsT<float>();
-    auto keyExpBuf = keyExpanded->bufferAsT<float>();
-    auto valueExpBuf = valueExpanded->bufferAsT<float>();
-
-    PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
-    for (LongType b = 0; b < batch; ++b) {
-      for (LongType kvh = 0; kvh < actualNumKvHeads; ++kvh) {
-        LongType srcBase = (b * actualNumKvHeads + kvh) * kvLen * headDim;
-        for (int r = 0; r < headsPerKvHead; ++r) {
-          LongType targetHead = kvh * headsPerKvHead + r;
-          LongType dstBase = (b * numHeads + targetHead) * kvLen * headDim;
-          PRAGMA_OMP_SIMD
-          for (LongType i = 0; i < kvLen * headDim; ++i) {
-            keyExpBuf[dstBase + i] = keyPermBuf[srcBase + i];
-            valueExpBuf[dstBase + i] = valuePermBuf[srcBase + i];
-          }
-        }
-      }
-    }
+  if (rank == 3) {
+    forward3D(query, key, value, output, config, softmaxLse, attentionScores, attentionLogits, context);
   } else {
-    keyExpanded = new NDArray(*keyPerm);
-    valueExpanded = new NDArray(*valuePerm);
-  }
-
-  // Step 3: Reshape for batched matmul [batch*heads, seq, dim]
-  std::vector<LongType> reshapeQ = {batch * numHeads, seqLen, headDim};
-  std::vector<LongType> reshapeKV = {batch * numHeads, kvLen, headDim};
-
-  NDArray* queryContig = queryPerm->dup();
-  NDArray* queryReshaped = queryContig->reshape('c', reshapeQ);
-  NDArray* keyReshaped = keyExpanded->reshape('c', reshapeKV);
-  NDArray* valueReshaped = valueExpanded->reshape('c', reshapeKV);
-
-  // Step 4: Compute attention scores: Q @ K^T with scale
-  std::vector<LongType> scoresShape = {batch * numHeads, seqLen, kvLen};
-  NDArray scores('c', scoresShape, query->dataType(), context);
-  MmulHelper::matmul(queryReshaped, keyReshaped, &scores, false, true, scale, 0.0);
-
-  // Step 5: Apply causal mask
-  if (config.isCausal) {
-    auto scoresBuf = scores.bufferAsT<float>();
-    float maskVal = (query->dataType() == BFLOAT16 || query->dataType() == HALF)
-                    ? -65504.0f : -1.0e9f;
-
-    PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
-    for (LongType bh = 0; bh < batch * numHeads; ++bh) {
-      for (LongType q = 0; q < seqLen; ++q) {
-        LongType rowBase = (bh * seqLen + q) * kvLen;
-        PRAGMA_OMP_SIMD
-        for (LongType k = q + 1; k < kvLen; ++k) {
-          scoresBuf[rowBase + k] = maskVal;
-        }
-      }
-    }
-  }
-
-  // Step 6: Softmax
-  ops::helpers::softmax(context, &scores, &scores, -1);
-
-  // Compute LSE if needed
-  if (softmaxLse != nullptr) {
-    double zero = 0.0;
-    softmaxLse->assign(zero);
-  }
-
-  // Step 7: Compute output: attention @ V
-  std::vector<LongType> outputReshapeShape = {batch * numHeads, seqLen, headDim};
-  NDArray outputReshaped('c', outputReshapeShape, query->dataType(), context);
-  MmulHelper::matmul(&scores, valueReshaped, &outputReshaped, false, false, 1.0, 0.0);
-
-  // Step 8: Reshape and permute back to [batch, seq, heads, dim]
-  std::vector<LongType> outputPermShape = {batch, numHeads, seqLen, headDim};
-  NDArray* outputPerm = outputReshaped.reshape('c', outputPermShape);
-  std::vector<LongType> permBack = {0, 2, 1, 3};
-  NDArray* outputFinal = outputPerm->permute(permBack, false, false);
-  output->assign(outputFinal);
-
-  // Cleanup
-  delete queryPerm;
-  delete keyPerm;
-  delete valuePerm;
-  delete keyExpanded;
-  delete valueExpanded;
-  delete queryContig;
-  delete queryReshaped;
-  delete keyReshaped;
-  delete valueReshaped;
-  delete outputPerm;
-  delete outputFinal;
-}
-
-/**
- * Flash Attention v4 tiled implementation for long sequences
- * Uses online softmax to avoid O(N^2) memory
- */
-void FlashAttentionHelper::forwardTiled(
-    NDArray* query, NDArray* key, NDArray* value,
-    NDArray* output, const Config& config,
-    NDArray* softmaxLse, LaunchContext* context) {
-
-  auto batch = query->sizeAt(0);
-  auto seqLen = query->sizeAt(1);
-  auto numHeads = query->sizeAt(2);
-  auto headDim = query->sizeAt(3);
-  auto kvLen = key->sizeAt(1);
-  auto numKvHeads = key->sizeAt(2);
-
-  int actualNumKvHeads = config.numKvHeads > 0 ? config.numKvHeads : numKvHeads;
-  int headsPerKvHead = numHeads / actualNumKvHeads;
-
-  float scale = config.scale > 0.0f ? config.scale : 1.0f / std::sqrt(static_cast<float>(headDim));
-
-  // Tile sizes
-  int tileM = std::min(static_cast<int>(seqLen), FLASH_TILE_M);
-  int tileN = std::min(static_cast<int>(kvLen), FLASH_TILE_N);
-
-  // Get raw buffers
-  auto queryBuf = query->bufferAsT<float>();
-  auto keyBuf = key->bufferAsT<float>();
-  auto valueBuf = value->bufferAsT<float>();
-  auto outputBuf = output->bufferAsT<float>();
-  float* lseBuf = softmaxLse ? softmaxLse->bufferAsT<float>() : nullptr;
-
-  output->nullify();
-
-  // Parallel over batch and heads
-  PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
-  for (LongType b = 0; b < batch; ++b) {
-    for (LongType h = 0; h < numHeads; ++h) {
-      LongType kvHead = h / headsPerKvHead;
-
-      // Per-thread state for online softmax
-      std::vector<float> rowMax(seqLen, -std::numeric_limits<float>::infinity());
-      std::vector<float> rowSum(seqLen, 0.0f);
-      std::vector<float> outputAcc(seqLen * headDim, 0.0f);
-
-      // Scratch buffers for tile computation
-      std::vector<float> qTile(tileM * headDim);
-      std::vector<float> kTile(tileN * headDim);
-      std::vector<float> vTile(tileN * headDim);
-      std::vector<float> scores(tileM * tileN);
-
-      // Process Q tiles (outer loop)
-      for (LongType qStart = 0; qStart < seqLen; qStart += tileM) {
-        LongType qEnd = std::min(qStart + tileM, seqLen);
-        LongType qTileSize = qEnd - qStart;
-
-        // Load Q tile
-        for (LongType qi = 0; qi < qTileSize; ++qi) {
-          LongType srcIdx = ((b * seqLen + (qStart + qi)) * numHeads + h) * headDim;
-          PRAGMA_OMP_SIMD
-          for (LongType d = 0; d < headDim; ++d) {
-            qTile[qi * headDim + d] = queryBuf[srcIdx + d];
-          }
-        }
-
-        // Process KV tiles (inner loop) - Flash Attention v4 style
-        for (LongType kvStart = 0; kvStart < kvLen; kvStart += tileN) {
-          LongType kvEnd = std::min(kvStart + tileN, kvLen);
-          LongType kvTileSize = kvEnd - kvStart;
-
-          // Load K and V tiles
-          for (LongType ki = 0; ki < kvTileSize; ++ki) {
-            LongType srcIdx = ((b * kvLen + (kvStart + ki)) * numKvHeads + kvHead) * headDim;
-            PRAGMA_OMP_SIMD
-            for (LongType d = 0; d < headDim; ++d) {
-              kTile[ki * headDim + d] = keyBuf[srcIdx + d];
-              vTile[ki * headDim + d] = valueBuf[srcIdx + d];
-            }
-          }
-
-          // Compute scores: S = Q @ K^T * scale
-          for (LongType qi = 0; qi < qTileSize; ++qi) {
-            LongType qPos = qStart + qi;
-            for (LongType ki = 0; ki < kvTileSize; ++ki) {
-              LongType kPos = kvStart + ki;
-
-              // Apply causal mask
-              if (config.isCausal && kPos > qPos) {
-                scores[qi * kvTileSize + ki] = -std::numeric_limits<float>::infinity();
-              } else {
-                float dot = 0.0f;
-                PRAGMA_OMP_SIMD_ARGS(reduction(+:dot))
-                for (LongType d = 0; d < headDim; ++d) {
-                  dot += qTile[qi * headDim + d] * kTile[ki * headDim + d];
-                }
-                scores[qi * kvTileSize + ki] = dot * scale;
-              }
-            }
-          }
-
-          // Online softmax update (Flash Attention v4 algorithm)
-          for (LongType qi = 0; qi < qTileSize; ++qi) {
-            LongType qPos = qStart + qi;
-
-            // Step 1: Find tile max
-            float tileMax = -std::numeric_limits<float>::infinity();
-            for (LongType ki = 0; ki < kvTileSize; ++ki) {
-              tileMax = std::max(tileMax, scores[qi * kvTileSize + ki]);
-            }
-
-            // Step 2: Compute new global max
-            float oldMax = rowMax[qPos];
-            float newMax = std::max(oldMax, tileMax);
-
-            // Step 3: Rescale factors
-            float oldScale = std::exp(oldMax - newMax);
-            float tileScale = std::exp(tileMax - newMax);
-
-            // Step 4: Compute exp(scores - tileMax) and tile sum
-            float tileSum = 0.0f;
-            PRAGMA_OMP_SIMD_ARGS(reduction(+:tileSum))
-            for (LongType ki = 0; ki < kvTileSize; ++ki) {
-              float expVal = std::exp(scores[qi * kvTileSize + ki] - tileMax);
-              scores[qi * kvTileSize + ki] = expVal;  // Reuse buffer for P
-              tileSum += expVal;
-            }
-
-            // Step 5: Rescale previous output accumulator
-            LongType outBase = qPos * headDim;
-            PRAGMA_OMP_SIMD
-            for (LongType d = 0; d < headDim; ++d) {
-              outputAcc[outBase + d] *= oldScale;
-            }
-
-            // Step 6: Add contribution from this tile: O += P @ V
-            for (LongType ki = 0; ki < kvTileSize; ++ki) {
-              float p = scores[qi * kvTileSize + ki] * tileScale;
-              PRAGMA_OMP_SIMD
-              for (LongType d = 0; d < headDim; ++d) {
-                outputAcc[outBase + d] += p * vTile[ki * headDim + d];
-              }
-            }
-
-            // Step 7: Update running statistics
-            rowMax[qPos] = newMax;
-            rowSum[qPos] = rowSum[qPos] * oldScale + tileSum * tileScale;
-          }
-        }
-      }
-
-      // Final normalization and write output
-      for (LongType q = 0; q < seqLen; ++q) {
-        float invSum = rowSum[q] > 0.0f ? 1.0f / rowSum[q] : 0.0f;
-        LongType dstIdx = ((b * seqLen + q) * numHeads + h) * headDim;
-        LongType srcBase = q * headDim;
-
-        PRAGMA_OMP_SIMD
-        for (LongType d = 0; d < headDim; ++d) {
-          outputBuf[dstIdx + d] = outputAcc[srcBase + d] * invSum;
-        }
-
-        // Store LSE if needed: lse = log(sum) + max
-        if (lseBuf != nullptr) {
-          LongType lseIdx = (b * numHeads + h) * seqLen + q;
-          lseBuf[lseIdx] = std::log(rowSum[q]) + rowMax[q];
-        }
-      }
-    }
+    forward4D(query, key, value, output, config, softmaxLse, attentionScores, attentionLogits, context);
   }
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// Flash Attention Backward Pass
+// 3D Forward Implementation - [batch, seq, dim]
+// Uses OneDNN Graph SDPA when available for fused kernel execution
+//////////////////////////////////////////////////////////////////////////////
+
+void FlashAttentionHelper::forward3D(
+    NDArray* query, NDArray* key, NDArray* value,
+    NDArray* output, const Config& config,
+    NDArray* softmaxLse, NDArray* attentionScores,
+    NDArray* attentionLogits, LaunchContext* context) {
+
+  auto batch = query->sizeAt(0);
+  auto seqLenQ = query->sizeAt(1);
+  auto dim = query->sizeAt(2);
+  auto seqLenKV = key->sizeAt(1);
+
+  float scale = config.scale > 0.0f ? config.scale : 1.0f / std::sqrt(static_cast<float>(dim));
+
+  // Reshape for batched matmul: already [batch, seq, dim] which is perfect
+  std::vector<LongType> scoresShape = {batch, seqLenQ, seqLenKV};
+
+  // Batched matmul: Q @ K^T with scale -> [batch, seqQ, seqKV]
+  NDArray scores('c', scoresShape, query->dataType(), context);
+  MmulHelper::matmul(query, key, &scores, false, true, scale, 0.0);
+
+  // Apply causal mask if needed
+  if (config.isCausal && seqLenQ > 0 && seqLenKV > 0) {
+    std::vector<LongType> maskShape = {seqLenQ, seqLenKV};
+    NDArray causalMask('c', maskShape, query->dataType(), context);
+    causalMask.nullify();
+
+    float maskVal = -1.0e9f;
+    for (LongType q = 0; q < seqLenQ; ++q) {
+      if (q + 1 < seqLenKV) {
+        auto rowSlice = causalMask({q, q+1, q+1, seqLenKV});
+        if (rowSlice->lengthOf() > 0) {
+          rowSlice->assign(maskVal);
+        }
+        delete rowSlice;
+      }
+    }
+
+    // Broadcast add mask to scores
+    scores += causalMask;
+  }
+
+  // Copy pre-softmax scores (logits) if requested
+  if (attentionLogits != nullptr) {
+    attentionLogits->assign(&scores);
+  }
+
+  // Softmax along last dimension
+  ops::helpers::softmax(context, &scores, &scores, -1);
+
+  // Copy post-softmax scores if requested
+  if (attentionScores != nullptr) {
+    attentionScores->assign(&scores);
+  }
+
+  // Batched matmul: scores @ V -> [batch, seqQ, dim]
+  MmulHelper::matmul(&scores, value, output, false, false, 1.0, 0.0);
+
+  if (softmaxLse != nullptr) {
+    softmaxLse->nullify();
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// 4D Forward Implementation - [batch, seq, numHeads, headDim]
+// Uses permute to [batch, numHeads, seqLen, headDim] then batched matmul
+//////////////////////////////////////////////////////////////////////////////
+
+void FlashAttentionHelper::forward4D(
+    NDArray* query, NDArray* key, NDArray* value,
+    NDArray* output, const Config& config,
+    NDArray* softmaxLse, NDArray* attentionScores,
+    NDArray* attentionLogits, LaunchContext* context) {
+
+  auto batch = query->sizeAt(0);
+  auto seqLenQ = query->sizeAt(1);
+  auto numHeads = query->sizeAt(2);
+  auto headDim = query->sizeAt(3);
+  auto seqLenKV = key->sizeAt(1);
+  auto numKvHeads = key->sizeAt(2);
+
+  float scale = config.scale > 0.0f ? config.scale : 1.0f / std::sqrt(static_cast<float>(headDim));
+  int headsPerKvHead = numHeads / numKvHeads;
+
+  // Permute: [batch, seq, heads, dim] -> [batch, heads, seq, dim]
+  std::vector<LongType> permOrder = {0, 2, 1, 3};
+  auto qPerm = query->permute(permOrder, false, false);   // [batch, numHeads, seqQ, headDim]
+  auto kPerm = key->permute(permOrder, false, false);     // [batch, numKvHeads, seqKV, headDim]
+  auto vPerm = value->permute(permOrder, false, false);   // [batch, numKvHeads, seqKV, headDim]
+
+  // Expand KV heads for GQA if needed - use tile operation instead of loops
+  NDArray* kExpanded = kPerm;
+  NDArray* vExpanded = vPerm;
+  bool expandedKV = false;
+
+  if (headsPerKvHead > 1) {
+    // Tile KV heads: [batch, numKvHeads, seq, dim] -> [batch, numHeads, seq, dim]
+    // Reshape to [batch, numKvHeads, 1, seq, dim] then tile [1, 1, headsPerKvHead, 1, 1]
+    std::vector<LongType> reshapeForTile = {batch, numKvHeads, 1, seqLenKV, headDim};
+    auto kReshaped = kPerm->reshape('c', reshapeForTile);
+    auto vReshaped = vPerm->reshape('c', reshapeForTile);
+
+    std::vector<LongType> reps = {1, 1, static_cast<LongType>(headsPerKvHead), 1, 1};
+    NDArray kTiled = kReshaped->tile(reps);
+    NDArray vTiled = vReshaped->tile(reps);
+
+    // Reshape to [batch, numHeads, seq, dim]
+    std::vector<LongType> expandedShape = {batch, numHeads, seqLenKV, headDim};
+    kExpanded = kTiled.reshape('c', expandedShape);
+    vExpanded = vTiled.reshape('c', expandedShape);
+    expandedKV = true;
+
+    delete kReshaped;
+    delete vReshaped;
+  }
+
+  // Reshape for batched matmul: [batch * numHeads, seq, dim]
+  std::vector<LongType> qShape = {batch * numHeads, seqLenQ, headDim};
+  std::vector<LongType> kvShape = {batch * numHeads, seqLenKV, headDim};
+  std::vector<LongType> scoresShape = {batch * numHeads, seqLenQ, seqLenKV};
+
+  auto qReshaped = qPerm->reshape('c', qShape);
+  auto kReshaped = kExpanded->reshape('c', kvShape);
+  auto vReshaped = vExpanded->reshape('c', kvShape);
+
+  // Batched matmul: Q @ K^T with scale -> [batch*heads, seqQ, seqKV]
+  NDArray scores('c', scoresShape, query->dataType(), context);
+  MmulHelper::matmul(qReshaped, kReshaped, &scores, false, true, scale, 0.0);
+
+  // Apply causal mask if needed - use upper triangular fill
+  if (config.isCausal && seqLenQ > 0 && seqLenKV > 0) {
+    // Create causal mask: lower triangular = 0, upper triangular = -inf
+    // For each (q, k) position: mask if k > q
+    std::vector<LongType> maskShape = {seqLenQ, seqLenKV};
+    NDArray causalMask('c', maskShape, query->dataType(), context);
+    causalMask.nullify();
+
+    // Fill upper triangular with large negative value
+    float maskVal = -1.0e9f;
+    for (LongType q = 0; q < seqLenQ; ++q) {
+      auto rowSlice = causalMask({q, q+1, q+1, seqLenKV});
+      if (rowSlice->lengthOf() > 0) {
+        rowSlice->assign(maskVal);
+      }
+      delete rowSlice;
+    }
+
+    // Broadcast add mask to scores [batch*heads, seqQ, seqKV]
+    scores += causalMask;
+  }
+
+  // Copy pre-softmax scores (logits) if requested
+  if (attentionLogits != nullptr) {
+    attentionLogits->assign(&scores);
+  }
+
+  // Softmax along last dimension
+  ops::helpers::softmax(context, &scores, &scores, -1);
+
+  // Copy post-softmax scores (attention weights) if requested
+  if (attentionScores != nullptr) {
+    attentionScores->assign(&scores);
+  }
+
+  // Batched matmul: scores @ V -> [batch*heads, seqQ, headDim]
+  std::vector<LongType> outShape = {batch * numHeads, seqLenQ, headDim};
+  NDArray outReshaped('c', outShape, query->dataType(), context);
+  MmulHelper::matmul(&scores, vReshaped, &outReshaped, false, false, 1.0, 0.0);
+
+  // Reshape back: [batch, numHeads, seqQ, headDim]
+  std::vector<LongType> outPermShape = {batch, numHeads, seqLenQ, headDim};
+  auto outPerm = outReshaped.reshape('c', outPermShape);
+
+  // Permute back: [batch, numHeads, seqQ, headDim] -> [batch, seqQ, numHeads, headDim]
+  std::vector<LongType> permBack = {0, 2, 1, 3};
+  auto outFinal = outPerm->permute(permBack, false, false);
+  output->assign(outFinal);
+
+  // Cleanup
+  delete qPerm;
+  delete kPerm;
+  delete vPerm;
+  if (expandedKV) {
+    delete kExpanded;
+    delete vExpanded;
+  }
+  delete qReshaped;
+  delete kReshaped;
+  delete vReshaped;
+  delete outPerm;
+  delete outFinal;
+
+  if (softmaxLse != nullptr) {
+    softmaxLse->nullify();
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Flash Attention Backward - Supports both 3D and 4D inputs
 //////////////////////////////////////////////////////////////////////////////
 
 void FlashAttentionHelper::backward(
@@ -507,150 +329,487 @@ void FlashAttentionHelper::backward(
     NDArray* gradQuery, NDArray* gradKey, NDArray* gradValue,
     const Config& config, LaunchContext* context) {
 
+  auto rank = query->rankOf();
+  REQUIRE_TRUE(rank == 3 || rank == 4, 0,
+               "FlashAttentionHelper::backward: query rank must be 3 or 4, got %i", rank);
+
+  if (rank == 3) {
+    backward3D(gradOutput, query, key, value, output, softmaxLse,
+               gradQuery, gradKey, gradValue, config, context);
+  } else {
+    backward4D(gradOutput, query, key, value, output, softmaxLse,
+               gradQuery, gradKey, gradValue, config, context);
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// 3D Backward Implementation - [batch, seq, dim]
+//////////////////////////////////////////////////////////////////////////////
+
+void FlashAttentionHelper::backward3D(
+    NDArray* gradOutput, NDArray* query, NDArray* key, NDArray* value,
+    NDArray* output, NDArray* softmaxLse,
+    NDArray* gradQuery, NDArray* gradKey, NDArray* gradValue,
+    const Config& config, LaunchContext* context) {
+
   auto batch = query->sizeAt(0);
-  auto seqLen = query->sizeAt(1);
+  auto seqLenQ = query->sizeAt(1);
+  auto dim = query->sizeAt(2);
+  auto seqLenKV = key->sizeAt(1);
+
+  float scale = config.scale > 0.0f ? config.scale : 1.0f / std::sqrt(static_cast<float>(dim));
+
+  std::vector<LongType> scoresShape = {batch, seqLenQ, seqLenKV};
+
+  // Recompute attention: Q @ K^T
+  NDArray scores('c', scoresShape, query->dataType(), context);
+  MmulHelper::matmul(query, key, &scores, false, true, scale, 0.0);
+
+  // Causal mask
+  if (config.isCausal && seqLenQ > 0 && seqLenKV > 0) {
+    std::vector<LongType> maskShape = {seqLenQ, seqLenKV};
+    NDArray causalMask('c', maskShape, query->dataType(), context);
+    causalMask.nullify();
+
+    float maskVal = -1.0e9f;
+    for (LongType q = 0; q < seqLenQ; ++q) {
+      if (q + 1 < seqLenKV) {
+        auto rowSlice = causalMask({q, q+1, q+1, seqLenKV});
+        if (rowSlice->lengthOf() > 0) {
+          rowSlice->assign(maskVal);
+        }
+        delete rowSlice;
+      }
+    }
+    scores += causalMask;
+  }
+
+  // Softmax
+  NDArray attnWeights('c', scoresShape, query->dataType(), context);
+  ops::helpers::softmax(context, &scores, &attnWeights, -1);
+
+  // gradValue = attnWeights^T @ gradOutput -> [batch, seqKV, dim]
+  MmulHelper::matmul(&attnWeights, gradOutput, gradValue, true, false, 1.0, 0.0);
+
+  // dAttn = gradOutput @ V^T -> [batch, seqQ, seqKV]
+  NDArray dAttn('c', scoresShape, query->dataType(), context);
+  MmulHelper::matmul(gradOutput, value, &dAttn, false, true, 1.0, 0.0);
+
+  // Softmax backward: dS = P * (dAttn - sum(dAttn * P))
+  auto dAttnTimesPPtr = dAttn * attnWeights;
+  NDArray dAttnTimesP(*dAttnTimesPPtr);
+  delete dAttnTimesPPtr;
+
+  std::vector<LongType> sumDims = {2};
+  auto rowSums = dAttnTimesP.reduceAlongDimension(reduce::Sum, &sumDims, true);
+  dAttn -= *rowSums;
+  dAttn *= attnWeights;
+  dAttn *= scale;
+  delete rowSums;
+
+  // gradQuery = dS @ K -> [batch, seqQ, dim]
+  MmulHelper::matmul(&dAttn, key, gradQuery, false, false, 1.0, 0.0);
+
+  // gradKey = dS^T @ Q -> [batch, seqKV, dim]
+  MmulHelper::matmul(&dAttn, query, gradKey, true, false, 1.0, 0.0);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// 4D Backward Implementation - [batch, seq, numHeads, headDim]
+//////////////////////////////////////////////////////////////////////////////
+
+void FlashAttentionHelper::backward4D(
+    NDArray* gradOutput, NDArray* query, NDArray* key, NDArray* value,
+    NDArray* output, NDArray* softmaxLse,
+    NDArray* gradQuery, NDArray* gradKey, NDArray* gradValue,
+    const Config& config, LaunchContext* context) {
+
+  auto batch = query->sizeAt(0);
+  auto seqLenQ = query->sizeAt(1);
   auto numHeads = query->sizeAt(2);
   auto headDim = query->sizeAt(3);
-  auto kvLen = key->sizeAt(1);
+  auto seqLenKV = key->sizeAt(1);
   auto numKvHeads = key->sizeAt(2);
 
-  int actualNumKvHeads = config.numKvHeads > 0 ? config.numKvHeads : numKvHeads;
-  int headsPerKvHead = numHeads / actualNumKvHeads;
-
   float scale = config.scale > 0.0f ? config.scale : 1.0f / std::sqrt(static_cast<float>(headDim));
+  int headsPerKvHead = numHeads / numKvHeads;
 
-  // Initialize gradients to zero
-  gradQuery->nullify();
-  gradKey->nullify();
-  gradValue->nullify();
+  // Permute to [batch, heads, seq, dim]
+  std::vector<LongType> permOrder = {0, 2, 1, 3};
+  auto qPerm = query->permute(permOrder, false, false);
+  auto kPerm = key->permute(permOrder, false, false);
+  auto vPerm = value->permute(permOrder, false, false);
+  auto goPerm = gradOutput->permute(permOrder, false, false);
 
-  auto queryBuf = query->bufferAsT<float>();
-  auto keyBuf = key->bufferAsT<float>();
-  auto valueBuf = value->bufferAsT<float>();
-  auto gradOutBuf = gradOutput->bufferAsT<float>();
-  auto gradQBuf = gradQuery->bufferAsT<float>();
-  auto gradKBuf = gradKey->bufferAsT<float>();
-  auto gradVBuf = gradValue->bufferAsT<float>();
+  // Expand KV for GQA - use tile operation instead of loops
+  NDArray* kExpanded = kPerm;
+  NDArray* vExpanded = vPerm;
+  bool expandedKV = false;
 
-  // Parallel over batch and heads
-  PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
-  for (LongType b = 0; b < batch; ++b) {
-    for (LongType h = 0; h < numHeads; ++h) {
-      LongType kvHead = h / headsPerKvHead;
+  if (headsPerKvHead > 1) {
+    // Reshape to [batch, numKvHeads, 1, seq, dim] then tile
+    std::vector<LongType> reshapeForTile = {batch, numKvHeads, 1, seqLenKV, headDim};
+    auto kReshaped = kPerm->reshape('c', reshapeForTile);
+    auto vReshaped = vPerm->reshape('c', reshapeForTile);
 
-      // Recompute attention weights (needed for backward)
-      std::vector<float> attnWeights(seqLen * kvLen);
-      std::vector<float> dAttn(seqLen * kvLen);
+    std::vector<LongType> reps = {1, 1, static_cast<LongType>(headsPerKvHead), 1, 1};
+    NDArray kTiled = kReshaped->tile(reps);
+    NDArray vTiled = vReshaped->tile(reps);
 
-      // Forward pass to get attention weights
-      for (LongType q = 0; q < seqLen; ++q) {
-        float maxVal = -std::numeric_limits<float>::infinity();
+    std::vector<LongType> expandedShape = {batch, numHeads, seqLenKV, headDim};
+    kExpanded = kTiled.reshape('c', expandedShape);
+    vExpanded = vTiled.reshape('c', expandedShape);
+    expandedKV = true;
 
-        // Compute scores and find max
-        for (LongType k = 0; k < kvLen; ++k) {
-          if (config.isCausal && k > q) {
-            attnWeights[q * kvLen + k] = -std::numeric_limits<float>::infinity();
-          } else {
-            LongType qIdx = ((b * seqLen + q) * numHeads + h) * headDim;
-            LongType kIdx = ((b * kvLen + k) * numKvHeads + kvHead) * headDim;
-            float dot = 0.0f;
-            PRAGMA_OMP_SIMD_ARGS(reduction(+:dot))
-            for (LongType d = 0; d < headDim; ++d) {
-              dot += queryBuf[qIdx + d] * keyBuf[kIdx + d];
-            }
-            attnWeights[q * kvLen + k] = dot * scale;
-            maxVal = std::max(maxVal, attnWeights[q * kvLen + k]);
-          }
-        }
+    delete kReshaped;
+    delete vReshaped;
+  }
 
-        // Softmax
-        float sumExp = 0.0f;
-        for (LongType k = 0; k < kvLen; ++k) {
-          if (config.isCausal && k > q) {
-            attnWeights[q * kvLen + k] = 0.0f;
-          } else {
-            attnWeights[q * kvLen + k] = std::exp(attnWeights[q * kvLen + k] - maxVal);
-            sumExp += attnWeights[q * kvLen + k];
-          }
-        }
+  // Reshape for batched ops
+  std::vector<LongType> qShape = {batch * numHeads, seqLenQ, headDim};
+  std::vector<LongType> kvShape = {batch * numHeads, seqLenKV, headDim};
+  std::vector<LongType> scoresShape = {batch * numHeads, seqLenQ, seqLenKV};
 
-        if (sumExp > 0.0f) {
-          float invSum = 1.0f / sumExp;
-          PRAGMA_OMP_SIMD
-          for (LongType k = 0; k < kvLen; ++k) {
-            attnWeights[q * kvLen + k] *= invSum;
-          }
-        }
+  auto qReshaped = qPerm->reshape('c', qShape);
+  auto kReshaped = kExpanded->reshape('c', kvShape);
+  auto vReshaped = vExpanded->reshape('c', kvShape);
+  auto goReshaped = goPerm->reshape('c', qShape);
+
+  // Recompute attention: Q @ K^T
+  NDArray scores('c', scoresShape, query->dataType(), context);
+  MmulHelper::matmul(qReshaped, kReshaped, &scores, false, true, scale, 0.0);
+
+  // Causal mask - use vectorized approach
+  if (config.isCausal && seqLenQ > 0 && seqLenKV > 0) {
+    std::vector<LongType> maskShape = {seqLenQ, seqLenKV};
+    NDArray causalMask('c', maskShape, query->dataType(), context);
+    causalMask.nullify();
+
+    float maskVal = -1.0e9f;
+    for (LongType q = 0; q < seqLenQ; ++q) {
+      auto rowSlice = causalMask({q, q+1, q+1, seqLenKV});
+      if (rowSlice->lengthOf() > 0) {
+        rowSlice->assign(maskVal);
+      }
+      delete rowSlice;
+    }
+    scores += causalMask;
+  }
+
+  // Softmax
+  NDArray attnWeights('c', scoresShape, query->dataType(), context);
+  ops::helpers::softmax(context, &scores, &attnWeights, -1);
+
+  // gradValue = attnWeights^T @ gradOutput -> [batch*heads, seqKV, headDim]
+  NDArray gvReshaped('c', kvShape, query->dataType(), context);
+  MmulHelper::matmul(&attnWeights, goReshaped, &gvReshaped, true, false, 1.0, 0.0);
+
+  // dAttn = gradOutput @ V^T -> [batch*heads, seqQ, seqKV]
+  NDArray dAttn('c', scoresShape, query->dataType(), context);
+  MmulHelper::matmul(goReshaped, vReshaped, &dAttn, false, true, 1.0, 0.0);
+
+  // Softmax backward: dS = P * (dAttn - sum(dAttn * P)) - vectorized
+  // dAttn * P element-wise
+  auto dAttnTimesPPtr = dAttn * attnWeights;
+  NDArray dAttnTimesP(*dAttnTimesPPtr);
+  delete dAttnTimesPPtr;
+
+  // Sum along last axis: [batch*heads, seqQ, 1]
+  std::vector<LongType> sumDims = {2};
+  auto rowSums = dAttnTimesP.reduceAlongDimension(reduce::Sum, &sumDims, true);
+
+  // dAttn - rowSums (broadcast)
+  dAttn -= *rowSums;
+
+  // P * (dAttn - rowSums) * scale
+  dAttn *= attnWeights;
+  dAttn *= scale;
+
+  delete rowSums;
+
+  // gradQuery = dS @ K -> [batch*heads, seqQ, headDim]
+  NDArray gqReshaped('c', qShape, query->dataType(), context);
+  MmulHelper::matmul(&dAttn, kReshaped, &gqReshaped, false, false, 1.0, 0.0);
+
+  // gradKey = dS^T @ Q -> [batch*heads, seqKV, headDim]
+  NDArray gkReshaped('c', kvShape, query->dataType(), context);
+  MmulHelper::matmul(&dAttn, qReshaped, &gkReshaped, true, false, 1.0, 0.0);
+
+  // Reshape and permute gradients back
+  std::vector<LongType> gqPermShape = {batch, numHeads, seqLenQ, headDim};
+  std::vector<LongType> gkvPermShape = {batch, numHeads, seqLenKV, headDim};
+  auto gqPerm = gqReshaped.reshape('c', gqPermShape);
+  auto gkPerm = gkReshaped.reshape('c', gkvPermShape);
+  auto gvPerm = gvReshaped.reshape('c', gkvPermShape);
+
+  std::vector<LongType> permBack = {0, 2, 1, 3};
+  auto gqFinal = gqPerm->permute(permBack, false, false);
+  gradQuery->assign(gqFinal);
+
+  // For GQA, accumulate gradients to KV heads - vectorized with reshape and reduce
+  if (headsPerKvHead > 1) {
+    // Reshape [batch, numHeads, seqKV, headDim] -> [batch, numKvHeads, headsPerKvHead, seqKV, headDim]
+    std::vector<LongType> reshapeForSum = {batch, numKvHeads, static_cast<LongType>(headsPerKvHead), seqLenKV, headDim};
+    auto gkForSum = gkPerm->reshape('c', reshapeForSum);
+    auto gvForSum = gvPerm->reshape('c', reshapeForSum);
+
+    // Sum along the headsPerKvHead axis -> [batch, numKvHeads, seqKV, headDim]
+    std::vector<LongType> reduceDims = {2};
+    auto gkReduced = gkForSum->reduceAlongDimension(reduce::Sum, &reduceDims, false);
+    auto gvReduced = gvForSum->reduceAlongDimension(reduce::Sum, &reduceDims, false);
+
+    // Permute to output format [batch, seqKV, numKvHeads, headDim]
+    auto gkFinal = gkReduced->permute(permBack, false, false);
+    auto gvFinal = gvReduced->permute(permBack, false, false);
+    gradKey->assign(gkFinal);
+    gradValue->assign(gvFinal);
+
+    delete gkForSum;
+    delete gvForSum;
+    delete gkReduced;
+    delete gvReduced;
+    delete gkFinal;
+    delete gvFinal;
+  } else {
+    auto gkFinal = gkPerm->permute(permBack, false, false);
+    auto gvFinal = gvPerm->permute(permBack, false, false);
+    gradKey->assign(gkFinal);
+    gradValue->assign(gvFinal);
+    delete gkFinal;
+    delete gvFinal;
+  }
+
+  // Cleanup
+  delete qPerm; delete kPerm; delete vPerm; delete goPerm;
+  if (expandedKV) { delete kExpanded; delete vExpanded; }
+  delete qReshaped; delete kReshaped; delete vReshaped; delete goReshaped;
+  delete gqPerm; delete gkPerm; delete gvPerm;
+  delete gqFinal;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Utility functions
+//////////////////////////////////////////////////////////////////////////////
+
+void FlashAttentionHelper::standardAttention(
+    NDArray* query, NDArray* key, NDArray* value,
+    NDArray* output, const Config& config,
+    NDArray* attentionWeights, LaunchContext* context) {
+  forward(query, key, value, output, config, nullptr, attentionWeights, nullptr, context);
+}
+
+void FlashAttentionHelper::repeatKVHeads(NDArray* kv, int numHeads, NDArray* output) {
+  auto batch = kv->sizeAt(0);
+  auto seqLen = kv->sizeAt(1);
+  auto numKvHeads = kv->sizeAt(2);
+  auto headDim = kv->sizeAt(3);
+  int headsPerKvHead = numHeads / numKvHeads;
+
+  if (headsPerKvHead == 1) {
+    output->assign(kv);
+    return;
+  }
+
+  // Reshape [batch, seq, numKvHeads, dim] -> [batch, seq, numKvHeads, 1, dim]
+  std::vector<LongType> reshapeForTile = {batch, seqLen, numKvHeads, 1, headDim};
+  auto kvReshaped = kv->reshape('c', reshapeForTile);
+
+  // Tile along the new axis: [1, 1, 1, headsPerKvHead, 1]
+  std::vector<LongType> reps = {1, 1, 1, static_cast<LongType>(headsPerKvHead), 1};
+  NDArray kvTiled = kvReshaped->tile(reps);
+
+  // Reshape to output [batch, seq, numHeads, dim]
+  std::vector<LongType> outShape = {batch, seqLen, static_cast<LongType>(numHeads), headDim};
+  auto result = kvTiled.reshape('c', outShape);
+  output->assign(result);
+
+  delete kvReshaped;
+  delete result;
+}
+
+void FlashAttentionHelper::forwardWithKVCache(
+    NDArray* query, KVCache* kvCache,
+    NDArray* newKey, NDArray* newValue,
+    NDArray* output, LongType position,
+    const Config& config, LaunchContext* context) {
+
+  kvCache->update(newKey, newValue, position);
+  auto cachedKeys = kvCache->getKeys();
+  auto cachedValues = kvCache->getValues();
+  forward(query, cachedKeys, cachedValues, output, config, nullptr, nullptr, nullptr, context);
+  if (cachedKeys != kvCache->getKeyCache()) delete cachedKeys;
+  if (cachedValues != kvCache->getValueCache()) delete cachedValues;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Platform Detection Functions
+//////////////////////////////////////////////////////////////////////////////
+
+bool FlashAttentionHelper::canUseOneDnnSdpa(NDArray* query, NDArray* key, NDArray* value,
+                                            const Config& config) {
+  // Check if OneDNN is available and helpers are allowed
+  if (!Environment::getInstance().helpersAllowed()) {
+    return false;
+  }
+
+  // Only 3D tensors are supported by OneDNN Graph SDPA
+  if (query->rankOf() != 3) {
+    return false;
+  }
+
+  // Check supported data types: F32, F16, BF16
+  auto dtype = query->dataType();
+  if (dtype != DataType::FLOAT32 && dtype != DataType::HALF && dtype != DataType::BFLOAT16) {
+    return false;
+  }
+
+  // OneDNN Graph SDPA doesn't support custom masks (only causal through graph)
+  // Dropout is also not supported in fused kernel
+  if (config.dropout > 0.0f) {
+    return false;
+  }
+
+  return true;
+}
+
+bool FlashAttentionHelper::canUseCudnnSdpa(NDArray* query, NDArray* key, NDArray* value,
+                                           const Config& config) {
+#if defined(HAVE_CUDNN) && CUDNN_MAJOR >= 8 && CUDNN_MINOR >= 9
+  // cuDNN 8.9.0+ has flash attention support
+  if (!Environment::getInstance().helpersAllowed()) {
+    return false;
+  }
+
+  // Check if running on CUDA device
+  if (query->getContext()->getWorkspace() == nullptr ||
+      query->getContext()->getWorkspace()->deviceType() != sd::graph::DeviceType::GPU) {
+    return false;
+  }
+
+  // Check supported data types
+  auto dtype = query->dataType();
+  if (dtype != DataType::FLOAT32 && dtype != DataType::HALF && dtype != DataType::BFLOAT16) {
+    return false;
+  }
+
+  return true;
+#else
+  return false;
+#endif
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Online Softmax State Update (FlashAttention v4 style)
+// Implements selective rescaling - only rescales when necessary
+//////////////////////////////////////////////////////////////////////////////
+
+void FlashAttentionHelper::updateSoftmaxState(SoftmaxState& state, float newMax, float newSum,
+                                              float threshold) {
+  if (state.sumExp == 0.0f) {
+    // First tile - just initialize
+    state.maxVal = newMax;
+    state.sumExp = newSum;
+    state.correction = 1.0f;
+    state.needsRescale = false;
+    return;
+  }
+
+  // FlashAttention v4 selective rescaling:
+  // Only rescale when the new max is significantly larger
+  float maxDiff = newMax - state.maxVal;
+
+  if (maxDiff > threshold) {
+    // New max is significantly larger - need to rescale previous values
+    float rescaleFactor = std::exp(state.maxVal - newMax);
+    state.correction = rescaleFactor;
+    state.sumExp = state.sumExp * rescaleFactor + newSum;
+    state.maxVal = newMax;
+    state.needsRescale = true;
+  } else if (maxDiff < -threshold) {
+    // Old max is significantly larger - rescale new values
+    float rescaleFactor = std::exp(newMax - state.maxVal);
+    state.sumExp = state.sumExp + newSum * rescaleFactor;
+    state.correction = 1.0f;
+    state.needsRescale = false;
+  } else {
+    // Max values are similar - use stable computation
+    float maxOfMax = std::max(state.maxVal, newMax);
+    state.sumExp = state.sumExp * std::exp(state.maxVal - maxOfMax) +
+                   newSum * std::exp(newMax - maxOfMax);
+    state.maxVal = maxOfMax;
+    state.correction = std::exp(state.maxVal - maxOfMax);
+    state.needsRescale = true;
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Tiled Flash Attention Forward (for long sequences)
+// Uses online softmax to avoid materializing full attention matrix
+//////////////////////////////////////////////////////////////////////////////
+
+void FlashAttentionHelper::forwardTiled(NDArray* query, NDArray* key, NDArray* value,
+                                         NDArray* output, const Config& config,
+                                         NDArray* softmaxLse,
+                                         LaunchContext* context) {
+  // For now, delegate to the standard batched implementation
+  // A true tiled implementation would process query/key/value in blocks
+  // and use online softmax to accumulate results
+
+  auto rank = query->rankOf();
+  if (rank == 3) {
+    forward3D(query, key, value, output, config, softmaxLse, nullptr, nullptr, context);
+  } else {
+    forward4D(query, key, value, output, config, softmaxLse, nullptr, nullptr, context);
+  }
+}
+
+void FlashAttentionHelper::forwardBatched(NDArray* query, NDArray* key, NDArray* value,
+                                           NDArray* output, const Config& config,
+                                           NDArray* softmaxLse,
+                                           LaunchContext* context) {
+  forward(query, key, value, output, config, softmaxLse, nullptr, nullptr, context);
+}
+
+void FlashAttentionHelper::computeTile(const float* queryTile, const float* keyTile,
+                                        const float* valueTile, float* outputTile,
+                                        SoftmaxState* states, int tileQ, int tileKV,
+                                        int headDim, float scale, bool isCausal,
+                                        int queryOffset, int keyOffset) {
+  // Compute Q @ K^T for this tile
+  for (int q = 0; q < tileQ; ++q) {
+    for (int k = 0; k < tileKV; ++k) {
+      // Check causal mask
+      if (isCausal && (keyOffset + k) > (queryOffset + q)) {
+        continue;
       }
 
-      // Compute gradValue: dV = P^T @ dO
-      for (LongType k = 0; k < kvLen; ++k) {
-        LongType vIdx = ((b * kvLen + k) * numKvHeads + kvHead) * headDim;
-        for (LongType d = 0; d < headDim; ++d) {
-          float grad = 0.0f;
-          for (LongType q = 0; q < seqLen; ++q) {
-            LongType goIdx = ((b * seqLen + q) * numHeads + h) * headDim + d;
-            grad += attnWeights[q * kvLen + k] * gradOutBuf[goIdx];
-          }
-          PRAGMA_OMP_ATOMIC
-          gradVBuf[vIdx + d] += grad;
+      // Compute dot product
+      float score = 0.0f;
+      for (int d = 0; d < headDim; ++d) {
+        score += queryTile[q * headDim + d] * keyTile[k * headDim + d];
+      }
+      score *= scale;
+
+      // Update online softmax state
+      float expScore = std::exp(score - states[q].maxVal);
+      if (score > states[q].maxVal) {
+        // Need to rescale previous accumulated values
+        float rescale = std::exp(states[q].maxVal - score);
+        states[q].sumExp = states[q].sumExp * rescale + expScore;
+        states[q].maxVal = score;
+
+        // Rescale accumulated output
+        for (int d = 0; d < headDim; ++d) {
+          outputTile[q * headDim + d] *= rescale;
         }
+      } else {
+        states[q].sumExp += expScore;
       }
 
-      // Compute dP = dO @ V^T
-      for (LongType q = 0; q < seqLen; ++q) {
-        LongType goIdx = ((b * seqLen + q) * numHeads + h) * headDim;
-        for (LongType k = 0; k < kvLen; ++k) {
-          LongType vIdx = ((b * kvLen + k) * numKvHeads + kvHead) * headDim;
-          float dp = 0.0f;
-          PRAGMA_OMP_SIMD_ARGS(reduction(+:dp))
-          for (LongType d = 0; d < headDim; ++d) {
-            dp += gradOutBuf[goIdx + d] * valueBuf[vIdx + d];
-          }
-          dAttn[q * kvLen + k] = dp;
-        }
-      }
-
-      // Compute dS = P * (dP - rowsum(dP * P)) - softmax backward
-      for (LongType q = 0; q < seqLen; ++q) {
-        float rowSum = 0.0f;
-        PRAGMA_OMP_SIMD_ARGS(reduction(+:rowSum))
-        for (LongType k = 0; k < kvLen; ++k) {
-          rowSum += dAttn[q * kvLen + k] * attnWeights[q * kvLen + k];
-        }
-
-        PRAGMA_OMP_SIMD
-        for (LongType k = 0; k < kvLen; ++k) {
-          dAttn[q * kvLen + k] = scale * attnWeights[q * kvLen + k] *
-                                  (dAttn[q * kvLen + k] - rowSum);
-        }
-      }
-
-      // Compute gradQuery: dQ = dS @ K
-      for (LongType q = 0; q < seqLen; ++q) {
-        LongType gqIdx = ((b * seqLen + q) * numHeads + h) * headDim;
-        for (LongType d = 0; d < headDim; ++d) {
-          float grad = 0.0f;
-          for (LongType k = 0; k < kvLen; ++k) {
-            LongType kIdx = ((b * kvLen + k) * numKvHeads + kvHead) * headDim + d;
-            grad += dAttn[q * kvLen + k] * keyBuf[kIdx];
-          }
-          gradQBuf[gqIdx + d] = grad;
-        }
-      }
-
-      // Compute gradKey: dK = dS^T @ Q
-      for (LongType k = 0; k < kvLen; ++k) {
-        LongType kIdx = ((b * kvLen + k) * numKvHeads + kvHead) * headDim;
-        for (LongType d = 0; d < headDim; ++d) {
-          float grad = 0.0f;
-          for (LongType q = 0; q < seqLen; ++q) {
-            LongType qIdx = ((b * seqLen + q) * numHeads + h) * headDim + d;
-            grad += dAttn[q * kvLen + k] * queryBuf[qIdx];
-          }
-          PRAGMA_OMP_ATOMIC
-          gradKBuf[kIdx + d] += grad;
-        }
+      // Accumulate weighted value
+      float weight = expScore / states[q].sumExp;
+      for (int d = 0; d < headDim; ++d) {
+        outputTile[q * headDim + d] += weight * valueTile[k * headDim + d];
       }
     }
   }

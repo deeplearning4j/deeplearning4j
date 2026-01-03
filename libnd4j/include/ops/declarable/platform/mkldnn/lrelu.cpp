@@ -32,16 +32,40 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////
+// Get OneDNN data type from NDArray
+static dnnl::memory::data_type getOneDnnDataType(DataType dt) {
+  switch (dt) {
+    case DataType::FLOAT32:
+      return dnnl::memory::data_type::f32;
+    case DataType::BFLOAT16:
+      return dnnl::memory::data_type::bf16;
+    case DataType::HALF:
+      return dnnl::memory::data_type::f16;
+    default:
+      return dnnl::memory::data_type::f32;
+  }
+}
+
+//////////////////////////////////////////////////////////////////////
+// Check if data type is supported by OneDNN eltwise operations
+static bool isSupportedEltwiseType(DataType dt) {
+  return dt == DataType::FLOAT32 || dt == DataType::BFLOAT16 || dt == DataType::HALF;
+}
+
+//////////////////////////////////////////////////////////////////////
 static void lreluMKLDNN(NDArray* x, NDArray* z, float alpha) {
   dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
+  // Use actual input data type - OneDNN supports f32, bf16, f16 for eltwise operations
+  auto dataType = getOneDnnDataType(x->dataType());
+
   dnnl::memory::desc x_mkl_md, x_user_md, z_mkl_md, z_user_md;
 
-  x_user_md = x_mkl_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
+  x_user_md = x_mkl_md = dnnl::memory::desc(shape, dataType, onednnUtils::getFormat(*x));
   onednnUtils::setBlockStrides(*x, x_user_md);
 
   // z
-  z_user_md = z_mkl_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*z));
+  z_user_md = z_mkl_md = dnnl::memory::desc(shape, dataType, onednnUtils::getFormat(*z));
   onednnUtils::setBlockStrides(*z, z_user_md);
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
@@ -98,12 +122,15 @@ PLATFORM_CHECK(lrelu, ENGINE_CPU) {
   auto z = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN LRELU OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
+  req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
-      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
+      req.expectTrue(makeInfoVariable(isSupportedEltwiseType(x->dataType()), TYPE_MSG_INPUT),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectTrue(makeInfoVariable(isSupportedEltwiseType(z->dataType()), TYPE_MSG_OUTPUT),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT),
+                   makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT));
   req.logTheSuccess();
   return req;
 }
@@ -112,18 +139,21 @@ PLATFORM_CHECK(lrelu, ENGINE_CPU) {
 static void lreluBpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx, float alpha) {
   dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
+  // Use actual input data type - OneDNN supports f32, bf16, f16 for eltwise backward
+  auto dataType = getOneDnnDataType(x->dataType());
+
   dnnl::memory::desc x_mkl_md, x_user_md, dLdx_mkl_md, dLdx_user_md, dLdz_mkl_md, dLdz_user_md;
 
   // x
-  x_user_md = x_mkl_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
+  x_user_md = x_mkl_md = dnnl::memory::desc(shape, dataType, onednnUtils::getFormat(*x));
   onednnUtils::setBlockStrides(*x, x_user_md);
 
   // dLdz
-  dLdz_user_md = dLdz_mkl_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*dLdz));
+  dLdz_user_md = dLdz_mkl_md = dnnl::memory::desc(shape, dataType, onednnUtils::getFormat(*dLdz));
   onednnUtils::setBlockStrides(*dLdz, dLdz_user_md);
 
   // dLdx
-  dLdx_user_md = dLdx_mkl_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*dLdx));
+  dLdx_user_md = dLdx_mkl_md = dnnl::memory::desc(shape, dataType, onednnUtils::getFormat(*dLdx));
   onednnUtils::setBlockStrides(*dLdx, dLdx_user_md);
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
@@ -191,14 +221,18 @@ PLATFORM_CHECK(lrelu_bp, ENGINE_CPU) {
   auto dLdx = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN LRELU BP OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
+  req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
       req.expectFalse(makeInfoVariable(dLdz->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), 7) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), 0) &&
-      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(dLdz->dataType(), TYPE_MSG_INPUT1), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(dLdx->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32) &&
+      req.expectTrue(makeInfoVariable(isSupportedEltwiseType(x->dataType()), TYPE_MSG_INPUT0),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectTrue(makeInfoVariable(isSupportedEltwiseType(dLdz->dataType()), TYPE_MSG_INPUT1),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectTrue(makeInfoVariable(isSupportedEltwiseType(dLdx->dataType()), TYPE_MSG_OUTPUT),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0),
+                   makeInfoVariable(dLdz->dataType(), TYPE_MSG_INPUT1)) &&
       req.expect(
           makeShapeInfoVariable(x, SHAPE_MSG_INPUT0), makeShapeInfoVariable(dLdz, SHAPE_MSG_INPUT1),
           [](const decltype(x)& l, const decltype(dLdz)& r) {

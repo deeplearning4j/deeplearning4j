@@ -213,8 +213,7 @@ PLATFORM_CHECK(deconv2d_tf, ENGINE_CPU) {
   auto gradO = INPUT_VARIABLE(2);    // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCDHW), epsilon_next
   auto gradI = OUTPUT_VARIABLE(0);   // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCDHW), gradI
   Requirements req("ONEDNN DECONV2d_TF OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(makeInfoVariable(
+  req.expectTrue(makeInfoVariable(
                          [weights, gradI, gradO] {
                            const DataType wType = weights->dataType();
                            const DataType gradOType = gradO->dataType();

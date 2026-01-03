@@ -36,6 +36,27 @@ namespace sd {
 namespace ops {
 namespace platforms {
 
+//////////////////////////////////////////////////////////////////////
+// Get OneDNN data type from NDArray
+static dnnl::memory::data_type getOneDnnDataType(DataType dt) {
+  switch (dt) {
+    case DataType::FLOAT32:
+      return dnnl::memory::data_type::f32;
+    case DataType::BFLOAT16:
+      return dnnl::memory::data_type::bf16;
+    case DataType::HALF:
+      return dnnl::memory::data_type::f16;
+    default:
+      return dnnl::memory::data_type::f32;
+  }
+}
+
+//////////////////////////////////////////////////////////////////////
+// Check if data type is supported by OneDNN batchnorm
+static bool isSupportedBatchnormType(DataType dt) {
+  return dt == DataType::FLOAT32 || dt == DataType::BFLOAT16 || dt == DataType::HALF;
+}
+
 //////////////////////////////////////////////////////////////////////////
 static void batchnormMKLDNN(NDArray* x, NDArray* mean, NDArray* variance, NDArray* weights,
                             NDArray* z, const float epsilon, const bool isNCHW) {
@@ -49,8 +70,8 @@ static void batchnormMKLDNN(NDArray* x, NDArray* mean, NDArray* variance, NDArra
 
   const int xRank = x->rankOf();
 
-  // input type
-  dnnl::memory::data_type type = dnnl::memory::data_type::f32;
+  // Use actual input data type - OneDNN supports f32, bf16, f16 for batch normalization
+  dnnl::memory::data_type type = getOneDnnDataType(x->dataType());
 
   // indicate whether gamma or/and beta are given
   auto flags =
@@ -156,8 +177,8 @@ static void batchnormBpMKLDNN(NDArray* x, NDArray* mean, NDArray* variance, NDAr
 
   const sd::LongType xRank = x->rankOf();
 
-  // input type
-  dnnl::memory::data_type type = dnnl::memory::data_type::f32;
+  // Use actual input data type - OneDNN supports f32, bf16, f16 for batch normalization backward
+  dnnl::memory::data_type type = getOneDnnDataType(x->dataType());
 
   // indicate whether gamma or/and beta are given
   auto flags =
@@ -451,24 +472,27 @@ PLATFORM_CHECK(batchnorm, ENGINE_CPU) {
   const int inRank = input->rankOf();
 
   Requirements req("ONEDNN BATCHNORM OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectEq(makeInfoVariable(axes.size(), "axes.size()"), 1) &&
+  req.expectEq(makeInfoVariable(axes.size(), "axes.size()"), 1) &&
       req.expectIn(makeInfoVariable(axes[0], "axes#0"), {1, inRank - 1}) &&
       req.expectIn(makeInfoVariable(inRank, RANK_MSG_INPUT0), {2, 4, 5}) &&
+      req.expectTrue(makeInfoVariable(isSupportedBatchnormType(input->dataType()), TYPE_MSG_INPUT0),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectTrue(makeInfoVariable(isSupportedBatchnormType(output->dataType()), TYPE_MSG_OUTPUT),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
       req.expectTrue(makeInfoVariable(
                          [input, mean, variance, gamma, beta, output] {
                            DataType inputType = input->dataType();
                            DataType meanType = mean->dataType();
                            DataType varType = variance->dataType();
-                           DataType gammaType = gamma != nullptr ? gamma->dataType() : DataType::FLOAT32;
-                           DataType betaType = beta != nullptr ? beta->dataType() : DataType::FLOAT32;
+                           DataType gammaType = gamma != nullptr ? gamma->dataType() : inputType;
+                           DataType betaType = beta != nullptr ? beta->dataType() : inputType;
                            DataType outType = output->dataType();
-                           return (inputType == DataType::FLOAT32 && meanType == DataType::FLOAT32 &&
-                                   varType == DataType::FLOAT32 && gammaType == DataType::FLOAT32 &&
-                                   betaType == DataType::FLOAT32 && outType == DataType::FLOAT32);
+                           // All types should match the input type
+                           return (meanType == inputType && varType == inputType &&
+                                   gammaType == inputType && betaType == inputType && outType == inputType);
                          },
                          TYPECHECK_MSG),
-                     NO_MSG);
+                     "All inputs must have same data type");
   req.logTheSuccess();
   return req;
 }
@@ -635,29 +659,31 @@ PLATFORM_CHECK(batchnorm_bp, ENGINE_CPU) {
   const sd::LongType inRank = input->rankOf();
   std::vector<sd::LongType> shape =  {1, inRank - 1};
   Requirements req("ONEDNN BATCHNORM_BP OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectEq(makeInfoVariable(axes.size(), "axes.size()"), 1) &&
+  req.expectEq(makeInfoVariable(axes.size(), "axes.size()"), 1) &&
       req.expectIn(makeInfoVariable(inRank, RANK_MSG_INPUT0), {2, 4, 5}) &&
+      req.expectTrue(makeInfoVariable(isSupportedBatchnormType(input->dataType()), TYPE_MSG_INPUT0),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectTrue(makeInfoVariable(isSupportedBatchnormType(dLdO->dataType()), TYPE_MSG_INPUT),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
       req.expectTrue(makeInfoVariable(
                          [input, mean, variance, dLdO, gamma, beta, dLdG, dLdB, dLdI] {
                            DataType inputType = input->dataType();
                            DataType meanType = mean->dataType();
                            DataType varType = variance->dataType();
                            DataType dLdOType = dLdO->dataType();
-                           DataType gammaType = gamma != nullptr ? gamma->dataType() : DataType::FLOAT32;
-                           DataType betaType = beta != nullptr ? beta->dataType() : DataType::FLOAT32;
+                           DataType gammaType = gamma != nullptr ? gamma->dataType() : inputType;
+                           DataType betaType = beta != nullptr ? beta->dataType() : inputType;
 
                            DataType dLdIType = dLdI->dataType();
-                           DataType dLdGType = gamma != nullptr ? dLdG->dataType() : DataType::FLOAT32;
-                           DataType dLdBType = beta != nullptr ? dLdB->dataType() : DataType::FLOAT32;
-                           return (inputType == DataType::FLOAT32 && meanType == DataType::FLOAT32 &&
-                                   varType == DataType::FLOAT32 && dLdOType == DataType::FLOAT32 &&
-                                   gammaType == DataType::FLOAT32 && betaType == DataType::FLOAT32 &&
-                                   dLdIType == DataType::FLOAT32 && dLdGType == DataType::FLOAT32 &&
-                                   dLdBType == DataType::FLOAT32);
+                           DataType dLdGType = gamma != nullptr ? dLdG->dataType() : inputType;
+                           DataType dLdBType = beta != nullptr ? dLdB->dataType() : inputType;
+                           // All types should match the input type
+                           return (meanType == inputType && varType == inputType && dLdOType == inputType &&
+                                   gammaType == inputType && betaType == inputType &&
+                                   dLdIType == inputType && dLdGType == inputType && dLdBType == inputType);
                          },
                          TYPECHECK_MSG),
-                     NO_MSG);
+                     "All inputs must have same data type");
   req.logTheSuccess();
   return req;
 }

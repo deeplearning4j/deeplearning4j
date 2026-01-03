@@ -91,6 +91,20 @@ class SD_LIB_EXPORT MmulHelper {
                                double alpha, double beta);
 
   /**
+   * Try strided batch GEMM for contiguous batched data
+   *
+   * On CPU (MKL): Uses cblas_sgemm_batch_strided/cblas_dgemm_batch_strided
+   * On GPU (cuBLAS): Uses cublasSgemmStridedBatched/cublasDgemmStridedBatched/cublasHgemmStridedBatched
+   *
+   * More efficient than pointer-array batch GEMM as it avoids building pointer arrays
+   * and allows the library to optimize memory access patterns.
+   *
+   * @return true if strided batch GEMM handled the operation
+   */
+  static bool tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
+                                     double alpha, double beta);
+
+  /**
    * Try BLAS batched GEMM (cblas_sgemm_batch/cblas_dgemm_batch)
    * @return true if batched BLAS handled the operation
    */

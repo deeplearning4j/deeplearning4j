@@ -37,6 +37,27 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////
+// Get OneDNN data type from NDArray
+static dnnl::memory::data_type getOneDnnDataType(DataType dt) {
+  switch (dt) {
+    case DataType::FLOAT32:
+      return dnnl::memory::data_type::f32;
+    case DataType::BFLOAT16:
+      return dnnl::memory::data_type::bf16;
+    case DataType::HALF:
+      return dnnl::memory::data_type::f16;
+    default:
+      return dnnl::memory::data_type::f32;
+  }
+}
+
+//////////////////////////////////////////////////////////////////////
+// Check if data type is supported by OneDNN layer norm
+static bool isSupportedType(DataType dt) {
+  return dt == DataType::FLOAT32 || dt == DataType::BFLOAT16 || dt == DataType::HALF;
+}
+
+//////////////////////////////////////////////////////////////////////
 static void layerNormMKLDNN(NDArray* x, NDArray* gain, NDArray* bias, NDArray* z, float epsilon) {
   const int rank = x->rankOf();
   const int lastDim = x->sizeAt(-1);
@@ -46,9 +67,12 @@ static void layerNormMKLDNN(NDArray* x, NDArray* gain, NDArray* bias, NDArray* z
   dnnl::memory::dims statsDims = xDims;
   statsDims[rank - 1] = 1;  // Stats are computed over the last dimension
 
+  // Get data type - use input type for computation
+  auto dType = getOneDnnDataType(x->dataType());
+
   // Create memory descriptors
-  dnnl::memory::desc x_md = dnnl::memory::desc(xDims, dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
-  dnnl::memory::desc z_md = dnnl::memory::desc(xDims, dnnl::memory::data_type::f32, onednnUtils::getFormat(*z));
+  dnnl::memory::desc x_md = dnnl::memory::desc(xDims, dType, onednnUtils::getFormat(*x));
+  dnnl::memory::desc z_md = dnnl::memory::desc(xDims, dType, onednnUtils::getFormat(*z));
 
   // Scale and shift (gain and bias) descriptors - 1D arrays of size lastDim
   dnnl::memory::dims scaleDims = {lastDim};
@@ -136,13 +160,16 @@ PLATFORM_CHECK(layer_norm, ENGINE_CPU) {
   bool lastDimOnly = (axis.size() == 1 && axis[0] == rank - 1) || axis.empty();
 
   Requirements req("ONEDNN LAYER_NORM OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(makeInfoVariable(lastDimOnly, "LAST_DIM_NORM"), "Only last dimension normalization supported") &&
+  req.expectTrue(makeInfoVariable(lastDimOnly, "LAST_DIM_NORM"), "Only last dimension normalization supported") &&
       req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 1) &&
-      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32) &&
+      req.expectTrue(makeInfoVariable(isSupportedType(x->dataType()), TYPE_MSG_INPUT),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectTrue(makeInfoVariable(isSupportedType(z->dataType()), TYPE_MSG_OUTPUT),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT),
+                   makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT)) &&
       req.expectEq(makeInfoVariable(gain->rankOf(), "GAIN_RANK"), 1) &&
       req.expectEq(makeInfoVariable(gain->sizeAt(0), "GAIN_SIZE"), x->sizeAt(-1));
   req.logTheSuccess();

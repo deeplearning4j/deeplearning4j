@@ -33,35 +33,6 @@
 namespace sd {
 namespace ops {
 
-/**
- * dot_product_attention_v2 - Dot product attention with flash attention optimization
- *
- * Supports:
- * - Flash attention for 4D inputs [batch, seq, heads, dim] (memory efficient)
- * - Standard attention for 2D/3D inputs [Tq, dim] or [batch, Tq, dim]
- * - KV cache for autoregressive generation (4D only)
- *
- * Inputs:
- *   0: queries [Tq, dim], [batch, Tq, dim], or [batch, Tq, heads, dim]
- *   1: values [Tv, dim], [batch, Tv, dim], or [batch, Tv, heads, dim]
- *   2: keys (optional, defaults to values)
- *   3: queryMask (optional)
- *   4: valueMask (optional)
- *   5: keyCache (optional) - for KV caching [batch, maxSeq, heads, dim]
- *   6: valueCache (optional) - for KV caching [batch, maxSeq, heads, dim]
- *
- * T_ARG:
- *   0: scale (default 1.0)
- *   1: dropout (default 0.0)
- *
- * B_ARG:
- *   0: useCausalMask (default false)
- *   1: training (default false)
- *   2: useFlashAttention (default true when applicable)
- *
- * I_ARG:
- *   0: kvCachePosition (for KV cache, default 0)
- */
 CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   auto queriesOrig = INPUT_VARIABLE(0);
   auto valuesOrig = INPUT_VARIABLE(1);
@@ -69,124 +40,74 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   REQUIRE_TRUE(queriesOrig->rankOf() == valuesOrig->rankOf(), 0,
                "dot_product_attention_v2: Queries and values must have same rank, got %i vs %i",
                queriesOrig->rankOf(), valuesOrig->rankOf());
-  REQUIRE_TRUE(queriesOrig->rankOf() >= 2 && queriesOrig->rankOf() <= 4, 0,
-               "dot_product_attention_v2: Input rank must be 2, 3, or 4, got %i", queriesOrig->rankOf());
+  REQUIRE_TRUE(queriesOrig->rankOf() >= 2 && queriesOrig->rankOf() <= 3, 0,
+               "dot_product_attention_v2: Input rank must be 2 or 3, got %i", queriesOrig->rankOf());
 
-  // Get arguments
-  auto scale = block.numT() > 0 ? T_ARG(0) : 1.0;
-  auto dropout = block.numT() > 1 ? T_ARG(1) : 0.0;
-  auto useCausalMask = block.numB() > 0 ? B_ARG(0) : false;
-  auto training = block.numB() > 1 ? B_ARG(1) : false;
-  auto useFlashAttention = block.numB() > 2 ? B_ARG(2) : true;
-  auto kvCachePosition = block.numI() > 0 ? INT_ARG(0) : 0;
-
-  // Check for KV cache inputs
-  NDArray* keyCache = block.width() > 5 ? INPUT_VARIABLE(5) : nullptr;
-  NDArray* valueCache = block.width() > 6 ? INPUT_VARIABLE(6) : nullptr;
-  bool useKVCache = (keyCache != nullptr && valueCache != nullptr &&
-                     !keyCache->isEmpty() && !valueCache->isEmpty());
-
-  // Check if we can use flash attention:
-  // - 4D inputs [batch, seq, heads, dim]
-  // - No dropout during inference (or we don't need intermediate weights)
-  bool canUseFlash = useFlashAttention &&
-                     queriesOrig->rankOf() == 4 &&
-                     (dropout == 0.0 || !training);
-
-  if (canUseFlash) {
-    // ========== FLASH ATTENTION PATH (4D inputs) ==========
-    auto query = queriesOrig;
-    auto keysOrig = block.width() > 2 ? INPUT_VARIABLE(2) : valuesOrig;
-    auto key = keysOrig;
-    auto value = valuesOrig;
-
-    auto output = OUTPUT_VARIABLE(0);
-
-    // Configure flash attention
-    FlashAttentionHelper::Config config;
-    config.scale = scale > 0.0 ? static_cast<float>(scale) : 0.0f;
-    config.isCausal = useCausalMask;
-    config.numHeads = query->sizeAt(2);
-    config.numKvHeads = key->sizeAt(2);
-
-    if (useKVCache) {
-      // With KV cache: update cache and use cached KV
-      auto newSeqLen = key->sizeAt(1);
-      auto batch = key->sizeAt(0);
-      auto numHeads = key->sizeAt(2);
-      auto headDim = key->sizeAt(3);
-
-      // Update cache slice
-      auto keyCacheSlice = (*keyCache)({0, batch, kvCachePosition, kvCachePosition + newSeqLen, 0, numHeads, 0, headDim});
-      auto valueCacheSlice = (*valueCache)({0, batch, kvCachePosition, kvCachePosition + newSeqLen, 0, numHeads, 0, headDim});
-      keyCacheSlice->assign(key);
-      valueCacheSlice->assign(value);
-      delete keyCacheSlice;
-      delete valueCacheSlice;
-
-      FlashAttentionHelper::forward(query, keyCache, valueCache, output, config,
-                                    nullptr, block.launchContext());
-    } else {
-      FlashAttentionHelper::forward(query, key, value, output, config,
-                                    nullptr, block.launchContext());
-    }
-
-    // Flash attention doesn't compute separate attention scores/logits
-    double zeroVal = 0.0;
-    if (block.outputWidth() > 1) {
-      OUTPUT_VARIABLE(1)->assign(zeroVal);
-    }
-    if (block.outputWidth() > 2) {
-      OUTPUT_VARIABLE(2)->assign(zeroVal);
-    }
-
-    return sd::Status::OK;
-  }
-
-  // ========== STANDARD ATTENTION PATH (2D/3D inputs) ==========
-  auto queries = queriesOrig;
-  auto values = valuesOrig;
+  // Track reshaped arrays for cleanup
+  NDArray* queries = nullptr;
+  NDArray* values = nullptr;
+  NDArray* keys = nullptr;
+  NDArray* qMask = nullptr;
+  NDArray* vMask = nullptr;
+  bool reshapedQ = false;
 
   // Handle rank 2 inputs by adding batch dimension
-  bool reshapedQ = false;
-  if (queries->rankOf() == 2) {
+  if(queriesOrig->rankOf() == 2) {
     reshapedQ = true;
-    std::vector<sd::LongType> qShape = {1, queries->sizeAt(0), queries->sizeAt(-1)};
-    std::vector<sd::LongType> vShape = {1, values->sizeAt(0), values->sizeAt(-1)};
-    queries = queries->reshape('c', qShape);
-    values = values->reshape('c', vShape);
+    std::vector<sd::LongType> qShape = {1, queriesOrig->sizeAt(0), queriesOrig->sizeAt(1)};
+    std::vector<sd::LongType> vShape = {1, valuesOrig->sizeAt(0), valuesOrig->sizeAt(1)};
+    queries = queriesOrig->reshape('c', qShape);
+    values = valuesOrig->reshape('c', vShape);
+  } else {
+    queries = queriesOrig;
+    values = valuesOrig;
   }
 
   // Handle keys - defaults to values if not provided
-  auto keys = block.width() > 2 ? INPUT_VARIABLE(2) : valuesOrig;
-  if (reshapedQ && block.width() > 2) {
-    std::vector<sd::LongType> kShape = {1, keys->sizeAt(0), keys->sizeAt(-1)};
-    keys = keys->reshape('c', kShape);
-  } else if (reshapedQ) {
+  auto keysOrig = block.width() > 2 ? INPUT_VARIABLE(2) : valuesOrig;
+  if(reshapedQ && block.width() > 2) {
+    std::vector<sd::LongType> kShape = {1, keysOrig->sizeAt(0), keysOrig->sizeAt(1)};
+    keys = keysOrig->reshape('c', kShape);
+  } else if(reshapedQ) {
     keys = values;  // keys defaults to values
+  } else {
+    keys = keysOrig;
   }
 
-  // Handle masks - check for empty arrays
-  auto qMask = block.width() > 3 ? INPUT_VARIABLE(3) : nullptr;
-  auto vMask = block.width() > 4 ? INPUT_VARIABLE(4) : nullptr;
+  // Handle masks - check for empty arrays as well as nullptr
+  auto qMaskOrig = block.width() > 3 ? INPUT_VARIABLE(3) : nullptr;
+  auto vMaskOrig = block.width() > 4 ? INPUT_VARIABLE(4) : nullptr;
 
-  if (qMask != nullptr && qMask->isEmpty()) qMask = nullptr;
-  if (vMask != nullptr && vMask->isEmpty()) vMask = nullptr;
-
-  // Reshape masks if needed for rank 2 case
-  if (qMask != nullptr && reshapedQ) {
-    std::vector<sd::LongType> qmShape = {1, qMask->sizeAt(0), qMask->sizeAt(-1)};
-    qMask = qMask->reshape('c', qmShape);
+  // Treat empty arrays as no mask
+  if(qMaskOrig != nullptr && qMaskOrig->isEmpty()) {
+    qMaskOrig = nullptr;
+  }
+  if(vMaskOrig != nullptr && vMaskOrig->isEmpty()) {
+    vMaskOrig = nullptr;
   }
 
-  if (vMask != nullptr && reshapedQ) {
-    std::vector<sd::LongType> vmShape = {1, vMask->sizeAt(0), vMask->sizeAt(-1)};
-    vMask = vMask->reshape('c', vmShape);
+  // Reshape masks if needed
+  if(qMaskOrig != nullptr && reshapedQ) {
+    std::vector<sd::LongType> qmShape = {1, qMaskOrig->sizeAt(0), qMaskOrig->sizeAt(1)};
+    qMask = qMaskOrig->reshape('c', qmShape);
+  } else {
+    qMask = qMaskOrig;
   }
 
-  // Prepare inputs and masks
-  std::vector<sd::NDArray*> inputs = {queries, values, keys};
-  std::vector<sd::NDArray*> masks = {qMask, vMask};
+  if(vMaskOrig != nullptr && reshapedQ) {
+    std::vector<sd::LongType> vmShape = {1, vMaskOrig->sizeAt(0), vMaskOrig->sizeAt(1)};
+    vMask = vMaskOrig->reshape('c', vmShape);
+  } else {
+    vMask = vMaskOrig;
+  }
+
+  // Get arguments - T_ARG order: scale, dropout
+  auto scale = block.numT() > 0 ? T_ARG(0) : 1.0;
+  auto dropout = block.numT() > 1 ? T_ARG(1) : 0.0;
+
+  // B_ARG order: useCausalMask, training
+  auto useCausalMask = block.numB() > 0 ? B_ARG(0) : false;
+  auto training = block.numB() > 1 ? B_ARG(1) : false;
 
   // Get output variables
   auto applyScoresOut = OUTPUT_VARIABLE(0);
@@ -195,29 +116,86 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   auto dropoutMask = dropout > 0.0 ? OUTPUT_VARIABLE(3) : nullptr;
 
   // Reshape outputs for rank 2 case
-  if (reshapedQ) {
+  if(reshapedQ) {
     applyScoresOut->reshapei('c', {1, applyScoresOut->sizeAt(0), applyScoresOut->sizeAt(1)});
     attentionLogits->reshapei('c', {1, attentionLogits->sizeAt(0), attentionLogits->sizeAt(1)});
     attentionScores->reshapei('c', {1, attentionScores->sizeAt(0), attentionScores->sizeAt(1)});
   }
 
-  // Execute attention
-  AttentionHelper::doAttention(inputs, masks, training, useCausalMask, dropout, scale, attentionScores,
-                               block.randomSeed(), applyScoresOut, attentionLogits, dropoutMask);
+  // Use FlashAttentionHelper when no custom masks or dropout (faster path)
+  // FlashAttentionHelper only supports causal masking, not custom masks
+  bool canUseFlash = (qMask == nullptr || qMask->isEmpty()) &&
+                     (vMask == nullptr || vMask->isEmpty()) &&
+                     dropout == 0.0;
 
-  // Cleanup and restore shapes
-  if (reshapedQ) {
+  if (canUseFlash) {
+    // Reshape 3D inputs to 4D by adding numHeads=1 dimension
+    // [batch, seq, dim] -> [batch, seq, 1, dim]
+    auto batch = queries->sizeAt(0);
+    auto seqQ = queries->sizeAt(1);
+    auto seqKV = keys->sizeAt(1);
+    auto dim = queries->sizeAt(2);
+
+    std::vector<sd::LongType> query4DShape = {batch, seqQ, 1, dim};
+    std::vector<sd::LongType> kv4DShape = {batch, seqKV, 1, dim};
+    std::vector<sd::LongType> output3DShape = {batch, seqQ, dim};
+
+    auto query4D = queries->reshape('c', query4DShape);
+    auto key4D = keys->reshape('c', kv4DShape);
+    auto value4D = values->reshape('c', kv4DShape);
+
+    // Create 4D output buffer
+    NDArray output4D('c', query4DShape, queries->dataType(), block.launchContext());
+
+    // Setup FlashAttentionHelper config
+    FlashAttentionHelper::Config config;
+    config.scale = static_cast<float>(scale);
+    config.isCausal = useCausalMask;
+    config.dropout = 0.0f;
+    config.numHeads = 1;
+    config.numKvHeads = 1;
+
+    // Call FlashAttentionHelper::forward()
+    // attentionScores and attentionLogits are [batch, seqQ, seqKV] which matches [batch*1, seqQ, seqKV]
+    FlashAttentionHelper::forward(query4D, key4D, value4D, &output4D, config,
+                                  nullptr, attentionScores, attentionLogits,
+                                  block.launchContext());
+
+    // Reshape output back to 3D: [batch, seqQ, 1, dim] -> [batch, seqQ, dim]
+    auto output3D = output4D.reshape('c', output3DShape);
+    applyScoresOut->assign(output3D);
+
+    // Cleanup
+    delete query4D;
+    delete key4D;
+    delete value4D;
+    delete output3D;
+  } else {
+    // Fallback to AttentionHelper for masks/dropout support
+    std::vector<sd::NDArray*> inputs = {queries, values, keys};
+    std::vector<sd::NDArray*> masks = {qMask, vMask};
+    AttentionHelper::doAttention(inputs, masks, training, useCausalMask, dropout, scale, attentionScores,
+                                 block.randomSeed(), applyScoresOut, attentionLogits, dropoutMask);
+  }
+
+  // Cleanup reshaped arrays and restore output shapes
+  if(reshapedQ) {
     delete queries;
     delete values;
-    if (block.width() > 2) {
+    if(block.width() > 2) {
       delete keys;
     }
-    if (qMask != nullptr) delete qMask;
-    if (vMask != nullptr) delete vMask;
+    if(qMaskOrig != nullptr) {
+      delete qMask;
+    }
+    if(vMaskOrig != nullptr) {
+      delete vMask;
+    }
 
-    applyScoresOut->reshapei('c', {applyScoresOut->sizeAt(1), applyScoresOut->sizeAt(-1)});
-    attentionLogits->reshapei('c', {attentionLogits->sizeAt(1), attentionLogits->sizeAt(-1)});
-    attentionScores->reshapei('c', {attentionScores->sizeAt(1), attentionScores->sizeAt(-1)});
+    // Restore original shapes for outputs
+    applyScoresOut->reshapei('c', {applyScoresOut->sizeAt(1), applyScoresOut->sizeAt(2)});
+    attentionLogits->reshapei('c', {attentionLogits->sizeAt(1), attentionLogits->sizeAt(2)});
+    attentionScores->reshapei('c', {attentionScores->sizeAt(1), attentionScores->sizeAt(2)});
   }
 
   return sd::Status::OK;
@@ -232,47 +210,43 @@ DECLARE_SHAPE_FN(dot_product_attention_v2) {
   auto firstInputType = INPUT_VARIABLE(0)->dataType();
   auto queries = INPUT_VARIABLE(0);
   auto values = INPUT_VARIABLE(1);
-  auto keys = block.width() > 2 ? INPUT_VARIABLE(2) : values;
+  auto keys = block.width() > 2  ? INPUT_VARIABLE(2) : values;
 
   auto dropout = block.numT() > 1 ? block.getTArguments()->at(1) : 0.0;
 
+  // For rank 3: [batch, seq_len, features]
+  // For rank 2: [seq_len, features] - treated as batch=1
   std::vector<sd::LongType> outShape;
   std::vector<sd::LongType> scoresShape;
 
-  if (queries->rankOf() == 4) {
-    // Rank 4: [batch, seq, heads, dim] - flash attention format
+  if(queries->rankOf() == 3) {
+    // Rank 3: [batch, Tq, dim] @ [batch, Tv, dim]^T -> [batch, Tq, Tv] -> softmax -> @ [batch, Tv, dim] -> [batch, Tq, dim]
     sd::LongType batchSize = queries->sizeAt(0);
-    sd::LongType tq = queries->sizeAt(1);
-    sd::LongType numHeads = queries->sizeAt(2);
-    sd::LongType headDim = queries->sizeAt(3);
-    sd::LongType tv = values->sizeAt(1);
+    sd::LongType tq = queries->sizeAt(1);  // query sequence length
+    sd::LongType tv = values->sizeAt(1);   // value sequence length
+    sd::LongType dim = values->sizeAt(2);  // feature dimension
 
-    outShape = {batchSize, tq, numHeads, headDim};
-    scoresShape = {batchSize, numHeads, tq, tv};
-  } else if (queries->rankOf() == 3) {
-    // Rank 3: [batch, Tq, dim]
-    sd::LongType batchSize = queries->sizeAt(0);
-    sd::LongType tq = queries->sizeAt(-2);
-    sd::LongType tv = values->sizeAt(-2);
-    sd::LongType dim = values->sizeAt(-1);
-
+    // Output shape: [batch, Tq, dim]
     outShape = {batchSize, tq, dim};
+    // Attention scores shape: [batch, Tq, Tv]
     scoresShape = {batchSize, tq, tv};
   } else {
-    // Rank 2: [Tq, dim]
-    sd::LongType batchSize = queries->sizeAt(0);
-    sd::LongType tv = values->sizeAt(0);
-    sd::LongType dim = values->sizeAt(-1);
+    // Rank 2: [Tq, dim] @ [Tv, dim]^T -> [Tq, Tv] -> softmax -> @ [Tv, dim] -> [Tq, dim]
+    sd::LongType tq = queries->sizeAt(0);  // query sequence length
+    sd::LongType tv = values->sizeAt(0);   // value sequence length
+    sd::LongType dim = values->sizeAt(1);  // feature dimension
 
-    outShape = {batchSize, tv};
-    scoresShape = {batchSize, dim};
+    // Output shape: [Tq, dim]
+    outShape = {tq, dim};
+    // Attention scores shape: [Tq, Tv]
+    scoresShape = {tq, tv};
   }
 
   auto outputShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(firstInputType, 'c', outShape);
   auto attentionScoresShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(firstInputType, 'c', scoresShape);
   auto attentionLogitsShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(firstInputType, 'c', scoresShape);
 
-  if (dropout > 0) {
+  if(dropout > 0) {
     auto dropoutMaskShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(firstInputType, 'c', scoresShape);
     return SHAPELIST(outputShapeInfo, attentionScoresShapeInfo, attentionLogitsShapeInfo, dropoutMaskShapeInfo);
   } else {
@@ -285,117 +259,96 @@ CUSTOM_OP_IMPL(dot_product_attention_v2_bp, -2, 3, false, 0, -2) {
   auto valuesOrig = INPUT_VARIABLE(1);
   auto keysOrig = INPUT_VARIABLE(2);
 
-  // Get arguments
-  auto scale = block.numT() > 0 ? T_ARG(0) : 1.0;
-  auto dropout = block.numT() > 1 ? T_ARG(1) : 0.0;
-  auto useCausalMask = block.numB() > 0 ? B_ARG(0) : false;
-  auto training = block.numB() > 1 ? B_ARG(1) : false;
-  auto useFlashAttention = block.numB() > 2 ? B_ARG(2) : true;
-
-  // Check if we should use flash attention backward
-  bool canUseFlash = useFlashAttention &&
-                     queriesOrig->rankOf() == 4 &&
-                     (dropout == 0.0 || !training);
-
-  if (canUseFlash) {
-    // ========== FLASH ATTENTION BACKWARD PATH ==========
-    auto attentionScoresOut = INPUT_VARIABLE(3);
-    auto eps = INPUT_VARIABLE(6);
-
-    auto dLdq = OUTPUT_VARIABLE(0);
-    auto dLdv = OUTPUT_VARIABLE(1);
-    auto dLdk = OUTPUT_VARIABLE(2);
-
-    FlashAttentionHelper::Config config;
-    config.scale = scale > 0.0 ? static_cast<float>(scale) : 0.0f;
-    config.isCausal = useCausalMask;
-    config.numHeads = queriesOrig->sizeAt(2);
-    config.numKvHeads = keysOrig->sizeAt(2);
-
-    // Compute forward pass to get LSE for backward
-    auto batch = queriesOrig->sizeAt(0);
-    auto seqLen = queriesOrig->sizeAt(1);
-    auto numHeads = queriesOrig->sizeAt(2);
-
-    auto queryShapeVec = queriesOrig->getShapeAsVector();
-    auto computedOutput = NDArrayFactory::create_<float>('c', *queryShapeVec);
-    delete queryShapeVec;
-    std::vector<sd::LongType> lseShape = {batch, numHeads, seqLen};
-    auto computedLse = NDArrayFactory::create_<float>('c', lseShape);
-
-    FlashAttentionHelper::forward(queriesOrig, keysOrig, valuesOrig, computedOutput, config,
-                                  computedLse, block.launchContext());
-
-    FlashAttentionHelper::backward(eps, queriesOrig, keysOrig, valuesOrig, computedOutput, computedLse,
-                                   dLdq, dLdk, dLdv, config, block.launchContext());
-
-    delete computedOutput;
-    delete computedLse;
-
-    return sd::Status::OK;
-  }
-
-  // ========== STANDARD ATTENTION BACKWARD PATH ==========
-  auto queries = queriesOrig;
-  auto values = valuesOrig;
-  auto keys = keysOrig;
-
+  // Track reshaped arrays for cleanup
+  NDArray* queries = nullptr;
+  NDArray* values = nullptr;
+  NDArray* keys = nullptr;
+  NDArray* qMask = nullptr;
+  NDArray* vMask = nullptr;
   bool reshapedQ = false;
-  if (queries->rankOf() == 2) {
+
+  // Handle rank 2 inputs by adding batch dimension
+  if(queriesOrig->rankOf() == 2) {
     reshapedQ = true;
-    std::vector<sd::LongType> qShape = {1, queries->sizeAt(0), queries->sizeAt(-1)};
-    std::vector<sd::LongType> vShape = {1, values->sizeAt(0), values->sizeAt(-1)};
-    std::vector<sd::LongType> kShape = {1, keys->sizeAt(0), keys->sizeAt(-1)};
-    queries = queries->reshape('c', qShape);
-    values = values->reshape('c', vShape);
-    keys = keys->reshape('c', kShape);
+    std::vector<sd::LongType> qShape = {1, queriesOrig->sizeAt(0), queriesOrig->sizeAt(1)};
+    std::vector<sd::LongType> vShape = {1, valuesOrig->sizeAt(0), valuesOrig->sizeAt(1)};
+    std::vector<sd::LongType> kShape = {1, keysOrig->sizeAt(0), keysOrig->sizeAt(1)};
+    queries = queriesOrig->reshape('c', qShape);
+    values = valuesOrig->reshape('c', vShape);
+    keys = keysOrig->reshape('c', kShape);
+  } else {
+    queries = queriesOrig;
+    values = valuesOrig;
+    keys = keysOrig;
   }
 
   auto attentionScoresOut = INPUT_VARIABLE(3);
   auto attentionScoresWeights = INPUT_VARIABLE(4);
   auto attentionScoreLogits = INPUT_VARIABLE(5);
 
-  if (reshapedQ) {
+  if(reshapedQ) {
     attentionScoresOut->reshapei('c', {1, attentionScoresOut->sizeAt(0), attentionScoresOut->sizeAt(1)});
     attentionScoreLogits->reshapei('c', {1, attentionScoreLogits->sizeAt(0), attentionScoreLogits->sizeAt(1)});
     attentionScoresWeights->reshapei('c', {1, attentionScoresWeights->sizeAt(0), attentionScoresWeights->sizeAt(1)});
   }
 
   auto eps = INPUT_VARIABLE(6);
-  if (reshapedQ) {
+  if(reshapedQ) {
     eps->reshapei('c', {1, eps->sizeAt(0), eps->sizeAt(1)});
   }
 
   // Handle dropout mask - check for empty array
-  auto dropoutMask = block.width() > 7 ? INPUT_VARIABLE(7) : nullptr;
-  if (dropoutMask != nullptr && dropoutMask->isEmpty()) dropoutMask = nullptr;
-
-  // Handle masks
-  auto qMask = block.width() > 8 ? INPUT_VARIABLE(8) : nullptr;
-  auto vMask = block.width() > 9 ? INPUT_VARIABLE(9) : nullptr;
-
-  if (qMask != nullptr && qMask->isEmpty()) qMask = nullptr;
-  if (vMask != nullptr && vMask->isEmpty()) vMask = nullptr;
-
-  if (qMask != nullptr && qMask->rankOf() == 2) {
-    std::vector<sd::LongType> qmShape = {1, qMask->sizeAt(0), qMask->sizeAt(-1)};
-    qMask = qMask->reshape('c', qmShape);
+  auto dropoutMaskOrig = block.width() > 7 ? INPUT_VARIABLE(7) : nullptr;
+  NDArray* dropoutMask = nullptr;
+  if(dropoutMaskOrig != nullptr && !dropoutMaskOrig->isEmpty()) {
+    dropoutMask = dropoutMaskOrig;
   }
 
-  if (vMask != nullptr && vMask->rankOf() == 2) {
-    std::vector<sd::LongType> vmShape = {1, vMask->sizeAt(0), vMask->sizeAt(-1)};
-    vMask = vMask->reshape('c', vmShape);
+  // Handle masks - check for empty arrays
+  auto qMaskOrig = block.width() > 8 ? INPUT_VARIABLE(8) : nullptr;
+  auto vMaskOrig = block.width() > 9 ? INPUT_VARIABLE(9) : nullptr;
+
+  // Treat empty arrays as no mask
+  if(qMaskOrig != nullptr && qMaskOrig->isEmpty()) {
+    qMaskOrig = nullptr;
+  }
+  if(vMaskOrig != nullptr && vMaskOrig->isEmpty()) {
+    vMaskOrig = nullptr;
+  }
+
+  // Reshape masks if needed
+  // For 2D masks [batch, seq], reshape to [batch, 1, seq] to broadcast correctly with attention scores [batch, Tq, Tv]
+  if(qMaskOrig != nullptr && qMaskOrig->rankOf() == 2) {
+    std::vector<sd::LongType> qmShape = {qMaskOrig->sizeAt(0), 1, qMaskOrig->sizeAt(1)};
+    qMask = qMaskOrig->reshape('c', qmShape);
+  } else {
+    qMask = qMaskOrig;
+  }
+
+  if(vMaskOrig != nullptr && vMaskOrig->rankOf() == 2) {
+    std::vector<sd::LongType> vmShape = {vMaskOrig->sizeAt(0), 1, vMaskOrig->sizeAt(1)};
+    vMask = vMaskOrig->reshape('c', vmShape);
+  } else {
+    vMask = vMaskOrig;
   }
 
   auto dLdq = OUTPUT_VARIABLE(0);
   auto dLdv = OUTPUT_VARIABLE(1);
   auto dLdk = OUTPUT_VARIABLE(2);
 
-  if (reshapedQ) {
+  if(reshapedQ) {
     dLdq->reshapei('c', {1, dLdq->sizeAt(0), dLdq->sizeAt(1)});
     dLdv->reshapei('c', {1, dLdv->sizeAt(0), dLdv->sizeAt(1)});
     dLdk->reshapei('c', {1, dLdk->sizeAt(0), dLdk->sizeAt(1)});
   }
+
+  // Get arguments - T_ARG order: scale, dropout (same as forward pass)
+  auto scale = block.numT() > 0 ? T_ARG(0) : 1.0;
+  auto dropout = block.numT() > 1 ? T_ARG(1) : 0.0;
+
+  // B_ARG order: useCausalMask, training (same as forward pass)
+  auto useCausalMask = block.numB() > 0 ? B_ARG(0) : false;
+  auto training = block.numB() > 1 ? B_ARG(1) : false;
 
   int seed = block.randomSeed();
   AttentionHelper::dotProductAttentionBpHelper(queries, keys, values, scale, dLdq, dLdk, dLdv, eps, seed, qMask, vMask,
@@ -403,18 +356,23 @@ CUSTOM_OP_IMPL(dot_product_attention_v2_bp, -2, 3, false, 0, -2) {
                                                attentionScoreLogits, dropoutMask);
 
   // Cleanup and restore shapes
-  if (reshapedQ) {
+  if(reshapedQ) {
     delete queries;
     delete values;
     delete keys;
-    if (qMask != nullptr) delete qMask;
-    if (vMask != nullptr) delete vMask;
+    if(qMaskOrig != nullptr && qMask != qMaskOrig) {
+      delete qMask;
+    }
+    if(vMaskOrig != nullptr && vMask != vMaskOrig) {
+      delete vMask;
+    }
 
     dLdq->reshapei('c', {dLdq->sizeAt(1), dLdq->sizeAt(2)});
     dLdv->reshapei('c', {dLdv->sizeAt(1), dLdv->sizeAt(2)});
     dLdk->reshapei('c', {dLdk->sizeAt(1), dLdk->sizeAt(2)});
     eps->reshapei('c', {eps->sizeAt(1), eps->sizeAt(2)});
 
+    // Restore attention tensors shapes
     attentionScoresOut->reshapei('c', {attentionScoresOut->sizeAt(1), attentionScoresOut->sizeAt(2)});
     attentionScoreLogits->reshapei('c', {attentionScoreLogits->sizeAt(1), attentionScoreLogits->sizeAt(2)});
     attentionScoresWeights->reshapei('c', {attentionScoresWeights->sizeAt(1), attentionScoresWeights->sizeAt(2)});

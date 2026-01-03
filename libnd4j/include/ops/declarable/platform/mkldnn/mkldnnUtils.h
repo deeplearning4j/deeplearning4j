@@ -166,6 +166,10 @@ DECLARE_PLATFORM(Round, ENGINE_CPU);
 
 DECLARE_PLATFORM(Neg, ENGINE_CPU);
 
+// Error functions (MKL VML accelerated)
+DECLARE_PLATFORM(Erf, ENGINE_CPU);
+DECLARE_PLATFORM(Erfc, ENGINE_CPU);
+
 DECLARE_PLATFORM(clipbyvalue, ENGINE_CPU);
 DECLARE_PLATFORM(clipbyvalue_bp, ENGINE_CPU);
 
@@ -401,6 +405,10 @@ DECLARE_PLATFORM(roll, ENGINE_CPU);
 // Attention operations - Scaled Dot Product Attention (SDPA)
 DECLARE_PLATFORM(dot_product_attention_v2, ENGINE_CPU);
 DECLARE_PLATFORM(dot_product_attention_v2_bp, ENGINE_CPU);
+
+// Flash Attention - memory efficient attention with 3D/4D support
+DECLARE_PLATFORM(flash_attention, ENGINE_CPU);
+DECLARE_PLATFORM(flash_attention_bp, ENGINE_CPU);
 
 }  // namespace platforms
 }  // namespace ops

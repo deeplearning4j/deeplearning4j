@@ -23,7 +23,6 @@
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/PlatformHelper.h>
 #include <system/platform_boilerplate.h>
-#include <system/Environment.h>
 
 #include <numeric>
 
@@ -302,51 +301,41 @@ PLATFORM_IMPL(matmul, ENGINE_CPU) {
 PLATFORM_CHECK(matmul, ENGINE_CPU) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
+  auto z = OUTPUT_VARIABLE(0);
 
-  const auto xRank = x->rankOf();
-  const auto yRank = y->rankOf();
   const auto xType = x->dataType();
   const auto yType = y->dataType();
-
-  // OneDNN matmul is beneficial for:
-  // 1. Batched operations (3D+) where primitive creation is amortized across batch
-  // 2. 2D matrix multiplication with large enough matrices
-  // 3. BF16/FP16 types where OneDNN has specialized kernels
-  //
-  // Modern OneDNN with BRGEMM backend is competitive with OpenBLAS even for 2D
-  // and provides better performance on systems with AVX-512 or AMX
-
-  const bool isBatched = (xRank >= 3 && yRank >= 3);
-  const bool is2D = (xRank == 2 && yRank == 2);
-  const bool isVectorMatrixOrMatrixVector = ((xRank == 1 && yRank == 2) || (xRank == 2 && yRank == 1));
-  const bool isSupportedRank = isBatched || is2D || isVectorMatrixOrMatrixVector;
-
-  const bool isSupportedType = (xType == DataType::FLOAT32 || xType == DataType::BFLOAT16 ||
-                                 xType == DataType::HALF);
-  const bool sameTypes = (xType == yType);
-
-  // For 2D, check matrix dimensions are large enough to benefit from OneDNN
-  // OneDNN overhead is ~5-20us per primitive execution, so we need enough FLOPS
-  // For M x K x N matmul, we want at least ~10K FLOPS to benefit
-  bool largeEnough = true;
-  if (is2D) {
-    const LongType M = x->sizeAt(0);
-    const LongType K = x->sizeAt(1);
-    const LongType N = y->sizeAt(1);
-    // Minimum threshold: at least 64 elements in any dimension for OneDNN benefit
-    // This covers typical neural network layers (embedding dims 768+, etc.)
-    largeEnough = (M >= 1 && K >= 64 && N >= 64) || (M >= 64 && K >= 1 && N >= 64) ||
-                  (M >= 64 && K >= 64 && N >= 1) || (M * K * N >= 100000);
-  }
+  const auto zType = z->dataType();
 
   Requirements req("ONEDNN MATMUL OP");
-  req.expectTrue(makeInfoVariable(sd::Environment::getInstance().helpersAllowed(), "Helpers allowed"), EXPECTED_TRUE) &&
+
+  // Use OneDNN for all supported types and ranks - no size threshold needed
+  // OneDNN is well-optimized and competitive with OpenBLAS for all matrix sizes
+  
       req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
-      req.expectFalse(makeInfoVariable(y->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&
-      req.expectTrue(makeInfoVariable(isSupportedRank, "Supported rank (2D, batched 3D+, or vector-matrix)"), EXPECTED_TRUE) &&
-      req.expectTrue(makeInfoVariable(largeEnough, "Large enough matrices"), EXPECTED_TRUE) &&
-      req.expectTrue(makeInfoVariable(sameTypes, "Same input types"), EXPECTED_TRUE) &&
-      req.expectTrue(makeInfoVariable(isSupportedType, "Supported type (FP32/BF16/FP16)"), EXPECTED_TRUE);
+      req.expectFalse(makeInfoVariable(y->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE);
+
+  // OneDNN matmul supports:
+  // - f32 x f32 -> f32
+  // - f16 x f16 -> f16 or f32
+  // - bf16 x bf16 -> bf16 or f32
+  // - int8 x int8 -> int8, int32, or f32
+  req.expectTrue(
+      makeInfoVariable(
+          [xType, yType, zType] {
+            return ((xType == DataType::FLOAT32 && yType == DataType::FLOAT32 && zType == DataType::FLOAT32) ||
+                    (xType == DataType::HALF && yType == DataType::HALF &&
+                     (zType == DataType::HALF || zType == DataType::FLOAT32)) ||
+                    (xType == DataType::BFLOAT16 && yType == DataType::BFLOAT16 &&
+                     (zType == DataType::BFLOAT16 || zType == DataType::FLOAT32)) ||
+                    ((xType == DataType::UINT8 || xType == DataType::INT8) &&
+                     (yType == DataType::UINT8 || yType == DataType::INT8) &&
+                     (zType == DataType::UINT8 || zType == DataType::INT8 || zType == DataType::INT32 ||
+                      zType == DataType::FLOAT32)));
+          },
+          TYPECHECK_MSG),
+      NO_MSG);
+
   req.logTheSuccess();
   return req;
 }

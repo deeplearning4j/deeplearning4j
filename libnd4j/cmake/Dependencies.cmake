@@ -548,6 +548,7 @@ function(setup_onednn)
             -DDNNL_BUILD_TESTS=OFF
             -DDNNL_BUILD_EXAMPLES=OFF
             -DDNNL_VERBOSE=OFF
+            -DONEDNN_BUILD_GRAPH=ON
             -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
             -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
     )

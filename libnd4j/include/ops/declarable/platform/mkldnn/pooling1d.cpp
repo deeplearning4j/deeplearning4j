@@ -112,8 +112,7 @@ PLATFORM_CHECK(maxpool1d, ENGINE_CPU) {
   auto z = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN MAXPOOL1D OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
+  req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectEq(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 3) &&
       req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
       req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
@@ -150,8 +149,7 @@ PLATFORM_CHECK(avgpool1d, ENGINE_CPU) {
   auto z = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN AVGPOOL1D OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
+  req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectEq(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 3) &&
       req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
       req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
@@ -260,8 +258,7 @@ PLATFORM_CHECK(maxpool1d_bp, ENGINE_CPU) {
   auto gradI = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN MAXPOOL1D_BP OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
+  req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
       req.expectEq(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), 3) &&
       req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&
       req.expectEq(makeInfoVariable(gradO->dataType(), TYPE_MSG_INPUT1), DataType::FLOAT32) &&
@@ -299,8 +296,7 @@ PLATFORM_CHECK(avgpool1d_bp, ENGINE_CPU) {
   auto gradI = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN AVGPOOL1D_BP OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
+  req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
       req.expectEq(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), 3) &&
       req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&
       req.expectEq(makeInfoVariable(gradO->dataType(), TYPE_MSG_INPUT1), DataType::FLOAT32) &&

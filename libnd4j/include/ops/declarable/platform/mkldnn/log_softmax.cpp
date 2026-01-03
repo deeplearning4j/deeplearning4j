@@ -32,6 +32,27 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////
+// Get OneDNN data type from NDArray
+static dnnl::memory::data_type getOneDnnDataType(DataType dt) {
+  switch (dt) {
+    case DataType::FLOAT32:
+      return dnnl::memory::data_type::f32;
+    case DataType::BFLOAT16:
+      return dnnl::memory::data_type::bf16;
+    case DataType::HALF:
+      return dnnl::memory::data_type::f16;
+    default:
+      return dnnl::memory::data_type::f32;
+  }
+}
+
+//////////////////////////////////////////////////////////////////////
+// Check if data type is supported by OneDNN log_softmax
+static bool isSupportedLogSoftmaxType(DataType dt) {
+  return dt == DataType::FLOAT32 || dt == DataType::BFLOAT16 || dt == DataType::HALF;
+}
+
+//////////////////////////////////////////////////////////////////////
 static void logSoftmaxMKLDNN(NDArray* x, NDArray* z, const sd::LongType axis) {
   dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
@@ -49,7 +70,8 @@ static void logSoftmaxMKLDNN(NDArray* x, NDArray* z, const sd::LongType axis) {
     zFormat = dnnl::memory::format_tag::acdb;
   }
 
-  dnnl::memory::data_type xType = dnnl::memory::data_type::f32;
+  // Use actual input data type - OneDNN supports f32, bf16, f16 for log_softmax
+  dnnl::memory::data_type xType = getOneDnnDataType(x->dataType());
 
   dnnl::memory::desc x_mkl_md, x_user_md, z_mkl_md, z_user_md;
 
@@ -121,12 +143,15 @@ PLATFORM_CHECK(log_softmax, ENGINE_CPU) {
   auto z = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN LOG_SOFTMAX OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
+  req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
-      req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 1) &&
-      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
+      req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
+      req.expectTrue(makeInfoVariable(isSupportedLogSoftmaxType(x->dataType()), TYPE_MSG_INPUT),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectTrue(makeInfoVariable(isSupportedLogSoftmaxType(z->dataType()), TYPE_MSG_OUTPUT),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT),
+                   makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT));
   req.logTheSuccess();
   return req;
 }
@@ -135,19 +160,22 @@ PLATFORM_CHECK(log_softmax, ENGINE_CPU) {
 static void logSoftmaxBpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx, const sd::LongType axis) {
   dnnl::memory::desc x_user_md, x_mkl_md, dLdx_mkl_md, dLdx_user_md, dLdz_mkl_md, dLdz_user_md;
 
+  // Use actual input data type - OneDNN supports f32, bf16, f16 for log_softmax backward
+  auto dataType = getOneDnnDataType(x->dataType());
+
   // x
   x_mkl_md = x_user_md =
-      dnnl::memory::desc(*x->getShapeAsFlatVector(), dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
+      dnnl::memory::desc(*x->getShapeAsFlatVector(), dataType, onednnUtils::getFormat(*x));
   onednnUtils::setBlockStrides(*x, x_user_md);
 
   // dLdx
   dLdx_mkl_md = dLdx_user_md =
-      dnnl::memory::desc(*dLdx->getShapeAsFlatVector(), dnnl::memory::data_type::f32, onednnUtils::getFormat(*dLdx));
+      dnnl::memory::desc(*dLdx->getShapeAsFlatVector(), dataType, onednnUtils::getFormat(*dLdx));
   onednnUtils::setBlockStrides(*dLdx, dLdx_user_md);
 
   // dLdz
   dLdz_mkl_md = dLdz_user_md =
-      dnnl::memory::desc(*dLdz->getShapeAsFlatVector(), dnnl::memory::data_type::f32, onednnUtils::getFormat(*dLdz));
+      dnnl::memory::desc(*dLdz->getShapeAsFlatVector(), dataType, onednnUtils::getFormat(*dLdz));
   onednnUtils::setBlockStrides(*dLdz, dLdz_user_md);
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
@@ -231,15 +259,19 @@ PLATFORM_CHECK(log_softmax_bp, ENGINE_CPU) {
   dLdx->assign(softmaxOutput);
 
   Requirements req("ONEDNN LOG_SOFTMAX_BP OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
+  req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
       req.expectFalse(makeInfoVariable(dLdz->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), 7) &&
       req.expectEq(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), makeInfoVariable(dLdz->rankOf(), RANK_MSG_INPUT1)) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
-      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(dLdz->dataType(), TYPE_MSG_INPUT1), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(dLdx->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32) &&
+      req.expectTrue(makeInfoVariable(isSupportedLogSoftmaxType(x->dataType()), TYPE_MSG_INPUT0),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectTrue(makeInfoVariable(isSupportedLogSoftmaxType(dLdz->dataType()), TYPE_MSG_INPUT1),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectTrue(makeInfoVariable(isSupportedLogSoftmaxType(dLdx->dataType()), TYPE_MSG_OUTPUT),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0),
+                   makeInfoVariable(dLdz->dataType(), TYPE_MSG_INPUT1)) &&
       req.expect(
           makeShapeInfoVariable(x, SHAPE_MSG_INPUT0), makeShapeInfoVariable(dLdz, SHAPE_MSG_INPUT1),
           [](const decltype(x)& l, const decltype(dLdz)& r) {

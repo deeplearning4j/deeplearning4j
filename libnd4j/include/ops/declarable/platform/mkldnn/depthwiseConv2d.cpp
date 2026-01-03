@@ -420,8 +420,7 @@ PLATFORM_CHECK(depthwise_conv2d, ENGINE_CPU) {
   auto output = INPUT_VARIABLE(0);
 
   Requirements req("ONEDNN DEPTHWISE_CONV2d OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectEq(makeInfoVariable(weights->sizeAt(3), "weight NdArray size#3"), 1) &&
+  req.expectEq(makeInfoVariable(weights->sizeAt(3), "weight NdArray size#3"), 1) &&
       req.expectTrue(makeInfoVariable(
                          [input, weights, bias, output] {
                            const DataType xType = input->dataType();
@@ -529,8 +528,7 @@ PLATFORM_CHECK(depthwise_conv2d_bp, ENGINE_CPU) {
   auto gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;  // [oC]
 
   Requirements req("ONEDNN DEPTHWISE_CONV2d_BP OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectEq(makeInfoVariable(weights->sizeAt(3), "weight NdArray size#3"), 1) &&
+  req.expectEq(makeInfoVariable(weights->sizeAt(3), "weight NdArray size#3"), 1) &&
       req.expectTrue(makeInfoVariable(
                          [input, weights, gradI, gradW, gradB, gradO] {
                            const DataType xType = input->dataType();

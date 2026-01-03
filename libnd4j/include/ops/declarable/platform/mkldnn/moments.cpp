@@ -151,8 +151,7 @@ PLATFORM_CHECK(reduce_variance, ENGINE_CPU) {
   auto z = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN REDUCE_VARIANCE OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(makeInfoVariable(isVarianceSuitable(x, z), "KEEP_DIMS"), "keepDims must be true") &&
+  req.expectTrue(makeInfoVariable(isVarianceSuitable(x, z), "KEEP_DIMS"), "keepDims must be true") &&
       req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
@@ -220,8 +219,7 @@ PLATFORM_CHECK(reduce_stdev, ENGINE_CPU) {
   auto z = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN REDUCE_STDEV OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(makeInfoVariable(isVarianceSuitable(x, z), "KEEP_DIMS"), "keepDims must be true") &&
+  req.expectTrue(makeInfoVariable(isVarianceSuitable(x, z), "KEEP_DIMS"), "keepDims must be true") &&
       req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&

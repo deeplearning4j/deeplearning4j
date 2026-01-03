@@ -120,8 +120,7 @@ PLATFORM_CHECK(mergeadd, ENGINE_CPU) {
   auto z = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN MERGEADD OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(makeInfoVariable(!inputs.empty(), "HAS_INPUTS"), "At least one input required") &&
+  req.expectTrue(makeInfoVariable(!inputs.empty(), "HAS_INPUTS"), "At least one input required") &&
       req.expectTrue(makeInfoVariable(allShapesMatch(inputs), "SHAPES_MATCH"), "All shapes must match");
 
   if (!inputs.empty()) {

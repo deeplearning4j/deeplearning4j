@@ -97,8 +97,7 @@ PLATFORM_CHECK(shuffle_channel, ENGINE_CPU) {
   bool divisible = x->sizeAt(axis) % groups == 0;
 
   Requirements req("ONEDNN SHUFFLE_CHANNEL OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(makeInfoVariable(divisible, "DIVISIBLE_BY_GROUPS"), "Channels must be divisible by groups") &&
+  req.expectTrue(makeInfoVariable(divisible, "DIVISIBLE_BY_GROUPS"), "Channels must be divisible by groups") &&
       req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectGreaterEq(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 2) &&
       req.expectLessEq(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 6) &&
@@ -170,8 +169,7 @@ PLATFORM_CHECK(shuffle_channel_bp, ENGINE_CPU) {
   bool divisible = x->sizeAt(axis) % groups == 0;
 
   Requirements req("ONEDNN SHUFFLE_CHANNEL_BP OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(makeInfoVariable(divisible, "DIVISIBLE_BY_GROUPS"), "Channels must be divisible by groups") &&
+  req.expectTrue(makeInfoVariable(divisible, "DIVISIBLE_BY_GROUPS"), "Channels must be divisible by groups") &&
       req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
       req.expectFalse(makeInfoVariable(dLdz->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&
       req.expectGreaterEq(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 2) &&

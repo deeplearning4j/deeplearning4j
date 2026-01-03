@@ -50,6 +50,25 @@
             <artifactId>mkl-platform</artifactId>
             <version>${mkl.version}-${javacpp-presets.version}</version>
         </dependency>
+        <!-- MKL redist packages contain headers and additional runtime libraries -->
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>mkl</artifactId>
+            <version>${mkl.version}-${javacpp-presets.version}</version>
+            <classifier>linux-x86_64-redist</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>mkl</artifactId>
+            <version>${mkl.version}-${javacpp-presets.version}</version>
+            <classifier>windows-x86_64-redist</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>mkl</artifactId>
+            <version>${mkl.version}-${javacpp-presets.version}</version>
+            <classifier>macosx-x86_64-redist</classifier>
+        </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>${nd4j.backend}</artifactId>

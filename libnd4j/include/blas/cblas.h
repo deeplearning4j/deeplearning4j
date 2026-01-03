@@ -27,12 +27,22 @@
 #include <config.h>
 #endif
 
+// Guard against including multiple CBLAS implementations
+// MKL and OpenBLAS both provide CBLAS with conflicting declarations
+
 #ifdef __MKL_CBLAS_H__
 // CBLAS from MKL is already included
 #define CBLAS_H
 #endif
 
-#ifdef HAVE_OPENBLAS
+#ifdef HAVE_MKL
+// When MKL is available, prefer MKL's CBLAS (included via mkl_cblas.h)
+// Do NOT include OpenBLAS cblas.h to avoid conflicts
+#ifndef CBLAS_H
+#include <mkl_cblas.h>
+#define CBLAS_H
+#endif
+#elif defined(HAVE_OPENBLAS)
 // include CBLAS from OpenBLAS
 #ifdef __GNUC__
 #include <cblas.h>
@@ -63,14 +73,15 @@ enum CBLAS_SIDE { CblasLeft = 141, CblasRight = 142 };
 int cblas_errprn(int ierr, int info, char *form, ...);
 void cblas_xerbla(int p, char *rout, char *form, ...);
 
-#ifdef __MKL
+// BLAS thread control declarations (for fallback when headers not included)
+#if defined(__MKL) || defined(HAVE_MKL)
 void MKL_Set_Num_Threads(int num);
 int MKL_Domain_Set_Num_Threads(int num, int domain);
 int MKL_Set_Num_Threads_Local(int num);
-#elif __OPENBLAS
+#elif defined(__OPENBLAS) || defined(HAVE_OPENBLAS)
 void openblas_set_num_threads(int num);
 #else
-// do nothing
+// No BLAS thread control available
 #endif
 
 /*
