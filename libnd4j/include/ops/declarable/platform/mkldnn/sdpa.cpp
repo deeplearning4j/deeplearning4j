@@ -29,14 +29,22 @@
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/PlatformHelper.h>
 #include <system/platform_boilerplate.h>
+#include <system/openmp_pragmas.h>
 
 #include <oneapi/dnnl/dnnl_graph.hpp>
+#include <dnnl.hpp>
+
+#ifdef HAVE_MKL
+#include <mkl.h>
+#endif
 
 #include <unordered_map>
 #include <mutex>
 #include <thread>
 #include <algorithm>
 #include <vector>
+#include <cmath>
+#include <limits>
 
 #include "mkldnnUtils.h"
 
@@ -452,13 +460,130 @@ static void fastPermute_BHSD_to_BSHD(void* srcBuffer, NDArray* dst, int64_t B, i
   reorder_prim.execute(strm, src_mem, dst_mem);
 }
 
+#ifdef HAVE_MKL
+//////////////////////////////////////////////////////////////////////////
+// Thread-local score buffer for MKL SDPA
+struct MKLSDPABuffer {
+  std::vector<float> scores;
+  size_t capacity = 0;
+
+  static MKLSDPABuffer& instance() {
+    thread_local MKLSDPABuffer buf;
+    return buf;
+  }
+
+  float* ensureCapacity(size_t needed) {
+    if (capacity < needed) {
+      capacity = needed * 2;
+      scores.resize(capacity);
+    }
+    return scores.data();
+  }
+};
+
+//////////////////////////////////////////////////////////////////////////
+// Fast vectorized softmax using MKL VML
+static void mklSoftmaxInPlace(float* data, MKL_INT rows, MKL_INT cols, float scale) {
+  for (MKL_INT r = 0; r < rows; r++) {
+    float* row = data + r * cols;
+
+    // Scale and find max in single pass
+    float maxVal = -std::numeric_limits<float>::infinity();
+    PRAGMA_OMP_SIMD_ARGS(reduction(max:maxVal))
+    for (MKL_INT c = 0; c < cols; c++) {
+      row[c] *= scale;
+      if (row[c] > maxVal) maxVal = row[c];
+    }
+
+    // Subtract max
+    PRAGMA_OMP_SIMD
+    for (MKL_INT c = 0; c < cols; c++) row[c] -= maxVal;
+
+    // Vectorized exp
+    vsExp(cols, row, row);
+
+    // Sum and normalize
+    float sum = cblas_sasum(cols, row, 1);
+    if (sum > 0.0f) {
+      cblas_sscal(cols, 1.0f / sum, row, 1);
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Execute 4D SDPA using MKL strided batch GEMM
+static void executeSDPA4D_MKL(NDArray* query, NDArray* key, NDArray* value, NDArray* output,
+                               float scale, LaunchContext* context) {
+  const MKL_INT batch = query->sizeAt(0);
+  const MKL_INT seqQ = query->sizeAt(1);
+  const MKL_INT seqKV = key->sizeAt(1);
+  const MKL_INT numHeads = query->sizeAt(2);
+  const MKL_INT headDim = query->sizeAt(3);
+
+  float* qPtr = query->bufferAsT<float>();
+  float* kPtr = key->bufferAsT<float>();
+  float* vPtr = value->bufferAsT<float>();
+  float* outPtr = output->bufferAsT<float>();
+
+  const MKL_INT qBatchStride = query->strideAt(0);
+  const MKL_INT qSeqStride = query->strideAt(1);
+  const MKL_INT qHeadStride = query->strideAt(2);
+
+  const MKL_INT kBatchStride = key->strideAt(0);
+  const MKL_INT kSeqStride = key->strideAt(1);
+  const MKL_INT kHeadStride = key->strideAt(2);
+
+  const MKL_INT vBatchStride = value->strideAt(0);
+  const MKL_INT vSeqStride = value->strideAt(1);
+  const MKL_INT vHeadStride = value->strideAt(2);
+
+  const MKL_INT outBatchStride = output->strideAt(0);
+  const MKL_INT outSeqStride = output->strideAt(1);
+  const MKL_INT outHeadStride = output->strideAt(2);
+
+  const MKL_INT scoreSize = seqQ * seqKV;
+
+  auto& scratch = MKLSDPABuffer::instance();
+  float* allScores = scratch.ensureCapacity(numHeads * scoreSize);
+
+  for (MKL_INT b = 0; b < batch; b++) {
+    float* Q = qPtr + b * qBatchStride;
+    float* K = kPtr + b * kBatchStride;
+    float* V = vPtr + b * vBatchStride;
+    float* O = outPtr + b * outBatchStride;
+
+    // Batch GEMM: Q @ K^T for all heads
+    cblas_sgemm_batch_strided(CblasRowMajor, CblasNoTrans, CblasTrans,
+                               seqQ, seqKV, headDim, 1.0f,
+                               Q, qSeqStride, qHeadStride,
+                               K, kSeqStride, kHeadStride,
+                               0.0f, allScores, seqKV, scoreSize, numHeads);
+
+    // Softmax for all heads
+    for (MKL_INT h = 0; h < numHeads; h++) {
+      mklSoftmaxInPlace(allScores + h * scoreSize, seqQ, seqKV, scale);
+    }
+
+    // Batch GEMM: scores @ V for all heads
+    cblas_sgemm_batch_strided(CblasRowMajor, CblasNoTrans, CblasNoTrans,
+                               seqQ, headDim, seqKV, 1.0f,
+                               allScores, seqKV, scoreSize,
+                               V, vSeqStride, vHeadStride,
+                               0.0f, O, outSeqStride, outHeadStride, numHeads);
+  }
+}
+#endif
+
 //////////////////////////////////////////////////////////////////////////
 // Execute 4D SDPA with [batch, seq, heads, dim] layout
-// ZERO-COPY: Uses strided 4D tensors to read/write directly from input/output
-// Input layout: [B,S,H,D] with strides [S*H*D, H*D, D, 1]
-// Graph expects: [B,H,S,D] - we provide strided view [S*H*D, D, H*D, 1]
 static void executeSDPA4D(NDArray* query, NDArray* key, NDArray* value, NDArray* output,
                           float scale, LaunchContext* context) {
+#ifdef HAVE_MKL
+  if (query->dataType() == DataType::FLOAT32) {
+    executeSDPA4D_MKL(query, key, value, output, scale, context);
+    return;
+  }
+#endif
   const auto batch = query->sizeAt(0);
   const auto seqQ = query->sizeAt(1);
   const auto seqKV = key->sizeAt(1);
