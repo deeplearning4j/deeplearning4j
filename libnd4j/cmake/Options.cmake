@@ -170,6 +170,15 @@ option(SD_PTXAS "Enable ptxas verbose output" OFF)
 option(SD_KEEP_NVCC_OUTPUT "Keep NVCC output files" OFF)
 option(SD_PREPROCESS "Enable preprocessing" OFF)
 
+# --- CUDA Parallel Compilation Options (CUDA 11.2+) ---
+# These options can dramatically reduce CUDA build times (up to 50% improvement)
+# --threads and --split-compile are auto-enabled for CUDA 11.2+
+# Device LTO is opt-in due to increased link time
+option(SD_CUDA_DEVICE_LTO "Enable CUDA Device Link Time Optimization (better runtime perf, longer link)" OFF)
+option(SD_CUDA_TIME_TRACE "Generate CUDA compilation time trace for build profiling (CUDA 12.8+)" OFF)
+set(SD_CUDA_THREADS "0" CACHE STRING "NVCC --threads count (0=auto, max parallel arch compilation)")
+set(SD_CUDA_SPLIT_COMPILE "0" CACHE STRING "NVCC --split-compile threads (0=auto, parallel optimization phase)")
+
 # --- Build Target Options ---
 option(SD_BUILD_TESTS "Build tests" OFF)
 option(FLATBUFFERS_BUILD_FLATC "Enable the build of the flatbuffers compiler" OFF)
@@ -281,6 +290,27 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInf
 else()
     add_compile_options(-ftemplate-depth=512)
     message(STATUS "Using template depth 512 for ${CMAKE_BUILD_TYPE} build")
+endif()
+
+# --- CONSTEXPR LIMITS: Reduce memory usage during template instantiation ---
+# These limits prevent excessive memory consumption during compile-time evaluation
+# fconstexpr-depth: Maximum nesting depth of constexpr function calls (default: 512)
+#   - Lowering to 256 reduces memory for deeply nested constexpr code
+# fconstexpr-loop-limit: Maximum iterations for constexpr loops (default: 262144)
+#   - 65536 is sufficient for most use cases while using less memory
+# fconstexpr-ops-limit: Maximum operations in constexpr evaluation (default: 33554432)
+#   - 4194304 (4M) is enough for practical constexpr while limiting memory
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 10.0)
+        add_compile_options(-fconstexpr-depth=256)
+        add_compile_options(-fconstexpr-loop-limit=65536)
+        add_compile_options(-fconstexpr-ops-limit=4194304)
+        message(STATUS "💾 Applied GCC constexpr limits to reduce compilation memory")
+    endif()
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    add_compile_options(-fconstexpr-depth=256)
+    add_compile_options(-fconstexpr-steps=4194304)
+    message(STATUS "💾 Applied Clang constexpr limits to reduce compilation memory")
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")

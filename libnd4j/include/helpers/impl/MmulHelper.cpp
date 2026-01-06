@@ -216,9 +216,10 @@ bool MmulHelper::tryOneDnnBatched(NDArray* A, NDArray* B, NDArray* C,
 // Only handles simple row-major contiguous case for reliability
 // Non-standard layouts fall through to tryBlasBatched/tryBlasPerBatch
 //////////////////////////////////////////////////////////////////////////
+#if !defined(SD_CUDA)
 bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
                                         double alpha, double beta) {
-#if defined(HAVE_MKL) && !defined(SD_CUDA)
+#if defined(HAVE_MKL)
   if (!Environment::getInstance().isEnableBlas()) {
     return false;
   }
@@ -311,12 +312,14 @@ bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
 
   return true;
 #else
-  // MKL not available or running on CUDA - strided batch not supported here
+  // MKL not available - strided batch not supported here
   return false;
 #endif
 }
+#endif  // !SD_CUDA
 
 //////////////////////////////////////////////////////////////////////////
+#if !defined(SD_CUDA)
 bool MmulHelper::tryBlasBatched(NDArray* A, NDArray* B, NDArray* C,
                                  double alpha, double beta) {
   if (!Environment::getInstance().isEnableBlas()) {
@@ -552,6 +555,18 @@ bool MmulHelper::tryBlasPerBatch(NDArray* A, NDArray* B, NDArray* C,
 
   return true;
 }
+#else
+// CUDA stubs - batched BLAS not available on CUDA through this path
+bool MmulHelper::tryBlasBatched(NDArray* A, NDArray* B, NDArray* C,
+                                 double alpha, double beta) {
+  return false;
+}
+
+bool MmulHelper::tryBlasPerBatch(NDArray* A, NDArray* B, NDArray* C,
+                                  double alpha, double beta) {
+  return false;
+}
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 void MmulHelper::manualBatchedGemm(NDArray* A, NDArray* B, NDArray* C,
@@ -1107,7 +1122,8 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
 
   if (z->isEmpty()) return;
 
-  // Fast path for 2D with BLAS transpose flags
+#if !defined(SD_CUDA)
+  // Fast path for 2D with BLAS transpose flags (CPU only)
   if (xRank == 2 && yRank == 2 && Environment::getInstance().isEnableBlas()) {
     const auto xType = x->dataType();
     const bool sameTypes = (xType == y->dataType()) && (xType == z->dataType());
@@ -1158,6 +1174,7 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
       return;
     }
   }
+#endif
 
   // Handle transpose via permute + dup
   NDArray *xT = const_cast<NDArray*>(x);

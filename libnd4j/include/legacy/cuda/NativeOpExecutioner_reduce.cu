@@ -185,104 +185,7 @@ void NativeOpExecutioner::execReduceFloat(sd::LaunchContext* lc, int opNum, cons
                         SD_COMMON_TYPES, SD_FLOAT_TYPES);
 }
 
-////////////////////////////////////////////////////////////////////////
-/**
- *
- * @param opNum
- * @param dX
- * @param dXShapeInfo
- * @param extraParams
- * @param dZ
- * @param dZShapeInfo
- * @param dimension
- * @param dimensionLength
- */
-void NativeOpExecutioner::execIndexReduce(sd::LaunchContext* lc, int opNum, void const* hX, sd::LongType const* hXShapeInfo,
-                                          void const* dX, sd::LongType const* dXShapeInfo, void* extraParams, void* hZ,
-                                          sd::LongType const* hZShapeInfo, void* dZ, sd::LongType const* dZShapeInfo,
-                                          sd::LongType* dimension, sd::LongType dimensionLength, sd::LongType const* tadShapeInfo,
-                                          sd::LongType const* tadOffsets) {
-  auto stream = lc->getCudaStream();
-  auto reductionPointer = lc->getReductionPointer();
-  auto allocationPointer = lc->getAllocationPointer();
-
-  if (sd::Environment::getInstance().isDebugAndVerbose()) {
-    printf("F2 opType:[%i]\n", opNum);
-  }
-  auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
-  auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-  if (sd::DataTypeUtils::isS(xType) || sd::DataTypeUtils::isS(zType)) {
-    THROW_EXCEPTION(
-        "NativeOpExecutioner::execIndexReduce:: unable to execute on strings. Please write logic higher level in each "
-        "op for the string data type.")
-  }
-  auto numBlocks = shape::length(hZShapeInfo);
-  auto tadLength = shape::length(hXShapeInfo) / numBlocks;
-  dim3 launchDims = getReduceDims(numBlocks);
-  if (zType != sd::INT64 && zType != sd::INT32) {
-    std::string errorMessage = "NativeOpExecutioner::execIndexReduce requires Z operand to have INT32/INT64 type. Z type: " + sd::DataTypeUtils::asString(zType);
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-  auto dz = reinterpret_cast<sd::LongType*>(dZ);
-  BUILD_DOUBLE_SELECTOR(
-      xType, zType, functions::indexreduce::IndexReduce,
-      ::executeIndexReduce(launchDims,
-                           stream,
-                           opNum,
-                           dX,
-                           dXShapeInfo, shape::rank(hXShapeInfo),
-                           extraParams,
-                           dz,
-                           dZShapeInfo,
-                           shape::rank(hZShapeInfo),
-                           dimension,
-                           dimensionLength,
-                           1,
-                           allocationPointer,
-                           reductionPointer,
-                           tadShapeInfo,
-                           tadOffsets),
-      SD_COMMON_TYPES, SD_INDEXING_TYPES);
-}
-
-/**
- *
- * @param opNum
- * @param dX
- * @param dXShapeInfo
- * @param extraParams
- */
-////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execIndexReduceScalar(sd::LaunchContext* lc, int opNum, void const* hX,
-                                                sd::LongType const* hXShapeInfo, void const* dX,
-                                                sd::LongType const* dXShapeInfo, void* extraParams, void* hZ,
-                                                sd::LongType const* hZShapeInfo, void* dZ, sd::LongType const* dZShapeInfo) {
-  auto stream = lc->getCudaStream();
-  auto reductionPointer = lc->getReductionPointer();
-  sd::LongType* allocationPointer = lc->getAllocationPointer();
-
-  auto xLength = shape::length(hXShapeInfo);
-  dim3 launchDims = getReduceDims(xLength);
-
-  auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
-  auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-  if (sd::DataTypeUtils::isS(xType) || sd::DataTypeUtils::isS(zType)) {
-    THROW_EXCEPTION(
-        "NativeOpExecutioner::execIndexReduceScalar:: unable to execute on strings. Please write logic higher level in "
-        "each op for the string data type.")
-  }
-
-  if (zType != sd::INT64 && zType != sd::INT32) {
-    std::string errorMessage = "NativeOpExecutioner::execIndexReduceScalar requires Z operand to have INT32/INT64 data type. Z type: " + sd::DataTypeUtils::asString(zType);
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-  auto dz = reinterpret_cast<sd::LongType*>(dZ);
-  BUILD_DOUBLE_SELECTOR(
-      xType, zType, functions::indexreduce::IndexReduce,
-      ::executeIndexReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, shape::rank(hXShapeInfo), extraParams, dz,
-                                 dZShapeInfo, 0, nullptr, 0, 1, allocationPointer, reductionPointer, nullptr, nullptr),
-      SD_COMMON_TYPES, SD_INDEXING_TYPES);
-}
+// NOTE: execIndexReduce and execIndexReduceScalar are defined in NativeOpExecutioner_indexreduce.cu
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execReduceFloatScalar(sd::LaunchContext* lc, int opNum, void const* hX,
@@ -548,7 +451,7 @@ void NativeOpExecutioner::execReduce3TAD(sd::LaunchContext* lc, int opNum, const
                                          const void* hY, const sd::LongType* hYShapeInfo, const void* dY,
                                          const sd::LongType* dYShapeInfo, void* hZ, const sd::LongType* hZShapeInfo, void* dZ,
                                          const sd::LongType* dZShapeInfo, sd::LongType* dimension,
-                                         long long int dimensionLength, const sd::LongType* tadShapeInfo,
+                                         sd::LongType dimensionLength, const sd::LongType* tadShapeInfo,
                                          const sd::LongType* tadOffsets, const sd::LongType* yTadShapeInfo,
                                          const sd::LongType* yTadOffsets) {
   if (shape::isScalar(hZShapeInfo)) {

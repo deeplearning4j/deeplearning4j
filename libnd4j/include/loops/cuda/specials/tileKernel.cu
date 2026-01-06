@@ -25,7 +25,7 @@
     namespace sd {
 
   template <typename T>
-  SD_KERNEL void tileKernel(void const* inputBuffer,
+  SD_KERNEL SD_INLINE void tileKernel(void const* inputBuffer,
                             LongType const* inputShape,
                             void* outputBuffer,
                             LongType const* outputShape,
@@ -101,15 +101,9 @@
     }
   }
 
-  // We build specialized versions of tileKernel for all SD_COMMON_TYPES
-  BUILD_SINGLE_TEMPLATE(
-       SD_KERNEL void tileKernel,
-      (void const* inputBuffer,
-       sd::LongType const* inputShape,
-       void* outputBuffer,
-       sd::LongType const* outputShape,
-       sd::LongType resultLength),
-      SD_COMMON_TYPES);
+  // Note: CUDA __global__ kernel functions are implicitly instantiated when called
+  // from host wrapper functions. Explicit template instantiation is not supported
+  // for __global__ functions.
 
   template <typename T>
   void tileKernelH(void const* inputBuffer,
@@ -138,7 +132,7 @@
 
   // Enhancement for different input (Y) and output (X) data types
   template <typename X, typename Y>
-  SD_KERNEL void tileKernelDouble(
+  SD_KERNEL SD_INLINE void tileKernelDouble(
       void const* inputBuffer,
       LongType const* inputShape,
       void* outputBuffer,
@@ -213,14 +207,9 @@
     }
   }
 
-  BUILD_SINGLE_TEMPLATE_TWICE(
-       SD_KERNEL void tileKernelDouble,
-      (void const* inputBuffer,
-       sd::LongType const* inputShape,
-       void* outputBuffer,
-       sd::LongType const* outputShape,
-       sd::LongType resultLength),
-      SD_COMMON_TYPES);
+  // Note: CUDA __global__ kernel functions are implicitly instantiated when called
+  // from host wrapper functions. Explicit template instantiation is not supported
+  // for __global__ functions.
 
   // The host wrapper for tileKernelDouble
   template <typename X, typename Y>

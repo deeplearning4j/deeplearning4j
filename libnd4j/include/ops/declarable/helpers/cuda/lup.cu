@@ -39,7 +39,7 @@ namespace helpers {
 // ------------------------------------------------------------------------------------------------------------------ //
 //  invert the second diagonal for lower diagonal matrix
 template <typename T>
-static SD_KERNEL void invertKernelLow(void *invertedBuf, const LongType *invertedShape, const void *inputBuf,
+static SD_KERNEL SD_INLINE void invertKernelLow(void *invertedBuf, const LongType *invertedShape, const void *inputBuf,
                                       const LongType *inputShape, LongType n) {
   auto inverted = reinterpret_cast<T *>(invertedBuf);
   auto input = reinterpret_cast<const T *>(inputBuf);
@@ -71,7 +71,7 @@ static SD_KERNEL void invertKernelLow(void *invertedBuf, const LongType *inverte
 // ------------------------------------------------------------------------------------------------------------------ //
 // invert diagonal vals to upper diagonal matrix
 template <typename T>
-static SD_KERNEL void upvertKernel(void *invertedBuf, const LongType *invertedShape, const void *inputBuf,
+static SD_KERNEL SD_INLINE void upvertKernel(void *invertedBuf, const LongType *invertedShape, const void *inputBuf,
                                    const LongType *inputShape, LongType n) {
   auto inverted = reinterpret_cast<T *>(invertedBuf);
   auto input = reinterpret_cast<const T *>(inputBuf);
@@ -92,7 +92,7 @@ static SD_KERNEL void upvertKernel(void *invertedBuf, const LongType *invertedSh
 // ------------------------------------------------------------------------------------------------------------------ //
 //  invert upper second diagonal
 template <typename T>
-static SD_KERNEL void upvertKernelUp(void *invertedBuf, const LongType *invertedShape, const void *inputBuf,
+static SD_KERNEL SD_INLINE void upvertKernelUp(void *invertedBuf, const LongType *invertedShape, const void *inputBuf,
                                      const LongType *inputShape, LongType n) {
   __shared__ T *inverted;
   __shared__ const T *input;
@@ -124,7 +124,7 @@ static SD_KERNEL void upvertKernelUp(void *invertedBuf, const LongType *inverted
 }
 // ------------------------------------------------------------------------------------------------------------------ //
 template <typename T>
-static SD_KERNEL void invertLowKernel(void *invertedBuf, const LongType *invertedShape, const void *inputBuf,
+static SD_KERNEL SD_INLINE void invertLowKernel(void *invertedBuf, const LongType *invertedShape, const void *inputBuf,
                                       const LongType *inputShape, LongType n) {
   auto input = reinterpret_cast<const T *>(inputBuf);
   auto inverted = reinterpret_cast<T *>(invertedBuf);
@@ -155,7 +155,7 @@ static SD_KERNEL void invertLowKernel(void *invertedBuf, const LongType *inverte
 // ------------------------------------------------------------------------------------------------------------------ //
 // Invertion of upper triangular matrix non-diagonal elements when main and second diagonals already processed
 template <typename T>
-static SD_KERNEL void invertUpKernel(void *invertedBuf, const LongType *invertedShape, const void *inputBuf,
+static SD_KERNEL SD_INLINE void invertUpKernel(void *invertedBuf, const LongType *invertedShape, const void *inputBuf,
                                      const LongType *inputShape, LongType n) {
   auto inverted = reinterpret_cast<T *>(invertedBuf);
   auto input = reinterpret_cast<const T *>(inputBuf);
@@ -262,7 +262,7 @@ void invertUpperMatrix(LaunchContext *context, NDArray *inputMatrix, NDArray *in
 // ------------------------------------------------------------------------------------------------------------------ //
 // determinant kernel - accumulation product of all values on the main diagonal
 template <typename T>
-static SD_KERNEL void determinantKernel(T *compound, T *result, LongType len) {
+static SD_KERNEL SD_INLINE void determinantKernel(T *compound, T *result, LongType len) {
   auto start = blockIdx.x * blockDim.x + threadIdx.x;
   auto step = blockDim.x * gridDim.x;
   for (auto i = start; i < len; i += step) {
@@ -276,7 +276,7 @@ static SD_KERNEL void determinantKernel(T *compound, T *result, LongType len) {
 // determinant logarithm - accumulation sum of all logarithm values on the main diagonal. All in logarithic values
 // should be positive
 template <typename T>
-static SD_KERNEL void determinantLogKernel(T *compound, T *result, LongType len) {
+static SD_KERNEL SD_INLINE void determinantLogKernel(T *compound, T *result, LongType len) {
   auto start = blockIdx.x * blockDim.x + threadIdx.x;
   auto step = blockDim.x * gridDim.x;
   for (auto i = start; i < len; i += step) {
@@ -290,7 +290,7 @@ static SD_KERNEL void determinantLogKernel(T *compound, T *result, LongType len)
 // kernel to copy matrix with given shape to compound tensor with given pos
 // output - a N-D tensor buffer with rank not less than 2, input - 2D square n x n matrix with n = rowLen
 template <typename T, typename F>
-static SD_KERNEL void fillMatrix(void *output, const LongType *outShape, const void *input, const LongType *inputShape,
+static SD_KERNEL SD_INLINE void fillMatrix(void *output, const LongType *outShape, const void *input, const LongType *inputShape,
                                  LongType pos, LongType rowLen) {
   // Shared memory caching for rank, shape, and stride
   __shared__ F *matrix;
@@ -331,7 +331,7 @@ static SD_KERNEL void fillMatrix(void *output, const LongType *outShape, const v
 // ------------------------------------------------------------------------------------------------------------------ //
 // same as above, but without type conversion
 template <typename T>
-static SD_KERNEL void returnMatrix(void *output, const LongType *outputShape, const void *input,
+static SD_KERNEL SD_INLINE void returnMatrix(void *output, const LongType *outputShape, const void *input,
                                    const LongType *inputShape, LongType pos, LongType rowLen) {
   // Shared memory caching for rank, shape, and stride
   __shared__ LongType outputLen;
@@ -371,7 +371,7 @@ static SD_KERNEL void returnMatrix(void *output, const LongType *outputShape, co
 // ------------------------------------------------------------------------------------------------------------------ //
 // fill up permutaion matrix kernel. Permutation matrix filled with zeros and ones
 template <typename F>
-static SD_KERNEL void fillUpPermutation(void *output, const LongType *shape, int *source, int rowNum) {
+static SD_KERNEL SD_INLINE void fillUpPermutation(void *output, const LongType *shape, int *source, int rowNum) {
   F *permutation = reinterpret_cast<F *>(output);
 
   auto start = blockIdx.x * blockDim.x + threadIdx.x;
@@ -559,6 +559,9 @@ void processColumns(LongType currentRow, LongType rowNum, T *compoundBuf, LongTy
   };
   samediff::Threads::parallel_tad(loop, currentRow + 1, rowNum, 1);
 }
+#define INSTANTIATE_PROCESS_COLUMNS(T) template void processColumns<GET_SECOND(T)>(LongType currentRow, LongType rowNum, GET_SECOND(T) *compoundBuf, LongType const *compoundShape);
+ITERATE_LIST((SD_FLOAT_NATIVE), INSTANTIATE_PROCESS_COLUMNS)
+#undef INSTANTIATE_PROCESS_COLUMNS
 
 template <typename T>
 static void swapRows(T *matrixBuf, LongType const *matrixShape, LongType theFirst, LongType theSecond) {
@@ -594,7 +597,7 @@ static void doolitleLU(LaunchContext *context, NDArray *compound, LongType rowNu
       for (LongType j = 0; j < i; j++) sum += compound->t<T>(i, j) * compound->t<T>(j, k);
 
       // Evaluating U(i, k)
-      compound->r<T>(i, k) = input.t<T>(i, k) - sum;
+      compound->r<T>(i, k) = input->t<T>(i, k) - sum;
     }
 
     // Lower Triangular
@@ -604,9 +607,11 @@ static void doolitleLU(LaunchContext *context, NDArray *compound, LongType rowNu
       for (LongType j = 0; j < i; j++) sum += compound->t<T>(k, j) * compound->t<T>(j, i);
 
       // Evaluating L(k, i)
-      compound->r<T>(k, i) = (input.t<T>(k, i) - sum) / compound->t<T>(i, i);
+      compound->r<T>(k, i) = (input->t<T>(k, i) - sum) / compound->t<T>(i, i);
     }
   }
+
+  delete input;
 }
 
 /*
@@ -734,11 +739,11 @@ static Status determinant_(LaunchContext *context, NDArray *input, NDArray *outp
 
     // Fill matrix using the CUDA kernel
     fillMatrix<T, T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
-        matrix.specialBuffer(), matrix.specialShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), pos, n);
+        matrix->specialBuffer(), matrix->specialShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), pos, n);
     sd::DebugHelper::checkErrorCode(stream, "fillMatrix failed");
 
     // Perform LU decomposition
-    lup_<T, int>(context, &matrix, nullptr, nullptr);
+    lup_<T, int>(context, matrix, nullptr, nullptr);
 
     // Precompute coordinates and offsets
     LongType offsetCoords[SD_MAX_RANK];
@@ -747,17 +752,21 @@ static Status determinant_(LaunchContext *context, NDArray *input, NDArray *outp
     COORDS2INDEX(outputRank, outputStride, offsetCoords, offset);
 
     // Execute determinant kernel
-    auto inputBuf = reinterpret_cast<T*>(matrix.specialBuffer());
+    auto inputBuf = reinterpret_cast<T*>(matrix->specialBuffer());
     auto outputBuf = reinterpret_cast<T*>(output->specialBuffer()) + offset;
     determinantKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuf, outputBuf, n);
     sd::DebugHelper::checkErrorCode(stream, "determinantKernel failed");
   }
 
+  delete matrix;
+  delete det;
   NDArray::registerSpecialUse({output}, {input});
 
   return Status::OK;
 }
 
+
+BUILD_SINGLE_TEMPLATE(Status determinant_, (LaunchContext *context, NDArray *input, NDArray *output), SD_FLOAT_NATIVE);
 
 Status determinant(LaunchContext *context, NDArray *input, NDArray *output) {
   NDArray::prepareSpecialUse({output}, {input});
@@ -790,10 +799,10 @@ Status logAbsDeterminant_(LaunchContext *context, NDArray *input, NDArray *outpu
   for (int e = 0; e < output->lengthOf(); e++) {
     LongType pos = e * n2;
     fillMatrix<T, T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
-        matrix.specialBuffer(), matrix.specialShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), pos, n);
+        matrix->specialBuffer(), matrix->specialShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), pos, n);
     sd::DebugHelper::checkErrorCode(stream, "fillMatrix failed");
 
-    lup_<T, int>(context, &matrix, nullptr, nullptr);
+    lup_<T, int>(context, matrix, nullptr, nullptr);
 
     // Precompute coordinates and offsets
     LongType offsetCoords[SD_MAX_RANK];
@@ -801,17 +810,21 @@ Status logAbsDeterminant_(LaunchContext *context, NDArray *input, NDArray *outpu
     INDEX2COORDS(e, outputRank, outputShape, offsetCoords);
     COORDS2INDEX(outputRank, outputStride, offsetCoords, offset);
 
-    auto inputBuf = reinterpret_cast<T *>(matrix.specialBuffer());
+    auto inputBuf = reinterpret_cast<T *>(matrix->specialBuffer());
     auto outputBuf = reinterpret_cast<T *>(output->specialBuffer()) + offset;
     determinantLogKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuf, outputBuf, n);
     sd::DebugHelper::checkErrorCode(stream, "determinantLogKernel failed");
   }
 
+  delete matrix;
+  delete det;
   NDArray::registerSpecialUse({output}, {input});
 
   return Status::OK;
 }
 
+
+BUILD_SINGLE_TEMPLATE(Status logAbsDeterminant_, (LaunchContext *context, NDArray *input, NDArray *output), SD_FLOAT_NATIVE);
 
 Status logAbsDeterminant(LaunchContext *context, NDArray *input, NDArray *output) {
   NDArray::prepareSpecialUse({output}, {input});
@@ -820,7 +833,7 @@ Status logAbsDeterminant(LaunchContext *context, NDArray *input, NDArray *output
 }
 
 template <typename T>
-static SD_KERNEL void fillLowerUpperKernel(void *lowerBuf, const LongType *lowerShape, void *upperBuf,
+static SD_KERNEL SD_INLINE void fillLowerUpperKernel(void *lowerBuf, const LongType *lowerShape, void *upperBuf,
                                            const LongType *upperShape, void *matrixBuf, const LongType *matrixShape,
                                            LongType n) {
   __shared__ T *lowerMatrix;
@@ -856,11 +869,11 @@ static Status inverse_(LaunchContext *context, NDArray *input, NDArray *output) 
   auto n2 = n * n;
   auto dtype = DataTypeUtils::fromT<T>();
 
-  NDArray matrix = NDArrayFactory::create('c', {n, n}, dtype, context);
-  NDArray upper = NDArrayFactory::create('c', {n, n}, dtype, context);
-  NDArray lower = NDArrayFactory::create('c', {n, n}, dtype, context);
-  NDArray compound = NDArrayFactory::create('c', {n, n}, dtype, context);
-  NDArray permutation = NDArrayFactory::create('c', {n, n}, dtype, context);
+  auto matrix = NDArrayFactory::create('c', {n, n}, dtype, context);
+  auto upper = NDArrayFactory::create('c', {n, n}, dtype, context);
+  auto lower = NDArrayFactory::create('c', {n, n}, dtype, context);
+  auto compound = NDArrayFactory::create('c', {n, n}, dtype, context);
+  auto permutation = NDArrayFactory::create('c', {n, n}, dtype, context);
 
   std::vector<LongType> dims2 = {input->rankOf() - 2, input->rankOf() - 1};
   std::vector<LongType> dims3 = {output->rankOf() - 2, output->rankOf() - 1};
@@ -870,32 +883,38 @@ static Status inverse_(LaunchContext *context, NDArray *input, NDArray *output) 
   auto stream = context->getCudaStream();
 
   for (auto i = 0LL; i < packX->numberOfTads(); i++) {
-    fillMatrix<T, T><<<1, n2, 1024, *stream>>>(matrix.specialBuffer(), matrix.specialShapeInfo(),
+    fillMatrix<T, T><<<1, n2, 1024, *stream>>>(matrix->specialBuffer(), matrix->specialShapeInfo(),
                                                input->specialBuffer(), input->specialShapeInfo(), i * n2, n);
     sd::DebugHelper::checkErrorCode(stream, "fillMatrix failed");
-    matrix.tickWriteDevice();
-    lup_<T, int>(context, &matrix, nullptr, nullptr);
-    fillLowerUpperKernel<T><<<n, n, 1024, *stream>>>(lower.specialBuffer(), lower.specialShapeInfo(),
-                                                     upper.specialBuffer(), upper.specialShapeInfo(),
-                                                     matrix.specialBuffer(), matrix.specialShapeInfo(), n);
+    matrix->tickWriteDevice();
+    lup_<T, int>(context, matrix, nullptr, nullptr);
+    fillLowerUpperKernel<T><<<n, n, 1024, *stream>>>(lower->specialBuffer(), lower->specialShapeInfo(),
+                                                     upper->specialBuffer(), upper->specialShapeInfo(),
+                                                     matrix->specialBuffer(), matrix->specialShapeInfo(), n);
     sd::DebugHelper::checkErrorCode(stream, "fillLowerUpperKernel failed");
 
-    lower.tickWriteDevice();
-    upper.tickWriteDevice();
+    lower->tickWriteDevice();
+    upper->tickWriteDevice();
     int zero = 0;
-    matrix.assign(zero);
-    invertUpperMatrix(context, &upper, &matrix);  // U^{-1}
-    matrix.tickWriteDevice();
-    compound.assign(zero);
-    invertLowerMatrix(context, &lower, &compound);  // L{-1}
-    compound.tickWriteDevice();
+    matrix->assign(zero);
+    invertUpperMatrix(context, upper, matrix);  // U^{-1}
+    matrix->tickWriteDevice();
+    compound->assign(zero);
+    invertLowerMatrix(context, lower, compound);  // L{-1}
+    compound->tickWriteDevice();
 
-    MmulHelper::mmul(&matrix, &compound, &upper, 1.0, 0.0);
-    upper.tickWriteDevice();
+    MmulHelper::mmul(matrix, compound, upper, 1.0, 0.0);
+    upper->tickWriteDevice();
     returnMatrix<T><<<1, n2, 1024, *stream>>>(output->specialBuffer(), output->specialShapeInfo(),
-                                              upper.specialBuffer(), upper.specialShapeInfo(), i * n2, n);
+                                              upper->specialBuffer(), upper->specialShapeInfo(), i * n2, n);
     sd::DebugHelper::checkErrorCode(stream, "returnMatrix failed");
   }
+
+  delete matrix;
+  delete upper;
+  delete lower;
+  delete compound;
+  delete permutation;
   return Status::OK;
 }
 
@@ -908,7 +927,7 @@ Status inverse(LaunchContext *context, NDArray *input, NDArray *output) {
 bool checkCholeskyInput(LaunchContext *context, NDArray *input) { return true; }
 
 template <typename F>
-SD_KERNEL void fillBatchKernel(F **dArrayBatch, F *buf, const LongType *offsets, LongType batchSize) {
+SD_KERNEL SD_INLINE void fillBatchKernel(F **dArrayBatch, F *buf, const LongType *offsets, LongType batchSize) {
   auto start = blockIdx.x * blockDim.x + threadIdx.x;
   auto step = blockDim.x * gridDim.x;
 
@@ -918,7 +937,7 @@ SD_KERNEL void fillBatchKernel(F **dArrayBatch, F *buf, const LongType *offsets,
 }
 
 template <typename F>
-SD_KERNEL void adjustResultsKernel(F *dArray, const LongType *shape, const LongType *offsets, LongType batchSize,
+SD_KERNEL SD_INLINE void adjustResultsKernel(F *dArray, const LongType *shape, const LongType *offsets, LongType batchSize,
                                    LongType n) {
   // auto i = blockIdx.x * blockDim.x + threadIdx.x;
   LongType *shapeOf = shape::shapeOf(shape);
@@ -935,6 +954,11 @@ SD_KERNEL void adjustResultsKernel(F *dArray, const LongType *shape, const LongT
     }
   }
 }
+// Explicit template instantiations for CUDA kernel functions
+template SD_KERNEL SD_INLINE void fillBatchKernel<float>(float **dArrayBatch, float *buf, const LongType *offsets, LongType batchSize);
+template SD_KERNEL SD_INLINE void fillBatchKernel<double>(double **dArrayBatch, double *buf, const LongType *offsets, LongType batchSize);
+template SD_KERNEL SD_INLINE void adjustResultsKernel<float>(float *dArray, const LongType *shape, const LongType *offsets, LongType batchSize, LongType n);
+template SD_KERNEL SD_INLINE void adjustResultsKernel<double>(double *dArray, const LongType *shape, const LongType *offsets, LongType batchSize, LongType n);
 
 template <typename F>
 Status cholesky__(LaunchContext *context, NDArray *input, NDArray *output, bool inplace) {
@@ -949,8 +973,8 @@ Status cholesky__(LaunchContext *context, NDArray *input, NDArray *output, bool 
     throw cuda_exception::build("helpers::cholesky_: Cannot create solver handle", status);
   }
   F **dArrayBatch = nullptr;
-  std::vector<LongType> dims = {tempOutput.rankOf() - 2, tempOutput.rankOf() - 1};
-  auto packX = ConstantTadHelper::getInstance().tadForDimensions(tempOutput.shapeInfo(), &dims);
+  std::vector<LongType> dims = {tempOutput->rankOf() - 2, tempOutput->rankOf() - 1};
+  auto packX = ConstantTadHelper::getInstance().tadForDimensions(tempOutput->shapeInfo(), &dims);
   const LongType batchSize = packX->numberOfTads();
   int *dInfoArray = nullptr;
   auto err = cudaMalloc((void **)&dArrayBatch, sizeof(F *) * batchSize);
@@ -962,7 +986,7 @@ Status cholesky__(LaunchContext *context, NDArray *input, NDArray *output, bool 
     throw cuda_exception::build("helpers::cholesky_: Cannot allocate memory for solver errors buffer", err);
   }
   auto stream = context->getCudaStream();
-  fillBatchKernel<F><<<1, batchSize, 128, *stream>>>(dArrayBatch, reinterpret_cast<F *>(tempOutput.specialBuffer()),
+  fillBatchKernel<F><<<1, batchSize, 128, *stream>>>(dArrayBatch, reinterpret_cast<F *>(tempOutput->specialBuffer()),
                                                      packX->specialOffsets(), batchSize);
   sd::DebugHelper::checkErrorCode(stream, "fillBatchKernel failed");
 
@@ -979,7 +1003,7 @@ Status cholesky__(LaunchContext *context, NDArray *input, NDArray *output, bool 
   if (CUSOLVER_STATUS_SUCCESS != status) {
     throw cuda_exception::build("helpers::cholesky_: Cholesky factorization failed for batch", status);
   }
-  adjustResultsKernel<F><<<batchSize, n2, 128, *stream>>>(reinterpret_cast<F *>(tempOutput.specialBuffer()),
+  adjustResultsKernel<F><<<batchSize, n2, 128, *stream>>>(reinterpret_cast<F *>(tempOutput->specialBuffer()),
                                                           packX->specialShapeInfo(), packX->specialOffsets(), batchSize,
                                                           n);
   sd::DebugHelper::checkErrorCode(stream, "adjustResultsKernel failed");
@@ -994,10 +1018,11 @@ Status cholesky__(LaunchContext *context, NDArray *input, NDArray *output, bool 
   }
 
   if (!inplace)
-    output->assign(&tempOutput);
+    output->assign(tempOutput);
   else
-    input->assign(&tempOutput);
+    input->assign(tempOutput);
 
+  delete tempOutput;
   NDArray::registerSpecialUse({output}, {input});
   return Status::OK;
 }
@@ -1030,7 +1055,7 @@ BUILD_SINGLE_TEMPLATE( sd::Status inverse_, (sd::LaunchContext * context, NDArra
                       SD_FLOAT_NATIVE);
 
 template <typename T>
-SD_KERNEL void logDetKernel(const T *inputBuf, const LongType *inputShape, LongType batchNum, const LongType *tadShape,
+SD_KERNEL SD_INLINE void logDetKernel(const T *inputBuf, const LongType *inputShape, LongType batchNum, const LongType *tadShape,
                             const LongType *tadOffsets, T *outputBuf, const LongType *outputShape) {
   __shared__ int n;
   if (threadIdx.x == 0) {
@@ -1054,6 +1079,11 @@ SD_KERNEL void logDetKernel(const T *inputBuf, const LongType *inputShape, LongT
     }
   }
 }
+// Explicit template instantiations for logDetKernel
+template SD_KERNEL SD_INLINE void logDetKernel<float>(const float *inputBuf, const LongType *inputShape, LongType batchNum, const LongType *tadShape, const LongType *tadOffsets, float *outputBuf, const LongType *outputShape);
+template SD_KERNEL SD_INLINE void logDetKernel<double>(const double *inputBuf, const LongType *inputShape, LongType batchNum, const LongType *tadShape, const LongType *tadOffsets, double *outputBuf, const LongType *outputShape);
+template SD_KERNEL SD_INLINE void logDetKernel<float16>(const float16 *inputBuf, const LongType *inputShape, LongType batchNum, const LongType *tadShape, const LongType *tadOffsets, float16 *outputBuf, const LongType *outputShape);
+
 template <typename T>
 Status logdetFunctor_(LaunchContext *context, NDArray *input, NDArray *output) {
   NDArray::prepareSpecialUse({output}, {input});
@@ -1063,8 +1093,8 @@ Status logdetFunctor_(LaunchContext *context, NDArray *input, NDArray *output) {
 
   cholesky(context, input, &tempOutput, false);
 
-  auto outputBuf = output->dataBuffer()->specialAsT<T>();
-  auto inputBuf = tempOutput.dataBuffer()->specialAsT<T>();
+  auto outputBuf = output->dataBuffer()->template specialAsT<T>();
+  auto inputBuf = tempOutput.dataBuffer()->template specialAsT<T>();
   output->nullify();
 
   std::vector<LongType> dims = {tempOutput.rankOf() - 2, tempOutput.rankOf() - 1};
@@ -1078,6 +1108,7 @@ Status logdetFunctor_(LaunchContext *context, NDArray *input, NDArray *output) {
   NDArray::registerSpecialUse({output}, {input});
   return Status::OK;
 }
+BUILD_SINGLE_TEMPLATE(Status logdetFunctor_, (LaunchContext *context, NDArray *input, NDArray *output), SD_FLOAT_NATIVE);
 
 Status logdetFunctor(LaunchContext *context, NDArray *input, NDArray *output) {
   BUILD_SINGLE_SELECTOR(output->dataType(), return logdetFunctor_, (context, input, output), SD_FLOAT_NATIVE);

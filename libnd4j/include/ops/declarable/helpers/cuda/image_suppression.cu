@@ -251,20 +251,20 @@ static void nonMaxSuppressionV2_(LaunchContext* context, NDArray* boxes, NDArray
 
   NDArray scores(*scales);
   Pointer extras[2] = {nullptr, stream};
-  auto indexBuf = indices.dataBuffer()->specialAsT<I>();
-  auto scoreBuf = scores.dataBuffer()->specialAsT<T>();
+  auto indexBuf = indices.dataBuffer()->template specialAsT<I>();
+  auto scoreBuf = scores.dataBuffer()->template specialAsT<T>();
   dim3 launchDims = getLaunchDims("image_suppress_scores");
   suppressScores<T, I><<<launchDims.x, launchDims.y,launchDims.z, *stream>>>(scoreBuf, indexBuf, scores.lengthOf(), T(scoreThreshold));
   indices.tickWriteDevice();
   sortByValue(extras, &indices,
               &scores,true);
   indices.tickWriteDevice();
-  NDArray selectedIndices = NDArrayFactory::create<I>('c', {output->lengthOf()}, context);
+  NDArray* selectedIndices = NDArrayFactory::create<I>('c', {output->lengthOf()}, context);
   int numSelected = 0;
   int numBoxes = boxes->sizeAt(0), tt(0);
   auto boxesBuf = reinterpret_cast<T*>(boxes->specialBuffer());
 
-  auto selectedIndicesData = reinterpret_cast<I*>(selectedIndices.specialBuffer());
+  auto selectedIndicesData = reinterpret_cast<I*>(selectedIndices->specialBuffer());
   auto outputBuf = reinterpret_cast<I*>(output->specialBuffer());
 
   bool* shouldSelectD;
@@ -301,6 +301,7 @@ static void nonMaxSuppressionV2_(LaunchContext* context, NDArray* boxes, NDArray
   if (err) {
     throw cuda_exception::build("helpers::nonMaxSuppressionV2: Cannot deallocate memory for bool flag", err);
   }
+  delete selectedIndices;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -35,7 +35,7 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void nesterovsUpdaterCuda(const void* vx, const LongType* xShapeInfo, const void* vin,
+SD_KERNEL SD_INLINE void nesterovsUpdaterCuda(const void* vx, const LongType* xShapeInfo, const void* vin,
                                     const LongType* inShapeInfo, void* vz, const LongType* zShapeInfo,
                                     void* vst, const LongType* stShapeInfo, const T lr, const T momentum) {
   const auto grad = reinterpret_cast<const T*>(vx);
@@ -126,6 +126,7 @@ void nesterovsUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerB
   sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "nesterovsUpdaterCuda failed");
 
 }
+BUILD_SINGLE_TEMPLATE(void nesterovsUpdaterCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory, const cudaStream_t* stream, const void* vx, const LongType* xShapeInfo, const void* vin, const LongType* inShapeInfo, void* vz, const LongType* zShapeInfo, void* vst, const LongType* stShapeInfo, const double dLr, const double dMomentum), SD_FLOAT_TYPES);
 
 ///////////////////////////////////////////////////////////////////
 void updaterNesterovs(LaunchContext* context, NDArray& gradient, NDArray& initState, NDArray& update,

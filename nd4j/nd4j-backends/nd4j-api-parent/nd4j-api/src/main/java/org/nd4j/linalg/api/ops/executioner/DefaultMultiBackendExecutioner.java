@@ -24,7 +24,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.buffer.HybridDataBuffer;
 import org.nd4j.linalg.api.device.DeviceDescriptor;
+import org.nd4j.linalg.api.device.DeviceRoutingConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
 import org.nd4j.linalg.api.ops.*;
@@ -188,17 +190,64 @@ public class DefaultMultiBackendExecutioner implements MultiBackendExecutioner {
     }
 
     private void executeTransfers(RoutingDecision decision) {
+        DeviceRoutingConfiguration config = DeviceRoutingConfiguration.current();
+
         for (RoutingDecision.TransferInfo transfer : decision.getRequiredTransfers()) {
-            transferTo(transfer.getArray(), transfer.getTargetDevice());
+            DeviceDescriptor sourceDevice = getArrayDevice(transfer.getArray());
+            DeviceDescriptor targetDevice = transfer.getTargetDevice();
+
+            // Track transfer with timing
+            long bytes = transfer.getBytes();
+            long startNanos = System.nanoTime();
+
+            transferTo(transfer.getArray(), targetDevice);
+
+            long endNanos = System.nanoTime();
+            long transferTimeNanos = endNanos - startNanos;
+
+            // Update local statistics
             transferCount.incrementAndGet();
-            transferBytes.addAndGet(transfer.getBytes());
+            transferBytes.addAndGet(bytes);
+
+            // Record in TransferMetrics for detailed tracking
+            TransferMetrics.getInstance().recordTransfer(sourceDevice, targetDevice, bytes, transferTimeNanos);
+
+            // Log if configured
+            if (config.isLogDataTransfers() && bytes >= config.getMinBytesForTransferLogging()) {
+                double bandwidthGBps = transferTimeNanos > 0 ? (bytes / 1e9) / (transferTimeNanos / 1e9) : 0;
+                log.info("[EXEC TRANSFER] {} -> {} | {} bytes | {:.2f} ms | {:.2f} GB/s",
+                        sourceDevice != null ? sourceDevice.getDeviceId() : "unknown",
+                        targetDevice.getDeviceId(),
+                        bytes,
+                        transferTimeNanos / 1_000_000.0,
+                        bandwidthGBps);
+            }
         }
+    }
+
+    /**
+     * Get the device where an array currently resides.
+     */
+    private DeviceDescriptor getArrayDevice(INDArray array) {
+        if (array == null || array.data() == null) {
+            return null;
+        }
+
+        if (array.data().isHybrid()) {
+            return array.data().asHybrid().getOwnerDevice();
+        }
+
+        // Default to CPU if not hybrid
+        return DeviceDescriptor.cpu();
     }
 
     private void recordExecution(DeviceDescriptor device, long timeNanos) {
         String deviceId = device.getDeviceId();
         opsPerDevice.computeIfAbsent(deviceId, k -> new AtomicLong(0)).incrementAndGet();
         timePerDevice.computeIfAbsent(deviceId, k -> new AtomicLong(0)).addAndGet(timeNanos);
+
+        // Record in TransferMetrics for overhead calculation
+        TransferMetrics.getInstance().recordOpExecution(device, timeNanos);
     }
 
     @Override
@@ -264,6 +313,13 @@ public class DefaultMultiBackendExecutioner implements MultiBackendExecutioner {
         stats.put("transferBytes", transferBytes.get());
         stats.put("opsPerDevice", new HashMap<>(opsPerDevice));
         stats.put("timePerDevice", new HashMap<>(timePerDevice));
+
+        // Include TransferMetrics data
+        TransferMetrics metrics = TransferMetrics.getInstance();
+        stats.put("transferMetrics", metrics.getStatistics());
+        stats.put("transferOverheadPercent", metrics.getOverheadPercent());
+        stats.put("averageBandwidthGBps", metrics.getAverageBandwidthGBps());
+
         return stats;
     }
 
@@ -275,6 +331,36 @@ public class DefaultMultiBackendExecutioner implements MultiBackendExecutioner {
         transferBytes.set(0);
         opsPerDevice.clear();
         timePerDevice.clear();
+
+        // Reset TransferMetrics as well
+        TransferMetrics.getInstance().reset();
+    }
+
+    /**
+     * Log a summary of transfer metrics.
+     * Useful for debugging transfer overhead issues.
+     */
+    public void logTransferMetricsSummary() {
+        TransferMetrics.getInstance().logSummary();
+    }
+
+    /**
+     * Get the transfer overhead percentage.
+     *
+     * @return percentage of execution time spent on transfers
+     */
+    public double getTransferOverheadPercent() {
+        return TransferMetrics.getInstance().getOverheadPercent();
+    }
+
+    /**
+     * Check if transfer overhead exceeds the warning threshold.
+     *
+     * @return true if overhead exceeds threshold
+     */
+    public boolean isTransferOverheadHigh() {
+        DeviceRoutingConfiguration config = DeviceRoutingConfiguration.current();
+        return TransferMetrics.getInstance().getOverheadPercent() > config.getTransferOverheadWarningThreshold();
     }
 
     @Override

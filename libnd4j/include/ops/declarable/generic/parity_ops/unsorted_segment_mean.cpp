@@ -20,7 +20,7 @@
 // Created by george@skymind.io on 9/6/2018.
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/segment.h>
 #if NOT_EXCLUDED(OP_unsorted_segment_mean)
 namespace sd {

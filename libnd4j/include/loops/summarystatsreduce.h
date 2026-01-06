@@ -32,7 +32,8 @@
 #include <jni.h>
 #endif
 #include <loops/legacy_ops.h>
-#include <ops/ops.h>
+// NOTE: Removed #include <ops/ops.h> - this header only uses templatemath.h functions
+// (sd_min, sd_max, sd_sqrt, sd_pow) and including ops.h created a circular dependency
 #include <system/op_boilerplate.h>
 
 namespace functions {

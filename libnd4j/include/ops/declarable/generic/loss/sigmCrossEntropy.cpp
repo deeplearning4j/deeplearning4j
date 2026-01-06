@@ -23,7 +23,8 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_sigm_cross_entropy_loss)
 
-#include <ops/declarable/CustomOperations.h>
+#include <array/NDArrayFactory.h>
+#include <ops/declarable/headers/loss.h>
 #include <ops/declarable/helpers/legacy_helpers.h>
 
 namespace sd {

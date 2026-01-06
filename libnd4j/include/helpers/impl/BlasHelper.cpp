@@ -56,8 +56,8 @@ namespace {
   static MklThreadInitializer __mkl_thread_init;
 }
 
-#elif defined(HAVE_OPENBLAS)
-// OpenBLAS is primary BLAS
+#elif defined(HAVE_OPENBLAS) && !defined(SD_CUDA)
+// OpenBLAS is primary BLAS (CPU builds only - CUDA uses cuBLAS)
 extern "C" void openblas_set_num_threads(int num_threads);
 extern "C" int openblas_get_num_threads(void);
 
@@ -580,7 +580,7 @@ void BlasHelper::setOpenblasThreads(int threads) {
 #if defined(HAVE_MKL)
     mkl_set_num_threads(threads);
     sd_debug("MKL threads set to %d\n", threads);
-#elif defined(HAVE_OPENBLAS)
+#elif defined(HAVE_OPENBLAS) && !defined(SD_CUDA)
     openblas_set_num_threads(threads);
     sd_debug("OpenBLAS threads set to %d\n", threads);
 #endif
@@ -620,7 +620,7 @@ void BlasHelper::initializeBlasThreading() {
 #if defined(HAVE_MKL)
         mkl_set_num_threads(threads);
         sd_debug("MKL threads set to %d via SD_OPENBLAS_THREADS\n", threads);
-#elif defined(HAVE_OPENBLAS)
+#elif defined(HAVE_OPENBLAS) && !defined(SD_CUDA)
         openblas_set_num_threads(threads);
         sd_debug("OpenBLAS threads set to %d via SD_OPENBLAS_THREADS\n", threads);
 #endif
@@ -635,7 +635,7 @@ void BlasHelper::initializeBlasThreading() {
 #if defined(HAVE_MKL)
       mkl_set_num_threads(threads);
       sd_debug("MKL threads set to %d via SD_OPENBLAS_THREADS\n", threads);
-#elif defined(HAVE_OPENBLAS)
+#elif defined(HAVE_OPENBLAS) && !defined(SD_CUDA)
       openblas_set_num_threads(threads);
       sd_debug("OpenBLAS threads set to %d via SD_OPENBLAS_THREADS\n", threads);
 #endif
@@ -677,7 +677,7 @@ void BlasHelper::initializeBlasThreading() {
 #if defined(HAVE_MKL)
     mkl_set_num_threads(1);
     sd_debug("MKL threads defaulted to 1 (set MKL_NUM_THREADS to override)\n", "");
-#elif defined(HAVE_OPENBLAS)
+#elif defined(HAVE_OPENBLAS) && !defined(SD_CUDA)
     openblas_set_num_threads(1);
     sd_debug("OpenBLAS threads defaulted to 1 to prevent TLS corruption (set OPENBLAS_NUM_THREADS to override)\n", "");
 #endif

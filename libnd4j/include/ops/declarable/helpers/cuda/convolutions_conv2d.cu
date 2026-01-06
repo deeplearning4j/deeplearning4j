@@ -21,6 +21,7 @@
 //
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
+#include <array/NDArrayFactory.h>
 #include <helpers/MmulHelper.h>
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/addBias.h>
@@ -73,18 +74,19 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
   auto ctx = block.launchContext();
 
 
-  NDArray zero = NDArrayFactory::create(0.f, input->getContext());
+  NDArray* zero = NDArrayFactory::create(0.f, input->getContext());
   if (isNCHW) {
     helpers::im2col(*ctx, *input, *colP, kH, kW, sH, sW, pH, pW, dH, dW,
-                    zero);
+                    *zero);
   } else {
     std::vector<sd::LongType> permute = {0, 3, 1, 2};
     // For NHWC, we need to permute the input to NCHW before im2col
     NDArray* inputNchw = input->permute(permute, 0, false);  // permute() already returns NDArray*
     helpers::im2col(*ctx, *inputNchw, *colP, kH, kW, sH, sW, pH, pW, dH, dW,
-                    zero);
+                    *zero);
     delete inputNchw;  // Clean up permuted array
   }
+  delete zero;
 
 
 
@@ -92,27 +94,33 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
   block.pushIntermediateResult(col);
 
   std::vector<sd::LongType> shape = {bS * oH * oW, kW * kH * iC};
-  auto im2colReshape = col->reshape('c', shape, true);
+  NDArray* im2colReshape = col->reshape('c', shape, true);
 
-  auto weightsPermuted = weights->permute(permuteForOutput, 0, false);
+  NDArray* weightsPermuted = weights->permute(permuteForOutput, 0, false);
   std::vector<LongType> weightShape = {iC * kH * kW, oC};
-  auto reshapedW = weightsPermuted.reshape('f', weightShape, false);
-  MmulHelper::matmul(&im2colReshape, &reshapedW, &mmulResult, false, false, 1.0, 0.0);
+  NDArray* reshapedW = weightsPermuted->reshape('f', weightShape, false);
+  MmulHelper::matmul(im2colReshape, reshapedW, &mmulResult, false, false, 1.0, 0.0);
 
 
   std::vector<LongType> mmulResultShape = {oH, oW, bS, oC};
-  auto reshaped = mmulResult.reshape('f', mmulResultShape, false);
+  NDArray* reshaped = mmulResult.reshape('f', mmulResultShape, false);
   std::vector<sd::LongType> permutedShape = {2, 3, 1,0};
-  auto permuted = reshaped.permute(permutedShape, 0, false);
+  NDArray* permuted = reshaped->permute(permutedShape, 0, false);
 
   // Reshape and copy result to output
   if (isNCHW) {
-    output->assign(&permuted);
+    output->assign(permuted);
   } else {
     std::vector<sd::LongType> otherPermute = {0,2,3,1};
-    permuted = permuted.permute(otherPermute, 0, false);
-    output->assign(&permuted);
+    NDArray* permuted2 = permuted->permute(otherPermute, 0, false);
+    output->assign(permuted2);
+    delete permuted2;
   }
+  delete permuted;
+  delete reshaped;
+  delete reshapedW;
+  delete weightsPermuted;
+  delete im2colReshape;
 
   //----- add biases if required -----//
   if (bias) {

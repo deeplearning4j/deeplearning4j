@@ -25,6 +25,7 @@
 #include <loops/reduce_float.h>
 #include <loops/scalar.h>
 #include <loops/legacy_ops.h>
+#include <helpers/ConstantShapeHelper.h>
 #include <helpers/DebugHelper.h>
 #include <types/types.h>
 #include <ops/specials_cuda.h>
@@ -35,7 +36,7 @@
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpType>
-SD_KERNEL void simpleReduce(
+SD_KERNEL SD_INLINE void simpleReduce(
     const void* x,
     const sd::LongType* outerXTadShapeInfo,
     const sd::LongType* innerXTadShapeInfo,
@@ -56,14 +57,14 @@ SD_KERNEL void simpleReduce(
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpType>
-SD_KERNEL void simpleScalar(
+SD_KERNEL SD_INLINE void simpleScalar(
     const void* x,
     const sd::LongType* xShapeInfo,
     void* extraParams,
     void* z,
     const sd::LongType* zShapeInfo,
     sd::LongType* dimension,
-    long long int dimensionLength,
+    sd::LongType dimensionLength,
     void* reductionBuffer,
     const sd::LongType* tadOnlyShapeInfo) {
 
@@ -440,8 +441,8 @@ SD_HOST void ReduceFloatFunction<X,Z>::intermediateScalar(
 }
 
 ////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y>
-SD_HOST void ReduceFloatFunction<X,Y>::execReduceScalar(
+template <typename X, typename Z>
+SD_HOST void ReduceFloatFunction<X,Z>::execReduceScalar(
     dim3 launchDims,
     cudaStream_t* stream,
     const int opNum,
@@ -453,7 +454,7 @@ SD_HOST void ReduceFloatFunction<X,Y>::execReduceScalar(
     const sd::LongType* dZShapeInfo,
     const sd::LongType* hZShapeInfo,
     sd::LongType* dimension,
-    long long int dimensionLength,
+    sd::LongType dimensionLength,
     void* reductionBuffer,
     const sd::LongType* tadOnlyShapeInfo) {
 
@@ -467,8 +468,8 @@ SD_HOST void ReduceFloatFunction<X,Y>::execReduceScalar(
 }
 
 ////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y>
-SD_HOST void ReduceFloatFunction<X,Y>::execReduce(
+template <typename X, typename Z>
+SD_HOST void ReduceFloatFunction<X,Z>::execReduce(
     dim3 launchDims,
     cudaStream_t* stream,
     const int opNum,
@@ -483,7 +484,7 @@ SD_HOST void ReduceFloatFunction<X,Y>::execReduce(
     const sd::LongType* dims) {
 
   if (shape::length(hZShapeInfo) == 1) {
-    ReduceFloatFunction<X,Y>::execReduceScalar(
+    ReduceFloatFunction<X,Z>::execReduceScalar(
         launchDims, stream, opNum, x, dXShapeInfo, hXShapeInfo,
         extraParams, z, dZShapeInfo, hZShapeInfo,
         nullptr, 0, vreductionBuffer, nullptr);

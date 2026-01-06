@@ -23,9 +23,11 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <helpers/DebugHelper.h>
+#include <helpers/StringUtils.h>
 
 #include <helpers/shape.h>
 #include <loops/summarystatsreduce.h>
+#include <ops/ops.h>
 #include <ops/specials_cuda.h>
 #include <system/Environment.h>
 #include <system/op_boilerplate.h>
@@ -38,7 +40,7 @@ namespace functions {
 namespace summarystats {
 
 template <typename X, typename Z>
-SD_KERNEL void summaryStatsReduceKernel(
+SD_KERNEL SD_INLINE void summaryStatsReduceKernel(
     int op, void * dx, sd::LongType * xShapeInfo, sd::LongType xRank,
     void* extraParams, void* z, sd::LongType * zShapeInfo, sd::LongType zRank,
     sd::LongType* dimension, sd::LongType dimensionLength, int postProcessOrNot,
@@ -290,8 +292,8 @@ SD_DEVICE void SummaryStatsReduce<X, Z>::transform(void * vx, sd::LongType * xSh
   }
 }
 
-template <typename X, typename Y>
-SD_DEVICE void SummaryStatsReduce<X, Y>::transform( int opNum, void * dx, sd::LongType * xShapeInfo,
+template <typename X, typename Z>
+SD_DEVICE void SummaryStatsReduce<X, Z>::transform( int opNum, void * dx, sd::LongType * xShapeInfo,
                                                    void* extraParams, void* z, sd::LongType * zShapeInfo,
                                                    sd::LongType* dimension, sd::LongType dimensionLength, int postProcessOrNot, sd::LongType* allocationBuffer, void* reductionBuffer,
                                                    sd::LongType * tadOnlyShapeInfo,
@@ -360,4 +362,5 @@ SD_HOST void SummaryStatsReduce<X, Z>::execSummaryStatsReduce(
 
 BUILD_DOUBLE_TEMPLATE( class SummaryStatsReduce, , SD_COMMON_TYPES, SD_FLOAT_TYPES);
 
-}
+}  // namespace summarystats
+}  // namespace functions

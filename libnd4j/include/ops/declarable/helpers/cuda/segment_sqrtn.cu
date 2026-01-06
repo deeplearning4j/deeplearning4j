@@ -148,22 +148,22 @@ template <typename T, typename I>
 static void unsortedSegmentSqrtNFunctor_(LaunchContext* context, NDArray* input, NDArray* indices,
                                         LongType numOfClasses, NDArray* output) {
  auto stream = context->getCudaStream();
- NDArray classesRangesBegs = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
- NDArray classesRangesLens = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
+ auto classesRangesBegs = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
+ auto classesRangesLens = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
  sd::LongType zero = 0;
  sd::LongType  one = 1;
  sd::LongType  len = indices->lengthOf();
- classesRangesBegs.assign(len);
- classesRangesLens.assign(zero);
+ classesRangesBegs->assign(len);
+ classesRangesLens->assign(zero);
  dim3 dims= getLaunchDims("segmentSqrtN");
- fillUpSegments(indices, numOfClasses, classesRangesBegs, classesRangesLens);
- LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs.specialBuffer());
- LongType* lengths = reinterpret_cast<LongType*>(classesRangesLens.specialBuffer());
+ fillUpSegments(indices, numOfClasses, *classesRangesBegs, *classesRangesLens);
+ LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs->specialBuffer());
+ LongType* lengths = reinterpret_cast<LongType*>(classesRangesLens->specialBuffer());
  output->nullify();
  if (input->isVector()  || input->isScalar()) {
    unsortedSegmentSqrtNLinearKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
-       input->dataBuffer()->specialAsT<T>(), input->specialShapeInfo(), indices->dataBuffer()->specialAsT<I>(),
-       indices->specialShapeInfo(), begins, lengths, numOfClasses, output->dataBuffer()->specialAsT<T>(),
+       input->dataBuffer()->template specialAsT<T>(), input->specialShapeInfo(), indices->dataBuffer()->template specialAsT<I>(),
+       indices->specialShapeInfo(), begins, lengths, numOfClasses, output->dataBuffer()->template specialAsT<T>(),
        output->specialShapeInfo());
    sd::DebugHelper::checkErrorCode(stream, "unsortedSegmentSqrtNLinearKernel failed");
 
@@ -179,13 +179,15 @@ static void unsortedSegmentSqrtNFunctor_(LaunchContext* context, NDArray* input,
    auto outputTadOffsets = packZ->specialOffsets();
    dims.x = input->sizeAt(0);
    segmentSqrtNTadKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
-       input->dataBuffer()->specialAsT<T>(), input->specialShapeInfo(), inputTads, inputTadOffsets,
-       indices->dataBuffer()->specialAsT<I>(), begins, lengths, numOfClasses, output->specialBuffer(),
+       input->dataBuffer()->template specialAsT<T>(), input->specialShapeInfo(), inputTads, inputTadOffsets,
+       indices->dataBuffer()->template specialAsT<I>(), begins, lengths, numOfClasses, output->specialBuffer(),
        output->specialShapeInfo(), outputTads, outputTadOffsets, indices->lengthOf());
    sd::DebugHelper::checkErrorCode(stream, "segmentSqrtNTadKernel failed");
 
    delete dimensions;
  }
+ delete classesRangesBegs;
+ delete classesRangesLens;
 }
 // -------------------------------------------------------------------------------------------------------------- //
 void unsortedSegmentSqrtNFunctor(LaunchContext* context, NDArray* input, NDArray* indices, LongType numOfClasses, NDArray* output) {
@@ -342,16 +344,16 @@ static Status unsortedSegmentSqrtNFunctorBP_(LaunchContext* context, NDArray* in
  auto stream = context->getCudaStream();
  NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
  auto numClasses = indices->e<LongType>(indices->lengthOf() - 1) + 1;
- NDArray classesRangesLens = NDArrayFactory::create<LongType>('c', {numClasses}, context);
- NDArray classesRangesBegs = NDArrayFactory::create<LongType>('c', {numClasses}, context);
+ auto classesRangesLens = NDArrayFactory::create<LongType>('c', {numClasses}, context);
+ auto classesRangesBegs = NDArrayFactory::create<LongType>('c', {numClasses}, context);
  sd::LongType zero = 0;
  sd::LongType  one = 1;
  sd::LongType  len = indices->lengthOf();
- classesRangesBegs.assign(len);
- classesRangesLens.assign(zero);
- fillUpSegments(indices, numClasses, classesRangesBegs, classesRangesLens);
- LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs.specialBuffer());
- LongType* lengths = reinterpret_cast<LongType*>(classesRangesLens.specialBuffer());
+ classesRangesBegs->assign(len);
+ classesRangesLens->assign(zero);
+ fillUpSegments(indices, numClasses, *classesRangesBegs, *classesRangesLens);
+ LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs->specialBuffer());
+ LongType* lengths = reinterpret_cast<LongType*>(classesRangesLens->specialBuffer());
 
  if (input->isVector()  || input->isScalar()) {
    LongType loop_size = input->lengthOf();
@@ -385,6 +387,8 @@ static Status unsortedSegmentSqrtNFunctorBP_(LaunchContext* context, NDArray* in
 
    delete dimensions;
  }
+ delete classesRangesBegs;
+ delete classesRangesLens;
  NDArray::registerSpecialUse({output}, {input, indices, gradOut});
 
  return Status::OK;

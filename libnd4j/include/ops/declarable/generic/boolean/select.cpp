@@ -24,7 +24,7 @@
 #if NOT_EXCLUDED(OP_select)
 
 #include <helpers/ShapeUtils.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/boolean.h>
 
 namespace sd {
 namespace ops {

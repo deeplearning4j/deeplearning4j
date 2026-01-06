@@ -222,6 +222,23 @@ public class BackendRegistry {
     }
 
     /**
+     * Get the default device for array creation.
+     * Returns the first available GPU if present, otherwise CPU.
+     * This follows the convention of frameworks like PyTorch/JAX that prefer
+     * accelerators when available.
+     *
+     * @return the default device (GPU if available, else CPU)
+     */
+    public DeviceDescriptor getDefaultDevice() {
+        ensureInitialized();
+        // Prefer GPU if available (like PyTorch/JAX)
+        if (defaultGpuDevice != null) {
+            return defaultGpuDevice;
+        }
+        return defaultCpuDevice;
+    }
+
+    /**
      * Check if any GPU devices are available
      * @return true if GPUs are available
      */

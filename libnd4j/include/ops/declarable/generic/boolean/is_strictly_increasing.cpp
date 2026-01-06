@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_is_strictly_increasing)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/boolean.h>
 #include <ops/declarable/helpers/compare_elem.h>
 
 namespace sd {

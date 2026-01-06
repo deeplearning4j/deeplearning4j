@@ -27,6 +27,8 @@
 #include <memory/MemoryCounter.h>
 #include <system/op_boilerplate.h>
 #include <system/type_boilerplate.h>
+#include <helpers/TransferMetrics.h>
+#include <chrono>
 
 #include "../DataBuffer.h"
 #include "helpers/DebugHelper.h"
@@ -403,6 +405,9 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
+  // Track D2H transfer
+  auto startTime = std::chrono::high_resolution_clock::now();
+
   res = cudaMemcpy(_primaryBuffer, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToHost);
   if (res != 0) {
         std::string errorMessage;
@@ -413,6 +418,11 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
         errorMessage += std::to_string(_specialBuffer == nullptr);
         THROW_EXCEPTION(errorMessage.c_str());
   }
+
+  auto endTime = std::chrono::high_resolution_clock::now();
+  auto durationNs = std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime).count();
+  TransferMetrics::getInstance().recordTransfer(TransferType::DEVICE_TO_HOST, getLenInBytes(),
+                                                 durationNs, _deviceId.load(), -1);
 
   readPrimary();
 }
@@ -428,6 +438,9 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
 
   allocateSpecial();
 
+  // Track H2D transfer
+  auto startTime = std::chrono::high_resolution_clock::now();
+
   auto res = cudaMemcpy(_specialBuffer, _primaryBuffer, getLenInBytes(), cudaMemcpyHostToDevice);
   if (res != 0) {
     std::string errorMessage;
@@ -435,8 +448,12 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
     errorMessage += std::to_string(getLenInBytes());
     errorMessage += cudaGetErrorString(res);
     THROW_EXCEPTION(errorMessage.c_str());
-
   }
+
+  auto endTime = std::chrono::high_resolution_clock::now();
+  auto durationNs = std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime).count();
+  TransferMetrics::getInstance().recordTransfer(TransferType::HOST_TO_DEVICE, getLenInBytes(),
+                                                 durationNs, -1, _deviceId.load());
 
   readSpecial();
 }
@@ -591,28 +608,67 @@ void memcpyWithT(DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, 
 
   dst->writeSpecial();
 }
+BUILD_SINGLE_TEMPLATE(void memcpyWithT, (DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, sd::LongType dstOffset), SD_COMMON_TYPES);
 
 void DataBuffer::memcpy(DataBuffer* dst, DataBuffer* src,
                         sd::LongType startingOffset, sd::LongType dstOffset) {
-  BUILD_SINGLE_TEMPLATE(memcpyWithT,(dst, src, startingOffset, dstOffset),
-                        SD_COMMON_TYPES);
+  BUILD_SINGLE_SELECTOR(src->getDataType(), memcpyWithT, (dst, src, startingOffset, dstOffset), SD_COMMON_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::migrate() {
+  auto currentDeviceId = AffinityManager::currentDeviceId();
+  auto oldDeviceId = _deviceId.load();
+
+  // Don't migrate if already on the target device
+  if (oldDeviceId == currentDeviceId && _specialBuffer != nullptr) {
+    return;
+  }
+
   memory::Workspace* newWorkspace = nullptr;
   void* newBuffer;
-  ALLOCATE_SPECIAL(newBuffer, newWorkspace, getLenInBytes(), int8_t);
-  auto res = cudaMemcpy(newBuffer, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToDevice);
-  if (res != 0) throw cuda_exception::build("DataBuffer::migrate: cudaMemcpyAsync failed!", res);
 
-  if (_isOwnerSpecial) {
+  // Start timing the transfer
+  auto startTime = std::chrono::high_resolution_clock::now();
+
+  ALLOCATE_SPECIAL(newBuffer, newWorkspace, getLenInBytes(), int8_t);
+
+  if (_specialBuffer != nullptr) {
+    // Copy from old device to new device
+    auto res = cudaMemcpy(newBuffer, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToDevice);
+    if (res != 0) throw cuda_exception::build("DataBuffer::migrate: cudaMemcpy failed!", res);
+  } else if (_primaryBuffer != nullptr) {
+    // Copy from host to device if no special buffer exists
+    auto res = cudaMemcpy(newBuffer, _primaryBuffer, getLenInBytes(), cudaMemcpyHostToDevice);
+    if (res != 0) throw cuda_exception::build("DataBuffer::migrate: cudaMemcpy H2D failed!", res);
+  }
+
+  auto endTime = std::chrono::high_resolution_clock::now();
+  auto durationNs = std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime).count();
+
+  // Record transfer metrics
+  if (_specialBuffer != nullptr) {
+    // Device to device transfer (possibly peer-to-peer)
+    TransferType transferType = (oldDeviceId != currentDeviceId) ?
+        TransferType::PEER_TO_PEER : TransferType::DEVICE_TO_DEVICE;
+    TransferMetrics::getInstance().recordTransfer(transferType, getLenInBytes(), durationNs,
+                                                   oldDeviceId, currentDeviceId);
+  } else if (_primaryBuffer != nullptr) {
+    // Host to device transfer
+    TransferMetrics::getInstance().recordTransfer(TransferType::HOST_TO_DEVICE, getLenInBytes(),
+                                                   durationNs, -1, currentDeviceId);
+  }
+
+  if (_isOwnerSpecial && _specialBuffer != nullptr) {
     // now we're releasing original buffer
     RELEASE_SPECIAL(_specialBuffer, _workspace);
   }
 
   _isOwnerSpecial = true;
   _specialBuffer = newBuffer;
+
+  // Update device ID to the current device
+  _deviceId.store(currentDeviceId);
 }
 
 ////////////////////////////////////////////////////////////////////////

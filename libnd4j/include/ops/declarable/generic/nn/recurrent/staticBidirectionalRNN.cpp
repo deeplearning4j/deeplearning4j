@@ -20,12 +20,13 @@
 // @author Yurii Shyrma, created on 03.04.2018
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/recurrent.h>
 #include <ops/declarable/helpers/reverse.h>
 #include <ops/declarable/helpers/rnn.h>
 #include <ops/declarable/helpers/transforms.h>
 
 #if NOT_EXCLUDED(OP_static_bi_directional_rnn)
+#include <array/NDArrayFactory.h>
 namespace sd {
 namespace ops {
 
@@ -282,5 +283,6 @@ DECLARE_SHAPE_FN(static_bidirectional_rnn) {
 }
 
 }  // namespace ops
+#include <array/NDArrayFactory.h>
 }  // namespace sd
 #endif

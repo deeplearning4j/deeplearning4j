@@ -213,14 +213,14 @@ static void windowedAttentionCuda_(sd::LaunchContext* context,
 
     PointersManager manager(context, "windowedAttention");
 
-    const T* queryBuffer = query->specialBufferAsT<T>();
-    const T* keyBuffer = key->specialBufferAsT<T>();
-    const T* valueBuffer = value->specialBufferAsT<T>();
-    const T* biasBuffer = relativePositionBias != nullptr ? relativePositionBias->specialBufferAsT<T>() : nullptr;
-    const T* maskBuffer = attentionMask != nullptr ? attentionMask->specialBufferAsT<T>() : nullptr;
-    T* outputBuffer = output->specialBufferAsT<T>();
+    const T* queryBuffer = query->specialBufferasT<T>();
+    const T* keyBuffer = key->specialBufferasT<T>();
+    const T* valueBuffer = value->specialBufferasT<T>();
+    const T* biasBuffer = relativePositionBias != nullptr ? relativePositionBias->specialBufferasT<T>() : nullptr;
+    const T* maskBuffer = attentionMask != nullptr ? attentionMask->specialBufferasT<T>() : nullptr;
+    T* outputBuffer = output->specialBufferasT<T>();
     T* weightsBuffer = returnWeights && attentionWeights != nullptr ?
-                       attentionWeights->specialBufferAsT<T>() : nullptr;
+                       attentionWeights->specialBufferasT<T>() : nullptr;
 
     windowedAttentionKernel<T><<<totalPositions, blockSize, sharedMemSize, *context->getCudaStream()>>>(
         queryBuffer, keyBuffer, valueBuffer, biasBuffer, maskBuffer,

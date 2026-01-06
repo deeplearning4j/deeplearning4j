@@ -20,7 +20,7 @@
 // Created by george@skymind.io on 11/13/2018.
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/axis.h>
 namespace sd {
 namespace ops {

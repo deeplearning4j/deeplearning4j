@@ -25,14 +25,13 @@
 #include <system/Environment.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
-#include <execution/cuda/DeviceValidator.h>
 
 using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Cached kernel that caches shape info in shared memory and uses cached variables
 template <typename X, typename Z, typename OpType>
-__global__ void transformBoolSimpleCached(
+SD_KERNEL SD_INLINE void transformBoolSimpleCached(
    const void* x,
    const sd::LongType* xShapeInfo,
    sd::LongType xRank,
@@ -55,18 +54,18 @@ namespace transform {
 
 ////////////////////////////////////////////////////////////////////////////////
 // Implementation of the "executeTransformShaped" that launches the cached kernel
-template <typename X, typename Y>
-SD_HOST void TransformBool<X, Y>::executeTransformShaped(
+template <typename X, typename Z>
+SD_HOST void TransformBool<X, Z>::executeTransformShaped(
    dim3 launchDims,
    cudaStream_t* stream,
    const int opNum,
    const void* x,
    const sd::LongType* xShape,
-   long long int xRank,
+   sd::LongType xRank,
    void* extraParams,
    void* z,
    const sd::LongType* zShape,
-   long long int zRank,
+   sd::LongType zRank,
    sd::LongType* allocationPointer,
    void* reductionPointer,
    const sd::LongType* tadShapeInfo,

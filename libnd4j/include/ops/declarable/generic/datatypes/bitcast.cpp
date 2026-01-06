@@ -24,7 +24,7 @@
 #if NOT_EXCLUDED(OP_bitcast)
 
 #include <array/DataTypeUtils.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/datatypes.h>
 
 namespace sd {
 namespace ops {

@@ -2101,6 +2101,9 @@ inline SD_DEVICE sd::LongType sd_atomicAdd<sd::LongType>(sd::LongType* address, 
   return old;
 }
 
+// Only define sd_atomicAdd<long> when long is 32-bit (different from sd::LongType which is int64_t)
+// On 64-bit Linux, long is 64-bit and equals int64_t, causing duplicate definition
+#if LONG_MAX == 2147483647L
 template <>
 inline SD_DEVICE long sd_atomicAdd<long>(long* address, long val) {
   unsigned long long* address_as_ull = (unsigned long long int*)address;
@@ -2113,6 +2116,7 @@ inline SD_DEVICE long sd_atomicAdd<long>(long* address, long val) {
   } while (assumed != old);
   return old;
 }
+#endif // LONG_MAX == 2147483647L
 #endif // HAS_LONG
 
 // Custom atomicAdd for uint32_t
@@ -2445,6 +2449,10 @@ inline SD_DEVICE int32_t sd_atomicAdd<int32_t>(int32_t* address, int32_t val) {
 }
 #endif // HAS_INT32
 
+// Forward declaration for internal_16bit_atomicMul
+template <typename T>
+static SD_INLINE SD_DEVICE T internal_16bit_atomicMul(T* address, T val);
+
 #ifdef HAS_FLOAT16
 template <>
 inline SD_DEVICE float16 sd_atomicSub<float16>(float16* address, float16 val) {
@@ -2632,18 +2640,8 @@ inline SD_DEVICE uint64_t sd_atomicMul<uint64_t>(uint64_t* address, uint64_t val
 }
 #endif // HAS_UINT64
 
-#if !defined(_WIN32) && !defined(_WIN64) && defined(HAS_LONG)
-template <>
-inline SD_DEVICE sd::LongType sd_atomicMul<sd::LongType>(sd::LongType* address, sd::LongType val) {
-  unsigned long long int* res_address = (unsigned long long*)address;
-  unsigned long long int old = *res_address, assumed;
-  do {
-    assumed = old;
-    old = atomicCAS(res_address, assumed, val * assumed);
-  } while (assumed != old);
-  return (sd::LongType)old;
-}
-#endif
+// Note: sd_atomicMul<sd::LongType> is not needed separately because sd::LongType is int64_t,
+// and the sd_atomicMul<int64_t> specialization above handles it.
 
 #ifdef HAS_FLOAT16
 template <>

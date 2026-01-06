@@ -368,19 +368,13 @@ function(configure_cuda_linking main_target_name)
         message(STATUS "✅ Added CUDA include directories to ${main_target_name}: ${CUDA_INCLUDE_DIRS}")
     endif()
 
-    # Apply GNU-specific CUDA compiler flags for duplicate instantiation handling
-    # ONLY for non-Windows builds
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT WIN32)
-        message(STATUS "🔧 Applying GNU-specific CUDA flags for duplicate instantiation handling")
-        target_compile_options(${main_target_name} PRIVATE
-                $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-fno-implicit-templates>
-        )
-    endif()
 
     # Modern CMake uses imported targets which handle all necessary dependencies.
     # Linking against CUDA::toolkit automatically adds include directories,
     # runtime libraries, and all other required flags.
-    target_link_libraries(${main_target_name} PUBLIC CUDA::toolkit)
+    # CUDA::cublas and CUDA::cusolver are required for cuBLAS and cuSolver functions
+    # used in MmulHelper.cu, svd.cu, cublasHelper.cu, etc.
+    target_link_libraries(${main_target_name} PUBLIC CUDA::toolkit CUDA::cublas CUDA::cusolver)
 
     # If cuDNN was found, link against its imported target
     if(HAVE_CUDNN AND TARGET CUDNN::cudnn)
@@ -433,8 +427,9 @@ function(setup_cuda_architectures_early)
     if(DEFINED COMPUTE)
         string(TOLOWER "${COMPUTE}" COMPUTE_CMP)
         if(COMPUTE_CMP STREQUAL "all")
-            set(CUDA_ARCHITECTURES "75;80;86;89" PARENT_SCOPE)
-            message(STATUS "   CUDA architectures (all): 75;80;86;89")
+            # Use only sm_86 (Ampere) for faster builds - add more if needed for production
+            set(CUDA_ARCHITECTURES "86" PARENT_SCOPE)
+            message(STATUS "   CUDA architectures (all->86 for fast build): 86")
         elseif(COMPUTE_CMP STREQUAL "auto")
             set(CMAKE_CUDA_ARCHITECTURES "86" PARENT_SCOPE)
             message(STATUS "   CUDA architectures (auto): 86")
@@ -526,8 +521,9 @@ endfunction()
 function(configure_cuda_architecture_flags COMPUTE)
     string(TOLOWER "${COMPUTE}" COMPUTE_CMP)
     if(COMPUTE_CMP STREQUAL "all")
-        set(CUDA_ARCH_FLAGS "-gencode arch=compute_75,code=sm_75 -gencode arch=compute_80,code=sm_80 -gencode arch=compute_86,code=sm_86 -gencode arch=compute_89,code=sm_89" PARENT_SCOPE)
-        message(STATUS "Building for all CUDA architectures (gencode flags)")
+        # Use only sm_86 (Ampere) for faster builds - add more if needed for production
+        set(CUDA_ARCH_FLAGS "-gencode arch=compute_86,code=sm_86" PARENT_SCOPE)
+        message(STATUS "Building for sm_86 only (fast build mode)")
     elseif(COMPUTE_CMP STREQUAL "auto")
         set(CUDA_ARCH_FLAGS "-gencode arch=compute_86,code=sm_86" PARENT_SCOPE)
         message(STATUS "Auto-detecting CUDA architectures (gencode flags)")
@@ -674,8 +670,6 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fPIC --device-debug -lineinfo -G")
             else()
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fPIC -Xcompiler=-fpermissive")
-                # Add flags to handle duplicate instantiations for GNU compiler
-                set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fno-implicit-templates")
             endif()
         endif()
 
@@ -697,7 +691,80 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
 
     if(CMAKE_CUDA_COMPILER_VERSION)
         string(REGEX MATCH "^([0-9]+)" CUDA_VERSION_MAJOR "${CMAKE_CUDA_COMPILER_VERSION}")
+        string(REGEX MATCH "^([0-9]+)\\.([0-9]+)" CUDA_VERSION_MATCH "${CMAKE_CUDA_COMPILER_VERSION}")
+        string(REGEX REPLACE "^([0-9]+)\\.([0-9]+).*" "\\2" CUDA_VERSION_MINOR "${CMAKE_CUDA_COMPILER_VERSION}")
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR}")
+
+        # ============================================================================
+        # CUDA 11.2+ PARALLEL COMPILATION OPTIMIZATIONS
+        # These can dramatically reduce build times (up to 50% improvement)
+        # Configure via: SD_CUDA_THREADS, SD_CUDA_SPLIT_COMPILE, SD_CUDA_DEVICE_LTO
+        # ============================================================================
+        if(CUDA_VERSION_MAJOR GREATER_EQUAL 11 AND (CUDA_VERSION_MAJOR GREATER 11 OR CUDA_VERSION_MINOR GREATER_EQUAL 2))
+            message(STATUS "🚀 CUDA ${CUDA_VERSION_MAJOR}.${CUDA_VERSION_MINOR} detected - enabling parallel compilation optimizations")
+
+            # --threads: Parallel compilation for multiple GPU architectures
+            # Uses all available CPUs (0 = auto-detect) to compile different arch targets simultaneously
+            # This is different from make -j; it parallelizes WITHIN a single nvcc invocation
+            if(DEFINED SD_CUDA_THREADS AND NOT SD_CUDA_THREADS STREQUAL "0")
+                set(NVCC_THREADS ${SD_CUDA_THREADS})
+            else()
+                cmake_host_system_information(RESULT NVCC_THREADS QUERY NUMBER_OF_LOGICAL_CORES)
+                # Cap based on available memory (each thread can use significant RAM)
+                cmake_host_system_information(RESULT TOTAL_MEM_MB QUERY TOTAL_PHYSICAL_MEMORY)
+                math(EXPR MEM_BASED_CAP "${TOTAL_MEM_MB} / 4000")  # ~4GB per nvcc thread
+                if(MEM_BASED_CAP LESS 2)
+                    set(MEM_BASED_CAP 2)
+                endif()
+                if(NVCC_THREADS GREATER MEM_BASED_CAP)
+                    set(NVCC_THREADS ${MEM_BASED_CAP})
+                endif()
+                if(NVCC_THREADS GREATER 8)
+                    set(NVCC_THREADS 8)  # Hard cap at 8
+                endif()
+            endif()
+            set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --threads ${NVCC_THREADS}")
+            message(STATUS "   --threads ${NVCC_THREADS}: Parallel multi-arch compilation")
+
+            # --split-compile: Parallelize optimization phase within each .cu file
+            # This splits the optimization work across multiple threads
+            if(DEFINED SD_CUDA_SPLIT_COMPILE AND NOT SD_CUDA_SPLIT_COMPILE STREQUAL "0")
+                set(SPLIT_THREADS ${SD_CUDA_SPLIT_COMPILE})
+            else()
+                # Use half the threads to avoid competing with --threads
+                math(EXPR SPLIT_THREADS "${NVCC_THREADS} / 2")
+                if(SPLIT_THREADS LESS 2)
+                    set(SPLIT_THREADS 2)
+                endif()
+            endif()
+            set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --split-compile ${SPLIT_THREADS}")
+            message(STATUS "   --split-compile ${SPLIT_THREADS}: Parallel optimization phase")
+
+            # -dlto: Device Link Time Optimization
+            # Enables whole-program optimizations even with separate compilation
+            # Improves runtime performance AND can reduce final binary size
+            if(SD_CUDA_DEVICE_LTO)
+                set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -dlto")
+                message(STATUS "   -dlto: Device LTO enabled (better codegen, longer link)")
+
+                # With LTO, we can use extended split compile for even more parallelism
+                if(CUDA_VERSION_MAJOR GREATER_EQUAL 12)
+                    set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --split-compile-extended ${SPLIT_THREADS}")
+                    message(STATUS "   --split-compile-extended ${SPLIT_THREADS}: Aggressive LTO parallelization")
+                endif()
+            endif()
+        else()
+            message(STATUS "⚠️  CUDA ${CMAKE_CUDA_COMPILER_VERSION} < 11.2 - parallel compilation not available")
+        endif()
+
+        # CUDA 12.8+ additional optimizations
+        if(CUDA_VERSION_MAJOR GREATER_EQUAL 13 OR (CUDA_VERSION_MAJOR EQUAL 12 AND CUDA_VERSION_MINOR GREATER_EQUAL 8))
+            # --fdevice-time-trace: Generate compilation timeline (useful for profiling builds)
+            if(SD_CUDA_TIME_TRACE)
+                set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --fdevice-time-trace")
+                message(STATUS "   --fdevice-time-trace: Build profiling enabled (view in chrome://tracing)")
+            endif()
+        endif()
     endif()
 
     # Clean up any problematic flags for Windows

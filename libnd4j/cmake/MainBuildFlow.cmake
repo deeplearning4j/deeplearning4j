@@ -439,7 +439,13 @@ function(configure_cuda_linking main_target_name)
     # Modern CMake uses imported targets which handle all necessary dependencies.
     # Linking against CUDA::toolkit automatically adds include directories,
     # runtime libraries, and all other required flags.
-    target_link_libraries(${main_target_name} PUBLIC CUDA::toolkit ${JVM_LIBRARY})
+    # CUDA::cublas and CUDA::cusolver are required for cuBLAS and cuSolver functions
+    # used in MmulHelper.cu, svd.cu, cublasHelper.cu, etc.
+    target_link_libraries(${main_target_name} PUBLIC
+        CUDA::toolkit
+        CUDA::cublas
+        CUDA::cusolver
+        ${JVM_LIBRARY})
 
     # If cuDNN was found, link against its imported target
     if(HAVE_CUDNN AND TARGET CUDNN::cudnn)
@@ -462,6 +468,12 @@ function(configure_cuda_linking main_target_name)
 
     target_include_directories("${main_target_name}" PUBLIC "${CUDA_INCLUDE_DIRS}")
     target_link_libraries(${main_target_name} PUBLIC flatbuffers_interface)
+
+    # Link OpenBLAS for CUDA builds (needed by BlasHelper.cpp for openblas_set_num_threads)
+    if(OPENBLAS_LIBRARIES)
+        target_link_libraries(${main_target_name} PUBLIC ${OPENBLAS_LIBRARIES})
+        message(STATUS "✅ Linking CUDA build with OpenBLAS: ${OPENBLAS_LIBRARIES}")
+    endif()
 
     # ZLUDA linking configuration
     if(HAVE_ZLUDA)
@@ -590,7 +602,6 @@ function(create_and_link_library)
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/indexing"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/generated"
                 "${CMAKE_BINARY_DIR}/compilation_units"
-                "${CMAKE_BINARY_DIR}/cpu_instantiations"
         )
 
         if(SD_CUDA)
@@ -613,20 +624,22 @@ function(create_and_link_library)
         setup_type_definitions_for_target(${OBJECT_LIB_NAME})
 
         # Enable precompiled headers for large commonly-included headers
-        # This significantly speeds up incremental builds when these headers change
-        # PERMANENTLY DISABLED: Causes cache staleness issues when SD_GCC_FUNCTRACE changes
-        # The CMake cache can hold stale values causing build failures
-        if(FALSE)  # Disabled to prevent cache staleness issues
+        # NOTE: PCH disabled for CUDA builds - nvcc doesn't support PCH well
+        # This significantly speeds up builds by avoiding re-parsing 11,000+ lines of headers per file
+        # PCH is ONLY enabled when SD_GCC_FUNCTRACE is OFF and NOT a CUDA build
+        if(NOT SD_GCC_FUNCTRACE AND NOT SD_CUDA)
             message(STATUS "🚀 Enabling precompiled headers for ${OBJECT_LIB_NAME}")
             target_precompile_headers(${OBJECT_LIB_NAME} PRIVATE
                 <system/op_boilerplate.h>
                 <system/type_boilerplate.h>
+                <math/templatemath.h>
+                <helpers/shape.h>
             )
-            message(STATUS "✅ Precompiled headers enabled for op_boilerplate.h and type_boilerplate.h")
-        elseif(SD_GCC_FUNCTRACE)
-            message(STATUS "⚠️ Precompiled headers DISABLED (prevents CMake cache staleness issues)")
+            message(STATUS "✅ Precompiled headers enabled (op_boilerplate.h, type_boilerplate.h, templatemath.h, shape.h)")
+        elseif(SD_CUDA)
+            message(STATUS "⚠️ Precompiled headers DISABLED for CUDA build (nvcc compatibility)")
         else()
-            message(STATUS "⚠️ Precompiled headers DISABLED (prevents CMake cache staleness issues)")
+            message(STATUS "⚠️ Precompiled headers DISABLED for functrace build (use clean build when switching)")
         endif()
     endif()
 
@@ -645,7 +658,6 @@ function(create_and_link_library)
 
         # No CUDA includes needed here, they are handled by the linking function
         target_include_directories(${MAIN_LIB_NAME} PUBLIC
-                "${OPENBLAS_PATH}/include"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/blas"
                 "${CMAKE_CURRENT_BINARY_DIR}/include"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include"
@@ -664,8 +676,7 @@ function(create_and_link_library)
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/indexing"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/generated"
                 "${CMAKE_BINARY_DIR}/compilation_units"
-                "${CMAKE_BINARY_DIR}/cpu_instantiations"
-                "${CMAKE_BINARY_DIR}/cuda_instantiations")
+        )
 
         if(SD_CUDA)
             target_include_directories(${MAIN_LIB_NAME} PUBLIC
@@ -1077,9 +1088,11 @@ if(SD_EXTRACT_INSTANTIATIONS)
     return()
 endif()
 
-# Precompiled headers PERMANENTLY DISABLED to prevent CMake cache staleness issues
-# When SD_GCC_FUNCTRACE or other flags change, stale cache can cause build failures
-if(FALSE)  # Disabled to prevent cache staleness issues
+# Enable precompiled headers for non-CUDA, non-functrace builds
+# NOTE: PCH disabled for CUDA builds - nvcc doesn't support PCH well
+# This dramatically reduces compile time by pre-compiling 11,000+ lines of headers
+# Users switching between functrace and normal builds should do a clean build
+if(NOT SD_GCC_FUNCTRACE AND NOT SD_CUDA AND TARGET ${SD_LIBRARY_NAME})
     target_precompile_headers(${SD_LIBRARY_NAME} PRIVATE
             <vector>
             <memory>
@@ -1088,17 +1101,15 @@ if(FALSE)  # Disabled to prevent cache staleness issues
             <cstring>
             "${CMAKE_CURRENT_SOURCE_DIR}/include/system/op_boilerplate.h"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/system/type_boilerplate.h"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/system/type_boiler_plate_expansioons.h"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/array/DataType.h"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/array/NDArray.h"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/array/NDArray.hXX"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/types/types.h"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/math/platformmath.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/system/type_boiler_plate_expansions.h"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/math/templatemath.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/helpers/shape.h"
     )
-    message(STATUS "✅ Precompiled headers enabled for main library")
-else()
-    message(STATUS "⚠️ Precompiled headers DISABLED (prevents CMake cache staleness issues)")
+    message(STATUS "✅ Precompiled headers enabled for main library ${SD_LIBRARY_NAME}")
+elseif(SD_CUDA)
+    message(STATUS "⚠️ Precompiled headers DISABLED for CUDA build (nvcc compatibility)")
+elseif(SD_GCC_FUNCTRACE)
+    message(STATUS "⚠️ Precompiled headers DISABLED for functrace build")
 endif()
 
 include(PostBuild)

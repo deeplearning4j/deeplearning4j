@@ -20,7 +20,7 @@
 // Created by george@skymind.io on 6/4/2018.
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/axis.h>
 
 

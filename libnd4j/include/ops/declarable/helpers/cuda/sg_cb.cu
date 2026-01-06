@@ -37,7 +37,7 @@ namespace helpers {
 
 
 template <typename T>
-SD_KERNEL void hSoftmaxKernel(void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, double alpha, int vectorLength,
+SD_KERNEL SD_INLINE void hSoftmaxKernel(void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, double alpha, int vectorLength,
                               int code, int expLength, bool isInference) {
   auto syn0 = reinterpret_cast<T *>(vsyn0);
   auto syn1 = reinterpret_cast<T *>(vsyn1);
@@ -85,9 +85,10 @@ void hSoftmax_(void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, double a
   sd::DebugHelper::checkErrorCode(stream, "hSoftmaxKernel failed");
 
 }
+BUILD_SINGLE_TEMPLATE(void hSoftmax_, (void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, double alpha, int vectorLength, int code, int expLength, bool isInference, cudaStream_t *stream), SD_FLOAT_TYPES);
 
 template <typename T>
-SD_KERNEL void nSamplingKernel(void *vsyn0, void *vsyn1Neg, void *vexpTable, void *vneu1e, double alpha,
+SD_KERNEL SD_INLINE void nSamplingKernel(void *vsyn0, void *vsyn1Neg, void *vexpTable, void *vneu1e, double alpha,
                                int vectorLength, int code, int expLength, bool isInference) {
   auto syn0 = reinterpret_cast<T *>(vsyn0);
   auto syn1Neg = reinterpret_cast<T *>(vsyn1Neg);
@@ -135,6 +136,7 @@ void nSampling_(void *vsyn0, void *vsyn1Neg, void *vexpTable, void *vneu1e, doub
   sd::DebugHelper::checkErrorCode(stream, "nSamplingKernel failed");
 
 }
+BUILD_SINGLE_TEMPLATE(void nSampling_, (void *vsyn0, void *vsyn1Neg, void *vexpTable, void *vneu1e, double alpha, int vectorLength, int code, int expLength, bool isInference, cudaStream_t *stream), SD_FLOAT_TYPES);
 
 /*
  * binarySearch - find element in haystack buffer (haystack - sorted device memory)
@@ -156,7 +158,7 @@ int binarySearch(const int *haystack, const int needle, const int totalElements)
   return (haystack[halfIndex] == needle) ? halfIndex : -1;
 }
 template <typename T>
-SD_KERNEL void addInfVectorKernel(T *neu1, T *infVector, int vectorLength) {
+SD_KERNEL SD_INLINE void addInfVectorKernel(T *neu1, T *infVector, int vectorLength) {
   auto start = blockIdx.x * blockDim.x + threadIdx.x;
   auto step = blockDim.x * gridDim.x;
 
@@ -408,7 +410,7 @@ const int hsRounds, const int nsRounds)
 
 
 template <typename T>
-static SD_KERNEL void checkContextKernel(int *context, T *syn0, T *neu1, int contextWidth, int vectorLength,
+static SD_KERNEL SD_INLINE void checkContextKernel(int *context, T *syn0, T *neu1, int contextWidth, int vectorLength,
                                          int vocabSize) {
   __shared__ bool hasError;
   if (0 == threadIdx.x) {
@@ -434,7 +436,7 @@ static SD_KERNEL void checkContextKernel(int *context, T *syn0, T *neu1, int con
 }
 
 template <typename T>
-SD_KERNEL void shiftKernel(T *neu1, T *infVector, int contextWidth, int vectorLength) {
+SD_KERNEL SD_INLINE void shiftKernel(T *neu1, T *infVector, int contextWidth, int vectorLength) {
   auto start = blockIdx.x * blockDim.x + threadIdx.x;
   auto step = blockDim.x * gridDim.x;
 
@@ -444,7 +446,7 @@ SD_KERNEL void shiftKernel(T *neu1, T *infVector, int contextWidth, int vectorLe
 }
 
 template <typename T>
-SD_KERNEL void fillUpSynonymsKernel(int starter, int contextWidth, int vectorLength, int *lockedWords, int *context,
+SD_KERNEL SD_INLINE void fillUpSynonymsKernel(int starter, int contextWidth, int vectorLength, int *lockedWords, int *context,
                                     T *neu1e, T *syn0) {
   auto start = threadIdx.x + blockIdx.x * blockDim.x;
   auto step = blockDim.x * gridDim.x;
@@ -579,7 +581,7 @@ void cbowInference(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expT
 }
 
 template <typename T>
-static SD_KERNEL void buildCurrentWindowKernel(int vocabSize, int contextWidth, int vectorLength, int *bContext,
+static SD_KERNEL SD_INLINE void buildCurrentWindowKernel(int vocabSize, int contextWidth, int vectorLength, int *bContext,
                                                T *syn0, T *neu1, int *actualContext, int e) {
   // building neu1 for current window
   auto start = blockIdx.x * blockDim.x + threadIdx.x;
@@ -603,7 +605,7 @@ static SD_KERNEL void buildCurrentWindowKernel(int vocabSize, int contextWidth, 
 }
 
 template <typename T>
-SD_KERNEL void arrangeNeuKernel(int vectorLength, T *neu1, T *infVector, int *actualContext) {
+SD_KERNEL SD_INLINE void arrangeNeuKernel(int vectorLength, T *neu1, T *infVector, int *actualContext) {
   auto start = blockIdx.x * blockDim.x + threadIdx.x;
   auto step = blockDim.x * gridDim.x;
 
@@ -612,7 +614,7 @@ SD_KERNEL void arrangeNeuKernel(int vectorLength, T *neu1, T *infVector, int *ac
 }
 
 template <typename T>
-SD_KERNEL void applyShiftKernel(int *bContext, int *bLocker, T *syn0, T *neu1e, int contextWidth, int vectorLength,
+SD_KERNEL SD_INLINE void applyShiftKernel(int *bContext, int *bLocker, T *syn0, T *neu1e, int contextWidth, int vectorLength,
                                 int e, int starter) {
   auto step = blockDim.x * gridDim.x;
   auto start = blockDim.x * blockIdx.x + threadIdx.x;

@@ -27,7 +27,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_mixture_of_experts)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/nn.h>
 #include <ops/declarable/helpers/mixture_of_experts.h>
 
 namespace sd {

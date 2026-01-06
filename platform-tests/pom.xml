@@ -575,6 +575,28 @@
             <version>${project.version}</version>
         </dependency>
 
+        <!-- Pipeline modules -->
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>samediff-pipeline-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>samediff-pipeline-safetensors</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>samediff-pipeline-ggml</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>samediff-pipeline-onnx</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
     </dependencies>
     <profiles>
         <profile>

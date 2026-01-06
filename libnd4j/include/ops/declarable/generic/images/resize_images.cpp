@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_resize_images)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/images.h>
 #include <ops/declarable/helpers/image_resize.h>
 
 namespace sd {

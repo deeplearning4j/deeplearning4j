@@ -486,6 +486,91 @@ SD_LIB_EXPORT int dbLocality(OpaqueDataBuffer *dataBuffer) ;
 SD_LIB_EXPORT OpaqueDataBuffer* dbCreateView(OpaqueDataBuffer* dataBuffer, sd::LongType length) ;
 SD_LIB_EXPORT OpaqueDataBuffer* dbAllocateDataBuffer(sd::LongType elements, int dataType, bool allocateBoth) ;
 SD_LIB_EXPORT OpaqueDataBuffer* dbCreateExternalDataBuffer(sd::LongType elements, int dataType, sd::Pointer primary, sd::Pointer special) ;
+
+// =====================================================
+// Transfer Metrics API - for tracking device transfers
+// =====================================================
+
+/**
+ * Enable or disable transfer metrics collection
+ */
+SD_LIB_EXPORT void transferMetricsSetEnabled(bool enabled);
+
+/**
+ * Check if transfer metrics are enabled
+ */
+SD_LIB_EXPORT bool transferMetricsIsEnabled();
+
+/**
+ * Enable or disable individual transfer logging
+ */
+SD_LIB_EXPORT void transferMetricsSetLogTransfers(bool log);
+
+/**
+ * Set minimum bytes threshold for logging individual transfers
+ */
+SD_LIB_EXPORT void transferMetricsSetMinBytesForLogging(sd::LongType bytes);
+
+/**
+ * Get total bytes transferred (H2D)
+ */
+SD_LIB_EXPORT sd::LongType transferMetricsGetH2DBytes();
+
+/**
+ * Get total bytes transferred (D2H)
+ */
+SD_LIB_EXPORT sd::LongType transferMetricsGetD2HBytes();
+
+/**
+ * Get total bytes transferred (D2D within device)
+ */
+SD_LIB_EXPORT sd::LongType transferMetricsGetD2DBytes();
+
+/**
+ * Get total bytes transferred (P2P between devices)
+ */
+SD_LIB_EXPORT sd::LongType transferMetricsGetP2PBytes();
+
+/**
+ * Get total transfer count (H2D)
+ */
+SD_LIB_EXPORT sd::LongType transferMetricsGetH2DCount();
+
+/**
+ * Get total transfer count (D2H)
+ */
+SD_LIB_EXPORT sd::LongType transferMetricsGetD2HCount();
+
+/**
+ * Get total transfer count (D2D)
+ */
+SD_LIB_EXPORT sd::LongType transferMetricsGetD2DCount();
+
+/**
+ * Get total transfer count (P2P)
+ */
+SD_LIB_EXPORT sd::LongType transferMetricsGetP2PCount();
+
+/**
+ * Get total transfer time in nanoseconds (all types)
+ */
+SD_LIB_EXPORT sd::LongType transferMetricsGetTotalTimeNs();
+
+/**
+ * Get transfer overhead as percentage of op execution time
+ */
+SD_LIB_EXPORT double transferMetricsGetOverheadPercent();
+
+/**
+ * Reset all transfer metrics
+ */
+SD_LIB_EXPORT void transferMetricsReset();
+
+/**
+ * Print transfer metrics summary to stdout
+ */
+SD_LIB_EXPORT void transferMetricsPrintSummary();
+
 SD_LIB_EXPORT void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *bufferToSet,char order,int elementWiseStride,bool isEmpty,bool isView) ;
 SD_LIB_EXPORT OpaqueConstantShapeBuffer cacheAndStoreShapeBuffer(sd::LongType *shapeInfo);
 SD_LIB_EXPORT OpaqueConstantShapeBuffer shapeBuffer(int rank, sd::LongType* shape, sd::LongType* strides,

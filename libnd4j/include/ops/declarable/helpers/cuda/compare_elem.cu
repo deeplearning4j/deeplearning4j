@@ -15,6 +15,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
+#include <array/NDArrayFactory.h>
 #include <ops/declarable/helpers/compare_elem.h>
 
 #include "execution/cuda/LaunchDims.h"
@@ -131,12 +132,13 @@ static void _compare_elem(LaunchContext *context, NDArray *input, bool isStrictl
   dim3 compareElemDims = getCompareElem(input->lengthOf());
   comparator<T><<<compareElemDims.x,compareElemDims.y,compareElemDims.z, *context->getCudaStream()>>>(
       input->specialBuffer(), input->specialShapeInfo(), input->lengthOf(), isStrictlyIncreasing,
-      context->getReductionPointer(), reinterpret_cast<bool *>(z.specialBuffer()));
+      context->getReductionPointer(), reinterpret_cast<bool *>(z->specialBuffer()));
 
   z->tickWriteDevice();
   DebugHelper::checkErrorCode(context->getCudaStream(), "is_strictly_increasing");
 
   output = z->e<bool>(0);
+  delete z;
 }
 
 void compare_elem(LaunchContext *context, NDArray *input, bool isStrictlyIncreasing, bool &output) {

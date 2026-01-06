@@ -1,33 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
 # ============================================================================
-# STALE MAKEFILE DETECTION AND CLEANUP
-# ============================================================================
-# CMake's progress tracking can become inconsistent when template-generated
-# files change between builds, causing build failures with "No rule to make target"
-# This check forces a clean reconfiguration if stale Makefiles are detected
-if(EXISTS "${CMAKE_BINARY_DIR}/CMakeFiles/progress.marks")
-    file(READ "${CMAKE_BINARY_DIR}/CMakeFiles/progress.marks" PROGRESS_MARKS)
-    string(STRIP "${PROGRESS_MARKS}" PROGRESS_MARKS)
-
-    # If progress marks is suspiciously low (99 or less), force reconfiguration
-    # Real builds should have much higher counts with template instantiations
-    if(PROGRESS_MARKS LESS 200)
-        message(STATUS "⚠️  Detected stale CMake progress tracking (only ${PROGRESS_MARKS} marks)")
-        message(STATUS "   Forcing clean reconfiguration to fix Makefile consistency...")
-
-        # Delete all CMake-generated Makefiles and progress files
-        file(REMOVE_RECURSE "${CMAKE_BINARY_DIR}/CMakeFiles/Makefile2")
-        file(REMOVE_RECURSE "${CMAKE_BINARY_DIR}/CMakeFiles/progress.marks")
-        file(REMOVE_RECURSE "${CMAKE_BINARY_DIR}/CMakeFiles/nd4jcpu_object.dir/progress.make")
-        file(REMOVE_RECURSE "${CMAKE_BINARY_DIR}/CMakeFiles/nd4jcpu_object.dir/build.make")
-        file(REMOVE_RECURSE "${CMAKE_BINARY_DIR}/CMakeCache.txt")
-
-        message(FATAL_ERROR "Stale Makefiles deleted. Please re-run cmake to regenerate build system.")
-    endif()
-endif()
-
-# ============================================================================
 # CCACHE SETUP - Must be before project() for proper compiler launcher setup
 # ============================================================================
 # NOTE: ccache is DISABLED for debug and functrace builds due to poor hit rates

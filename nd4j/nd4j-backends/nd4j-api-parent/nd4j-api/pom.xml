@@ -39,8 +39,8 @@
         <byteunits.version>0.9.1</byteunits.version>
         <neoitertools.version>1.0.0</neoitertools.version>
         <module.name>nd4j.api</module.name>
-        <cuda.version>12.3</cuda.version>
-        <cudnn.version>8.9</cudnn.version>
+        <cuda.version>12.9</cuda.version>
+        <cudnn.version>9.10</cudnn.version>
         <libnd4j.platform>${javacpp.platform}</libnd4j.platform>
         <libnd4j.extension></libnd4j.extension>
         <libnd4j.chip></libnd4j.chip>

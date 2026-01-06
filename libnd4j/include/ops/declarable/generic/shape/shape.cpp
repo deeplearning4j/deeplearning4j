@@ -21,7 +21,7 @@
 //
 
 #include <system/op_boilerplate.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/shape.h>
 #include <cstring>
 
 #if NOT_EXCLUDED(OP_shape_of)

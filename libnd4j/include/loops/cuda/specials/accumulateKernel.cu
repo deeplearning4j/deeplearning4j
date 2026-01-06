@@ -70,7 +70,7 @@ SD_DEVICE void accumulateKernel(void **vx, void *vz, int n, const LongType lengt
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void execAccumulateKernel(void **vx, void *vz, int n, const LongType length) {
+SD_KERNEL SD_INLINE void execAccumulateKernel(void **vx, void *vz, int n, const LongType length) {
   accumulateKernel<T>(vx, vz, n, length);
 }
 

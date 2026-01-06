@@ -211,18 +211,22 @@ static void fillRandomGamma_(LaunchContext* context, graph::RandomGenerator& rng
   }
 
   auto stream = context->getCudaStream();
-  NDArray uniform = NDArrayFactory::create<T>('c', {shift}, context);
-  uniform.syncToDevice();
+  auto uniform = NDArrayFactory::create<T>('c', {shift}, context);
+  uniform->syncToDevice();
   // fill up uniform with given length
-  RandomLauncher::fillUniform(context, rng, &uniform, 0.0000000001, 0.9999999999);
-  uniform.syncToDevice();
+  RandomLauncher::fillUniform(context, rng, uniform, static_cast<T>(0.0000000001), static_cast<T>(0.9999999999));
+  uniform->syncToDevice();
   dim3 launchDims = getLaunchDims("random_gamma");
+  auto uniformBuf = uniform->dataBuffer()->template specialAsT<T>();
+  auto alphaBuf = copyAlpha->dataBuffer()->template specialAsT<T>();
+  auto betaBuf = beta ? copyBeta->dataBuffer()->template specialAsT<T>() : (T const*)nullptr;
+  auto betaShape = beta ? copyBeta->specialShapeInfo() : (LongType const*)nullptr;
+  auto outputBuf = output->dataBuffer()->template specialAsT<T>();
   fillGammaKernel<T><<<launchDims.x, launchDims.y,launchDims.z, *stream>>>(
-      uniform.dataBuffer()->specialAsT<T>(), shift, copyAlpha->dataBuffer()->specialAsT<T>(),
-      copyAlpha->specialShapeInfo(), beta ? copyBeta->dataBuffer()->specialAsT<T>() : (T const*)nullptr,
-      beta ? copyBeta->specialShapeInfo() : (LongType const*)nullptr, output->dataBuffer()->specialAsT<T>(),
-      output->specialShapeInfo());
+      uniformBuf, shift, alphaBuf, copyAlpha->specialShapeInfo(), betaBuf, betaShape, outputBuf, output->specialShapeInfo());
   sd::DebugHelper::checkErrorCode(stream, "fillGammaKernel failed");
+
+  delete uniform;
 
   if (beta != nullptr) {
     delete copyAlpha;
@@ -322,21 +326,21 @@ static void fillRandomPoisson_(LaunchContext* context, graph::RandomGenerator& r
   PointersManager manager(context, "fillRandomPoisson");
   auto stream = context->getCudaStream();
   // fill up uniform with given length
-  NDArray tempOutput = output->cast(DOUBLE);
+  std::unique_ptr<NDArray> tempOutputPtr(output->cast(DOUBLE));
   RandomLauncher::fillUniform(context, rng, &uniform, 0., 1.);
 
-  NDArray tempLambda = lambda->cast(DOUBLE);
-  NDArray::prepareSpecialUse({output,&tempOutput}, {lambda,&tempLambda});
+  std::unique_ptr<NDArray> tempLambdaPtr(lambda->cast(DOUBLE));
+  NDArray::prepareSpecialUse({output, tempOutputPtr.get()}, {lambda, tempLambdaPtr.get()});
 
   dim3 launchDims = getLaunchDims("random_poisson");
-  fillPoissonKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(uniform.dataBuffer()->specialAsT<T>(), uniform.lengthOf(),
-                                                                              tempLambda.dataBuffer()->specialAsT<T>(), tempLambda.specialShapeInfo(),
-                                                                              tempOutput.dataBuffer()->specialAsT<T>(), tempOutput.specialShapeInfo());
+  fillPoissonKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(uniform.dataBuffer()->template specialAsT<T>(), uniform.lengthOf(),
+                                                                              tempLambdaPtr->dataBuffer()->template specialAsT<T>(), tempLambdaPtr->specialShapeInfo(),
+                                                                              tempOutputPtr->dataBuffer()->template specialAsT<T>(), tempOutputPtr->specialShapeInfo());
 
   sd::DebugHelper::checkErrorCode(stream, "fillPoissonKernel failed");
-  NDArray ret = tempOutput.cast(output->dataType());
-  output->assign(&ret);
-  NDArray::registerSpecialUse({output,&tempOutput}, {lambda,&tempLambda});
+  std::unique_ptr<NDArray> retPtr(tempOutputPtr->cast(output->dataType()));
+  output->assign(retPtr.get());
+  NDArray::registerSpecialUse({output, tempOutputPtr.get()}, {lambda, tempLambdaPtr.get()});
 
   manager.synchronize();
 }
@@ -405,7 +409,7 @@ static void fillRandomUniform_(LaunchContext* context, graph::RandomGenerator& r
     if (err != 0) {
       cuda_exception::build("fillRandomUniform_: Cannot copy random generator to device", err);
     }
-    auto outputBuf = output->dataBuffer()->specialAsT<T>();
+    auto outputBuf = output->dataBuffer()->template specialAsT<T>();
     auto outputShape = output->specialShapeInfo();
     dim3 launchDims = getLaunchDims("random_uniform");
     fillUniformKernel<T><<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(devRng, minVal, maxVal, outputBuf, outputShape);

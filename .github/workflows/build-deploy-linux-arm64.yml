@@ -93,6 +93,12 @@ jobs:
           sudo swapon /swapfile
           sudo sysctl vm.swappiness=60
           free -h
+      - name: Setup ccache
+        uses: ./.github/actions/setup-ccache-linux
+        with:
+          cache-suffix: arm64-${{ matrix.helper }}
+          max-size: '5G'
+
       - name: Cache protobuf install
         uses: actions/cache@v4
         id: cache-protobuf
@@ -212,6 +218,13 @@ jobs:
           else
               eval "${COMMAND}"
           fi
+      - name: Show ccache stats after build
+        if: always()
+        shell: bash
+        run: |
+          echo "=== ccache stats after build ==="
+          ccache --show-stats --verbose || ccache -sv || ccache -s
+
       - name: Cleanup swap
         if: always()
         shell: bash

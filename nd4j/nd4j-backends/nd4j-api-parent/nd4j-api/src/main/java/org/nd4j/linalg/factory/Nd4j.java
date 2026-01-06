@@ -55,6 +55,8 @@ import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.concurrency.BasicAffinityManager;
+import org.nd4j.linalg.api.device.DeviceDescriptor;
+import org.nd4j.linalg.api.device.DeviceType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.MemoryWorkspaceManager;
 import org.nd4j.linalg.api.memory.MultiBackendWorkspace;
@@ -66,9 +68,11 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
+import org.nd4j.linalg.api.ops.executioner.DefaultMultiBackendExecutioner;
 import org.nd4j.linalg.api.ops.executioner.KernelPluginManager;
 import org.nd4j.linalg.api.ops.executioner.KernelSelectionConfig;
 import org.nd4j.linalg.api.ops.executioner.KernelSelector;
+import org.nd4j.linalg.api.ops.executioner.MultiBackendExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.api.ops.impl.scalar.ReplaceNans;
@@ -683,9 +687,40 @@ public class Nd4j {
     /**
      * Get the operation executioner instance.
      *
-     * @return the operation executioner instance.
+     * <p>When multi-backend mode is enabled (via {@link #enableMultiBackend()}),
+     * returns a routing executioner that automatically determines the execution
+     * device based on where the input arrays reside. This is data-dependent routing:
+     * <ul>
+     *   <li>If inputs are on GPU, the op executes on GPU</li>
+     *   <li>If inputs are on CPU, the op executes on CPU</li>
+     *   <li>If inputs are on different devices, data is transferred based on routing policy</li>
+     * </ul>
+     *
+     * <p>When multi-backend mode is disabled, returns the default backend executioner.</p>
+     *
+     * @return the operation executioner instance
      */
     public static OpExecutioner getExecutioner() {
+        // If multi-backend mode is enabled, use the routing executioner
+        // which routes ops based on input data location
+        if (multiBackendMode && MULTI_BACKEND_EXECUTIONER != null) {
+            return MULTI_BACKEND_EXECUTIONER;
+        }
+
+        // Fall back to default
+        return OP_EXECUTIONER_INSTANCE;
+    }
+
+    /**
+     * Get the default operation executioner instance without any context-awareness.
+     * This always returns the primary backend's executioner regardless of
+     * multi-backend mode or thread-local device context.
+     *
+     * <p>Use this when you explicitly need the default executioner without routing.</p>
+     *
+     * @return the default operation executioner instance
+     */
+    public static OpExecutioner getDefaultExecutioner() {
         return OP_EXECUTIONER_INSTANCE;
     }
 
@@ -5902,6 +5937,294 @@ public class Nd4j {
     public static MultiBackendWorkspace getAndActivateMultiBackendWorkspace(
             DeviceAwareWorkspaceConfiguration configuration, String id) {
         return getMultiBackendWorkspaceManager().getAndActivateWorkspace(configuration, id);
+    }
+
+    // ========================
+    // Multi-Backend Executioner APIs
+    // ========================
+
+    // Static field for multi-backend executioner (lazily initialized)
+    private static volatile MultiBackendExecutioner MULTI_BACKEND_EXECUTIONER;
+    private static volatile boolean multiBackendMode = false;
+    private static final Object MULTI_BACKEND_LOCK = new Object();
+
+    /**
+     * Enable multi-backend mode for seamless device routing.
+     * When enabled, operations will automatically route to the appropriate
+     * backend based on input data location and routing policy.
+     *
+     * @return true if multi-backend was successfully enabled
+     */
+    public static boolean enableMultiBackend() {
+        synchronized (MULTI_BACKEND_LOCK) {
+            if (multiBackendMode && MULTI_BACKEND_EXECUTIONER != null) {
+                return true;
+            }
+
+            // Initialize the backend registry
+            BackendRegistry.getInstance().initialize();
+
+            // Create the multi-backend executioner wrapping the current one
+            MULTI_BACKEND_EXECUTIONER = new DefaultMultiBackendExecutioner(OP_EXECUTIONER_INSTANCE);
+            multiBackendMode = true;
+
+            log.info("Multi-backend mode enabled with {} backends and {} devices",
+                    BackendRegistry.getInstance().getBackends().size(),
+                    BackendRegistry.getInstance().getAllDevices().size());
+
+            return true;
+        }
+    }
+
+    /**
+     * Disable multi-backend mode.
+     */
+    public static void disableMultiBackend() {
+        synchronized (MULTI_BACKEND_LOCK) {
+            multiBackendMode = false;
+        }
+    }
+
+    /**
+     * Check if multi-backend mode is enabled.
+     *
+     * @return true if multi-backend is enabled
+     */
+    public static boolean isMultiBackendEnabled() {
+        return multiBackendMode;
+    }
+
+    // Default device for array creation (null = use backend's default)
+    private static volatile DeviceDescriptor defaultCreationDevice = null;
+
+    /**
+     * Set the default device for array creation.
+     * All subsequent calls to {@code Nd4j.create()} will allocate arrays on this device
+     * unless overridden by a scoped context or explicit device parameter.
+     *
+     * <p>This is similar to PyTorch's {@code torch.set_default_device()}.</p>
+     *
+     * <pre>{@code
+     * // Set GPU as default for all new arrays
+     * Nd4j.setDefaultDevice(DeviceDescriptor.cuda(0));
+     *
+     * // Now all creates go to GPU
+     * INDArray a = Nd4j.create(100, 100);  // on GPU
+     * }</pre>
+     *
+     * @param device the default device, or null to use backend's default
+     */
+    public static void setDefaultDevice(DeviceDescriptor device) {
+        defaultCreationDevice = device;
+    }
+
+    /**
+     * Get the current default device for array creation.
+     *
+     * <p>Priority order:
+     * <ol>
+     *   <li>Thread-local scoped context ({@link #withDevice})</li>
+     *   <li>Global default device ({@link #setDefaultDevice})</li>
+     *   <li>Backend's default (typically first GPU if available, else CPU)</li>
+     * </ol>
+     *
+     * @return the effective default device for array creation
+     */
+    public static DeviceDescriptor getDefaultDevice() {
+        // Check thread-local scope first
+        DeviceDescriptor scoped = MultiBackendContext.currentDevice();
+        if (scoped != null) {
+            return scoped;
+        }
+
+        // Check global default
+        if (defaultCreationDevice != null) {
+            return defaultCreationDevice;
+        }
+
+        // Fall back to backend registry default (prefers GPU if available)
+        return BackendRegistry.getInstance().getDefaultDevice();
+    }
+
+    /**
+     * Set default device to first available GPU, or CPU if no GPU available.
+     * Convenience method equivalent to PyTorch's default behavior.
+     */
+    public static void setDefaultDeviceToGpuIfAvailable() {
+        DeviceDescriptor gpu = BackendRegistry.getInstance().getDefaultGpuDevice();
+        if (gpu != null) {
+            setDefaultDevice(gpu);
+        } else {
+            setDefaultDevice(BackendRegistry.getInstance().getDefaultCpuDevice());
+        }
+    }
+
+    /**
+     * Get the multi-backend executioner.
+     * This executioner routes operations to the appropriate backend
+     * based on input data location and routing policy.
+     *
+     * @return the multi-backend executioner, or null if multi-backend is not enabled
+     */
+    public static MultiBackendExecutioner getMultiBackendExecutioner() {
+        if (!multiBackendMode) {
+            return null;
+        }
+        return MULTI_BACKEND_EXECUTIONER;
+    }
+
+    /**
+     * Get the operation executioner for a specific device.
+     * This allows explicit execution on a particular device.
+     *
+     * @param device the target device
+     * @return the executioner for that device
+     */
+    public static OpExecutioner getExecutioner(DeviceDescriptor device) {
+        if (device == null) {
+            return OP_EXECUTIONER_INSTANCE;
+        }
+        return BackendRegistry.getInstance().getExecutioner(device);
+    }
+
+    /**
+     * Get the operation executioner for a specific device type.
+     *
+     * @param deviceType the device type (CPU, CUDA_GPU, etc.)
+     * @return the executioner for that device type
+     */
+    public static OpExecutioner getExecutioner(DeviceType deviceType) {
+        if (deviceType == null) {
+            return OP_EXECUTIONER_INSTANCE;
+        }
+
+        // Get the first device of this type
+        java.util.List<DeviceDescriptor> devices = BackendRegistry.getInstance().getDevices(deviceType);
+        if (devices != null && !devices.isEmpty()) {
+            return BackendRegistry.getInstance().getExecutioner(devices.get(0));
+        }
+
+        return OP_EXECUTIONER_INSTANCE;
+    }
+
+    /**
+     * Get the backend registry for advanced multi-backend operations.
+     *
+     * @return the backend registry
+     */
+    public static BackendRegistry getBackendRegistry() {
+        return BackendRegistry.getInstance();
+    }
+
+    /**
+     * Get all available devices across all backends.
+     *
+     * @return list of all devices
+     */
+    public static java.util.List<DeviceDescriptor> getAllDevices() {
+        return BackendRegistry.getInstance().getAllDevices();
+    }
+
+    /**
+     * Get the default GPU device if available.
+     *
+     * @return the default GPU, or null if none available
+     */
+    public static DeviceDescriptor getDefaultGpu() {
+        return BackendRegistry.getInstance().getDefaultGpuDevice();
+    }
+
+    /**
+     * Get the default CPU device.
+     *
+     * @return the default CPU device
+     */
+    public static DeviceDescriptor getDefaultCpu() {
+        return BackendRegistry.getInstance().getDefaultCpuDevice();
+    }
+
+    /**
+     * Check if any GPU devices are available.
+     *
+     * @return true if GPUs are available
+     */
+    public static boolean hasGpu() {
+        return BackendRegistry.getInstance().hasGpu();
+    }
+
+    /**
+     * Execute code within a specific device context for array creation.
+     * New arrays created via {@code Nd4j.create()} within the supplier will
+     * be allocated on the specified device.
+     *
+     * <p><b>Note:</b> This does NOT override data-dependent operation routing.
+     * Operations still execute where their input data resides. This context
+     * only affects where NEW arrays are created.</p>
+     *
+     * <pre>{@code
+     * // Create arrays on GPU 0
+     * INDArray gpuArray = Nd4j.withDevice(DeviceDescriptor.cuda(0), () -> {
+     *     return Nd4j.create(new float[]{1, 2, 3});
+     * });
+     * }</pre>
+     *
+     * @param device the device where new arrays should be created
+     * @param supplier the code to execute
+     * @param <T> the return type
+     * @return the result
+     */
+    public static <T> T withDevice(DeviceDescriptor device, java.util.function.Supplier<T> supplier) {
+        return MultiBackendContext.withDevice(device, supplier);
+    }
+
+    /**
+     * Execute code within a specific device context for array creation.
+     *
+     * <p><b>Note:</b> This does NOT override data-dependent operation routing.
+     * See {@link #withDevice(DeviceDescriptor, java.util.function.Supplier)} for details.</p>
+     *
+     * @param device the device where new arrays should be created
+     * @param runnable the code to execute
+     */
+    public static void withDevice(DeviceDescriptor device, Runnable runnable) {
+        MultiBackendContext.withDevice(device, runnable);
+    }
+
+    /**
+     * Execute code with new arrays created on GPU (if available).
+     * Falls back to default device if no GPU is available.
+     *
+     * <p><b>Note:</b> This does NOT override data-dependent operation routing.
+     * Operations still execute where their input data resides.</p>
+     *
+     * @param supplier the code to execute
+     * @param <T> the return type
+     * @return the result
+     */
+    public static <T> T onGpu(java.util.function.Supplier<T> supplier) {
+        DeviceDescriptor gpu = getDefaultGpu();
+        if (gpu != null) {
+            return withDevice(gpu, supplier);
+        }
+        return supplier.get();
+    }
+
+    /**
+     * Execute code with new arrays created on CPU.
+     *
+     * <p><b>Note:</b> This does NOT override data-dependent operation routing.
+     * Operations still execute where their input data resides.</p>
+     *
+     * @param supplier the code to execute
+     * @param <T> the return type
+     * @return the result
+     */
+    public static <T> T onCpu(java.util.function.Supplier<T> supplier) {
+        DeviceDescriptor cpu = getDefaultCpu();
+        if (cpu != null) {
+            return withDevice(cpu, supplier);
+        }
+        return supplier.get();
     }
 
     /**

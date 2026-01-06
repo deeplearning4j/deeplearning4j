@@ -18,7 +18,7 @@
 // @author AbdelRauf
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/decoder.h>
 #include <ops/declarable/helpers/ctc.h>
 #include <system/op_boilerplate.h>
 

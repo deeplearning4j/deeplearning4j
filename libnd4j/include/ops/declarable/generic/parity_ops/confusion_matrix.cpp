@@ -26,7 +26,7 @@
 #include <array/NDArray.h>
 #include <array/NDArrayList.h>
 #include <helpers/ShapeUtils.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/confusion.h>
 
 #include <array>

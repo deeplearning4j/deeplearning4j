@@ -26,14 +26,13 @@
 #include <system/Environment.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
-#include <execution/cuda/DeviceValidator.h>
 
 using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////////////
 // The cached kernel that caches shape info in shared memory and uses cached variables
 template <typename X, typename Z, typename OpType>
-__global__ void transformFloatSimpleCached(
+SD_KERNEL SD_INLINE void transformFloatSimpleCached(
    const void* x,
    const sd::LongType* xShapeInfo,
    sd::LongType xRank,
@@ -56,8 +55,8 @@ namespace transform {
 
 ////////////////////////////////////////////////////////////////////////////////
 // Implementation of the "executeTransformShaped" that launches the cached kernel
-template <typename X, typename Y>
-SD_HOST void TransformFloat<X, Y>::executeTransformShaped(
+template <typename X, typename Z>
+SD_HOST void TransformFloat<X, Z>::executeTransformShaped(
    dim3 launchDims,
    cudaStream_t* stream,
    int opNum,
@@ -196,7 +195,7 @@ SD_HOST void TransformFloat<X, Z>::intermediateShaped(
  sd::DebugHelper::checkErrorCode(stream, "transformFloat(...) cached kernel failed");
 }
 
-BUILD_DOUBLE_TEMPLATE( class TransformFloat, , SD_COMMON_TYPES, SD_FLOAT_TYPES);
+BUILD_DOUBLE_TEMPLATE( class TransformFloat, , SD_COMMON_TYPES, SD_COMMON_TYPES);
 
 }  // namespace transform
 }  // namespace functions

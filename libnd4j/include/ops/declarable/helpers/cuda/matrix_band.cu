@@ -49,7 +49,7 @@ namespace helpers {
 // inputLength - input subarray length
 //
 template <typename T>
-static SD_KERNEL void matrixBandKernel(const void* inputBuffer, const LongType* inputShape, void* outputBuffer,
+static SD_KERNEL SD_INLINE void matrixBandKernel(const void* inputBuffer, const LongType* inputShape, void* outputBuffer,
                                        const LongType* outputShape, LongType lowerBand, LongType upperBand,
                                        const LongType* tadOnlyInputShapeInfo, const LongType* tadInputOffsets,
                                        const LongType* tadOnlyOutputShapeInfo, const LongType* tadOutputOffsets,
@@ -115,6 +115,7 @@ void matrixBandPart_(LaunchContext* context, NDArray* input, NDArray* output, Lo
 
   delete dimsToExclude;
 }
+BUILD_SINGLE_TEMPLATE(void matrixBandPart_, (LaunchContext* context, NDArray* input, NDArray* output, LongType lowerBand, LongType upperBand), SD_FLOAT_TYPES);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void matrixBandPart(LaunchContext* context, NDArray* input, NDArray* output, LongType lowerBand, LongType upperBand) {

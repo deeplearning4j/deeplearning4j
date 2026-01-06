@@ -24,7 +24,7 @@
 #if NOT_EXCLUDED(OP_cosine_distance_loss)
 
 #include <helpers/ShapeUtils.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/loss.h>
 
 namespace sd {
 namespace ops {

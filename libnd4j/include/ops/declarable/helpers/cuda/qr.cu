@@ -32,7 +32,7 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-static SD_KERNEL void matrixMinorKernel(T* outBuffer, LongType* outShape, T* inBuffer, LongType* inShape,
+static SD_KERNEL SD_INLINE void matrixMinorKernel(T* outBuffer, LongType* outShape, T* inBuffer, LongType* inShape,
                                         LongType column, LongType rows, LongType columns) {
 
   for (auto i = blockIdx.x; i < rows; i += gridDim.x)
@@ -57,17 +57,22 @@ template <typename T>
 NDArray matrixMinor(LaunchContext* context, NDArray& in, LongType col) {
   NDArray *m = in.ulike();
   m->setIdentity();
-  NDArray view = *m;
-  NDArray assign = in({col, m->rows(), col, m->columns()});
-  view({col, m->rows(), col, m->columns()}).assign(&assign);
+  NDArray *inSlice = in({col, m->rows(), col, m->columns()});
+  NDArray *mSlice = (*m)({col, m->rows(), col, m->columns()});
+  mSlice->assign(inSlice);
+  delete inSlice;
+  delete mSlice;
 
   m->tickWriteDevice();
-  return *m;
+  NDArray result = *m;
+  delete m;
+  return result;
 }
+BUILD_SINGLE_TEMPLATE(NDArray matrixMinor, (LaunchContext* context, NDArray& in, LongType col), SD_FLOAT_TYPES);
 
 /* m = I - v v^T */
 template <typename T>
-static SD_KERNEL void vmulKernel(T* resBuf, const LongType* resShape, T const* vBuff, LongType const* vShape,
+static SD_KERNEL SD_INLINE void vmulKernel(T* resBuf, const LongType* resShape, T const* vBuff, LongType const* vShape,
                                  LongType n) {
   for (auto i = blockIdx.x; i < n; i += gridDim.x)
     for (auto j = threadIdx.x; j < n; j += blockDim.x) {
@@ -88,12 +93,13 @@ NDArray vmul(LaunchContext* context, NDArray& v, int n) {
 
   auto stream = context->getCudaStream();
   dim3 launchDims = getLaunchDims("qr");
-  vmulKernel<T><<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(res.dataBuffer()->specialAsT<T>(), res.specialShapeInfo(),
+  vmulKernel<T><<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(res.dataBuffer()->template specialAsT<T>(), res.specialShapeInfo(),
                                             reinterpret_cast<T const*>(v.specialBuffer()), v.specialShapeInfo(), n);
   sd::DebugHelper::checkErrorCode(stream, "vmulKernel failed");
 
   return res;
 }
+BUILD_SINGLE_TEMPLATE(NDArray vmul, (LaunchContext* context, NDArray& v, int n), SD_FLOAT_TYPES);
 
 template <typename T>
 static bool diagonalIsPositive(NDArray* matrix, LongType k) {
@@ -104,13 +110,21 @@ static bool diagonalIsPositive(NDArray* matrix, LongType k) {
   cudaMemcpy(&hVal, matrix->specialBuffer(), sizeof(T), cudaMemcpyDeviceToHost);
   return hVal > T(0.f);
 }
+BUILD_SINGLE_TEMPLATE(bool diagonalIsPositive, (NDArray* matrix, LongType k), SD_FLOAT_TYPES);
 
 template <typename T>
 void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatrices) {
   LongType M = matrix->sizeAt(0);
   LongType N = matrix->sizeAt(1);
-  auto resQ = fullMatrices ? *Q->ulike() : NDArrayFactory::create<T>(matrix->ordering(), {M, M}, Q->getContext());
-  auto resR = fullMatrices ? R->ulike() : matrix->ulike();
+  NDArray* resQPtr = nullptr;
+  NDArray* resRPtr = nullptr;
+  if (fullMatrices) {
+    resQPtr = Q->ulike();
+    resRPtr = R->ulike();
+  } else {
+    resQPtr = NDArrayFactory::create<T>(matrix->ordering(), {M, M}, Q->getContext());
+    resRPtr = matrix->ulike();
+  }
   std::vector<NDArray*> q(M, nullptr);
   NDArray z = *matrix;
   std::vector<LongType> shape = {M};
@@ -121,42 +135,50 @@ void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, b
     z = matrixMinor<T>(context, z,
                        k);  // minor computing for current column with given matrix z (initally is a input matrix)
 
-    auto currentColumn = z({0, 0, k, k + 1});  // retrieve k column from z to x buffer
+    NDArray* currentColumnPtr = z({0, 0, k, k + 1});  // retrieve k column from z to x buffer
     std::vector<LongType> zero = {0};
-    auto norm = currentColumn.reduceAlongDimension(reduce::Norm2, &zero);
+    auto norm = currentColumnPtr->reduceAlongDimension(reduce::Norm2, &zero);
     if (diagonalIsPositive<T>(matrix, k))  // matrix->t<T>(k,k) > T(0.f)) // negate on positive matrix diagonal element
-      norm.applyTransform(transform::Neg, &norm);  // *= -1.f;//-norm.t<T>(0);
+      norm->applyTransform(transform::Neg, norm);  // *= -1.f;//-norm.t<T>(0);
 
-    e.p(k, &norm);        // e - is filled by 0 vector except diagonal element (filled by 1)
-    e += currentColumn;  // e[i] = x[i] + a * e[i] for each i from 0 to n - 1
+    e.p(k, norm);        // e - is filled by 0 vector except diagonal element (filled by 1)
+    e += *currentColumnPtr;  // e[i] = x[i] + a * e[i] for each i from 0 to n - 1
+    delete currentColumnPtr;
+    delete norm;
     auto normE = e.reduceAlongDimension(reduce::Norm2, &zero);
-    e /= normE;
+    e /= *normE;
+    delete normE;
     q[k] = new NDArray(vmul<T>(context, e, M));
-    auto qQ = z.ulike();
+    NDArray* qQ = z.ulike();
     MmulHelper::matmul(q[k], &z, qQ, false, false,1.0,0.0,qQ);
     z = std::move(*qQ);
+    delete qQ;
   }
-  resQ.assign(q[0]);
+  resQPtr->assign(q[0]);
 
   for (int i = 1; i < N && i < M - 1; i++) {
-    auto tempResQ = resQ;
-    MmulHelper::matmul(q[i],&resQ, &tempResQ, false, false,1.0,0.0,&tempResQ);
-    resQ = std::move(tempResQ);
+    NDArray tempResQ = *resQPtr;
+    MmulHelper::matmul(q[i], resQPtr, &tempResQ, false, false,1.0,0.0,&tempResQ);
+    *resQPtr = std::move(tempResQ);
   }
-  MmulHelper::matmul(&resQ, matrix, resR, false, false,1.0,0.0,resR);
+  MmulHelper::matmul(resQPtr, matrix, resRPtr, false, false,1.0,0.0,resRPtr);
   // resR *= -1.f;
-  resQ.transposei();
+  resQPtr->transposei();
 
   if (fullMatrices) {
-    Q->assign(&resQ);
-    R->assign(resR);
+    Q->assign(resQPtr);
+    R->assign(resRPtr);
   } else {
-    NDArray resRRef = *resR;
-    NDArray qAssign = resQ({0, 0, 0, N});
-    Q->assign(&qAssign);
-    NDArray rAssign = resRRef({0, N, 0, 0});
-    R->assign(&rAssign);
+    NDArray* qAssignPtr = (*resQPtr)({0, 0, 0, N});
+    Q->assign(qAssignPtr);
+    delete qAssignPtr;
+    NDArray* rAssignPtr = (*resRPtr)({0, N, 0, 0});
+    R->assign(rAssignPtr);
+    delete rAssignPtr;
   }
+
+  delete resQPtr;
+  delete resRPtr;
 
   // Clean up allocated NDArrays in q vector
   for (LongType i = 0; i < M; i++) {
@@ -165,6 +187,7 @@ void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, b
     }
   }
 }
+BUILD_SINGLE_TEMPLATE(void qrSingle, (LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatrices), SD_FLOAT_TYPES);
 
 template <typename T>
 void qr_(LaunchContext* context, NDArray * input, NDArray* outputQ, NDArray* outputR, bool const fullMatricies) {
@@ -185,6 +208,7 @@ void qr_(LaunchContext* context, NDArray * input, NDArray* outputQ, NDArray* out
   }
   NDArray::registerSpecialUse({outputQ, outputR}, {input});
 }
+BUILD_SINGLE_TEMPLATE(void qr_, (LaunchContext* context, NDArray * input, NDArray* outputQ, NDArray* outputR, bool const fullMatricies), SD_FLOAT_TYPES);
 
 void qr(LaunchContext* context, NDArray * input, NDArray* outputQ, NDArray* outputR,
         bool const fullMatricies) {

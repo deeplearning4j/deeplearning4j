@@ -27,7 +27,7 @@
 
 #include <helpers/HelperVersionRegistry.h>
 
-#ifdef HAVE_ONEDNN
+#if HAVE_ONEDNN
 #include <dnnl.h>
 #include <dnnl_version.h>
 #endif
@@ -72,7 +72,7 @@ class SD_LIB_EXPORT OnednnVersionProvider {
    * Get compile-time OneDNN version
    */
   static HelperVersion getCompileTimeVersion() {
-#ifdef HAVE_ONEDNN
+#if HAVE_ONEDNN
     return HelperVersion(DNNL_VERSION_MAJOR, DNNL_VERSION_MINOR, DNNL_VERSION_PATCH);
 #else
     return HelperVersion(0, 0, 0);
@@ -83,7 +83,7 @@ class SD_LIB_EXPORT OnednnVersionProvider {
    * Get runtime OneDNN version
    */
   static HelperVersion getRuntimeVersion() {
-#ifdef HAVE_ONEDNN
+#if HAVE_ONEDNN
     const dnnl_version_t* ver = dnnl_version();
     if (ver) {
       return HelperVersion(ver->major, ver->minor, ver->patch);
@@ -98,7 +98,7 @@ class SD_LIB_EXPORT OnednnVersionProvider {
    * Check if OneDNN is available
    */
   static bool isAvailable() {
-#ifdef HAVE_ONEDNN
+#if HAVE_ONEDNN
     return true;
 #else
     return false;
@@ -109,7 +109,7 @@ class SD_LIB_EXPORT OnednnVersionProvider {
    * Get CPU ISA (Instruction Set Architecture) name
    */
   static std::string getCpuIsa() {
-#ifdef HAVE_ONEDNN
+#if HAVE_ONEDNN
     // OneDNN 3.x provides ISA detection
     dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
     switch (isa) {
@@ -142,7 +142,7 @@ class SD_LIB_EXPORT OnednnVersionProvider {
     HelperInfo info;
     info.name = HelperNames::ONEDNN;
 
-#ifdef HAVE_ONEDNN
+#if HAVE_ONEDNN
     info.available = true;
     info.compileTime = getCompileTimeVersion();
     info.runtime = getRuntimeVersion();
@@ -205,7 +205,7 @@ class SD_LIB_EXPORT OnednnVersionProvider {
   // ============================================================================
 
   static bool hasBfloat16Support() {
-#ifdef HAVE_ONEDNN
+#if HAVE_ONEDNN
     HelperVersion runtime = getRuntimeVersion();
     HelperVersion required(ONEDNN_BF16_VERSION_MAJOR, ONEDNN_BF16_VERSION_MINOR, 0);
     return runtime.meetsMinimum(required);
@@ -215,7 +215,7 @@ class SD_LIB_EXPORT OnednnVersionProvider {
   }
 
   static bool hasInt8Support() {
-#ifdef HAVE_ONEDNN
+#if HAVE_ONEDNN
     HelperVersion runtime = getRuntimeVersion();
     HelperVersion required(ONEDNN_INT8_VERSION_MAJOR, ONEDNN_INT8_VERSION_MINOR, 0);
     return runtime.meetsMinimum(required);
@@ -225,7 +225,7 @@ class SD_LIB_EXPORT OnednnVersionProvider {
   }
 
   static bool hasGraphApi() {
-#ifdef HAVE_ONEDNN
+#if HAVE_ONEDNN
     HelperVersion runtime = getRuntimeVersion();
     HelperVersion required(ONEDNN_GRAPH_API_VERSION_MAJOR, ONEDNN_GRAPH_API_VERSION_MINOR, 0);
     return runtime.meetsMinimum(required);
@@ -235,7 +235,7 @@ class SD_LIB_EXPORT OnednnVersionProvider {
   }
 
   static bool hasAvx512() {
-#ifdef HAVE_ONEDNN
+#if HAVE_ONEDNN
     std::string isa = getCpuIsa();
     return isa.find("AVX512") != std::string::npos;
 #else
@@ -244,7 +244,7 @@ class SD_LIB_EXPORT OnednnVersionProvider {
   }
 
   static bool hasAmx() {
-#ifdef HAVE_ONEDNN
+#if HAVE_ONEDNN
     std::string isa = getCpuIsa();
     return isa.find("AMX") != std::string::npos;
 #else

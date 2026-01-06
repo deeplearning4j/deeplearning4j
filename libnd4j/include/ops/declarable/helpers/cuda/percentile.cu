@@ -100,7 +100,7 @@ static void _percentile(LaunchContext* context, NDArray& input, NDArray& output,
     shape::checkDimensions(inputRank, &axis);
 
   auto tempArray = input.dup();
-  auto packX = ConstantTadHelper::getInstance().tadForDimensions(tempArray.shapeInfo(), &axis);
+  auto packX = ConstantTadHelper::getInstance().tadForDimensions(tempArray->shapeInfo(), &axis);
 
   auto tadLength = shape::length(packX->primaryShapeInfo());
 
@@ -122,10 +122,12 @@ static void _percentile(LaunchContext* context, NDArray& input, NDArray& output,
 
   dim3 launchDims = getLaunchDims("percentile");
   percentileKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *context->getCudaStream()>>>(
-      tempArray.specialBuffer(), packX->platformShapeInfo(), packX->platformOffsets(), packX->numberOfTads(), tadLength,
+      tempArray->specialBuffer(), packX->platformShapeInfo(), packX->platformOffsets(), packX->numberOfTads(), tadLength,
       output.specialBuffer(), output.specialShapeInfo(), output.lengthOf(), position);
 
   DebugHelper::checkErrorCode(context->getCudaStream(), "percentile");
+
+  delete tempArray;
 }
 
 void percentile(LaunchContext* context, NDArray& input, NDArray& output, std::vector<LongType>& axises,

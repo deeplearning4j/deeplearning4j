@@ -26,7 +26,7 @@
 #if NOT_EXCLUDED(OP_matmul)
 
 #include <helpers/MmulHelper.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/blas.h>
 
 namespace sd {
 namespace ops {

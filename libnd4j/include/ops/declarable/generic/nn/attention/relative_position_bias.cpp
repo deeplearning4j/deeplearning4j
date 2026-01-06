@@ -27,7 +27,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_relative_position_bias)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/nn.h>
 #include <ops/declarable/helpers/relative_position_bias.h>
 
 namespace sd {

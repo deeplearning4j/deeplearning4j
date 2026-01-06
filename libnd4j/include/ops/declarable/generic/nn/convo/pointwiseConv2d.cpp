@@ -20,7 +20,7 @@
 // @author Yurii Shyrma, created on 20.03.2018
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/convo.h>
 #include <ops/declarable/helpers/convolutions.h>
 
 #if NOT_EXCLUDED(op_pointwise_conv2d)

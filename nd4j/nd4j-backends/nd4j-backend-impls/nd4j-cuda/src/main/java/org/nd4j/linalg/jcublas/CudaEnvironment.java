@@ -41,7 +41,8 @@ public class CudaEnvironment implements Environment {
     protected boolean funcTracePrintJavaOnly = false;
     protected boolean workspaceTrackOpenClose = false;
     protected int numEventsToKeep = -1;
-    
+    protected boolean truncateNDArrayLongStrings = false;
+
     // Variable origin tracing flag for debugging import issues
     protected boolean variableTracingEnabled = false;
 
@@ -106,12 +107,12 @@ public class CudaEnvironment implements Environment {
 
     @Override
     public boolean isTruncateNDArrayLogStrings() {
-        return false;
+        return truncateNDArrayLongStrings;
     }
 
     @Override
     public void setTruncateLogStrings(boolean truncateLogStrings) {
-
+        this.truncateNDArrayLongStrings = truncateLogStrings;
     }
 
     @Override
@@ -712,5 +713,75 @@ public class CudaEnvironment implements Environment {
     @Override
     public void setMaxDeletionHistory(long max) {
         e.setMaxDeletionHistory(max);
+    }
+
+    @Override
+    public boolean isSnapshotFiles() {
+        return e.isSnapshotFiles();
+    }
+
+    @Override
+    public void setSnapshotFiles(boolean enabled) {
+        e.setSnapshotFiles(enabled);
+    }
+
+    @Override
+    public boolean isTrackOperations() {
+        return e.isTrackOperations();
+    }
+
+    @Override
+    public void setTrackOperations(boolean enabled) {
+        e.setTrackOperations(enabled);
+    }
+
+    @Override
+    public boolean isNDArrayTracking() {
+        return e.isNDArrayTracking();
+    }
+
+    @Override
+    public void setNDArrayTracking(boolean enabled) {
+        e.setNDArrayTracking(enabled);
+    }
+
+    @Override
+    public boolean isDataBufferTracking() {
+        return e.isDataBufferTracking();
+    }
+
+    @Override
+    public void setDataBufferTracking(boolean enabled) {
+        e.setDataBufferTracking(enabled);
+    }
+
+    @Override
+    public boolean isTADCacheTracking() {
+        return e.isTADCacheTracking();
+    }
+
+    @Override
+    public void setTADCacheTracking(boolean enabled) {
+        e.setTADCacheTracking(enabled);
+    }
+
+    @Override
+    public boolean isShapeCacheTracking() {
+        return e.isShapeCacheTracking();
+    }
+
+    @Override
+    public void setShapeCacheTracking(boolean enabled) {
+        e.setShapeCacheTracking(enabled);
+    }
+
+    @Override
+    public boolean isOpContextTracking() {
+        return e.isOpContextTracking();
+    }
+
+    @Override
+    public void setOpContextTracking(boolean enabled) {
+        e.setOpContextTracking(enabled);
     }
 }

@@ -85,13 +85,13 @@ static Status computeSpans(LaunchContext* context, TKernelFunc& kernel, LongType
   spans._spanSize =
       math::sd_min(2 * static_cast<int>(std::ceil(kernel.radius() * kernelScale)) + 1, static_cast<int>(inSize));
   spans._starts = NDArrayFactory::create<int>('c', {outSize});
-  spans._starts.syncToHost();
+  spans._starts->syncToHost();
   spans._weights = NDArrayFactory::create<float>('c', {outSize, spans._spanSize});
-  spans._weights.syncToHost();
+  spans._weights->syncToHost();
 
-  auto startsVec = reinterpret_cast<int*>(spans._starts.buffer());
-  auto weightsVector = reinterpret_cast<float*>(spans._weights.buffer());
-  spans._weights.nullify();
+  auto startsVec = reinterpret_cast<int*>(spans._starts->buffer());
+  auto weightsVector = reinterpret_cast<float*>(spans._weights->buffer());
+  spans._weights->nullify();
 
   const float invKernelScale = 1.f / kernelScale;
   auto stream = context->getCudaStream();
@@ -136,10 +136,10 @@ static Status computeSpans(LaunchContext* context, TKernelFunc& kernel, LongType
     }
     startsVec[x] = spanStart;
   }
-  spans._starts.tickWriteHost();
-  spans._weights.tickWriteHost();
-  spans._starts.syncToDevice();
-  spans._weights.syncToDevice();
+  spans._starts->tickWriteHost();
+  spans._weights->tickWriteHost();
+  spans._starts->syncToDevice();
+  spans._weights->syncToDevice();
   return Status::OK;
 }
 
@@ -261,18 +261,15 @@ static Status resizeKernel(LaunchContext* context, ImageResizeMethods method, ND
     } break;
   };
 
-  NDArray intermediate = NDArrayFactory::create<Z>('c', {batchSize, outHeight, inputWidth, channels});
+  NDArray* intermediate = NDArrayFactory::create<Z>('c', {batchSize, outHeight, inputWidth, channels});
 
   // const functor::Spans& const_row_spans = row_spans;
   // typename TTypes<int32, 1>::ConstTensor row_starts(
   // const_row_spans.starts.tensor<int32, 1>());
-  auto& rowStarts = rowSpans._starts;       // shape {outWidth}
-  auto& rowWeights = rowSpans._weights;     // shape {outWidth, numSpans}
-  auto& columnStarts = colSpans._starts;    // shape {outHeights}
-  auto& columnWeights = colSpans._weights;  // shape {outHeights, numSpans}
 
-  gatherSpans<X, Z>(context, rowSpans._spanSize, rowStarts, rowWeights, colSpans._spanSize, columnStarts, columnWeights,
-                    input, intermediate, output);
+  gatherSpans<X, Z>(context, rowSpans._spanSize, *rowSpans._starts, *rowSpans._weights, colSpans._spanSize, *colSpans._starts, *colSpans._weights,
+                    input, *intermediate, output);
+  delete intermediate;
 
   NDArray::registerSpecialUse({output}, {input});
   return res;

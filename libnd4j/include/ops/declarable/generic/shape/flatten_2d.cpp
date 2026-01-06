@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_flatten2d)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/shape.h>
 
 namespace sd {
 namespace ops {

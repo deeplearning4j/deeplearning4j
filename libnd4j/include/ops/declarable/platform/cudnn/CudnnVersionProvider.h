@@ -28,7 +28,7 @@
 
 #include <helpers/HelperVersionRegistry.h>
 
-#ifdef HAVE_CUDNN
+#if HAVE_CUDNN
 #include <cudnn.h>
 #endif
 
@@ -73,7 +73,7 @@ class SD_LIB_EXPORT CudnnVersionProvider {
    * Get compile-time cuDNN version
    */
   static HelperVersion getCompileTimeVersion() {
-#ifdef HAVE_CUDNN
+#if HAVE_CUDNN
     return HelperVersion(CUDNN_MAJOR, CUDNN_MINOR, CUDNN_PATCHLEVEL);
 #else
     return HelperVersion(0, 0, 0);
@@ -84,7 +84,7 @@ class SD_LIB_EXPORT CudnnVersionProvider {
    * Get runtime cuDNN version
    */
   static HelperVersion getRuntimeVersion() {
-#ifdef HAVE_CUDNN
+#if HAVE_CUDNN
     size_t version = cudnnGetVersion();
     int major = static_cast<int>(version / 1000);
     int minor = static_cast<int>((version / 100) % 10);
@@ -99,7 +99,7 @@ class SD_LIB_EXPORT CudnnVersionProvider {
    * Get runtime version as integer (for direct comparison with constants)
    */
   static int getRuntimeVersionInt() {
-#ifdef HAVE_CUDNN
+#if HAVE_CUDNN
     return static_cast<int>(cudnnGetVersion());
 #else
     return 0;
@@ -110,7 +110,7 @@ class SD_LIB_EXPORT CudnnVersionProvider {
    * Check if cuDNN is available
    */
   static bool isAvailable() {
-#ifdef HAVE_CUDNN
+#if HAVE_CUDNN
     return true;
 #else
     return false;
@@ -124,7 +124,7 @@ class SD_LIB_EXPORT CudnnVersionProvider {
     HelperInfo info;
     info.name = HelperNames::CUDNN;
 
-#ifdef HAVE_CUDNN
+#if HAVE_CUDNN
     info.available = true;
     info.compileTime = getCompileTimeVersion();
     info.runtime = getRuntimeVersion();

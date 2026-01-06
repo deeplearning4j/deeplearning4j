@@ -22,7 +22,8 @@
 
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_absolute_difference_loss)
-#include <ops/declarable/CustomOperations.h>
+#include <array/NDArrayFactory.h>
+#include <ops/declarable/headers/loss.h>
 
 namespace sd {
 namespace ops {

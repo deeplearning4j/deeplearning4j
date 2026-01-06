@@ -26,7 +26,8 @@
 #if NOT_EXCLUDED(OP_multi_head_dot_product_attention)
 
 #include <helpers/AttentionHelper.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/nn.h>
+#include <ops/declarable/headers/blas.h>
 
 namespace sd {
 namespace ops {

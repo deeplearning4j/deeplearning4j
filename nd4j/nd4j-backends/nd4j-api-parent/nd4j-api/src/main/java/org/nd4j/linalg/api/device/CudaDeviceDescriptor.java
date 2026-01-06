@@ -41,6 +41,22 @@ public class CudaDeviceDescriptor extends BaseDeviceDescriptor {
     private Set<Integer> peerAccessDevices;
 
     /**
+     * Create a simple CUDA device descriptor with the given GPU index.
+     * Uses default/estimated values for GPU properties.
+     * For accurate properties, use the full constructor or fromNative().
+     *
+     * @param gpuIndex the GPU index
+     */
+    public CudaDeviceDescriptor(int gpuIndex) {
+        // Use reasonable defaults for a modern GPU (e.g., RTX 3080-like)
+        this("cuda", gpuIndex, "CUDA GPU " + gpuIndex, gpuIndex == 0,
+                8, 6,  // Ampere compute capability 8.6
+                68,    // ~68 SMs
+                10L * 1024 * 1024 * 1024,  // 10 GB
+                760L * 1024 * 1024 * 1024); // ~760 GB/s
+    }
+
+    /**
      * Create a new CUDA device descriptor
      * @param backendId the backend identifier
      * @param deviceIndex the GPU index

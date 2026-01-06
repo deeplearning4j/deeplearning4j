@@ -20,9 +20,10 @@
 // Created by george@skymind.io on 2/21/2018.
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/segment.h>
 #if NOT_EXCLUDED(OP_segment_prod)
+#include <array/NDArrayFactory.h>
 namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(segment_prod, 2, 1, false, 0, 0) {
@@ -105,5 +106,6 @@ DECLARE_TYPES(segment_prod_bp) {
       ->setSameMode(false);
 }
 }  // namespace ops
+#include <array/NDArrayFactory.h>
 }  // namespace sd
 #endif

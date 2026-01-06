@@ -19,6 +19,7 @@
 #include <graph/GraphExecutioner.h>
 #include <graph/GraphHolder.h>
 #include <helpers/ConstantTadHelper.h>
+#include <helpers/TransferMetrics.h>
 #include <legacy/NativeOps.h>
 #include <ops/declarable/OpRegistrator.h>
 
@@ -772,5 +773,82 @@ int dbLocality(OpaqueDataBuffer *dataBuffer) {
     return -1;
   else
     return 1;
+}
+
+// =====================================================
+// Transfer Metrics API Implementation
+// =====================================================
+
+void transferMetricsSetEnabled(bool enabled) {
+  sd::TransferMetrics::getInstance().setEnabled(enabled);
+}
+
+bool transferMetricsIsEnabled() {
+  return sd::TransferMetrics::getInstance().isEnabled();
+}
+
+void transferMetricsSetLogTransfers(bool log) {
+  sd::TransferMetrics::getInstance().setLogTransfers(log);
+}
+
+void transferMetricsSetMinBytesForLogging(sd::LongType bytes) {
+  sd::TransferMetrics::getInstance().setMinBytesForLogging(static_cast<uint64_t>(bytes));
+}
+
+sd::LongType transferMetricsGetH2DBytes() {
+  return static_cast<sd::LongType>(
+      sd::TransferMetrics::getInstance().getTotalBytes(sd::TransferType::HOST_TO_DEVICE));
+}
+
+sd::LongType transferMetricsGetD2HBytes() {
+  return static_cast<sd::LongType>(
+      sd::TransferMetrics::getInstance().getTotalBytes(sd::TransferType::DEVICE_TO_HOST));
+}
+
+sd::LongType transferMetricsGetD2DBytes() {
+  return static_cast<sd::LongType>(
+      sd::TransferMetrics::getInstance().getTotalBytes(sd::TransferType::DEVICE_TO_DEVICE));
+}
+
+sd::LongType transferMetricsGetP2PBytes() {
+  return static_cast<sd::LongType>(
+      sd::TransferMetrics::getInstance().getTotalBytes(sd::TransferType::PEER_TO_PEER));
+}
+
+sd::LongType transferMetricsGetH2DCount() {
+  return static_cast<sd::LongType>(
+      sd::TransferMetrics::getInstance().getTransferCount(sd::TransferType::HOST_TO_DEVICE));
+}
+
+sd::LongType transferMetricsGetD2HCount() {
+  return static_cast<sd::LongType>(
+      sd::TransferMetrics::getInstance().getTransferCount(sd::TransferType::DEVICE_TO_HOST));
+}
+
+sd::LongType transferMetricsGetD2DCount() {
+  return static_cast<sd::LongType>(
+      sd::TransferMetrics::getInstance().getTransferCount(sd::TransferType::DEVICE_TO_DEVICE));
+}
+
+sd::LongType transferMetricsGetP2PCount() {
+  return static_cast<sd::LongType>(
+      sd::TransferMetrics::getInstance().getTransferCount(sd::TransferType::PEER_TO_PEER));
+}
+
+sd::LongType transferMetricsGetTotalTimeNs() {
+  return static_cast<sd::LongType>(
+      sd::TransferMetrics::getInstance().getTotalTimeNsAllTypes());
+}
+
+double transferMetricsGetOverheadPercent() {
+  return sd::TransferMetrics::getInstance().getOverheadPercent();
+}
+
+void transferMetricsReset() {
+  sd::TransferMetrics::getInstance().reset();
+}
+
+void transferMetricsPrintSummary() {
+  sd::TransferMetrics::getInstance().printSummary();
 }
 

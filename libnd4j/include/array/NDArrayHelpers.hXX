@@ -764,6 +764,9 @@ template SD_LIB_EXPORT NDArray* operator/<NDArray, NDArray &, void>(NDArray &&ar
 template SD_LIB_EXPORT NDArray* operator/<NDArray&&, NDArray &&, void>(NDArray &&arr1, NDArray &&arr2);
 template SD_LIB_EXPORT NDArray* operator/<NDArray, NDArray, void>(sd::NDArray&&, sd::NDArray&&);
 
-
+// Explicit instantiations for scalarArrayOpHelper
+#define INSTANTIATE_SCALAR_HELPER(T) template SD_LIB_EXPORT NDArray* scalarArrayOpHelper<GET_SECOND(T)>(NDArray*, GET_SECOND(T), sd::scalar::Ops, bool);
+ITERATE_LIST((SD_COMMON_TYPES), INSTANTIATE_SCALAR_HELPER)
+#undef INSTANTIATE_SCALAR_HELPER
 
 } // namespace sd

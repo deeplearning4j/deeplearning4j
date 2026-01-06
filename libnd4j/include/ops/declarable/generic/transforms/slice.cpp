@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #include <legacy/NativeOpExecutioner.h>
 #include <helpers/ShapeUtils.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #if NOT_EXCLUDED(OP_slice)
 namespace sd {
 namespace ops {

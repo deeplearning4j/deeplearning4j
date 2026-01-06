@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_softmax_cross_entropy_loss_with_logits)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/loss.h>
 
 namespace sd {
 namespace ops {

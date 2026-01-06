@@ -29,7 +29,7 @@
     NOT_EXCLUDED(OP_vlm_multimodal_fusion) || NOT_EXCLUDED(OP_vlm_vision_projection) || \
     NOT_EXCLUDED(OP_vlm_image_preprocess) || NOT_EXCLUDED(OP_vlm_2d_position_encode)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/vlm.h>
 #include <ops/declarable/headers/vlm.h>
 #include <ops/declarable/helpers/transforms.h>
 #include <helpers/MmulHelper.h>

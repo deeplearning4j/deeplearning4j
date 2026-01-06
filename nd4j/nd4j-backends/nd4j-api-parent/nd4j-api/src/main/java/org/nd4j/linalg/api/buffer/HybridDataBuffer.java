@@ -21,15 +21,32 @@
 package org.nd4j.linalg.api.buffer;
 
 import org.nd4j.linalg.api.device.DeviceDescriptor;
+import org.nd4j.linalg.api.device.DeviceType;
 import org.nd4j.linalg.api.memory.MultiBackendWorkspace;
+import org.nd4j.nativeblas.OpaqueDataBuffer;
 
 /**
  * Interface for data buffers that support multi-device/hybrid execution.
  * A HybridDataBuffer can track which device currently owns the data
  * and manage data transfers between devices.
  *
+ * <p>This interface integrates with the existing {@link OpaqueDataBuffer} infrastructure
+ * which provides the underlying native memory management with primary (host) and
+ * special (device) buffers.</p>
+ *
+ * <p>Key integration points with OpaqueDataBuffer:</p>
+ * <ul>
+ *   <li>{@link OpaqueDataBuffer#primaryBuffer()} - Host memory pointer</li>
+ *   <li>{@link OpaqueDataBuffer#specialBuffer()} - Device memory pointer</li>
+ *   <li>{@link OpaqueDataBuffer#syncToPrimary()} - Device to host sync</li>
+ *   <li>{@link OpaqueDataBuffer#syncToSpecial()} - Host to device sync</li>
+ *   <li>{@link OpaqueDataBuffer#deviceId()} - Device affinity</li>
+ * </ul>
+ *
  * <p>Also supports workspace-based allocation for efficient memory reuse
  * across multiple devices.</p>
+ *
+ * @see OpaqueDataBuffer
  */
 public interface HybridDataBuffer extends DataBuffer {
 
@@ -126,7 +143,7 @@ public interface HybridDataBuffer extends DataBuffer {
      * @return true if attached to a workspace
      */
     default boolean isAttachedToWorkspace() {
-        return getParentWorkspace() != null;
+        return getMultiBackendWorkspace() != null;
     }
 
     /**
@@ -134,7 +151,7 @@ public interface HybridDataBuffer extends DataBuffer {
      *
      * @return the parent workspace, or null if not attached
      */
-    MultiBackendWorkspace getParentWorkspace();
+    MultiBackendWorkspace getMultiBackendWorkspace();
 
     /**
      * Attach this buffer to a multi-backend workspace.
@@ -187,11 +204,164 @@ public interface HybridDataBuffer extends DataBuffer {
      * @param targetDevice the target device
      */
     default void workspaceCopy(DeviceDescriptor sourceDevice, DeviceDescriptor targetDevice) {
-        MultiBackendWorkspace workspace = getParentWorkspace();
+        MultiBackendWorkspace workspace = getMultiBackendWorkspace();
         if (workspace != null) {
             workspace.transferTo(sourceDevice, targetDevice);
         } else {
             ensureAvailableOn(targetDevice);
         }
+    }
+
+    // ========================
+    // OpaqueDataBuffer Integration
+    // ========================
+
+    /**
+     * Get the native device ID from the underlying OpaqueDataBuffer.
+     * This corresponds to {@link OpaqueDataBuffer#deviceId()}.
+     *
+     * @return the native device ID, or -1 if not available
+     */
+    default int getNativeDeviceId() {
+        OpaqueDataBuffer opaque = opaqueBuffer();
+        return opaque != null ? opaque.deviceId() : -1;
+    }
+
+    /**
+     * Synchronize data from device (special buffer) to host (primary buffer).
+     * This is a wrapper around {@link OpaqueDataBuffer#syncToPrimary()}.
+     *
+     * <p>Use this when you need to read device data on the host.</p>
+     */
+    default void syncDeviceToHost() {
+        OpaqueDataBuffer opaque = opaqueBuffer();
+        if (opaque != null) {
+            opaque.syncToPrimary();
+        }
+    }
+
+    /**
+     * Synchronize data from host (primary buffer) to device (special buffer).
+     * This is a wrapper around {@link OpaqueDataBuffer#syncToSpecial()}.
+     *
+     * <p>Use this when you need to push host data to the device.</p>
+     */
+    default void syncHostToDevice() {
+        OpaqueDataBuffer opaque = opaqueBuffer();
+        if (opaque != null) {
+            opaque.syncToSpecial();
+        }
+    }
+
+    /**
+     * Check if this buffer has a valid device (special) buffer.
+     *
+     * @return true if special buffer exists and is non-null
+     */
+    default boolean hasDeviceBuffer() {
+        OpaqueDataBuffer opaque = opaqueBuffer();
+        if (opaque != null) {
+            return opaque.specialBuffer() != null && !opaque.specialBuffer().isNull();
+        }
+        return false;
+    }
+
+    /**
+     * Check if this buffer has a valid host (primary) buffer.
+     *
+     * @return true if primary buffer exists and is non-null
+     */
+    default boolean hasHostBuffer() {
+        OpaqueDataBuffer opaque = opaqueBuffer();
+        if (opaque != null) {
+            return opaque.primaryBuffer() != null && !opaque.primaryBuffer().isNull();
+        }
+        return false;
+    }
+
+    /**
+     * Get the host (primary) buffer address.
+     *
+     * @return the host buffer address, or 0 if not available
+     */
+    default long getHostBufferAddress() {
+        OpaqueDataBuffer opaque = opaqueBuffer();
+        if (opaque != null && opaque.primaryBuffer() != null) {
+            return opaque.primaryBuffer().address();
+        }
+        return 0;
+    }
+
+    /**
+     * Get the device (special) buffer address.
+     *
+     * @return the device buffer address, or 0 if not available
+     */
+    default long getDeviceBufferAddress() {
+        OpaqueDataBuffer opaque = opaqueBuffer();
+        if (opaque != null && opaque.specialBuffer() != null) {
+            return opaque.specialBuffer().address();
+        }
+        return 0;
+    }
+
+    /**
+     * Convenience method to ensure data is on the host.
+     * Syncs from device if owner is a GPU device.
+     */
+    default void ensureOnHost() {
+        DeviceDescriptor owner = getOwnerDevice();
+        if (owner != null && owner.getDeviceType().isGpu()) {
+            syncDeviceToHost();
+        }
+    }
+
+    /**
+     * Convenience method to ensure data is on the default GPU.
+     * Syncs from host if owner is CPU.
+     */
+    default void ensureOnDevice() {
+        DeviceDescriptor owner = getOwnerDevice();
+        if (owner == null || owner.getDeviceType() == DeviceType.CPU) {
+            syncHostToDevice();
+        }
+    }
+
+    /**
+     * Check if the data is currently dirty (modified) on the host and needs sync to device.
+     * Implementations should track modification state.
+     *
+     * @return true if host data is dirty
+     */
+    default boolean isHostDirty() {
+        // Default implementation - subclasses should override with actual tracking
+        return false;
+    }
+
+    /**
+     * Check if the data is currently dirty (modified) on the device and needs sync to host.
+     * Implementations should track modification state.
+     *
+     * @return true if device data is dirty
+     */
+    default boolean isDeviceDirty() {
+        // Default implementation - subclasses should override with actual tracking
+        return false;
+    }
+
+    /**
+     * Mark the host buffer as dirty (modified).
+     * Call this after modifying data on the host.
+     */
+    default void markHostDirty() {
+        // Default implementation - subclasses should override
+    }
+
+    /**
+     * Mark the device buffer as dirty (modified).
+     * Call this after modifying data on the device.
+     */
+    default void markDeviceDirty() {
+        // Default implementation - subclasses should override
     }
 }

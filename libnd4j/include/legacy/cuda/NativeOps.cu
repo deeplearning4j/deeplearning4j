@@ -25,7 +25,9 @@
 #include <helpers/CudaLaunchHelper.h>
 #include <helpers/DebugHelper.h>
 #include <helpers/PointersManager.h>
+#include <helpers/StringUtils.h>
 #include <helpers/threshold.h>
+#include <system/Environment.h>
 #include <legacy/NativeOpExecutioner.h>
 #include <legacy/NativeOps.h>
 #include <loops/reduce_bool.h>
@@ -64,6 +66,15 @@ int blockLimit = 128;
 int maxThreads = 512;
 bool allowedP2P = false;
 bool supportedP2P = false;
+
+// TadPack lifetime registry - keeps shared_ptr<TadPack> alive for TadPacks returned to Java
+// Without this, when ConstantTadHelper::tadForDimensions() returns shared_ptr<TadPack>,
+// but tadOnlyShapeInfo() returns raw TadPack*, the local shared_ptr goes out of scope
+// and TadPack can be deleted while Java still holds the raw pointer
+#include <unordered_map>
+#include <mutex>
+static std::unordered_map<sd::TadPack*, std::shared_ptr<sd::TadPack>> g_cudaTadPackRegistry;
+static std::mutex g_cudaTadPackMutex;
 
 
 
@@ -220,7 +231,7 @@ sd::buffer::Buffer<sd::LongType> *createScalarBuffer(cudaStream_t stream) {
 
 
 template <typename T>
-SD_KERNEL  void _printBuffers(void* buffer, sd::LongType bufferLength) {
+SD_KERNEL SD_INLINE void _printBuffers(void* buffer, sd::LongType bufferLength) {
   T * inputBuffer = reinterpret_cast<T *>(buffer);
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   if(tid == 0) {
@@ -306,6 +317,12 @@ void printDeviceBuffer(OpaqueDataBuffer *buffer) {
 
 
 }
+
+// Explicit template instantiations for _printDeviceBuffer
+BUILD_SINGLE_TEMPLATE(void _printDeviceBuffer, (OpaqueDataBuffer *buffer), SD_COMMON_TYPES);
+
+// Explicit template instantiations for _printHostBuffer
+BUILD_SINGLE_TEMPLATE(void _printHostBuffer, (OpaqueDataBuffer *buffer, sd::LongType offset), SD_COMMON_TYPES);
 
 
 
@@ -1533,8 +1550,23 @@ void saveNpy(std::string fname, const OpaqueDataBuffer *data, const unsigned int
  */
 OpaqueTadPack *tadOnlyShapeInfo(sd::LongType *hXShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength) {
   try {
-    auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension,dimensionLength);
-    return pack;
+    auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+    if (!pack) {
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("tadOnlyShapeInfo: Failed to create TadPack!");
+      return nullptr;
+    }
+
+    // Get raw pointer BEFORE storing in registry
+    sd::TadPack* rawPtr = pack.get();
+
+    // Store shared_ptr in registry to keep TadPack alive
+    {
+      std::lock_guard<std::mutex> lock(g_cudaTadPackMutex);
+      g_cudaTadPackRegistry[rawPtr] = pack;
+    }
+
+    return rawPtr;
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());

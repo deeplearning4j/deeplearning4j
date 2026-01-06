@@ -27,7 +27,7 @@
 
 #include <helpers/HelperVersionRegistry.h>
 
-#ifdef HAVE_ARMCOMPUTE
+#if HAVE_ARMCOMPUTE
 #include <arm_compute/core/Version.h>
 #endif
 
@@ -106,7 +106,7 @@ class SD_LIB_EXPORT ArmComputeVersionProvider {
    * Get compile-time ARM Compute version
    */
   static HelperVersion getCompileTimeVersion() {
-#ifdef HAVE_ARMCOMPUTE
+#if HAVE_ARMCOMPUTE
     // ARM_COMPUTE_VERSION_STR is typically "vYY.MM"
     return parseVersionString(arm_compute::build_information());
 #else
@@ -127,7 +127,7 @@ class SD_LIB_EXPORT ArmComputeVersionProvider {
    * Check if ARM Compute is available
    */
   static bool isAvailable() {
-#ifdef HAVE_ARMCOMPUTE
+#if HAVE_ARMCOMPUTE
     return true;
 #else
     return false;
@@ -141,7 +141,7 @@ class SD_LIB_EXPORT ArmComputeVersionProvider {
     HelperInfo info;
     info.name = HelperNames::ARM_COMPUTE;
 
-#ifdef HAVE_ARMCOMPUTE
+#if HAVE_ARMCOMPUTE
     info.available = true;
     info.compileTime = getCompileTimeVersion();
     info.runtime = getRuntimeVersion();
@@ -206,7 +206,7 @@ class SD_LIB_EXPORT ArmComputeVersionProvider {
   // ============================================================================
 
   static bool hasNeon() {
-#ifdef HAVE_ARMCOMPUTE
+#if HAVE_ARMCOMPUTE
     // NEON is mandatory on ARM64
     return true;
 #else
@@ -215,7 +215,7 @@ class SD_LIB_EXPORT ArmComputeVersionProvider {
   }
 
   static bool hasSve() {
-#ifdef HAVE_ARMCOMPUTE
+#if HAVE_ARMCOMPUTE
     // Check for SVE support via ARM Compute's CPU info
     // This is a simplified check - actual detection uses CPUID
 #if defined(__ARM_FEATURE_SVE)
@@ -229,7 +229,7 @@ class SD_LIB_EXPORT ArmComputeVersionProvider {
   }
 
   static bool hasSve2() {
-#ifdef HAVE_ARMCOMPUTE
+#if HAVE_ARMCOMPUTE
 #if defined(__ARM_FEATURE_SVE2)
     return true;
 #else
@@ -241,7 +241,7 @@ class SD_LIB_EXPORT ArmComputeVersionProvider {
   }
 
   static bool hasI8mm() {
-#ifdef HAVE_ARMCOMPUTE
+#if HAVE_ARMCOMPUTE
 #if defined(__ARM_FEATURE_MATMUL_INT8)
     return true;
 #else
@@ -253,7 +253,7 @@ class SD_LIB_EXPORT ArmComputeVersionProvider {
   }
 
   static bool hasBf16Hardware() {
-#ifdef HAVE_ARMCOMPUTE
+#if HAVE_ARMCOMPUTE
 #if defined(__ARM_FEATURE_BF16)
     return true;
 #else

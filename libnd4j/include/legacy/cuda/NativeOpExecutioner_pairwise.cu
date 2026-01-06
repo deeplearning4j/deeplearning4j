@@ -147,12 +147,10 @@ void NativeOpExecutioner::execPairwiseBoolTransform(sd::LaunchContext* lc, int o
     THROW_EXCEPTION(errorMessage.c_str());
   }
   dim3 launchDims = getLaunchDims("pairwiseTransforms");
-#if SD_IS_PAIR_TYPE_COMPILED(xType,zType)
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::pairwise_transforms::PairWiseBoolTransform,
       ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraParams),
       SD_COMMON_TYPES, SD_BOOL_TYPES)
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////

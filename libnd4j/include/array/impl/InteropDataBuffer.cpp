@@ -22,7 +22,9 @@
 #include <array/DataTypeUtils.h>
 #include <array/InteropDataBuffer.h>
 #include <execution/AffinityManager.h>
+#include <execution/LaunchContext.h>
 #include <helpers/logger.h>
+#include <helpers/TransferMetrics.h>
 
 namespace sd {
 InteropDataBuffer::InteropDataBuffer(InteropDataBuffer* dataBuffer, uint64_t length) {
@@ -212,13 +214,42 @@ void InteropDataBuffer::prepareSpecialUse(const std::vector<const InteropDataBuf
 
 void InteropDataBuffer::registerPrimaryUse(const std::vector<const InteropDataBuffer*>& writeList,
                                            const std::vector<const InteropDataBuffer*>& readList) {
+  for (const auto& v : writeList) {
+    if (v == nullptr || v->_closed) continue;
 
+    auto db = v->getDataBuffer();
+    if (db != nullptr) {
+      db->writePrimary();
+    }
+  }
 }
 
 void InteropDataBuffer::preparePrimaryUse(const std::vector<const InteropDataBuffer*>& writeList,
                                           const std::vector<const InteropDataBuffer*>& readList,
                                           bool synchronizeWritables) {
+  // Sync read buffers from device to host
+  for (const auto& v : readList) {
+    if (v == nullptr || v->_closed) continue;
 
+    auto db = v->getDataBuffer();
+    if (db == nullptr) continue;
+
+    // Transfer metrics are tracked inside syncToPrimary
+    db->syncToPrimary(LaunchContext::defaultContext(), false);
+  }
+
+  // Ensure write buffers have primary allocation
+  for (const auto& v : writeList) {
+    if (v == nullptr || v->_closed) continue;
+
+    auto db = v->getDataBuffer();
+    if (db == nullptr) continue;
+
+    db->allocatePrimary();
+    if (synchronizeWritables && !db->isPrimaryActual()) {
+      db->syncToPrimary(LaunchContext::defaultContext(), false);
+    }
+  }
 }
 
 void InteropDataBuffer::expand(size_t newlength) {

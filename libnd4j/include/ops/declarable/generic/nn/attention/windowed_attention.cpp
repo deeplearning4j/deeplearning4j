@@ -27,7 +27,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_windowed_attention)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/nn.h>
 #include <ops/declarable/helpers/windowed_attention.h>
 
 namespace sd {

@@ -95,6 +95,12 @@ jobs:
 
       - uses: actions/checkout@v4
 
+      - name: Setup ccache
+        uses: ./.github/actions/setup-ccache-linux
+        with:
+          cache-suffix: android-x86_64-${{ matrix.helper }}
+          max-size: '5G'
+
       - name: Free Disk Space
         uses: jlumbroso/free-disk-space@main
         with:
@@ -483,6 +489,13 @@ jobs:
               eval "${COMMAND}"
           fi
 
+      - name: Show ccache stats after build
+        if: always()
+        shell: bash
+        run: |
+          echo "=== ccache stats after build ==="
+          ccache --show-stats --verbose || ccache -sv || ccache -s
+
       - name: Show memory usage summary
         if: always()
         shell: bash
@@ -491,14 +504,14 @@ jobs:
           if [ -n "$MONITOR_PID" ]; then
             kill $MONITOR_PID 2>/dev/null || true
           fi
-          
+
           echo "=== Final memory status ==="
           free -h
           if swapon --show | grep -q "/"; then
             echo "=== Swap usage ==="
             swapon --show
           fi
-          
+
           echo "=== Memory usage during build ==="
           if [ -f memory_monitor.log ]; then
             cat memory_monitor.log

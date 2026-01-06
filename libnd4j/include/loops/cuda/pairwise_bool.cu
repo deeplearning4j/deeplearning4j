@@ -131,8 +131,8 @@ void SD_HOST PairWiseBoolTransform<X,Z>::intermediateShaped(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y>
-void PairWiseBoolTransform<X,Y>::executeCudaShaped(
+template <typename X, typename Z>
+void PairWiseBoolTransform<X,Z>::executeCudaShaped(
     dim3& launchDims,
     cudaStream_t* stream,
     int opNum,

@@ -23,9 +23,7 @@
 #ifndef LIBND4J__DEBUG_INFO_HELPER__H
 #define LIBND4J__DEBUG_INFO_HELPER__H
 
-#include <helpers/StringUtils.h>
 #include <math/templatemath.h>
-#include <system/Environment.h>
 #include <system/op_boilerplate.h>
 
 #include <string>

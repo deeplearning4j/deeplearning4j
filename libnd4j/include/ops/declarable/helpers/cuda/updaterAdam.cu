@@ -35,7 +35,7 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void adamUpdaterCuda(const void* vx, const LongType* xShapeInfo, const void* vinv,
+SD_KERNEL SD_INLINE void adamUpdaterCuda(const void* vx, const LongType* xShapeInfo, const void* vinv,
                                const LongType* invShapeInfo, const void* vinm, const LongType* inmShapeInfo,
                                void* vz, const LongType* zShapeInfo, void* vstV, const LongType* stvShapeInfo,
                                void* vstM, const LongType* stmShapeInfo, const T lr, const T beta1, const T beta2,
@@ -150,6 +150,7 @@ void adamUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock,
   sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "adamUpdaterCuda failed");
 
 }
+BUILD_SINGLE_TEMPLATE(void adamUpdaterCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory, const cudaStream_t* stream, const void* vx, const LongType* xShapeInfo, const void* vinv, const LongType* invShapeInfo, const void* vinm, const LongType* inmShapeInfo, void* vz, const LongType* zShapeInfo, void* vstV, const LongType* stvShapeInfo, void* vstM, const LongType* stmShapeInfo, const double dLr, const double dBeta1, const double dBeta2, const double dEpsilon, const int nIteration), SD_FLOAT_TYPES);
 
 ///////////////////////////////////////////////////////////////////
 void updaterAdam(LaunchContext* context, NDArray& gradient, NDArray& initStateU,

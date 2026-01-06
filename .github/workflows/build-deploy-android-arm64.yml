@@ -79,6 +79,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      - name: Setup ccache
+        uses: ./.github/actions/setup-ccache-linux
+        with:
+          cache-suffix: android-arm64-${{ matrix.helper }}
+          max-size: '5G'
+
       - name: Free Disk Space (Initial)
         uses: jlumbroso/free-disk-space@main
         with:
@@ -282,9 +288,15 @@ jobs:
               eval "${MAVEN_COMMAND}"
           fi
 
+      - name: Show ccache stats after build
+        if: always()
+        shell: bash
+        run: |
+          echo "=== ccache stats after build ==="
+          ccache --show-stats --verbose || ccache -sv || ccache -s
+
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
         if: ${{ github.event.inputs.debug_enabled == 'true' }}
         with:
           limit-access-to-actor: true
-

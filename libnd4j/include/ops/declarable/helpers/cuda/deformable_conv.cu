@@ -252,12 +252,12 @@ static void deformableConv2dCuda_(sd::LaunchContext* context,
 
     PointersManager manager(context, "deformableConv2d");
 
-    const T* inputBuffer = input->specialBufferAsT<T>();
-    const T* weightsBuffer = weights->specialBufferAsT<T>();
-    const T* offsetBuffer = offset->specialBufferAsT<T>();
-    const T* biasBuffer = bias != nullptr ? bias->specialBufferAsT<T>() : nullptr;
-    const T* maskBuffer = hasMask ? mask->specialBufferAsT<T>() : nullptr;
-    T* outputBuffer = output->specialBufferAsT<T>();
+    const T* inputBuffer = input->specialBufferasT<T>();
+    const T* weightsBuffer = weights->specialBufferasT<T>();
+    const T* offsetBuffer = offset->specialBufferasT<T>();
+    const T* biasBuffer = bias != nullptr ? bias->specialBufferasT<T>() : nullptr;
+    const T* maskBuffer = hasMask ? mask->specialBufferasT<T>() : nullptr;
+    T* outputBuffer = output->specialBufferasT<T>();
 
     deformableConv2dKernel<T><<<numBlocks, blockSize, 0, *context->getCudaStream()>>>(
         inputBuffer, weightsBuffer, offsetBuffer, biasBuffer, maskBuffer, outputBuffer,

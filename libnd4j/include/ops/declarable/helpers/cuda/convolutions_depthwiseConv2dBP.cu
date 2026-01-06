@@ -21,6 +21,7 @@
 //
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
+#include <array/NDArrayFactory.h>
 #include <helpers/MmulHelper.h>
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/col2im.h>
@@ -95,16 +96,18 @@ static void depthwiseConv2dBP_(NDArray* input, NDArray* weights, NDArray* bias, 
 
   std::vector<sd::LongType> colShape = {bS, iC, kH, kW, oH, oW};
   NDArray columns(input->ordering(), colShape, input->dataType(), input->getContext());
-  NDArray gradOreshaped = gradO->reshape(gradO->ordering(), gradOreShape,false);
+  NDArray* gradOreshaped = gradO->reshape(gradO->ordering(), gradOreShape,false);
 
   // ----- calculation of gradW and gradB ----- //
 
-  NDArray zero = NDArrayFactory::create(0.f, input->getContext());
+  NDArray* zero = NDArrayFactory::create(0.f, input->getContext());
   helpers::im2col(
       *input->getContext(), *input, columns, kH, kW, sH, sW, pH, pW, dH, dW,
-      zero);  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-  MmulHelper::tensorDot(&columns, &gradOreshaped, gradW, modifColumns, modifGradO1,
+      *zero);  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
+  MmulHelper::tensorDot(&columns, gradOreshaped, gradW, modifColumns, modifGradO1,
                             modifWeights);  // [iC, kW*kH, bS*oH*oW] x [iC, bS*oH*oW, mC] = [iC, kH*kW, mC]
+  delete zero;
+  delete gradOreshaped;
 
   // ----- calculation of gradB ----- //
   if (gradB) {

@@ -25,7 +25,7 @@
 #if NOT_EXCLUDED(OP_cast)
 
 #include <array/DataTypeUtils.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/datatypes.h>
 #include <ops/declarable/helpers/assign.h>
 namespace sd {
 namespace ops {

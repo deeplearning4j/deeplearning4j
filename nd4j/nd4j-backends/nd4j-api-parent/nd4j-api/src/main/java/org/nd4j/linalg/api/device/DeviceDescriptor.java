@@ -163,4 +163,72 @@ public interface DeviceDescriptor {
     String CAPABILITY_AVX512 = "avx512";
     String CAPABILITY_NEON = "neon";
     String CAPABILITY_SVE = "sve";
+
+    // =========================================================================
+    // Static Factory Methods for Common Device Types
+    // =========================================================================
+
+    /**
+     * Create a CPU device descriptor.
+     *
+     * @return CPU device descriptor
+     */
+    static DeviceDescriptor cpu() {
+        return new CpuDeviceDescriptor(0);
+    }
+
+    /**
+     * Create a CPU device descriptor with a specific index.
+     *
+     * @param index the CPU index (for multi-socket systems)
+     * @return CPU device descriptor
+     */
+    static DeviceDescriptor cpu(int index) {
+        return new CpuDeviceDescriptor(index);
+    }
+
+    /**
+     * Create a CUDA GPU device descriptor.
+     *
+     * @param gpuIndex the GPU index
+     * @return CUDA device descriptor
+     */
+    static DeviceDescriptor cuda(int gpuIndex) {
+        return new CudaDeviceDescriptor(gpuIndex);
+    }
+
+    /**
+     * Create a device descriptor from a device ID string.
+     *
+     * @param deviceId the device ID (e.g., "cuda:gpu:0", "native:cpu:0")
+     * @return device descriptor
+     */
+    static DeviceDescriptor fromId(String deviceId) {
+        if (deviceId == null || deviceId.isEmpty()) {
+            return cpu();
+        }
+
+        String[] parts = deviceId.split(":");
+        if (parts.length < 2) {
+            return cpu();
+        }
+
+        String type = parts.length >= 2 ? parts[1].toLowerCase() : "cpu";
+        int index = parts.length >= 3 ? Integer.parseInt(parts[2]) : 0;
+
+        if (type.equals("gpu") || type.contains("cuda")) {
+            return cuda(index);
+        } else {
+            return cpu(index);
+        }
+    }
+
+    /**
+     * Create a device descriptor for the default device.
+     *
+     * @return default device descriptor (usually CPU)
+     */
+    static DeviceDescriptor defaultDevice() {
+        return cpu();
+    }
 }

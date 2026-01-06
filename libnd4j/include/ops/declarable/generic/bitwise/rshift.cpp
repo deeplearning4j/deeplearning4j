@@ -25,8 +25,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_rshift_bits)
 
-#include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/helpers/helpers.h>
+#include <ops/declarable/headers/bitwise.h>
 #include <ops/declarable/helpers/shift.h>
 
 namespace sd {

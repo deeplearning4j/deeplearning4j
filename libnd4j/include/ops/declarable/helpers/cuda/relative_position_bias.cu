@@ -136,7 +136,7 @@ static void relativePositionBiasCuda_(sd::LaunchContext* context,
         const int blockSize = 256;
         const int numBlocks = (total + blockSize - 1) / blockSize;
 
-        T* outputBuffer = output->specialBufferAsT<T>();
+        T* outputBuffer = output->specialBufferasT<T>();
         const auto outHeadStride = output->strideAt(0);
         const auto outRowStride = output->strideAt(1);
         const auto outColStride = output->strideAt(2);
@@ -148,14 +148,14 @@ static void relativePositionBiasCuda_(sd::LaunchContext* context,
         cudaFree(slopesDevice);
     } else {
         // Learned bias mode
-        const T* biasBuffer = biasTable->specialBufferAsT<T>();
-        T* outputBuffer = output->specialBufferAsT<T>();
+        const T* biasBuffer = biasTable->specialBufferasT<T>();
+        T* outputBuffer = output->specialBufferasT<T>();
 
         const sd::LongType windowArea = windowSize * windowSize;
         const bool hasIndex = relativePositionIndex != nullptr && !relativePositionIndex->isEmpty();
 
         const sd::LongType* indexBuffer = hasIndex ?
-            relativePositionIndex->specialBufferAsT<sd::LongType>() : nullptr;
+            relativePositionIndex->specialBufferasT<sd::LongType>() : nullptr;
 
         const auto biasTableStride0 = biasTable->strideAt(0);
         const auto biasTableStride1 = biasTable->strideAt(1);

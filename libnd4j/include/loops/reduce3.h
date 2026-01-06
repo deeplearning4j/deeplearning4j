@@ -44,11 +44,11 @@ namespace reduce3 {
  * Reduce involving
  * 2 arrays
  */
-template <typename X, typename Y>
+template <typename X, typename Z>
 class  Reduce3 {
  public:
 #ifdef __CUDACC__
-  virtual SD_DEVICE inline Y opAtomic(X d1, X d2, Y *extraParamsRef) = 0;
+  virtual SD_DEVICE inline Z opAtomic(X d1, X d2, Z *extraParamsRef) = 0;
 
   /**
    * Aggregate shared memory

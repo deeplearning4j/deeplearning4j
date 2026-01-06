@@ -83,8 +83,10 @@ endfunction()
 # Function to apply memory optimization during compilation
 function(configure_compilation_memory_optimization)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=100 --param ggc-min-heapsize=131072" PARENT_SCOPE)
-        message(STATUS "Applied GCC memory optimization flags")
+        # More aggressive GC (ggc-min-expand=20) reclaims memory more frequently
+        # This is critical for template-heavy files that can use 4-8GB per compiler
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=20 --param ggc-min-heapsize=65536 --param inline-unit-growth=30 -finline-limit=50" PARENT_SCOPE)
+        message(STATUS "Applied aggressive GCC memory optimization flags (ggc-min-expand=20)")
     endif()
 endfunction()
 
@@ -212,9 +214,15 @@ function(apply_compiler_specific_flags ARCH_TUNE)
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ARCH_TUNE}" PARENT_SCOPE)
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT SD_CUDA)
-        message(STATUS "Adding GCC memory optimization flag: --param ggc-min-expand=10")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=10 ${ARCH_TUNE} ${INFORMATIVE_FLAGS} -std=c++17 -fPIC" PARENT_SCOPE)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --param ggc-min-expand=10 -fPIC" PARENT_SCOPE)
+        # Aggressive GCC memory flags for template-heavy builds:
+        # ggc-min-expand=20: Run GC when heap grows 20% (default 30, lower = more aggressive)
+        # ggc-min-heapsize=65536: 64MB min heap before GC applies (prevents thrashing on small files)
+        # inline-unit-growth=30: Limit function growth from inlining (default 40)
+        # finline-limit=50: Max inline function size (default 600, lower = much less memory)
+        set(GCC_MEM_FLAGS "--param ggc-min-expand=20 --param ggc-min-heapsize=65536 --param inline-unit-growth=30 -finline-limit=50")
+        message(STATUS "Adding GCC memory optimization flags: ${GCC_MEM_FLAGS}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_MEM_FLAGS} ${ARCH_TUNE} ${INFORMATIVE_FLAGS} -std=c++17 -fPIC" PARENT_SCOPE)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GCC_MEM_FLAGS} -fPIC" PARENT_SCOPE)
 
 
         if(UNIX)

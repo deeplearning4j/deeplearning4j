@@ -24,7 +24,6 @@
 #include <system/Environment.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
-#include <execution/cuda/DeviceValidator.h>
 
 using namespace simdOps;
 
@@ -32,7 +31,7 @@ using namespace simdOps;
 // The kernel that calls the transform CUDA method,
 // caching shape info in shared memory for offset computations.
 template <typename X, typename Z, typename OpType>
-__global__ void transformAnySimpleCached(
+SD_KERNEL SD_INLINE void transformAnySimpleCached(
     const void* x,
     const sd::LongType* xShapeInfo,
     sd::LongType xRank,
@@ -56,8 +55,8 @@ namespace transform {
 
 ////////////////////////////////////////////////////////////////////////////////
 // Implementation of the "executeTransformShaped" that calls the new cached kernel
-template <typename X, typename Y>
-SD_HOST void TransformAny<X, Y>::executeTransformShaped(
+template <typename X, typename Z>
+SD_HOST void TransformAny<X, Z>::executeTransformShaped(
     dim3 launchDims,
     cudaStream_t* stream,
     const int opNum,

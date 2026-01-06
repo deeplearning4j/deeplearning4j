@@ -26,12 +26,37 @@
 #   --cmake-only ON        Run CMake configuration only, skip build
 #   --link-only ON         Skip compilation, only relink (requires prior build)
 #
+# OOM KILLER OPTIONS (cross-platform: Linux, macOS, Windows/MSYS2):
+#   --oom-killer ON|OFF              Enable/disable OOM killer (default: ON)
+#   --oom-memory-threshold <1-99>    System memory usage % to trigger kill (default: 80)
+#   --oom-critical-threshold <1-99>  CRITICAL threshold: immediate SIGKILL, no grace (default: 92)
+#   --oom-monitor-interval <seconds> Check interval in seconds (default: 1)
+#   --oom-process-max-mb <MB>        Max process tree memory in MB before kill (default: 0=disabled)
+#   --oom-velocity-threshold <1-50>  Kill if memory grows faster than this %/5sec (default: 8)
+#
+#   The OOM killer monitors FOUR conditions (any triggers a kill):
+#   0. CRITICAL threshold exceeded - IMMEDIATE SIGKILL, no grace period (prevents OS freeze)
+#   1. System memory threshold exceeded (--oom-memory-threshold) - graceful then force kill
+#   2. Process tree memory limit exceeded (--oom-process-max-mb) - tracks build + all child compilers
+#   3. Rapid memory growth detected (--oom-velocity-threshold) - predictive kill before OOM
+#
+#   Note: On Windows, uses PowerShell/wmic for memory detection and taskkill for termination
+#
 # EXAMPLES:
 #   # Validate build configuration before building
 #   ./buildnativeoperations.sh --dry-run -a cpu -c ON --compiler clang
 #
 #   # Normal build
 #   ./buildnativeoperations.sh -a cpu -c ON --compiler clang -j 14
+#
+#   # Build with OOM killer enabled (basic - system memory threshold only)
+#   ./buildnativeoperations.sh -a cpu -j 8 --oom-killer ON --oom-memory-threshold 85
+#
+#   # Build with full OOM protection (recommended for large builds)
+#   ./buildnativeoperations.sh -a cuda -j 8 --oom-killer ON \
+#       --oom-memory-threshold 85 \
+#       --oom-process-max-mb 32000 \
+#       --oom-velocity-threshold 10
 #
 set -eu
 
@@ -523,6 +548,7 @@ EXPERIMENTAL="${EXPERIMENTAL:-}"
 OPERATIONS="${OPERATIONS:-}"
 DATATYPES="${DATATYPES:-}"
 CLEAN="${CLEAN:-false}"
+CLEAN_ALL="${CLEAN_ALL:-false}"
 MINIFIER="${MINIFIER:-false}"
 TESTS="${TESTS:-false}"
 PRINT_INDICES="${PRINT_INDICES:-OFF}"
@@ -545,6 +571,10 @@ CHECK_VECTORIZATION="${CHECK_VECTORIZATION:-OFF}"
 NAME="${NAME:-}"
 OP_OUTPUT_FILE="${OP_OUTPUT_FILE:-include/generated/include_ops.h}"
 USE_LTO="${USE_LTO:-}"
+# CUDA parallel compilation options (CUDA 11.2+)
+CUDA_LTO="${CUDA_LTO:-OFF}"           # Device LTO for better runtime performance
+CUDA_THREADS="${CUDA_THREADS:-0}"     # NVCC --threads (0=auto)
+CUDA_SPLIT_COMPILE="${CUDA_SPLIT_COMPILE:-0}"  # NVCC --split-compile (0=auto)
 SANITIZE="${SANITIZE:-OFF}"
 OPTIMIZATION_LEVEL="${OPTIMIZATION_LEVEL:-}"
 SANITIZERS="${SANITIZERS:-address,undefined,float-divide-by-zero,float-cast-overflow}"
@@ -575,6 +605,668 @@ SD_VALIDATED_TYPES="${SD_VALIDATED_TYPES:-}"
 MLIR="${MLIR:-OFF}"
 MLIR_VERSION="${MLIR_VERSION:-18}"
 MLIR_GPU="${MLIR_GPU:-OFF}"
+
+# OOM Killer configuration
+# Monitors memory usage during build and kills processes if threshold is exceeded
+OOM_KILLER_ENABLED="${OOM_KILLER_ENABLED:-ON}"
+OOM_MEMORY_THRESHOLD="${OOM_MEMORY_THRESHOLD:-80}"  # Percentage of system memory (1-99) - lowered from 85%
+OOM_CRITICAL_THRESHOLD="${OOM_CRITICAL_THRESHOLD:-92}"  # CRITICAL: Immediate SIGKILL, no grace period
+OOM_MONITOR_INTERVAL="${OOM_MONITOR_INTERVAL:-1}"   # Check interval in seconds (1s for fast response)
+OOM_PROCESS_MAX_MB="${OOM_PROCESS_MAX_MB:-0}"       # Process tree memory limit in MB (0=disabled)
+OOM_VELOCITY_THRESHOLD="${OOM_VELOCITY_THRESHOLD:-8}" # Kill if memory grows faster than this %/sec
+OOM_MONITOR_PID=""  # Will hold the PID of the background monitor
+
+# Velocity tracking arrays (simulated with temp file for subshell compatibility)
+OOM_VELOCITY_FILE=""
+
+# =============================================================================
+# OOM KILLER FUNCTIONS
+# =============================================================================
+
+# Detect platform for OOM killer (cached for performance)
+OOM_PLATFORM=""
+detect_oom_platform() {
+    if [[ -n "$OOM_PLATFORM" ]]; then
+        echo "$OOM_PLATFORM"
+        return
+    fi
+
+    local uname_out
+    uname_out="$(uname -s 2>/dev/null || echo "Unknown")"
+
+    case "$uname_out" in
+        Linux*)
+            OOM_PLATFORM="linux"
+            ;;
+        Darwin*)
+            OOM_PLATFORM="macos"
+            ;;
+        CYGWIN*|MINGW*|MSYS*|Windows_NT*)
+            OOM_PLATFORM="windows"
+            ;;
+        *)
+            # Check for Windows environment variables as fallback
+            if [[ -n "${WINDIR:-}" ]] || [[ -n "${SystemRoot:-}" ]]; then
+                OOM_PLATFORM="windows"
+            else
+                OOM_PLATFORM="unknown"
+            fi
+            ;;
+    esac
+
+    echo "$OOM_PLATFORM"
+}
+
+# Get current memory usage percentage
+get_memory_usage_percent() {
+    local platform
+    platform=$(detect_oom_platform)
+
+    case "$platform" in
+        linux)
+            # Linux: use /proc/meminfo
+            if [[ -f /proc/meminfo ]]; then
+                local mem_total mem_available
+                mem_total=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+                mem_available=$(grep MemAvailable /proc/meminfo | awk '{print $2}')
+                if [[ -n "$mem_total" && -n "$mem_available" && "$mem_total" -gt 0 ]]; then
+                    echo $(( (mem_total - mem_available) * 100 / mem_total ))
+                    return
+                fi
+            fi
+            ;;
+        macos)
+            # macOS: use vm_stat
+            if command -v vm_stat &>/dev/null; then
+                local pages_free pages_active pages_inactive pages_speculative pages_wired
+                pages_free=$(vm_stat | grep "Pages free" | awk '{print $3}' | tr -d '.')
+                pages_active=$(vm_stat | grep "Pages active" | awk '{print $3}' | tr -d '.')
+                pages_inactive=$(vm_stat | grep "Pages inactive" | awk '{print $3}' | tr -d '.')
+                pages_speculative=$(vm_stat | grep "Pages speculative" | awk '{print $4}' | tr -d '.')
+                pages_wired=$(vm_stat | grep "Pages wired" | awk '{print $4}' | tr -d '.')
+                local total_pages=$((pages_free + pages_active + pages_inactive + pages_speculative + pages_wired))
+                local used_pages=$((pages_active + pages_wired))
+                if [[ "$total_pages" -gt 0 ]]; then
+                    echo $(( used_pages * 100 / total_pages ))
+                    return
+                fi
+            fi
+            ;;
+        windows)
+            # Windows/MSYS2/MinGW/Cygwin: multiple detection methods
+
+            # Method 1: Try PowerShell (most reliable on Windows)
+            if command -v powershell.exe &>/dev/null; then
+                local ps_result
+                ps_result=$(powershell.exe -NoProfile -NonInteractive -Command \
+                    '$os = Get-CimInstance Win32_OperatingSystem; [math]::Round((($os.TotalVisibleMemorySize - $os.FreePhysicalMemory) / $os.TotalVisibleMemorySize) * 100)' 2>/dev/null | tr -d '\r\n')
+                if [[ "$ps_result" =~ ^[0-9]+$ ]]; then
+                    echo "$ps_result"
+                    return
+                fi
+            fi
+
+            # Method 2: Try wmic (older Windows, deprecated but still works)
+            if command -v wmic.exe &>/dev/null; then
+                local total_mem free_mem
+                total_mem=$(wmic.exe OS get TotalVisibleMemorySize /value 2>/dev/null | grep '=' | cut -d'=' -f2 | tr -d '\r\n')
+                free_mem=$(wmic.exe OS get FreePhysicalMemory /value 2>/dev/null | grep '=' | cut -d'=' -f2 | tr -d '\r\n')
+                if [[ -n "$total_mem" && -n "$free_mem" && "$total_mem" -gt 0 ]]; then
+                    echo $(( (total_mem - free_mem) * 100 / total_mem ))
+                    return
+                fi
+            fi
+
+            # Method 3: Try MSYS2/Cygwin /proc/meminfo (some MSYS2 builds support this)
+            if [[ -f /proc/meminfo ]]; then
+                local mem_total mem_available mem_free
+                mem_total=$(grep MemTotal /proc/meminfo 2>/dev/null | awk '{print $2}')
+                mem_available=$(grep MemAvailable /proc/meminfo 2>/dev/null | awk '{print $2}')
+                mem_free=$(grep MemFree /proc/meminfo 2>/dev/null | awk '{print $2}')
+                if [[ -n "$mem_total" && "$mem_total" -gt 0 ]]; then
+                    if [[ -n "$mem_available" ]]; then
+                        echo $(( (mem_total - mem_available) * 100 / mem_total ))
+                        return
+                    elif [[ -n "$mem_free" ]]; then
+                        echo $(( (mem_total - mem_free) * 100 / mem_total ))
+                        return
+                    fi
+                fi
+            fi
+
+            # Method 4: Try systeminfo (slowest, last resort)
+            if command -v systeminfo.exe &>/dev/null; then
+                local sysinfo_output total_phys avail_phys
+                sysinfo_output=$(systeminfo.exe 2>/dev/null)
+                # Parse "Total Physical Memory" and "Available Physical Memory"
+                total_phys=$(echo "$sysinfo_output" | grep -i "Total Physical Memory" | grep -oE '[0-9,]+' | tr -d ',')
+                avail_phys=$(echo "$sysinfo_output" | grep -i "Available Physical Memory" | grep -oE '[0-9,]+' | tr -d ',')
+                if [[ -n "$total_phys" && -n "$avail_phys" && "$total_phys" -gt 0 ]]; then
+                    echo $(( (total_phys - avail_phys) * 100 / total_phys ))
+                    return
+                fi
+            fi
+            ;;
+    esac
+
+    # Fallback: return 0 (no memory info available)
+    echo "0"
+}
+
+# Get memory usage in MB for a single process (from /proc/[pid]/status VmRSS)
+get_process_memory_mb() {
+    local pid="$1"
+    local platform
+    platform=$(detect_oom_platform)
+
+    case "$platform" in
+        linux)
+            if [[ -f "/proc/$pid/status" ]]; then
+                local vmrss
+                vmrss=$(grep VmRSS "/proc/$pid/status" 2>/dev/null | awk '{print $2}')
+                if [[ -n "$vmrss" && "$vmrss" =~ ^[0-9]+$ ]]; then
+                    # VmRSS is in kB, convert to MB
+                    echo $(( vmrss / 1024 ))
+                    return
+                fi
+            fi
+            ;;
+        macos)
+            # macOS: use ps to get RSS (resident set size) in KB
+            if command -v ps &>/dev/null; then
+                local rss
+                rss=$(ps -o rss= -p "$pid" 2>/dev/null | tr -d ' ')
+                if [[ -n "$rss" && "$rss" =~ ^[0-9]+$ ]]; then
+                    echo $(( rss / 1024 ))
+                    return
+                fi
+            fi
+            ;;
+        windows)
+            # Windows: use PowerShell to get WorkingSet
+            if command -v powershell.exe &>/dev/null; then
+                local ws_bytes
+                ws_bytes=$(powershell.exe -NoProfile -NonInteractive -Command \
+                    "(Get-Process -Id $pid -ErrorAction SilentlyContinue).WorkingSet64" 2>/dev/null | tr -d '\r\n')
+                if [[ -n "$ws_bytes" && "$ws_bytes" =~ ^[0-9]+$ ]]; then
+                    echo $(( ws_bytes / 1048576 ))  # bytes to MB
+                    return
+                fi
+            fi
+            ;;
+    esac
+
+    echo "0"
+}
+
+# Get total memory usage in MB for a process tree (process + all descendants)
+# CRITICAL: Build processes spawn many children (make -> gcc/g++/nvcc/ld)
+# We must monitor the ENTIRE process tree to catch memory-hungry compilers/linkers
+get_process_tree_memory_mb() {
+    local root_pid="$1"
+    local platform
+    platform=$(detect_oom_platform)
+    local total_mb=0
+
+    case "$platform" in
+        linux)
+            # Get root process memory
+            local root_mem
+            root_mem=$(get_process_memory_mb "$root_pid")
+            total_mb=$root_mem
+
+            # Find all descendant processes using /proc/[pid]/task/[tid]/children or pgrep
+            if command -v pgrep &>/dev/null; then
+                # Get all descendants recursively
+                local descendants
+                descendants=$(pgrep -P "$root_pid" 2>/dev/null || true)
+                for child_pid in $descendants; do
+                    if [[ -n "$child_pid" ]]; then
+                        # Recursively get child tree memory
+                        local child_tree_mem
+                        child_tree_mem=$(get_process_tree_memory_mb "$child_pid")
+                        total_mb=$((total_mb + child_tree_mem))
+                    fi
+                done
+            else
+                # Fallback: scan /proc for child processes
+                for child_dir in /proc/[0-9]*/; do
+                    local child_pid
+                    child_pid=$(basename "$child_dir" 2>/dev/null || true)
+                    if [[ -f "/proc/$child_pid/stat" ]]; then
+                        local ppid
+                        ppid=$(awk '{print $4}' "/proc/$child_pid/stat" 2>/dev/null || true)
+                        if [[ "$ppid" == "$root_pid" ]]; then
+                            local child_mem
+                            child_mem=$(get_process_memory_mb "$child_pid")
+                            total_mb=$((total_mb + child_mem))
+                        fi
+                    fi
+                done
+            fi
+            ;;
+        macos)
+            # macOS: use ps to get all processes in the tree
+            local root_mem
+            root_mem=$(get_process_memory_mb "$root_pid")
+            total_mb=$root_mem
+
+            if command -v pgrep &>/dev/null; then
+                local descendants
+                descendants=$(pgrep -P "$root_pid" 2>/dev/null || true)
+                for child_pid in $descendants; do
+                    if [[ -n "$child_pid" ]]; then
+                        local child_tree_mem
+                        child_tree_mem=$(get_process_tree_memory_mb "$child_pid")
+                        total_mb=$((total_mb + child_tree_mem))
+                    fi
+                done
+            fi
+            ;;
+        windows)
+            # Windows: use PowerShell to get process tree memory
+            if command -v powershell.exe &>/dev/null; then
+                local tree_mem
+                tree_mem=$(powershell.exe -NoProfile -NonInteractive -Command "
+                    function Get-ProcessTreeMemory {
+                        param(\$pid)
+                        \$total = 0
+                        \$proc = Get-Process -Id \$pid -ErrorAction SilentlyContinue
+                        if (\$proc) { \$total = \$proc.WorkingSet64 }
+                        \$children = Get-CimInstance Win32_Process | Where-Object { \$_.ParentProcessId -eq \$pid }
+                        foreach (\$child in \$children) {
+                            \$total += Get-ProcessTreeMemory -pid \$child.ProcessId
+                        }
+                        return \$total
+                    }
+                    [math]::Round((Get-ProcessTreeMemory -pid $root_pid) / 1MB)
+                " 2>/dev/null | tr -d '\r\n')
+                if [[ -n "$tree_mem" && "$tree_mem" =~ ^[0-9]+$ ]]; then
+                    echo "$tree_mem"
+                    return
+                fi
+            fi
+            # Fallback to single process
+            total_mb=$(get_process_memory_mb "$root_pid")
+            ;;
+    esac
+
+    echo "$total_mb"
+}
+
+# Get all descendant PIDs of a process (recursive)
+get_descendant_pids() {
+    local parent_pid="$1"
+    local descendants=""
+    local children
+
+    # Get direct children
+    children=$(pgrep -P "$parent_pid" 2>/dev/null) || true
+
+    for child in $children; do
+        descendants="$descendants $child"
+        # Recursively get descendants of each child
+        local child_descendants
+        child_descendants=$(get_descendant_pids "$child")
+        descendants="$descendants $child_descendants"
+    done
+
+    echo "$descendants"
+}
+
+# Kill a process tree (cross-platform)
+# This kills all descendants of the given PID, not just direct children
+kill_process_tree() {
+    local pid="$1"
+    local signal="${2:-TERM}"
+    local platform
+    platform=$(detect_oom_platform)
+
+    case "$platform" in
+        windows)
+            # Windows: use taskkill to kill process tree (//T flag handles descendants)
+            if command -v taskkill.exe &>/dev/null; then
+                case "$signal" in
+                    TERM|SIGTERM|15)
+                        # Graceful termination - taskkill without /F
+                        taskkill.exe //PID "$pid" //T 2>/dev/null || true
+                        ;;
+                    KILL|SIGKILL|9)
+                        # Force kill
+                        taskkill.exe //F //PID "$pid" //T 2>/dev/null || true
+                        ;;
+                    *)
+                        taskkill.exe //PID "$pid" //T 2>/dev/null || true
+                        ;;
+                esac
+            else
+                # Fallback to standard kill
+                kill -"$signal" "$pid" 2>/dev/null || true
+            fi
+            ;;
+        *)
+            # Unix-like systems (Linux, macOS)
+            # Get all descendants first (children, grandchildren, etc.)
+            local descendants
+            descendants=$(get_descendant_pids "$pid")
+
+            # Kill descendants first (bottom-up to avoid orphans re-parenting)
+            for desc_pid in $descendants; do
+                kill -"$signal" "$desc_pid" 2>/dev/null || true
+            done
+
+            # Kill the parent process
+            kill -"$signal" "$pid" 2>/dev/null || true
+            ;;
+    esac
+}
+
+# Check if a process is running (cross-platform)
+is_process_running() {
+    local pid="$1"
+    local platform
+    platform=$(detect_oom_platform)
+
+    case "$platform" in
+        windows)
+            # Windows: try multiple methods
+            if command -v tasklist.exe &>/dev/null; then
+                tasklist.exe //FI "PID eq $pid" 2>/dev/null | grep -q "$pid" && return 0
+            fi
+            # Fallback to kill -0
+            kill -0 "$pid" 2>/dev/null && return 0
+            return 1
+            ;;
+        *)
+            # Unix-like systems
+            kill -0 "$pid" 2>/dev/null && return 0
+            return 1
+            ;;
+    esac
+}
+
+# Start the OOM monitor in the background
+# This is the critical watchdog that ACTIVELY KILLS the build when memory is exceeded
+start_oom_monitor() {
+    local threshold="$1"
+    local interval="$2"
+    local build_pid="$3"
+    local process_max_mb="${4:-0}"
+    local velocity_threshold="${5:-8}"
+    local critical_threshold="${6:-92}"  # NEW: Critical threshold for immediate kill
+    local platform
+    platform=$(detect_oom_platform)
+
+    # Create temp file for velocity tracking (subshell can't share variables)
+    local velocity_file
+    velocity_file=$(mktemp /tmp/oom_velocity.XXXXXX 2>/dev/null || echo "/tmp/oom_velocity.$$")
+    echo "0 0 0 0 0" > "$velocity_file"  # Initialize with 5 readings
+
+    (
+        # Set up signal handlers and cleanup
+        cleanup_velocity_file() {
+            rm -f "$velocity_file" 2>/dev/null || true
+        }
+
+        case "$platform" in
+            windows)
+                trap 'cleanup_velocity_file; exit 0' TERM INT EXIT
+                ;;
+            *)
+                trap 'cleanup_velocity_file; exit 0' TERM INT HUP QUIT EXIT
+                ;;
+        esac
+
+        local check_count=0
+        local first_check=true
+
+        while true; do
+            # CRITICAL FIX: Check memory BEFORE sleeping on first iteration
+            # This ensures we catch OOM conditions immediately when monitor starts
+            if [[ "$first_check" == "true" ]]; then
+                first_check=false
+            else
+                sleep "$interval"
+            fi
+
+            # Check if build process is still running
+            if ! is_process_running "$build_pid"; then
+                exit 0
+            fi
+
+            check_count=$((check_count + 1))
+
+            # Get current system memory usage
+            local mem_usage
+            mem_usage=$(get_memory_usage_percent)
+
+            # Handle case where memory detection fails
+            if [[ "$mem_usage" == "0" ]]; then
+                continue
+            fi
+
+            # Get process tree memory if limit is set
+            local process_tree_mb=0
+            if [[ "$process_max_mb" -gt 0 ]]; then
+                process_tree_mb=$(get_process_tree_memory_mb "$build_pid")
+            fi
+
+            # Calculate memory velocity (change per second)
+            local velocity=0
+            if [[ -f "$velocity_file" ]]; then
+                # Read last 5 readings
+                local readings
+                readings=$(cat "$velocity_file" 2>/dev/null || echo "0 0 0 0 0")
+                local oldest newest
+                oldest=$(echo "$readings" | awk '{print $1}')
+                newest=$mem_usage
+
+                # Shift readings and add new one
+                echo "$readings $mem_usage" | awk '{print $2, $3, $4, $5, $6}' > "$velocity_file"
+
+                # Calculate velocity over 5 readings (5 seconds at 1s interval)
+                if [[ "$oldest" -gt 0 ]]; then
+                    velocity=$((newest - oldest))
+                    # Divide by 5 to get per-second rate (since we have 5 readings over 5 seconds)
+                    # But keep as integer for comparison
+                fi
+            fi
+
+            # Log periodically (every 30 checks = 30 seconds at 1s interval)
+            if [[ $((check_count % 30)) -eq 0 ]]; then
+                local status_msg="OOM Monitor: System ${mem_usage}%"
+                if [[ "$process_max_mb" -gt 0 ]]; then
+                    status_msg="${status_msg}, Process tree ${process_tree_mb}MB/${process_max_mb}MB"
+                fi
+                if [[ "$velocity" -ne 0 ]]; then
+                    status_msg="${status_msg}, Velocity ${velocity}%/5s"
+                fi
+                echo "$status_msg"
+            fi
+
+            local kill_reason=""
+            local kill_type=""
+            local is_critical=false
+
+            # CHECK 0: CRITICAL threshold - immediate kill, no grace period
+            if [[ "$mem_usage" -ge "$critical_threshold" ]]; then
+                kill_reason="CRITICAL MEMORY: ${mem_usage}% exceeds CRITICAL threshold of ${critical_threshold}%"
+                kill_type="CRITICAL"
+                is_critical=true
+            # CHECK 1: Process tree memory limit (most specific - kills only if OUR process is the problem)
+            elif [[ "$process_max_mb" -gt 0 && "$process_tree_mb" -ge "$process_max_mb" ]]; then
+                kill_reason="PROCESS MEMORY LIMIT: Build process tree using ${process_tree_mb}MB exceeds limit of ${process_max_mb}MB"
+                kill_type="PROCESS_LIMIT"
+            # CHECK 2: Rapid memory growth (predictive kill - memory growing too fast)
+            elif [[ "$velocity" -ge "$velocity_threshold" && "$mem_usage" -ge 70 ]]; then
+                kill_reason="RAPID MEMORY GROWTH: Memory growing at ${velocity}% per 5 seconds (threshold: ${velocity_threshold}%) at ${mem_usage}% usage"
+                kill_type="VELOCITY"
+            # CHECK 3: System memory threshold (traditional OOM killer)
+            elif [[ "$mem_usage" -ge "$threshold" ]]; then
+                kill_reason="SYSTEM MEMORY THRESHOLD: ${mem_usage}% exceeds threshold of ${threshold}%"
+                kill_type="THRESHOLD"
+            fi
+
+            if [[ -n "$kill_reason" ]]; then
+                echo ""
+                print_colored "red" "═══════════════════════════════════════════════════════════"
+                if [[ "$is_critical" == "true" ]]; then
+                    print_colored "red" "🚨🚨🚨 CRITICAL OOM - IMMEDIATE KILL! 🚨🚨🚨"
+                else
+                    print_colored "red" "🚨 OOM KILLER TRIGGERED! ($kill_type)"
+                fi
+                print_colored "red" "═══════════════════════════════════════════════════════════"
+                print_colored "red" "$kill_reason"
+                print_colored "yellow" ""
+                print_colored "yellow" "Status at kill time:"
+                print_colored "cyan" "  • System memory: ${mem_usage}%"
+                print_colored "cyan" "  • Process tree memory: ${process_tree_mb}MB"
+                print_colored "cyan" "  • Memory velocity: ${velocity}% per 5 seconds"
+                print_colored "cyan" "  • Build PID: $build_pid"
+                print_colored "yellow" ""
+
+                if [[ "$is_critical" == "true" ]]; then
+                    # CRITICAL: Immediate SIGKILL - no time for graceful shutdown
+                    print_colored "red" "CRITICAL: Sending immediate SIGKILL (no grace period)..."
+                    kill_process_tree "$build_pid" "KILL"
+                    sleep 0.5
+                else
+                    # Normal threshold: Try graceful first, but with shorter timeout
+                    print_colored "yellow" "Terminating build process tree..."
+                    kill_process_tree "$build_pid" "TERM"
+                    sleep 1  # Reduced from 2 seconds
+
+                    # Force kill if still running
+                    if is_process_running "$build_pid"; then
+                        print_colored "yellow" "Process still running, forcing termination..."
+                        kill_process_tree "$build_pid" "KILL"
+                        sleep 0.5
+                    fi
+                fi
+
+                # Kill any remaining child processes of the build (safer than blanket pkill)
+                # Only kill processes that are descendants of our build_pid
+                if [[ "$platform" == "windows" ]]; then
+                    # Windows taskkill with /T already kills the process tree, no extra action needed
+                    :
+                else
+                    # Linux/macOS: kill remaining descendants of the build process only
+                    if command -v pkill &>/dev/null; then
+                        # Use -P to kill only children of build_pid (not all matching processes system-wide)
+                        pkill -9 -P "$build_pid" 2>/dev/null || true
+                    fi
+                fi
+
+                print_colored "yellow" ""
+                print_colored "yellow" "SUGGESTIONS TO REDUCE MEMORY USAGE:"
+                print_colored "cyan" "  1. Reduce parallel jobs: -j 2 (currently: ${MAKEJ})"
+                print_colored "cyan" "  2. Reduce data types: --datatypes \"float32;int32;int64\""
+                print_colored "cyan" "  3. Increase swap/page file size"
+                print_colored "cyan" "  4. Close other memory-intensive applications"
+                print_colored "cyan" "  5. Increase thresholds: --oom-memory-threshold 95 --oom-process-max-mb 16384"
+                if [[ "$platform" == "windows" ]]; then
+                    print_colored "cyan" "  6. Windows: Check Task Manager for memory-heavy processes"
+                    print_colored "cyan" "  7. Windows: Increase virtual memory in System Properties"
+                fi
+                print_colored "yellow" ""
+
+                cleanup_velocity_file
+                exit 137  # Standard OOM exit code
+            fi
+        done
+    ) &
+
+    OOM_MONITOR_PID=$!
+    local monitor_info="threshold: ${threshold}%, CRITICAL: ${critical_threshold}%, interval: ${interval}s"
+    if [[ "$process_max_mb" -gt 0 ]]; then
+        monitor_info="${monitor_info}, process limit: ${process_max_mb}MB"
+    fi
+    monitor_info="${monitor_info}, velocity: ${velocity_threshold}%/5s"
+    print_colored "green" "✓ OOM monitor ACTIVE (PID: $OOM_MONITOR_PID, $monitor_info, platform: $platform)"
+    print_colored "yellow" "  ⚠️  Memory thresholds: ${threshold}%=graceful kill, ${critical_threshold}%=IMMEDIATE SIGKILL"
+}
+
+# Stop the OOM monitor
+stop_oom_monitor() {
+    if [[ -n "$OOM_MONITOR_PID" ]]; then
+        if is_process_running "$OOM_MONITOR_PID"; then
+            kill_process_tree "$OOM_MONITOR_PID" "TERM"
+            # Wait for the monitor to exit (with timeout for Windows compatibility)
+            local wait_count=0
+            while is_process_running "$OOM_MONITOR_PID" && [[ $wait_count -lt 10 ]]; do
+                sleep 0.1 2>/dev/null || sleep 1
+                wait_count=$((wait_count + 1))
+            done
+            # Force kill if still running
+            if is_process_running "$OOM_MONITOR_PID"; then
+                kill_process_tree "$OOM_MONITOR_PID" "KILL"
+            fi
+        fi
+        wait "$OOM_MONITOR_PID" 2>/dev/null || true
+        OOM_MONITOR_PID=""
+    fi
+}
+
+# Wrapper to run a command with OOM monitoring
+run_with_oom_monitor() {
+    local cmd="$1"
+
+    if [[ "$OOM_KILLER_ENABLED" == "ON" ]]; then
+        # Validate threshold
+        if [[ ! "$OOM_MEMORY_THRESHOLD" =~ ^[0-9]+$ ]] || \
+           [[ "$OOM_MEMORY_THRESHOLD" -lt 1 ]] || \
+           [[ "$OOM_MEMORY_THRESHOLD" -gt 99 ]]; then
+            print_colored "red" "❌ ERROR: Invalid OOM memory threshold: $OOM_MEMORY_THRESHOLD"
+            print_colored "yellow" "   Must be a number between 1 and 99"
+            exit 1
+        fi
+
+        # Validate interval
+        if [[ ! "$OOM_MONITOR_INTERVAL" =~ ^[0-9]+$ ]] || \
+           [[ "$OOM_MONITOR_INTERVAL" -lt 1 ]]; then
+            print_colored "red" "❌ ERROR: Invalid OOM monitor interval: $OOM_MONITOR_INTERVAL"
+            print_colored "yellow" "   Must be a positive integer (seconds)"
+            exit 1
+        fi
+
+        print_colored "cyan" "═══════════════════════════════════════════════════════════"
+        print_colored "cyan" "🛡️  OOM KILLER ENABLED - ACTIVE MEMORY PROTECTION"
+        print_colored "cyan" "═══════════════════════════════════════════════════════════"
+        print_colored "blue" "System memory threshold: ${OOM_MEMORY_THRESHOLD}%"
+        print_colored "blue" "Monitor interval: ${OOM_MONITOR_INTERVAL}s"
+        if [[ "$OOM_PROCESS_MAX_MB" -gt 0 ]]; then
+            print_colored "blue" "Process tree limit: ${OOM_PROCESS_MAX_MB}MB"
+        else
+            print_colored "yellow" "Process tree limit: DISABLED (use --oom-process-max-mb to enable)"
+        fi
+        print_colored "blue" "Velocity threshold: ${OOM_VELOCITY_THRESHOLD}% per 5 seconds"
+
+        local current_mem
+        current_mem=$(get_memory_usage_percent)
+        print_colored "blue" "Current memory usage: ${current_mem}%"
+        echo ""
+
+        # Run the build command in background
+        eval "$cmd" &
+        local build_pid=$!
+
+        # Start the OOM monitor
+        start_oom_monitor "$OOM_MEMORY_THRESHOLD" "$OOM_MONITOR_INTERVAL" "$build_pid" "$OOM_PROCESS_MAX_MB" "$OOM_VELOCITY_THRESHOLD" "$OOM_CRITICAL_THRESHOLD"
+
+        # Wait for build to complete
+        wait "$build_pid"
+        local exit_code=$?
+
+        # Stop the OOM monitor
+        stop_oom_monitor
+
+        return $exit_code
+    else
+        # No OOM monitoring, run command directly
+        eval "$cmd"
+        return $?
+    fi
+}
 
 # =============================================================================
 # COMMAND LINE ARGUMENT PARSING
@@ -791,6 +1483,18 @@ do
             USE_LTO="-DSD_USE_LTO=$value"
             shift # past argument
             ;;
+        --cuda-lto)
+            CUDA_LTO="$value"
+            shift # past argument
+            ;;
+        --cuda-threads)
+            CUDA_THREADS="$value"
+            shift # past argument
+            ;;
+        --cuda-split-compile)
+            CUDA_SPLIT_COMPILE="$value"
+            shift # past argument
+            ;;
         --name)
             NAME="$value"
             shift # past argument
@@ -805,6 +1509,11 @@ do
             ;;
         clean)
             CLEAN="true"
+            shift # past argument
+            ;;
+        clean-all)
+            CLEAN="true"
+            CLEAN_ALL="true"
             shift # past argument
             ;;
         -m|--minifier)
@@ -851,6 +1560,38 @@ do
         --link-only)
             LINK_ONLY="$value"
             print_colored "blue" "✓ Link-only mode enabled - will skip compilation and only relink"
+            shift # past argument
+            ;;
+        --oom-killer)
+            OOM_KILLER_ENABLED="$value"
+            if [[ "$value" == "ON" ]]; then
+                print_colored "green" "✓ OOM killer enabled - will monitor memory during build"
+            fi
+            shift # past argument
+            ;;
+        --oom-memory-threshold)
+            OOM_MEMORY_THRESHOLD="$value"
+            print_colored "blue" "✓ OOM memory threshold set to: ${value}%"
+            shift # past argument
+            ;;
+        --oom-monitor-interval)
+            OOM_MONITOR_INTERVAL="$value"
+            print_colored "blue" "✓ OOM monitor interval set to: ${value}s"
+            shift # past argument
+            ;;
+        --oom-process-max-mb)
+            OOM_PROCESS_MAX_MB="$value"
+            print_colored "blue" "✓ OOM process memory limit set to: ${value}MB"
+            shift # past argument
+            ;;
+        --oom-velocity-threshold)
+            OOM_VELOCITY_THRESHOLD="$value"
+            print_colored "blue" "✓ OOM velocity threshold set to: ${value}% per 5 seconds"
+            shift # past argument
+            ;;
+        --oom-critical-threshold)
+            OOM_CRITICAL_THRESHOLD="$value"
+            print_colored "blue" "✓ OOM CRITICAL threshold set to: ${value}% (immediate SIGKILL)"
             shift # past argument
             ;;
         --dry-run)
@@ -1600,11 +2341,28 @@ fi
 
 mkbuilddir() {
     if [ "$CLEAN" == "true" ]; then
-        echo "Removing blasbuild"
-        rm -Rf "$DIR/blasbuild"
+        if [ "$CLEAN_ALL" == "true" ]; then
+            echo "Removing ALL blasbuild directories (clean-all)"
+            rm -Rf "$DIR/blasbuild"
+        else
+            echo "Removing blasbuild for $CHIP only (use 'clean-all' to clean all backends)"
+            rm -Rf "$DIR/blasbuild/$CHIP"
+        fi
     fi
 
     mkdir -p "$BUILD_DIR"
+
+    # File locking to prevent concurrent builds of the same backend
+    LOCK_FILE="$BUILD_DIR/.build.lock"
+    exec 200>"$LOCK_FILE"
+    if ! flock -n 200 2>/dev/null; then
+        print_colored "red" "ERROR: Another build is already running for backend '$CHIP'"
+        print_colored "yellow" "Lock file: $LOCK_FILE"
+        print_colored "yellow" "If no other build is running, remove the lock file manually"
+        exit 1
+    fi
+    # Lock will be released when script exits (fd 200 closes)
+
     cd "$BUILD_DIR"
 }
 
@@ -1707,6 +2465,9 @@ echo MLIR_VERSION        = "$MLIR_VERSION"
 echo MLIR_GPU            = "$MLIR_GPU"
 echo OP_OUTPUT_FILE      = "$OP_OUTPUT_FILE"
 echo USE_LTO             = "$USE_LTO"
+echo CUDA_LTO            = "$CUDA_LTO"
+echo CUDA_THREADS        = "$CUDA_THREADS"
+echo CUDA_SPLIT_COMPILE  = "$CUDA_SPLIT_COMPILE"
 echo SANITIZE            = "$SANITIZE"
 echo FUNC_TRACE          = "$FUNC_TRACE"
 echo LOG_OUTPUT          = "$LOG_OUTPUT"
@@ -1757,6 +2518,9 @@ if [ "$PREPROCESS" == "ON" ]; then
             -DSD_SANITIZE="${SANITIZE}" \
             -DSD_BUILD_WITH_JAVA="${BUILD_WITH_JAVA}" \
             "$USE_LTO" \
+            -DSD_CUDA_DEVICE_LTO="${CUDA_LTO}" \
+            -DSD_CUDA_THREADS="${CUDA_THREADS}" \
+            -DSD_CUDA_SPLIT_COMPILE="${CUDA_SPLIT_COMPILE}" \
             $HELPERS_CMAKE \
             $KERNEL_CMAKE \
             $MLIR_ARG \
@@ -1785,6 +2549,9 @@ if [ "$PREPROCESS" == "ON" ]; then
             -DSD_SANITIZE="${SANITIZE}" \
             -DSD_BUILD_WITH_JAVA="${BUILD_WITH_JAVA}" \
             "$USE_LTO" \
+            -DSD_CUDA_DEVICE_LTO="${CUDA_LTO}" \
+            -DSD_CUDA_THREADS="${CUDA_THREADS}" \
+            -DSD_CUDA_SPLIT_COMPILE="${CUDA_SPLIT_COMPILE}" \
             $HELPERS_CMAKE \
             $KERNEL_CMAKE \
             $MLIR_ARG \
@@ -1847,6 +2614,9 @@ if [ "$LOG_OUTPUT" == "none" ]; then
         -DSD_CHECK_VECTORIZATION="${CHECK_VECTORIZATION}" \
         -DSD_BUILD_WITH_JAVA="${BUILD_WITH_JAVA}" \
         "$USE_LTO" \
+        -DSD_CUDA_DEVICE_LTO="${CUDA_LTO}" \
+        -DSD_CUDA_THREADS="${CUDA_THREADS}" \
+        -DSD_CUDA_SPLIT_COMPILE="${CUDA_SPLIT_COMPILE}" \
         $HELPERS_CMAKE \
         $KERNEL_CMAKE \
         $MLIR_ARG \
@@ -1883,6 +2653,9 @@ else
         -DSD_CHECK_VECTORIZATION="${CHECK_VECTORIZATION}" \
         -DSD_BUILD_WITH_JAVA="${BUILD_WITH_JAVA}" \
         "$USE_LTO" \
+        -DSD_CUDA_DEVICE_LTO="${CUDA_LTO}" \
+        -DSD_CUDA_THREADS="${CUDA_THREADS}" \
+        -DSD_CUDA_SPLIT_COMPILE="${CUDA_SPLIT_COMPILE}" \
         $HELPERS_CMAKE \
         $KERNEL_CMAKE \
         $MLIR_ARG \
@@ -2177,11 +2950,73 @@ if [ "$LINK_ONLY" == "ON" ]; then
     # Don't exit here - let the script continue to the flatc section
 else
     # Normal build mode: full compilation and linking
-    # Determine script location
-    if [ "$LOG_OUTPUT" == "none" ]; then
-        eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" && cd ../../..
+    BUILD_EXIT_CODE=0
+
+    if [[ "$OOM_KILLER_ENABLED" == "ON" ]]; then
+        print_colored "cyan" "═══════════════════════════════════════════════════════════"
+        print_colored "cyan" "🛡️  OOM KILLER ENABLED - ACTIVE MEMORY PROTECTION"
+        print_colored "cyan" "═══════════════════════════════════════════════════════════"
+        print_colored "blue" "System memory threshold: ${OOM_MEMORY_THRESHOLD}%"
+        print_colored "blue" "Monitor interval: ${OOM_MONITOR_INTERVAL}s"
+        if [[ "$OOM_PROCESS_MAX_MB" -gt 0 ]]; then
+            print_colored "blue" "Process tree limit: ${OOM_PROCESS_MAX_MB}MB"
+        else
+            print_colored "yellow" "Process tree limit: DISABLED (use --oom-process-max-mb to enable)"
+        fi
+        print_colored "blue" "Velocity threshold: ${OOM_VELOCITY_THRESHOLD}% per 5 seconds"
+
+        local_current_mem=$(get_memory_usage_percent)
+        print_colored "blue" "Current memory usage: ${local_current_mem}%"
+        echo ""
+
+        # Validate threshold
+        if [[ ! "$OOM_MEMORY_THRESHOLD" =~ ^[0-9]+$ ]] || \
+           [[ "$OOM_MEMORY_THRESHOLD" -lt 1 ]] || \
+           [[ "$OOM_MEMORY_THRESHOLD" -gt 99 ]]; then
+            print_colored "red" "❌ ERROR: Invalid OOM memory threshold: $OOM_MEMORY_THRESHOLD"
+            print_colored "yellow" "   Must be a number between 1 and 99"
+            exit 1
+        fi
+
+        # Run build in background with OOM monitoring
+        if [ "$LOG_OUTPUT" == "none" ]; then
+            eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" &
+        else
+            eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" >> "$LOG_OUTPUT" 2>&1 &
+        fi
+        BUILD_PID=$!
+
+        # Start OOM monitor with all parameters
+        start_oom_monitor "$OOM_MEMORY_THRESHOLD" "$OOM_MONITOR_INTERVAL" "$BUILD_PID" "$OOM_PROCESS_MAX_MB" "$OOM_VELOCITY_THRESHOLD" "$OOM_CRITICAL_THRESHOLD"
+
+        # Wait for build to complete
+        wait "$BUILD_PID"
+        BUILD_EXIT_CODE=$?
+
+        # Stop OOM monitor
+        stop_oom_monitor
+
+        if [ $BUILD_EXIT_CODE -eq 137 ]; then
+            print_colored "red" "═══════════════════════════════════════════════════════════"
+            print_colored "red" "❌ BUILD KILLED BY OOM KILLER"
+            print_colored "red" "═══════════════════════════════════════════════════════════"
+            cd ../../..
+            exit 137
+        elif [ $BUILD_EXIT_CODE -ne 0 ]; then
+            print_colored "red" "❌ BUILD FAILED (exit code: $BUILD_EXIT_CODE)"
+            cd ../../..
+            exit $BUILD_EXIT_CODE
+        fi
+
+        cd ../../..
     else
-        eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" >> "$LOG_OUTPUT" 2>&1 && cd ../../..
+        # Normal build without OOM monitoring
+        if [ "$LOG_OUTPUT" == "none" ]; then
+            eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" && cd ../../..
+        else
+            eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" >> "$LOG_OUTPUT" 2>&1 && cd ../../..
+        fi
+        BUILD_EXIT_CODE=$?
     fi
 fi
 

@@ -23,8 +23,6 @@
 #ifndef LIBND4J_DEBUGHELPER_H
 #define LIBND4J_DEBUGHELPER_H
 
-#include <helpers/StringUtils.h>
-#include <system/Environment.h>
 #include <system/op_boilerplate.h>
 
 #include <string>
@@ -47,7 +45,7 @@ class SD_LIB_EXPORT DebugHelper {
 
     if (res != 0) {
       std::string op = "Kernel OpNum failed: [";
-      op += StringUtils::valueToString<int>(opType);
+      op += std::to_string(opType);
       op += "]";
 
       THROW_EXCEPTION(op.c_str());
@@ -56,7 +54,7 @@ class SD_LIB_EXPORT DebugHelper {
     cudaError_t res2 = cudaGetLastError();
     if(res2 != 0) {
         std::string op = "Kernel OpNum failed: [";
-        op += StringUtils::valueToString<int>(opType);
+        op += std::to_string(opType);
         op += "]";
 
         THROW_EXCEPTION(op.c_str());
@@ -69,10 +67,10 @@ class SD_LIB_EXPORT DebugHelper {
     cudaError_t res2 = cudaGetLastError();
     if (res2 != 0) {
       if (failMessage == nullptr) {
-        std::string op = "CUDA call ended with error code [" + StringUtils::valueToString<int>(res2) + std::string("]");
+        std::string op = "CUDA call ended with error code [" + std::to_string(res2) + std::string("]");
         THROW_EXCEPTION(op.c_str());
       } else {
-        std::string op = std::string(failMessage) + std::string("Error code [") + StringUtils::valueToString<int>(res2) +
+        std::string op = std::string(failMessage) + std::string("Error code [") + std::to_string(res2) +
                          std::string("]");
         THROW_EXCEPTION(op.c_str());
       }
@@ -83,10 +81,10 @@ class SD_LIB_EXPORT DebugHelper {
     cudaError_t res = cudaStreamSynchronize(*stream);
     if (res != 0) {
       if (failMessage == nullptr) {
-        std::string op = "CUDA call ended with error code [" + StringUtils::valueToString<int>(res) + std::string("]");
+        std::string op = "CUDA call ended with error code [" + std::to_string(res) + std::string("]");
         THROW_EXCEPTION(op.c_str());
       } else {
-        std::string op = std::string(failMessage) + std::string("Error code [") + StringUtils::valueToString<int>(res) +
+        std::string op = std::string(failMessage) + std::string("Error code [") + std::to_string(res) +
                          std::string("]");
         THROW_EXCEPTION(op.c_str());
       }
@@ -97,10 +95,10 @@ class SD_LIB_EXPORT DebugHelper {
     cudaError_t res2 = cudaGetLastError();
     if (res2 != 0) {
       if (failMessage == nullptr) {
-        std::string op = "CUDA call ended with error code [" + StringUtils::valueToString<int>(res2) + std::string("]");
+        std::string op = "CUDA call ended with error code [" + std::to_string(res2) + std::string("]");
         THROW_EXCEPTION(op.c_str());
       } else {
-        std::string op = std::string(failMessage) + std::string("Error code [") + StringUtils::valueToString<int>(res2) +
+        std::string op = std::string(failMessage) + std::string("Error code [") + std::to_string(res2) +
                          std::string("]");
         THROW_EXCEPTION(op.c_str());
       }

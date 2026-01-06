@@ -39,20 +39,22 @@ ConstantShapeBuffer* CudaShapeBufferCreator::create(const LongType* shapeInfo, i
           delete ptr;
         }
     );
-    
-    PointerWrapper hPtr(shapeCopy, deallocator);
+
+    PointerWrapper* hPtr = new PointerWrapper(shapeCopy, deallocator);
 
     // Create device pointer for CUDA
-    PointerWrapper dPtr(
+    PointerWrapper* dPtr = new PointerWrapper(
         ConstantHelper::getInstance().replicatePointer(shapeCopy,
                                                    shapeInfoLength * sizeof(LongType)),
         std::make_shared<CudaPointerDeallocator>());
 
-    if(dPtr.pointer() == nullptr) {
+    if(dPtr->pointer() == nullptr) {
+        delete hPtr;
+        delete dPtr;
         THROW_EXCEPTION("Failed to allocate device memory for shape buffer");
     }
     ConstantShapeBuffer *buffer = new ConstantShapeBuffer(hPtr, dPtr);
-    
+
     return buffer;
 }
 

@@ -22,7 +22,10 @@
 //
 #include <exceptions/cuda_exception.h>
 #include <execution/LaunchContext.h>
+#include <helpers/ConstantShapeHelper.h>
 #include <helpers/DebugHelper.h>
+#include <helpers/StringUtils.h>
+#include <system/Environment.h>
 #include <loops/legacy_ops.h>
 #include <loops/reduce_same.h>
 #include <loops/scalar.h>
@@ -61,7 +64,7 @@ SD_KERNEL SD_INLINE void simpleScalar(
     void* z,
     const sd::LongType* zShapeInfo,
     sd::LongType* dimension,
-    long long int dimensionLength,
+    sd::LongType dimensionLength,
     void* reductionBuffer,
     const sd::LongType* tadOnlyShapeInfo) {
 

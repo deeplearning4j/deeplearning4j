@@ -162,10 +162,10 @@ void drawBoundingBoxesH(LaunchContext* context, NDArray * images, NDArray * boxe
     colorsTable = *colors;
   }
 
-  auto imagesBuf = images->getDataBuffer()->specialAsT<T>();
+  auto imagesBuf = images->getDataBuffer()->template specialAsT<T>();
   auto boxesBuf = boxes->getDataBuffer()->specialAsT<float>();             // boxes should be float32
   auto colorsTableBuf = colorsTable.getDataBuffer()->specialAsT<float>();  // color table is float32
-  auto outputBuf = output->dataBuffer()->specialAsT<T>();
+  auto outputBuf = output->dataBuffer()->template specialAsT<T>();
   dim3 launchDims = getLaunchDims("draw_bounding_boxes");
   drawBoundingBoxesKernel<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       imagesBuf, images->specialShapeInfo(), boxesBuf, boxes->specialShapeInfo(), colorsTableBuf,

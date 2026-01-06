@@ -24,7 +24,7 @@
 
     //////////////////////////////////////////////////////////////////////////
     template <typename X, typename Y>
-    SD_KERNEL void bitonicSortStepKernelKey(
+    SD_KERNEL SD_INLINE void bitonicSortStepKernelKey(
         void* vx,
         const sd::LongType* xShapeInfo,
         void* vy,
@@ -131,7 +131,7 @@
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void bitonicSortStepKernel(
+SD_KERNEL SD_INLINE void bitonicSortStepKernel(
     void* vx,
     const sd::LongType* xShapeInfo,
     int j,
@@ -244,14 +244,12 @@ SD_HOST void bitonicSortStepGenericKey(
   sd::DebugHelper::checkErrorCode(stream, "bitonicSortStepGenericKey failed");
 }
 
-BUILD_SINGLE_TEMPLATE(
-    template void bitonicSortStepGeneric,
+BUILD_SINGLE_TEMPLATE( void bitonicSortStepGeneric,
     (dim3 & launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo,
      int j, int k, int length, bool descending),
     SD_COMMON_TYPES);
 
-BUILD_DOUBLE_TEMPLATE(
-    template void bitonicSortStepGenericKey,
+BUILD_DOUBLE_TEMPLATE( void bitonicSortStepGenericKey,
     (dim3 & launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo,
      void *vy, sd::LongType const *yShapeInfo, int j, int k, int length, bool descending),
     SD_COMMON_TYPES, SD_COMMON_TYPES);

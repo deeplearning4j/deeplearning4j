@@ -20,7 +20,8 @@
 // @author Yurii Shyrma, created on 05.04.2018
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/recurrent.h>
+#include <ops/declarable/headers/transforms.h>
 #if NOT_EXCLUDED(OP_dynamic_bidirectional_rnn)
 namespace sd {
 namespace ops {

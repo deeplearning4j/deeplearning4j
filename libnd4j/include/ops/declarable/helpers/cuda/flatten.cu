@@ -19,6 +19,7 @@
 //
 //  @author raver119@gmail.com
 //
+#include <array/NDArrayFactory.h>
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/flatten.h>
 

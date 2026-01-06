@@ -25,6 +25,7 @@
 #include <cstring>
 #include <array/ShapeDescriptor.h>
 #include <helpers/ConstantShapeHelper.h>
+#include <helpers/StringUtils.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/PointersManager.h>
 #include <loops/BroadcastPairwiseConverter.h>
@@ -722,6 +723,32 @@ NDArray::NDArray(NDArray &&other) noexcept {
   creationTrace = StackTrace();
   creationTrace.load_here();
 #endif
+  RECORD_NDARRAY_ALLOCATION();
+}
+
+////////////////////////////////////////////////////////////////////////
+// constructor, create empty array stored at given workspace
+NDArray::NDArray(LaunchContext *context) {
+  if (Environment::getInstance().isLogNativeNDArrayCreation()) {
+    sd_print("NDArray::NDArray(LaunchContext *context) - constructor 10\n");
+    fflush(stdout);
+  }
+
+  _context = context;
+  _isAttached = getContext()->getWorkspace() != nullptr;
+#if defined(SD_GCC_FUNCTRACE)
+  creationTrace = StackTrace();
+  creationTrace.load_here();
+#endif
+  // Create an empty array with FLOAT32 as default type
+  auto desc = ConstantShapeHelper::getInstance().emptyShapeInfo(DataType::FLOAT32);
+  auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
+  this->_shapeInfoBuffer = constDesc;
+  this->_shapeInfo = constDesc->primary();
+  this->_shapeInfoD = constDesc->special();
+  _length = 0;
+  _buffer = nullptr;
+  _ownsBuffer = false;
   RECORD_NDARRAY_ALLOCATION();
 }
 
@@ -2371,6 +2398,9 @@ void *NDArray::buffer() {
   // If BUILD_SINGLE_SELECTOR didn't match any type, throw instead of returning nullptr
   THROW_EXCEPTION("NDArray::buffer(): dataType() did not match any known type");
 }
+
+// Explicit template instantiation for _bufferWithOffset used by buffer()
+BUILD_SINGLE_TEMPLATE(void* _bufferWithOffset, (LongType, DataBuffer*), SD_COMMON_TYPES_ALL);
 
 //////////////////////////////////////////////////////////////////////////
 void *NDArray::bufferWithOffset(sd::LongType offset) {
@@ -4808,6 +4838,10 @@ T NDArray::e( sd::LongType i) {
   delete thisVec;
 }
 BUILD_SINGLE_UNCHAINED_TEMPLATE( SD_LIB_EXPORT, NDArray::e(sd::LongType), SD_COMMON_TYPES_ALL);
+BUILD_SINGLE_UNCHAINED_TEMPLATE( SD_LIB_EXPORT, NDArray::e(sd::LongType), SD_STRING_TYPES);
+// Explicit instantiations for string types used by StringUtils::setValueForDifferentDataType
+template SD_LIB_EXPORT std::u16string NDArray::e<std::u16string>(sd::LongType);
+template SD_LIB_EXPORT std::u32string NDArray::e<std::u32string>(sd::LongType);
 
 //////////////////////////////////////////////////////////////////////////
 // Returns value from 2D matrix by coordinates/indexes

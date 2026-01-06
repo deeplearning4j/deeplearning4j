@@ -642,7 +642,7 @@ void scatterND(LaunchContext *context, pairwise::Ops op, NDArray&indices, NDArra
 
 ///////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
-SD_KERNEL void scatterForLossCuda(const void* vx, const LongType* xShapeInfo, void* vy, const LongType* yShapeInfo,
+SD_KERNEL SD_INLINE void scatterForLossCuda(const void* vx, const LongType* xShapeInfo, void* vy, const LongType* yShapeInfo,
                                   void* vz, const LongType* zShapeInfo) {
   // Cast input and output pointers
   const auto x = reinterpret_cast<const X*>(vx);
@@ -714,6 +714,7 @@ static void scatterForLossCudaLauncher(const int blocksPerGrid, const int thread
       <<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo);
   sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "scatterUpdateCuda failed");
 }
+BUILD_DOUBLE_TEMPLATE(void scatterForLossCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void *vx, const LongType *xShapeInfo, void *vy, const LongType *yShapeInfo, void *vz, const LongType *zShapeInfo), SD_INDEXING_TYPES, SD_FLOAT_TYPES);
 
 ///////////////////////////////////////////////////////////////////
 void scatterForLoss(LaunchContext *context, NDArray&indices, NDArray &updates, NDArray &output,

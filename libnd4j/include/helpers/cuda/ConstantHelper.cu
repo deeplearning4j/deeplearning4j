@@ -30,6 +30,7 @@
 #include <helpers/logger.h>
 #include <helpers/shape.h>
 #include <ops/specials.h>
+#include <ops/impl/specials_double.hpp>
 #include <system/selective_rendering.h>
 #define CONSTANT_LIMIT 49152
 
@@ -155,15 +156,14 @@ ConstantDataBuffer *ConstantHelper::constantBuffer(const ConstantDescriptor &des
     // create buffer with this dtype
     if (descriptor.isFloat()) {
       BUILD_DOUBLE_SELECTOR(
-          sd::DataType::DOUBLE, dataType, sd::SpecialTypeConverter::convertGeneric,
+          DOUBLE, dataType, SpecialTypeConverter::convertGeneric,
           (nullptr, const_cast<double *>(descriptor.floatValues().data()), descriptor.length(), cbuff->pointer()),
-          (sd::DataType::DOUBLE, double), SD_COMMON_TYPES);
+          (DOUBLE, double), SD_COMMON_TYPES);
     } else if (descriptor.isInteger()) {
-      auto int64DType = sd::DataType::INT64;
-      BUILD_DOUBLE_SELECTOR(sd::DataType::INT64, dataType, sd::SpecialTypeConverter::convertGeneric,
-                            (nullptr, const_cast<sd::LongType *>(descriptor.integerValues().data()),
+      BUILD_DOUBLE_SELECTOR(INT64, dataType, SpecialTypeConverter::convertGeneric,
+                            (nullptr, const_cast<LongType *>(descriptor.integerValues().data()),
                                 descriptor.length(), cbuff->pointer()),
-                            (sd::DataType::INT64, sd::LongType), SD_COMMON_TYPES);
+                            (INT64, LongType), SD_COMMON_TYPES);
     }
 
     // we don't have deallocator here.
@@ -187,4 +187,15 @@ LongType ConstantHelper::getCachedAmount(int deviceId) {
   else
     return _counters[deviceId];
 }
+
+// Explicit template instantiations for SpecialTypeConverter::convertGeneric
+// These are needed because BUILD_DOUBLE_SELECTOR expands to call these with (DOUBLE, SD_COMMON_TYPES) and (INT64, SD_COMMON_TYPES)
+#define INSTANTIATE_CONVERT_DOUBLE(T) template void SpecialTypeConverter::convertGeneric<double, GET_SECOND(T)>(sd::Pointer*, void*, sd::LongType, void*);
+ITERATE_LIST((SD_COMMON_TYPES), INSTANTIATE_CONVERT_DOUBLE)
+#undef INSTANTIATE_CONVERT_DOUBLE
+
+#define INSTANTIATE_CONVERT_LONG(T) template void SpecialTypeConverter::convertGeneric<LongType, GET_SECOND(T)>(sd::Pointer*, void*, sd::LongType, void*);
+ITERATE_LIST((SD_COMMON_TYPES), INSTANTIATE_CONVERT_LONG)
+#undef INSTANTIATE_CONVERT_LONG
+
 }  // namespace sd

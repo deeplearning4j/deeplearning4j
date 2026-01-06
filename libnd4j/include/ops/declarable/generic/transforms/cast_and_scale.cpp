@@ -27,7 +27,8 @@
 #if NOT_EXCLUDED(OP_cast_and_scale)
 
 #include <array/DataTypeUtils.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
+#include <execution/Threads.h>
 
 namespace sd {
 namespace ops {

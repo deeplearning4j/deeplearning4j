@@ -24,12 +24,13 @@
 //
 
 #include <system/op_boilerplate.h>
+#include <array/NDArrayFactory.h>
 #if NOT_EXCLUDED(OP_rms_norm) || NOT_EXCLUDED(OP_rope) || NOT_EXCLUDED(OP_silu) || \
     NOT_EXCLUDED(OP_quantized_matmul) || NOT_EXCLUDED(OP_grouped_query_attention) || \
     NOT_EXCLUDED(OP_flash_attention) || NOT_EXCLUDED(OP_kv_cache_update) || \
     NOT_EXCLUDED(OP_apply_alibi) || NOT_EXCLUDED(OP_sliding_window_attention)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/llm.h>
 #include <ops/declarable/headers/llm.h>
 #include <helpers/MmulHelper.h>
 #include <helpers/FlashAttentionHelper.h>

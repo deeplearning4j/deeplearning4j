@@ -39,12 +39,14 @@ namespace helpers {
 
 void bgemm(NDArray *a, NDArray *b, NDArray *c,  NDArray *alphas,  NDArray *betas,
                   int transA, int transB, int M, int N, int K, int lda, int ldb, int ldc, NDArray *all) {
+  bool shouldDeleteAll = false;
   NDArray *allIndex = nullptr;
   if(all != nullptr)
     allIndex = all;
   else {
-    NDArray allLocal = NDIndexUtils::createAll();
-    all = &allLocal;
+    allIndex = NDIndexUtils::createAll();
+    all = allIndex;
+    shouldDeleteAll = true;
   }
 
 
@@ -62,16 +64,20 @@ void bgemm(NDArray *a, NDArray *b, NDArray *c,  NDArray *alphas,  NDArray *betas
   //divide by 2: queries and keys
   for(int i = 0; i < batchSize; i++) {
     auto point = NDIndexUtils::createPoint(i);
-    auto aSlice = createView.evaluate({a,&point,all,all},{},{});
-    auto bSlice = createView.evaluate({b,&point,all,all},{},{});
-    auto outSlice = createView.evaluate({c,&point,all,all},{},{});
+    auto aSlice = createView.evaluate({a, point, all, all},{},{});
+    auto bSlice = createView.evaluate({b, point, all, all},{},{});
+    auto outSlice = createView.evaluate({c, point, all, all},{},{});
     inputs.push_back(aSlice.at(0));
     keyInputs.push_back(bSlice.at(0));
     outputs.push_back(outSlice.at(0));
+    delete point;  // Clean up created point
   }
 
   bgemm(inputs,keyInputs,outputs,alphas,betas,transA,transB,M,N,K,lda,ldb,ldc);
 
+  if (shouldDeleteAll) {
+    delete allIndex;
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////

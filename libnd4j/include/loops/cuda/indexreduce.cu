@@ -154,8 +154,8 @@ SD_DEVICE void IndexReduce<X, Z>::aggregatePartials(IndexValue<X> *sPartials, sd
  }
 }
 
-template <typename X, typename Y>
-SD_DEVICE void IndexReduce<X, Y>::transform(int opNum, void const *x, sd::LongType const *xShapeInfo,
+template <typename X, typename Z>
+SD_DEVICE void IndexReduce<X, Z>::transform(int opNum, void const *x, sd::LongType const *xShapeInfo,
                                            void *extraParams, void *result, sd::LongType const *zShapeInfo, sd::LongType *dimension,
                                            sd::LongType dimensionLength, int postProcessOrNot,
                                            sd::LongType *allocationBuffer, void *reductionBuffer,

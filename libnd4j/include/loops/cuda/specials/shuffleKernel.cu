@@ -24,7 +24,7 @@
 
     namespace sd {
     template <typename T>
-    SD_KERNEL void execShuffleKernel(
+    SD_KERNEL SD_INLINE void execShuffleKernel(
         void** vdX,
         LongType** dxShapeInfo,
         void** vdZ,
@@ -167,7 +167,7 @@
   }
 
   BUILD_SINGLE_TEMPLATE(
-      template void shuffleKernelGeneric,
+      void shuffleKernelGeneric,
       (dim3 & launchDims,
        cudaStream_t *stream,
        void** vdX,

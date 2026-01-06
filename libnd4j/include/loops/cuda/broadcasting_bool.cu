@@ -33,7 +33,7 @@
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpClass>
-static SD_KERNEL void broadcastBoolSimple(
+static SD_KERNEL SD_INLINE void broadcastBoolSimple(
     void const* x,
     sd::LongType const* xShapeInfo,
     void const* y,
@@ -66,7 +66,7 @@ static SD_KERNEL void broadcastBoolSimple(
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpClass>
-static SD_KERNEL void broadcastBoolSimple(
+static SD_KERNEL SD_INLINE void broadcastBoolSimple(
     const void* x,
     const sd::LongType* xShapeInfo,
     const void* y,
@@ -87,7 +87,7 @@ static SD_KERNEL void broadcastBoolSimple(
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpClass>
-static SD_KERNEL void broadcastBoolInverseSimple(
+static SD_KERNEL SD_INLINE void broadcastBoolInverseSimple(
     void const* x,
     sd::LongType const* xShapeInfo,
     void const* y,
@@ -188,8 +188,8 @@ SD_HOST void BroadcastBool<X, Z>::intermediateBroadcast(
 }
 
 //////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y>
-SD_HOST void BroadcastBool<X, Y>::execBroadcast(
+template <typename X, typename Z>
+SD_HOST void BroadcastBool<X, Z>::execBroadcast(
     dim3 launchDims,
     cudaStream_t* stream,
     int opNum,
@@ -218,8 +218,8 @@ SD_HOST void BroadcastBool<X, Y>::execBroadcast(
 }
 
 //////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y>
-SD_HOST void BroadcastBool<X, Y>::execBroadcast(
+template <typename X, typename Z>
+SD_HOST void BroadcastBool<X, Z>::execBroadcast(
     dim3 launchDims,
     cudaStream_t* stream,
     const int opNum,
@@ -279,8 +279,8 @@ SD_HOST void BroadcastBool<X, Z>::intermediateInverseBroadcast(
 }
 
 //////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y>
-SD_HOST void BroadcastBool<X, Y>::execInverseBroadcast(
+template <typename X, typename Z>
+SD_HOST void BroadcastBool<X, Z>::execInverseBroadcast(
     dim3 launchDims,
     cudaStream_t* stream,
     int opNum,

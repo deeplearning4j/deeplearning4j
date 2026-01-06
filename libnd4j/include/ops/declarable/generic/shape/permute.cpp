@@ -25,7 +25,7 @@
 #if NOT_EXCLUDED(OP_permute)
 
 #include <helpers/ShapeUtils.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/shape.h>
 
 namespace sd {
 namespace ops {

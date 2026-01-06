@@ -337,7 +337,9 @@ static void tileBPCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
 //////////////////////////////////////////////////////////////////////////
 void tileBP(LaunchContext* context, NDArray gradO /*input*/, NDArray& gradI /*output*/,
            const std::vector<LongType> reps) {
- auto grad0Shape = gradO.getShapeAsVector();
+ auto grad0ShapePtr = gradO.getShapeAsVector();
+ std::vector<LongType> grad0Shape(*grad0ShapePtr);
+ delete grad0ShapePtr;
  NDArray memBuff(
      'c', grad0Shape, INT64,
      context);  // empty auxiliary array for storing device memory which will be used in kernel calculations

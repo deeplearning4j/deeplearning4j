@@ -29,7 +29,8 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_mean_pairwssqerr_loss)
 
-#include <ops/declarable/CustomOperations.h>
+#include <array/NDArrayFactory.h>
+#include <ops/declarable/headers/loss.h>
 
 #include <iostream>
 #include <numeric>

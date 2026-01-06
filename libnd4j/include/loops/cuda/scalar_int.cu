@@ -36,7 +36,7 @@
 // A kernel that applies an integer-based scalar transform along specified dimension (via TAD).
 // We'll cache shape info in shared memory to reduce repeated calls to shapeOf, strideOf, etc.
 template <typename X, typename OpType>
-__global__ void scalarAlongDimensionCachedKernel(
+SD_KERNEL SD_INLINE void scalarAlongDimensionCachedKernel(
     void const* x,
     sd::LongType const* xShapeInfo,
     void* extraParams,
@@ -44,7 +44,7 @@ __global__ void scalarAlongDimensionCachedKernel(
     sd::LongType const* zShapeInfo,
     void const* scalars,
     sd::LongType* dimension,
-    long long int dimensionLength,
+    sd::LongType dimensionLength,
     sd::LongType const* tadShapeInfo,
     sd::LongType const* tadOffsets,
     sd::LongType const* tadShapeInfoZ,
@@ -72,7 +72,7 @@ __global__ void scalarAlongDimensionCachedKernel(
 // A kernel to handle shaped transforms: x is "scalar," y is "array," but
 // we store shape data in shared memory.
 template <typename X, typename OpType>
-__global__ void scalarSimpleShapedCachedKernel(
+SD_KERNEL SD_INLINE void scalarSimpleShapedCachedKernel(
     void const* x,
     void const* y,
     sd::LongType const* xShapeInfo,
@@ -195,7 +195,7 @@ __device__ void ScalarIntTransform<X>::transformCuda(
     sd::LongType const* zShapeInfo,
     void const* vscalars,
     sd::LongType* dimension,
-    long long int dimensionLength,
+    sd::LongType dimensionLength,
     sd::LongType const* tadShapeInfo,
     sd::LongType const* tadOffsets,
     sd::LongType const* tadShapeInfoZ,
@@ -273,7 +273,7 @@ __host__ void ScalarIntTransform<X>::intermediateAlongDimension(
     void const* scalars,
     void* extraParams,
     sd::LongType* dimension,
-    long long int dimensionLength,
+    sd::LongType dimensionLength,
     sd::LongType const* tadShapeInfo,
     sd::LongType const* tadOffsets,
     sd::LongType const* tadShapeInfoZ,
@@ -364,7 +364,7 @@ __host__ void ScalarIntTransform<X>::executeCudaAlongDimension(
     void const* vscalars,
     void* vextraParams,
     sd::LongType* dimension,
-    long long int dimensionLength,
+    sd::LongType dimensionLength,
     sd::LongType const* tadShapeInfo,
     sd::LongType const* tadOffsets,
     sd::LongType const* tadShapeInfoZ,

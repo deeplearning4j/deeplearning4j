@@ -21,6 +21,7 @@
 //
 #include <array/NDArrayList.h>
 #include <system/op_boilerplate.h>
+#include <array/NDArrayFactory.h>
 
 #if NOT_EXCLUDED(OP_Where)
 #include <ops/declarable/helpers/where.h>

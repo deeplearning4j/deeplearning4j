@@ -1,3 +1,4 @@
+#include <array/NDArrayFactory.h>
 /*******************************************************************************
  * Copyright (c) 2021 Deeplearning4j Contributors
  *

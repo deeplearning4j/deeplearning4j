@@ -25,11 +25,9 @@
 
 #ifndef LIBND4J_HEADERS_IMAGES_H
 #define LIBND4J_HEADERS_IMAGES_H
-#include <execution/Threads.h>
-#include <helpers/ConstantTadHelper.h>
-#include <ops/declarable/CustomOperations.h>
+// NOTE: Removed CustomOperations.h - it's a kitchen-sink header that pulls in ALL ops
+// common.h already provides all the macros needed for op declarations
 #include <ops/declarable/headers/common.h>
-#include <ops/declarable/helpers/imagesHelpers.h>
 
 namespace sd {
 namespace ops {

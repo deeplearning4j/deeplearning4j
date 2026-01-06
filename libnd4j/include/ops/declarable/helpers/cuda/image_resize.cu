@@ -128,11 +128,11 @@ static void resizeImage_(LaunchContext* context, NDArray * images, LongType batc
   LongType inBatchNumValues = inHeight * inRowSize;
   LongType outRowSize = outWidth * channels;
   auto stream = context->getCudaStream();
-  T const* pInput = images->getDataBuffer()->specialAsT<T>();
+  T const* pInput = images->getDataBuffer()->template specialAsT<T>();
   dim3 launchDims = getLaunchDims("image_resize");
 
                                                                // // this works only with 'c' direction
-  F* pOutput = output->dataBuffer()->specialAsT<F>();
+  F* pOutput = output->dataBuffer()->template specialAsT<F>();
   resizeImageKernel<T, F><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(pInput, images->specialShapeInfo(), pOutput,
                                                       output->specialShapeInfo(), batchSize, outWidth, outHeight,
                                                       channels, inRowSize, outRowSize, inBatchNumValues, xs_, ys_);
@@ -298,8 +298,8 @@ Status resizeNeighborFunctor_(LaunchContext* context, NDArray * images, int cons
   float heightScale = ImageResizerState::calculateResizeScale(inHeight, outHeight, alignCorner);
   float widthScale = ImageResizerState::calculateResizeScale(inWidth, outWidth, alignCorner);
 
-  auto imagesBuffer = images->getDataBuffer()->specialAsT<T>();
-  auto outputBuffer = output->dataBuffer()->specialAsT<T>();
+  auto imagesBuffer = images->getDataBuffer()->template specialAsT<T>();
+  auto outputBuffer = output->dataBuffer()->template specialAsT<T>();
   auto stream = context->getCudaStream();
 
   dim3 neightborDims = resizeNeighborDims(batchSize, outHeight, outWidth);
@@ -667,7 +667,7 @@ static void bicubicInterpolateWithCaching(NDArray * image, const ImageResizerSta
                                 err);
   }
 
-  const T* pInput = image->getDataBuffer()->specialAsT<T>();
+  const T* pInput = image->getDataBuffer()->template specialAsT<T>();
   float* pOutput = output->dataBuffer()->specialAsT<float>();
   dim3 bicubDims = getLaunchDims("image_resize_bicubic");
   //128,1,512

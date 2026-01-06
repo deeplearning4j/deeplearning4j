@@ -230,21 +230,17 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext* lc, int opNum, void cons
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
-  if (sd::DataTypeUtils::isS(xType)) {
-#if defined(HAS_UTF8) || defined(HAS_UTF16) || defined(HAS_UTF32)
-     BUILD_SINGLE_SELECTOR_THRICE(
-        xType, functions::scalar::ScalarTransform,
-        ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams,
-                                    dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ),
-        SD_STRING_TYPES);
-#endif
-  } else {
-    BUILD_SINGLE_SELECTOR_THRICE(
-        xType, functions::scalar::ScalarTransform,
-        ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams,
-                                    dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ),
-        SD_COMMON_TYPES);
+  if (sd::DataTypeUtils::isS(xType) || sd::DataTypeUtils::isS(yType) || sd::DataTypeUtils::isS(zType)) {
+    THROW_EXCEPTION(
+        "NativeOpExecutioner::execScalar:: unable to execute on strings. Please write logic higher level in each op "
+        "for the string data type.")
   }
+
+  BUILD_SINGLE_SELECTOR_THRICE(
+      xType, functions::scalar::ScalarTransform,
+      ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams,
+                                  dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ),
+      SD_COMMON_TYPES);
 
 
   // TODO: remove after the release

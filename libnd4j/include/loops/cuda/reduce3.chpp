@@ -22,6 +22,7 @@
 #include <system/op_boilerplate.h>
 #include <loops/reduce3.h>
 #include <loops/legacy_ops.h>
+#include <ops/ops.h>
 #include <types/types.h>
 #include <ops/specials_cuda.h>
 
@@ -32,7 +33,7 @@ namespace reduce3 {
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
-SD_KERNEL void execScalarGeneric(const int opNum,
+SD_KERNEL SD_INLINE void execScalarGeneric(const int opNum,
                                  void const* vx, sd::LongType const* xShapeInfo,
                                  void const* vy, sd::LongType const* yShapeInfo,
                                  void *extraParams,
@@ -52,13 +53,13 @@ SD_KERNEL void execScalarGeneric(const int opNum,
 }
 
 template <typename X, typename Z>
-SD_KERNEL void execAllGeneric(const int opNum,
+SD_KERNEL SD_INLINE void execAllGeneric(const int opNum,
                               void const* vx, sd::LongType const* xShapeInfo,
                               void const* vy, sd::LongType const* yShapeInfo,
                               void *extraParams,
                               void *vz, sd::LongType const* zShapeInfo,
                               sd::LongType* dimension,
-                              long long int dimensionLength,
+                              sd::LongType dimensionLength,
                               int postProcessOrNot,
                               sd::LongType* allocationPointer,
                               sd::LongType const* tadOnlyShapeInfo,
@@ -80,7 +81,7 @@ SD_KERNEL void execAllGeneric(const int opNum,
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
-SD_KERNEL void execGeneric(const int opNum,
+SD_KERNEL SD_INLINE void execGeneric(const int opNum,
                            void const* vx, sd::LongType const* xShapeInfo,
                            void const* vy, sd::LongType const* yShapeInfo,
                            void *extraParams,
@@ -546,8 +547,8 @@ SD_DEVICE void Reduce3<X, Z>::transform(
 }
 
 //////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y>
-SD_DEVICE void Reduce3<X, Y>::execCuda(
+template <typename X, typename Z>
+SD_DEVICE void Reduce3<X, Z>::execCuda(
     int opNum,
     void const* vx, sd::LongType const* xShapeInfo,
     void const* vy, sd::LongType const* yShapeInfo,
@@ -569,8 +570,8 @@ SD_DEVICE void Reduce3<X, Y>::execCuda(
 }
 
 //////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y>
-SD_DEVICE void Reduce3<X, Y>::execAllCuda(
+template <typename X, typename Z>
+SD_DEVICE void Reduce3<X, Z>::execAllCuda(
     int opNum,
     void const* vx, sd::LongType const* xShapeInfo,
     void const* vy, sd::LongType const* yShapeInfo,
@@ -593,8 +594,8 @@ SD_DEVICE void Reduce3<X, Y>::execAllCuda(
 }
 
 //////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y>
-SD_DEVICE void Reduce3<X, Y>::execScalarCuda(
+template <typename X, typename Z>
+SD_DEVICE void Reduce3<X, Z>::execScalarCuda(
     int opNum,
     void const* vx, sd::LongType const* xShapeInfo,
     void const* vy, sd::LongType const* yShapeInfo,
@@ -653,7 +654,7 @@ SD_HOST void Reduce3<X, Z>::execAll(
     void const* vy, sd::LongType const* yShapeInfo,
     void* extraParams,
     void* vz, sd::LongType const* zShapeInfo,
-    sd::LongType* dimension, long long int dimensionLength,
+    sd::LongType* dimension, sd::LongType dimensionLength,
     int postProcessOrNot,
     sd::LongType* allocationPointer,
     sd::LongType const* tadOnlyShapeInfo,

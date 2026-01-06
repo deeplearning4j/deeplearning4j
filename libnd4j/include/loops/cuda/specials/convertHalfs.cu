@@ -27,7 +27,7 @@ namespace sd {
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void execConvertHalfs(half *dx, LongType n, void *dz) {
+SD_KERNEL SD_INLINE void execConvertHalfs(half *dx, LongType n, void *dz) {
   auto z = reinterpret_cast<T *>(dz);
   int tid = threadIdx.x + blockIdx.x * blockDim.x;
 

@@ -74,10 +74,11 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
 
   std::vector<sd::LongType> reshape = {oC,bS * oH * oW};
   // Reshape gradO to 2D: [oC, bS * oH * oW]
-  NDArray gradO2d = gradOPermuted->reshape(gradOPermuted->ordering(), reshape,false);
+  NDArray* gradO2d = gradOPermuted->reshape(gradOPermuted->ordering(), reshape,false);
 
   // Perform im2col
   NDArray* columns;
+  NDArray* zero = nullptr;
   if (block.hasIntermediateResults()) {
     columns = block.intermediateResult(0);
     if (columns->rankOf() < 6) {
@@ -87,68 +88,85 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
     std::vector<sd::LongType> colShape = {bS, iC, kH, kW, oH, oW};
     columns = new NDArray(inputPermuted->ordering(), colShape, inputPermuted->dataType(), inputPermuted->getContext());
     auto ctx = block.launchContext();
-    NDArray zero =   NDArrayFactory::create<double>(0., inputPermuted->getContext());
+    zero = NDArrayFactory::create<double>(0., inputPermuted->getContext());
     helpers::im2col(*ctx, *inputPermuted, *columns, kH, kW, sH, sW, pH, pW, dH, dW,
-                   zero);
+                   *zero);
   }
 
   // Calculate gradW
+  NDArray* columns2dForGradW = nullptr;
+  NDArray* gradWReshaped = nullptr;
+  NDArray* gradW2d = nullptr;
   if (gradW) {
     std::vector<sd::LongType> columnsShape = {bS * oH * oW, iC * kH * kW};
     std::vector<sd::LongType> wShape = {oC, iC * kH * kW};
-    NDArray columns2d = columns->reshape('c', columnsShape,false);
+    columns2dForGradW = columns->reshape('c', columnsShape,false);
     std::vector<sd::LongType > permu = {1,0};
-    NDArray &gradW2d = gradW->reshape('f', wShape,false).permute(permu,false,false);
+    gradWReshaped = gradW->reshape('f', wShape,false);
+    gradW2d = gradWReshaped->permute(permu,false,false);
 
-    MmulHelper::matmul( &columns2d,&gradO2d, &gradW2d, true, true, 1.0, 0.0, &gradW2d);
-    gradW->assign(&gradW2d);
+    MmulHelper::matmul(columns2dForGradW, gradO2d, gradW2d, true, true, 1.0, 0.0, gradW2d);
+    gradW->assign(gradW2d);
 
   }
 
   // Calculate gradB
   if (gradB) {
     std::vector<LongType> axes = {1};  // Sum over bS, oH, oW
-    gradO2d.reduceAlongDimension(reduce::Sum, gradB, &axes);
+    gradO2d->reduceAlongDimension(reduce::Sum, gradB, &axes);
   }
 
   // Calculate gradI
-  NDArray weights2d;
+  NDArray* weights2d = nullptr;
+  NDArray* weightsPermuted = nullptr;
   if (wFormat == 0) {
     std::vector<sd::LongType> permute = {3,2,1,0};
     std::vector<sd::LongType> shape2 = {iC * kH * kW, oC};
-    weights2d = weights->permute(permute,false,false).reshape('f', shape2);
+    weightsPermuted = weights->permute(permute,false,false);
+    weights2d = weightsPermuted->reshape('f', shape2);
   } else if (wFormat == 1) {
     std::vector<sd::LongType> shape2 = {iC * kH * kW, oC};
     weights2d = weights->reshape('f', shape2);
   } else {
     std::vector<sd::LongType> shape2 = {iC * kH * kW, oC};
     std::vector<sd::LongType> permute3 = {0, 2, 3, 1};
-    weights2d = weights->permute(permute3,false,false).reshape('f', shape2);
+    weightsPermuted = weights->permute(permute3,false,false);
+    weights2d = weightsPermuted->reshape('f', shape2);
   }
 
   std::vector<sd::LongType> colShape2 = {iC * kH * kW, bS * oH * oW};
   NDArray columns2d('c', colShape2, columns->dataType(), columns->getContext());
 
 
-  MmulHelper::matmul(&weights2d, &gradO2d, &columns2d, false, false, 1.0, 0.0);
+  MmulHelper::matmul(weights2d, gradO2d, &columns2d, false, false, 1.0, 0.0);
   //Calculate epsilonNext by doing im2col reduction.
   //Current col2im implementation expects input with order: [miniBatch,channels,kH,kW,outH,outW]
   //currently have [kH,kW,inDepth,outW,outH,miniBatch] -> permute first
   auto eps6d = columns2d.newShapeNoCopy({kH, kW,iC, oW, oH, bS }, 'f');
   std::vector<sd::LongType> epsPerm = {5,2,1,0,4,3};
-  auto permuted = eps6d->permute(epsPerm,false,false);
+  NDArray* permuted = eps6d->permute(epsPerm,false,false);
 
   // Perform col2im
   auto ctx = block.launchContext();
-  helpers::col2im(*ctx, &permuted, gradIPermuted, sH, sW, pH, pW, iH, iW, dH, dW);
+  helpers::col2im(*ctx, permuted, gradIPermuted, sH, sW, pH, pW, iH, iW, dH, dW);
   // Handle NHWC format if necessary
   if (!isNCHW) {
     std::vector<sd::LongType> permute = {0, 2,3,1};
-    auto permuted = gradIPermuted->permute(permute,false,false);  // [bS, iC, iH, iW] -> [bS, iH, iW, iC]
-    gradI->assign(&permuted);  // [bS, iC, iH, iW] -> [bS, iH, iW, iC]
+    NDArray* permutedGradI = gradIPermuted->permute(permute,false,false);  // [bS, iC, iH, iW] -> [bS, iH, iW, iC]
+    gradI->assign(permutedGradI);  // [bS, iC, iH, iW] -> [bS, iH, iW, iC]
+    delete permutedGradI;
   }
 
   // Clean up
+  delete permuted;
+  delete eps6d;
+  if (weightsPermuted) delete weightsPermuted;
+  delete weights2d;
+  if (gradW2d) delete gradW2d;
+  if (gradWReshaped) delete gradWReshaped;
+  if (columns2dForGradW) delete columns2dForGradW;
+  delete gradO2d;
+  if (zero) delete zero;
   if (!isNCHW) {
     delete inputPermuted;
     delete gradOPermuted;

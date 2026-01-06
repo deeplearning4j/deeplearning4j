@@ -30,8 +30,8 @@
 using namespace simdOps;
 
 template <typename X, typename OpType>
-SD_KERNEL void transformStrictSimple(const void *x, const sd::LongType *xShapeInfo, long long int xRank, void *params, void *z,
-                                    const sd::LongType *zShapeInfo, long long int zRank,
+SD_KERNEL SD_INLINE void transformStrictSimple(const void *x, const sd::LongType *xShapeInfo, sd::LongType xRank, void *params, void *z,
+                                    const sd::LongType *zShapeInfo, sd::LongType zRank,
                                     sd::LongType *allocationPointer,
                                     void *reductionPointer, const sd::LongType *tadShapeInfo,
                                     const sd::LongType *tadOffsets) {
@@ -132,6 +132,6 @@ SD_HOST void TransformStrict<X>::intermediateShaped(dim3 launchDims, cudaStream_
  sd::DebugHelper::checkErrorCode(stream, "transformStrict(...) failed");
 }
 
-BUILD_SINGLE_TEMPLATE( class TransformStrict, , SD_FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE( class TransformStrict, , SD_COMMON_TYPES);
 }  // namespace transform
 }  // namespace functions

@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_knn_mindistance)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/kernels.h>
 #include <ops/declarable/helpers/knn.h>
 
 namespace sd {

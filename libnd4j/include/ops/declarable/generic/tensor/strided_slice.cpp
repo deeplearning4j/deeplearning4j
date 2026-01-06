@@ -23,7 +23,7 @@
 
 #include <helpers/ShapeUtils.h>
 #include <cstring>  // for memcpy
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <legacy/NativeOpExecutioner.h>
 #include <array>
 

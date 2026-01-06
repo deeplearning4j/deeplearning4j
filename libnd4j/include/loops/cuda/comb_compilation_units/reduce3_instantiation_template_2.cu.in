@@ -73,7 +73,7 @@ ITERATE_COMBINATIONS(
         void* vz,
         sd::LongType const* zShapeInfo,
         sd::LongType* dimension,
-        long long int dimensionLength,
+        sd::LongType dimensionLength,
         int postProcessOrNot,
         sd::LongType* allocationPointer,
         sd::LongType const* tadOnlyShapeInfo,

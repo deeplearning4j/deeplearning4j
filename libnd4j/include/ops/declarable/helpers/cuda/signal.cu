@@ -22,6 +22,7 @@
 
 #include <ops/declarable/helpers/signal.h>
 #include <helpers/PointersManager.h>
+#include <system/op_boilerplate.h>
 #include <cuda_runtime.h>
 
 #ifndef M_PI
@@ -33,7 +34,7 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-__global__ void dftKernel(const T* input, T* output,
+SD_KERNEL SD_INLINE void dftKernel(const T* input, T* output,
                            sd::LongType outerSize, sd::LongType innerSize,
                            sd::LongType N, sd::LongType M,
                            T sign, T scale) {
@@ -110,7 +111,7 @@ void dft(LaunchContext* context, NDArray* input, int axis,
 }
 
 template <typename T>
-__global__ void stftKernel(const T* signal, const T* window, T* output,
+SD_KERNEL SD_INLINE void stftKernel(const T* signal, const T* window, T* output,
                             sd::LongType batchSize, sd::LongType signalLength,
                             int frameStep, int frameLength,
                             sd::LongType numFrames, sd::LongType numBins,
@@ -187,7 +188,7 @@ void stft(LaunchContext* context, NDArray* signal, int frameStep,
 }
 
 template <typename T>
-__global__ void hannWindowKernel(T* output, int size, int denom) {
+SD_KERNEL SD_INLINE void hannWindowKernel(T* output, int size, int denom) {
     const auto i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= size) return;
 
@@ -216,7 +217,7 @@ void hannWindow(LaunchContext* context, int size, bool periodic, NDArray* output
 }
 
 template <typename T>
-__global__ void hammingWindowKernel(T* output, int size, int denom) {
+SD_KERNEL SD_INLINE void hammingWindowKernel(T* output, int size, int denom) {
     const auto i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= size) return;
 
@@ -245,7 +246,7 @@ void hammingWindow(LaunchContext* context, int size, bool periodic, NDArray* out
 }
 
 template <typename T>
-__global__ void blackmanWindowKernel(T* output, int size, int denom) {
+SD_KERNEL SD_INLINE void blackmanWindowKernel(T* output, int size, int denom) {
     const auto i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= size) return;
 

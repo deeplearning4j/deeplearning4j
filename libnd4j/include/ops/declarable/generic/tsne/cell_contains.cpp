@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_cell_contains)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/BarnesHutTsne.h>
 #include <ops/declarable/helpers/BarnesHutTsne.h>
 
 namespace sd {

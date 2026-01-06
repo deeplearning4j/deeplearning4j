@@ -32,9 +32,9 @@
 
     </parent>
 
-    <artifactId>nd4j-cuda</artifactId>
+    <artifactId>nd4j-cuda-12.9</artifactId>
 
-    <name>nd4j-cuda</name>
+    <name>nd4j-cuda-12.9</name>
 
     <properties>
         <cuda.version>12.9</cuda.version>
@@ -59,7 +59,7 @@
         </dependency>
         <dependency>
             <groupId>org.eclipse.deeplearning4j</groupId>
-            <artifactId>nd4j-cuda-preset</artifactId>
+            <artifactId>nd4j-cuda-12.9-preset</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -210,7 +210,7 @@
                         <dependencies>
                             <dependency>
                                 <groupId>org.eclipse.deeplearning4j</groupId>
-                                <artifactId>nd4j-cuda-preset</artifactId>
+                                <artifactId>nd4j-cuda-12.9-preset</artifactId>
                                 <version>${project.version}</version>
                             </dependency>
                             <dependency>
@@ -317,7 +317,7 @@
                         <dependencies>
                             <dependency>
                                 <groupId>org.eclipse.deeplearning4j</groupId>
-                                <artifactId>nd4j-cuda-preset</artifactId>
+                                <artifactId>nd4j-cuda-12.9-preset</artifactId>
                                 <version>${project.version}</version>
                             </dependency>
                             <dependency>

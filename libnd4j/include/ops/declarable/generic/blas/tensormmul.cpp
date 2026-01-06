@@ -25,7 +25,7 @@
 
 #include <helpers/MmulHelper.h>
 #include <helpers/ShapeUtils.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/blas.h>
 
 #include <numeric>
 

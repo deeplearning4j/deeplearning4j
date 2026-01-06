@@ -24,7 +24,7 @@
 #if NOT_EXCLUDED(OP_Where)
 
 #include <helpers/ShapeUtils.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/boolean.h>
 #include <ops/declarable/helpers/where.h>
 
 namespace sd {

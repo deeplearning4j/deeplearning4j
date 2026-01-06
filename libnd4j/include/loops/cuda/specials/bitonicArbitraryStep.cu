@@ -24,7 +24,7 @@
 
     //////////////////////////////////////////////////////////////////////////
     template <typename X, typename Y>
-    SD_KERNEL void bitonicArbitraryStepKernelKey(
+    SD_KERNEL SD_INLINE void bitonicArbitraryStepKernelKey(
         void* vx,
         const sd::LongType* xShapeInfo,
         void* vy,
@@ -140,7 +140,7 @@
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void execBitonicArbitraryStepKernel(
+SD_KERNEL SD_INLINE void execBitonicArbitraryStepKernel(
     void* vx,
     const sd::LongType* xShapeInfo,
     int window,

@@ -20,7 +20,8 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 04.06.2018
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
+#include <ops/declarable/headers/broadcastable.h>
 #include <ops/declarable/helpers/axis.h>
 #include <ops/declarable/helpers/reductions.h>
 #if NOT_EXCLUDED(OP_reduce_stdev)

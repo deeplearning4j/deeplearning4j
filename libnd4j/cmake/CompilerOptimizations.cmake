@@ -85,8 +85,12 @@ else()
 endif()
 
 # Memory optimization during compilation - FIXED: Only apply to GCC
+# Note: Main memory flags are set in CompilerFlags.cmake; this is a fallback
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=100 --param ggc-min-heapsize=131072")
+    # Only add if not already present (avoid duplicates with CompilerFlags.cmake)
+    if(NOT CMAKE_CXX_FLAGS MATCHES "ggc-min-expand")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=20 --param ggc-min-heapsize=65536 --param inline-unit-growth=30 -finline-limit=50")
+    endif()
 endif()
 
 # Section splitting for better linker handling - FIXED: Only apply to GCC/Clang

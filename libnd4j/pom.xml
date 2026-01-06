@@ -73,8 +73,8 @@
 
         <libnd4j.generate.flatc>false</libnd4j.generate.flatc>
         <libnd4j.outputPath>${project.basedir}/blasbuild/${libnd4j.chip}</libnd4j.outputPath>
-        <cuda.version>12.3</cuda.version>
-        <cudnn.version>8.9</cudnn.version>
+        <cuda.version>12.9</cuda.version>
+        <cudnn.version>9.10</cudnn.version>
         <libnd4j.build>release</libnd4j.build>
         <libnd4j.chip>cpu</libnd4j.chip>
         <libnd4j.platform>${javacpp.platform}</libnd4j.platform>
@@ -117,6 +117,13 @@
         <libnd4j.blas></libnd4j.blas>
         <libnd4j.calltrace>OFF</libnd4j.calltrace>
         <libnd4j.lto>OFF</libnd4j.lto>
+        <!-- CUDA Parallel Compilation (CUDA 11.2+): can reduce build times by 50% -->
+        <!-- libnd4j.cuda.lto: Device LTO (better runtime perf, longer link) -->
+        <libnd4j.cuda.lto>OFF</libnd4j.cuda.lto>
+        <!-- libnd4j.cuda.threads: nvcc threads flag (0=auto, parallelizes multi-arch) -->
+        <libnd4j.cuda.threads>0</libnd4j.cuda.threads>
+        <!-- libnd4j.cuda.splitcompile: nvcc split-compile (0=auto, parallel optimization) -->
+        <libnd4j.cuda.splitcompile>0</libnd4j.cuda.splitcompile>
         <libnd4j.vectorization>OFF</libnd4j.vectorization>
         <libnd4j.cpu.compile.skip>false</libnd4j.cpu.compile.skip>
         <libnd4j.cuda.compile.skip>false</libnd4j.cuda.compile.skip>
@@ -142,6 +149,21 @@
         <libnd4j.link.only>OFF</libnd4j.link.only>
         <libnd4j.dry.run>OFF</libnd4j.dry.run>
 
+        <!-- OOM Killer Configuration (cross-platform: Linux, macOS, Windows/MSYS2) -->
+        <!-- Monitors memory usage during native build and terminates if threshold exceeded -->
+        <!-- The OOM killer monitors THREE conditions (any triggers a kill): -->
+        <!--   1. System memory threshold exceeded (libnd4j.oom.memory.threshold) -->
+        <!--   2. Process tree memory limit exceeded (libnd4j.oom.process.max.mb) -->
+        <!--   3. Rapid memory growth detected (libnd4j.oom.velocity.threshold) -->
+        <!-- Example: mvn compile -Dlibnd4j.oom.killer=ON -Dlibnd4j.oom.process.max.mb=32000 -->
+        <libnd4j.oom.killer>ON</libnd4j.oom.killer>
+        <libnd4j.oom.memory.threshold>85</libnd4j.oom.memory.threshold>
+        <libnd4j.oom.monitor.interval>1</libnd4j.oom.monitor.interval>
+        <!-- Process tree memory limit in MB (0=disabled). Tracks build process + all child compilers -->
+        <libnd4j.oom.process.max.mb>0</libnd4j.oom.process.max.mb>
+        <!-- Velocity threshold: kill if memory grows faster than this % per 5 seconds -->
+        <libnd4j.oom.velocity.threshold>8</libnd4j.oom.velocity.threshold>
+
         <!-- JNI Configuration for Java stack trace capture in lifecycle tracking -->
         <libnd4j.build.with.java>ON</libnd4j.build.with.java>
 
@@ -149,6 +171,12 @@
         <libnd4j.mlir>OFF</libnd4j.mlir>
         <libnd4j.mlir.version>18</libnd4j.mlir.version>
         <libnd4j.mlir.gpu>OFF</libnd4j.mlir.gpu>
+
+        <!-- Build Isolation Configuration -->
+        <!-- When true, 'mvn clean' removes ALL backends (blasbuild/*) -->
+        <!-- When false (default), 'mvn clean' only removes the current backend (blasbuild/${libnd4j.chip}) -->
+        <!-- This allows parallel builds of different backends without interference -->
+        <libnd4j.clean.all>false</libnd4j.clean.all>
 
     </properties>
 
@@ -245,6 +273,10 @@
                 </executions>
             </plugin>
 
+            <!-- Backend-Isolated Clean Plugin Configuration -->
+            <!-- By default, only cleans the current backend (blasbuild/${libnd4j.chip}) -->
+            <!-- This allows parallel builds of CPU and CUDA without interference -->
+            <!-- Use -Dlibnd4j.clean.all=true to clean all backends -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-clean-plugin</artifactId>
@@ -258,8 +290,9 @@
                         </goals>
                         <configuration>
                             <filesets>
+                                <!-- Only clean the current backend's build directory -->
                                 <fileset>
-                                    <directory>blasbuild</directory>
+                                    <directory>blasbuild/${libnd4j.chip}</directory>
                                 </fileset>
                             </filesets>
                         </configuration>
@@ -288,6 +321,45 @@
     </build>
 
     <profiles>
+
+        <!-- Clean All Backends Profile -->
+        <!-- Activated with -Dlibnd4j.clean.all=true -->
+        <!-- Cleans ALL backend build directories (blasbuild/*) instead of just the current one -->
+        <profile>
+            <id>clean-all-backends</id>
+            <activation>
+                <property>
+                    <name>libnd4j.clean.all</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-clean-plugin</artifactId>
+                        <version>3.3.1</version>
+                        <executions>
+                            <execution>
+                                <id>javacpp-cppbuild-clean-all</id>
+                                <phase>clean</phase>
+                                <goals>
+                                    <goal>clean</goal>
+                                </goals>
+                                <configuration>
+                                    <filesets>
+                                        <!-- Clean ALL backend build directories -->
+                                        <fileset>
+                                            <directory>blasbuild</directory>
+                                        </fileset>
+                                    </filesets>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
 
         <profile>
             <id>compat-profile</id>
@@ -826,6 +898,12 @@
                                         <argument>${libnd4j.sanitizers}</argument>
                                         <argument>--use_lto</argument>
                                         <argument>${libnd4j.lto}</argument>
+                                        <argument>--cuda-lto</argument>
+                                        <argument>${libnd4j.cuda.lto}</argument>
+                                        <argument>--cuda-threads</argument>
+                                        <argument>${libnd4j.cuda.threads}</argument>
+                                        <argument>--cuda-split-compile</argument>
+                                        <argument>${libnd4j.cuda.splitcompile}</argument>
                                         <argument>--functrace</argument>
                                         <argument>${libnd4j.calltrace}</argument>
                                         <argument>--log-output</argument>
@@ -870,6 +948,16 @@
                                         <argument>${libnd4j.mlir.version}</argument>
                                         <argument>--mlir-gpu</argument>
                                         <argument>${libnd4j.mlir.gpu}</argument>
+                                        <argument>--oom-killer</argument>
+                                        <argument>${libnd4j.oom.killer}</argument>
+                                        <argument>--oom-memory-threshold</argument>
+                                        <argument>${libnd4j.oom.memory.threshold}</argument>
+                                        <argument>--oom-monitor-interval</argument>
+                                        <argument>${libnd4j.oom.monitor.interval}</argument>
+                                        <argument>--oom-process-max-mb</argument>
+                                        <argument>${libnd4j.oom.process.max.mb}</argument>
+                                        <argument>--oom-velocity-threshold</argument>
+                                        <argument>${libnd4j.oom.velocity.threshold}</argument>
 
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
@@ -963,6 +1051,12 @@
                                         <argument>${libnd4j.sanitizers}</argument>
                                         <argument>--use_lto</argument>
                                         <argument>${libnd4j.lto}</argument>
+                                        <argument>--cuda-lto</argument>
+                                        <argument>${libnd4j.cuda.lto}</argument>
+                                        <argument>--cuda-threads</argument>
+                                        <argument>${libnd4j.cuda.threads}</argument>
+                                        <argument>--cuda-split-compile</argument>
+                                        <argument>${libnd4j.cuda.splitcompile}</argument>
                                         <argument>--functrace</argument>
                                         <argument>${libnd4j.calltrace}</argument>
                                         <argument>--log-output</argument>
@@ -1001,6 +1095,16 @@
                                         <argument>${libnd4j.mlir.version}</argument>
                                         <argument>--mlir-gpu</argument>
                                         <argument>${libnd4j.mlir.gpu}</argument>
+                                        <argument>--oom-killer</argument>
+                                        <argument>${libnd4j.oom.killer}</argument>
+                                        <argument>--oom-memory-threshold</argument>
+                                        <argument>${libnd4j.oom.memory.threshold}</argument>
+                                        <argument>--oom-monitor-interval</argument>
+                                        <argument>${libnd4j.oom.monitor.interval}</argument>
+                                        <argument>--oom-process-max-mb</argument>
+                                        <argument>${libnd4j.oom.process.max.mb}</argument>
+                                        <argument>--oom-velocity-threshold</argument>
+                                        <argument>${libnd4j.oom.velocity.threshold}</argument>
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>
@@ -1142,6 +1246,12 @@
                                         <argument>${libnd4j.arch}</argument>
                                         <argument>--use_lto</argument>
                                         <argument>${libnd4j.lto}</argument>
+                                        <argument>--cuda-lto</argument>
+                                        <argument>${libnd4j.cuda.lto}</argument>
+                                        <argument>--cuda-threads</argument>
+                                        <argument>${libnd4j.cuda.threads}</argument>
+                                        <argument>--cuda-split-compile</argument>
+                                        <argument>${libnd4j.cuda.splitcompile}</argument>
                                         <argument>--functrace</argument>
                                         <argument>${libnd4j.calltrace}</argument>
                                         <argument>--log-output</argument>
@@ -1182,6 +1292,16 @@
                                         <argument>${libnd4j.mlir.version}</argument>
                                         <argument>--mlir-gpu</argument>
                                         <argument>${libnd4j.mlir.gpu}</argument>
+                                        <argument>--oom-killer</argument>
+                                        <argument>${libnd4j.oom.killer}</argument>
+                                        <argument>--oom-memory-threshold</argument>
+                                        <argument>${libnd4j.oom.memory.threshold}</argument>
+                                        <argument>--oom-monitor-interval</argument>
+                                        <argument>${libnd4j.oom.monitor.interval}</argument>
+                                        <argument>--oom-process-max-mb</argument>
+                                        <argument>${libnd4j.oom.process.max.mb}</argument>
+                                        <argument>--oom-velocity-threshold</argument>
+                                        <argument>${libnd4j.oom.velocity.threshold}</argument>
 
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>

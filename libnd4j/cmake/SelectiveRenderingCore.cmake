@@ -858,6 +858,15 @@ function(_internal_srcore_generate_combinations active_indices type_names profil
         endforeach()
     endforeach()
 
+    # Generate SAME-TYPE 3-type combinations for templates using BUILD_SINGLE_SELECTOR_THRICE
+    # These templates only dispatch (T, T, T) at runtime, so cross-type combinations are wasted
+    set(combinations_3_same "")
+    foreach(i RANGE ${max_index})
+        list(APPEND combinations_3_same "${i},${i},${i}")
+    endforeach()
+    list(LENGTH combinations_3_same same_type_count)
+    message(STATUS "   - 3-type same-type combinations: ${same_type_count} (for BUILD_SINGLE_SELECTOR_THRICE templates)")
+
     # Get counts before profile filtering
     list(LENGTH combinations_2 accepted_2)
     list(LENGTH combinations_3 accepted_3_before_profile)
@@ -894,6 +903,8 @@ function(_internal_srcore_generate_combinations active_indices type_names profil
 
     set(${result_2_var} "${combinations_2}" PARENT_SCOPE)
     set(${result_3_var} "${combinations_3}" PARENT_SCOPE)
+    # Export same-type combinations directly to SRCORE namespace for access by callers
+    set(SRCORE_COMBINATIONS_3_SAME "${combinations_3_same}" PARENT_SCOPE)
 endfunction()
 
 
@@ -1444,6 +1455,8 @@ function(srcore_generate_combinations active_indices profile result_2_var result
     _internal_srcore_generate_combinations("${active_indices}" "${SRCORE_ACTIVE_TYPES}" "${profile}" combinations_2 combinations_3)
     set(SRCORE_COMBINATIONS_2 "${combinations_2}" PARENT_SCOPE)
     set(SRCORE_COMBINATIONS_3 "${combinations_3}" PARENT_SCOPE)
+    # Propagate same-type combinations from internal function
+    set(SRCORE_COMBINATIONS_3_SAME "${SRCORE_COMBINATIONS_3_SAME}" PARENT_SCOPE)
     set(${result_2_var} "${combinations_2}" PARENT_SCOPE)
     set(${result_3_var} "${combinations_3}" PARENT_SCOPE)
 endfunction()
@@ -2479,11 +2492,14 @@ function(setup_selective_rendering_unified)
 
     set(UNIFIED_COMBINATIONS_2 "${combinations_2}" PARENT_SCOPE)
     set(UNIFIED_COMBINATIONS_3 "${combinations_3}" PARENT_SCOPE)
+    # Propagate same-type combinations for BUILD_SINGLE_SELECTOR_THRICE templates
+    set(UNIFIED_COMBINATIONS_3_SAME "${SRCORE_COMBINATIONS_3_SAME}" PARENT_SCOPE)
     set(UNIFIED_ACTIVE_TYPES "${SRCORE_ACTIVE_TYPES}" PARENT_SCOPE)
     set(UNIFIED_TYPE_COUNT ${type_count} PARENT_SCOPE)
 
     set(UNIFIED_COMBINATIONS_2 "${combinations_2}" CACHE INTERNAL "Unified 2-type combinations")
     set(UNIFIED_COMBINATIONS_3 "${combinations_3}" CACHE INTERNAL "Unified 3-type combinations")
+    set(UNIFIED_COMBINATIONS_3_SAME "${SRCORE_COMBINATIONS_3_SAME}" CACHE INTERNAL "Unified 3-type same-type combinations for BUILD_SINGLE_SELECTOR_THRICE")
     set(UNIFIED_ACTIVE_TYPES "${SRCORE_ACTIVE_TYPES}" CACHE INTERNAL "Active types for build")
     set(UNIFIED_TYPE_COUNT ${type_count} CACHE INTERNAL "Unified active type count")
 
@@ -2511,6 +2527,9 @@ function(setup_selective_rendering_unified_safe)
     if(DEFINED UNIFIED_COMBINATIONS_3)
         set(UNIFIED_COMBINATIONS_3 "${UNIFIED_COMBINATIONS_3}" PARENT_SCOPE)
     endif()
+    if(DEFINED UNIFIED_COMBINATIONS_3_SAME)
+        set(UNIFIED_COMBINATIONS_3_SAME "${UNIFIED_COMBINATIONS_3_SAME}" PARENT_SCOPE)
+    endif()
     if(DEFINED UNIFIED_COMBINATIONS_2)
         set(UNIFIED_COMBINATIONS_2 "${UNIFIED_COMBINATIONS_2}" PARENT_SCOPE)
     endif()
@@ -2531,6 +2550,9 @@ function(setup_selective_rendering_unified_safe)
 
         if(DEFINED UNIFIED_COMBINATIONS_3)
             set(UNIFIED_COMBINATIONS_3 "${UNIFIED_COMBINATIONS_3}" PARENT_SCOPE)
+        endif()
+        if(DEFINED UNIFIED_COMBINATIONS_3_SAME)
+            set(UNIFIED_COMBINATIONS_3_SAME "${UNIFIED_COMBINATIONS_3_SAME}" PARENT_SCOPE)
         endif()
         if(DEFINED UNIFIED_COMBINATIONS_2)
             set(UNIFIED_COMBINATIONS_2 "${UNIFIED_COMBINATIONS_2}" PARENT_SCOPE)

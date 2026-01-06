@@ -69,13 +69,11 @@ void NativeOpExecutioner::execSummaryStatsScalar(sd::LaunchContext* lc, int opNu
         "NativeOpExecutioner::execSummaryStatsScalar:: unable to execute on strings. Please write logic higher level "
         "in each op for the string data type.")
   }
-#if SD_IS_PAIR_TYPE_COMPILED(xType,zType)
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::summarystats::SummaryStatsReduce,
       ::execSummaryStatsReduceScalar(launchDims, stream, opNum, const_cast<void*>(dX), dXShapeInfo, hXShapeInfo, extraParams, dZ,
                                      dZShapeInfo, hZShapeInfo, nullptr, nullptr, biasCorrected, reductionPointer),
       SD_COMMON_TYPES, SD_FLOAT_TYPES);
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////

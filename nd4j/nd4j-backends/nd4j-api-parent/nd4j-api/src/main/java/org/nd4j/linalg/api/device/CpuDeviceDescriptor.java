@@ -34,6 +34,20 @@ public class CpuDeviceDescriptor extends BaseDeviceDescriptor {
     private final long estimatedFlops;
 
     /**
+     * Create a simple CPU device descriptor with the given index.
+     * Uses system information for other properties.
+     *
+     * @param deviceIndex the device index
+     */
+    public CpuDeviceDescriptor(int deviceIndex) {
+        this("native", deviceIndex, "CPU-" + deviceIndex, deviceIndex == 0,
+                Runtime.getRuntime().availableProcessors(),
+                Runtime.getRuntime().availableProcessors(),
+                Runtime.getRuntime().maxMemory(),
+                System.getProperty("os.arch", "unknown"));
+    }
+
+    /**
      * Create a new CPU device descriptor
      * @param backendId the backend identifier
      * @param deviceIndex the device index

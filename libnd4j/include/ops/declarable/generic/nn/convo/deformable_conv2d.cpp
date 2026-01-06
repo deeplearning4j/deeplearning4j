@@ -28,7 +28,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_deformable_conv2d)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/nn.h>
 #include <ops/declarable/helpers/deformable_conv.h>
 
 namespace sd {

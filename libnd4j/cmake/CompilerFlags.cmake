@@ -212,9 +212,20 @@ endif()
 
 # --- GCC/Clang Specific Flags ---
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT SD_CUDA)
-    message(STATUS "Adding GCC memory optimization flags: --param ggc-min-expand=100 --param ggc-min-heapsize=131072")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=100 --param ggc-min-heapsize=131072 ${INFORMATIVE_FLAGS} -std=c++17 -fPIC")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --param ggc-min-expand=100 --param ggc-min-heapsize=131072 -fPIC")
+    # MEMORY OPTIMIZATION: Aggressive garbage collection during compilation
+    # ggc-min-expand: % heap growth before GC runs (lower = more aggressive, default 30)
+    #   - 20 means GC runs when heap grows 20%, reclaiming memory more frequently
+    #   - Critical for template-heavy files that can consume 4-8GB per compiler instance
+    # ggc-min-heapsize: Minimum heap in KB before GC params apply (default 4096)
+    #   - 65536 (64MB) prevents GC thrashing on small compilations
+    # finline-limit: Maximum size of inlined functions (default 600)
+    #   - 50 dramatically reduces memory for template-heavy code with many inlined functions
+    # fno-inline-small-functions: Disable automatic inlining of small functions
+    #   - Reduces code duplication and memory during template instantiation
+    set(GCC_MEMORY_FLAGS "--param ggc-min-expand=20 --param ggc-min-heapsize=65536 --param inline-unit-growth=30 -finline-limit=50")
+    message(STATUS "Adding GCC memory optimization flags: ${GCC_MEMORY_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_MEMORY_FLAGS} ${INFORMATIVE_FLAGS} -std=c++17 -fPIC")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GCC_MEMORY_FLAGS} -fPIC")
     if(UNIX)
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath,$ORIGIN/,--no-undefined,--verbose")
     else()
@@ -498,6 +509,36 @@ if(SD_SANITIZE)
         set(CMAKE_JOB_POOL_COMPILE compile_pool)
         message(STATUS "⚠️  Limited parallel compilation to ${SANITIZER_MAX_JOBS} jobs for memory-intensive sanitizer build")
         message(STATUS "   Estimated peak memory: ~${SANITIZER_MAX_JOBS}0 GB")
+    endif()
+endif()
+
+# --- MEMORY-BASED PARALLEL JOB LIMITING FOR ALL BUILDS ---
+# Template instantiation files consume 2-4GB per compiler process even WITHOUT sanitizers
+# This dynamically limits parallelism based on available system memory
+if(NOT SD_SANITIZE AND NOT DEFINED CMAKE_JOB_POOL_COMPILE)
+    cmake_host_system_information(RESULT TOTAL_MEMORY_MB QUERY TOTAL_PHYSICAL_MEMORY)
+    # Conservative estimate: each template instantiation compilation uses ~3GB peak
+    # Reserve 4GB for system + linker, rest divided by 3GB per compiler
+    math(EXPR AVAILABLE_FOR_COMPILE "(${TOTAL_MEMORY_MB} - 4000) / 3000")
+    if(AVAILABLE_FOR_COMPILE LESS 2)
+        set(AVAILABLE_FOR_COMPILE 2)
+    endif()
+    # Cap at 12 to avoid diminishing returns and I/O bottlenecks
+    if(AVAILABLE_FOR_COMPILE GREATER 12)
+        set(AVAILABLE_FOR_COMPILE 12)
+    endif()
+
+    # Only apply pool if we're limiting below what user might expect
+    cmake_host_system_information(RESULT NPROC QUERY NUMBER_OF_LOGICAL_CORES)
+    if(AVAILABLE_FOR_COMPILE LESS NPROC)
+        set_property(GLOBAL PROPERTY JOB_POOLS
+            heavy_compile=${AVAILABLE_FOR_COMPILE}
+            light_compile=${NPROC}
+        )
+        # Default pool for template-heavy files
+        set(CMAKE_JOB_POOL_COMPILE heavy_compile CACHE STRING "Job pool for compilation" FORCE)
+        message(STATUS "💾 Memory-based parallel limiting: ${AVAILABLE_FOR_COMPILE} jobs (${TOTAL_MEMORY_MB}MB RAM, ${NPROC} cores)")
+        message(STATUS "   Template instantiation files limited to prevent OOM (estimated ~3GB each)")
     endif()
 endif()
 

@@ -26,7 +26,7 @@
     namespace sd {
 
   template <typename T>
-  SD_KERNEL void flattenKernel(
+  SD_KERNEL SD_INLINE void flattenKernel(
       Pointer* extraPointers,
       int dOffset,
       char order,

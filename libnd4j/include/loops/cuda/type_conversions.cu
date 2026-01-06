@@ -170,7 +170,7 @@ SD_DEVICE void prescanBlock(int *data, int blockIndex, int *blockSums) {
 }
 
 template <bool storeSum, bool isNP2>
-SD_KERNEL void prescan(int *g_odata, const int *g_idata, int *g_blockSums, int n, int blockIndex, int baseIndex) {
+SD_KERNEL SD_INLINE void prescan(int *g_odata, const int *g_idata, int *g_blockSums, int n, int blockIndex, int baseIndex) {
   int ai, bi, mem_ai, mem_bi, bankOffsetA, bankOffsetB;
   extern __shared__ int s_data[];
 
@@ -520,22 +520,28 @@ SD_HOST void prescanLauncher(dim3 &blocks, dim3 &threads, int shmem, cudaStream_
 };
 
 template <typename S, typename T>
-SD_KERNEL void convertKernel(void *dx, LongType N, void *dz) {
+SD_KERNEL SD_INLINE void convertKernel(void *dx, LongType N, void *dz) {
   auto x = reinterpret_cast<S *>(dx);
   auto z = reinterpret_cast<T *>(dz);
 
   sd::convertKernelGeneric(x, N, z);
 }
 
-#define LIBND4J_BOOLS_LOCAL (randomName0, 0), (randomName1, 1)
-
 BUILD_DOUBLE_TEMPLATE( void TypeCast::convertGenericCuda,
                       (sd::Pointer * extras, void *dx, sd::LongType N, void *dz), SD_COMMON_TYPES,
                       SD_COMMON_TYPES);
-BUILD_DOUBLE_TEMPLATE( void prescanLauncher,
-                      (dim3 & blocks, dim3 &threads, int shmem, cudaStream_t *stream, int *g_odata, const int *g_idata,
-                       int *g_blockSums, int n, int blockIndex, int baseIndex),
-                      LIBND4J_BOOLS_LOCAL, LIBND4J_BOOLS_LOCAL);
 
-#undef LIBND4J_BOOLS_LOCAL
+// Explicit template instantiations for prescanLauncher with boolean non-type template parameters
+template SD_HOST void prescanLauncher<false, false>(dim3 &blocks, dim3 &threads, int shmem, cudaStream_t *stream,
+                                                     int *g_odata, const int *g_idata, int *g_blockSums, int n,
+                                                     int blockIndex, int baseIndex);
+template SD_HOST void prescanLauncher<false, true>(dim3 &blocks, dim3 &threads, int shmem, cudaStream_t *stream,
+                                                    int *g_odata, const int *g_idata, int *g_blockSums, int n,
+                                                    int blockIndex, int baseIndex);
+template SD_HOST void prescanLauncher<true, false>(dim3 &blocks, dim3 &threads, int shmem, cudaStream_t *stream,
+                                                    int *g_odata, const int *g_idata, int *g_blockSums, int n,
+                                                    int blockIndex, int baseIndex);
+template SD_HOST void prescanLauncher<true, true>(dim3 &blocks, dim3 &threads, int shmem, cudaStream_t *stream,
+                                                   int *g_odata, const int *g_idata, int *g_blockSums, int n,
+                                                   int blockIndex, int baseIndex);
 }  // namespace sd

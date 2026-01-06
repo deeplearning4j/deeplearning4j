@@ -26,7 +26,7 @@
 #if NOT_EXCLUDED(OP_conv3dnew)
 
 #include <helpers/MmulHelper.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/convo.h>
 #include <ops/declarable/helpers/addBias.h>
 #include <ops/declarable/helpers/convolutions.h>
 

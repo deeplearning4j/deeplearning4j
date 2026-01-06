@@ -22,7 +22,7 @@
 
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_reshape)
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/shape.h>
 #include <cstring>
 namespace sd {
 namespace ops {

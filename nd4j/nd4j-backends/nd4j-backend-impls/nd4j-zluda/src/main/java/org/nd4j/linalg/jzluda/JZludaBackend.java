@@ -20,9 +20,14 @@
 
 package org.nd4j.linalg.jzluda;
 
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.common.io.Resource;
+import org.nd4j.linalg.api.device.DeviceDescriptor;
+import org.nd4j.linalg.api.memory.MemoryManager;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Environment;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +35,8 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * ZLUDA Backend for ND4J
@@ -262,5 +269,56 @@ public class JZludaBackend extends Nd4jBackend {
     @Override
     public String toString() {
         return "ZLUDA Backend [target=" + detectedTarget + ", available=" + zludaAvailable + "]";
+    }
+
+    @Override
+    public boolean allowsOrder() {
+        return false;
+    }
+
+    @Override
+    public String buildInfo() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("ZLUDA Backend\n");
+        sb.append("Target: ").append(detectedTarget).append("\n");
+        sb.append("ZLUDA Path: ").append(System.getenv("ZLUDA_PATH")).append("\n");
+        return sb.toString();
+    }
+
+    @Override
+    public void logBackendInit() {
+        String logInitProperty = System.getProperty(ND4JSystemProperties.LOG_INITIALIZATION, "true");
+        boolean logInit = Boolean.parseBoolean(logInitProperty);
+
+        if (logInit) {
+            try {
+                log.info("ZLUDA Backend build information:\n{}", buildInfo());
+                log.info("ZLUDA target: {}", detectedTarget);
+            } catch (Throwable t) {
+                log.debug("Error logging ZLUDA backend versions", t);
+            }
+        }
+    }
+
+    @Override
+    public List<DeviceDescriptor> discoverDevices() {
+        // ZLUDA exposes devices through CUDA API
+        // For now return empty list - device discovery would require native bindings
+        return Collections.emptyList();
+    }
+
+    @Override
+    public OpExecutioner createExecutioner() {
+        return Nd4j.getExecutioner();
+    }
+
+    @Override
+    public MemoryManager createMemoryManager() {
+        return Nd4j.getMemoryManager();
+    }
+
+    @Override
+    public String getBackendId() {
+        return "zluda";
     }
 }

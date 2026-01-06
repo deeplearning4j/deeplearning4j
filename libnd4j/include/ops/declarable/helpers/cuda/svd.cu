@@ -53,27 +53,36 @@ static void svdQR(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, ND
 
   if (A->rankOf() != 2) THROW_EXCEPTION("svdQR: rank of A array is not equal 2 !");
 
-  auto m = A->sizeAt(0);
-  auto n = A->sizeAt(1);
-  const int minDim = m < n ? m : n;
+  LongType m = A->sizeAt(0);
+  LongType n = A->sizeAt(1);
+  const LongType minDim = m < n ? m : n;
   const char orderA = A->ordering();
 
   if (m < n) THROW_EXCEPTION("svdQR: due to cuda api input constrains given shape of A array are not valid !");
 
-  if (std::vector<LongType>({minDim}) != S->getShapeAsVector())
+  // Check S shape - should be [minDim]
+  if (S->rankOf() != 1 || S->sizeAt(0) != minDim)
     THROW_EXCEPTION("svdQR: wrong shape of S array !");
 
   if (calcUV) {
-    if (fullUV && std::vector<LongType>({m, m}) != U->getShapeAsVector()) {
+    // U should be [m, m] if fullUV, otherwise [m, minDim]
+    if (U->rankOf() != 2) {
       THROW_EXCEPTION("svdQR: wrong shape of U array !");
-    } else if (!fullUV && std::vector<LongType>({m, minDim}) != U->getShapeAsVector()) {
+    }
+    if (fullUV && (U->sizeAt(0) != m || U->sizeAt(1) != m)) {
+      THROW_EXCEPTION("svdQR: wrong shape of U array !");
+    } else if (!fullUV && (U->sizeAt(0) != m || U->sizeAt(1) != minDim)) {
       THROW_EXCEPTION("svdQR: wrong shape of U array !");
     }
 
-    if (fullUV && std::vector<LongType>({n, n}) != VT->getShapeAsVector()) {
+    // VT should be [n, n] if fullUV, otherwise [minDim, n]
+    if (VT->rankOf() != 2) {
       THROW_EXCEPTION("svdQR: wrong shape of VT array !");
     }
-    else if (!fullUV && std::vector<LongType>({minDim, n}) != VT->getShapeAsVector()) {
+    if (fullUV && (VT->sizeAt(0) != n || VT->sizeAt(1) != n)) {
+      THROW_EXCEPTION("svdQR: wrong shape of VT array !");
+    }
+    else if (!fullUV && (VT->sizeAt(0) != minDim || VT->sizeAt(1) != n)) {
       THROW_EXCEPTION("svdQR: wrong shape of VT array !");
     }
   }
@@ -204,21 +213,36 @@ static void svdJcb(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, N
 
   if (A->rankOf() != 2) THROW_EXCEPTION("svdJcb: rank of A array is not equal 2 !");
 
-  int m = A->sizeAt(0);
-  int n = A->sizeAt(1);
-  const int minDim = m < n ? m : n;
+  LongType m = A->sizeAt(0);
+  LongType n = A->sizeAt(1);
+  const LongType minDim = m < n ? m : n;
 
-  if (std::vector<LongType>({minDim}) != S->getShapeAsVector()) THROW_EXCEPTION("svdJcb: wrong shape of S array !");
-
-  if (fullUV && U != nullptr && std::vector<LongType>({m, m}) != U->getShapeAsVector()) {
-    THROW_EXCEPTION("svdJcb: wrong shape of U array !");
-  } else if (!fullUV && U != nullptr && std::vector<LongType>({m, minDim}) != U->getShapeAsVector()) {
-    THROW_EXCEPTION("svdJcb: wrong shape of U array !");
+  // Check S shape - should be [minDim]
+  if (S->rankOf() != 1 || S->sizeAt(0) != minDim) {
+    THROW_EXCEPTION("svdJcb: wrong shape of S array !");
   }
-  if (fullUV && V != nullptr && std::vector<LongType>({n, n}) != V->getShapeAsVector()) {
-    THROW_EXCEPTION("svdJcb: wrong shape of V array !");
-  } else if (!fullUV && V != nullptr && std::vector<LongType>({n, minDim}) != V->getShapeAsVector()) {
-    THROW_EXCEPTION("svdJcb: wrong shape of V array !");
+
+  if (U != nullptr) {
+    // U should be [m, m] if fullUV, otherwise [m, minDim]
+    if (U->rankOf() != 2) {
+      THROW_EXCEPTION("svdJcb: wrong shape of U array !");
+    }
+    if (fullUV && (U->sizeAt(0) != m || U->sizeAt(1) != m)) {
+      THROW_EXCEPTION("svdJcb: wrong shape of U array !");
+    } else if (!fullUV && (U->sizeAt(0) != m || U->sizeAt(1) != minDim)) {
+      THROW_EXCEPTION("svdJcb: wrong shape of U array !");
+    }
+  }
+  if (V != nullptr) {
+    // V should be [n, n] if fullUV, otherwise [n, minDim]
+    if (V->rankOf() != 2) {
+      THROW_EXCEPTION("svdJcb: wrong shape of V array !");
+    }
+    if (fullUV && (V->sizeAt(0) != n || V->sizeAt(1) != n)) {
+      THROW_EXCEPTION("svdJcb: wrong shape of V array !");
+    } else if (!fullUV && (V->sizeAt(0) != n || V->sizeAt(1) != minDim)) {
+      THROW_EXCEPTION("svdJcb: wrong shape of V array !");
+    }
   }
 
   NDArray* pA = const_cast<NDArray*>(A);
@@ -293,7 +317,7 @@ static void svdJcb(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, N
   const cusolverEigMode_t jobz = calcUV ? CUSOLVER_EIG_MODE_VECTOR : CUSOLVER_EIG_MODE_NOVECTOR;
   const int econ = !fullUV;
 
-  if (transA) math::sd_swap<int>(m, n);
+  if (transA) math::sd_swap<LongType>(m, n);
 
   // *** avoid bug in cuda API ***
   void* nullPtr = nullptr;

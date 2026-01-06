@@ -23,11 +23,12 @@
 //
 
 #include <system/op_boilerplate.h>
+#include <array/NDArrayFactory.h>
 #if NOT_EXCLUDED(OP_sru)
 
 #include <helpers/MmulHelper.h>
 #include <helpers/PointersManager.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/recurrent.h>
 #include <ops/declarable/helpers/sru.h>
 
 namespace sd {

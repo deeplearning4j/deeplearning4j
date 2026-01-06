@@ -179,10 +179,10 @@ static void ctcGreedyDecodeCuda_(sd::LaunchContext* context,
 
     PointersManager manager(context, "ctcGreedyDecode");
 
-    const T* logitsBuffer = logits->specialBufferAsT<T>();
-    const I* seqLenBuffer = sequenceLength != nullptr ? sequenceLength->specialBufferAsT<I>() : nullptr;
-    sd::LongType* decodedBuffer = decoded->specialBufferAsT<sd::LongType>();
-    T* logProbBuffer = logProb->specialBufferAsT<T>();
+    const T* logitsBuffer = logits->specialBufferasT<T>();
+    const I* seqLenBuffer = sequenceLength != nullptr ? sequenceLength->specialBufferasT<I>() : nullptr;
+    sd::LongType* decodedBuffer = decoded->specialBufferasT<sd::LongType>();
+    T* logProbBuffer = logProb->specialBufferasT<T>();
 
     ctcGreedyDecodeKernel<T, I><<<grid, block, sharedMemSize, *context->getCudaStream()>>>(
         logitsBuffer,

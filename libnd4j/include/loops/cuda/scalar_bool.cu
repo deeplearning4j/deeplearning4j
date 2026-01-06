@@ -35,7 +35,7 @@ using namespace simdOps;
 // A kernel that applies a scalar bool transform along a specific dimension (TAD).
 // It uses shared memory caching for relevant shape information to reduce overhead.
 template <typename X, typename Z, typename OpType>
-__global__ void scalarAlongDimensionCachedKernel(
+SD_KERNEL SD_INLINE void scalarAlongDimensionCachedKernel(
    void const* x,
    const sd::LongType* xShapeInfo,
    void* extraParams,
@@ -115,7 +115,7 @@ __global__ void scalarAlongDimensionCachedKernel(
 // A kernel to apply a scalar transform to a shaped buffer, with caching logic
 // for shape info in shared memory to reduce overhead.
 template <typename X, typename Z, typename OpType>
-__global__ void scalarSimpleShapedCachedKernel(
+SD_KERNEL SD_INLINE void scalarSimpleShapedCachedKernel(
    void const* x,                 // the "scalar" input
    void const* y,                 // the "array" input
    const sd::LongType* xShapeInfo,// we just read rank from here if needed
@@ -305,8 +305,8 @@ __host__ void ScalarBoolTransform<X,Z>::intermediateShaped(
 }
 
 ////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y>
-__host__ void ScalarBoolTransform<X, Y>::executeCudaShaped(
+template <typename X, typename Z>
+__host__ void ScalarBoolTransform<X, Z>::executeCudaShaped(
    dim3& launchDims,
    cudaStream_t* stream,
    int opNum,
@@ -329,8 +329,8 @@ __host__ void ScalarBoolTransform<X, Y>::executeCudaShaped(
 }
 
 ////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y>
-__host__ void ScalarBoolTransform<X, Y>::executeCudaAlongDimension(
+template <typename X, typename Z>
+__host__ void ScalarBoolTransform<X, Z>::executeCudaAlongDimension(
    dim3& launchDims,
    cudaStream_t* stream,
    int opNum,

@@ -22,6 +22,9 @@
 // Created by agibsonccc on 3/10/25.
 //
 
+// MEMORY OPTIMIZATION: Define op group to compile only a subset of operations
+#define BROADCAST_OP_GROUP @OP_GROUP@
+
 #include <loops/cuda/broadcasting.chpp>
 #include <system/type_boilerplate.h>
 #include <loops/pairwise_instantiations_single.h>

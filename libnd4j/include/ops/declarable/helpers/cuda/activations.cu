@@ -562,12 +562,15 @@ void logSoftmax(LaunchContext *context, NDArray *input, NDArray *output, const i
   } else {
     std::vector<LongType> dim = {static_cast<LongType>(dimension)};
     auto maxAlongDim = const_cast<NDArray *>(input)->reduceAlongDimension(reduce::Max, &dim, true);
-    auto inputMinusMax = *input - maxAlongDim;
-    inputMinusMax.applyTransform(transform::Exp, output);  // output contains exponents temporarily
+    auto inputMinusMax = *input - *maxAlongDim;
+    inputMinusMax->applyTransform(transform::Exp, output);  // output contains exponents temporarily
     auto sumAlongDim = output->reduceAlongDimension(reduce::Sum, &dim, true);
-    *output /= sumAlongDim;
+    *output /= *sumAlongDim;
     output->applyTransform(transform::Log, output);
     input->tickReadDevice();
+    delete maxAlongDim;
+    delete inputMinusMax;
+    delete sumAlongDim;
   }
 
   PointersManager manager(context, "helpers::logSoftmax");
@@ -694,12 +697,17 @@ void softmaxDerivative(LaunchContext *context, NDArray *input, NDArray *output, 
   } else {
     std::vector<LongType> dim = {static_cast<LongType>(dimension)};
     auto maxAlongDim = const_cast<NDArray *>(input)->reduceAlongDimension(reduce::Max, &dim, true);
-    auto inputMinusMax = *input - maxAlongDim;
-    inputMinusMax.applyTransform(transform::Exp, output);  // output contains exponents temporarily
+    auto inputMinusMax = *input - *maxAlongDim;
+    inputMinusMax->applyTransform(transform::Exp, output);  // output contains exponents temporarily
     auto sumAlongDim = output->reduceAlongDimension(reduce::Sum, &dim, true);
-    *output /= sumAlongDim;
-    *output *= (1.f - *output);  // derivative
+    *output /= *sumAlongDim;
+    auto oneMinusOutput = 1.f - *output;
+    *output *= *oneMinusOutput;  // derivative
     input->tickReadDevice();
+    delete maxAlongDim;
+    delete inputMinusMax;
+    delete sumAlongDim;
+    delete oneMinusOutput;
   }
 
   PointersManager manager(context, "helpers::softmaxDerivative");

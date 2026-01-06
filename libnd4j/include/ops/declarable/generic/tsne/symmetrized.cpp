@@ -21,9 +21,10 @@
 //
 
 #include <system/op_boilerplate.h>
+#include <array/NDArrayFactory.h>
 #if NOT_EXCLUDED(OP_barnes_symmetrized)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/BarnesHutTsne.h>
 #include <ops/declarable/helpers/BarnesHutTsne.h>
 
 namespace sd {

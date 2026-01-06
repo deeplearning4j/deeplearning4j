@@ -29,9 +29,8 @@
 #include "../cublasHelper.h"
 #include "config.h"
 
-#ifdef HAVE_CUDNN
+#if HAVE_CUDNN
 #include <cudnn.h>
-
 #endif
 
 namespace sd {
@@ -54,14 +53,15 @@ static void* solver_() {
 }
 
 static void* cudnn_() {
-#ifdef HAVE_CUDNN
+#if HAVE_CUDNN
   auto cudnnH = new cudnnHandle_t();
   auto status = cudnnCreate(cudnnH);
   if (status != CUDNN_STATUS_SUCCESS) throw cuda_exception::build("cuDNN handle creation failed !", status);
 
   return cudnnH;
-#endif
+#else
   return nullptr;
+#endif
 }
 
 static void destroyHandle_(void* handle) {

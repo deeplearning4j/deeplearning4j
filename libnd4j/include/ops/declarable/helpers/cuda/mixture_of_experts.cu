@@ -211,11 +211,11 @@ static void mixtureOfExpertsSimpleCuda_(sd::LaunchContext* context,
 
     PointersManager manager(context, "mixtureOfExperts");
 
-    const T* inputBuffer = input->specialBufferAsT<T>();
-    const T* gatingBuffer = gatingWeights->specialBufferAsT<T>();
-    const T* expertBuffer = expertWeights->specialBufferAsT<T>();
-    const T* biasBuffer = expertBias != nullptr ? expertBias->specialBufferAsT<T>() : nullptr;
-    T* outputBuffer = output->specialBufferAsT<T>();
+    const T* inputBuffer = input->specialBufferasT<T>();
+    const T* gatingBuffer = gatingWeights->specialBufferasT<T>();
+    const T* expertBuffer = expertWeights->specialBufferasT<T>();
+    const T* biasBuffer = expertBias != nullptr ? expertBias->specialBufferasT<T>() : nullptr;
+    T* outputBuffer = output->specialBufferasT<T>();
 
     mixtureOfExpertsKernel<T><<<totalTokens, blockSize, sharedMemSize, *context->getCudaStream()>>>(
         inputBuffer, gatingBuffer, expertBuffer, biasBuffer, outputBuffer,
