@@ -55,12 +55,6 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
     public final static long BASE_CUDA_OP_CONTEXT_OFFSET = RandomUtils.nextLong();
     private long deallocationId;
 
-    // CRITICAL: Keep OpaqueNDArrayArr instances alive to prevent use-after-free in native code.
-    // These hold references to parent INDArrays, preventing GC from freeing their DataBuffers
-    // while the native Context still holds pointers to the sd::NDArray* objects.
-    private OpaqueNDArrayArr inputArraysHolder;
-    private OpaqueNDArrayArr outputArraysHolder;
-
     // Keep strong references to INDArrays passed via single-array setters.
     // This prevents GC from collecting them while this OpContext is alive.
     // The cached OpaqueNDArrays inside these INDArrays will remain valid.
@@ -75,16 +69,7 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
     @Override
     public void close() {
         purge();
-        // Clean up array holders to release parent references
-        if (inputArraysHolder != null) {
-            inputArraysHolder.close();
-            inputArraysHolder = null;
-        }
-        if (outputArraysHolder != null) {
-            outputArraysHolder.close();
-            outputArraysHolder = null;
-        }
-        // Clear single-array references (no need to close OpaqueNDArrays - they're cached and
+        // Clear array references (no need to close OpaqueNDArrays - they're cached and
         // managed by the INDArrays themselves, which will clean them up when they're GC'd)
         singleInputArrayRefs.clear();
         singleOutputArrayRefs.clear();
@@ -134,36 +119,25 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
 
     @Override
     public void setInputArrays(@NonNull List<INDArray> arrays) {
-        // CRITICAL: Store ALL arrays (including empty ones) to prevent GC from freeing
-        // their DataBuffers while native code holds pointers to sd::NDArray* objects.
+        // Use the single-array approach like CpuOpContext - bypasses OpaqueNDArrayArr issues
         for (int i = 0; i < arrays.size(); i++) {
             INDArray array = arrays.get(i);
-            // Always store the array reference, not null - prevents use-after-free under memory pressure
             fastpath_in.put(i, array);
-        }
-        if (!arrays.isEmpty()) {
-            // Use createFrom() which keeps parent array references and registers with DeallocatorService
-            // Store in instance field to keep alive for duration of this OpContext
-            inputArraysHolder = OpaqueNDArrayArr.createFrom(arrays);
-            nativeOps.setGraphContextInputArraysArr(context, arrays.size(), inputArraysHolder);
+            singleInputArrayRefs.put(i, array);
+            OpaqueNDArray opaqueArray = OpaqueNDArray.fromINDArray(array);
+            nativeOps.setGraphContextInputArray(context, i, opaqueArray);
         }
     }
 
     @Override
     public void setOutputArrays(@NonNull List<INDArray> arrays) {
-        // CRITICAL: Store ALL arrays (including empty ones) to prevent GC from freeing
-        // their DataBuffers while native code holds pointers to sd::NDArray* objects.
+        // Use the single-array approach like CpuOpContext - bypasses OpaqueNDArrayArr issues
         for (int i = 0; i < arrays.size(); i++) {
             INDArray array = arrays.get(i);
-            // Always store the array reference, not null - prevents use-after-free under memory pressure
             fastpath_out.put(i, array);
-        }
-
-        if (!arrays.isEmpty()) {
-            // Use createFrom() which keeps parent array references and registers with DeallocatorService
-            // Store in instance field to keep alive for duration of this OpContext
-            outputArraysHolder = OpaqueNDArrayArr.createFrom(arrays);
-            nativeOps.setGraphContextOutputArraysArr(context, arrays.size(), outputArraysHolder);
+            singleOutputArrayRefs.put(i, array);
+            OpaqueNDArray opaqueArray = OpaqueNDArray.fromINDArray(array);
+            nativeOps.setGraphContextOutputArray(context, i, opaqueArray);
         }
     }
     @Override

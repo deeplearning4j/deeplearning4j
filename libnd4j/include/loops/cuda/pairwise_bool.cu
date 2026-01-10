@@ -28,7 +28,7 @@ using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpType>
-SD_KERNEL static void pairwiseSimpleShaped(
+SD_KERNEL void pairwiseSimpleShaped(
     void const* vx,
     sd::LongType const* xShapeInfo,
     void const* vy,

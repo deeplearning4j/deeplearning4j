@@ -35,8 +35,12 @@ import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.buffer.HybridDataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
+import org.nd4j.linalg.api.device.DeviceDescriptor;
+import org.nd4j.linalg.api.device.DeviceType;
 import org.nd4j.linalg.api.memory.Deallocatable;
+import org.nd4j.linalg.api.memory.MultiBackendWorkspace;
 import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
@@ -72,7 +76,7 @@ import java.util.Collection;
  * @author Adam Gibson
  * @author raver119@gmail.com
  */
-public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCudaBuffer, Deallocatable {
+public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCudaBuffer, Deallocatable, HybridDataBuffer {
 
     @Getter
     protected transient volatile AllocationPoint allocationPoint;
@@ -81,6 +85,14 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     private static AtomicAllocator allocator = AtomicAllocator.getInstance();
 
     protected DataType globalType = DataTypeUtil.getDtypeFromContext();
+
+    // HybridDataBuffer device tracking fields
+    protected volatile DeviceDescriptor ownerDevice;
+    protected volatile boolean hostDirty = false;
+    protected volatile boolean deviceDirty = false;
+    protected volatile boolean cpuValid = false;   // CPU has valid copy of data
+    protected volatile boolean gpuValid = true;    // GPU has valid copy (true by default for CUDA buffers)
+    protected volatile MultiBackendWorkspace multiBackendWorkspace;
 
     public BaseCudaDataBuffer() {
 
@@ -1978,5 +1990,167 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     public void syncToSpecial(){
         ptrDataBuffer.syncToSpecial();
+    }
+
+    // ========================
+    // HybridDataBuffer Implementation
+    // ========================
+
+    @Override
+    public boolean isHybrid() {
+        return true;
+    }
+
+    @Override
+    public HybridDataBuffer asHybrid() {
+        return this;
+    }
+
+    @Override
+    public DeviceDescriptor getOwnerDevice() {
+        if (ownerDevice == null) {
+            // Default to CUDA device based on allocation point
+            int deviceId = targetDevice();
+            ownerDevice = DeviceDescriptor.cuda(deviceId);
+        }
+        return ownerDevice;
+    }
+
+    @Override
+    public void setOwnerDevice(DeviceDescriptor device) {
+        this.ownerDevice = device;
+    }
+
+    @Override
+    public boolean isValidOn(DeviceDescriptor device) {
+        if (device == null) {
+            return false;
+        }
+        // Check explicit validity flags
+        if (device.getDeviceType() == DeviceType.CPU) {
+            return cpuValid;
+        } else if (device.getDeviceType().isGpu()) {
+            return gpuValid;
+        }
+        return false;
+    }
+
+    @Override
+    public void markValidOn(DeviceDescriptor device) {
+        if (device == null) {
+            return;
+        }
+        if (device.getDeviceType() == DeviceType.CPU) {
+            cpuValid = true;
+            hostDirty = false;
+        } else if (device.getDeviceType().isGpu()) {
+            gpuValid = true;
+            deviceDirty = false;
+            ownerDevice = device;
+        }
+    }
+
+    @Override
+    public void markInvalidOn(DeviceDescriptor device) {
+        if (device == null) {
+            return;
+        }
+        if (device.getDeviceType() == DeviceType.CPU) {
+            cpuValid = false;
+            hostDirty = true;
+        } else if (device.getDeviceType().isGpu()) {
+            gpuValid = false;
+            deviceDirty = true;
+        }
+    }
+
+    @Override
+    public void ensureAvailableOn(DeviceDescriptor device) {
+        if (device == null || ptrDataBuffer == null) {
+            return;
+        }
+
+        if (device.getDeviceType() == DeviceType.CPU) {
+            // Need data on CPU/host
+            if (!cpuValid) {
+                // Sync from GPU to CPU
+                syncToPrimary();
+                cpuValid = true;
+                deviceDirty = false;
+            }
+        } else if (device.getDeviceType().isGpu()) {
+            // Need data on GPU
+            if (!gpuValid) {
+                // Sync from CPU to GPU
+                syncToSpecial();
+                gpuValid = true;
+                hostDirty = false;
+            }
+            // Update owner to target device
+            ownerDevice = device;
+        }
+    }
+
+    @Override
+    public long getDeviceAddress(DeviceDescriptor device) {
+        if (device == null || ptrDataBuffer == null) {
+            return 0;
+        }
+
+        if (device.getDeviceType() == DeviceType.CPU) {
+            // Return host/primary buffer address
+            Pointer primary = ptrDataBuffer.primaryBuffer();
+            return primary != null ? primary.address() : 0;
+        } else {
+            // Return device/special buffer address
+            Pointer special = ptrDataBuffer.specialBuffer();
+            return special != null ? special.address() : 0;
+        }
+    }
+
+    @Override
+    public MultiBackendWorkspace getMultiBackendWorkspace() {
+        return multiBackendWorkspace;
+    }
+
+    @Override
+    public void attachToWorkspace(MultiBackendWorkspace workspace) {
+        this.multiBackendWorkspace = workspace;
+    }
+
+    @Override
+    public void detachFromWorkspace() {
+        this.multiBackendWorkspace = null;
+    }
+
+    @Override
+    public void allocateOnDevice(DeviceDescriptor device, long requiredSize) {
+        // For CUDA buffers, allocation is handled by AtomicAllocator
+        // This method is a hook for workspace-based allocation
+        if (multiBackendWorkspace != null) {
+            // Use workspace allocation - the workspace handles device-specific allocation
+            // The actual memory pointer management is in the native layer
+        }
+        // Otherwise, standard allocation already happened in constructor
+    }
+
+    @Override
+    public boolean isHostDirty() {
+        return hostDirty;
+    }
+
+    @Override
+    public boolean isDeviceDirty() {
+        return deviceDirty;
+    }
+
+    @Override
+    public void markHostDirty() {
+        this.hostDirty = true;
+    }
+
+    @Override
+    public void markDeviceDirty() {
+        this.deviceDirty = true;
     }
 }

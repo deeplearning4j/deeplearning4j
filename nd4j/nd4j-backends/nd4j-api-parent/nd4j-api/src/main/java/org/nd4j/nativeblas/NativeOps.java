@@ -444,6 +444,7 @@ public interface NativeOps {
  Pointer lcBlasHandle(org.nd4j.nativeblas.OpaqueLaunchContext lc);
  Pointer lcSolverHandle(org.nd4j.nativeblas.OpaqueLaunchContext lc);
  int lastErrorCode();
+ void clearLastError();
  void ctxShapeFunctionOverride(org.nd4j.nativeblas.OpaqueContext ptr, boolean reallyOverride);
  void ctxPurge(org.nd4j.nativeblas.OpaqueContext ptr);
  int binaryLevel();

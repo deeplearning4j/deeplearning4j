@@ -23,8 +23,9 @@
 #ifndef LIBND4J_TYPE_BOILERPLATE_H
 #define LIBND4J_TYPE_BOILERPLATE_H
 
-
-#include "array/DataTypeValidation.h"
+// DataTypeValidation.h is included for the BUILD_SINGLE_SELECTOR macros.
+// It uses sd_export.h (not common.h) to avoid circular dependencies.
+#include <array/DataTypeValidation.h>
 #include <system/type_instantiate_boilerplate.h>
 #include <system/selective_rendering.h>
 #include "type_boiler_plate_expansions.h"

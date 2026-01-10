@@ -22,6 +22,7 @@ package org.nd4j.linalg.factory;
 
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.common.config.ND4JClassLoading;
+import org.nd4j.linalg.api.device.CpuDeviceDescriptor;
 import org.nd4j.linalg.api.device.DeviceDescriptor;
 import org.nd4j.linalg.api.device.DeviceType;
 import org.nd4j.linalg.api.memory.MultiBackendWorkspace;
@@ -133,6 +134,14 @@ public class BackendRegistry {
             } catch (Exception e) {
                 log.warn("Failed to discover devices for backend: {}", entry.getKey(), e);
             }
+        }
+
+        // Always ensure at least one CPU device is registered
+        // This is needed for hybrid buffers that have both host and device memory
+        if (devicesByType.get(DeviceType.CPU) == null || devicesByType.get(DeviceType.CPU).isEmpty()) {
+            CpuDeviceDescriptor cpuDevice = new CpuDeviceDescriptor(0);
+            registerDevice(cpuDevice);
+            log.debug("Registered default CPU device for hybrid buffer support");
         }
     }
 

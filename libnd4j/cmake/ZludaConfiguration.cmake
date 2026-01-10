@@ -391,34 +391,34 @@ function(configure_zluda_cuda_flags)
 
     message(STATUS "Configuring CUDA flags for ZLUDA compatibility...")
 
-    # ZLUDA-specific CUDA compilation adjustments
-    # These ensure generated PTX/SASS is compatible with ZLUDA's translation layer
+    # =========================================================================
+    # NOTE: Architecture flags (-arch=sm_50) and --relocatable-device-code=false
+    # are now handled centrally in CudaConfiguration.cmake when SD_ZLUDA is set.
+    # This function now only handles additional ZLUDA-specific flags that aren't
+    # part of the core CUDA build configuration.
+    # =========================================================================
 
     set(ZLUDA_CUDA_FLAGS "")
 
-    # Use a baseline compute capability that ZLUDA supports well
-    # ZLUDA translates these to appropriate HIP/Level Zero code
+    # Report that architecture is handled by CudaConfiguration.cmake
     if(ZLUDA_TARGET_BACKEND STREQUAL "AMD")
-        # For AMD, use sm_50 as baseline - ZLUDA maps to appropriate gfx arch
-        list(APPEND ZLUDA_CUDA_FLAGS "-arch=sm_50")
-        message(STATUS "   Using sm_50 for AMD ZLUDA (mapped to ROCm gfx)")
+        message(STATUS "   Target: AMD (ROCm/HIP) - sm_50 baseline set in CudaConfiguration")
     elseif(ZLUDA_TARGET_BACKEND STREQUAL "INTEL")
-        # For Intel, use sm_50 as baseline - ZLUDA maps to Level Zero
-        list(APPEND ZLUDA_CUDA_FLAGS "-arch=sm_50")
-        message(STATUS "   Using sm_50 for Intel ZLUDA (mapped to Level Zero)")
+        message(STATUS "   Target: Intel (Level Zero) - sm_50 baseline set in CudaConfiguration")
     endif()
 
-    # Disable features that ZLUDA may not fully support
-    list(APPEND ZLUDA_CUDA_FLAGS "--relocatable-device-code=false")
-
-    # Disable CUDA-specific optimizations that might not translate well
+    # Additional ZLUDA-specific flags can be added here if needed in the future
+    # For example, disabling specific PTX optimizations that don't translate well:
     # list(APPEND ZLUDA_CUDA_FLAGS "-Xptxas" "-dlcm=cg")
 
-    # Add flags to CMAKE_CUDA_FLAGS
-    string(REPLACE ";" " " ZLUDA_CUDA_FLAGS_STR "${ZLUDA_CUDA_FLAGS}")
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${ZLUDA_CUDA_FLAGS_STR}" PARENT_SCOPE)
-
-    message(STATUS "   ZLUDA CUDA flags: ${ZLUDA_CUDA_FLAGS_STR}")
+    # Only append if we have additional flags
+    if(ZLUDA_CUDA_FLAGS)
+        string(REPLACE ";" " " ZLUDA_CUDA_FLAGS_STR "${ZLUDA_CUDA_FLAGS}")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${ZLUDA_CUDA_FLAGS_STR}" PARENT_SCOPE)
+        message(STATUS "   Additional ZLUDA CUDA flags: ${ZLUDA_CUDA_FLAGS_STR}")
+    else()
+        message(STATUS "   No additional ZLUDA flags needed (core flags in CudaConfiguration)")
+    endif()
 endfunction()
 
 ################################################################################

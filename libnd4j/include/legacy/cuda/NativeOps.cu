@@ -583,15 +583,18 @@ void execReduceSame2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, voi
 
     std::vector<sd::LongType> dimensions(dimensionData, dimensionData + dimensionLength);
 
+    // Check for -1 sentinel which means "full array" reduction
+    bool isFullArrayReduce = (dimensionLength == 1 && dimensions[0] == -1);
+
     const sd::LongType *zShapeInfoH = z->shapeInfo();
 
-    if (shape::rank(x->shapeInfo()) - dimensionLength != shape::rank(z->shapeInfo()) && zLen != 1) {
+    if (!isFullArrayReduce && shape::rank(x->shapeInfo()) - dimensionLength != shape::rank(z->shapeInfo()) && zLen != 1) {
       auto zPack = sd::ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(z->shapeInfo(), &dimensions);
       zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
     }
 
     std::vector<sd::LongType> *dims =
-        (zLen != 1) ? sd::ShapeUtils::evalDimsForReduceOp(shape::rank(x->shapeInfo()), &dimensions) : new std::vector<sd::LongType>();
+        (zLen != 1 && !isFullArrayReduce) ? sd::ShapeUtils::evalDimsForReduceOp(shape::rank(x->shapeInfo()), &dimensions) : new std::vector<sd::LongType>();
     sd::LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduceSame(&lc,
                                         opNum,
@@ -627,15 +630,18 @@ void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, voi
 
     std::vector<sd::LongType> dimensions(dimensionData, dimensionData + dimensionLength);
 
+    // Check for -1 sentinel which means "full array" reduction
+    bool isFullArrayReduce = (dimensionLength == 1 && dimensions[0] == -1);
+
     const sd::LongType *zShapeInfoH = z->shapeInfo();
 
-    if (shape::rank(x->shapeInfo()) - dimensionLength != shape::rank(z->shapeInfo()) && zLen != 1) {
+    if (!isFullArrayReduce && shape::rank(x->shapeInfo()) - dimensionLength != shape::rank(z->shapeInfo()) && zLen != 1) {
       auto zPack = sd::ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(z->shapeInfo(), &dimensions);
       zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
     }
 
     std::vector<sd::LongType> *dims =
-        (zLen != 1) ? sd::ShapeUtils::evalDimsForReduceOp(shape::rank(x->shapeInfo()), &dimensions) : new std::vector<sd::LongType>();
+        (zLen != 1 && !isFullArrayReduce) ? sd::ShapeUtils::evalDimsForReduceOp(shape::rank(x->shapeInfo()), &dimensions) : new std::vector<sd::LongType>();
 
     sd::LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduceLong(&lc, opNum,
@@ -715,15 +721,18 @@ void execReduceBool2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, voi
 
     std::vector<sd::LongType> dimensions(dimensionData, dimensionData + dimensionLength);
 
+    // Check for -1 sentinel which means "full array" reduction
+    bool isFullArrayReduce = (dimensionLength == 1 && dimensions[0] == -1);
+
     const sd::LongType *zShapeInfoH = z->shapeInfo();
 
-    if (shape::rank(x->shapeInfo()) - dimensionLength != shape::rank(z->shapeInfo()) && zLen != 1) {
+    if (!isFullArrayReduce && shape::rank(x->shapeInfo()) - dimensionLength != shape::rank(z->shapeInfo()) && zLen != 1) {
       auto zPack = sd::ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(z->shapeInfo(), &dimensions);
       zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
     }
 
     std::vector<sd::LongType> *dims =
-        (zLen != 1) ? sd::ShapeUtils::evalDimsForReduceOp(shape::rank(x->shapeInfo()), &dimensions) : new std::vector<sd::LongType>();
+        (zLen != 1 && !isFullArrayReduce) ? sd::ShapeUtils::evalDimsForReduceOp(shape::rank(x->shapeInfo()), &dimensions) : new std::vector<sd::LongType>();
 
     sd::LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduceBool(&lc,
@@ -857,15 +866,19 @@ void execReduceFloat2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, vo
 
     std::vector<sd::LongType> dimensions(dimensionData, dimensionData + dimensionLength);
 
+    // Check for -1 sentinel which means "full array" reduction
+    // -1 is used as a special sentinel value for reducing along all dimensions
+    bool isFullArrayReduce = (dimensionLength == 1 && dimensions[0] == -1);
+
     const sd::LongType *zShapeInfoH = z->shapeInfo();
 
-    if (shape::rank(x->shapeInfo()) - dimensionLength != shape::rank(z->shapeInfo()) && zLen != 1) {
+    if (!isFullArrayReduce && shape::rank(x->shapeInfo()) - dimensionLength != shape::rank(z->shapeInfo()) && zLen != 1) {
       auto zPack = sd::ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(z->shapeInfo(), &dimensions);
       zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
     }
 
     std::vector<sd::LongType> *dims =
-        (zLen != 1) ? sd::ShapeUtils::evalDimsForReduceOp(shape::rank(x->shapeInfo()), &dimensions) : new std::vector<sd::LongType>();
+        (zLen != 1 && !isFullArrayReduce) ? sd::ShapeUtils::evalDimsForReduceOp(shape::rank(x->shapeInfo()), &dimensions) : new std::vector<sd::LongType>();
 
     sd::LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduceFloat(&lc,
@@ -1123,11 +1136,19 @@ void initializeDevicesAndFunctions() {
       cudaDeviceSetLimit(cudaLimitStackSize, 8192);
       cudaDeviceSetLimit(cudaLimitMallocHeapSize, 1048576 * 128);
 
-
+      // Force CUDA context creation and module registration for this device
+      // This ensures the fatbinary (containing kernels) is loaded before any kernel launches
+      cudaFree(0);
+      cudaDeviceSynchronize();
+      cudaGetLastError();  // Clear any errors
 
     }
 
     cudaSetDevice(0);
+    // Ensure device 0 context is also fully initialized
+    cudaFree(0);
+    cudaDeviceSynchronize();
+    cudaGetLastError();
 
     checkP2P();
 
@@ -1965,6 +1986,8 @@ void execScalarBoolTad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, O
 ////////////////////////////////////////////////////////////////////////
 void execScalar(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, OpaqueNDArray z, OpaqueNDArray scalar, void *extraParams) {
   try {
+    // Clear any stale CUDA errors from initialization before running operations
+    cudaGetLastError();
     x->prepareSpecialUse({z}, {x, scalar});
 
     sd::LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
@@ -2857,6 +2880,37 @@ void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *b
 
     if (allZero) {
       THROW_EXCEPTION("Found shape buffer with all zero values. Values likely unset.");
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////////
+// CUDA-specific clearLastError implementation
+// Clears both the ErrorReference and the CUDA runtime error state
+void clearLastError() {
+  // Clear the ErrorReference
+  sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(0);
+  sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("");
+
+  // Clear any pending CUDA errors first
+  cudaError_t err = cudaGetLastError();
+
+  // If there was a serious error, we need to be more aggressive about cleanup
+  if (err != cudaSuccess) {
+    // Try to synchronize the device - this may help flush bad state
+    cudaDeviceSynchronize();
+    cudaGetLastError();  // Clear any error from synchronize
+
+    // If the context was really corrupted, try to reset the device streams
+    // by getting a fresh stream from the context
+    auto ctx = sd::LaunchContext::defaultContext();
+    if (ctx != nullptr) {
+      // Force stream synchronization
+      auto stream = ctx->getCudaStream();
+      if (stream != nullptr) {
+        cudaStreamSynchronize(*stream);
+        cudaGetLastError();
+      }
     }
   }
 }

@@ -370,11 +370,11 @@ function(configure_cuda_linking main_target_name)
 
 
     # Modern CMake uses imported targets which handle all necessary dependencies.
-    # Linking against CUDA::toolkit automatically adds include directories,
-    # runtime libraries, and all other required flags.
+    # CUDA::cudart is REQUIRED for proper fatbinary registration - without it,
+    # kernels won't be registered and cuKernelGetFunction will fail with error 400.
     # CUDA::cublas and CUDA::cusolver are required for cuBLAS and cuSolver functions
     # used in MmulHelper.cu, svd.cu, cublasHelper.cu, etc.
-    target_link_libraries(${main_target_name} PUBLIC CUDA::toolkit CUDA::cublas CUDA::cusolver)
+    target_link_libraries(${main_target_name} PUBLIC CUDA::toolkit CUDA::cudart CUDA::cublas CUDA::cusolver)
 
     # If cuDNN was found, link against its imported target
     if(HAVE_CUDNN AND TARGET CUDNN::cudnn)
@@ -424,12 +424,20 @@ function(setup_cuda_architectures_early)
 
     message(STATUS "🔧 Early CUDA: Configuring architectures before project() call")
 
+    # ZLUDA mode: Force sm_50 architecture for runtime translation
+    if(SD_ZLUDA)
+        set(CUDA_ARCHITECTURES "50" PARENT_SCOPE)
+        set(CMAKE_CUDA_ARCHITECTURES "50" PARENT_SCOPE)
+        message(STATUS "   🔄 ZLUDA mode: Forcing sm_50 architecture for runtime translation")
+        return()
+    endif()
+
     if(DEFINED COMPUTE)
         string(TOLOWER "${COMPUTE}" COMPUTE_CMP)
         if(COMPUTE_CMP STREQUAL "all")
-            # Use only sm_86 (Ampere) for faster builds - add more if needed for production
-            set(CUDA_ARCHITECTURES "86" PARENT_SCOPE)
-            message(STATUS "   CUDA architectures (all->86 for fast build): 86")
+            # Use sm_86 (Ampere/RTX 3070 Ti) and sm_89 (Ada Lovelace/RTX 4090) for local testing
+            set(CUDA_ARCHITECTURES "86;89" PARENT_SCOPE)
+            message(STATUS "   CUDA architectures (all): 86, 89")
         elseif(COMPUTE_CMP STREQUAL "auto")
             set(CMAKE_CUDA_ARCHITECTURES "86" PARENT_SCOPE)
             message(STATUS "   CUDA architectures (auto): 86")
@@ -519,11 +527,27 @@ function(configure_windows_cuda_build)
     message(STATUS "Windows CUDA: Verbose mode enabled with clean flags")
 endfunction()
 function(configure_cuda_architecture_flags COMPUTE)
+    # =========================================================================
+    # ZLUDA TRANSPILER SUPPORT
+    # When SD_ZLUDA is enabled, we MUST use sm_50 as the baseline architecture.
+    # ZLUDA translates PTX/SASS at runtime to HIP (AMD) or Level Zero (Intel).
+    # Using higher compute capabilities would generate instructions ZLUDA cannot translate.
+    # =========================================================================
+    if(SD_ZLUDA)
+        # ZLUDA requires sm_50 baseline - it translates at runtime to target GPU
+        # Do NOT use -gencode; use simple -arch for cleaner PTX generation
+        set(CUDA_ARCH_FLAGS "-arch=sm_50" PARENT_SCOPE)
+        set(CMAKE_CUDA_ARCHITECTURES "50" PARENT_SCOPE)
+        message(STATUS "🔄 ZLUDA mode: Using sm_50 baseline architecture (runtime translation to ${SD_ZLUDA_TARGET})")
+        message(STATUS "   ZLUDA will translate PTX to HIP/Level Zero at runtime")
+        return()
+    endif()
+
     string(TOLOWER "${COMPUTE}" COMPUTE_CMP)
     if(COMPUTE_CMP STREQUAL "all")
-        # Use only sm_86 (Ampere) for faster builds - add more if needed for production
-        set(CUDA_ARCH_FLAGS "-gencode arch=compute_86,code=sm_86" PARENT_SCOPE)
-        message(STATUS "Building for sm_86 only (fast build mode)")
+        # Use sm_86 (Ampere/RTX 3070 Ti) and sm_89 (Ada Lovelace/RTX 4090) for local testing
+        set(CUDA_ARCH_FLAGS "-gencode arch=compute_86,code=sm_86 -gencode arch=compute_89,code=sm_89" PARENT_SCOPE)
+        message(STATUS "Building for sm_86 and sm_89 (local testing)")
     elseif(COMPUTE_CMP STREQUAL "auto")
         set(CUDA_ARCH_FLAGS "-gencode arch=compute_86,code=sm_86" PARENT_SCOPE)
         message(STATUS "Auto-detecting CUDA architectures (gencode flags)")
@@ -549,6 +573,20 @@ endfunction()
 
 function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
     set(LOCAL_CUDA_FLAGS "")
+
+    # =========================================================================
+    # ZLUDA TRANSPILER COMPATIBILITY FLAGS
+    # When SD_ZLUDA is enabled, we need to disable certain CUDA optimizations
+    # that would generate code incompatible with ZLUDA's runtime translation.
+    # =========================================================================
+    set(ZLUDA_MODE OFF)
+    if(SD_ZLUDA)
+        set(ZLUDA_MODE ON)
+        message(STATUS "🔄 ZLUDA mode: Configuring CUDA compiler for ZLUDA compatibility")
+        # Disable relocatable device code - ZLUDA needs simpler linking
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --relocatable-device-code=false")
+        message(STATUS "   --relocatable-device-code=false (ZLUDA compatibility)")
+    endif()
 
     if(WIN32 AND MSVC)
         message(STATUS "Configuring CUDA for Windows MSVC with verbose mode...")
@@ -699,8 +737,13 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
         # CUDA 11.2+ PARALLEL COMPILATION OPTIMIZATIONS
         # These can dramatically reduce build times (up to 50% improvement)
         # Configure via: SD_CUDA_THREADS, SD_CUDA_SPLIT_COMPILE, SD_CUDA_DEVICE_LTO
+        # NOTE: Disabled for ZLUDA builds - these optimizations may produce code
+        #       that doesn't translate well through ZLUDA's PTX-to-HIP/Level Zero path
         # ============================================================================
-        if(CUDA_VERSION_MAJOR GREATER_EQUAL 11 AND (CUDA_VERSION_MAJOR GREATER 11 OR CUDA_VERSION_MINOR GREATER_EQUAL 2))
+        if(ZLUDA_MODE)
+            message(STATUS "⚠️  ZLUDA mode: Skipping CUDA parallel compilation optimizations")
+            message(STATUS "   (--threads, --split-compile, -dlto disabled for ZLUDA compatibility)")
+        elseif(CUDA_VERSION_MAJOR GREATER_EQUAL 11 AND (CUDA_VERSION_MAJOR GREATER 11 OR CUDA_VERSION_MINOR GREATER_EQUAL 2))
             message(STATUS "🚀 CUDA ${CUDA_VERSION_MAJOR}.${CUDA_VERSION_MINOR} detected - enabling parallel compilation optimizations")
 
             # --threads: Parallel compilation for multiple GPU architectures
@@ -757,12 +800,14 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
             message(STATUS "⚠️  CUDA ${CMAKE_CUDA_COMPILER_VERSION} < 11.2 - parallel compilation not available")
         endif()
 
-        # CUDA 12.8+ additional optimizations
-        if(CUDA_VERSION_MAJOR GREATER_EQUAL 13 OR (CUDA_VERSION_MAJOR EQUAL 12 AND CUDA_VERSION_MINOR GREATER_EQUAL 8))
-            # --fdevice-time-trace: Generate compilation timeline (useful for profiling builds)
-            if(SD_CUDA_TIME_TRACE)
-                set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --fdevice-time-trace")
-                message(STATUS "   --fdevice-time-trace: Build profiling enabled (view in chrome://tracing)")
+        # CUDA 12.8+ additional optimizations (not for ZLUDA)
+        if(NOT ZLUDA_MODE)
+            if(CUDA_VERSION_MAJOR GREATER_EQUAL 13 OR (CUDA_VERSION_MAJOR EQUAL 12 AND CUDA_VERSION_MINOR GREATER_EQUAL 8))
+                # --fdevice-time-trace: Generate compilation timeline (useful for profiling builds)
+                if(SD_CUDA_TIME_TRACE)
+                    set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --fdevice-time-trace")
+                    message(STATUS "   --fdevice-time-trace: Build profiling enabled (view in chrome://tracing)")
+                endif()
             endif()
         endif()
     endif()
@@ -785,7 +830,9 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
     string(REGEX REPLACE "  +" " " LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}")
     string(STRIP "${LOCAL_CUDA_FLAGS}" LOCAL_CUDA_FLAGS)
 
-    set(CMAKE_CUDA_SEPARABLE_COMPILATION ON PARENT_SCOPE)
+    # Separable compilation disabled - causes __constant__ symbols to be module-local
+    # which breaks cudaGetSymbolAddress for deviceConstantMemory in ConstantHelper.cu
+    set(CMAKE_CUDA_SEPARABLE_COMPILATION OFF PARENT_SCOPE)
     set(CMAKE_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}" PARENT_SCOPE)
 
     message(STATUS "Final CMAKE_CUDA_FLAGS (with verbose): ${LOCAL_CUDA_FLAGS}")
@@ -808,6 +855,19 @@ function(debug_cuda_configuration)
         message(STATUS "CUDNN_LIBRARIES: ${CUDNN_LIBRARIES}")
         message(STATUS "CUDNN_VERSION: ${CUDNN_VERSION_STRING}")
     endif()
+    # ZLUDA configuration info
+    if(SD_ZLUDA)
+        message(STATUS "--- ZLUDA Transpiler Configuration ---")
+        message(STATUS "SD_ZLUDA: ${SD_ZLUDA}")
+        message(STATUS "SD_ZLUDA_TARGET: ${SD_ZLUDA_TARGET}")
+        message(STATUS "HAVE_ZLUDA: ${HAVE_ZLUDA}")
+        message(STATUS "ZLUDA_TARGET_BACKEND: ${ZLUDA_TARGET_BACKEND}")
+        if(HAVE_MIOPEN)
+            message(STATUS "MIOPEN_LIBRARY: ${MIOPEN_LIBRARY}")
+            message(STATUS "MIOPEN_INCLUDE_DIR: ${MIOPEN_INCLUDE_DIR}")
+        endif()
+        message(STATUS "--------------------------------------")
+    endif()
     message(STATUS "=== End CUDA Debug Info ===")
 endfunction()
 
@@ -829,6 +889,14 @@ endfunction()
 
 function(setup_cuda_build)
     message(STATUS "=== CUDA BUILD CONFIGURATION (VERBOSE MODE) ===")
+
+    # Report ZLUDA mode status early
+    if(SD_ZLUDA)
+        message(STATUS "🔄 ZLUDA TRANSPILER MODE ENABLED")
+        message(STATUS "   Target: ${SD_ZLUDA_TARGET}")
+        message(STATUS "   Architecture: sm_50 (baseline for runtime translation)")
+        message(STATUS "   CUDA code will be translated at runtime to HIP/Level Zero")
+    endif()
 
     # Enable verbose output for the build system
     set(CMAKE_VERBOSE_MAKEFILE ON PARENT_SCOPE)

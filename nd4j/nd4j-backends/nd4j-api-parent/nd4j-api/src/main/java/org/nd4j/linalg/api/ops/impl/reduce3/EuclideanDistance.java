@@ -109,10 +109,12 @@ public class EuclideanDistance extends BaseReduce3Op {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
         //ddist(x,y)/dxi = (xi-yi)/dist(x,y)
+        //Add epsilon to avoid divide-by-zero when distance is 0 (i.e., x == y)
         SDVariable euc = outputVariables()[0];
         SDVariable difference = larg().sub(rarg());
-        SDVariable divBroadcastable = i_v1.get(0).div(euc);
-        if(!keepDims && !(dimensions == null || dimensions.length == 0 || (dimensions.length == 1 && dimensions[0] == Integer.MAX_VALUE))){
+        SDVariable eucSafe = sameDiff.math().max(euc, sameDiff.constant(1e-8));
+        SDVariable divBroadcastable = i_v1.get(0).div(eucSafe);
+        if(!keepDims && !(dimensions == null || dimensions.length == 0 || (dimensions.length == 1 && (dimensions[0] == Integer.MAX_VALUE || dimensions[0] == -1)))){
             //Not keep dims, and not full array reduction -> need to make broadcastable
             divBroadcastable = SameDiffUtils.reductionBroadcastableWithOrigShape(arg(), sameDiff.constant(Nd4j.createFromArray(dimensions)), divBroadcastable);
         }

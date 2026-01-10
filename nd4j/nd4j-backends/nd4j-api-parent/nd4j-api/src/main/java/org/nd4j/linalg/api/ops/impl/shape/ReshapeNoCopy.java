@@ -27,8 +27,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.OpContext;
-import org.nd4j.linalg.api.shape.LongShapeDescriptor;
-import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -98,21 +96,14 @@ public class ReshapeNoCopy extends DynamicCustomOp {
         boolean shapeOverride = false;
         if (numOutputArguments() == 0 && !isInplaceCall()) {
             try {
-                val list = Nd4j.getExecutioner().calculateOutputShape(this,ctx);
+                val list = Nd4j.getExecutioner().calculateOutputShape(this, ctx);
                 if (list.isEmpty())
                     throw new ND4JIllegalStateException("Op name " + opName() + " failed to calculate output shape and data types.");
 
-                DataBuffer needsCopyShape = list.get(0);
-                if(ArrayOptionsHelper.arrayNeedsCopy(needsCopyShape.asLong())) {
-                    // When a copy is needed, create a new array. The native op will handle
-                    // the memcpy to preserve linear element order (which is correct for reshape).
-                    INDArray newOut = Nd4j.createFromDescriptor(needsCopyShape);
-                    addOutputArgument(newOut);
-                } else {
-                    INDArray newOut = Nd4j.createFromDescriptor(inputArguments.get(0).data(),needsCopyShape);
-                    addOutputArgument(newOut);
-                }
-
+                DataBuffer shapeInfo = list.get(0);
+                // This is reshape NO COPY - just create a view with the new shape, sharing input's data
+                INDArray newOut = Nd4j.createFromDescriptor(inputArguments.get(0).data(), shapeInfo);
+                addOutputArgument(newOut);
                 shapeOverride = true;
             } catch (ND4JIllegalStateException e) {
                 throw e;

@@ -678,7 +678,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
                 sd.setLogExecution(false);
 
 
-                SDVariable in = sd.var("in", d1, d1, d2);
+                SDVariable in = sd.var("in", d0, d1, d2);
                 SDVariable in2 = sd.var("in2", d0, d1, d2);
 
                 INDArray inArr = Nd4j.randn(new int[]{d0, d1, d2}).muli(100).castTo(DataType.DOUBLE);

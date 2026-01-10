@@ -18,27 +18,72 @@
 
 package org.nd4j.linalg.jcublas.ops.executioner;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.memory.Deallocator;
-import org.nd4j.linalg.profiler.data.eventlogger.LogEvent;
+import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueContext;
 
+/**
+ * Deallocator for CudaOpContext that ensures proper cleanup order to prevent use-after-free.
+ *
+ * <p><b>CRITICAL:</b> The deallocation order is essential:</p>
+ * <ol>
+ *   <li>Call ctxPurge() to clear native Context's fastpath pointers (prevents dangling refs)</li>
+ *   <li>Delete the native Context</li>
+ * </ol>
+ *
+ * <p>Without this order, the native Context might still hold pointers to deleted NDArray* objects,
+ * causing "invalid rank" errors when shape info is accessed from freed memory.</p>
+ */
+@Slf4j
 public class CudaOpContextDeallocator implements Deallocator {
     private transient final OpaqueContext context;
-    private long ctxId = -1;
+    private volatile boolean deallocated = false;
 
-
+    /**
+     * Creates a deallocator that will properly clean up the CudaOpContext.
+     *
+     * @param ctx The CudaOpContext to deallocate
+     */
     public CudaOpContextDeallocator(CudaOpContext ctx) {
-        context = (OpaqueContext) ctx.contextPointer();
-
-
+        this.context = (OpaqueContext) ctx.contextPointer();
     }
 
     @Override
     public void deallocate() {
-        NativeOpsHolder.getInstance().getDeviceNativeOps().deleteGraphContext(context);
-    }
+        if (deallocated) {
+            return;
+        }
 
+        synchronized (this) {
+            if (deallocated) {
+                return;
+            }
+
+            try {
+                NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+
+                // Step 1: CRITICAL - Clear the native Context's fastpath pointers FIRST.
+                // This prevents the Context from holding dangling pointers to arrays we're about to delete.
+                // ctxPurge() calls Context::clearFastPath() which clears _fastpath_in and _fastpath_out.
+                if (context != null && !context.isNull()) {
+                    nativeOps.ctxPurge(context);
+                }
+
+                // Step 2: Delete the native Context object.
+                // Now safe to delete since fastpath is cleared.
+                if (context != null && !context.isNull()) {
+                    nativeOps.deleteGraphContext(context);
+                }
+
+            } catch (Exception e) {
+                log.error("Error during CudaOpContext deallocation", e);
+            } finally {
+                deallocated = true;
+            }
+        }
+    }
 
     @Override
     public boolean isConstant() {

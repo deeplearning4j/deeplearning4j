@@ -43,9 +43,9 @@ void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext *lc, int opNum
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
-  if (xType != zType && yType != zType) {
+  if (xType != zType || yType != zType) {
     std::string errorMessage;
-    errorMessage += "NativeOpExecutioner::execPairwiseTransform both operands must have same data type. ";
+    errorMessage += "NativeOpExecutioner::execPairwiseTransform requires all operands to have the same data type. ";
     errorMessage += "X type: ";
     errorMessage += sd::DataTypeUtils::asString(xType);
     errorMessage += " Y type: ";
@@ -56,9 +56,9 @@ void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext *lc, int opNum
   }
 
   auto func = PRAGMA_THREADS_FOR {
-    BUILD_TRIPLE_SELECTOR(xType, yType, zType, functions::pairwise_transforms::PairWiseTransform,
-                          ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, extraParams, start, stop),
-                          SD_NUMERIC_TYPES, SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
+    BUILD_SINGLE_SELECTOR_THRICE(xType, functions::pairwise_transforms::PairWiseTransform,
+                                 ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, extraParams, start, stop),
+                                 SD_NUMERIC_TYPES);
   };
 
   auto zLen = shape::length(hZShapeInfo);

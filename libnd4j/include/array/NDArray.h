@@ -29,6 +29,7 @@
 #include <array/ResultSet.h>
 #include <array/ShapeDescriptor.h>
 #include <execution/AffinityManager.h>
+#include <execution/LaunchContext.h>
 #include <graph/Intervals.h>
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/ShapeBuilders.h>
@@ -2044,19 +2045,33 @@ void * _bufferWithOffset(LongType offset,DataBuffer *buffer) {
   // Get the buffer pointer from DataBuffer
   void* ptr = buffer->primaryAtOffset<T>(offset);
 
-  // This hides the real bug! Instead of silently propagating nullptr (which causes SIGSEGV in native kernels),
-  // throw a clear exception to expose the root cause: an NDArray is being used without a valid data buffer.
+  // If primary buffer is null but the DataBuffer exists, we need to allocate and sync
   if (ptr == nullptr) {
+#ifdef SD_CUDA
+    // On CUDA, arrays may only have GPU memory allocated initially.
+    // If someone calls buffer() (which accesses host memory), we need to
+    // allocate the primary buffer and sync data from device to host.
+    buffer->allocatePrimary();
+    buffer->syncToPrimary(LaunchContext::defaultContext());
+    ptr = buffer->primaryAtOffset<T>(offset);
+    if (ptr == nullptr) {
+      THROW_EXCEPTION("NDArray::_bufferWithOffset: Failed to allocate primary buffer");
+    }
+#else
+    // On CPU builds, a null primary buffer indicates an improperly initialized array.
     std::string msg = "NDArray::_bufferWithOffset: primaryAtOffset returned nullptr - "
                       "array buffer is not allocated. This indicates the NDArray was created "
                       "improperly or its buffer was freed while still in use. "
                       "Offset: " + std::to_string(offset) + ", "
                       "Buffer length: " + std::to_string(buffer->getLenInBytes()) + " bytes";
     THROW_EXCEPTION(msg.c_str());
+#endif
   }
 
   return ptr;
 }
+
+
 
 // Moved to NDArray.hXX - removed inline definition to avoid requiring selective_rendering.h in header
 
@@ -2144,7 +2159,29 @@ SD_INLINE LongType *NDArray::specialShapeInfo()  {
   LongType* shapeInfoToReturn = nullptr;
   if (_shapeInfoD == nullptr) {
     if (_shapeInfo != nullptr) {
+#ifdef SD_CUDA
+      // CRITICAL FIX: On CUDA, we must NEVER return a host pointer from specialShapeInfo()
+      // because this pointer will be passed to CUDA kernels which cannot access host memory.
+      // Instead, use ConstantShapeHelper to get a cached device pointer for this shape.
+      auto constBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(_shapeInfo);
+      if (constBuffer != nullptr) {
+        LongType* devicePtr = constBuffer->special();
+        if (devicePtr != nullptr) {
+          _shapeInfoD = devicePtr;
+          _shapeInfoBuffer = constBuffer;
+          shapeInfoToReturn = devicePtr;
+        } else {
+          // ConstantShapeHelper returned a buffer but with no device pointer - this is a bug
+          THROW_EXCEPTION("NDArray::specialShapeInfo() - CUDA: ConstantShapeHelper returned buffer with nullptr special(). "
+                         "This indicates CUDA memory allocation failure or initialization issue.");
+        }
+      } else {
+        THROW_EXCEPTION("NDArray::specialShapeInfo() - CUDA: Failed to get device shape buffer from ConstantShapeHelper.");
+      }
+#else
+      // On CPU, using host pointer is fine
       shapeInfoToReturn = _shapeInfo;
+#endif
     } else {
       // Both are nullptr - this is a fatal error
       // CRITICAL: Just throw without setting error context to avoid
@@ -2156,23 +2193,29 @@ SD_INLINE LongType *NDArray::specialShapeInfo()  {
     shapeInfoToReturn = _shapeInfoD;
   }
 
-  // Prevents "Rank is too high: <pointer_value>" errors from corrupted/uninitialized memory.
-  sd::LongType rank = shapeInfoToReturn[0];
-  if (rank < 0 || rank > SD_MAX_RANK) {
-    std::string errorMessage;
-    errorMessage += "NDArray::specialShapeInfo() - shapeInfo contains invalid rank: ";
-    errorMessage += std::to_string(rank);
-    errorMessage += " (expected 0-";
-    errorMessage += std::to_string(SD_MAX_RANK);
-    errorMessage += "). ";
-    errorMessage += "This indicates memory corruption, use-after-free, or uninitialized shapeInfo buffer.";
+  // Validates using HOST pointer (_shapeInfo) which is always accessible from CPU.
+  // CRITICAL: Do NOT validate using shapeInfoToReturn directly because it may be
+  // a CUDA device pointer (_shapeInfoD) which cannot be dereferenced from host code.
+  // This was causing SIGSEGV (SEGV_ACCERR) crashes when validation tried to read
+  // device memory from the CPU.
+  // Shape content is identical on host and device, so validating host copy is sufficient.
+  if (_shapeInfo != nullptr) {
+    sd::LongType rank = _shapeInfo[0];
+    if (rank < 0 || rank > SD_MAX_RANK) {
+      std::string errorMessage;
+      errorMessage += "NDArray::specialShapeInfo() - shapeInfo contains invalid rank: ";
+      errorMessage += std::to_string(rank);
+      errorMessage += " (expected 0-";
+      errorMessage += std::to_string(SD_MAX_RANK);
+      errorMessage += "). ";
+      errorMessage += "This indicates memory corruption, use-after-free, or uninitialized shapeInfo buffer.";
 
-    // CRITICAL: Just throw without setting error context to avoid
-    // static initialization/destruction order issues with LaunchContext
-    THROW_EXCEPTION(errorMessage.c_str());
+      // CRITICAL: Just throw without setting error context to avoid
+      // static initialization/destruction order issues with LaunchContext
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
   }
 
-  // FIXME: this should be fixed once CUDA backend added
   return shapeInfoToReturn;
 }
 

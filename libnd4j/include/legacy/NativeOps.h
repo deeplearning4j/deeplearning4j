@@ -636,6 +636,7 @@ SD_LIB_EXPORT OpaqueDataBuffer  * intermediateResultDataAt(int index, OpaqueCont
 SD_LIB_EXPORT const sd::LongType * intermediateResultShapeInfoAt(int index, OpaqueContext *contextPointer);
 SD_LIB_EXPORT const char *lastErrorMessage();
 SD_LIB_EXPORT int lastErrorCode();
+SD_LIB_EXPORT void clearLastError();
 SD_LIB_EXPORT void triggerLeakCheck();
 SD_LIB_EXPORT void enableNDArrayTracking();
 SD_LIB_EXPORT void disableNDArrayTracking();

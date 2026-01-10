@@ -2103,6 +2103,91 @@ public native int dbLocality(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 public native org.nd4j.nativeblas.OpaqueDataBuffer dbCreateView(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, @Cast("sd::LongType") long length);
 public native org.nd4j.nativeblas.OpaqueDataBuffer dbAllocateDataBuffer(@Cast("sd::LongType") long elements, int dataType, @Cast("bool") boolean allocateBoth);
 public native org.nd4j.nativeblas.OpaqueDataBuffer dbCreateExternalDataBuffer(@Cast("sd::LongType") long elements, int dataType, @Cast("sd::Pointer") Pointer primary, @Cast("sd::Pointer") Pointer special);
+
+// =====================================================
+// Transfer Metrics API - for tracking device transfers
+// =====================================================
+
+/**
+ * Enable or disable transfer metrics collection
+ */
+public native void transferMetricsSetEnabled(@Cast("bool") boolean enabled);
+
+/**
+ * Check if transfer metrics are enabled
+ */
+public native @Cast("bool") boolean transferMetricsIsEnabled();
+
+/**
+ * Enable or disable individual transfer logging
+ */
+public native void transferMetricsSetLogTransfers(@Cast("bool") boolean log);
+
+/**
+ * Set minimum bytes threshold for logging individual transfers
+ */
+public native void transferMetricsSetMinBytesForLogging(@Cast("sd::LongType") long bytes);
+
+/**
+ * Get total bytes transferred (H2D)
+ */
+public native @Cast("sd::LongType") long transferMetricsGetH2DBytes();
+
+/**
+ * Get total bytes transferred (D2H)
+ */
+public native @Cast("sd::LongType") long transferMetricsGetD2HBytes();
+
+/**
+ * Get total bytes transferred (D2D within device)
+ */
+public native @Cast("sd::LongType") long transferMetricsGetD2DBytes();
+
+/**
+ * Get total bytes transferred (P2P between devices)
+ */
+public native @Cast("sd::LongType") long transferMetricsGetP2PBytes();
+
+/**
+ * Get total transfer count (H2D)
+ */
+public native @Cast("sd::LongType") long transferMetricsGetH2DCount();
+
+/**
+ * Get total transfer count (D2H)
+ */
+public native @Cast("sd::LongType") long transferMetricsGetD2HCount();
+
+/**
+ * Get total transfer count (D2D)
+ */
+public native @Cast("sd::LongType") long transferMetricsGetD2DCount();
+
+/**
+ * Get total transfer count (P2P)
+ */
+public native @Cast("sd::LongType") long transferMetricsGetP2PCount();
+
+/**
+ * Get total transfer time in nanoseconds (all types)
+ */
+public native @Cast("sd::LongType") long transferMetricsGetTotalTimeNs();
+
+/**
+ * Get transfer overhead as percentage of op execution time
+ */
+public native double transferMetricsGetOverheadPercent();
+
+/**
+ * Reset all transfer metrics
+ */
+public native void transferMetricsReset();
+
+/**
+ * Print transfer metrics summary to stdout
+ */
+public native void transferMetricsPrintSummary();
+
 public native void setShapeBuffer(@Cast("sd::LongType*") LongPointer inputShapeData,@Cast("sd::DataType") int dt,@Cast("sd::LongType*") LongPointer bufferToSet,char order,int elementWiseStride,@Cast("bool") boolean isEmpty,@Cast("bool") boolean isView);
 public native void setShapeBuffer(@Cast("sd::LongType*") LongBuffer inputShapeData,@Cast("sd::DataType") int dt,@Cast("sd::LongType*") LongBuffer bufferToSet,char order,int elementWiseStride,@Cast("bool") boolean isEmpty,@Cast("bool") boolean isView);
 public native void setShapeBuffer(@Cast("sd::LongType*") long[] inputShapeData,@Cast("sd::DataType") int dt,@Cast("sd::LongType*") long[] bufferToSet,char order,int elementWiseStride,@Cast("bool") boolean isEmpty,@Cast("bool") boolean isView);
@@ -2173,6 +2258,7 @@ public native org.nd4j.nativeblas.OpaqueDataBuffer intermediateResultDataAt(int 
 public native @Cast("const sd::LongType*") LongPointer intermediateResultShapeInfoAt(int index, org.nd4j.nativeblas.OpaqueContext contextPointer);
 public native @Cast("char*") String lastErrorMessage();
 public native int lastErrorCode();
+public native void clearLastError();
 public native void triggerLeakCheck();
 public native void enableNDArrayTracking();
 public native void disableNDArrayTracking();
@@ -3341,6 +3427,7 @@ public static final int
 // #include <array/ResultSet.h>
 // #include <array/ShapeDescriptor.h>
 // #include <execution/AffinityManager.h>
+// #include <execution/LaunchContext.h>
 // #include <graph/Intervals.h>
 // #include <helpers/ConstantShapeHelper.h>
 // #include <helpers/ShapeBuilders.h>
@@ -4427,6 +4514,8 @@ public static final int
 
 
 //////////////////////////////////////////////////////////////////////////
+
+
 
 // Moved to NDArray.hXX - removed inline definition to avoid requiring selective_rendering.h in header
 
@@ -7563,8 +7652,9 @@ public static final int
 // #ifndef LIBND4J_TYPE_BOILERPLATE_H
 // #define LIBND4J_TYPE_BOILERPLATE_H
 
-
-// #include "array/DataTypeValidation.h"
+// DataTypeValidation.h is included for the BUILD_SINGLE_SELECTOR macros.
+// It uses sd_export.h (not common.h) to avoid circular dependencies.
+// #include <array/DataTypeValidation.h>
 // #include <system/type_instantiate_boilerplate.h>
 // #include <system/selective_rendering.h>
 // #include "type_boiler_plate_expansions.h"
@@ -8948,7 +9038,7 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 //     EVAL(SD_IF_PAIR_ALIAS_COMPILED_DECL(
 //         ENUM,
 //         ENUM,
-//          TEMPLATE_NAME<TYPE, TYPE> SIGNATURE;
+//          template TEMPLATE_NAME<TYPE, TYPE> SIGNATURE;
 //     ))
 
 // #define TEMPLATE_SINGLE_TWICE(A, B, C) EVALUATING_PASTE(_TEM, PLATE_SINGLE_TWICE(A, B, UNPAREN(C)))
@@ -19276,6 +19366,24 @@ public static final int RESHAPE_NO_COPY_C_ORDER_MARKER = -99;
 // #include "config.h"
 // #endif
 
+// Forward declarations for CUDA graph support
+// #ifdef SD_CUDA
+    @Namespace("sd::cuda") @Opaque public static class CudaGraphHandle extends Pointer {
+        /** Empty constructor. Calls {@code super((Pointer)null)}. */
+        public CudaGraphHandle() { super((Pointer)null); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public CudaGraphHandle(Pointer p) { super(p); }
+    }
+    @Namespace("sd::cuda") @Opaque public static class CudaGraphScheduler extends Pointer {
+        /** Empty constructor. Calls {@code super((Pointer)null)}. */
+        public CudaGraphScheduler() { super((Pointer)null); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public CudaGraphScheduler(Pointer p) { super(p); }
+    }
+  // namespace cuda
+  // namespace sd
+// #endif
+
 // used for MKLDNN etc
 // #if !defined(__STANDALONE_BUILD__)
 // #include "config.h"
@@ -19434,9 +19542,7 @@ public static final int SHAPE_DESC_INVALID_EMPTY = 5;     // rank > 32 or shape 
 // #ifndef LIBND4J__DEBUG_INFO_HELPER__H
 // #define LIBND4J__DEBUG_INFO_HELPER__H
 
-// #include <helpers/StringUtils.h>
 // #include <math/templatemath.h>
-// #include <system/Environment.h>
 // #include <system/op_boilerplate.h>
 
 // #include <string>

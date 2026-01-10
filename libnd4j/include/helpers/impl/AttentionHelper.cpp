@@ -69,10 +69,49 @@ NDArray AttentionHelper::multiHeadProject(NDArray *input, NDArray *projectionMat
  * @return
  */
 NDArray * AttentionHelper::lowerTriangularMask(std::vector<LongType> *shape) {
-  // Optimized: use matrix_band_part directly instead of cumsum + greater_equal
+  // Get the last two dimensions (rows and cols of the 2D matrix part)
+  auto rank = shape->size();
+  auto rows = shape->at(rank - 2);
+  auto cols = shape->at(rank - 1);
+
+  // Handle edge case: when rows == 1, the lower triangular mask is simply [1, 0, 0, ...]
+  // Only position (0, 0) is on or below the diagonal
+  if (rows == 1) {
+    auto result = NDArrayFactory::create<bool>('c', *shape);
+    bool falseVal = false;
+    bool trueVal = true;
+    result->assign(falseVal);
+    // Set only the first column to true for each batch
+    // For shape [..., 1, cols], we need to set elements at positions [..., 0, 0] to true
+    if (cols > 0) {
+      if (rank == 3) {
+        // Shape is [batch, 1, cols]
+        LongType batch = shape->at(0);
+        for (LongType b = 0; b < batch; b++) {
+          result->p(b, 0, 0, trueVal);
+        }
+      } else if (rank == 4) {
+        // Shape is [batch1, batch2, 1, cols]
+        LongType batch1 = shape->at(0);
+        LongType batch2 = shape->at(1);
+        for (LongType b1 = 0; b1 < batch1; b1++) {
+          for (LongType b2 = 0; b2 < batch2; b2++) {
+            result->p(b1, b2, 0, 0, trueVal);
+          }
+        }
+      } else if (rank == 2) {
+        // Shape is [1, cols] - just set (0, 0)
+        result->p(0, 0, trueVal);
+      }
+    }
+    return result;
+  }
+
+  // For normal cases (rows > 1), use matrix_band_part
   // matrix_band_part with (-1, 0) keeps the lower triangular part
   ops::matrix_band_part matrixBandPart;
-  auto ones = NDArrayFactory::valueOf(*shape, 1, 'c');  // Creates INT32 array filled with 1s
+  // Use FLOAT32 because matrix_band_part only supports float types (SD_FLOAT_TYPES)
+  auto ones = NDArrayFactory::valueOf(*shape, 1.0f, 'c');
   auto lower = matrixBandPart.evaluate({ones}, {}, {-1, 0});
   auto ret = lower.at(0)->cast(BOOL);
   lower.setNonRemovable();
@@ -90,8 +129,9 @@ NDArray *AttentionHelper::computeCasualMask(NDArray *query, NDArray *value, bool
     auto qSeqLength = query->sizeAt(1);
     auto vSeqLength = value != nullptr ? value->sizeAt(1) : qSeqLength;
     ops::matrix_band_part matrixBandPart;
-    auto ones = NDArrayFactory::create('c',{1,qSeqLength,vSeqLength}, INT32);
-    int assignVal = 1;
+    // Use FLOAT32 because matrix_band_part only supports float types (SD_FLOAT_TYPES)
+    auto ones = NDArrayFactory::create('c',{1,qSeqLength,vSeqLength}, FLOAT32);
+    float assignVal = 1.0f;
     ones->assign(assignVal);
     auto lower = matrixBandPart.evaluate({ones},{},{-1,0});
     auto ret = lower.at(0)->cast(BOOL);
@@ -217,10 +257,19 @@ NDArray * AttentionHelper::mergeMasks(NDArray *x, NDArray *y) {
     return x;
   }
 
-  // Optimized: use multiplication instead of boolean_and.evaluate()
-  // For boolean/0-1 masks: x AND y = x * y
-  // This avoids the evaluate() overhead and ResultSet allocation
-  auto result = (*x) * (*y);
+  // Ensure both masks have the same type before multiplication
+  // Cast to BOOL since these are logical masks
+  NDArray* xBool = (x->dataType() == BOOL) ? x : x->cast(BOOL);
+  NDArray* yBool = (y->dataType() == BOOL) ? y : y->cast(BOOL);
+
+  // For boolean masks: x AND y = x * y
+  // Using explicit applyTrueBroadcast to avoid operator issues
+  NDArray* result = xBool->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), yBool);
+
+  // Clean up casted arrays if we created them
+  if (xBool != x) delete xBool;
+  if (yBool != y) delete yBool;
+
   return result;
 }
 
@@ -232,48 +281,76 @@ void AttentionHelper::applyAttentionScores(NDArray *scores, NDArray *value, NDAr
   ops::matmul matmul;
 
   int softmaxDim = -1;
+  // Debug: verify attentionLogits is valid after matmul
+  sd_printf("applyAttentionScores: After matmul - attentionLogits buffer: %p, specialBuffer: %p\n",
+           attentionLogits->buffer(), attentionLogits->specialBuffer());
+
   if (scoresMask != nullptr && !scoresMask->isEmpty()) {
+    sd_printf("applyAttentionScores: Applying mask - scoresMask shape: [%lld, %lld, %lld]\n",
+             scoresMask->sizeAt(0), scoresMask->sizeAt(1), scoresMask->sizeAt(2));
+
     REQUIRE_TRUE(scoresMask->sizeAt(-2) == 1 || scoresMask->sizeAt(-2) == scores->sizeAt(-2),0,
                  "Scores mask must be either broadcastable or equal to scores shape. scores size at -2: was: %i scores size at -2 was: %i",scoresMask->sizeAt(-2),scores->sizeAt(-2));
 
     REQUIRE_TRUE(scoresMask->sizeAt(-1) == scores->sizeAt(-1),0,
                  "Scores mask must be either broadcastable or equal to scores shape. scores size at -1: was: %i scores size at -1 was: %i",scoresMask->sizeAt(-1),scores->sizeAt(-1));
 
-    // Optimized mask application: instead of boolean_not + multiply + subtract,
-    // we use arithmetic: logits -= (1 - mask) * largeVal = logits - largeVal + mask * largeVal
-    // This avoids the boolean_not.evaluate() call and reduces allocations from 4 to 2.
+    // Use appropriate large value for masking
+    float largeVal = (attentionLogits->dataType() == BFLOAT16) ? 65504.0f : 1.0e9f;
 
-    // Cast mask to scores datatype (ensures 0.0/1.0 values)
-    NDArray* numericMask;
+    // Cast mask to scores datatype if needed
+    NDArray* numericMask = scoresMask;
     bool needsDeleteMask = false;
-
-    if(scoresMask->dataType() == scores->dataType()) {
-      // Already correct type - if it's a float type, assume 0/1 values
-      // If it was BOOL, it would have been caught by the else branch
-      numericMask = scoresMask;
-    } else {
-      // Cast to scores datatype (BOOL->FLOAT gives 0.0/1.0)
+    if(scoresMask->dataType() != scores->dataType()) {
       numericMask = scoresMask->cast(scores->dataType());
       needsDeleteMask = true;
     }
 
-    // Use appropriate large value for masking
-    float largeVal = (attentionLogits->dataType() == BFLOAT16) ? 65504.0f : 1.0e9f;
+    // Apply masking: where mask=0 (masked positions), subtract largeVal to push toward -inf
+    // Where mask=1 (keep positions), the subtract and add cancel out
+    // Using explicit function calls to avoid operator issues with CUDA memory
 
-    // Step 1: Subtract largeVal from all positions
-    attentionLogits->applyScalar(sd::scalar::Subtract, largeVal, attentionLogits);
+    // Apply masking using the add operation
+    // maskedVals = mask * largeVal - largeVal (where mask=0 gives -largeVal, mask=1 gives 0)
+    // Then attentionLogits = attentionLogits + maskedVals
 
-    // Step 2: Add back largeVal * mask (restores unmasked positions where mask=1)
-    auto restore = largeVal * (*numericMask);
-    *attentionLogits += *restore;
-    delete restore;
+    // Step 1: Create temporary result array with same shape as attentionLogits
+    NDArray tempResult(attentionLogits->shapeInfo(), attentionLogits->dataType(), false, attentionLogits->getContext());
+
+    // Step 2: Compute maskedVals = numericMask * largeVal - largeVal
+    // Use broadcast Add: result = attentionLogits + (numericMask * largeVal - largeVal)
+    // First compute the mask offset term
+    NDArray maskScaled(numericMask->shapeInfo(), numericMask->dataType(), false, numericMask->getContext());
+    numericMask->applyScalar(sd::scalar::Multiply, largeVal, &maskScaled);
+    maskScaled.applyScalar(sd::scalar::Subtract, largeVal, &maskScaled);
+
+    // Step 3: Add to attentionLogits using broadcast into temp, then copy back
+    attentionLogits->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), &maskScaled, &tempResult, false);
+
+    // Step 4: Copy result back to attentionLogits
+    sd_printf("applyAttentionScores: Before assign - attentionLogits buffer: %p, specialBuffer: %p\n",
+             attentionLogits->buffer(), attentionLogits->specialBuffer());
+    attentionLogits->assign(&tempResult);
+    sd_printf("applyAttentionScores: After assign - attentionLogits buffer: %p, specialBuffer: %p\n",
+             attentionLogits->buffer(), attentionLogits->specialBuffer());
+
+    // Ensure device buffers are synchronized before proceeding
+    attentionLogits->syncToDevice();
+    sd_printf("applyAttentionScores: After syncToDevice - attentionLogits buffer: %p, specialBuffer: %p\n",
+             attentionLogits->buffer(), attentionLogits->specialBuffer());
 
     if(needsDeleteMask) {
       delete numericMask;
     }
   }
 
+  // Ensure attentionLogits is fully synced before softmax
+  attentionLogits->syncToDevice();
 
+  // Debug: verify attentionLogits buffer is valid before softmax
+  sd_printf("applyAttentionScores: Before softmax - attentionLogits shape: [%lld, %lld, %lld], buffer: %p, specialBuffer: %p\n",
+           attentionLogits->sizeAt(0), attentionLogits->sizeAt(1), attentionLogits->sizeAt(2),
+           attentionLogits->buffer(), attentionLogits->specialBuffer());
 
   softmax.execute({attentionLogits},{scores},{},{softmaxDim});
   auto weights = scores;
@@ -334,7 +411,8 @@ void AttentionHelper::dotProductAttentionBpHelper(NDArray *query, NDArray *key, 
 
   if(mask != nullptr && !mask->isEmpty()) {
     auto maskCast = mask->cast(query->dataType());
-    dldS *= *maskCast;
+    // Use applyTrueBroadcast to handle potentially different shapes safely
+    dldS.applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), maskCast, &dldS, false);
     // Only delete maskCast if it's a different array than mask (i.e., cast created a new array)
     if(maskCast != mask) {
       delete maskCast;
@@ -568,7 +646,8 @@ void AttentionHelper::doAttention(std::vector<NDArray *> &inputs, std::vector<ND
     qMaskExpandResult = expandDims.evaluate({qMaskInternal},{},{-1});
     qMaskInternal = qMaskExpandResult.at(0);
     auto casted = qMaskInternal->cast(attentionScores->dataType());
-    *attentionScores *= *casted;
+    // Use applyTrueBroadcast to handle potentially different shapes safely
+    attentionScores->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), casted, attentionScores, false);
     // Clean up casted array if it's different from qMaskInternal
     if(casted != qMaskInternal) {
       delete casted;

@@ -287,6 +287,115 @@ public class ND4JSystemProperties {
      */
     public final static String ND4J_EVENT_LOG_POINT_OF_ORIGIN_PATTERNS = "org.nd4j.linalg.profiler.pointoforigin.patterns";
 
+    /**
+     * Applicability: Always<br>
+     * Description: Controls whether multi-backend support is enabled. When multiple backends
+     * (e.g., nd4j-native and nd4j-cuda) are on the classpath, ND4J will automatically discover
+     * and initialize all available backends, enabling operations to run on any available device.
+     * <p>
+     * Default: true (multi-backend is enabled by default when multiple backends are available)
+     * <p>
+     * When enabled:
+     * <ul>
+     *   <li>All backends on classpath are discovered and initialized</li>
+     *   <li>Device routing allows operations to run on CPU, GPU, or other accelerators</li>
+     *   <li>Cross-device data transfers are handled automatically</li>
+     * </ul>
+     */
+    public final static String MULTI_BACKEND_AUTO_ENABLED = "org.nd4j.backend.multi.auto";
+
+    /**
+     * Applicability: Always (when multi-backend is enabled)<br>
+     * Description: Controls whether automatic device routing is enabled. When enabled,
+     * ND4J will automatically select the optimal device for operations based on data location,
+     * device availability, and memory constraints.
+     * <p>
+     * Default: true
+     */
+    public final static String DEVICE_ROUTING_AUTO_ENABLED = "org.nd4j.device.routing.auto";
+
+    /**
+     * Applicability: CUDA backend with nd4j-native also on classpath<br>
+     * Description: When set to true, enables the DeviceAwareOpExecutioner with multi-backend
+     * support. This allows CPU fallback execution when GPU memory is constrained or data
+     * has spilled to CPU memory.
+     * <p>
+     * Requirements:
+     * <ul>
+     *   <li>Primary backend must be CUDA (or other GPU backend)</li>
+     *   <li>nd4j-native (CPU backend) JAR must be on classpath</li>
+     *   <li>Both native libraries must be loadable (no symbol conflicts)</li>
+     * </ul>
+     * <p>
+     * Default: false (single-backend mode)
+     * <p>
+     * Example usage:
+     * <pre>
+     * java -Dnd4j.multibackend.enabled=true -jar myapp.jar
+     * </pre>
+     */
+    public final static String MULTI_BACKEND_EXECUTION_ENABLED = "nd4j.multibackend.enabled";
+
+    /**
+     * Applicability: Multi-backend configuration<br>
+     * Description: When set to true, disables automatic multi-backend discovery and initialization.
+     * By default, ND4J will automatically detect and use all available backends on the classpath.
+     * Set this to true to force single-backend mode even when multiple backends are available.
+     * <p>
+     * Default: false (auto-discovery enabled)
+     * <p>
+     * Example usage:
+     * <pre>
+     * java -Dnd4j.multibackend.disabled=true -jar myapp.jar
+     * </pre>
+     */
+    public final static String MULTI_BACKEND_DISABLED = "nd4j.multibackend.disabled";
+
+    /**
+     * Applicability: When multi-backend execution is enabled<br>
+     * Description: Controls whether to log routing decisions when operations are
+     * routed to different backends. Useful for debugging and performance analysis.
+     * <p>
+     * Default: false
+     */
+    public final static String MULTI_BACKEND_LOG_ROUTING = "nd4j.multibackend.logrouting";
+
+    /**
+     * Applicability: When multi-backend execution is enabled<br>
+     * Description: Minimum array size (in bytes) for considering CPU fallback.
+     * Arrays smaller than this threshold will always stay on the primary device.
+     * <p>
+     * Default: 1048576 (1 MB)
+     */
+    public final static String MULTI_BACKEND_MIN_SPILLOVER_SIZE = "nd4j.multibackend.minspilloversize";
+
+    /**
+     * Applicability: Multi-backend configuration<br>
+     * Description: Comma-separated list of secondary backend classes to load alongside
+     * the primary backend. Each backend class must be on the classpath and implement Nd4jBackend.
+     * <p>
+     * Example usage:
+     * <pre>
+     * java -Dnd4j.backend.secondary=org.nd4j.linalg.cpu.nativecpu.CpuBackend -jar myapp.jar
+     * </pre>
+     * <p>
+     * This allows loading CPU as a secondary backend when CUDA is primary, enabling
+     * CPU fallback execution for spillover data.
+     */
+    public final static String SECONDARY_BACKEND_CLASSES = "nd4j.backend.secondary";
+
+    /**
+     * Applicability: Multi-backend configuration<br>
+     * Description: Comma-separated list of secondary backend property files to load.
+     * Each property file defines a backend configuration (opexec, native.ops, device.type, etc.)
+     * <p>
+     * Example usage:
+     * <pre>
+     * java -Dnd4j.backend.secondary.properties=nd4j-native.properties -jar myapp.jar
+     * </pre>
+     */
+    public final static String SECONDARY_BACKEND_PROPERTIES = "nd4j.backend.secondary.properties";
+
     private ND4JSystemProperties() {
     }
 }

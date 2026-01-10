@@ -404,27 +404,27 @@ public class Shape {
      *
      * @return true if the dimension length is equal to the rank,
      * the dimension is null or the dimension length is 1 and the first entry is
-     * {@link Integer#MAX_VALUE}
+     * -1 (sentinel for "reduce all dimensions")
      */
     public static boolean isWholeArray(int rank, int... dimension) {
         return rank == 0 || dimension == null || dimension.length == 0 ||
-                (dimension.length == 1 && dimension[0] == Integer.MAX_VALUE) || dimension.length == rank;
+                (dimension.length == 1 && (dimension[0] == -1 || dimension[0] == Integer.MAX_VALUE)) || dimension.length == rank;
     }
 
     /**
      * Returns true if the dimension is null
      * or the dimension length is 1 and the first entry
-     * is {@link Integer#MAX_VALUE}
+     * is -1 (sentinel for "reduce all dimensions")
      * @param rank the rank of the input array
      * @param dimension the dimensions specified
      *
      * @return true if the dimension length is equal to the rank,
      * the dimension is null or the dimension length is 1 and the first entry is
-     * {@link Integer#MAX_VALUE}
+     * -1 (sentinel for "reduce all dimensions")
      */
     public static boolean isWholeArray(long rank, long... dimension) {
         return rank == 0 || dimension == null || dimension.length == 0 ||
-                (dimension.length == 1 && dimension[0] == Integer.MAX_VALUE) || dimension.length == rank;
+                (dimension.length == 1 && (dimension[0] == -1 || dimension[0] == Integer.MAX_VALUE)) || dimension.length == rank;
     }
 
     public static long[] getReducedShape(long[] wholeShape, long[] dimensions) {
@@ -3166,10 +3166,10 @@ public class Shape {
      * Returns true if the given array
      * is meant for the whole dimension
      * @param arr the array to test
-     * @return true if arr.length == 1 && arr[0] is Integer.MAX_VALUE
+     * @return true if arr.length == 1 && arr[0] is -1 (sentinel for "reduce all")
      */
     public static boolean wholeArrayDimension(long... arr) {
-        return arr == null || arr.length == 0 || (arr.length == 1 && arr[0] == Integer.MAX_VALUE);
+        return arr == null || arr.length == 0 || (arr.length == 1 && (arr[0] == -1 || arr[0] == Integer.MAX_VALUE));
     }
 
     public static long[] uniquify(long[] array) {
@@ -3199,8 +3199,17 @@ public class Shape {
     }
 
     public static long[] normalizeAxis(long rank, long... axis) {
+        // Empty or null axis means "reduce all dimensions" - return empty array
+        // Native code handles empty dimensions as "full array reduction"
         if (axis == null || axis.length == 0)
-            return new long[] {Integer.MAX_VALUE};
+            return new long[0];
+
+        // Check for Integer.MAX_VALUE or -1 sentinel (legacy) - convert to empty array
+        for (val v : axis) {
+            if (v == Integer.MAX_VALUE || v == -1) {
+                return new long[0];
+            }
+        }
 
         // first we should get rid of all negative axis
         long[] tmp = new long[axis.length];

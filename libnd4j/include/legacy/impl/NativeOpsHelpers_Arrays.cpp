@@ -164,6 +164,22 @@ OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer *shapeInfo,
                     "This indicates the Java-side DataBuffer for shape information is corrupted or deallocated.");
   }
 
+  // CRITICAL: Validate that the shape info DATA is valid before using it.
+  // The pointer may be valid (non-null) but point to garbage/uninitialized memory.
+  // This catches use-after-free and memory corruption issues early.
+  sd::LongType rank = shapeInfoCast[0];
+  if (rank < 0 || rank > SD_MAX_RANK) {
+    std::string errorMessage;
+    errorMessage += "createOpaqueNDArray: shapeInfo->primary() contains invalid rank: ";
+    errorMessage += std::to_string(rank);
+    errorMessage += " (expected 0-";
+    errorMessage += std::to_string(SD_MAX_RANK);
+    errorMessage += "). This indicates memory corruption, use-after-free, or uninitialized host buffer. ";
+    errorMessage += "shapeInfo primary ptr: ";
+    errorMessage += std::to_string(reinterpret_cast<uintptr_t>(shapeInfoCast));
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
   if(shape::isEmpty(shapeInfoCast) && buffer != nullptr) {
     THROW_EXCEPTION("createOpaqueNDArray: Shape info was empty but buffer was not null!");
   } else if(!shape::isEmpty(shapeInfoCast) && buffer == nullptr) {
@@ -181,6 +197,45 @@ OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer *shapeInfo,
     sd::LaunchContext::defaultContext(),
     offset
   );
+
+  // CRITICAL: Validate the newly created NDArray immediately
+  // This catches any issue with the constructor not properly setting _shapeInfoBuffer
+  if (ret != nullptr) {
+    sd::ConstantShapeBuffer* shapeBuffer = ret->shapeInfoConstBuffer();
+    fprintf(stderr, "createOpaqueNDArray: created array at %p, shapeInfoConstBuffer=%p\n", (void*)ret, (void*)shapeBuffer);
+    fflush(stderr);
+
+    if (shapeBuffer == nullptr) {
+      std::string errorMessage;
+      errorMessage += "createOpaqueNDArray: CRITICAL - newly created NDArray has nullptr _shapeInfoBuffer! ";
+      errorMessage += "NDArray ptr: ";
+      errorMessage += std::to_string(reinterpret_cast<uintptr_t>(ret));
+      delete ret;
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+
+    // Check if shapeBuffer equals ret - this would indicate corruption
+    if (reinterpret_cast<uintptr_t>(shapeBuffer) == reinterpret_cast<uintptr_t>(ret)) {
+      std::string errorMessage;
+      errorMessage += "createOpaqueNDArray: CRITICAL - _shapeInfoBuffer equals NDArray ptr! ";
+      errorMessage += "This indicates uninitialized memory or constructor failure. ";
+      errorMessage += "NDArray ptr: ";
+      errorMessage += std::to_string(reinterpret_cast<uintptr_t>(ret));
+      delete ret;
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+
+    if (!shapeBuffer->isValid()) {
+      std::string errorMessage;
+      errorMessage += "createOpaqueNDArray: CRITICAL - newly created NDArray has invalid _shapeInfoBuffer! ";
+      errorMessage += "NDArray ptr: ";
+      errorMessage += std::to_string(reinterpret_cast<uintptr_t>(ret));
+      errorMessage += ", shapeBuffer ptr: ";
+      errorMessage += std::to_string(reinterpret_cast<uintptr_t>(shapeBuffer));
+      delete ret;
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+  }
 
   // Track allocation
   if (ret != nullptr) {
@@ -588,7 +643,39 @@ sd::Pointer getConstantDataBufferSpecial(OpaqueConstantDataBuffer dbf) { return 
 sd::LongType getConstantDataBufferLength(OpaqueConstantDataBuffer dbf) { return dbf->length(); }
 sd::LongType getConstantDataBufferSizeOf(OpaqueConstantDataBuffer dbf) { return dbf->sizeOf(); }
 
-sd::Pointer getConstantShapeBufferPrimary(OpaqueConstantShapeBuffer dbf) { return const_cast<sd::LongType *>(dbf->primary()); }
+sd::Pointer getConstantShapeBufferPrimary(OpaqueConstantShapeBuffer dbf) {
+  if (dbf == nullptr) {
+    THROW_EXCEPTION("getConstantShapeBufferPrimary: OpaqueConstantShapeBuffer is null");
+  }
+
+  // Check if the ConstantShapeBuffer is valid
+  if (!dbf->isValid()) {
+    THROW_EXCEPTION("getConstantShapeBufferPrimary: ConstantShapeBuffer failed validity check (possible use-after-free or garbage pointer)");
+  }
+
+  sd::LongType* primary = const_cast<sd::LongType *>(dbf->primary());
+  if (primary == nullptr) {
+    THROW_EXCEPTION("getConstantShapeBufferPrimary: primary() returned nullptr");
+  }
+
+  // Validate the shape data at this point to catch corruption early
+  sd::LongType rank = primary[0];
+  if (rank < 0 || rank > SD_MAX_RANK) {
+    std::string errorMessage;
+    errorMessage += "getConstantShapeBufferPrimary: Shape buffer contains invalid rank: ";
+    errorMessage += std::to_string(rank);
+    errorMessage += " (expected 0-";
+    errorMessage += std::to_string(SD_MAX_RANK);
+    errorMessage += "). This indicates memory corruption in the cached shape buffer. ";
+    errorMessage += "ConstantShapeBuffer ptr: ";
+    errorMessage += std::to_string(reinterpret_cast<uintptr_t>(dbf));
+    errorMessage += ", primary ptr: ";
+    errorMessage += std::to_string(reinterpret_cast<uintptr_t>(primary));
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
+  return primary;
+}
 
 sd::Pointer getConstantShapeBufferSpecial(OpaqueConstantShapeBuffer dbf) { return const_cast<sd::LongType *>(dbf->special()); }
 
@@ -629,12 +716,84 @@ void setGraphContextInputArraysArr(OpaqueContext* ptr, int numArrays, OpaqueNDAr
   if (ptr == nullptr)
     THROW_EXCEPTION("setGraphContextInputArraysArr: Context was null!");
 
+  // Debug: Print the OpaqueNDArrayArr pointer and raw memory layout
+  fprintf(stderr, "=== setGraphContextInputArraysArr DEBUG ===\n");
+  fprintf(stderr, "numArrays=%d, arr base ptr=%p\n", numArrays, (void*)arr);
+  fflush(stderr);
+
+  // Print raw memory at the arr pointer to see what's actually stored
+  uint64_t* rawArr = reinterpret_cast<uint64_t*>(arr);
+  fprintf(stderr, "Raw memory at arr (interpreting as uint64_t array):\n");
+  for (int i = 0; i < numArrays && i < 5; i++) {
+    fprintf(stderr, "  rawArr[%d] at %p = 0x%016lx, arr[%d] = %p\n",
+            i, (void*)&rawArr[i], rawArr[i], i, (void*)arr[i]);
+    fflush(stderr);
+  }
+  fprintf(stderr, "===========================================\n");
+  fflush(stderr);
+
   for (int i = 0; i < numArrays; i++) {
     if (arr[i] == nullptr) {
       std::string errorMessage;
       errorMessage += "setGraphContextInputArraysArr: Input array at index ";
       errorMessage += std::to_string(i);
       errorMessage += " was null!";
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+
+    // CRITICAL: Validate the NDArray's shapeInfo BEFORE passing to setInputArray
+    // This catches corruption in OpaqueNDArrays created via OpaqueNDArrayArr.createFrom()
+    sd::NDArray* ndarray = arr[i];
+
+    // DEBUG: Print memory layout of the NDArray pointer to detect corruption
+    fprintf(stderr, "  Checking arr[%d]: NDArray ptr=%p\n", i, (void*)ndarray);
+    fflush(stderr);
+    // Print first 64 bytes at the NDArray address as raw hex to see if it's valid object data
+    uint64_t* rawPtr = reinterpret_cast<uint64_t*>(ndarray);
+    fprintf(stderr, "    Raw memory at NDArray: [0]=0x%016lx [1]=0x%016lx [2]=0x%016lx [3]=0x%016lx\n",
+              rawPtr[0], rawPtr[1], rawPtr[2], rawPtr[3]);
+    fflush(stderr);
+
+    // Check the shapeInfo directly from the buffer, not via shapeInfo() which may re-cache
+    sd::ConstantShapeBuffer* shapeBuffer = ndarray->shapeInfoConstBuffer();
+    fprintf(stderr, "    shapeInfoConstBuffer() returned: %p\n", (void*)shapeBuffer);
+    fflush(stderr);
+    if (shapeBuffer == nullptr || !shapeBuffer->isValid()) {
+      std::string errorMessage;
+      errorMessage += "setGraphContextInputArraysArr: Array at index ";
+      errorMessage += std::to_string(i);
+      errorMessage += " has invalid ConstantShapeBuffer (null or magic check failed). ";
+      errorMessage += "NDArray ptr: ";
+      errorMessage += std::to_string(reinterpret_cast<uintptr_t>(ndarray));
+      errorMessage += ", shapeBuffer ptr: ";
+      errorMessage += std::to_string(reinterpret_cast<uintptr_t>(shapeBuffer));
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+
+    sd::LongType* shapeInfoPtr = shapeBuffer->primary();
+    if (shapeInfoPtr == nullptr) {
+      std::string errorMessage;
+      errorMessage += "setGraphContextInputArraysArr: Array at index ";
+      errorMessage += std::to_string(i);
+      errorMessage += " has null primary shapeInfo!";
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+
+    sd::LongType rank = shapeInfoPtr[0];
+    if (rank < 0 || rank > SD_MAX_RANK) {
+      std::string errorMessage;
+      errorMessage += "setGraphContextInputArraysArr: Array at index ";
+      errorMessage += std::to_string(i);
+      errorMessage += " has corrupt shapeInfo! Rank: ";
+      errorMessage += std::to_string(rank);
+      errorMessage += " (expected 0-";
+      errorMessage += std::to_string(SD_MAX_RANK);
+      errorMessage += "). NDArray ptr: ";
+      errorMessage += std::to_string(reinterpret_cast<uintptr_t>(ndarray));
+      errorMessage += ", shapeInfo ptr: ";
+      errorMessage += std::to_string(reinterpret_cast<uintptr_t>(shapeInfoPtr));
+      errorMessage += ", ConstantShapeBuffer ptr: ";
+      errorMessage += std::to_string(reinterpret_cast<uintptr_t>(shapeBuffer));
       THROW_EXCEPTION(errorMessage.c_str());
     }
 

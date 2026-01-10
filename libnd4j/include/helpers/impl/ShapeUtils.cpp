@@ -221,8 +221,13 @@ std::vector<LongType>* ShapeUtils::evalDimsToExclude(const LongType rank, const 
 
 
   // Validate input parameters
-  if (rank <= 0) {
-    THROW_EXCEPTION("ShapeUtils::evalDimsToExclude: rank must be positive");
+  if (rank < 0) {
+    THROW_EXCEPTION("ShapeUtils::evalDimsToExclude: rank cannot be negative");
+  }
+
+  // Handle scalar case (rank 0) - return empty vector since there are no dimensions to exclude
+  if (rank == 0) {
+    return ret;  // Return empty vector
   }
   if (dimsLen < 0) {
     THROW_EXCEPTION("ShapeUtils::evalDimsToExclude: dimsLen cannot be negative");
@@ -231,16 +236,27 @@ std::vector<LongType>* ShapeUtils::evalDimsToExclude(const LongType rank, const 
     THROW_EXCEPTION("ShapeUtils::evalDimsToExclude: dimensions array is null but dimsLen > 0");
   }
 
-  if (dimsLen == 0) {  // if input vector is empty then return whole shape range
+  // Check for -1 sentinel (means "reduce all dimensions") - return whole shape range
+  if (dimsLen == 0 || (dimsLen == 1 && dimensions[0] == -1)) {
     ret->resize(rank);
     std::iota(ret->begin(), ret->end(), 0);  // fill with 0, 1, ... rank-1
+    return ret;
   } else {
     // Validate dimensions are within bounds
     for (LongType j = 0; j < dimsLen; j++) {
-      LongType dim = dimensions[j] >= 0 ? dimensions[j] : dimensions[j] + rank;
+      LongType originalDim = dimensions[j];
+      LongType dim = originalDim >= 0 ? originalDim : originalDim + rank;
       if (dim < 0 || dim >= rank) {
+        std::string errorMessage = "ShapeUtils::evalDimsToExclude: dimension index is out of bounds - dimension[";
+        errorMessage += std::to_string(j);
+        errorMessage += "] = ";
+        errorMessage += std::to_string(originalDim);
+        errorMessage += " (normalized: ";
+        errorMessage += std::to_string(dim);
+        errorMessage += ") is invalid for rank ";
+        errorMessage += std::to_string(rank);
         delete ret;
-        THROW_EXCEPTION("ShapeUtils::evalDimsToExclude: dimension index is out of bounds");
+        THROW_EXCEPTION(errorMessage.c_str());
       }
     }
 
@@ -325,7 +341,7 @@ LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType
   LongType newRank = rank - dimSize;
   if (newRank == 0 ||
       (dimSize == 1 &&
-       dimsToExclude->at(0) == INT_MAX)) {  // check whether given dimension is meant for the whole dimension
+       dimsToExclude->at(0) == INT_MAX || dimsToExclude->at(0) == -1)) {  // check whether given dimension is meant for the whole dimension
 
     if (supportOldShapes) {
       newShapeInfo = new LongType[shape::shapeInfoLength(2)];
@@ -430,7 +446,7 @@ LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType
   LongType newRank = rank - dimSize;
   if (newRank == 0 ||
       (dimSize == 1 &&
-       dimsToExclude->at(0) == INT_MAX)) {  // check whether given dimension is meant for the whole dimension
+       dimsToExclude->at(0) == INT_MAX || dimsToExclude->at(0) == -1)) {  // check whether given dimension is meant for the whole dimension
 
     if (supportOldShapes) {
       newShapeInfo = new sd::LongType[shape::shapeInfoLength(2)];
@@ -541,7 +557,7 @@ LongType* ShapeUtils::evalReduceShapeInfo(char order, std::vector<LongType>* dim
   LongType newRank = rank - dimSize;
   if (newRank == 0 ||
       (dimSize == 1 &&
-       dimsToExclude->at(0) == INT_MAX)) {  // check whether given dimension is meant for the whole dimension
+       dimsToExclude->at(0) == INT_MAX || dimsToExclude->at(0) == -1)) {  // check whether given dimension is meant for the whole dimension
 
     if (supportOldShapes) {
       newShapeInfo = new sd::LongType[shape::shapeInfoLength(2)];

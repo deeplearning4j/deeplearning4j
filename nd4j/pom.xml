@@ -51,6 +51,15 @@
         <module>nd4j-web</module>
         <module>nd4j-ggml</module>
         <module>nd4j-torchscript</module>
+        <!-- LLM and VLM support modules -->
+        <module>nd4j-tokenizers</module>
+        <module>samediff-llm</module>
+        <module>samediff-vlm</module>
+        <!-- Pipeline loaders for model format support -->
+        <module>samediff-pipeline-core</module>
+        <module>samediff-pipeline-safetensors</module>
+        <module>samediff-pipeline-ggml</module>
+        <module>samediff-pipeline-onnx</module>
     </modules>
 
     <profiles>

@@ -22,6 +22,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg;
 
 import lombok.SneakyThrows;
+import org.eclipse.deeplearning4j.tests.extensions.BackendTest;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -39,6 +40,7 @@ import java.util.concurrent.Future;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@BackendTest(description = "Reduction operations smoke tests for all backends")
 public class ReduceOpsSmokeTests {
 
 

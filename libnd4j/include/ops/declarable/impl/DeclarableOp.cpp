@@ -22,7 +22,6 @@
 #include <array/NDArrayFactory.h>
 #include <exceptions/datatype_exception.h>
 #include <exceptions/graph_exception.h>
-#include <graph/exceptions/unresolved_input_exception.h>
 #include <graph/profiling/OpTimingTracker.h>
 #include <helpers/KernelSelectionEnvironment.h>
 #include <helpers/ShapeUtils.h>
@@ -351,8 +350,10 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
         if (var->variableType() == VariableType::NDARRAY) {
           NDArray *array = var->getNDArray();
           var->markRemovable(false);
-          if (array == nullptr)
-            THROW_EXCEPTION(unresolved_input_exception::build("OP PREPARE OUTPUTS: Variable wasn't resolved prior shape calculation", p).what());
+          if (array == nullptr) {
+            std::string msg = "OP PREPARE OUTPUTS: Variable wasn't resolved prior shape calculation; Variable: [" + std::to_string(p.first) + ":" + std::to_string(p.second) + "]";
+            THROW_EXCEPTION(msg.c_str());
+          }
 
           inSha.push_back(array->shapeInfo());
 
@@ -486,14 +487,38 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
           ctx.setOutputArray(idx, outArr, true);
         } else {
           auto array = fout[idx];
-          int shapeEquals = shape::equalsSoft(out, array->shapeInfo());
+          // CRITICAL: Check for null shapeInfo before accessing it.
+          // This can happen if the OpaqueNDArray was invalidated after being set in the context.
+          if (array == nullptr) {
+            std::string errorMessage = "OP PREPARE OUTPUTS: Output array at index ";
+            errorMessage += std::to_string(idx);
+            errorMessage += " is nullptr for op ";
+            errorMessage += *getOpName();
+            delete outSha;
+            THROW_EXCEPTION(errorMessage.c_str());
+          }
+          sd::LongType* arrayShapeInfo = nullptr;
+          try {
+            arrayShapeInfo = array->shapeInfo();
+          } catch (...) {
+            std::string errorMessage = "OP PREPARE OUTPUTS: Output array at index ";
+            errorMessage += std::to_string(idx);
+            errorMessage += " has null or invalid shapeInfo for op ";
+            errorMessage += *getOpName();
+            errorMessage += ". This usually indicates the OpaqueNDArray was invalidated "
+                           "after being passed to native code (possible Java GC issue or "
+                           "array was closed/modified).";
+            delete outSha;
+            THROW_EXCEPTION(errorMessage.c_str());
+          }
+          int shapeEquals = shape::equalsSoft(out, arrayShapeInfo);
           int arrayEmpty = array->isEmpty();
           // checking out shape equality
           if (!shapeEquals) {
             auto eShape = ShapeUtils::shapeAsString(out);
-            auto aShape = ShapeUtils::shapeAsString(array->shapeInfo());
+            auto aShape = ShapeUtils::shapeAsString(arrayShapeInfo);
             auto eShapeInfoString = ShapeUtils::shapeInfoAsString(out);
-            auto aShapeInfoString = ShapeUtils::shapeInfoAsString(array->shapeInfo());
+            auto aShapeInfoString = ShapeUtils::shapeInfoAsString(arrayShapeInfo);
             if (eShapeInfoString != aShapeInfoString) {
               delete outSha;
 
@@ -717,7 +742,23 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
     for (auto array : block.fastpath_out()) {
       if (array == nullptr) continue;
 
-      auto cType = array->dataType();
+      // CRITICAL: Check for null shapeInfo before accessing dataType().
+      // dataType() internally calls shapeInfo() which throws if _shapeInfo is null.
+      // This can happen if the OpaqueNDArray was invalidated after being set in the context.
+      sd::DataType cType;
+      try {
+        cType = array->dataType();
+      } catch (...) {
+        std::string errorMessage = "validateDataTypes: Output array at index ";
+        errorMessage += std::to_string(index);
+        errorMessage += " has null or invalid shapeInfo for op ";
+        errorMessage += _descriptor->getOpName()->data();
+        errorMessage += ". This usually indicates the OpaqueNDArray was invalidated "
+                       "after being passed to native code (possible Java GC issue or "
+                       "array was closed/modified). Output array pointer: ";
+        errorMessage += std::to_string(reinterpret_cast<uintptr_t>(array));
+        THROW_EXCEPTION(errorMessage.c_str());
+      }
 
       if (_descriptor->isSameMode()) {
         if (index >= block.width()) {
@@ -1193,17 +1234,24 @@ void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array
 }
 
 void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array) {
-  block.pushNDArrayToVariableSpace(block.nodeId(), outputIdx, array);
-  auto varSpace = block.getVariableSpace();
-  if (varSpace->hasVariable(block.getNodeId(), outputIdx)) {
-    auto var = varSpace->getVariable(block.getNodeId(), outputIdx);
-    if (var->getNDArray() != nullptr && var->isRemovable()) delete var->getNDArray();
-
-    var->setNDArray(array);
-    var->markRemovable(true);
+  if (block.isFastPath()) {
+    block.fastpath_out()[outputIdx] = array;
   } else {
-    auto var = new Variable(array, nullptr, block.getNodeId(), outputIdx);
-    varSpace->putVariable(block.getNodeId(), outputIdx, var);
+    auto varSpace = block.getVariableSpace();
+    if (varSpace == nullptr) {
+      THROW_EXCEPTION("Var space should not be null in overwriteResult!");
+    }
+    block.pushNDArrayToVariableSpace(block.nodeId(), outputIdx, array);
+    if (varSpace->hasVariable(block.getNodeId(), outputIdx)) {
+      auto var = varSpace->getVariable(block.getNodeId(), outputIdx);
+      if (var->getNDArray() != nullptr && var->isRemovable()) delete var->getNDArray();
+
+      var->setNDArray(array);
+      var->markRemovable(true);
+    } else {
+      auto var = new Variable(array, nullptr, block.getNodeId(), outputIdx);
+      varSpace->putVariable(block.getNodeId(), outputIdx, var);
+    }
   }
 }
 

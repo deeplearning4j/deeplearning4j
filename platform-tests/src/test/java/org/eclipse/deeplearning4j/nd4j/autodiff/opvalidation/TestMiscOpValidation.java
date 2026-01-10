@@ -1278,14 +1278,15 @@ public class TestMiscOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testOneHotOp(){
+    public void testOneHotOp(Nd4jBackend backend){
         //https://www.tensorflow.org/api_docs/python/tf/one_hot
         //https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/include/ops/declarable/generic/parity_ops/onehot.cpp
 
         for( int axis=-1; axis<=0; axis++ ) {
+            // Use DOUBLE data type consistently to match test framework defaults
             String err = OpValidation.validate(new OpTestCase(new OneHot(Nd4j.create(new double[]{0, 1, 2}),
-                    Nd4j.create(FLOAT,3,3), 3, axis, 1.0, 0.0))
-                    .expectedOutput(0, Nd4j.eye(3).castTo(FLOAT)));
+                    3, axis, 1.0, 0.0, DataType.DOUBLE))
+                    .expectedOutput(0, Nd4j.eye(3)));
 
             assertNull(err);
         }

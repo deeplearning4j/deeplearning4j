@@ -212,7 +212,7 @@ SD_DEVICE inline void encoderKernelP2Generic(void *dx, LongType n, void *dz) {
  * PLEASE NOTE: This kernel doesn't allow loop for data. Basically: grid will be huge.
  */
 template <typename T>
-SD_KERNEL static void execEncoderKernelP1(const void *dx, LongType N, void *dz, float threshold) {
+SD_KERNEL void execEncoderKernelP1(const void *dx, LongType N, void *dz, float threshold) {
   auto x = reinterpret_cast<const T *>(dx);
   auto z = reinterpret_cast<int *>(dz);
 
@@ -251,7 +251,7 @@ BUILD_SINGLE_TEMPLATE( void encoderKernelP1Generic,
  * Based on: https://github.com/knotman90/cuStreamComp <-- efficient CUDA stream compaction algorithm
  */
 template <typename T>
-SD_KERNEL static void execEncoderKernelP3(void *dx, int *offsets, LongType N, void *dz) {
+SD_KERNEL void execEncoderKernelP3(void *dx, int *offsets, LongType N, void *dz) {
   auto x = reinterpret_cast<T *>(dx);
   auto z = reinterpret_cast<int *>(dz);
 
@@ -328,7 +328,7 @@ BUILD_SINGLE_TEMPLATE( void encoderKernelP3Generic,
  *   PLEASE NOTE: Z is expected to be memset to 0
  */
 template <typename T>
-SD_KERNEL static void execDecoderKernel(const void *dx, LongType N, void *dz) {
+SD_KERNEL void execDecoderKernel(const void *dx, LongType N, void *dz) {
   auto x = reinterpret_cast<const int *>(dx);
   auto z = reinterpret_cast<T *>(dz);
 
@@ -365,7 +365,7 @@ BUILD_SINGLE_TEMPLATE( void decoderKernelGeneric,
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL static void execCudaEncodeBitmapKernel(void *vdx, LongType N, int *dz, int *scalar, int *reductionBuffer,
+SD_KERNEL void execCudaEncodeBitmapKernel(void *vdx, LongType N, int *dz, int *scalar, int *reductionBuffer,
                                                  float threshold) {
   auto dx = reinterpret_cast<T *>(vdx);
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -448,7 +448,7 @@ BUILD_SINGLE_TEMPLATE( void cudaEncodeBitmapGeneric,
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL static void execCudaDecodeBitmapKernel(const void *dx, LongType N, void *vdz) {
+SD_KERNEL void execCudaDecodeBitmapKernel(const void *dx, LongType N, void *vdz) {
   auto dz = static_cast<T *>(vdz);
 
   int tid = blockIdx.x * blockDim.x + threadIdx.x;

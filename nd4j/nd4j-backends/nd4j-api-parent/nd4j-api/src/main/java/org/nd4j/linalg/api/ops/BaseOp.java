@@ -694,9 +694,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         }
 
         // Note: null/empty dimensions means "reduce all dimensions"
-        // We preserve this as an empty INDArray rather than converting to {-1}
-        // because -1 means "last dimension", not "reduce all".
-        // The execution code (Shape.normalizeAxis) will convert empty to {Integer.MAX_VALUE}
+        // The execution code (Shape.normalizeAxis) will convert empty to {-1}
         // which signals "reduce all" to the reduction logic.
 
         // Set allocation context so lifecycle tracking can associate

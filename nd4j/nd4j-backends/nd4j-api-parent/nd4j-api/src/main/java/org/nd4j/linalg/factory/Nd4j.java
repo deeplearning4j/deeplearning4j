@@ -1403,6 +1403,8 @@ public class Nd4j {
             return  Nd4j.create(Nd4j.createBuffer(pointer,length,dataTypeForPointer(pointer))).castTo(dataType).data();
         }
         Pointer nPointer = getPointer(pointer, dataType);
+        // Set the capacity so the indexer knows the buffer size
+        nPointer.capacity(length);
         return DATA_BUFFER_FACTORY_INSTANCE.create(nPointer, dataType, length, getIndexerByType(nPointer, dataType));
     }
 
@@ -1418,6 +1420,8 @@ public class Nd4j {
      */
     public static DataBuffer createBuffer(@NonNull Pointer pointer,  Pointer devicePointer, long length, @NonNull DataType dataType) {
         Pointer nPointer = getPointer(pointer, dataType);
+        // Set the capacity so the indexer knows the buffer size
+        nPointer.capacity(length);
         return DATA_BUFFER_FACTORY_INSTANCE.create(nPointer, devicePointer, dataType, length, getIndexerByType(nPointer, dataType));
     }
 
@@ -5339,6 +5343,10 @@ public class Nd4j {
             Nd4jBackend backend = Nd4jBackend.load();
             if(backend != null)
                 initWithBackend(backend);
+
+            // Auto-initialize multi-backend support
+            // This detects all available backends/devices and configures routing
+            BackendManager.getInstance().autoInitialize();
         } catch (NoAvailableBackendException e) {
             throw new RuntimeException(e);
         }
@@ -5630,6 +5638,11 @@ public class Nd4j {
             if(Boolean.parseBoolean(logInitProperty)) {
                 OP_EXECUTIONER_INSTANCE.printEnvironmentInformation();
             }
+
+            // Automatic multi-backend initialization
+            // When GPU backend is primary and CPU backend is available, automatically set up
+            // multi-backend execution so ops can run on CPU when data spills to host memory
+            initializeMultiBackendIfAvailable();
 
             // Force early native shape cache initialization before any NDArray allocations occur
             try {
@@ -5949,6 +5962,348 @@ public class Nd4j {
     private static final Object MULTI_BACKEND_LOCK = new Object();
 
     /**
+     * Automatic multi-backend initialization during Nd4j startup.
+     * Called automatically when Nd4j initializes if multi-backend is enabled via properties.
+     *
+     * <p>Configuration options:
+     * <ul>
+     *   <li>{@code nd4j.multibackend.enabled=true} - Enable multi-backend execution</li>
+     *   <li>{@code nd4j.backend.secondary.properties=nd4j-native.properties} - Secondary backend properties file(s)</li>
+     *   <li>{@code nd4j.backend.secondary=org.nd4j.linalg.cpu.nativecpu.CpuBackend} - Secondary backend class(es)</li>
+     * </ul>
+     *
+     * <p>This enables true multi-backend execution where:
+     * <ul>
+     *   <li>Arrays are processed by the backend matching their device location</li>
+     *   <li>CPU fallback for spillover data when GPU memory is constrained</li>
+     * </ul>
+     */
+    private static void initializeMultiBackendIfAvailable() {
+        try {
+            // Check if multi-backend is explicitly disabled
+            String disabledStr = System.getProperty(ND4JSystemProperties.MULTI_BACKEND_DISABLED, "false");
+            if (Boolean.parseBoolean(disabledStr)) {
+                log.debug("Multi-backend explicitly disabled via {}", ND4JSystemProperties.MULTI_BACKEND_DISABLED);
+                return;
+            }
+
+            // Auto-discover all available backends via ServiceLoader
+            ServiceLoader<Nd4jBackend> loader = ND4JClassLoading.loadService(Nd4jBackend.class);
+            List<Nd4jBackend> availableBackends = new ArrayList<>();
+
+            for (Nd4jBackend backend : loader) {
+                try {
+                    if (backend.isAvailable()) {
+                        availableBackends.add(backend);
+                        log.debug("Discovered available backend: {} (priority {})",
+                            backend.getClass().getSimpleName(), backend.getPriority());
+                    }
+                } catch (Exception e) {
+                    log.debug("Backend {} not available: {}", backend.getClass().getSimpleName(), e.getMessage());
+                }
+            }
+
+            // Need at least 2 backends for multi-backend mode
+            if (availableBackends.size() < 2) {
+                log.debug("Single backend mode: only {} backend(s) available", availableBackends.size());
+                return;
+            }
+
+            // Sort by priority (highest first) - first one is primary, rest are secondary
+            availableBackends.sort((a, b) -> Integer.compare(b.getPriority(), a.getPriority()));
+
+            Nd4jBackend primaryBackend = availableBackends.get(0);
+            List<Nd4jBackend> secondaryBackends = availableBackends.subList(1, availableBackends.size());
+
+            log.info("Multi-backend mode: {} backends available", availableBackends.size());
+            log.info("  Primary: {} (priority {})", primaryBackend.getClass().getSimpleName(), primaryBackend.getPriority());
+
+            // Create the device-aware wrapper around the primary executioner
+            org.nd4j.linalg.api.ops.executioner.DeviceAwareOpExecutioner deviceAwareExec =
+                new org.nd4j.linalg.api.ops.executioner.DeviceAwareOpExecutioner(OP_EXECUTIONER_INSTANCE);
+
+            int registeredCount = 0;
+
+            // Load each secondary backend
+            for (Nd4jBackend backend : secondaryBackends) {
+                try {
+                    org.nd4j.linalg.api.ops.executioner.OpExecutioner secondaryExec = loadExecutionerFromBackend(backend);
+                    DeviceType deviceType = getDeviceTypeForBackend(backend);
+
+                    if (secondaryExec != null && deviceType != null) {
+                        deviceAwareExec.registerBackendExecutioner(deviceType, secondaryExec);
+                        registeredCount++;
+                        log.info("  Secondary: {} -> {} (priority {})",
+                                deviceType, backend.getClass().getSimpleName(), backend.getPriority());
+                    }
+                } catch (Exception e) {
+                    log.debug("Failed to load secondary backend {}: {}",
+                        backend.getClass().getSimpleName(), e.getMessage());
+                }
+            }
+
+            if (registeredCount > 0) {
+                // Replace the global executioner with the device-aware wrapper
+                OP_EXECUTIONER_INSTANCE = deviceAwareExec;
+                log.info("Multi-backend initialized: ops route based on data device location");
+            }
+
+        } catch (Exception e) {
+            log.debug("Multi-backend auto-initialization skipped: {}", e.getMessage());
+            // Continue with single-backend mode - this is not an error
+        }
+    }
+
+    /**
+     * Load properties from a classpath resource.
+     */
+    private static Properties loadPropertiesFromClasspath(String resourceName) {
+        try {
+            java.io.InputStream is = Nd4j.class.getClassLoader().getResourceAsStream(resourceName);
+            if (is == null) {
+                log.debug("Properties file not found on classpath: {}", resourceName);
+                return null;
+            }
+            Properties props = new Properties();
+            try {
+                props.load(is);
+            } finally {
+                is.close();
+            }
+            return props;
+        } catch (Exception e) {
+            log.debug("Failed to load properties file {}: {}", resourceName, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Load an OpExecutioner from a Properties object.
+     */
+    private static org.nd4j.linalg.api.ops.executioner.OpExecutioner loadExecutionerFromProperties(
+            Properties props) {
+        try {
+            String executionerClassName = props.getProperty("opexec");
+            if (executionerClassName == null || executionerClassName.trim().isEmpty()) {
+                return null;
+            }
+            executionerClassName = executionerClassName.trim();
+
+            String nativeOpsClassName = props.getProperty("native.ops");
+
+            Class<?> execClass = ND4JClassLoading.loadClassByName(executionerClassName);
+            if (execClass == null) {
+                return null;
+            }
+
+            // Try to instantiate with NativeOps if available
+            if (nativeOpsClassName != null && !nativeOpsClassName.trim().isEmpty()) {
+                try {
+                    Class<?> nativeOpsClass = ND4JClassLoading.loadClassByName(nativeOpsClassName.trim());
+                    if (nativeOpsClass != null) {
+                        org.nd4j.nativeblas.NativeOps nativeOps =
+                            (org.nd4j.nativeblas.NativeOps) nativeOpsClass.getDeclaredConstructor().newInstance();
+                        try {
+                            nativeOps.initializeDevicesAndFunctions();
+                        } catch (Exception e) {
+                            log.debug("NativeOps initialization warning: {}", e.getMessage());
+                        }
+
+                        try {
+                            java.lang.reflect.Constructor<?> ctor = execClass.getConstructor(
+                                org.nd4j.nativeblas.NativeOps.class, boolean.class);
+                            return (org.nd4j.linalg.api.ops.executioner.OpExecutioner)
+                                ctor.newInstance(nativeOps, true);
+                        } catch (NoSuchMethodException e) {
+                            // Fall through
+                        }
+                    }
+                } catch (Exception e) {
+                    log.debug("Could not load NativeOps: {}", e.getMessage());
+                }
+            }
+
+            return (org.nd4j.linalg.api.ops.executioner.OpExecutioner)
+                execClass.getDeclaredConstructor().newInstance();
+
+        } catch (Exception e) {
+            log.debug("Failed to load executioner from properties: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Get DeviceType from a Properties object.
+     */
+    private static DeviceType getDeviceTypeFromProperties(Properties props) {
+        String deviceTypeStr = props.getProperty("device.type");
+        if (deviceTypeStr == null || deviceTypeStr.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return DeviceType.valueOf(deviceTypeStr.trim());
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid device.type value: {}", deviceTypeStr);
+            return null;
+        }
+    }
+
+    /**
+     * Load an OpExecutioner from a backend's properties file.
+     * Reads the 'opexec' property from the backend's configuration resource.
+     */
+    private static org.nd4j.linalg.api.ops.executioner.OpExecutioner loadExecutionerFromBackend(
+            Nd4jBackend backend) {
+        try {
+            // Load properties from the backend's configuration resource
+            Properties props = new Properties();
+            try (java.io.InputStream is = backend.getConfigurationResource().getInputStream()) {
+                props.load(is);
+            }
+
+            // Get the executioner class name from 'opexec' property
+            String executionerClassName = props.getProperty("opexec");
+            if (executionerClassName == null || executionerClassName.trim().isEmpty()) {
+                log.debug("No 'opexec' property in backend {}", backend.getClass().getSimpleName());
+                return null;
+            }
+
+            executionerClassName = executionerClassName.trim();
+
+            // Also load the NativeOps class from 'native.ops' property
+            String nativeOpsClassName = props.getProperty("native.ops");
+
+            // Load the executioner class
+            Class<?> execClass = ND4JClassLoading.loadClassByName(executionerClassName);
+            if (execClass == null) {
+                log.debug("Could not load executioner class: {}", executionerClassName);
+                return null;
+            }
+
+            // Try to instantiate with NativeOps and isSecondary flag if possible
+            if (nativeOpsClassName != null && !nativeOpsClassName.trim().isEmpty()) {
+                try {
+                    Class<?> nativeOpsClass = ND4JClassLoading.loadClassByName(nativeOpsClassName.trim());
+                    if (nativeOpsClass != null) {
+                        org.nd4j.nativeblas.NativeOps nativeOps =
+                            (org.nd4j.nativeblas.NativeOps) nativeOpsClass.getDeclaredConstructor().newInstance();
+
+                        // Initialize the native ops
+                        try {
+                            nativeOps.initializeDevicesAndFunctions();
+                        } catch (Exception e) {
+                            log.debug("NativeOps initialization warning: {}", e.getMessage());
+                        }
+
+                        // Try constructor with NativeOps and isSecondary flag
+                        try {
+                            java.lang.reflect.Constructor<?> ctor = execClass.getConstructor(
+                                org.nd4j.nativeblas.NativeOps.class, boolean.class);
+                            return (org.nd4j.linalg.api.ops.executioner.OpExecutioner)
+                                ctor.newInstance(nativeOps, true);
+                        } catch (NoSuchMethodException e) {
+                            // Fall through to default constructor
+                        }
+                    }
+                } catch (Exception e) {
+                    log.debug("Could not load NativeOps for secondary backend: {}", e.getMessage());
+                }
+            }
+
+            // Fall back to default constructor
+            return (org.nd4j.linalg.api.ops.executioner.OpExecutioner)
+                execClass.getDeclaredConstructor().newInstance();
+
+        } catch (Exception e) {
+            log.debug("Failed to load executioner from backend {}: {}",
+                    backend.getClass().getSimpleName(), e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Determine the DeviceType for a backend from its 'device.type' property.
+     * The property value must match a DeviceType enum value exactly.
+     */
+    private static DeviceType getDeviceTypeForBackend(Nd4jBackend backend) {
+        try {
+            Properties props = new Properties();
+            try (java.io.InputStream is = backend.getConfigurationResource().getInputStream()) {
+                props.load(is);
+            }
+
+            String deviceTypeStr = props.getProperty("device.type");
+            if (deviceTypeStr == null || deviceTypeStr.trim().isEmpty()) {
+                log.debug("No 'device.type' property in backend {}", backend.getClass().getSimpleName());
+                return null;
+            }
+
+            // Parse the DeviceType enum directly - no string matching
+            return DeviceType.valueOf(deviceTypeStr.trim());
+
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid 'device.type' value in backend {}: {}",
+                    backend.getClass().getSimpleName(), e.getMessage());
+            return null;
+        } catch (Exception e) {
+            log.debug("Could not determine device type for backend {}: {}",
+                    backend.getClass().getSimpleName(), e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Get the DeviceType for the current primary backend.
+     * This reads the 'device.type' property from the backend's configuration.
+     *
+     * @return the DeviceType of the current backend, or null if not determinable
+     */
+    public static DeviceType getBackendDeviceType() {
+        return getDeviceTypeForBackend(backend);
+    }
+
+    /**
+     * Get a list of all available backends with their device types.
+     * This discovers all backends on the classpath via ServiceLoader.
+     *
+     * @return list of available backends with their device types
+     */
+    public static List<Map.Entry<Nd4jBackend, DeviceType>> getAvailableBackends() {
+        List<Map.Entry<Nd4jBackend, DeviceType>> result = new ArrayList<>();
+        ServiceLoader<Nd4jBackend> loader = ND4JClassLoading.loadService(Nd4jBackend.class);
+
+        for (Nd4jBackend backend : loader) {
+            try {
+                if (backend.isAvailable()) {
+                    DeviceType deviceType = getDeviceTypeForBackend(backend);
+                    result.add(new java.util.AbstractMap.SimpleEntry<>(backend, deviceType));
+                }
+            } catch (Exception e) {
+                log.debug("Backend {} not available: {}", backend.getClass().getSimpleName(), e.getMessage());
+            }
+        }
+
+        // Sort by priority (highest first)
+        result.sort((a, b) -> Integer.compare(b.getKey().getPriority(), a.getKey().getPriority()));
+        return result;
+    }
+
+    /**
+     * Check if a specific DeviceType backend is available on the classpath.
+     *
+     * @param deviceType the device type to check for
+     * @return true if a backend for that device type is available
+     */
+    public static boolean isBackendAvailable(DeviceType deviceType) {
+        for (Map.Entry<Nd4jBackend, DeviceType> entry : getAvailableBackends()) {
+            if (entry.getValue() == deviceType) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Enable multi-backend mode for seamless device routing.
      * When enabled, operations will automatically route to the appropriate
      * backend based on input data location and routing policy.
@@ -6225,6 +6580,53 @@ public class Nd4j {
             return withDevice(cpu, supplier);
         }
         return supplier.get();
+    }
+
+    // ========================
+    // Unified Backend Manager API
+    // ========================
+
+    /**
+     * Get the unified backend manager for multi-backend configuration.
+     *
+     * <p>The BackendManager provides a single entry point for:</p>
+     * <ul>
+     *   <li>Configuring device priority and memory limits</li>
+     *   <li>Querying available backends and devices</li>
+     *   <li>Monitoring memory usage across devices</li>
+     *   <li>Scoped device forcing for specific code blocks</li>
+     * </ul>
+     *
+     * <p>Basic usage - everything works automatically:</p>
+     * <pre>{@code
+     * // Arrays are allocated on the best available device (GPU if present)
+     * INDArray a = Nd4j.create(100, 100);
+     *
+     * // Check what's available
+     * Nd4j.backends().info();
+     * }</pre>
+     *
+     * <p>Configuration via fluent API:</p>
+     * <pre>{@code
+     * Nd4j.backends()
+     *     .priority(DeviceType.CUDA_GPU, DeviceType.CPU)  // GPU first, CPU fallback
+     *     .gpuMemoryFraction(0.9)                         // Use 90% of GPU memory
+     *     .memoryFallback(true)                           // Auto-fallback on OOM
+     *     .apply();
+     * }</pre>
+     *
+     * <p>Scoped device forcing:</p>
+     * <pre>{@code
+     * try (var scope = Nd4j.backends().forceDevice(DeviceType.CPU)) {
+     *     INDArray cpuArray = Nd4j.create(100, 100);  // Forced to CPU
+     * }
+     * }</pre>
+     *
+     * @return the BackendManager instance
+     * @see BackendManager
+     */
+    public static BackendManager backends() {
+        return BackendManager.getInstance();
     }
 
     /**

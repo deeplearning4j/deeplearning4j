@@ -20,6 +20,7 @@
 
 #include <array/TadPack.h>
 #include <system/common.h>
+#include <execution/AffinityManager.h>
 
 #include <array>
 #include <atomic>
@@ -250,6 +251,11 @@ public:
  // Original methods preserved
  size_t computeStripeIndex(const std::vector<LongType>& dimensions, LongType* originalShape) const {
    size_t hash = 17; // Prime number starting point
+
+   // CRITICAL: Include device ID in hash to make cache device-aware
+   // TAD packs contain device-specific pointers that are only valid on the device where allocated
+   int deviceId = AffinityManager::currentDeviceId();
+   hash = hash * 53 + static_cast<size_t>(deviceId) * 59;
 
    // Add dimension-specific hash contribution with position-dependence
    for (size_t i = 0; i < dimensions.size(); i++) {

@@ -641,12 +641,14 @@ void Context::setOutputArray(int index, NDArray *array, bool removable) {
 
   if (_fastpath_out.size() < static_cast<size_t>(index + 1)) _fastpath_out.resize(index + 1);
 
-  // Check for null shapeInfo before accessing it
-  if (array->shapeInfo() == nullptr) {
+  // Check for null shapeInfo before accessing it - use try-catch because shapeInfo() throws when null
+  try {
+    array->shapeInfo();
+  } catch (...) {
     std::string errorMessage;
     errorMessage += std::string("Context::setOutputArray: Array at index ");
     errorMessage += std::to_string(index);
-    errorMessage += std::string(" has a null shape buffer!");
+    errorMessage += std::string(" has a null or invalid shape buffer!");
     THROW_EXCEPTION(errorMessage.c_str());
   }
 

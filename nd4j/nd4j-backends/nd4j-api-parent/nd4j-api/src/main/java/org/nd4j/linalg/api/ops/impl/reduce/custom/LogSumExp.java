@@ -37,8 +37,11 @@ public class LogSumExp extends DynamicCustomOp {
 
     public LogSumExp(SameDiff sameDiff, SDVariable i_v, boolean keepDims, long[] dimensions) {
         super(sameDiff, i_v);
-        if(dimensions != null) {
-            addIArgument(dimensions);
+        if(dimensions != null && dimensions.length > 0) {
+            // -1 or Integer.MAX_VALUE means "full array" - don't pass dimension args for full array reduction
+            if(dimensions.length != 1 || (dimensions[0] != -1 && dimensions[0] != Integer.MAX_VALUE)) {
+                addIArgument(dimensions);
+            }
             this.dimensions = dimensions;
         }
         addTArgument(keepDims ? 1.0 : 0.0);
@@ -86,7 +89,7 @@ public class LogSumExp extends DynamicCustomOp {
         SDVariable sumExp =  null;
         if(dimensions == null) {
             if(args().length < 2) {
-                dimensions = new long[]{Integer.MAX_VALUE};
+                dimensions = new long[]{-1};
                 sumExp = exp.sum(dimensions);
             } else {
                 sumExp = sameDiff.math().sum(exp,arg(1));

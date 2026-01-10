@@ -255,6 +255,13 @@ int lastErrorCode() { return sd::LaunchContext::defaultContext()->errorReference
 
 const char *lastErrorMessage() { return sd::LaunchContext::defaultContext()->errorReference()->errorMessage(); }
 
+// For CUDA builds, clearLastError is defined in NativeOps.cu with CUDA-specific error clearing
+#ifndef SD_CUDA
+void clearLastError() {
+  sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(0);
+  sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("");
+}
+#endif
 
 sd::LaunchContext *defaultLaunchContext() { return sd::LaunchContext::defaultContext(); }
 

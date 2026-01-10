@@ -59,7 +59,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
         <platform.classifier>${javacpp.platform}</platform.classifier>
-        <backend.artifactId>nd4j-native</backend.artifactId>
+        <backend.artifactId>nd4j-cuda-12.9</backend.artifactId>
         <!-- UDF package names for TestUdf -->
         <org.nd4j.linalg.api.ops.udf.classes></org.nd4j.linalg.api.ops.udf.classes>
         <lombok.version>1.18.42</lombok.version>
@@ -434,12 +434,6 @@
             <version>${project.version}</version>
         </dependency>
 
-
-        <dependency>
-            <groupId>org.eclipse.deeplearning4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>${project.version}</version>
-        </dependency>
         <dependency>
             <groupId>org.apache.derby</groupId>
             <artifactId>derby</artifactId>
@@ -1113,6 +1107,261 @@
                                 <sd.test.helpers>${sd.test.helpers}</sd.test.helpers>
                                 <sd.test.skip.helpers>${sd.test.skip.helpers}</sd.test.skip.helpers>
                             </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- ============================================================= -->
+        <!-- Multi-Backend Dual/Triple Backend Profiles                     -->
+        <!-- These profiles include multiple backend dependencies for       -->
+        <!-- true multi-device testing (CPU + GPU simultaneously)           -->
+        <!-- ============================================================= -->
+
+        <!-- Profile for dual-backend testing: CPU + CUDA -->
+        <profile>
+            <id>multi-backend-dual</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <sd.test.enable.multi.backend>true</sd.test.enable.multi.backend>
+                <sd.test.enable.all.helpers>true</sd.test.enable.all.helpers>
+                <sd.test.kernel.strategy>fastest</sd.test.kernel.strategy>
+            </properties>
+            <dependencies>
+                <!-- CPU backend (nd4j-native) -->
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${dl4j.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${dl4j.version}</version>
+                    <classifier>${platform.classifier}</classifier>
+                </dependency>
+                <!-- CUDA backend -->
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-cuda-12.9</artifactId>
+                    <version>${dl4j.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-cuda-12.9</artifactId>
+                    <version>${dl4j.version}</version>
+                    <classifier>${platform.classifier}</classifier>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.enable.multi.backend>${sd.test.enable.multi.backend}</sd.test.enable.multi.backend>
+                                <sd.test.enable.all.helpers>${sd.test.enable.all.helpers}</sd.test.enable.all.helpers>
+                                <sd.test.kernel.strategy>${sd.test.kernel.strategy}</sd.test.kernel.strategy>
+                            </systemPropertyVariables>
+                            <!-- Run multi-backend and multi-device tests -->
+                            <groups>multi-backend,multi-device</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for all available backends: CPU + CUDA + ZLUDA + TPU -->
+        <profile>
+            <id>multi-backend-all</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <sd.test.enable.multi.backend>true</sd.test.enable.multi.backend>
+                <sd.test.enable.all.helpers>true</sd.test.enable.all.helpers>
+                <sd.test.kernel.strategy>fastest</sd.test.kernel.strategy>
+                <sd.test.discover.backends>true</sd.test.discover.backends>
+            </properties>
+            <dependencies>
+                <!-- CPU backend (nd4j-native) - always included -->
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${dl4j.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${dl4j.version}</version>
+                    <classifier>${platform.classifier}</classifier>
+                </dependency>
+                <!-- CUDA backend -->
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-cuda-12.9</artifactId>
+                    <version>${dl4j.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-cuda-12.9</artifactId>
+                    <version>${dl4j.version}</version>
+                    <classifier>${platform.classifier}</classifier>
+                </dependency>
+                <!-- ZLUDA backend (AMD/Intel GPUs) -->
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-zluda</artifactId>
+                    <version>${dl4j.version}</version>
+                </dependency>
+                <!-- TPU backend -->
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-tpu</artifactId>
+                    <version>${dl4j.version}</version>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.enable.multi.backend>${sd.test.enable.multi.backend}</sd.test.enable.multi.backend>
+                                <sd.test.enable.all.helpers>${sd.test.enable.all.helpers}</sd.test.enable.all.helpers>
+                                <sd.test.kernel.strategy>${sd.test.kernel.strategy}</sd.test.kernel.strategy>
+                                <sd.test.discover.backends>${sd.test.discover.backends}</sd.test.discover.backends>
+                            </systemPropertyVariables>
+                            <!-- Run all multi-backend related tests -->
+                            <groups>multi-backend,multi-device,backend-discovery</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for ZLUDA-specific testing (AMD/Intel GPUs) -->
+        <profile>
+            <id>test-zluda</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>env.ZLUDA_PATH</name>
+                </property>
+            </activation>
+            <properties>
+                <sd.test.backend>zluda</sd.test.backend>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-zluda</artifactId>
+                    <version>${dl4j.version}</version>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.backend>${sd.test.backend}</sd.test.backend>
+                            </systemPropertyVariables>
+                            <groups>zluda,rocm,amd-gpu</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for TPU-specific testing -->
+        <profile>
+            <id>test-tpu</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <sd.test.backend>tpu</sd.test.backend>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-tpu</artifactId>
+                    <version>${dl4j.version}</version>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.backend>${sd.test.backend}</sd.test.backend>
+                            </systemPropertyVariables>
+                            <groups>tpu</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for testing device memory management and routing -->
+        <profile>
+            <id>test-device-routing</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <sd.test.enable.multi.backend>true</sd.test.enable.multi.backend>
+                <sd.test.device.routing.enabled>true</sd.test.device.routing.enabled>
+                <sd.test.log.routing.decisions>true</sd.test.log.routing.decisions>
+                <sd.test.log.data.transfers>true</sd.test.log.data.transfers>
+            </properties>
+            <dependencies>
+                <!-- Include both backends for routing tests -->
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${dl4j.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${dl4j.version}</version>
+                    <classifier>${platform.classifier}</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-cuda-12.9</artifactId>
+                    <version>${dl4j.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-cuda-12.9</artifactId>
+                    <version>${dl4j.version}</version>
+                    <classifier>${platform.classifier}</classifier>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.enable.multi.backend>${sd.test.enable.multi.backend}</sd.test.enable.multi.backend>
+                                <sd.test.device.routing.enabled>${sd.test.device.routing.enabled}</sd.test.device.routing.enabled>
+                                <sd.test.log.routing.decisions>${sd.test.log.routing.decisions}</sd.test.log.routing.decisions>
+                                <sd.test.log.data.transfers>${sd.test.log.data.transfers}</sd.test.log.data.transfers>
+                            </systemPropertyVariables>
+                            <groups>device-routing,multi-device,memory-management</groups>
                         </configuration>
                     </plugin>
                 </plugins>

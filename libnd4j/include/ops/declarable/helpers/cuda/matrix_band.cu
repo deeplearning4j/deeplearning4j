@@ -63,10 +63,6 @@ static SD_KERNEL SD_INLINE void matrixBandKernel(const void* inputBuffer, const 
   for (LongType e = blockIdx.x; e < numTads; e += gridDim.x) {
     auto yOffset = tadInputOffsets[e];
     auto xOffset = tadOutputOffsets[e];
-    if (outputBuffer != inputBuffer)  // if not inplace
-      for(int i = 0; i < inputLength; i++) {
-        resetBuffer[i] = input[i];
-      }
     for (LongType i = blockIdx.y; i < rows; i += gridDim.y) {
       for (LongType j = threadIdx.x; j < cols; j += totalThreads) {
         LongType coords[2] = {i, j};

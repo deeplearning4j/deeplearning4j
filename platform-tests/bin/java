@@ -109,13 +109,14 @@ fi
 
 # if test_runner_prefix is not empty and contains "compute-sanitizer"
 if [[ -n $TEST_RUNNER_PREFIX && $TEST_RUNNER_PREFIX =~ "compute-sanitizer" ]]; then
-    TEST_RUNNER_PREFIX="$TEST_RUNNER_PREFIX --error-limit=no --suppressions=$suppression_file --track-origins=yes --keep-stacktraces=alloc-and-free"
+    TEST_RUNNER_PREFIX="$TEST_RUNNER_PREFIX  --print-limit=0  --show-backtrace=yes"
     # add jvm option to disable jit compilation to help with debugging
     java_call="${java_call}  -Djava.compiler=none"
 
     echo "running with cuda compute-sanitizer"
 fi
-export CUDA_VISIBLE_DEVICES=1
+# Temporarily disable device remapping to debug kernel loading issues
+# export CUDA_VISIBLE_DEVICES=1
 # print the final command
 echo "$TEST_RUNNER_PREFIX $java_call $@"
 $TEST_RUNNER_PREFIX $java_call "$@"

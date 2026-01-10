@@ -18,6 +18,7 @@
 #include "../DirectTadTrie.h"
 
 #include <array/TadPack.h>
+#include <execution/AffinityManager.h>
 
 #include <algorithm>
 #include <memory>
@@ -34,13 +35,19 @@ std::shared_ptr<TadPack> DirectTadTrie::enhancedSearch(const std::vector<LongTyp
   const TadTrieNode* current = _roots[stripeIdx].get();
   int rank = shape::rank(originalShape);
 
-  // Navigate to dimension length node
-  current = findChild(current, dimensions.size(), 0, false, rank);
+  // CRITICAL: First level is device ID to ensure device-aware caching
+  // TAD packs contain device-specific pointers that are only valid on the device where allocated
+  int deviceId = AffinityManager::currentDeviceId();
+  current = findChild(current, deviceId, 0, false, rank);
   if (!current) return nullptr;
 
-  // Navigate through dimension nodes
+  // Navigate to dimension length node (now level 1)
+  current = findChild(current, dimensions.size(), 1, false, rank);
+  if (!current) return nullptr;
+
+  // Navigate through dimension nodes (now starting at level 2)
   for (size_t i = 0; i < dimensions.size(); i++) {
-    current = findChild(current, dimensions[i], i + 1, true, rank);
+    current = findChild(current, dimensions[i], i + 2, true, rank);
     if (!current) return nullptr;
   }
 
@@ -68,6 +75,12 @@ size_t DirectTadTrie::computeStrideAwareHash(const std::vector<LongType>& dimens
   if (!originalShape) return 0;
 
   size_t hash = 17; // Prime number starting point
+
+  // CRITICAL: Include device ID in hash to make cache device-aware
+  // TAD packs contain device-specific pointers (specialShapeInfo, specialOffsets)
+  // that are only valid on the device where they were allocated
+  int deviceId = AffinityManager::currentDeviceId();
+  hash = hash * 53 + static_cast<size_t>(deviceId) * 59;
 
   // Handle empty dimensions specially
   if (dimensions.empty()) {
@@ -127,13 +140,18 @@ std::shared_ptr<TadPack> DirectTadTrie::search(const std::vector<LongType>& dime
   // No need for locking - caller handles locking (e.g., in getOrCreate)
   const TadTrieNode* current = _roots[stripeIdx].get();
 
-  // First level: dimension length
-  current = findChild(current, dimensions.size(), 0, false, originalShapeRank);
+  // CRITICAL: First level is device ID to ensure device-aware caching
+  int deviceId = AffinityManager::currentDeviceId();
+  current = findChild(current, deviceId, 0, false, originalShapeRank);
   if (!current) return nullptr;
 
-  // Second level: dimensions
+  // Second level: dimension length (now level 1)
+  current = findChild(current, dimensions.size(), 1, false, originalShapeRank);
+  if (!current) return nullptr;
+
+  // Third level: dimensions (now starting at level 2)
   for (size_t i = 0; i < dimensions.size(); i++) {
-    current = findChild(current, dimensions[i], i + 1, true, originalShapeRank);
+    current = findChild(current, dimensions[i], i + 2, true, originalShapeRank);
     if (!current) return nullptr;
   }
 
@@ -181,15 +199,23 @@ std::shared_ptr<TadPack> DirectTadTrie::insert(std::vector<LongType>& dimensions
   // No compatible TadPack found, create a new one
   TadTrieNode* current = _roots[stripeIdx].get();
 
-  // First level: dimension length node with shape rank
-  current = current->findOrCreateChild(dimensions.size(), 0, false, rank);
+  // CRITICAL: First level is device ID to ensure device-aware caching
+  // TAD packs contain device-specific pointers that are only valid on the device where allocated
+  int deviceId = AffinityManager::currentDeviceId();
+  current = current->findOrCreateChild(deviceId, 0, false, rank);
+  if (!current) {
+    THROW_EXCEPTION("Failed to create device ID node");
+  }
+
+  // Second level: dimension length node with shape rank (now level 1)
+  current = current->findOrCreateChild(dimensions.size(), 1, false, rank);
   if (!current) {
     THROW_EXCEPTION("Failed to create dimension length node");
   }
 
-  // Second level: dimension nodes with shape rank
+  // Third level: dimension nodes with shape rank (now starting at level 2)
   for (size_t i = 0; i < dimensions.size(); i++) {
-    current = current->findOrCreateChild(dimensions[i], i + 1, true, rank);
+    current = current->findOrCreateChild(dimensions[i], i + 2, true, rank);
     if (!current) {
       THROW_EXCEPTION("Failed to create dimension node");
     }

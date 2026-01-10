@@ -50,7 +50,7 @@ using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y, typename Z, typename OpType>
-SD_KERNEL static void scalarSimpleShaped(
+SD_KERNEL void scalarSimpleShaped(
     void const* x,
     void const* y,
     sd::LongType const* xShapeInfo,
@@ -118,7 +118,7 @@ SD_KERNEL static void scalarSimpleShaped(
 
 ////////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y, typename Z, typename OpType>
-SD_KERNEL static void scalarAlongDimension(
+SD_KERNEL void scalarAlongDimension(
     void const* x,
     sd::LongType const* xShapeInfo,
     void* extraParams,

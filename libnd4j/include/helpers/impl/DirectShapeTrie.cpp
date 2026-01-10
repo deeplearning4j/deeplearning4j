@@ -22,6 +22,7 @@
 #include <helpers/DirectShapeTrie.h>
 #include <helpers/shape.h>
 #include <system/common.h>
+#include <execution/AffinityManager.h>
 
 #include <atomic>
 #include <chrono>
@@ -86,6 +87,14 @@ size_t DirectShapeTrie::computeHash(const LongType* shapeInfo) const {
   size_t hash = 17; // Prime number starting point
   const int rank = shape::rank(shapeInfo);
 
+  // CRITICAL: Include device ID in hash to make cache device-aware
+  // This ensures each GPU device gets its own cached shape buffers
+  // Without this, a shape buffer created on device 0 could be returned
+  // when device 1 requests the same shape, causing CUDA error 400
+  // (cudaErrorInvalidResourceHandle) because device pointers are device-specific
+  int deviceId = AffinityManager::currentDeviceId();
+  hash = hash * 53 + static_cast<size_t>(deviceId) * 59;
+
   // Add rank first with high weight
   hash = hash * 31 + rank * 19;
 
@@ -117,6 +126,11 @@ size_t DirectShapeTrie::computeHash(const LongType* shapeInfo) const {
 int DirectShapeTrie::calculateShapeSignature(const LongType* shapeInfo) const {
   int signature = 17;
   const int rank = shape::rank(shapeInfo);
+
+  // CRITICAL: Include device ID in signature to make cache device-aware
+  // This ensures shape signatures are unique per device
+  int deviceId = AffinityManager::currentDeviceId();
+  signature = signature * 37 + deviceId * 41;
 
   // Incorporate rank with weight
   signature = signature * 31 + rank * 13;
@@ -243,28 +257,36 @@ ConstantShapeBuffer* DirectShapeTrie::search(const LongType* shapeInfo, size_t s
   const int rank = shape::rank(shapeInfo);
   const int shapeSignature = calculateShapeSignature(shapeInfo);
 
-  // Check rank
-  current = findChild(current, rank, 0, true, shapeSignature);
+  // CRITICAL: Check device ID FIRST to ensure device-aware caching
+  // This prevents returning a shape buffer with device pointers from a different GPU
+  int deviceId = AffinityManager::currentDeviceId();
+  current = findChild(current, deviceId, 0, true, shapeSignature);
+  if (!current) {
+    return nullptr;  // Not found for this device
+  }
+
+  // Check rank (now at level 1)
+  current = findChild(current, rank, 1, true, shapeSignature);
   if (!current) {
     return nullptr;  // Not found, but this is expected behavior
   }
 
-  // Check datatype
-  current = findChild(current, ArrayOptions::dataType(shapeInfo), 1, true, shapeSignature);
+  // Check datatype (now at level 2)
+  current = findChild(current, ArrayOptions::dataType(shapeInfo), 2, true, shapeSignature);
   if (!current) {
     return nullptr;  // Not found, but this is expected behavior
   }
 
-  // Check order
-  current = findChild(current, shape::order(shapeInfo), 2, true, shapeSignature);
+  // Check order (now at level 3)
+  current = findChild(current, shape::order(shapeInfo), 3, true, shapeSignature);
   if (!current) {
     return nullptr;  // Not found, but this is expected behavior
   }
 
-  // Check shape values
+  // Check shape values (now starting at level 4)
   const LongType* shapeValues = shape::shapeOf(shapeInfo);
   for (int i = 0; i < rank; i++) {
-    current = findChild(current, shapeValues[i], 3 + i, true, shapeSignature);
+    current = findChild(current, shapeValues[i], 4 + i, true, shapeSignature);
     if (!current) {
       return nullptr;  // Not found, but this is expected behavior
     }
@@ -273,7 +295,7 @@ ConstantShapeBuffer* DirectShapeTrie::search(const LongType* shapeInfo, size_t s
   // Check stride values
   const LongType* strides = shape::stride(shapeInfo);
   for (int i = 0; i < rank; i++) {
-    current = findChild(current, strides[i], 3 + rank + i, false, shapeSignature);
+    current = findChild(current, strides[i], 4 + rank + i, false, shapeSignature);
     if (!current) {
       return nullptr;  // Not found, but this is expected behavior
     }
@@ -310,20 +332,14 @@ ConstantShapeBuffer* DirectShapeTrie::createFallbackBuffer(const LongType* shape
       new PrimaryPointerDeallocator(),
       [] (PrimaryPointerDeallocator* ptr) { delete ptr; });
 
-  // Create a pointer wrapper and buffer
-  auto hPtr = new PointerWrapper(shapeCopy, deallocator);
-  if (hPtr == nullptr) {
+  // Use platform-specific creator (CudaShapeBufferCreator for CUDA, CpuShapeBufferCreator for CPU)
+  auto buffer = ShapeBufferCreatorHelper::getCurrentCreator().create(shapeInfo, rank);
+  if (buffer == nullptr || buffer->primary() == nullptr) {
     delete[] shapeCopy;
-    std::string msg = "Failed to create PointerWrapper";
+    std::string msg = "Failed to create ConstantShapeBuffer via platform creator";
     THROW_EXCEPTION(msg.c_str());
   }
-
-  auto buffer = new ConstantShapeBuffer(hPtr);
-  if (buffer == nullptr) {
-    delete hPtr;
-    std::string msg = "Failed to create ConstantShapeBuffer";
-    THROW_EXCEPTION(msg.c_str());
-  }
+  // shapeCopy is owned by the buffer now, don't delete it
 
 #if defined(SD_GCC_FUNCTRACE)
   // Track shape cache allocation
@@ -404,31 +420,42 @@ ConstantShapeBuffer* DirectShapeTrie::getOrCreate(const LongType* shapeInfo) {
   // Safe pointer to track the current node through the insertion process
   ShapeTrieNode* safeNodePtr = nullptr;
 
-  // Insert rank with signature
-  safeNodePtr = current->findOrCreateChild(rank, 0, true, shapeSignature);
+  // CRITICAL: Insert device ID FIRST to ensure device-aware caching
+  // This ensures each GPU device gets its own cached shape buffers
+  // Without this, a shape buffer created on device 0 could be returned
+  // when device 1 requests the same shape, causing CUDA error 400
+  int deviceId = AffinityManager::currentDeviceId();
+  safeNodePtr = current->findOrCreateChild(deviceId, 0, true, shapeSignature);
   if (safeNodePtr == nullptr) {
     return createFallbackBuffer(shapeInfo, rank);
   }
   current = safeNodePtr;
 
-  // Insert datatype with signature
-  safeNodePtr = current->findOrCreateChild(ArrayOptions::dataType(shapeInfo), 1, true, shapeSignature);
+  // Insert rank with signature (now at level 1)
+  safeNodePtr = current->findOrCreateChild(rank, 1, true, shapeSignature);
   if (safeNodePtr == nullptr) {
     return createFallbackBuffer(shapeInfo, rank);
   }
   current = safeNodePtr;
 
-  // Insert order with signature
-  safeNodePtr = current->findOrCreateChild(shape::order(shapeInfo), 2, true, shapeSignature);
+  // Insert datatype with signature (now at level 2)
+  safeNodePtr = current->findOrCreateChild(ArrayOptions::dataType(shapeInfo), 2, true, shapeSignature);
   if (safeNodePtr == nullptr) {
     return createFallbackBuffer(shapeInfo, rank);
   }
   current = safeNodePtr;
 
-  // Insert shape values with signature
+  // Insert order with signature (now at level 3)
+  safeNodePtr = current->findOrCreateChild(shape::order(shapeInfo), 3, true, shapeSignature);
+  if (safeNodePtr == nullptr) {
+    return createFallbackBuffer(shapeInfo, rank);
+  }
+  current = safeNodePtr;
+
+  // Insert shape values with signature (now starting at level 4)
   const LongType* shapeValues = shape::shapeOf(shapeInfo);
   for (int i = 0; i < rank; i++) {
-    safeNodePtr = current->findOrCreateChild(shapeValues[i], 3 + i, true, shapeSignature);
+    safeNodePtr = current->findOrCreateChild(shapeValues[i], 4 + i, true, shapeSignature);
     if (safeNodePtr == nullptr) {
       return createFallbackBuffer(shapeInfo, rank);
     }
@@ -438,7 +465,7 @@ ConstantShapeBuffer* DirectShapeTrie::getOrCreate(const LongType* shapeInfo) {
   // Insert stride values with signature
   const LongType* strides = shape::stride(shapeInfo);
   for (int i = 0; i < rank; i++) {
-    safeNodePtr = current->findOrCreateChild(strides[i], 3 + rank + i, false, shapeSignature);
+    safeNodePtr = current->findOrCreateChild(strides[i], 4 + rank + i, false, shapeSignature);
     if (safeNodePtr == nullptr) {
       return createFallbackBuffer(shapeInfo, rank);
     }
@@ -510,34 +537,43 @@ ConstantShapeBuffer* DirectShapeTrie::insert(const LongType* shapeInfo, size_t s
   const int rank = shape::rank(shapeInfo);
   const int shapeSignature = calculateShapeSignature(shapeInfo);
 
-  // Insert rank
-  current = current->findOrCreateChild(rank, 0, true, shapeSignature);
+  // CRITICAL: Insert device ID FIRST to ensure device-aware caching
+  int deviceId = AffinityManager::currentDeviceId();
+  current = current->findOrCreateChild(deviceId, 0, true, shapeSignature);
+  if (!current) {
+    std::string msg = "Failed to create device node";
+    THROW_EXCEPTION(msg.c_str());
+    return nullptr;
+  }
+
+  // Insert rank (now at level 1)
+  current = current->findOrCreateChild(rank, 1, true, shapeSignature);
   if (!current) {
     std::string msg = "Failed to create rank node";
     THROW_EXCEPTION(msg.c_str());
     return nullptr;
   }
 
-  // Insert datatype
-  current = current->findOrCreateChild(ArrayOptions::dataType(shapeInfo), 1, true, shapeSignature);
+  // Insert datatype (now at level 2)
+  current = current->findOrCreateChild(ArrayOptions::dataType(shapeInfo), 2, true, shapeSignature);
   if (!current) {
     std::string msg = "Failed to create datatype node";
     THROW_EXCEPTION(msg.c_str());
     return nullptr;
   }
 
-  // Insert order
-  current = current->findOrCreateChild(shape::order(shapeInfo), 2, true, shapeSignature);
+  // Insert order (now at level 3)
+  current = current->findOrCreateChild(shape::order(shapeInfo), 3, true, shapeSignature);
   if (!current) {
     std::string msg = "Failed to create order node";
     THROW_EXCEPTION(msg.c_str());
     return nullptr;
   }
 
-  // Insert shape values
+  // Insert shape values (now starting at level 4)
   const LongType* shape = shape::shapeOf(shapeInfo);
   for (int i = 0; i < rank; i++) {
-    current = current->findOrCreateChild(shape[i], 3 + i, true, shapeSignature);
+    current = current->findOrCreateChild(shape[i], 4 + i, true, shapeSignature);
     if (!current) {
       std::string msg = "Failed to create shape value node at index " + std::to_string(i);
       THROW_EXCEPTION(msg.c_str());
@@ -548,7 +584,7 @@ ConstantShapeBuffer* DirectShapeTrie::insert(const LongType* shapeInfo, size_t s
   // Insert stride values
   const LongType* strides = shape::stride(shapeInfo);
   for (int i = 0; i < rank; i++) {
-    current = current->findOrCreateChild(strides[i], 3 + rank + i, false, shapeSignature);
+    current = current->findOrCreateChild(strides[i], 4 + rank + i, false, shapeSignature);
     if (!current) {
       std::string msg = "Failed to create stride value node at index " + std::to_string(i);
       THROW_EXCEPTION(msg.c_str());
@@ -558,18 +594,16 @@ ConstantShapeBuffer* DirectShapeTrie::insert(const LongType* shapeInfo, size_t s
 
   if (!current->buffer()) {
     try {
-      const int shapeInfoLength = shape::shapeInfoLength(rank);
-      LongType* shapeCopy = new LongType[shapeInfoLength];
-      std::memcpy(shapeCopy, shapeInfo, shapeInfoLength * sizeof(LongType));
-
-      auto deallocator = std::shared_ptr<PrimaryPointerDeallocator>(new PrimaryPointerDeallocator(),
-                                                                    [] (PrimaryPointerDeallocator* ptr) { delete ptr; });
-      auto hPtr = new PointerWrapper(shapeCopy, deallocator);
-      auto buffer = new ConstantShapeBuffer(hPtr);
+      // Use platform-specific creator (CudaShapeBufferCreator for CUDA, CpuShapeBufferCreator for CPU)
+      auto buffer = ShapeBufferCreatorHelper::getCurrentCreator().create(shapeInfo, rank);
+      if (buffer == nullptr || buffer->primary() == nullptr) {
+        std::string msg = "Failed to create ConstantShapeBuffer via platform creator in search";
+        THROW_EXCEPTION(msg.c_str());
+      }
 
 #if defined(SD_GCC_FUNCTRACE)
       // Track shape cache allocation
-      sd::array::ShapeCacheLifecycleTracker::getInstance().recordAllocation(shapeCopy);
+      sd::array::ShapeCacheLifecycleTracker::getInstance().recordAllocation(buffer->primary());
 #endif
 
       current->setBuffer(buffer);

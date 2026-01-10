@@ -20,6 +20,7 @@
 package org.nd4j.nativeblas;
 
 import lombok.extern.slf4j.Slf4j;
+import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.linalg.api.memory.deallocation.DeallocatorService;
 import org.nd4j.linalg.api.memory.deallocation.OpaqueNDArrayArrDeallocator;
@@ -67,8 +68,8 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
     // Track the deallocator for this instance
     private OpaqueNDArrayArrDeallocator deallocator;
 
-    // Keep the memory pointer alive to prevent GC from freeing the native memory we're using
-    private org.bytedeco.javacpp.Pointer memoryPointer;
+    // Track the number of arrays stored
+    private int numArrays;
 
     /**
      * Default constructor for internal use.
@@ -84,17 +85,55 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
      *
      * @param p The Pointer whose memory to wrap
      */
-    public OpaqueNDArrayArr(org.bytedeco.javacpp.Pointer p) {
+    public OpaqueNDArrayArr(Pointer p) {
         super(p);
     }
 
     /**
-     * Basic constructor for internal use.
+     * Constructor that allocates native memory for the specified number of pointers.
+     * Uses PointerPointer's native memory allocation.
      *
-     * @param array Array of OpaqueNDArray pointers
+     * @param size The number of pointers to allocate space for
      */
-    public OpaqueNDArrayArr(OpaqueNDArray... array) {
-        super(array);
+    public OpaqueNDArrayArr(long size) {
+        super(size);
+    }
+
+    /**
+     * Constructor that creates from an array of OpaqueNDArray objects.
+     * Uses PointerPointer's native put() method to properly store the pointers.
+     *
+     * <p><b>Note:</b> The caller is responsible for keeping the OpaqueNDArray objects
+     * alive while this OpaqueNDArrayArr is in use.</p>
+     *
+     * @param opaqueArrays Array of OpaqueNDArray objects
+     */
+    public OpaqueNDArrayArr(OpaqueNDArray[] opaqueArrays) {
+        // Use PointerPointer's native allocation - allocates sizeof(void*) * length bytes
+        super(opaqueArrays.length);
+        if (opaqueArrays == null || opaqueArrays.length == 0) {
+            throw new IllegalArgumentException("Cannot create OpaqueNDArrayArr from null or empty array");
+        }
+
+        // Use PointerPointer's put() method to properly store each pointer in native memory
+        for (int i = 0; i < opaqueArrays.length; i++) {
+            if (opaqueArrays[i] == null) {
+                throw new IllegalArgumentException("OpaqueNDArray at index " + i + " is null");
+            }
+            this.put(i, opaqueArrays[i]);
+        }
+
+        this.numArrays = opaqueArrays.length;
+        this.opaqueArrays = opaqueArrays;
+        this.retainReference();
+    }
+
+    /**
+     * Gets the number of arrays stored in this OpaqueNDArrayArr.
+     * @return The number of arrays
+     */
+    public int getNumArrays() {
+        return numArrays;
     }
 
     /**
@@ -110,8 +149,20 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
      * @see #createFrom(INDArray...)
      */
     public static OpaqueNDArrayArr createFrom(List<INDArray> array) {
+        return createFrom(true, array);
+    }
+
+    /**
+     * Creates an OpaqueNDArrayArr from a list of INDArrays with optional DeallocatorService registration.
+     *
+     * @param registerWithDeallocator Whether to register with DeallocatorService
+     * @param array List of INDArrays to convert
+     * @return A new OpaqueNDArrayArr, optionally registered with DeallocatorService
+     * @see #createFrom(boolean, INDArray...)
+     */
+    public static OpaqueNDArrayArr createFrom(boolean registerWithDeallocator, List<INDArray> array) {
         INDArray[] arrayArr = array.toArray(new INDArray[0]);
-        return createFrom(arrayArr);
+        return createFrom(registerWithDeallocator, arrayArr);
     }
 
     /**
@@ -131,6 +182,25 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
      * @return A new OpaqueNDArrayArr registered with DeallocatorService
      */
     public static OpaqueNDArrayArr createFrom(INDArray... array) {
+        return createFrom(true, array);
+    }
+
+    /**
+     * Creates an OpaqueNDArrayArr from an array of INDArrays with optional DeallocatorService registration.
+     *
+     * <p><b>Memory Management:</b> If registerWithDeallocator is true, the created OpaqueNDArrayArr
+     * is automatically registered with {@link DeallocatorService} for cleanup. If false, the caller
+     * is responsible for calling {@link #close()} to avoid memory leaks.</p>
+     *
+     * <p><b>When to skip registration:</b> Set registerWithDeallocator=false when the OpaqueNDArrayArr
+     * is owned by another object (like CudaOpContext) that will handle its lifecycle. This prevents
+     * race conditions where both the owner and DeallocatorService try to clean up the same arrays.</p>
+     *
+     * @param registerWithDeallocator Whether to register with DeallocatorService
+     * @param array Array of INDArrays to convert
+     * @return A new OpaqueNDArrayArr, optionally registered with DeallocatorService
+     */
+    public static OpaqueNDArrayArr createFrom(boolean registerWithDeallocator, INDArray... array) {
         if (array == null || array.length == 0) {
             throw new IllegalArgumentException("Cannot create OpaqueNDArrayArr from null or empty array");
         }
@@ -170,16 +240,30 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
             inputs[i] = opaque;
         }
 
-        // Use PointerPointer's native varargs constructor which is designed for this purpose.
-        // This uses JavaCPP's internal implementation rather than custom memory management.
-        OpaqueNDArrayArr inputsOpaque = new OpaqueNDArrayArr(inputs);
+        // Allocate our own PointerPointer and write addresses directly to native memory
+        OpaqueNDArrayArr inputsOpaque = new OpaqueNDArrayArr(inputs.length);
         inputsOpaque.retainReference();
+
+        // Write addresses directly using Pointer.put(long, Pointer) which writes to native memory
+        for (int i = 0; i < inputs.length; i++) {
+            inputsOpaque.put(i, inputs[i]);
+        }
 
         // Store references to prevent GC from freeing memory while we're using it
         inputsOpaque.parentArrays = array;
         inputsOpaque.opaqueArrays = inputs;
+        inputsOpaque.numArrays = inputs.length;
 
-
+        // Register with DeallocatorService for proper lifecycle management (if requested).
+        // When registerWithDeallocator=false, the caller (e.g., CudaOpContext) is responsible
+        // for cleanup, which prevents race conditions between multiple deallocators.
+        if (registerWithDeallocator) {
+            registerWithDeallocatorService(inputsOpaque, array);
+        } else {
+            if (log.isTraceEnabled()) {
+                log.trace("OpaqueNDArrayArr created without DeallocatorService registration (caller manages lifecycle)");
+            }
+        }
 
         return inputsOpaque;
     }
@@ -236,10 +320,6 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
             if (log.isTraceEnabled()) {
                 log.trace("Fallback cleanup for unregistered OpaqueNDArrayArr");
             }
-            if (!isNull()) {
-                deallocate();
-                setNull();
-            }
             // Close the uncached OpaqueNDArrays we created
             // Since we use fromINDArrayUncached(), these are owned by this OpaqueNDArrayArr
             // and must be explicitly closed to free the native sd::NDArray* objects.
@@ -251,6 +331,8 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
                     }
                 }
             }
+            // Deallocate the PointerPointer's native memory
+            deallocate();
             parentArrays = null;
             opaqueArrays = null;
         }

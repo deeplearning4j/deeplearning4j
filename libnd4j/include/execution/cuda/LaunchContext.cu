@@ -19,6 +19,7 @@
 //
 // @author raver119@gmail.com
 //
+#include <cuda_runtime.h>
 #include <exceptions/cuda_exception.h>
 #include <execution/AffinityManager.h>
 #include <execution/LaunchContext.h>
@@ -61,6 +62,13 @@ LaunchContext::LaunchContext(cudaStream_t* cudaStream, cudaStream_t& specialCuda
 
   _workspace = nullptr;
   _isAllocated = false;
+  _deviceID = AffinityManager::currentDeviceId();
+
+  // Store the provided stream and pointers
+  _externalStream = cudaStream;
+  _externalReductionPointer = reductionPointer;
+  _externalScalarPointer = scalarPointer;
+  _externalAllocationPointer = allocationPointer;
 }
 
 std::mutex* LaunchContext::deviceMutex() {
@@ -80,12 +88,28 @@ LaunchContext::LaunchContext() {
   _deviceID = 0;
 
   _isAllocated = true;
+
+  // No external pointers - will use thread_local contextBuffers
+  _externalStream = nullptr;
+  _externalReductionPointer = nullptr;
+  _externalScalarPointer = nullptr;
+  _externalAllocationPointer = nullptr;
 }
 
 LaunchContext::LaunchContext(Pointer cudaStream, Pointer reductionPointer, Pointer scalarPointer,
                              Pointer allocationPointer) {
-  _isAllocated = false;
+  // Clear any stale CUDA errors from initialization before operations run
+  cudaGetLastError();
 
+  _isAllocated = false;
+  _workspace = nullptr;
+  _deviceID = AffinityManager::currentDeviceId();
+
+  // Store externally provided pointers - these will be used instead of thread_local contextBuffers
+  _externalStream = reinterpret_cast<cudaStream_t*>(cudaStream);
+  _externalReductionPointer = reductionPointer;
+  _externalScalarPointer = scalarPointer;
+  _externalAllocationPointer = allocationPointer;
 }
 
 LaunchContext* LaunchContext::defaultContext() {
@@ -122,18 +146,37 @@ LaunchContext* LaunchContext::defaultContext() {
   return contexts().at(deviceId);
 }
 
-void* LaunchContext::getReductionPointer() const { return contextBuffers.reductionBuffer(); };
+void* LaunchContext::getReductionPointer() const {
+  if (_externalReductionPointer != nullptr) return _externalReductionPointer;
+  return contextBuffers.reductionBuffer();
+};
 
-void* LaunchContext::getScalarPointer() const { return contextBuffers.scalarBuffer(); };
+void* LaunchContext::getScalarPointer() const {
+  if (_externalScalarPointer != nullptr) return _externalScalarPointer;
+  return contextBuffers.scalarBuffer();
+};
 
-LongType* LaunchContext::getAllocationPointer() const { return reinterpret_cast<LongType*>(contextBuffers.allocationBuffer()); };
+LongType* LaunchContext::getAllocationPointer() const {
+  if (_externalAllocationPointer != nullptr) return reinterpret_cast<LongType*>(_externalAllocationPointer);
+  return reinterpret_cast<LongType*>(contextBuffers.allocationBuffer());
+};
 
 void* LaunchContext::getCublasHandle() const { return CublasHelper::getInstance().handle(); };
 
 void* LaunchContext::getCusolverHandle() const { return CublasHelper::getInstance().solver(); };
 
 cudaStream_t* LaunchContext::getCudaStream() const {
-  return reinterpret_cast<cudaStream_t*>(contextBuffers.execStream());
+  // IMPORTANT: Always use the thread-local contextBuffers stream instead of external stream
+  // The external stream pointer passed from Java may point to freed memory if the
+  // contextBuffers was reinitialized between the time Java obtained the pointer and now.
+  // Using the thread-local contextBuffers ensures we always have a valid stream.
+  auto stream = reinterpret_cast<cudaStream_t*>(contextBuffers.execStream());
+  if (stream == nullptr || *stream == nullptr) {
+    // Stream not initialized - this shouldn't happen if contextBuffers.execStream() works correctly
+    fprintf(stderr, "WARNING: getCudaStream() returning null stream - context may not be initialized\n");
+    fflush(stderr);
+  }
+  return stream;
 };
 
 cudaStream_t* LaunchContext::getCudaSpecialStream() const {
@@ -172,4 +215,150 @@ void* LaunchContext::getCuDnnHandle() const { return CublasHelper::getInstance()
 ErrorReference* LaunchContext::errorReference() { return contextBuffers.errorReference(); }
 
 void* LaunchContext::engine() { return _engine; }
+
+// ============================================================================
+// CUDA Graph Support Implementation
+// ============================================================================
+
+bool LaunchContext::beginGraphCapture(cudaStreamCaptureMode mode) {
+  if (_graphCaptureActive) {
+    sd_print("LaunchContext::beginGraphCapture - Already capturing\n");
+    return false;
+  }
+
+  cudaStream_t* stream = getCudaStream();
+  if (stream == nullptr) {
+    sd_print("LaunchContext::beginGraphCapture - No stream available\n");
+    return false;
+  }
+
+  cudaError_t err = cudaStreamBeginCapture(*stream, mode);
+  if (err != cudaSuccess) {
+    sd_printf("LaunchContext::beginGraphCapture failed: %s", cudaGetErrorString(err));
+    return false;
+  }
+
+  _graphCaptureActive = true;
+  _captureMode = mode;
+  return true;
+}
+
+bool LaunchContext::endGraphCapture(cudaGraph_t* outGraph) {
+  if (!_graphCaptureActive) {
+    sd_print("LaunchContext::endGraphCapture - Not currently capturing\n");
+    return false;
+  }
+
+  if (outGraph == nullptr) {
+    sd_print("LaunchContext::endGraphCapture - Null output pointer\n");
+    return false;
+  }
+
+  cudaStream_t* stream = getCudaStream();
+  if (stream == nullptr) {
+    return false;
+  }
+
+  cudaError_t err = cudaStreamEndCapture(*stream, outGraph);
+  _graphCaptureActive = false;
+
+  if (err != cudaSuccess) {
+    sd_printf("LaunchContext::endGraphCapture failed: %s", cudaGetErrorString(err));
+    return false;
+  }
+
+  return *outGraph != nullptr;
+}
+
+void LaunchContext::abortGraphCapture() {
+  if (!_graphCaptureActive) {
+    return;
+  }
+
+  cudaStream_t* stream = getCudaStream();
+  if (stream != nullptr) {
+    cudaGraph_t discardedGraph;
+    cudaStreamEndCapture(*stream, &discardedGraph);
+    if (discardedGraph != nullptr) {
+      cudaGraphDestroy(discardedGraph);
+    }
+  }
+
+  _graphCaptureActive = false;
+}
+
+bool LaunchContext::instantiateGraph(cudaGraph_t graph, cudaGraphExec_t* outGraphExec) {
+  if (graph == nullptr || outGraphExec == nullptr) {
+    return false;
+  }
+
+  cudaGraphNode_t errorNode;
+  char logBuffer[1024] = {0};
+
+  cudaError_t err = cudaGraphInstantiate(outGraphExec, graph, &errorNode, logBuffer, sizeof(logBuffer));
+
+  if (err != cudaSuccess) {
+    sd_printf("LaunchContext::instantiateGraph failed: %s", cudaGetErrorString(err));
+    if (strlen(logBuffer) > 0) {
+      sd_printf("Graph instantiation log: %s", logBuffer);
+    }
+    return false;
+  }
+
+  return true;
+}
+
+bool LaunchContext::launchGraph(cudaGraphExec_t graphExec) {
+  if (graphExec == nullptr) {
+    return false;
+  }
+
+  cudaStream_t* stream = getCudaStream();
+  if (stream == nullptr) {
+    return false;
+  }
+
+  cudaError_t err = cudaGraphLaunch(graphExec, *stream);
+  if (err != cudaSuccess) {
+    sd_printf("LaunchContext::launchGraph failed: %s", cudaGetErrorString(err));
+    return false;
+  }
+
+  // Synchronous execution
+  err = cudaStreamSynchronize(*stream);
+  if (err != cudaSuccess) {
+    sd_printf("LaunchContext::launchGraph sync failed: %s", cudaGetErrorString(err));
+    return false;
+  }
+
+  return true;
+}
+
+bool LaunchContext::launchGraphAsync(cudaGraphExec_t graphExec, cudaEvent_t completionEvent) {
+  if (graphExec == nullptr) {
+    return false;
+  }
+
+  cudaStream_t* stream = getCudaStream();
+  if (stream == nullptr) {
+    return false;
+  }
+
+  cudaError_t err = cudaGraphLaunch(graphExec, *stream);
+  if (err != cudaSuccess) {
+    sd_printf("LaunchContext::launchGraphAsync failed: %s", cudaGetErrorString(err));
+    return false;
+  }
+
+  if (completionEvent != nullptr) {
+    err = cudaEventRecord(completionEvent, *stream);
+    if (err != cudaSuccess) {
+      sd_printf("LaunchContext::launchGraphAsync event record failed: %s", cudaGetErrorString(err));
+      // Don't fail - graph was launched, just event recording failed
+    }
+  }
+
+  return true;
+}
+
 }  // namespace sd

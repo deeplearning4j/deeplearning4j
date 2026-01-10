@@ -32,6 +32,7 @@ import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.common.io.ReflectionUtils;
 import org.nd4j.context.Nd4jContext;
+import org.nd4j.linalg.api.device.DeviceType;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,6 +102,10 @@ public class NativeOpsHolder {
                        .asSubclass(NativeOps.class);
                deviceNativeOps = ReflectionUtils.newInstance(nativeOpsClass);
                initOps();
+
+               // Register this NativeOps with MultiBackendNativeOpsHolder so it won't
+               // try to load the same backend again when multi-backend mode is enabled.
+               registerWithMultiBackendHolder(name);
 
                // Register shutdown hook to set the shutdown flag EARLY.
                // This prevents SIGSEGV crashes if any code accidentally calls
@@ -247,5 +252,39 @@ public class NativeOpsHolder {
 
     public static NativeOpsHolder getInstance() {
         return INSTANCE;
+    }
+
+    /**
+     * Register the loaded NativeOps with MultiBackendNativeOpsHolder.
+     * This allows MultiBackendNativeOpsHolder to reuse this instance instead of
+     * loading the same backend again.
+     *
+     * @param className the class name of the NativeOps implementation
+     */
+    private void registerWithMultiBackendHolder(String className) {
+        try {
+            DeviceType deviceType = null;
+
+            // Determine device type from class name
+            if (className.contains("Nd4jCpu") || className.contains("cpu")) {
+                deviceType = DeviceType.CPU;
+            } else if (className.contains("Nd4jCuda") || className.contains("cuda") || className.contains("jcublas")) {
+                deviceType = DeviceType.CUDA_GPU;
+            } else if (className.contains("Nd4jZluda") || className.contains("zluda")) {
+                deviceType = DeviceType.ROCM_GPU;
+            } else if (className.contains("Nd4jTpu") || className.contains("tpu")) {
+                deviceType = DeviceType.TPU;
+            } else if (className.contains("Nd4jMetal") || className.contains("metal")) {
+                deviceType = DeviceType.METAL_GPU;
+            }
+
+            if (deviceType != null && deviceNativeOps != null) {
+                MultiBackendNativeOpsHolder.getInstance().registerPreloadedBackend(deviceType, deviceNativeOps);
+                log.debug("Registered primary backend {} with MultiBackendNativeOpsHolder", deviceType);
+            }
+        } catch (Exception e) {
+            // Non-fatal - multi-backend mode may still work by loading backends fresh
+            log.debug("Could not register with MultiBackendNativeOpsHolder: {}", e.getMessage());
+        }
     }
 }

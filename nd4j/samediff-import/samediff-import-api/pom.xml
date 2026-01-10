@@ -41,7 +41,6 @@
     <commons.dbutils.version>1.7</commons.dbutils.version>
     <lombok.version>1.18.42</lombok.version>
     <logback.version>1.2.3</logback.version>
-    <protobuf.version>3.8.0</protobuf.version>
     <classgraph.version>4.8.90</classgraph.version>
     <commons-collections4.version>4.1</commons-collections4.version>
     <module.name>samediff.modelimport.api</module.name>
@@ -87,9 +86,9 @@
       <version>${commons-collections4.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.google.protobuf</groupId>
-      <artifactId>protobuf-java</artifactId>
-      <version>${protobuf.version}</version>
+      <groupId>org.eclipse.deeplearning4j</groupId>
+      <artifactId>protobuf</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

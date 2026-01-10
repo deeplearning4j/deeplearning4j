@@ -98,7 +98,17 @@ TadPack::~TadPack() {
     _tadOffsets = nullptr;
   }
 
-  // DON'T delete _tadShape - it comes from ConstantShapeHelper cache
+  // Handle _tadShape cleanup based on platform:
+  // - CUDA: TadCalculator creates NEW shape buffers via CudaShapeBufferCreator (not cached),
+  //   so TadPack owns and must delete them
+  // - CPU: Shape buffers come from ConstantShapeHelper cache, so TadPack must NOT delete them
+#ifdef SD_CUDA
+  if (_tadShape != nullptr) {
+    delete _tadShape;
+    _tadShape = nullptr;
+  }
+#endif
+  // On CPU, _tadShape comes from ConstantShapeHelper cache - DON'T delete
 }
 
 LongType* TadPack::primaryShapeInfo() {

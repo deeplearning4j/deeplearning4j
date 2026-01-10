@@ -19,6 +19,7 @@
  */
 package org.eclipse.deeplearning4j.nd4j.linalg;
 
+import org.eclipse.deeplearning4j.tests.extensions.BackendTest;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -28,6 +29,7 @@ import org.nd4j.linalg.api.ops.impl.shape.Tile;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+@BackendTest(description = "Comprehensive broadcast operations smoke tests for all backends")
 public class BroadcastingOpsSmokeTests {
 
     @Test

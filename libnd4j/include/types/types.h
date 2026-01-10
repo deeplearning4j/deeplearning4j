@@ -800,6 +800,9 @@
 #if SD_SINGLE_TYPE_50_COMPILED
   #define HAS_UTF8 1
   #define TTYPE_UTF8 , (UTF8, stdstring)
+#elif defined(ORIGINAL_HAS_UTF8)
+  #define HAS_UTF8 1
+  #define TTYPE_UTF8 , (UTF8, stdstring)
 #else
   #define TTYPE_UTF8
 #endif
@@ -807,11 +810,17 @@
 #if SD_SINGLE_TYPE_51_COMPILED
   #define HAS_UTF16 1
   #define TTYPE_UTF16 , (UTF16, u16string)
+#elif defined(ORIGINAL_HAS_UTF16)
+  #define HAS_UTF16 1
+  #define TTYPE_UTF16 , (UTF16, u16string)
 #else
   #define TTYPE_UTF16
 #endif
 
 #if SD_SINGLE_TYPE_52_COMPILED
+  #define HAS_UTF32 1
+  #define TTYPE_UTF32 , (UTF32, u32string)
+#elif defined(ORIGINAL_HAS_UTF32)
   #define HAS_UTF32 1
   #define TTYPE_UTF32 , (UTF32, u32string)
 #else

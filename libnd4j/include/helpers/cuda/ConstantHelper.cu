@@ -37,13 +37,19 @@
 __constant__ char deviceConstantMemory[CONSTANT_LIMIT];
 
 namespace sd {
+
 void * ConstantHelper::getConstantSpace() {
-  Pointer dConstAddr;
-  auto dZ = cudaGetSymbolAddress(reinterpret_cast<void **>(&dConstAddr), deviceConstantMemory);
-
-  if (dZ != 0) throw cuda_exception::build("cudaGetSymbolAddress(...) failed", dZ);
-
-  return dConstAddr;
+  // Always use cudaMalloc for constant space
+  // The __constant__ memory approach via cudaGetSymbolAddress was causing issues
+  // with CUDA module registration timing, leading to error 400 on kernel launches.
+  // Using regular device memory is functionally equivalent and more reliable.
+  void* ptr = nullptr;
+  auto err = cudaMalloc(&ptr, CONSTANT_LIMIT);
+  if (err != cudaSuccess) {
+    cudaGetLastError();  // Clear error state
+    throw cuda_exception::build("Failed to allocate constant space", err);
+  }
+  return ptr;
 }
 
 int ConstantHelper::getCurrentDevice() { return AffinityManager::currentDeviceId(); }
@@ -51,6 +57,13 @@ int ConstantHelper::getCurrentDevice() { return AffinityManager::currentDeviceId
 int ConstantHelper::getNumberOfDevices() { return AffinityManager::numberOfDevices(); }
 
 ConstantHelper::ConstantHelper() {
+  // Force CUDA runtime initialization by making a simple API call
+  // This ensures the CUDA context and module registration happen before we use any CUDA features
+  cudaFree(0);
+
+  // Clear any stale CUDA errors from previous operations
+  cudaGetLastError();
+
   auto initialDevice = getCurrentDevice();
 
   auto numDevices = getNumberOfDevices();
@@ -62,7 +75,10 @@ ConstantHelper::ConstantHelper() {
   // filling all pointers
   for (int e = 0; e < numDevices; e++) {
     auto res = cudaSetDevice(e);
-    if (res != 0) throw cuda_exception::build("cudaSetDevice failed", res);
+    if (res != 0) {
+      cudaGetLastError();  // Clear error before throwing
+      throw cuda_exception::build("cudaSetDevice failed", res);
+    }
     auto constant = getConstantSpace();
 
     SD_MAP_IMPL<ConstantDescriptor, ConstantHolder *> devCache;
@@ -75,7 +91,13 @@ ConstantHelper::ConstantHelper() {
 
   //
   auto res = cudaSetDevice(initialDevice);
-  if (res != 0) throw cuda_exception::build("Final cudaSetDevice failed", res);
+  if (res != 0) {
+    cudaGetLastError();  // Clear error before throwing
+    throw cuda_exception::build("Final cudaSetDevice failed", res);
+  }
+
+  // Clear any errors that may have accumulated
+  cudaGetLastError();
 }
 
 ConstantHelper::~ConstantHelper() {

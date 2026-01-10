@@ -115,18 +115,21 @@ public class CosineSimilarity extends BaseReduce3Op {
         SDVariable l2y = sameDiff.norm2(y, true, dimensions);
         SDVariable b = l2x.mul(l2y);
 
-        SDVariable l2xSq = sameDiff.math().square(l2x);
-        SDVariable l2ySq = sameDiff.math().square(l2y);
+        //Add epsilon to avoid divide-by-zero when norms are 0
+        SDVariable eps = sameDiff.constant(1e-8);
+        SDVariable l2xSq = sameDiff.math().max(sameDiff.math().square(l2x), eps);
+        SDVariable l2ySq = sameDiff.math().max(sameDiff.math().square(l2y), eps);
+        SDVariable bSafe = sameDiff.math().max(b, eps);
         SDVariable broadcastableGrad;
-        if(keepDims || dimensions == null || dimensions.length == 0 || (dimensions.length == 1 && dimensions[0] == Integer.MAX_VALUE)){
+        if(keepDims || dimensions == null || dimensions.length == 0 || (dimensions.length == 1 && (dimensions[0] == Integer.MAX_VALUE || dimensions[0] == -1))){
             //keepDims or full array reduction
             broadcastableGrad = gradOut;
         } else {
             broadcastableGrad = SameDiffUtils.reductionBroadcastableWithOrigShape(x, sameDiff.constant(Nd4j.createFromArray(dimensions)), gradOut);
         }
 
-        SDVariable dcdx = y.sub(x.mul(a).div(l2xSq)).div(b);
-        SDVariable dcdy = x.sub(y.mul(a).div(l2ySq)).div(b);
+        SDVariable dcdx = y.sub(x.mul(a).div(l2xSq)).div(bSafe);
+        SDVariable dcdy = x.sub(y.mul(a).div(l2ySq)).div(bSafe);
 
         return Arrays.asList(dcdx.mul(broadcastableGrad), dcdy.mul(broadcastableGrad));
     }

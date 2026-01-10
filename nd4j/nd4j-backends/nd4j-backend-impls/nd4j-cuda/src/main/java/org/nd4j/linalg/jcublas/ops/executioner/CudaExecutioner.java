@@ -215,8 +215,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         checkForCompression(op);
         op.validateDataTypes(null);
 
+        // normalizeAxis converts null, empty, {-1}, or {Integer.MAX_VALUE} to empty array
+        // Empty array means "reduce all dimensions" in native code
+        dimension = Shape.normalizeAxis(op.x().rank(), dimension);
+
+        // Validate dimensions are within rank bounds
         for (int i = 0; i < dimension.length; i++)
-            if (dimension[i] >= op.x().rank() && dimension[i] != Integer.MAX_VALUE)
+            if (dimension[i] >= op.x().rank())
                 throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension)
                         + " contains element that higher then rank of op.X: [" + op.x().rank() + "]");
 
@@ -259,7 +264,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         Pointer yDevTadShapeInfo = null;
 
         if (op.y() != null) {
-            if (dimension.length == 0 || (dimension.length == 1 &&  dimension[0] == Integer.MAX_VALUE )|| op.x().tensorAlongDimension(0, dimension).length() != op.y().length()) {
+            // dimension.length == 0 means "reduce all dimensions" (full array reduction)
+            if (dimension.length == 0 || op.x().tensorAlongDimension(0, dimension).length() != op.y().length()) {
                 if (!op.isComplexAccumulation() && op.x().length() != op.y().length())
                     throw new ND4JIllegalStateException("Op.X [" + op.x().length() + "] and Op.Y [" + op.y().length() + "] lengths should match");
 
@@ -273,6 +279,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
                     xShapeInfoHostPointer.put(12, yDevTadShapeInfo);
                     xShapeInfoHostPointer.put(13, yDevTadOffsets);
+                } else {
+                    // For scalar output, explicitly clear any stale TAD pointers from previous operations
+                    xShapeInfoHostPointer.put(12, null);
+                    xShapeInfoHostPointer.put(13, null);
                 }
             } else {
                 // TAD vs full array code branch
@@ -427,6 +437,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         INDArray ret = null;
         if (op.z() == null || op.z() == op.x()) {
             if (op.isComplexAccumulation()) {
+                // Complex accumulation requires actual dimensions, not full array reduction
+                if (dimension.length == 0)
+                    throw new ND4JIllegalStateException("Complex accumulation requires dimensions to be specified");
                 val xT = op.x().tensorsAlongDimension(dimension);
                 val yT = op.y().tensorsAlongDimension(dimension);
 
@@ -695,8 +708,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         INDArray y = getY(op, oc);
         INDArray z = getZ(op, oc);
 
+        // normalizeAxis converts null, empty, {-1}, or {Integer.MAX_VALUE} to empty array
         dimension = Shape.normalizeAxis(x.rank(), dimension);
-        if (dimension == null || (dimension.length == 1 && dimension[0] == Integer.MAX_VALUE)) {
+
+        // Empty dimension array means "reduce all dimensions" (scalar output)
+        if (dimension.length == 0) {
             if(z == x || z == null) {
                 z = Nd4j.createUninitialized(DataType.LONG, new long[0], 'c');
                 setZ(z, op, oc);
@@ -726,10 +742,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         if (CudaEnvironment.getInstance().getConfiguration().isDebug())
             lastOp.set(op.opName());
-        if (dimension != null)
-            for (int i = 0; i < dimension.length; i++)
-                if (dimension[i] >= x.rank() && dimension[i] != Integer.MAX_VALUE)
-                    throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension) + " contains element that higher then rank of op.X: [" + x.rank() + "]");
+
+        // Validate dimensions are within rank bounds
+        for (int i = 0; i < dimension.length; i++)
+            if (dimension[i] >= x.rank())
+                throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension) + " contains element that higher then rank of op.X: [" + x.rank() + "]");
 
         val context = AtomicAllocator.getInstance().getDeviceContext();
 
@@ -737,11 +754,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val hostYShapeInfo = y == null ? null : AddressRetriever.retrieveHostPointer(y.shapeInfoDataBuffer());
         val hostZShapeInfo = z == null ? null : AddressRetriever.retrieveHostPointer(z.shapeInfoDataBuffer());
 
-        long fdimension[] = dimension;
-        if (fdimension == null)
-            fdimension = new long[] {0};
-
-        Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(x, fdimension);
+        // Use dimension directly - normalizeAxis already handled conversion to empty array
+        Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(x, dimension);
 
         Pointer hostTadShapeInfo = AddressRetriever.retrieveHostPointer(tadBuffers.getFirst());
         Pointer devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context);
@@ -758,13 +772,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial(),
                 hostYShapeInfo, hostZShapeInfo, hostTadShapeInfo, devTadShapeInfo, devTadOffsets);
 
-        if (z.isScalar() || dimension == null || dimension[0] == Integer.MAX_VALUE) {
+        // Empty dimension means scalar reduction (all dimensions)
+        if (z.isScalar() || dimension.length == 0) {
             Nd4j.getNativeOps().execIndexReduceScalar(xShapeInfoHostPointer, op.opNum(),
                     xb,
                     extraArgs,
                     zb);
         } else {
-            if (dimension != null && dimension.length > 1)
+            if (dimension.length > 1)
                 Arrays.sort(dimension);
 
             val dim = Nd4j.createFromArray(dimension);
@@ -809,9 +824,18 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             }
         }
 
+        long st = profilingConfigurableHookIn(op);
+
+        checkForCompression(op);
+
+        // normalizeAxis converts null, empty, {-1}, or {Integer.MAX_VALUE} to empty array
+        // Empty array means "reduce all dimensions" in native code
+        dimension = Shape.normalizeAxis(x.rank(), dimension);
+
         // FIXME: this should be moved down to C++ on per-op basis
         // reduce to scalar case, ReduceBool ops require special treatment
-        if (op instanceof BaseReduceBoolOp && x.isEmpty() && (dimension == null || (dimension.length == 1 && dimension[0] == Integer.MAX_VALUE))) {
+        // dimension.length == 0 means "reduce all dimensions"
+        if (op instanceof BaseReduceBoolOp && x.isEmpty() && dimension.length == 0) {
             if (z == null) {
                 op.setZ(Nd4j.scalar(((BaseReduceBoolOp) op).emptyValue()));
             } else {
@@ -821,25 +845,15 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             return context;
         }
 
-        long st = profilingConfigurableHookIn(op);
-
-        checkForCompression(op);
-
-        dimension = Shape.normalizeAxis(x.rank(), dimension);
-
-
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
 
-        // dimension is ALWAYS null here.
-        if (dimension == null )
-            dimension = new long[] {Integer.MAX_VALUE};
-
-        if (dimension != null && dimension.length > 1)
+        if (dimension.length > 1)
             Arrays.sort(dimension);
 
+        // Validate dimensions are within rank bounds
         for (int i = 0; i < dimension.length; i++)
-            if (dimension[i] >= x.rank() && dimension[i] != Integer.MAX_VALUE)
+            if (dimension[i] >= x.rank())
                 throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension)
                         + " contains element that higher then rank of op.X: [" + x.rank() + "]");
 
@@ -858,7 +872,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         long[] retShape = Shape.reductionShape(x, dimension, true, op.isKeepDims());
 
-        if (y != null) {
+        if (y != null && dimension.length > 0) {
+            // Only do TAD validation when we have specific dimensions (not full array reduction)
             //2 options here: either pairwise, equal sizes - OR every X TAD vs. entirety of Y
             if (x.length() == y.length()) {
                 //Pairwise
@@ -1713,8 +1728,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (Nd4j.getNativeOps().lastErrorCode() != 0)
             throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
-        val result = Nd4j.createBuffer(Nd4j.getNativeOps().getConstantShapeBufferPrimary(dbf),
-                Shape.shapeInfoLength(shape.length),DataType.INT64);
+        // CRITICAL: Use BOTH the primary (host) and special (device) pointers from the constant shape buffer.
+        // The CudaLongDataBuffer constructor uses OpaqueDataBuffer.externalizedDataBuffer() to properly
+        // wrap both pointers without allocating new memory. Previously only the primary pointer was used,
+        // causing issues when native code expected valid device pointers for shape info.
+        Pointer primaryShapeInfo = Nd4j.getNativeOps().getConstantShapeBufferPrimary(dbf);
+        Pointer specialShapeInfo = Nd4j.getNativeOps().getConstantShapeBufferSpecial(dbf);
+        long shapeInfoLength = Shape.shapeInfoLength(shape.length);
+        val result = new CudaLongDataBuffer(primaryShapeInfo, specialShapeInfo, shapeInfoLength);
 
         return result;
     }

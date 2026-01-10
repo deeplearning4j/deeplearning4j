@@ -98,6 +98,8 @@ public class CudaZeroHandler implements MemoryHandler {
 
 
     private final transient ThreadLocal<CudaContext> tlContext = new ThreadLocal<>();
+    // Track which device the thread-local context was created for
+    private final transient ThreadLocal<Integer> tlContextDeviceId = new ThreadLocal<>();
 
     /*
     table for Thread, Device, Object allocations of device memory. Objects should be used to grab Allocation point from allocationsMap
@@ -443,7 +445,9 @@ public class CudaZeroHandler implements MemoryHandler {
 
         val profDH = PerformanceTracker.getInstance().helperStartTransaction();
 
-
+        // Use minimum of src and dst lengths to avoid writing beyond destination buffer
+        long copyLength = Math.min(srcBuffer.length(), dstBuffer.length());
+        long copyBytes = copyLength * srcBuffer.getElementSize();
 
         Nd4j.getExecutioner().push();
 
@@ -451,7 +455,7 @@ public class CudaZeroHandler implements MemoryHandler {
             sP = AtomicAllocator.getInstance().getPointer(srcBuffer, context);
             dP = AtomicAllocator.getInstance().getPointer(dstBuffer, context);
 
-            if (nativeOps.memcpyAsync(dP, sP, srcBuffer.length() * srcBuffer.getElementSize(),
+            if (nativeOps.memcpyAsync(dP, sP, copyBytes,
                     CudaConstants.cudaMemcpyDeviceToDevice, context.getOldStream()) == 0) {
                 throw new ND4JIllegalStateException("memcpyAsync failed");
             }
@@ -462,7 +466,7 @@ public class CudaZeroHandler implements MemoryHandler {
             sP = AtomicAllocator.getInstance().getHostPointer(srcBuffer);
             dP = AtomicAllocator.getInstance().getPointer(dstBuffer, context);
 
-            if (nativeOps.memcpyAsync(dP, sP, srcBuffer.length() * srcBuffer.getElementSize(),
+            if (nativeOps.memcpyAsync(dP, sP, copyBytes,
                     CudaConstants.cudaMemcpyHostToDevice, context.getOldStream()) == 0) {
                 throw new ND4JIllegalStateException("memcpyAsync failed");
             }
@@ -941,13 +945,25 @@ public class CudaZeroHandler implements MemoryHandler {
 
     /**
      * This method returns CudaContext for current thread. If context doesn't exist - it gets created first.
-     * @return
+     *
+     * CRITICAL: Stream pointers are ALWAYS fetched fresh from native code because the C++ side
+     * can destroy and recreate streams when detecting device changes (via cudaGetDevice()).
+     * Caching stream pointers would lead to dangling pointers and CUDA error 400
+     * (cudaErrorInvalidResourceHandle) when streams are used after being recreated.
+     *
+     * @return CudaContext with fresh stream pointers
      */
     public CudaContext getCudaContext() {
-        var ctx = tlContext.get();
-        if (ctx == null) {
-            val lc = nativeOps.defaultLaunchContext();
+        int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        Integer cachedDeviceId = tlContextDeviceId.get();
 
+        var ctx = tlContext.get();
+
+        // Always get fresh LaunchContext from native - this ensures streams are valid
+        val lc = nativeOps.defaultLaunchContext();
+
+        if (ctx == null || cachedDeviceId == null || cachedDeviceId != currentDeviceId) {
+            // Device changed or no context exists - create full new context
             ctx = CudaContext.builder()
                     .bufferScalar(nativeOps.lcScalarPointer(lc))
                     .bufferReduction(nativeOps.lcReductionPointer(lc))
@@ -957,17 +973,29 @@ public class CudaZeroHandler implements MemoryHandler {
                     .specialStream(new cudaStream_t(nativeOps.lcCopyStream(lc)))
                     .cublasHandle(getCudaCublasHandle(lc))
                     .solverHandle(new cusolverDnHandle_t(nativeOps.lcSolverHandle(lc)))
+                    .deviceId(currentDeviceId)
                     .build();
 
             tlContext.set(ctx);
-            return ctx;
-        } else
-            return ctx;
+            tlContextDeviceId.set(currentDeviceId);
+        } else {
+            // Context exists for same device, but MUST refresh stream pointers
+            // because C++ contextBuffers may have recreated them
+            ctx.setOldStream(new cudaStream_t(nativeOps.lcExecutionStream(lc)));
+            ctx.setSpecialStream(new cudaStream_t(nativeOps.lcCopyStream(lc)));
+            // Also refresh buffers as they may have been recreated
+            ctx.setBufferScalar(nativeOps.lcScalarPointer(lc));
+            ctx.setBufferReduction(nativeOps.lcReductionPointer(lc));
+            ctx.setBufferAllocation(nativeOps.lcAllocationPointer(lc));
+        }
+
+        return ctx;
     }
 
     @Override
     public void resetCachedContext() {
         tlContext.remove();
+        tlContextDeviceId.remove();
     }
 
     /**

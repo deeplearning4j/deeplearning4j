@@ -880,15 +880,58 @@ NDArray::NDArray(DataBuffer *buffer,
   _context = context;
   _buffer = buffer;
   _ownsBuffer = false;  // External buffer (e.g., from Java) - don't delete
+
+  // Validate input shapeInfo before using it
+  sd::LongType inputRank = shapeInfo[0];
+  if (inputRank < 0 || inputRank > SD_MAX_RANK) {
+    std::string errorMessage = "NDArray constructor 13: INPUT shapeInfo contains invalid rank: ";
+    errorMessage += std::to_string(inputRank);
+    errorMessage += " (ptr: ";
+    errorMessage += std::to_string(reinterpret_cast<uintptr_t>(shapeInfo));
+    errorMessage += ")";
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
   _length = shape::length(shapeInfo);
   _offset = offset;
   auto constShapeInfo = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
-  if(!shape::strideEquals(shapeInfo, constShapeInfo->primary())) {
+
+  // CRITICAL: Validate the RETURNED buffer from the cache
+  if (constShapeInfo == nullptr) {
+    THROW_EXCEPTION("NDArray constructor 13: bufferForShapeInfo returned nullptr");
+  }
+  if (!constShapeInfo->isValid()) {
+    THROW_EXCEPTION("NDArray constructor 13: bufferForShapeInfo returned invalid ConstantShapeBuffer (magic number check failed)");
+  }
+
+  sd::LongType* cachedShapeInfo = constShapeInfo->primary();
+  if (cachedShapeInfo == nullptr) {
+    THROW_EXCEPTION("NDArray constructor 13: constShapeInfo->primary() returned nullptr");
+  }
+
+  // Validate the cached shape info data
+  sd::LongType cachedRank = cachedShapeInfo[0];
+  if (cachedRank < 0 || cachedRank > SD_MAX_RANK) {
+    std::string errorMessage = "NDArray constructor 13: CACHED shapeInfo contains invalid rank: ";
+    errorMessage += std::to_string(cachedRank);
+    errorMessage += " (input rank was: ";
+    errorMessage += std::to_string(inputRank);
+    errorMessage += ", input ptr: ";
+    errorMessage += std::to_string(reinterpret_cast<uintptr_t>(shapeInfo));
+    errorMessage += ", cached ptr: ";
+    errorMessage += std::to_string(reinterpret_cast<uintptr_t>(cachedShapeInfo));
+    errorMessage += ", ConstantShapeBuffer ptr: ";
+    errorMessage += std::to_string(reinterpret_cast<uintptr_t>(constShapeInfo));
+    errorMessage += ")";
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
+  if(!shape::strideEquals(shapeInfo, cachedShapeInfo)) {
     THROW_EXCEPTION("NDArray::NDArray(DataBuffer *  buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const sd::LongType offset) - strideEquals failed !");
   }
 
   this->_shapeInfoBuffer = constShapeInfo;
-  this->_shapeInfo = constShapeInfo->primary();
+  this->_shapeInfo = cachedShapeInfo;
   this->_shapeInfoD = constShapeInfo->special();
   if(this->_shapeInfo == nullptr) {
     THROW_EXCEPTION("NDArray::NDArray(DataBuffer *  buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const sd::LongType offset) - shapeInfo is nullptr");
@@ -3009,16 +3052,19 @@ void NDArray::copyDataForAssign(NDArray *thisArray, NDArray *other, const sd::Lo
       return;
     }
 
-    thisArray->prepareSpecialUse({thisArray}, {other});
+    // FIX: prepareSpecialUse takes (writeList, readList)
+    // We are reading from thisArray (source) and writing to other (destination)
+    NDArray::prepareSpecialUse({other}, {thisArray});
     NativeOpExecutioner::execScalar(thisArray->getContext(), scalar::CopyPws,
-                                    thisArray->buffer(), thisArray->shapeInfo(),
-                                    thisArray->specialBuffer(), thisArray->specialShapeInfo(),
-                                    thisArray->buffer(), thisArray->shapeInfo(),
-                                    thisArray->specialBuffer(), thisArray->specialShapeInfo(),
                                     other->buffer(), other->shapeInfo(),
                                     other->specialBuffer(), other->specialShapeInfo(),
+                                    other->buffer(), other->shapeInfo(),
+                                    other->specialBuffer(), other->specialShapeInfo(),
+                                    thisArray->buffer(), thisArray->shapeInfo(),
+                                    thisArray->specialBuffer(), thisArray->specialShapeInfo(),
                                     nullptr, allowParallelism);
-    thisArray->registerSpecialUse({thisArray}, {other});
+    // FIX: registerSpecialUse takes (writeList, readList)
+    NDArray::registerSpecialUse({other}, {thisArray});
 
   } else {
     // Fast path: use memcpy when both arrays are contiguous with same type, length, and order
@@ -3026,22 +3072,30 @@ void NDArray::copyDataForAssign(NDArray *thisArray, NDArray *other, const sd::Lo
     // and that both are contiguous and neither is a view.
     // Note: otherShapeInfo is the SOURCE's (possibly reshaped) shapeInfo, NOT the destination's!
     // We must use other->shapeInfo() for destination checks.
+    // IMPORTANT: On CUDA, we must ensure source data is actually on host before using memcpy,
+    // otherwise we copy stale/empty host buffer data instead of the actual device data.
     bool sameOrder = (shape::order(thisArray->shapeInfo()) == shape::order(other->shapeInfo()));
     bool neitherIsView = !thisArray->isView() && !other->isView();
+    bool sourceDataOnHost = thisArray->isActualOnHostSide();
     bool canUseMemcpy = (thisArray->dataType() == other->dataType()) &&
                         (thisArray->lengthOf() == other->lengthOf()) &&
                         sameOrder &&
                         neitherIsView &&
+                        sourceDataOnHost &&
                         isContiguousLayout(thisArray->shapeInfo()) &&
                         isContiguousLayout(other->shapeInfo());
 
     if (canUseMemcpy) {
       // Direct memcpy - much faster for contiguous arrays with same order
       std::memcpy(other->buffer(), thisArray->buffer(), thisArray->lengthOf() * thisArray->sizeOfT());
+      // Mark host buffer as written so device sync happens when needed
+      other->tickWriteHost();
       return;
     }
 
-    thisArray->prepareSpecialUse({thisArray}, {other});
+    // FIX: prepareSpecialUse takes (writeList, readList)
+    // We are reading from thisArray (source) and writing to other (destination)
+    NDArray::prepareSpecialUse({other}, {thisArray});
 
     // FIX: Use source's shapeInfo for reading (thisArray->shapeInfo()) and
     // destination's shapeInfo for writing (other->shapeInfo()).
@@ -3060,7 +3114,8 @@ void NDArray::copyDataForAssign(NDArray *thisArray, NDArray *other, const sd::Lo
                                           other->specialShapeInfo(),
                                           nullptr,
                                           allowParallelism);
-    thisArray->registerSpecialUse({thisArray}, {other});
+    // FIX: registerSpecialUse takes (writeList, readList)
+    NDArray::registerSpecialUse({other}, {thisArray});
   }
 }
 
@@ -4501,6 +4556,10 @@ BUILD_DOUBLE_TEMPLATE(  void NDArray::templatedSet,
 void NDArray::applyPairwiseTransform(pairwise::Ops op, NDArray *other, NDArray *target,
                                      ExtraArguments *extraParams)  {
   if (isS()) THROW_EXCEPTION("NDArray::applyPairwiseTransform: you can't use this method on String array!");
+
+  // prepareSpecialUse MUST be called BEFORE kernel execution to sync device buffers
+  NDArray::prepareSpecialUse({target}, {this, other});
+
   NativeOpExecutioner::execPairwiseTransform(
       getContext(), op,
       buffer(),
@@ -4512,7 +4571,7 @@ void NDArray::applyPairwiseTransform(pairwise::Ops op, NDArray *other, NDArray *
       target->specialBuffer(),
       target->specialShapeInfo(),
       extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr);
-  NDArray::prepareSpecialUse({target}, {this, other});
+
   NDArray::registerSpecialUse({target}, {this, other});
   if (extraParams != nullptr) synchronize("NDArray::applyPairwiseTransform");
 }
@@ -6021,6 +6080,14 @@ EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
 ))
 ITERATE_LIST((SD_STRING_TYPES),INSTANTIATE_P_SINGLE_STRING);
 #undef INSTANTIATE_P_SINGLE_STRING
+
+// Explicit instantiations for u16string and u32string that StringUtils uses
+#ifdef HAS_UTF16
+template SD_LIB_EXPORT void NDArray::p<std::u16string>(const sd::LongType i, const std::u16string value);
+#endif
+#ifdef HAS_UTF32
+template SD_LIB_EXPORT void NDArray::p<std::u32string>(const sd::LongType i, const std::u32string value);
+#endif
 
 #endif
 ////////////////////////////////////////////////////////////////////////

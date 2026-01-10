@@ -33,7 +33,7 @@ namespace reduce3 {
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
-SD_KERNEL SD_INLINE void execScalarGeneric(const int opNum,
+SD_KERNEL void execScalarGeneric(const int opNum,
                                  void const* vx, sd::LongType const* xShapeInfo,
                                  void const* vy, sd::LongType const* yShapeInfo,
                                  void *extraParams,
@@ -53,7 +53,7 @@ SD_KERNEL SD_INLINE void execScalarGeneric(const int opNum,
 }
 
 template <typename X, typename Z>
-SD_KERNEL SD_INLINE void execAllGeneric(const int opNum,
+SD_KERNEL void execAllGeneric(const int opNum,
                               void const* vx, sd::LongType const* xShapeInfo,
                               void const* vy, sd::LongType const* yShapeInfo,
                               void *extraParams,
@@ -81,7 +81,7 @@ SD_KERNEL SD_INLINE void execAllGeneric(const int opNum,
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
-SD_KERNEL SD_INLINE void execGeneric(const int opNum,
+SD_KERNEL void execGeneric(const int opNum,
                            void const* vx, sd::LongType const* xShapeInfo,
                            void const* vy, sd::LongType const* yShapeInfo,
                            void *extraParams,
@@ -159,26 +159,35 @@ SD_DEVICE void Reduce3<X, Z>::execScalarCuda(
   __shared__ Z extraZ[3];  // just 3 values used in logic below
   __shared__ Z sPartials[SD_CUDA_BLOCK_SIZE];
 
-  // Cache rank/shape/stride for x and y in __shared__
+  // Cache rank and actual shape/stride VALUES (not pointers) to avoid address space issues
   __shared__ sd::LongType xRank;
-  __shared__ const sd::LongType* xShapePtr;
-  __shared__ const sd::LongType* xStridePtr;
+  __shared__ sd::LongType xShape[SD_MAX_RANK];
+  __shared__ sd::LongType xStride[SD_MAX_RANK];
 
   __shared__ sd::LongType yRank;
-  __shared__ const sd::LongType* yShapePtr;
-  __shared__ const sd::LongType* yStridePtr;
+  __shared__ sd::LongType yShape[SD_MAX_RANK];
+  __shared__ sd::LongType yStride[SD_MAX_RANK];
 
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (threadIdx.x == 0) {
-    length        = shape::length(xShapeInfo);
+    length = shape::length(xShapeInfo);
+    xRank  = shape::rank(xShapeInfo);
+    yRank  = shape::rank(yShapeInfo);
 
-    xRank         = shape::rank(xShapeInfo);
-    xShapePtr     = shape::shapeOf(xShapeInfo);
-    xStridePtr    = shape::stride(xShapeInfo);
+    // Copy shape and stride values to shared memory
+    const sd::LongType* xShapePtr = shape::shapeOf(xShapeInfo);
+    const sd::LongType* xStridePtr = shape::stride(xShapeInfo);
+    const sd::LongType* yShapePtr = shape::shapeOf(yShapeInfo);
+    const sd::LongType* yStridePtr = shape::stride(yShapeInfo);
 
-    yRank         = shape::rank(yShapeInfo);
-    yShapePtr     = shape::shapeOf(yShapeInfo);
-    yStridePtr    = shape::stride(yShapeInfo);
+    for (int i = 0; i < xRank; i++) {
+      xShape[i] = xShapePtr[i];
+      xStride[i] = xStridePtr[i];
+    }
+    for (int i = 0; i < yRank; i++) {
+      yShape[i] = yShapePtr[i];
+      yStride[i] = yStridePtr[i];
+    }
 
     extraZ[0] = (Z) 0.0f;
     extraZ[1] = (Z) 0.0f;
@@ -190,8 +199,6 @@ SD_DEVICE void Reduce3<X, Z>::execScalarCuda(
 
   sPartials[threadIdx.x] = OpType::startingValue(x);
 
-  char xOrder = shape::order(xShapeInfo);
-  char yOrder = shape::order(yShapeInfo);
   sd::LongType gridSize = gridDim.x * blockDim.x;
 
   // fill partial sums
@@ -201,11 +208,11 @@ SD_DEVICE void Reduce3<X, Z>::execScalarCuda(
     sd::LongType xOffset;
     sd::LongType yOffset;
 
-    INDEX2COORDS(i, xRank, xShapePtr, xCoords);
-    COORDS2INDEX(xRank, xStridePtr, xCoords, xOffset);
+    INDEX2COORDS(i, xRank, xShape, xCoords);
+    COORDS2INDEX(xRank, xStride, xCoords, xOffset);
 
-    INDEX2COORDS(i, yRank, yShapePtr, yCoords);
-    COORDS2INDEX(yRank, yStridePtr, yCoords, yOffset);
+    INDEX2COORDS(i, yRank, yShape, yCoords);
+    COORDS2INDEX(yRank, yStride, yCoords, yOffset);
 
     sPartials[threadIdx.x] =
         OpType::update(sPartials[threadIdx.x],

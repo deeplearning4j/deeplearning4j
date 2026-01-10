@@ -86,19 +86,25 @@ void ContextBuffers::release() {
 
     if (_scalarPointer != nullptr) cudaFreeHost(_scalarPointer);
 
-    if (_allocationPointer != nullptr) cudaFree(_reductionPointer);
+    if (_reductionPointer != nullptr) cudaFree(_reductionPointer);
 
-    auto _cudaStream = reinterpret_cast<cudaStream_t*>(_execStream);
-    auto _cudaSpecialStream = reinterpret_cast<cudaStream_t*>(_specialStream);
+    if (_execStream != nullptr) {
+      auto _cudaStream = reinterpret_cast<cudaStream_t*>(_execStream);
+      if (*_cudaStream != nullptr) {
+        cudaStreamSynchronize(*_cudaStream);
+        cudaStreamDestroy(*_cudaStream);
+      }
+      delete _cudaStream;
+    }
 
-    cudaStreamSynchronize(*_cudaStream);
-    cudaStreamSynchronize(*_cudaSpecialStream);
-
-    cudaStreamDestroy(*_cudaStream);
-    cudaStreamDestroy(*_cudaSpecialStream);
-
-    delete _cudaStream;
-    delete _cudaSpecialStream;
+    if (_specialStream != nullptr) {
+      auto _cudaSpecialStream = reinterpret_cast<cudaStream_t*>(_specialStream);
+      if (*_cudaSpecialStream != nullptr) {
+        cudaStreamSynchronize(*_cudaSpecialStream);
+        cudaStreamDestroy(*_cudaSpecialStream);
+      }
+      delete _cudaSpecialStream;
+    }
 
     //////
     _allocated = false;
@@ -126,7 +132,12 @@ ContextBuffers::ContextBuffers(void* rPointer, void* sPointer, void* aPointer, b
 void ContextBuffers::initialize() {
   _deviceId = AffinityManager::currentNativeDeviceId();
 
-  auto res = cudaMalloc(reinterpret_cast<void**>(&_reductionPointer), 1024 * 1024 * 8);
+  auto res = cudaSetDevice(_deviceId);
+  if (res != cudaSuccess) {
+    throw cuda_exception::build("ContextBuffers::initialize - cudaSetDevice failed", res);
+  }
+
+  res = cudaMalloc(reinterpret_cast<void**>(&_reductionPointer), 1024 * 1024 * 8);
   if (res != 0) throw cuda_exception::build("_reductionPointer allocation failed", res);
 
   res = cudaHostAlloc(reinterpret_cast<void**>(&_scalarPointer), 16, cudaHostAllocDefault);
@@ -151,18 +162,48 @@ void ContextBuffers::initialize() {
 }
 
 void* ContextBuffers::reductionBuffer() {
+  // CRITICAL: Ensure CUDA context is properly established for this thread
+  int currentDevice = AffinityManager::currentNativeDeviceId();
+  cudaSetDevice(currentDevice);
+
+  // Check if device has changed since initialization
+  // Device memory allocated on one device is invalid on another device
+  if (_initialized && _deviceId != currentDevice) {
+    release();
+  }
+
   if (!_initialized) initialize();
 
   return _reductionPointer;
 }
 
 void* ContextBuffers::scalarBuffer() {
+  // CRITICAL: Ensure CUDA context is properly established for this thread
+  int currentDevice = AffinityManager::currentNativeDeviceId();
+  cudaSetDevice(currentDevice);
+
+  // Check if device has changed since initialization
+  // Device memory allocated on one device is invalid on another device
+  if (_initialized && _deviceId != currentDevice) {
+    release();
+  }
+
   if (!_initialized) initialize();
 
   return _scalarPointer;
 }
 
 void* ContextBuffers::allocationBuffer() {
+  // CRITICAL: Ensure CUDA context is properly established for this thread
+  int currentDevice = AffinityManager::currentNativeDeviceId();
+  cudaSetDevice(currentDevice);
+
+  // Check if device has changed since initialization
+  // Device memory allocated on one device is invalid on another device
+  if (_initialized && _deviceId != currentDevice) {
+    release();
+  }
+
   if (!_initialized) initialize();
 
   return _allocationPointer;
@@ -179,18 +220,104 @@ void ContextBuffers::triggerOwnership(bool isOwner) { _allocated = isOwner; }
 int ContextBuffers::deviceId() { return _deviceId; }
 
 void* ContextBuffers::execStream() {
+  // CRITICAL: Ensure CUDA context is properly established for this thread
+  // cudaSetDevice() establishes the primary context and must be called before any stream operations
+  int currentDevice = AffinityManager::currentNativeDeviceId();
+  auto setDeviceRes = cudaSetDevice(currentDevice);
+  if (setDeviceRes != cudaSuccess) {
+    throw cuda_exception::build("ContextBuffers::execStream - cudaSetDevice failed", setDeviceRes);
+  }
+
+  // Check if device has changed since initialization
+  // Streams created on one device are invalid on another device (error 400)
+  if (_initialized && _deviceId != currentDevice) {
+    // Device changed - must reinitialize streams for new device
+    release();
+  }
+
   if (!_initialized) {
     initialize();
+  }
+
+  // Validate stream after initialization
+  if (_execStream == nullptr) {
+    THROW_EXCEPTION("ContextBuffers::execStream - stream pointer is null after initialization");
+  }
+
+  auto streamPtr = reinterpret_cast<cudaStream_t*>(_execStream);
+  if (*streamPtr == nullptr) {
+    // Stream handle is null, try to recreate
+    auto res = cudaStreamCreate(streamPtr);
+    if (res != 0) {
+      throw cuda_exception::build("Failed to recreate CUDA exec stream", res);
+    }
   } else {
+    // Validate the stream is still usable - cudaStreamQuery returns cudaSuccess or cudaErrorNotReady
+    // for valid streams, but cudaErrorInvalidResourceHandle (400) for destroyed/invalid streams
+    auto queryResult = cudaStreamQuery(*streamPtr);
+    if (queryResult == cudaErrorInvalidResourceHandle) {
+      // Stream is invalid (was destroyed or belongs to different device) - recreate it
+      auto res = cudaStreamCreate(streamPtr);
+      if (res != 0) {
+        throw cuda_exception::build("Failed to recreate invalid CUDA exec stream", res);
+      }
+      // Update device ID since we're creating a new stream on current device
+      _deviceId = AffinityManager::currentNativeDeviceId();
+    }
+    // Clear any error that cudaStreamQuery might have set (like cudaErrorNotReady which is normal)
+    cudaGetLastError();
   }
 
   return _execStream;
 }
 
 void* ContextBuffers::specialStream() {
+  // CRITICAL: Ensure CUDA context is properly established for this thread
+  // cudaSetDevice() establishes the primary context and must be called before any stream operations
+  int currentDevice = AffinityManager::currentNativeDeviceId();
+  auto setDeviceRes = cudaSetDevice(currentDevice);
+  if (setDeviceRes != cudaSuccess) {
+    throw cuda_exception::build("ContextBuffers::specialStream - cudaSetDevice failed", setDeviceRes);
+  }
+
+  // Check if device has changed since initialization
+  // Streams created on one device are invalid on another device (error 400)
+  if (_initialized && _deviceId != currentDevice) {
+    // Device changed - must reinitialize streams for new device
+    release();
+  }
+
   if (!_initialized) {
     initialize();
+  }
+
+  // Validate stream after initialization
+  if (_specialStream == nullptr) {
+    THROW_EXCEPTION("ContextBuffers::specialStream - stream pointer is null after initialization");
+  }
+
+  auto streamPtr = reinterpret_cast<cudaStream_t*>(_specialStream);
+  if (*streamPtr == nullptr) {
+    // Stream handle is null, try to recreate
+    auto res = cudaStreamCreate(streamPtr);
+    if (res != 0) {
+      throw cuda_exception::build("Failed to recreate CUDA special stream", res);
+    }
   } else {
+    // Validate the stream is still usable - cudaStreamQuery returns cudaSuccess or cudaErrorNotReady
+    // for valid streams, but cudaErrorInvalidResourceHandle (400) for destroyed/invalid streams
+    auto queryResult = cudaStreamQuery(*streamPtr);
+    if (queryResult == cudaErrorInvalidResourceHandle) {
+      // Stream is invalid (was destroyed or belongs to different device) - recreate it
+      auto res = cudaStreamCreate(streamPtr);
+      if (res != 0) {
+        throw cuda_exception::build("Failed to recreate invalid CUDA special stream", res);
+      }
+      // Update device ID since we're creating a new stream on current device
+      _deviceId = AffinityManager::currentNativeDeviceId();
+    }
+    // Clear any error that cudaStreamQuery might have set (like cudaErrorNotReady which is normal)
+    cudaGetLastError();
   }
 
   return _specialStream;

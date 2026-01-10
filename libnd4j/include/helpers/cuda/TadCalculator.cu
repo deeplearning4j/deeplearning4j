@@ -33,14 +33,14 @@ TadCalculator::TadCalculator(LongType* originalShape)
     : _originalShape(originalShape), _numTads(0) {}
 
 TadCalculator::~TadCalculator() {
+  // Only delete _tadOffsets if we still own it (hasn't been released via releaseOffsets())
   if (_tadOffsets) {
     delete _tadOffsets;
     _tadOffsets = nullptr;
   }
-  if (_tadShape) {
-    delete _tadShape;
-    _tadShape = nullptr;
-  }
+  // DON'T delete _tadShape - ownership is transferred to TadPack when tadShape() is called.
+  // TadPack holds the reference and will manage its lifecycle.
+  // Deleting it here causes use-after-free when softmax (or other ops) access the TAD shape info.
 }
 
 

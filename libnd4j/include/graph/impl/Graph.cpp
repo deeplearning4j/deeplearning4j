@@ -24,8 +24,6 @@
 #include <graph/FlatUtils.h>
 #include <graph/Graph.h>
 #include <graph/VariableProxy.h>
-#include <graph/exceptions/unresolved_input_exception.h>
-#include <graph/exceptions/unresolved_output_exception.h>
 #include <helpers/EnumUtils.h>
 #include <helpers/ShapeUtils.h>
 #include <legacy/NativeOps.h>
@@ -199,7 +197,8 @@ std::vector<Variable *> *Graph::fetchOutputs() {
         res->push_back(_variableSpace->getVariable(nodeId, e1));
       } else {
         if (e == 0) {
-          THROW_EXCEPTION(unresolved_output_exception::build("Can't find output variable", nodeId, e).what());
+          std::string msg = "Can't find output variable; Node: [" + std::to_string(nodeId) + ":0]; Output: [" + std::to_string(e) + "]";
+          THROW_EXCEPTION(msg.c_str());
         } else
           break;
       }
@@ -888,7 +887,8 @@ void Graph::toposortNodes() {
             in.first)) {  // that's probably variable. if not - we'll throw exception later
           // do nothing, maxDepLayer is -1 here, because it's a variable input
         } else {
-          THROW_EXCEPTION(unresolved_input_exception::build("Unknown input specified", id, in).what());
+          std::string msg = "Unknown input specified; Node: [" + std::to_string(id) + ":0]; Variable: [" + std::to_string(in.first) + ":" + std::to_string(in.second) + "]";
+          THROW_EXCEPTION(msg.c_str());
         }
       }
 

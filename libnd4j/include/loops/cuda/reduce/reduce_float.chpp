@@ -265,13 +265,13 @@ SD_DEVICE void ReduceFloatFunction<X, Z>::execScalarCuda(
     INDEX2COORDS(i, xRank, xShapePtr, xCoords);
     COORDS2INDEX(xRank, xStridePtr, xCoords, xOffset);
 
-    if(xOffset < length) {
-      sPartials[threadIdx.x] = OpType::update(
-          sPartials[threadIdx.x],
-          OpType::op(x[xOffset], extraParams),
-          extraParams);
-    }
-
+    // Note: xOffset is a memory offset calculated from strides, not a logical index.
+    // For views/strided arrays, xOffset can be >= length. The loop bounds on 'i'
+    // already ensure we only process valid logical elements.
+    sPartials[threadIdx.x] = OpType::update(
+        sPartials[threadIdx.x],
+        OpType::op(x[xOffset], extraParams),
+        extraParams);
   }
   __syncthreads();
 

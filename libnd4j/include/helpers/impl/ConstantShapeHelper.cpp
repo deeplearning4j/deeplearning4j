@@ -24,6 +24,7 @@
 #include <helpers/ShapeUtils.h>
 #include <helpers/shape.h>
 #include <system/Environment.h>
+#include <string>
 
 namespace sd {
 
@@ -53,14 +54,58 @@ ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(LongType* shapeInfo
  if(shapeInfo == nullptr) {
    THROW_EXCEPTION("shapeInfo is nullptr");
  }
- if(shape::rank(shapeInfo) < 0 || shape::rank(shapeInfo) > SD_MAX_RANK) {
-   THROW_EXCEPTION("shapeInfo is not a valid rank.");
+ LongType inputRank = shape::rank(shapeInfo);
+ if(inputRank < 0 || inputRank > SD_MAX_RANK) {
+   std::string errorMessage = "bufferForShapeInfo: input shapeInfo has invalid rank: ";
+   errorMessage += std::to_string(inputRank);
+   errorMessage += " (ptr: ";
+   errorMessage += std::to_string(reinterpret_cast<uintptr_t>(shapeInfo));
+   errorMessage += ")";
+   THROW_EXCEPTION(errorMessage.c_str());
  }
 
  auto buffer = _shapeTrie.getOrCreate(shapeInfo);
- if (buffer == nullptr || buffer->primary() == nullptr) {
-   THROW_EXCEPTION("Failed to get/create shape buffer");
+ if (buffer == nullptr) {
+   THROW_EXCEPTION("bufferForShapeInfo: getOrCreate returned nullptr");
  }
+ if (!buffer->isValid()) {
+   std::string errorMessage = "bufferForShapeInfo: getOrCreate returned invalid ConstantShapeBuffer (magic number check failed). ";
+   errorMessage += "ConstantShapeBuffer ptr: ";
+   errorMessage += std::to_string(reinterpret_cast<uintptr_t>(buffer));
+   THROW_EXCEPTION(errorMessage.c_str());
+ }
+ if (buffer->primary() == nullptr) {
+   THROW_EXCEPTION("bufferForShapeInfo: getOrCreate returned buffer with nullptr primary()");
+ }
+
+ // CRITICAL: Validate the RETURNED buffer's data matches what we asked for
+ LongType* returnedShapeInfo = buffer->primary();
+ LongType returnedRank = returnedShapeInfo[0];
+ if (returnedRank < 0 || returnedRank > SD_MAX_RANK) {
+   std::string errorMessage = "bufferForShapeInfo: RETURNED buffer contains invalid rank: ";
+   errorMessage += std::to_string(returnedRank);
+   errorMessage += " (input rank was: ";
+   errorMessage += std::to_string(inputRank);
+   errorMessage += ", input ptr: ";
+   errorMessage += std::to_string(reinterpret_cast<uintptr_t>(shapeInfo));
+   errorMessage += ", returned ptr: ";
+   errorMessage += std::to_string(reinterpret_cast<uintptr_t>(returnedShapeInfo));
+   errorMessage += ", ConstantShapeBuffer ptr: ";
+   errorMessage += std::to_string(reinterpret_cast<uintptr_t>(buffer));
+   errorMessage += ")";
+   THROW_EXCEPTION(errorMessage.c_str());
+ }
+
+ // Verify ranks match
+ if (returnedRank != inputRank) {
+   std::string errorMessage = "bufferForShapeInfo: RANK MISMATCH! Input rank: ";
+   errorMessage += std::to_string(inputRank);
+   errorMessage += ", returned rank: ";
+   errorMessage += std::to_string(returnedRank);
+   errorMessage += ". This indicates cache corruption or hash collision.";
+   THROW_EXCEPTION(errorMessage.c_str());
+ }
+
  return buffer;
 }
 ConstantShapeBuffer* ConstantShapeHelper::createSubArrShapeInfo( sd::LongType* inShapeInfo,  LongType* dims,

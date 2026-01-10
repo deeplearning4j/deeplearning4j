@@ -19,6 +19,24 @@
 #ifndef SD_SYSTEM_COMMON_H
 #define SD_SYSTEM_COMMON_H
 
+// ============================================================================
+// Backend Namespace Configuration
+// ============================================================================
+// Include backend namespace configuration for type identification and utilities.
+// NOTE: Full namespace isolation (redefining 'sd' as a macro) is NOT enabled
+// by default because it interferes with complex macro expansion in the codebase.
+//
+// The namespace remains 'sd' for all builds. Symbol isolation between CPU and
+// CUDA backends relies on:
+// 1. Different shared library names (libnd4jcpu.so vs libnd4jcuda.so)
+// 2. JNI symbol uniqueness (different Java package names)
+// 3. dlopen with RTLD_LOCAL to prevent symbol interposition
+//
+// If full namespace isolation is needed in the future, each source file would
+// need to be modified to use SD_NS macro instead of hardcoded 'sd'.
+// ============================================================================
+#include <system/BackendNamespace.h>
+
 #include <cstdint>
 
 #define STRINGIZE2(x) #x

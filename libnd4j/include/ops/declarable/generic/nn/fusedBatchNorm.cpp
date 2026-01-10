@@ -150,19 +150,25 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
   delete xScaled1;
   
   if (dataFormat) {
-    // need to reshape from matrix to 4d then permute the ordering due to NWHC  ordering
+    // need to reshape from matrix to 4d then permute the ordering due to NWHC ordering
     auto* newShapePtr = xCast->getShapeAsVector();
     std::vector<LongType> newShape = *newShapePtr;
     delete newShapePtr;
-    auto* reshaped = xShifted1->reshape(xCast->ordering(), newShape, false);
+    auto* reshaped = xShifted1->reshape(xCast->ordering(), newShape, true);  // use copy=true
     delete xShifted1;
     reshaped->permutei({0, 3, 1, 2}, 0, false);
     y->assign(reshaped);
     delete reshaped;
 
-  } else {  // NWHC case
-    y->assign(xShifted1);
+  } else {  // NHWC case
+    // Reshape from 2D {restSize, iD} back to original 4D shape {bS, iH, iW, iD}
+    auto* newShapePtr = x->getShapeAsVector();
+    std::vector<LongType> newShape = *newShapePtr;
+    delete newShapePtr;
+    auto* reshaped = xShifted1->reshape(x->ordering(), newShape, true);  // use copy=true
     delete xShifted1;
+    y->assign(reshaped);
+    delete reshaped;
   }
 
   if (isTraining) {

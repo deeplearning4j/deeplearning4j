@@ -1313,7 +1313,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public long tensorsAlongDimension(long... dimension) {
         if (dimension == null || dimension.length == 0)
             throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
-        if (dimension.length >= rank() || dimension.length == 1 && dimension[0] == Integer.MAX_VALUE)
+        if (dimension.length >= rank() || dimension.length == 1 && (dimension[0] == Integer.MAX_VALUE || dimension[0] == -1))
             return 1;
         for (int i = 0; i < dimension.length; i++)
             if (dimension[i] < 0)
@@ -1335,7 +1335,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         Preconditions.checkArgument(!this.isEmpty(), "tensorAlongDimension(...) can't be used on empty tensors");
 
-        if (dimension.length >= rank()  || dimension.length == 1 && dimension[0] == Integer.MAX_VALUE)
+        if (dimension.length >= rank()  || dimension.length == 1 && (dimension[0] == Integer.MAX_VALUE || dimension[0] == -1))
             return this;
         for (int i = 0; i < dimension.length; i++)
             if (dimension[i] < 0)
@@ -1473,7 +1473,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 s += getDouble(i);
                 putScalar(i, s);
             }
-        } else if (dimension == Integer.MAX_VALUE) {
+        } else if (dimension == Integer.MAX_VALUE || dimension == -1) {
             INDArray flattened = ravel();
             double prevVal = flattened.getDouble(0);
             for (int i = 1; i < flattened.length(); i++) {
@@ -4725,35 +4725,31 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray getColumn(long c) {
-        Nd4j.getCompressor().autoDecompress(this);
-
-        if (isColumnVector() && c == 0) {
-            // For a column vector [n,1], return a 1D copy with the same data
-            long len = rows();
-            INDArray result = Nd4j.createUninitialized(dataType(), len);
-            for (long i = 0; i < len; i++) {
-                result.putScalar(i, getScalar(i, 0).getDouble(0));
-            }
-            return result;
-        } else if (isColumnVector() && c > 0)
-            throw new IllegalArgumentException("Illegal index for column");
-        Preconditions.checkArgument(this.rank() == 2, "getColumn() can be called on 2D arrays only");
-        // Extract column as 1D array using getScalar for each element
-        long numRows = rows();
-        INDArray result = Nd4j.createUninitialized(dataType(), numRows);
-        for (long i = 0; i < numRows; i++) {
-            double value = getScalar(i, c).getDouble(0);
-            result.putScalar(i, value);
-        }
-        return result;
+        return getColumn(c, true);
     }
 
     @Override
     public INDArray getColumn(long c, boolean keepDim) {
-        INDArray col = getColumn(c);
-        if(!keepDim)
-            return col;
-        return col.reshape(col.length(), 1);
+        Nd4j.getCompressor().autoDecompress(this);
+
+        if (isColumnVector() && c == 0) {
+            if (keepDim) {
+                return this;
+            } else {
+                return reshape(length());
+            }
+        } else if (isColumnVector() && c > 0)
+            throw new IllegalArgumentException("Illegal index for column");
+        Preconditions.checkArgument(this.rank() == 2, "getColumn() can be called on 2D arrays only");
+
+        // Use get() to create a proper view of the column
+        if (keepDim) {
+            // Return a view with shape [n, 1] - keeps 2D shape
+            return get(NDArrayIndex.all(), NDArrayIndex.interval(c, c + 1));
+        } else {
+            // Return a view with shape [n] - reduces to 1D
+            return get(NDArrayIndex.all(), NDArrayIndex.point(c));
+        }
     }
 
     @Override

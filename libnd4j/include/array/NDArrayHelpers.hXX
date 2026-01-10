@@ -460,9 +460,21 @@ void compoundAssignArray(NDArray& arr1, NDArray& arr2, sd::pairwise::Ops op, sd:
     if (shape::equalsTypesAndShapesSoft(arr1.shapeInfo(), bShape)) {
       arr1.applyTrueBroadcast(broadcastOp, &arr2, &arr1, false);
     } else {
-      NDArray result(bShape, true, arr1.getContext());
-      arr1.applyTrueBroadcast(broadcastOp, &arr2, &result, false);
-      arr1 = std::move(result);
+      // Compound assignment operators (+=, -=, *=, /=) must modify in-place.
+      // If broadcast would require a different output shape, we cannot safely
+      // perform the operation in-place as it would corrupt external references
+      // to arr1's buffer (like CUDA streams still accessing it).
+      // This matches numpy/Python behavior where a += b fails if shapes are incompatible.
+      std::string errorMessage;
+      errorMessage += "compoundAssignArray: Cannot perform in-place compound assignment when broadcast ";
+      errorMessage += "would change the array shape. Left operand shape: ";
+      errorMessage += ShapeUtils::shapeAsString(&arr1);
+      errorMessage += ", right operand shape: ";
+      errorMessage += ShapeUtils::shapeAsString(&arr2);
+      errorMessage += ", broadcast result shape would be: ";
+      errorMessage += ShapeUtils::shapeAsString(bShape);
+      errorMessage += ". Use binary operator (e.g., a = a + b) instead of compound assignment (a += b).";
+      THROW_EXCEPTION(errorMessage.c_str());
     }
   }
 }

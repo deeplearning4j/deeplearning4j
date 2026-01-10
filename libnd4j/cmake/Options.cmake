@@ -18,6 +18,43 @@ option(SD_CUDA "Build CUDA/GPU backend" OFF)
 option(SD_TPU "Build TPU backend using PJRT" OFF)
 set(TPU_VERSION "v5" CACHE STRING "TPU version (v4, v5)")
 
+# --- Backend Namespace Isolation ---
+# When multiple backends (CPU, CUDA) are loaded in the same process, symbol conflicts
+# can occur because both libraries export identically-named symbols (ops, helpers, singletons).
+# This option sets a unique namespace prefix for all internal symbols.
+#
+# Default behavior:
+#   - CPU build:  SD_BACKEND_NAMESPACE = sd_cpu
+#   - CUDA build: SD_BACKEND_NAMESPACE = sd_cuda
+#   - TPU build:  SD_BACKEND_NAMESPACE = sd_tpu
+#
+# This enables true multi-backend execution where both CPU and CUDA libraries
+# can be loaded simultaneously without symbol conflicts.
+if(NOT DEFINED SD_BACKEND_NAMESPACE OR SD_BACKEND_NAMESPACE STREQUAL "")
+    if(SD_CUDA)
+        set(SD_BACKEND_NAMESPACE "sd_cuda" CACHE STRING "Backend-specific namespace for symbol isolation")
+    elseif(SD_TPU)
+        set(SD_BACKEND_NAMESPACE "sd_tpu" CACHE STRING "Backend-specific namespace for symbol isolation")
+    else()
+        set(SD_BACKEND_NAMESPACE "sd_cpu" CACHE STRING "Backend-specific namespace for symbol isolation")
+    endif()
+    message(STATUS "🔧 Backend namespace: ${SD_BACKEND_NAMESPACE} (auto-detected)")
+else()
+    message(STATUS "🔧 Backend namespace: ${SD_BACKEND_NAMESPACE} (user-specified)")
+endif()
+
+# Add the namespace as a compile definition
+add_definitions(-DSD_BACKEND_NAMESPACE=${SD_BACKEND_NAMESPACE})
+
+# Also define which backend type this is (for conditional compilation)
+if(SD_CUDA)
+    add_definitions(-DSD_BACKEND_TYPE_CUDA=1)
+elseif(SD_TPU)
+    add_definitions(-DSD_BACKEND_TYPE_TPU=1)
+else()
+    add_definitions(-DSD_BACKEND_TYPE_CPU=1)
+endif()
+
 # --- ZLUDA Transpiler Options ---
 # ZLUDA enables running CUDA code on AMD/Intel GPUs via runtime translation
 option(SD_ZLUDA "Enable ZLUDA transpiler support for AMD/Intel GPUs" OFF)
