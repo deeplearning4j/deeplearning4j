@@ -85,9 +85,9 @@ std::shared_ptr<TadPack> ConstantTadHelper::tadForDimensions(LongType* originalS
     return result;
   }
 
-  // Handle zero dimension length case OR -1 sentinel - treat entire array as single TAD
-  // -1 is the sentinel value meaning "reduce all dimensions"
-  if (dimLength <= 0 || (dimLength == 1 && dimensions[0] == -1)) {
+  // Handle zero dimension length case OR -1/SD_MAX_INT sentinel - treat entire array as single TAD
+  // -1 is the standard sentinel, SD_MAX_INT (Integer.MAX_VALUE) is deprecated but still supported
+  if (dimLength <= 0 || (dimLength == 1 && (dimensions[0] == -1 || dimensions[0] == SD_MAX_INT))) {
     // When no dimensions specified or -1 sentinel, create TAD along all dimensions
     // This means the entire array is treated as a single TAD
     std::vector<LongType> allDims;

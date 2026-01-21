@@ -4065,6 +4065,566 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertTrue(casted.getShapeDescriptor().isEmpty());
     }
 
+    /**
+     * Test to reproduce crash occurring during LONG to INT cast operation.
+     * This test mimics the scenario where Anserini initializes a SameDiff model
+     * with LONG input_ids placeholder and casts to INT32.
+     *
+     * The crash manifests as "free(): invalid pointer" which is a memory
+     * corruption issue in native code during buffer deallocation after cast op.
+     *
+     * Original error log:
+     * - Input: input_ids placeholder, dtype=LONG, declaredShape=[-1, -1], runtimeShape=[1, 512]
+     * - Output: input_ids_int32, dtype=INT
+     * - Crash: "free(): invalid pointer" (SIGABRT)
+     *
+     * @see <a href="https://github.com/deeplearning4j/deeplearning4j/issues/XXXX">Issue tracker</a>
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCastLongToIntWithDynamicShape(Nd4jBackend backend) {
+        // Create SameDiff graph mimicking Anserini encoder pattern
+        SameDiff sd = SameDiff.create();
+
+        // Create placeholder with LONG dtype and dynamic shape [-1, -1]
+        // This matches the pattern: input_ids with declaredShape=[-1, -1]
+        SDVariable inputIds = sd.placeHolder("input_ids", DataType.LONG, -1, -1);
+
+        // Cast to INT (INT32) - this is where the crash occurs
+        SDVariable inputIdsInt32 = inputIds.castTo("input_ids_int32", DataType.INT);
+
+        // Create input data with shape [1, 512] matching the runtime shape from the crash
+        // Use values similar to tokenizer output (101 = [CLS] token, 102 = [SEP] token, etc.)
+        long[] inputData = new long[512];
+        inputData[0] = 101;  // CLS token
+        inputData[1] = 2023; // Some token
+        inputData[2] = 2003; // Some token
+        // Rest are zeros (padding)
+        INDArray input = Nd4j.createFromArray(inputData).reshape(1, 512);
+
+        // Execute the graph - this is where the "free(): invalid pointer" crash occurs
+        Map<String, INDArray> placeholders = Collections.singletonMap("input_ids", input);
+        Map<String, INDArray> outputs = sd.output(placeholders, "input_ids_int32");
+
+        // Verify output
+        INDArray result = outputs.get("input_ids_int32");
+        assertNotNull(result);
+        assertArrayEquals(new long[]{1, 512}, result.shape());
+        assertEquals(DataType.INT, result.dataType());
+
+        // Verify values were cast correctly
+        assertEquals(101, result.getLong(0, 0));
+        assertEquals(2023, result.getLong(0, 1));
+        assertEquals(2003, result.getLong(0, 2));
+    }
+
+    /**
+     * Extended test for LONG to INT cast with larger batch sizes.
+     * Tests multiple batch sizes to ensure memory management is correct.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCastLongToIntWithVariousBatchSizes(Nd4jBackend backend) {
+        int[] batchSizes = {1, 2, 4, 8, 16, 32};
+        int seqLength = 512;
+
+        for (int batchSize : batchSizes) {
+            SameDiff sd = SameDiff.create();
+
+            // Placeholder with dynamic batch dimension
+            SDVariable inputIds = sd.placeHolder("input_ids", DataType.LONG, -1, seqLength);
+            SDVariable inputIdsInt32 = inputIds.castTo("input_ids_int32", DataType.INT);
+
+            // Create input data
+            INDArray input = Nd4j.zeros(DataType.LONG, batchSize, seqLength);
+            // Fill first row with some token IDs
+            for (int i = 0; i < batchSize; i++) {
+                input.putScalar(new int[]{i, 0}, 101);  // CLS
+                input.putScalar(new int[]{i, 1}, 2000 + i);
+            }
+
+            Map<String, INDArray> placeholders = Collections.singletonMap("input_ids", input);
+            Map<String, INDArray> outputs = sd.output(placeholders, "input_ids_int32");
+
+            INDArray result = outputs.get("input_ids_int32");
+            assertNotNull(result, "Result should not be null for batch size " + batchSize);
+            assertArrayEquals(new long[]{batchSize, seqLength}, result.shape(),
+                    "Shape mismatch for batch size " + batchSize);
+            assertEquals(DataType.INT, result.dataType());
+        }
+    }
+
+    /**
+     * Test cast operation with attention mask pattern (LONG to INT).
+     * This is another common pattern in transformer encoders.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCastAttentionMaskLongToInt(Nd4jBackend backend) {
+        SameDiff sd = SameDiff.create();
+
+        // Create placeholders for full encoder input pattern
+        SDVariable inputIds = sd.placeHolder("input_ids", DataType.LONG, -1, -1);
+        SDVariable attentionMask = sd.placeHolder("attention_mask", DataType.LONG, -1, -1);
+
+        // Cast both to INT
+        SDVariable inputIdsInt = inputIds.castTo("input_ids_int32", DataType.INT);
+        SDVariable attentionMaskInt = attentionMask.castTo("attention_mask_int32", DataType.INT);
+
+        // Create test data
+        int batchSize = 1;
+        int seqLength = 512;
+        INDArray inputData = Nd4j.zeros(DataType.LONG, batchSize, seqLength);
+        INDArray maskData = Nd4j.zeros(DataType.LONG, batchSize, seqLength);
+
+        // Set some tokens
+        inputData.putScalar(0, 0, 101);
+        inputData.putScalar(0, 1, 2023);
+        inputData.putScalar(0, 2, 102);
+
+        // Set attention mask (1 for real tokens, 0 for padding)
+        maskData.putScalar(0, 0, 1);
+        maskData.putScalar(0, 1, 1);
+        maskData.putScalar(0, 2, 1);
+
+        Map<String, INDArray> placeholders = new HashMap<>();
+        placeholders.put("input_ids", inputData);
+        placeholders.put("attention_mask", maskData);
+
+        Map<String, INDArray> outputs = sd.output(placeholders, "input_ids_int32", "attention_mask_int32");
+
+        assertNotNull(outputs.get("input_ids_int32"));
+        assertNotNull(outputs.get("attention_mask_int32"));
+        assertEquals(DataType.INT, outputs.get("input_ids_int32").dataType());
+        assertEquals(DataType.INT, outputs.get("attention_mask_int32").dataType());
+    }
+
+    /**
+     * Stress test for LONG to INT cast to detect memory corruption.
+     * Runs multiple iterations to increase chance of detecting memory issues.
+     * The original crash involved "free(): invalid pointer" suggesting a
+     * memory management bug that may manifest after multiple allocations/deallocations.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCastLongToIntStressTest(Nd4jBackend backend) {
+        int numIterations = 100;
+        int seqLength = 512;
+
+        for (int iter = 0; iter < numIterations; iter++) {
+            SameDiff sd = SameDiff.create();
+
+            // Create placeholder with LONG dtype and dynamic shape
+            SDVariable inputIds = sd.placeHolder("input_ids", DataType.LONG, -1, -1);
+            SDVariable inputIdsInt32 = inputIds.castTo("input_ids_int32", DataType.INT);
+
+            // Vary batch size to stress memory allocation
+            int batchSize = (iter % 8) + 1;
+
+            // Create input data
+            INDArray input = Nd4j.zeros(DataType.LONG, batchSize, seqLength);
+            for (int b = 0; b < batchSize; b++) {
+                input.putScalar(b, 0, 101);  // CLS token
+                input.putScalar(b, 1, 2000 + iter);
+                input.putScalar(b, 2, 102);  // SEP token
+            }
+
+            Map<String, INDArray> placeholders = Collections.singletonMap("input_ids", input);
+            Map<String, INDArray> outputs = sd.output(placeholders, "input_ids_int32");
+
+            INDArray result = outputs.get("input_ids_int32");
+            assertNotNull(result, "Result should not be null at iteration " + iter);
+            assertEquals(DataType.INT, result.dataType());
+            assertArrayEquals(new long[]{batchSize, seqLength}, result.shape());
+
+            // Explicit cleanup to stress memory management
+            result.close();
+            input.close();
+        }
+    }
+
+    /**
+     * Test cast with serialization/deserialization mimicking model loading pattern.
+     * The Anserini encoder loads models from disk, so this tests if the crash
+     * is related to models loaded from serialized format.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCastLongToIntWithModelSaveLoad(Nd4jBackend backend) throws Exception {
+        // Create and save model
+        SameDiff sd = SameDiff.create();
+        SDVariable inputIds = sd.placeHolder("input_ids", DataType.LONG, -1, -1);
+        SDVariable inputIdsInt32 = inputIds.castTo("input_ids_int32", DataType.INT);
+
+        // Save to temp file
+        File tempFile = File.createTempFile("cast_test_model", ".fb");
+        tempFile.deleteOnExit();
+        sd.asFlatFile(tempFile);
+
+        // Load model from file
+        SameDiff loaded = SameDiff.fromFlatFile(tempFile);
+        assertNotNull(loaded);
+
+        // Test inference on loaded model
+        INDArray input = Nd4j.zeros(DataType.LONG, 1, 512);
+        input.putScalar(0, 0, 101);
+        input.putScalar(0, 1, 2023);
+        input.putScalar(0, 2, 2003);
+
+        Map<String, INDArray> placeholders = Collections.singletonMap("input_ids", input);
+        Map<String, INDArray> outputs = loaded.output(placeholders, "input_ids_int32");
+
+        INDArray result = outputs.get("input_ids_int32");
+        assertNotNull(result);
+        assertEquals(DataType.INT, result.dataType());
+        assertArrayEquals(new long[]{1, 512}, result.shape());
+        assertEquals(101, result.getInt(0, 0));
+    }
+
+    /**
+     * Test cast operation with downstream operations to mimic encoder pattern.
+     * The encoder typically does: input_ids (LONG) -> cast to INT -> embedding lookup -> ...
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCastLongToIntWithDownstreamOps(Nd4jBackend backend) {
+        SameDiff sd = SameDiff.create();
+
+        // Create placeholders mimicking transformer encoder input
+        SDVariable inputIds = sd.placeHolder("input_ids", DataType.LONG, -1, -1);
+
+        // Cast to INT (this is what crashes in the original error)
+        SDVariable inputIdsInt32 = inputIds.castTo("input_ids_int32", DataType.INT);
+
+        // Downstream operations (simplified embedding simulation)
+        // Embedding lookup would use the INT indices, but we simulate with a simple operation
+        SDVariable embeddingDim = sd.constant("embed_dim", Nd4j.scalar(768.0));
+        SDVariable castedFloat = inputIdsInt32.castTo("input_float", DataType.FLOAT);
+
+        // Simple computation on the cast result
+        SDVariable normalized = castedFloat.div("normalized", embeddingDim);
+
+        // Create test data
+        int batchSize = 1;
+        int seqLength = 512;
+        INDArray inputData = Nd4j.zeros(DataType.LONG, batchSize, seqLength);
+        inputData.putScalar(0, 0, 101);
+        inputData.putScalar(0, 1, 2023);
+        inputData.putScalar(0, 2, 2003);
+
+        Map<String, INDArray> placeholders = Collections.singletonMap("input_ids", inputData);
+
+        // Execute the full graph
+        Map<String, INDArray> outputs = sd.output(placeholders, "input_ids_int32", "normalized");
+
+        assertNotNull(outputs.get("input_ids_int32"));
+        assertNotNull(outputs.get("normalized"));
+        assertEquals(DataType.INT, outputs.get("input_ids_int32").dataType());
+        assertEquals(DataType.FLOAT, outputs.get("normalized").dataType());
+    }
+
+    /**
+     * Multi-threaded test simulating Spring server concurrent requests.
+     * Multiple threads share a single SameDiff model instance (like Spring singleton)
+     * and execute the cast operation concurrently.
+     *
+     * This mimics: @Service class EncoderService { private final SameDiff model; ... }
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCastLongToIntMultiThreadedSharedModel(Nd4jBackend backend) throws Exception {
+        int nThreads = 8;
+        int nIterationsPerThread = 50;
+        int seqLength = 512;
+
+        // Create single shared model (like Spring singleton bean)
+        SameDiff sd = SameDiff.create();
+        SDVariable inputIds = sd.placeHolder("input_ids", DataType.LONG, -1, -1);
+        SDVariable inputIdsInt32 = inputIds.castTo("input_ids_int32", DataType.INT);
+
+        // Synchronization primitives
+        java.util.concurrent.CountDownLatch startLatch = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch doneLatch = new java.util.concurrent.CountDownLatch(nThreads);
+        java.util.concurrent.atomic.AtomicBoolean failed = new java.util.concurrent.atomic.AtomicBoolean(false);
+        java.util.concurrent.atomic.AtomicReference<Throwable> firstError = new java.util.concurrent.atomic.AtomicReference<>();
+
+        // Start threads
+        for (int t = 0; t < nThreads; t++) {
+            final int threadId = t;
+            Thread thread = new Thread(() -> {
+                try {
+                    // Wait for all threads to be ready
+                    startLatch.await();
+
+                    for (int iter = 0; iter < nIterationsPerThread; iter++) {
+                        // Vary batch size per thread to stress memory allocation
+                        int batchSize = (threadId % 4) + 1;
+
+                        // Create input data
+                        INDArray input = Nd4j.zeros(DataType.LONG, batchSize, seqLength);
+                        for (int b = 0; b < batchSize; b++) {
+                            input.putScalar(b, 0, 101);  // CLS
+                            input.putScalar(b, 1, 2000 + threadId * 100 + iter);
+                            input.putScalar(b, 2, 102);  // SEP
+                        }
+
+                        // Execute model (synchronized internally by SameDiff)
+                        Map<String, INDArray> placeholders = Collections.singletonMap("input_ids", input);
+                        Map<String, INDArray> outputs = sd.output(placeholders, "input_ids_int32");
+
+                        INDArray result = outputs.get("input_ids_int32");
+                        if (result == null) {
+                            throw new RuntimeException("Null result at thread " + threadId + " iter " + iter);
+                        }
+                        if (result.dataType() != DataType.INT) {
+                            throw new RuntimeException("Wrong dtype at thread " + threadId + " iter " + iter);
+                        }
+                        if (result.shape()[0] != batchSize || result.shape()[1] != seqLength) {
+                            throw new RuntimeException("Wrong shape at thread " + threadId + " iter " + iter);
+                        }
+
+                        // Verify values
+                        if (result.getInt(0, 0) != 101) {
+                            throw new RuntimeException("Wrong value at thread " + threadId + " iter " + iter);
+                        }
+
+                        result.close();
+                        input.close();
+                    }
+                } catch (Throwable e) {
+                    failed.set(true);
+                    firstError.compareAndSet(null, e);
+                    log.error("Thread {} failed", threadId, e);
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+            thread.setName("CastTest-Thread-" + threadId);
+            thread.start();
+        }
+
+        // Start all threads simultaneously
+        startLatch.countDown();
+
+        // Wait for completion
+        doneLatch.await();
+
+        // Check for failures
+        if (failed.get()) {
+            Throwable error = firstError.get();
+            if (error != null) {
+                throw new RuntimeException("Multi-threaded test failed", error);
+            }
+            fail("Multi-threaded test failed with unknown error");
+        }
+    }
+
+    /**
+     * Test concurrent model creation and execution.
+     * Simulates Spring startup where multiple beans might initialize encoders concurrently.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCastLongToIntConcurrentModelCreation(Nd4jBackend backend) throws Exception {
+        int nThreads = 4;
+        int seqLength = 512;
+
+        java.util.concurrent.CountDownLatch startLatch = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch doneLatch = new java.util.concurrent.CountDownLatch(nThreads);
+        java.util.concurrent.atomic.AtomicBoolean failed = new java.util.concurrent.atomic.AtomicBoolean(false);
+        java.util.concurrent.atomic.AtomicReference<Throwable> firstError = new java.util.concurrent.atomic.AtomicReference<>();
+
+        for (int t = 0; t < nThreads; t++) {
+            final int threadId = t;
+            Thread thread = new Thread(() -> {
+                try {
+                    startLatch.await();
+
+                    // Each thread creates its own model (like multiple encoder beans)
+                    SameDiff sd = SameDiff.create();
+                    SDVariable inputIds = sd.placeHolder("input_ids", DataType.LONG, -1, -1);
+                    SDVariable inputIdsInt32 = inputIds.castTo("input_ids_int32", DataType.INT);
+
+                    // Run multiple inferences
+                    for (int iter = 0; iter < 20; iter++) {
+                        int batchSize = (iter % 4) + 1;
+                        INDArray input = Nd4j.zeros(DataType.LONG, batchSize, seqLength);
+                        input.putScalar(0, 0, 101 + threadId);
+
+                        Map<String, INDArray> outputs = sd.output(
+                            Collections.singletonMap("input_ids", input), "input_ids_int32");
+
+                        INDArray result = outputs.get("input_ids_int32");
+                        assertEquals(DataType.INT, result.dataType());
+                        assertEquals(101 + threadId, result.getInt(0, 0));
+
+                        result.close();
+                        input.close();
+                    }
+                } catch (Throwable e) {
+                    failed.set(true);
+                    firstError.compareAndSet(null, e);
+                    log.error("Thread {} failed", threadId, e);
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+            thread.setName("ModelCreate-Thread-" + threadId);
+            thread.start();
+        }
+
+        startLatch.countDown();
+        doneLatch.await();
+
+        if (failed.get()) {
+            throw new RuntimeException("Concurrent model creation test failed", firstError.get());
+        }
+    }
+
+    /**
+     * Test simulating Spring request handling with model loaded from file.
+     * This mimics the actual Anserini pattern: load model once, serve many requests.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCastLongToIntLoadedModelMultiThreaded(Nd4jBackend backend) throws Exception {
+        int nThreads = 8;
+        int nIterationsPerThread = 25;
+        int seqLength = 512;
+
+        // Create and save model (simulating model file on disk)
+        SameDiff original = SameDiff.create();
+        SDVariable inputIds = original.placeHolder("input_ids", DataType.LONG, -1, -1);
+        SDVariable attentionMask = original.placeHolder("attention_mask", DataType.LONG, -1, -1);
+        SDVariable inputIdsInt32 = inputIds.castTo("input_ids_int32", DataType.INT);
+        SDVariable maskInt32 = attentionMask.castTo("attention_mask_int32", DataType.INT);
+
+        File tempFile = File.createTempFile("mt_cast_model", ".fb");
+        tempFile.deleteOnExit();
+        original.asFlatFile(tempFile);
+
+        // Load model (like Spring bean initialization)
+        SameDiff loaded = SameDiff.fromFlatFile(tempFile);
+
+        java.util.concurrent.CountDownLatch startLatch = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch doneLatch = new java.util.concurrent.CountDownLatch(nThreads);
+        java.util.concurrent.atomic.AtomicBoolean failed = new java.util.concurrent.atomic.AtomicBoolean(false);
+        java.util.concurrent.atomic.AtomicReference<Throwable> firstError = new java.util.concurrent.atomic.AtomicReference<>();
+
+        for (int t = 0; t < nThreads; t++) {
+            final int threadId = t;
+            Thread thread = new Thread(() -> {
+                try {
+                    startLatch.await();
+
+                    for (int iter = 0; iter < nIterationsPerThread; iter++) {
+                        int batchSize = (threadId % 4) + 1;
+
+                        INDArray inputData = Nd4j.zeros(DataType.LONG, batchSize, seqLength);
+                        INDArray maskData = Nd4j.ones(DataType.LONG, batchSize, seqLength);
+
+                        for (int b = 0; b < batchSize; b++) {
+                            inputData.putScalar(b, 0, 101);
+                            inputData.putScalar(b, 1, 2000 + threadId);
+                            inputData.putScalar(b, 2, 102);
+                        }
+
+                        Map<String, INDArray> placeholders = new HashMap<>();
+                        placeholders.put("input_ids", inputData);
+                        placeholders.put("attention_mask", maskData);
+
+                        Map<String, INDArray> outputs = loaded.output(
+                            placeholders, "input_ids_int32", "attention_mask_int32");
+
+                        assertNotNull(outputs.get("input_ids_int32"));
+                        assertNotNull(outputs.get("attention_mask_int32"));
+                        assertEquals(DataType.INT, outputs.get("input_ids_int32").dataType());
+
+                        outputs.get("input_ids_int32").close();
+                        outputs.get("attention_mask_int32").close();
+                        inputData.close();
+                        maskData.close();
+                    }
+                } catch (Throwable e) {
+                    failed.set(true);
+                    firstError.compareAndSet(null, e);
+                    log.error("Thread {} failed", threadId, e);
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+            thread.setName("LoadedModel-Thread-" + threadId);
+            thread.start();
+        }
+
+        startLatch.countDown();
+        doneLatch.await();
+
+        if (failed.get()) {
+            throw new RuntimeException("Loaded model multi-threaded test failed", firstError.get());
+        }
+    }
+
+    /**
+     * Rapid-fire test with quick successive executions to stress buffer allocation.
+     * Simulates high-throughput scenario where requests come in rapid succession.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCastLongToIntRapidFireExecution(Nd4jBackend backend) throws Exception {
+        int nThreads = 4;
+        int nIterationsPerThread = 200;  // More iterations, rapid fire
+        int seqLength = 512;
+
+        SameDiff sd = SameDiff.create();
+        SDVariable inputIds = sd.placeHolder("input_ids", DataType.LONG, -1, -1);
+        SDVariable inputIdsInt32 = inputIds.castTo("input_ids_int32", DataType.INT);
+
+        java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors.newFixedThreadPool(nThreads);
+        java.util.concurrent.atomic.AtomicInteger successCount = new java.util.concurrent.atomic.AtomicInteger(0);
+        java.util.concurrent.atomic.AtomicBoolean failed = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+        java.util.List<java.util.concurrent.Future<?>> futures = new java.util.ArrayList<>();
+
+        for (int t = 0; t < nThreads; t++) {
+            final int threadId = t;
+            futures.add(executor.submit(() -> {
+                try {
+                    for (int iter = 0; iter < nIterationsPerThread; iter++) {
+                        // Small batch, fast execution
+                        INDArray input = Nd4j.zeros(DataType.LONG, 1, seqLength);
+                        input.putScalar(0, 0, 101);
+
+                        Map<String, INDArray> outputs = sd.output(
+                            Collections.singletonMap("input_ids", input), "input_ids_int32");
+
+                        INDArray result = outputs.get("input_ids_int32");
+                        if (result == null || result.dataType() != DataType.INT) {
+                            failed.set(true);
+                            return;
+                        }
+
+                        successCount.incrementAndGet();
+                        result.close();
+                        input.close();
+                    }
+                } catch (Throwable e) {
+                    failed.set(true);
+                    log.error("Rapid fire thread {} failed", threadId, e);
+                }
+            }));
+        }
+
+        // Wait for all tasks
+        for (java.util.concurrent.Future<?> f : futures) {
+            f.get();
+        }
+        executor.shutdown();
+
+        assertFalse(failed.get(), "Rapid fire test had failures");
+        assertEquals(nThreads * nIterationsPerThread, successCount.get(),
+            "Expected all iterations to succeed");
+    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

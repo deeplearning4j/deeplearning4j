@@ -233,13 +233,13 @@ class SummaryStatsReduce {
   static SD_DEVICE void transform(void * dx, sd::LongType * xShapeInfo, void* extraParams, void* vz,
                                   sd::LongType * zShapeInfo, sd::LongType* dimension,
                                   sd::LongType dimensionLength,
-                                  int postProcessOrNot, sd::LongType* allocationBuffer, void* reductionBuffer,
+                                  int postProcessOrNot, bool biasCorrected, sd::LongType* allocationBuffer, void* reductionBuffer,
                                   sd::LongType * tadOnlyShapeInfo, sd::LongType * tadOffsets);
 
   static SD_DEVICE void transform( int opNum, void * dx, sd::LongType * xShapeInfo, void* extraParams,
                                   void* vz, sd::LongType * zShapeInfo, sd::LongType* dimension,
                                   sd::LongType dimensionLength,
-                                  int postProcessOrNot, sd::LongType* allocationBuffer, void* reductionBuffer,
+                                  int postProcessOrNot, bool biasCorrected, sd::LongType* allocationBuffer, void* reductionBuffer,
                                   sd::LongType * tadOnlyShapeInfo, sd::LongType * tadOffsets);
 
   static SD_HOST void execSummaryStatsReduceScalar(dim3& launchDims, cudaStream_t* stream, int opNum, void * x,

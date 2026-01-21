@@ -667,11 +667,6 @@ void BlasHelper::initializeBlasThreading() {
     }
   }
 
-  // CRITICAL: If no thread count was specified, default BLAS to single-threaded
-  // For OpenBLAS, this prevents TLS (thread-local storage) corruption crashes when OpenBLAS's
-  // internal threading conflicts with the application's OpenMP threading.
-  // For MKL, this is for consistency, though MKL handles threading better.
-  // Users who want multi-threaded BLAS can set OPENBLAS_NUM_THREADS/MKL_NUM_THREADS or SD_OPENBLAS_THREADS.
   if (_openblasThreads.load() == 0) {
     _openblasThreads.store(1);
 #if defined(HAVE_MKL)

@@ -185,6 +185,9 @@ include(cmake/MainBuildFlow.cmake)
 if(SD_CUDA)
     include(cmake/CudaConfiguration.cmake)
     setup_cuda_build()
+    # CUDA cleanup hooks - clean temp files at configure time and create build targets
+    include(cmake/CudaCleanup.cmake)
+    cuda_create_cleanup_target()
 elseif(SD_TPU)
     include(cmake/TpuConfiguration.cmake)
     include(cmake/BuildTPU.cmake)
@@ -236,4 +239,14 @@ add_custom_target(verify_types
 
 if(BUILD_PPSTEP)
 include(cmake/Ppstep.cmake)
+endif()
+
+# =============================================================================
+# CUDA CLEANUP HOOKS - Connect pre-build cleanup to main library target
+# This ensures CUDA temp files are cleaned before each build starts
+# =============================================================================
+if(SD_CUDA AND TARGET cuda_cleanup_pre_build AND TARGET ${SD_LIBRARY_NAME})
+    # Add pre-build cleanup as a dependency of the main library
+    add_dependencies(${SD_LIBRARY_NAME} cuda_cleanup_pre_build)
+    message(STATUS "✅ CUDA cleanup hook connected to ${SD_LIBRARY_NAME}")
 endif()

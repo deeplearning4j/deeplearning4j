@@ -44,8 +44,16 @@ public class DeallocatableReference extends PhantomReference<Deallocatable> {
     }
 
     public void deallocate() {
+        if (deallocator == null) {
+            return;
+        }
+
+        // Constant buffers (like shape info) should never be deallocated.
+        // Instead of throwing an exception which could crash the deallocator thread,
+        // silently return. The buffer will remain in memory, which is the intended
+        // behavior for constant/cached buffers.
         if(deallocator.isConstant()) {
-            throw new IllegalStateException("Unable to deallocate reference. Not ready yet.");
+            return;
         }
 
         if(!Nd4j.getDeallocatorService().getListeners().isEmpty()) {

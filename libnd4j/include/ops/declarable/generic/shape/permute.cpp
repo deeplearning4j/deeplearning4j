@@ -41,6 +41,12 @@ CUSTOM_OP_IMPL(permute, 1, 1, true, 0, -2) {
     return Status::OK;  // No op
   }
 
+  // Handle scalar input - permute is a no-op for scalars
+  if (x->rankOf() == 0) {
+    z->assign(x);
+    return Status::OK;
+  }
+
   if (block.width() == 1 && block.getIArguments()->size() == 0) {
     NDArray *t = x->transpose();
     z->assign(t);
@@ -52,6 +58,13 @@ CUSTOM_OP_IMPL(permute, 1, 1, true, 0, -2) {
   }
 
   std::vector<LongType> permutationVector = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<LongType>() : *block.getIArguments();
+
+  // Handle empty permutation vector - just copy input to output
+  if (permutationVector.empty()) {
+    z->assign(x);
+    return Status::OK;
+  }
+
   if(permutationVector.size() != static_cast<size_t>(x->rankOf())) {
     sd_printf("PERMUTE OP: permutation vector size was %d and x input rank was %d\n",permutationVector.size(),x->rankOf());
   }
@@ -85,11 +98,26 @@ DECLARE_TYPES(permute) {
 DECLARE_SHAPE_FN(permute) {
   auto x = INPUT_VARIABLE(0);
 
+  // Handle empty input - return same shape
+  if (x->isEmpty()) {
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(x->dataType(), x->ordering(), *x->getShapeAsVector()));
+  }
+
+  // Handle scalar input - permute is a no-op for scalars, return scalar shape
+  if (x->rankOf() == 0) {
+    return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(x->dataType()));
+  }
+
   if (block.width() == 1 && block.getIArguments()->size() == 0) {
     auto ret = ShapeUtils::evalTransposeShapeInfo(*x, block.workspace(), true);
     return SHAPELIST(ret);
   }
   std::vector<LongType> permutationVector = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<LongType>() : *block.getIArguments();
+
+  // Handle empty permutation vector - return input shape unchanged
+  if (permutationVector.empty()) {
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(x->dataType(), x->ordering(), *x->getShapeAsVector()));
+  }
 
   auto outputShapeInfo =
       ShapeUtils::evalPermShapeInfo(permutationVector.data(), x->rankOf(), x, block.workspace(), true);

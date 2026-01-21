@@ -215,22 +215,23 @@ public:
    // or preventing proper cache management
    for (size_t i = 0; i < NUM_STRIPES; i++) {
      _roots[i] = std::make_unique<TadTrieNode>(0, 0, false);
-     // Make sure mutexes are properly initialized
-     new (&_mutexes[i]) MUTEX_TYPE();  // Explicit initialization
+     // NOTE: _mutexes array is already default-initialized via "= {}" in member declaration
+     // DO NOT use placement new here - it would double-construct the mutex causing UB
    }
  }
 
- // Destructor - DO NOT call clear() here!
- // During JVM shutdown / static destruction, the order of destruction is undefined.
- // Memory allocators and other infrastructure may have already been destroyed,
- // causing corrupted pointers in the trie. Traversing the tree in this state
- // causes SIGSEGV crashes (e.g., in deleteTadPacksRecursive).
- //
- // The OS will reclaim all memory when the process exits anyway, so explicit
- // cleanup during shutdown is unnecessary and dangerous.
- //
+ // Destructor - Release ownership of all roots to prevent crashes during JVM shutdown.
+ // During static destruction, memory allocators may already be destroyed, causing
+ // corrupted pointers. Traversing the tree to delete nodes causes SIGSEGV.
+ // By releasing ownership, we leak memory but the OS reclaims it on process exit anyway.
  // For explicit cleanup during runtime (e.g., testing), use clear() directly.
- ~DirectTadTrie() = default;
+ ~DirectTadTrie() {
+   // Release ownership of all root nodes without deleting them
+   // This prevents traversing potentially corrupted memory during shutdown
+   for (size_t i = 0; i < NUM_STRIPES; i++) {
+     _roots[i].release();  // Release ownership, don't delete
+   }
+ }
 
  // Delete copy constructor and assignment
  DirectTadTrie(const DirectTadTrie&) = delete;
@@ -252,8 +253,6 @@ public:
  size_t computeStripeIndex(const std::vector<LongType>& dimensions, LongType* originalShape) const {
    size_t hash = 17; // Prime number starting point
 
-   // CRITICAL: Include device ID in hash to make cache device-aware
-   // TAD packs contain device-specific pointers that are only valid on the device where allocated
    int deviceId = AffinityManager::currentDeviceId();
    hash = hash * 53 + static_cast<size_t>(deviceId) * 59;
 

@@ -50,7 +50,9 @@ sd::Status LegacyReduceOp::validateAndExecute(Context &block) {
 
     if (block.getIArguments()->size() == x->rankOf()) allAxes = true;
 
-    if ((block.getIArguments()->size() == 0) || (block.getIArguments()->size() == 1 && INT_ARG(0) == SD_MAX_INT) ||
+    // Check for -1 or SD_MAX_INT sentinel (means "reduce all dimensions")
+    // -1 is the standard sentinel, SD_MAX_INT (Integer.MAX_VALUE) is deprecated but still supported
+    if ((block.getIArguments()->size() == 0) || (block.getIArguments()->size() == 1 && (INT_ARG(0) == -1 || INT_ARG(0) == SD_MAX_INT)) ||
         allAxes) {
       // scalar
       NativeOpExcutioner::execReduceFloatScalar(opType, x->buffer(), x->shapeInfo(), block.getTArguments()->data(),
@@ -85,7 +87,9 @@ sd::Status LegacyReduceOp::validateAndExecute(Context &block) {
       axis[e] = f >= 0 ? f : f += x->rankOf();
     }
 
-    if ((block.getIArguments()->size() == 1 && INT_ARG(0) == SD_MAX_INT) || allAxes) {
+    // Check for -1 or SD_MAX_INT sentinel (means "reduce all dimensions")
+    // -1 is the standard sentinel, SD_MAX_INT (Integer.MAX_VALUE) is deprecated but still supported
+    if ((block.getIArguments()->size() == 1 && (INT_ARG(0) == -1 || INT_ARG(0) == SD_MAX_INT)) || allAxes) {
       auto z = OUTPUT_VARIABLE(0);
 
       auto b = x->buffer();
@@ -144,7 +148,9 @@ ShapeList *LegacyReduceOp::calculateOutputShape(ShapeList *inputShape, sd::graph
 
   if (block.getIArguments()->size() == shape::rank(inShape)) allAxes = true;
 
-  if (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && INT_ARG(0) == SD_MAX_INT) ||
+  // Check for -1 or SD_MAX_INT sentinel (means "reduce all dimensions")
+  // -1 is the standard sentinel, SD_MAX_INT (Integer.MAX_VALUE) is deprecated but still supported
+  if (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && (INT_ARG(0) == -1 || INT_ARG(0) == SD_MAX_INT)) ||
       allAxes) {
     if (block.getIArguments()->size() > 0 && block.getIArguments()->at(0) == 1) {
       // in this case we just return legacy scalar
@@ -158,7 +164,7 @@ ShapeList *LegacyReduceOp::calculateOutputShape(ShapeList *inputShape, sd::graph
       newShape[6] = 1;
       newShape[7] = 99;
     } else {
-      ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), sd::LongType);
+      ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(static_cast<sd::LongType>(0)), sd::LongType);
       newShape[0] = 0;
       newShape[1] = 0;
       newShape[2] = 1;

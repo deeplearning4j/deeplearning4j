@@ -616,13 +616,14 @@ SD_HOST SD_INLINE void ArrayOptions::setDataType(sd::LongType *shapeInfo, const 
 
 SD_HOST SD_INLINE sd::LongType ArrayOptions::setDataTypeValue(sd::LongType extraStorage, const sd::DataType dataType) {
   sd::LongType  ret = extraStorage;
+  // For unsigned types, set the ARRAY_UNSIGNED flag first, then fall through to set the size flag
   if (dataType == sd::DataType::UINT8
       || dataType == sd::DataType::UINT16
       || dataType == sd::DataType::UINT32 ||
       dataType == sd::DataType::UINT64) {
     ret = setPropertyBitForFlagsValue(extraStorage, ARRAY_UNSIGNED);
     extraStorage = ret;
-    return extraStorage;
+    // Don't return early - let it fall through to set the type size flag below
   }
 
 

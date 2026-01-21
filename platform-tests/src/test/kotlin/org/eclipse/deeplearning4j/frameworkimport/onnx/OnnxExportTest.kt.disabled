@@ -1,0 +1,785 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+package org.eclipse.deeplearning4j.frameworkimport.onnx
+
+import onnx.Onnx
+import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
+import org.nd4j.autodiff.samediff.SameDiff
+import org.nd4j.autodiff.samediff.TrainingConfig
+import org.nd4j.linalg.api.buffer.DataType
+import org.nd4j.linalg.factory.Nd4j
+import org.nd4j.linalg.learning.config.Adam
+import org.nd4j.linalg.learning.config.Sgd
+import org.nd4j.samediff.frameworkimport.onnx.export.OnnxExportConfig
+import org.nd4j.samediff.frameworkimport.onnx.export.OnnxExporter
+import org.nd4j.samediff.frameworkimport.onnx.export.SameDiffToOnnxOpMapper
+import org.nd4j.samediff.frameworkimport.onnx.export.TrainingStateExporter
+import org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter
+import java.io.ByteArrayOutputStream
+import java.io.File
+import java.nio.file.Path
+
+/**
+ * Comprehensive tests for ONNX export functionality.
+ *
+ * @author Adam Gibson
+ */
+class OnnxExportTest {
+
+    @TempDir
+    lateinit var tempDir: Path
+
+    // ========================================
+    // Basic Export Tests
+    // ========================================
+
+    @Test
+    fun testSimpleAddExport() {
+        val sd = SameDiff.create()
+
+        val x = sd.placeHolder("x", DataType.FLOAT, -1, 3)
+        val y = sd.placeHolder("y", DataType.FLOAT, -1, 3)
+        val sum = x.add(y)
+        sum.rename("output")
+
+        val onnxFile = tempDir.resolve("simple_add.onnx").toFile()
+        sd.exportToOnnx(onnxFile)
+
+        assertTrue(onnxFile.exists(), "ONNX file should be created")
+        assertTrue(onnxFile.length() > 0, "ONNX file should have content")
+
+        val modelProto = parseOnnxModel(onnxFile)
+        assertNotNull(modelProto.graph)
+        assertEquals(2, modelProto.graph.inputCount, "Should have 2 inputs")
+        assertTrue(modelProto.graph.nodeCount >= 1, "Should have at least 1 node")
+    }
+
+    @Test
+    fun testExportToStream() {
+        val sd = SameDiff.create()
+        val x = sd.placeHolder("x", DataType.FLOAT, 2, 3)
+        val result = sd.math.abs(x)
+        result.rename("output")
+
+        val baos = ByteArrayOutputStream()
+        sd.exportToOnnx(baos)
+
+        val bytes = baos.toByteArray()
+        assertTrue(bytes.isNotEmpty(), "Should have output bytes")
+
+        val modelProto = Onnx.ModelProto.parseFrom(bytes)
+        assertNotNull(modelProto.graph)
+    }
+
+    @Test
+    fun testToOnnxBytes() {
+        val sd = SameDiff.create()
+        val x = sd.placeHolder("x", DataType.FLOAT, 2, 2)
+        val y = sd.constant("y", Nd4j.ones(2, 2))
+        val result = x.mul(y)
+        result.rename("output")
+
+        val bytes = sd.toOnnxBytes()
+        assertNotNull(bytes)
+        assertTrue(bytes.isNotEmpty(), "Should have bytes")
+
+        val modelProto = Onnx.ModelProto.parseFrom(bytes)
+        assertNotNull(modelProto.graph)
+    }
+
+    // ========================================
+    // Configuration Tests
+    // ========================================
+
+    @Test
+    fun testExportWithConfig() {
+        val sd = SameDiff.create()
+        val x = sd.placeHolder("x", DataType.FLOAT, 2, 3)
+        val result = sd.math.relu(x)
+        result.rename("output")
+
+        val config = OnnxExportConfig.builder()
+            .opsetVersion(13)
+            .producerName("test-producer")
+            .producerVersion("1.0.0")
+            .graphName("test-graph")
+            .docString("Test model documentation")
+            .build()
+
+        val onnxFile = tempDir.resolve("relu_with_config.onnx").toFile()
+        sd.exportToOnnx(onnxFile, config)
+
+        val modelProto = parseOnnxModel(onnxFile)
+        assertEquals("test-producer", modelProto.producerName)
+        assertEquals("1.0.0", modelProto.producerVersion)
+        assertEquals("test-graph", modelProto.graph.name)
+        assertEquals("Test model documentation", modelProto.docString)
+    }
+
+    @Test
+    fun testDefaultConfig() {
+        val config = OnnxExportConfig.DEFAULT
+        assertEquals(13L, config.opsetVersion)
+        assertEquals(7L, config.irVersion)
+        assertEquals("nd4j-samediff", config.producerName)
+        assertFalse(config.includeTrainingState)
+        assertEquals("main", config.graphName)
+    }
+
+    @Test
+    fun testCompatibleConfig() {
+        val config = OnnxExportConfig.COMPATIBLE
+        assertEquals(9L, config.opsetVersion)
+        assertEquals(4L, config.irVersion)
+    }
+
+    @Test
+    fun testWithTrainingConfig() {
+        val config = OnnxExportConfig.WITH_TRAINING
+        assertTrue(config.includeTrainingState)
+    }
+
+    @Test
+    fun testConfigBuilder() {
+        val config = OnnxExportConfig.builder()
+            .opsetVersion(12)
+            .irVersion(6)
+            .producerName("custom-producer")
+            .producerVersion("2.0.0")
+            .domain("com.example")
+            .modelVersion(2)
+            .graphName("custom-graph")
+            .includeTrainingState(true)
+            .build()
+
+        assertEquals(12L, config.opsetVersion)
+        assertEquals(6L, config.irVersion)
+        assertEquals("custom-producer", config.producerName)
+        assertEquals("2.0.0", config.producerVersion)
+        assertEquals("com.example", config.domain)
+        assertEquals(2L, config.modelVersion)
+        assertEquals("custom-graph", config.graphName)
+        assertTrue(config.includeTrainingState)
+    }
+
+    // ========================================
+    // Arithmetic Operations Tests
+    // ========================================
+
+    @Test
+    fun testArithmeticOpsExport() {
+        val sd = SameDiff.create()
+        val x = sd.placeHolder("x", DataType.FLOAT, 2, 3)
+        val y = sd.placeHolder("y", DataType.FLOAT, 2, 3)
+
+        val add = x.add(y)
+        val sub = x.sub(y)
+        val mul = x.mul(y)
+        val div = x.div(y)
+
+        add.rename("add_out")
+        sub.rename("sub_out")
+        mul.rename("mul_out")
+        div.rename("div_out")
+
+        val onnxFile = tempDir.resolve("arithmetic.onnx").toFile()
+        sd.exportToOnnx(onnxFile)
+
+        val modelProto = parseOnnxModel(onnxFile)
+        assertTrue(modelProto.graph.nodeCount >= 4, "Should have arithmetic nodes")
+
+        // Verify operation types
+        val opTypes = modelProto.graph.nodeList.map { it.opType }.toSet()
+        assertTrue(opTypes.contains("Add"), "Should have Add op")
+        assertTrue(opTypes.contains("Sub"), "Should have Sub op")
+        assertTrue(opTypes.contains("Mul"), "Should have Mul op")
+        assertTrue(opTypes.contains("Div"), "Should have Div op")
+    }
+
+    @Test
+    fun testMathFunctionsExport() {
+        val sd = SameDiff.create()
+        val x = sd.placeHolder("x", DataType.FLOAT, 2, 3)
+
+        val abs = sd.math.abs("abs", x)
+        val sqrt = sd.math.sqrt("sqrt", sd.math.abs(x))  // abs to ensure positive
+        val exp = sd.math.exp("exp", x)
+        val log = sd.math.log("log", sd.math.abs(x).add(1.0))  // log(|x|+1) to avoid log(0)
+        val neg = sd.math.neg("neg", x)
+        val floor = sd.math.floor("floor", x)
+        val ceil = sd.math.ceil("ceil", x)
+
+        val onnxFile = tempDir.resolve("math_funcs.onnx").toFile()
+        sd.exportToOnnx(onnxFile)
+
+        val modelProto = parseOnnxModel(onnxFile)
+        assertTrue(modelProto.graph.nodeCount >= 5, "Should have math function nodes")
+    }
+
+    // ========================================
+    // Activation Functions Tests
+    // ========================================
+
+    @Test
+    fun testActivationFunctionsExport() {
+        val sd = SameDiff.create()
+        val x = sd.placeHolder("x", DataType.FLOAT, 2, 3)
+
+        val relu = sd.math.relu("relu", x)
+        val sigmoid = sd.nn.sigmoid("sigmoid", x)
+        val tanh = sd.math.tanh("tanh", x)
+        val softplus = sd.math.softplus("softplus", x)
+        val softsign = sd.math.softsign("softsign", x)
+
+        val onnxFile = tempDir.resolve("activations.onnx").toFile()
+        sd.exportToOnnx(onnxFile)
+
+        val modelProto = parseOnnxModel(onnxFile)
+        assertTrue(modelProto.graph.nodeCount >= 5, "Should have activation nodes")
+
+        val opTypes = modelProto.graph.nodeList.map { it.opType }.toSet()
+        assertTrue(opTypes.contains("Relu"), "Should have Relu op")
+        assertTrue(opTypes.contains("Sigmoid"), "Should have Sigmoid op")
+        assertTrue(opTypes.contains("Tanh"), "Should have Tanh op")
+    }
+
+    @Test
+    fun testLeakyReluExport() {
+        val sd = SameDiff.create()
+        val x = sd.placeHolder("x", DataType.FLOAT, 2, 3)
+
+        val leakyRelu = sd.nn.leakyRelu("leaky_relu", x, 0.1)
+
+        val onnxFile = tempDir.resolve("leaky_relu.onnx").toFile()
+        sd.exportToOnnx(onnxFile)
+
+        val modelProto = parseOnnxModel(onnxFile)
+        val leakyReluNode = modelProto.graph.nodeList.find { it.opType == "LeakyRelu" }
+        assertNotNull(leakyReluNode, "Should have LeakyRelu node")
+
+        // Verify alpha attribute
+        val alphaAttr = leakyReluNode?.attributeList?.find { it.name == "alpha" }
+        if (alphaAttr != null) {
+            assertEquals(0.1f, alphaAttr.f, 0.001f, "Alpha should be 0.1")
+        }
+    }
+
+    @Test
+    fun testSoftmaxExport() {
+        val sd = SameDiff.create()
+        val x = sd.placeHolder("x", DataType.FLOAT, 2, 5)
+
+        val softmax = sd.nn.softmax("softmax", x, 1)
+
+        val onnxFile = tempDir.resolve("softmax.onnx").toFile()
+        sd.exportToOnnx(onnxFile)
+
+        val modelProto = parseOnnxModel(onnxFile)
+        val softmaxNode = modelProto.graph.nodeList.find { it.opType == "Softmax" }
+        assertNotNull(softmaxNode, "Should have Softmax node")
+    }
+
+    // ========================================
+    // Reduction Operations Tests
+    // ========================================
+
+    @Test
+    fun testReductionOpsExport() {
+        val sd = SameDiff.create()
+        val x = sd.placeHolder("x", DataType.FLOAT, 2, 3, 4)
+
+        val sum = sd.math.sum("sum", x, 1)
+        val mean = sd.math.mean("mean", x, 1)
+        val max = sd.math.max("max", x, 1)
+        val min = sd.math.min("min", x, 1)
+
+        val onnxFile = tempDir.resolve("reductions.onnx").toFile()
+        sd.exportToOnnx(onnxFile)
+
+        val modelProto = parseOnnxModel(onnxFile)
+        assertTrue(modelProto.graph.nodeCount >= 4, "Should have reduction nodes")
+    }
+
+    @Test
+    fun testArgMaxArgMinExport() {
+        val sd = SameDiff.create()
+        val x = sd.placeHolder("x", DataType.FLOAT, 2, 5)
+
+        val argmax = sd.math.argmax("argmax", x, 1)
+        val argmin = sd.math.argmin("argmin", x, 1)
+
+        val onnxFile = tempDir.resolve("argmax_argmin.onnx").toFile()
+        sd.exportToOnnx(onnxFile)
+
+        val modelProto = parseOnnxModel(onnxFile)
+        val opTypes = modelProto.graph.nodeList.map { it.opType }.toSet()
+        assertTrue(opTypes.contains("ArgMax"), "Should have ArgMax op")
+        assertTrue(opTypes.contains("ArgMin"), "Should have ArgMin op")
+    }
+
+    // ========================================
+    // Shape Operations Tests
+    // ========================================
+
+    @Test
+    fun testReshapeExport() {
+        val sd = SameDiff.create()
+        val x = sd.placeHolder("x", DataType.FLOAT, 2, 6)
+
+        val reshaped = sd.reshape("reshaped", x, 3, 4)
+
+        val onnxFile = tempDir.resolve("reshape.onnx").toFile()
+        sd.exportToOnnx(onnxFile)
+
+        assertTrue(onnxFile.exists())
+    }
+
+    @Test
+    fun testConcatExport() {
+        val sd = SameDiff.create()
+        val x = sd.placeHolder("x", DataType.FLOAT, 2, 3)
+        val y = sd.placeHolder("y", DataType.FLOAT, 2, 3)
+
+        val concat = sd.concat("concat", 1, x, y)
+
+        val onnxFile = tempDir.resolve("concat.onnx").toFile()
+        sd.exportToOnnx(onnxFile)
+
+        val modelProto = parseOnnxModel(onnxFile)
+        val concatNode = modelProto.graph.nodeList.find { it.opType == "Concat" }
+        assertNotNull(concatNode, "Should have Concat node")
+    }
+
+    @Test
+    fun testTransposeExport() {
+        val sd = SameDiff.create()
+        val x = sd.placeHolder("x", DataType.FLOAT, 2, 3, 4)
+
+        val transposed = sd.permute("transposed", x, 0, 2, 1)
+
+        val onnxFile = tempDir.resolve("transpose.onnx").toFile()
+        sd.exportToOnnx(onnxFile)
+
+        assertTrue(onnxFile.exists())
+    }
+
+    // ========================================
+    // Constants and Variables Tests
+    // ========================================
+
+    @Test
+    fun testExportWithConstants() {
+        val sd = SameDiff.create()
+
+        val x = sd.placeHolder("x", DataType.FLOAT, 2, 3)
+        val weights = sd.constant("weights", Nd4j.randn(3, 4).castTo(DataType.FLOAT))
+        val bias = sd.constant("bias", Nd4j.zeros(4).castTo(DataType.FLOAT))
+
+        val mm = sd.mmul(x, weights)
+        val result = mm.add(bias)
+        result.rename("output")
+
+        val onnxFile = tempDir.resolve("with_constants.onnx").toFile()
+        sd.exportToOnnx(onnxFile)
+
+        val modelProto = parseOnnxModel(onnxFile)
+
+        // Should have initializers for weights and bias
+        assertTrue(modelProto.graph.initializerCount >= 2, "Should have initializers for constants")
+
+        // Verify initializer names
+        val initializerNames = modelProto.graph.initializerList.map { it.name }.toSet()
+        assertTrue(initializerNames.contains("weights"), "Should have weights initializer")
+        assertTrue(initializerNames.contains("bias"), "Should have bias initializer")
+    }
+
+    @Test
+    fun testExportWithVariables() {
+        val sd = SameDiff.create()
+
+        val x = sd.placeHolder("x", DataType.FLOAT, -1, 10)
+        val w = sd.variable("w", Nd4j.randn(10, 5).castTo(DataType.FLOAT))
+        val b = sd.variable("b", Nd4j.zeros(5).castTo(DataType.FLOAT))
+
+        val result = sd.mmul(x, w).add(b)
+        result.rename("output")
+
+        val onnxFile = tempDir.resolve("with_variables.onnx").toFile()
+        sd.exportToOnnx(onnxFile)
+
+        val modelProto = parseOnnxModel(onnxFile)
+        assertTrue(modelProto.graph.initializerCount >= 2, "Should have initializers for variables")
+    }
+
+    // ========================================
+    // Neural Network Architecture Tests
+    // ========================================
+
+    @Test
+    fun testExportMLP() {
+        val sd = SameDiff.create()
+
+        // Simple MLP: input -> dense -> relu -> dense -> softmax
+        val input = sd.placeHolder("input", DataType.FLOAT, -1, 10)
+        val w1 = sd.variable("w1", Nd4j.randn(10, 20).castTo(DataType.FLOAT))
+        val b1 = sd.variable("b1", Nd4j.zeros(20).castTo(DataType.FLOAT))
+        val w2 = sd.variable("w2", Nd4j.randn(20, 5).castTo(DataType.FLOAT))
+        val b2 = sd.variable("b2", Nd4j.zeros(5).castTo(DataType.FLOAT))
+
+        var x = sd.mmul(input, w1).add(b1)
+        x = sd.math.relu(x)
+        x = sd.mmul(x, w2).add(b2)
+        val output = sd.nn.softmax("output", x)
+
+        val onnxFile = tempDir.resolve("mlp.onnx").toFile()
+        sd.exportToOnnx(onnxFile)
+
+        assertTrue(onnxFile.exists())
+
+        val modelProto = parseOnnxModel(onnxFile)
+        assertNotNull(modelProto.graph)
+        assertTrue(modelProto.graph.nodeCount >= 5, "MLP should have multiple nodes")
+
+        // Verify it has expected ops
+        val opTypes = modelProto.graph.nodeList.map { it.opType }.toSet()
+        assertTrue(opTypes.contains("MatMul"), "Should have MatMul op")
+        assertTrue(opTypes.contains("Add"), "Should have Add op")
+        assertTrue(opTypes.contains("Relu"), "Should have Relu op")
+        assertTrue(opTypes.contains("Softmax"), "Should have Softmax op")
+    }
+
+    @Test
+    fun testExportDeepNetwork() {
+        val sd = SameDiff.create()
+
+        val input = sd.placeHolder("input", DataType.FLOAT, -1, 784)
+
+        var x = input
+        val layerSizes = listOf(784, 512, 256, 128, 10)
+
+        for (i in 0 until layerSizes.size - 1) {
+            val inSize = layerSizes[i]
+            val outSize = layerSizes[i + 1]
+
+            val w = sd.variable("w$i", Nd4j.randn(inSize.toLong(), outSize.toLong()).mul(0.01).castTo(DataType.FLOAT))
+            val b = sd.variable("b$i", Nd4j.zeros(outSize.toLong()).castTo(DataType.FLOAT))
+
+            x = sd.mmul(x, w).add(b)
+
+            if (i < layerSizes.size - 2) {
+                x = sd.math.relu(x)
+            }
+        }
+
+        val output = sd.nn.softmax("output", x)
+
+        val onnxFile = tempDir.resolve("deep_network.onnx").toFile()
+        sd.exportToOnnx(onnxFile)
+
+        val modelProto = parseOnnxModel(onnxFile)
+        assertTrue(modelProto.graph.initializerCount >= 8, "Should have weights and biases for all layers")
+    }
+
+    // ========================================
+    // Validation Tests
+    // ========================================
+
+    @Test
+    fun testCanExportToOnnx() {
+        val sd = SameDiff.create()
+
+        val x = sd.placeHolder("x", DataType.FLOAT, 2, 3)
+        val y = sd.placeHolder("y", DataType.FLOAT, 2, 3)
+        val sum = x.add(y)
+        val result = sd.math.relu(sum)
+        result.rename("output")
+
+        assertTrue(sd.canExportToOnnx(), "Simple graph should be exportable")
+    }
+
+    @Test
+    fun testGetUnsupportedOps() {
+        val sd = SameDiff.create()
+        val x = sd.placeHolder("x", DataType.FLOAT, 2, 3)
+        val result = sd.math.relu(x)
+        result.rename("output")
+
+        val unsupported = sd.getUnsupportedOnnxOps()
+        assertTrue(unsupported.isEmpty(), "Should have no unsupported ops for simple relu graph")
+    }
+
+    @Test
+    fun testValidateForExport() {
+        val sd = SameDiff.create()
+        val x = sd.placeHolder("x", DataType.FLOAT, 2, 3)
+        val y = sd.constant("y", Nd4j.ones(2, 3))
+        val result = x.add(y)
+        result.rename("output")
+
+        val unsupported = OnnxExporter.validateForExport(sd)
+        assertTrue(unsupported.isEmpty(), "Add op should be supported")
+    }
+
+    // ========================================
+    // Op Mapper Tests
+    // ========================================
+
+    @Test
+    fun testOpMapperMappings() {
+        // Verify basic mappings exist
+        assertEquals("Add", SameDiffToOnnxOpMapper.getOnnxOpName("add"))
+        assertEquals("Sub", SameDiffToOnnxOpMapper.getOnnxOpName("subtract"))
+        assertEquals("Mul", SameDiffToOnnxOpMapper.getOnnxOpName("multiply"))
+        assertEquals("Div", SameDiffToOnnxOpMapper.getOnnxOpName("divide"))
+        assertEquals("Relu", SameDiffToOnnxOpMapper.getOnnxOpName("relu"))
+        assertEquals("Sigmoid", SameDiffToOnnxOpMapper.getOnnxOpName("sigmoid"))
+        assertEquals("Tanh", SameDiffToOnnxOpMapper.getOnnxOpName("tanh"))
+        assertEquals("Softmax", SameDiffToOnnxOpMapper.getOnnxOpName("softmax"))
+        assertEquals("MatMul", SameDiffToOnnxOpMapper.getOnnxOpName("matmul"))
+        assertEquals("Reshape", SameDiffToOnnxOpMapper.getOnnxOpName("reshape"))
+    }
+
+    @Test
+    fun testOpMapperTrigFunctions() {
+        assertEquals("Sin", SameDiffToOnnxOpMapper.getOnnxOpName("sin"))
+        assertEquals("Cos", SameDiffToOnnxOpMapper.getOnnxOpName("cos"))
+        assertEquals("Tan", SameDiffToOnnxOpMapper.getOnnxOpName("tan"))
+        assertEquals("Asin", SameDiffToOnnxOpMapper.getOnnxOpName("asin"))
+        assertEquals("Acos", SameDiffToOnnxOpMapper.getOnnxOpName("acos"))
+        assertEquals("Atan", SameDiffToOnnxOpMapper.getOnnxOpName("atan"))
+        assertEquals("Sinh", SameDiffToOnnxOpMapper.getOnnxOpName("sinh"))
+        assertEquals("Cosh", SameDiffToOnnxOpMapper.getOnnxOpName("cosh"))
+    }
+
+    @Test
+    fun testOpMapperReductions() {
+        assertEquals("ReduceSum", SameDiffToOnnxOpMapper.getOnnxOpName("reduce_sum"))
+        assertEquals("ReduceMean", SameDiffToOnnxOpMapper.getOnnxOpName("reduce_mean"))
+        assertEquals("ReduceMax", SameDiffToOnnxOpMapper.getOnnxOpName("reduce_max"))
+        assertEquals("ReduceMin", SameDiffToOnnxOpMapper.getOnnxOpName("reduce_min"))
+        assertEquals("ReduceProd", SameDiffToOnnxOpMapper.getOnnxOpName("reduce_prod"))
+    }
+
+    @Test
+    fun testSupportedOps() {
+        val supportedOps = SameDiffToOnnxOpMapper.getSupportedOps()
+
+        assertTrue(supportedOps.contains("add"), "add should be supported")
+        assertTrue(supportedOps.contains("relu"), "relu should be supported")
+        assertTrue(supportedOps.contains("softmax"), "softmax should be supported")
+        assertTrue(supportedOps.contains("reshape"), "reshape should be supported")
+        assertTrue(supportedOps.contains("concat"), "concat should be supported")
+        assertTrue(supportedOps.contains("reduce_sum"), "reduce_sum should be supported")
+    }
+
+    @Test
+    fun testIsSupported() {
+        assertTrue(SameDiffToOnnxOpMapper.isSupported("add"))
+        assertTrue(SameDiffToOnnxOpMapper.isSupported("relu"))
+        assertTrue(SameDiffToOnnxOpMapper.isSupported("matmul"))
+        assertFalse(SameDiffToOnnxOpMapper.isSupported("nonexistent_op"))
+    }
+
+    // ========================================
+    // Round Trip Tests
+    // ========================================
+
+    @Test
+    fun testRoundTripSimpleAdd() {
+        val sd = SameDiff.create()
+        val x = sd.placeHolder("x", DataType.FLOAT, 2, 3)
+        val y = sd.constant("y", Nd4j.ones(2, 3).castTo(DataType.FLOAT))
+        val result = x.add(y)
+        result.rename("output")
+
+        val onnxFile = tempDir.resolve("roundtrip_add.onnx").toFile()
+        sd.exportToOnnx(onnxFile)
+
+        // Import the exported model
+        val importer = OnnxFrameworkImporter()
+        val importedSd = importer.runImport(onnxFile.absolutePath, emptyMap())
+
+        assertNotNull(importedSd, "Imported SameDiff should not be null")
+        assertTrue(importedSd.variables.isNotEmpty(), "Should have variables")
+        assertTrue(importedSd.ops.isNotEmpty(), "Should have ops")
+    }
+
+    @Test
+    fun testRoundTripWithMultipleOps() {
+        val sd = SameDiff.create()
+
+        val x = sd.placeHolder("x", DataType.FLOAT, -1, 4)
+        val w = sd.variable("w", Nd4j.randn(4, 3).castTo(DataType.FLOAT))
+        val b = sd.variable("b", Nd4j.zeros(3).castTo(DataType.FLOAT))
+
+        var result = sd.mmul(x, w)
+        result = result.add(b)
+        result = sd.math.relu(result)
+        result.rename("output")
+
+        val onnxFile = tempDir.resolve("roundtrip_multi.onnx").toFile()
+        sd.exportToOnnx(onnxFile)
+
+        val importer = OnnxFrameworkImporter()
+        val importedSd = importer.runImport(onnxFile.absolutePath, emptyMap())
+
+        assertNotNull(importedSd)
+        assertTrue(importedSd.ops.isNotEmpty())
+    }
+
+    // ========================================
+    // Training State Tests
+    // ========================================
+
+    @Test
+    fun testTrainingStateExport() {
+        val sd = SameDiff.create()
+
+        val x = sd.placeHolder("x", DataType.FLOAT, -1, 4)
+        val labels = sd.placeHolder("labels", DataType.FLOAT, -1, 2)
+        val w = sd.variable("w", Nd4j.randn(4, 2).castTo(DataType.FLOAT))
+
+        val pred = sd.mmul(x, w)
+        val loss = sd.loss.meanSquaredError("loss", labels, pred, null)
+
+        val config = TrainingConfig.builder()
+            .updater(Adam(0.001))
+            .dataSetFeatureMapping("x")
+            .dataSetLabelMapping("labels")
+            .build()
+
+        sd.trainingConfig = config
+
+        val trainingFile = tempDir.resolve("training_state.training").toFile()
+        TrainingStateExporter.export(sd, trainingFile)
+
+        assertTrue(trainingFile.exists(), "Training state file should be created")
+        assertTrue(trainingFile.length() > 0, "Training state file should have content")
+    }
+
+    @Test
+    fun testExportWithTrainingState() {
+        val sd = SameDiff.create()
+
+        val x = sd.placeHolder("x", DataType.FLOAT, -1, 4)
+        val labels = sd.placeHolder("labels", DataType.FLOAT, -1, 2)
+        val w = sd.variable("w", Nd4j.randn(4, 2).castTo(DataType.FLOAT))
+
+        val pred = sd.mmul(x, w)
+        sd.loss.meanSquaredError("loss", labels, pred, null)
+
+        val config = TrainingConfig.builder()
+            .updater(Sgd(0.01))
+            .dataSetFeatureMapping("x")
+            .dataSetLabelMapping("labels")
+            .build()
+
+        sd.trainingConfig = config
+
+        val onnxFile = tempDir.resolve("model_with_training.onnx").toFile()
+        sd.exportToOnnxWithTraining(onnxFile)
+
+        assertTrue(onnxFile.exists(), "ONNX file should exist")
+
+        val trainingFile = File(onnxFile.absolutePath + ".training")
+        assertTrue(trainingFile.exists(), "Training state file should exist")
+    }
+
+    // ========================================
+    // Data Type Tests
+    // ========================================
+
+    @ParameterizedTest
+    @ValueSource(strings = ["FLOAT", "DOUBLE"])
+    fun testExportWithDifferentDataTypes(dataTypeStr: String) {
+        val dataType = DataType.valueOf(dataTypeStr)
+
+        val sd = SameDiff.create()
+        val x = sd.placeHolder("x", dataType, 2, 3)
+        val y = sd.constant("y", Nd4j.ones(dataType, 2, 3))
+        val result = x.add(y)
+        result.rename("output")
+
+        val onnxFile = tempDir.resolve("datatype_${dataTypeStr.lowercase()}.onnx").toFile()
+        sd.exportToOnnx(onnxFile)
+
+        val modelProto = parseOnnxModel(onnxFile)
+        assertNotNull(modelProto.graph)
+    }
+
+    // ========================================
+    // Edge Cases Tests
+    // ========================================
+
+    @Test
+    fun testExportEmptyGraph() {
+        val sd = SameDiff.create()
+        val x = sd.placeHolder("x", DataType.FLOAT, 2, 3)
+        x.rename("output")  // Just a passthrough
+
+        val onnxFile = tempDir.resolve("empty_graph.onnx").toFile()
+        sd.exportToOnnx(onnxFile)
+
+        assertTrue(onnxFile.exists())
+    }
+
+    @Test
+    fun testExportWithLongVariableNames() {
+        val sd = SameDiff.create()
+
+        val longName = "a".repeat(100)
+        val x = sd.placeHolder(longName, DataType.FLOAT, 2, 3)
+        val result = sd.math.relu(x)
+        result.rename("output_with_very_long_name_that_should_still_work")
+
+        val onnxFile = tempDir.resolve("long_names.onnx").toFile()
+        sd.exportToOnnx(onnxFile)
+
+        val modelProto = parseOnnxModel(onnxFile)
+        assertNotNull(modelProto.graph)
+    }
+
+    @Test
+    fun testExportScalarOperations() {
+        val sd = SameDiff.create()
+
+        val x = sd.placeHolder("x", DataType.FLOAT, 2, 3)
+        val scaled = x.mul(2.0)
+        val shifted = scaled.add(1.0)
+        shifted.rename("output")
+
+        val onnxFile = tempDir.resolve("scalar_ops.onnx").toFile()
+        sd.exportToOnnx(onnxFile)
+
+        assertTrue(onnxFile.exists())
+    }
+
+    // ========================================
+    // Helper Methods
+    // ========================================
+
+    private fun parseOnnxModel(file: File): Onnx.ModelProto {
+        return file.inputStream().use { Onnx.ModelProto.parseFrom(it) }
+    }
+}

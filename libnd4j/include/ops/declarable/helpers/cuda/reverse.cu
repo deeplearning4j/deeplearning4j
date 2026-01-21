@@ -274,10 +274,22 @@ static void reverseSequence_(LaunchContext* context, NDArray* input, NDArray* se
       } else {
         auto inInnerSet = inSubArrsSet.at(i)->allTensorsAlongDimension({seqDim});
         auto outInnerSet = outSubArrsSet.at(i)->allTensorsAlongDimension({seqDim});
-        for (int j = 0; j < inInnerSet.size(); ++j)
-          reverseArray<T>(context, inInnerSet.at(j), outInnerSet.at(j), numOfElemsToReverse);
+        for (int j = 0; j < inInnerSet.size(); ++j) {
+          // Use specialBuffer directly - parent arrays are already prepared
+          auto inArr = inInnerSet.at(j);
+          auto outArr = outInnerSet.at(j);
+          LongType numOfReverse = numOfElemsToReverse;
+          if (numOfReverse == 0) numOfReverse = inArr->lengthOf();
+
+          reverseArrayKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
+              inArr->specialBuffer(), inArr->specialShapeInfo(),
+              outArr->specialBuffer(), outArr->specialShapeInfo(), numOfReverse);
+        }
       }
     }
+
+    // Synchronize stream to ensure all kernel launches complete before returning
+    cudaStreamSynchronize(*stream);
 
     delete dimensions;
   }
@@ -287,8 +299,13 @@ void reverseSequence(LaunchContext* context, NDArray* input, NDArray* seqLengths
                      int seqDim, const int batchDim) {
   NDArray::prepareSpecialUse({output}, {input, seqLengths});
 
-  // if op isn't inplace - copy original data into output array
-  if (output->specialBuffer() != input->specialBuffer()) output->assign(input);
+  // Copy original data into output array using device-to-device copy
+  // This must happen after prepareSpecialUse to ensure device buffers are valid
+  if (output->specialBuffer() != input->specialBuffer()) {
+    cudaMemcpyAsync(output->specialBuffer(), input->specialBuffer(),
+                    input->lengthOf() * input->sizeOfT(),
+                    cudaMemcpyDeviceToDevice, *context->getCudaStream());
+  }
 
   BUILD_SINGLE_SELECTOR(input->dataType(), reverseSequence_, (context, input, seqLengths, output, seqDim, batchDim),
                         SD_COMMON_TYPES);

@@ -61,7 +61,7 @@ set(OBJECT_LIB_NAME "${SD_LIBRARY_NAME}_object")
 add_library(${OBJECT_LIB_NAME} OBJECT ${ALL_SOURCES})
 add_dependencies(${OBJECT_LIB_NAME} flatbuffers_interface)
 
-# CRITICAL: Force external dependencies to build BEFORE any object files compile
+# Force external dependencies to build BEFORE any object files compile
 # Must depend on the ExternalProject targets directly to block compilation
 
 # OneDNN helper

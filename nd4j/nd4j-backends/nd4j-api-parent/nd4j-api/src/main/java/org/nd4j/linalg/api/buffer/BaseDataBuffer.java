@@ -2132,10 +2132,22 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param reallyConstant
      */
     public void setConstant(boolean reallyConstant) {
-        deallocator().setConstant(reallyConstant);
+        if (ptrDataBuffer != null && !ptrDataBuffer.isNull()) {
+            ptrDataBuffer.setConstant(reallyConstant);
+        }
+
+        if (ptrDataBuffer != null && ptrDataBuffer.getDeallocator() != null) {
+            ptrDataBuffer.getDeallocator().setConstant(reallyConstant);
+        }
+
+        Deallocator dealloc = deallocator();
+        if (dealloc != null) {
+            dealloc.setConstant(reallyConstant);
+        }
+
+        // Now safe to set Java-side flags
         this.constant = reallyConstant;
         Nd4j.getDeallocatorService().getReferenceMap().remove(this.deallocationId);
-
     }
 
     @Override
@@ -2216,8 +2228,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected void release() {
         this.released.set(true);
 
-        // CRITICAL: Actually deallocate native memory immediately when close() is called
-        // Previously this only removed from tracking but left native memory allocated until GC
         if (deallocator != null && !deallocator.isConstant()) {
             try {
                 deallocator.deallocate();

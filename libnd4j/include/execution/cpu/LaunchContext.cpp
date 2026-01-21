@@ -60,7 +60,6 @@ LaunchContext::~LaunchContext() {
 }
 
 // This avoids static destruction order crashes during JVM shutdown
-// CRITICAL FIX: Use pointer to prevent static destructor from running.
 // The vector is intentionally leaked to avoid crashes during shutdown when:
 // 1. An exception is thrown that references LaunchContext
 // 2. JVM shuts down and runs static destructors

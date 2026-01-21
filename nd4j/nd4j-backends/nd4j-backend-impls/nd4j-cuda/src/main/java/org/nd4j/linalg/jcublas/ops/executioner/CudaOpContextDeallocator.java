@@ -19,26 +19,21 @@
 package org.nd4j.linalg.jcublas.ops.executioner;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.device.DeviceDescriptor;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.memory.Deallocator;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueContext;
 
 /**
  * Deallocator for CudaOpContext that ensures proper cleanup order to prevent use-after-free.
- *
- * <p><b>CRITICAL:</b> The deallocation order is essential:</p>
- * <ol>
- *   <li>Call ctxPurge() to clear native Context's fastpath pointers (prevents dangling refs)</li>
- *   <li>Delete the native Context</li>
- * </ol>
- *
- * <p>Without this order, the native Context might still hold pointers to deleted NDArray* objects,
- * causing "invalid rank" errors when shape info is accessed from freed memory.</p>
  */
 @Slf4j
 public class CudaOpContextDeallocator implements Deallocator {
     private transient final OpaqueContext context;
+    private final int deviceId;
     private volatile boolean deallocated = false;
 
     /**
@@ -48,6 +43,7 @@ public class CudaOpContextDeallocator implements Deallocator {
      */
     public CudaOpContextDeallocator(CudaOpContext ctx) {
         this.context = (OpaqueContext) ctx.contextPointer();
+        this.deviceId = ctx.targetDevice();
     }
 
     @Override
@@ -61,20 +57,46 @@ public class CudaOpContextDeallocator implements Deallocator {
                 return;
             }
 
+            if (context == null || context.isNull()) {
+                deallocated = true;
+                return;
+            }
+
             try {
                 NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
-                // Step 1: CRITICAL - Clear the native Context's fastpath pointers FIRST.
-                // This prevents the Context from holding dangling pointers to arrays we're about to delete.
-                // ctxPurge() calls Context::clearFastPath() which clears _fastpath_in and _fastpath_out.
-                if (context != null && !context.isNull()) {
-                    nativeOps.ctxPurge(context);
+                int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+                boolean switchedDevice = false;
+
+                if (currentDevice != deviceId) {
+                    // Use unsafeSetDevice which properly updates both native device
+                    // AND resets the cached CUDA context (ThreadLocal) for this thread.
+                    // Just calling nativeOps.setDevice() doesn't update the ThreadLocal context,
+                    // so commit() would sync the wrong device's streams.
+                    Nd4j.getAffinityManager().unsafeSetDevice(deviceId);
+                    switchedDevice = true;
                 }
 
-                // Step 2: Delete the native Context object.
-                // Now safe to delete since fastpath is cleared.
-                if (context != null && !context.isNull()) {
-                    nativeOps.deleteGraphContext(context);
+                try {
+                    Nd4j.getExecutioner().commit();
+
+                    // Step 1: Clear the native Context's fastpath pointers FIRST.
+                    // This prevents the Context from holding dangling pointers to arrays.
+                    // Double-check isNull() in case close() was called concurrently.
+                    if (context != null && !context.isNull()) {
+                        nativeOps.ctxPurge(context);
+                    }
+
+                    // Step 2: Delete the native Context object.
+                    // Double-check isNull() again for same reason.
+                    if (context != null && !context.isNull()) {
+                        nativeOps.deleteGraphContext(context);
+                    }
+                } finally {
+                    // Restore original device context
+                    if (switchedDevice) {
+                        Nd4j.getAffinityManager().unsafeSetDevice(currentDevice);
+                    }
                 }
 
             } catch (Exception e) {

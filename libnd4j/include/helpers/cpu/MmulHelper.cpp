@@ -302,6 +302,14 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
   const bool cRowMajor = (C->strideAt(1) == 1) && (C->strideAt(0) == N);
 
   if (ABC && aRowMajor && bRowMajor && cRowMajor && Environment::getInstance().isEnableBlas()) {
+    // Validate dimensions before BLAS call to prevent crashes
+    if (M <= 0 || N <= 0 || K <= 0) {
+      std::string errorMessage = "MmulHelper::mmul (fast path): Invalid matrix dimensions. ";
+      errorMessage += "M=" + std::to_string(M) + ", N=" + std::to_string(N) + ", K=" + std::to_string(K);
+      errorMessage += ". Shapes: A=" + ShapeUtils::shapeAsString(A) + ", B=" + ShapeUtils::shapeAsString(B) + ", C=" + ShapeUtils::shapeAsString(C);
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+
     // Optimized fast path for contiguous row-major arrays
     auto& blasHelper = BlasHelper::getInstance();
     auto blasLock = blasHelper.lockBlas();
@@ -363,6 +371,22 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
     const int lda = (aMcont && aKcont) ? M : !aMcont ? pA->strideAt(0) : pA->strideAt(1);
     const int ldb = (bKcont && bNcont) ? K : !bKcont ? pB->strideAt(0) : pB->strideAt(1);
     const int ldc = (cMcont && cNcont) ? M : !cMcont ? pC->strideAt(0) : pC->strideAt(1);
+
+    // Validate BLAS parameters before calling to prevent crashes
+    // For row-major: lda >= K (or M if transposed), ldb >= N (or K if transposed), ldc >= N (or M if transposed)
+    // For col-major: lda >= M (or K if transposed), ldb >= K (or N if transposed), ldc >= M (or N if transposed)
+    if (lda <= 0 || ldb <= 0 || ldc <= 0) {
+      std::string errorMessage = "MmulHelper::mmul: Invalid leading dimension(s). ";
+      errorMessage += "lda=" + std::to_string(lda) + ", ldb=" + std::to_string(ldb) + ", ldc=" + std::to_string(ldc);
+      errorMessage += ". Shapes: A=" + ShapeUtils::shapeAsString(pA) + ", B=" + ShapeUtils::shapeAsString(pB) + ", C=" + ShapeUtils::shapeAsString(pC);
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+
+    if (M <= 0 || N <= 0 || K <= 0) {
+      std::string errorMessage = "MmulHelper::mmul: Invalid matrix dimensions. ";
+      errorMessage += "M=" + std::to_string(M) + ", N=" + std::to_string(N) + ", K=" + std::to_string(K);
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
 
     // Acquire BLAS lock to prevent OpenBLAS TLS corruption and race conditions
     auto blasLock = BlasHelper::getInstance().lockBlas();

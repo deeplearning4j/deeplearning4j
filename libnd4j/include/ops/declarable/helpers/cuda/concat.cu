@@ -110,6 +110,22 @@ SD_HOST static void concatCudaLauncher(const int blocksPerGrid, const int thread
 void concat(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
   const int numInArrs = inArrs.size();
 
+  // Handle case where there are no input arrays
+  if (numInArrs == 0) {
+    return;
+  }
+
+  // Handle case where output is empty - check both isEmpty() flag AND length
+  // Arrays with shape like [0,1] might not have ARRAY_EMPTY flag but still have no data
+  if (output.isEmpty() || output.lengthOf() == 0) {
+    return;
+  }
+
+  // Also check if output buffer is null (defensive check)
+  if (output.getDataBuffer() == nullptr) {
+    return;
+  }
+
   NDArray::prepareSpecialUse({&output}, inArrs);
 
   bool luckCase1 = false;
@@ -119,9 +135,12 @@ void concat(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray
   std::vector<const LongType*> hInShapeInfo(numInArrs);
  std::vector <int> lenPerArray(numInArrs);
   for (int i = 0; i < numInArrs; i++) {
-    hInBuffers[i] = inArrs[i]->specialBuffer();
+    // Check for empty arrays before accessing specialBuffer to avoid null pointer exception
+    // Check both isEmpty() flag AND length AND buffer pointer
+    bool isEffectivelyEmpty = inArrs[i]->isEmpty() || inArrs[i]->lengthOf() == 0 || inArrs[i]->getDataBuffer() == nullptr;
+    hInBuffers[i] = isEffectivelyEmpty ? nullptr : inArrs[i]->specialBuffer();
     hInShapeInfo[i] = inArrs[i]->specialShapeInfo();
-    lenPerArray[i] = inArrs[i]->isEmpty() ? 0 : inArrs[i]->isScalar() ? 1 : inArrs[i]->lengthOf();
+    lenPerArray[i] = isEffectivelyEmpty ? 0 : inArrs[i]->isScalar() ? 1 : inArrs[i]->lengthOf();
   }
 
   PointersManager manager(context, "helpers::concat");
@@ -159,8 +178,7 @@ void concat(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray
                         SD_COMMON_TYPES);
 
   manager.synchronize();
-  manager.synchronize();
-  output.syncToHost();
+
   NDArray::registerSpecialUse({&output}, inArrs);
 }
 

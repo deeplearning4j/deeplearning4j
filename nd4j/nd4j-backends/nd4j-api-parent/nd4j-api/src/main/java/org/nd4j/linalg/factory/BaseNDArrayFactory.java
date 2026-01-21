@@ -345,20 +345,15 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         INDArray out = null;
         boolean firstBufferUsed = false;
         try {
-            out = Nd4j.create(shape.get(0));
+            out = Nd4j.createFromDescriptor(shape.get(0));
             firstBufferUsed = true;
             op.setOutputArgument(0, out);
             Nd4j.exec(op);
             return out;
         } finally {
-            // Clean up unused shape buffers to prevent memory leak
-            int startIndex = firstBufferUsed ? 1 : 0;
-            for (int i = startIndex; i < shape.size(); i++) {
-                DataBuffer db = shape.get(i);
-                if (db != null) {
-                    db.close();
-                }
-            }
+            // NOTE: Shape buffers returned by calculateOutputShape() are CACHED by ConstantShapeHelper
+            // and must NOT be closed here - they are shared across operations.
+            // Closing them would corrupt the shape cache, leading to use-after-free bugs.
         }
     }
 

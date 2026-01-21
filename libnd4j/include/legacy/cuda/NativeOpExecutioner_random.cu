@@ -55,6 +55,11 @@
 void NativeOpExecutioner::execRandom(sd::LaunchContext* lc, int opNum, sd::Pointer stateHost, void* hZ,
                                      sd::LongType const* hZShapeInfo, void* dZ, sd::LongType const* dZShapeInfo,
                                      void* extraArguments) {
+  // Validate stateHost pointer - it must point to a valid RandomGenerator object
+  if (stateHost == nullptr) {
+    THROW_EXCEPTION("execRandom: stateHost is nullptr - RandomGenerator pointer is invalid");
+  }
+
   auto stream = lc->getCudaStream();
   auto sizeOf = sizeof(sd::graph::RandomGenerator);
   sd::Pointer stateDevice;
@@ -87,6 +92,11 @@ void NativeOpExecutioner::execRandom(sd::LaunchContext* lc, int opNum, sd::Point
                                      sd::LongType const* hXShapeInfo, void const* dX, sd::LongType const* dXShapeInfo, void* hZ,
                                      sd::LongType const* hZShapeInfo, void* dZ, sd::LongType const* dZShapeInfo,
                                      void* extraArguments) {
+  // Validate stateHost pointer - it must point to a valid RandomGenerator object
+  if (stateHost == nullptr) {
+    THROW_EXCEPTION("execRandom: stateHost is nullptr - RandomGenerator pointer is invalid");
+  }
+
   auto stream = lc->getCudaStream();
 
   auto sizeOf = sizeof(sd::graph::RandomGenerator);
@@ -122,6 +132,11 @@ void NativeOpExecutioner::execRandom(sd::LaunchContext* lc, int opNum, sd::Point
                                      void const* hY, sd::LongType const* hYShapeInfo, void const* dY,
                                      sd::LongType const* dYShapeInfo, void* hZ, sd::LongType const* hZShapeInfo, void* dZ,
                                      sd::LongType const* dZShapeInfo, void* extraArguments) {
+  // Validate stateHost pointer - it must point to a valid RandomGenerator object
+  if (stateHost == nullptr) {
+    THROW_EXCEPTION("execRandom: stateHost is nullptr - RandomGenerator pointer is invalid");
+  }
+
   auto stream = lc->getCudaStream();
   auto sizeOf = sizeof(sd::graph::RandomGenerator);
   sd::Pointer stateDevice;

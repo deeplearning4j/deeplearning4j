@@ -86,8 +86,6 @@ void throwException(const char* exceptionMessage) {
 #endif
 
   // Set error context for Java to retrieve using safe wrapper
-  // CRITICAL: Don't directly call LaunchContext during exception handling
-  // to avoid static initialization/destruction order issues
   safeSetErrorContext(1, exceptionMessage);
 
 #ifdef __cpp_exceptions
@@ -102,8 +100,6 @@ void throwException(const char* exceptionMessage) {
   fflush(stderr);
 
   // Set error context for Java to retrieve using safe wrapper
-  // CRITICAL: Don't directly call LaunchContext during exception handling
-  // to avoid static initialization/destruction order issues
   safeSetErrorContext(1, exceptionMessage);
 
 #ifdef __cpp_exceptions

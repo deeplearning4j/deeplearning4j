@@ -32,6 +32,10 @@ public class NoOpMemoryMgr extends AbstractMemoryMgr implements SessionMemMgr {
 
     @Override
     public INDArray allocate(boolean detached, DataType dataType, long... shape) {
+        // Handle empty arrays (shape contains 0)
+        if (shape != null && shape.length > 0 && org.nd4j.common.util.ArrayUtil.prodLong(shape) == 0) {
+            return Nd4j.emptyWithShape(shape, dataType);
+        }
         return Nd4j.createUninitialized(dataType, shape);
     }
 

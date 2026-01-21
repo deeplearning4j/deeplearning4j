@@ -971,154 +971,7 @@ void Environment::initCudaEnvironment() {
 #endif
 
 
-void Environment::setCudaCurrentDevice(int device) {
-#ifdef SD_CUDA
- if (device >= 0 && device < _cudaDeviceCount.load()) {
-   cudaError_t err = cudaSetDevice(device);
-   if (err == cudaSuccess) {
-     _cudaCurrentDevice.store(device);
-   } else {
-     sd_printf("Warning: Failed to set CUDA device to %d, error: %s\n", device, cudaGetErrorString(err));
-   }
- } else {
-   sd_printf("Warning: Attempted to set invalid CUDA device %d (valid range: 0-%d)\n", device, _cudaDeviceCount.load() - 1);
- }
-#endif
-}
-
-void Environment::setCudaMemoryPinned(bool pinned) {
- _cudaMemoryPinned.store(pinned);
-}
-
-void Environment::setCudaUseManagedMemory(bool managed) {
- _cudaUseManagedMemory.store(managed);
-}
-
-void Environment::setCudaMemoryPoolSize(int sizeInMB) {
- if (sizeInMB >= 0) {
-   _cudaMemoryPoolSize.store(sizeInMB);
- }
-}
-
-void Environment::setCudaForceP2P(bool forceP2P) {
- _cudaForceP2P.store(forceP2P);
-}
-
-void Environment::setCudaAllocatorEnabled(bool enabled) {
- _cudaAllocatorEnabled.store(enabled);
-}
-
-void Environment::setCudaMaxBlocks(int blocks) {
- if (blocks > 0) {
-   _cudaMaxBlocks.store(blocks);
- }
-}
-
-void Environment::setCudaMaxThreadsPerBlock(int threads) {
- if (threads > 0) {
-   _cudaMaxThreadsPerBlock.store(threads);
- }
-}
-
-void Environment::setCudaAsyncExecution(bool async) {
- _cudaAsyncExecution.store(async);
-}
-
-void Environment::setCudaStreamLimit(int limit) {
- if (limit > 0) {
-   _cudaStreamLimit.store(limit);
- }
-}
-
-void Environment::setCudaUseDeviceHost(bool useDeviceHost) {
- _cudaUseDeviceHost.store(useDeviceHost);
-}
-
-void Environment::setCudaEventLimit(int limit) {
- if (limit > 0) {
-   _cudaEventLimit.store(limit);
- }
-}
-
-void Environment::setCudaCachingAllocatorLimit(int limitInMB) {
- if (limitInMB >= 0) {
-   _cudaCachingAllocatorLimit.store(limitInMB);
- }
-}
-
-void Environment::setCudaUseUnifiedMemory(bool unified) {
- _cudaUseUnifiedMemory.store(unified);
-}
-
-void Environment::setCudaPrefetchSize(int sizeInMB) {
- if (sizeInMB >= 0) {
-   _cudaPrefetchSize.store(sizeInMB);
- }
-}
-
-void Environment::setCudaGraphOptimization(bool enabled) {
- _cudaGraphOptimization.store(enabled);
-}
-
-void Environment::setCudaTensorCoreEnabled(bool enabled) {
-#ifdef SD_CUDA
- _cudaTensorCoreEnabled.store(enabled);
-
- // Apply TensorCore settings if the device supports it
- if (_cudaCurrentDevice.load() >= 0 && _cudaCurrentDevice.load() < _cudaDeviceCount.load()) {
-   int deviceId = _cudaCurrentDevice.load();
-   if (_capabilities[deviceId].first() >= 7) {  // Volta and newer architectures support TensorCores
-     // Instead of using attribute directly, use the math mode flags
-     // which are more widely supported across CUDA versions
-     cudaError_t err;
-     if (enabled) {
-       // Use the most permissive math mode that allows tensor cores
-       err = cudaDeviceSetSharedMemConfig(cudaSharedMemBankSizeEightByte);
-       if (err != cudaSuccess) {
-         sd_printf("Warning: Failed to set shared memory config for tensor cores, error: %s\n",
-                   cudaGetErrorString(err));
-       }
-     }
-   }
- }
-#endif
-}
-
-void Environment::setCudaBlockingSync(int mode) {
-#ifdef SD_CUDA
- if (mode >= 0 && mode <= 1) {
-   _cudaBlockingSync.store(mode);
-   cudaSetDeviceFlags(mode == 1 ? cudaDeviceBlockingSync : cudaDeviceScheduleSpin);
- }
-#endif
-}
-
-void Environment::setCudaDeviceSchedule(int schedule) {
-#ifdef SD_CUDA
- if (schedule >= 0 && schedule <= 3) {
-   _cudaDeviceSchedule.store(schedule);
-
-   unsigned int flag;
-   switch (schedule) {
-     case 1:
-       flag = cudaDeviceScheduleSpin;
-       break;
-     case 2:
-       flag = cudaDeviceScheduleYield;
-       break;
-     case 3:
-       flag = cudaDeviceScheduleBlockingSync;
-       break;
-     case 0:
-     default:
-       flag = cudaDeviceScheduleAuto;
-       break;
-   }
-
-   cudaSetDeviceFlags(flag);
- }
-#endif
-}
+// CUDA configuration setters moved to Environment_CudaConfig.cpp
 
  bool Environment::isCheckOutputChange() { return _checkOutputChange.load(); }
 
@@ -1376,5 +1229,30 @@ void Environment::setOpenBlasThreads(int threads) {
  void Environment::setOpContextTracking(bool enabled) {
    _opContextTracking.store(enabled);
    graph::OpContextLifecycleTracker::getInstance().setEnabled(enabled);
+ }
+
+ // NDArray print options (NumPy-style printoptions)
+ void Environment::setPrintEdgeItems(int edgeItems) {
+   if (edgeItems > 0) {
+     _printEdgeItems.store(edgeItems);
+   }
+ }
+
+ void Environment::setPrintThreshold(int threshold) {
+   if (threshold > 0) {
+     _printThreshold.store(threshold);
+   }
+ }
+
+ void Environment::setPrintLineWidth(int lineWidth) {
+   if (lineWidth > 0) {
+     _printLineWidth.store(lineWidth);
+   }
+ }
+
+ void Environment::setPrintPrecision(int precision) {
+   if (precision >= 0 && precision <= 20) {
+     _printPrecision.store(precision);
+   }
  }
 }

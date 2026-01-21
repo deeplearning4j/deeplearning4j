@@ -234,7 +234,8 @@ public class DefaultMultiBackendExecutioner implements MultiBackendExecutioner {
         }
 
         if (array.data().isHybrid()) {
-            return array.data().asHybrid().getOwnerDevice();
+            DeviceDescriptor effective = array.data().asHybrid().getEffectiveDevice();
+            return effective != null ? effective : DeviceDescriptor.cpu();
         }
 
         // Default to CPU if not hybrid
@@ -268,6 +269,11 @@ public class DefaultMultiBackendExecutioner implements MultiBackendExecutioner {
 
         // If hybrid buffer, use its transfer mechanism
         if (array.data().isHybrid()) {
+            DeviceDescriptor pinned = array.data().asHybrid().getPinnedDevice();
+            if (pinned != null && !pinned.getDeviceId().equals(device.getDeviceId())) {
+                throw new IllegalStateException("Array is pinned to " + pinned.getDeviceId()
+                        + " and cannot be transferred to " + device.getDeviceId());
+            }
             array.data().asHybrid().ensureReadableOn(device);
         }
 
@@ -283,6 +289,11 @@ public class DefaultMultiBackendExecutioner implements MultiBackendExecutioner {
         }
 
         if (array.data().isHybrid()) {
+            DeviceDescriptor pinned = array.data().asHybrid().getPinnedDevice();
+            if (pinned != null && !pinned.getDeviceId().equals(device.getDeviceId())) {
+                throw new IllegalStateException("Array is pinned to " + pinned.getDeviceId()
+                        + " and cannot be prefetched to " + device.getDeviceId());
+            }
             array.data().asHybrid().prefetch(device);
         }
     }

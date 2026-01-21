@@ -75,7 +75,7 @@ static SD_KERNEL void col2imCuda(const void* columns, const LongType* colShapeIn
     LongType imOffset;
     COORDS2INDEX(imRank, imStride, coords, imOffset);
 
-    const auto bSiCoffset = coords[0] * colShape[7] + coords[1] * colShape[8];
+    const auto bSiCoffset = coords[0] * colStride[0] + coords[1] * colStride[1];
 
     const LongType imH = coords[2] + pH;
     const LongType imW = coords[3] + pW;
@@ -126,12 +126,12 @@ void col2im(LaunchContext& context,  NDArray* input, NDArray* output, const Long
   PointersManager manager(&context, "col2im");
   dim3 dims = getCol2imLaunchParams(*input,*output);
 
-  NDArray::prepareSpecialUse({input}, {output});
+  NDArray::prepareSpecialUse({output}, {input});
   BUILD_SINGLE_SELECTOR(input->dataType(), col2imCudaLauncher,
-                        (dims.x, dims.y, dims.z, context.getCudaStream(), output->specialBuffer(),
-                         output->specialShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), sH, sW, pH, pW, dH, dW),
+                        (dims.x, dims.y, dims.z, context.getCudaStream(), input->specialBuffer(),
+                         input->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), sH, sW, pH, pW, dH, dW),
                         SD_FLOAT_TYPES);
-  NDArray::registerSpecialUse({input}, {output});
+  NDArray::registerSpecialUse({output}, {input});
 
   manager.synchronize();
 }

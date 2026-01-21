@@ -176,10 +176,6 @@ public class IndexingTests extends BaseNd4jTestWithBackends {
 
 
     @Test
-    @Disabled //added recently: For some reason this is passing.
-    // The test .equals fails on a comparison of row  vs column vector.
-    //TODO: possibly figure out what's going on here at some point?
-    // - Adam
     public void testTensorGet(Nd4jBackend backend) {
         INDArray threeTwoTwo = Nd4j.linspace(1, 12, 12).reshape(3, 2, 2);
         /*

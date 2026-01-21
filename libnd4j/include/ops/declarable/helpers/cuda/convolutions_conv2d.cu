@@ -90,16 +90,15 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
 
 
 
-  std::vector<sd::LongType> permute = {0, 3, 4, 5, 1, 2};
   block.pushIntermediateResult(col);
 
-  std::vector<sd::LongType> shape = {bS * oH * oW, kW * kH * iC};
-  NDArray* im2colReshape = col->reshape('c', shape, true);
+  std::vector<sd::LongType> shape = {bS * oH * oW, kH * kW * iC};
+  NDArray* colReshaped = colP->reshape('c', shape, false);  // Use colP (permuted), view not copy
 
-  NDArray* weightsPermuted = weights->permute(permuteForOutput, 0, false);
+  NDArray* weightsPermuted = weights->permute(permuteForOutput, false, false);
   std::vector<LongType> weightShape = {iC * kH * kW, oC};
   NDArray* reshapedW = weightsPermuted->reshape('f', weightShape, false);
-  MmulHelper::matmul(im2colReshape, reshapedW, &mmulResult, false, false, 1.0, 0.0);
+  MmulHelper::matmul(colReshaped, reshapedW, &mmulResult, false, false, 1.0, 0.0);
 
 
   std::vector<LongType> mmulResultShape = {oH, oW, bS, oC};
@@ -116,11 +115,16 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
     output->assign(permuted2);
     delete permuted2;
   }
+
+  // Synchronize CUDA stream before cleanup to ensure all async operations complete
+  cudaStreamSynchronize(*ctx->getCudaStream());
+
   delete permuted;
   delete reshaped;
   delete reshapedW;
   delete weightsPermuted;
-  delete im2colReshape;
+  delete colReshaped;
+  delete colP;  // colP is a view that needs to be deleted
 
   //----- add biases if required -----//
   if (bias) {

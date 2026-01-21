@@ -522,10 +522,13 @@ dim3 getSortFullDims(int xLength) {
 }
 
 dim3 getSortTadLarge(int numberTads) {
-  return dim3(numberTads, 512,33768);
+  // dim3.x = threads per block (blockDim), dim3.y = number of blocks (gridDim)
+  // Kernel launches with <<<launchDims.y, launchDims.x, launchDims.z>>>
+  return dim3(512, numberTads, 33768);
 }
 dim3 getSortTadDims(int numberTads) {
-  return dim3(numberTads, 256,2048);
+  // dim3.x = threads per block (blockDim), dim3.y = number of blocks (gridDim)
+  return dim3(256, numberTads, 2048);
 }
 
 dim3 getFillUpSegmentsDims(int numClasses,int length) {
@@ -737,7 +740,9 @@ dim3 getDilation(int outputLength,int weightRank,int outputRank) {
 
 dim3 getGatherLinear(int numSubArrs) {
   int numBlocks = numSubArrs;
-  int threadsPerBlock = SD_MAX_NUM_THREADS;
+  // Use smaller thread count because each thread allocates 2*SD_MAX_RANK*sizeof(LongType)
+  // = 2*32*8 = 512 bytes of local memory for coordinate arrays
+  int threadsPerBlock = 128;
   int sharedMem = 1024;
   threadsPerBlock = getEnvVariable("GRID_SIZE_GATHER", threadsPerBlock);
   numBlocks = getEnvVariable("BLOCK_SIZE_GATHER", numBlocks);

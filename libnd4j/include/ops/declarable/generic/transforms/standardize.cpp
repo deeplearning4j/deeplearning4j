@@ -36,6 +36,12 @@ namespace ops {
 CONFIGURABLE_OP_IMPL(standardize, 1, 1, true, 0, -2) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
+
+  // Handle empty input gracefully - nothing to standardize
+  if (input->isEmpty() || input->lengthOf() == 0) {
+    return sd::Status::OK;
+  }
+
   output->nullify();
   std::vector<sd::LongType> axis;
 
@@ -59,15 +65,10 @@ CONFIGURABLE_OP_IMPL(standardize, 1, 1, true, 0, -2) {
   // Compute mean directly into pre-allocated array
   input->reduceAlongDimension(reduce::Mean, &means, &axis, true, false);
 
-  // Compute variance directly into stdev array (we'll transform it to stdev in-place)
-  // Note: varianceAlongDimension doesn't have keepDims, so we need to use the correct shape
-  // The target already has the right shape due to reducedShapeInfo with keepDims=true
-  input->varianceAlongDimension(variance::SummaryStatsVariance, stdev, false, &axis);
-
-  // Add epsilon BEFORE sqrt: stdev = sqrt(variance + epsilon)
-  // This is the numerically stable formula for LayerNorm
-  stdev.applyScalar(scalar::Add, 1e-5, &stdev);
-  stdev.applyTransform(transform::Sqrt, &stdev);
+  // Compute standard deviation directly into stdev array
+  // Using SummaryStatsStandardDeviation to get std = sqrt(variance)
+  // For plain standardization, we do NOT add epsilon (unlike layer_norm)
+  input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, stdev, false, &axis);
 
   // output = (input - mean) / stdev
   input->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), &means, output, false);
@@ -87,6 +88,12 @@ CUSTOM_OP_IMPL(standardize_bp, 2, 1, false, 0, -2) {
   auto eps = block.width() == 3 ? INPUT_VARIABLE(2) : INPUT_VARIABLE(1);
 
   auto output = OUTPUT_VARIABLE(0);
+
+  // Handle empty input gracefully - nothing to backpropagate
+  if (input->isEmpty() || input->lengthOf() == 0) {
+    return sd::Status::OK;
+  }
+
   std::vector<sd::LongType> axis;
 
   if (block.width() == 3)

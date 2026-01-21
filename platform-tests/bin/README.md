@@ -20,19 +20,31 @@ TEST_RUNNER_PREFIX="valgrind" mvn test
 ```
 
 #### Features
+- **Focused on libnd4j**: Automatically suppresses errors from JVM, system libraries, CUDA, MKL, etc.
 - Automatically generates JVM suppressions for libjvm.so
 - Enables memory leak detection
 - Tracks memory origins
 - Keeps allocation and free stack traces
-- Generates suppression file automatically
 
 #### Options
 The script automatically adds:
 - `--error-limit=no` - No limit on error reporting
-- `--suppressions=<file>` - JVM-specific suppressions
+- `--suppressions=<file>` - Comprehensive suppressions for non-libnd4j libraries
 - `--track-origins=yes` - Track uninitialized value origins
 - `--keep-stacktraces=alloc-and-free` - Keep both allocation and deallocation traces
 - `-Djava.compiler=none` - Disables JIT for better stack traces
+
+#### Suppressed Libraries
+The suppression file (`valgrind_libnd4j.supp`) filters out errors from:
+- JVM libraries (libjvm.so, libjava.so, libnio.so, etc.)
+- System libraries (glibc, libstdc++, libpthread, ld-linux)
+- Math libraries (MKL, OpenBLAS, DNNL/OneDNN)
+- CUDA libraries (libcuda, libcudart, libcublas, libcudnn, libnvidia)
+- OpenMP libraries (libgomp, libiomp)
+- Compression libraries (zlib, lz4, zstd, snappy)
+- Other common libraries (NSS/SSL, X11, HDF5, jemalloc)
+
+This allows you to focus specifically on memory issues in libnd4j code (libnd4jcpu.so, libnd4jcuda.so, libjnind4jcpu.so, libjnind4jcuda.so).
 
 ### 2. AddressSanitizer (ASAN)
 

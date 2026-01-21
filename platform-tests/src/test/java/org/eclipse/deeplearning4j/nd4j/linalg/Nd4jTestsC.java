@@ -323,16 +323,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Disabled // with broadcastables mechanic it'll be ok
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testShapeEqualsOnElementWise(Nd4jBackend backend) {
-        assertThrows(IllegalStateException.class,() -> {
-            Nd4j.ones(10000, 1).sub(Nd4j.ones(1, 2));
-
-        });
-    }
-
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIsMaxVectorCase(Nd4jBackend backend) {
@@ -521,7 +511,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled
     public void testMmulOp(Nd4jBackend backend) throws Exception {
         INDArray arr = Nd4j.create(new double[][] {{1, 2, 3}, {4, 5, 6}});
         INDArray z = Nd4j.create(2, 2);
@@ -1136,7 +1125,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled
     public void testSumAlongDim1sEdgeCases(Nd4jBackend backend) {
         val shapes = new long[][] {
                 //Standard case:
@@ -1550,7 +1538,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled
     public void testSubRowVector(Nd4jBackend backend) {
         INDArray matrix = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3);
         INDArray row = Nd4j.linspace(1, 3, 3, DataType.DOUBLE);
@@ -5491,7 +5478,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled("Crashes")
     @Tag(TagNames.NEEDS_VERIFY)
     public void testNativeSort3(Nd4jBackend backend) {
         int length = isIntegrationTests() ? 1048576 : 16484;
@@ -5686,7 +5672,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled("Crashes")
     @Tag(TagNames.NEEDS_VERIFY)
     public void testNativeSortAlongDimension3(Nd4jBackend backend) {
         INDArray array = Nd4j.create(2000,  2000);
@@ -5723,7 +5708,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled("Crashes")
     @Tag(TagNames.NEEDS_VERIFY)
     public void testNativeSortAlongDimension2(Nd4jBackend backend) {
         INDArray array = Nd4j.create(100, 10);
@@ -7780,7 +7764,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled()
     public void testArangeWithStep(Nd4jBackend backend) {
         int begin = -9, end = 9, step = 2;
         INDArray in = Nd4j.arange(begin, end, step);
@@ -7797,7 +7780,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled("Crashes")
     @Tag(TagNames.NEEDS_VERIFY)
     public void testRollingMean(Nd4jBackend backend) {
         val wsconf = WorkspaceConfiguration.builder()

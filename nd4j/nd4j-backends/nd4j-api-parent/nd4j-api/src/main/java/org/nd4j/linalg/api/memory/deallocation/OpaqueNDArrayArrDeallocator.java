@@ -95,10 +95,6 @@ public class OpaqueNDArrayArrDeallocator implements Deallocatable, Deallocator {
                                 uniqueId, parentArrays != null ? parentArrays.length : 0);
                     }
 
-                    // CRITICAL FIX: Close the uncached OpaqueNDArrays FIRST, before deallocating the PointerPointer.
-                    // OpaqueNDArrayArr.createFrom() uses fromINDArrayUncached() which creates UNCACHED instances
-                    // that own their native sd::NDArray* objects. These must be explicitly closed to free
-                    // the native memory and properly release shape buffer references.
                     OpaqueNDArray[] opaqueArrays = arrayArr.getOpaqueArrays();
                     if (opaqueArrays != null) {
                         for (OpaqueNDArray opaque : opaqueArrays) {

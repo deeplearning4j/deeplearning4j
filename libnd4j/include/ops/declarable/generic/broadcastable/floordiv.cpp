@@ -37,6 +37,33 @@ BROADCASTABLE_OP_IMPL(floordiv, 0, 0) {
 
   REQUIRE_TRUE(!y->isB(), 0, "FLOORDIV OP: you can't divide by bool array!");
 
+  // Check for division by zero for scalar divisor - this is undefined behavior for integers
+  // and will cause crashes. For scalar divisor, check the value directly.
+  if (y->lengthOf() == 1) {
+    // Sync to host to read the value
+    y->syncToHost();
+    bool isZero = false;
+    switch (y->dataType()) {
+      case DataType::INT64:
+        isZero = y->e<sd::LongType>(0) == 0;
+        break;
+      case DataType::INT32:
+        isZero = y->e<int>(0) == 0;
+        break;
+      case DataType::FLOAT32:
+        isZero = y->e<float>(0) == 0.0f;
+        break;
+      case DataType::DOUBLE:
+        isZero = y->e<double>(0) == 0.0;
+        break;
+      default:
+        // For other types, use a generic check via double conversion
+        isZero = y->e<double>(0) == 0.0;
+        break;
+    }
+    REQUIRE_TRUE(!isZero, 0, "FLOORDIV OP: division by zero is not allowed! Divisor value is 0.");
+  }
+
   // Fast path: same shape - skip BroadcastHelper dispatch overhead
   if (x->isSameShape(y)) {
     x->applyPairwiseTransform(pairwise::FloorDiv, y, z, nullptr);

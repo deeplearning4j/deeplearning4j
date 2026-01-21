@@ -147,7 +147,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
             return new Pair<>(retGradient, workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsOut));
         } finally {
-            // CRITICAL: Close OpContext to prevent native memory leak even on exceptions
+            // Close OpContext to prevent native memory leak even on exceptions
             try {
                 ctx.close();
             } catch (Exception e) {
@@ -225,7 +225,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             z = Nd4j.cnn().conv2d(input, weights, bias, config);
             im2col = ctx.getIntermediateResult(0);
         } finally {
-            // CRITICAL: Close OpContext to prevent native memory leak
+            // Close OpContext to prevent native memory leak
             Nd4j.getExecutioner().clearOpContext();
             try {
                 ctx.close();

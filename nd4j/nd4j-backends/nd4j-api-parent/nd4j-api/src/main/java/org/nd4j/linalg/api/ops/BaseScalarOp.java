@@ -82,12 +82,6 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
             Nd4j.getCompressor().decompressi(x);
 
         closeScalarValue();
-        // CRITICAL FIX: Detach scalar from any workspace to prevent buffer invalidation.
-        // When Nd4j.scalar() is called, it uses the current workspace. If the workspace
-        // is later reset or closed (e.g., during SameDiff inference cleanup), the scalar's
-        // buffer becomes invalid, causing the native scalar operation to read stale/wrong data.
-        // This was causing NaN values in sqrt operations because max(negative, 1e-12) was
-        // returning the negative value instead of 1e-12 due to an invalid scalar buffer.
         INDArray scalar = Nd4j.scalar(x.dataType(), num);
         this.scalarValue = scalar.isAttached() ? scalar.detach() : scalar;
 
@@ -99,7 +93,6 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
             Nd4j.getCompressor().decompressi(x);
 
         closeScalarValue();
-        // CRITICAL FIX: Detach scalar from any workspace to prevent buffer invalidation
         INDArray scalar = Nd4j.scalar(x.dataType(), num);
         this.scalarValue = scalar.isAttached() ? scalar.detach() : scalar;
 
@@ -111,7 +104,6 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
             Nd4j.getCompressor().decompressi(x);
 
         closeScalarValue();
-        // CRITICAL FIX: Detach scalar from any workspace to prevent buffer invalidation
         INDArray scalar = Nd4j.scalar(x.dataType(), set);
         this.scalarValue = scalar.isAttached() ? scalar.detach() : scalar;
 
@@ -135,7 +127,6 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
                         Object[] extraArgs) {
         super(sameDiff,inPlace,extraArgs);
         closeScalarValue();
-        // CRITICAL FIX: Detach scalar from any workspace to prevent buffer invalidation
         INDArray scalarArr = Nd4j.scalar(i_v.dataType(), scalar);
         this.scalarValue = scalarArr.isAttached() ? scalarArr.detach() : scalarArr;
         this.xVertexId = i_v.name();
@@ -195,7 +186,6 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     @Override
     public void setScalar(Number scalar) {
         closeScalarValue();
-        // CRITICAL FIX: Detach scalar from any workspace to prevent buffer invalidation
         INDArray scalarArr = Nd4j.scalar(x.dataType(), scalar);
         this.scalarValue = scalarArr.isAttached() ? scalarArr.detach() : scalarArr;
     }
@@ -203,7 +193,6 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     @Override
     public void setScalar(INDArray scalar){
         closeScalarValue();
-        // CRITICAL FIX: Detach scalar from any workspace to prevent buffer invalidation
         this.scalarValue = (scalar != null && scalar.isAttached()) ? scalar.detach() : scalar;
     }
 

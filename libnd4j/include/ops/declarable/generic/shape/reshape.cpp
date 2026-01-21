@@ -23,7 +23,9 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_reshape)
 #include <ops/declarable/headers/shape.h>
+#include <system/Environment.h>
 #include <cstring>
+#include <cstdio>
 namespace sd {
 namespace ops {
 
@@ -45,9 +47,6 @@ CUSTOM_OP_IMPL(reshape, 1, 1, false, 0, -2) {
     return Status::OK;
   }
 
-  // Ensure data is synced to host before reshape operations
-  x->syncToHost();
-
   const sd::LongType len = x->lengthOf();
 
   // Validate lengths match
@@ -58,14 +57,19 @@ CUSTOM_OP_IMPL(reshape, 1, 1, false, 0, -2) {
                  len, z->lengthOf());
   }
 
-  // Fast path: contiguous arrays can use direct memcpy
+  // Check if we're on CPU backend
+  const bool isCpuBackend = Environment::getInstance().isCPU();
+
+  // Fast path: contiguous arrays can use direct memcpy (CPU only)
   const bool xContiguous = x->ordering() == 'c' && shape::strideDescendingCAscendingF(x->shapeInfo());
   const bool zContiguous = z->ordering() == 'c' && shape::strideDescendingCAscendingF(z->shapeInfo());
 
-  if (xContiguous && zContiguous) {
+  if (isCpuBackend && xContiguous && zContiguous) {
+    // CPU path: sync to host and use memcpy
+    x->syncToHost();
     std::memcpy(z->buffer(), x->buffer(), len * x->sizeOfT());
   } else {
-    // General case: use assign which handles non-contiguous layouts
+    // GPU path or non-contiguous: use assign which handles device buffers properly
     z->assign(x);
   }
 
@@ -153,13 +157,15 @@ void computeUnknownDimension(NDArray* x, std::vector<LongType>& shapeNew, int po
   }
 }
 
-LongType* handleEmptyShapeCase(NDArray* x, std::vector<LongType> reshapeArgs, bool newShapeEmpty) {
+LongType* handleEmptyShapeCase(NDArray* x, std::vector<LongType>& shapeNew, bool newShapeEmpty) {
   if(newShapeEmpty) {
-    for(size_t i = 0; i < reshapeArgs.size(); i++) {
-      if(reshapeArgs[i] < 0)
-        reshapeArgs[i] = 1;
+    // shapeNew already has the computed dimensions including the -1 replacement
+    // Just ensure there are no remaining negative values (shouldn't happen)
+    for(size_t i = 0; i < shapeNew.size(); i++) {
+      if(shapeNew[i] < 0)
+        shapeNew[i] = 1;
     }
-    return ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(x->dataType(), reshapeArgs);
+    return ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(x->dataType(), shapeNew);
   }
   return nullptr;
 }
@@ -189,6 +195,39 @@ DECLARE_SHAPE_FN(reshape) {
     };
   } else {
     reshapeArgs = INPUT_VARIABLE(1)->getBufferAsVector<LongType>();
+
+    // VALIDATION: Check for pointer-like values in shape array
+    // This catches a corruption bug where pointer addresses are stored as shape values
+    for (size_t i = 0; i < reshapeArgs.size(); i++) {
+      LongType value = reshapeArgs[i];
+      // Pointer values typically have high bits set (> 0x100000000000 = 256TB address space)
+      // Valid shape dimensions should be much smaller (typically < 1 billion)
+      if (value > 0x100000000000ULL && value < 0x8000000000000000ULL) {
+        std::string errorMsg = "reshape:: Shape input array at index ";
+        errorMsg += std::to_string(i);
+        errorMsg += " contains a value that looks like a pointer address: ";
+        errorMsg += std::to_string(value);
+        errorMsg += " (hex: 0x";
+        char hexBuf[32];
+        snprintf(hexBuf, sizeof(hexBuf), "%lx", static_cast<unsigned long>(value));
+        errorMsg += hexBuf;
+        errorMsg += "). Full shape array: [";
+        for (size_t j = 0; j < reshapeArgs.size(); j++) {
+          if (j > 0) errorMsg += ", ";
+          errorMsg += std::to_string(reshapeArgs[j]);
+        }
+        errorMsg += "]. This indicates the shape array's data buffer contains pointer addresses ";
+        errorMsg += "instead of actual shape values. Possible causes: ";
+        errorMsg += "1) Use-after-free where a scalar buffer was deallocated and memory reused, ";
+        errorMsg += "2) Concat operation received corrupted scalar inputs, ";
+        errorMsg += "3) Race condition during shape calculation. ";
+        errorMsg += "Shape input buffer address: 0x";
+        snprintf(hexBuf, sizeof(hexBuf), "%lx", reinterpret_cast<unsigned long>(INPUT_VARIABLE(1)->buffer()));
+        errorMsg += hexBuf;
+        THROW_EXCEPTION(errorMsg.c_str());
+      }
+    }
+
     if (block.numI() > 0) {
       // Note here that the ordering for this case can not be negative.
       // Negative is used in the long array case to be used as a flag to
@@ -225,7 +264,7 @@ DECLARE_SHAPE_FN(reshape) {
   computeUnknownDimension(x, shapeNew, pos, newShapeLen, newShapeEmpty);
 
   // Handle empty shape case
-  LongType* emptyResult = handleEmptyShapeCase(x, reshapeArgs, newShapeEmpty);
+  LongType* emptyResult = handleEmptyShapeCase(x, shapeNew, newShapeEmpty);
   if (emptyResult != nullptr) {
     return SHAPELIST(emptyResult);
   }

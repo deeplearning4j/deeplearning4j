@@ -51,16 +51,6 @@ public class BackendCheckerExtension implements ExecutionCondition {
 
     private static final Logger log = LoggerFactory.getLogger(BackendCheckerExtension.class);
 
-    // Tags that indicate resource-intensive tests
-    public final static Set<String> invalidResourcesTags = new HashSet<>() {{
-        add(TagNames.LARGE_RESOURCES);
-        add(TagNames.DOWNLOADS);
-        add(TagNames.LONG_TEST);
-        add(TagNames.MULTI_THREADED);
-        add(TagNames.SPARK);
-        add(TagNames.PYTHON);
-    }};
-
     // Tags for helper-specific tests
     public static final String TAG_ONEDNN = "onednn";
     public static final String TAG_CUDNN = "cudnn";
@@ -74,15 +64,6 @@ public class BackendCheckerExtension implements ExecutionCondition {
     public static final Set<String> HELPER_TAGS = Set.of(
             TAG_ONEDNN, TAG_CUDNN, TAG_ARMCOMPUTE, TAG_MPS, TAG_ACCELERATE, TAG_MLIR
     );
-
-    private boolean hasAny(Set<String> tags, Set<String> invalid) {
-        for (String s : invalid) {
-            if (tags.contains(s)) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     @Override
     public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
@@ -102,17 +83,6 @@ public class BackendCheckerExtension implements ExecutionCondition {
         } else if (helperResult != null && helperResult.isDisabled()) {
             // Helper tag matched but helper is not available
             return helperResult;
-        }
-
-        // Check backend-specific resource restrictions
-        boolean isCPU = Nd4j.getEnvironment().isCPU();
-
-        if (!isCPU && hasAny(testTags, invalidResourcesTags)) {
-            String reason = String.format(
-                    "Test '%s' disabled on GPU backend due to resource-intensive tags: %s",
-                    testName, getMatchingTags(testTags, invalidResourcesTags));
-            log.debug(reason);
-            return ConditionEvaluationResult.disabled(reason);
         }
 
         // Check for skip flags

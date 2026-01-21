@@ -33,11 +33,15 @@
         <dependency>
             <groupId>org.bytedeco</groupId>
             <artifactId>javacpp</artifactId>
+            <version>${javacpp.version}</version>
+
         </dependency>
         <dependency>
             <groupId>org.bytedeco</groupId>
             <artifactId>javacpp</artifactId>
             <classifier>${dependency.platform}</classifier>
+            <version>${javacpp.version}</version>
+
         </dependency>
         <dependency>
             <groupId>org.eclipse.deeplearning4j</groupId>

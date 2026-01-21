@@ -63,40 +63,30 @@ DECLARE_SHAPE_FN(eye) {
 
   REQUIRE_TRUE(params.size() > 1, 0, "Size is not provided for eye op.");
 
-  LongType* outShapeInfo(nullptr);
+  std::vector<LongType> shapeVec;
+  char order = static_cast<char>(-params[0]);
 
   const int size = params.size();
 
   switch (size) {
     case 2:
-      ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(2), sd::LongType);
-      outShapeInfo[0] = 2;
-      outShapeInfo[1] = params[1];
-      outShapeInfo[2] = params[1];
+      shapeVec = {params[1], params[1]};
       break;
 
     case 3:
-      ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(2), sd::LongType);
-      outShapeInfo[0] = 2;
-      outShapeInfo[1] = params[1];
-      outShapeInfo[2] = params[2];
+      shapeVec = {params[1], params[2]};
       break;
 
     default:
       int rank = size - 1;
-      ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), sd::LongType);
-      outShapeInfo[0] = rank;
-      outShapeInfo[rank - 1] = params[1];
-      outShapeInfo[rank] = params[2];
-      for (int i = 1; i < rank - 1; ++i) outShapeInfo[i] = params[i + 2];
+      shapeVec.resize(rank);
+      shapeVec[rank - 2] = params[1];
+      shapeVec[rank - 1] = params[2];
+      for (int i = 0; i < rank - 2; ++i) shapeVec[i] = params[i + 3];
       break;
   }
 
-  shape::updateStrides(outShapeInfo, static_cast<char>(-params[0]), false);
-  auto desc = new ShapeDescriptor(outShapeInfo, dtype, false);
-  auto result = ConstantShapeHelper::getInstance().bufferForShapeInfo(outShapeInfo);
-  auto ret =  SHAPELIST(result->primary());
-  return ret;
+  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(dtype, order, shapeVec));
 }
 
 }  // namespace ops

@@ -169,6 +169,8 @@ public class TestLayerOpValidation extends BaseOpValidation {
         //avg pool, batch norm, conv2d, max pool 2d, pooling2d, upsampling
         //Tested elsewhere: deconv2d, depthwise2d, LRN, sconv2d
 
+        Nd4j.getEnvironment().setDebug(true);
+        Nd4j.getEnvironment().setVerbose(true);
         Nd4j.getRandom().setSeed(12345);
 
         int[][] inputSizes = new int[][]{{1, 3, 8, 8}}; //, {3, 6, 12, 12}};

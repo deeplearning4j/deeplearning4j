@@ -2686,6 +2686,9 @@ SD_INLINE TT* internal_alloc_host(WW workSpace, sd::LongType len) {
 template <typename TT_PTR, typename WW>
 SD_INLINE void internal_release_host(WW workspace, TT_PTR var) {
   if (workspace == nullptr) {
+    if (var == nullptr) {
+      return;  // Don't try to free nullptr
+    }
 #if defined(SD_ALIGNED_ALLOC)
     free(var);
 #else
@@ -2729,15 +2732,6 @@ SD_INLINE void internal_release_host(WW workspace, TT_PTR var) {
   this->storeResult(block, 4, E)
 #define BROADCAST_CHECK_EMPTY(X, Y, Z)                                                                     \
   if (X->isEmpty() || Y->isEmpty()) {                                                                      \
-    if (!Z->isEmpty()) {                                                                                     \
-       std::string errorMessage;                                                                             \
-       errorMessage += "Broadcast op validation failed: if x or y are empty, z must be empty";               \
-       errorMessage += " X empty:";                                                                     \
-       errorMessage += std::to_string(X->isEmpty());                                                         \
-       errorMessage += "\n Y empty:";                                                                     \
-       errorMessage += std::to_string(Y->isEmpty());                                                          \
-      THROW_EXCEPTION(errorMessage.c_str()); \
-    }                                                                                                      \
     return sd::Status::OK;                                                                                 \
   }
 

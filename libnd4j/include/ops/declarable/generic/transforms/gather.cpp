@@ -23,6 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_gather)
 
+#include <helpers/ConstantShapeHelper.h>
 #include <ops/declarable/headers/transforms.h>
 #include <ops/declarable/helpers/gather.h>
 #include <ops/declarable/helpers/scatter.h>
@@ -38,10 +39,14 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
 
   const bool checkIndices = block.getBArguments()->empty() ? true : B_ARG(0);
 
-  // Edge case: empty indices -> empty output
-  if (indices != nullptr && indices->isEmpty()) {
-    REQUIRE_TRUE(output->isEmpty(), 0, "Gather op: If indices are empty, output must also be empty");
-    return sd::Status::OK;  // No op
+  // Edge case: empty indices or empty input -> empty output
+  bool indicesEmpty = indices != nullptr && (indices->isEmpty() || indices->lengthOf() == 0);
+  bool inputEmpty = input->isEmpty() || input->lengthOf() == 0;
+  bool outputEmpty = output->isEmpty() || output->lengthOf() == 0;
+
+  if (indicesEmpty || inputEmpty || outputEmpty) {
+    // For empty arrays, just return - nothing to gather
+    return sd::Status::OK;
   }
 
   const sd::LongType numOfIntArgs = block.numI();
@@ -135,6 +140,12 @@ DECLARE_SHAPE_FN(gather) {
 
     sd::LongType outputRank = inputRank + indicesRank - 1;
 
+    // Special handling for scalar output (rank 0)
+    if (outputRank == 0) {
+      auto result = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inputShapeInfo));
+      return SHAPELIST(result);
+    }
+
     ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outputRank), sd::LongType);
 
     // fill output shapeInfo
@@ -150,6 +161,13 @@ DECLARE_SHAPE_FN(gather) {
     int indicesRank = block.numI() == 2 ? 0 : 1;
 
     sd::LongType outputRank = inputRank + indicesRank - 1;
+
+    // Special handling for scalar output (rank 0)
+    if (outputRank == 0) {
+      auto result = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inputShapeInfo));
+      return SHAPELIST(result);
+    }
+
     ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outputRank), sd::LongType);
 
     // building shape manually
@@ -166,7 +184,8 @@ DECLARE_SHAPE_FN(gather) {
 
   ShapeUtils::updateStridesAndType(outputShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
 
-  if (isEmpty) {
+  // Check if output has any zero dimensions (making it empty)
+  if (shape::length(outputShapeInfo) == 0) {
     ArrayOptions::setPropertyBit(outputShapeInfo, ARRAY_EMPTY);
   }
 

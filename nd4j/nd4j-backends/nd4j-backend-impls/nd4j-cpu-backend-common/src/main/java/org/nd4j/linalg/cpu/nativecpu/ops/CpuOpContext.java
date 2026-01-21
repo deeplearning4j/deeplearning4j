@@ -44,15 +44,16 @@ import java.util.List;
 public class CpuOpContext extends BaseOpContext implements OpContext, Deallocatable {
     // we might want to have configurable
     private NativeOps nativeOps =Nd4j.getNativeOps();
-    private OpaqueContext context = nativeOps.createGraphContext(1);
+    private volatile OpaqueContext context = nativeOps.createGraphContext(1);
     private final transient long id = Nd4j.getDeallocatorService().nextValue();
     public final static long BASE_CPU_OP_CONTEXT_OFFSET = RandomUtils.nextLong();
 
     // Keep strong references to INDArrays to prevent GC while this OpContext is alive.
-    // This prevents GC from collecting them, ensuring the cached OpaqueNDArrays inside
-    // these INDArrays remain valid during native operations.
     private final java.util.Map<Integer, INDArray> singleInputArrayRefs = new java.util.HashMap<>();
     private final java.util.Map<Integer, INDArray> singleOutputArrayRefs = new java.util.HashMap<>();
+
+    private final java.util.Map<Integer, OpaqueNDArray> inputOpaqueArrayRefs = new java.util.HashMap<>();
+    private final java.util.Map<Integer, OpaqueNDArray> outputOpaqueArrayRefs = new java.util.HashMap<>();
 
     private transient  long deallocationId;
 
@@ -67,14 +68,29 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
         if (closed) {
             return;
         }
-        closed = true;
-        purge();
-        // Clear array references (no need to close OpaqueNDArrays - they're cached and
-        // managed by the INDArrays themselves, which will clean them up when they're GC'd)
-        singleInputArrayRefs.clear();
-        singleOutputArrayRefs.clear();
-        Nd4j.getDeallocatorService().getReferenceMap().remove(this.deallocationId);
-        nativeOps.deleteGraphContext(context);
+
+        synchronized (this) {
+            // Double-check inside synchronized block
+            if (closed) {
+                return;
+            }
+
+            purge();
+            // Clear array references - OpaqueNDArrays are managed by DeallocatorService
+            // and will be cleaned up when they become unreachable after we clear these refs
+            singleInputArrayRefs.clear();
+            singleOutputArrayRefs.clear();
+            inputOpaqueArrayRefs.clear();
+            outputOpaqueArrayRefs.clear();
+            Nd4j.getDeallocatorService().getReferenceMap().remove(this.deallocationId);
+
+            if (context != null && !context.isNull()) {
+                nativeOps.deleteGraphContext(context);
+                context.setNull();
+            }
+
+            closed = true;
+        }
     }
 
     @Override
@@ -219,11 +235,6 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
 
     @Override
     public void setInputArrays(@NonNull List<INDArray> arrays) {
-        // CRITICAL: Validate arrays are not null and not closed before proceeding.
-        // Arrays can be closed by ArrayCacheMemoryMgr.release() if dependency tracking
-        // incorrectly determines they're no longer needed. This causes the OpaqueNDArray's
-        // native pointer to be invalidated, leading to "Input array at index X was null!"
-        // errors in native code.
         for (int i = 0; i < arrays.size(); i++) {
             INDArray arr = arrays.get(i);
             if (arr == null) {
@@ -240,34 +251,25 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
                     "incorrect dependency tracking in InferenceSession.");
             }
         }
-        // CRITICAL: Store ALL arrays (including empty ones) to prevent GC from freeing
-        // their DataBuffers while native code holds pointers to sd::NDArray* objects.
-        // Use the single-array approach which bypasses OpaqueNDArrayArr issues.
         for (int i = 0; i < arrays.size(); i++) {
             INDArray array = arrays.get(i);
             // Always store the array reference, not null - prevents use-after-free under memory pressure
             fastpath_in.put(i, array);
-            // Store strong reference to INDArray to prevent GC while this OpContext is alive
             singleInputArrayRefs.put(i, array);
-            // Use cached OpaqueNDArray from INDArray - keeping INDArray alive keeps the cached OpaqueNDArray valid
             OpaqueNDArray opaqueArray = OpaqueNDArray.fromINDArray(array);
+            inputOpaqueArrayRefs.put(i, opaqueArray);
             nativeOps.setGraphContextInputArray(context, i, opaqueArray);
         }
     }
 
     @Override
     public void setOutputArrays(@NonNull List<INDArray> arrays) {
-        // CRITICAL: Store ALL arrays (including empty ones) to prevent GC from freeing
-        // their DataBuffers while native code holds pointers to sd::NDArray* objects.
-        // Use the single-array approach which bypasses OpaqueNDArrayArr issues.
         for (int i = 0; i < arrays.size(); i++) {
             INDArray array = arrays.get(i);
-            // Always store the array reference, not null - prevents use-after-free under memory pressure
             fastpath_out.put(i, array);
-            // Store strong reference to INDArray to prevent GC while this OpContext is alive
             singleOutputArrayRefs.put(i, array);
-            // Use cached OpaqueNDArray from INDArray - keeping INDArray alive keeps the cached OpaqueNDArray valid
             OpaqueNDArray opaqueArray = OpaqueNDArray.fromINDArray(array);
+            outputOpaqueArrayRefs.put(i, opaqueArray);
             nativeOps.setGraphContextOutputArray(context, i, opaqueArray);
         }
     }
@@ -286,20 +288,18 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
 
     @Override
     public void setInputArray(int index, @NonNull INDArray array) {
-        // Store strong reference to INDArray to prevent GC while this OpContext is alive
         singleInputArrayRefs.put(index, array);
-        // Use cached OpaqueNDArray from INDArray - keeping INDArray alive keeps the cached OpaqueNDArray valid
         OpaqueNDArray opaqueArray = OpaqueNDArray.fromINDArray(array);
+        inputOpaqueArrayRefs.put(index, opaqueArray);
         nativeOps.setGraphContextInputArray(context, index, opaqueArray);
         super.setInputArray(index, array);
     }
 
     @Override
     public void setOutputArray(int index, @NonNull INDArray array) {
-        // Store strong reference to INDArray to prevent GC while this OpContext is alive
         singleOutputArrayRefs.put(index, array);
-        // Use cached OpaqueNDArray from INDArray - keeping INDArray alive keeps the cached OpaqueNDArray valid
         OpaqueNDArray opaqueArray = OpaqueNDArray.fromINDArray(array);
+        outputOpaqueArrayRefs.put(index, opaqueArray);
         nativeOps.setGraphContextOutputArray(context, index, opaqueArray);
         super.setOutputArray(index, array);
     }
@@ -332,8 +332,16 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
 
     @Override
     public void purge() {
+        // Don't purge if already closed
+        if (closed) {
+            return;
+        }
+
         super.purge();
-        nativeOps.ctxPurge(context);
+        // Only call ctxPurge if context is still valid
+        if (context != null && !context.isNull()) {
+            nativeOps.ctxPurge(context);
+        }
     }
 
     @Override

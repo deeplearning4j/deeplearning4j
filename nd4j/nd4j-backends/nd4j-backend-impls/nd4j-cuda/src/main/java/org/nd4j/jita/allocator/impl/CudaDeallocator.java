@@ -35,10 +35,15 @@ public class CudaDeallocator implements Deallocator {
 
     private OpaqueDataBuffer opaqueDataBuffer;
     private LogEvent logEvent;
-    private boolean isConstant;
+    private volatile boolean isConstant;
+    private volatile boolean deallocated = false;
+    private final int targetDevice;
+    private final Object lock = new Object();
+
     public CudaDeallocator(@NonNull BaseCudaDataBuffer buffer) {
         opaqueDataBuffer = buffer.getOpaqueDataBuffer();
         isConstant = buffer.isConstant();
+        targetDevice = buffer.targetDevice();
         if(EventLogger.getInstance().isEnabled()) {
             logEvent = LogEvent.builder()
                     .attached(buffer.isAttached())
@@ -54,18 +59,97 @@ public class CudaDeallocator implements Deallocator {
 
     @Override
     public void deallocate() {
+        synchronized (lock) {
+            // Check constant flag FIRST - constant buffers (like shape info)
+            // should NEVER be freed. Without this check, shape info buffers would be
+            // deallocated causing use-after-free crashes when native code accesses them.
+            if (isConstant) {
+                if (log.isTraceEnabled()) {
+                    log.trace("Skipping deallocation of constant buffer");
+                }
+                return;
+            }
+
+            // Check if already deallocated to prevent double-free
+            if (deallocated) {
+                if (log.isTraceEnabled()) {
+                    log.trace("Skipping already-deallocated buffer");
+                }
+                return;
+            }
+
+            // Check if buffer is already null to prevent double-free.
+            // The OpaqueDataBuffer is shared with OpaqueDataBufferDeallocator.
+            // Whichever deallocator runs first should set the pointer to null,
+            // and the other should see isNull() == true and skip.
+            if (opaqueDataBuffer == null || opaqueDataBuffer.isNull()) {
+                if (log.isTraceEnabled()) {
+                    log.trace("Skipping deallocation of already-freed buffer");
+                }
+                deallocated = true;
+                return;
+            }
+
+            // Mark as deallocated BEFORE actual deallocation to prevent races
+            deallocated = true;
+        }
+
         //update the log event with the actual time of de allocation and then
         //perform logging
         if(logEvent != null) {
             logEvent.setEventTimeMs(System.currentTimeMillis());
             EventLogger.getInstance().log(logEvent);
         }
-        NativeOpsHolder.getInstance().getDeviceNativeOps().deleteDataBuffer(opaqueDataBuffer);
-    }
 
+        int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        boolean switchedDevice = false;
+
+        if (currentDevice != targetDevice) {
+            // Switch to the target device and reset cached context
+            Nd4j.getAffinityManager().unsafeSetDevice(targetDevice);
+            switchedDevice = true;
+        }
+
+        try {
+            // Synchronize the device before deleting to ensure all async ops are complete
+            Nd4j.getExecutioner().commit();
+
+            NativeOpsHolder.getInstance().getDeviceNativeOps().dbClose(opaqueDataBuffer);
+
+            opaqueDataBuffer.setNull();
+        } finally {
+            // Restore original device context
+            if (switchedDevice) {
+                Nd4j.getAffinityManager().unsafeSetDevice(currentDevice);
+            }
+        }
+    }
 
     @Override
     public boolean isConstant() {
         return isConstant;
+    }
+
+    /**
+     * Updates the constant flag for this deallocator.
+     * This is called when DataBuffer.setConstant() is invoked to ensure
+     * that buffers marked as constant (like shape info) are never freed.
+     *
+     * @param constant true if this buffer should never be deallocated
+     */
+    @Override
+    public void setConstant(boolean constant) {
+        synchronized (lock) {
+            // If already deallocated, setting constant won't help - but don't throw,
+            // as this could be called during cleanup
+            if (deallocated && constant) {
+                log.warn("setConstant(true) called on already-deallocated buffer - this may indicate a race condition");
+            }
+            this.isConstant = constant;
+        }
+        // Also update the log event if present (outside lock - not critical)
+        if (logEvent != null) {
+            logEvent.setConstant(constant);
+        }
     }
 }

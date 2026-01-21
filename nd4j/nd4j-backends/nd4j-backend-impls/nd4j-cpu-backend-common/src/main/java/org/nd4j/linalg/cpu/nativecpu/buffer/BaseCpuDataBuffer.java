@@ -27,10 +27,14 @@ import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.buffer.HybridDataBuffer;
 import org.nd4j.linalg.api.buffer.util.AllocUtil;
+import org.nd4j.linalg.api.device.DeviceDescriptor;
+import org.nd4j.linalg.api.device.DeviceType;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.MultiBackendWorkspace;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
@@ -39,12 +43,17 @@ import java.nio.ByteBuffer;
 
 import static org.nd4j.linalg.api.buffer.DataType.INT8;
 
-public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallocatable {
+public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallocatable, HybridDataBuffer {
 
     protected transient Pointer addressPointer;
     private transient final long instanceId = Nd4j.getDeallocatorService().nextValue();
 
     public final static long BASE_CPU_DATA_BUFFER_OFFSET = RandomUtils.nextLong();
+
+    // HybridDataBuffer fields - CPU is always the owner for CPU buffers
+    protected volatile DeviceDescriptor ownerDevice;
+    protected volatile DeviceDescriptor pinnedDevice;
+    protected volatile MultiBackendWorkspace multiBackendWorkspace;
 
     protected BaseCpuDataBuffer() {
 
@@ -149,7 +158,8 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
             setIndexer(ULongIndexer.create((LongPointer) pointer));
         }
 
-        this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
+        this.deallocationId = ptrDataBuffer != null && ptrDataBuffer.getDeallocator() != null ?
+            ptrDataBuffer.getDeallocator().getUniqueId() : -1;
     }
 
 
@@ -236,7 +246,8 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
         if (ptrDataBuffer == null) {
             ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(length(), type, false);
-            this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
+            this.deallocationId = ptrDataBuffer.getDeallocator() != null ?
+                ptrDataBuffer.getDeallocator().getUniqueId() : -1;
         }
 
         actualizePointerAndIndexer();
@@ -365,7 +376,8 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
                 fillPointerWithZero();
         }
 
-        this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
+        this.deallocationId = ptrDataBuffer != null && ptrDataBuffer.getDeallocator() != null ?
+            ptrDataBuffer.getDeallocator().getUniqueId() : -1;
     }
 
     public void actualizePointerAndIndexer() {
@@ -610,7 +622,8 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         // creating & registering native DataBuffer
         ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(data.length, DataType.FLOAT, false);
         ptrDataBuffer.setPrimaryBuffer(pointer, data.length);
-        this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
+        this.deallocationId = ptrDataBuffer.getDeallocator() != null ?
+            ptrDataBuffer.getDeallocator().getUniqueId() : -1;
 
         setIndexer(FloatIndexer.create((FloatPointer) pointer));
 
@@ -632,7 +645,8 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         //note: data buffer is owned externally no deallocator added
 
         ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(length, dataType(), this.pointer, null);
-        this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
+        this.deallocationId = ptrDataBuffer.getDeallocator() != null ?
+            ptrDataBuffer.getDeallocator().getUniqueId() : -1;
 
         workspaceGenerationId = workspace.getGenerationId();
         setIndexer(FloatIndexer.create((FloatPointer) pointer));
@@ -713,7 +727,8 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         // creating & registering native DataBuffer
         ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(data.length, DataType.DOUBLE, false);
         ptrDataBuffer.setPrimaryBuffer(pointer, data.length);
-        this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
+        this.deallocationId = ptrDataBuffer.getDeallocator() != null ?
+            ptrDataBuffer.getDeallocator().getUniqueId() : -1;
 
         length = data.length;
         underlyingLength = data.length;
@@ -736,7 +751,8 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         // creating & registering native DataBuffer
         ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(data.length, DataType.INT32, false);
         ptrDataBuffer.setPrimaryBuffer(pointer, data.length);
-        this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
+        this.deallocationId = ptrDataBuffer.getDeallocator() != null ?
+            ptrDataBuffer.getDeallocator().getUniqueId() : -1;
 
         length = data.length;
         underlyingLength = data.length;
@@ -757,7 +773,8 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         // creating & registering native DataBuffer
         ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(data.length, DataType.INT64, false);
         ptrDataBuffer.setPrimaryBuffer(pointer, data.length);
-        this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
+        this.deallocationId = ptrDataBuffer.getDeallocator() != null ?
+            ptrDataBuffer.getDeallocator().getUniqueId() : -1;
 
         length = data.length;
         underlyingLength = data.length;
@@ -932,5 +949,152 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
     @Override
     public void syncToSpecial(){
         ptrDataBuffer.syncToSpecial();
+    }
+
+    // =========================================================================
+    // HybridDataBuffer Implementation
+    // =========================================================================
+
+    @Override
+    public boolean isHybrid() {
+        return true;
+    }
+
+    @Override
+    public HybridDataBuffer asHybrid() {
+        return this;
+    }
+
+    @Override
+    public DeviceDescriptor getOwnerDevice() {
+        if (ownerDevice == null) {
+            // CPU buffers are always owned by CPU device
+            ownerDevice = DeviceDescriptor.cpu();
+        }
+        return ownerDevice;
+    }
+
+    @Override
+    public void setOwnerDevice(DeviceDescriptor device) {
+        // CPU buffers can only be owned by CPU
+        if (device != null && device.getDeviceType() != DeviceType.CPU) {
+            throw new IllegalArgumentException("CPU buffer can only be owned by CPU device, not " + device.getDeviceId());
+        }
+        this.ownerDevice = device;
+    }
+
+    @Override
+    public DeviceDescriptor getPinnedDevice() {
+        return pinnedDevice;
+    }
+
+    @Override
+    public void pinTo(DeviceDescriptor device) {
+        if (device == null) {
+            unpin();
+            return;
+        }
+        // CPU buffers can only be pinned to CPU
+        if (device.getDeviceType() != DeviceType.CPU) {
+            throw new IllegalArgumentException("CPU buffer can only be pinned to CPU device, not " + device.getDeviceId());
+        }
+        pinnedDevice = device;
+        ownerDevice = device;
+    }
+
+    @Override
+    public void unpin() {
+        pinnedDevice = null;
+    }
+
+    @Override
+    public boolean isValidOn(DeviceDescriptor device) {
+        if (device == null) {
+            return false;
+        }
+        // CPU data is always valid on CPU
+        return device.getDeviceType() == DeviceType.CPU;
+    }
+
+    @Override
+    public void markValidOn(DeviceDescriptor device) {
+        // No-op for CPU buffers - data is always valid on CPU
+    }
+
+    @Override
+    public void markInvalidOn(DeviceDescriptor device) {
+        // No-op for CPU buffers - data is always valid on CPU
+    }
+
+    @Override
+    public void ensureAvailableOn(DeviceDescriptor device) {
+        if (device == null) {
+            return;
+        }
+        // CPU data is always available on CPU
+        if (device.getDeviceType() != DeviceType.CPU) {
+            throw new UnsupportedOperationException(
+                    "CPU buffer cannot provide data directly on GPU device " + device.getDeviceId() +
+                    ". Use AffinityManager.replicateToDevice() to copy data to GPU.");
+        }
+    }
+
+    @Override
+    public long getDeviceAddress(DeviceDescriptor device) {
+        if (device == null || ptrDataBuffer == null) {
+            return 0;
+        }
+        // CPU only supports CPU device addresses
+        if (device.getDeviceType() != DeviceType.CPU) {
+            throw new UnsupportedOperationException(
+                    "CPU buffer cannot provide address for GPU device " + device.getDeviceId());
+        }
+        Pointer primary = ptrDataBuffer.primaryBuffer();
+        return primary != null ? primary.address() : 0;
+    }
+
+    @Override
+    public MultiBackendWorkspace getMultiBackendWorkspace() {
+        return multiBackendWorkspace;
+    }
+
+    @Override
+    public void attachToWorkspace(MultiBackendWorkspace workspace) {
+        this.multiBackendWorkspace = workspace;
+    }
+
+    @Override
+    public void detachFromWorkspace() {
+        this.multiBackendWorkspace = null;
+    }
+
+    @Override
+    public void allocateOnDevice(DeviceDescriptor device, long requiredSize) {
+        // CPU buffers only support CPU allocation
+        if (device != null && device.getDeviceType() != DeviceType.CPU) {
+            throw new UnsupportedOperationException(
+                    "CPU buffer cannot allocate on GPU device " + device.getDeviceId());
+        }
+        // Standard allocation already happened in constructor
+    }
+
+    @Override
+    public boolean isHostDirty() {
+        return false; // CPU data is always current
+    }
+
+    @Override
+    public boolean isDeviceDirty() {
+        return false; // No device for CPU buffer
+    }
+
+    @Override
+    public void markHostDirty() {
+        // No-op - CPU buffer data is always current
+    }
+
+    @Override
+    public void markDeviceDirty() {
+        // No-op - no device buffer for CPU
     }
 }

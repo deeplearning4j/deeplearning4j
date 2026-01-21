@@ -121,6 +121,12 @@ public class ND4JEnvironmentVars {
      */
     public static final String ND4J_CUDA_FORCE_SINGLE_GPU = "ND4J_CUDA_FORCE_SINGLE_GPU";
     /**
+     * Applicability: nd4j-cuda-xx used on multi-GPU systems<br>
+     * Description: If set to true, ND4J will allow use of multiple GPUs by default when no explicit device list is provided.
+     * When false (default), ND4J will select a single best GPU unless devices are explicitly configured.
+     */
+    public static final String ND4J_CUDA_ALLOW_MULTI_GPU = "ND4J_CUDA_ALLOW_MULTI_GPU";
+    /**
      * Applicability: nd4j-cuda-xx<br>
      * Description:
      */

@@ -123,7 +123,7 @@ if(SD_USE_LTO)
 endif()
 
 # --- Memory Model for large binaries ---
-# CRITICAL: -mcmodel=large is INCOMPATIBLE with system CRT libraries (crtbeginS.o, crti.o)
+# -mcmodel=large is INCOMPATIBLE with system CRT libraries (crtbeginS.o, crti.o)
 # System libraries are compiled with -mcmodel=small and cannot be linked into -mcmodel=large binaries
 # This causes "relocation truncated to fit: R_X86_64_PC32" errors (see session #959, #1008)
 # SOLUTION: Use -mcmodel=medium for both sanitizers AND functrace builds
@@ -212,18 +212,13 @@ endif()
 
 # --- GCC/Clang Specific Flags ---
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT SD_CUDA)
-    # MEMORY OPTIMIZATION: Aggressive garbage collection during compilation
-    # ggc-min-expand: % heap growth before GC runs (lower = more aggressive, default 30)
-    #   - 20 means GC runs when heap grows 20%, reclaiming memory more frequently
-    #   - Critical for template-heavy files that can consume 4-8GB per compiler instance
-    # ggc-min-heapsize: Minimum heap in KB before GC params apply (default 4096)
-    #   - 65536 (64MB) prevents GC thrashing on small compilations
-    # finline-limit: Maximum size of inlined functions (default 600)
-    #   - 50 dramatically reduces memory for template-heavy code with many inlined functions
-    # fno-inline-small-functions: Disable automatic inlining of small functions
-    #   - Reduces code duplication and memory during template instantiation
-    set(GCC_MEMORY_FLAGS "--param ggc-min-expand=20 --param ggc-min-heapsize=65536 --param inline-unit-growth=30 -finline-limit=50")
-    message(STATUS "Adding GCC memory optimization flags: ${GCC_MEMORY_FLAGS}")
+    # GCC garbage collection tuning - use defaults which work well for template-heavy code
+    # ggc-min-expand=100: GC when heap grows 100% (default, less overhead than aggressive GC)
+    # ggc-min-heapsize=131072: 128MB minimum before GC params apply (default)
+    # NOTE: Previous attempt with ggc-min-expand=20, finline-limit=50 INCREASED memory usage
+    #       because preventing inlining keeps more function bodies in memory
+    set(GCC_MEMORY_FLAGS "--param ggc-min-expand=100 --param ggc-min-heapsize=131072")
+    message(STATUS "Adding GCC flags: ${GCC_MEMORY_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_MEMORY_FLAGS} ${INFORMATIVE_FLAGS} -std=c++17 -fPIC")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GCC_MEMORY_FLAGS} -fPIC")
     if(UNIX)
@@ -571,19 +566,65 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND SD_GCC_FUNCTRACE AND NOT SD_SANITI
     # Aggressive size reduction for functrace builds
     add_compile_options(-ffunction-sections -fdata-sections)
     add_compile_options(-fvisibility=hidden -fvisibility-inlines-hidden)
+    # -fno-common: Place uninitialized globals in .bss instead of COMMON
+    # This helps with linker section ordering and reduces relocation distance
+    add_compile_options(-fno-common)
+
+    # FOR >2GB BINARIES: Disable async unwind tables to reduce .eh_frame size
+    # -fno-asynchronous-unwind-tables: Only generates synchronous unwind info (for C++ exceptions)
+    #   Removes async signal handler unwind info which dramatically reduces .eh_frame
+    #   C++ exceptions and debugger backtraces still work normally
+    # -fno-omit-frame-pointer: Keep frame pointers for allocation stack trace tracking
+    #   This is the fallback mechanism when .eh_frame is reduced
+    #
+    # Without this, individual CUDA object files have 175KB+ of .eh_frame that causes
+    # PC32 relocation overflow when placed in a 3GB binary.
+    if(SD_CUDA)
+        add_compile_options(-fno-asynchronous-unwind-tables)
+        add_compile_options(-fno-omit-frame-pointer)
+        message(STATUS "   Using -fno-asynchronous-unwind-tables to reduce .eh_frame for >2GB binary")
+    endif()
+
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections,--as-needed")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections,--as-needed")
 
+    # Exception table relocation overflow mitigation for >2GB binaries
+    # Problem: .gcc_except_table sections use PC32 relocations to typeinfo symbols
+    #          When binary exceeds 2GB, these relocations overflow (R_X86_64_PC32 limit)
+    # Solution: Disable relaxable relocations and reduce exception table overhead
+    #
+    # -Wa,-mrelax-relocations=no: Prevents assembler from generating relaxable relocations
+    #   that the linker might convert to PC32 when they need to stay as GOT-indirect
+    #
+    # NOTE: For CUDA builds, this flag is handled separately in CudaConfiguration.cmake
+    # via -Xcompiler with escaped comma. We CANNOT use add_compile_options here because
+    # nvcc inherits host compiler flags and mangles comma-containing flags, splitting
+    # "-Wa,-mrelax-relocations=no" into "-Wa" and "-mrelax-relocations=no" which GCC
+    # doesn't recognize.
+    if(NOT SD_CUDA)
+        # Non-CUDA builds: safe to use add_compile_options with generator expressions
+        add_compile_options($<$<COMPILE_LANGUAGE:C>:-Wa,-mrelax-relocations=no>)
+        add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wa,-mrelax-relocations=no>)
+        message(STATUS "   -Wa,-mrelax-relocations=no: Prevent PC32 relocation generation (C/C++ only)")
+    else()
+        # CUDA builds: the flag is added via -Xcompiler in CudaConfiguration.cmake
+        message(STATUS "   -Wa,-mrelax-relocations=no: Handled via -Xcompiler in CudaConfiguration.cmake")
+    endif()
+
     # Memory optimizations for linking large binaries
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-keep-memory")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--reduce-memory-overheads")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--hash-size=31")
+    # NOTE: SD_GCC_FUNCTRACE now uses Gold linker (configured in CudaConfiguration.cmake)
+    # Gold supports --no-keep-memory, so we can apply it here.
+    # These flags are applied via LINKER_EXTRA_FLAGS in CudaConfiguration.cmake for CUDA builds.
+    if(NOT SD_CUDA)
+        # For non-CUDA functrace builds, apply Gold-compatible flags here
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-keep-memory")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--icf=safe")
+    endif()
 
     # NOTE: We use compiler-rt for runtime builtins but NOT libunwind for exception handling
     # (Session #1045 fix: libunwind conflicts with JVM's libgcc_s, causing _Unwind_SetGR crashes)
     # The system's libgcc_s handles exception unwinding, which is compatible with JVM
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        # CRITICAL FIX: Do NOT use --unwindlib=libunwind for JNI libraries!
         #
         # Problem (discovered in session #1045):
         # - When --unwindlib=libunwind is used, Clang generates code assuming LLVM's libunwind ABI
@@ -656,28 +697,29 @@ if(SD_GCC_FUNCTRACE)
 
     # Add comprehensive debug flags
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        # Debug flags with function instrumentation
+        # Debug flags WITHOUT function instrumentation (reduces binary size significantly)
+        # Keep frame pointers for stack traces
         # MEMORY OPTIMIZATION: Use -g1 (minimal debug info) instead of -ggdb3
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g1 -finstrument-functions -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -fno-threadsafe-statics -ftls-model=global-dynamic")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g1 -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -fno-threadsafe-statics -ftls-model=global-dynamic")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g1 -fno-omit-frame-pointer -ftls-model=global-dynamic")
-        message(STATUS "Applied memory-optimized debug flags for GCC (instrumentation enabled):")
+        message(STATUS "Applied memory-optimized debug flags for GCC:")
         message(STATUS "  - g1 (minimal debug info) for 40-60% memory reduction vs ggdb3")
+        message(STATUS "  - frame pointers enabled for stack traces")
         message(STATUS "  - disabled thread-safe static guards")
-        message(STATUS "  - enabled function instrumentation")
 
         # Override any conflicting optimization
         string(REGEX REPLACE "-O[0-9s]" "-O0" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
         string(REGEX REPLACE "-O[0-9s]" "-O0" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        # Debug flags with function instrumentation
+        # Debug flags WITHOUT function instrumentation (reduces binary size significantly)
+        # Keep frame pointers for stack traces
         # MEMORY OPTIMIZATION: Use -gline-tables-only instead of -ggdb3 (Clang-specific flag)
-        # AGGRESSIVE MEMORY: Disable inline tracking and macro debug info
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gline-tables-only -finstrument-functions -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -fno-threadsafe-statics -ftls-model=global-dynamic -fno-standalone-debug")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gline-tables-only -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -fno-threadsafe-statics -ftls-model=global-dynamic -fno-standalone-debug")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gline-tables-only -fno-omit-frame-pointer -ftls-model=global-dynamic -fno-standalone-debug")
-        message(STATUS "Applied memory-optimized debug flags for Clang (instrumentation enabled):")
+        message(STATUS "Applied memory-optimized debug flags for Clang:")
         message(STATUS "  - gline-tables-only (Clang-specific) for 40-60% memory reduction vs ggdb3")
+        message(STATUS "  - frame pointers enabled for stack traces")
         message(STATUS "  - disabled thread-safe static guards")
-        message(STATUS "  - enabled function instrumentation")
 
         # Override any conflicting optimization
         string(REGEX REPLACE "-O[0-9s]" "-O0" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
@@ -694,8 +736,8 @@ if(SD_GCC_FUNCTRACE)
     # Add the compiler definition
     add_compile_definitions(SD_GCC_FUNCTRACE=ON)
 
-    # Enable function instrumentation
-    message(STATUS "ℹ️  Function instrumentation enabled. This will significantly increase binary size.")
+    # Frame pointers enabled for stack traces (function instrumentation disabled to reduce binary size)
+    message(STATUS "ℹ️  SD_GCC_FUNCTRACE enabled with frame pointers for debugging.")
 endif()
 
 # --- Flag Deduplication ---

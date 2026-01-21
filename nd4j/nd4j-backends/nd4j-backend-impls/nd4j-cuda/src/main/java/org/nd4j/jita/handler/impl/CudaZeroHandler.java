@@ -45,6 +45,9 @@ import org.nd4j.jita.handler.MemoryHandler;
 import org.nd4j.jita.memory.MemoryProvider;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
+import org.nd4j.linalg.api.device.DeviceDescriptor;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
+import org.nd4j.linalg.api.device.DeviceType;
 import org.nd4j.linalg.api.memory.MemcpyDirection;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -55,6 +58,7 @@ import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.nativeblas.OpaqueDataBuffer;
 import org.nd4j.nativeblas.OpaqueLaunchContext;
 import org.nd4j.shade.guava.collect.HashBasedTable;
 import org.nd4j.shade.guava.collect.Table;
@@ -96,6 +100,9 @@ public class CudaZeroHandler implements MemoryHandler {
 
     private final List<cublasHandle_t> cublasHandles = new ArrayList<>();
 
+    // Per-device context cache - each device has its own streams that must be used for operations on that device
+    private final List<CudaContext> deviceContexts = new ArrayList<>();
+    private final Object deviceContextLock = new Object();
 
     private final transient ThreadLocal<CudaContext> tlContext = new ThreadLocal<>();
     // Track which device the thread-local context was created for
@@ -143,6 +150,7 @@ public class CudaZeroHandler implements MemoryHandler {
         for (int i = 0; i < numDevices; i++) {
             deviceAllocations.add(new ConcurrentHashMap<Long, Long>());
             cublasHandles.add(null);
+            deviceContexts.add(null);  // Will be lazily initialized when needed
         }
 
         if (NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceMajor(0) < 3) {
@@ -451,7 +459,16 @@ public class CudaZeroHandler implements MemoryHandler {
 
         Nd4j.getExecutioner().push();
 
-        if (srcPoint.isActualOnDeviceSide()) {
+        // Check if source and destination are on different devices
+        int srcDeviceId = srcPoint.getDeviceId();
+        int dstDeviceId = dstPoint.getDeviceId();
+        int currentDeviceId = AtomicAllocator.getInstance().getDeviceId();
+        boolean crossDevice = srcDeviceId >= 0 && dstDeviceId >= 0 && srcDeviceId != dstDeviceId;
+        boolean p2pAvailable = NativeOpsHolder.getInstance().getDeviceNativeOps().isP2PAvailable()
+                && CudaEnvironment.getInstance().getConfiguration().isCrossDeviceAccessAllowed();
+
+        if (srcPoint.isActualOnDeviceSide() && (!crossDevice || p2pAvailable)) {
+            // Same device or P2P available - can do direct device-to-device copy
             sP = AtomicAllocator.getInstance().getPointer(srcBuffer, context);
             dP = AtomicAllocator.getInstance().getPointer(dstBuffer, context);
 
@@ -462,7 +479,33 @@ public class CudaZeroHandler implements MemoryHandler {
 
             dstPoint.tickDeviceWrite();
             direction = MemcpyDirection.DEVICE_TO_DEVICE;
+        } else if (crossDevice && !p2pAvailable) {
+            // Cross-device without P2P - must go through host memory
+            // Use OpaqueDataBuffer to sync and get primary (host) pointer
+            OpaqueDataBuffer srcOpaque = srcBuffer.opaqueBuffer();
+            srcOpaque.syncToPrimary();
+
+            // Get host pointer from OpaqueDataBuffer (more reliable than AllocationPoint)
+            sP = srcOpaque.primaryBuffer();
+            if (sP == null || sP.isNull()) {
+                throw new ND4JIllegalStateException("Source primary buffer is null for cross-device copy");
+            }
+
+            dP = AtomicAllocator.getInstance().getPointer(dstBuffer, context);
+            if (dP == null || dP.isNull()) {
+                throw new ND4JIllegalStateException("Destination device pointer is null for cross-device copy");
+            }
+
+            // Use synchronous memcpy for cross-device - async requires pinned memory
+            // which might not be available with the new OpaqueDataBuffer architecture
+            if (nativeOps.memcpySync(dP, sP, copyBytes,
+                    CudaConstants.cudaMemcpyHostToDevice, null) == 0) {
+                throw new ND4JIllegalStateException("memcpySync H2D failed for cross-device copy");
+            }
+
+            direction = MemcpyDirection.HOST_TO_DEVICE;
         } else {
+            // Source is on host - simple host to device copy
             sP = AtomicAllocator.getInstance().getHostPointer(srcBuffer);
             dP = AtomicAllocator.getInstance().getPointer(dstBuffer, context);
 
@@ -927,69 +970,169 @@ public class CudaZeroHandler implements MemoryHandler {
     //
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
+    // Lock for thread-safe access to CUDA context operations
+    private final Object contextLock = new Object();
+
     protected cublasHandle_t getCudaCublasHandle(OpaqueLaunchContext lc) {
         val deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         try {
             lock.writeLock().lock();
 
             if (cublasHandles.get(deviceId) == null) {
+                // Get native handle and validate before creating wrapper
+                Pointer nativeHandle = nativeOps.lcBlasHandle(lc);
+                if (nativeHandle == null || nativeHandle.isNull()) {
+                    throw new ND4JIllegalStateException("cuBLAS handle is null for device " + deviceId +
+                        ". This may indicate cuBLAS initialization failure.");
+                }
                 cublasHandles.remove(deviceId);
-                cublasHandles.add(deviceId, new cublasHandle_t(nativeOps.lcBlasHandle(lc)));
+                cublasHandles.add(deviceId, new cublasHandle_t(nativeHandle));
             }
 
-            return cublasHandles.get(deviceId);
+            cublasHandle_t handle = cublasHandles.get(deviceId);
+            // Double-check the cached handle is still valid
+            if (handle == null || handle.isNull()) {
+                throw new ND4JIllegalStateException("Cached cuBLAS handle became invalid for device " + deviceId +
+                    ". This may indicate CUDA context corruption.");
+            }
+            return handle;
         } finally {
             lock.writeLock().unlock();
         }
     }
 
     /**
-     * This method returns CudaContext for current thread. If context doesn't exist - it gets created first.
+     * This method returns CudaContext for current thread with FRESH stream pointers.
      *
-     * CRITICAL: Stream pointers are ALWAYS fetched fresh from native code because the C++ side
-     * can destroy and recreate streams when detecting device changes (via cudaGetDevice()).
-     * Caching stream pointers would lead to dangling pointers and CUDA error 400
-     * (cudaErrorInvalidResourceHandle) when streams are used after being recreated.
+     * CRITICAL: Stream pointers are NOT cached because native code can reinitialize
+     * its thread-local ContextBuffers (via release() + initialize()) when detecting
+     * device mismatches. If Java caches old pointers while native has new streams,
+     * using the stale pointers causes cudaErrorInvalidResourceHandle (error 400).
      *
-     * @return CudaContext with fresh stream pointers
+     * @return CudaContext with fresh stream pointers from native
      */
     public CudaContext getCudaContext() {
-        int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-        Integer cachedDeviceId = tlContextDeviceId.get();
+        // Get current device from native - this is authoritative
+        int currentDeviceId = nativeOps.getDevice();
 
-        var ctx = tlContext.get();
-
-        // Always get fresh LaunchContext from native - this ensures streams are valid
+        // ALWAYS get fresh launch context and stream pointers from native.
+        // Native's ContextBuffers can be reinitialized at any time (e.g., when
+        // AffinityManager.setCurrentDevice() detects device mismatch), so we
+        // must always fetch current stream pointers rather than caching them.
         val lc = nativeOps.defaultLaunchContext();
 
-        if (ctx == null || cachedDeviceId == null || cachedDeviceId != currentDeviceId) {
-            // Device changed or no context exists - create full new context
-            ctx = CudaContext.builder()
-                    .bufferScalar(nativeOps.lcScalarPointer(lc))
-                    .bufferReduction(nativeOps.lcReductionPointer(lc))
-                    .bufferAllocation(nativeOps.lcAllocationPointer(lc))
-                    .bufferSpecial(nativeOps.lcScalarPointer(lc))
-                    .oldStream(new cudaStream_t(nativeOps.lcExecutionStream(lc)))
-                    .specialStream(new cudaStream_t(nativeOps.lcCopyStream(lc)))
-                    .cublasHandle(getCudaCublasHandle(lc))
-                    .solverHandle(new cusolverDnHandle_t(nativeOps.lcSolverHandle(lc)))
-                    .deviceId(currentDeviceId)
-                    .build();
-
-            tlContext.set(ctx);
-            tlContextDeviceId.set(currentDeviceId);
-        } else {
-            // Context exists for same device, but MUST refresh stream pointers
-            // because C++ contextBuffers may have recreated them
-            ctx.setOldStream(new cudaStream_t(nativeOps.lcExecutionStream(lc)));
-            ctx.setSpecialStream(new cudaStream_t(nativeOps.lcCopyStream(lc)));
-            // Also refresh buffers as they may have been recreated
-            ctx.setBufferScalar(nativeOps.lcScalarPointer(lc));
-            ctx.setBufferReduction(nativeOps.lcReductionPointer(lc));
-            ctx.setBufferAllocation(nativeOps.lcAllocationPointer(lc));
-        }
+        var ctx = CudaContext.builder()
+                .bufferScalar(nativeOps.lcScalarPointer(lc))
+                .bufferReduction(nativeOps.lcReductionPointer(lc))
+                .bufferAllocation(nativeOps.lcAllocationPointer(lc))
+                .bufferSpecial(nativeOps.lcScalarPointer(lc))
+                .oldStream(new cudaStream_t(nativeOps.lcExecutionStream(lc)))
+                .specialStream(new cudaStream_t(nativeOps.lcCopyStream(lc)))
+                .cublasHandle(getCudaCublasHandle(lc))
+                .solverHandle(new cusolverDnHandle_t(nativeOps.lcSolverHandle(lc)))
+                .deviceId(currentDeviceId)
+                .build();
 
         return ctx;
+    }
+
+    /**
+     * Get a CudaContext for a specific device. This is essential for multi-device operations
+     * where we need to use streams from the device where data resides, not the current thread's device.
+     *
+     * CUDA streams are device-specific - using a stream from device A to operate on device B's memory
+     * will result in cudaErrorInvalidResourceHandle (error 400).
+     *
+     * @param deviceId the target device ID
+     * @return CudaContext with streams valid for the specified device
+     */
+    public CudaContext getCudaContextForDevice(int deviceId) {
+        int currentDevice = nativeOps.getDevice();
+
+        // If already on the target device, just return the current context
+        if (currentDevice == deviceId) {
+            return getCudaContext();
+        }
+
+        // Need to get context for a different device
+        synchronized (deviceContextLock) {
+            // Check if we have a cached context for this device
+            CudaContext cachedCtx = deviceContexts.get(deviceId);
+
+            // Context needs refresh - switch to target device, get context, switch back
+            int savedDevice = currentDevice;
+            try {
+                // Switch to target device
+                nativeOps.setDevice(deviceId);
+
+                // Get fresh launch context from native for this device
+                val lc = nativeOps.defaultLaunchContext();
+                if (lc == null) {
+                    throw new IllegalStateException("Failed to obtain CUDA LaunchContext for device " + deviceId);
+                }
+
+                Pointer execStream = nativeOps.lcExecutionStream(lc);
+                Pointer copyStream = nativeOps.lcCopyStream(lc);
+                Pointer solverHandlePtr = nativeOps.lcSolverHandle(lc);
+
+                // Validate streams
+                if (execStream == null || execStream.isNull()) {
+                    throw new ND4JIllegalStateException("CUDA execution stream is null for device " + deviceId);
+                }
+                if (copyStream == null || copyStream.isNull()) {
+                    throw new ND4JIllegalStateException("CUDA copy stream is null for device " + deviceId);
+                }
+
+                if (cachedCtx == null) {
+                    // Create new context
+                    cachedCtx = CudaContext.builder()
+                            .bufferScalar(nativeOps.lcScalarPointer(lc))
+                            .bufferReduction(nativeOps.lcReductionPointer(lc))
+                            .bufferAllocation(nativeOps.lcAllocationPointer(lc))
+                            .bufferSpecial(nativeOps.lcScalarPointer(lc))
+                            .oldStream(new cudaStream_t(execStream))
+                            .specialStream(new cudaStream_t(copyStream))
+                            .cublasHandle(getCudaCublasHandleForDevice(lc, deviceId))
+                            .solverHandle(new cusolverDnHandle_t(solverHandlePtr))
+                            .deviceId(deviceId)
+                            .build();
+                    deviceContexts.set(deviceId, cachedCtx);
+                } else {
+                    // Refresh existing context's streams
+                    cachedCtx.setOldStream(new cudaStream_t(execStream));
+                    cachedCtx.setSpecialStream(new cudaStream_t(copyStream));
+                    cachedCtx.setBufferScalar(nativeOps.lcScalarPointer(lc));
+                    cachedCtx.setBufferReduction(nativeOps.lcReductionPointer(lc));
+                    cachedCtx.setBufferAllocation(nativeOps.lcAllocationPointer(lc));
+                }
+
+                return cachedCtx;
+            } finally {
+                // Always switch back to the original device
+                nativeOps.setDevice(savedDevice);
+            }
+        }
+    }
+
+    /**
+     * Get cuBLAS handle for a specific device (used by getCudaContextForDevice)
+     */
+    protected cublasHandle_t getCudaCublasHandleForDevice(OpaqueLaunchContext lc, int deviceId) {
+        try {
+            lock.writeLock().lock();
+
+            if (cublasHandles.get(deviceId) == null) {
+                Pointer nativeHandle = nativeOps.lcBlasHandle(lc);
+                if (nativeHandle == null || nativeHandle.isNull()) {
+                    throw new ND4JIllegalStateException("cuBLAS handle is null for device " + deviceId);
+                }
+                cublasHandles.set(deviceId, new cublasHandle_t(nativeHandle));
+            }
+
+            return cublasHandles.get(deviceId);
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     @Override

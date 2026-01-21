@@ -103,10 +103,14 @@ CublasHelper& CublasHelper::getInstance() {
 
 void* CublasHelper::cudnn() {
   auto deviceId = AffinityManager::currentDeviceId();
-  if (deviceId < 0 || deviceId > _cudnn.size())
-    throw cuda_exception::build("requested deviceId doesn't look valid", deviceId);
+  if (deviceId < 0 || deviceId >= _cudnn.size())
+    throw cuda_exception::build("requested deviceId doesn't look valid for cuDNN", deviceId);
 
-  return _cudnn[deviceId];
+  auto handle = _cudnn[deviceId];
+  if (handle == nullptr) {
+    sd_printf("WARNING: cuDNN handle is null for device %d\n", deviceId);
+  }
+  return handle;
 }
 
 void* CublasHelper::handle() {
@@ -116,16 +120,24 @@ void* CublasHelper::handle() {
 
 void* CublasHelper::solver() {
   auto deviceId = AffinityManager::currentDeviceId();
-  if (deviceId < 0 || deviceId > _solvers.size())
-    throw cuda_exception::build("requested deviceId doesn't look valid", deviceId);
+  if (deviceId < 0 || deviceId >= _solvers.size())
+    throw cuda_exception::build("requested deviceId doesn't look valid for cuSolver", deviceId);
 
-  return _solvers[deviceId];
+  auto handle = _solvers[deviceId];
+  if (handle == nullptr) {
+    throw cuda_exception::build("cuSolver handle is null for device - initialization may have failed", deviceId);
+  }
+  return handle;
 }
 
 void* CublasHelper::handle(int deviceId) {
-  if (deviceId < 0 || deviceId > _cache.size())
-    throw cuda_exception::build("requested deviceId doesn't look valid", deviceId);
+  if (deviceId < 0 || deviceId >= _cache.size())
+    throw cuda_exception::build("requested deviceId doesn't look valid for cuBLAS", deviceId);
 
-  return _cache[deviceId];
+  auto handle = _cache[deviceId];
+  if (handle == nullptr) {
+    throw cuda_exception::build("cuBLAS handle is null for device - initialization may have failed", deviceId);
+  }
+  return handle;
 }
 }  // namespace sd

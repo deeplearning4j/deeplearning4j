@@ -490,6 +490,13 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                     if (!arr.isEmpty()) {
                         this.dimensionz = arr;
                         this.dimensions = arr.toLongVector();
+                        if (this.dimensionz.data() != null) {
+                            this.dimensionz.data().setConstant(true);
+                        }
+                        if (this.dimensionz.shapeInfoDataBuffer() != null) {
+                            this.dimensionz.shapeInfoDataBuffer().setConstant(true);
+                        }
+                        this.dimensionz.setCloseable(false);
                     } else {
                         this.dimensions = new long[0];
                     }
@@ -705,11 +712,30 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         }
         try {
             if (dimensions == null || dimensions.length == 0) {
-                // Empty dimensions = reduce all. Create an empty long array.
-                this.dimensionz = Nd4j.empty(DataType.LONG);
+                // Empty dimensions = reduce all. Use -1 sentinel value.
+                // Don't use Nd4j.empty() as it causes CUDA synchronization issues.
+                this.dimensionz = Nd4j.createFromArray(-1L).detach();
             } else {
                 this.dimensionz = Shape.ndArrayDimFromLong(dimensions).detach();
             }
+
+            if (this.dimensionz == null) {
+                throw new IllegalStateException("Failed to create dimension array - result is null. " +
+                        "dimensions: " + (dimensions == null ? "null" : java.util.Arrays.toString(dimensions)));
+            }
+            if (this.dimensionz.data() == null) {
+                throw new IllegalStateException("Dimension array has null data buffer immediately after creation. " +
+                        "This indicates a critical allocation failure. " +
+                        "dimensions: " + (dimensions == null ? "null" : java.util.Arrays.toString(dimensions)) +
+                        ", array isEmpty: " + this.dimensionz.isEmpty() +
+                        ", array rank: " + this.dimensionz.rank());
+            }
+
+            this.dimensionz.data().setConstant(true);
+            if (this.dimensionz.shapeInfoDataBuffer() != null) {
+                this.dimensionz.shapeInfoDataBuffer().setConstant(true);
+            }
+            this.dimensionz.setCloseable(false);
         } finally {
             if (opName != null) {
                 Nd4j.getNativeOps().clearAllocationContext();
@@ -723,6 +749,25 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     }
     public INDArray dimensions() {
         return dimensionz;
+    }
+
+    /**
+     * Set the dimension array directly. This is used during deserialization.
+     * The array is marked as constant to prevent GC from collecting the buffer.
+     * @param dimensionz The dimension array to set
+     */
+    public void setDimensionz(INDArray dimensionz) {
+        this.dimensionz = dimensionz;
+        // Mark dimension arrays as constant to prevent GC from collecting their buffers
+        if (this.dimensionz != null) {
+            if (this.dimensionz.data() != null) {
+                this.dimensionz.data().setConstant(true);
+            }
+            if (this.dimensionz.shapeInfoDataBuffer() != null) {
+                this.dimensionz.shapeInfoDataBuffer().setConstant(true);
+            }
+            this.dimensionz.setCloseable(false);
+        }
     }
 
     public Number getFinalResult() {

@@ -73,7 +73,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.strict.RectifiedTanh;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.SELU;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.Swish;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
-import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -84,7 +83,6 @@ import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.common.util.ArrayUtil;
-import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.*;
 
@@ -109,14 +107,11 @@ public class TestTransformOpValidation extends BaseOpValidation {
 
     @AfterEach
     public void after() {
-        Nd4j.setDataType(initialType);
-    }
-
-
-    @AfterEach
-    public void tearDown() {
-       Nd4j.getNativeOps().enableDebugMode(false);
-       Nd4j.getNativeOps().enableVerboseMode(false);
+        if (initialType != null) {
+            Nd4j.setDataType(initialType);
+        }
+        Nd4j.getNativeOps().enableDebugMode(false);
+        Nd4j.getNativeOps().enableVerboseMode(false);
     }
 
     @ParameterizedTest
@@ -508,7 +503,6 @@ public class TestTransformOpValidation extends BaseOpValidation {
                 .expectedOutput("ds", expOut)
                 .gradientCheck(true)
                 .gradCheckSkipVariables("index1", "index2")
-
         );
         assertNull(err);
     }
@@ -1047,7 +1041,8 @@ public class TestTransformOpValidation extends BaseOpValidation {
                 case 81:
                     ia = Nd4j.rand(DataType.DOUBLE, ia.shape()).muli(0.5);
                     t = sd.nn().preciseGelu(in);
-                    INDArray x3 = Transforms.pow(ia.mul(0.044715), 3, true);
+                    // Precise GELU: 0.5 * x * (1 + tanh(sqrt(2/π) * (x + 0.044715 * x^3)))
+                    INDArray x3 = Transforms.pow(ia, 3, true).muli(0.044715);  // 0.044715 * x^3
                     INDArray inner1 = ia.add(x3).mul(Math.sqrt(2.0 / Math.PI));
                     INDArray inner2 = Transforms.tanh(inner1, true).addi(1.0);
                     INDArray geluPrecise = inner2.mul(ia).mul(0.5);
@@ -1499,32 +1494,21 @@ public class TestTransformOpValidation extends BaseOpValidation {
     }
 
 
-    @Disabled("12/16/2019 https://github.com/eclipse/deeplearning4j/issues/8540")
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPad(Nd4jBackend backend) {
-        INDArray in = Nd4j.valueArrayOf(new long[]{5}, 1.0);
-        INDArray pad = Nd4j.create(new double[]{1, 1}, new long[]{1, 2}).castTo(DataType.LONG);
-        INDArray value = Nd4j.scalar(10.0);
-
-        INDArray out = Nd4j.create(new long[]{7});
-
-        DynamicCustomOp op = DynamicCustomOp.builder("pad")
-                .addInputs(in, pad, value)
-                //.addInputs(in, pad) //Also doesn't work
-                .addOutputs(out)
-                .addIntegerArguments(0) //0 = CONSTANT
-                .build();
+        INDArray in = Nd4j.valueArrayOf(new long[]{5}, 1.0).castTo(DataType.DOUBLE);
+        INDArray pad = Nd4j.create(new double[][]{{1, 1}}).castTo(DataType.INT);  // Shape [1, 2] for 1D input
 
         INDArray exp = Nd4j.create(new double[]{10, 1, 1, 1, 1, 1, 10});
-        OpValidation.validate(new OpTestCase(op)
-                .expectedOutput(0, exp));
 
+        // Test using SameDiff pad operation
         SameDiff sd = SameDiff.create();
         SDVariable s = sd.var("in", in);
-        SDVariable padded = sd.nn().pad(s, sd.constant(pad), 10.0);
-        String err2 = OpValidation.validate(new TestCase(sd).expected(padded, exp).gradientCheck(false));
-        assertNull(err2);
+        SDVariable padVar = sd.constant("pad", pad);
+        SDVariable padded = sd.nn().pad(s, padVar, PadMode.CONSTANT, 10.0);
+        String err = OpValidation.validate(new TestCase(sd).expected(padded, exp).gradientCheck(false));
+        assertNull(err);
     }
 
 

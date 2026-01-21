@@ -125,6 +125,12 @@ class SD_LIB_EXPORT Environment {
   std::atomic<int> _cudaBlockingSync{0};
   std::atomic<int> _cudaDeviceSchedule{0}; // 0: default, 1: spin, 2: yield, 3: block
 
+  // NDArray print options (similar to NumPy's printoptions)
+  std::atomic<int> _printEdgeItems{3};       // Number of elements at each edge when summarizing
+  std::atomic<int> _printThreshold{1000};    // Total elements before switching to summarized output
+  std::atomic<int> _printLineWidth{75};      // Characters per line for output
+  std::atomic<int> _printPrecision{8};       // Floating point precision (digits after decimal)
+
   // CUDA Device Limit configurations
   std::atomic<size_t> _cudaStackSize{0};            // cudaLimitStackSize
   std::atomic<size_t> _cudaMallocHeapSize{0};       // cudaLimitMallocHeapSize
@@ -406,6 +412,15 @@ class SD_LIB_EXPORT Environment {
 
   bool setCudaDeviceLimit(int limitType, size_t value);
 
+  // NDArray print options (NumPy-style printoptions)
+  int printEdgeItems() { return _printEdgeItems.load(); }
+  void setPrintEdgeItems(int edgeItems);
+  int printThreshold() { return _printThreshold.load(); }
+  void setPrintThreshold(int threshold);
+  int printLineWidth() { return _printLineWidth.load(); }
+  void setPrintLineWidth(int lineWidth);
+  int printPrecision() { return _printPrecision.load(); }
+  void setPrintPrecision(int precision);
 
   // Initialize CUDA environment settings from environment variables
   void initCudaEnvironment();

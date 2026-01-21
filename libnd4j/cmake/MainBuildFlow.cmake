@@ -11,6 +11,9 @@
 # This inconsistency caused build to stop at 98% missing files 48-64.
 # =============================================================================
 
+# Include partial linking support for large binaries (>2GB with debug/trace)
+include(${CMAKE_CURRENT_LIST_DIR}/PartialLinking.cmake)
+
 # =============================================================================
 # SECTION 1: HELPER FUNCTION DEFINITIONS
 # All functions are defined first to ensure they are available when called.
@@ -146,6 +149,19 @@ endfunction()
 # --- Platform environment setup functions ---
 function(setup_cpu_environment)
     message(STATUS "🔧 Setting up CPU environment")
+
+    # ==========================================================================
+    # TMPDIR Configuration - Use build directory instead of /tmp (tmpfs)
+    # Large template instantiations can create significant temp files.
+    # By using a directory under the build tree, we use disk storage instead.
+    # ==========================================================================
+    set(CPU_TMPDIR "${CMAKE_BINARY_DIR}/compiler_tmp")
+    file(MAKE_DIRECTORY "${CPU_TMPDIR}")
+    set(ENV{TMPDIR} "${CPU_TMPDIR}")
+    set(ENV{TMP} "${CPU_TMPDIR}")
+    set(ENV{TEMP} "${CPU_TMPDIR}")
+    message(STATUS "📁 Compiler temp directory: ${CPU_TMPDIR}")
+
     add_definitions(-D__CPUBLAS__=true)
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -401,7 +417,7 @@ function(configure_cpu_linking main_target_name)
 
     # Add debug libraries when SD_GCC_FUNCTRACE is enabled
     if(SD_GCC_FUNCTRACE)
-        # CRITICAL FIX (Session #1045): Do NOT link libunwind!
+        # FIX (Session #1045): Do NOT link libunwind!
         # - We removed --unwindlib=libunwind from compile flags in CompilerFlags.cmake
         # - Using system libgcc_s for exception handling (JVM compatible)
         # - libunwind would conflict with JVM's libgcc_s causing _Unwind_SetGR crashes
@@ -490,6 +506,22 @@ function(create_and_link_library)
         add_library(${OBJECT_LIB_NAME} OBJECT ${ALL_SOURCES})
         add_dependencies(${OBJECT_LIB_NAME} flatbuffers_interface)
         target_link_libraries(${OBJECT_LIB_NAME} PUBLIC flatbuffers_interface)
+
+        # =========================================================================
+        # NOTE ON EXCEPTION TABLE REDUCTION (ABANDONED APPROACH)
+        # =========================================================================
+        # We attempted to use -fno-exceptions to reduce .gcc_except_table sections
+        # that cause PC32 relocation overflow in >2GB binaries. However, this approach
+        # was abandoned because DirectShapeTrie.h (which uses try/catch at line 106)
+        # is included transitively by virtually ALL source files through the header
+        # chain (via ConstantShapeHelper.h and other helpers).
+        #
+        # The relocation overflow issue is instead solved via:
+        # 1. Partial linking (PartialLinking.cmake) - pre-links object files in small
+        #    groups to resolve internal relocations before the final link
+        # 2. Gold linker with appropriate flags for large binaries
+        # 3. -mcmodel=medium for 64-bit data addressing
+        # =========================================================================
 
         # =========================================================================
         # EXTERNAL DEPENDENCY BLOCKING
@@ -644,63 +676,83 @@ function(create_and_link_library)
     endif()
 
     if(NOT TARGET ${MAIN_LIB_NAME})
-        add_library(${MAIN_LIB_NAME} SHARED $<TARGET_OBJECTS:${OBJECT_LIB_NAME}>)
-        set_target_properties(${MAIN_LIB_NAME} PROPERTIES OUTPUT_NAME ${MAIN_LIB_NAME})
+        # Check if partial linking is needed for large binary support
+        sd_should_use_partial_linking(USE_PARTIAL_LINKING)
 
-        # Code model configuration is now centralized in CompilerFlags.cmake to avoid conflicts
-        # (CMAKE_SHARED_LINKER_FLAGS is set there with -mcmodel=large for sanitizer builds)
-        # Removed: target_link_options setting to prevent duplicate -mcmodel flags in link command
-        # if(SD_X86_BUILD AND NOT WIN32 AND DEFINED SD_SANITIZERS AND NOT SD_SANITIZERS STREQUAL "")
-        #     target_link_options(${MAIN_LIB_NAME} PRIVATE "-mcmodel=large")
-        #     message(STATUS "Applied -mcmodel=large to linker for ${MAIN_LIB_NAME}")
-        # endif()
-        message(STATUS "Code model configuration deferred to CompilerFlags.cmake (via CMAKE_SHARED_LINKER_FLAGS)")
-
-        # No CUDA includes needed here, they are handled by the linking function
-        target_include_directories(${MAIN_LIB_NAME} PUBLIC
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/blas"
-                "${CMAKE_CURRENT_BINARY_DIR}/include"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/array"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/execution"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/exceptions"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/graph"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/helpers"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/loops"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/memory"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/ops"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/types"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/system"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/legacy"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/performance"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/indexing"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/generated"
-                "${CMAKE_BINARY_DIR}/compilation_units"
-        )
-
-        if(SD_CUDA)
-            target_include_directories(${MAIN_LIB_NAME} PUBLIC
-                    "${CMAKE_BINARY_DIR}/cuda_instantiations"
-            )
+        if(USE_PARTIAL_LINKING)
+            message(STATUS "")
+            message(STATUS "╔══════════════════════════════════════════════════════════════════╗")
+            message(STATUS "║  LARGE BINARY BUILD DETECTED (SD_GCC_FUNCTRACE + SD_CUDA)        ║")
+            message(STATUS "║  Using partial linking to handle >2GB .eh_frame relocations      ║")
+            message(STATUS "╚══════════════════════════════════════════════════════════════════╝")
+            message(STATUS "")
+            sd_create_library_with_partial_linking(${MAIN_LIB_NAME} ${OBJECT_LIB_NAME})
         else()
-            target_include_directories(${MAIN_LIB_NAME} PUBLIC
-                    "${OPENBLAS_PATH}/include"
-                    "${CMAKE_BINARY_DIR}/cpu_instantiations"
-            )
-        endif ()
+            add_library(${MAIN_LIB_NAME} SHARED $<TARGET_OBJECTS:${OBJECT_LIB_NAME}>)
+        endif()
 
-        # 🔧 ALSO apply type definitions to the shared library (for completeness)
-        message(STATUS "🔧 Applying type definitions to SHARED library: ${MAIN_LIB_NAME}")
-        setup_type_definitions_for_target(${MAIN_LIB_NAME})
+        # For IMPORTED targets (created by partial linking), properties and includes
+        # are already set in PartialLinking.cmake. Skip these operations.
+        if(NOT SD_PARTIAL_LINKED_TARGET)
+            set_target_properties(${MAIN_LIB_NAME} PROPERTIES OUTPUT_NAME ${MAIN_LIB_NAME})
+
+            # Code model configuration is now centralized in CompilerFlags.cmake to avoid conflicts
+            # (CMAKE_SHARED_LINKER_FLAGS is set there with -mcmodel=large for sanitizer builds)
+            message(STATUS "Code model configuration deferred to CompilerFlags.cmake (via CMAKE_SHARED_LINKER_FLAGS)")
+
+            # No CUDA includes needed here, they are handled by the linking function
+            target_include_directories(${MAIN_LIB_NAME} PUBLIC
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/blas"
+                    "${CMAKE_CURRENT_BINARY_DIR}/include"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/array"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/execution"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/exceptions"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/graph"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/helpers"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/loops"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/memory"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/ops"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/types"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/system"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/legacy"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/performance"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/indexing"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/generated"
+                    "${CMAKE_BINARY_DIR}/compilation_units"
+            )
+
+            if(SD_CUDA)
+                target_include_directories(${MAIN_LIB_NAME} PUBLIC
+                        "${CMAKE_BINARY_DIR}/cuda_instantiations"
+                )
+            else()
+                target_include_directories(${MAIN_LIB_NAME} PUBLIC
+                        "${OPENBLAS_PATH}/include"
+                        "${CMAKE_BINARY_DIR}/cpu_instantiations"
+                )
+            endif ()
+
+            # 🔧 ALSO apply type definitions to the shared library (for completeness)
+            message(STATUS "🔧 Applying type definitions to SHARED library: ${MAIN_LIB_NAME}")
+            setup_type_definitions_for_target(${MAIN_LIB_NAME})
+        else()
+            message(STATUS "Skipping target configuration for IMPORTED target (partial linking)")
+        endif()
     endif()
 
     # Remove the old call since we're now applying to both targets explicitly
     # apply_libnd4j_type_definitions_auto()
 
-    if(SD_CUDA)
-        configure_cuda_linking(${MAIN_LIB_NAME})
+    # For IMPORTED targets (partial linking), linking is handled by PartialLinking.cmake
+    if(NOT SD_PARTIAL_LINKED_TARGET)
+        if(SD_CUDA)
+            configure_cuda_linking(${MAIN_LIB_NAME})
+        else()
+            configure_cpu_linking(${MAIN_LIB_NAME})
+        endif()
     else()
-        configure_cpu_linking(${MAIN_LIB_NAME})
+        message(STATUS "Skipping linking configuration for IMPORTED target (handled by partial linking)")
     endif()
 endfunction()
 

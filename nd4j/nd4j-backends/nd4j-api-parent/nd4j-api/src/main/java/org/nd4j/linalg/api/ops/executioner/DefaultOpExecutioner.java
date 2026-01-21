@@ -725,9 +725,6 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         List<INDArray> inArgs = inputsFromOp(op,oc);
         List<INDArray> outArgs = outputsFromOp(op,oc);
         logCustomOpArrayEventIfNeccessary(inArgs, outArgs,NDArrayEventType.OP_INPUT , NDArrayEventType.OP_OUTPUT);
-        // CRITICAL: Check for BOTH Inf and NaN when both are enabled
-        // Previously used "else if" which meant Inf check was skipped when NaN check was enabled
-        // This allowed Inf values to silently propagate until they caused NaN
         if(profilerConfig.isCheckForINF()) {
             OpExecutionerUtil.checkForInf(op,oc);
         }
@@ -1125,6 +1122,8 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public List<DataBuffer> calculateOutputShape(@NonNull CustomOp op, OpContext opContext) {
+        Nd4j.getAffinityManager().getDeviceForCurrentThread();
+
         val hash = op.opHash();
         val result = new ArrayList<DataBuffer>();
 
@@ -1173,7 +1172,9 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     protected DataBuffer getShapeFromPointer(CustomOp op,OpContext ctx,LongPointer ptr) {
         val rank = (int) ptr.get(0);
         int len = Shape.shapeInfoLength(rank);
-        return Nd4j.createBuffer(ptr.capacity(len),Shape.shapeInfoLength(rank),DataType.INT64);
+        DataBuffer buffer = Nd4j.createBuffer(ptr.capacity(len),Shape.shapeInfoLength(rank),DataType.INT64);
+        buffer.setConstant(true);
+        return buffer;
     }
 
 

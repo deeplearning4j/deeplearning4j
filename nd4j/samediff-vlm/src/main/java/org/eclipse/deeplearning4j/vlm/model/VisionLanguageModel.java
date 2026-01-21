@@ -552,7 +552,7 @@ public class VisionLanguageModel implements AutoCloseable {
                 .embedTokens(loaded.getEmbedTokens())
                 .decoder(loaded.getDecoder())
                 .tokenizer(loaded.getTokenizer())
-                .imagePreprocessor(VLMImagePreprocessor.forDevice(loaded.getPreprocessorConfig(), device))
+                .imagePreprocessor(VLMImagePreprocessor.forDevice(loaded.getImagePreprocessor().getConfig(), device))
                 .config(loaded.getConfig())
                 .targetDevice(device)
                 .build();

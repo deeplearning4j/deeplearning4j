@@ -25,6 +25,7 @@
 #include <cstring>  // for memcpy
 #include <ops/declarable/headers/parity_ops.h>
 #include <legacy/NativeOpExecutioner.h>
+#include <system/Environment.h>
 #include <array>
 
 namespace sd {
@@ -141,11 +142,9 @@ bool _preprocess_strided_slice(std::vector<sd::LongType>* indicesList, std::vect
     }
   }
 
-  // FIX: Check if end values are 0 when they shouldn't be
-  // For ONNX slice [0:1] on axis 0, end should be 1, not 0
-  if (end.size() == 1 && end[0] == 0 && begin.size() == 1 && begin[0] == 0) {
-    THROW_EXCEPTION("Invalid bounds for strided slice. Result is empty.");
-  }
+  // NOTE: Empty slices (begin==end) are valid and should produce empty arrays
+  // Do not throw an exception for begin=0, end=0 - this is valid when masks are applied
+  // The check for invalid ONNX slices should happen elsewhere with proper context
 
   std::vector<int> preshape;
   bool ellipsis_seen = false;
@@ -526,17 +525,19 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
 
     // Fast path: check if both source slice and destination are contiguous
     // For contiguous memory, use memcpy instead of transform
+    // NOTE: Only use memcpy on CPU - on CUDA, data is on device and memcpy won't work
     const LongType length = z->lengthOf();
     const bool subContiguous = shape::order(subArrShapeInfo) == 'c' &&
                                 shape::strideDescendingCAscendingF(subArrShapeInfo);
     const bool zContiguous = z->ordering() == 'c' &&
                               shape::strideDescendingCAscendingF(z->shapeInfo());
+    const bool isCpuBackend = Environment::getInstance().isCPU();
 
-    if (subContiguous && zContiguous && length > 0) {
-      // Both contiguous - use direct memcpy
+    if (isCpuBackend && subContiguous && zContiguous && length > 0) {
+      // Both contiguous and on CPU - use direct memcpy
       const auto sizeBytes = length * x->sizeOfT();
       std::memcpy(z->buffer(), x->bufferWithOffset(offset), sizeBytes);
-    } else {
+    } else if (length > 0) {
       // Non-contiguous - use transform
       auto subArrShapeInfoPack = ConstantShapeHelper::getInstance().bufferForShapeInfo(subArrShapeInfo);
 

@@ -157,6 +157,10 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
     delete permutedGradI;
   }
 
+  // Synchronize CUDA stream before cleanup to ensure all async operations complete
+  auto cudaCtx = block.launchContext();
+  cudaStreamSynchronize(*cudaCtx->getCudaStream());
+
   // Clean up
   delete permuted;
   delete eps6d;

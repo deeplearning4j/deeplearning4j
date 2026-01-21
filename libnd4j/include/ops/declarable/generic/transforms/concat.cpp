@@ -25,6 +25,7 @@
 #include <ops/declarable/helpers/transforms.h>
 
 #include <array>
+#include <cstdio>
 #if NOT_EXCLUDED(OP_concat)
 
 namespace sd {
@@ -56,8 +57,53 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
 
   for (LongType i = 0; i < numOfInArrs; ++i) {
     auto input = INPUT_VARIABLE(i);
+
+    if (input->rankOf() == 0 && input->isEmpty()) {
+      std::string errorMsg = "CONCAT op: Input scalar at index ";
+      errorMsg += std::to_string(i);
+      errorMsg += " is incorrectly marked as empty. True scalars (rank 0) should never be empty ";
+      errorMsg += "(they have exactly 1 element). This indicates either: ";
+      errorMsg += "1) The scalar's shape info has been corrupted (use-after-free), ";
+      errorMsg += "2) The ARRAY_EMPTY flag was incorrectly set during array creation, ";
+      errorMsg += "3) A shape [0] array (which is empty) is being confused with a scalar. ";
+      errorMsg += "Input data type: ";
+      errorMsg += DataTypeUtils::asString(input->dataType());
+      errorMsg += ", buffer address: 0x";
+      char hexBuf[32];
+      snprintf(hexBuf, sizeof(hexBuf), "%lx", reinterpret_cast<unsigned long>(input->buffer()));
+      errorMsg += hexBuf;
+      THROW_EXCEPTION(errorMsg.c_str());
+    }
+
     if (!input->isEmpty()) {
       allOfSameType &= (typeOfFirstArr == input->dataType());
+
+      // VALIDATION: Check for pointer-like values in INT64 scalar inputs
+      // This catches a corruption bug where pointer addresses are stored as data values
+      if (input->rankOf() == 0 && input->dataType() == DataType::INT64) {
+        auto value = input->e<sd::LongType>(0);
+        // Pointer values typically have high bits set (> 0x100000000000 = 256TB address space)
+        // Valid shape dimensions should be much smaller
+        if (value > 0x100000000000ULL && value < 0x8000000000000000ULL) {
+          std::string errorMsg = "CONCAT op: Input scalar at index ";
+          errorMsg += std::to_string(i);
+          errorMsg += " contains a value that looks like a pointer address: ";
+          errorMsg += std::to_string(value);
+          errorMsg += " (hex: 0x";
+          char hexBuf[32];
+          snprintf(hexBuf, sizeof(hexBuf), "%lx", static_cast<unsigned long>(value));
+          errorMsg += hexBuf;
+          errorMsg += "). This indicates the input array's data buffer contains a pointer ";
+          errorMsg += "instead of actual data. Possible causes: ";
+          errorMsg += "1) Use-after-free where the scalar buffer was deallocated and memory reused, ";
+          errorMsg += "2) Buffer pointer was stored as data instead of dereferencing, ";
+          errorMsg += "3) Race condition during scalar array creation. ";
+          errorMsg += "Input buffer address: 0x";
+          snprintf(hexBuf, sizeof(hexBuf), "%lx", reinterpret_cast<unsigned long>(input->buffer()));
+          errorMsg += hexBuf;
+          THROW_EXCEPTION(errorMsg.c_str());
+        }
+      }
 
       if (input->rankOf() == 0) {
         NDArray* vec = nullptr;
@@ -213,8 +259,22 @@ DECLARE_SHAPE_FN(concat) {
     const sd::LongType* currentShapeInfo = inputShape->at(i);
     const int currentRank = shape::rank(currentShapeInfo);
 
+    if (currentRank == 0 && (shape::isEmptyConst(currentShapeInfo) || shape::length(currentShapeInfo) == 0)) {
+      std::string errorMsg = "CONCAT shape calculation: Input at index ";
+      errorMsg += std::to_string(i);
+      errorMsg += " is a rank-0 array (scalar) that is marked as empty or has length 0. ";
+      errorMsg += "True scalars should have exactly 1 element. This indicates shape info corruption, ";
+      errorMsg += "possibly due to use-after-free or incorrect ARRAY_EMPTY flag. ";
+      errorMsg += "isEmpty flag: ";
+      errorMsg += std::to_string(shape::isEmptyConst(currentShapeInfo));
+      errorMsg += ", length: ";
+      errorMsg += std::to_string(shape::length(currentShapeInfo));
+      THROW_EXCEPTION(errorMsg.c_str());
+    }
+
     if (currentRank <= 1) {
-      const bool isEmpty = shape::isEmptyConst(currentShapeInfo);
+      // Check both the ARRAY_EMPTY flag AND length == 0 (arrays like [0] are effectively empty)
+      const bool isEmpty = shape::isEmptyConst(currentShapeInfo) || shape::length(currentShapeInfo) == 0;
       const bool isScalar = shape::isScalar(currentShapeInfo);
       const int len = isScalar ? 1 : shape::length(currentShapeInfo);
       newDim += len;
@@ -228,7 +288,8 @@ DECLARE_SHAPE_FN(concat) {
         numOfNonEmptyArrs++;
       }
     } else {
-      const bool isEmpty = shape::isEmptyConst(currentShapeInfo);
+      // Check both the ARRAY_EMPTY flag AND length == 0 (arrays like [0,1] are effectively empty)
+      const bool isEmpty = shape::isEmptyConst(currentShapeInfo) || shape::length(currentShapeInfo) == 0;
       const sd::LongType* currShape = shape::shapeOf(currentShapeInfo);
       newDim += currShape[axis];
 
@@ -291,6 +352,10 @@ DECLARE_SHAPE_FN(concat) {
     // case when we have only one input array
     if (numOfNonEmptyArrs == 1) {
       ShapeUtils::updateStridesAndType(outShapeInfo, arrShapes.at(firstNonEmptyShapeIdx), shape::order(arrShapes.at(firstNonEmptyShapeIdx)));
+      // If the output has length 0, set the ARRAY_EMPTY flag
+      if (shape::length(outShapeInfo) == 0) {
+        ArrayOptions::setPropertyBit(outShapeInfo, ARRAY_EMPTY);
+      }
       auto result = CONSTANT(outShapeInfo);
       delete[] outShapeInfo;
       return SHAPELIST(result);
@@ -299,6 +364,11 @@ DECLARE_SHAPE_FN(concat) {
     auto currShape = shape::shapeOf(outShapeInfo);
     currShape[axis] = newDim;
     ShapeUtils::updateStridesAndType(outShapeInfo, arrShapes.at(firstNonEmptyShapeIdx), shape::order(arrShapes.at(firstNonEmptyShapeIdx)));
+
+    // If the output has length 0, set the ARRAY_EMPTY flag
+    if (shape::length(outShapeInfo) == 0) {
+      ArrayOptions::setPropertyBit(outShapeInfo, ARRAY_EMPTY);
+    }
 
     //note: always ensure that the constant shape helper is used, otherwise we could end up with
     //some modification of pre existing cache values.

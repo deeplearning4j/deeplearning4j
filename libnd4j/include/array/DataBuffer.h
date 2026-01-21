@@ -141,6 +141,20 @@ class SD_LIB_EXPORT DataBuffer {
    */
   void validateIntegrity() const;
 
+  /**
+   * Check if this DataBuffer has been destroyed (destructor was called).
+   * After destruction, the magic number is set to 0xDEADBEEF.
+   * This is useful for detecting use-after-free and preventing double-free.
+   * @return true if the buffer has been destroyed, false if it's still valid
+   */
+  bool isDestroyed() const { return _magicNumber == 0xDEADBEEF; }
+
+  /**
+   * Check if this DataBuffer is valid (not destroyed and has correct magic number).
+   * @return true if the buffer is valid, false otherwise
+   */
+  bool isValid() const { return _magicNumber == MAGIC_NUMBER && !closed; }
+
   void allocatePrimary();
   void allocateSpecial();
 
@@ -180,6 +194,8 @@ class SD_LIB_EXPORT DataBuffer {
   void  showBufferLimited();
   //for Debug purposes
   void showCounters(const char* msg1, const char* msg2);
+  // Reset host/device sync counters when reusing buffers.
+  void resetCounters();
 
   /**
    * This method deletes buffers, if we're owners

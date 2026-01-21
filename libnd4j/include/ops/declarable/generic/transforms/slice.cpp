@@ -82,7 +82,8 @@ CUSTOM_OP_IMPL(slice, 1, 1, false, 0, -2) {
   }
 
   if (empty) {
-    REQUIRE_TRUE(output->isEmpty(), 0, "Slice: empty array indices requested, but output array is not empty");
+    // Check both isEmpty() flag AND lengthOf() == 0 since arrays with shape [0] might not have ARRAY_EMPTY flag set
+    REQUIRE_TRUE(output->isEmpty() || output->lengthOf() == 0, 0, "Slice: empty array indices requested, but output array is not empty");
     return Status::OK;
   }
 

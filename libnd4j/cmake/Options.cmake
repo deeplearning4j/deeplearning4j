@@ -18,6 +18,9 @@ option(SD_CUDA "Build CUDA/GPU backend" OFF)
 option(SD_TPU "Build TPU backend using PJRT" OFF)
 set(TPU_VERSION "v5" CACHE STRING "TPU version (v4, v5)")
 
+# --- Build Verbosity Options ---
+option(SD_VERBOSE_CUDA "Enable verbose CUDA/nvcc output (increases memory usage)" OFF)
+
 # --- Backend Namespace Isolation ---
 # When multiple backends (CPU, CUDA) are loaded in the same process, symbol conflicts
 # can occur because both libraries export identically-named symbols (ops, helpers, singletons).

@@ -18,8 +18,10 @@
  *  *****************************************************************************
  */
 
-package org.nd4j.jita.allocator.impl;
 
+package org.nd4j.jita.allocator.impl;
+import org.bytedeco.javacpp.IntPointer;
+import java.util.List;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.val;
@@ -132,6 +134,14 @@ public class AtomicAllocator implements Allocator {
 
     public void applyConfiguration() {
         CudaEnvironment.getInstance().notifyConfigurationApplied();
+        List<Integer> devices = configuration.getAvailableDevices();
+        if (devices != null && !devices.isEmpty()) {
+            IntPointer ptr = new IntPointer(devices.size());
+            for (int i = 0; i < devices.size(); i++) {
+                ptr.put(i, devices.get(i));
+            }
+            NativeOpsHolder.getInstance().getDeviceNativeOps().setAvailableDevices(ptr, devices.size());
+        }
 
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(configuration.isDebug());
 

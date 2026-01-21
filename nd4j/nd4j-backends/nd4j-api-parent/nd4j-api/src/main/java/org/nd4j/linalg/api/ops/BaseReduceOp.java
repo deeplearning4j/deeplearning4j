@@ -31,6 +31,7 @@ import org.nd4j.autodiff.util.SameDiffUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -229,8 +230,19 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
             } else {
                 long[] shape = x.shape();
                 if(dimensions == null || Shape.isWholeArray(shape, dimensions)){
-                    //Return scalar
-                    return x.reshape().dup();
+                    // Return scalar only if input has exactly 1 element
+                    // This is a true no-op for whole-array reduction of a single element
+                    if (x.length() == 1) {
+                        return x.reshape().dup();
+                    } else {
+                        // If x has more than 1 element, this shouldn't be called as a noOp
+                        // Log a warning and return a dup - caller should have done actual reduction
+                        log.warn("noOp() called for whole-array reduction on array with {} elements. " +
+                            "Input shape: {}, dimensions: {}. Returning dup instead.",
+                            x.length(), java.util.Arrays.toString(shape),
+                            (dimensions == null ? "null" : java.util.Arrays.toString(dimensions)));
+                        return x.dup();
+                    }
                 } else {
                     //Strip out size 1 dimensions
                     long[] outShape = ArrayUtil.removeIndex(shape, dimensions);
@@ -313,6 +325,21 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
         if(properties.containsKey("dimensionz")) {
             INDArray array = (INDArray) properties.get("dimensionz");
             this.dimensionz = array;
+            if (this.dimensionz != null) {
+                // If loaded array has null data buffer, replace it with the -1 sentinel
+                // which means "reduce all dimensions"
+                if (this.dimensionz.data() == null || this.dimensionz.isEmpty()) {
+                    this.dimensionz = Nd4j.createFromArray(-1L);
+                }
+                // Mark dimension arrays as constant to prevent GC from freeing them
+                if (this.dimensionz.data() != null) {
+                    this.dimensionz.data().setConstant(true);
+                }
+                if (this.dimensionz.shapeInfoDataBuffer() != null) {
+                    this.dimensionz.shapeInfoDataBuffer().setConstant(true);
+                }
+                this.dimensionz.setCloseable(false);
+            }
         }
 
         if(properties.containsKey("dimensionVariable") && properties.get("dimensionVariable") != null) {

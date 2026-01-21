@@ -58,11 +58,6 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
     // Keep parent arrays alive to prevent use-after-free
     private INDArray[] parentArrays;
 
-    // CRITICAL: Keep OpaqueNDArray instances alive to prevent use-after-free!
-    // The PointerPointer only stores raw native pointers. Without this field,
-    // the OpaqueNDArray Java objects become GC-eligible immediately after createFrom()
-    // returns. When GC runs, DeallocatorService deletes the native sd::NDArray* objects
-    // that the PointerPointer's raw pointers still reference -> heap corruption!
     private OpaqueNDArray[] opaqueArrays;
 
     // Track the deallocator for this instance

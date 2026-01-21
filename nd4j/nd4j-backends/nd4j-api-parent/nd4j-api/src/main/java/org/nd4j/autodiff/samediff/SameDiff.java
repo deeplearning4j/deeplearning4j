@@ -985,7 +985,19 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
 
         SDVariable v = getVariable(varName);
         if (v.isConstant()) {
-            constantArrays.setArray(varName, arr);
+            arr = Nd4j.getDeallocatorService().registerPendingConstant(arr);
+            try {
+                if (arr.data() != null) {
+                    arr.data().setConstant(true);
+                }
+                if (arr.shapeInfoDataBuffer() != null) {
+                    arr.shapeInfoDataBuffer().setConstant(true);
+                }
+                arr.setCloseable(false);
+                constantArrays.setArray(varName, arr);
+            } finally {
+                Nd4j.getDeallocatorService().releasePendingConstant(arr);
+            }
         } else if (v.getVariableType() == VariableType.VARIABLE) {
             variablesArrays.setArray(varName, arr);
         } else if (v.isPlaceHolder()) {
@@ -1145,6 +1157,18 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                 variablesArrays.setArray(variable.name(), arr);
                 break;
             case CONSTANT:
+                arr = Nd4j.getDeallocatorService().registerPendingConstant(arr);
+                try {
+                    if (arr.data() != null) {
+                        arr.data().setConstant(true);
+                    }
+                    if (arr.shapeInfoDataBuffer() != null) {
+                        arr.shapeInfoDataBuffer().setConstant(true);
+                    }
+                    arr.setCloseable(false);
+                } finally {
+                    Nd4j.getDeallocatorService().releasePendingConstant(arr);
+                }
                 constantArrays.setArray(variable.name(), arr);
                 break;
             case ARRAY:
@@ -1201,6 +1225,18 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         if(variable.getVariableType() == VariableType.VARIABLE ){
             variablesArrays.setArray(variable.name(), arr);
         } else {
+            arr = Nd4j.getDeallocatorService().registerPendingConstant(arr);
+            try {
+                if (arr.data() != null) {
+                    arr.data().setConstant(true);
+                }
+                if (arr.shapeInfoDataBuffer() != null) {
+                    arr.shapeInfoDataBuffer().setConstant(true);
+                }
+                arr.setCloseable(false);
+            } finally {
+                Nd4j.getDeallocatorService().releasePendingConstant(arr);
+            }
             constantArrays.setArray(variable.name(), arr);
         }
     }
@@ -3336,17 +3372,33 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
 
         if (name == null || name.length() < 1)
             name = getNewVarName();
-        if(constant.isView()) {
+        if(constant.isView() || constant.isAttached()) {
             try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()){
                 constant = constant.dup();
             }
         }
 
-        SDVariable v = new SDVariable(name, VariableType.CONSTANT, this, constant.shape(), constant.dataType());
-        name = v.name();
-        variables.put(name, Variable.builder().name(name).variable(v).build());
-        constantArrays.setArray(name, constant);
-        return v;
+        Nd4j.getDeallocatorService().registerPendingConstant(constant);
+        try {
+            if (constant.data() != null) {
+                constant.data().setConstant(true);
+            }
+            // Also mark the shape info buffer as constant
+            if (constant.shapeInfoDataBuffer() != null) {
+                constant.shapeInfoDataBuffer().setConstant(true);
+            }
+            // Prevent explicit close() on the array
+            constant.setCloseable(false);
+
+            SDVariable v = new SDVariable(name, VariableType.CONSTANT, this, constant.shape(), constant.dataType());
+            name = v.name();
+            variables.put(name, Variable.builder().name(name).variable(v).build());
+            constantArrays.setArray(name, constant);
+            return v;
+        } finally {
+            // Release from pending constants - the array is now protected by being marked constant
+            Nd4j.getDeallocatorService().releasePendingConstant(constant);
+        }
     }
 
     /**
@@ -4034,8 +4086,18 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             String n = variable.name();
             INDArray arr = variable.getArr();
             Preconditions.checkNotNull(arr, "Could not get array for variable %s: if this is a placeholder, use SDVariable.setArray before converting", variable);
-            //constants are reusable and should not be reused
-            arr.setCloseable(false);
+            arr = Nd4j.getDeallocatorService().registerPendingConstant(arr);
+            try {
+                if (arr.data() != null) {
+                    arr.data().setConstant(true);
+                }
+                if (arr.shapeInfoDataBuffer() != null) {
+                    arr.shapeInfoDataBuffer().setConstant(true);
+                }
+                arr.setCloseable(false);
+            } finally {
+                Nd4j.getDeallocatorService().releasePendingConstant(arr);
+            }
             constantArrays.setArray(n, arr);   //DeviceLocal with delayed initialization, in case we don't actually need multiple threads
             variablesArrays.removeArray(n);
             if (!placeholdersPerThread.isEmpty()) {
@@ -4218,6 +4280,18 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                 case CONSTANT:
                     INDArray arr2 = constantArrays.removeArray(e.getKey());
                     INDArray newArr2 = arr2.castTo(d);
+                    newArr2 = Nd4j.getDeallocatorService().registerPendingConstant(newArr2);
+                    try {
+                        if (newArr2.data() != null) {
+                            newArr2.data().setConstant(true);
+                        }
+                        if (newArr2.shapeInfoDataBuffer() != null) {
+                            newArr2.shapeInfoDataBuffer().setConstant(true);
+                        }
+                        newArr2.setCloseable(false);
+                    } finally {
+                        Nd4j.getDeallocatorService().releasePendingConstant(newArr2);
+                    }
                     constantArrays.setArray(e.getKey(), newArr2);  //DeviceLocal with delayed initialization, in case we don't actually need multiple threads
                     break;
                 case PLACEHOLDER:
@@ -4728,7 +4802,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * @return SDVariable
      */
     public SDVariable constant(String name, double value) {
-        return constant(name, Nd4j.scalar(value));
+        return constant(name, Nd4j.constantScalar(value));
 
     }
 
@@ -4751,7 +4825,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * @return SDVariable
      */
     public SDVariable constant(String name, float value) {
-        return constant(name, Nd4j.scalar(value));
+        return constant(name, Nd4j.constantScalar(value));
 
     }
 
@@ -4772,7 +4846,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * @return SDVariable
      */
     public SDVariable constant(String name, int value) {
-        return constant(name, Nd4j.scalar(value));
+        return constant(name, Nd4j.constantScalar(value));
 
     }
 
@@ -4794,7 +4868,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * @param value Value to initialize the constant with
      */
     public SDVariable constant(String name, boolean value) {
-        return constant(name, Nd4j.scalar(value));
+        return constant(name, Nd4j.constantScalar(value));
 
     }
 
@@ -4814,7 +4888,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * @param value Value to initialize the constant with
      */
     public SDVariable constant(String name, long value) {
-        return constant(name, Nd4j.scalar(value));
+        return constant(name, Nd4j.constantScalar(value));
 
     }
 
@@ -4826,7 +4900,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * @param value    Value to initialize the constant with
      */
     public SDVariable constant(String name, DataType dataType, Number value) {
-        return constant(name, Nd4j.scalar(dataType, value));
+        return constant(name, Nd4j.constantScalar(dataType, value));
 
     }
 
@@ -7042,7 +7116,16 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                 try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
                     arr = Nd4j.createFromFlatArray(fa);
                 }
-                sd.setArrayForVariable(n, arr);
+                if (vt == VariableType.CONSTANT) {
+                    arr = Nd4j.getDeallocatorService().registerPendingConstant(arr);
+                    try {
+                        sd.setArrayForVariable(n, arr);
+                    } finally {
+                        Nd4j.getDeallocatorService().releasePendingConstant(arr);
+                    }
+                } else {
+                    sd.setArrayForVariable(n, arr);
+                }
             }
 
             IntPair id = v.id();    //First value: node (op) id. Second: output number

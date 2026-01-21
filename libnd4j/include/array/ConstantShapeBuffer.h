@@ -45,6 +45,7 @@ class SD_LIB_EXPORT ConstantShapeBuffer {
   PointerWrapper* _primaryShapeInfo;
   PointerWrapper*  _specialShapeInfo;
   std::atomic<int> _refCount;
+  bool _isOwner;
 
 
  public:
@@ -52,6 +53,46 @@ class SD_LIB_EXPORT ConstantShapeBuffer {
   ConstantShapeBuffer( PointerWrapper* primary, PointerWrapper* special);
   ConstantShapeBuffer();
   ~ConstantShapeBuffer();
+
+  // =========================================================================
+  // COPY PREVENTION - CRITICAL FOR MEMORY SAFETY
+  // =========================================================================
+  //
+  // Copy construction and assignment are DELETED to prevent heap corruption.
+  //
+  // The previous implementation allowed copying, creating non-owning copies
+  // that shared pointers with the original. This was dangerous because:
+  //
+  // 1. DANGLING POINTERS: If the original buffer is deleted while copies exist,
+  //    the copies have dangling pointers to freed memory.
+  //
+  // 2. REFERENCE COUNT CONFUSION: Each copy had its own refCount, so the
+  //    original could be deleted (refCount=0) while copies still held pointers.
+  //
+  // 3. JNI/JavaCPP ISSUES: The copy constructor was used for @ByVal returns,
+  //    creating temporaries with shared pointers that could outlive the original.
+  //
+  // HOW TO ADAPT CODE THAT PREVIOUSLY COPIED ConstantShapeBuffer:
+  //
+  // - Use POINTERS instead of values:
+  //     ConstantShapeBuffer* buf = helper.bufferForShapeInfo(...);
+  //     // Use buf directly, don't copy
+  //
+  // - Use REFERENCES for function parameters:
+  //     void process(const ConstantShapeBuffer& buffer) { ... }
+  //
+  // - For JavaCPP/JNI: Use pointer returns (@ByRef or Pointer) instead of @ByVal
+  //
+  // - For STL containers: Use std::vector<ConstantShapeBuffer*> instead of
+  //     std::vector<ConstantShapeBuffer>
+  //
+  // =========================================================================
+  ConstantShapeBuffer(const ConstantShapeBuffer& other) = delete;
+  ConstantShapeBuffer& operator=(const ConstantShapeBuffer& other) = delete;
+
+  // Move semantics ARE allowed - source is invalidated after move
+  ConstantShapeBuffer(ConstantShapeBuffer&& other) noexcept;
+  ConstantShapeBuffer& operator=(ConstantShapeBuffer&& other) noexcept;
 
   /**
    * Check if this buffer is valid (not garbage/use-after-free).

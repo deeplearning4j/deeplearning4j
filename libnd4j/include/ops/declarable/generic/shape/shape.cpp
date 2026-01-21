@@ -34,13 +34,16 @@ CUSTOM_OP_IMPL(shape_of, 1, 1, false, 0, 0) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
-  // Cache rank and get direct pointer to shape array for better performance
   const int rank = x->rankOf();
   const sd::LongType* xShape = shape::shapeOf(x->shapeInfo());
 
-  // Use direct buffer write based on output type
+  // Ensure host buffer is allocated before writing
+  if (z->getDataBuffer() != nullptr) {
+    z->getDataBuffer()->allocatePrimary();
+  }
+
+  // Write to host buffer directly for efficiency
   if (z->dataType() == sd::DataType::INT64) {
-    // Fast path: direct memcpy for INT64 (most common case)
     auto zBuff = z->bufferAsT<sd::LongType>();
     std::memcpy(zBuff, xShape, rank * sizeof(sd::LongType));
   } else if (z->dataType() == sd::DataType::INT32) {
@@ -49,11 +52,14 @@ CUSTOM_OP_IMPL(shape_of, 1, 1, false, 0, 0) {
       zBuff[e] = static_cast<int>(xShape[e]);
     }
   } else {
-    // Fallback for other int types
     for (int e = 0; e < rank; e++) {
       z->p(e, xShape[e]);
     }
   }
+
+  // Mark host as written and sync to device
+  z->tickWriteHost();
+  z->syncToDevice();
 
   STORE_RESULT(z);
 

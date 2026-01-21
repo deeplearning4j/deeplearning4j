@@ -65,6 +65,54 @@ public interface HybridDataBuffer extends DataBuffer {
     void setOwnerDevice(DeviceDescriptor device);
 
     /**
+     * Get the device this buffer is pinned to, if any.
+     * When pinned, ops should be routed to this device and transfers
+     * to other devices should be treated as an error.
+     *
+     * @return the pinned device, or null if not pinned
+     */
+    default DeviceDescriptor getPinnedDevice() {
+        return null;
+    }
+
+    /**
+     * Pin this buffer to a specific device.
+     * Implementations should ensure data is available on that device.
+     *
+     * @param device the device to pin to
+     */
+    default void pinTo(DeviceDescriptor device) {
+        // no-op by default
+    }
+
+    /**
+     * Remove any pinning from this buffer.
+     */
+    default void unpin() {
+        // no-op by default
+    }
+
+    /**
+     * Check if this buffer is pinned to a device.
+     *
+     * @return true if pinned
+     */
+    default boolean isPinned() {
+        return getPinnedDevice() != null;
+    }
+
+    /**
+     * Get the effective device for routing decisions.
+     * Uses the pinned device if present, otherwise the owner device.
+     *
+     * @return the effective device, or null if unknown
+     */
+    default DeviceDescriptor getEffectiveDevice() {
+        DeviceDescriptor pinned = getPinnedDevice();
+        return pinned != null ? pinned : getOwnerDevice();
+    }
+
+    /**
      * Check if the data is valid on the specified device.
      *
      * @param device the device to check

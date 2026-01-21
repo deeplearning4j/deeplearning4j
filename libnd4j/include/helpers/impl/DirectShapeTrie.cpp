@@ -63,16 +63,16 @@ void DirectShapeTrie::waitForInitialization() const {
 void ShapeTrieNode::setBuffer(ConstantShapeBuffer* buf) {
   if (!buf) return;  // Nothing to do if buffer is null
 
-  // If we already have a buffer, don't replace it
-  if (_buffer != nullptr) {
-    // The existing buffer takes precedence
-    // Don't delete the new buffer - let the caller handle it
+  ConstantShapeBuffer* expected = nullptr;
+  if (_buffer.compare_exchange_strong(expected, buf, std::memory_order_acq_rel)) {
+    // Successfully set the buffer - we are the first thread
+    // The buffer is now owned by the cache, addRef() was already done by caller
     return;
   }
 
-  // At this point, we know _buffer is null and buf is valid
-  // Set the buffer atomically
-  _buffer = buf;
+  // Another thread already set a buffer (expected now contains the existing buffer).
+  // Don't replace it - the first buffer wins to maintain consistency.
+  // The caller must handle the unused buffer (delete it or return it).
 }
 
 
@@ -87,11 +87,6 @@ size_t DirectShapeTrie::computeHash(const LongType* shapeInfo) const {
   size_t hash = 17; // Prime number starting point
   const int rank = shape::rank(shapeInfo);
 
-  // CRITICAL: Include device ID in hash to make cache device-aware
-  // This ensures each GPU device gets its own cached shape buffers
-  // Without this, a shape buffer created on device 0 could be returned
-  // when device 1 requests the same shape, causing CUDA error 400
-  // (cudaErrorInvalidResourceHandle) because device pointers are device-specific
   int deviceId = AffinityManager::currentDeviceId();
   hash = hash * 53 + static_cast<size_t>(deviceId) * 59;
 
@@ -127,8 +122,6 @@ int DirectShapeTrie::calculateShapeSignature(const LongType* shapeInfo) const {
   int signature = 17;
   const int rank = shape::rank(shapeInfo);
 
-  // CRITICAL: Include device ID in signature to make cache device-aware
-  // This ensures shape signatures are unique per device
   int deviceId = AffinityManager::currentDeviceId();
   signature = signature * 37 + deviceId * 41;
 
@@ -257,8 +250,6 @@ ConstantShapeBuffer* DirectShapeTrie::search(const LongType* shapeInfo, size_t s
   const int rank = shape::rank(shapeInfo);
   const int shapeSignature = calculateShapeSignature(shapeInfo);
 
-  // CRITICAL: Check device ID FIRST to ensure device-aware caching
-  // This prevents returning a shape buffer with device pointers from a different GPU
   int deviceId = AffinityManager::currentDeviceId();
   current = findChild(current, deviceId, 0, true, shapeSignature);
   if (!current) {
@@ -317,33 +308,17 @@ ConstantShapeBuffer* DirectShapeTrie::createFallbackBuffer(const LongType* shape
     THROW_EXCEPTION(msg.c_str());
   }
 
-  // Create a direct copy of the shape info
-  const int shapeInfoLength = shape::shapeInfoLength(rank);
-  LongType* shapeCopy = new LongType[shapeInfoLength];
-  if (shapeCopy == nullptr) {
-    std::string msg = "Failed to allocate memory for shape copy";
-    THROW_EXCEPTION(msg.c_str());
-  }
-
-  std::memcpy(shapeCopy, shapeInfo, shapeInfoLength * sizeof(LongType));
-
-  // Create a deallocator for memory management
-  auto deallocator = std::shared_ptr<PrimaryPointerDeallocator>(
-      new PrimaryPointerDeallocator(),
-      [] (PrimaryPointerDeallocator* ptr) { delete ptr; });
-
   // Use platform-specific creator (CudaShapeBufferCreator for CUDA, CpuShapeBufferCreator for CPU)
+  // Note: The creator makes its own copy of shapeInfo internally, so we don't need to copy here.
   auto buffer = ShapeBufferCreatorHelper::getCurrentCreator().create(shapeInfo, rank);
   if (buffer == nullptr || buffer->primary() == nullptr) {
-    delete[] shapeCopy;
     std::string msg = "Failed to create ConstantShapeBuffer via platform creator";
     THROW_EXCEPTION(msg.c_str());
   }
-  // shapeCopy is owned by the buffer now, don't delete it
 
 #if defined(SD_GCC_FUNCTRACE)
-  // Track shape cache allocation
-  sd::array::ShapeCacheLifecycleTracker::getInstance().recordAllocation(shapeCopy);
+  // Track shape cache allocation - use the buffer's primary pointer (the creator's copy)
+  sd::array::ShapeCacheLifecycleTracker::getInstance().recordAllocation(buffer->primary());
 #endif
 
   // Fallback buffer is NOT cached, so refCount stays at 1 (caller owns it)
@@ -390,7 +365,7 @@ ConstantShapeBuffer* DirectShapeTrie::getOrCreate(const LongType* shapeInfo) {
   }
 
   // If not found or not matching, grab exclusive lock and try again
-  SHARED_LOCK_TYPE<MUTEX_TYPE> writeLock(*(*_mutexes)[stripeIdx]);
+  EXCLUSIVE_LOCK_TYPE<MUTEX_TYPE> writeLock(*(*_mutexes)[stripeIdx]);
 
   // Check again under the write lock
   ConstantShapeBuffer* existing = search(shapeInfo, stripeIdx);
@@ -420,10 +395,6 @@ ConstantShapeBuffer* DirectShapeTrie::getOrCreate(const LongType* shapeInfo) {
   // Safe pointer to track the current node through the insertion process
   ShapeTrieNode* safeNodePtr = nullptr;
 
-  // CRITICAL: Insert device ID FIRST to ensure device-aware caching
-  // This ensures each GPU device gets its own cached shape buffers
-  // Without this, a shape buffer created on device 0 could be returned
-  // when device 1 requests the same shape, causing CUDA error 400
   int deviceId = AffinityManager::currentDeviceId();
   safeNodePtr = current->findOrCreateChild(deviceId, 0, true, shapeSignature);
   if (safeNodePtr == nullptr) {
@@ -490,18 +461,29 @@ ConstantShapeBuffer* DirectShapeTrie::getOrCreate(const LongType* shapeInfo) {
     return createFallbackBuffer(shapeInfo, rank);
   }
 
-  // Set the buffer - setBuffer handles ownership properly
+  // Try to set the buffer atomically - setBuffer uses compare-and-swap
+  // If another thread already set a buffer, our setBuffer will fail
   current->setBuffer(buffer);
 
-  // Return the buffer from the node (could be the one we just set or a pre-existing one)
+  // Get the actual buffer from the node - this may be ours or another thread's
   ConstantShapeBuffer* resultBuffer = current->buffer();
+
   if (resultBuffer == nullptr) {
-    // Rare case: setBuffer failed to store, return the buffer we created
-    // Caller owns it with refCount=1 (no addRef needed)
+    // Rare edge case: setBuffer failed AND buffer() returns null
+    // This could happen if clearCache() ran between setBuffer and buffer()
+    // Return the buffer we created - caller owns it with refCount=1
     return buffer;
   }
 
-  // Buffer is now cached, increment refcount for the caller
+  // Check if we won or lost the race
+  if (resultBuffer != buffer) {
+    // Another thread won the race and set a different buffer.
+    // We must delete the buffer we created since it's not being used.
+    delete buffer;
+  }
+
+  // Increment refcount for the caller (whether we won or lost the race,
+  // we're returning the cached buffer)
   resultBuffer->addRef();
   return resultBuffer;
 }
@@ -537,7 +519,6 @@ ConstantShapeBuffer* DirectShapeTrie::insert(const LongType* shapeInfo, size_t s
   const int rank = shape::rank(shapeInfo);
   const int shapeSignature = calculateShapeSignature(shapeInfo);
 
-  // CRITICAL: Insert device ID FIRST to ensure device-aware caching
   int deviceId = AffinityManager::currentDeviceId();
   current = current->findOrCreateChild(deviceId, 0, true, shapeSignature);
   if (!current) {
@@ -629,6 +610,13 @@ ConstantShapeBuffer* DirectShapeTrie::insert(const LongType* shapeInfo, size_t s
 }
 
 void DirectShapeTrie::clearCache() {
+  // Check shutdown flag first - if set, let the OS reclaim memory at exit
+  // This prevents segfaults during JVM shutdown when buffers may still have
+  // external references or memory allocators may be in an inconsistent state
+  if (_shutdownInProgress.load(std::memory_order_acquire)) {
+    return;
+  }
+
   waitForInitialization();
 
   if (_roots == nullptr || _mutexes == nullptr) {

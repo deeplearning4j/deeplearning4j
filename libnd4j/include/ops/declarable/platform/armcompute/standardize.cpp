@@ -60,7 +60,8 @@ PLATFORM_IMPL(standardize, ENGINE_CPU) {
   sd::LongType totalLen = input->lengthOf();
 
   // Simple case: standardize over all elements
-  if (axes.empty() || (axes.size() == 1 && axes[0] == -1)) {
+  // -1 is the standard sentinel, SD_MAX_INT (Integer.MAX_VALUE) is deprecated but still supported
+  if (axes.empty() || (axes.size() == 1 && (axes[0] == -1 || axes[0] == SD_MAX_INT))) {
     float sum = 0.0f;
     for (sd::LongType i = 0; i < totalLen; i++) {
       sum += inPtr[i];

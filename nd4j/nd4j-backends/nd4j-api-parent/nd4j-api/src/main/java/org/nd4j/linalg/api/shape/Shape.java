@@ -408,7 +408,7 @@ public class Shape {
      */
     public static boolean isWholeArray(int rank, int... dimension) {
         return rank == 0 || dimension == null || dimension.length == 0 ||
-                (dimension.length == 1 && (dimension[0] == -1 || dimension[0] == Integer.MAX_VALUE)) || dimension.length == rank;
+                (dimension.length == 1 && dimension[0] == -1) || dimension.length == rank;
     }
 
     /**
@@ -424,7 +424,7 @@ public class Shape {
      */
     public static boolean isWholeArray(long rank, long... dimension) {
         return rank == 0 || dimension == null || dimension.length == 0 ||
-                (dimension.length == 1 && (dimension[0] == -1 || dimension[0] == Integer.MAX_VALUE)) || dimension.length == rank;
+                (dimension.length == 1 && dimension[0] == -1) || dimension.length == rank;
     }
 
     public static long[] getReducedShape(long[] wholeShape, long[] dimensions) {
@@ -3169,7 +3169,8 @@ public class Shape {
      * @return true if arr.length == 1 && arr[0] is -1 (sentinel for "reduce all")
      */
     public static boolean wholeArrayDimension(long... arr) {
-        return arr == null || arr.length == 0 || (arr.length == 1 && (arr[0] == -1 || arr[0] == Integer.MAX_VALUE));
+        // -1 is the standard sentinel for "reduce all dimensions"
+        return arr == null || arr.length == 0 || (arr.length == 1 && arr[0] == -1);
     }
 
     public static long[] uniquify(long[] array) {
@@ -3204,9 +3205,10 @@ public class Shape {
         if (axis == null || axis.length == 0)
             return new long[0];
 
-        // Check for Integer.MAX_VALUE or -1 sentinel (legacy) - convert to empty array
+        // Check for -1 sentinel - convert to empty array
+        // -1 is the standard sentinel for "reduce all dimensions"
         for (val v : axis) {
-            if (v == Integer.MAX_VALUE || v == -1) {
+            if (v == -1) {
                 return new long[0];
             }
         }
@@ -3627,10 +3629,24 @@ public class Shape {
      * @return Dimensions as an INDArray
      */
     public static INDArray ndArrayDimFromLong(long... dimensions) {
-        if (dimensions == null || dimensions.length == 0)
-            return Nd4j.empty(DataType.LONG);
-        else
-            return Nd4j.createFromArray(dimensions);
+        INDArray result;
+        if (dimensions == null || dimensions.length == 0) {
+            // Return -1 sentinel for "reduce all dimensions"
+            // Don't use Nd4j.empty() as it causes CUDA synchronization issues
+            result = Nd4j.createFromArray(-1L);
+        } else {
+            result = Nd4j.createFromArray(dimensions);
+        }
+        if (result != null) {
+            if (result.data() != null) {
+                result.data().setConstant(true);
+            }
+            if (result.shapeInfoDataBuffer() != null) {
+                result.shapeInfoDataBuffer().setConstant(true);
+            }
+            result.setCloseable(false);
+        }
+        return result;
     }
 
     /**
@@ -3729,6 +3745,7 @@ public class Shape {
         LongPointer longPointer = new LongPointer(Nd4j.getNativeOps().getConstantShapeBufferPrimary(opaqueConstantShapeBuffer));
         longPointer.capacity(Shape.shapeInfoLength(descriptor.rank()));
         DataBuffer ret = Nd4j.createBuffer(longPointer,Shape.shapeInfoLength(descriptor.rank()),DataType.INT64);
+        ret.setConstant(true);
         return  ret;
     }
 }

@@ -1839,6 +1839,10 @@ template <typename X, typename Z>
 class MatchConditionBool {
  private:
   static SD_HOST_DEVICE SD_INLINE Z op_logic(X d1, X *extraParams) {
+    // Null check to prevent SIGSEGV - return false (0) if extraParams is null
+    if (extraParams == nullptr) {
+      return static_cast<Z>(0);
+    }
     X compare = extraParams[0];
     X eps = extraParams[1];
     auto mode = static_cast<int>(extraParams[2]);

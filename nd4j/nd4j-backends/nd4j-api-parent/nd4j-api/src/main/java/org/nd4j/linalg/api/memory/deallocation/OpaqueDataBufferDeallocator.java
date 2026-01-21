@@ -66,12 +66,17 @@ public class OpaqueDataBufferDeallocator implements Deallocatable, Deallocator {
 
     @Override
     public void deallocate() {
+        // Check constant flag first - constant buffers (like shape info) should never be freed
+        if (constant) {
+            return;
+        }
+
         if (deallocated) {
             return;
         }
 
         synchronized (this) {
-            if (deallocated) {
+            if (constant || deallocated) {
                 return;
             }
 
@@ -80,10 +85,51 @@ public class OpaqueDataBufferDeallocator implements Deallocatable, Deallocator {
                     if (log.isTraceEnabled()) {
                         log.trace("Deallocating OpaqueDataBuffer with uniqueId: {}", uniqueId);
                     }
-                    
-                    // Call native cleanup directly to avoid infinite recursion
-                    Nd4j.getNativeOps().dbClose(buffer);
-                    buffer.setNull();
+
+                    int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+                    int bufferDevice = targetDevice;
+                    try {
+                        bufferDevice = buffer.deviceId();
+                    } catch (Exception e) {
+                        // Fall back to targetDevice if native query fails
+                    }
+
+                    int deviceCount = Nd4j.getAffinityManager().getNumberOfDevices();
+                    if (deviceCount <= 0 || bufferDevice < 0 || bufferDevice >= deviceCount) {
+                        if (Nd4j.getEnvironment().isDebug()) {
+                            log.debug("OpaqueDataBuffer deallocator: invalid buffer deviceId={} (devices={}); using targetDevice={}",
+                                    bufferDevice, deviceCount, targetDevice);
+                        }
+                        bufferDevice = targetDevice;
+                    }
+                    if (deviceCount > 0 && (bufferDevice < 0 || bufferDevice >= deviceCount)) {
+                        if (Nd4j.getEnvironment().isDebug()) {
+                            log.debug("OpaqueDataBuffer deallocator: invalid targetDevice={} (devices={}); using currentDevice={}",
+                                    targetDevice, deviceCount, currentDevice);
+                        }
+                        bufferDevice = currentDevice;
+                    }
+                    boolean switchedDevice = false;
+
+                    if (currentDevice != bufferDevice) {
+                        // Switch to the actual buffer device and reset cached context
+                        Nd4j.getAffinityManager().unsafeSetDevice(bufferDevice);
+                        switchedDevice = true;
+                    }
+
+                    try {
+                        // Synchronize the device before closing to ensure all async ops are complete
+                        Nd4j.getExecutioner().commit();
+
+                        // Call native cleanup
+                        Nd4j.getNativeOps().dbClose(buffer);
+                        buffer.setNull();
+                    } finally {
+                        // Restore original device context
+                        if (switchedDevice) {
+                            Nd4j.getAffinityManager().unsafeSetDevice(currentDevice);
+                        }
+                    }
                 }
             } catch (Exception e) {
                 log.error("Error deallocating OpaqueDataBuffer with uniqueId: " + uniqueId, e);
@@ -114,9 +160,21 @@ public class OpaqueDataBufferDeallocator implements Deallocatable, Deallocator {
         return constant;
     }
 
+    /**
+     * Updates the constant flag for this deallocator.
+     *
+     * @param constant true if this buffer should never be deallocated
+     */
     @Override
     public void setConstant(boolean constant) {
-        this.constant = constant;
+        synchronized (this) {
+            // If already deallocated, setting constant won't help - but don't throw,
+            // as this could be called during cleanup
+            if (deallocated && constant) {
+                log.warn("setConstant(true) called on already-deallocated OpaqueDataBuffer - this may indicate a race condition");
+            }
+            this.constant = constant;
+        }
     }
 
     /**

@@ -55,7 +55,6 @@
 #include <io.h>
 #endif
 #include <errno.h>
-#include <ops/declarable/CustomOperations.h>
 #include <sys/types.h>
 #include <unordered_map>
 
@@ -67,17 +66,15 @@ static std::atomic<size_t> g_opaqueArrayCount{0};
 static std::atomic<size_t> g_opaqueArrayBytes{0};
 static std::mutex g_opaqueArrayMutex;
 
-// InteropDataBuffer/OpaqueDataBuffer allocation tracking
-static std::atomic<size_t> g_dataBufferCount{0};
-static std::atomic<size_t> g_dataBufferBytes{0};
+// DataBuffer allocation tracking - non-static so platform-specific dbClose can access
+std::atomic<size_t> g_dataBufferCount{0};
+std::atomic<size_t> g_dataBufferBytes{0};
 static std::mutex g_dataBufferMutex;
 
-// TadPack lifetime registry - keeps shared_ptr<TadPack> alive for TadPacks returned to Java
-// Without this, when ConstantTadHelper::tadForDimensions() returns shared_ptr<TadPack>,
-// but tadOnlyShapeInfo() returns raw TadPack*, the local shared_ptr goes out of scope
-// and TadPack can be deleted while Java still holds the raw pointer → SIGSEGV
-std::unordered_map<sd::TadPack*, std::shared_ptr<sd::TadPack>> g_tadPackRegistry;
-std::mutex g_tadPackMutex;
+// TadPack lifetime registry moved to NativeOpsHelpers_DataBuffers_tad.cpp
+// extern reference if needed:
+extern std::unordered_map<sd::TadPack*, std::shared_ptr<sd::TadPack>> g_tadPackRegistry;
+extern std::mutex g_tadPackMutex;
 
 #include <execution/Threads.h>
 #include <graph/Context.h>
@@ -97,124 +94,9 @@ std::mutex g_tadPackMutex;
 
 
 
-/*
- * TypeDef:
- *     void convertTypes(Pointer *extras, DataType srcType, Pointer hX, long N, DataType dstType, Pointer hZ);
- */
-void* mapFromNpzFile(std::string path) {
-  cnpy::npz_t* mapPtr = new cnpy::npz_t();
-  cnpy::npz_t map = cnpy::npzLoad(path);
-  mapPtr->insert(map.begin(), map.end());
-  return reinterpret_cast<void*>(mapPtr);
-}
-
-int getNumNpyArraysInMap(void* map) {
-  cnpy::npz_t* arrays = reinterpret_cast<cnpy::npz_t*>(map);
-  int n = arrays->size();
-  return n;
-}
-
-const char* getNpyArrayNameFromMap(void* map, int index, char* nameBuffer) {
-  cnpy::npz_t* arrays = reinterpret_cast<cnpy::npz_t*>(map);
-  cnpy::npz_t::iterator it = arrays->begin();
-  cnpy::npz_t::iterator end = arrays->end();
-  int cnt = 0;
-  for (; it != end; ++it, ++cnt) {
-    if (cnt == index) {
-      size_t len_of_str = strlen(it->first.c_str());
-      memcpy(nameBuffer, it->first.c_str(), len_of_str);
-    }
-  }
-  return "";
-}
-
-void* getNpyArrayFromMap(void* map, int index) {
-  cnpy::npz_t* arrays = reinterpret_cast<cnpy::npz_t*>(map);
-  cnpy::npz_t::iterator it = arrays->begin();
-  cnpy::npz_t::iterator end = arrays->end();
-  cnpy::NpyArray* arr = new cnpy::NpyArray();
-  int cnt = 0;
-  for (; it != end; ++it, ++cnt) {
-    if (cnt == index) {
-      *arr = it->second;
-      return arr;
-    }
-  }
-
- return nullptr;
-}
-
-
-void* getNpyArrayData(void* npArray) {
-  cnpy::NpyArray* npyArray2 = reinterpret_cast<cnpy::NpyArray*>(npArray);
-  return reinterpret_cast<void*>(npyArray2->data);
-}
-
-int getNpyArrayRank(void* npArray) {
-  cnpy::NpyArray* arr = reinterpret_cast<cnpy::NpyArray*>(npArray);
-  int rank = arr->shape.size();
-  return rank;
-}
-
-sd::LongType* getNpyArrayShape(void* npArray) {
-  cnpy::NpyArray* arr = reinterpret_cast<cnpy::NpyArray*>(npArray);
-  int ndim = arr->shape.size();
-  sd::LongType* shape = new sd::LongType[ndim];
-  for (int i = 0; i < ndim; i++) {
-    shape[i] = arr->shape.at(i);
-  }
-  return shape;
-}
-
-char getNpyArrayOrder(void* npArray) {
-  cnpy::NpyArray* arr = reinterpret_cast<cnpy::NpyArray*>(npArray);
-  return (arr->fortranOrder) ? 'f' : 'c';
-}
-
-int getNpyArrayElemSize(void* npArray) {
-  cnpy::NpyArray* arr = reinterpret_cast<cnpy::NpyArray*>(npArray);
-  return arr->wordSize;
-}
-
-void deleteNPArrayStruct(void* npArray) {
-  cnpy::NpyArray* arr = reinterpret_cast<cnpy::NpyArray*>(npArray);
-  delete arr;
-}
-
-void deleteNPArrayMap(void* map) {
-  cnpy::npz_t* arrays = reinterpret_cast<cnpy::npz_t*>(map);
-  delete arrays;
-}
-//////
-
-/**
- * Get the element size for a numpy array
- * @param npyArray  the numpy array's address
- * to get the length for
- * @return
- */
-int elementSizeForNpyArray(sd::Pointer npyArray) {
-  cnpy::NpyArray arr = cnpy::loadNpyFromPointer(reinterpret_cast<char*>(npyArray));
-  cnpy::NpyArray* arrPointer = &arr;
-  int size = arrPointer->wordSize;
-  // arrPointer->destruct();
-  return size;
-}
-
-/**
- * Get the element size for a numpy array
- * @param npyArray  the numpy array's address
- * to get the length for
- * @return
- */
-int elementSizeForNpyArrayHeader(sd::Pointer npyArray) {
-  cnpy::NpyArray arr = cnpy::loadNpyFromHeader(reinterpret_cast<char*>(npyArray));
-  cnpy::NpyArray* arrPointer = &arr;
-  int size = arrPointer->wordSize;
-  return size;
-}
-
-void releaseNumpy(sd::Pointer npyArray) { free(reinterpret_cast<void*>(npyArray)); }
+// NPZ/numpy interop functions moved to NativeOpsHelpers_DataBuffers_npz.cpp
+// TAD pack functions moved to NativeOpsHelpers_DataBuffers_tad.cpp
+// Transfer metrics functions moved to NativeOpsHelpers_DataBuffers_metrics.cpp
 
 #if defined(SD_GCC_FUNCTRACE)
 // this is mainly a c based function.
@@ -333,172 +215,7 @@ const sd::LongType * intermediateResultShapeInfoAt(int index, OpaqueContext *con
 }
 
 
-sd::LongType const *getPrimaryShapeInfo(sd::TadPack *pack) {
-  return const_cast<sd::LongType *>(pack->primaryShapeInfo());
-}
-
-sd::LongType const *getPrimaryOffsets(sd::TadPack *pack) {
-  if(pack->primaryOffsets() == nullptr)
-    THROW_EXCEPTION("getPrimaryOffsets: primaryOffsets is nullptr!");
-  return const_cast<sd::LongType *>(pack->primaryOffsets());
-}
-
-sd::LongType const *getSpecialShapeInfo(sd::TadPack *pack) {
-  return const_cast<sd::LongType *>(pack->specialShapeInfo());
-}
-
-sd::LongType const *getSpecialOffsets(sd::TadPack *pack) { return const_cast<sd::LongType *>(pack->specialOffsets()); }
-
-sd::LongType getNumberOfTads(sd::TadPack *pack) { return pack->numberOfTads(); }
-
-int getShapeInfoLength(sd::TadPack *pack) { return pack->shapeInfoLength(); }
-
-const char* getTadPackStackTrace(OpaqueTadPack *pack) {
-  if (pack == nullptr) {
-    return "TadPack is null";
-  }
-
-  //
-  // ROOT CAUSE: thread_local uses R_X86_64_GOTPC32_TLSDESC relocations which have ±2GB limit
-  // When SD_GCC_FUNCTRACE is enabled, binary size exceeds 2GB → TLS relocations fail
-  //
-  // SOLUTION: Use regular static instead of thread_local
-  // - Eliminates all TLS relocations from this function
-  // - Trade-off: Not thread-safe (acceptable for debugging function)
-  // - If called concurrently by multiple threads, traces may interleave (rare edge case)
-  //
-  // This is fundamentally different from Sessions #159-164 which tried linker workarounds
-  // Those approaches CAN'T work - TLS relocations are architectural limitation
-  static std::string cachedTrace;
-  cachedTrace = pack->getStackTraceAsString();
-
-  return cachedTrace.c_str();
-}
-
-
-sd::TadPack *tadOnlyShapeInfo(OpaqueDataBuffer *hXShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength) {
-#ifdef __cpp_exceptions
-  try {
-    if(hXShapeInfo->primary() == nullptr) {
-      THROW_EXCEPTION("tadOnlyShapeInfo: hXShapeInfo->primary() is nullptr!");
-    }
-
-    auto buffPrim = reinterpret_cast<sd::LongType *>(hXShapeInfo->primary());
-    auto shapeFromCache = sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(buffPrim)->primary();
-    auto rankVal = shapeFromCache[0];
-    if(rankVal == 0) {
-      //detect when the shape buffer values are unset.
-      auto len = shape::shapeInfoLength(rankVal);
-      //min number of values in a shape info buffer
-      bool allZero = true;
-      for(int i = 0; i < len; i++) {
-        if(buffPrim[i] != 0) {
-          allZero = false;
-          break;
-        }
-      }
-
-      if(allZero) {
-        THROW_EXCEPTION("Found shape buffer with all zero values. Values likely unset.");
-      }
-    }
-
-
-
-
-    // If we just return pack.get(), the local shared_ptr goes out of scope and TadPack can be deleted
-    // when cache evicts it, leaving Java with a dangling pointer → SIGSEGV
-    //
-    // Solution: Store the shared_ptr in a global registry to keep the TadPack alive.
-    // The shared_ptr is removed from registry when Java explicitly releases it, or when
-    // the cache is explicitly cleared.
-    auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(
-        shapeFromCache, dimension, dimensionLength);
-
-    if (!pack) {
-      THROW_EXCEPTION("tadOnlyShapeInfo: Failed to create TadPack!");
-    }
-
-    // Get raw pointer BEFORE storing in registry
-    sd::TadPack* rawPtr = pack.get();
-
-    // Store shared_ptr in registry to keep TadPack alive
-    {
-      std::lock_guard<std::mutex> lock(g_tadPackMutex);
-      g_tadPackRegistry[rawPtr] = pack;
-    }
-
-    return rawPtr;
-  } catch (std::exception &e) {
-    safeSetErrorContext(1, e.what());
-    THROW_EXCEPTION(e.what());
-  }
-#else
-  if(hXShapeInfo->primary() == nullptr) {
-    safeSetErrorContext(1, "tadOnlyShapeInfo: hXShapeInfo->primary() is nullptr!");
-    return nullptr;
-  }
-
-  auto buffPrim = reinterpret_cast<sd::LongType *>(hXShapeInfo->primary());
-  auto shapeFromCache = sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(buffPrim)->primary();
-  auto rankVal = shapeFromCache[0];
-  if(rankVal == 0) {
-    //detect when the shape buffer values are unset.
-    auto len = shape::shapeInfoLength(rankVal);
-    //min number of values in a shape info buffer
-    bool allZero = true;
-    for(int i = 0; i < len; i++) {
-      if(buffPrim[i] != 0) {
-        allZero = false;
-        break;
-      }
-    }
-
-    if(allZero) {
-      safeSetErrorContext(1, "Found shape buffer with all zero values. Values likely unset.");
-      return nullptr;
-    }
-  }
-
-
-
-
-  // If we just return pack.get(), the local shared_ptr goes out of scope and TadPack can be deleted
-  // when cache evicts it, leaving Java with a dangling pointer → SIGSEGV
-  //
-  // Solution: Store the shared_ptr in a global registry to keep the TadPack alive.
-  // The shared_ptr is removed from registry when Java explicitly releases it, or when
-  // the cache is explicitly cleared.
-  auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(
-      shapeFromCache, dimension, dimensionLength);
-
-  if (!pack) {
-    safeSetErrorContext(1, "tadOnlyShapeInfo: Failed to create TadPack!");
-    return nullptr;
-  }
-
-  // Get raw pointer BEFORE storing in registry
-  sd::TadPack* rawPtr = pack.get();
-
-  // Store shared_ptr in registry to keep TadPack alive
-  {
-    std::lock_guard<std::mutex> lock(g_tadPackMutex);
-    g_tadPackRegistry[rawPtr] = pack;
-  }
-
-  return rawPtr;
-#endif
-
-  return nullptr;
-
-}
-
-// Helper function to clear the TadPack registry
-// This should be called when explicitly clearing caches to prevent memory leaks
-void clearTadPackRegistry() {
-  std::lock_guard<std::mutex> lock(g_tadPackMutex);
-  g_tadPackRegistry.clear();
-}
+// TAD pack functions (tadOnlyShapeInfo, clearTadPackRegistry, etc.) moved to NativeOpsHelpers_DataBuffers_tad.cpp
 
 
 OpaqueConstantShapeBuffer shapeBuffer(int rank, sd::LongType *shape, sd::LongType *strides, sd::DataType dtype,
@@ -563,7 +280,17 @@ OpaqueDataBuffer *allocateDataBuffer(sd::LongType elements, int dataType, bool a
 }
 
 OpaqueDataBuffer *dbCreateExternalDataBuffer(sd::LongType elements, int dataType, sd::Pointer primary, sd::Pointer special) {
+  // Create an InteropDataBuffer and set external pointers
+  // Note: This allocates a small internal buffer which is then overwritten with external pointers.
+  // The external pointers (e.g., cached shape info) are NOT owned by this buffer.
   auto buffer = dbAllocateDataBuffer(0, dataType, false);
+
+  // Critical: check for null - allocation can fail under concurrent access or CUDA errors
+  if (buffer == nullptr) {
+    sd_printf("dbCreateExternalDataBuffer: allocation failed for dataType=%d, elements=%lld\n", dataType, elements);
+    return nullptr;
+  }
+
   buffer->markOwner(false);
 
   if (primary != nullptr) buffer->setPrimary(primary, elements);
@@ -571,6 +298,85 @@ OpaqueDataBuffer *dbCreateExternalDataBuffer(sd::LongType elements, int dataType
   if (special != nullptr) buffer->setSpecial(special, elements);
 
   return buffer;
+}
+
+OpaqueDataBuffer *dbCreateConstantExternalDataBuffer(sd::LongType elements, int dataType, sd::Pointer primary, sd::Pointer special) {
+  // Create an externalized buffer and mark it constant IMMEDIATELY
+  // This is critical for preventing race conditions where Java GC can finalize
+  // the buffer before setConstant() is called on the Java side.
+  //
+  // By marking constant HERE (in native code), the buffer is protected
+  // before it even returns to Java, eliminating the race window entirely.
+  auto buffer = dbCreateExternalDataBuffer(elements, dataType, primary, special);
+
+  if (buffer != nullptr) {
+    // Mark constant IMMEDIATELY, before returning to Java
+    // Use release memory order to ensure visibility to other threads
+    buffer->isConstant.store(true, std::memory_order_release);
+
+    // Also propagate to underlying DataBuffer if it exists
+    auto db = buffer->dataBuffer();
+    if (db != nullptr) {
+      db->markConstant(true);
+    }
+
+    if (sd::Environment::getInstance().isVerbose()) {
+      sd_printf("dbCreateConstantExternalDataBuffer: created constant buffer at %p\n", buffer);
+    }
+  }
+
+  return buffer;
+}
+
+bool dbSetConstant(OpaqueDataBuffer *dataBuffer, bool isConstant) {
+  if (dataBuffer == nullptr) {
+    // Null buffer - return false to indicate failure
+    // This is a programming error, but we don't throw to maintain backwards compatibility
+    if (sd::Environment::getInstance().isVerbose()) {
+      sd_printf("dbSetConstant: null buffer passed, returning false%s", "\n");
+    }
+    return false;
+  }
+
+  if (!dataBuffer->isValid()) {
+    // Buffer is invalid (freed or closed) - return false to indicate failure
+    // This can happen when:
+    // 1. DeallocatorService runs dbClose() before setConstant() is called
+    // 2. This indicates a race condition between GC and constant flag setting
+    // 3. The Java side should use registerPendingConstant() to prevent this
+    if (sd::Environment::getInstance().isVerbose()) {
+      sd_printf("dbSetConstant: FAILED - buffer %p is invalid (freed or closed). "
+                "This indicates a race condition - use registerPendingConstant() to protect buffers.\n",
+                dataBuffer);
+    }
+    return false;
+  }
+
+  dataBuffer->isConstant.store(isConstant, std::memory_order_release);
+
+  // Also propagate to the underlying DataBuffer if it exists
+  auto db = dataBuffer->dataBuffer();
+  if (db != nullptr) {
+    db->markConstant(isConstant);
+  }
+
+  if (sd::Environment::getInstance().isVerbose()) {
+    sd_printf("dbSetConstant: buffer %p marked as constant=%d\n", dataBuffer, isConstant);
+  }
+
+  return true;
+}
+
+bool dbIsConstant(OpaqueDataBuffer *dataBuffer) {
+  if (dataBuffer == nullptr) {
+    return false;
+  }
+  // Check if buffer is valid before accessing - return false for freed buffers
+  // This prevents use-after-free when checking constant status during cleanup
+  if (!dataBuffer->isValid()) {
+    return false;
+  }
+  return dataBuffer->isConstant.load(std::memory_order_acquire);
 }
 
 sd::Pointer dbPrimaryBuffer(OpaqueDataBuffer *dataBuffer) {
@@ -585,8 +391,11 @@ sd::Pointer dbSpecialBuffer(OpaqueDataBuffer *dataBuffer) {
 }
 
 void deleteDataBuffer(OpaqueDataBuffer *dataBuffer) {
-  if(dataBuffer == nullptr)
-    THROW_EXCEPTION("deleteDataBuffer: dataBuffer is null");
+  // Deleting null should be a safe no-op, similar to delete nullptr in C++
+  // This is important for cleanup paths handling empty arrays which may have null buffers
+  if(dataBuffer == nullptr) {
+    return;
+  }
 
   // Close the buffer first to ensure proper cleanup of underlying DataBuffer
   // This updates tracking counters and frees the actual data
@@ -656,12 +465,32 @@ void dbSyncToSpecial(OpaqueDataBuffer *dataBuffer) {
 }
 
 void dbSyncToPrimary(OpaqueDataBuffer *dataBuffer) {
-  if(dataBuffer == nullptr)
-    THROW_EXCEPTION("dbSyncToPrimary: dataBuffer is null");
-  if(dataBuffer->dataBuffer() != nullptr  && dataBuffer->dataBuffer()->getNumElements() > 0)
-    dataBuffer->dataBuffer()->syncToPrimary(sd::LaunchContext::defaultContext(),false);
-
+  if (dataBuffer == nullptr) THROW_EXCEPTION("dbSyncToPrimary: dataBuffer is null");
+  if (dataBuffer->dataBuffer() != nullptr && dataBuffer->dataBuffer()->getNumElements() > 0)
+    dataBuffer->dataBuffer()->syncToPrimary(sd::LaunchContext::defaultContext(), false);
 }
+
+#ifndef SD_CUDA
+// CPU implementation - simple sequential fallback
+void batchSyncToSpecialAsync(OpaqueDataBuffer **buffers, int bufferCount, int streamCount) {
+  // On CPU, just iterate through and sync each buffer sequentially
+  // The 'async' and 'streamCount' parameters are ignored as CPU doesn't have streams
+  for (int i = 0; i < bufferCount; i++) {
+    if (buffers[i] != nullptr) {
+      dbSyncToSpecial(buffers[i]);
+    }
+  }
+}
+#endif
+
+void dbMigrate(OpaqueDataBuffer *dataBuffer) {
+  if (dataBuffer == nullptr)
+    THROW_EXCEPTION("dbMigrate: dataBuffer is null");
+  if (dataBuffer->dataBuffer() != nullptr && dataBuffer->dataBuffer()->getNumElements() > 0)
+    dataBuffer->dataBuffer()->migrate();
+}
+
+
 
 void dbTickHostRead(OpaqueDataBuffer *dataBuffer) {
   if(dataBuffer == nullptr)
@@ -694,67 +523,8 @@ void dbExpand(OpaqueDataBuffer *dataBuffer, sd::LongType elements) {
   dataBuffer->expand(elements);
 }
 
-void dbClose(OpaqueDataBuffer *dataBuffer) {
-  if(dataBuffer == nullptr)
-    THROW_EXCEPTION("dbClose: dataBuffer is null");
-
-  // Check if already closed - this flag is in InteropDataBuffer, not the freed DataBuffer
-  if(dataBuffer->_closed) {
-    return;
-  }
-
-  // Check constant flag (public field, safe to access)
-  if(dataBuffer->isConstant) {
-    return;
-  }
-
-  // Check if we even have a DataBuffer pointer
-  if(!dataBuffer->hasValidDataBuffer()) {
-    dataBuffer->_closed = true;
-    return;
-  }
-
-  // If we don't own it, don't close it
-  if(!dataBuffer->isOwner()) {
-    return;
-  }
-
-  // Track deallocation using cached size - DO NOT touch the DataBuffer as it may be freed
-  // Use the cached size from InteropDataBuffer instead of accessing potentially freed memory
-  size_t bytes = dataBuffer->_cachedLenInBytes;
-  g_dataBufferCount.fetch_sub(1, std::memory_order_relaxed);
-  g_dataBufferBytes.fetch_sub(bytes, std::memory_order_relaxed);
-
-  if(sd::Environment::getInstance().isVerbose()) {
-    sd_printf("dbClose: deallocating buffer at %p, count=%zu, total_bytes=%zu, freed_bytes=%zu\n",
-              dataBuffer, g_dataBufferCount.load(), g_dataBufferBytes.load(), bytes);
-  }
-
-#if defined(SD_GCC_FUNCTRACE)
-  // Record deallocation using cached pointers (safe even if DataBuffer is freed)
-  if(dataBuffer->_cachedPrimaryPtr != nullptr) {
-    sd::array::DataBufferLifecycleTracker::getInstance().recordDeallocation(
-        dataBuffer->_cachedPrimaryPtr, sd::array::BufferType::PRIMARY);
-  }
-  if(dataBuffer->_cachedSpecialPtr != nullptr) {
-    sd::array::DataBufferLifecycleTracker::getInstance().recordDeallocation(
-        dataBuffer->_cachedSpecialPtr, sd::array::BufferType::SPECIAL);
-  }
-#endif
-
-  // Get the DataBuffer before marking closed
-  sd::DataBuffer* db = dataBuffer->getDataBufferDirect();
-
-  // Mark as closed and invalidate pointer BEFORE deleting to prevent concurrent access
-  dataBuffer->_closed = true;
-  dataBuffer->invalidateDataBuffer();
-
-  // Delete the DataBuffer if we have one and we own it
-  // This is safe because we passed the isOwner() check above
-  if(db != nullptr) {
-    delete db;
-  }
-}
+// dbClose is implemented in cpu/NativeOpsHelpers_DataBuffers_close.cpp
+// and cuda/NativeOpsHelpers_DataBuffers_close.cu for platform-specific handling
 
 int dbDeviceId(OpaqueDataBuffer *dataBuffer) {
   if(dataBuffer == nullptr)
@@ -765,6 +535,14 @@ int dbDeviceId(OpaqueDataBuffer *dataBuffer) {
 void dbSetDeviceId(OpaqueDataBuffer *dataBuffer, int deviceId) {
   if(dataBuffer == nullptr)
     THROW_EXCEPTION("dbSetDeviceId: dataBuffer is null");
+  if (deviceId < 0) {
+    // Sentinel: reset sync counters without changing the device id.
+    auto db = dataBuffer->dataBuffer();
+    if (db != nullptr) {
+      db->resetCounters();
+    }
+    return;
+  }
   dataBuffer->setDeviceId(deviceId);
 }
 
@@ -782,80 +560,4 @@ int dbLocality(OpaqueDataBuffer *dataBuffer) {
     return 1;
 }
 
-// =====================================================
-// Transfer Metrics API Implementation
-// =====================================================
-
-void transferMetricsSetEnabled(bool enabled) {
-  sd::TransferMetrics::getInstance().setEnabled(enabled);
-}
-
-bool transferMetricsIsEnabled() {
-  return sd::TransferMetrics::getInstance().isEnabled();
-}
-
-void transferMetricsSetLogTransfers(bool log) {
-  sd::TransferMetrics::getInstance().setLogTransfers(log);
-}
-
-void transferMetricsSetMinBytesForLogging(sd::LongType bytes) {
-  sd::TransferMetrics::getInstance().setMinBytesForLogging(static_cast<uint64_t>(bytes));
-}
-
-sd::LongType transferMetricsGetH2DBytes() {
-  return static_cast<sd::LongType>(
-      sd::TransferMetrics::getInstance().getTotalBytes(sd::TransferType::HOST_TO_DEVICE));
-}
-
-sd::LongType transferMetricsGetD2HBytes() {
-  return static_cast<sd::LongType>(
-      sd::TransferMetrics::getInstance().getTotalBytes(sd::TransferType::DEVICE_TO_HOST));
-}
-
-sd::LongType transferMetricsGetD2DBytes() {
-  return static_cast<sd::LongType>(
-      sd::TransferMetrics::getInstance().getTotalBytes(sd::TransferType::DEVICE_TO_DEVICE));
-}
-
-sd::LongType transferMetricsGetP2PBytes() {
-  return static_cast<sd::LongType>(
-      sd::TransferMetrics::getInstance().getTotalBytes(sd::TransferType::PEER_TO_PEER));
-}
-
-sd::LongType transferMetricsGetH2DCount() {
-  return static_cast<sd::LongType>(
-      sd::TransferMetrics::getInstance().getTransferCount(sd::TransferType::HOST_TO_DEVICE));
-}
-
-sd::LongType transferMetricsGetD2HCount() {
-  return static_cast<sd::LongType>(
-      sd::TransferMetrics::getInstance().getTransferCount(sd::TransferType::DEVICE_TO_HOST));
-}
-
-sd::LongType transferMetricsGetD2DCount() {
-  return static_cast<sd::LongType>(
-      sd::TransferMetrics::getInstance().getTransferCount(sd::TransferType::DEVICE_TO_DEVICE));
-}
-
-sd::LongType transferMetricsGetP2PCount() {
-  return static_cast<sd::LongType>(
-      sd::TransferMetrics::getInstance().getTransferCount(sd::TransferType::PEER_TO_PEER));
-}
-
-sd::LongType transferMetricsGetTotalTimeNs() {
-  return static_cast<sd::LongType>(
-      sd::TransferMetrics::getInstance().getTotalTimeNsAllTypes());
-}
-
-double transferMetricsGetOverheadPercent() {
-  return sd::TransferMetrics::getInstance().getOverheadPercent();
-}
-
-void transferMetricsReset() {
-  sd::TransferMetrics::getInstance().reset();
-}
-
-void transferMetricsPrintSummary() {
-  sd::TransferMetrics::getInstance().printSummary();
-}
-
+// Transfer Metrics API moved to NativeOpsHelpers_DataBuffers_metrics.cpp

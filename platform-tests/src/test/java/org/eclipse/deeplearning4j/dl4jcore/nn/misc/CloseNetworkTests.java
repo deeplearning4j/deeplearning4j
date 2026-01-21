@@ -65,7 +65,6 @@ public class CloseNetworkTests extends BaseDL4JTest {
     }
 
     @Test
-    @Disabled("Crashes all tests mid run on openblas")
     public void testCloseMLN() {
         Nd4j.getEnvironment().setDeleteSpecial(false);
         Nd4j.getEnvironment().setDeletePrimary(false);
@@ -121,7 +120,6 @@ public class CloseNetworkTests extends BaseDL4JTest {
     }
 
     @Test
-    @Disabled("Crashes all tests mid run on openblas")
     public void testCloseCG() {
         for (boolean train : new boolean[]{false, true}) {
             for (boolean test : new boolean[]{false, true}) {

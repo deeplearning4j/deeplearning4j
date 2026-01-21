@@ -970,11 +970,9 @@ val range = OnnxMappingProcess(
         inputFrameworkOpName = "Range",
         opName = "range",
         opMappingRegistry = onnxOpRegistry,
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("from" to "start","to" to "limit","step" to "delta"))),
-        attributeMappingRules = listOf(
-                convertNDArrayInputToScalarAttr(outputAttributeValue = "from",inputAttributeValue = "start"),
-                convertNDArrayInputToScalarAttr(outputAttributeValue = "to",inputAttributeValue = "limit"),
-                convertNDArrayInputToScalarAttr(outputAttributeValue = "step",inputAttributeValue = "delta"))
+        // Keep inputs as dynamic tensors - do NOT convert to scalar attributes
+        // This allows Range to work with dynamic sequence lengths (e.g., from Shape ops)
+        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("from" to "start","to" to "limit","step" to "delta")))
 )
 
 val neg = OnnxMappingProcess(

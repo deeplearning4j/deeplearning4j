@@ -63,8 +63,9 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public DataBuffer convertToNumpyBuffer(INDArray array) {
-        Pointer pointer =Nd4j.getNativeOps().numpyFromNd4j(array.data().addressPointer(), array.shapeInfoDataBuffer().pointer(), array.data().getElementSize());
+        // Ensure data is on host BEFORE reading from host pointer - critical for CUDA
         Nd4j.getAffinityManager().ensureLocation(array, AffinityManager.Location.HOST);
+        Pointer pointer =Nd4j.getNativeOps().numpyFromNd4j(array.data().addressPointer(), array.shapeInfoDataBuffer().pointer(), array.data().getElementSize());
         long len = Nd4j.getNativeOps().numpyHeaderLength(array.data().opaqueBuffer(),array.shapeInfoDataBuffer().pointer());
         pointer.capacity(len + array.length() * array.data().getElementSize());
         pointer.limit(len + array.length() * array.data().getElementSize());
@@ -476,8 +477,10 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public INDArray createFromNpyFile(File file) {
         byte[] pathBytes = file.getAbsolutePath().getBytes(Charset.forName("UTF-8"));
-        ByteBuffer directBuffer = ByteBuffer.allocateDirect(pathBytes.length).order(ByteOrder.nativeOrder());
+        // Allocate buffer with extra byte for null terminator - required for C++ std::string
+        ByteBuffer directBuffer = ByteBuffer.allocateDirect(pathBytes.length + 1).order(ByteOrder.nativeOrder());
         directBuffer.put(pathBytes);
+        directBuffer.put((byte) 0);  // null terminator
         ((Buffer) directBuffer).rewind();
         ((Buffer) directBuffer).position(0);
         Pointer pointer = nativeOps.numpyFromFile(new BytePointer(directBuffer));

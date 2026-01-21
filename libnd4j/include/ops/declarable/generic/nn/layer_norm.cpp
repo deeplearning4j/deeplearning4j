@@ -41,6 +41,11 @@ CONFIGURABLE_OP_IMPL(layer_norm, 2, 1, false, 0, -1) {
   auto gain = INPUT_VARIABLE(1);
   auto output = OUTPUT_VARIABLE(0);
 
+  // Handle empty input gracefully - nothing to normalize
+  if (input->isEmpty() || input->lengthOf() == 0) {
+    return sd::Status::OK;
+  }
+
   std::vector<sd::LongType> axis = *block.getIArguments();
 
   const bool isNCHW = block.getBArguments()->size() > 0 ? B_ARG(0) : true;  // 0-NCHW,  1-NHWC
@@ -210,6 +215,11 @@ CUSTOM_OP_IMPL(layer_norm_bp, 3, -1, false, 0, -1) {
   auto dLdx = OUTPUT_VARIABLE(0);
   auto dLdg = OUTPUT_VARIABLE(1);
   auto dLdb = block.width() == 4 ? OUTPUT_VARIABLE(2) : nullptr;
+
+  // Handle empty input gracefully - nothing to backpropagate
+  if (input->isEmpty() || input->lengthOf() == 0) {
+    return sd::Status::OK;
+  }
 
   const bool isNCHW = block.getBArguments()->size() > 0 ? B_ARG(0) : true;  //  0-NCHW,  1-NHWC
   const int dimC = isNCHW ? 1 : input->rankOf() - 1;

@@ -269,6 +269,7 @@ void NDArray::synchronize(const char* msg)  {
 
 void NDArray::syncToDevice()  {}
 void NDArray::syncToHost()  {}
+void NDArray::forceSyncToHost()  {}
 void NDArray::tickWriteHost()  {}
 void NDArray::tickWriteDevice()  {}
 void NDArray::tickReadHost()  {}

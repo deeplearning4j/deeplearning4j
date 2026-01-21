@@ -487,8 +487,6 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
           ctx.setOutputArray(idx, outArr, true);
         } else {
           auto array = fout[idx];
-          // CRITICAL: Check for null shapeInfo before accessing it.
-          // This can happen if the OpaqueNDArray was invalidated after being set in the context.
           if (array == nullptr) {
             std::string errorMessage = "OP PREPARE OUTPUTS: Output array at index ";
             errorMessage += std::to_string(idx);
@@ -742,9 +740,6 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
     for (auto array : block.fastpath_out()) {
       if (array == nullptr) continue;
 
-      // CRITICAL: Check for null shapeInfo before accessing dataType().
-      // dataType() internally calls shapeInfo() which throws if _shapeInfo is null.
-      // This can happen if the OpaqueNDArray was invalidated after being set in the context.
       sd::DataType cType;
       try {
         cType = array->dataType();

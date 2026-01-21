@@ -79,7 +79,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     protected static final String KERAS_TRAIN_TEST = "keras_learning_phase";
     //freed array ids to track for allocation, sometimes SDValues contain dup arrays that get freed twice.
     //we track the ids to avoid double frees
-    protected Set<Long> freedArrays = new LinkedHashSet<>();
+    protected final ThreadLocal<Set<Long>> freedArraysTl = ThreadLocal.withInitial(LinkedHashSet::new);
 
     @Getter
     @Setter
@@ -88,18 +88,40 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
      * Array use tracker: What needs to happen before the array can be closed/released?
      * As the name suggests, the INDArrays are tracked using object identity, not equality
      */
-    @Getter
-    @Setter
-    private AbstractDependencyTracker<SDValue, Dep> arrayUseTracker = new HashDependencyTracker<>();
+    private final ThreadLocal<AbstractDependencyTracker<SDValue, Dep>> arrayUseTrackerTl =
+            ThreadLocal.withInitial(HashDependencyTracker::new);
 
 
-    // Use ConcurrentHashMap to prevent race conditions during concurrent inference
-    // OpContexts are now created fresh for each operation execution to prevent sharing
-    @Getter
-    private Map<String,OpContext> opContexts = new ConcurrentHashMap<>();
+    // Use per-thread OpContexts to prevent sharing across concurrent execution.
+    private final ThreadLocal<Map<String,OpContext>> opContextsTl =
+            ThreadLocal.withInitial(ConcurrentHashMap::new);
 
     // DAG cache for avoiding expensive convergence process
     private final DAGCache dagCache = new DAGCache();
+
+    private Set<Long> freedArrays() {
+        return freedArraysTl.get();
+    }
+
+    private AbstractDependencyTracker<SDValue, Dep> arrayUseTracker() {
+        return arrayUseTrackerTl.get();
+    }
+
+    public AbstractDependencyTracker<SDValue, Dep> getArrayUseTracker() {
+        return arrayUseTracker();
+    }
+
+    public void setArrayUseTracker(AbstractDependencyTracker<SDValue, Dep> tracker) {
+        arrayUseTrackerTl.set(tracker);
+    }
+
+    public Map<String,OpContext> getOpContexts() {
+        return opContextsTl.get();
+    }
+
+    private Map<String,OpContext> opContexts() {
+        return opContextsTl.get();
+    }
 
     public InferenceSession(@NonNull SameDiff sameDiff) {
         super(sameDiff);
@@ -117,7 +139,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                                   List<Listener> listeners, At at) {
 
         // Clear freed arrays tracking from previous execution
-        freedArrays.clear();
+        freedArrays().clear();
 
         // Clear DAG cache to prevent unbounded growth with different output sets
         dagCache.clear();
@@ -138,7 +160,158 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 return builder.buildForwardDAG(allRequired);
             });
 
+            // Debug: Print execution plan when debug mode is enabled
+            if (Nd4j.getEnvironment().isDebug()) {
+                List<ExecutionNode> execOrder = dag.getFrameAwareExecutionOrder();
+                StringBuilder sb = new StringBuilder();
+                sb.append("\n╔══════════════════════════════════════════════════════════════════════════════╗\n");
+                sb.append("║                    SAMEDIFF EXECUTION PLAN (DEBUG MODE)                      ║\n");
+                sb.append("╠══════════════════════════════════════════════════════════════════════════════╣\n");
+                sb.append("║ Requested Outputs: ").append(variables).append("\n");
+                sb.append("║ Total Operations: ").append(execOrder.size()).append("\n");
+                sb.append("╠══════════════════════════════════════════════════════════════════════════════╣\n");
 
+                // List all placeholders with their shapes/types
+                sb.append("║ PLACEHOLDERS:\n");
+                Set<String> placeholders = dag.getRequiredPlaceholders();
+                if (placeholders.isEmpty()) {
+                    sb.append("║   (none)\n");
+                } else {
+                    for (String ph : placeholders) {
+                        SDVariable var = sameDiff.getVariable(ph);
+                        sb.append("║   • ").append(ph);
+                        if (var != null) {
+                            sb.append(" : dtype=").append(var.dataType());
+                            if (var.getShape() != null) {
+                                sb.append(", shape=").append(formatShape(var.getShape()));
+                            }
+                        }
+                        sb.append("\n");
+                    }
+                }
+
+                // List all constants
+                sb.append("╠──────────────────────────────────────────────────────────────────────────────╣\n");
+                sb.append("║ CONSTANTS:\n");
+                Set<String> constants = dag.getConstants();
+                if (constants.isEmpty()) {
+                    sb.append("║   (none)\n");
+                } else {
+                    for (String c : constants) {
+                        SDVariable var = sameDiff.getVariable(c);
+                        sb.append("║   • ").append(c);
+                        if (var != null) {
+                            sb.append(" : dtype=").append(var.dataType());
+                            if (var.getShape() != null) {
+                                sb.append(", shape=").append(formatShape(var.getShape()));
+                            }
+                        }
+                        sb.append("\n");
+                    }
+                }
+
+                // List all trainable variables
+                sb.append("╠──────────────────────────────────────────────────────────────────────────────╣\n");
+                sb.append("║ TRAINABLE VARIABLES:\n");
+                Set<String> trainableVars = dag.getVariables();
+                if (trainableVars.isEmpty()) {
+                    sb.append("║   (none)\n");
+                } else {
+                    for (String v : trainableVars) {
+                        SDVariable var = sameDiff.getVariable(v);
+                        sb.append("║   • ").append(v);
+                        if (var != null) {
+                            sb.append(" : dtype=").append(var.dataType());
+                            if (var.getShape() != null) {
+                                sb.append(", shape=").append(formatShape(var.getShape()));
+                            }
+                        }
+                        sb.append("\n");
+                    }
+                }
+
+                // List all graph variables
+                sb.append("╠──────────────────────────────────────────────────────────────────────────────╣\n");
+                sb.append("║ ALL GRAPH VARIABLES (").append(sameDiff.getVariables().size()).append(" total):\n");
+                for (String varName : sameDiff.getVariables().keySet()) {
+                    SDVariable var = sameDiff.getVariable(varName);
+                    if (var != null) {
+                        sb.append("║   • ").append(String.format("%-30s", var.name()));
+                        sb.append(" [").append(String.format("%-11s", var.getVariableType())).append("] ");
+                        sb.append("dtype=").append(var.dataType());
+                        if (var.getShape() != null) {
+                            sb.append(", shape=").append(formatShape(var.getShape()));
+                        }
+                        sb.append("\n");
+                    }
+                }
+
+                // Execution order with full details
+                sb.append("╠══════════════════════════════════════════════════════════════════════════════╣\n");
+                sb.append("║ EXECUTION ORDER (").append(execOrder.size()).append(" nodes):\n");
+                sb.append("╠──────────────────────────────────────────────────────────────────────────────╣\n");
+
+                int opIndex = 0;
+                for (ExecutionNode node : execOrder) {
+                    SameDiffOp sdOp = sameDiff.getOps().get(node.getOperationName());
+                    DifferentialFunction op = sdOp != null ? sdOp.getOp() : null;
+                    String opType = op != null ? op.opName() : "?";
+                    String opClass = op != null ? op.getClass().getSimpleName() : "?";
+
+                    sb.append("║ ").append(String.format("%4d", opIndex++)).append(". ");
+                    sb.append(node.getOperationName()).append("\n");
+                    sb.append("║       Type: ").append(opType).append(" (").append(opClass).append(")\n");
+                    sb.append("║       NodeType: ").append(node.getNodeType()).append("\n");
+
+                    // Show inputs with variable info
+                    List<String> inputs = node.getInputVariables();
+                    if (!inputs.isEmpty()) {
+                        sb.append("║       Inputs:\n");
+                        for (int i = 0; i < inputs.size(); i++) {
+                            String inputName = inputs.get(i);
+                            SDVariable inputVar = sameDiff.getVariable(inputName);
+                            sb.append("║         [").append(i).append("] ").append(inputName);
+                            if (inputVar != null) {
+                                sb.append(" : ").append(inputVar.getVariableType());
+                                sb.append(", dtype=").append(inputVar.dataType());
+                                if (inputVar.getShape() != null) {
+                                    sb.append(", shape=").append(formatShape(inputVar.getShape()));
+                                }
+                            }
+                            sb.append("\n");
+                        }
+                    }
+
+                    // Show outputs with variable info
+                    List<String> outputs = node.getOutputVariables();
+                    if (!outputs.isEmpty()) {
+                        sb.append("║       Outputs:\n");
+                        for (int i = 0; i < outputs.size(); i++) {
+                            String outputName = outputs.get(i);
+                            SDVariable outputVar = sameDiff.getVariable(outputName);
+                            sb.append("║         [").append(i).append("] ").append(outputName);
+                            if (outputVar != null) {
+                                sb.append(" : ").append(outputVar.getVariableType());
+                                sb.append(", dtype=").append(outputVar.dataType());
+                                if (outputVar.getShape() != null) {
+                                    sb.append(", shape=").append(formatShape(outputVar.getShape()));
+                                }
+                            }
+                            sb.append("\n");
+                        }
+                    }
+
+                    // Show dependencies
+                    Set<String> deps = node.getDependsOnOperations();
+                    if (deps != null && !deps.isEmpty()) {
+                        sb.append("║       DependsOn: ").append(deps).append("\n");
+                    }
+
+                    sb.append("║\n");
+                }
+                sb.append("╚══════════════════════════════════════════════════════════════════════════════╝\n");
+                log.info(sb.toString());
+            }
 
             // Preprocess placeholders using existing logic
             Map<String, INDArray> processedPlaceholders = preprocessPlaceholders(placeholderValues, at);
@@ -158,27 +331,52 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 }
             }
 
-            log.info("Forward pass completed: {} results", filteredResults.size());
+            // Debug: Print execution summary
+            if (Nd4j.getEnvironment().isDebug()) {
+                StringBuilder sb = new StringBuilder();
+                sb.append("\n╔══════════════════════════════════════════════════════════════════╗\n");
+                sb.append("║              EXECUTION COMPLETE - RESULTS SUMMARY                ║\n");
+                sb.append("╠══════════════════════════════════════════════════════════════════╣\n");
+                sb.append("║ Total Results: ").append(filteredResults.size()).append("\n");
+                for (Map.Entry<String, SDValue> entry : filteredResults.entrySet()) {
+                    sb.append("║   ").append(entry.getKey()).append(": ");
+                    SDValue val = entry.getValue();
+                    if (val == null) {
+                        sb.append("null");
+                    } else if (val.getSdValueType() == SDValueType.TENSOR) {
+                        INDArray arr = val.getTensorValue();
+                        if (arr != null) {
+                            sb.append("shape=").append(formatShape(arr.shape()))
+                              .append(", dtype=").append(arr.dataType());
+                        } else {
+                            sb.append("null tensor");
+                        }
+                    } else {
+                        sb.append(val.getSdValueType());
+                    }
+                    sb.append("\n");
+                }
+                sb.append("╚══════════════════════════════════════════════════════════════════╝\n");
+                log.info(sb.toString());
+            }
 
             // Mark output dependencies as satisfied so buffers can be released before clearing tracker
             for (String outputVar : variables) {
-                arrayUseTracker.markSatisfied(new ReqOutputDep(outputVar), true);
+                arrayUseTracker().markSatisfied(new ReqOutputDep(outputVar), true);
             }
 
             // Release any arrays that became releasable (will NOT release outputs we're returning)
-            if (arrayUseTracker.hasNewAllSatisfied()) {
-                arrayUseTracker.getNewAllSatisfiedList(); // Just pop them off the queue
+            if (arrayUseTracker().hasNewAllSatisfied()) {
+                arrayUseTracker().getNewAllSatisfiedList(); // Just pop them off the queue
             }
 
             // Clear array use tracker to prevent stale dependencies from accumulating
-            arrayUseTracker.clear();
+            arrayUseTracker().clear();
         } finally {
-            // CRITICAL: All cleanup MUST be in finally block to prevent memory leaks on exceptions
-
             // Close OpContext instances to prevent native memory leak
-            // Wrap in additional try-catch to ensure opContexts.clear() runs even if iteration fails
+            // Wrap in additional try-catch to ensure opContexts().clear() runs even if iteration fails
             try {
-                for (OpContext ctx : opContexts.values()) {
+                for (OpContext ctx : opContexts().values()) {
                     if (ctx != null) {
                         try {
                             ctx.close();
@@ -191,7 +389,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 log.warn("Error iterating OpContexts for cleanup: {}", e.getMessage());
             } finally {
                 // Always clear the map, even if iteration failed
-                opContexts.clear();
+                opContexts().clear();
             }
 
             // Close memory manager to release cached arrays
@@ -262,11 +460,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
             // Mark operation dependency as satisfied in arrayUseTracker
             Dep opDep = new OpDep(node.getOperationName(), OUTER_FRAME, 0, null);
-            arrayUseTracker.markSatisfied(opDep, true);
+            arrayUseTracker().markSatisfied(opDep, true);
 
             // Release any arrays that are no longer needed
-            if (arrayUseTracker.hasNewAllSatisfied()) {
-                List<SDValue> canClose = arrayUseTracker.getNewAllSatisfiedList();
+            if (arrayUseTracker().hasNewAllSatisfied()) {
+                List<SDValue> canClose = arrayUseTracker().getNewAllSatisfiedList();
                 for (SDValue value : canClose) {
                     if (log.isTraceEnabled()) {
                         if (value.getSdValueType() == SDValueType.TENSOR) {
@@ -277,16 +475,16 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
                     switch(value.getSdValueType()) {
                         case TENSOR:
-                            if (!freedArrays.contains(value.getTensorValue().getId())) {
+                            if (!freedArrays().contains(value.getTensorValue().getId())) {
                                 mmgr.release(value.getTensorValue());
-                                freedArrays.add(value.getTensorValue().getId());
+                                freedArrays().add(value.getTensorValue().getId());
                             }
                             break;
                         case LIST:
                             for (INDArray arr : value.getListValue()) {
-                                if (arr != null && !freedArrays.contains(arr.getId())) {
+                                if (arr != null && !freedArrays().contains(arr.getId())) {
                                     mmgr.release(arr);
-                                    freedArrays.add(arr.getId());
+                                    freedArrays().add(arr.getId());
                                 }
                             }
                             break;
@@ -412,6 +610,193 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 // OVERRIDE 4: Execute single node (add this to InferenceSession)
 // =============================================================================
 
+    /**
+     * Formats a shape array as a readable string for debug output.
+     */
+    private String formatShape(long[] shape) {
+        if (shape == null) return "null";
+        if (shape.length == 0) return "[]";
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < shape.length; i++) {
+            if (i > 0) sb.append(", ");
+            sb.append(shape[i]);
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+
+    /**
+     * Formats input information for debug output.
+     */
+    private String formatInputsDebug(ExecutionNode node, Map<String, SDValue> variableValues) {
+        StringBuilder sb = new StringBuilder();
+        List<String> inputs = node.getInputVariables();
+        if (inputs == null || inputs.isEmpty()) {
+            sb.append("    Inputs: (none)\n");
+        } else {
+            sb.append("    Inputs:\n");
+            for (int i = 0; i < inputs.size(); i++) {
+                String inputName = inputs.get(i);
+                SDValue value = variableValues.get(inputName);
+                sb.append("      [").append(i).append("] ").append(inputName).append(": ");
+                if (value == null) {
+                    sb.append("null");
+                } else if (value.getSdValueType() == SDValueType.TENSOR) {
+                    INDArray arr = value.getTensorValue();
+                    if (arr == null) {
+                        sb.append("null tensor");
+                    } else {
+                        sb.append("shape=").append(formatShape(arr.shape()))
+                          .append(", dtype=").append(arr.dataType());
+                    }
+                } else if (value.getSdValueType() == SDValueType.LIST) {
+                    List<INDArray> list = value.getListValue();
+                    sb.append("list[").append(list != null ? list.size() : 0).append("]");
+                } else {
+                    sb.append(value.getSdValueType());
+                }
+                sb.append("\n");
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Formats output information for debug output.
+     */
+    private String formatOutputsDebug(ExecutionNode node, Map<String, SDValue> variableValues) {
+        StringBuilder sb = new StringBuilder();
+        List<String> outputs = node.getOutputVariables();
+        if (outputs == null || outputs.isEmpty()) {
+            sb.append("    Outputs: (none)\n");
+        } else {
+            sb.append("    Outputs:\n");
+            for (int i = 0; i < outputs.size(); i++) {
+                String outputName = outputs.get(i);
+                SDVariable outVar = sameDiff.getVariable(outputName);
+                sb.append("      [").append(i).append("] ").append(outputName);
+                if (outVar != null) {
+                    sb.append(": dtype=").append(outVar.dataType());
+                    if (outVar.getShape() != null) {
+                        sb.append(", expectedShape=").append(formatShape(outVar.getShape()));
+                    }
+                }
+                // Check if already computed
+                SDValue computed = variableValues.get(outputName);
+                if (computed != null && computed.getSdValueType() == SDValueType.TENSOR) {
+                    INDArray arr = computed.getTensorValue();
+                    if (arr != null) {
+                        sb.append(" -> actualShape=").append(formatShape(arr.shape()));
+                    }
+                }
+                sb.append("\n");
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Formats comprehensive node metadata for error messages.
+     * This includes the operation name, input variable names with their shapes/values,
+     * and expected output variable names.
+     *
+     * @param node the execution node that failed
+     * @param variableValues current variable values map
+     * @return formatted string with node metadata for error context
+     */
+    private String formatNodeErrorContext(ExecutionNode node, Map<String, SDValue> variableValues) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("\n========================================\n");
+        sb.append("SAMEDIFF NODE EXECUTION ERROR CONTEXT\n");
+        sb.append("========================================\n");
+
+        String opName = node.getOperationName();
+        sb.append("Operation Name: ").append(opName).append("\n");
+
+        // Get the SameDiff op for additional info
+        SameDiffOp sameDiffOp = sameDiff.getOps().get(opName);
+        if (sameDiffOp != null) {
+            DifferentialFunction op = sameDiffOp.getOp();
+            if (op != null) {
+                sb.append("Op Type: ").append(op.opName()).append("\n");
+                sb.append("Op Class: ").append(op.getClass().getSimpleName()).append("\n");
+            }
+        }
+
+        // Input variables with details
+        List<String> inputs = node.getInputVariables();
+        sb.append("\nINPUT VARIABLES (").append(inputs != null ? inputs.size() : 0).append("):\n");
+        if (inputs != null && !inputs.isEmpty()) {
+            for (int i = 0; i < inputs.size(); i++) {
+                String inputName = inputs.get(i);
+                sb.append("  [").append(i).append("] '").append(inputName).append("'");
+
+                SDValue value = variableValues.get(inputName);
+                if (value == null) {
+                    sb.append(" -> VALUE NOT FOUND IN CONTEXT");
+                } else if (value.getSdValueType() == SDValueType.TENSOR) {
+                    INDArray arr = value.getTensorValue();
+                    if (arr == null) {
+                        sb.append(" -> null tensor");
+                    } else {
+                        sb.append("\n      Shape: ").append(formatShape(arr.shape()));
+                        sb.append(", DataType: ").append(arr.dataType());
+                        sb.append(", Closed: ").append(arr.wasClosed());
+                        if (arr.data() != null) {
+                            sb.append("\n      Buffer Address: 0x").append(Long.toHexString(arr.data().pointer().address()));
+                        }
+                        // For scalars, show the value
+                        if (arr.isScalar() && !arr.wasClosed()) {
+                            try {
+                                if (arr.dataType() == DataType.INT64) {
+                                    long val = arr.getLong(0);
+                                    sb.append("\n      Scalar Value: ").append(val);
+                                    sb.append(" (hex: 0x").append(Long.toHexString(val)).append(")");
+                                } else if (arr.dataType().isFPType()) {
+                                    sb.append("\n      Scalar Value: ").append(arr.getDouble(0));
+                                }
+                            } catch (Exception e) {
+                                sb.append("\n      Scalar Value: <error reading value>");
+                            }
+                        }
+                    }
+                } else if (value.getSdValueType() == SDValueType.LIST) {
+                    List<INDArray> list = value.getListValue();
+                    sb.append(" -> list[").append(list != null ? list.size() : 0).append("]");
+                } else {
+                    sb.append(" -> ").append(value.getSdValueType());
+                }
+                sb.append("\n");
+            }
+        } else {
+            sb.append("  (no inputs)\n");
+        }
+
+        // Output variables
+        List<String> outputs = node.getOutputVariables();
+        sb.append("\nOUTPUT VARIABLES (").append(outputs != null ? outputs.size() : 0).append("):\n");
+        if (outputs != null && !outputs.isEmpty()) {
+            for (int i = 0; i < outputs.size(); i++) {
+                String outputName = outputs.get(i);
+                sb.append("  [").append(i).append("] '").append(outputName).append("'");
+
+                SDVariable outVar = sameDiff.getVariable(outputName);
+                if (outVar != null) {
+                    sb.append(" -> dtype=").append(outVar.dataType());
+                    if (outVar.getShape() != null) {
+                        sb.append(", expectedShape=").append(formatShape(outVar.getShape()));
+                    }
+                }
+                sb.append("\n");
+            }
+        } else {
+            sb.append("  (no outputs)\n");
+        }
+
+        sb.append("========================================\n");
+        return sb.toString();
+    }
+
     private void executeNode(ExecutionNode node,
                              Map<String, SDValue> variableValues,
                              Set<String> allRequired,
@@ -420,7 +805,102 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                              MultiDataSet batch) {
 
         String opName = node.getOperationName();
-        log.trace("Executing operation: {}", opName);
+        boolean debugMode = Nd4j.getEnvironment().isDebug();
+        long startTime = debugMode ? System.nanoTime() : 0;
+
+        if (debugMode) {
+            SameDiffOp sameDiffOp = sameDiff.getOps().get(opName);
+            DifferentialFunction op = sameDiffOp != null ? sameDiffOp.getOp() : null;
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("\n┌──────────────────────────────────────────────────────────────────────────────┐\n");
+            sb.append("│ EXECUTING: ").append(opName).append("\n");
+            sb.append("├──────────────────────────────────────────────────────────────────────────────┤\n");
+            sb.append("│ Op Type: ").append(op != null ? op.opName() : "unknown");
+            sb.append(" (").append(op != null ? op.getClass().getSimpleName() : "unknown").append(")\n");
+            sb.append("│ Node Type: ").append(node.getNodeType()).append("\n");
+
+            // Frame info for control flow
+            if (node.getFrameInfo() != null) {
+                sb.append("│ Frame: ").append(node.getFrameInfo()).append("\n");
+            }
+
+            // Dependencies
+            Set<String> deps = node.getDependsOnOperations();
+            if (deps != null && !deps.isEmpty()) {
+                sb.append("│ Dependencies: ").append(deps).append("\n");
+            }
+
+            // Input variables with full details
+            sb.append("├──────────────────────────────────────────────────────────────────────────────┤\n");
+            sb.append("│ INPUT VARIABLES:\n");
+            List<String> inputs = node.getInputVariables();
+            if (inputs == null || inputs.isEmpty()) {
+                sb.append("│   (none)\n");
+            } else {
+                for (int i = 0; i < inputs.size(); i++) {
+                    String inputName = inputs.get(i);
+                    SDVariable inputVar = sameDiff.getVariable(inputName);
+                    SDValue value = variableValues.get(inputName);
+
+                    sb.append("│   [").append(i).append("] ").append(inputName).append("\n");
+                    if (inputVar != null) {
+                        sb.append("│       varType: ").append(inputVar.getVariableType()).append("\n");
+                        sb.append("│       dtype: ").append(inputVar.dataType()).append("\n");
+                        if (inputVar.getShape() != null) {
+                            sb.append("│       declaredShape: ").append(formatShape(inputVar.getShape())).append("\n");
+                        }
+                    }
+                    if (value != null) {
+                        if (value.getSdValueType() == SDValueType.TENSOR) {
+                            INDArray arr = value.getTensorValue();
+                            if (arr != null) {
+                                sb.append("│       runtimeShape: ").append(formatShape(arr.shape())).append("\n");
+                                sb.append("│       runtimeDtype: ").append(arr.dataType()).append("\n");
+                                // Show first few values for small arrays or scalars
+                                if (arr.isScalar()) {
+                                    sb.append("│       value: ").append(arr.getDouble(0)).append("\n");
+                                } else if (arr.length() <= 6) {
+                                    sb.append("│       values: ").append(arr.toStringFull()).append("\n");
+                                }
+                            } else {
+                                sb.append("│       runtime: null tensor\n");
+                            }
+                        } else if (value.getSdValueType() == SDValueType.LIST) {
+                            List<INDArray> list = value.getListValue();
+                            sb.append("│       runtime: list[").append(list != null ? list.size() : 0).append("]\n");
+                        }
+                    } else {
+                        sb.append("│       runtime: NOT YET COMPUTED\n");
+                    }
+                }
+            }
+
+            // Output variables with expected info
+            sb.append("├──────────────────────────────────────────────────────────────────────────────┤\n");
+            sb.append("│ OUTPUT VARIABLES:\n");
+            List<String> outputs = node.getOutputVariables();
+            if (outputs == null || outputs.isEmpty()) {
+                sb.append("│   (none)\n");
+            } else {
+                for (int i = 0; i < outputs.size(); i++) {
+                    String outputName = outputs.get(i);
+                    SDVariable outputVar = sameDiff.getVariable(outputName);
+
+                    sb.append("│   [").append(i).append("] ").append(outputName).append("\n");
+                    if (outputVar != null) {
+                        sb.append("│       varType: ").append(outputVar.getVariableType()).append("\n");
+                        sb.append("│       dtype: ").append(outputVar.dataType()).append("\n");
+                        if (outputVar.getShape() != null) {
+                            sb.append("│       expectedShape: ").append(formatShape(outputVar.getShape())).append("\n");
+                        }
+                    }
+                }
+            }
+            sb.append("└──────────────────────────────────────────────────────────────────────────────┘\n");
+
+            log.info(sb.toString());
+        }
 
         try {
             // Get the operation
@@ -462,17 +942,73 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
 
             if (op instanceof BaseTensorOp) {
-                executeTensorArrayNode(node, variableValues, op);
+                executeTensorArrayNode(node, variableValues, op, allRequired);
                 return;
             }
 
             // For regular operations, use the existing doExec infrastructure
             executeRegularOperation(node, variableValues, allRequired, listeners, at, batch);
 
-
         } catch (Exception e) {
-            log.error("Failed to execute operation: {}", opName, e);
-            throw new RuntimeException("Operation execution failed: " + opName, e);
+            // Format comprehensive node context for the error message
+            String nodeContext = formatNodeErrorContext(node, variableValues);
+            log.error("Failed to execute operation: {}\n{}", opName, nodeContext, e);
+            throw new RuntimeException("Operation execution failed: " + opName + nodeContext, e);
+        } finally {
+            // Log completion with timing and output shapes
+            if (debugMode) {
+                long endTime = System.nanoTime();
+                double elapsedMs = (endTime - startTime) / 1_000_000.0;
+
+                StringBuilder sb = new StringBuilder();
+                sb.append("┌─ COMPLETED: ").append(opName);
+                sb.append(" [").append(String.format("%.3f", elapsedMs)).append(" ms] ─────────────────────────────────┐\n");
+
+                // Show actual computed outputs after execution
+                List<String> outputs = node.getOutputVariables();
+                if (outputs != null && !outputs.isEmpty()) {
+                    sb.append("│ COMPUTED OUTPUTS:\n");
+                    for (int i = 0; i < outputs.size(); i++) {
+                        String outputName = outputs.get(i);
+                        SDValue computed = variableValues.get(outputName);
+
+                        sb.append("│   [").append(i).append("] ").append(outputName).append("\n");
+                        if (computed != null) {
+                            if (computed.getSdValueType() == SDValueType.TENSOR) {
+                                INDArray arr = computed.getTensorValue();
+                                if (arr != null) {
+                                    sb.append("│       shape: ").append(formatShape(arr.shape())).append("\n");
+                                    sb.append("│       dtype: ").append(arr.dataType()).append("\n");
+                                    // Show values for small arrays or scalars
+                                    if (arr.isScalar()) {
+                                        sb.append("│       value: ").append(arr.getDouble(0)).append("\n");
+                                    } else if (arr.length() <= 6) {
+                                        sb.append("│       values: ").append(arr.toStringFull()).append("\n");
+                                    } else {
+                                        // Show summary for larger arrays (skip min/max for non-numeric types)
+                                        DataType dt = arr.dataType();
+                                        if (dt != DataType.BOOL && dt != DataType.UTF8 && dt != DataType.UTF16 && dt != DataType.UTF32) {
+                                            sb.append("│       min: ").append(arr.minNumber()).append(", max: ").append(arr.maxNumber()).append("\n");
+                                        } else {
+                                            sb.append("│       (non-numeric type, ").append(arr.length()).append(" elements)\n");
+                                        }
+                                    }
+                                } else {
+                                    sb.append("│       result: null tensor\n");
+                                }
+                            } else if (computed.getSdValueType() == SDValueType.LIST) {
+                                List<INDArray> list = computed.getListValue();
+                                sb.append("│       result: list[").append(list != null ? list.size() : 0).append("]\n");
+                            }
+                        } else {
+                            sb.append("│       result: NOT COMPUTED (null)\n");
+                        }
+                    }
+                }
+                sb.append("└──────────────────────────────────────────────────────────────────────────────┘\n");
+
+                log.info(sb.toString());
+            }
         }
     }
 
@@ -634,7 +1170,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         variableValues.put(outputVar, inputValue);
     }
 
-    private void executeTensorArrayNode(ExecutionNode node, Map<String, SDValue> variableValues, DifferentialFunction op) {
+    private void executeTensorArrayNode(ExecutionNode node, Map<String, SDValue> variableValues,
+                                         DifferentialFunction op, Set<String> allRequired) {
         // Convert to VarId-based approach for tensor array operations
         // This maintains compatibility with existing tensor array handling
 
@@ -656,18 +1193,34 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         try {
             ExecutionResult result = getOutputsHelperTensorArrayOps(op, frameIter, opInputs, allIterInputs, variableValues);
 
-            // Store results back in variableValues
+            // Store results back in variableValues and track for deallocation
             if (result.hasValues()) {
                 Map<String, SDValue> outputs = result.getValueOutputs();
                 for (Map.Entry<String, SDValue> entry : outputs.entrySet()) {
-                    variableValues.put(entry.getKey(), entry.getValue());
+                    String varName = entry.getKey();
+                    SDValue outputValue = entry.getValue();
+                    variableValues.put(varName, outputValue);
+
+                    if (allRequired.contains(varName)) {
+                        arrayUseTracker().addDependency(outputValue, new ReqOutputDep(varName));
+                    } else {
+                        arrayUseTracker().addDependency(outputValue, new ExecDoneDep());
+                    }
                 }
             } else if (result.hasSingle()) {
                 List<String> outputNames = node.getOutputVariables();
                 for (int i = 0; i < outputNames.size() && i < result.numResults(); i++) {
                     INDArray resultArray = result.resultAt(i);
                     if (resultArray != null) {
-                        variableValues.put(outputNames.get(i), SDValue.create(resultArray));
+                        String varName = outputNames.get(i);
+                        SDValue outputValue = SDValue.create(resultArray);
+                        variableValues.put(varName, outputValue);
+
+                        if (allRequired.contains(varName)) {
+                            arrayUseTracker().addDependency(outputValue, new ReqOutputDep(varName));
+                        } else {
+                            arrayUseTracker().addDependency(outputValue, new ExecDoneDep());
+                        }
                     }
                 }
             }
@@ -684,7 +1237,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         DifferentialFunction op = sameDiffOp.getOp();
 
         // Create a NEW OpContext for each operation execution.
-        // CRITICAL: Each OpContext must be closed IMMEDIATELY after use, not accumulated.
         // Accumulating OpContexts in a map causes unbounded memory growth:
         // - For 6000+ chunks with 200+ ops each = 1.2M+ OpContexts
         // - This causes the server to crash after ~20 minutes of processing
@@ -777,6 +1329,35 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 if (inputArrays[i] != null && inputArrays[i].wasClosed()) {
                     throw new ND4JIllegalStateException("Input array was closed! For argument '" + argName + "' at index " + i + " for op '" + op.getOwnName() + "' (" + op.opName() + ") with id " + inputArrays[i].getId());
                 }
+
+                // Check for use-after-free corruption in scalar arrays.
+                // When a buffer is freed and reused by InteropDataBuffer, the magic number 0xAB12CD34EF56
+                // gets written where the data used to be. This is a telltale sign of use-after-free.
+                // Also check for pointer-like values which indicate memory was reused for other allocations.
+                if (inputArrays[i] != null && inputArrays[i].isScalar() && inputArrays[i].dataType() == DataType.INT64) {
+                    long value = inputArrays[i].getLong(0);
+                    // InteropDataBuffer magic number: 0xAB12CD34EF56 = 188097240559446
+                    if (value == 0xAB12CD34EF56L) {
+                        throw new ND4JIllegalStateException(
+                            "USE-AFTER-FREE DETECTED: Input scalar at index " + i + " for op '" + op.getOwnName() +
+                            "' contains InteropDataBuffer magic number (0xAB12CD34EF56). " +
+                            "This indicates the array's data buffer was deallocated and the memory was reused. " +
+                            "Variable name: '" + argName + "'. Array id: " + inputArrays[i].getId() + ". " +
+                            "This is a critical memory management bug - please report this issue.");
+                    }
+                    // Check for pointer-like values (heap addresses typically start with 0x7f on 64-bit Linux)
+                    // Values > 0x100000000000 (1TB) are likely pointers, not actual data
+                    if (value > 0x100000000000L) {
+                        throw new ND4JIllegalStateException(
+                            "USE-AFTER-FREE DETECTED: Input scalar at index " + i + " for op '" + op.getOwnName() +
+                            "' contains pointer-like value: " + value + " (hex: 0x" + Long.toHexString(value) + "). " +
+                            "This indicates the array's data buffer was deallocated and memory was reused for another allocation. " +
+                            "Variable name: '" + argName + "'. Array id: " + inputArrays[i].getId() + ". " +
+                            "Array wasClosed: " + inputArrays[i].wasClosed() + ". " +
+                            "Data buffer address: 0x" + Long.toHexString(inputArrays[i].data().pointer().address()) + ". " +
+                            "This is a critical memory management bug.");
+                    }
+                }
             }
 
             for(int i = 0; i < inputArrays.length; i++) {
@@ -831,7 +1412,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         DynamicCustomOp dynOp = (DynamicCustomOp) customOp;
 
         // Set op arguments (NOT input arrays - they are already set by executeRegularOperation)
-        // CRITICAL: Do NOT call opContext.setInputArrays(customOp.inputArguments()) here!
         // customOp.inputArguments() returns stale arrays from graph import/construction,
         // NOT the arrays from the current execution context. The correct inputs were
         // already set by executeRegularOperation via opContext.setInputArrays(inputArrays).
@@ -854,14 +1434,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 DataBuffer shapeBuffer = outShape.get(i);
                 long[] shape = shapeBuffer.asLong();
 
-                // Get output datatype from variable definition
-                DataType dt = DataType.FLOAT; // default
-                if (i < outputNames.size()) {
-                    SDVariable outVar = sameDiff.getVariable(outputNames.get(i));
-                    if (outVar != null) {
-                        dt = outVar.dataType();
-                    }
-                }
+                // Get output datatype from the shape buffer returned by calculateOutputShape
+                // This is critical for ops like argmax/argmin which return INT64 regardless of input type
+                DataType dt = Shape.dataType(shape);
 
                 boolean isOutput = allRequired.contains(outputNames.get(i));
                 outputArrays[i] = mmgr.allocate(isOutput, dt, Shape.shape(shape));
@@ -869,18 +1444,12 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
             opContext.setOutputArrays(outputArrays);
         } finally {
-            // Clean up shape buffers to prevent memory leak
-            // CRITICAL: Check wasClosed() before calling close() to avoid IllegalStateException
-            // if buffer was already released by deallocator or another cleanup path
-            for (DataBuffer db : outShape) {
-                if (db != null && !db.wasClosed()) {
-                    try {
-                        db.close();
-                    } catch (Exception e) {
-                        log.trace("Error closing shape buffer: {}", e.getMessage());
-                    }
-                }
-            }
+            // NOTE: Shape buffers returned by calculateOutputShape() are CACHED by ConstantShapeHelper
+            // and must NOT be closed here - they are shared across operations.
+            // Closing them would corrupt the shape cache, leading to use-after-free bugs that
+            // manifest as JVM heap corruption (crashes in SymbolTable::do_lookup, G1 GC, etc.)
+            // See DynamicCustomOp.java comment: "Shape buffers returned by calculateOutputShape()
+            // are CACHED by ConstantShapeHelper and must NOT be closed"
         }
 
         // Execute the operation
@@ -895,39 +1464,15 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             String varName = outputNames.get(i);
             if (allRequired.contains(varName)) {
                 // This is a final output, don't deallocate
-                arrayUseTracker.addDependency(outputValue, new ReqOutputDep(varName));
+                arrayUseTracker().addDependency(outputValue, new ReqOutputDep(varName));
             } else {
-                // Check what ops need this array
-                Variable v = sameDiff.getVariables().get(varName);
-                if (v != null && v.getInputsForOp() != null && !v.getInputsForOp().isEmpty()) {
-                    for (String consumerOp : v.getInputsForOp()) {
-                        arrayUseTracker.addDependency(outputValue, new OpDep(consumerOp, OUTER_FRAME, 0, null));
-                    }
-                } else {
-                    // No consumers tracked in graph metadata, but array might still be needed
-                    // by operations not properly registered. Add dependency on execution completion
-                    // to be safe. This prevents premature release when metadata is incomplete.
-                    arrayUseTracker.addDependency(outputValue, new ExecDoneDep());
-                }
+                arrayUseTracker().addDependency(outputValue, new ExecDoneDep());
             }
         }
     }
 
     private void executeStandardOp(Op op, OpContext opContext, ExecutionNode node,
                                    Map<String, SDValue> variableValues, Set<String> allRequired) {
-
-        // Handle reduction operations with axis
-        if (op instanceof ReduceOp && ((ReduceOp) op).getOpType() != Op.Type.REDUCE3) {
-            handleReduceOpAxis(op, opContext);
-        }
-
-        // Handle scalar operations
-        if (op instanceof ScalarOp && opContext.getInputArrays().size() >= 2) {
-            INDArray scalar = opContext.getInputArray(1);
-            if (scalar.isScalar()) {
-                ((ScalarOp) op).setScalar(scalar);
-            }
-        }
 
         // Calculate output shape
         List<DataBuffer> outputShape = ((BaseOp) op).calculateOutputShape(opContext);
@@ -951,20 +1496,12 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             // Execute the operation
             Nd4j.exec(op, opContext);
         } finally {
-            // Clean up shape buffers EXCEPT the first one which is now owned by outputArray
-            // The output array's shape buffer will be cleaned up when the array is released
-            // CRITICAL: Check wasClosed() before calling close() to avoid IllegalStateException
-            // if buffer was already released by deallocator or another cleanup path
-            for (int i = 1; i < outputShape.size(); i++) {
-                DataBuffer db = outputShape.get(i);
-                if (db != null && !db.wasClosed()) {
-                    try {
-                        db.close();
-                    } catch (Exception e) {
-                        log.trace("Error closing shape buffer: {}", e.getMessage());
-                    }
-                }
-            }
+            // NOTE: Shape buffers returned by calculateOutputShape() are CACHED by ConstantShapeHelper
+            // and must NOT be closed here - they are shared across operations.
+            // Closing them would corrupt the shape cache, leading to use-after-free bugs that
+            // manifest as JVM heap corruption (crashes in SymbolTable::do_lookup, G1 GC, etc.)
+            // See DynamicCustomOp.java comment: "Shape buffers returned by calculateOutputShape()
+            // are CACHED by ConstantShapeHelper and must NOT be closed"
         }
 
         // Store result and track for deallocation
@@ -976,20 +1513,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             // Add to arrayUseTracker so it can be released when no longer needed
             if (allRequired.contains(varName)) {
                 // This is a final output, don't deallocate
-                arrayUseTracker.addDependency(outputValue, new ReqOutputDep(varName));
+                arrayUseTracker().addDependency(outputValue, new ReqOutputDep(varName));
             } else {
-                // Check what ops need this array
-                Variable v = sameDiff.getVariables().get(varName);
-                if (v != null && v.getInputsForOp() != null && !v.getInputsForOp().isEmpty()) {
-                    for (String consumerOp : v.getInputsForOp()) {
-                        arrayUseTracker.addDependency(outputValue, new OpDep(consumerOp, OUTER_FRAME, 0, null));
-                    }
-                } else {
-                    // No consumers tracked in graph metadata, but array might still be needed
-                    // by operations not properly registered. Add dependency on execution completion
-                    // to be safe. This prevents premature release when metadata is incomplete.
-                    arrayUseTracker.addDependency(outputValue, new ExecDoneDep());
-                }
+                arrayUseTracker().addDependency(outputValue, new ExecDoneDep());
             }
         }
     }
@@ -1013,7 +1539,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
     @Override
     protected Map<String, INDArray> preprocessPlaceholders(Map<String, INDArray> placeholders, At at) {
-        arrayUseTracker.clear();
+        arrayUseTracker().clear();
 
         //We'll also use this method as a "pre execution" hook-in, to mark variables as something we should never deallocate
         //This occurs by never marking these "ConstantDep" and "VariableDep" instances as satisfied, so there's always
@@ -1023,12 +1549,12 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             if (v.getVariableType() == VariableType.CONSTANT) {
                 INDArray arr = v.getArr();
                 if (arr != null) {
-                    arrayUseTracker.addDependency(SDValue.create(arr), new ConstantDep(v.name()));
+                    arrayUseTracker().addDependency(SDValue.create(arr), new ConstantDep(v.name()));
                 }
             } else if (v.getVariableType() == VariableType.VARIABLE) {
                 INDArray arr = v.getArr();
                 if (arr != null) {
-                    arrayUseTracker.addDependency(SDValue.create(arr), new VariableDep(v.name()));
+                    arrayUseTracker().addDependency(SDValue.create(arr), new VariableDep(v.name()));
                 }
             }
         }
@@ -1087,10 +1613,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             //TODO For the casting case, we SHOULD actually deallocate this when we're done with it, which is usually sooner than "exec done"
             DataType dt = sameDiff.getVariable(e.getKey()).dataType();
             if (kerasWorkaround && e.getKey().endsWith(KERAS_TRAIN_TEST)) {
-                arrayUseTracker.addDependency(arrValue, new ExecDoneDep());
+                arrayUseTracker().addDependency(arrValue, new ExecDoneDep());
             } else if (arr.dataType() == dt) {
                 //Mark as a placeholder array in the array use tracker, so we never deallocate this array...
-                arrayUseTracker.addDependency(arrValue,
+                arrayUseTracker().addDependency(arrValue,
                         PlaceholderDep.builder()
                         .phName(e.getKey())
                         .frame(currentFrame).parentFrame(currParentFrame)
@@ -1101,7 +1627,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 arr = cast;
                 //This array CAN be deallocated once consumed, because of the cast
                 //TODO we can likely close this sooner
-                arrayUseTracker.addDependency(arrValue, ExecDoneDep.builder()
+                arrayUseTracker().addDependency(arrValue, ExecDoneDep.builder()
                         .frame(currentFrame)
                         .parentFrame(currParentFrame)
                         .build());
@@ -1121,29 +1647,29 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             for (ExecStep es : execSteps) {
                 if (es.getType() == ExecType.OP) {
                     OpDep od = new OpDep(es.getName(), es.getFrameIter().getFrame(), es.getFrameIter().getIteration(), es.getFrameIter().getParentFrame());
-                    arrayUseTracker.markSatisfied(od, true);
+                    arrayUseTracker().markSatisfied(od, true);
                 }
             }
         }
 
         //Also mark "end of execution" for array dependency tracker. Mainly used for TensorArray arrays at present.
         //TODO Optimize for reduced memory for some TensorArray operations - i.e., close/deallocate earlier
-        arrayUseTracker.markSatisfied(new ExecDoneDep(), true);
-        if (arrayUseTracker.hasNewAllSatisfied()) {
-            List<SDValue> l = arrayUseTracker.getNewAllSatisfiedList();
+        arrayUseTracker().markSatisfied(new ExecDoneDep(), true);
+        if (arrayUseTracker().hasNewAllSatisfied()) {
+            List<SDValue> l = arrayUseTracker().getNewAllSatisfiedList();
             for (SDValue value : l) {
                 switch(value.getSdValueType()) {
                     case LIST:
                         for(INDArray arr : value.getListValue())
-                            if(arr != null && !freedArrays.contains(arr.getId())) {
+                            if(arr != null && !freedArrays().contains(arr.getId())) {
                                 mmgr.release(arr);
-                                freedArrays.add(arr.getId());
+                                freedArrays().add(arr.getId());
                             }
                         break;
                     case TENSOR:
-                        if(!freedArrays.contains(value.getTensorValue().getId())) {
+                        if(!freedArrays().contains(value.getTensorValue().getId())) {
                             mmgr.release(value.getTensorValue());
-                            freedArrays.add(value.getTensorValue().getId());
+                            freedArrays().add(value.getTensorValue().getId());
                         }
                         break;
                 }
@@ -1175,7 +1701,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             }
         }
 
-        if(sameDiff.isDebugMode()) {
+        if(Nd4j.getEnvironment().isDebug()) {
             log.info("Executing samediff op: " + op.getName());
         }
 
@@ -1235,7 +1761,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 }
             }
         }
-        op.getOp().clearArrays();
+        // op.getOp().clearArrays(); // Removed for thread safety when sharing ops across threads
         if(opPair.getSecond() != null)
             opPair.getSecond().purge();
 
@@ -1299,33 +1825,30 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 //This variable is an output, record that in the array use tracker, so we don't deallocate it
                 //the specific value here
                 addToArrayTracker(out,i,new ReqOutputDep(name));
-            } else if ((inputsForOps == null || inputsForOps.isEmpty()) && out.getValueOutputs() != null && !arrayUseTracker.hasDependency(out.valueWithKeyAtIndex(i,false))) {
-                // No consumers tracked in graph metadata. Instead of releasing immediately,
-                // add dependency on execution completion to prevent premature release when
-                // metadata is incomplete or operations are dynamically created.
-                SDValue array = out.valueWithKeyAtIndex(i, false);
-                if (array != null) {
-                    arrayUseTracker.addDependency(array, new ExecDoneDep());
+            } else {
+                SDValue array = null;
+                if (out.getValueOutputs() != null) {
+                    array = out.valueWithKeyAtIndex(i, false);
+                } else if (out.getOutputs() != null) {
+                    INDArray arr = out.resultAt(i);
+                    if (arr != null) {
+                        array = SDValue.create(arr);
+                    }
                 }
-            } else if ((inputsForOps == null || inputsForOps.isEmpty()) && out.getOutputs() != null && !arrayUseTracker.hasDependency(SDValue.create(out.resultAt(i)))) {
-                // No consumers tracked in graph metadata. Instead of releasing immediately,
-                // add dependency on execution completion to prevent premature release when
-                // metadata is incomplete or operations are dynamically created.
-                INDArray array = out.resultAt(i);
                 if (array != null) {
-                    arrayUseTracker.addDependency(SDValue.create(array), new ExecDoneDep());
+                    arrayUseTracker().addDependency(array, new ExecDoneDep());
                 }
             }
         }
 
         //Mark current op dependency as satisfied...
         Dep d = new OpDep(op.getName(), outputFrameIter.getFrame(), outputFrameIter.getIteration(), outputFrameIter.getParentFrame());
-        arrayUseTracker.markSatisfied(d, true);
+        arrayUseTracker().markSatisfied(d, true);
 
 
         //Close any no longer required arrays
-        if (arrayUseTracker.hasNewAllSatisfied()) {
-            List<SDValue> canClose = arrayUseTracker.getNewAllSatisfiedList();
+        if (arrayUseTracker().hasNewAllSatisfied()) {
+            List<SDValue> canClose = arrayUseTracker().getNewAllSatisfiedList();
             for (SDValue value : canClose) {
                 if (log.isTraceEnabled()) {
                     if(value.getSdValueType() == SDValueType.TENSOR) {
@@ -1346,17 +1869,17 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 if(!(op.getOp() instanceof Switch))
                     switch(value.getSdValueType()) {
                         case TENSOR:
-                            if(!freedArrays.contains(value.getTensorValue().getId()) &&
+                            if(!freedArrays().contains(value.getTensorValue().getId()) &&
                                     !containsOutput) {
                                 mmgr.release(value.getTensorValue());
-                                freedArrays.add(value.getTensorValue().getId());
+                                freedArrays().add(value.getTensorValue().getId());
                             }
                             break;
                         case LIST:
                             for(INDArray arr : value.getListValue())
-                                if(arr != null && !freedArrays.contains(arr.getId()) && !containsOutput) {
+                                if(arr != null && !freedArrays().contains(arr.getId()) && !containsOutput) {
                                     mmgr.release(arr);
-                                    freedArrays.add(arr.getId());
+                                    freedArrays().add(arr.getId());
                                 }
                             break;
                     }
@@ -1370,9 +1893,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
     private void addToArrayTracker(ExecutionResult out,int i,Dep d) {
         if(out.hasSingle()) {
-            arrayUseTracker.addDependency(SDValue.create(out.resultOrValueAt(i,false)), d);       //Op defined by "d" needs to be executed before specified array can be closed
+            arrayUseTracker().addDependency(SDValue.create(out.resultOrValueAt(i,false)), d);       //Op defined by "d" needs to be executed before specified array can be closed
         } else {
-            arrayUseTracker.addDependency(out.valueWithKeyAtIndex(i,false),d);
+            arrayUseTracker().addDependency(out.valueWithKeyAtIndex(i,false),d);
         }
     }
 
@@ -1858,7 +2381,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                                 result = ExecutionResult.createFrom(c,opContext);
                             } finally {
                                 // LEAK FIX: Clean up Assign operation's internal arrays
-                                ((DifferentialFunction) c).clearArrays();
+                                // ((DifferentialFunction) c).clearArrays(); // Removed for thread safety
                             }
                             break;
                         case LIST:
@@ -1899,9 +2422,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 ExecutionResult result = ExecutionResult.createFrom(Arrays.asList("gradientbackwardsmarker"), new INDArray[]{out});
 
                 // Track for deallocation
-                if (!freedArrays.contains(out.getId())) {
+                if (!freedArrays().contains(out.getId())) {
                     mmgr.release(out);
-                    freedArrays.add(out.getId());
+                    freedArrays().add(out.getId());
                 }
 
                 // Record gradient marker execution
@@ -1975,7 +2498,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 ExecutionResult result = ExecutionResult.createFrom(Arrays.asList(n), new INDArray[]{out});
 
                 // Track for deallocation - this is typically an output array
-                arrayUseTracker.addDependency(SDValue.create(out), new ReqOutputDep(n));
+                arrayUseTracker().addDependency(SDValue.create(out), new ReqOutputDep(n));
 
                 // Record external errors execution
                 if (visualizationEnabled && visualizer != null) {
@@ -2131,13 +2654,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 ExecutionResult result;
                 try {
                     Nd4j.exec(c, opContext);
-                    // CRITICAL: createFrom MUST be called BEFORE clearArrays() so result
-                    // can read the operation's output arrays before they're nullified
                     result = ExecutionResult.createFrom((DifferentialFunction) c,opContext);
                 } finally {
                     // LEAK FIX: Clean up operation's internal arrays to prevent memory leaks
                     // This must happen AFTER createFrom() captures the results
-                    ((DifferentialFunction) c).clearArrays();
+                    // ((DifferentialFunction) c).clearArrays(); // Removed for thread safety
                 }
 
                 // Record custom op execution
@@ -2163,13 +2684,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 ExecutionResult result;
                 try {
                     Nd4j.exec(o, opContext);
-                    // CRITICAL: createFrom MUST be called BEFORE clearArrays() so result
-                    // can read the operation's output arrays before they're nullified
                     result = ExecutionResult.createFrom((DifferentialFunction)o,opContext);
                 } finally {
                     // LEAK FIX: Clean up operation's internal arrays (dimensionz, scalarValue, etc.)
                     // This must happen AFTER createFrom() captures the results
-                    ((DifferentialFunction) o).clearArrays();
+                    // ((DifferentialFunction) o).clearArrays(); // Removed for thread safety
                 }
 
                 // Record op execution
@@ -2489,7 +3008,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
             //Add a dependency
             Dep d = new ExecDoneDep();
-            arrayUseTracker.addDependency(sdValue1, d);
+            arrayUseTracker().addDependency(sdValue1, d);
             return ExecutionResult.createValue(op.outputVariable().name(),sdValue1);
         } else if (op instanceof TensorArraySize) {
             //Index 0 is the TensorArray (or dummy variable that represents it)
@@ -2537,18 +3056,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     // The temporary OpContext is closed by the try-with-resources block, which cleans up native resources.
                     // The input arrays are persistent state. The output array is returned to the caller.
 
-                    // Clean up shape buffers EXCEPT index 0 which is owned by the output array
-                    // CRITICAL: Check wasClosed() before calling close() to avoid IllegalStateException
-                    for (int i = 1; i < shape.size(); i++) {
-                        DataBuffer db = shape.get(i);
-                        if (db != null && !db.wasClosed()) {
-                            try {
-                                db.close();
-                            } catch (Exception e) {
-                                log.trace("Error closing shape buffer: {}", e.getMessage());
-                            }
-                        }
-                    }
+                    // NOTE: Shape buffers returned by calculateOutputShape() are CACHED by ConstantShapeHelper
+                    // and must NOT be closed here - they are shared across operations.
+                    // Closing them would corrupt the shape cache, leading to use-after-free bugs.
                 }            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -2613,18 +3123,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         // The temporary OpContext is closed by the try-with-resources block, which cleans up native resources.
                         // The input arrays are persistent state. The output array is returned to the caller.
 
-                        // Clean up shape buffers EXCEPT index 0 which is owned by the output array
-                        // CRITICAL: Check wasClosed() before calling close() to avoid IllegalStateException
-                        for (int i = 1; i < shape.size(); i++) {
-                            DataBuffer db = shape.get(i);
-                            if (db != null && !db.wasClosed()) {
-                                try {
-                                    db.close();
-                                } catch (Exception e) {
-                                    log.trace("Error closing shape buffer: {}", e.getMessage());
-                                }
-                            }
-                        }
+                        // NOTE: Shape buffers returned by calculateOutputShape() are CACHED by ConstantShapeHelper
+                        // and must NOT be closed here - they are shared across operations.
+                        // Closing them would corrupt the shape cache, leading to use-after-free bugs.
                     }                } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -2705,7 +3206,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 setArrayAtIndex(l, outIdx, get);
 
                 //Add dependency for values array until end of execution
-                arrayUseTracker.addDependency(newValue, new ExecDoneDep());
+                arrayUseTracker().addDependency(newValue, new ExecDoneDep());
             }
 
 
@@ -2760,7 +3261,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 soFar += sizes[i];
 
                 //Add dependency for values array until end of execution
-                arrayUseTracker.addDependency(subValue, new ExecDoneDep());
+                arrayUseTracker().addDependency(subValue, new ExecDoneDep());
             }
 
             return ExecutionResult.createValue(sizeName,sdValue);
@@ -2919,10 +3420,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         //TODO let's find a way to use in-place modification for loops where possible to reduce memory requirements
         boolean isLoop = !frameIter.getFrame().equals(OUTER_FRAME) && frameIter.getIteration() > 0;
 
-        OpContext oc = opContexts.get(opName);
+        OpContext oc = opContexts().get(opName);
         if(oc == null) {
             oc = Nd4j.getExecutioner().buildContext();
-            opContexts.put(opName, oc);
+            opContexts().put(opName, oc);
         }
 
         if (df instanceof CustomOp) {
@@ -2975,19 +3476,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         oc.setOutputArray(i, out);
                     }
                 } finally {
-                    // Clean up original shape buffers from calculateOutputShape
-                    // These are temporary buffers returned by calculateOutputShape() that we've already
-                    // extracted the shape info from. The output arrays use NEW buffers created above.
-                    // CRITICAL: Check wasClosed() before calling close() to avoid IllegalStateException
-                    for (DataBuffer db : outShape) {
-                        if (db != null && !db.wasClosed()) {
-                            try {
-                                db.close();
-                            } catch (Exception e) {
-                                log.trace("Error closing shape buffer: {}", e.getMessage());
-                            }
-                        }
-                    }
+                    // NOTE: Shape buffers returned by calculateOutputShape() are CACHED by ConstantShapeHelper
+                    // and must NOT be closed here - they are shared across operations.
+                    // Closing them would corrupt the shape cache, leading to use-after-free bugs that
+                    // manifest as JVM heap corruption (crashes in SymbolTable::do_lookup, G1 GC, etc.)
                 }
             }
 
@@ -3018,13 +3510,23 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     ((BaseReduceOp) op).setEmptyReduce(true);
                 }
                 axisArg = true;
-            } else if (op instanceof ScalarOp && df.argNames().length == 2) {
-                //Scalar ops: 2nd input should be treated as scalar...
-                SDVariable scalarVar = df.arg(1);
-                INDArray scalar = getArray(scalarVar, opInputs, allIterInputs);
-                Preconditions.checkState(scalar != null, "Could not get scalar argument for op %s: %s", df.getOwnName(), df.getClass());
-                Preconditions.checkState(scalar.isScalar(), "Scalar argument for op %s (%s) is not a scalar: has shape %ndShape", df.getOwnName(), df.getClass(), scalar);
-                ((ScalarOp) op).setScalar(scalar);
+            } else if (op instanceof ScalarOp) {
+                if (df.argNames().length == 2) {
+                    //Scalar ops: 2nd input should be treated as scalar...
+                    SDVariable scalarVar = df.arg(1);
+                    INDArray scalar = getArray(scalarVar, opInputs, allIterInputs);
+                    Preconditions.checkState(scalar != null, "Could not get scalar argument for op %s: %s", df.getOwnName(), df.getClass());
+                    Preconditions.checkState(scalar.isScalar(), "Scalar argument for op %s (%s) is not a scalar: has shape %ndShape", df.getOwnName(), df.getClass(), scalar);
+                    ((ScalarOp) op).setScalar(scalar);
+                } else if (df.argNames().length == 1) {
+                    // Handle scalar ops where the scalar was set directly (e.g., in.add(2.0))
+                    // In this case, the scalar value is stored in the op's scalarValue field
+                    INDArray existingScalar = ((ScalarOp) op).scalar();
+                    if (existingScalar == null) {
+                        log.warn("ScalarOp {} has no scalar value set - operations may produce incorrect results", df.getOwnName());
+                    }
+                    // The scalar is already set in the op from construction, no action needed
+                }
             }
 
             if (args != null && args.length > 0) {
@@ -3080,7 +3582,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
      * 3. NaN values appearing in reduce operations due to reading freed/corrupted memory
      *
      * The OpaqueNDArrays are properly cleaned up when:
-     * 1. The OpContext is closed (at end of inference via opContexts.clear())
+     * 1. The OpContext is closed (at end of inference via opContexts().clear())
      * 2. The INDArrays are garbage collected (their cached OpaqueNDArrays are cleaned up)
      *
      * @param opContext The OpContext (not used - method is deprecated)

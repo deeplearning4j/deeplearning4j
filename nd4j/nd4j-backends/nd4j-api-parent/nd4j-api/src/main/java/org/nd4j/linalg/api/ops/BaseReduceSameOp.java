@@ -138,11 +138,52 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
     @Override
     public INDArray dimensions() {
         if(dimensionz == null && dimensions != null) {
-            this.dimensionz = Nd4j.create(Nd4j.createBuffer(dimensions));
+            // Handle empty dimensions: use -1 sentinel for "reduce all"
+            if (dimensions.length == 0) {
+                this.dimensionz = Nd4j.createFromArray(-1L);
+            } else {
+                this.dimensionz = Nd4j.create(Nd4j.createBuffer(dimensions));
+            }
+            // Validate the created array has valid data
+            if (this.dimensionz == null || this.dimensionz.data() == null) {
+                // Fall back to -1 sentinel if creation failed
+                this.dimensionz = Nd4j.createFromArray(-1L);
+            }
+            // Mark as constant to prevent GC from collecting the buffer
+            markDimensionzConstant();
         } else if(dimensionz == null && y != null) {
-            this.dimensionz = y;
+            // When using y as dimensions, validate it has data
+            if (y.data() == null || y.isEmpty()) {
+                // Fall back to -1 sentinel for "reduce all"
+                this.dimensionz = Nd4j.createFromArray(-1L);
+            } else {
+                this.dimensionz = y;
+            }
+            // Mark as constant when used as dimensions
+            markDimensionzConstant();
+        }
+        // Final safety check: if dimensionz still has null data, create sentinel
+        if (dimensionz != null && dimensionz.data() == null) {
+            this.dimensionz = Nd4j.createFromArray(-1L);
+            markDimensionzConstant();
         }
         return dimensionz;
+    }
+
+    /**
+     * Mark the dimension array as constant to prevent GC from collecting its buffer.
+     * Dimension arrays are internal configuration data that must persist for the op's lifetime.
+     */
+    private void markDimensionzConstant() {
+        if (this.dimensionz != null) {
+            if (this.dimensionz.data() != null) {
+                this.dimensionz.data().setConstant(true);
+            }
+            if (this.dimensionz.shapeInfoDataBuffer() != null) {
+                this.dimensionz.shapeInfoDataBuffer().setConstant(true);
+            }
+            this.dimensionz.setCloseable(false);
+        }
     }
 
     @Override

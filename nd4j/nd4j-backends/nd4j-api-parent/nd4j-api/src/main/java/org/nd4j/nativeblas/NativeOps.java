@@ -21,6 +21,7 @@
 package org.nd4j.nativeblas;
 
 import org.bytedeco.javacpp.*;
+import org.bytedeco.javacpp.annotation.NoDeallocator;
 
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
@@ -75,6 +76,7 @@ public interface NativeOps {
 
 
 
+ @NoDeallocator
  OpaqueNDArray create(OpaqueDataBuffer shapeInfo,
                       OpaqueDataBuffer buffer,
                       OpaqueDataBuffer specialBuffer,
@@ -242,6 +244,7 @@ public interface NativeOps {
  Pointer createEvent();
  int registerEvent(Pointer event, Pointer stream);
  int setDevice(int deviceId);
+ void setAvailableDevices(IntPointer devices, int size);
  OpaqueConstantDataBuffer constantBufferLong(int dtype, LongPointer data, int length);
  String getDeviceName(int device);
  long getDeviceFreeMemoryDefault();
@@ -392,7 +395,9 @@ public interface NativeOps {
  String getConstantShapeBufferStackTrace(org.nd4j.nativeblas.OpaqueConstantShapeBuffer buffer);
 
  void markGraphContextInplace(OpaqueContext ptr, boolean reallyInplace);
+ @NoDeallocator
  org.nd4j.nativeblas.OpaqueNDArray getOutputArrayNative(org.nd4j.nativeblas.OpaqueContext ptr, int idx);
+ @NoDeallocator
  org.nd4j.nativeblas.OpaqueNDArray getInputArrayNative(org.nd4j.nativeblas.OpaqueContext ptr, int idx);
  long dataTypeNativeAt(org.nd4j.nativeblas.OpaqueContext ptr, int idx);
  boolean bArgAtNative(org.nd4j.nativeblas.OpaqueContext ptr, int idx);
@@ -464,6 +469,7 @@ public interface NativeOps {
  int dbUseCount(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbSyncToSpecial(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbSyncToPrimary(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+ void dbMigrate(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbTickHostRead(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbTickHostWrite(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbTickDeviceRead(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
@@ -473,9 +479,51 @@ public interface NativeOps {
  int dbDeviceId(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbSetDeviceId(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, int deviceId);
  int dbLocality(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+ @NoDeallocator
  org.nd4j.nativeblas.OpaqueDataBuffer dbCreateView(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, long length);
+ @NoDeallocator
  org.nd4j.nativeblas.OpaqueDataBuffer dbAllocateDataBuffer(long elements, int dataType, boolean allocateBoth);
+ @NoDeallocator
  org.nd4j.nativeblas.OpaqueDataBuffer dbCreateExternalDataBuffer(long elements, int dataType, Pointer primary, Pointer special);
+
+ /**
+  * Create an externalized data buffer that is ALREADY marked as constant.
+  * This is critical for preventing race conditions where the Java GC can
+  * finalize the buffer before setConstant() is called.
+  *
+  * The constant flag is set IN NATIVE CODE before returning to Java,
+  * eliminating the race window between buffer creation and marking constant.
+  *
+  * Use this instead of dbCreateExternalDataBuffer() + setConstant() for constant buffers.
+  *
+  * @param elements Number of elements
+  * @param dataType Data type integer
+  * @param primary Primary (host) pointer
+  * @param special Special (device) pointer
+  * @return Buffer that is already marked as constant and will never be deallocated
+  */
+ @NoDeallocator
+ org.nd4j.nativeblas.OpaqueDataBuffer dbCreateConstantExternalDataBuffer(long elements, int dataType, Pointer primary, Pointer special);
+
+ /**
+  * Set the constant flag on an OpaqueDataBuffer.
+  * Constant buffers (like shape info) should never be freed by the deallocator.
+  * This propagates the flag from Java to the native InteropDataBuffer.
+  * @param dataBuffer The buffer to mark
+  * @param isConstant True to mark as constant (will not be freed)
+  * @return true if the flag was successfully set, false if the buffer was invalid
+  *         (already closed or freed by GC). If false is returned, the buffer has
+  *         been deallocated and should not be used.
+  */
+ boolean dbSetConstant(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, boolean isConstant);
+
+ /**
+  * Check if a buffer is marked as constant.
+  * @param dataBuffer The buffer to check
+  * @return True if the buffer is marked as constant
+  */
+ boolean dbIsConstant(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+
  void setShapeBuffer(LongPointer inputShapeData, int dt, LongPointer bufferToSet, char order, int elementWiseStride, boolean isEmpty, boolean isView);
 
  org.nd4j.nativeblas.OpaqueConstantShapeBuffer cacheAndStoreShapeBuffer(long[] shapeInfo);
@@ -483,6 +531,7 @@ public interface NativeOps {
 
  org.nd4j.nativeblas.OpaqueConstantShapeBuffer shapeBufferEx(int rank, LongPointer shape, LongPointer strides, int dtype, char order, long ews, long extras);
 
+ @NoDeallocator
  org.nd4j.nativeblas.OpaqueDataBuffer allocateDataBuffer(long elements, int dataType, boolean allocateBoth);
  Pointer numpyHeaderForNd4j(Pointer data, Pointer shapeBuffer, long wordSize, LongPointer headerSize);
  Pointer numpyHeaderForNd4j(Pointer data, Pointer shapeBuffer, long wordSize, LongBuffer headerSize);
@@ -515,6 +564,7 @@ public interface NativeOps {
  PointerPointer intermediateResultsShapeInfo(org.nd4j.nativeblas.OpaqueContext contextPointer);
  void setIntermediateResult(org.nd4j.nativeblas.OpaqueContext contextPointer, int index, org.nd4j.nativeblas.OpaqueDataBuffer buffer, org.nd4j.nativeblas.OpaqueDataBuffer shapeInfo, long dataOffset);
  void pushIntermediateResult(org.nd4j.nativeblas.OpaqueContext contextPointer, org.nd4j.nativeblas.OpaqueDataBuffer buffer, org.nd4j.nativeblas.OpaqueDataBuffer shapeInfo, long offset);
+ @NoDeallocator
  org.nd4j.nativeblas.OpaqueDataBuffer intermediateResultDataAt(int index, org.nd4j.nativeblas.OpaqueContext contextPointer);
  LongPointer intermediateResultShapeInfoAt(int index, org.nd4j.nativeblas.OpaqueContext contextPointer);
  String lastErrorMessage();
@@ -788,8 +838,25 @@ public interface NativeOps {
  /**
   * Clears all cached shape buffers to prevent memory leaks.
   * This is called during application shutdown to free accumulated cache memory.
+  * NOTE: Will return early without action if setShapeCacheShutdownInProgress(true) was called.
   */
  void clearShapeCache();
+
+ /**
+  * Marks that shutdown is in progress for the shape cache.
+  * When set to true, clearShapeCache() becomes a no-op to avoid segfaults
+  * during JVM shutdown when buffers may still have external references.
+  *
+  * @param inProgress true to mark shutdown in progress, false otherwise
+  */
+ void setShapeCacheShutdownInProgress(boolean inProgress);
+
+ /**
+  * Check if shape cache shutdown is in progress.
+  *
+  * @return true if setShapeCacheShutdownInProgress(true) was called
+  */
+ boolean isShapeCacheShutdownInProgress();
 
  /**
   * Get the total number of cached shape buffer entries.

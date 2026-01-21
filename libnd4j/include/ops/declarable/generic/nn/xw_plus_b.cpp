@@ -202,13 +202,13 @@ CUSTOM_OP_IMPL(xw_plus_b_bp, 4, 3, false, 0, 0) {
 
   bool aTranspose = (block.getIArguments()->size() > 0 ? INT_ARG(0) == 1 : false);
   bool bTranspose = (block.getIArguments()->size() > 1 ? INT_ARG(1) == 1 : false);
-  auto x = aTranspose ? INPUT_VARIABLE(0)->transpose() : INPUT_VARIABLE(0);  // transpose() already returns NDArray*
+  auto x = aTranspose ? INPUT_VARIABLE(0)->transpose() : INPUT_VARIABLE(0);
   auto b = INPUT_VARIABLE(2);
   auto dLdz = INPUT_VARIABLE(3);
 
   if (x->isEmpty() || INPUT_VARIABLE(1)->isEmpty() || b->isEmpty() || dLdz->isEmpty()) return Status::OK;
 
-  auto w = bTranspose ? INPUT_VARIABLE(1)->transpose() : INPUT_VARIABLE(1);  // transpose() already returns NDArray*
+  auto w = bTranspose ? INPUT_VARIABLE(1)->transpose() : INPUT_VARIABLE(1);
 
   REQUIRE_TRUE(x->rankOf() == 2, 0, "xw_plus_b BP: Input x array should have rank equal 2, but got instead %i!",
                x->rankOf());
@@ -217,10 +217,10 @@ CUSTOM_OP_IMPL(xw_plus_b_bp, 4, 3, false, 0, 0) {
   REQUIRE_TRUE(dLdz->rankOf() == 2, 0, "xw_plus_b BP: Output array should have rank equal 2, but got instead %i!",
                dLdz->rankOf());
 
-  auto dLdx = aTranspose ? OUTPUT_VARIABLE(0)->transpose() : OUTPUT_VARIABLE(0);  // transpose() already returns NDArray*
+  auto dLdx = aTranspose ? OUTPUT_VARIABLE(0)->transpose() : OUTPUT_VARIABLE(0);
   auto dLdb = OUTPUT_VARIABLE(2);
 
-  auto dLdw = (bTranspose) ? OUTPUT_VARIABLE(1)->transpose() : OUTPUT_VARIABLE(1);  // transpose() already returns NDArray*
+  auto dLdw = (bTranspose) ? OUTPUT_VARIABLE(1)->transpose() : OUTPUT_VARIABLE(1);
 
   // dLdb - reduceAlongDimension returns pointer
   std::vector<LongType> dims({0});
@@ -230,13 +230,6 @@ CUSTOM_OP_IMPL(xw_plus_b_bp, 4, 3, false, 0, 0) {
 
   matmul_bp mmul_bp;
   mmul_bp.execute({x, w, dLdz}, std::vector<NDArray*>{dLdx, dLdw}, {}, {}, {});
-
-  // Transpose views are managed by parent arrays - no deletion needed
-  // x is from INPUT_VARIABLE(0)->transpose() if aTranspose
-  // w is from INPUT_VARIABLE(1)->transpose() if bTranspose
-  // dLdx is from OUTPUT_VARIABLE(0)->transpose() if aTranspose
-  // dLdw is from OUTPUT_VARIABLE(1)->transpose() if bTranspose
-  // All are views managed by their parent arrays
 
   return Status::OK;
 }

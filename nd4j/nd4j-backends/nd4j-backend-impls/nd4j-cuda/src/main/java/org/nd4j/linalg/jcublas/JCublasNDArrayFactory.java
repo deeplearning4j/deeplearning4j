@@ -198,8 +198,12 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
     public INDArray createFromDescriptor(DataBuffer shapeInformation) {
         JCublasNDArray jCublasNDArray = new JCublasNDArray();
         jCublasNDArray.setShapeInfoDataBuffer(shapeInformation);
-        DataType dt = Shape.dataType(jCublasNDArray.shapeInfoJava());
-        DataBuffer buff = Nd4j.createBuffer(dt,jCublasNDArray.length(),false);
+        long[] shapeInfo = jCublasNDArray.shapeInfoJava();
+        DataType dt = Shape.dataType(shapeInfo);
+        // Compute length directly from shape info, not from array.length()
+        // because isEmpty() returns true when data buffer is null
+        long length = Shape.isEmpty(shapeInfo) ? 0 : Shape.length(shapeInfo);
+        DataBuffer buff = Nd4j.createBuffer(dt, length, false);
         jCublasNDArray.setData(buff);
         return jCublasNDArray;
     }
@@ -528,6 +532,10 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
             context = allocator.getFlowController().prepareAction(arrays.get(x));
         }
 
+        if (context == null) {
+            throw new RuntimeException("Failed to prepare CUDA context for shuffle operation");
+        }
+
         val zero = arrays.get(0);
         int tadLength = 1;
         if (zero.rank() > 1)
@@ -562,7 +570,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
             //we have to sync manually here as we are calling the method with raw cuda pointers
             AllocationPoint point = allocator.getAllocationPoint(array);
-            if(point.isActualOnHostSide()) {
+            if(point != null && point.isActualOnHostSide()) {
                 AtomicAllocator.getInstance().getFlowController().synchronizeToDevice(point);
                 point.tickDeviceWrite();
             }
@@ -573,7 +581,8 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         // Create OpaqueNDArrayArr from the array of OpaqueNDArray
         OpaqueNDArrayArr xArr = new OpaqueNDArrayArr(xOpaqueArray);
 
-        nativeOps.shuffle(extras, xArr, null, arrays.size(), dimensionArr, OpaqueNDArray.fromINDArray(Nd4j.createFromArray(map)));
+        // Pass xArr for both input and output arrays (in-place shuffle), matching CPU implementation
+        nativeOps.shuffle(extras, xArr, xArr, arrays.size(), dimensionArr, OpaqueNDArray.fromINDArray(Nd4j.createFromArray(map)));
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());

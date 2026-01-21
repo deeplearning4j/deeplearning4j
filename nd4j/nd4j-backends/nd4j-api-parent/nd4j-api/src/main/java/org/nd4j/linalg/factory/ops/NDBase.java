@@ -737,6 +737,18 @@ public class NDBase {
    * @return output Output variable (NUMERIC type)
    */
   public INDArray expandDims(INDArray x, int axis) {
+    // Validate axis bounds before calling native code
+    int rank = x.rank();
+    int adjustedAxis = axis;
+    if (adjustedAxis < 0) {
+      adjustedAxis += rank + 1;
+    }
+    if (adjustedAxis < 0 || adjustedAxis > rank) {
+      throw new org.nd4j.linalg.exception.ND4JIllegalStateException(
+          "ExpandDims: axis " + axis + " is out of bounds for input array with rank " + rank +
+          ". Valid range is [" + (-(rank+1)) + ", " + rank + "]");
+    }
+
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.ExpandDims(x, axis));
     try {
       return __tmp[0];

@@ -177,7 +177,7 @@ public class PerformancePolicy implements RoutingPolicy {
 
             DeviceDescriptor sourceDevice;
             if (input.data().isHybrid()) {
-                sourceDevice = input.data().asHybrid().getOwnerDevice();
+                sourceDevice = input.data().asHybrid().getEffectiveDevice();
             } else {
                 sourceDevice = defaultDevice;
             }
@@ -203,7 +203,7 @@ public class PerformancePolicy implements RoutingPolicy {
 
             DeviceDescriptor sourceDevice;
             if (input.data().isHybrid()) {
-                sourceDevice = input.data().asHybrid().getOwnerDevice();
+                sourceDevice = input.data().asHybrid().getEffectiveDevice();
             } else {
                 sourceDevice = defaultDevice;
             }

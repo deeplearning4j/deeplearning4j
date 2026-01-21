@@ -1148,8 +1148,6 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
 
   // OPTIMIZATION: Fast path for Assign operation with contiguous same-type arrays
   // Use memcpy when both arrays are contiguous, same type, AND same order
-  // CRITICAL: Must check same order because c-order and f-order have different memory layouts
-  // even when both are "contiguous" - memcpy would copy raw bytes incorrectly if orders differ
   constexpr bool isAssignOp = std::is_same_v<OpType, simdOps::Assign<X, Z>>;
   if constexpr (isAssignOp && std::is_same_v<X, Z>) {
     bool sameOrder = (shape::order(xShapeInfo) == shape::order(zShapeInfo));

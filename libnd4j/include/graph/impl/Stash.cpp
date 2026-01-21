@@ -20,6 +20,8 @@
 // @author raver119@gmail.com
 //
 #include <graph/Stash.h>
+#include <array/ConstantShapeBuffer.h>
+#include <unordered_set>
 
 namespace std {
 size_t hash<sd::graph::KeyPair>::operator()(const sd::graph::KeyPair &k) const {
@@ -89,7 +91,40 @@ void Stash::storeArray(int nodeId, const char *name, NDArray *array) {
 }
 
 void Stash::clear() {
-  for (auto v : _handles) delete v;
+  // Use a set to track deleted pointers and prevent double-deletion
+  std::unordered_set<NDArray*> deletedPtrs;
+  for (auto v : _handles) {
+    if (v == nullptr || deletedPtrs.find(v) != deletedPtrs.end()) {
+      continue;
+    }
+    deletedPtrs.insert(v);
+
+    // SAFETY CHECK: Validate the NDArray before deletion using ConstantShapeBuffer's magic number
+    ConstantShapeBuffer* shapeBuffer = v->shapeInfoConstBuffer();
+    if (shapeBuffer == nullptr) {
+      sd_printf("Stash::clear: Skipping NDArray at %p with null shapeInfoConstBuffer\n", v);
+      continue;
+    }
+
+    // Check magic number validity - this detects use-after-free and garbage pointers
+    if (!shapeBuffer->isValid()) {
+      sd_printf("Stash::clear: Skipping NDArray at %p with invalid ConstantShapeBuffer (magic check failed)\n", v);
+      continue;
+    }
+
+    // Additional validation: check that shapeInfo values are reasonable
+    LongType* shapeInfo = shapeBuffer->primary();
+    if (shapeInfo != nullptr) {
+      LongType rank = shapeInfo[0];
+      if (rank < 0 || rank > SD_MAX_RANK) {
+        sd_printf("Stash::clear: Skipping corrupted NDArray at %p with invalid rank %lld\n",
+                  v, (long long)rank);
+        continue;
+      }
+    }
+
+    delete v;
+  }
 
   _handles.clear();
   _stash.clear();

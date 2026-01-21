@@ -54,6 +54,7 @@ import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.exception.ND4JOpExceptionUtils;
 import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.bindings.Nd4jCuda;
@@ -109,11 +110,23 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(BroadcastOp op) {
+        // Device-aware execution: switch to input array's device BEFORE any operations
+        int arrayDeviceId = AtomicAllocator.getInstance().getDeviceId(op.x());
+        int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        if (arrayDeviceId >= 0 && arrayDeviceId != currentDeviceId) {
+            Nd4j.getAffinityManager().unsafeSetDevice(arrayDeviceId);
+        }
+
         long st = profilingConfigurableHookIn(op);
 
         checkForCompression(op);
 
-        INDArray dim1 = op.dimensions().castTo(DataType.LONG);
+        // Handle null dimensions or dimensions with null data buffer
+        INDArray dimArray = op.dimensions();
+        INDArray dim1 = null;
+        if (dimArray != null && dimArray.data() != null) {
+            dim1 = dimArray.castTo(DataType.LONG);
+        }
         val dimension = OpaqueNDArray.fromINDArray(dim1);
 
         if (extraz.get() == null)
@@ -180,7 +193,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         }
 
         if (Nd4j.getNativeOps().lastErrorCode() != 0)
-            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
+            throw ND4JOpExceptionUtils.opExecutionException(op, Nd4j.getNativeOps().lastErrorMessage());
 
         profilingConfigurableHookOut(op, null, st);
 
@@ -215,7 +228,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         checkForCompression(op);
         op.validateDataTypes(null);
 
-        // normalizeAxis converts null, empty, {-1}, or {Integer.MAX_VALUE} to empty array
+        // normalizeAxis converts null, empty, or {-1} to empty array (meaning "reduce all")
         // Empty array means "reduce all dimensions" in native code
         dimension = Shape.normalizeAxis(op.x().rank(), dimension);
 
@@ -224,6 +237,15 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             if (dimension[i] >= op.x().rank())
                 throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension)
                         + " contains element that higher then rank of op.X: [" + op.x().rank() + "]");
+
+        // Device-aware execution: automatically switch to the array's device
+        // CUDA operations must run on the device that owns the memory (error 700 = illegal address)
+        int arrayDeviceId = AtomicAllocator.getInstance().getDeviceId(op.x());
+        int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        if (arrayDeviceId >= 0 && arrayDeviceId != currentDeviceId) {
+            // Automatically switch to the array's device for seamless multi-device support
+            Nd4j.getAffinityManager().unsafeSetDevice(arrayDeviceId);
+        }
 
         val context = AtomicAllocator.getInstance().getDeviceContext();
 
@@ -405,6 +427,16 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(ReduceOp op) {
+        // Device-aware execution: automatically switch to the input array's device FIRST
+        // This MUST happen before any allocations (including output arrays) to ensure
+        // all buffers are on the same device. CUDA error 700 occurs when kernels
+        // access memory from the wrong device.
+        int arrayDeviceId = AtomicAllocator.getInstance().getDeviceId(op.x());
+        int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        if (arrayDeviceId >= 0 && arrayDeviceId != currentDeviceId) {
+            Nd4j.getAffinityManager().unsafeSetDevice(arrayDeviceId);
+        }
+
         checkForCompression(op);
 
         if(op instanceof BaseReduceOp && ((BaseReduceOp)op).isEmptyReduce()) {
@@ -421,7 +453,15 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             }
         }
 
-        val dimension = op.dimensions().toLongVector();
+        // Match CPU behavior: check for null dimensions before calling toLongVector()
+        // op.dimensions() can be null OR return an array with null data buffer
+        // In either case, pass null to normalizeAxis which returns empty array meaning "reduce all"
+        INDArray dimArray = op.dimensions();
+        long[] dimLong = null;
+        if (dimArray != null && dimArray.data() != null) {
+            dimLong = dimArray.toLongVector();
+        }
+        val dimension = Shape.normalizeAxis(op.x().rank(), dimLong);
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
@@ -490,7 +530,20 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(IndexAccumulation op) {
-        val dimension = Shape.normalizeAxis(op.x().rank(), op.dimensions().toLongVector());
+        // Device-aware execution: switch to input array's device BEFORE any allocations
+        int arrayDeviceId = AtomicAllocator.getInstance().getDeviceId(op.x());
+        int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        if (arrayDeviceId >= 0 && arrayDeviceId != currentDeviceId) {
+            Nd4j.getAffinityManager().unsafeSetDevice(arrayDeviceId);
+        }
+
+        // Check for null dimensions or null data buffer before calling toLongVector()
+        INDArray dimArray = op.dimensions();
+        long[] dimLong = null;
+        if (dimArray != null && dimArray.data() != null) {
+            dimLong = dimArray.toLongVector();
+        }
+        val dimension = Shape.normalizeAxis(op.x().rank(), dimLong);
 
         if (op.x().isEmpty()) {
             for (val d:dimension) {
@@ -548,7 +601,12 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val x = OpaqueNDArray.fromINDArray(op.x());
         val y = OpaqueNDArray.fromINDArray(op.y());
         val z = OpaqueNDArray.fromINDArray(op.z());
-        INDArray dim1 = op.dimensions().castTo(DataType.LONG);
+        // Handle null dimensions or dimensions with null data buffer
+        INDArray dimArr = op.dimensions();
+        INDArray dim1 = null;
+        if (dimArr != null && dimArr.data() != null) {
+            dim1 = dimArr.castTo(DataType.LONG);
+        }
         val dimension2 = OpaqueNDArray.fromINDArray(dim1);
         Nd4j.getNativeOps().execIndexReduce(xShapeInfoHostPointer, op.opNum(),
                 x,
@@ -669,7 +727,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val xb = OpaqueNDArray.fromINDArray(x);
         val yb = OpaqueNDArray.fromINDArray(y);
         val zb = OpaqueNDArray.fromINDArray(z);
-        val dimension = OpaqueNDArray.fromINDArray(op.dimensions().castTo(DataType.LONG));
+        // Handle null dimensions or dimensions with null data buffer
+        INDArray dimArr = op.dimensions();
+        INDArray dimCast = null;
+        if (dimArr != null && dimArr.data() != null) {
+            dimCast = dimArr.castTo(DataType.LONG);
+        }
+        val dimension = OpaqueNDArray.fromINDArray(dimCast);
         Pointer extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(x.dataType()), context) : null;
 
         switch (op.getOpType()) {
@@ -708,7 +772,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         INDArray y = getY(op, oc);
         INDArray z = getZ(op, oc);
 
-        // normalizeAxis converts null, empty, {-1}, or {Integer.MAX_VALUE} to empty array
+        // normalizeAxis converts null, empty, or {-1} to empty array (meaning "reduce all")
         dimension = Shape.normalizeAxis(x.rank(), dimension);
 
         // Empty dimension array means "reduce all dimensions" (scalar output)
@@ -828,7 +892,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         checkForCompression(op);
 
-        // normalizeAxis converts null, empty, {-1}, or {Integer.MAX_VALUE} to empty array
+        // normalizeAxis converts null, empty, or {-1} to empty array (meaning "reduce all")
         // Empty array means "reduce all dimensions" in native code
         dimension = Shape.normalizeAxis(x.rank(), dimension);
 
@@ -1123,11 +1187,20 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     }
 
     protected CudaContext invoke(ScalarOp op, OpContext oc) {
+        // Device-aware execution: switch to input array's device BEFORE any allocations
+        INDArray x = getX(op, oc);
+        if (x != null) {
+            int arrayDeviceId = AtomicAllocator.getInstance().getDeviceId(x);
+            int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            if (arrayDeviceId >= 0 && arrayDeviceId != currentDeviceId) {
+                Nd4j.getAffinityManager().unsafeSetDevice(arrayDeviceId);
+            }
+        }
+
         long st = profilingConfigurableHookIn(op);
 
         checkForCompression(op);
 
-        INDArray x = getX(op, oc);
         INDArray y = getY(op, oc);
         INDArray z = getZ(op, oc);
 
@@ -1158,8 +1231,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (CudaEnvironment.getInstance().getConfiguration().isDebug())
             lastOp.set(op.opName());
 
-        if (op.dimensions() != null) {
-            intercept(op, op.dimensions().toLongVector());
+        // Check for null dimensions AND null data buffer before calling toLongVector()
+        INDArray dimArr = op.dimensions();
+        if (dimArr != null && dimArr.data() != null) {
+            intercept(op, dimArr.toLongVector());
             return null;
         }
 
@@ -1209,9 +1284,18 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     }
 
     protected CudaContext invoke(TransformOp op, OpContext oc) {
+        // Device-aware execution: switch to input array's device BEFORE any allocations
+        INDArray x = getX(op, oc);
+        if (x != null) {
+            int arrayDeviceId = AtomicAllocator.getInstance().getDeviceId(x);
+            int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            if (arrayDeviceId >= 0 && arrayDeviceId != currentDeviceId) {
+                Nd4j.getAffinityManager().unsafeSetDevice(arrayDeviceId);
+            }
+        }
+
         long st = profilingConfigurableHookIn(op);
 
-        INDArray x = getX(op, oc);
         INDArray y = getY(op, oc);
         INDArray z = getZ(op, oc);
 
@@ -1379,6 +1463,16 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         INDArray x = getX(op, oc);
         INDArray y = getY(op, oc);
         INDArray z = getZ(op, oc);
+
+        // Device-aware execution: switch to array's device BEFORE any operations
+        INDArray targetArray = z != null ? z : (x != null ? x : y);
+        if (targetArray != null) {
+            int arrayDeviceId = AtomicAllocator.getInstance().getDeviceId(targetArray);
+            int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            if (arrayDeviceId >= 0 && arrayDeviceId != currentDeviceId) {
+                Nd4j.getAffinityManager().unsafeSetDevice(arrayDeviceId);
+            }
+        }
 
         if(op instanceof BaseRandomOp && ((BaseRandomOp)op).isTripleArgRngOp() && z != null && x == null && y == null){
             //Ugly hack to ensure the triple arg call occurs
@@ -1568,6 +1662,20 @@ public class CudaExecutioner extends DefaultOpExecutioner {
      */
     @Override
     public  INDArray[] exec(@NonNull CustomOp op) {
+        // Device-aware execution: switch to input array's device BEFORE any allocations
+        // This ensures output arrays are allocated on the same device as inputs
+        List<INDArray> inputs = op.inputArguments();
+        if (inputs != null && !inputs.isEmpty()) {
+            INDArray firstInput = inputs.get(0);
+            if (firstInput != null) {
+                int arrayDeviceId = AtomicAllocator.getInstance().getDeviceId(firstInput);
+                int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+                if (arrayDeviceId >= 0 && arrayDeviceId != currentDeviceId) {
+                    Nd4j.getAffinityManager().unsafeSetDevice(arrayDeviceId);
+                }
+            }
+        }
+
         val name = op.opName();
         // Set allocation context BEFORE any native calls so allocations are tagged with op name
         if (name != null) {
@@ -1589,10 +1697,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
             return result;
         } catch (ND4JOpProfilerException e) {
-
             throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Op [" + name + "] execution failed", e);
+            throw ND4JOpExceptionUtils.opExecutionException(op, null, e);
         } finally {
             // Clear allocation context after op execution
             Nd4j.getNativeOps().clearAllocationContext();
@@ -1646,10 +1753,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val status = Nd4j.getNativeOps().execCustomOp2(null, op.opHash(), context.contextPointer());
         if (Nd4j.getNativeOps().lastErrorCode() != 0)
-            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
+            throw ND4JOpExceptionUtils.opExecutionException(op, Nd4j.getNativeOps().lastErrorMessage(), null);
 
         if (status != 0)
-            throw new RuntimeException("Op [" + op.opName() + "] execution failed");
+            throw ND4JOpExceptionUtils.opExecutionException(op, "Status code: " + status, null);
 
         // check if input && output needs update
         for (val in:op.inputArguments()) {
@@ -1728,14 +1835,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (Nd4j.getNativeOps().lastErrorCode() != 0)
             throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
-        // CRITICAL: Use BOTH the primary (host) and special (device) pointers from the constant shape buffer.
-        // The CudaLongDataBuffer constructor uses OpaqueDataBuffer.externalizedDataBuffer() to properly
-        // wrap both pointers without allocating new memory. Previously only the primary pointer was used,
-        // causing issues when native code expected valid device pointers for shape info.
+        dbf.retainReference();
+
         Pointer primaryShapeInfo = Nd4j.getNativeOps().getConstantShapeBufferPrimary(dbf);
         Pointer specialShapeInfo = Nd4j.getNativeOps().getConstantShapeBufferSpecial(dbf);
         long shapeInfoLength = Shape.shapeInfoLength(shape.length);
-        val result = new CudaLongDataBuffer(primaryShapeInfo, specialShapeInfo, shapeInfoLength);
+
+        val result = new CudaLongDataBuffer(primaryShapeInfo, specialShapeInfo, shapeInfoLength, true);
 
         return result;
     }
@@ -1756,8 +1862,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         LongPointer primaryOffsets = Nd4j.getNativeOps().getPrimaryOffsets(pack).retainReference();
         LongPointer specialOffsets =  Nd4j.getNativeOps().getSpecialOffsets(pack).retainReference();
         long numTads = Nd4j.getNativeOps().getNumberOfTads(pack);
-        val tadShape = new CudaLongDataBuffer(primaryShapeInfo, specialShapeInfo,shapeInfoLength);
-        val tadOffsets = new CudaLongDataBuffer(primaryOffsets, specialOffsets, numTads);
+
+        val tadShape = new CudaLongDataBuffer(primaryShapeInfo, specialShapeInfo, shapeInfoLength, true);
+        val tadOffsets = new CudaLongDataBuffer(primaryOffsets, specialOffsets, numTads, true);
 
         return new TadPack(tadShape, tadOffsets);
     }

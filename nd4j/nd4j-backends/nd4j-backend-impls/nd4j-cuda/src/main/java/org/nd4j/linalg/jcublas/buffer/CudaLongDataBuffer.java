@@ -69,6 +69,24 @@ public class CudaLongDataBuffer extends BaseCudaDataBuffer {
      * @param numberOfElements
      */
     public CudaLongDataBuffer(@NonNull Pointer hostPointer, @NonNull Pointer devicePointer, long numberOfElements) {
+        this(hostPointer, devicePointer, numberOfElements, false);
+    }
+
+    /**
+     * This constructor is special one - it's used for ShapeInfo with constant flag support.
+     *
+     * CRITICAL FIX: This overload allows marking the buffer as constant IMMEDIATELY during creation,
+     * BEFORE GC can run and deallocate it. This prevents the race condition where:
+     * 1. Buffer is created (not constant)
+     * 2. GC runs and frees buffer
+     * 3. setConstant(true) is called but fails (buffer already freed)
+     *
+     * @param hostPointer Host pointer
+     * @param devicePointer Device pointer
+     * @param numberOfElements Number of elements
+     * @param isConstant If true, marks buffer as constant immediately to prevent GC deallocation
+     */
+    public CudaLongDataBuffer(@NonNull Pointer hostPointer, @NonNull Pointer devicePointer, long numberOfElements, boolean isConstant) {
         super();
         this.allocationMode = AllocationMode.MIXED_DATA_TYPES;
         this.underlyingLength = numberOfElements;
@@ -76,12 +94,17 @@ public class CudaLongDataBuffer extends BaseCudaDataBuffer {
         initTypeAndSize();
 
         // creating empty native DataBuffer and filling it with pointers
-        ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(numberOfElements, DataType.INT64, hostPointer, devicePointer);
+        ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(numberOfElements, DataType.INT64, hostPointer, devicePointer, isConstant);
 
         // setting up java side of things
         this.pointer = new CudaPointer(hostPointer, numberOfElements).asLongPointer();
         indexer = LongIndexer.create((LongPointer) this.pointer);
         this.allocationPoint = new AllocationPoint(ptrDataBuffer, numberOfElements * DataType.INT64.width());
+
+        // Set the constant flag on this DataBuffer as well
+        if (isConstant) {
+            this.constant = true;
+        }
     }
 
     /**

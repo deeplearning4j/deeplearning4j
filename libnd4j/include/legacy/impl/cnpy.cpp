@@ -228,20 +228,26 @@ std::vector<char> &operator+=(std::vector<char> &lhs, const char *rhs) {
  * @return
  */
 char *cnpy::loadFile(const char *path) {
-  char *buffer = 0;
-  long length;
-  FILE *f = fopen(path, "rb");  // was "rb"
+  char *buffer = nullptr;
+  long length = 0;
+  FILE *f = fopen(path, "rb");
 
   if (f) {
     fseek(f, 0, SEEK_END);
     length = ftell(f);
     fseek(f, 0, SEEK_SET);
     buffer = (char *)malloc((length + 1) * sizeof(char));
-
+    if (buffer) {
+      size_t bytesRead = fread(buffer, 1, length, f);
+      buffer[bytesRead] = '\0';
+    }
     fclose(f);
   }
 
-  buffer[length] = '\0';
+  if (!buffer) {
+    THROW_EXCEPTION("Failed to load numpy file - file not found or memory allocation failed");
+  }
+
   return buffer;
 }
 

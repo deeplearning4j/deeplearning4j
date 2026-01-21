@@ -27,27 +27,140 @@
 #include <helpers/TransferMetrics.h>
 
 namespace sd {
+
+// ============================================================================
+// BufferAccessGuard implementation
+// ============================================================================
+
+BufferAccessGuard::BufferAccessGuard(const InteropDataBuffer* buffer)
+    : _buffer(buffer), _primaryPtr(nullptr), _specialPtr(nullptr), _valid(false) {
+  if (_buffer == nullptr) {
+    return;
+  }
+
+  // Validate magic number before accessing
+  if (_buffer->_magic != INTEROP_BUFFER_MAGIC) {
+    _buffer = nullptr;
+    return;
+  }
+
+  // Try to acquire access
+  if (!_buffer->acquireAccess()) {
+    _buffer = nullptr;
+    return;
+  }
+
+  // Access acquired - cache the pointers while holding access
+  _valid = true;
+  _primaryPtr = _buffer->primaryNoRelease();
+  _specialPtr = _buffer->specialNoRelease();
+  // NOTE: We do NOT release access here - that's the whole point!
+  // Access will be released in destructor or release()
+}
+
+BufferAccessGuard::~BufferAccessGuard() {
+  release();
+}
+
+BufferAccessGuard::BufferAccessGuard(BufferAccessGuard&& other) noexcept
+    : _buffer(other._buffer),
+      _primaryPtr(other._primaryPtr),
+      _specialPtr(other._specialPtr),
+      _valid(other._valid) {
+  // Invalidate source - we now own the access
+  other._buffer = nullptr;
+  other._primaryPtr = nullptr;
+  other._specialPtr = nullptr;
+  other._valid = false;
+}
+
+BufferAccessGuard& BufferAccessGuard::operator=(BufferAccessGuard&& other) noexcept {
+  if (this != &other) {
+    // Release our current access
+    release();
+
+    // Take ownership from other
+    _buffer = other._buffer;
+    _primaryPtr = other._primaryPtr;
+    _specialPtr = other._specialPtr;
+    _valid = other._valid;
+
+    // Invalidate source
+    other._buffer = nullptr;
+    other._primaryPtr = nullptr;
+    other._specialPtr = nullptr;
+    other._valid = false;
+  }
+  return *this;
+}
+
+void BufferAccessGuard::release() {
+  if (_valid && _buffer != nullptr) {
+    _buffer->releaseAccess();
+  }
+  _buffer = nullptr;
+  _primaryPtr = nullptr;
+  _specialPtr = nullptr;
+  _valid = false;
+}
+
+// ============================================================================
+// InteropDataBuffer new methods
+// ============================================================================
+
+BufferAccessGuard InteropDataBuffer::acquireGuard() const {
+  return BufferAccessGuard(this);
+}
+
+void* InteropDataBuffer::primaryNoRelease() const {
+  // This method is ONLY called after acquireAccess() succeeded
+  // It does NOT call releaseAccess() - the caller (BufferAccessGuard) handles that
+
+  DataBuffer* db = _dataBuffer.load(std::memory_order_acquire);
+  if (db == nullptr) {
+    return nullptr;
+  }
+  void* result = db->primary();
+  return result != nullptr ? reinterpret_cast<int8_t*>(result) : nullptr;
+}
+
+void* InteropDataBuffer::specialNoRelease() const {
+  // This method is ONLY called after acquireAccess() succeeded
+  // It does NOT call releaseAccess() - the caller (BufferAccessGuard) handles that
+
+  DataBuffer* db = _dataBuffer.load(std::memory_order_acquire);
+  if (db == nullptr) {
+    return nullptr;
+  }
+  void* result = db->special();
+  return result != nullptr ? reinterpret_cast<int8_t*>(result) : nullptr;
+}
+
+// ============================================================================
+// Original InteropDataBuffer implementation
+// ============================================================================
 InteropDataBuffer::InteropDataBuffer(InteropDataBuffer* dataBuffer, uint64_t length) {
  if(dataBuffer == nullptr) {
         THROW_EXCEPTION("InteropDataBuffer::InteropDataBuffer(InteropDataBuffer& dataBuffer, uint64_t length, uint64_t offset) - dataBuffer is nullptr");
  }
-  if(dataBuffer->_dataBuffer->getDataType() == DataType::UNKNOWN)
+  DataBuffer* srcBuffer = dataBuffer->dataBuffer();
+  if(srcBuffer == nullptr || srcBuffer->getDataType() == DataType::UNKNOWN)
     THROW_EXCEPTION("InteropDataBuffer::InteropDataBuffer(InteropDataBuffer& dataBuffer, uint64_t length, uint64_t offset) - dataBuffer has unknown data type");
-  _dataBuffer = dataBuffer->dataBuffer();
+  _dataBuffer.store(srcBuffer, std::memory_order_release);
   _dataType = dataBuffer->_dataType;
 
   _cachedLenInBytes = length * DataTypeUtils::sizeOf(_dataType);
   // Cache pointers for deallocation tracking
-  if (_dataBuffer != nullptr) {
-    _cachedPrimaryPtr = _dataBuffer->primary();
-    _cachedSpecialPtr = _dataBuffer->special();
+  if (srcBuffer != nullptr) {
+    _cachedPrimaryPtr = srcBuffer->primary();
+    _cachedSpecialPtr = srcBuffer->special();
   }
 
   owner = false;
 }
 
 InteropDataBuffer::InteropDataBuffer(DataBuffer * databuffer) {
-  _dataBuffer = databuffer;
+  _dataBuffer.store(databuffer, std::memory_order_release);
   _dataType = databuffer->getDataType();
   if(_dataType == DataType::UNKNOWN) {
     THROW_EXCEPTION(
@@ -73,102 +186,201 @@ InteropDataBuffer::InteropDataBuffer(size_t lenInBytes, DataType dtype, bool all
   _cachedLenInBytes = lenInBytes;
 
   if (lenInBytes == 0) {
-    _dataBuffer = nullptr;
+    _dataBuffer.store(nullptr, std::memory_order_release);
     this->_dataType = dtype;
 
   } else {
     //note this should be size in bytes hence why we multiply the number of elements by the size of the data type
-    _dataBuffer = new DataBuffer(lenInBytes, dtype, nullptr, allocateBoth);
+    DataBuffer* newBuffer = new DataBuffer(lenInBytes, dtype, nullptr, allocateBoth);
+    _dataBuffer.store(newBuffer, std::memory_order_release);
     this->_dataType = dtype;
     this->markOwner(true);
     // Cache pointers for deallocation tracking
-    _cachedPrimaryPtr = _dataBuffer->primary();
-    _cachedSpecialPtr = _dataBuffer->special();
+    _cachedPrimaryPtr = newBuffer->primary();
+    _cachedSpecialPtr = newBuffer->special();
   }
 }
 
 
 void InteropDataBuffer::printDbAllocationTrace() {
-  if(_dataBuffer == nullptr)
+  DataBuffer* db = _dataBuffer.load(std::memory_order_acquire);
+  if(db == nullptr)
     return;
-  _dataBuffer->printAllocationTrace();
+  db->printAllocationTrace();
 }
 
 void InteropDataBuffer::markOwner(bool owner) {
   this->owner = owner;
-  if(_dataBuffer != nullptr && !_closed) {
-    this->_dataBuffer->_isOwnerPrimary = owner;
-    this->_dataBuffer->_isOwnerSpecial = owner;
+  DataBuffer* db = _dataBuffer.load(std::memory_order_acquire);
+  if(db != nullptr && !isClosed()) {
+    db->_isOwnerPrimary = owner;
+    db->_isOwnerSpecial = owner;
   }
 }
 
 DataBuffer * InteropDataBuffer::getDataBuffer() const {
+  // Validate magic number to detect use-after-free
+  if (_magic != INTEROP_BUFFER_MAGIC) {
+    std::string errorMessage = "InteropDataBuffer::getDataBuffer(): USE-AFTER-FREE DETECTED! ";
+    if (_magic == INTEROP_BUFFER_FREED) {
+      errorMessage += "Buffer was explicitly freed. ";
+    } else {
+      errorMessage += "Magic number corrupted - memory reused. ";
+    }
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
   //this can effect size of calculations among others
   if(_dataType == DataType::UNKNOWN) {
     THROW_EXCEPTION("All interop buffers must have a known data type.");
   }
-  // Don't access _dataBuffer if it's been closed/freed
-  if(_dataBuffer != nullptr && !_closed && _dataBuffer->_dataType == DataType::UNKNOWN) {
-    _dataBuffer->_dataType = _dataType;
-  }
+
   // Return nullptr if closed to prevent use-after-free
-  return _closed ? nullptr : _dataBuffer;
+  // EXCEPTION: Constant buffers remain valid even after _closed is set,
+  // because their data is never freed and their pointer is never nulled.
+  bool bufferIsConstant = isConstant.load(std::memory_order_acquire);
+  if (isClosed() && !bufferIsConstant) {
+    return nullptr;
+  }
+
+  DataBuffer* db = _dataBuffer.load(std::memory_order_acquire);
+
+  // Set data type if needed (this is a non-const operation on the DataBuffer,
+  // which is safe because DataBuffer's _dataType is independent of the atomic pointer)
+  if(db != nullptr && db->_dataType == DataType::UNKNOWN) {
+    db->_dataType = _dataType;
+  }
+
+  return db;
 }
 
 DataBuffer * InteropDataBuffer::dataBuffer() {
-  if(_dataBuffer == nullptr) {
+  // Validate magic number to detect use-after-free
+  if (_magic != INTEROP_BUFFER_MAGIC) {
+    std::string errorMessage = "InteropDataBuffer::dataBuffer(): USE-AFTER-FREE DETECTED! ";
+    if (_magic == INTEROP_BUFFER_FREED) {
+      errorMessage += "Buffer was explicitly freed. ";
+    } else {
+      errorMessage += "Magic number corrupted - memory reused. ";
+    }
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
+  bool bufferIsConstant = isConstant.load(std::memory_order_acquire);
+  if(isClosed() && !bufferIsConstant) {
     return nullptr;
   }
-  return _dataBuffer;
+
+  DataBuffer* db = _dataBuffer.load(std::memory_order_acquire);
+  return db;
 }
 
 
 
 void* InteropDataBuffer::primary() const {
-  if(_dataBuffer == nullptr || _dataBuffer->primary() == nullptr) {
+  if (_magic != INTEROP_BUFFER_MAGIC) {
+    std::string errorMessage = "InteropDataBuffer::primary(): USE-AFTER-FREE DETECTED! ";
+    if (_magic == INTEROP_BUFFER_FREED) {
+      errorMessage += "Buffer was explicitly freed (destructor was called). ";
+    } else {
+      errorMessage += "Magic number corrupted (0x";
+      char hexBuf[32];
+      snprintf(hexBuf, sizeof(hexBuf), "%lx", static_cast<unsigned long>(_magic));
+      errorMessage += hexBuf;
+      errorMessage += ") - memory was freed and reused. ";
+    }
+    errorMessage += "This indicates a dangling pointer to a closed/freed InteropDataBuffer.";
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
+  if (!acquireAccess()) {
     return nullptr;
   }
-  return reinterpret_cast<int8_t*>(_dataBuffer->primary());
+
+  DataBuffer* db = _dataBuffer.load(std::memory_order_acquire);
+
+  void* result = nullptr;
+  if(db != nullptr) {
+    result = db->primary();
+  }
+
+  releaseAccess();
+
+  return result != nullptr ? reinterpret_cast<int8_t*>(result) : nullptr;
 }
 
 void* InteropDataBuffer::special() const {
-  if(_dataBuffer == nullptr)
-    return nullptr;
-  if(_dataBuffer->special() == nullptr) {
+  if (_magic != INTEROP_BUFFER_MAGIC) {
+    std::string errorMessage = "InteropDataBuffer::special(): USE-AFTER-FREE DETECTED! ";
+    if (_magic == INTEROP_BUFFER_FREED) {
+      errorMessage += "Buffer was explicitly freed (destructor was called). ";
+    } else {
+      errorMessage += "Magic number corrupted (0x";
+      char hexBuf[32];
+      snprintf(hexBuf, sizeof(hexBuf), "%lx", static_cast<unsigned long>(_magic));
+      errorMessage += hexBuf;
+      errorMessage += ") - memory was freed and reused. ";
+    }
+    errorMessage += "This indicates a dangling pointer to a closed/freed InteropDataBuffer.";
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
+  if (!acquireAccess()) {
     return nullptr;
   }
-  return reinterpret_cast<int8_t*>(_dataBuffer->special());
+
+  DataBuffer* db = _dataBuffer.load(std::memory_order_acquire);
+
+  void* result = nullptr;
+  if(db != nullptr) {
+    result = db->special();
+  }
+
+  releaseAccess();
+
+  return result != nullptr ? reinterpret_cast<int8_t*>(result) : nullptr;
 }
 
 void InteropDataBuffer::setSpecial(void* ptr, size_t length) {
-  if(_dataBuffer == nullptr)
+  DataBuffer* db = _dataBuffer.load(std::memory_order_acquire);
+  if(db == nullptr)
     THROW_EXCEPTION("InteropDataBuffer::setSpecial() - _dataBuffer is nullptr");
-  if(_closed)
+  if(isClosed())
     return;  // Silently ignore if buffer was already closed
-  _dataBuffer->setSpecialBuffer(ptr, length);
+  db->setSpecialBuffer(ptr, length);
   // Update cached pointer
   _cachedSpecialPtr = ptr;
 }
 
 void InteropDataBuffer::setPrimary(void* ptr, size_t length) {
-  if(_dataBuffer == nullptr)
+  DataBuffer* db = _dataBuffer.load(std::memory_order_acquire);
+  if(db == nullptr)
     THROW_EXCEPTION("InteropDataBuffer::setPrimary() - _dataBuffer is nullptr");
-  if(_closed)
+  if(isClosed())
     return;  // Silently ignore if buffer was already closed
-  _dataBuffer->setPrimaryBuffer(ptr, length);
+  db->setPrimaryBuffer(ptr, length);
   // Update cached pointer
   _cachedPrimaryPtr = ptr;
 }
 
 void InteropDataBuffer::setDeviceId(int deviceId) {
-  if(_dataBuffer == nullptr || _closed)
+  if(isClosed())
     return;
-  _dataBuffer->setDeviceId(deviceId);
+  DataBuffer* db = _dataBuffer.load(std::memory_order_acquire);
+  if(db == nullptr)
+    return;
+  db->setDeviceId(deviceId);
 }
+
 int InteropDataBuffer::deviceId() const {
-  if(_dataBuffer == nullptr || _closed)
+  // Constant buffers remain valid even after _closed is set
+  bool bufferIsConstant = isConstant.load(std::memory_order_acquire);
+  if(isClosed() && !bufferIsConstant)
     return 0;
-  return _dataBuffer->deviceId();
+  DataBuffer* db = _dataBuffer.load(std::memory_order_acquire);
+  if(db == nullptr)
+    return 0;
+  return db->deviceId();
 }
 
 int InteropDataBuffer::useCount() const {
@@ -189,7 +401,7 @@ void InteropDataBuffer::prepareSpecialUse(const std::vector<const InteropDataBuf
                                           bool synchronizeWritables) {
   auto currentDeviceId = AffinityManager::currentDeviceId();
   for (const auto& v : readList) {
-    if (v == nullptr || v->_closed) continue;
+    if (v == nullptr || v->isClosed()) continue;
 
     auto db = v->getDataBuffer();
     if(db == nullptr) continue;
@@ -200,7 +412,7 @@ void InteropDataBuffer::prepareSpecialUse(const std::vector<const InteropDataBuf
 
   // we don't tick write list, only ensure the same device affinity
   for (const auto& v : writeList) {
-    if (v == nullptr || v->_closed) continue;
+    if (v == nullptr || v->isClosed()) continue;
 
     auto db = v->getDataBuffer();
     if(db == nullptr) continue;
@@ -215,7 +427,7 @@ void InteropDataBuffer::prepareSpecialUse(const std::vector<const InteropDataBuf
 void InteropDataBuffer::registerPrimaryUse(const std::vector<const InteropDataBuffer*>& writeList,
                                            const std::vector<const InteropDataBuffer*>& readList) {
   for (const auto& v : writeList) {
-    if (v == nullptr || v->_closed) continue;
+    if (v == nullptr || v->isClosed()) continue;
 
     auto db = v->getDataBuffer();
     if (db != nullptr) {
@@ -229,7 +441,7 @@ void InteropDataBuffer::preparePrimaryUse(const std::vector<const InteropDataBuf
                                           bool synchronizeWritables) {
   // Sync read buffers from device to host
   for (const auto& v : readList) {
-    if (v == nullptr || v->_closed) continue;
+    if (v == nullptr || v->isClosed()) continue;
 
     auto db = v->getDataBuffer();
     if (db == nullptr) continue;
@@ -240,7 +452,7 @@ void InteropDataBuffer::preparePrimaryUse(const std::vector<const InteropDataBuf
 
   // Ensure write buffers have primary allocation
   for (const auto& v : writeList) {
-    if (v == nullptr || v->_closed) continue;
+    if (v == nullptr || v->isClosed()) continue;
 
     auto db = v->getDataBuffer();
     if (db == nullptr) continue;
@@ -253,9 +465,12 @@ void InteropDataBuffer::preparePrimaryUse(const std::vector<const InteropDataBuf
 }
 
 void InteropDataBuffer::expand(size_t newlength) {
-  if(_dataBuffer == nullptr || _closed)
-    return;  // Cannot expand a closed or null buffer
-  _dataBuffer->expand(newlength * DataTypeUtils::sizeOf(_dataBuffer->getDataType()));
+  if(isClosed())
+    return;  // Cannot expand a closed buffer
+  DataBuffer* db = _dataBuffer.load(std::memory_order_acquire);
+  if(db == nullptr)
+    return;  // Cannot expand a null buffer
+  db->expand(newlength * DataTypeUtils::sizeOf(db->getDataType()));
 }
 
 

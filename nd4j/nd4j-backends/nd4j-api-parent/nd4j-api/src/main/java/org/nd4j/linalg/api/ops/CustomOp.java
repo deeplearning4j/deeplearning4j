@@ -229,7 +229,7 @@ public interface CustomOp  {
       char ordering = Shape.order(shapeInfo);
 
       // Create output as a view sharing the input's buffer at the input's offset
-      INDArray newOut = Nd4j.create(input.data(), shape, strides, input.offset(), ordering);
+      INDArray newOut = Nd4j.create(input.data(), shape, strides, input.offset(), ordering, true);
       addOutputArgument(newOut);
      } else {
       // Standard case: create new array

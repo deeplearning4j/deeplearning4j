@@ -212,9 +212,12 @@ public class AllocationPoint {
      * This method returns CUDA pointer object for this allocation.
      * It can be either device pointer or pinned memory pointer, or null.
      *
-     * @return
+     * @return the device pointer, or null if the underlying buffer is null/deallocated
      */
     public Pointer getDevicePointer() {
+        if (ptrDataBuffer == null || ptrDataBuffer.isNull()) {
+            return null;
+        }
         return NativeOpsHolder.getInstance().getDeviceNativeOps().dbSpecialBuffer(ptrDataBuffer);
     }
 
@@ -222,14 +225,20 @@ public class AllocationPoint {
      * This method returns CUDA pointer object for this allocation.
      * It can be either device pointer or pinned memory pointer, or null.
      *
-     * @return
+     * @return the host pointer, or null if the underlying buffer is null/deallocated
      */
     public Pointer getHostPointer() {
+        if (ptrDataBuffer == null || ptrDataBuffer.isNull()) {
+            return null;
+        }
         return NativeOpsHolder.getInstance().getDeviceNativeOps().dbPrimaryBuffer(ptrDataBuffer);
     }
 
 
     public synchronized void tickDeviceRead() {
+        if (ptrDataBuffer == null || ptrDataBuffer.isNull()) {
+            return;
+        }
         NativeOpsHolder.getInstance().getDeviceNativeOps().dbTickDeviceRead(ptrDataBuffer);
     }
 
@@ -252,6 +261,9 @@ public class AllocationPoint {
     }
 
     public synchronized void tickHostRead() {
+        if (ptrDataBuffer == null || ptrDataBuffer.isNull()) {
+            return;
+        }
         NativeOpsHolder.getInstance().getDeviceNativeOps().dbTickHostRead(ptrDataBuffer);
     }
 
@@ -260,6 +272,9 @@ public class AllocationPoint {
      *
      */
     public synchronized void tickDeviceWrite() {
+        if (ptrDataBuffer == null || ptrDataBuffer.isNull()) {
+            return;
+        }
         NativeOpsHolder.getInstance().getDeviceNativeOps().dbTickDeviceWrite(ptrDataBuffer);
     }
 
@@ -267,6 +282,9 @@ public class AllocationPoint {
      * This method sets time when this point was changed on host
      */
     public synchronized void tickHostWrite() {
+        if (ptrDataBuffer == null || ptrDataBuffer.isNull()) {
+            return;
+        }
         NativeOpsHolder.getInstance().getDeviceNativeOps().dbTickHostWrite(ptrDataBuffer);
     }
 
@@ -276,6 +294,9 @@ public class AllocationPoint {
      * @return true, if data is actual, false otherwise
      */
     public synchronized boolean isActualOnHostSide() {
+        if (ptrDataBuffer == null || ptrDataBuffer.isNull()) {
+            return false;
+        }
         val s = NativeOpsHolder.getInstance().getDeviceNativeOps().dbLocality(ptrDataBuffer);
         return s <= 0;
     }
@@ -286,6 +307,9 @@ public class AllocationPoint {
      * @return
      */
     public synchronized boolean isActualOnDeviceSide() {
+        if (ptrDataBuffer == null || ptrDataBuffer.isNull()) {
+            return false;
+        }
         val s = NativeOpsHolder.getInstance().getDeviceNativeOps().dbLocality(ptrDataBuffer);
         return s >= 0;
     }

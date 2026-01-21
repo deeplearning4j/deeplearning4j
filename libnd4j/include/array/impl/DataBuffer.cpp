@@ -474,11 +474,15 @@ void DataBuffer::validateIntegrity() const {
 
 ////////////////////////////////////////////////////////////////////////
 void* DataBuffer::primary() {
+  // Validate buffer integrity before returning pointer to catch use-after-free
+  validateIntegrity();
   return _primaryBuffer;
 }
 
 ////////////////////////////////////////////////////////////////////////
 void* DataBuffer::special() {
+  // Validate buffer integrity before returning pointer to catch use-after-free
+  validateIntegrity();
   return _specialBuffer;
 }
 
@@ -632,10 +636,14 @@ void DataBuffer::deleteBuffers() {
 
 ////////////////////////////////////////////////////////////////////////
 DataBuffer::~DataBuffer() {
-  // Clear magic number to detect use-after-free
-  // If anyone tries to use this buffer after destruction, validateIntegrity() will catch it
-  _magicNumber = 0xDEADBEEF;
+  // IMPORTANT: Call deleteBuffers() FIRST while magic number is still valid.
+  // This allows the validation checks in deletePrimary/deleteSpecial to pass.
+  // Then set magic number to 0xDEADBEEF to detect any use-after-free attempts.
   deleteBuffers();
+
+  // Now mark as destroyed - any future access will see this corrupt magic number
+  // and validateIntegrity() will catch it
+  _magicNumber = 0xDEADBEEF;
 }
 
 
@@ -736,4 +744,6 @@ int DataBuffer::deviceId() const { return _deviceId.load(); }
 void DataBuffer::close() { this->deleteBuffers(); }
 
 void DataBuffer::setDeviceId(int deviceId) { _deviceId = deviceId; }
+
+void DataBuffer::resetCounters() { setCountersToZero(); }
 }  // namespace sd

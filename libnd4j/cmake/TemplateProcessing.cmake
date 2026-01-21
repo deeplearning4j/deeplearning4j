@@ -81,9 +81,13 @@ if(SD_GCC_FUNCTRACE)
     endif()
 
     # Note: We now count actual template lines, not combinations
-    # Default to 30 template lines per chunk - adjust via -DMULTI_PASS_CHUNK_SIZE=N if needed
-    set(_chunk_target 30)
-    set(_direct_chunk 30)
+    # REDUCED from 30 to 3 for functrace+CUDA builds to avoid .eh_frame PC32 relocation overflow
+    # AND reduce memory usage during compilation (each CUDA compilation uses 500MB-1GB RAM)
+    # Each template instantiation generates ~200+ symbols due to template expansion, inline functions, etc.
+    # With 30 instantiations per file, we get 6000+ symbols which exceeds PC32 relocation limits
+    # Reduced to 3 to allow more parallel jobs without OOM
+    set(_chunk_target 3)
+    set(_direct_chunk 3)
 
     set(CHUNK_TARGET_INSTANTIATIONS "${_chunk_target}" CACHE STRING "Adaptive chunk size for functrace builds" FORCE)
     set(MULTI_PASS_CHUNK_SIZE "${_direct_chunk}" CACHE STRING "Adaptive direct chunk size for functrace builds" FORCE)

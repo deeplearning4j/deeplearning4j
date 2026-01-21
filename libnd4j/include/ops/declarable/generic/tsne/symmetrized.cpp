@@ -74,7 +74,6 @@ DECLARE_SHAPE_FN(barnes_symmetrized) {
   LongType len = helpers::barnes_row_count(rowP, colP, N, *rowCounts);
   rowCounts->syncToHost();
   if (len <= 0) {
-    // CRITICAL: Clean up allocated array before throwing exception to prevent memory leak
     delete rowCounts;
     THROW_EXCEPTION("barnes_symmetrized: Cannot allocate shape due non-positive len.");
   }

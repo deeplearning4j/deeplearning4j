@@ -482,6 +482,20 @@ public static final int
    */
   public native void validateIntegrity();
 
+  /**
+   * Check if this DataBuffer has been destroyed (destructor was called).
+   * After destruction, the magic number is set to 0xDEADBEEF.
+   * This is useful for detecting use-after-free and preventing double-free.
+   * @return true if the buffer has been destroyed, false if it's still valid
+   */
+  public native @Cast("bool") boolean isDestroyed();
+
+  /**
+   * Check if this DataBuffer is valid (not destroyed and has correct magic number).
+   * @return true if the buffer is valid, false otherwise
+   */
+  public native @Cast("bool") boolean isValid();
+
   public native void allocatePrimary();
   public native void allocateSpecial();
 
@@ -720,6 +734,15 @@ public static final int
 
   public ConstantShapeBuffer() { super((Pointer)null); allocate(); }
   private native void allocate();
+
+  // Copy constructor - creates a non-owning copy that doesn't delete pointers.
+  // This is critical for JavaCPP @ByVal returns which create temporary copies.
+  // Without this, the default shallow copy would delete shared pointers on destruction.
+  public ConstantShapeBuffer(@Const @ByRef ConstantShapeBuffer other) { super((Pointer)null); allocate(other); }
+  private native void allocate(@Const @ByRef ConstantShapeBuffer other);
+
+  // Copy assignment operator
+  public native @ByRef @Name("operator =") ConstantShapeBuffer put(@Const @ByRef ConstantShapeBuffer other);
 
   /**
    * Check if this buffer is valid (not garbage/use-after-free).
@@ -1510,6 +1533,15 @@ public static final int
 
   public native @Cast("bool") boolean setCudaDeviceLimit(int limitType, @Cast("size_t") long value);
 
+  // NDArray print options (NumPy-style printoptions)
+  public native int printEdgeItems();
+  public native void setPrintEdgeItems(int edgeItems);
+  public native int printThreshold();
+  public native void setPrintThreshold(int threshold);
+  public native int printLineWidth();
+  public native void setPrintLineWidth(int lineWidth);
+  public native int printPrecision();
+  public native void setPrintPrecision(int precision);
 
   // Initialize CUDA environment settings from environment variables
   public native void initCudaEnvironment();
@@ -1648,12 +1680,12 @@ public static final int
 
 
 public native @Cast("char*") String getAllCustomOps();
-public native @ByVal org.nd4j.nativeblas.OpaqueRandomGenerator createRandomGenerator(@Cast("sd::LongType") long rootSeed, @Cast("sd::LongType") long nodeSeed);
+public native org.nd4j.nativeblas.OpaqueRandomGenerator createRandomGenerator(@Cast("sd::LongType") long rootSeed, @Cast("sd::LongType") long nodeSeed);
 
 public native org.nd4j.nativeblas.OpaqueContext createGraphContext(int nodeId);
 public native void setGraphContextCudaContext(org.nd4j.nativeblas.OpaqueContext ptr, Pointer stream, Pointer reductionPointer,
                                               Pointer allocationPointer);
-public native @ByVal org.nd4j.nativeblas.OpaqueRandomGenerator getGraphContextRandomGenerator(org.nd4j.nativeblas.OpaqueContext ptr);
+public native org.nd4j.nativeblas.OpaqueRandomGenerator getGraphContextRandomGenerator(org.nd4j.nativeblas.OpaqueContext ptr);
 
 public native void shuffle(@Cast("sd::Pointer*") PointerPointer extras,
                            @ByVal org.nd4j.nativeblas.OpaqueNDArrayArr x,
@@ -2052,18 +2084,18 @@ public native void setGraphContextDArguments(org.nd4j.nativeblas.OpaqueContext p
 public native void setGraphContextDArguments(org.nd4j.nativeblas.OpaqueContext ptr, IntBuffer arguments, int numberOfArguments);
 public native void setGraphContextDArguments(org.nd4j.nativeblas.OpaqueContext ptr, int[] arguments, int numberOfArguments);
 public native void deleteGraphContext(org.nd4j.nativeblas.OpaqueContext ptr);
-public native @Cast("sd::LongType") long getRandomGeneratorRootState(@ByVal org.nd4j.nativeblas.OpaqueRandomGenerator ptr);
-public native @Cast("sd::LongType") long getRandomGeneratorNodeState(@ByVal org.nd4j.nativeblas.OpaqueRandomGenerator ptr);
-public native void setRandomGeneratorStates(@ByVal org.nd4j.nativeblas.OpaqueRandomGenerator ptr, @Cast("sd::LongType") long rootSeed, @Cast("sd::LongType") long nodeSeed);
-public native float getRandomGeneratorRelativeFloat(@ByVal org.nd4j.nativeblas.OpaqueRandomGenerator ptr, @Cast("sd::LongType") long index);
-public native double getRandomGeneratorRelativeDouble(@ByVal org.nd4j.nativeblas.OpaqueRandomGenerator ptr, @Cast("sd::LongType") long index);
-public native int getRandomGeneratorRelativeInt(@ByVal org.nd4j.nativeblas.OpaqueRandomGenerator ptr, @Cast("sd::LongType") long index);
-public native @Cast("sd::LongType") long getRandomGeneratorRelativeLong(@ByVal org.nd4j.nativeblas.OpaqueRandomGenerator ptr, @Cast("sd::LongType") long index);
-public native int getRandomGeneratorNextInt(@ByVal org.nd4j.nativeblas.OpaqueRandomGenerator ptr);
-public native @Cast("sd::LongType") long getRandomGeneratorNextLong(@ByVal org.nd4j.nativeblas.OpaqueRandomGenerator ptr);
-public native float getRandomGeneratorNextFloat(@ByVal org.nd4j.nativeblas.OpaqueRandomGenerator ptr);
-public native double getRandomGeneratorNextDouble(@ByVal org.nd4j.nativeblas.OpaqueRandomGenerator ptr);
-public native void deleteRandomGenerator(@ByVal org.nd4j.nativeblas.OpaqueRandomGenerator ptr);
+public native @Cast("sd::LongType") long getRandomGeneratorRootState(org.nd4j.nativeblas.OpaqueRandomGenerator ptr);
+public native @Cast("sd::LongType") long getRandomGeneratorNodeState(org.nd4j.nativeblas.OpaqueRandomGenerator ptr);
+public native void setRandomGeneratorStates(org.nd4j.nativeblas.OpaqueRandomGenerator ptr, @Cast("sd::LongType") long rootSeed, @Cast("sd::LongType") long nodeSeed);
+public native float getRandomGeneratorRelativeFloat(org.nd4j.nativeblas.OpaqueRandomGenerator ptr, @Cast("sd::LongType") long index);
+public native double getRandomGeneratorRelativeDouble(org.nd4j.nativeblas.OpaqueRandomGenerator ptr, @Cast("sd::LongType") long index);
+public native int getRandomGeneratorRelativeInt(org.nd4j.nativeblas.OpaqueRandomGenerator ptr, @Cast("sd::LongType") long index);
+public native @Cast("sd::LongType") long getRandomGeneratorRelativeLong(org.nd4j.nativeblas.OpaqueRandomGenerator ptr, @Cast("sd::LongType") long index);
+public native int getRandomGeneratorNextInt(org.nd4j.nativeblas.OpaqueRandomGenerator ptr);
+public native @Cast("sd::LongType") long getRandomGeneratorNextLong(org.nd4j.nativeblas.OpaqueRandomGenerator ptr);
+public native float getRandomGeneratorNextFloat(org.nd4j.nativeblas.OpaqueRandomGenerator ptr);
+public native double getRandomGeneratorNextDouble(org.nd4j.nativeblas.OpaqueRandomGenerator ptr);
+public native void deleteRandomGenerator(org.nd4j.nativeblas.OpaqueRandomGenerator ptr);
 public native @Cast("sd::LongType") long getCachedMemory(int deviceId);
 public native @Cast("sd::Pointer") Pointer lcScalarPointer(@ByVal org.nd4j.nativeblas.OpaqueLaunchContext lc);
 public native @Cast("sd::Pointer") Pointer lcReductionPointer(@ByVal org.nd4j.nativeblas.OpaqueLaunchContext lc);
@@ -2091,6 +2123,22 @@ public native void dbExpandBuffer(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffe
 public native int dbUseCount(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 public native void dbSyncToSpecial(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 public native void dbSyncToPrimary(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+
+/**
+ * Batched asynchronous synchronization of multiple data buffers from host to device.
+ * Uses multiple CUDA streams to transfer data in parallel for better performance
+ * during model loading.
+ */
+@Override
+public void batchSyncToSpecialAsync(org.nd4j.nativeblas.OpaqueDataBuffer[] buffers, int bufferCount, int streamCount) {
+    // Fall back to individual sync calls since native array passing is complex
+    for (int i = 0; i < bufferCount && i < buffers.length; i++) {
+        if (buffers[i] != null) {
+            dbSyncToSpecial(buffers[i]);
+        }
+    }
+}
+
 public native void dbTickHostRead(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 public native void dbTickHostWrite(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 public native void dbTickDeviceRead(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
@@ -2103,6 +2151,18 @@ public native int dbLocality(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 public native org.nd4j.nativeblas.OpaqueDataBuffer dbCreateView(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, @Cast("sd::LongType") long length);
 public native org.nd4j.nativeblas.OpaqueDataBuffer dbAllocateDataBuffer(@Cast("sd::LongType") long elements, int dataType, @Cast("bool") boolean allocateBoth);
 public native org.nd4j.nativeblas.OpaqueDataBuffer dbCreateExternalDataBuffer(@Cast("sd::LongType") long elements, int dataType, @Cast("sd::Pointer") Pointer primary, @Cast("sd::Pointer") Pointer special);
+
+/**
+ * Set the constant flag on an OpaqueDataBuffer.
+ * Constant buffers (like shape info) should never be freed by the deallocator.
+ * This propagates the flag from Java to the native InteropDataBuffer.
+ */
+public native void dbSetConstant(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, @Cast("bool") boolean isConstant);
+
+/**
+ * Check if a buffer is marked as constant.
+ */
+public native @Cast("bool") boolean dbIsConstant(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 
 // =====================================================
 // Transfer Metrics API - for tracking device transfers
@@ -2486,8 +2546,24 @@ public native @Cast("bool") boolean isTADCacheShutdownInProgress();
  * Clears all cached shape buffers.
  * This frees all ConstantShapeBuffer objects stored in the shape cache.
  * Called during application shutdown to prevent memory leaks.
+ * NOTE: Will return early without action if setShapeCacheShutdownInProgress(true) was called.
  */
 public native void clearShapeCache();
+
+/**
+ * Marks that shutdown is in progress for the shape cache.
+ * When set to true, clearShapeCache() becomes a no-op to avoid segfaults
+ * during JVM shutdown when buffers may still have external references.
+ *
+ * @param inProgress true to mark shutdown in progress, false otherwise
+ */
+public native void setShapeCacheShutdownInProgress(@Cast("bool") boolean inProgress);
+
+/**
+ * Check if shape cache shutdown is in progress.
+ * @return true if setShapeCacheShutdownInProgress(true) was called
+ */
+public native @Cast("bool") boolean isShapeCacheShutdownInProgress();
 
 /**
  * Get the total number of cached shape buffer entries.
@@ -12395,15 +12471,6 @@ public static final int SD_ALL_OPS_ACTIVATED = 1;
 //   this->storeResult(block, 4, E)
 // #define BROADCAST_CHECK_EMPTY(X, Y, Z)
 //   if (X->isEmpty() || Y->isEmpty()) {
-//     if (!Z->isEmpty()) {
-//        std::string errorMessage;
-//        errorMessage += "Broadcast op validation failed: if x or y are empty, z must be empty";
-//        errorMessage += " X empty:";
-//        errorMessage += std::to_string(X->isEmpty());
-//        errorMessage += "\n Y empty:";
-//        errorMessage += std::to_string(Y->isEmpty());
-//       THROW_EXCEPTION(errorMessage.c_str());
-//     }
 //     return sd::Status::OK;
 //   }
 

@@ -76,8 +76,8 @@ static sd::Status listDiffFunctor_(NDArray* values, NDArray* keep, NDArray* outp
   }
 
   if (saved.size() == 0) {
-    sd_printf("ListDiff: search returned no results", "");
-    THROW_EXCEPTION("Op validation failed");
+    // Empty result is valid - both output arrays should have length 0
+    return sd::Status::OK;
   } else {
     auto z0 = output1;
     auto z1 = output2;

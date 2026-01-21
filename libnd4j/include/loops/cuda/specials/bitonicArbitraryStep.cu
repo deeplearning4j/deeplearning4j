@@ -281,6 +281,151 @@ SD_HOST void bitonicArbitraryStepGenericKey(
   sd::DebugHelper::checkErrorCode(stream, "bitonicArbitraryStepKernelKey failed");
 }
 
+//////////////////////////////////////////////////////////////////////////
+// Value version: compares by Y values, swaps both X and Y
+template <typename X, typename Y>
+SD_KERNEL SD_INLINE void bitonicArbitraryStepKernelValue(
+    void* vx,
+    const sd::LongType* xShapeInfo,
+    void* vy,
+    const sd::LongType* yShapeInfo,
+    int window,
+    int length,
+    int reverse,
+    bool descending) {
+
+  auto x         = static_cast<X*>(vx);
+  auto y         = static_cast<Y*>(vy);
+  const int tid  = threadIdx.x + blockDim.x * blockIdx.x;
+  const int half = window >> 1;
+
+  __shared__ sd::LongType xRank;
+  __shared__ const sd::LongType* xShapePtr;
+  __shared__ const sd::LongType* xStridePtr;
+
+  __shared__ sd::LongType yRank;
+  __shared__ const sd::LongType* yShapePtr;
+  __shared__ const sd::LongType* yStridePtr;
+
+  __shared__ sd::LongType xLength;
+
+  if (threadIdx.x == 0) {
+    xRank      = shape::rank(xShapeInfo);
+    xShapePtr  = shape::shapeOf(xShapeInfo);
+    xStridePtr = shape::stride(xShapeInfo);
+
+    yRank      = shape::rank(yShapeInfo);
+    yShapePtr  = shape::shapeOf(yShapeInfo);
+    yStridePtr = shape::stride(yShapeInfo);
+
+    xLength    = shape::length(xShapeInfo);
+  }
+  __syncthreads();
+
+  const int WARP_SIZE = 32;
+  const int numWarps  = (gridDim.x * blockDim.x) / WARP_SIZE;
+  const int warpId    = tid / WARP_SIZE;
+  const int warpIdx   = tid % WARP_SIZE;
+
+  int firstPosition;
+  int firstStep;
+  int secondPosition;
+  int secondStep;
+
+  if (half >= 128) {
+    firstPosition = blockIdx.x * window;
+    firstStep     = gridDim.x * window;
+
+    secondPosition = threadIdx.x;
+    secondStep     = blockDim.x;
+  }
+  else if (half >= 32) {
+    firstPosition = warpId * window;
+    firstStep     = numWarps * window;
+
+    secondPosition = warpIdx;
+    secondStep     = WARP_SIZE;
+  }
+  else {
+    firstPosition = tid * window;
+    firstStep     = blockDim.x * gridDim.x * window;
+
+    secondPosition = 0;
+    secondStep     = 1;
+  }
+
+  for (int i = firstPosition; i < length; i += firstStep) {
+    for (int j = secondPosition; j < half; j += secondStep) {
+      const int it = (reverse) ? i + j + half : i + window - j - 1;
+      const int ij = i + j;
+      if (it < length && ij < length) {
+        sd::LongType itCoordsY[SD_MAX_RANK];
+        sd::LongType ijCoordsY[SD_MAX_RANK];
+        sd::LongType itOffsetY;
+        sd::LongType ijOffsetY;
+
+        INDEX2COORDS(it, yRank, yShapePtr, itCoordsY);
+        COORDS2INDEX(yRank, yStridePtr, itCoordsY, itOffsetY);
+
+        INDEX2COORDS(ij, yRank, yShapePtr, ijCoordsY);
+        COORDS2INDEX(yRank, yStridePtr, ijCoordsY, ijOffsetY);
+
+        Y v0 = y[ijOffsetY];
+        Y v1 = y[itOffsetY];
+
+        const bool condition = (!descending == (v0 > v1));
+        if (condition) {
+          y[ijOffsetY] = v1;
+          y[itOffsetY] = v0;
+
+          sd::LongType itCoordsX[SD_MAX_RANK];
+          sd::LongType ijCoordsX[SD_MAX_RANK];
+          sd::LongType itOffsetX;
+          sd::LongType ijOffsetX;
+
+          INDEX2COORDS(it, xRank, xShapePtr, itCoordsX);
+          COORDS2INDEX(xRank, xStridePtr, itCoordsX, itOffsetX);
+
+          INDEX2COORDS(ij, xRank, xShapePtr, ijCoordsX);
+          COORDS2INDEX(xRank, xStridePtr, ijCoordsX, ijOffsetX);
+
+          X xtemp        = x[ijOffsetX];
+          x[ijOffsetX]   = x[itOffsetX];
+          x[itOffsetX]   = xtemp;
+        }
+      }
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////
+template <typename X, typename Y>
+SD_HOST void bitonicArbitraryStepGenericValue(
+    dim3 &launchDims,
+    cudaStream_t *stream,
+    void* vx,
+    const sd::LongType* xShapeInfo,
+    void* vy,
+    const sd::LongType* yShapeInfo,
+    int window,
+    int length,
+    int reverse,
+    bool descending) {
+
+  bitonicArbitraryStepKernelValue<X, Y>
+      <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
+          vx,
+          xShapeInfo,
+          vy,
+          yShapeInfo,
+          window,
+          length,
+          reverse,
+          descending);
+
+  sd::DebugHelper::checkErrorCode(stream, "bitonicArbitraryStepKernelValue failed");
+}
+
 BUILD_SINGLE_TEMPLATE(
      void bitonicArbitraryStepGeneric,
     (dim3 & launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo, int window,
@@ -289,6 +434,12 @@ BUILD_SINGLE_TEMPLATE(
 
 BUILD_DOUBLE_TEMPLATE(
      void bitonicArbitraryStepGenericKey,
+    (dim3 & launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo, void *vy,
+     sd::LongType const *yShapeInfo, int window, int length, int reverse, bool descending),
+    SD_COMMON_TYPES, SD_COMMON_TYPES);
+
+BUILD_DOUBLE_TEMPLATE(
+     void bitonicArbitraryStepGenericValue,
     (dim3 & launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo, void *vy,
      sd::LongType const *yShapeInfo, int window, int length, int reverse, bool descending),
     SD_COMMON_TYPES, SD_COMMON_TYPES);

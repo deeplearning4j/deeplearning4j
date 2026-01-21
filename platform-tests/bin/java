@@ -47,36 +47,63 @@ fi
 
 # if test_runner_prefix is not empty and contains "valgrind"
 if [[ -n $TEST_RUNNER_PREFIX && $TEST_RUNNER_PREFIX =~ "valgrind" ]]; then
-    # create a file to store the suppression information
-    suppression_file="valgrind_suppressions.supp"
+    # path to the comprehensive suppression file (same directory as this script)
+    libnd4j_supp_file="${script_dir}/valgrind_libnd4j.supp"
 
-    # if suppression file exists, delete it
-    if [[ -f $suppression_file ]]; then
-        rm -f $suppression_file
-    fi
+    # create a file to store the dynamic suppression information (for libjvm.so path)
+    dynamic_suppression_file="/tmp/valgrind_dynamic_$$.supp"
 
-    # generate the suppression file for all memcheck error types except param
-    echo "generating valgrind suppression file at $suppression_file..."
-    for error_type in addr1 addr2 addr4 addr8 value1 value2 value4 value8 jump cond
+    # generate dynamic suppression file for the actual libjvm.so path
+    echo "generating dynamic valgrind suppression file at $dynamic_suppression_file..."
+    for error_type in Addr1 Addr2 Addr4 Addr8 Value1 Value2 Value4 Value8 Jump Cond
     do
-        cat << eof >> $suppression_file
+        cat << EOF >> $dynamic_suppression_file
 {
-    suppresslibjvm${error_type}
-    memcheck:${error_type}
+    suppress_libjvm_dynamic_${error_type}
+    Memcheck:${error_type}
     ...
     obj:$libjvm_path
 }
-eof
+EOF
     done
 
-    echo "valgrind suppression file has been generated."
+    # add leak suppressions for libjvm.so
+    for leak_kind in definite possible reachable indirect
+    do
+        cat << EOF >> $dynamic_suppression_file
+{
+    suppress_libjvm_leak_${leak_kind}
+    Memcheck:Leak
+    match-leak-kinds: ${leak_kind}
+    ...
+    obj:$libjvm_path
+}
+EOF
+    done
 
-    # check if "--suppressions" already exists in test_runner_prefix
+    echo "valgrind dynamic suppression file has been generated."
+
+    # build valgrind options - focus on libnd4j only by default
+    valgrind_opts="--error-limit=no --track-origins=yes --keep-stacktraces=alloc-and-free"
+    valgrind_opts="${valgrind_opts} --suppressions=${dynamic_suppression_file}"
+
+    # add comprehensive suppression file to focus on libnd4j
+    if [[ -f "$libnd4j_supp_file" ]]; then
+        echo "Valgrind configured to focus on libnd4j errors only"
+        valgrind_opts="${valgrind_opts} --suppressions=${libnd4j_supp_file}"
+    else
+        echo "WARNING: libnd4j suppression file not found at $libnd4j_supp_file"
+    fi
+
+    # check if "--suppressions" already exists in test_runner_prefix (user override)
     if [[ $TEST_RUNNER_PREFIX != *"--suppressions"* ]]; then
-TEST_RUNNER_PREFIX="$TEST_RUNNER_PREFIX --error-limit=no --suppressions=$suppression_file --track-origins=yes --keep-stacktraces=alloc-and-free"
+        TEST_RUNNER_PREFIX="$TEST_RUNNER_PREFIX ${valgrind_opts}"
     fi
 
     java_call="${java_call} -Djava.compiler=none"
+
+    # store suppression file path for cleanup
+    VALGRIND_DYNAMIC_SUPP="$dynamic_suppression_file"
 fi
 
 # if test_runner_prefix is not empty and contains "asan" (AddressSanitizer)
@@ -121,9 +148,9 @@ fi
 echo "$TEST_RUNNER_PREFIX $java_call $@"
 $TEST_RUNNER_PREFIX $java_call "$@"
 
-# if test_runner_prefix is not empty and contains "valgrind", remove the suppression file
-if [[ -n $TEST_RUNNER_PREFIX && $TEST_RUNNER_PREFIX =~ "valgrind" ]]; then
-    rm -f $suppression_file
+# if valgrind was used, remove the dynamic suppression file
+if [[ -n $VALGRIND_DYNAMIC_SUPP && -f $VALGRIND_DYNAMIC_SUPP ]]; then
+    rm -f "$VALGRIND_DYNAMIC_SUPP"
 fi
 
 # if asan was used, print location of reports

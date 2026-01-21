@@ -158,21 +158,37 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
         String calltraceProperty = System.getProperty("libnd4j.calltrace", "OFF");
         boolean funcTrace = calltraceProperty.equalsIgnoreCase("ON");
 
-        System.out.println("JavaCPP init (CUDA) - Functrace: " + (funcTrace ? "ENABLED" : "DISABLED") +
-                          " (property: " + calltraceProperty + ")");
+
         // Only apply this at load time since we don't want to copy the CUDA libraries here
         if (!Loader.isLoadLibraries()) {
             return;
         }
+
+        // Add CUDA libraries to preload list with correct version suffixes for CUDA 12.x
+        // Library version mapping (from /usr/local/cuda-12.9/lib64/):
+        //   libcudart.so.12, libcublas.so.12, libcublasLt.so.12, libcusparse.so.12
+        //   libcurand.so.10 (curand is still version 10), libcusolver.so.11 (cusolver is still version 11)
         int i = 0;
-        String[] libs = {"cudart", "cublasLt", "cublas", "curand", "cusolver", "cusparse", "cudnn",
-                "cudnn_ops_infer", "cudnn_ops_train", "cudnn_adv_infer",
-                "cudnn_adv_train", "cudnn_cnn_infer", "cudnn_cnn_train"};
+        String[] libs = {"cudart", "cublasLt", "cublas", "curand", "cusolver", "cusparse"};
         for (String lib : libs) {
             if (platform.startsWith("linux")) {
-                lib += lib.startsWith("cudnn") ? "@.8" : lib.equals("curand") ? "@.10" : lib.equals("cudart") ? "@.11.0" : "@.11";
+                // Version suffixes for CUDA 12.x
+                if (lib.equals("curand")) {
+                    lib += "@.10";  // curand is still version 10
+                } else if (lib.equals("cusolver")) {
+                    lib += "@.11";  // cusolver is still version 11
+                } else {
+                    lib += "@.12";  // cudart, cublas, cublasLt, cusparse use version 12
+                }
             } else if (platform.startsWith("windows")) {
-                lib += lib.startsWith("cudnn") ? "64_8" : lib.equals("curand") ? "64_10" : lib.equals("cudart") ? "64_110" : "64_11";
+                // Windows version suffixes for CUDA 12.x
+                if (lib.equals("curand")) {
+                    lib += "64_10";
+                } else if (lib.equals("cusolver")) {
+                    lib += "64_11";
+                } else {
+                    lib += "64_12";
+                }
             } else {
                 continue; // no CUDA
             }
@@ -215,8 +231,30 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
                 .put(new Info("OpaqueConstantOffsetsBuffer").pointerTypes("org.nd4j.nativeblas.OpaqueConstantOffsetsBuffer"))
                 .put(new Info("OpaqueContext").pointerTypes("org.nd4j.nativeblas.OpaqueContext"))
                 .put(new Info("OpaqueRandomGenerator").pointerTypes("org.nd4j.nativeblas.OpaqueRandomGenerator"))
+                // Ensure RandomGenerator functions don't use @ByVal - they should return/accept pointers
+                .put(new Info("createRandomGenerator").javaText(
+                        "public native org.nd4j.nativeblas.OpaqueRandomGenerator createRandomGenerator(@Cast(\"sd::LongType\") long rootSeed, @Cast(\"sd::LongType\") long nodeSeed);"))
+                .put(new Info("getGraphContextRandomGenerator").javaText(
+                        "public native org.nd4j.nativeblas.OpaqueRandomGenerator getGraphContextRandomGenerator(org.nd4j.nativeblas.OpaqueContext ptr);"))
                 .put(new Info("OpaqueLaunchContext").pointerTypes("org.nd4j.nativeblas.OpaqueLaunchContext"))
                 .put(new Info("OpaqueDataBuffer").pointerTypes("org.nd4j.nativeblas.OpaqueDataBuffer"))
+                // CRITICAL: Add @NoDeallocator to OpaqueDataBuffer-returning methods to prevent JavaCPP
+                // from attaching a NativeDeallocator. ND4J's DeallocatorService manages buffer lifecycle.
+                // Without this, JavaCPP's deallocator races with DeallocatorService causing use-after-free.
+                .put(new Info("dbCreateExternalDataBuffer").javaText(
+                        "@org.bytedeco.javacpp.annotation.NoDeallocator public native org.nd4j.nativeblas.OpaqueDataBuffer dbCreateExternalDataBuffer(@Cast(\"sd::LongType\") long elements, int dataType, @Cast(\"sd::Pointer\") Pointer primary, @Cast(\"sd::Pointer\") Pointer special);"))
+                // CRITICAL: This function marks the buffer constant IN NATIVE CODE before returning to Java,
+                // eliminating the race window between buffer creation and marking constant.
+                .put(new Info("dbCreateConstantExternalDataBuffer").javaText(
+                        "@org.bytedeco.javacpp.annotation.NoDeallocator public native org.nd4j.nativeblas.OpaqueDataBuffer dbCreateConstantExternalDataBuffer(@Cast(\"sd::LongType\") long elements, int dataType, @Cast(\"sd::Pointer\") Pointer primary, @Cast(\"sd::Pointer\") Pointer special);"))
+                .put(new Info("dbAllocateDataBuffer").javaText(
+                        "@org.bytedeco.javacpp.annotation.NoDeallocator public native org.nd4j.nativeblas.OpaqueDataBuffer dbAllocateDataBuffer(@Cast(\"sd::LongType\") long elements, int dataType, @Cast(\"bool\") boolean allocateBoth);"))
+                .put(new Info("allocateDataBuffer").javaText(
+                        "@org.bytedeco.javacpp.annotation.NoDeallocator public native org.nd4j.nativeblas.OpaqueDataBuffer allocateDataBuffer(@Cast(\"sd::LongType\") long elements, int dataType, @Cast(\"bool\") boolean allocateBoth);"))
+                .put(new Info("dbCreateView").javaText(
+                        "@org.bytedeco.javacpp.annotation.NoDeallocator public native org.nd4j.nativeblas.OpaqueDataBuffer dbCreateView(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, @Cast(\"sd::LongType\") long length);"))
+                .put(new Info("intermediateResultDataAt").javaText(
+                        "@org.bytedeco.javacpp.annotation.NoDeallocator public native org.nd4j.nativeblas.OpaqueDataBuffer intermediateResultDataAt(int index, org.nd4j.nativeblas.OpaqueContext contextPointer);"))
                 .put (new Info("std::vector<std::string>","std::vector<std::string>*").cast().pointerTypes("PointerPointer"))
 
                 .put(new Info("const char").valueTypes("byte").pointerTypes("@Cast(\"char*\") String",

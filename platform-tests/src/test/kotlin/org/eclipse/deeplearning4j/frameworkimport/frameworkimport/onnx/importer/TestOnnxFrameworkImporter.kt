@@ -42,7 +42,16 @@ class TestOnnxFrameworkImporter {
         println("Internal variables map size: ${imported.getVariables().size}")
         println("Ops count: ${imported.ops.size}")
 
-        val arr = Nd4j.readBinary(File("inputs.bin"))
+        // Create valid input for BGE model: [batch=1, seq_len=512] with INT64
+        // Token IDs: [CLS]=101, some tokens, [SEP]=102, rest is padding (0)
+        val arr = Nd4j.zeros(DataType.INT64, 1, 512)
+        arr.putScalar(longArrayOf(0, 0), 101)  // [CLS] token
+        arr.putScalar(longArrayOf(0, 1), 2023) // example token
+        arr.putScalar(longArrayOf(0, 2), 2003) // example token
+        arr.putScalar(longArrayOf(0, 3), 1037) // example token
+        arr.putScalar(longArrayOf(0, 4), 3231) // example token
+        arr.putScalar(longArrayOf(0, 5), 102)  // [SEP] token
+        // Rest remains 0 (padding)
         val inputPlaceHolder = mutableMapOf<String, INDArray>()
         inputPlaceHolder["input_ids"] = arr
         val initMatmUl = runner.getConstantOrInitializer("onnx::MatMul_1509")

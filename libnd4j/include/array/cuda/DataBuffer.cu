@@ -43,10 +43,14 @@ void DataBuffer::expand(const uint64_t size) {
     // allocate new buffer
     int8_t* newBuffer = nullptr;
     int8_t* newSpecialBuffer = nullptr;
+    auto currentDeviceId = AffinityManager::currentDeviceId();
+    auto oldDeviceId = _deviceId.load();  // Save old device ID for releasing old buffer
+
+    // Allocate new buffer on current device
     ALLOCATE_SPECIAL(newSpecialBuffer, _workspace, size, int8_t);
 #if defined(SD_GCC_FUNCTRACE)
-    DataBufferLifecycleTracker::getInstance().recordAllocation(
-        newSpecialBuffer, size, _dataType,BufferType::SPECIAL, this, _workspace != nullptr);
+    array::DataBufferLifecycleTracker::getInstance().recordAllocation(
+        newSpecialBuffer, size, _dataType,array::BufferType::SPECIAL, this, _workspace != nullptr);
 #endif
 
     // copy data from existing buffer
@@ -57,8 +61,8 @@ void DataBuffer::expand(const uint64_t size) {
 
       if (_isOwnerPrimary) {
 #if defined(SD_GCC_FUNCTRACE)
-        DataBufferLifecycleTracker::getInstance().recordDeallocation(
-            _primaryBuffer,BufferType::PRIMARY);
+        array::DataBufferLifecycleTracker::getInstance().recordDeallocation(
+            _primaryBuffer,array::BufferType::PRIMARY);
 #endif
         auto ipb = reinterpret_cast<int8_t*>(_primaryBuffer);
         RELEASE(ipb, _workspace);
@@ -67,25 +71,38 @@ void DataBuffer::expand(const uint64_t size) {
       _primaryBuffer = newBuffer;
       _isOwnerPrimary = true;
 #if defined(SD_GCC_FUNCTRACE)
-      DataBufferLifecycleTracker::getInstance().recordAllocation(
-          _primaryBuffer, size, _dataType,BufferType::PRIMARY, this, _workspace != nullptr);
+      array::DataBufferLifecycleTracker::getInstance().recordAllocation(
+          _primaryBuffer, size, _dataType,array::BufferType::PRIMARY, this, _workspace != nullptr);
 #endif
     }
 
+    // Cross-device copy
     cudaMemcpy(newSpecialBuffer, _specialBuffer, _lenInBytes, cudaMemcpyDeviceToDevice);
 
-    if (_isOwnerSpecial) {
+    if (_isOwnerSpecial && _specialBuffer != nullptr) {
+      // Switch to old device to release memory
+      if (oldDeviceId != currentDeviceId && oldDeviceId >= 0) {
+        cudaSetDevice(oldDeviceId);
+      }
+
 #if defined(SD_GCC_FUNCTRACE)
-      DataBufferLifecycleTracker::getInstance().recordDeallocation(
-          _specialBuffer,BufferType::SPECIAL);
+      array::DataBufferLifecycleTracker::getInstance().recordDeallocation(
+          _specialBuffer,array::BufferType::SPECIAL);
 #endif
       auto isb = reinterpret_cast<int8_t*>(_specialBuffer);
       RELEASE_SPECIAL(isb, _workspace);
+
+      // Switch back to current device
+      if (oldDeviceId != currentDeviceId && oldDeviceId >= 0) {
+        cudaSetDevice(currentDeviceId);
+      }
     }
 
     _specialBuffer = newSpecialBuffer;
     _lenInBytes = size;
     _isOwnerSpecial = true;
+
+    _deviceId.store(currentDeviceId);
   }
 }
 
@@ -231,11 +248,12 @@ BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT  SD_KERNEL void printDeviceBufferKernel,(vo
 // Wrapper function to launch the kernel
 template <typename T>
 void launchPrintDeviceBufferKernel(void* buffer, sd::LongType offset, sd::LongType length) {
-  printDeviceBufferKernel<T><<<1, 1, 32*1024, *LaunchContext::defaultContext()->getCudaStream()>>>(
+  // Cache the stream reference for consistent usage
+  auto stream = LaunchContext::defaultContext()->getCudaStream();
+  printDeviceBufferKernel<T><<<1, 1, 32*1024, *stream>>>(
       buffer, offset, length);
-  cudaStreamSynchronize(*LaunchContext::defaultContext()->getCudaStream());
-  sd::DebugHelper::checkErrorCode(LaunchContext::defaultContext()->getCudaStream(),
-                                  "printBufferDebug kernel failed");
+  cudaStreamSynchronize(*stream);
+  sd::DebugHelper::checkErrorCode(stream, "printBufferDebug kernel failed");
 }
 BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT void launchPrintDeviceBufferKernel,(void* buffer, sd::LongType offset, sd::LongType length),SD_COMMON_TYPES);
 
@@ -317,6 +335,16 @@ void DataBuffer::showCounters(const char* msg1, const char* msg2) {
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::allocateSpecial() {
   if (_specialBuffer != nullptr) {
+    if (isConstant) {
+      // Constant buffers are cached and shared - don't migrate them
+      return;
+    }
+    auto currentDeviceId = AffinityManager::currentDeviceId();
+    auto bufferDeviceId = _deviceId.load();
+    if (bufferDeviceId != currentDeviceId) {
+      // Buffer exists but on wrong device - migrate it
+      migrate();
+    }
     return;
   }
 
@@ -342,6 +370,13 @@ void DataBuffer::allocateSpecial() {
   if (_specialBuffer == nullptr) {
     auto deviceId = AffinityManager::currentDeviceId();
 
+    cudaError_t pendingErr = cudaGetLastError();
+    if (pendingErr != cudaSuccess) {
+      // Log the error but continue - clearing it may allow allocation to proceed
+      sd_debug("DataBuffer::allocateSpecial: Cleared pending CUDA error before allocation: %s\n",
+               cudaGetErrorString(pendingErr));
+    }
+
     if (_workspace == nullptr) {
       if (!memory::MemoryCounter::getInstance().validate(getLenInBytes())) {
         std::string errorMessage;
@@ -362,11 +397,13 @@ void DataBuffer::allocateSpecial() {
     ALLOCATE_SPECIAL(_specialBuffer, _workspace, getLenInBytes(), int8_t);
     _isOwnerSpecial = true;
 
+    _deviceId.store(deviceId);
+
 #if defined(SD_GCC_FUNCTRACE)
     // Record SPECIAL (device) buffer allocation
-    DataBufferLifecycleTracker::getInstance().recordAllocation(
+    array::DataBufferLifecycleTracker::getInstance().recordAllocation(
         _specialBuffer, getLenInBytes(), getDataType(),
-       BufferType::SPECIAL, this, _workspace != nullptr);
+       array::BufferType::SPECIAL, this, _workspace != nullptr);
 #endif
 
     if (_workspace == nullptr) {
@@ -389,19 +426,38 @@ void DataBuffer::allocateSpecial() {
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSync) {
+  if (_specialBuffer == nullptr || _lenInBytes == 0 || closed) {
+    return;
+  }
+
   if (isPrimaryActual() && !forceSync) {
     return;
   }
 
   allocatePrimary();
 
+  auto bufferDeviceId = _deviceId.load();
+  auto currentDeviceId = AffinityManager::currentDeviceId();
+  bool switchedDevice = false;
+
+  if (currentDeviceId != bufferDeviceId) {
+    cudaSetDevice(bufferDeviceId);
+    switchedDevice = true;
+  }
+
   auto res = cudaStreamSynchronize(*context->getCudaStream());
   if (res != 0)  {
+    if (switchedDevice) {
+      cudaSetDevice(currentDeviceId);
+    }
     std::string errorMessage;
     errorMessage += "DataBuffer::syncToPrimary: cudaStreamSynchronize failed: ";
     errorMessage += std::to_string(getLenInBytes());
+    errorMessage += " ";
     errorMessage += cudaGetErrorString(res);
-    errorMessage += "Special buffer is nullptr : ";
+    errorMessage += " (buffer device: ";
+    errorMessage += std::to_string(bufferDeviceId);
+    errorMessage += ")";
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
@@ -410,27 +466,37 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
 
   res = cudaMemcpy(_primaryBuffer, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToHost);
   if (res != 0) {
-        std::string errorMessage;
-        errorMessage += "DataBuffer::syncToPrimary: cudaMemcpy failed: ";
-        errorMessage += std::to_string(getLenInBytes());
-        errorMessage += cudaGetErrorString(res);
-        errorMessage += "Special buffer is nullptr : ";
-        errorMessage += std::to_string(_specialBuffer == nullptr);
-        THROW_EXCEPTION(errorMessage.c_str());
+    if (switchedDevice) {
+      cudaSetDevice(currentDeviceId);
+    }
+    std::string errorMessage;
+    errorMessage += "DataBuffer::syncToPrimary: cudaMemcpy failed: ";
+    errorMessage += std::to_string(getLenInBytes());
+    errorMessage += " ";
+    errorMessage += cudaGetErrorString(res);
+    errorMessage += " (buffer device: ";
+    errorMessage += std::to_string(bufferDeviceId);
+    errorMessage += ")";
+    THROW_EXCEPTION(errorMessage.c_str());
   }
 
   auto endTime = std::chrono::high_resolution_clock::now();
   auto durationNs = std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime).count();
   TransferMetrics::getInstance().recordTransfer(TransferType::DEVICE_TO_HOST, getLenInBytes(),
-                                                 durationNs, _deviceId.load(), -1);
+                                                 durationNs, bufferDeviceId, -1);
+
+  // Restore original device if we switched
+  if (switchedDevice) {
+    cudaSetDevice(currentDeviceId);
+  }
 
   readPrimary();
 }
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::syncToSpecial(const bool forceSync) {
-  // in this case there's nothing to do here
-  if (_primaryBuffer == nullptr) return;
+  // Nothing to do for null or zero-length buffers
+  if (_primaryBuffer == nullptr || _lenInBytes == 0) return;
 
   if (isSpecialActual() && !forceSync) {
     return;
@@ -438,22 +504,44 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
 
   allocateSpecial();
 
+  auto bufferDeviceId = _deviceId.load();
+  auto currentDeviceId = AffinityManager::currentDeviceId();
+  bool switchedDevice = false;
+
+  if (currentDeviceId != bufferDeviceId) {
+    cudaSetDevice(bufferDeviceId);
+    switchedDevice = true;
+  }
+
   // Track H2D transfer
   auto startTime = std::chrono::high_resolution_clock::now();
 
   auto res = cudaMemcpy(_specialBuffer, _primaryBuffer, getLenInBytes(), cudaMemcpyHostToDevice);
   if (res != 0) {
+    // Restore device before throwing
+    if (switchedDevice) {
+      cudaSetDevice(currentDeviceId);
+    }
     std::string errorMessage;
     errorMessage += "Failed to copy dataBuffer::syncToSpecial: ";
     errorMessage += std::to_string(getLenInBytes());
+    errorMessage += " ";
     errorMessage += cudaGetErrorString(res);
+    errorMessage += " (buffer device: ";
+    errorMessage += std::to_string(bufferDeviceId);
+    errorMessage += ")";
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
   auto endTime = std::chrono::high_resolution_clock::now();
   auto durationNs = std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime).count();
   TransferMetrics::getInstance().recordTransfer(TransferType::HOST_TO_DEVICE, getLenInBytes(),
-                                                 durationNs, -1, _deviceId.load());
+                                                 durationNs, -1, bufferDeviceId);
+
+  // Restore original device if we switched
+  if (switchedDevice) {
+    cudaSetDevice(currentDeviceId);
+  }
 
   readSpecial();
 }
@@ -461,11 +549,20 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::deleteSpecial() {
   if (_isOwnerSpecial && _specialBuffer != nullptr && getLenInBytes() != 0) {
+    auto bufferDeviceId = _deviceId.load();
+    auto currentDeviceId = AffinityManager::currentDeviceId();
+    bool switchedDevice = false;
+
+    if (currentDeviceId != bufferDeviceId) {
+      cudaSetDevice(bufferDeviceId);
+      switchedDevice = true;
+    }
+
     auto p = reinterpret_cast<int8_t*>(_specialBuffer);
 #if defined(SD_GCC_FUNCTRACE)
     // Record SPECIAL (device) buffer deallocation before releasing
-    DataBufferLifecycleTracker::getInstance().recordDeallocation(
-        _specialBuffer,BufferType::SPECIAL);
+    array::DataBufferLifecycleTracker::getInstance().recordDeallocation(
+        _specialBuffer,array::BufferType::SPECIAL);
 #endif
     RELEASE_SPECIAL(p, _workspace);
     _specialBuffer = nullptr;
@@ -473,8 +570,13 @@ void DataBuffer::deleteSpecial() {
 
     // count out towards DataBuffer device, only if we're not in workspace
     if (_workspace == nullptr) {
-      sd::memory::MemoryCounter::getInstance().countOut(_deviceId, getLenInBytes());
+      sd::memory::MemoryCounter::getInstance().countOut(bufferDeviceId, getLenInBytes());
       sd::memory::MemoryCounter::getInstance().countOut(sd::memory::MemoryType::DEVICE, getLenInBytes());
+    }
+
+    // Restore original device if we switched
+    if (switchedDevice) {
+      cudaSetDevice(currentDeviceId);
     }
   }
 }
@@ -512,22 +614,41 @@ void DataBuffer::copyBufferFrom(const DataBuffer& other, size_t sizeToCopyinByte
     return;
   }
 
+  auto bufferDeviceId = _deviceId.load();
+  auto currentDeviceId = AffinityManager::currentDeviceId();
+  bool switchedDevice = false;
+
+  if (currentDeviceId != bufferDeviceId) {
+    cudaSetDevice(bufferDeviceId);
+    switchedDevice = true;
+  }
+
+  int res = 0;
   if (other.isPrimaryActual()) {
-    auto res = cudaMemcpy(
+    res = cudaMemcpy(
         static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType),
         static_cast<const int8_t*>(other._primaryBuffer) + offsetOther * DataTypeUtils::sizeOfElement(other._dataType),
         sizeToCopyinBytes, cudaMemcpyHostToDevice);
-    if (res != 0)
-      throw cuda_exception::build("DataBuffer::copyBufferFrom: cudaMemcpy_cudaMemcpyHostToDevice failed!", res);
     other.readPrimary();
   } else {
-    auto res = cudaMemcpy(
+    res = cudaMemcpy(
         static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType),
         static_cast<const int8_t*>(other._specialBuffer) + offsetOther * DataTypeUtils::sizeOfElement(other._dataType),
         sizeToCopyinBytes, cudaMemcpyDeviceToDevice);
-    if (res != 0)
-      throw cuda_exception::build("DataBuffer::copyBufferFrom: cudaMemcpy_cudaMemcpyDeviceToDevice failed!", res);
     other.readSpecial();
+  }
+
+  // Restore original device if we switched
+  if (switchedDevice) {
+    cudaSetDevice(currentDeviceId);
+  }
+
+  if (res != 0) {
+    if (other.isPrimaryActual()) {
+      throw cuda_exception::build("DataBuffer::copyBufferFrom: cudaMemcpy_cudaMemcpyHostToDevice failed!", res);
+    } else {
+      throw cuda_exception::build("DataBuffer::copyBufferFrom: cudaMemcpy_cudaMemcpyDeviceToDevice failed!", res);
+    }
   }
 
   writeSpecial();
@@ -542,10 +663,25 @@ void DataBuffer::copyBufferFromHost(const void* hostBuffer, size_t sizeToCopyinB
   if (sizeToCopyinBytes == 0) sizeToCopyinBytes = getLenInBytes();
   if (sizeToCopyinBytes == 0) return;
 
+  auto bufferDeviceId = _deviceId.load();
+  auto currentDeviceId = AffinityManager::currentDeviceId();
+  bool switchedDevice = false;
+
+  if (currentDeviceId != bufferDeviceId) {
+    cudaSetDevice(bufferDeviceId);
+    switchedDevice = true;
+  }
+
   auto res =
       cudaMemcpy(static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType),
                  static_cast<const int8_t*>(hostBuffer) + offsetHostBuffer * DataTypeUtils::sizeOfElement(_dataType),
                  sizeToCopyinBytes, cudaMemcpyHostToDevice);
+
+  // Restore original device if we switched
+  if (switchedDevice) {
+    cudaSetDevice(currentDeviceId);
+  }
+
   if (res != 0)
     throw cuda_exception::build("DataBuffer::copyBufferFromHost: cudaMemcpy_cudaMemcpyHostToDevice failed!", res);
 
@@ -557,6 +693,10 @@ void DataBuffer::setSpecial(void* special, const bool isOwnerSpecial) {
   deleteSpecial();
   _specialBuffer = special;
   _isOwnerSpecial = isOwnerSpecial;
+
+  if (special != nullptr) {
+    _deviceId.store(AffinityManager::currentDeviceId());
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -570,8 +710,26 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {  // always allocate spe
 void DataBuffer::setToZeroBuffers(const bool both) {
   if(getLenInBytes() < 1 || special() == nullptr)
     return;
-  cudaMemsetAsync(special(), 0, getLenInBytes(), *LaunchContext::defaultContext()->getCudaStream());
-  auto res = cudaStreamSynchronize(*LaunchContext::defaultContext()->getCudaStream());
+
+  auto bufferDeviceId = _deviceId.load();
+  auto currentDeviceId = AffinityManager::currentDeviceId();
+  bool switchedDevice = false;
+
+  if (currentDeviceId != bufferDeviceId) {
+    cudaSetDevice(bufferDeviceId);
+    switchedDevice = true;
+  }
+
+  // Cache the stream reference - must obtain AFTER device switch so we get the correct device's stream
+  auto stream = LaunchContext::defaultContext()->getCudaStream();
+  cudaMemsetAsync(special(), 0, getLenInBytes(), *stream);
+  auto res = cudaStreamSynchronize(*stream);
+
+  // Restore original device if we switched
+  if (switchedDevice) {
+    cudaSetDevice(currentDeviceId);
+  }
+
   if (res != 0) throw cuda_exception::build("DataBuffer::setToZeroBuffers: streamSync failed!", res);
 
   writeSpecial();
@@ -592,18 +750,41 @@ void memcpyWithT(DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, 
   if (src->getLenInBytes() > dst->getLenInBytes())
     THROW_EXCEPTION("DataBuffer::memcpy: Source data buffer is larger than destination");
 
+  auto dstDeviceId = dst->deviceId();
+  auto currentDeviceId = AffinityManager::currentDeviceId();
+  bool switchedDevice = false;
+
+  if (currentDeviceId != dstDeviceId) {
+    cudaSetDevice(dstDeviceId);
+    switchedDevice = true;
+  }
+
+  // Cache the stream reference - must obtain AFTER device switch
+  auto stream = LaunchContext::defaultContext()->getCudaStream();
+
   int res = 0;
   if (src->isSpecialActual()) {
     res = cudaMemcpyAsync(dst->specialAtOffset<T>(dstOffset), src->specialAtOffset<T>(startingOffset), src->getLenInBytes(), cudaMemcpyDeviceToDevice,
-                          *LaunchContext::defaultContext()->getCudaStream());
+                          *stream);
   } else if (src->isPrimaryActual()) {
     res = cudaMemcpyAsync(dst->specialAtOffset<T>(dstOffset), src->specialAtOffset<T>(startingOffset), src->getLenInBytes(), cudaMemcpyHostToDevice,
-                          *LaunchContext::defaultContext()->getCudaStream());
+                          *stream);
   }
 
-  if (res != 0) throw cuda_exception::build("DataBuffer::memcpy: cudaMemcpyAsync failed!", res);
+  if (res != 0) {
+    if (switchedDevice) {
+      cudaSetDevice(currentDeviceId);
+    }
+    throw cuda_exception::build("DataBuffer::memcpy: cudaMemcpyAsync failed!", res);
+  }
 
-  res = cudaStreamSynchronize(*LaunchContext::defaultContext()->getCudaStream());
+  res = cudaStreamSynchronize(*stream);
+
+  // Restore original device if we switched
+  if (switchedDevice) {
+    cudaSetDevice(currentDeviceId);
+  }
+
   if (res != 0) throw cuda_exception::build("DataBuffer::memcpy: streamSync failed!", res);
 
   dst->writeSpecial();
@@ -617,6 +798,10 @@ void DataBuffer::memcpy(DataBuffer* dst, DataBuffer* src,
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::migrate() {
+  if (isConstant) {
+    return;
+  }
+
   auto currentDeviceId = AffinityManager::currentDeviceId();
   auto oldDeviceId = _deviceId.load();
 
@@ -627,14 +812,16 @@ void DataBuffer::migrate() {
 
   memory::Workspace* newWorkspace = nullptr;
   void* newBuffer;
+  void* oldBuffer = _specialBuffer;  // Save old buffer pointer for deallocation
 
   // Start timing the transfer
   auto startTime = std::chrono::high_resolution_clock::now();
 
+  // Allocate on current (target) device
   ALLOCATE_SPECIAL(newBuffer, newWorkspace, getLenInBytes(), int8_t);
 
   if (_specialBuffer != nullptr) {
-    // Copy from old device to new device
+    // Copy from old device to new device (cross-device copy)
     auto res = cudaMemcpy(newBuffer, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToDevice);
     if (res != 0) throw cuda_exception::build("DataBuffer::migrate: cudaMemcpy failed!", res);
   } else if (_primaryBuffer != nullptr) {
@@ -647,7 +834,7 @@ void DataBuffer::migrate() {
   auto durationNs = std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime).count();
 
   // Record transfer metrics
-  if (_specialBuffer != nullptr) {
+  if (oldBuffer != nullptr) {
     // Device to device transfer (possibly peer-to-peer)
     TransferType transferType = (oldDeviceId != currentDeviceId) ?
         TransferType::PEER_TO_PEER : TransferType::DEVICE_TO_DEVICE;
@@ -659,9 +846,19 @@ void DataBuffer::migrate() {
                                                    durationNs, -1, currentDeviceId);
   }
 
-  if (_isOwnerSpecial && _specialBuffer != nullptr) {
-    // now we're releasing original buffer
-    RELEASE_SPECIAL(_specialBuffer, _workspace);
+  if (_isOwnerSpecial && oldBuffer != nullptr) {
+    // Switch to old device to release memory
+    if (oldDeviceId != currentDeviceId && oldDeviceId >= 0) {
+      cudaSetDevice(oldDeviceId);
+    }
+
+    auto p = reinterpret_cast<int8_t*>(oldBuffer);
+    RELEASE_SPECIAL(p, _workspace);
+
+    // Switch back to current device
+    if (oldDeviceId != currentDeviceId && oldDeviceId >= 0) {
+      cudaSetDevice(currentDeviceId);
+    }
   }
 
   _isOwnerSpecial = true;

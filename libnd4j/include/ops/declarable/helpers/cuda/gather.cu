@@ -74,20 +74,23 @@ SD_KERNEL static void gatherCudaLinearKernel(const void* vx, const LongType* xSh
   auto step = blockDim.x * gridDim.x;
 
   for (LongType j = start; j < zLen; j += step) {
-    LongType zIndex, yIndex, xIndex;
-    LongType zCoords[SD_MAX_RANK], yCoords[SD_MAX_RANK], xCoords[SD_MAX_RANK];
+    LongType zIndex, yIndex;
+    LongType zCoords[SD_MAX_RANK], yCoords[SD_MAX_RANK];
 
     // Compute z coordinates and offset
     INDEX2COORDS(j, zRank, zShapePtr, zCoords);
     COORDS2INDEX(zRank, zStridePtr, zCoords, zIndex);
 
-    // Compute y coordinates and offset
+    // Compute y coordinates and offset to get the gather index
     INDEX2COORDS(j, yRank, yShapePtr, yCoords);
     COORDS2INDEX(yRank, yStridePtr, yCoords, yIndex);
 
-    // Compute x coordinates and offset
-    INDEX2COORDS(y[yIndex], xRank, xShapePtr, xCoords);
-    COORDS2INDEX(xRank, xStridePtr, xCoords, xIndex);
+    // Get the gather index directly from y - this is the element index to gather from x
+    LongType gatherIdx = y[yIndex];
+
+    // For linear gather, use the gather index directly with x stride
+    // x is 1D so we just need to multiply by stride
+    LongType xIndex = gatherIdx * xStridePtr[0];
 
     // Assign value to z
     z[zIndex] = x[xIndex];
@@ -124,23 +127,20 @@ SD_KERNEL static void gatherCuda(const int numOfSubArrs, const void* vx, const L
 
   for (LongType i = blockIdx.x; i < numOfSubArrs; i += gridDim.x) {
     if (threadIdx.x == 0) {
-      LongType yIndex, xOffset, zOffset;
-      LongType yCoords[SD_MAX_RANK], xCoords[SD_MAX_RANK], zCoords[SD_MAX_RANK];
+      LongType yIndex;
+      LongType yCoords[SD_MAX_RANK];
 
-      // Calculate y index
+      // Calculate y index to get the gather index value
       INDEX2COORDS(i, yRank, yShapePtr, yCoords);
       COORDS2INDEX(yRank, yStridePtr, yCoords, yIndex);
 
-      // Calculate x offset
-      INDEX2COORDS(y[yIndex], xRank, xShapePtr, xCoords);
-      COORDS2INDEX(xRank, xStridePtr, xCoords, xOffset);
+      // Get the gather index directly from y - this is the TAD index to gather from input
+      LongType gatherIdx = y[yIndex];
 
-      // Calculate z offset
-      INDEX2COORDS(i, zRank, zShapePtr, zCoords);
-      COORDS2INDEX(zRank, zStridePtr, zCoords, zOffset);
-
-      x = reinterpret_cast<const X*>(vx) + xOffsets[xOffset];
-      z = reinterpret_cast<X*>(vz) + zOffsets[zOffset];
+      // Use gather index directly to look up input TAD offset
+      // Use i directly for output TAD offset (output TADs are in order)
+      x = reinterpret_cast<const X*>(vx) + xOffsets[gatherIdx];
+      z = reinterpret_cast<X*>(vz) + zOffsets[i];
     }
     __syncthreads();
 
@@ -171,7 +171,7 @@ SD_HOST static void gatherCudaLinear(const cudaStream_t* stream, const void* vx,
                                      const LongType* zShapeInfo) {
  //note gather linear and gather are different kernels
    dim3 gatherLinear = getLaunchDims("gather_linear");
-  gatherCudaLinearKernel<X, Y><<<gatherLinear.x, gatherLinear.y, gatherLinear.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo);
+  gatherCudaLinearKernel<X, Y><<<gatherLinear.y, gatherLinear.x, gatherLinear.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo);
   DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream),"gatherCudaLinearKernel failed");
 
 }
@@ -203,6 +203,10 @@ void gather(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* o
     output->assign(scalar);
     delete scalar;
   } else if (indices != nullptr && indices->isScalar()) {
+    // Sync indices to host for scalar access
+    indices->syncToHost();
+    input->syncToHost();
+
     if (input->rankOf() <= 1) {  // For scalar indices, rank 0 or 1 input: can't do tensor along dimension 0 as this is
                                  // whole array... instead, we want to get a scalar
       auto idx = indices->e<LongType>(0);

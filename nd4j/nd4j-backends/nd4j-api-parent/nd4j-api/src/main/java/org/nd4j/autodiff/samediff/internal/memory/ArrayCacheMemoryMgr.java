@@ -197,6 +197,11 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
     @Override
     public synchronized INDArray allocate(boolean detached, DataType dataType, long... shape) {
+        // Handle empty arrays (shape contains 0)
+        if (shape != null && shape.length > 0 && org.nd4j.common.util.ArrayUtil.prodLong(shape) == 0) {
+            return Nd4j.emptyWithShape(shape, dataType);
+        }
+
         String arrayShapeString = Arrays.toString(shape);
         Table<DataType, String, List<INDArray>> arraysForThread = getArraysForThread();
         Set<Long> lruCacheForThread = getLruCacheForThread();
@@ -229,6 +234,10 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                     // the old cache was recreating New Array using buffer and thus gaining new
                     // reference . Note that it had IdentityHash with references being keys
                     ((BaseNDArray) arr).assignNewId();
+                    // Reset native sync counters for cached buffer reuse.
+                    if (arr.data() != null) {
+                        Nd4j.getNativeOps().dbSetDeviceId(arr.data().opaqueBuffer(), -1);
+                    }
                     return arr; // Allocated from cache
                 }
             }
@@ -285,14 +294,15 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                 getLruCache().remove(arr.getId());
                 getLruCacheValues().remove(arr.getId());
                 ((BaseNDArray) arr).assignNewId();
+                // Reset native sync counters for cached buffer reuse.
+                if (arr.data() != null) {
+                    Nd4j.getNativeOps().dbSetDeviceId(arr.data().opaqueBuffer(), -1);
+                }
                 return arr; // Allocated from cache
             }
         }
 
         // Allocation failed, allocate new array
-        // CRITICAL FIX: Use initialized arrays instead of uninitialized to prevent NaN/garbage values.
-        // Uninitialized arrays can contain NaN if native operations don't write to all elements.
-        // Respect the detached parameter: create initialized array, then detach if needed.
         return detached ? Nd4j.create(dataType, shape).detach() : Nd4j.create(dataType, shape);
     }
 
@@ -309,19 +319,8 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                     array);
         }
 
-        // Handle non-closeable arrays (views, etc.)
+        // Handle non-closeable arrays (views, constants, etc.)
         if (!array.closeable()) {
-            // Non-closeable arrays can't be cached, but we should still cleanup if possible
-            if (array.data() != null && Nd4j.getExecutioner().useCount(array.data()) == 1) {
-                // This is the only reference to the DataBuffer, so we can safely close it
-                // This prevents memory leaks for view arrays that are marked non-closeable
-                try {
-                    array.close();
-                } catch (Exception e) {
-                    log.warn("Failed to close non-closeable array with exclusive data buffer: " + e.getMessage());
-                }
-            }
-            // If useCount > 1, the buffer is shared, so we can't close it
             return;
         }
 
@@ -339,11 +338,6 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         }
 
         if (array != null && array.data() != null && Nd4j.getExecutioner().useCount(array.data()) > 1) {
-            // DataBuffer is used by multiple arrays (e.g., through views).
-            // CRITICAL: Do NOT close this array! Closing it would invalidate the shared
-            // DataBuffer, corrupting all other arrays that use it and causing NaN values.
-            // Instead, just return without caching or closing - let the other arrays
-            // keep the buffer alive until they're all garbage collected.
             return;
         }
 
@@ -353,8 +347,6 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
             if (array.closeable()) {
                 array.close();
             }
-            // CRITICAL FIX: Must return after closing UTF8 arrays!
-            // Previously fell through to add closed array to LRU cache, causing double-free
             return;
         } else if (currentCacheSize.get() + thisBytes > maxCacheBytes.get()) {
             if (thisBytes > maxCacheBytes.get()) {
@@ -477,14 +469,15 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                 getLruCache().remove(arr.getId());
                 getLruCacheValues().remove(arr.getId());
                 ((BaseNDArray) arr).assignNewId();
+                // Reset native sync counters for cached buffer reuse.
+                if (arr.data() != null) {
+                    Nd4j.getNativeOps().dbSetDeviceId(arr.data().opaqueBuffer(), -1);
+                }
                 return arr; // Allocated from cache
             }
         }
 
         // Allocation failed, allocate new array
-        // CRITICAL FIX: Use initialized arrays instead of uninitialized to prevent NaN/garbage values.
-        // Uninitialized arrays can contain NaN if native operations don't write to all elements.
-        // Respect the detached parameter: create initialized array, then detach if needed.
         return detached ? Nd4j.create(dataType, shape).detach() : Nd4j.create(dataType, shape);
     }
 

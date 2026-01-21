@@ -122,7 +122,9 @@ DECLARE_SHAPE_FN(range) {
   // FIXED: Don't access INPUT_VARIABLE(0) when there are no input arrays!
   // Range can be called with T_args or I_args instead of input arrays.
   // Each branch below will set the correct dataType based on the input mode.
-  DataType dataType = block.numD() ? D_ARG(0) : (numInArrs > 0 ? INPUT_VARIABLE(0)->dataType() : Environment::getInstance().defaultFloatDataType());
+  // Track if D_ARG was used so we don't override it later
+  const bool hasDArg = block.numD() > 0;
+  DataType dataType = hasDArg ? D_ARG(0) : (numInArrs > 0 ? INPUT_VARIABLE(0)->dataType() : Environment::getInstance().defaultFloatDataType());
 
   if (numInArrs > 0) {
     auto isR = INPUT_VARIABLE(0)->isR();
@@ -153,7 +155,7 @@ DECLARE_SHAPE_FN(range) {
 
       steps = static_cast<LongType>((limit - start) / delta);
 
-      if (!block.numD()) dataType = INPUT_VARIABLE(0)->dataType();
+      if (!hasDArg) dataType = INPUT_VARIABLE(0)->dataType();
 
       if(steps <= 0) {
         std::string errorMessage;
@@ -208,7 +210,7 @@ DECLARE_SHAPE_FN(range) {
 
       steps = static_cast<LongType>((limit - start) / delta);
 
-      if (!block.numD()) dataType = INPUT_VARIABLE(0)->dataType();
+      if (!hasDArg) dataType = INPUT_VARIABLE(0)->dataType();
 
       if (math::sd_abs<double,double>(start + steps * delta) < math::sd_abs<double,double>(limit)) ++steps;
 
@@ -249,7 +251,7 @@ DECLARE_SHAPE_FN(range) {
 
     REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
 
-    if (!block.numD()) {
+    if (!hasDArg) {
       if (limit > DataTypeUtils::max<int>())
         dataType = INT64;
       else
@@ -300,7 +302,7 @@ DECLARE_SHAPE_FN(range) {
 
     steps = static_cast<LongType>((limit - start) / delta);
 
-    if (!block.numD()) {
+    if (!hasDArg) {
       if (Environment::getInstance().precisionBoostAllowed())
         dataType = DOUBLE;
       else

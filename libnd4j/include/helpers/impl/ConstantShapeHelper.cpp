@@ -26,6 +26,10 @@
 #include <system/Environment.h>
 #include <string>
 
+#ifdef SD_CUDA
+#include <cuda_runtime.h>
+#endif
+
 namespace sd {
 
 ConstantShapeHelper::~ConstantShapeHelper() {
@@ -54,14 +58,64 @@ ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(LongType* shapeInfo
  if(shapeInfo == nullptr) {
    THROW_EXCEPTION("shapeInfo is nullptr");
  }
+
+#ifdef SD_CUDA
+ cudaError_t syncError = cudaDeviceSynchronize();
+ if (syncError != cudaSuccess) {
+   std::string errorMessage = "bufferForShapeInfo: cudaDeviceSynchronize failed with error: ";
+   errorMessage += std::to_string(syncError);
+   errorMessage += " (";
+   errorMessage += cudaGetErrorString(syncError);
+   errorMessage += ")";
+   THROW_EXCEPTION(errorMessage.c_str());
+ }
+#endif
+
  LongType inputRank = shape::rank(shapeInfo);
  if(inputRank < 0 || inputRank > SD_MAX_RANK) {
    std::string errorMessage = "bufferForShapeInfo: input shapeInfo has invalid rank: ";
    errorMessage += std::to_string(inputRank);
-   errorMessage += " (ptr: ";
-   errorMessage += std::to_string(reinterpret_cast<uintptr_t>(shapeInfo));
-   errorMessage += ")";
+   errorMessage += " (ptr: 0x";
+
+   // Format address as hex for easier debugging
+   char addrBuf[32];
+   snprintf(addrBuf, sizeof(addrBuf), "%lx", reinterpret_cast<unsigned long>(shapeInfo));
+   errorMessage += addrBuf;
+
+   // Print first few bytes in hex to help diagnose what kind of data this is
+   errorMessage += ", first 8 bytes as hex: ";
+   for (int i = 0; i < 8 && i < 64; i++) {
+     char byteBuf[8];
+     snprintf(byteBuf, sizeof(byteBuf), "%02x ", (unsigned char)(reinterpret_cast<char*>(shapeInfo)[i]));
+     errorMessage += byteBuf;
+   }
+
+   errorMessage += "). This could indicate: 1) Use-after-free, 2) Memory corruption, ";
+   errorMessage += "3) GPU pointer passed to CPU code, or 4) Uninitialized memory.";
    THROW_EXCEPTION(errorMessage.c_str());
+ }
+
+ const LongType MAX_REASONABLE_DIM = 1000000000LL;  // 1 billion - generous limit
+ const LongType* shapeValues = shape::shapeOf(shapeInfo);
+ for (int i = 0; i < inputRank; i++) {
+   LongType dimValue = shapeValues[i];
+   if (dimValue < 0 || dimValue > MAX_REASONABLE_DIM) {
+     std::string errorMessage = "bufferForShapeInfo: SHAPE CORRUPTION DETECTED! ";
+     errorMessage += "Dimension " + std::to_string(i) + " has value " + std::to_string(dimValue);
+     errorMessage += " (0x";
+     char hexBuf[32];
+     snprintf(hexBuf, sizeof(hexBuf), "%lx", static_cast<unsigned long>(dimValue));
+     errorMessage += hexBuf;
+     errorMessage += ") which exceeds reasonable limit of " + std::to_string(MAX_REASONABLE_DIM);
+     errorMessage += ". Full shape: [";
+     for (int j = 0; j < inputRank; j++) {
+       if (j > 0) errorMessage += ", ";
+       errorMessage += std::to_string(shapeValues[j]);
+     }
+     errorMessage += "]. This indicates memory corruption - the shape buffer was overwritten ";
+     errorMessage += "by garbage data (possibly a pointer value being interpreted as shape data).";
+     THROW_EXCEPTION(errorMessage.c_str());
+   }
  }
 
  auto buffer = _shapeTrie.getOrCreate(shapeInfo);
@@ -78,7 +132,6 @@ ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(LongType* shapeInfo
    THROW_EXCEPTION("bufferForShapeInfo: getOrCreate returned buffer with nullptr primary()");
  }
 
- // CRITICAL: Validate the RETURNED buffer's data matches what we asked for
  LongType* returnedShapeInfo = buffer->primary();
  LongType returnedRank = returnedShapeInfo[0];
  if (returnedRank < 0 || returnedRank > SD_MAX_RANK) {
@@ -182,7 +235,9 @@ LongType* ConstantShapeHelper::emptyShapeInfo(DataType dataType) {
 
 LongType* ConstantShapeHelper::scalarShapeInfo(DataType dataType) {
  auto descriptor = ShapeBuilders::createScalarShapeInfo(dataType);
- return bufferForShapeInfo(descriptor)->primary();
+ auto result = bufferForShapeInfo(descriptor)->primary();
+ delete[] descriptor;  // Fix memory leak - descriptor was never freed
+ return result;
 }
 
 LongType* ConstantShapeHelper::vectorShapeInfo(LongType length, DataType dataType) {

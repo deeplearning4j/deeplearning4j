@@ -58,8 +58,11 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND SD_X86_BUILD)
     message(STATUS "Configuring linker for large template library with PLT overflow prevention")
 
     # Clear any existing conflicting linker flags
-    string(REGEX REPLACE "-fuse-ld=[a-zA-Z]+" "" CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
-    string(REGEX REPLACE "-fuse-ld=[a-zA-Z]+" "" CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
+    # BUT preserve -fuse-ld=mold for SD_GCC_FUNCTRACE builds - mold is required for >2GB binaries
+    if(NOT SD_GCC_FUNCTRACE)
+        string(REGEX REPLACE "-fuse-ld=[a-zA-Z]+" "" CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+        string(REGEX REPLACE "-fuse-ld=[a-zA-Z]+" "" CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
+    endif()
 
     # Test if linker supports --plt-align before using it
     execute_process(
@@ -88,8 +91,9 @@ endif()
 # Note: Main memory flags are set in CompilerFlags.cmake; this is a fallback
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     # Only add if not already present (avoid duplicates with CompilerFlags.cmake)
+    # Use GCC defaults - aggressive settings (finline-limit=50) actually INCREASED memory
     if(NOT CMAKE_CXX_FLAGS MATCHES "ggc-min-expand")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=20 --param ggc-min-heapsize=65536 --param inline-unit-growth=30 -finline-limit=50")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=100 --param ggc-min-heapsize=131072")
     endif()
 endif()
 

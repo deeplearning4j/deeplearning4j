@@ -97,8 +97,16 @@ public class ProtectedCachedShapeInfoProvider extends BaseShapeInfoProvider {
             synchronized (this) {
                 if (!protector.containsDataBuffer(deviceId, descriptor)) {
                     buffer = super.createShapeInformation(shape, stride, elementWiseStride, order, extras);
-                    buffer.getFirst().setConstant(true);
 
+                    DataBuffer dataBuffer = buffer.getFirst();
+                    Nd4j.getDeallocatorService().registerPendingConstant(dataBuffer);
+                    try {
+                        dataBuffer.setConstant(true);
+                    } finally {
+                        // Release the protection - now that it's marked constant,
+                        // DeallocatorService won't deallocate it anyway
+                        Nd4j.getDeallocatorService().releasePendingConstant(dataBuffer);
+                    }
 
                     protector.persistDataBuffer(deviceId, descriptor, buffer);
 

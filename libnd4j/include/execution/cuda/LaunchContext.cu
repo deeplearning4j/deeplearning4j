@@ -118,6 +118,9 @@ LaunchContext* LaunchContext::defaultContext() {
    * 1) temporary buffers. they must be per-thread
    * 2) CUDA stream. it must be either per-thread or per-device
    * 3) cuBLAS handle. it must be per-device
+   *
+   * currentDeviceId() now always syncs with the native CUDA device (cudaGetDevice()),
+   * so we use it directly. This ensures consistency across all code paths.
    */
   auto deviceId = AffinityManager::currentDeviceId();
 

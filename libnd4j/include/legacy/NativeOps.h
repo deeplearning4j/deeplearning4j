@@ -61,7 +61,7 @@ typedef Context OpaqueContext;
 typedef sd::NDArray* OpaqueNDArray;
 typedef sd::NDArray** OpaqueNDArrayArr;
 typedef sd::LaunchContext* OpaqueLaunchContext;
-typedef RandomGenerator* OpaqueRandomGenerator;
+typedef RandomGenerator OpaqueRandomGenerator;
 typedef sd::graph::ResultWrapper OpaqueResultWrapper;
 typedef sd::graph::VariablesSet OpaqueVariablesSet;
 typedef sd::graph::Variable OpaqueVariable;
@@ -74,12 +74,12 @@ typedef sd::ConstantShapeBuffer* OpaqueConstantShapeBuffer;
 
 
 SD_LIB_EXPORT const char* getAllCustomOps();
-SD_LIB_EXPORT OpaqueRandomGenerator createRandomGenerator(sd::LongType rootSeed, sd::LongType nodeSeed);
+SD_LIB_EXPORT OpaqueRandomGenerator* createRandomGenerator(sd::LongType rootSeed, sd::LongType nodeSeed);
 
 SD_LIB_EXPORT OpaqueContext *createGraphContext(int nodeId);
 SD_LIB_EXPORT void setGraphContextCudaContext(OpaqueContext *ptr, void *stream, void *reductionPointer,
                                               void *allocationPointer);
-SD_LIB_EXPORT OpaqueRandomGenerator getGraphContextRandomGenerator(OpaqueContext *ptr);
+SD_LIB_EXPORT OpaqueRandomGenerator* getGraphContextRandomGenerator(OpaqueContext *ptr);
 
 SD_LIB_EXPORT void shuffle(sd::Pointer *extras,
                            OpaqueNDArrayArr x,
@@ -260,6 +260,7 @@ SD_LIB_EXPORT sd::Pointer createStream() ;
 SD_LIB_EXPORT sd::Pointer createEvent() ;
 SD_LIB_EXPORT int registerEvent(sd::Pointer event, sd::Pointer stream) ;
 SD_LIB_EXPORT int setDevice(int deviceId) ;
+SD_LIB_EXPORT void setAvailableDevices(int *devices, int size) ;
 SD_LIB_EXPORT sd::LongType getDeviceFreeMemoryDefault() ;
 SD_LIB_EXPORT sd::LongType getDeviceFreeMemory(int device) ;
 SD_LIB_EXPORT sd::LongType getDeviceTotalMemory(int device) ;
@@ -435,18 +436,18 @@ SD_LIB_EXPORT void setGraphContextIArguments(OpaqueContext *ptr, sd::LongType *a
 SD_LIB_EXPORT void setGraphContextBArguments(OpaqueContext *ptr, bool *arguments, int numberOfArguments) ;
 SD_LIB_EXPORT void setGraphContextDArguments(OpaqueContext *ptr, int *arguments, int numberOfArguments) ;
 SD_LIB_EXPORT void deleteGraphContext(OpaqueContext *ptr) ;
-SD_LIB_EXPORT sd::LongType getRandomGeneratorRootState(OpaqueRandomGenerator ptr) ;
-SD_LIB_EXPORT sd::LongType getRandomGeneratorNodeState(OpaqueRandomGenerator ptr) ;
-SD_LIB_EXPORT void setRandomGeneratorStates(OpaqueRandomGenerator ptr, sd::LongType rootSeed, sd::LongType nodeSeed) ;
-SD_LIB_EXPORT float getRandomGeneratorRelativeFloat(OpaqueRandomGenerator ptr, sd::LongType index) ;
-SD_LIB_EXPORT double getRandomGeneratorRelativeDouble(OpaqueRandomGenerator ptr, sd::LongType index) ;
-SD_LIB_EXPORT int getRandomGeneratorRelativeInt(OpaqueRandomGenerator ptr, sd::LongType index) ;
-SD_LIB_EXPORT sd::LongType getRandomGeneratorRelativeLong(OpaqueRandomGenerator ptr, sd::LongType index) ;
-SD_LIB_EXPORT int getRandomGeneratorNextInt(OpaqueRandomGenerator ptr) ;
-SD_LIB_EXPORT sd::LongType getRandomGeneratorNextLong(OpaqueRandomGenerator ptr) ;
-SD_LIB_EXPORT float getRandomGeneratorNextFloat(OpaqueRandomGenerator ptr) ;
-SD_LIB_EXPORT double getRandomGeneratorNextDouble(OpaqueRandomGenerator ptr) ;
-SD_LIB_EXPORT void deleteRandomGenerator(OpaqueRandomGenerator ptr) ;
+SD_LIB_EXPORT sd::LongType getRandomGeneratorRootState(OpaqueRandomGenerator* ptr) ;
+SD_LIB_EXPORT sd::LongType getRandomGeneratorNodeState(OpaqueRandomGenerator* ptr) ;
+SD_LIB_EXPORT void setRandomGeneratorStates(OpaqueRandomGenerator* ptr, sd::LongType rootSeed, sd::LongType nodeSeed) ;
+SD_LIB_EXPORT float getRandomGeneratorRelativeFloat(OpaqueRandomGenerator* ptr, sd::LongType index) ;
+SD_LIB_EXPORT double getRandomGeneratorRelativeDouble(OpaqueRandomGenerator* ptr, sd::LongType index) ;
+SD_LIB_EXPORT int getRandomGeneratorRelativeInt(OpaqueRandomGenerator* ptr, sd::LongType index) ;
+SD_LIB_EXPORT sd::LongType getRandomGeneratorRelativeLong(OpaqueRandomGenerator* ptr, sd::LongType index) ;
+SD_LIB_EXPORT int getRandomGeneratorNextInt(OpaqueRandomGenerator* ptr) ;
+SD_LIB_EXPORT sd::LongType getRandomGeneratorNextLong(OpaqueRandomGenerator* ptr) ;
+SD_LIB_EXPORT float getRandomGeneratorNextFloat(OpaqueRandomGenerator* ptr) ;
+SD_LIB_EXPORT double getRandomGeneratorNextDouble(OpaqueRandomGenerator* ptr) ;
+SD_LIB_EXPORT void deleteRandomGenerator(OpaqueRandomGenerator* ptr) ;
 SD_LIB_EXPORT sd::LongType getCachedMemory(int deviceId) ;
 SD_LIB_EXPORT sd::Pointer lcScalarPointer(OpaqueLaunchContext lc) ;
 SD_LIB_EXPORT sd::Pointer lcReductionPointer(OpaqueLaunchContext lc) ;
@@ -474,6 +475,19 @@ SD_LIB_EXPORT void dbExpandBuffer(OpaqueDataBuffer *dataBuffer, sd::LongType ele
 SD_LIB_EXPORT int dbUseCount(OpaqueDataBuffer* dataBuffer) ;
 SD_LIB_EXPORT void dbSyncToSpecial(OpaqueDataBuffer *dataBuffer) ;
 SD_LIB_EXPORT void dbSyncToPrimary(OpaqueDataBuffer *dataBuffer) ;
+
+/**
+ * Batched asynchronous synchronization of multiple data buffers from host to device.
+ * Uses multiple CUDA streams to transfer data in parallel, providing better performance
+ * than individual synchronous transfers for model loading.
+ *
+ * @param buffers Array of OpaqueDataBuffer pointers to sync
+ * @param bufferCount Number of buffers in the array
+ * @param streamCount Number of CUDA streams to use for parallel transfers (typically 2-8)
+ */
+SD_LIB_EXPORT void batchSyncToSpecialAsync(OpaqueDataBuffer **buffers, int bufferCount, int streamCount);
+
+SD_LIB_EXPORT void dbMigrate(OpaqueDataBuffer *dataBuffer) ;
 SD_LIB_EXPORT void dbTickHostRead(OpaqueDataBuffer *dataBuffer) ;
 SD_LIB_EXPORT void dbTickHostWrite(OpaqueDataBuffer *dataBuffer) ;
 SD_LIB_EXPORT void dbTickDeviceRead(OpaqueDataBuffer *dataBuffer) ;
@@ -486,6 +500,40 @@ SD_LIB_EXPORT int dbLocality(OpaqueDataBuffer *dataBuffer) ;
 SD_LIB_EXPORT OpaqueDataBuffer* dbCreateView(OpaqueDataBuffer* dataBuffer, sd::LongType length) ;
 SD_LIB_EXPORT OpaqueDataBuffer* dbAllocateDataBuffer(sd::LongType elements, int dataType, bool allocateBoth) ;
 SD_LIB_EXPORT OpaqueDataBuffer* dbCreateExternalDataBuffer(sd::LongType elements, int dataType, sd::Pointer primary, sd::Pointer special) ;
+
+/**
+ * Create an externalized data buffer that is ALREADY marked as constant.
+ * This is critical for preventing race conditions where the Java GC can
+ * finalize the buffer before setConstant() is called.
+ *
+ * The constant flag is set IN NATIVE CODE before returning to Java,
+ * eliminating the race window between buffer creation and marking constant.
+ *
+ * @param elements Number of elements
+ * @param dataType Data type integer
+ * @param primary Primary (host) pointer
+ * @param special Special (device) pointer
+ * @return Buffer that is already marked as constant and will never be deallocated
+ */
+SD_LIB_EXPORT OpaqueDataBuffer* dbCreateConstantExternalDataBuffer(sd::LongType elements, int dataType, sd::Pointer primary, sd::Pointer special) ;
+
+/**
+ * Set the constant flag on an OpaqueDataBuffer.
+ * Constant buffers (like shape info) should never be freed by the deallocator.
+ * This propagates the flag from Java to the native InteropDataBuffer.
+ *
+ * @param dataBuffer The buffer to mark as constant
+ * @param isConstant true to mark as constant, false otherwise
+ * @return true if the flag was successfully set, false if the buffer was invalid
+ *         (already closed or freed). If false is returned, the buffer may have
+ *         been deallocated by GC and should not be used.
+ */
+SD_LIB_EXPORT bool dbSetConstant(OpaqueDataBuffer *dataBuffer, bool isConstant);
+
+/**
+ * Check if a buffer is marked as constant.
+ */
+SD_LIB_EXPORT bool dbIsConstant(OpaqueDataBuffer *dataBuffer);
 
 // =====================================================
 // Transfer Metrics API - for tracking device transfers
@@ -860,8 +908,26 @@ SD_LIB_EXPORT bool isTADCacheShutdownInProgress();
  * Clears all cached shape buffers.
  * This frees all ConstantShapeBuffer objects stored in the shape cache.
  * Called during application shutdown to prevent memory leaks.
+ * NOTE: Will return early without action if setShapeCacheShutdownInProgress(true) was called.
  */
 SD_LIB_EXPORT void clearShapeCache();
+
+/**
+ * Marks that shutdown is in progress for the shape cache.
+ *
+ * When set to true, clearShapeCache() becomes a no-op to avoid segfaults
+ * during JVM/application shutdown when buffers may still have external
+ * references or memory allocators may be in an inconsistent state.
+ *
+ * @param inProgress true to mark shutdown in progress, false otherwise
+ */
+SD_LIB_EXPORT void setShapeCacheShutdownInProgress(bool inProgress);
+
+/**
+ * Check if shape cache shutdown is in progress.
+ * @return true if setShapeCacheShutdownInProgress(true) was called
+ */
+SD_LIB_EXPORT bool isShapeCacheShutdownInProgress();
 
 /**
  * Get the total number of cached shape buffer entries.

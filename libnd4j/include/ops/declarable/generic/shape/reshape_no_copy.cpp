@@ -10,13 +10,19 @@ namespace ops {
 CUSTOM_OP_IMPL(reshape_no_copy, -2, 1, false, 0, -2) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
+
+  // Handle empty arrays - nothing to copy
+  if (input->isEmpty() || input->lengthOf() == 0 || output->isEmpty() || output->lengthOf() == 0) {
+    return Status::OK;
+  }
+
   //note that the calculate output shape that sets this flag does not have access to the data buffer
   if (ArrayOptions::arrayNeedsCopy(const_cast<LongType *>(output->shapeInfo()))
       || output->dataBuffer() != input->dataBuffer()) {
     // For reshape, we want to preserve LINEAR element order (not logical positions).
     // This means we can use memcpy which preserves the raw byte order.
     // The new shape/strides will correctly interpret the data in the new order.
-    if (input->lengthOf() == output->lengthOf()) {
+    if (input->lengthOf() == output->lengthOf() && input->lengthOf() > 0) {
       std::memcpy(output->buffer(), input->buffer(), input->lengthOf() * input->sizeOfT());
     }
   }
@@ -37,7 +43,28 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
 
   if (block.width() > 1) {
     auto shapeArg = INPUT_VARIABLE(1);
+
+    if (shapeArg == nullptr) {
+      THROW_EXCEPTION("reshape_no_copy: Shape argument (input 1) is null");
+    }
+    if (shapeArg->isEmpty()) {
+      THROW_EXCEPTION("reshape_no_copy: Shape argument (input 1) is empty - cannot determine target shape");
+    }
+    if (shapeArg->lengthOf() == 0) {
+      THROW_EXCEPTION("reshape_no_copy: Shape argument (input 1) has length 0 - cannot determine target shape");
+    }
+
     auto shapeBuffLong = shapeArg->getBufferAsVector<sd::LongType>();
+
+    // Validate that we actually got shape values
+    if (shapeBuffLong.empty()) {
+      std::string errorMsg = "reshape_no_copy: Shape argument returned empty vector. ";
+      errorMsg += "Shape arg rank: " + std::to_string(shapeArg->rankOf());
+      errorMsg += ", length: " + std::to_string(shapeArg->lengthOf());
+      errorMsg += ", isEmpty: " + std::to_string(shapeArg->isEmpty());
+      THROW_EXCEPTION(errorMsg.c_str());
+    }
+
     // Copy all elements from the shape array - order is passed separately via iArgs
     for (size_t i = 0; i < shapeBuffLong.size(); i++) {
       newShape.push_back(shapeBuffLong[i]);
@@ -70,6 +97,42 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
     order = iArgs->at(iArgs->size() - 1) == RESHAPE_NO_COPY_F_ORDER_MARKER ? 'f' : 'c';
   }
 
+  // Handle empty newShape (rank-0 / scalar output)
+  // This is a VALID use case when:
+  // 1. Input has exactly 1 element (reshape to scalar)
+  // 2. Called from noOp() in reduce operations
+  // It's INVALID when:
+  // 1. Input has more than 1 element (cannot reshape to scalar without losing data)
+  // 2. Shape argument was corrupted
+  if (newShape.empty()) {
+    sd::LongType inputLength = shape::length(inShape);
+    if (inputLength == 1) {
+      // Valid: reshape single element to scalar
+      // Create a rank-0 (scalar) shape info
+      sd::LongType len = shape::shapeInfoLength(static_cast<sd::LongType>(0));  // rank 0
+      sd::LongType *newShapeInfo = new sd::LongType[len];
+      newShapeInfo[0] = 0;  // rank = 0
+      shape::setOrder(newShapeInfo, order);
+      ArrayOptions::resetFlags(newShapeInfo);
+      ArrayOptions::setDataType(newShapeInfo, dtype);
+      // Copy strides are not needed for scalars, but we need proper offset handling
+      ArrayOptions::togglePropertyBit(newShapeInfo, ARRAY_COPY_OFFSET_INPUT_0);
+
+      auto newShape2 = ConstantShapeHelper::getInstance().createFromExisting(newShapeInfo);
+      delete[] newShapeInfo;
+      return SHAPELIST(CONSTANT(newShape2));
+    } else {
+      // Invalid: cannot reshape multi-element array to scalar
+      std::string errorMsg = "reshape_no_copy: Target shape is empty (rank-0) but input has ";
+      errorMsg += std::to_string(inputLength);
+      errorMsg += " elements. Cannot reshape to scalar without losing data. ";
+      errorMsg += "Input shape rank: " + std::to_string(shape::rank(inShape));
+      errorMsg += ", block.width: " + std::to_string(block.width());
+      errorMsg += ", block.numI: " + std::to_string(block.numI());
+      THROW_EXCEPTION(errorMsg.c_str());
+    }
+  }
+
   // Handle -1 in shape specification
   sd::LongType negativeOneCount = 0;
   sd::LongType negativeOneIndex = -1;
@@ -77,11 +140,13 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
   sd::LongType knownDimProduct = 1;
   
   // Count -1s and calculate product of known dimensions
+  // Note: 0 is valid for empty arrays, only reject negative values other than -1
+  bool hasZeroDim = false;
   for (size_t i = 0; i < newShape.size(); i++) {
     if (newShape[i] == -1) {
       negativeOneCount++;
       negativeOneIndex = i;
-    } else if (newShape[i] <= 0) {
+    } else if (newShape[i] < 0) {
       std::string errorMessage = "Shape value is invalid: ";
       errorMessage += std::to_string(newShape[i]);
       errorMessage += " at index ";
@@ -89,6 +154,8 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
       errorMessage += " in shape ";
       errorMessage += std::to_string(newShape.size());
       THROW_EXCEPTION(errorMessage.c_str());
+    } else if (newShape[i] == 0) {
+      hasZeroDim = true;
     } else {
       knownDimProduct *= newShape[i];
     }
@@ -98,17 +165,21 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
   if (negativeOneCount > 1) {
     THROW_EXCEPTION("Only one dimension can be -1 in reshape operation");
   }
-  
+
   // Calculate the -1 dimension if present
   if (negativeOneCount == 1) {
-    if (totalElements % knownDimProduct != 0) {
+    if (hasZeroDim || totalElements == 0) {
+      // For empty arrays, set -1 dimension to 0 or 1 depending on context
+      newShape[negativeOneIndex] = (totalElements == 0) ? 0 : 1;
+    } else if (totalElements % knownDimProduct != 0) {
       std::string errorMessage = "Cannot reshape array of size ";
       errorMessage += std::to_string(totalElements);
       errorMessage += " into shape with known dimensions product ";
       errorMessage += std::to_string(knownDimProduct);
       THROW_EXCEPTION(errorMessage.c_str());
+    } else {
+      newShape[negativeOneIndex] = totalElements / knownDimProduct;
     }
-    newShape[negativeOneIndex] = totalElements / knownDimProduct;
   }
 
   sd::LongType len = shape::shapeInfoLength(newShape.size());
@@ -132,7 +203,8 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
     }
   }
 
-  if (shape::isEmptyConst(inShape)) {
+  // Handle empty output (either from empty input or zero dimension in shape)
+  if (shape::isEmptyConst(inShape) || hasZeroDim) {
     newShapeInfo[0] = newShape.size();
     shape::setShape(newShapeInfo, newShape.data());
     // If reshape is not possible without allocation, fall back to regular reshape

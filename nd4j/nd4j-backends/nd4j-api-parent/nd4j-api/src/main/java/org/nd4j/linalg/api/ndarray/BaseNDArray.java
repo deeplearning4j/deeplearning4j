@@ -34,6 +34,7 @@ import org.nd4j.linalg.profiler.data.array.event.NDArrayMetaData;
 import org.nd4j.linalg.profiler.data.array.eventlog.Nd4jEventLog;
 import org.nd4j.linalg.profiler.data.array.event.NDArrayEvent;
 import org.nd4j.linalg.profiler.data.array.event.NDArrayEventType;
+import org.nd4j.nativeblas.OpaqueDataBuffer;
 import org.nd4j.nativeblas.OpaqueNDArray;
 import org.nd4j.shade.guava.primitives.Longs;
 import com.google.flatbuffers.FlatBufferBuilder;
@@ -113,9 +114,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected static ThreadLocal<Boolean> callingToString = initWithFalse();
     protected long offset = 0;
 
-    // CRITICAL: volatile ensures visibility across threads.
-    // Access MUST be synchronized via opaqueNDArrayLock to prevent race conditions
-    // between getOrCreateOpaqueNDArray() and clearOpaqueNDArray().
     protected volatile OpaqueNDArray opaqueNDArray;
 
     // Lock object for thread-safe access to opaqueNDArray
@@ -156,7 +154,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return ThreadLocal.withInitial(() -> false);
     }
     @Getter
-    @Setter
+    // NOTE: Custom setCloseable method is defined below - do NOT add @Setter here!
+    // When setCloseable(false) is called, we must propagate to the DataBuffer to prevent
+    // DeallocatorService from freeing the underlying OpaqueDataBuffer.
     protected transient boolean closeable = true;
     protected transient boolean released = false;
 
@@ -292,21 +292,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
     public BaseNDArray(LongShapeDescriptor descriptor) {
-        // CRITICAL FIX: Use initialized buffer (true) instead of uninitialized (false).
-        // When uninitialized, buffer contains garbage data which may include NaN values.
-        // If native operations fail to write to the buffer for any reason (e.g., memory
-        // management issues, stale pointers), the output will contain these garbage NaN values.
-        // Using initialized (zeroed) buffers ensures predictable behavior even if native
-        // operations don't write - though this does have a small performance cost.
-        // This was changed after memory management updates caused sporadic NaN outputs
-        // in reduce operations like norm2() where the native code wasn't writing to output.
-        //
-        // CRITICAL FIX 2: For scalars (rank 0), we must always create a buffer even if
-        // descriptor.isEmpty() returns true. Scalars have shape [] but still need 1 element
-        // of storage. The isEmpty flag can be incorrectly set for scalars created via
-        // Nd4j.create(dt, new long[]{}) or reduce operations.
-        // A truly empty array has shape containing a 0 dimension (like [0, 5]).
-        // A scalar has rank 0 (shape.length == 0) and always needs a buffer of size 1.
         this(createBufferForDescriptor(descriptor), descriptor);
         this.offset = descriptor.getOffset();
     }
@@ -331,7 +316,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     public BaseNDArray(DataBuffer buffer,LongShapeDescriptor longShapeDescriptor) {
         this.data = buffer;
-        if (buffer.length() >= Integer.MAX_VALUE)
+        // buffer can be null for empty arrays (shape containing 0)
+        if (buffer != null && buffer.length() >= Integer.MAX_VALUE)
             throw new IllegalArgumentException("Length of buffer can not be >= Integer.MAX_VALUE");
         Pair<DataBuffer, long[]> shapeInformation = getShapeInfoProvider().createShapeInformation(longShapeDescriptor.toShapeInfo());
         setShapeInformation(shapeInformation);
@@ -1311,9 +1297,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public long tensorsAlongDimension(long... dimension) {
+        // Empty dimensions means "all dimensions" - return 1 for full array reduction
         if (dimension == null || dimension.length == 0)
-            throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
-        if (dimension.length >= rank() || dimension.length == 1 && (dimension[0] == Integer.MAX_VALUE || dimension[0] == -1))
+            return 1;
+        if (dimension.length >= rank() || dimension.length == 1 && dimension[0] == -1)
             return 1;
         for (int i = 0; i < dimension.length; i++)
             if (dimension[i] < 0)
@@ -1330,12 +1317,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray tensorAlongDimension(long index, long... dimension) {
+        // Empty dimensions means "all dimensions" - return the whole array
         if (dimension == null || dimension.length == 0)
-            throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
+            return this;
 
         Preconditions.checkArgument(!this.isEmpty(), "tensorAlongDimension(...) can't be used on empty tensors");
 
-        if (dimension.length >= rank()  || dimension.length == 1 && (dimension[0] == Integer.MAX_VALUE || dimension[0] == -1))
+        if (dimension.length >= rank() || dimension.length == 1 && dimension[0] == -1)
             return this;
         for (int i = 0; i < dimension.length; i++)
             if (dimension[i] < 0)
@@ -1388,11 +1376,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     private void setShapeInformation(Pair<DataBuffer, long[]> shapeInfo) {
-        // CRITICAL: Clear cached OpaqueNDArray when shape info changes!
-        // The cached OpaqueNDArray holds native pointers to the old shape info memory.
-        // If we don't clear it, the native sd::NDArray* will have dangling pointers
-        // to the old shape info, causing SIGSEGV crashes when native code accesses it.
-        // Note: During construction opaqueNDArray is null, so this is a no-op then.
         clearOpaqueNDArray();
         this.jvmShapeInfo = new JvmShapeInfo(shapeInfo.getSecond());
         this.shapeInfoDataBuffer = shapeInfo.getFirst();
@@ -1473,7 +1456,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 s += getDouble(i);
                 putScalar(i, s);
             }
-        } else if (dimension == Integer.MAX_VALUE || dimension == -1) {
+        } else if (dimension == -1) {
             INDArray flattened = ravel();
             double prevVal = flattened.getDouble(0);
             for (int i = 1; i < flattened.length(); i++) {
@@ -1496,29 +1479,29 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public Number normmaxNumber() {
-        return normmax(Integer.MAX_VALUE).getDouble(0);
+        return normmax(-1).getDouble(0);
     }
 
     @Override
     public Number norm2Number() {
-        return norm2(Integer.MAX_VALUE).getDouble(0);
+        return norm2(-1).getDouble(0);
     }
 
     @Override
     public Number norm1Number() {
-        return norm1(Integer.MAX_VALUE).getDouble(0);
+        return norm1(-1).getDouble(0);
     }
 
     @Override
     public Number stdNumber() {
-        return std(Integer.MAX_VALUE).getDouble(0);
+        return std(-1).getDouble(0);
     }
 
     @Override
     public Number prodNumber() {
         if(isScalar())
             return getNumber(0);
-        return prod(Integer.MAX_VALUE).getDouble(0);
+        return prod(-1).getDouble(0);
     }
 
     @Override
@@ -1526,41 +1509,41 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         validateNumericalArray("meanNumber", false);
         if(isScalar())
             return getNumber(0);
-        return mean(Integer.MAX_VALUE).getDouble(0);
+        return mean(-1).getDouble(0);
     }
 
     @Override
     public Number ameanNumber() {
-        return amean(Integer.MAX_VALUE).getDouble(0);
+        return amean(-1).getDouble(0);
     }
 
     @Override
     public Number varNumber() {
-        return var(Integer.MAX_VALUE).getDouble(0);
+        return var(-1).getDouble(0);
     }
 
     @Override
     public Number maxNumber() {
         if(isScalar())
             return getNumber(0);
-        return max(Integer.MAX_VALUE).getDouble(0);
+        return max(-1).getDouble(0);
     }
 
     @Override
     public Number amaxNumber() {
-        return amax(Integer.MAX_VALUE).getDouble(0);
+        return amax(-1).getDouble(0);
     }
 
     @Override
     public Number minNumber() {
         if(isScalar())
             return getNumber(0);
-        return min(Integer.MAX_VALUE).getDouble(0);
+        return min(-1).getDouble(0);
     }
 
     @Override
     public Number aminNumber() {
-        return amin(Integer.MAX_VALUE).getDouble(0);
+        return amin(-1).getDouble(0);
     }
 
     @Override
@@ -1596,24 +1579,24 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         validateNumericalArray("sum", false);
         if(isScalar())
             return getNumber(0);
-        val scalar = sum(Integer.MAX_VALUE);
+        val scalar = sum(-1);
         Nd4j.getExecutioner().commit();
         return scalar.getDouble(0);
     }
 
     @Override
     public Number entropyNumber() {
-        return entropy(Integer.MAX_VALUE).getDouble(0);
+        return entropy(-1).getDouble(0);
     }
 
     @Override
     public Number shannonEntropyNumber() {
-        return shannonEntropy(Integer.MAX_VALUE).getDouble(0);
+        return shannonEntropy(-1).getDouble(0);
     }
 
     @Override
     public Number logEntropyNumber() {
-        return logEntropy(Integer.MAX_VALUE).getDouble(0);
+        return logEntropy(-1).getDouble(0);
     }
 
     @Override
@@ -2085,8 +2068,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray dup(char order) {
         WorkspaceUtils.assertValidArray(this, "Cannot duplicate INDArray");
         logBeforeViewCreationIfNeccessary();
+
+        DataBuffer localData = this.data;
+        if (localData == null) {
+            return this;
+        }
+
         if (this.isCompressed() && this.ordering() == order) {
-            INDArray ret = Nd4j.createArrayFromShapeBuffer(data().dup(), this.shapeInfoDataBuffer());
+            INDArray ret = Nd4j.createArrayFromShapeBuffer(localData.dup(), this.shapeInfoDataBuffer());
             ret.markAsCompressed(true);
             logViewCreationIfNeccessary();
             return ret;
@@ -2095,6 +2084,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return this;
 
         Nd4j.getCompressor().autoDecompress(this);
+
+        // Re-check data buffer after autoDecompress as it might have changed
+        localData = this.data;
+        if (localData == null) {
+            return this;
+        }
 
         // For views, we need to create a new contiguous array and copy the data
         // Simply duplicating the underlying buffer doesn't work because:
@@ -2107,7 +2102,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             // Copy all elements from this view to the new contiguous array
             z.assign(this);
         } else {
-            z = Nd4j.create(data().dup(), shape(), stride(), offset(), order);
+            z = Nd4j.create(localData.dup(), shape(), stride(), offset(), order);
         }
 
         if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
@@ -2773,7 +2768,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             And it's possible to be not a view, and have non-empty originalBuffer
          */
         // length/data.length can be different in case of Threshold conversion
-        if(isEmpty() || isS())
+        if(data() == null || isEmpty() || isS())
             return false;
 
         val c2 = (length() < data().length());
@@ -2796,10 +2791,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public void setData(DataBuffer data) {
-        // CRITICAL: Clear cached OpaqueNDArray when data buffer changes!
-        // The cached OpaqueNDArray holds native pointers to the old data buffer memory.
-        // If we don't clear it, the native sd::NDArray* will have dangling pointers
-        // to the old data, causing SIGSEGV crashes when native code accesses it.
         clearOpaqueNDArray();
         this.data = data;
     }
@@ -3227,8 +3218,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     private void applyBroadcastOp(INDArray vector, final char operation) {
         Nd4j.getCompressor().autoDecompress(this);
+        // For row vectors, use the last dimension (rank-1) instead of -1
+        // For a matrix [rows, cols] with row vector [cols], we broadcast along dimension 1 (columns)
+        // For column vectors, dimension 0 (rows) is correct
         int alongDimension = Shape.isRowVectorShape(vector.shape()) ?
-                -1 : 0;
+                (rank() - 1) : 0;
         switch (operation) {
             case 'a':
                 Nd4j.getExecutioner().exec(new BroadcastAddOp(this, vector, this, alongDimension));
@@ -3517,6 +3511,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public double[] toDoubleVector() {
+        DataBuffer localData = this.data;
+        if (localData == null || isEmpty()) {
+            return new double[0];
+        }
         if(!isVectorOrScalar()) {
             throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector! Shape: " + Shape.shapeToStringShort(this));
         }
@@ -3537,6 +3535,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public float[] toFloatVector() {
+        DataBuffer localData = this.data;
+        if (localData == null || isEmpty()) {
+            return new float[0];
+        }
         if(!isVectorOrScalar()) {
             throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector! Shape: " + Shape.shapeToStringShort(this));
         }
@@ -3587,8 +3589,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public int[] toIntVector() {
-        if (isEmpty())
+        DataBuffer localData = this.data;
+        if (localData == null || isEmpty()) {
             return new int[0];
+        }
 
         if(!isVectorOrScalar()) {
             throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector! Shape: " + Shape.shapeToStringShort(this));
@@ -3608,11 +3612,16 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 }
             }
         }
-        return data().asInt();
+        return localData.asInt();
     }
 
     @Override
     public long[] toLongVector() {
+        DataBuffer localData = this.data;
+        if (localData == null) {
+            return new long[0];
+        }
+
         if(isEmpty())
             return new long[0];
         if(!isVectorOrScalar()) {
@@ -3620,23 +3629,30 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
         if(isView() || elementWiseStride() != 1) {
             INDArray duplicated = dup();
+            boolean shouldCleanup = (duplicated != this);
             try {
+                // dup() for empty arrays returns 'this', and we already checked isEmpty() above,
+                // but there's a race condition. Double-check here.
+                if (duplicated.data() == null) {
+                    return new long[0];
+                }
                 return duplicated.data().asLong();
             } finally {
-                // Clean up the duplicated array
-                try {
-                    if (duplicated.data() != null) {
-                        duplicated.data().close();
+                // Only clean up if we actually created a new array (not if dup returned 'this')
+                if (shouldCleanup) {
+                    try {
+                        if (duplicated.data() != null) {
+                            duplicated.data().close();
+                        }
+                        duplicated.close();
+                    } catch (Exception e) {
+                        // Ignore close errors
                     }
-                    duplicated.close();
-                } catch (Exception e) {
-                    // Ignore close errors
                 }
             }
         }
 
-
-        return data().asLong();
+        return localData.asLong();
     }
 
     @Override
@@ -3652,16 +3668,23 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         for(int i = 0; i < ret.length; i++) {
             INDArray row = getRow(i);
             INDArray duplicated = row.dup();
+            boolean shouldCleanup = (duplicated != row);
             try {
+                if (duplicated.data() == null) {
+                    ret[i] = new long[0];
+                    continue;
+                }
                 ret[i] = duplicated.data().asLong();
             } finally {
-                try {
-                    if (duplicated.data() != null) {
-                        duplicated.data().close();
+                if (shouldCleanup) {
+                    try {
+                        if (duplicated.data() != null) {
+                            duplicated.data().close();
+                        }
+                        duplicated.close();
+                    } catch (Exception e) {
+                        // Ignore close errors
                     }
-                    duplicated.close();
-                } catch (Exception e) {
-                    // Ignore close errors
                 }
             }
         }
@@ -3682,16 +3705,23 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         for(int i = 0; i < ret.length; i++) {
             INDArray row = getRow(i);
             INDArray duplicated = row.dup();
+            boolean shouldCleanup = (duplicated != row);
             try {
+                if (duplicated.data() == null) {
+                    ret[i] = new int[0];
+                    continue;
+                }
                 ret[i] = duplicated.data().asInt();
             } finally {
-                try {
-                    if (duplicated.data() != null) {
-                        duplicated.data().close();
+                if (shouldCleanup) {
+                    try {
+                        if (duplicated.data() != null) {
+                            duplicated.data().close();
+                        }
+                        duplicated.close();
+                    } catch (Exception e) {
+                        // Ignore close errors
                     }
-                    duplicated.close();
-                } catch (Exception e) {
-                    // Ignore close errors
                 }
             }
         }
@@ -4279,19 +4309,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             Nd4j.exec(op);
             return out;
         } finally {
-            // Clean up UNUSED shape buffers to prevent memory leak
-            // IMPORTANT: First buffer is owned by 'out' array if allocation succeeded - do NOT close it!
-            int startIndex = firstBufferUsed ? 1 : 0;
-            for (int i = startIndex; i < shapeList.size(); i++) {
-                DataBuffer shapeBuffer = shapeList.get(i);
-                if (shapeBuffer != null) {
-                    try {
-                        shapeBuffer.close();
-                    } catch (Exception e) {
-                        // Ignore close errors
-                    }
-                }
-            }
+            // NOTE: Shape buffers returned by calculateOutputShape() are CACHED by ConstantShapeHelper
+            // and must NOT be closed here - they are shared across operations.
+            // Closing them would corrupt the shape cache, leading to use-after-free bugs that
+            // manifest as JVM heap corruption (crashes in SymbolTable::do_lookup, G1 GC, etc.)
         }
     }
 
@@ -5200,7 +5221,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (slices() != n.slices())
             return false;
 
-        EqualsWithEps op = new EqualsWithEps(this, n, eps);
+        // Create array of all dimensions for full array comparison
+        long[] allDims = new long[rank()];
+        for (int i = 0; i < rank(); i++) {
+            allDims[i] = i;
+        }
+        EqualsWithEps op = new EqualsWithEps(this, n, eps, allDims);
         Nd4j.getExecutioner().exec(op);
         double diff = op.z().getDouble(0);
 
@@ -5960,12 +5986,25 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public boolean isAttached() {
-        if (isEmpty())
+        DataBuffer localData = this.data;
+
+        // Check if array is empty (null data or empty shape)
+        // Using localData directly instead of isEmpty() which reads data field again
+        if (localData == null) {
             return false;
+        }
 
-        Preconditions.checkArgument(!(data == null && !isEmpty()), "Array has no buffer!");
+        // Also check shape-based emptiness
+        if (Shape.isEmpty(jvmShapeInfo.javaShapeInformation)) {
+            // For rank-0 (scalar) arrays with valid data, don't treat as empty
+            if (jvmShapeInfo.rank == 0 && localData != null) {
+                // Fall through - scalar with data is not empty
+            } else {
+                return false;
+            }
+        }
 
-        return data.isAttached();
+        return localData.isAttached();
     }
 
     @Override
@@ -6316,7 +6355,24 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public boolean isEmpty() {
-        return Shape.isEmpty(jvmShapeInfo.javaShapeInformation);
+        // If data buffer is null, the array is functionally empty - we can't operate on it
+        if (data() == null) {
+            return true;
+        }
+
+        // Check if shape info indicates empty array
+        boolean shapeEmpty = Shape.isEmpty(jvmShapeInfo.javaShapeInformation);
+
+        // For rank-0 (scalar) arrays, Shape.isEmpty might incorrectly return true
+        // due to shape info corruption. Scalars with valid data should never be empty.
+        if (shapeEmpty && jvmShapeInfo.rank == 0 && data() != null) {
+            log.warn("WARNING: Rank-0 array (scalar) has ARRAY_EMPTY flag set but has valid data. " +
+                    "This may indicate shape info corruption. Array id: {}, dataType: {}",
+                    this.getId(), this.dataType());
+            return false;
+        }
+
+        return shapeEmpty;
     }
 
     @Override
@@ -6450,11 +6506,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public OpaqueNDArray getOrCreateOpaqueNDArray() {
-        // CRITICAL: Check if the array is closed BEFORE attempting to create OpaqueNDArray.
-        // If the array is closed, its data buffer's native memory has been freed.
-        // Creating an OpaqueNDArray with pointers to freed memory causes use-after-free
-        // crashes (SIGSEGV) when native code tries to access the memory.
-        // This check prevents the crash by failing fast with a clear exception.
         if (wasClosed()) {
             throw new IllegalStateException(
                 "Cannot create OpaqueNDArray for closed INDArray (id=" + getId() +
@@ -6462,10 +6513,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 "where an array is used after being closed or released to memory manager.");
         }
 
-        // CRITICAL: Synchronize to prevent race condition with clearOpaqueNDArray().
-        // Without synchronization, another thread could close the OpaqueNDArray between
-        // our null check and our return, causing us to return an invalid/closed reference.
-        // This race condition was causing NaN values in reduce operations.
         synchronized (opaqueNDArrayLock) {
             // Double-check after acquiring lock in case close() was called concurrently
             if (wasClosed()) {
@@ -6474,11 +6521,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                     "). Array was closed by another thread.");
             }
 
-            // CRITICAL: Check both that the cached OpaqueNDArray exists AND that its native pointer
-            // is still valid. The DeallocatorService can deallocate the OpaqueNDArray (setting its
-            // pointer to null via setNull()) while we still hold a reference to the Java object.
-            // Without the isNull() check, we'd return an invalidated OpaqueNDArray with a null
-            // native pointer, causing "Input array at index X was null!" errors in native code.
             if (opaqueNDArray != null && !opaqueNDArray.isNull()) {
                 return opaqueNDArray;
             }
@@ -6490,17 +6532,43 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             DataBuffer buffer = data();
             DataBuffer shapeInfo = shapeInfoDataBuffer();
 
-            // CRITICAL FIX: For reduce operations that produce scalar results, the shape info
-            // may incorrectly have the EMPTY bit set even though the buffer is valid.
-            // This happens because isEmpty(buffer, shape) can return true when buffer.length() < 1,
-            // but for scalars created via Nd4j.scalar(), the buffer should have exactly 1 element.
-            // We should only pass null for the buffer if it's actually null or has zero elements.
-            // The isEmpty() flag in shape info may be stale/incorrect, so we use the actual buffer state.
+            if (shapeInfo == null) {
+                throw new IllegalStateException(
+                    "Cannot create OpaqueNDArray for INDArray (id=" + getId() +
+                    "): shapeInfoDataBuffer() returned null!");
+            }
+
+            // Check if shapeInfo's OpaqueDataBuffer is valid
+            OpaqueDataBuffer shapeOpaqueBuffer = shapeInfo.opaqueBuffer();
+            if (shapeOpaqueBuffer == null || shapeOpaqueBuffer.isNull()) {
+                throw new IllegalStateException(
+                    "Cannot create OpaqueNDArray for INDArray (id=" + getId() +
+                    "): shapeInfo.opaqueBuffer() is null or invalidated. " +
+                    "ShapeInfo constant=" + shapeInfo.isConstant() +
+                    ", released=" + (shapeInfo instanceof BaseDataBuffer ?
+                        ((BaseDataBuffer)shapeInfo).wasClosed() : "unknown"));
+            }
+
+            if (shapeInfo.length() > 0) {
+                long rank = shapeInfo.getLong(0);
+                if (rank < 0 || rank > 32) {
+                    throw new IllegalStateException(
+                        "Shape info corruption detected for INDArray (id=" + getId() +
+                        "): rank=" + rank + " (expected 0-32). " +
+                        "ShapeInfo constant=" + shapeInfo.isConstant() +
+                        ", length=" + shapeInfo.length() +
+                        ", dataType=" + shapeInfo.dataType() +
+                        ", released=" + (shapeInfo instanceof BaseDataBuffer ?
+                            ((BaseDataBuffer)shapeInfo).wasClosed() : "unknown") +
+                        ". This indicates memory corruption or use-after-free.");
+                }
+            }
+
             boolean bufferIsEmpty = buffer == null || buffer.length() < 1;
 
 
             OpaqueNDArray ret = OpaqueNDArray.create(
-                    shapeInfo.opaqueBuffer(),
+                    shapeOpaqueBuffer,
                     bufferIsEmpty ? null : buffer.opaqueBuffer(),
                     bufferIsEmpty ? null : buffer.opaqueBuffer(),
                     offset()
@@ -6513,26 +6581,32 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public void clearOpaqueNDArray() {
-        // CRITICAL: Synchronize to prevent race condition with getOrCreateOpaqueNDArray().
-        // Without synchronization, getOrCreateOpaqueNDArray() could return a reference
-        // that we're about to clear, causing the caller to use an invalidated OpaqueNDArray.
         synchronized (opaqueNDArrayLock) {
-            // CRITICAL FIX: Do NOT call close() here!
-            // The OpaqueNDArray might still be in use by OpaqueNDArrayArr (e.g., during operation
-            // execution when setData() or setShapeInformation() is called on an input array).
-            // If we close() the OpaqueNDArray, its native pointer becomes null, causing
-            // "Input array at index X was null!" errors in native code.
-            //
-            // Instead, just clear our cache reference. The OpaqueNDArray will be cleaned up by
-            // DeallocatorService when all strong references are gone (including OpaqueNDArrayArr).
-            // The next call to getOrCreateOpaqueNDArray() will create a fresh OpaqueNDArray
-            // with the updated data/shape pointers.
-            //
-            // Note: This is safe because:
-            // 1. OpaqueNDArrayArr keeps parentArrays alive, which keeps data buffers valid
-            // 2. When OpaqueNDArrayArr is closed, it clears references and lets GC handle cleanup
-            // 3. DeallocatorService will delete the native sd::NDArray* when no refs remain
             opaqueNDArray = null;
+        }
+    }
+
+    /**
+     * Sets whether this INDArray can be closed/released.
+     *
+     * @param closeable true if this array can be closed, false to make it constant
+     */
+    @Override
+    public void setCloseable(boolean closeable) {
+        this.closeable = closeable;
+
+        if (!closeable) {
+            DataBuffer dataBuffer = data();
+            if (dataBuffer != null) {
+                // Mark the data buffer as constant to prevent deallocation
+                dataBuffer.setConstant(true);
+            }
+
+            // Also mark the shape info buffer as constant
+            DataBuffer shapeBuffer = shapeInfoDataBuffer();
+            if (shapeBuffer != null) {
+                shapeBuffer.setConstant(true);
+            }
         }
     }
 
@@ -6556,13 +6630,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                     .build());
         }
 
-        // CRITICAL ORDER: Close OpaqueNDArray BEFORE data buffer!
-        // The OpaqueNDArray holds native pointers to the data buffer.
-        // If we close data first, those pointers become dangling.
-        // NOTE: We close directly here instead of calling clearOpaqueNDArray() because
-        // the data buffer is about to be freed. clearOpaqueNDArray() just clears the
-        // reference (for use during data/shape changes), but here we must actually
-        // close the native array before the data buffer becomes invalid.
         synchronized (opaqueNDArrayLock) {
             if (opaqueNDArray != null) {
                 opaqueNDArray.close();
@@ -6610,20 +6677,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     public void assignNewId() {
         arrayId = arrayCounter.incrementAndGet();
-        // CRITICAL: Clear cached OpaqueNDArray when array is reused from cache.
-        // The old OpaqueNDArray may have been deallocated by DeallocatorService
-        // while the array was in the cache. Using a stale OpaqueNDArray that points
-        // to freed memory causes undefined behavior (NaN values, crashes).
-        // A fresh OpaqueNDArray will be created on demand via getOrCreateOpaqueNDArray().
         clearOpaqueNDArray();
     }
 
 
     public void setShapeInfoDataBuffer(DataBuffer shapeInformation) {
-        // CRITICAL: Clear cached OpaqueNDArray when shape info changes!
-        // The cached OpaqueNDArray holds native pointers to the old shape info memory.
-        // If we don't clear it, the native sd::NDArray* will have dangling pointers
-        // to the old shape info, causing SIGSEGV crashes when native code accesses it.
         clearOpaqueNDArray();
         this.shapeInfoDataBuffer = shapeInformation;
         this.jvmShapeInfo = new JvmShapeInfo(shapeInformation.asLong());

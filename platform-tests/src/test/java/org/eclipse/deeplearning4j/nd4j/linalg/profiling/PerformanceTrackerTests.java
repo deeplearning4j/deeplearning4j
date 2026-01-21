@@ -130,25 +130,6 @@ public class PerformanceTrackerTests extends BaseNd4jTestWithBackends {
         assertTrue(bw > 0);
     }
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled("useless these days")
-    public void testTrackerGpu_1(Nd4jBackend backend) {
-        if (!Nd4j.getExecutioner().getClass().getCanonicalName().toLowerCase().contains("cuda"))
-            return;
-
-        val fa = new float[100000000];
-        val array = Nd4j.create(fa, new int[]{10000, 10000});
-
-        val map = PerformanceTracker.getInstance().getCurrentBandwidth();
-
-        // getting H2D bandwidth for device 0
-        val bw = map.get(0).get(MemcpyDirection.HOST_TO_DEVICE);
-        log.info("H2D bandwidth: {}", map);
-
-        assertTrue(bw > 0);
-    }
-
     @Override
     public char ordering() {
         return 'c';

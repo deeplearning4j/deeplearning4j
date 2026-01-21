@@ -27,6 +27,7 @@ import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.primitives.Counter;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.Deallocatable;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.lang.ref.ReferenceQueue;
@@ -99,6 +100,113 @@ public class DeallocatorService {
     private  int numThreads =  Integer.parseInt(System.getProperty(ND4JSystemProperties.DEALLOCATOR_SERVICE_GC_THREADS,"1"));
 
     private final transient AtomicLong counter = new AtomicLong(0);
+
+    private final Set<Object> pendingConstants = Collections.synchronizedSet(
+        Collections.newSetFromMap(new IdentityHashMap<>()));
+
+    /**
+     * Registers an object as a "pending constant" - holding a strong reference to prevent
+     * GC from collecting it before setConstant(true) can be called.
+     *
+     * IMPORTANT: This method now IMMEDIATELY marks the buffer as constant when registering
+     * an INDArray. This narrows the race condition window between buffer allocation and
+     * constant flag setting. Without this, the following race can occur:
+     *
+     * 1. Native allocateDataBuffer() returns OpaqueDataBuffer
+     * 2. JavaCPP attaches NativeDeallocator
+     * 3. GC runs and finalizes buffer BEFORE registerPendingConstant() is called
+     * 4. registerPendingConstant() is called on already-freed buffer
+     *
+     * By marking constant immediately, we ensure that even if GC runs after this method
+     * is called, the buffer won't be deallocated (constant buffers are protected).
+     *
+     * @param object The array or buffer to protect from GC
+     * @return The same object, for chaining
+     */
+    public <T> T registerPendingConstant(T object) {
+        if (object != null) {
+            // Add to pending set FIRST to hold strong reference
+            pendingConstants.add(object);
+
+            // IMMEDIATELY mark as constant to narrow the race window
+            // This must happen ASAP after the strong reference is established
+            if (object instanceof INDArray) {
+                INDArray arr = (INDArray) object;
+                try {
+                    DataBuffer data = arr.data();
+                    if (data != null && !data.isConstant()) {
+                        data.setConstant(true);
+                    }
+                    DataBuffer shapeInfo = arr.shapeInfoDataBuffer();
+                    if (shapeInfo != null && !shapeInfo.isConstant()) {
+                        shapeInfo.setConstant(true);
+                    }
+                    arr.setCloseable(false);
+                } catch (IllegalStateException e) {
+                    // Buffer was already freed by GC - this is a race condition
+                    // Log for debugging but don't throw - caller will encounter error when using buffer
+                    log.warn("registerPendingConstant: Buffer already freed for array - race condition detected. " +
+                             "This may cause use-after-free errors downstream. Error: {}", e.getMessage());
+                }
+            } else if (object instanceof DataBuffer) {
+                DataBuffer buf = (DataBuffer) object;
+                try {
+                    if (!buf.isConstant()) {
+                        buf.setConstant(true);
+                    }
+                } catch (IllegalStateException e) {
+                    log.warn("registerPendingConstant: Buffer already freed - race condition detected. " +
+                             "Error: {}", e.getMessage());
+                }
+            }
+
+            if (log.isTraceEnabled()) {
+                log.trace("Registered pending constant: {} (total pending: {})",
+                        object.getClass().getSimpleName(), pendingConstants.size());
+            }
+        }
+        return object;
+    }
+
+    /**
+     * Releases an object from the "pending constants" set after setConstant(true) has been called.
+     *
+     * Once an array is marked as constant, it won't be deallocated by DeallocatorService anyway,
+     * so we can release the strong reference.
+     *
+     * @param object The array or buffer that was previously registered
+     */
+    public void releasePendingConstant(Object object) {
+        if (object != null) {
+            boolean removed = pendingConstants.remove(object);
+            if (log.isTraceEnabled() && removed) {
+                log.trace("Released pending constant: {} (remaining: {})",
+                        object.getClass().getSimpleName(), pendingConstants.size());
+            }
+        }
+    }
+
+    /**
+     * Returns the number of objects currently being held as pending constants.
+     * Useful for debugging memory issues.
+     *
+     * @return The count of pending constants
+     */
+    public int getPendingConstantCount() {
+        return pendingConstants.size();
+    }
+
+    /**
+     * Clears all pending constants. This should only be called during shutdown or testing.
+     * WARNING: Calling this while arrays are still being marked as constant can cause use-after-free!
+     */
+    public void clearPendingConstants() {
+        int count = pendingConstants.size();
+        pendingConstants.clear();
+        if (count > 0) {
+            log.info("Cleared {} pending constants", count);
+        }
+    }
 
     // Time-series tracking fields - only active when functrace is enabled
     private volatile boolean timeSeriesTrackingEnabled = false;
@@ -195,6 +303,12 @@ public class DeallocatorService {
     public DeallocatorService() {
         // we need to have at least 2 threads, but for CUDA we'd need at least numDevices threads, due to thread->device affinity
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+
+        // Ensure we have at least 1 device to prevent division by zero and empty deviceMap
+        if (numDevices < 1) {
+            log.warn("AffinityManager reported {} devices, defaulting to 1", numDevices);
+            numDevices = 1;
+        }
 
         for (int e = 0; e < numDevices; e++)
             deviceMap.add(new ArrayList<>());
@@ -312,11 +426,37 @@ public class DeallocatorService {
     public long pickObject(@NonNull Deallocatable deallocatable) {
         if(!noPointerGc) {
 
-            val desiredDevice = deallocatable.targetDevice();
-            val map = deviceMap.get(desiredDevice);
+            int desiredDevice = deallocatable.targetDevice();
 
+            // Safety check: ensure deviceMap is not empty and desiredDevice is in bounds
+            if (deviceMap.isEmpty()) {
+                log.error("DeallocatorService deviceMap is empty - cannot register buffer for deallocation");
+                throw new IllegalStateException("DeallocatorService has no devices initialized. " +
+                        "Ensure Nd4j is properly initialized before allocating buffers.");
+            }
 
-            val reference = new DeallocatableReference(deallocatable, map.get(RandomUtils.nextInt(0, numThreads)));
+            // Clamp device ID to valid range
+            if (desiredDevice < 0 || desiredDevice >= deviceMap.size()) {
+                log.trace("Device {} out of range [0, {}), falling back to device 0",
+                        desiredDevice, deviceMap.size());
+                desiredDevice = 0;
+            }
+
+            List<ReferenceQueue<Deallocatable>> queueList = deviceMap.get(desiredDevice);
+
+            // Safety check: if no queues for this device, fall back to device 0's queues
+            // This can happen when numDevices > numThreads
+            if (queueList.isEmpty()) {
+                // Fall back to device 0 which is guaranteed to have at least one queue
+                queueList = deviceMap.get(0);
+                if (queueList.isEmpty()) {
+                    log.error("No deallocator queues available - cannot register buffer for deallocation");
+                    throw new IllegalStateException("DeallocatorService has no queues initialized. " +
+                            "Ensure Nd4j is properly initialized before allocating buffers.");
+                }
+            }
+
+            val reference = new DeallocatableReference(deallocatable, queueList.get(RandomUtils.nextInt(0, queueList.size())));
             referenceMap.put(deallocatable.getUniqueId(), reference);
             return deallocatable.getUniqueId();
         }

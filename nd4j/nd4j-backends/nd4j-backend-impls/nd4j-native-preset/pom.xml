@@ -78,14 +78,12 @@
             <groupId>org.bytedeco</groupId>
             <artifactId>mkl</artifactId>
             <version>${mkl.version}-${javacpp-presets.version}</version>
-            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.bytedeco</groupId>
             <artifactId>mkl</artifactId>
             <version>${mkl.version}-${javacpp-presets.version}</version>
             <classifier>${dependency.platform}</classifier>
-            <optional>true</optional>
         </dependency>
         <!-- MKL redist - contains headers and additional libraries -->
         <dependency>
@@ -93,7 +91,6 @@
             <artifactId>mkl</artifactId>
             <version>${mkl.version}-${javacpp-presets.version}</version>
             <classifier>${dependency.platform}-redist</classifier>
-            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.eclipse.deeplearning4j</groupId>

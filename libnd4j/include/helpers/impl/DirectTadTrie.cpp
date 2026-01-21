@@ -35,8 +35,6 @@ std::shared_ptr<TadPack> DirectTadTrie::enhancedSearch(const std::vector<LongTyp
   const TadTrieNode* current = _roots[stripeIdx].get();
   int rank = shape::rank(originalShape);
 
-  // CRITICAL: First level is device ID to ensure device-aware caching
-  // TAD packs contain device-specific pointers that are only valid on the device where allocated
   int deviceId = AffinityManager::currentDeviceId();
   current = findChild(current, deviceId, 0, false, rank);
   if (!current) return nullptr;
@@ -76,9 +74,6 @@ size_t DirectTadTrie::computeStrideAwareHash(const std::vector<LongType>& dimens
 
   size_t hash = 17; // Prime number starting point
 
-  // CRITICAL: Include device ID in hash to make cache device-aware
-  // TAD packs contain device-specific pointers (specialShapeInfo, specialOffsets)
-  // that are only valid on the device where they were allocated
   int deviceId = AffinityManager::currentDeviceId();
   hash = hash * 53 + static_cast<size_t>(deviceId) * 59;
 
@@ -140,7 +135,6 @@ std::shared_ptr<TadPack> DirectTadTrie::search(const std::vector<LongType>& dime
   // No need for locking - caller handles locking (e.g., in getOrCreate)
   const TadTrieNode* current = _roots[stripeIdx].get();
 
-  // CRITICAL: First level is device ID to ensure device-aware caching
   int deviceId = AffinityManager::currentDeviceId();
   current = findChild(current, deviceId, 0, false, originalShapeRank);
   if (!current) return nullptr;
@@ -199,8 +193,6 @@ std::shared_ptr<TadPack> DirectTadTrie::insert(std::vector<LongType>& dimensions
   // No compatible TadPack found, create a new one
   TadTrieNode* current = _roots[stripeIdx].get();
 
-  // CRITICAL: First level is device ID to ensure device-aware caching
-  // TAD packs contain device-specific pointers that are only valid on the device where allocated
   int deviceId = AffinityManager::currentDeviceId();
   current = current->findOrCreateChild(deviceId, 0, false, rank);
   if (!current) {
@@ -304,10 +296,6 @@ static void deleteTadPacksRecursive(TadTrieNode* node, int& deletedCount) {
 }
 
 void DirectTadTrie::clear() {
-  // CRITICAL: Skip cleanup during shutdown to avoid SIGSEGV from corrupted memory
-  // During JVM/static destruction, memory allocators may have been destroyed,
-  // leaving corrupted pointers in the trie. Traversing the tree in this state
-  // causes crashes in deleteTadPacksRecursive.
   if (_shutdownInProgress.load(std::memory_order_acquire)) {
     return;  // Let the OS reclaim memory at exit - this is safe
   }

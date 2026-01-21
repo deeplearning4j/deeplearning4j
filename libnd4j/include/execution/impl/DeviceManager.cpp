@@ -621,6 +621,153 @@ void DeviceManager::updateAllMemoryStats() {
     }
 }
 
+bool DeviceManager::reserveMemory(int globalIndex, size_t bytes) {
+    std::lock_guard<std::mutex> lock(_mutex);
+
+    auto* device = findDevice(globalIndex);
+    if (device == nullptr || !device->available) {
+        return false;
+    }
+
+    updateMemoryStats(globalIndex);
+
+    size_t reserved = 0;
+    auto it = _reservedMemory.find(globalIndex);
+    if (it != _reservedMemory.end()) {
+        reserved = it->second;
+    }
+
+    if (bytes == 0) {
+        return true;
+    }
+
+    if (device->freeMemory < reserved + bytes) {
+        return false;
+    }
+
+    _reservedMemory[globalIndex] = reserved + bytes;
+    device->availableMemory = (device->freeMemory > _reservedMemory[globalIndex])
+        ? (device->freeMemory - _reservedMemory[globalIndex])
+        : 0;
+
+    return true;
+}
+
+void DeviceManager::releaseReservedMemory(int globalIndex, size_t bytes) {
+    std::lock_guard<std::mutex> lock(_mutex);
+
+    auto* device = findDevice(globalIndex);
+    if (device == nullptr) {
+        return;
+    }
+
+    auto it = _reservedMemory.find(globalIndex);
+    if (it == _reservedMemory.end()) {
+        device->availableMemory = device->freeMemory;
+        return;
+    }
+
+    if (bytes >= it->second) {
+        _reservedMemory.erase(it);
+        device->availableMemory = device->freeMemory;
+        return;
+    }
+
+    it->second -= bytes;
+    device->availableMemory = (device->freeMemory > it->second) ? (device->freeMemory - it->second) : 0;
+}
+
+std::vector<DeviceInfo> DeviceManager::findBestDevices(size_t requiredMemory, int count, bool preferP2P) {
+    if (count <= 0) {
+        return {};
+    }
+
+    if (!_initialized.load()) {
+        initialize();
+    }
+
+    std::lock_guard<std::mutex> lock(_mutex);
+    updateAllMemoryStats();
+
+    std::vector<DeviceInfo> candidates;
+    candidates.reserve(_devices.size());
+
+    for (const auto& device : _devices) {
+        if (!device.available || device.inUse) {
+            continue;
+        }
+
+        if (requiredMemory > 0 && device.availableMemory < requiredMemory) {
+            continue;
+        }
+
+        candidates.push_back(device);
+    }
+
+    if (candidates.empty()) {
+        return {};
+    }
+
+    std::sort(candidates.begin(), candidates.end(), [preferP2P](const DeviceInfo& a, const DeviceInfo& b) {
+        if (preferP2P && a.supportsP2P != b.supportsP2P) {
+            return a.supportsP2P > b.supportsP2P;
+        }
+        if (a.availableMemory != b.availableMemory) {
+            return a.availableMemory > b.availableMemory;
+        }
+        return a.globalIndex < b.globalIndex;
+    });
+
+    if (count >= static_cast<int>(candidates.size())) {
+        return candidates;
+    }
+
+    return std::vector<DeviceInfo>(candidates.begin(), candidates.begin() + count);
+}
+
+DeviceInfo DeviceManager::getBestGpu() const {
+    auto* self = const_cast<DeviceManager*>(this);
+    if (!self->_initialized.load()) {
+        self->initialize();
+    }
+
+    std::lock_guard<std::mutex> lock(_mutex);
+    self->updateAllMemoryStats();
+
+    bool found = false;
+    DeviceInfo best;
+
+    for (const auto& device : _devices) {
+        if (device.type != DeviceType::CUDA_GPU) {
+            continue;
+        }
+        if (!device.available || device.inUse) {
+            continue;
+        }
+
+        if (!found || device.availableMemory > best.availableMemory) {
+            best = device;
+            found = true;
+        }
+    }
+
+    if (found) {
+        return best;
+    }
+
+    for (const auto& device : _devices) {
+        if (device.type == DeviceType::CUDA_GPU) {
+            return device;
+        }
+    }
+
+    if (!_devices.empty()) {
+        return _devices.front();
+    }
+
+    return DeviceInfo{};
+}
+
 void DeviceManager::setCurrentDevice(int globalIndex) {
     if (globalIndex < 0 || globalIndex >= static_cast<int>(_devices.size())) {
         return;

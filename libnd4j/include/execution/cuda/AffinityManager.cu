@@ -21,42 +21,56 @@
 //
 #include <exceptions/cuda_exception.h>
 #include <execution/AffinityManager.h>
+#include <execution/ContextBuffers.h>
 #include <execution/LaunchContext.h>
 #include <helpers/logger.h>
 
 thread_local int globalThreadToDevice = -1;
 
+// Defined in LaunchContext.cu - thread-local context buffers
+extern thread_local sd::ContextBuffers contextBuffers;
+
 namespace sd {
+
 std::mutex AffinityManager::_currentMutex;
 std::mutex AffinityManager::_numberMutex;
 int AffinityManager::_numberOfDevices = -1;
+std::vector<int> AffinityManager::_availableDevices;
+
+/**
+ * Check if the given device ID represents the CPU.
+ * CPU is represented as device -1.
+ */
+bool isCpuDevice(int deviceId) {
+  return deviceId == CPU_DEVICE_ID;
+}
+
+/**
+ * Returns the CPU device ID constant.
+ */
+int getCpuDeviceId() {
+  return CPU_DEVICE_ID;
+}
 
 int AffinityManager::currentDeviceId() {
-  // if there's no affinity set - set it now
-  if (globalThreadToDevice < 0) {
-    // this block must be thread-local
-    _currentMutex.lock();
-
-    globalThreadToDevice = _lastDevice++;
-
-    // we need to check if we've got deviceId >= number of actual devices, and reset to zero otherwise
-    if (globalThreadToDevice >= numberOfDevices()) {
-      globalThreadToDevice = 0;
-      _lastDevice = numberOfDevices() > 1 ? 1 : 0;
-    }
-
-    _currentMutex.unlock();
-
-    setCurrentNativeDevice(globalThreadToDevice);
-  }
-
-  // if we already know affinity - just return it
-  if (globalThreadToDevice >= 0) return globalThreadToDevice;
+  // CRITICAL FIX: Always query CUDA for the current device and sync our thread-local state.
+  // This prevents race conditions where native code auto-assigns a device before Java
+  // has a chance to set it via setDevice(). Java controls thread-device affinity through
+  // CudaAffinityManager, and native code should respect whatever device Java has set.
+  //
+  // Previous behavior: Native code would auto-assign devices using its own round-robin,
+  // which could conflict with Java's assignment when multiple threads start simultaneously.
 
   int dev = 0;
   auto res = cudaGetDevice(&dev);
 
   if (res != 0) throw cuda_exception::build("cudaGetDevice failed", res);
+
+  // Sync thread-local cache with actual CUDA device
+  // This ensures subsequent calls return the correct device without CUDA API overhead
+  if (globalThreadToDevice != dev) {
+    globalThreadToDevice = dev;
+  }
 
   return dev;
 }
@@ -93,26 +107,46 @@ void AffinityManager::setCurrentNativeDevice(int deviceId) {
 
 void AffinityManager::setCurrentDevice(int deviceId) {
   auto previousDeviceId = globalThreadToDevice;
-  if (previousDeviceId >= 0 && LaunchContext::isInitialized()) {
-    auto res = cudaStreamSynchronize(*LaunchContext::defaultContext()->getCudaStream());
-    if (res != 0) throw cuda_exception::build("setCurrentDevice -> sync failed", res);
 
-    res = cudaStreamSynchronize(*LaunchContext::defaultContext()->getCudaSpecialStream());
-    if (res != 0) throw cuda_exception::build("setCurrentDevice -> specialSync failed", res);
+  // Check if context buffers need to be released due to device mismatch.
+  // This handles two cases:
+  // 1. Thread switching from one device to another (previousDeviceId >= 0 and different)
+  // 2. NEW threads where context was lazily initialized for wrong device (previousDeviceId == -1)
+  if (LaunchContext::isInitialized()) {
+    int contextDeviceId = contextBuffers.deviceId();
 
-    if (deviceId != previousDeviceId) {
-      // discard existing stuff
+    // Determine if we need to release and reinitialize
+    bool needsRelease = false;
+    if (previousDeviceId >= 0 && deviceId != previousDeviceId) {
+      // Case 1: Explicit device switch
+      needsRelease = true;
+    } else if (contextDeviceId >= 0 && contextDeviceId != deviceId) {
+      // Case 2: Context was initialized for wrong device
+      needsRelease = true;
+    }
+
+    if (needsRelease) {
+      // Release will handle device switching internally to properly sync streams
       LaunchContext::releaseBuffers();
     }
   }
 
-  if (deviceId != previousDeviceId) {
-    auto res = cudaSetDevice(deviceId);
-    if (res != 0) throw cuda_exception::build("cudaSetDevice failed", res);
-  }
+  // Switch to target device
+  auto res = cudaSetDevice(deviceId);
+  if (res != 0) throw cuda_exception::build("cudaSetDevice failed", res);
 
   // update thread-device affinity
   globalThreadToDevice = deviceId;
+}
+
+void AffinityManager::syncThreadDeviceId(int deviceId) {
+  // Sync the thread-local device ID with the specified device
+  globalThreadToDevice = deviceId;
+}
+
+void AffinityManager::setAvailableDevices(const std::vector<int> &devices) {
+  // For CUDA, this can be used to restrict which devices are available
+  // Currently a no-op but could be extended to filter device selection
 }
 
 std::atomic<int> AffinityManager::_lastDevice;  // = std::atomic<int>(initialV);

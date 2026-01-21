@@ -114,15 +114,16 @@ __global__ static void splitCuda(const void* vx, const LongType* xShapeInfo, voi
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-SD_HOST static void splitCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t* stream,
+SD_HOST static void splitCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
+                                      const cudaStream_t* stream,
                                       const void* vx, const LongType* xShapeInfo, void* pVz,
                                       const LongType* zTadShapeInfo, const LongType axis) {
-  splitCuda<T><<<blocksPerGrid, threadsPerBlock, 256, *stream>>>(vx, xShapeInfo, pVz, zTadShapeInfo, axis);
+  splitCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, pVz, zTadShapeInfo, axis);
   sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "splitCuda failed");
 
 }
 BUILD_SINGLE_TEMPLATE( void splitCudaLauncher,
-                      (const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t* stream, const void* vx,
+                      (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t* stream, const void* vx,
                        const sd::LongType* xShapeInfo, void* pVz, const sd::LongType* zTadShapeInfo, const sd::LongType axis),
                       SD_COMMON_TYPES);
 
@@ -131,8 +132,8 @@ void split(LaunchContext* context, NDArray& input, std::vector<NDArray*>& outArr
   const int numOfSubArrs = outArrs.size();
   const auto sizeofT = input.sizeOfT();
 
-  for (int i = 0; i < numOfSubArrs; ++i) outArrs[i]->syncToDevice();
-  input.syncToDevice();
+  // Prepare input and outputs for device access
+  NDArray::prepareSpecialUse(outArrs, {&input});
 
   bool luckCase1 = false;
 
@@ -158,8 +159,8 @@ void split(LaunchContext* context, NDArray& input, std::vector<NDArray*>& outArr
     if (cudaStreamSynchronize(*context->getCudaStream()) != 0)
       THROW_EXCEPTION("split cuda: luckCase1 failed!");
 
-    for (int i = 0; i < numOfSubArrs; ++i) outArrs[i]->tickWriteDevice();
-    input.tickReadDevice();
+    // Register that outputs were written on device
+    NDArray::registerSpecialUse(outArrs, {&input});
 
     return;
   }
@@ -168,6 +169,8 @@ void split(LaunchContext* context, NDArray& input, std::vector<NDArray*>& outArr
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   const int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+  // Calculate shared memory: each thread needs rank * sizeof(LongType) bytes for coordinates
+  const int sharedMem = threadsPerBlock * input.rankOf() * sizeof(LongType);
 
   // prepare arrays of pointers on buffers and shapes
   std::vector<void*> hOutBuffers(numOfSubArrs);
@@ -179,15 +182,14 @@ void split(LaunchContext* context, NDArray& input, std::vector<NDArray*>& outArr
   void* dOutBuffers = manager.replicatePointer(hOutBuffers.data(), hOutBuffers.size() * sizeof(void*));
 
   BUILD_SINGLE_SELECTOR(input.dataType(), splitCudaLauncher,
-                        (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input.specialBuffer(),
+                        (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.specialBuffer(),
                          input.specialShapeInfo(), dOutBuffers, outArrs[0]->specialShapeInfo(), axis),
                         SD_COMMON_TYPES);
 
   manager.synchronize();
-  // }
 
-  for (int i = 0; i < numOfSubArrs; ++i) outArrs[i]->tickWriteDevice();
-  input.tickReadDevice();
+  // Register that outputs were written on device
+  NDArray::registerSpecialUse(outArrs, {&input});
 }
 
 }  // namespace helpers

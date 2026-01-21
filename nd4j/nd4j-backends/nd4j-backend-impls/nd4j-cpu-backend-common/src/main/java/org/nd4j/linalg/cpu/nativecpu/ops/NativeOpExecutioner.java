@@ -59,6 +59,7 @@ import org.nd4j.linalg.cpu.nativecpu.buffer.BaseCpuDataBuffer;
 import org.nd4j.linalg.cpu.nativecpu.buffer.LongBuffer;
 import org.nd4j.linalg.cpu.nativecpu.rng.CpuNativeRandom;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.exception.ND4JOpExceptionUtils;
 import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOps;
@@ -89,7 +90,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      * This is the normal path when CPU is the primary backend.
      */
     public NativeOpExecutioner() {
-        this(getNativeOps(), false);
+        this(Nd4j.getNativeOps(), false);
     }
 
     /**
@@ -187,7 +188,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
 
-        val dimension = Shape.normalizeAxis(x.rank(), op.dimensions().toLongVector());
+        INDArray dimArray = op.dimensions();
+        long[] dimLong = null;
+        if (dimArray != null && dimArray.data() != null) {
+            dimLong = dimArray.toLongVector();
+        }
+        val dimension = Shape.normalizeAxis(x.rank(), dimLong);
 
         if (x.isEmpty()) {
             for (val d:dimension) {
@@ -232,7 +238,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     getPointerForExtraArgs(op,x.dataType()),
                     zb);
         } else {
-            OpaqueNDArray fromDims = OpaqueNDArray.fromINDArray(op.dimensions());
+            // Use dimArray which was validated earlier (null check on data buffer)
+            // If dimArray had null data, we use the normalized dimension array instead
+            INDArray dimsToUse = (dimArray != null && dimArray.data() != null) ? dimArray : Nd4j.createFromArray(dimension);
+            OpaqueNDArray fromDims = OpaqueNDArray.fromINDArray(dimsToUse);
             getNativeOps().execIndexReduce(dummy,op.opNum(),xb,zb,fromDims, null);
         }
 
@@ -297,7 +306,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
         }
 
-        val dimension = Shape.normalizeAxis(x.rank(), op.dimensions() != null ?  op.dimensions().toLongVector() : null);
+        INDArray dimArray = op.dimensions();
+        long[] dimLong = null;
+        if (dimArray != null && dimArray.data() != null) {
+            dimLong = dimArray.toLongVector();
+        }
+        val dimension = Shape.normalizeAxis(x.rank(), dimLong);
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
 
@@ -305,16 +319,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         long[] retShape = Shape.reductionShape(x, dimension, true, keepDims);
 
 
-        if (x.isVector() && x.length() == ArrayUtil.prod(retShape) && ArrayUtil.prodLong(retShape) > 1 && y == null) {
-            profilingConfigurableHookOut(op, oc, st);
-            // Periodic TAD cache cleanup to prevent memory leaks
-            getNativeOps().checkAndCleanupCaches();
-            // When using OpContext, op.x() may be null so set it before calling noOp()
-            if (op.x() == null) {
-                op.setX(x);
-            }
-            return op.noOp();
-        }
+        // REMOVED: The noOp optimization was too fragile and caused bugs when:
+        // 1. Sentinel values (MAX_VALUE, -1) weren't consistently recognized
+        // 2. Whole-array reductions were incorrectly short-circuited
+        // The actual reduction kernels handle all cases correctly, so let them do the work.
 
         /**
          * This is the result array.
@@ -442,11 +450,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         } else {
             if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
-            // CRITICAL FIX: For reduce operations, use the normalized dimension array.
-            // op.dimensions() may return an empty array for reduce-all operations,
-            // which has isEmpty()=true and data()=null. We need to use the normalized
-            // dimension array which contains {-1} for reduce-all.
-            // Create a proper INDArray from the dimension long[] to pass to native code.
             INDArray dimsArray = Nd4j.createFromArray(dimension);
             OpaqueNDArray dims = OpaqueNDArray.fromINDArray(dimsArray);
 
@@ -525,8 +528,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         INDArray x = getX(op, oc);
         INDArray y = getY(op, oc);
         INDArray z = getZ(op, oc);
-        val dimension = op.dimensions().toLongVector();
 
+        INDArray dimArray = op.dimensions();
+        long[] dimension;
+        if (dimArray != null && dimArray.data() != null) {
+            dimension = dimArray.toLongVector();
+        } else {
+            dimension = new long[0]; // Empty means reduce all
+        }
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
@@ -534,6 +543,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val xb = OpaqueNDArray.fromINDArray(x);
         val yb = OpaqueNDArray.fromINDArray(y);
         val zb = OpaqueNDArray.fromINDArray(z);
+
+        // Use validated dimension array for native calls
+        INDArray dimsToUse = (dimArray != null && dimArray.data() != null) ? dimArray : Nd4j.createFromArray(dimension);
+        OpaqueNDArray fromDims = OpaqueNDArray.fromINDArray(dimsToUse);
+
         switch (op.getOpType()) {
             case SCALAR:
                 getNativeOps().execScalarTad(null, op.opNum(),
@@ -541,7 +555,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         zb,
                         yb,
                         getPointerForExtraArgs(op, x.dataType()),
-                        OpaqueNDArray.fromINDArray(op.dimensions())
+                        fromDims
                 );
                 break;
             case SCALAR_BOOL:
@@ -550,7 +564,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         zb,
                         yb,
                         getPointerForExtraArgs(op, x.dataType()),
-                        OpaqueNDArray.fromINDArray(op.dimensions())
+                        fromDims
                 );
                 break;
             default:
@@ -1039,8 +1053,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     public INDArray createFromDescriptor(DataBuffer shapeInformation) {
         NDArray ndArray = new NDArray();
         ndArray.setShapeInfoDataBuffer(shapeInformation);
-        DataType dt = Shape.dataType(ndArray.shapeInfoJava());
-        DataBuffer buff = Nd4j.createBuffer(dt,ndArray.length(),false);
+        long[] shapeInfo = ndArray.shapeInfoJava();
+        DataType dt = Shape.dataType(shapeInfo);
+        // Compute length directly from shape info, not from array.length()
+        // because isEmpty() returns true when data buffer is null
+        long length = Shape.isEmpty(shapeInfo) ? 0 : Shape.length(shapeInfo);
+        DataBuffer buff = Nd4j.createBuffer(dt, length, false);
         ndArray.setData(buff);
         return ndArray;
     }
@@ -1078,10 +1096,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             return result;
         } catch (ND4JOpProfilerException e) {
-
             throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Op [" + name + "] execution failed", e);
+            throw ND4JOpExceptionUtils.opExecutionException(op, null, e);
         } finally {
             // Clear allocation context after op execution
             getNativeOps().clearAllocationContext();
@@ -1226,6 +1243,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val result = Nd4j.createBuffer(getNativeOps().getConstantShapeBufferPrimary(dbf),
                 Shape.shapeInfoLength(shape.length),DataType.INT64);
 
+        result.setConstant(true);
+
         return result;
     }
 
@@ -1244,6 +1263,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         val result = new LongBuffer(getNativeOps().getConstantShapeBufferPrimary(dbf), Shape.shapeInfoLength(shape.length));
 
+        result.setConstant(true);
+
         return result;
     }
 
@@ -1261,6 +1282,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             val tadShape = new LongBuffer(getNativeOps().getPrimaryShapeInfo(pack), getNativeOps().getShapeInfoLength(pack));
             val tadOffsets = new LongBuffer(getNativeOps().getPrimaryOffsets(pack), getNativeOps().getNumberOfTads(pack));
+
+            tadShape.setConstant(true);
+            tadOffsets.setConstant(true);
+
             return new TadPack(tadShape, tadOffsets);
         }catch(Exception e) {
             throw new RuntimeException(e);

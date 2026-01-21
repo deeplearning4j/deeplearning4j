@@ -71,7 +71,12 @@ public class DirectShapeInfoProvider extends BaseShapeInfoProvider {
                         return longCache.get(descriptor);
                 }
             } else {
-                return super.createShapeInformation(shape, stride, elementWiseStride, order, extras);
+                // Cache is full, but we MUST still mark shape buffers as constant!
+                // Without this, the DeallocatorService will free the shape buffer while
+                // NDArrays are still using it, causing use-after-free crashes.
+                Pair<DataBuffer, long[]> buffer = super.createShapeInformation(shape, stride, elementWiseStride, order, extras);
+                buffer.getFirst().setConstant(true);
+                return buffer;
             }
         }
 

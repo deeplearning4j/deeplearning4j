@@ -1164,9 +1164,14 @@ start_oom_monitor() {
                 print_colored "cyan" "  3. Increase swap/page file size"
                 print_colored "cyan" "  4. Close other memory-intensive applications"
                 print_colored "cyan" "  5. Increase thresholds: --oom-memory-threshold 95 --oom-process-max-mb 16384"
+                print_colored "yellow" ""
+                print_colored "yellow" "CMAKE BUILD CONFIGURATION OPTIONS:"
+                print_colored "cyan" "  6. Reduce type instantiation chunk size:"
+                print_colored "cyan" "     Edit cmake/TemplateProcessing.cmake: set(_chunk_target 2)"
+                print_colored "cyan" "  7. Reduce CUDA architectures: -DCMAKE_CUDA_ARCHITECTURES=\"86\""
                 if [[ "$platform" == "windows" ]]; then
-                    print_colored "cyan" "  6. Windows: Check Task Manager for memory-heavy processes"
-                    print_colored "cyan" "  7. Windows: Increase virtual memory in System Properties"
+                    print_colored "cyan" "  8. Windows: Check Task Manager for memory-heavy processes"
+                    print_colored "cyan" "  9. Windows: Increase virtual memory in System Properties"
                 fi
                 print_colored "yellow" ""
 
@@ -2199,6 +2204,19 @@ fi
 SOURCE_PATH="$DIR"
 BUILD_DIR="$DIR/blasbuild/$CHIP"
 
+# =============================================================================
+# TMPDIR Configuration - Use build directory instead of /tmp (tmpfs)
+# NVCC and GCC create large temporary files during compilation. By using
+# a directory under the build tree, we use disk storage instead of RAM.
+# This prevents /tmp from filling up during large CUDA/functrace builds.
+# =============================================================================
+COMPILER_TMPDIR="$BUILD_DIR/compiler_tmp"
+mkdir -p "$COMPILER_TMPDIR"
+export TMPDIR="$COMPILER_TMPDIR"
+export TMP="$COMPILER_TMPDIR"
+export TEMP="$COMPILER_TMPDIR"
+print_colored "cyan" "📁 Compiler temp directory: $COMPILER_TMPDIR"
+
 export CMAKE_COMMAND="$CMAKE_COMMAND -DSD_SANITIZE=$SANITIZE -DSD_SANITIZERS=$SANITIZERS"
 
 if [ "$CHIP_EXTENSION" == "avx512" ] || [ "$ARCH" == "avx512" ]; then
@@ -2251,6 +2269,9 @@ elif [ "$CHIP" == "cuda" ]; then
     BLAS_ARG="-DSD_CUDA=true -DBLAS=TRUE"
 elif [ "$CHIP" == "tpu" ]; then
     BLAS_ARG="-DSD_TPU=true -DBLAS=TRUE"
+else
+    # Handle CUDA version numbers like "12.9" - treat as CUDA build
+    BLAS_ARG="-DSD_CUDA=true -DBLAS=TRUE"
 fi
 
 if [ -z "$NAME" ]; then
@@ -2262,6 +2283,9 @@ if [ -z "$NAME" ]; then
         NAME="nd4jaurora"
     elif [ "$CHIP" == "tpu" ]; then
         NAME="nd4jtpu"
+    else
+        # Handle CUDA version numbers like "12.9" - treat as CUDA build
+        NAME="nd4jcuda"
     fi
 fi
 

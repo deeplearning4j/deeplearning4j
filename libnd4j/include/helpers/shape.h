@@ -528,8 +528,9 @@ SD_INLINE SD_HOST SD_LIB_EXPORT sd::LongType tensorsAlongDimension(const sd::Lon
 
   const sd::LongType rank = shape::rank(shapeInfo);
 
-  // Single tensor case
-  if (dimensionLength >= rank || (dimensionLength == 1 && dimensions[0] == SD_MAX_INT))
+  // Single tensor case - check for -1 or SD_MAX_INT sentinel (means "reduce all dimensions")
+  // -1 is the standard sentinel, SD_MAX_INT (Integer.MAX_VALUE) is deprecated but still supported
+  if (dimensionLength >= rank || (dimensionLength == 1 && (dimensions[0] == -1 || dimensions[0] == SD_MAX_INT)))
     return 1;
 
   // Handle negative dimensions
@@ -1995,7 +1996,11 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType elementWiseStride(const sd::
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE int isScalar(const sd::LongType *info) {
   if (isEmptyConst(info)) return 0;
   const sd::LongType rank = shape::rank(info);
-  if (rank == 0 || shape::length(info) == 0 && !shape::isEmptyConst(info)) return 1;
+  // A scalar is rank 0 only. Arrays with length 0 are empty, not scalars.
+  // Scalars have exactly 1 element.
+  if (rank == 0) return 1;
+  // Also check for length 0 - these are empty arrays, not scalars
+  if (shape::length(info) == 0) return 0;
   return 0;
 }
 

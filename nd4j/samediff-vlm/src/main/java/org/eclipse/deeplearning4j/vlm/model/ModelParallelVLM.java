@@ -165,7 +165,7 @@ public class ModelParallelVLM implements AutoCloseable {
 
         // Create preprocessor with vision encoder device
         this.imagePreprocessor = VLMImagePreprocessor.forDevice(
-                loaded.getPreprocessorConfig(),
+                loaded.getImagePreprocessor().getConfig(),
                 this.visionEncoderDevice);
 
         // Configure execution

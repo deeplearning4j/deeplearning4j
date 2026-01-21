@@ -297,6 +297,20 @@ public class CudaMemoryManager extends BasicMemoryManager {
 
     @Override
     public void releaseCurrentContext() {
-        throw new UnsupportedOperationException("Not implemented yet");
+        // Synchronize the device to ensure all pending operations complete
+        try {
+            val context = AtomicAllocator.getInstance().getDeviceContext();
+            if (context != null) {
+                // Sync both streams to ensure all operations complete
+                if (context.getOldStream() != null) {
+                    context.getOldStream().synchronize();
+                }
+                if (context.getSpecialStream() != null) {
+                    context.getSpecialStream().synchronize();
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Error during context release synchronization: {}", e.getMessage());
+        }
     }
 }

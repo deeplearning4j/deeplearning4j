@@ -49,12 +49,14 @@ public class MultiBackendContext implements AutoCloseable {
     private final DeviceDescriptor preferredDevice;
     private final RoutingPolicy routingPolicy;
     private final boolean syncOnClose;
+    private final boolean autoPin;
     private final MultiBackendContext previousContext;
 
     private MultiBackendContext(Builder builder) {
         this.preferredDevice = builder.preferredDevice;
         this.routingPolicy = builder.routingPolicy;
         this.syncOnClose = builder.syncOnClose;
+        this.autoPin = builder.autoPin;
         this.previousContext = current();
 
         // Push this context onto the stack
@@ -77,6 +79,15 @@ public class MultiBackendContext implements AutoCloseable {
     public static DeviceDescriptor currentDevice() {
         MultiBackendContext ctx = current();
         return ctx != null ? ctx.getPreferredDevice() : null;
+    }
+
+    /**
+     * Get the preferred device for auto-pinning within the current context.
+     * @return the device to auto-pin to, or null if not enabled
+     */
+    public static DeviceDescriptor currentAutoPinDevice() {
+        MultiBackendContext ctx = current();
+        return (ctx != null && ctx.isAutoPin()) ? ctx.getPreferredDevice() : null;
     }
 
     /**
@@ -110,6 +121,14 @@ public class MultiBackendContext implements AutoCloseable {
      */
     public boolean isSyncOnClose() {
         return syncOnClose;
+    }
+
+    /**
+     * Check if new arrays should be auto-pinned to the preferred device.
+     * @return true if auto-pin is enabled
+     */
+    public boolean isAutoPin() {
+        return autoPin;
     }
 
     @Override
@@ -165,7 +184,7 @@ public class MultiBackendContext implements AutoCloseable {
      * @return the result
      */
     public static <T> T withDevice(DeviceDescriptor device, Supplier<T> supplier) {
-        try (MultiBackendContext ctx = builder().device(device).build()) {
+        try (MultiBackendContext ctx = builder().device(device).autoPin(true).build()) {
             return supplier.get();
         }
     }
@@ -176,7 +195,7 @@ public class MultiBackendContext implements AutoCloseable {
      * @param runnable the code to execute
      */
     public static void withDevice(DeviceDescriptor device, Runnable runnable) {
-        try (MultiBackendContext ctx = builder().device(device).build()) {
+        try (MultiBackendContext ctx = builder().device(device).autoPin(true).build()) {
             runnable.run();
         }
     }
@@ -212,6 +231,7 @@ public class MultiBackendContext implements AutoCloseable {
         private DeviceDescriptor preferredDevice;
         private RoutingPolicy routingPolicy;
         private boolean syncOnClose = false;
+        private boolean autoPin = false;
 
         /**
          * Set the preferred device
@@ -249,6 +269,24 @@ public class MultiBackendContext implements AutoCloseable {
          */
         public Builder syncOnClose(boolean sync) {
             this.syncOnClose = sync;
+            return this;
+        }
+
+        /**
+         * Enable auto-pinning of new arrays to the preferred device.
+         * @return this builder
+         */
+        public Builder autoPin() {
+            return autoPin(true);
+        }
+
+        /**
+         * Set auto-pinning behavior for new arrays.
+         * @param autoPin whether to auto-pin
+         * @return this builder
+         */
+        public Builder autoPin(boolean autoPin) {
+            this.autoPin = autoPin;
             return this;
         }
 

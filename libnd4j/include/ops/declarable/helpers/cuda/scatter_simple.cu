@@ -107,21 +107,29 @@ static SD_KERNEL void scatterSimpleKernel(void* vx, const LongType* xTadShape, c
 template <typename X, typename Y>
 void scatterSimple_(LaunchContext* context, const int opId, NDArray& input, NDArray& updates,
                     NDArray& indices, const std::vector<LongType>& dimensions) {
-  auto dims = ShapeUtils::evalDimsToExclude(input.rankOf(),dimensions.size(),dimensions.data());
-  auto packX = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dims);
+  // dimensions parameter contains dims_to_exclude (dimensions NOT part of the TAD)
+  // We need to convert to dims_to_use for tadForDimensions
+  auto dimsToUse = ShapeUtils::evalDimsToExclude(input.rankOf(), dimensions.size(), dimensions.data());
+  auto packX = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dimsToUse);
 
   auto xLength = shape::length(packX->primaryShapeInfo());
   auto iLength = indices.lengthOf();
   auto uLength = updates.lengthOf();
+  auto numTads = packX->numberOfTads();
+
+  // Verify TAD count matches indices length to prevent out-of-bounds access
+  if (numTads != iLength) {
+    sd_printf("scatterSimple: TAD count mismatch! numTads=%lld, iLength=%lld\n", (long long)numTads, (long long)iLength);
+  }
 
   dim3 launchDims = getLaunchDims("scatter_simple");
   scatterSimpleKernel<X, Y><<<launchDims.y, launchDims.x, launchDims.z, *context->getCudaStream()>>>(
-      input.specialBuffer(), packX->platformShapeInfo(), packX->platformOffsets(), xLength, packX->numberOfTads(),
+      input.specialBuffer(), packX->platformShapeInfo(), packX->platformOffsets(), xLength, numTads,
       indices.specialBuffer(), indices.specialShapeInfo(), iLength, updates.specialBuffer(), updates.specialShapeInfo(),
       uLength);
   sd::DebugHelper::checkErrorCode(context->getCudaStream(), "scatterUpdateCuda failed");
 
-
+  delete dimsToUse;
 }
 
 void scatterSimple(LaunchContext* context, const int opId, NDArray& input, NDArray& updates,

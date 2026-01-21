@@ -120,9 +120,10 @@ public class NativeOpsHolder {
                //   Nd4j.clearTADCache() and Nd4j.clearShapeCache() directly.
                Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                    try {
-                       // Set the shutdown flag - this makes clearTADCache() safe to call
-                       // (it will return early without traversing potentially corrupted memory)
+                       // Set the shutdown flags - this makes clearTADCache() and clearShapeCache()
+                       // safe to call (they will return early without traversing potentially corrupted memory)
                        deviceNativeOps.setTADCacheShutdownInProgress(true);
+                       deviceNativeOps.setShapeCacheShutdownInProgress(true);
                    } catch (Throwable t) {
                        // Ignore errors during shutdown - we're just trying to be safe
                    }

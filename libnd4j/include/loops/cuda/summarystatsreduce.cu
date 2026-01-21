@@ -49,7 +49,7 @@ SD_KERNEL SD_INLINE void summaryStatsReduceKernel(
 
   SummaryStatsReduce<X, Z>::transform(
       op, dx, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength,
-      postProcessOrNot, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
+      postProcessOrNot, biasCorrected, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
 }
 
 /**
@@ -115,7 +115,7 @@ template <typename OpType>
 SD_DEVICE void SummaryStatsReduce<X, Z>::transform(void * vx, sd::LongType * xShapeInfo, void* vextraParams,
                                                    void* vz, sd::LongType * zShapeInfo, sd::LongType* dimension,
                                                    sd::LongType dimensionLength, int postProcessOrNot,
-                                                   sd::LongType* allocationBuffer,
+                                                   bool biasCorrected, sd::LongType* allocationBuffer,
                                                    void* vreductionBuffer, sd::LongType * tadOnlyShapeInfo,
                                                    sd::LongType * tadOffsets) {
   auto dx = static_cast<X *>(vx);
@@ -215,7 +215,7 @@ SD_DEVICE void SummaryStatsReduce<X, Z>::transform(void * vx, sd::LongType * xSh
 
       __syncthreads();
       if (threadIdx.x == 0) {
-        z[r] = OpType::getValue(postProcessOrNot, sPartials[threadIdx.x]);
+        z[r] = OpType::getValue(biasCorrected, sPartials[threadIdx.x]);
       }
       __syncthreads();
     }
@@ -279,14 +279,14 @@ SD_DEVICE void SummaryStatsReduce<X, Z>::transform(void * vx, sd::LongType * xSh
         __syncthreads();
 
         if (tid == 0) {
-          z[0] = OpType::getValue(postProcessOrNot, sPartials[0]);
+          z[0] = OpType::getValue(biasCorrected, sPartials[0]);
         }
       }
     } else {
       if (tid == 0) {
         unsigned int* tc = (unsigned*)reductionBuffer;
         tc[16384] = 0;
-        z[0] = OpType::getValue(postProcessOrNot, sPartials[0]);
+        z[0] = OpType::getValue(biasCorrected, sPartials[0]);
       }
     }
   }
@@ -295,12 +295,13 @@ SD_DEVICE void SummaryStatsReduce<X, Z>::transform(void * vx, sd::LongType * xSh
 template <typename X, typename Z>
 SD_DEVICE void SummaryStatsReduce<X, Z>::transform( int opNum, void * dx, sd::LongType * xShapeInfo,
                                                    void* extraParams, void* z, sd::LongType * zShapeInfo,
-                                                   sd::LongType* dimension, sd::LongType dimensionLength, int postProcessOrNot, sd::LongType* allocationBuffer, void* reductionBuffer,
+                                                   sd::LongType* dimension, sd::LongType dimensionLength, int postProcessOrNot,
+                                                   bool biasCorrected, sd::LongType* allocationBuffer, void* reductionBuffer,
                                                    sd::LongType * tadOnlyShapeInfo,
                                                    sd::LongType * tadOffsets) {
   DISPATCH_BY_OPNUM_TT(transform,
                        PARAMS(dx, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, postProcessOrNot,
-                              allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets),
+                              biasCorrected, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets),
                        SUMMARY_STATS_OPS);
 }
 

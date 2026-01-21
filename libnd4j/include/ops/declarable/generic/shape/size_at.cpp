@@ -37,10 +37,9 @@ CUSTOM_OP_IMPL(size_at, 1, 1, false, 0, 1) {
 
   REQUIRE_TRUE(dim < rank, 0, "Size_At: Dim can't be higher then input rank")
 
-  // Direct buffer write - output is always INT64 scalar
-  const sd::LongType* inputShape = shape::shapeOf(input->shapeInfo());
-  auto outBuff = output->bufferAsT<sd::LongType>();
-  outBuff[0] = inputShape[dim];
+  // Get the size at the specified dimension and write to output
+  // Use p() method which handles host/device sync properly
+  output->p(0, input->sizeAt(dim));
 
   return Status::OK;
 }

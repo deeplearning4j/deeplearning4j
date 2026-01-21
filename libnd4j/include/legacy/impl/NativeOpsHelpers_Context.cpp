@@ -51,7 +51,6 @@
 #include <io.h>
 #endif
 #include <errno.h>
-#include <ops/declarable/CustomOperations.h>
 #include <sys/types.h>
 
 
@@ -401,6 +400,13 @@ OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType
 #endif
         THROW_EXCEPTION(errorMessage.c_str());
       }
+      // IMPORTANT: Force sync all input arrays to host before shape calculation.
+      // Shape functions may read scalar values from inputs (e.g., create, concat axis).
+      // Use forceSyncToHost() to bypass counter-based checks and always sync from device.
+      // This is necessary because counter tracking can be unreliable when arrays flow
+      // between ops that write to host vs device, especially after execCustomOp2 calls
+      // tickWriteDevice() on all outputs regardless of where the op actually wrote.
+      context->array(e)->forceSyncToHost();
       inShapes.push_back(context->array(e)->shapeInfo());
     }
 
@@ -439,6 +445,13 @@ OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType
       safeSetErrorContext(1, errorMessage.c_str());
       return nullptr;
     }
+    // IMPORTANT: Force sync all input arrays to host before shape calculation.
+    // Shape functions may read scalar values from inputs (e.g., create, concat axis).
+    // Use forceSyncToHost() to bypass counter-based checks and always sync from device.
+    // This is necessary because counter tracking can be unreliable when arrays flow
+    // between ops that write to host vs device, especially after execCustomOp2 calls
+    // tickWriteDevice() on all outputs regardless of where the op actually wrote.
+    context->array(e)->forceSyncToHost();
     inShapes.push_back(context->array(e)->shapeInfo());
   }
 

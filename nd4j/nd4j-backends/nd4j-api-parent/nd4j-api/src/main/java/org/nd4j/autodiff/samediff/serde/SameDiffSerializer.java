@@ -48,6 +48,9 @@ import org.nd4j.linalg.exception.ND4JUnknownDataTypeException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.GradientUpdater;
+import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.nativeblas.OpaqueDataBuffer;
 import org.nd4j.shade.guava.primitives.Ints; // Use shaded Guava
 
 import java.io.*;
@@ -504,6 +507,119 @@ public class SameDiffSerializer {
             // Loading a single file means creating a new SameDiff instance.
             return loadInternal(modelFile, loadUpdaterState,null);
         }
+    }
+
+    /**
+     * Loads a SameDiff model with intelligent background transfer monitoring.
+     * This overload uses ModelLoadingContext for optimized model loading:
+     * <ul>
+     *   <li>Pre-analyzes model size from manifest</li>
+     *   <li>Selects optimal target device (GPU/CPU) based on available memory</li>
+     *   <li>Schedules background async transfers for better performance</li>
+     *   <li>Logs transfer metrics and statistics</li>
+     * </ul>
+     *
+     * @param modelFile        Path to the base model file.
+     * @param loadUpdaterState If true, attempt to load updater state.
+     * @param context          The ModelLoadingContext for optimized loading and transfer monitoring.
+     * @return The loaded SameDiff instance.
+     * @throws IOException If loading fails or the format is inconsistent.
+     */
+    public static SameDiff load(@NonNull File modelFile, boolean loadUpdaterState, @NonNull ModelLoadingContext context) throws IOException {
+        Preconditions.checkNotNull(modelFile, "Model file path cannot be null.");
+        Preconditions.checkNotNull(context, "ModelLoadingContext cannot be null.");
+
+        log.info("Loading model with intelligent context: target={}, sizeInfo={}",
+                context.getTargetDevice().getDeviceId(),
+                context.getSizeInfo().toSummaryString());
+
+        File parentDir = modelFile.getParentFile();
+        if (parentDir == null) parentDir = new File(".");
+        parentDir = parentDir.getAbsoluteFile();
+        String baseName = modelFile.getName();
+        int dotIdx = baseName.lastIndexOf('.');
+        if (dotIdx > 0) baseName = baseName.substring(0, dotIdx);
+
+        final String filePrefix = baseName + ".shard";
+        File[] matchingFiles = parentDir.listFiles((dir, name) -> name.startsWith(filePrefix) && name.endsWith(".sdnb"));
+
+        if (matchingFiles != null && matchingFiles.length > 0) {
+            log.info("Shard files detected for base name '{}'. Attempting sharded load with context.", baseName);
+            return loadShardedWithContext(modelFile, loadUpdaterState, context);
+        } else {
+            log.info("No shard files detected. Attempting to load '{}' as a single-file SDNB model with context.", modelFile.getAbsolutePath());
+            if (!modelFile.exists()) {
+                throw new FileNotFoundException("Model file does not exist: " + modelFile.getAbsolutePath());
+            }
+            if (!isValidSdnbFile(modelFile)) {
+                throw new IOException("File format not recognized as SDNB: " + modelFile.getAbsolutePath());
+            }
+            return loadInternalWithContext(modelFile, loadUpdaterState, null, context);
+        }
+    }
+
+    /**
+     * Loads a sharded SameDiff model with intelligent context.
+     */
+    private static SameDiff loadShardedWithContext(@NonNull File baseFile, boolean loadUpdaterState, @NonNull ModelLoadingContext context) throws IOException {
+        Preconditions.checkNotNull(baseFile, "Base file path cannot be null.");
+        File parentDir = baseFile.getParentFile();
+        if (parentDir == null) parentDir = new File(".");
+        parentDir = parentDir.getAbsoluteFile();
+
+        String baseName = baseFile.getName();
+        int dotIdx = baseName.lastIndexOf('.');
+        if (dotIdx > 0) baseName = baseName.substring(0, dotIdx);
+
+        int numShards = detectShardCount(parentDir, baseName);
+        log.info("Loading {} shards with context for base model '{}'", numShards, baseName);
+
+        SameDiff mainSD = null;
+        for (int i = 0; i < numShards; i++) {
+            String shardFileName = String.format("%s.shard%d-of-%d.sdnb", baseName, i, numShards);
+            File shardFile = new File(parentDir, shardFileName);
+            log.info("Loading shard {}: {}", i, shardFile.getName());
+
+            if (!shardFile.exists() || !isValidSdnbFile(shardFile)) {
+                throw new IOException("Shard file missing or invalid: " + shardFile.getAbsolutePath());
+            }
+
+            if (i == 0) {
+                mainSD = loadInternalWithContext(shardFile, loadUpdaterState, null, context);
+            } else {
+                loadInternalWithContext(shardFile, loadUpdaterState, mainSD, context);
+            }
+        }
+
+        if (mainSD == null) {
+            throw new IOException("Failed to load any shards from " + baseFile.getAbsolutePath());
+        }
+
+        // Wait for all background transfers to complete
+        context.awaitTransfers();
+
+        return mainSD;
+    }
+
+    /**
+     * Internal loading with context for scheduling background transfers.
+     */
+    private static SameDiff loadInternalWithContext(File file, boolean loadUpdaterState, SameDiff existingSD, ModelLoadingContext context) throws IOException {
+        // Use the standard loadInternal - the context is threaded through to array loading
+        // via a thread-local or passed through the callback mechanism
+        SameDiff result = loadInternal(file, loadUpdaterState, existingSD);
+
+        // After loading, schedule transfers for all arrays in the result
+        if (result != null && context != null) {
+            for (SDVariable var : result.variables()) {
+                if (var.getArr() != null) {
+                    context.onArrayLoaded(var.getArr());
+                    context.scheduleTransfer(var.getArr());
+                }
+            }
+        }
+
+        return result;
     }
 
     /**
@@ -1171,7 +1287,21 @@ public class SameDiffSerializer {
                         if (expectedDtype != null && expectedDtype != DataType.UNKNOWN && smallArr.dataType() != expectedDtype) {
                             log.warn("LOAD_INLINE: Data type mismatch for small inline array '{}'. Expected {}, Found {}. Attempting cast.", name, expectedDtype, smallArr.dataType());
                             try {
-                                smallArr = smallArr.castTo(expectedDtype);
+                                INDArray castResult = smallArr.castTo(expectedDtype);
+                                castResult = Nd4j.getDeallocatorService().registerPendingConstant(castResult);
+                                try {
+                                    // Mark as constant immediately to prevent deallocation
+                                    if (castResult.data() != null) {
+                                        castResult.data().setConstant(true);
+                                    }
+                                    if (castResult.shapeInfoDataBuffer() != null) {
+                                        castResult.shapeInfoDataBuffer().setConstant(true);
+                                    }
+                                    castResult.setCloseable(false);
+                                } finally {
+                                    Nd4j.getDeallocatorService().releasePendingConstant(castResult);
+                                }
+                                smallArr = castResult;
                             } catch (Exception castEx) {
                                 log.error("LOAD_INLINE: Failed to cast array '{}' to {}.", name, expectedDtype, castEx);
                                 errorCount++;
@@ -1190,33 +1320,8 @@ public class SameDiffSerializer {
                         log.info("LOAD_INLINE: Placing array for '{}' in appropriate container for type: {}", name, varType);
 
                         try {
-                            // First, call the main method (this might not work properly, but we'll ensure it with explicit placement)
                             targetSD.setArrayForVariable(name, smallArr);
-
-                            // Then, explicitly place in the correct ArrayHolder to ensure it's there
-                            switch (varType) {
-                                case CONSTANT:
-                                    targetSD.getConstantArrays().setArray(name, smallArr);
-                                    log.info("LOAD_INLINE: Explicitly placed '{}' in constantArrays", name);
-                                    break;
-                                case VARIABLE:
-                                    targetSD.getVariablesArrays().setArray(name, smallArr);
-                                    log.info("LOAD_INLINE: Explicitly placed '{}' in variablesArrays", name);
-                                    break;
-                                case ARRAY:
-                                    targetSD.getEagerArrays().setArray(name, smallArr);
-                                    log.info("LOAD_INLINE: Explicitly placed '{}' in eagerArrays", name);
-                                    break;
-                                case PLACEHOLDER:
-                                    // Placeholders typically don't have arrays, but if they do...
-                                    targetSD.getEagerArrays().setArray(name, smallArr);
-                                    log.info("LOAD_INLINE: Explicitly placed '{}' (placeholder) in eagerArrays", name);
-                                    break;
-                                default:
-                                    log.warn("LOAD_INLINE: Unknown variable type {} for '{}', placing in eagerArrays as fallback", varType, name);
-                                    targetSD.getEagerArrays().setArray(name, smallArr);
-                                    break;
-                            }
+                            log.info("LOAD_INLINE: Placed '{}' via setArrayForVariable for type: {}", name, varType);
 
                             // Verification after explicit placement
                             INDArray checkArr = null;
@@ -2135,6 +2240,25 @@ public class SameDiffSerializer {
                 log.info("Skipping data reading for empty array '{}'", name);
             }
 
+            // --- CRITICAL FIX: Mark host buffer as written and sync to device ---
+            // After loading data into the host buffer via asNio()/memcpy, we must:
+            // 1. Mark the primary (host) buffer as written so CUDA knows the data is fresh
+            // 2. Sync to device (special buffer) so GPU operations can use the data
+            // Without this, the CUDA backend thinks the device buffer is up-to-date when
+            // it actually contains uninitialized/garbage data, causing corrupted values
+            // in operations like floordiv that read scalar constants.
+            // Note: These are no-ops on CPU backend (writePrimary/syncToSpecial are empty stubs).
+            if (lengthBytes > 0 && targetBuffer != null) {
+                OpaqueDataBuffer opaqueBuffer = targetBuffer.opaqueBuffer();
+                if (opaqueBuffer != null) {
+                    NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                    // Mark that we wrote to the host buffer
+                    nativeOps.dbTickHostWrite(opaqueBuffer);
+                    // Force sync host -> device (no-op on CPU, copies data on CUDA)
+                    nativeOps.dbSyncToSpecial(opaqueBuffer);
+                    log.debug("Synced loaded data to device for variable '{}'", name);
+                }
+            }
 
             // --- Associate Array with SameDiff Instance & Verify ---
             log.info("Associating loaded array with variable '{}' in target SameDiff instance.", name);
@@ -2953,41 +3077,58 @@ public class SameDiffSerializer {
 
                     // Create and set the scalar value based on type
                     try {
+                        INDArray scalar = null;
                         switch (dataType) {
                             case FLOAT:
-                                return Nd4j.scalar(bb.getFloat());
+                                scalar = Nd4j.constantScalar(bb.getFloat());
+                                break;
                             case DOUBLE:
-                                return Nd4j.scalar(bb.getDouble());
+                                scalar = Nd4j.constantScalar(bb.getDouble());
+                                break;
                             case INT:
-                                return Nd4j.scalar(bb.getInt());
+                                scalar = Nd4j.constantScalar(bb.getInt());
+                                break;
                             case LONG:
-                                return Nd4j.scalar(bb.getLong());
+                                scalar = Nd4j.constantScalar(bb.getLong());
+                                break;
                             case SHORT:
-                                return Nd4j.scalar(bb.getShort());
+                                scalar = Nd4j.constantScalar((int) bb.getShort());
+                                break;
                             case BYTE:
-                                return Nd4j.scalar(bb.get());
+                                scalar = Nd4j.constantScalar((int) bb.get());
+                                break;
                             case UBYTE:
-                                return Nd4j.scalar(bb.get() & 0xFF);
+                                scalar = Nd4j.constantScalar(bb.get() & 0xFF);
+                                break;
                             case UINT16:
-                                return Nd4j.scalar(bb.getShort() & 0xFFFF);
+                                scalar = Nd4j.constantScalar(bb.getShort() & 0xFFFF);
+                                break;
                             case UINT32:
-                                return Nd4j.scalar(bb.getInt() & 0xFFFFFFFFL);
+                                scalar = Nd4j.constantScalar(bb.getInt() & 0xFFFFFFFFL);
+                                break;
                             case UINT64:
-                                return Nd4j.scalar(bb.getLong());
+                                scalar = Nd4j.constantScalar(bb.getLong());
+                                break;
                             case BOOL:
-                                return Nd4j.scalar(bb.get() != 0);
+                                scalar = Nd4j.constantScalar(bb.get() != 0);
+                                break;
                             case HALF:
                             case BFLOAT16:
                                 if (bb.remaining() >= 2) {
-                                    return Nd4j.scalar(HalfPrecisionUtil.toFloat(bb.getShort()));
+                                    scalar = Nd4j.constantScalar(HalfPrecisionUtil.toFloat(bb.getShort()));
                                 } else {
                                     log.error("LOAD_INLINE [{}]: Insufficient bytes for HALF/BFLOAT16 scalar", varName);
                                     return null;
                                 }
+                                break;
                             default:
                                 log.error("LOAD_INLINE [{}]: Unsupported scalar type {} during load", varName, dataType);
                                 return null;
                         }
+
+                        // Note: constantScalar() already marks the scalar as constant and non-closeable
+                        // so no additional marking is needed here
+                        return scalar;
                     } catch (Exception e) {
                         log.error("LOAD_INLINE [{}]: Failed to create scalar of type {}: {}", varName, dataType, e.getMessage(), e);
                         return null;
@@ -3052,7 +3193,8 @@ public class SameDiffSerializer {
                 // Wrap the manually read bytes and create the INDArray
                 ByteBuffer bbManual = ByteBuffer.wrap(readBytes).order(ByteOrder.nativeOrder());
 
-                INDArray result = Nd4j.create(dataType, shape, order);
+                INDArray result = Nd4j.getDeallocatorService().registerPendingConstant(
+                    Nd4j.create(dataType, shape, order));
                 DataBuffer targetBuffer = result.data();
                 if (targetBuffer == null) {
                     log.error("LOAD_INLINE [{}]: Target DataBuffer is null after creating array shape {}.", varName, shapeForLog);
@@ -3113,6 +3255,16 @@ public class SameDiffSerializer {
                         log.warn("LOAD_INLINE [{}]: Error during element-wise copy from manual bytes...", varName, e);
                     }
                 }
+
+                // Mark array as constant to prevent deallocation during inference
+                if (result.data() != null) {
+                    result.data().setConstant(true);
+                }
+                if (result.shapeInfoDataBuffer() != null) {
+                    result.shapeInfoDataBuffer().setConstant(true);
+                }
+                result.setCloseable(false);
+                Nd4j.getDeallocatorService().releasePendingConstant(result);
 
                 return result;
 

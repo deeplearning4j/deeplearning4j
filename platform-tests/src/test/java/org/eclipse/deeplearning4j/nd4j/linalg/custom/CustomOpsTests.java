@@ -167,31 +167,6 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, arrayX);
     }
 
-    @Disabled // it's noop, we dont care anymore
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testNoOp1(Nd4jBackend backend) {
-        val arrayX = Nd4j.create(10, 10);
-        val arrayY = Nd4j.create(5, 3);
-
-        arrayX.assign(3.0);
-        arrayY.assign(1.0);
-
-        val expX = Nd4j.create(10,10).assign(3.0);
-        val expY = Nd4j.create(5,3).assign(1.0);
-
-        CustomOp op = DynamicCustomOp.builder("noop")
-                .addInputs(arrayX, arrayY)
-                .addOutputs(arrayX, arrayY)
-                .build();
-
-        Nd4j.getExecutioner().exec(op);
-
-        assertEquals(expX, arrayX);
-        assertEquals(expY, arrayY);
-    }
-
-
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFloor(Nd4jBackend backend) {

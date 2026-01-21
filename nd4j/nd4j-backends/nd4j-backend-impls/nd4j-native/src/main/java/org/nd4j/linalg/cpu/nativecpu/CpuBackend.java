@@ -42,8 +42,6 @@ public class CpuBackend extends Nd4jBackend {
     private final static String LINALG_PROPS = "/nd4j-native.properties";
 
     static {
-        // CRITICAL: Configure OpenBLAS threading immediately after library loading.
-        // This must run before any BLAS operations to prevent TLS corruption crashes.
         initializeOpenBlasThreading();
     }
 

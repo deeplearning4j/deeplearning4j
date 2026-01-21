@@ -126,11 +126,21 @@ CUSTOM_OP_IMPL(reduce_norm_max_bp, -1, 1, false, 0, 0) {
 
   *gradI = 0.0;
 
-  if (gradO->lengthOf() == 1) {
+  // Handle scalar case: when gradO is a scalar (length 1) or when dimensions reduce to scalar
+  // Also handle edge case where gradO might have shape [0] instead of [] for scalar
+  bool isScalarGrad = gradO->lengthOf() == 1 || gradO->isScalar() ||
+                      (dimensions.empty() && gradO->lengthOf() <= 1);
+
+  if (isScalarGrad) {
     auto* indOfAbsMaxElem = input->indexReduceNumber(sd::indexreduce::IndexAbsoluteMax);
     const sd::LongType ind = indOfAbsMaxElem->t<sd::LongType>(0);
     delete indOfAbsMaxElem;
-    
+
+    // Handle empty gradient case - gradient is effectively 0
+    if (gradO->lengthOf() == 0) {
+      return sd::Status::OK;
+    }
+
     const int sign = input->e<float>(ind) >= 0 ? 1 : -1;
     auto put = sign * gradO->e(0);
     gradI->p(ind, put);

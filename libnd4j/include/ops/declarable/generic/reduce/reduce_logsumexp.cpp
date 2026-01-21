@@ -29,7 +29,7 @@ namespace ops {
 CUSTOM_OP_IMPL(reduce_logsumexp, -1, 1, false, 0, -2) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
-  std::vector<sd::LongType> axes;  // = *block.getIArguments();
+  std::vector<sd::LongType> axes;
   if (block.width() > 1) {
     auto axisVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(input->rankOf(), axisVector, axes);
@@ -44,15 +44,48 @@ CUSTOM_OP_IMPL(reduce_logsumexp, -1, 1, false, 0, -2) {
         input->rankOf(), input->rankOf(), item);
 
   const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-  sd::LongType maxI = input->argMax();
-  auto maxVals = input->e(maxI);
-  // void* whereMax = (void*)();
-  auto internal = (*input);
-  internal -= maxVals;
-  internal.applyTransform(transform::Exp, &internal);
-  internal.reduceAlongDimension(reduce::Sum, output, &axes, keepDims, false);  //, (void*)&maxVals);
-  output->applyTransform(transform::Log, output);
-  (*output) += maxVals;
+
+  // Handle full array reduction (empty axes) vs. dimension-specific reduction
+  if (axes.empty()) {
+    // Full array reduction: log(sum(exp(x))) = max(x) + log(sum(exp(x - max(x))))
+    auto maxVal = input->reduceNumber(reduce::Max);
+    double maxScalar = maxVal->e<double>(0);
+
+    auto internal = (*input);
+    internal -= maxScalar;
+    internal.applyTransform(transform::Exp, &internal);
+
+    auto sumVal = internal.reduceNumber(reduce::Sum);
+    sumVal->applyTransform(transform::Log, sumVal);
+
+    double result = sumVal->e<double>(0) + maxScalar;
+    output->assign(result);
+    delete maxVal;
+    delete sumVal;
+  } else {
+    // Dimension-specific reduction
+    // Get max along the specified axes
+    auto maxVals = input->reduceAlongDimension(reduce::Max, &axes, true);
+
+    auto internal = (*input);
+    internal.applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), maxVals, &internal, false);
+    internal.applyTransform(transform::Exp, &internal);
+    internal.reduceAlongDimension(reduce::Sum, output, &axes, keepDims);
+    output->applyTransform(transform::Log, output);
+
+    // Add max back - need to handle keepDims for broadcasting
+    if (keepDims) {
+      output->applyPairwiseTransform(sd::pairwise::Add, maxVals, output);
+    } else {
+      // maxVals has keepDims=true shape, need to squeeze for broadcasting
+      auto outputShape = output->getShapeAsVector();
+      auto maxValsSqueezed = maxVals->reshape(maxVals->ordering(), *outputShape);
+      output->applyPairwiseTransform(sd::pairwise::Add, maxValsSqueezed, output);
+      delete outputShape;
+      delete maxValsSqueezed;
+    }
+    delete maxVals;
+  }
   return sd::Status::OK;
 }
 DECLARE_TYPES(reduce_logsumexp) {

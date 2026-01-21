@@ -1010,15 +1010,9 @@ public class Nd4j {
             op.addOutputArgument(out);
             Nd4j.exec(op);
         } finally {
-            // Clean up shape buffers to prevent memory leak
-            // First buffer is owned by 'out' array if allocation succeeded
-            int startIndex = firstBufferUsed ? 1 : 0;
-            for (int i = startIndex; i < l.size(); i++) {
-                DataBuffer db = l.get(i);
-                if (db != null) {
-                    db.close();
-                }
-            }
+            // NOTE: Shape buffers returned by calculateOutputShape() are CACHED by ConstantShapeHelper
+            // and must NOT be closed here - they are shared across operations.
+            // Closing them would corrupt the shape cache, leading to use-after-free bugs.
         }
 
         return out;
@@ -4040,6 +4034,11 @@ public class Nd4j {
         if(EMPTY_ARRAYS[type.ordinal()] == null) {
             try(MemoryWorkspace ignored = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 val ret = INSTANCE.empty(type);
+                if (ret.shapeInfoDataBuffer() != null) {
+                    ret.shapeInfoDataBuffer().setConstant(true);
+                }
+                // Mark the array as not closeable since it's a cached singleton
+                ret.setCloseable(false);
                 EMPTY_ARRAYS[type.ordinal()] = ret;
             }
         }
@@ -4625,7 +4624,15 @@ public class Nd4j {
         if(shape.length == 0) {
             return scalar(dataType, 0.0);
         }
-        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(shape, Nd4j.getStrides(shape, ordering), 0, ordering, dataType, false);
+        // Check if any dimension is 0 - if so, the array is empty
+        boolean isEmpty = false;
+        for (long dim : shape) {
+            if (dim == 0) {
+                isEmpty = true;
+                break;
+            }
+        }
+        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(shape, Nd4j.getStrides(shape, ordering), 0, ordering, dataType, isEmpty);
         return INSTANCE.create(descriptor);
     }
 
@@ -5264,6 +5271,95 @@ public class Nd4j {
         return scalar(DataType.LONG, value);
     }
 
+    // =========================================================================
+    // CONSTANT SCALAR FACTORY METHODS
+    // =========================================================================
+
+    /**
+     * Create a constant scalar NDArray with the specified value and datatype.
+     * The buffer is marked as constant immediately during allocation, preventing
+     * premature deallocation by GC.
+     *
+     * @param dataType Data type for the scalar
+     * @param value The value of the scalar
+     * @return A constant scalar INDArray that will never be deallocated by GC
+     */
+    public static INDArray constantScalar(DataType dataType, Number value) {
+        INDArray arr;
+        try (MemoryWorkspace ws = getMemoryManager().scopeOutOfWorkspaces()) {
+            arr = getDeallocatorService().registerPendingConstant(scalar(dataType, value));
+        }
+        try {
+            // Mark as constant immediately
+            if (arr.data() != null) {
+                arr.data().setConstant(true);
+            }
+            if (arr.shapeInfoDataBuffer() != null) {
+                arr.shapeInfoDataBuffer().setConstant(true);
+            }
+            arr.setCloseable(false);
+        } finally {
+            // Release from pending constants - array is now protected by constant flag
+            getDeallocatorService().releasePendingConstant(arr);
+        }
+        return arr;
+    }
+
+    /**
+     * Create a constant scalar NDArray with the specified double value.
+     * The buffer is marked as constant immediately during allocation.
+     *
+     * @param value The value of the scalar
+     * @return A constant scalar INDArray
+     */
+    public static INDArray constantScalar(double value) {
+        return constantScalar(DataType.DOUBLE, value);
+    }
+
+    /**
+     * Create a constant scalar NDArray with the specified float value.
+     * The buffer is marked as constant immediately during allocation.
+     *
+     * @param value The value of the scalar
+     * @return A constant scalar INDArray
+     */
+    public static INDArray constantScalar(float value) {
+        return constantScalar(DataType.FLOAT, value);
+    }
+
+    /**
+     * Create a constant scalar NDArray with the specified int value.
+     * The buffer is marked as constant immediately during allocation.
+     *
+     * @param value The value of the scalar
+     * @return A constant scalar INDArray
+     */
+    public static INDArray constantScalar(int value) {
+        return constantScalar(DataType.INT, value);
+    }
+
+    /**
+     * Create a constant scalar NDArray with the specified long value.
+     * The buffer is marked as constant immediately during allocation.
+     *
+     * @param value The value of the scalar
+     * @return A constant scalar INDArray
+     */
+    public static INDArray constantScalar(long value) {
+        return constantScalar(DataType.LONG, value);
+    }
+
+    /**
+     * Create a constant scalar NDArray with the specified boolean value.
+     * The buffer is marked as constant immediately during allocation.
+     *
+     * @param value The value of the scalar
+     * @return A constant scalar INDArray
+     */
+    public static INDArray constantScalar(boolean value) {
+        return constantScalar(DataType.BOOL, value ? 1 : 0);
+    }
+
     /**
      * Get the strides for the given order and shape
      *
@@ -5856,6 +5952,12 @@ public class Nd4j {
      * The cache will be repopulated automatically as needed for subsequent operations.
      * </p>
      * <p>
+     * <b>Thread Safety:</b> This method is synchronized to prevent concurrent access
+     * from multiple threads. The native TAD cache uses per-stripe locking, but the
+     * tree traversal during clear() can race with concurrent operations, leading to
+     * memory corruption (SIGSEGV or "free(): invalid pointer" errors).
+     * </p>
+     * <p>
      * <b>Recommended usage:</b> Call after completing a batch of inferences or after
      * processing a SameDiff graph to prevent memory accumulation.
      * </p>
@@ -5863,10 +5965,12 @@ public class Nd4j {
      * @since 1.0.0-SNAPSHOT
      */
     public static void clearTADCache() {
-        try {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().clearTADCache();
-        } catch (Exception e) {
-            log.warn("Failed to clear TAD cache", e);
+        synchronized (TAD_CACHE_LOCK) {
+            try {
+                NativeOpsHolder.getInstance().getDeviceNativeOps().clearTADCache();
+            } catch (Exception e) {
+                log.warn("Failed to clear TAD cache", e);
+            }
         }
     }
 
@@ -5960,6 +6064,11 @@ public class Nd4j {
     private static volatile MultiBackendExecutioner MULTI_BACKEND_EXECUTIONER;
     private static volatile boolean multiBackendMode = false;
     private static final Object MULTI_BACKEND_LOCK = new Object();
+
+    // Lock for TAD cache operations to prevent concurrent access from multiple threads
+    // The native TAD cache has per-stripe locking but the tree traversal during clear()
+    // can still race with other operations. This lock serializes clearTADCache() calls.
+    private static final Object TAD_CACHE_LOCK = new Object();
 
     /**
      * Automatic multi-backend initialization during Nd4j startup.
@@ -6800,14 +6909,9 @@ public class Nd4j {
             Nd4j.getExecutioner().execAndReturn(op.build());
             return outputs;
         } finally {
-            // Clean up unused shape buffers to prevent memory leak
-            // Buffers that were used by createFromDescriptor are owned by the output arrays
-            for (int i = buffersUsed; i < outShapes.size(); i++) {
-                DataBuffer db = outShapes.get(i);
-                if (db != null) {
-                    db.close();
-                }
-            }
+            // NOTE: Shape buffers returned by calculateOutputShape() are CACHED by ConstantShapeHelper
+            // and must NOT be closed here - they are shared across operations.
+            // Closing them would corrupt the shape cache, leading to use-after-free bugs.
         }
     }
 
@@ -6989,13 +7093,27 @@ public class Nd4j {
      * For more on the format, see: https://docs.scipy.org/doc/numpy-1.14.0/neps/npy-format.html
      */
     public static byte[] toNpyByteArray(INDArray input) {
-        DataBuffer asNumpy = convertToNumpy(input);
-        long len = input.length() * input.data().getElementSize();
-        Pointer pointer = asNumpy.addressPointer();
-        pointer.limit(len);
-        ByteBuffer directBuffer = pointer.asByteBuffer();
+        // Ensure data is on host before serialization (critical for CUDA)
+        Nd4j.getAffinityManager().ensureLocation(input, AffinityManager.Location.HOST);
 
-        byte[] ret = new byte[directBuffer.capacity()];
+        // Get header length and calculate total size
+        long headerLen = Nd4j.getNativeOps().numpyHeaderLength(
+            input.data().opaqueBuffer(),
+            input.shapeInfoDataBuffer().pointer());
+        long totalLen = headerLen + input.length() * input.data().getElementSize();
+
+        // Get the numpy data directly from native without going through DataBuffer
+        // This avoids CUDA addressPointer() returning a different pointer
+        Pointer numpyPointer = Nd4j.getNativeOps().numpyFromNd4j(
+            input.data().addressPointer(),
+            input.shapeInfoDataBuffer().pointer(),
+            input.data().getElementSize());
+
+        numpyPointer.capacity(totalLen);
+        numpyPointer.limit(totalLen);
+        ByteBuffer directBuffer = numpyPointer.asByteBuffer();
+
+        byte[] ret = new byte[(int) totalLen];
         directBuffer.get(ret);
         return ret;
     }

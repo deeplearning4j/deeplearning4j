@@ -106,6 +106,9 @@ static void depthwiseConv2d_(sd::graph::Context& block, NDArray* input, NDArray*
   if (bias)
     helpers::addBias(block, *output, *bias, *output, isNCHW);
 
+  // Synchronize CUDA stream before cleanup to ensure all async operations complete
+  cudaStreamSynchronize(*output->getContext()->getCudaStream());
+
   delete zero;
   delete outputReshaped;
   if (!isNCHW) delete input;

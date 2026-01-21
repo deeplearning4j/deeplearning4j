@@ -34,22 +34,34 @@ namespace sd {
 PointersManager::PointersManager(const LaunchContext* context, const std::string& funcName) {
   _context = const_cast<LaunchContext*>(context);
   _funcName = funcName;
+  _workspaceWasActive = (_context != nullptr && _context->getWorkspace() != nullptr);
 }
+
 //////////////////////////////////////////////////////////////////////////
 void* PointersManager::allocateDevMem(const size_t sizeInBytes) {
   void* dst = nullptr;
-  if (_context->getWorkspace() == nullptr) {
+  bool fromCudaMalloc = false;
+
+  if (_context == nullptr || _context->getWorkspace() == nullptr) {
+    // Allocate via cudaMalloc - we need to track and free this
     cudaError_t cudaResult = cudaMalloc(reinterpret_cast<void**>(&dst), sizeInBytes);
     if (cudaResult != 0)
       throw cuda_exception::build(_funcName + ": cannot allocate global memory on device!", cudaResult);
+    fromCudaMalloc = true;
   } else {
+    // Allocate from workspace - workspace manages lifecycle
     dst = _context->getWorkspace()->allocateBytes(memory::MemoryType::DEVICE, sizeInBytes);
+    fromCudaMalloc = false;
   }
+
+  // Track allocation with its source
+  _allocatedPointers.emplace_back(dst, fromCudaMalloc);
   return dst;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void* PointersManager::replicatePointer(const void* src, const size_t numberOfBytes) {
+  // allocateDevMem already tracks the allocation
   void* dst = allocateDevMem(numberOfBytes);
   if (src) {
     if (_context != nullptr)
@@ -57,7 +69,7 @@ void* PointersManager::replicatePointer(const void* src, const size_t numberOfBy
     else
       cudaMemcpy(dst, src, numberOfBytes, cudaMemcpyHostToDevice);
   }
-  _pOnGlobMem.emplace_back(dst);
+  // NOTE: We don't add to _allocatedPointers here because allocateDevMem already did
 
   return dst;
 }
@@ -74,7 +86,49 @@ void PointersManager::synchronize() const {
 
 //////////////////////////////////////////////////////////////////////////
 PointersManager::~PointersManager() {
- // for (auto& p : _pOnGlobMem) cudaFree(p);
+  if (_allocatedPointers.empty()) {
+    return;
+  }
+
+  // Check if we have any cudaMalloc allocations that need freeing
+  bool hasCudaMallocAllocations = false;
+  for (const auto& alloc : _allocatedPointers) {
+    if (alloc.fromCudaMalloc && alloc.ptr != nullptr) {
+      hasCudaMallocAllocations = true;
+      break;
+    }
+  }
+
+  if (!hasCudaMallocAllocations) {
+    // All allocations are from workspace - nothing to free
+    return;
+  }
+
+  // Synchronize ALL streams before freeing to ensure kernels are complete.
+  // We use cudaDeviceSynchronize instead of just stream sync because:
+  // 1. Kernels might be running on different streams than _context->getCudaStream()
+  // 2. This is safer and the cost is acceptable since we're destroying anyway
+  cudaError_t syncErr = cudaDeviceSynchronize();
+  if (syncErr != cudaSuccess) {
+    // Log warning but continue - we still need to try to free memory
+    sd_printf("<%s> WARNING: cudaDeviceSynchronize failed in destructor: %s. Attempting cleanup anyway.\n",
+              _funcName.c_str(), cudaGetErrorString(syncErr));
+    // Clear the error so subsequent CUDA calls don't fail
+    cudaGetLastError();
+  }
+
+  // Now free cudaMalloc allocations
+  for (const auto& alloc : _allocatedPointers) {
+    if (alloc.fromCudaMalloc && alloc.ptr != nullptr) {
+      cudaError_t freeErr = cudaFree(alloc.ptr);
+      if (freeErr != cudaSuccess) {
+        // Log warning but continue freeing others
+        sd_printf("<%s> WARNING: cudaFree failed: %s\n",
+                  _funcName.c_str(), cudaGetErrorString(freeErr));
+        cudaGetLastError();  // Clear error
+      }
+    }
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////

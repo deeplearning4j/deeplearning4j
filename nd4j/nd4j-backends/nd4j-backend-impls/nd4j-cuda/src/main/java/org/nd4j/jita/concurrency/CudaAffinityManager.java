@@ -27,6 +27,8 @@ import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.concurrency.BasicAffinityManager;
+import org.nd4j.linalg.api.device.DeviceType;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
@@ -40,7 +42,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * AffinityManager implementation for CUDA
+ * AffinityManager implementation for CUDA.
+ *
+ * This implementation recognizes both GPU devices (device IDs >= 0) and the CPU
+ * as a valid device (CPU_DEVICE_ID = -1). This allows seamless data transfer between
+ * CPU and GPU memory, enabling hybrid CPU-GPU computation patterns.
  *
  * @author raver119@gmail.com
  */
@@ -55,7 +61,32 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
     public CudaAffinityManager() {
         super();
+        logger.debug("CudaAffinityManager initialized - CPU device ID: {}", CPU_DEVICE_ID);
+    }
 
+    /**
+     * Checks if the given device ID represents the CPU.
+     *
+     * @param deviceId the device ID to check
+     * @return true if the device is CPU (deviceId == -1), false otherwise
+     */
+    @Override
+    public boolean isCpuDevice(int deviceId) {
+        return deviceId == CPU_DEVICE_ID;
+    }
+
+    /**
+     * Returns the device type for the given device ID.
+     *
+     * @param deviceId the device ID to query
+     * @return CPU for deviceId == -1, CUDA_GPU for deviceId >= 0
+     */
+    @Override
+    public DeviceType getDeviceType(int deviceId) {
+        if (deviceId == CPU_DEVICE_ID) {
+            return DeviceType.CPU;
+        }
+        return DeviceType.CUDA_GPU;
     }
 
     /**
@@ -67,7 +98,16 @@ public class CudaAffinityManager extends BasicAffinityManager {
      */
     @Override
     public Integer getDeviceForCurrentThread() {
-        return NativeOpsHolder.getInstance().getDeviceNativeOps().getDevice();
+        long threadId = Thread.currentThread().getId();
+        Integer deviceId = affinityMap.get(threadId);
+        if (deviceId != null) {
+            return deviceId;
+        }
+
+        deviceId = getNextDevice(threadId);
+        affinityMap.put(threadId, deviceId);
+        unsafeSetDevice(deviceId);
+        return deviceId;
     }
 
     /**
@@ -80,8 +120,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
         if (id == null) {
             // if this is current thread - we're still able to fetch id from native side, and update map
             if (threadId == Thread.currentThread().getId()) {
-                id = NativeOpsHolder.getInstance().getDeviceNativeOps().getDevice();
-                affinityMap.put(Long.valueOf(threadId), id);
+                id = getDeviceForCurrentThread();
             } else
                 // TODO: we should get rid of this method, and forbid such kind of queries
                 throw new RuntimeException("Affinity for thread [" + threadId + "] wasn't defined yet");
@@ -99,6 +138,11 @@ public class CudaAffinityManager extends BasicAffinityManager {
      */
     protected Integer getNextDevice(long threadId) {
         Integer device = null;
+        if (CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().isEmpty()) {
+            logger.warn("No available CUDA devices configured; defaulting to device [0]");
+            return 0;
+        }
+
         if (!CudaEnvironment.getInstance().getConfiguration().isForcedSingleGPU() && getNumberOfDevices() > 0) {
             // simple round-robin here
             synchronized (this) {
@@ -133,7 +177,9 @@ public class CudaAffinityManager extends BasicAffinityManager {
         if (numberOfDevices.get() < 0) {
             synchronized (this) {
                 if (numberOfDevices.get() < 1) {
-                    numberOfDevices.set(NativeOpsHolder.getInstance().getDeviceNativeOps().getAvailableDevices());
+                    // Ensure configuration has initialized the device list
+                    CudaEnvironment.getInstance().notifyConfigurationApplied();
+                    numberOfDevices.set(CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().size());
                 }
             }
         }
@@ -177,9 +223,12 @@ public class CudaAffinityManager extends BasicAffinityManager {
     /**
      * This method replicates given INDArray, and places it to target device.
      *
-     * @param deviceId target deviceId
+     * Supports both GPU devices (deviceId >= 0) and CPU (deviceId == CPU_DEVICE_ID).
+     * When targeting CPU, data is synchronized to host memory and a host-resident copy is created.
+     *
+     * @param deviceId target deviceId (use CPU_DEVICE_ID for CPU, >= 0 for GPU)
      * @param array    INDArray to replicate
-     * @return
+     * @return the replicated array on the target device
      */
     @Override
     public synchronized INDArray replicateToDevice(Integer deviceId, INDArray array) {
@@ -187,8 +236,11 @@ public class CudaAffinityManager extends BasicAffinityManager {
             return null;
 
         // string arrays are stored in host memory only atm
-        if (array.isS())
-            return array.dup(array.ordering());
+        if (array.isS()) {
+            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                return array.dup(array.ordering());
+            }
+        }
 
         if (array.isView())
             throw new UnsupportedOperationException("It's impossible to replicate View");
@@ -201,24 +253,62 @@ public class CudaAffinityManager extends BasicAffinityManager {
         val dtype = array.dataType();
         val empty = array.isEmpty();
 
-        // we use this call to get device memory updated
-        AtomicAllocator.getInstance().getPointer(array, AtomicAllocator.getInstance().getDeviceContext());
-
         int currentDeviceId = getDeviceForCurrentThread();
 
+        // Handle CPU device target - sync to host and create host-resident copy
+        if (isCpuDevice(deviceId)) {
+            logger.debug("Replicating array to CPU device from GPU device {}", currentDeviceId);
+
+            // Ensure data is synchronized to host memory
+            AtomicAllocator.getInstance().synchronizeHostData(array);
+            Nd4j.getExecutioner().commit();
+
+            // Create a copy that's marked as host-resident
+            INDArray result;
+            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                result = array.dup(array.ordering());
+                // Tag as host-resident
+                tagLocation(result, Location.HOST);
+            }
+
+            logger.debug("Array replicated to CPU, shape: {}", java.util.Arrays.toString(shape));
+            return result;
+        }
+
+        // GPU-to-GPU transfer
+        // Get the device where the SOURCE array actually resides
+        int sourceDeviceId = AtomicAllocator.getInstance().getAllocationPoint(array).getDeviceId();
+
+        // CRITICAL: Ensure source data is synced to host memory BEFORE any device switching.
+        // This uses native code that handles the device context properly internally.
+        // synchronizeHostData uses dbSyncToPrimary which knows the buffer's device.
+        AtomicAllocator.getInstance().synchronizeHostData(array);
+
+        // Also commit any pending operations on current device
+        Nd4j.getExecutioner().commit();
+
+        // Switch to target device for buffer creation
         if (currentDeviceId != deviceId.intValue()) {
             unsafeSetDevice(deviceId);
         }
 
-
+        // Create new data buffer on target device and copy data
         DataBuffer newDataBuffer = replicateToDevice(deviceId, array.data());
-        DataBuffer newShapeBuffer = Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, elementWiseStride, ordering, dtype, empty).getFirst();
-        INDArray result = Nd4j.createArrayFromShapeBuffer(newDataBuffer, newShapeBuffer);
 
-        if (currentDeviceId != deviceId.intValue()) {
-            unsafeSetDevice(currentDeviceId);
+        INDArray result;
+        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            // Create shape buffer on TARGET device (we're already on it)
+            DataBuffer newShapeBuffer = Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, elementWiseStride, ordering, dtype, empty).getFirst();
+            result = Nd4j.createArrayFromShapeBuffer(newDataBuffer, newShapeBuffer);
         }
 
+        // Sync target device before switching back
+        Nd4j.getExecutioner().commit();
+
+        // Switch back to original device
+        if (getDeviceForCurrentThread() != currentDeviceId) {
+            unsafeSetDevice(currentDeviceId);
+        }
 
         return result;
     }
@@ -226,9 +316,12 @@ public class CudaAffinityManager extends BasicAffinityManager {
     /**
      * This method replicates given DataBuffer, and places it to target device.
      *
-     * @param deviceId target deviceId
-     * @param buffer
-     * @return
+     * Supports both GPU devices (deviceId >= 0) and CPU (deviceId == CPU_DEVICE_ID).
+     * When targeting CPU, data is synchronized to host memory and a host-resident copy is created.
+     *
+     * @param deviceId target deviceId (use CPU_DEVICE_ID for CPU, >= 0 for GPU)
+     * @param buffer   the DataBuffer to replicate
+     * @return the replicated buffer on the target device
      */
     @Override
     public DataBuffer replicateToDevice(Integer deviceId, DataBuffer buffer) {
@@ -237,14 +330,52 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
         int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
 
-        if (currentDeviceId != deviceId) {
+        // CRITICAL: Ensure source data is synced to host memory BEFORE any device switching.
+        // This uses native code that handles the device context properly internally.
+        // synchronizeHostData uses dbSyncToPrimary which knows the buffer's device.
+        AtomicAllocator.getInstance().synchronizeHostData(buffer);
+
+        // Commit any pending operations on current device
+        Nd4j.getExecutioner().commit();
+
+        // Handle CPU device target
+        if (isCpuDevice(deviceId)) {
+            logger.debug("Replicating DataBuffer to CPU device from GPU device {}", currentDeviceId);
+
+            // Create a new buffer and copy host data
+            DataBuffer dstBuffer;
+            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                dstBuffer = Nd4j.createBuffer(buffer.dataType(), buffer.length(), false);
+            }
+
+            // memcpy from source (already synced to host) to destination
+            AtomicAllocator.getInstance().memcpy(dstBuffer, buffer);
+
+            // Tag the destination as host-resident
+            tagLocation(dstBuffer, Location.HOST);
+
+            return dstBuffer;
+        }
+
+        // GPU-to-GPU transfer
+        // Switch to target device for buffer creation
+        if (currentDeviceId != deviceId.intValue()) {
             Nd4j.getAffinityManager().unsafeSetDevice(deviceId);
         }
 
-        DataBuffer dstBuffer = Nd4j.createBuffer(buffer.dataType(), buffer.length(), false);
+        DataBuffer dstBuffer;
+        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            dstBuffer = Nd4j.createBuffer(buffer.dataType(), buffer.length(), false);
+        }
+
+        // memcpy handles cross-device copying (source is already synced to host)
         AtomicAllocator.getInstance().memcpy(dstBuffer, buffer);
 
-        if (currentDeviceId != deviceId) {
+        // Sync target device after copy
+        Nd4j.getExecutioner().commit();
+
+        // Switch back to original device
+        if (Nd4j.getAffinityManager().getDeviceForCurrentThread() != currentDeviceId) {
             Nd4j.getAffinityManager().unsafeSetDevice(currentDeviceId);
         }
 
@@ -298,7 +429,12 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
     @Override
     public void unsafeSetDevice(Integer deviceId) {
-        // actually set device
+        // Update affinity map FIRST so getDeviceForCurrentThread() returns consistent values
+        // This prevents the bug where nested device switches use stale device info
+        long threadId = Thread.currentThread().getId();
+        affinityMap.put(threadId, deviceId);
+
+        // actually set device (this syncs current device streams before switching)
         NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(deviceId);
 
         // reset saved context, so it will be recreated on first call

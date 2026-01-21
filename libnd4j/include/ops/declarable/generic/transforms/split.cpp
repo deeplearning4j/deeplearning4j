@@ -115,15 +115,6 @@ DECLARE_SHAPE_FN(split) {
 
   auto shapes = SHAPELIST();
 
-  // Edge case: splitting empty array (mainly for TF import compatibility) -> return N empty arrays
-   if(INPUT_VARIABLE(inputVar)->isEmpty()) {
-       for (int e = 0; e < num_splits; e++) {
-                 auto empty = ConstantShapeHelper::getInstance().emptyShapeInfo(dataType);
-           shapes->push_back(empty);
-       }
-       return shapes;
-   }
-
   if (block.numI() == 2) axis = INT_ARG(1);
 
   if (axis < 0) axis += shape::rank(input);
@@ -136,6 +127,8 @@ DECLARE_SHAPE_FN(split) {
     else
       shape[e] = shape::sizeAt(input, e);
 
+  // Handle both empty and non-empty arrays with proper shapes
+  // For empty arrays, this will create properly-shaped empty array info
   for (int e = 0; e < num_splits; e++) {
     auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dataType, shape::order(input), shape);
     shapes->push_back(newShape);

@@ -86,19 +86,8 @@ DECLARE_SHAPE_FN(fill) {
       hasZeros = true;
     totalLen *= newShape[e + 1];
   }
-  if(len > 1 && hasZeros) {
-    RELEASE(newShape, block.getWorkspace());
-    std::vector<LongType> shapeOnly = shapeArray->asVectorT<LongType>();
-    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(shapeArray->dataType(),shapeOnly));
-  }
-  if (totalLen < 1) {
-    RELEASE(newShape, block.getWorkspace());
-    std::vector<LongType> shape = {0};
-    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(shapeArray->dataType(), shape));
-  }
-
+  // Determine data type based on value input FIRST, before handling empty arrays
   DataType dataType;
-
   if (block.width() > 1) {
     dataType = INPUT_VARIABLE(1)->dataType();
   } else if (block.numT() > 0) {
@@ -109,6 +98,18 @@ DECLARE_SHAPE_FN(fill) {
     dataType = BOOL;
   } else
     THROW_EXCEPTION("Fill: missing value to fill output array with");
+
+  // Handle empty arrays (shape with zeros) - use the correct data type from value
+  if(len > 1 && hasZeros) {
+    RELEASE(newShape, block.getWorkspace());
+    std::vector<LongType> shapeOnly = shapeArray->asVectorT<LongType>();
+    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(dataType, shapeOnly));
+  }
+  if (totalLen < 1) {
+    RELEASE(newShape, block.getWorkspace());
+    std::vector<LongType> shape = {0};
+    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(dataType, shape));
+  }
 
   ShapeUtils::updateStridesAndType(newShape, dataType, 'c');
 

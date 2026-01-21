@@ -86,7 +86,7 @@ public class DataLocalityPolicy implements RoutingPolicy {
 
             if (input.data().isHybrid()) {
                 HybridDataBuffer hybrid = input.data().asHybrid();
-                DeviceDescriptor owner = hybrid.getOwnerDevice();
+                DeviceDescriptor owner = hybrid.getEffectiveDevice();
                 if (owner != null && bytesPerDevice.containsKey(owner.getDeviceId())) {
                     bytesPerDevice.merge(owner.getDeviceId(), bytes, Long::sum);
                 }
@@ -124,7 +124,7 @@ public class DataLocalityPolicy implements RoutingPolicy {
 
             DeviceDescriptor sourceDevice = null;
             if (input.data().isHybrid()) {
-                sourceDevice = input.data().asHybrid().getOwnerDevice();
+                sourceDevice = input.data().asHybrid().getEffectiveDevice();
             } else {
                 sourceDevice = availableDevices.get(0);  // Assume default
             }

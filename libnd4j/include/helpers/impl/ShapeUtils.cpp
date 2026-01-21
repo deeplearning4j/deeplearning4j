@@ -236,8 +236,9 @@ std::vector<LongType>* ShapeUtils::evalDimsToExclude(const LongType rank, const 
     THROW_EXCEPTION("ShapeUtils::evalDimsToExclude: dimensions array is null but dimsLen > 0");
   }
 
-  // Check for -1 sentinel (means "reduce all dimensions") - return whole shape range
-  if (dimsLen == 0 || (dimsLen == 1 && dimensions[0] == -1)) {
+  // Check for -1 or SD_MAX_INT sentinel (means "reduce all dimensions") - return whole shape range
+  // -1 is the standard sentinel, SD_MAX_INT (Integer.MAX_VALUE) is deprecated but still supported
+  if (dimsLen == 0 || (dimsLen == 1 && (dimensions[0] == -1 || dimensions[0] == SD_MAX_INT))) {
     ret->resize(rank);
     std::iota(ret->begin(), ret->end(), 0);  // fill with 0, 1, ... rank-1
     return ret;
@@ -305,7 +306,7 @@ LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType
       return ret;
     } else if (supportOldShapes) {
       newShapeInfo = new LongType[shape::shapeInfoLength(2)];
-      newShapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, workspace);
+      shape::shapeOldScalar(dataType, newShapeInfo, 'c');
       auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
       delete[] newShapeInfo;
       return ret;
@@ -333,6 +334,8 @@ LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType
         newShapeInfo[i + 1] = shapeInfo[i + 1];
     }
     updateStridesAndType(newShapeInfo, shapeInfo, order);
+    // Set the requested output data type (don't inherit from input)
+    ArrayOptions::setDataType(newShapeInfo, dataType);
     auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
     delete[] newShapeInfo;
     return ret;
@@ -345,13 +348,14 @@ LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType
 
     if (supportOldShapes) {
       newShapeInfo = new LongType[shape::shapeInfoLength(2)];
-      shape::shapeOldScalar(ArrayOptions::dataType(shapeInfo), newShapeInfo, 'c');
+      // Use the requested dataType, not the input's data type
+      shape::shapeOldScalar(dataType, newShapeInfo, 'c');
       auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
       delete[] newShapeInfo;
       return ret;
     } else {
-
-      newShapeInfo = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(shapeInfo), workspace);
+      // Use the requested dataType, not the input's data type
+      newShapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, workspace);
       auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
       delete[] newShapeInfo;
       return ret;
@@ -381,6 +385,8 @@ LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType
   }
 
   updateStridesAndType(newShapeInfo, shapeInfo, order);
+  // Set the requested output data type (don't inherit from input)
+  ArrayOptions::setDataType(newShapeInfo, dataType);
 
   auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
   delete[] newShapeInfo;
@@ -438,6 +444,8 @@ LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType
         newShapeInfo[i + 1] = shapeInfo[i + 1];
     }
     updateStridesAndType(newShapeInfo, shapeInfo, order);
+    // Set the requested output data type (don't inherit from input)
+    ArrayOptions::setDataType(newShapeInfo, dataType);
     auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
     delete[] newShapeInfo;
     return ret;
@@ -450,13 +458,15 @@ LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType
 
     if (supportOldShapes) {
       newShapeInfo = new sd::LongType[shape::shapeInfoLength(2)];
-      shape::shapeOldScalar(ArrayOptions::dataType(shapeInfo), newShapeInfo, 'c');
+      // Use the requested dataType, not the input's data type
+      shape::shapeOldScalar(dataType, newShapeInfo, 'c');
       auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
       delete[] newShapeInfo;
 
       return ret;
     } else {
-      newShapeInfo = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(shapeInfo), workspace);
+      // Use the requested dataType, not the input's data type
+      newShapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, workspace);
       auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
       delete[] newShapeInfo;
 
@@ -490,6 +500,8 @@ LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType
   }
 
   updateStridesAndType(newShapeInfo, shapeInfo, order);
+  // Set the requested output data type (don't inherit from input)
+  ArrayOptions::setDataType(newShapeInfo, dataType);
 
   auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
   RELEASE(newShapeInfo, workspace);
@@ -520,7 +532,7 @@ LongType* ShapeUtils::evalReduceShapeInfo(char order, std::vector<LongType>* dim
       delete[] newShapeInfo;
       return ret;
     } else if (supportOldShapes) {
-      newShapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, workspace);
+      newShapeInfo = new sd::LongType[shape::shapeInfoLength(2)];
       shape::shapeOldScalar(dataType, newShapeInfo, 'c');
       auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
       delete[] newShapeInfo;
@@ -874,7 +886,9 @@ std::vector<LongType> ShapeUtils::pullShapeFromShapeInfo(const LongType* shapeIn
 }
 
 std::string ShapeUtils::shapeAsString(NDArray* array) {
-  if (array->rankOf() == 0 && !array->isEmpty()) return "[0]";
+  // For scalars (rank 0), return "[]" which is the correct shape representation
+  // Previously returned "[0]" which was confusing as it looks like a 1D array with 0 elements
+  if (array->rankOf() == 0) return "[]";
 
   std::string result;
 

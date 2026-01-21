@@ -129,20 +129,55 @@ public class OpaqueDataBuffer extends Pointer {
      * @throws RuntimeException if registration fails (buffer must be cleaned up by caller)
      */
     private static void registerWithDeallocatorService(OpaqueDataBuffer buffer) {
+        registerWithDeallocatorService(buffer, false);
+    }
+
+    /**
+     * Registers this OpaqueDataBuffer with the DeallocatorService for automatic cleanup.
+     *
+     * CRITICAL FIX (Option 1): This overload allows marking the buffer as constant BEFORE
+     * the deallocator is registered, preventing the race condition where GC could trigger
+     * deallocation between buffer creation and setConstant() being called.
+     *
+     * @param buffer The buffer to register
+     * @param isConstant If true, marks the deallocator as constant immediately to prevent deallocation
+     * @throws RuntimeException if registration fails (buffer must be cleaned up by caller)
+     */
+    private static void registerWithDeallocatorService(OpaqueDataBuffer buffer, boolean isConstant) {
         try {
             DeallocatorService service = Nd4j.getDeallocatorService();
             long uniqueId = service.nextValue();
             int targetDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-            
+
             OpaqueDataBufferDeallocator deallocator = new OpaqueDataBufferDeallocator(
                 buffer, uniqueId, targetDevice
             );
-            
+
+            if (isConstant) {
+                deallocator.setConstant(true);
+                // Also set on native side immediately - MUST check return value!
+                // If this fails, the buffer was already closed (use-after-free race condition)
+                boolean nativeSuccess = Nd4j.getNativeOps().dbSetConstant(buffer, true);
+                if (!nativeSuccess) {
+                    throw new IllegalStateException(
+                        "RACE CONDITION DETECTED in registerWithDeallocatorService: Failed to set constant flag on buffer at " +
+                        buffer.address() + " because the native buffer was already closed. " +
+                        "This indicates a timing issue where the buffer was freed before it could be marked constant. " +
+                        "Buffer allocation trace: " + (buffer.allocationTrace != null ? buffer.allocationTrace : "trace not available"));
+                }
+                buffer.retainReference();
+            }
+
             buffer.deallocator = deallocator;
-            service.pickObject(deallocator);
-            
+
+            // Only register with DeallocatorService if not constant
+            // Constants should never be deallocated by GC
+            if (!isConstant) {
+                service.pickObject(deallocator);
+            }
+
             if (log.isTraceEnabled()) {
-                log.trace("Registered OpaqueDataBuffer {} with DeallocatorService", uniqueId);
+                log.trace("Registered OpaqueDataBuffer {} with DeallocatorService, isConstant={}", uniqueId, isConstant);
             }
         } catch (Exception e) {
             // LEAK FIX: If registration fails, caller must clean up the buffer
@@ -152,24 +187,92 @@ public class OpaqueDataBuffer extends Pointer {
     }
 
     public static OpaqueDataBuffer externalizedDataBuffer(long numElements, @NonNull DataType dataType, Pointer primary, Pointer special) {
-        // NOTE: Do NOT call retainReference() - it prevents DeallocatorService from working!
-        // DeallocatorService relies on the Java object becoming garbage-collectible
-        OpaqueDataBuffer ret = Nd4j.getNativeOps().dbCreateExternalDataBuffer(numElements, dataType.toInt(), primary, special);
-        
-        if(NativeOpsHolder.getInstance().getDeviceNativeOps().isFuncTrace())
-            ret.captureTrace();
-        
-        // Register with DeallocatorService
-        if (ret != null && !ret.isNull()) {
-            try {
-                registerWithDeallocatorService(ret);
-            } catch (Exception e) {
-                // LEAK FIX: Clean up buffer if registration fails
-                Nd4j.getNativeOps().dbClose(ret);
-                throw e;
+        return externalizedDataBuffer(numElements, dataType, primary, special, false);
+    }
+
+    /**
+     * Creates an externalized data buffer that wraps existing native pointers.
+     * The buffer is automatically registered with DeallocatorService for cleanup.
+     *
+     * CRITICAL FIX: This overload allows marking the buffer as constant IMMEDIATELY
+     * during registration, BEFORE GC can run and deallocate it. This prevents
+     * the race condition where:
+     * 1. Buffer is created
+     * 2. GC runs and frees buffer (because isConstant is false)
+     * 3. setConstant(true) is called but fails (buffer already freed)
+     *
+     * CRITICAL FIX (CUDA error 700): Ensure device assignment happens BEFORE native buffer
+     * wrapper creation. Even though this wraps existing pointers, the device assignment
+     * is needed to ensure the thread is bound to a device before any native operations.
+     *
+     * @param numElements Number of elements
+     * @param dataType Data type
+     * @param primary Primary (host) pointer
+     * @param special Special (device) pointer
+     * @param isConstant If true, marks as constant immediately to prevent GC deallocation
+     * @return Externalized buffer with appropriate constant protection
+     */
+    public static OpaqueDataBuffer externalizedDataBuffer(long numElements, @NonNull DataType dataType, Pointer primary, Pointer special, boolean isConstant) {
+        // CRITICAL: Ensure device is assigned for this thread BEFORE any native operations.
+        Nd4j.getAffinityManager().getDeviceForCurrentThread();
+
+        OpaqueDataBuffer ret;
+
+        if (isConstant) {
+            // CRITICAL FIX: For constant buffers, use the new native function that marks
+            // the buffer constant IN NATIVE CODE before returning to Java.
+            // This eliminates the race condition where GC can finalize the buffer
+            // before we call setConstant() on the Java side.
+            ret = Nd4j.getNativeOps().dbCreateConstantExternalDataBuffer(numElements, dataType.toInt(), primary, special);
+
+            if (ret != null && !ret.isNull()) {
+                // Prevent JavaCPP from attaching a deallocator (extra safety)
+                ret.retainReference();
+
+                if(NativeOpsHolder.getInstance().getDeviceNativeOps().isFuncTrace())
+                    ret.captureTrace();
+            }
+
+            // Register with DeallocatorService - buffer is already constant on native side
+            if (ret != null && !ret.isNull()) {
+                try {
+                    // Pass isConstant=true so Java side knows it's constant,
+                    // but dbSetConstant will see it's already constant and succeed
+                    registerWithDeallocatorService(ret, true);
+                } catch (Exception e) {
+                    // Constant buffers should never fail registration since they're
+                    // already protected on native side, but handle just in case
+                    log.error("Failed to register constant buffer with DeallocatorService", e);
+                    // Don't call dbClose - constant buffers should never be closed
+                    throw e;
+                }
+            }
+        } else {
+            // Non-constant buffers use the regular path
+            ret = Nd4j.getNativeOps().dbCreateExternalDataBuffer(numElements, dataType.toInt(), primary, special);
+
+            if (ret != null && !ret.isNull()) {
+                ret.retainReference();
+
+                if(NativeOpsHolder.getInstance().getDeviceNativeOps().isFuncTrace())
+                    ret.captureTrace();
+
+                // Register with DeallocatorService
+                try {
+                    registerWithDeallocatorService(ret, false);
+                } catch (Exception e) {
+                    // LEAK FIX: Clean up buffer if registration fails
+                    Nd4j.getNativeOps().dbClose(ret);
+                    throw e;
+                }
             }
         }
-        
+
+        // If ret is null, it means allocation failed - throw an exception with context
+        if (ret == null || ret.isNull()) {
+            throw new IllegalStateException("Failed to allocate external data buffer with " + numElements + " elements of type " + dataType);
+        }
+
         return ret;
     }
 
@@ -181,6 +284,11 @@ public class OpaqueDataBuffer extends Pointer {
      * - Clean up failed buffers in retry loop
      * - Clean up buffer if registration fails
      *
+     * CRITICAL FIX (CUDA error 700): Ensure device assignment happens BEFORE native allocation.
+     * Without this, multiple threads starting simultaneously could all see CUDA device 0 (default),
+     * but then get different device assignments from Java's round-robin, leading to illegal
+     * memory access when operations try to access buffers on the wrong device.
+     *
      * @param numElements Number of elements
      * @param dataType Data type
      * @param allocateBoth Whether to allocate both host and device buffers
@@ -191,13 +299,23 @@ public class OpaqueDataBuffer extends Pointer {
         int ec = 0;
         String em = null;
 
+        // CRITICAL: Ensure device is assigned for this thread BEFORE any native allocation.
+        // This ensures the native code allocates the buffer on the correct device.
+        // Without this, there's a race condition where:
+        // 1. Native code uses CUDA's current device (often device 0)
+        // 2. Java later assigns a different device via round-robin
+        // 3. Subsequent operations fail with CUDA error 700 (illegal memory access)
+        Nd4j.getAffinityManager().getDeviceForCurrentThread();
+
         for (int t = 0; t < MAX_TRIES; t++) {
             try {
                 // try to allocate data buffer
                 buffer = Nd4j.getNativeOps().allocateDataBuffer(numElements, dataType.toInt(), allocateBoth);
-                
+
                 // Check if allocation succeeded
                 if(buffer != null && !buffer.isNull()) {
+                    buffer.retainReference();
+
                     // Register with DeallocatorService
                     try {
                         registerWithDeallocatorService(buffer);
@@ -215,6 +333,84 @@ public class OpaqueDataBuffer extends Pointer {
                     }
                 }
                 
+                // check error code
+                ec = Nd4j.getNativeOps().lastErrorCode();
+                if (ec != 0) {
+                    em = Nd4j.getNativeOps().lastErrorMessage();
+
+                    // if allocation failed it might be caused by casual OOM, so we'll try GC
+                    System.gc();
+
+                    // sleeping for 50ms
+                    Thread.sleep(50);
+                } else {
+                    // Buffer is null but no error - shouldn't happen, but break to avoid infinite loop
+                    break;
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("Allocation interrupted", e);
+            }
+        }
+
+        // if MAX_TRIES is over, we'll just throw an exception
+        throw new RuntimeException("Allocation failed: [" + em + "] for amount of memory " + numElements * dataType.width() + " bytes");
+    }
+
+    /**
+     * Allocates a new InteropDataBuffer and optionally marks it as constant.
+     *
+     * CRITICAL FIX (Option 1): This method allows creating constant buffers that are protected
+     * from deallocation BEFORE the deallocator is registered with DeallocatorService.
+     * This prevents the race condition where GC could trigger deallocation between
+     * buffer creation and setConstant() being called.
+     *
+     * CRITICAL FIX (CUDA error 700): Ensure device assignment happens BEFORE native allocation.
+     * Without this, multiple threads starting simultaneously could all see CUDA device 0 (default),
+     * but then get different device assignments from Java's round-robin, leading to illegal
+     * memory access when operations try to access buffers on the wrong device.
+     *
+     * @param numElements Number of elements
+     * @param dataType Data type
+     * @param allocateBoth Whether to allocate both host and device buffers
+     * @param isConstant If true, marks the buffer as constant immediately to prevent deallocation
+     * @return Allocated buffer with appropriate constant protection
+     */
+    public static OpaqueDataBuffer allocateDataBuffer(long numElements, @NonNull DataType dataType, boolean allocateBoth, boolean isConstant) {
+        OpaqueDataBuffer buffer = null;
+        int ec = 0;
+        String em = null;
+
+        // CRITICAL: Ensure device is assigned for this thread BEFORE any native allocation.
+        // This ensures the native code allocates the buffer on the correct device.
+        Nd4j.getAffinityManager().getDeviceForCurrentThread();
+
+        for (int t = 0; t < MAX_TRIES; t++) {
+            try {
+                // try to allocate data buffer
+                buffer = Nd4j.getNativeOps().allocateDataBuffer(numElements, dataType.toInt(), allocateBoth);
+
+                // Check if allocation succeeded
+                if(buffer != null && !buffer.isNull()) {
+                    buffer.retainReference();
+
+                    // Register with DeallocatorService, marking as constant if requested
+                    try {
+                        registerWithDeallocatorService(buffer, isConstant);
+
+                        // Capture trace if needed
+                        if(Nd4j.getNativeOps().isFuncTrace())
+                            buffer.captureTrace();
+
+                        // Success - return the buffer
+                        return buffer;
+                    } catch (Exception regEx) {
+                        // LEAK FIX: Clean up buffer if registration fails
+                        Nd4j.getNativeOps().dbClose(buffer);
+                        throw regEx;
+                    }
+                }
+
                 // check error code
                 ec = Nd4j.getNativeOps().lastErrorCode();
                 if (ec != 0) {
@@ -399,6 +595,9 @@ public class OpaqueDataBuffer extends Pointer {
     public void syncToSpecial() {
         Nd4j.getNativeOps().dbSyncToSpecial(this);
     }
+    public void migrate() {
+        Nd4j.getNativeOps().dbMigrate(this);
+    }
 
     /**
      * This method synchronizes host memory
@@ -447,10 +646,63 @@ public class OpaqueDataBuffer extends Pointer {
 
     /**
      * Gets the deallocator associated with this OpaqueDataBuffer.
-     * 
+     *
      * @return The deallocator or null if not registered
      */
     public OpaqueDataBufferDeallocator getDeallocator() {
         return deallocator;
+    }
+
+    /**
+     * Marks this buffer as constant (immutable).
+     * Constant buffers are never freed by the DeallocatorService because they
+     * wrap cached/shared data that has a different lifecycle.
+     *
+     * This should be called for buffers that wrap cached shape info pointers
+     * or other constant data that should not be deallocated when the Java
+     * wrapper is garbage collected.
+     *
+     * @param isConstant true to mark as constant, false otherwise
+     */
+    public void setConstant(boolean isConstant) {
+        if (this.isNull()) {
+            return;
+        }
+
+        boolean nativeSuccess = Nd4j.getNativeOps().dbSetConstant(this, isConstant);
+
+        if (!nativeSuccess) {
+            // The native buffer was already closed - this is a race condition!
+            // The buffer was deallocated by GC before we could mark it constant.
+            // This typically means the buffer was not protected by registerPendingConstant().
+            //
+            // We throw an exception here instead of silently continuing because:
+            // 1. Silently continuing would cause use-after-free later
+            // 2. The caller needs to know their buffer was freed
+            // 3. This helps diagnose race conditions in buffer lifecycle management
+            throw new IllegalStateException(
+                "RACE CONDITION DETECTED: Failed to set constant flag on buffer at " + this.address() +
+                " because it was already freed by GC. This indicates a bug in buffer lifecycle management. " +
+                "The buffer should have been created with isConstant=true to prevent this race condition.");
+        }
+
+        if (isConstant) {
+            this.retainReference();
+        }
+
+        // Also set the constant flag on the Java-side deallocator.
+        // This prevents ND4J's DeallocatorService from trying to deallocate this buffer.
+        if (deallocator != null) {
+            deallocator.setConstant(isConstant);
+        }
+    }
+
+    /**
+     * Returns whether this buffer is marked as constant.
+     *
+     * @return true if constant, false otherwise
+     */
+    public boolean isConstant() {
+        return deallocator != null && deallocator.isConstant();
     }
 }

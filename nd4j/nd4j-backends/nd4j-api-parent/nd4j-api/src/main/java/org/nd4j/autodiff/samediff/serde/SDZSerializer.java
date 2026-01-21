@@ -419,6 +419,93 @@ public class SDZSerializer {
     }
 
     /**
+     * Loads a SameDiff model from a ZIP archive with intelligent background transfer monitoring.
+     * This overload uses ModelLoadingContext for optimized model loading:
+     * <ul>
+     *   <li>Pre-analyzes model size from manifest</li>
+     *   <li>Selects optimal target device (GPU/CPU) based on available memory</li>
+     *   <li>Schedules background async transfers for better performance</li>
+     *   <li>Logs transfer metrics and statistics on close</li>
+     * </ul>
+     *
+     * @param modelZipFile     Path to the .sdz model archive file.
+     * @param loadUpdaterState If true, attempt to load updater state from the internal shards.
+     * @param context          The ModelLoadingContext for optimized loading and transfer monitoring.
+     * @return The loaded SameDiff instance.
+     * @throws IOException If the file is not a valid ZIP, extraction fails, or loading fails.
+     */
+    @SneakyThrows
+    public static SameDiff load(@NonNull File modelZipFile, boolean loadUpdaterState, @NonNull ModelLoadingContext context) throws IOException {
+        Preconditions.checkNotNull(modelZipFile, "Model ZIP file path cannot be null.");
+        Preconditions.checkNotNull(context, "ModelLoadingContext cannot be null.");
+        Preconditions.checkArgument(modelZipFile.exists() && modelZipFile.isFile(),
+                "Model ZIP file does not exist or is not a file: %s", modelZipFile.getAbsolutePath());
+
+        if (!isZipFile(modelZipFile)) {
+            throw new IOException("File is not a valid ZIP archive: " + modelZipFile.getAbsolutePath());
+        }
+
+        log.info("Loading model with intelligent context: target={}, totalSize={}",
+                context.getTargetDevice().getDeviceId(),
+                context.getSizeInfo().toSummaryString());
+
+        Path tempDir = Files.createTempDirectory("sdz-serializer-load-");
+        log.debug("Using temporary directory for ZIP extraction: {}", tempDir);
+        SameDiff loadedSameDiff;
+
+        try {
+            log.info("Extracting ZIP archive '{}' to temporary directory...", modelZipFile.getName());
+            extractZip(modelZipFile, tempDir.toFile());
+
+            File loadPath = determineLoadPath(tempDir.toFile());
+            if (loadPath == null) {
+                throw new IOException("Could not determine the internal model file path after extracting ZIP archive to: " + tempDir);
+            }
+            log.info("Determined internal load path: {}", loadPath.getAbsolutePath());
+
+            log.info("Loading model using SameDiffSerializer with context from extracted files...");
+            loadedSameDiff = SameDiffSerializer.load(loadPath, loadUpdaterState, context);
+
+        } finally {
+            try {
+                FileUtils.deleteDirectory(tempDir.toFile());
+                log.debug("Cleaned up temporary load directory: {}", tempDir);
+            } catch (IOException e) {
+                log.warn("Failed to delete temporary load directory: {}", tempDir, e);
+            }
+        }
+
+        if (loadedSameDiff == null) {
+            throw new IOException("SameDiffSerializer.load returned null after loading from extracted files.");
+        }
+        log.info("Successfully loaded SameDiff model from ZIP archive with context: {}", modelZipFile.getAbsolutePath());
+        return loadedSameDiff;
+    }
+
+    /**
+     * Loads a SameDiff model with automatic intelligent loading.
+     * Creates a ModelLoadingContext automatically, analyzes the model, and selects
+     * the optimal device for loading.
+     *
+     * @param modelZipFile     Path to the .sdz model archive file.
+     * @param loadUpdaterState If true, attempt to load updater state from the internal shards.
+     * @param useIntelligentLoading If true, uses ModelLoadingContext for optimized loading.
+     * @return The loaded SameDiff instance.
+     * @throws IOException If loading fails.
+     */
+    @SneakyThrows
+    public static SameDiff load(@NonNull File modelZipFile, boolean loadUpdaterState, boolean useIntelligentLoading) throws IOException {
+        if (!useIntelligentLoading) {
+            return load(modelZipFile, loadUpdaterState);
+        }
+
+        // Use intelligent loading with automatic context
+        try (ModelLoadingContext context = ModelLoadingContext.forModel(modelZipFile)) {
+            return load(modelZipFile, loadUpdaterState, context);
+        }
+    }
+
+    /**
      * Determines the correct file path within the extraction directory
      * to pass to the original SameDiffSerializer.load method.
      * Prioritizes valid SDNB files over naming conventions.

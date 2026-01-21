@@ -34,7 +34,7 @@ import org.nd4j.nativeblas.OpaqueDataBuffer;
 public class CpuDeallocator implements Deallocator {
     private final transient OpaqueDataBuffer opaqueDataBuffer;
     private LogEvent logEvent;
-    private boolean isConstant;
+    private volatile boolean isConstant;
 
     public CpuDeallocator(BaseCpuDataBuffer buffer) {
         opaqueDataBuffer = buffer.getOpaqueDataBuffer();
@@ -57,8 +57,19 @@ public class CpuDeallocator implements Deallocator {
 
     @Override
     public void deallocate() {
-        if (opaqueDataBuffer == null)
-            throw new RuntimeException("opaqueDataBuffer is null");
+        if (isConstant) {
+            if (log.isTraceEnabled()) {
+                log.trace("Skipping deallocation of constant buffer");
+            }
+            return;
+        }
+
+        if (opaqueDataBuffer == null || opaqueDataBuffer.isNull()) {
+            if (log.isTraceEnabled()) {
+                log.trace("Skipping deallocation of already-freed buffer");
+            }
+            return;
+        }
 
         //update the log event with the actual time of de allocation and then
         //perform logging
@@ -68,13 +79,29 @@ public class CpuDeallocator implements Deallocator {
             EventLogger.getInstance().log(logEvent);
         }
 
-        if(!opaqueDataBuffer.isNull())
-           Nd4j.getNativeOps().deleteDataBuffer(opaqueDataBuffer);
-    }
+        Nd4j.getNativeOps().dbClose(opaqueDataBuffer);
 
+        opaqueDataBuffer.setNull();
+    }
 
     @Override
     public boolean isConstant() {
         return isConstant;
+    }
+
+    /**
+     * Updates the constant flag for this deallocator.
+     * This is called when DataBuffer.setConstant() is invoked to ensure
+     * that buffers marked as constant (like shape info) are never freed.
+     *
+     * @param constant true if this buffer should never be deallocated
+     */
+    @Override
+    public void setConstant(boolean constant) {
+        this.isConstant = constant;
+        // Also update the log event if present
+        if (logEvent != null) {
+            logEvent.setConstant(constant);
+        }
     }
 }

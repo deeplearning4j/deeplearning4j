@@ -93,43 +93,51 @@ CUSTOM_OP_IMPL(dynamic_partition_bp, 3, 2, false, 0, 1) {
   auto indices = INPUT_VARIABLE(1);
   auto numPartition = INT_ARG(0);
 
-  std::vector<NDArray *> outputList(2);  // only for output
+  // Output gradients
+  auto gradInput = OUTPUT_VARIABLE(0);   // gradient w.r.t. input data
+  auto gradIndices = OUTPUT_VARIABLE(1); // gradient w.r.t. partition indices (zeros)
+
+  // Gradient w.r.t. indices is always zero (indices are not differentiable)
+  gradIndices->assign(0);
+
+  // Collect gradients from each partition output
   std::vector<NDArray *> gradOutList(numPartition);
   for (sd::LongType e = 0; e < numPartition; e++) {
     gradOutList[e] = INPUT_VARIABLE(e + 2);
   }
-  outputList[0] = OUTPUT_VARIABLE(0);
-  outputList[1] = OUTPUT_VARIABLE(1);
-  NDArray originalIndices(*indices);
-  originalIndices.linspace(0);
-  ops::dynamic_partition op;
-  auto res = op.evaluate({&originalIndices, indices}, {numPartition});
-  REQUIRE_TRUE(res.status() == sd::Status::OK, 0, "dynamic_partition_bp: Error with dynamic partitioning.");
-  ops::dynamic_stitch stitchOp;
-  std::vector<NDArray *> partitions(numPartition * 2);
-  for (int i = 0; i < res.size(); i++) {
-    partitions[i] = res.at(i);
-    partitions[i + numPartition] = gradOutList[i];
-  }
 
-  auto result = stitchOp.evaluate(partitions, {numPartition});
-  REQUIRE_TRUE(result.status() == sd::Status::OK, 0, "dynamic_partition_bp: Error with dynamic partitioning.");
-  outputList[1]->assign(indices);
-  outputList[0]->assign(result.at(0));
+  // Track position within each partition
+  std::vector<sd::LongType> partitionCounters(numPartition, 0);
+
+  // Scatter gradients back to original positions
+  // For each element i: grad_input[i] = grad_partition[partition[i]][position_within_partition[i]]
+  auto len = indices->lengthOf();
+  for (sd::LongType i = 0; i < len; i++) {
+    auto partitionIdx = indices->e<sd::LongType>(i);
+    REQUIRE_TRUE(partitionIdx >= 0 && partitionIdx < numPartition, 0,
+                 "dynamic_partition_bp: partition index %lld out of range [0, %d)", partitionIdx, numPartition);
+    auto posInPartition = partitionCounters[partitionIdx]++;
+    auto gradVal = gradOutList[partitionIdx]->e<double>(posInPartition);
+    gradInput->p(i, gradVal);
+  }
 
   return sd::Status::OK;
 }
 
 DECLARE_SHAPE_FN(dynamic_partition_bp) {
-  auto numPartition = INT_ARG(0);
-  auto indices = INPUT_VARIABLE(1);
-  std::vector<sd::LongType> partitionSizes(numPartition, 0);
-
   auto shapes = SHAPELIST();
-  // just copy shape info from input and indices to output
-  for (sd::LongType i = 0; i < 2; i++) {
-    shapes->push_back(CONSTANT(inputShape->at(i)));
-  }
+
+  // Output 0: gradient w.r.t. input - same shape as input
+  auto inputShapeInfo = inputShape->at(0);
+  shapes->push_back(ConstantShapeHelper::getInstance().createShapeInfo(
+      ArrayOptions::dataType(inputShapeInfo), shape::order(inputShapeInfo),
+      shape::rank(inputShapeInfo), shape::shapeOf(inputShapeInfo), 0));
+
+  // Output 1: gradient w.r.t. indices - same shape as indices (will be zeros)
+  auto indicesShapeInfo = inputShape->at(1);
+  shapes->push_back(ConstantShapeHelper::getInstance().createShapeInfo(
+      ArrayOptions::dataType(indicesShapeInfo), shape::order(indicesShapeInfo),
+      shape::rank(indicesShapeInfo), shape::shapeOf(indicesShapeInfo), 0));
 
   return shapes;
 }

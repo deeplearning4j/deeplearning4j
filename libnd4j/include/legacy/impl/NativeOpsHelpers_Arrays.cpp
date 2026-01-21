@@ -50,7 +50,6 @@
 #include <io.h>
 #endif
 #include <errno.h>
-#include <ops/declarable/CustomOperations.h>
 #include <sys/types.h>
 #include <unordered_map>
 #include <memory>
@@ -63,9 +62,10 @@ extern std::unordered_map<sd::TadPack*, std::shared_ptr<sd::TadPack>> g_tadPackR
 extern std::mutex g_tadPackMutex;
 
 // OpaqueNDArray allocation tracking
-static std::atomic<size_t> g_opaqueArrayCount{0};
-static std::atomic<size_t> g_opaqueArrayBytes{0};
-static std::mutex g_opaqueArrayMutex;
+// Note: Not static - these need external linkage for platform-specific deleteNDArray implementations
+std::atomic<size_t> g_opaqueArrayCount{0};
+std::atomic<size_t> g_opaqueArrayBytes{0};
+std::mutex g_opaqueArrayMutex;
 
 // InteropDataBuffer/OpaqueDataBuffer allocation tracking
 static std::atomic<size_t> g_dataBufferCount{0};
@@ -88,29 +88,9 @@ static std::mutex g_dataBufferMutex;
 #include <array/DataTypeUtils.h>
 
 
-
-
-/*
- * TypeDef:
- *     void convertTypes(Pointer *extras, DataType srcType, Pointer hX, long N, DataType dstType, Pointer hZ);
- */
-void deleteNDArray(OpaqueNDArray array) {
-  if (array == nullptr) {
-    return;
-  }
-
-  // Track deallocation
-  size_t bytes = array->lengthOf() * array->sizeOfT();
-  g_opaqueArrayCount.fetch_sub(1, std::memory_order_relaxed);
-  g_opaqueArrayBytes.fetch_sub(bytes, std::memory_order_relaxed);
-
-  if(sd::Environment::getInstance().isVerbose()) {
-    sd_printf("deleteNDArray: deallocating array at %p, count=%zu, total_bytes=%zu, freed_bytes=%zu\n",
-              array, g_opaqueArrayCount.load(), g_opaqueArrayBytes.load(), bytes);
-  }
-
-  delete array;
-}
+// deleteNDArray is implemented in platform-specific files:
+// - cpu/NativeOpsHelpers_Arrays_delete.cpp for CPU (no sync needed)
+// - cuda/NativeOpsHelpers_Arrays_delete.cu for CUDA (with cudaDeviceSynchronize)
 
 sd::LongType getOpaqueNDArrayOffset(OpaqueNDArray array) {
   return array->offset();
@@ -124,15 +104,19 @@ const sd::LongType* getOpaqueNDArrayShapeInfo(OpaqueNDArray array) {
 
 
 void* getOpaqueNDArrayBuffer(OpaqueNDArray array) {
+  // Return nullptr for empty arrays or arrays with null buffers
+  // This is expected behavior for empty arrays with shape like [0,1]
   if(array == nullptr || array->dataBuffer() == nullptr) {
-    THROW_EXCEPTION("getOpaqueNDArrayBuffer: Array or data buffer was null!");
+    return nullptr;
   }
   return array->dataBuffer()->primary();
 }
 
 void* getOpaqueNDArraySpecialBuffer(OpaqueNDArray array) {
+  // Return nullptr for empty arrays or arrays with null buffers
+  // This is expected behavior for empty arrays with shape like [0,1]
   if(array == nullptr || array->dataBuffer() == nullptr) {
-    THROW_EXCEPTION("getOpaqueNDArraySpecialBuffer: Array or data buffer was null!");
+    return nullptr;
   }
   return array->dataBuffer()->special();
 }
@@ -142,6 +126,10 @@ sd::LongType getShapeInfoLength(OpaqueNDArray array) {
 }
 
 sd::LongType getOpaqueNDArrayLength(OpaqueNDArray array) {
+  // Return 0 for empty arrays or arrays with null buffers
+  if(array == nullptr || array->dataBuffer() == nullptr) {
+    return 0;
+  }
   return array->dataBuffer()->getNumElements();
 }
 
@@ -164,9 +152,6 @@ OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer *shapeInfo,
                     "This indicates the Java-side DataBuffer for shape information is corrupted or deallocated.");
   }
 
-  // CRITICAL: Validate that the shape info DATA is valid before using it.
-  // The pointer may be valid (non-null) but point to garbage/uninitialized memory.
-  // This catches use-after-free and memory corruption issues early.
   sd::LongType rank = shapeInfoCast[0];
   if (rank < 0 || rank > SD_MAX_RANK) {
     std::string errorMessage;
@@ -180,9 +165,13 @@ OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer *shapeInfo,
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
-  if(shape::isEmpty(shapeInfoCast) && buffer != nullptr) {
+  // An array is effectively empty if: 1) ARRAY_EMPTY flag is set, OR 2) length is 0
+  // Arrays with shape like [0,1] or [2,0] have length 0 and may not have a buffer
+  bool effectivelyEmpty = shape::isEmpty(shapeInfoCast) || shape::length(shapeInfoCast) == 0;
+
+  if(effectivelyEmpty && buffer != nullptr) {
     THROW_EXCEPTION("createOpaqueNDArray: Shape info was empty but buffer was not null!");
-  } else if(!shape::isEmpty(shapeInfoCast) && buffer == nullptr) {
+  } else if(!effectivelyEmpty && buffer == nullptr) {
     THROW_EXCEPTION("createOpaqueNDArray: Shape info was not empty but buffer was null!");
   }
 
@@ -198,16 +187,18 @@ OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer *shapeInfo,
     offset
   );
 
-  // CRITICAL: Validate the newly created NDArray immediately
-  // This catches any issue with the constructor not properly setting _shapeInfoBuffer
+  // Note: The specialBuffer parameter is intentionally not used here because in practice,
+  // Java passes the same OpaqueDataBuffer for both buffer and specialBuffer. The DataBuffer
+  // already contains both primary (host) and special (device) pointers correctly configured.
+  // Attempting to modify the special buffer here would cause use-after-free issues because
+  // setSpecialBuffer() calls deleteSpecial() first.
+
   if (ret != nullptr) {
     sd::ConstantShapeBuffer* shapeBuffer = ret->shapeInfoConstBuffer();
-    fprintf(stderr, "createOpaqueNDArray: created array at %p, shapeInfoConstBuffer=%p\n", (void*)ret, (void*)shapeBuffer);
-    fflush(stderr);
 
     if (shapeBuffer == nullptr) {
       std::string errorMessage;
-      errorMessage += "createOpaqueNDArray: CRITICAL - newly created NDArray has nullptr _shapeInfoBuffer! ";
+      errorMessage += "createOpaqueNDArray: newly created NDArray has nullptr _shapeInfoBuffer! ";
       errorMessage += "NDArray ptr: ";
       errorMessage += std::to_string(reinterpret_cast<uintptr_t>(ret));
       delete ret;
@@ -217,7 +208,7 @@ OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer *shapeInfo,
     // Check if shapeBuffer equals ret - this would indicate corruption
     if (reinterpret_cast<uintptr_t>(shapeBuffer) == reinterpret_cast<uintptr_t>(ret)) {
       std::string errorMessage;
-      errorMessage += "createOpaqueNDArray: CRITICAL - _shapeInfoBuffer equals NDArray ptr! ";
+      errorMessage += "createOpaqueNDArray: _shapeInfoBuffer equals NDArray ptr! ";
       errorMessage += "This indicates uninitialized memory or constructor failure. ";
       errorMessage += "NDArray ptr: ";
       errorMessage += std::to_string(reinterpret_cast<uintptr_t>(ret));
@@ -227,7 +218,7 @@ OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer *shapeInfo,
 
     if (!shapeBuffer->isValid()) {
       std::string errorMessage;
-      errorMessage += "createOpaqueNDArray: CRITICAL - newly created NDArray has invalid _shapeInfoBuffer! ";
+      errorMessage += "createOpaqueNDArray: newly created NDArray has invalid _shapeInfoBuffer! ";
       errorMessage += "NDArray ptr: ";
       errorMessage += std::to_string(reinterpret_cast<uintptr_t>(ret));
       errorMessage += ", shapeBuffer ptr: ";
@@ -703,7 +694,7 @@ const char* getConstantShapeBufferStackTrace(OpaqueConstantShapeBuffer buffer) {
 
 Context *createGraphContext(int nodeId) { return new Context(nodeId); }
 
-OpaqueRandomGenerator getGraphContextRandomGenerator(Context *ptr) { return &ptr->randomGenerator(); }
+OpaqueRandomGenerator* getGraphContextRandomGenerator(Context *ptr) { return &ptr->randomGenerator(); }
 
 void markGraphContextInplace(Context *ptr, bool reallyInplace) { ptr->markInplace(reallyInplace); }
 
@@ -741,8 +732,6 @@ void setGraphContextInputArraysArr(OpaqueContext* ptr, int numArrays, OpaqueNDAr
       THROW_EXCEPTION(errorMessage.c_str());
     }
 
-    // CRITICAL: Validate the NDArray's shapeInfo BEFORE passing to setInputArray
-    // This catches corruption in OpaqueNDArrays created via OpaqueNDArrayArr.createFrom()
     sd::NDArray* ndarray = arr[i];
 
     // DEBUG: Print memory layout of the NDArray pointer to detect corruption
@@ -826,7 +815,7 @@ void deleteGraphContext(Context *ptr) {
   delete ptr;
 }
 
-OpaqueRandomGenerator createRandomGenerator(sd::LongType rootSeed, sd::LongType nodeSeed) {
+OpaqueRandomGenerator* createRandomGenerator(sd::LongType rootSeed, sd::LongType nodeSeed) {
 #ifdef __cpp_exceptions
   try {
     return new RandomGenerator(rootSeed, nodeSeed);
@@ -839,29 +828,29 @@ OpaqueRandomGenerator createRandomGenerator(sd::LongType rootSeed, sd::LongType 
 #endif
 }
 
-sd::LongType getRandomGeneratorRootState(OpaqueRandomGenerator ptr) { return ptr->rootState(); }
+sd::LongType getRandomGeneratorRootState(OpaqueRandomGenerator* ptr) { return ptr->rootState(); }
 
-sd::LongType getRandomGeneratorNodeState(OpaqueRandomGenerator ptr) { return ptr->nodeState(); }
+sd::LongType getRandomGeneratorNodeState(OpaqueRandomGenerator* ptr) { return ptr->nodeState(); }
 
-void setRandomGeneratorStates(OpaqueRandomGenerator ptr, sd::LongType rootSeed, sd::LongType nodeSeed) {
+void setRandomGeneratorStates(OpaqueRandomGenerator* ptr, sd::LongType rootSeed, sd::LongType nodeSeed) {
   ptr->setStates(rootSeed, nodeSeed);
 }
 
-float getRandomGeneratorRelativeFloat(OpaqueRandomGenerator ptr, sd::LongType index) {
+float getRandomGeneratorRelativeFloat(OpaqueRandomGenerator* ptr, sd::LongType index) {
   return ptr->relativeT<float>(index);
 }
 
-double getRandomGeneratorRelativeDouble(OpaqueRandomGenerator ptr, sd::LongType index) {
+double getRandomGeneratorRelativeDouble(OpaqueRandomGenerator* ptr, sd::LongType index) {
   return ptr->relativeT<double>(index);
 }
 
-int getRandomGeneratorRelativeInt(OpaqueRandomGenerator ptr, sd::LongType index) { return ptr->relativeInt(index); }
+int getRandomGeneratorRelativeInt(OpaqueRandomGenerator* ptr, sd::LongType index) { return ptr->relativeInt(index); }
 
-sd::LongType getRandomGeneratorRelativeLong(OpaqueRandomGenerator ptr, sd::LongType index) {
+sd::LongType getRandomGeneratorRelativeLong(OpaqueRandomGenerator* ptr, sd::LongType index) {
   return ptr->relativeLong(index);
 }
 
-int getRandomGeneratorNextInt(OpaqueRandomGenerator ptr) {
+int getRandomGeneratorNextInt(OpaqueRandomGenerator* ptr) {
   // to nullify  _nodeState._long ^= (steps ^ 0xdeadbeef);
   // we will use step = 0xdeadbeef
   auto result = ptr->relativeInt(1);
@@ -869,25 +858,25 @@ int getRandomGeneratorNextInt(OpaqueRandomGenerator ptr) {
   return result;
 }
 
-sd::LongType getRandomGeneratorNextLong(OpaqueRandomGenerator ptr) {
+sd::LongType getRandomGeneratorNextLong(OpaqueRandomGenerator* ptr) {
   auto result = ptr->relativeLong(1);
   ptr->rewindH(0xdeadbeef);
   return result;
 }
 
-float getRandomGeneratorNextFloat(OpaqueRandomGenerator ptr) {
+float getRandomGeneratorNextFloat(OpaqueRandomGenerator* ptr) {
   auto result = ptr->relativeT<float>(1);
   ptr->rewindH(0xdeadbeef);
   return result;
 }
 
-double getRandomGeneratorNextDouble(OpaqueRandomGenerator ptr) {
+double getRandomGeneratorNextDouble(OpaqueRandomGenerator* ptr) {
   auto result = ptr->relativeT<double>(1);
   ptr->rewindH(0xdeadbeef);
   return result;
 }
 
-void deleteRandomGenerator(OpaqueRandomGenerator ptr) { delete ptr; }
+void deleteRandomGenerator(OpaqueRandomGenerator* ptr) { delete ptr; }
 
 
 /**

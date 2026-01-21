@@ -28,10 +28,6 @@ public abstract class Nd4jCpuHelper extends Nd4jCpuPresets implements NativeOps 
     private static final Logger log = LoggerFactory.getLogger(Nd4jCpuHelper.class);
 
     static {
-        // CRITICAL: Set OpenBLAS to single-threaded BEFORE native library loading.
-        // This prevents TLS (thread-local storage) corruption crashes when OpenBLAS's
-        // internal pthreads-based threading conflicts with the application's OpenMP threading.
-        // Users who need multi-threaded OpenBLAS can set OPENBLAS_NUM_THREADS environment variable.
         String openblasThreads = System.getenv("OPENBLAS_NUM_THREADS");
         String sdOpenblasThreads = System.getenv("SD_OPENBLAS_THREADS");
 

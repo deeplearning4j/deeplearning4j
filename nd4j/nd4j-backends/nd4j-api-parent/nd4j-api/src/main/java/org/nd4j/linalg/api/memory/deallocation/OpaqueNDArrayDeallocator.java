@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.OpaqueDataBuffer;
 import org.nd4j.nativeblas.OpaqueNDArray;
 
 /**
@@ -66,13 +67,46 @@ public class OpaqueNDArrayDeallocator implements Deallocatable, Deallocator {
 
     @Override
     public void deallocate() {
+        // Check constant flag first - constant arrays should never be freed
+        // This mirrors the behavior in OpaqueDataBufferDeallocator
+        if (constant) {
+            return;
+        }
+
         if (deallocated) {
             return;
         }
 
         synchronized (this) {
-            if (deallocated) {
+            if (constant || deallocated) {
                 return;
+            }
+
+            // DEFENSE-IN-DEPTH: Check if underlying buffers are constant.
+            // Even if this OpaqueNDArray's constant flag wasn't set, if the underlying
+            // data buffers are marked constant, we should NOT deallocate. This handles
+            // timing issues where setConstant() was called on the buffer but not yet
+            // propagated to the OpaqueNDArray.
+            if (array != null && !array.isNull()) {
+                try {
+                    OpaqueDataBuffer dataBufferRef = array.getDataBufferRef();
+                    if (dataBufferRef != null && dataBufferRef.getDeallocator() != null
+                            && dataBufferRef.getDeallocator().isConstant()) {
+                        // Underlying data buffer is constant - don't deallocate this array
+                        constant = true;  // Update our flag for future calls
+                        return;
+                    }
+                    OpaqueDataBuffer shapeInfoBufferRef = array.getShapeInfoBufferRef();
+                    if (shapeInfoBufferRef != null && shapeInfoBufferRef.getDeallocator() != null
+                            && shapeInfoBufferRef.getDeallocator().isConstant()) {
+                        // Underlying shape buffer is constant - don't deallocate this array
+                        constant = true;  // Update our flag for future calls
+                        return;
+                    }
+                } catch (Exception e) {
+                    // If we can't check, err on the side of caution and continue with deallocation
+                    // The deallocator checks already provide some protection
+                }
             }
 
             try {
@@ -80,10 +114,54 @@ public class OpaqueNDArrayDeallocator implements Deallocatable, Deallocator {
                     if (log.isTraceEnabled()) {
                         log.trace("Deallocating OpaqueNDArray with uniqueId: {}", uniqueId);
                     }
-                    
-                    // Call native cleanup directly to avoid infinite recursion
-                    Nd4j.getNativeOps().deleteNDArray(array);
-                    array.setNull();
+
+                    int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+                    int arrayDevice = targetDevice;
+                    try {
+                        int actualDevice = array.deviceId();
+                        if (actualDevice >= 0) {
+                            arrayDevice = actualDevice;
+                        }
+                    } catch (Exception e) {
+                        // Fall back to targetDevice if native query fails
+                    }
+
+                    int deviceCount = Nd4j.getAffinityManager().getNumberOfDevices();
+                    if (deviceCount <= 0 || arrayDevice < 0 || arrayDevice >= deviceCount) {
+                        if (Nd4j.getEnvironment().isDebug()) {
+                            log.debug("OpaqueNDArray deallocator: invalid array deviceId={} (devices={}); using targetDevice={}",
+                                    arrayDevice, deviceCount, targetDevice);
+                        }
+                        arrayDevice = targetDevice;
+                    }
+                    if (deviceCount > 0 && (arrayDevice < 0 || arrayDevice >= deviceCount)) {
+                        if (Nd4j.getEnvironment().isDebug()) {
+                            log.debug("OpaqueNDArray deallocator: invalid targetDevice={} (devices={}); using currentDevice={}",
+                                    targetDevice, deviceCount, currentDevice);
+                        }
+                        arrayDevice = currentDevice;
+                    }
+                    boolean switchedDevice = false;
+
+                    if (currentDevice != arrayDevice) {
+                        // Switch to the actual array device and reset cached context
+                        Nd4j.getAffinityManager().unsafeSetDevice(arrayDevice);
+                        switchedDevice = true;
+                    }
+
+                    try {
+                        // Synchronize the device before deleting to ensure all async ops are complete
+                        Nd4j.getExecutioner().commit();
+
+                        // Call native cleanup
+                        Nd4j.getNativeOps().deleteNDArray(array);
+                        array.setNull();
+                    } finally {
+                        // Restore original device context
+                        if (switchedDevice) {
+                            Nd4j.getAffinityManager().unsafeSetDevice(currentDevice);
+                        }
+                    }
                 }
             } catch (Exception e) {
                 log.error("Error deallocating OpaqueNDArray with uniqueId: " + uniqueId, e);
