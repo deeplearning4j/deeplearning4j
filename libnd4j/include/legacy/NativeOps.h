@@ -475,6 +475,8 @@ SD_LIB_EXPORT void dbExpandBuffer(OpaqueDataBuffer *dataBuffer, sd::LongType ele
 SD_LIB_EXPORT int dbUseCount(OpaqueDataBuffer* dataBuffer) ;
 SD_LIB_EXPORT void dbSyncToSpecial(OpaqueDataBuffer *dataBuffer) ;
 SD_LIB_EXPORT void dbSyncToPrimary(OpaqueDataBuffer *dataBuffer) ;
+SD_LIB_EXPORT void dbForceSyncToPrimary(OpaqueDataBuffer *dataBuffer) ;
+SD_LIB_EXPORT void dbForceSyncToSpecial(OpaqueDataBuffer *dataBuffer) ;
 
 /**
  * Batched asynchronous synchronization of multiple data buffers from host to device.

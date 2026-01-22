@@ -1019,17 +1019,23 @@ public class CudaZeroHandler implements MemoryHandler {
         // Native's ContextBuffers can be reinitialized at any time (e.g., when
         // AffinityManager.setCurrentDevice() detects device mismatch), so we
         // must always fetch current stream pointers rather than caching them.
+        // IMPORTANT: retainReference() prevents JavaCPP's NativeDeallocator from freeing
+        // the static singleton returned by defaultLaunchContext()
         val lc = nativeOps.defaultLaunchContext();
+        lc.retainReference();
 
+        // IMPORTANT: All pointers from launch context point to CUDA-allocated memory (cudaMalloc/cudaHostAlloc).
+        // We MUST call retainReference() to prevent JavaCPP's NativeDeallocator from calling free()
+        // on this memory, which would corrupt the heap since it wasn't allocated with malloc().
         var ctx = CudaContext.builder()
-                .bufferScalar(nativeOps.lcScalarPointer(lc))
-                .bufferReduction(nativeOps.lcReductionPointer(lc))
-                .bufferAllocation(nativeOps.lcAllocationPointer(lc))
-                .bufferSpecial(nativeOps.lcScalarPointer(lc))
-                .oldStream(new cudaStream_t(nativeOps.lcExecutionStream(lc)))
-                .specialStream(new cudaStream_t(nativeOps.lcCopyStream(lc)))
+                .bufferScalar(nativeOps.lcScalarPointer(lc).retainReference())
+                .bufferReduction(nativeOps.lcReductionPointer(lc).retainReference())
+                .bufferAllocation(nativeOps.lcAllocationPointer(lc).retainReference())
+                .bufferSpecial(nativeOps.lcScalarPointer(lc).retainReference())
+                .oldStream(new cudaStream_t(nativeOps.lcExecutionStream(lc).retainReference()))
+                .specialStream(new cudaStream_t(nativeOps.lcCopyStream(lc).retainReference()))
                 .cublasHandle(getCudaCublasHandle(lc))
-                .solverHandle(new cusolverDnHandle_t(nativeOps.lcSolverHandle(lc)))
+                .solverHandle(new cusolverDnHandle_t(nativeOps.lcSolverHandle(lc).retainReference()))
                 .deviceId(currentDeviceId)
                 .build();
 
@@ -1066,14 +1072,18 @@ public class CudaZeroHandler implements MemoryHandler {
                 nativeOps.setDevice(deviceId);
 
                 // Get fresh launch context from native for this device
+                // IMPORTANT: retainReference() prevents JavaCPP's NativeDeallocator from freeing
+                // the static singleton returned by defaultLaunchContext()
                 val lc = nativeOps.defaultLaunchContext();
+                lc.retainReference();
                 if (lc == null) {
                     throw new IllegalStateException("Failed to obtain CUDA LaunchContext for device " + deviceId);
                 }
 
-                Pointer execStream = nativeOps.lcExecutionStream(lc);
-                Pointer copyStream = nativeOps.lcCopyStream(lc);
-                Pointer solverHandlePtr = nativeOps.lcSolverHandle(lc);
+                // IMPORTANT: retainReference() prevents JavaCPP from freeing CUDA-allocated memory
+                Pointer execStream = nativeOps.lcExecutionStream(lc).retainReference();
+                Pointer copyStream = nativeOps.lcCopyStream(lc).retainReference();
+                Pointer solverHandlePtr = nativeOps.lcSolverHandle(lc).retainReference();
 
                 // Validate streams
                 if (execStream == null || execStream.isNull()) {
@@ -1084,12 +1094,12 @@ public class CudaZeroHandler implements MemoryHandler {
                 }
 
                 if (cachedCtx == null) {
-                    // Create new context
+                    // Create new context - retainReference() prevents JavaCPP from freeing CUDA memory
                     cachedCtx = CudaContext.builder()
-                            .bufferScalar(nativeOps.lcScalarPointer(lc))
-                            .bufferReduction(nativeOps.lcReductionPointer(lc))
-                            .bufferAllocation(nativeOps.lcAllocationPointer(lc))
-                            .bufferSpecial(nativeOps.lcScalarPointer(lc))
+                            .bufferScalar(nativeOps.lcScalarPointer(lc).retainReference())
+                            .bufferReduction(nativeOps.lcReductionPointer(lc).retainReference())
+                            .bufferAllocation(nativeOps.lcAllocationPointer(lc).retainReference())
+                            .bufferSpecial(nativeOps.lcScalarPointer(lc).retainReference())
                             .oldStream(new cudaStream_t(execStream))
                             .specialStream(new cudaStream_t(copyStream))
                             .cublasHandle(getCudaCublasHandleForDevice(lc, deviceId))
@@ -1098,12 +1108,12 @@ public class CudaZeroHandler implements MemoryHandler {
                             .build();
                     deviceContexts.set(deviceId, cachedCtx);
                 } else {
-                    // Refresh existing context's streams
+                    // Refresh existing context's streams - retainReference() prevents JavaCPP from freeing CUDA memory
                     cachedCtx.setOldStream(new cudaStream_t(execStream));
                     cachedCtx.setSpecialStream(new cudaStream_t(copyStream));
-                    cachedCtx.setBufferScalar(nativeOps.lcScalarPointer(lc));
-                    cachedCtx.setBufferReduction(nativeOps.lcReductionPointer(lc));
-                    cachedCtx.setBufferAllocation(nativeOps.lcAllocationPointer(lc));
+                    cachedCtx.setBufferScalar(nativeOps.lcScalarPointer(lc).retainReference());
+                    cachedCtx.setBufferReduction(nativeOps.lcReductionPointer(lc).retainReference());
+                    cachedCtx.setBufferAllocation(nativeOps.lcAllocationPointer(lc).retainReference());
                 }
 
                 return cachedCtx;

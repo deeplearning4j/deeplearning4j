@@ -28,6 +28,10 @@
 #include <memory/MemoryCounter.h>
 #include <sstream>
 
+#if defined(SD_CUDA)
+#include <cuda_runtime.h>
+#endif
+
 #if defined(SD_GCC_FUNCTRACE)
 #include <array/DataBufferLifecycleTracker.h>
 #endif
@@ -613,6 +617,17 @@ void DataBuffer::deleteBuffers() {
   std::lock_guard<std::mutex> lock(_deleteMutex);
   deletePrimary();
   deleteSpecial();
+
+  // Clean up CUDA event used for cross-thread synchronization
+#if defined(SD_CUDA)
+  if (_writeEvent != nullptr) {
+    cudaEvent_t* event = reinterpret_cast<cudaEvent_t*>(_writeEvent);
+    cudaEventDestroy(*event);
+    delete event;
+    _writeEvent = nullptr;
+    _writeEventRecorded.store(false);
+  }
+#endif
 
   // Clean up stack traces to prevent memory leak
 #if defined(SD_GCC_FUNCTRACE)

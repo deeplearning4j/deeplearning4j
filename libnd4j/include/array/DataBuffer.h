@@ -56,6 +56,14 @@ class SD_LIB_EXPORT DataBuffer {
   mutable std::atomic<LongType> _writeSpecial;
   mutable std::atomic<LongType> _readPrimary;
   mutable std::atomic<LongType> _readSpecial;
+
+  // CUDA event to track the last write to special (device) buffer.
+  // This enables proper cross-thread synchronization: when syncToPrimary() is called
+  // from a different thread than the one that executed the kernel, we wait on this
+  // event instead of synchronizing on the (wrong) caller's stream.
+  // Mutable because it's created/updated in const writeSpecial() method.
+  mutable void* _writeEvent = nullptr;  // cudaEvent_t*, void* to avoid cuda_runtime.h in header
+  mutable std::atomic<bool> _writeEventRecorded{false};
 #endif
 
 #if defined(SD_GCC_FUNCTRACE)

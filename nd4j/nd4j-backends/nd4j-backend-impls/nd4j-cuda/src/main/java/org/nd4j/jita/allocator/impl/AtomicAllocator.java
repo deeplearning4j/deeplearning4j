@@ -303,6 +303,12 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public void synchronizeHostData(DataBuffer buffer) {
+        // CRITICAL: Commit pending CUDA operations before syncing data to host.
+        // Without this, dbSyncToPrimary may copy stale data because CUDA kernels
+        // that write to this buffer haven't completed yet. This is especially
+        // important in multi-threaded or subprocess contexts where timing varies.
+        Nd4j.getExecutioner().commit();
+
         // we actually need synchronization only in device-dependant environment. no-op otherwise. managed by native code
         if(!buffer.wasClosed())
             NativeOpsHolder.getInstance().getDeviceNativeOps().dbSyncToPrimary(buffer.opaqueBuffer());

@@ -88,8 +88,12 @@ public class CudaContext {
     public void syncOldStream() {
         // Get fresh launch context and stream pointer from native
         // This ensures we use the currently valid stream, not a potentially stale cached pointer
+        // IMPORTANT: retainReference() prevents JavaCPP's NativeDeallocator from freeing
+        // the static singleton returned by defaultLaunchContext()
         OpaqueLaunchContext lc = nativeOps.defaultLaunchContext();
-        Pointer freshStream = nativeOps.lcExecutionStream(lc);
+        lc.retainReference();
+        // retainReference() prevents JavaCPP from freeing CUDA-allocated stream memory
+        Pointer freshStream = nativeOps.lcExecutionStream(lc).retainReference();
         if (freshStream == null || freshStream.isNull()) {
             throw new ND4JIllegalStateException("CUDA execution stream is null - context may not be initialized");
         }
@@ -100,8 +104,12 @@ public class CudaContext {
 
     public void syncSpecialStream() {
         // Get fresh launch context and stream pointer from native
+        // IMPORTANT: retainReference() prevents JavaCPP's NativeDeallocator from freeing
+        // the static singleton returned by defaultLaunchContext()
         OpaqueLaunchContext lc = nativeOps.defaultLaunchContext();
-        Pointer freshStream = nativeOps.lcCopyStream(lc);
+        lc.retainReference();
+        // retainReference() prevents JavaCPP from freeing CUDA-allocated stream memory
+        Pointer freshStream = nativeOps.lcCopyStream(lc).retainReference();
         if (freshStream == null || freshStream.isNull()) {
             throw new ND4JIllegalStateException("CUDA special stream is null - context may not be initialized");
         }

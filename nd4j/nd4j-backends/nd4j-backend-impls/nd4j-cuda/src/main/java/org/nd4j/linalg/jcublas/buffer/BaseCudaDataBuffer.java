@@ -602,16 +602,36 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public void copyDataFromSrc(Pointer pointer, long length, long srcOffset, long dstOffset) {
         val srcPtr = new CudaPointer(pointer.address() + (srcOffset * elementSize));
         val nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-        val perfD = PerformanceTracker.getInstance().helperStartTransaction();
+        val context = AtomicAllocator.getInstance().getDeviceContext();
 
-        // Set primary buffer
-        ptrDataBuffer.setPrimaryBuffer(pointer, length);
+        // Do NOT call setPrimaryBuffer with the temporary pointer!
+        // The temporary pointer (e.g., LongPointer wrapping a Java array) will be freed
+        // when it goes out of scope, causing use-after-free when syncToPrimary is called.
+
+        // Instead, ensure we have properly allocated HOST memory first
+        if (allocationPoint.getHostPointer() == null || allocationPoint.getHostPointer().isNull()) {
+            nativeOps.dbAllocatePrimaryBuffer(ptrDataBuffer);
+        }
+
+        // Get the properly allocated HOST pointer
+        Pointer hostPtr = allocationPoint.getHostPointer();
+        if (hostPtr == null || hostPtr.isNull()) {
+            throw new IllegalStateException("Failed to allocate HOST buffer for data copy");
+        }
+
+        // Copy from source Java array to our persistent HOST buffer
+        val dstHostPtr = new CudaPointer(hostPtr.address() + (dstOffset * elementSize));
+        Pointer.memcpy(dstHostPtr, srcPtr, length * getElementSize());
+
+        // Now copy from our HOST buffer to DEVICE
+        // IMPORTANT: Apply dstOffset to device pointer as well
+        val perfD = PerformanceTracker.getInstance().helperStartTransaction();
+        val dstDevPtr = new CudaPointer(allocationPoint.getDevicePointer().address() + (dstOffset * elementSize));
 
         // Use synchronous memcpy to avoid stream/device mismatch issues in multi-GPU setups
-        // cudaMemcpy (sync) uses the current device's default stream and blocks until complete
         int result = nativeOps.memcpySync(
-                allocationPoint.getDevicePointer(),
-                srcPtr,
+                dstDevPtr,
+                dstHostPtr,
                 length * getElementSize(),
                 CudaConstants.cudaMemcpyHostToDevice,
                 null);  // null stream means synchronous
@@ -624,9 +644,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 allocationPoint.getDeviceId(), perfD / 2,
                 allocationPoint.getNumberOfBytes(), MemcpyDirection.HOST_TO_DEVICE);
 
-        // Keep pointer reference for JVM
+        // Mark both HOST and DEVICE as having valid data
         allocationPoint.tickHostWrite();
         allocationPoint.tickDeviceWrite();
+        nativeOps.dbTickDeviceWrite(ptrDataBuffer);
     }
 
     /**

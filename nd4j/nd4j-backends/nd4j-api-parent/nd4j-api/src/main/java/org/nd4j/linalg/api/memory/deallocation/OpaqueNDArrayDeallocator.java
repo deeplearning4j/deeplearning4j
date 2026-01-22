@@ -154,6 +154,9 @@ public class OpaqueNDArrayDeallocator implements Deallocatable, Deallocator {
                         Nd4j.getExecutioner().commit();
 
                         // Call native cleanup
+                        // Note: setNull() is called immediately after to prevent any potential
+                        // double-free from JavaCPP's NativeDeallocator. The retainReference()
+                        // called during creation should prevent automatic deallocation.
                         Nd4j.getNativeOps().deleteNDArray(array);
                         array.setNull();
                     } finally {

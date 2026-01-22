@@ -445,13 +445,29 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
     switchedDevice = true;
   }
 
-  auto res = cudaStreamSynchronize(*context->getCudaStream());
+  // Use event-based synchronization for cross-thread correctness.
+  // The problem: if kernel K runs on Thread A's stream and syncToPrimary() is called
+  // from Thread B, the old code would sync Thread B's stream (useless) and then memcpy
+  // while kernel K might still be running on Thread A's stream.
+  //
+  // Solution: writeSpecial() records an event on the actual kernel stream. Here we wait
+  // on that event, which properly synchronizes regardless of which thread is calling.
+  cudaError_t res;
+  if (_writeEvent != nullptr && _writeEventRecorded.load()) {
+    cudaEvent_t* event = reinterpret_cast<cudaEvent_t*>(_writeEvent);
+    res = cudaEventSynchronize(*event);
+    _writeEventRecorded.store(false);  // Reset for next write
+  } else {
+    // Fallback to stream sync if no event recorded (e.g., buffer was created but no kernel ran)
+    res = cudaStreamSynchronize(*context->getCudaStream());
+  }
+
   if (res != 0)  {
     if (switchedDevice) {
       cudaSetDevice(currentDeviceId);
     }
     std::string errorMessage;
-    errorMessage += "DataBuffer::syncToPrimary: cudaStreamSynchronize failed: ";
+    errorMessage += "DataBuffer::syncToPrimary: synchronization failed: ";
     errorMessage += std::to_string(getLenInBytes());
     errorMessage += " ";
     errorMessage += cudaGetErrorString(res);
@@ -588,6 +604,21 @@ void DataBuffer::setCountersToZero() {
   _writeSpecial.store(0L);
   _readPrimary.store(0L);
   _readSpecial.store(0L);
+
+  // Initialize or reset the write event for cross-thread synchronization
+  if (_writeEvent == nullptr) {
+    cudaEvent_t* event = new cudaEvent_t();
+    // cudaEventDisableTiming for better performance since we don't need timing
+    auto res = cudaEventCreateWithFlags(event, cudaEventDisableTiming);
+    if (res != cudaSuccess) {
+      delete event;
+      // Non-fatal: fall back to stream sync if event creation fails
+      _writeEvent = nullptr;
+    } else {
+      _writeEvent = event;
+    }
+  }
+  _writeEventRecorded.store(false);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -870,7 +901,37 @@ void DataBuffer::migrate() {
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::writePrimary() const { _writePrimary = ++_counter; }
-void DataBuffer::writeSpecial() const { _writeSpecial = ++_counter; }
+void DataBuffer::writeSpecial() const {
+  _writeSpecial = ++_counter;
+
+  // Record an event on the current stream so that syncToPrimary() can properly
+  // synchronize even when called from a different thread with a different stream.
+  // This fixes the cross-thread synchronization bug where CUDA kernels complete
+  // on Stream A but syncToPrimary() syncs on Thread B's stream (useless).
+
+  // Create event on demand if it doesn't exist (handles DataBuffers created
+  // before this fix was added, or if setCountersToZero() wasn't called)
+  if (_writeEvent == nullptr) {
+    cudaEvent_t* event = new cudaEvent_t();
+    auto res = cudaEventCreateWithFlags(event, cudaEventDisableTiming);
+    if (res != cudaSuccess) {
+      delete event;
+      // Non-fatal: fall back to stream sync if event creation fails
+      return;
+    }
+    _writeEvent = event;  // _writeEvent is mutable
+  }
+
+  cudaEvent_t* event = reinterpret_cast<cudaEvent_t*>(_writeEvent);
+  cudaStream_t* stream = reinterpret_cast<cudaStream_t*>(
+      LaunchContext::defaultContext()->getCudaStream());
+  if (stream != nullptr && *stream != nullptr) {
+    auto res = cudaEventRecord(*event, *stream);
+    if (res == cudaSuccess) {
+      _writeEventRecorded.store(true);
+    }
+  }
+}
 void DataBuffer::readPrimary() const { _readPrimary = ++_counter; }
 void DataBuffer::readSpecial() const { _readSpecial = ++_counter; }
 bool DataBuffer::isPrimaryActual() const {

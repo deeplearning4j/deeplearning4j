@@ -320,6 +320,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             Map<String, SDValue> results = executeOperations(dag, processedPlaceholders,
                     processedOtherPlaceholders, allRequired, listeners, at, batch);
 
+            // CRITICAL: Commit all pending operations before accessing results
+            // This ensures async operations (CUDA streams, etc.) complete before values are read.
+            // Without this, multi-threaded or subprocess contexts may read stale/uninitialized data.
+            Nd4j.getExecutioner().commit();
+
             // Post-process results using existing logic
             Map<String, SDValue> finalResults = postProcessOutputValues(results);
 

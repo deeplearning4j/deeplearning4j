@@ -23,7 +23,10 @@ CUSTOM_OP_IMPL(reshape_no_copy, -2, 1, false, 0, -2) {
     // This means we can use memcpy which preserves the raw byte order.
     // The new shape/strides will correctly interpret the data in the new order.
     if (input->lengthOf() == output->lengthOf() && input->lengthOf() > 0) {
+      input->syncToHost();
       std::memcpy(output->buffer(), input->buffer(), input->lengthOf() * input->sizeOfT());
+      output->tickWriteHost();
+      output->syncToDevice();
     }
   }
   // the rest is no op, we don't need to copy we just needed the new shape

@@ -470,6 +470,18 @@ void dbSyncToPrimary(OpaqueDataBuffer *dataBuffer) {
     dataBuffer->dataBuffer()->syncToPrimary(sd::LaunchContext::defaultContext(), false);
 }
 
+void dbForceSyncToPrimary(OpaqueDataBuffer *dataBuffer) {
+  if (dataBuffer == nullptr) THROW_EXCEPTION("dbForceSyncToPrimary: dataBuffer is null");
+  if (dataBuffer->dataBuffer() != nullptr && dataBuffer->dataBuffer()->getNumElements() > 0)
+    dataBuffer->dataBuffer()->syncToPrimary(sd::LaunchContext::defaultContext(), true);
+}
+
+void dbForceSyncToSpecial(OpaqueDataBuffer *dataBuffer) {
+  if (dataBuffer == nullptr) THROW_EXCEPTION("dbForceSyncToSpecial: dataBuffer is null");
+  if (dataBuffer->dataBuffer() != nullptr && dataBuffer->dataBuffer()->getNumElements() > 0)
+    dataBuffer->dataBuffer()->syncToSpecial(true);
+}
+
 #ifndef SD_CUDA
 // CPU implementation - simple sequential fallback
 void batchSyncToSpecialAsync(OpaqueDataBuffer **buffers, int bufferCount, int streamCount) {

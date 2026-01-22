@@ -1138,21 +1138,38 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
             errorMessage.append(Nd4j.getNativeOps().lastErrorMessage());
             throw new RuntimeException(errorMessage.toString());
         }
-        if (ptrptr == null)
-            throw new RuntimeException();
-
-
-
-        if (Nd4j.getNativeOps().lastErrorCode() != 0) {
+        if (ptrptr == null) {
             StringBuilder errorMessage = new StringBuilder();
-            DifferentialFunction differentialFunction = (DifferentialFunction) op;
-            errorMessage.append("Native execution exec failed: ");
-            errorMessage.append(differentialFunction.debugInfo());
-            errorMessage.append(Nd4j.getNativeOps().lastErrorMessage());
+            errorMessage.append("calculateOutputShapes2 returned null for op: ").append(op.opName());
+            if (op instanceof DifferentialFunction) {
+                DifferentialFunction df = (DifferentialFunction) op;
+                errorMessage.append("\nOp own name: ").append(df.getOwnName());
+            }
+            errorMessage.append("\nOp num inputs: ").append(op.numInputArguments());
+            errorMessage.append("\nOpContext num inputs: ").append(opContext.numInputArguments());
+            // Also check native context inputs
+            errorMessage.append("\nOpContext native num inputs: ").append(opContext.numInputsNative());
+            // Log input array details from opContext
+            if (opContext.numInputArguments() > 0) {
+                errorMessage.append("\nOpContext input arrays:");
+                for (int i = 0; i < opContext.numInputArguments(); i++) {
+                    INDArray arr = opContext.getInputArray(i);
+                    if (arr != null) {
+                        errorMessage.append("\n  [").append(i).append("]: shape=").append(java.util.Arrays.toString(arr.shape()))
+                                    .append(", dtype=").append(arr.dataType());
+                    } else {
+                        errorMessage.append("\n  [").append(i).append("]: null");
+                    }
+                }
+            }
+            errorMessage.append("\nNum iArgs: ").append(op.numIArguments());
+            if (op.numIArguments() > 0) {
+                errorMessage.append("\niArgs: ").append(java.util.Arrays.toString(op.iArgs()));
+            }
+            errorMessage.append("\nNum tArgs: ").append(op.numTArguments());
+            errorMessage.append("\nLast error message: ").append(Nd4j.getNativeOps().lastErrorMessage());
             throw new RuntimeException(errorMessage.toString());
         }
-        if (ptrptr == null)
-            throw new RuntimeException();
 
         for (int e = 0; e < Nd4j.getNativeOps().getShapeListSize(ptrptr); e++)
             result.add(getShapeFromPointer(op,opContext,new PagedPointer(Nd4j.getNativeOps().getShape(ptrptr, e)).asLongPointer()));

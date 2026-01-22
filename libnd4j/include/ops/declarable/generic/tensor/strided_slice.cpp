@@ -135,10 +135,11 @@ bool _preprocess_strided_slice(std::vector<sd::LongType>* indicesList, std::vect
                                bool* slice_dim0) {
 
   // FIX: Check for zero strides and fix them
-  bool hasZeroStride = false;
+  // Zero stride doesn't make logical sense - treat as stride=1 (no skip)
+  // This can happen with dynamic ONNX models that compute slice indices
   for (size_t i = 0; i < strides.size(); i++) {
     if (strides[i] == 0) {
-      THROW_EXCEPTION("WARNING: Zero stride detected at index %zu, setting to 1\n");
+      strides[i] = 1;  // Actually set to 1 instead of throwing
     }
   }
 
@@ -535,8 +536,11 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
 
     if (isCpuBackend && subContiguous && zContiguous && length > 0) {
       // Both contiguous and on CPU - use direct memcpy
+      x->syncToHost();
       const auto sizeBytes = length * x->sizeOfT();
       std::memcpy(z->buffer(), x->bufferWithOffset(offset), sizeBytes);
+      z->tickWriteHost();
+      z->syncToDevice();
     } else if (length > 0) {
       // Non-contiguous - use transform
       auto subArrShapeInfoPack = ConstantShapeHelper::getInstance().bufferForShapeInfo(subArrShapeInfo);

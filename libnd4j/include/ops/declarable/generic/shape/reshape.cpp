@@ -68,8 +68,12 @@ CUSTOM_OP_IMPL(reshape, 1, 1, false, 0, -2) {
     // CPU path: sync to host and use memcpy
     x->syncToHost();
     std::memcpy(z->buffer(), x->buffer(), len * x->sizeOfT());
+    // Mark HOST as modified and sync to DEVICE
+    z->tickWriteHost();
+    z->syncToDevice();
   } else {
     // GPU path or non-contiguous: use assign which handles device buffers properly
+    // assign() calls prepareSpecialUse/registerSpecialUse internally for proper sync
     z->assign(x);
   }
 

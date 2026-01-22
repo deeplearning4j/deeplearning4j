@@ -6300,7 +6300,7 @@ public class Nd4j {
                         // Initialize the native ops
                         try {
                             nativeOps.initializeDevicesAndFunctions();
-                        } catch (Exception e) {
+                        } catch (Throwable e) {
                             log.debug("NativeOps initialization warning: {}", e.getMessage());
                         }
 
@@ -6314,7 +6314,8 @@ public class Nd4j {
                             // Fall through to default constructor
                         }
                     }
-                } catch (Exception e) {
+                } catch (Throwable e) {
+                    // Catch Throwable to handle NoClassDefFoundError when native libraries are missing
                     log.debug("Could not load NativeOps for secondary backend: {}", e.getMessage());
                 }
             }
@@ -6323,7 +6324,8 @@ public class Nd4j {
             return (org.nd4j.linalg.api.ops.executioner.OpExecutioner)
                 execClass.getDeclaredConstructor().newInstance();
 
-        } catch (Exception e) {
+        } catch (Throwable e) {
+            // Catch Throwable to handle NoClassDefFoundError when native libraries are missing
             log.debug("Failed to load executioner from backend {}: {}",
                     backend.getClass().getSimpleName(), e.getMessage());
             return null;

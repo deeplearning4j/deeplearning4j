@@ -110,6 +110,9 @@ public class OpaqueNDArrayArrDeallocator implements Deallocatable, Deallocator {
                     }
 
                     // Deallocate the PointerPointer's native memory (the array of pointers itself)
+                    // Note: setNull() is called immediately after deallocate() to prevent
+                    // JavaCPP's NativeDeallocator from trying to double-free. The retainReference()
+                    // called during creation should prevent automatic deallocation.
                     if (!arrayArr.isNull()) {
                         arrayArr.deallocate();
                         arrayArr.setNull();

@@ -760,6 +760,12 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (Nd4j.getNativeOps().lastErrorCode() != 0)
             throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
+        // CRITICAL: Mark output array's DEVICE buffer as written to
+        if (z != null && !z.isEmpty() && z.data() != null) {
+            ((BaseCudaDataBuffer) z.data()).actualizePointerAndIndexer();
+            AtomicAllocator.getInstance().tickDeviceWrite(z);
+        }
+
         profilingConfigurableHookOut(op, oc, st);
 
         return null;
@@ -858,6 +864,12 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         if (Nd4j.getNativeOps().lastErrorCode() != 0)
             throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
+
+        // CRITICAL: Mark output array's DEVICE buffer as written to
+        if (z != null && !z.isEmpty() && z.data() != null) {
+            ((BaseCudaDataBuffer) z.data()).actualizePointerAndIndexer();
+            AtomicAllocator.getInstance().tickDeviceWrite(z);
+        }
 
         profilingConfigurableHookOut(op, oc, st);
 
@@ -1096,6 +1108,12 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (Nd4j.getNativeOps().lastErrorCode() != 0)
             throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
+        // CRITICAL: Mark output array's DEVICE buffer as written to
+        if (z != null && !z.isEmpty() && z.data() != null) {
+            ((BaseCudaDataBuffer) z.data()).actualizePointerAndIndexer();
+            AtomicAllocator.getInstance().tickDeviceWrite(z);
+        }
+
         profilingConfigurableHookOut(op, oc, st);
 
         Nd4j.getExecutioner().commit();
@@ -1175,6 +1193,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (Nd4j.getNativeOps().lastErrorCode() != 0)
             throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
+        // CRITICAL: Mark output array's DEVICE buffer as written to
+        INDArray zArr = op.z();
+        if (zArr != null && !zArr.isEmpty() && zArr.data() != null) {
+            ((BaseCudaDataBuffer) zArr.data()).actualizePointerAndIndexer();
+            AtomicAllocator.getInstance().tickDeviceWrite(zArr);
+        }
+
         profilingConfigurableHookOut(op, null, st);
 
         return null;
@@ -1189,7 +1214,20 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     protected CudaContext invoke(ScalarOp op, OpContext oc) {
         // Device-aware execution: switch to input array's device BEFORE any allocations
         INDArray x = getX(op, oc);
-        if (x != null) {
+
+        // Handle empty arrays - if input is empty (0 elements), return early with empty output
+        if (x != null && x.isEmpty()) {
+            // For empty arrays, create an empty output with same shape and return
+            INDArray z = getZ(op, oc);
+            if (z == null) {
+                z = Nd4j.create(x.dataType(), x.shape());
+                setZ(z, op, oc);
+            }
+            return null; // No CUDA context needed for empty operation
+        }
+
+        // Check for null data buffer before accessing device ID
+        if (x != null && x.data() != null) {
             int arrayDeviceId = AtomicAllocator.getInstance().getDeviceId(x);
             int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
             if (arrayDeviceId >= 0 && arrayDeviceId != currentDeviceId) {
@@ -1277,6 +1315,12 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         if (Nd4j.getNativeOps().lastErrorCode() != 0)
             throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
+
+        // CRITICAL: Mark output array's DEVICE buffer as written to
+        if (z != null && !z.isEmpty() && z.data() != null) {
+            ((BaseCudaDataBuffer) z.data()).actualizePointerAndIndexer();
+            AtomicAllocator.getInstance().tickDeviceWrite(z);
+        }
 
         profilingConfigurableHookOut(op, oc, st);
 
@@ -1370,7 +1414,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         new CudaPointer(dimension == null ? 0 : dimension.length),
                         retHostShape);
 
-
         val xb = OpaqueNDArray.fromINDArray(x);
         val yb = OpaqueNDArray.fromINDArray(y);
         val zb = OpaqueNDArray.fromINDArray(z);
@@ -1436,6 +1479,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (extraArgs != null)
             extraArgs.address();
 
+        // CRITICAL: Mark output array's DEVICE buffer as written to
+        // After native op execution, the result is in the DEVICE buffer.
+        // We need to update Java-side counters so that subsequent reads
+        // will correctly sync DEVICE→HOST rather than using stale HOST data.
+        if (z != null && !z.isEmpty() && z.data() != null) {
+            ((BaseCudaDataBuffer) z.data()).actualizePointerAndIndexer();
+            AtomicAllocator.getInstance().tickDeviceWrite(z);
+        }
 
         profilingConfigurableHookOut(op, oc, st);
 
@@ -1746,6 +1797,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         long st = profilingConfigurableHookIn(op, context);
         if(op instanceof UserDefinedCustomOp) {
             ((UserDefinedCustomOp) op).exec(context);
+            // Tick device write for UserDefinedCustomOp outputs too
+            for (val out : context.getOutputArrays()) {
+                if (out != null && !out.isEmpty() && out.data() != null) {
+                    ((BaseCudaDataBuffer) out.data()).actualizePointerAndIndexer();
+                    AtomicAllocator.getInstance().tickDeviceWrite(out);
+                }
+            }
             return context.getOutputArrays().toArray(new INDArray[0]);
         }
 
@@ -1772,6 +1830,17 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         }
 
+        // CRITICAL: Also tick outputs from OpContext - these may be different from op.outputArguments()
+        // When using OpContext, the native code writes directly to context outputs, but the Java-side
+        // counter tracking only happened for op.outputArguments(). Without this, subsequent operations
+        // may incorrectly think the HOST buffer is "actual" and do an unwanted HOST->DEVICE sync,
+        // corrupting the data with stale/uninitialized HOST values.
+        for (val out : context.getOutputArrays()) {
+            if (out != null && !out.isEmpty() && out.data() != null) {
+                ((BaseCudaDataBuffer) out.data()).actualizePointerAndIndexer();
+                AtomicAllocator.getInstance().tickDeviceWrite(out);
+            }
+        }
 
         profilingConfigurableHookOut(op, context, st);
 

@@ -469,6 +469,8 @@ public interface NativeOps {
  int dbUseCount(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbSyncToSpecial(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbSyncToPrimary(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+ void dbForceSyncToPrimary(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+ void dbForceSyncToSpecial(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbMigrate(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbTickHostRead(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbTickHostWrite(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);

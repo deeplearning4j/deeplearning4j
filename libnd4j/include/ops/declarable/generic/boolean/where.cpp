@@ -172,6 +172,9 @@ void performBroadcastedWhere(NDArray* condition, NDArray* x, NDArray* y, NDArray
    }
  }
 
+ // Sync output to device after all element-wise writes to HOST
+ z->syncToDevice();
+
  delete zShape;
  delete condShape;
  delete xShape;
@@ -192,6 +195,11 @@ CUSTOM_OP_IMPL(Where, 1, 1, false, 0, 0) {
                 "X and Y must have equal shapes or be broadcastable. X shape: %s, Y shape: %s",
                 ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str());
 
+   // Sync inputs to HOST for element-wise access via e<T>()
+   condition->syncToHost();
+   x->syncToHost();
+   y->syncToHost();
+
    // Case 1: All arrays have exact shape matching (element-wise operation)
    if (condition->isSameShape(x) && x->isSameShape(y)) {
      // FIXME: for perf it might be better to issue memcpy here, and fill only mismatched values from either X or Y
@@ -210,6 +218,8 @@ CUSTOM_OP_IMPL(Where, 1, 1, false, 0, 0) {
          z->p(e, r);
        }
      }
+     // Sync output to device after HOST writes
+     z->syncToDevice();
    }
    // Case 2: Broadcasting is possible (most flexible case)
    else if (ShapeUtils::areShapesBroadcastable(*condition, *x) &&

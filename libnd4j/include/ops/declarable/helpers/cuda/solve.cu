@@ -77,6 +77,7 @@ static Status solveFunctor_(LaunchContext* context, NDArray* leftInput, NDArray*
   }
 
   P->tickWriteHost();
+  P->syncToDevice();
 
   auto rightPart = rightInput->ulike();
 
@@ -85,6 +86,7 @@ static Status solveFunctor_(LaunchContext* context, NDArray* leftInput, NDArray*
   for (auto i = 0; i < leftLowerPart.size(); i++) {
     for (LongType r = 0; r < leftLowerPart[i]->rows(); r++) leftLowerPart[i]->r<T>(r, r) = (T)1.f;
   }
+  leftLower->syncToDevice();
   triangularSolveFunctor(context, leftLower, rightPart, true, false, rightOutput);
   triangularSolveFunctor(context, leftOutput, rightOutput, false, false, output);
   NDArray::registerPrimaryUse({output}, {leftInput, rightInput});

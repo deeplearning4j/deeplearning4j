@@ -2537,6 +2537,7 @@ void NDArray::templatedSetString(void *buffer, LongType offset, void *value) {
 
   tickWriteHost();
   NDArray::registerPrimaryUse({this}, {this});
+  syncToDevice();
 }
 #ifdef HAS_UTF8
 template void NDArray::templatedSetString<std::string, std::string>(void*, LongType, void*);
@@ -3232,8 +3233,12 @@ void NDArray::copyDataForAssign(NDArray *thisArray, NDArray *other, const sd::Lo
     if (canUseMemcpy) {
       // Direct memcpy - much faster for contiguous arrays with same order
       std::memcpy(other->buffer(), thisArray->buffer(), thisArray->lengthOf() * thisArray->sizeOfT());
-      // Mark host buffer as written so device sync happens when needed
+      // Mark host buffer as written
       other->tickWriteHost();
+      // CRITICAL: Sync to device for CUDA backends. Without this, subsequent ops
+      // reading from device (via specialBuffer()) will see uninitialized/zero data.
+      // On CPU this is a no-op.
+      other->syncToDevice();
       return;
     }
 
@@ -5989,6 +5994,7 @@ void NDArray::p(const sd::LongType i, const sd::LongType j, const T value) {
     BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->buffer(), xOffset, p), SD_COMMON_TYPES_ALL);
   }
   NDArray::registerPrimaryUse({this}, {});
+  syncToDevice();
 }
 
 #define INSTANTIATE_P_I_J(T) \
@@ -6015,6 +6021,7 @@ void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k
     BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->buffer(), xOffset, p), SD_COMMON_TYPES_ALL);
   }
   NDArray::registerPrimaryUse({this}, {});
+  syncToDevice();
 }
 #if HAS_BOOL
 template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k,
@@ -6042,6 +6049,7 @@ void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k
     BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->buffer(), xOffset, p), SD_COMMON_TYPES_ALL);
   }
   NDArray::registerPrimaryUse({this}, {});
+  syncToDevice();
 }
 
 
@@ -6162,6 +6170,8 @@ void NDArray::p(const sd::LongType i, NDArray *scalar) {
   }
 
   NDArray::registerPrimaryUse({this}, {scalar});
+  // Sync HOST→DEVICE so subsequent CUDA ops see the data
+  syncToDevice();
 }
 
 template <typename T, typename Y, typename>
@@ -6188,6 +6198,7 @@ void NDArray::templatedSet(void *buffer, LongType offset, void *value) {
 
   tickWriteHost();
   NDArray::registerPrimaryUse({this}, {this});
+  syncToDevice();
 }
 
 template<typename T>
@@ -6201,6 +6212,8 @@ NDArray::p(const sd::LongType i, const T value) {  // Note: value not NDArray re
   if(isScalar() || this->lengthOf() <= 1) {
     // Direct value assignment, no need for scalar.isS() check
     templatedSet<T, T>(buffer(), i, dataType(), (void*)&value);
+    tickWriteHost();
+    syncToDevice();
     return;
   }
 
@@ -6225,6 +6238,8 @@ NDArray::p(const sd::LongType i, const T value) {  // Note: value not NDArray re
     templatedSet<T, T>(buffer(), xOffset, dataType(), (void*)&value);
   }
 
+  tickWriteHost();
+  syncToDevice();
 }
 
 #define INSTANTIATE_P_FOR_TYPE(TYPE) \
@@ -6264,6 +6279,8 @@ NDArray::p(const sd::LongType i, const T value) {
   COORDS2INDEX(rank, strideOf, coords, xOffset);
 
   templatedSetString<T,T>(buffer(), xOffset, (void*)&value);
+  tickWriteHost();
+  syncToDevice();
 }
 
 #define INSTANTIATE_P_SINGLE_STRING(T) \
@@ -6338,6 +6355,7 @@ void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k
     }
   }
   NDArray::registerPrimaryUse({this}, {scalar});
+  syncToDevice();
 }
 //////////////////////////////////////////////////////////////////////////
 void NDArray::addRowVector(NDArray *row, NDArray *target)  {

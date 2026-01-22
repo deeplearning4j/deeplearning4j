@@ -82,6 +82,13 @@ CONFIGURABLE_OP_IMPL(layer_norm, 2, 1, false, 0, -1) {
 
   if (lastDimNorm && isContiguous && (isFloat || isDouble) && gainContiguous && biasContiguous) {
     // Fused layer norm: 2 passes instead of 7-8
+    // This is a CPU implementation, so we need to sync data from device to host first
+    input->syncToHost();
+    gain->syncToHost();
+    if (bias != nullptr) {
+      bias->syncToHost();
+    }
+
     const sd::LongType numRows = input->lengthOf() / input->sizeAt(-1);
     const sd::LongType rowLen = input->sizeAt(-1);
     const double epsilon = 1e-5;
@@ -165,6 +172,10 @@ CONFIGURABLE_OP_IMPL(layer_norm, 2, 1, false, 0, -1) {
       };
       samediff::Threads::parallel_tad(func, 0, numRows);
     }
+
+    // After writing to HOST, mark output as written on HOST and sync to DEVICE
+    output->tickWriteHost();
+    output->syncToDevice();
 
     return sd::Status::OK;
   }

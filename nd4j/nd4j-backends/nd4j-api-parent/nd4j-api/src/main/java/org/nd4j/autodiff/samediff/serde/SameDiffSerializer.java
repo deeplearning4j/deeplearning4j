@@ -31,6 +31,7 @@ import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.*; // Import base package
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.common.base.Preconditions;
@@ -2240,7 +2241,7 @@ public class SameDiffSerializer {
                 log.info("Skipping data reading for empty array '{}'", name);
             }
 
-            // --- CRITICAL FIX: Mark host buffer as written and sync to device ---
+            // Mark host buffer as written and sync to device.
             // After loading data into the host buffer via asNio()/memcpy, we must:
             // 1. Mark the primary (host) buffer as written so CUDA knows the data is fresh
             // 2. Sync to device (special buffer) so GPU operations can use the data
@@ -3079,18 +3080,30 @@ public class SameDiffSerializer {
                     try {
                         INDArray scalar = null;
                         switch (dataType) {
-                            case FLOAT:
-                                scalar = Nd4j.constantScalar(bb.getFloat());
+                            case FLOAT: {
+                                float val = bb.getFloat();
+                                log.info("LOAD_INLINE [{}]: Scalar FLOAT value from buffer: {}", varName, val);
+                                scalar = Nd4j.constantScalar(val);
                                 break;
-                            case DOUBLE:
-                                scalar = Nd4j.constantScalar(bb.getDouble());
+                            }
+                            case DOUBLE: {
+                                double val = bb.getDouble();
+                                log.info("LOAD_INLINE [{}]: Scalar DOUBLE value from buffer: {}", varName, val);
+                                scalar = Nd4j.constantScalar(val);
                                 break;
-                            case INT:
-                                scalar = Nd4j.constantScalar(bb.getInt());
+                            }
+                            case INT: {
+                                int val = bb.getInt();
+                                log.info("LOAD_INLINE [{}]: Scalar INT value from buffer: {}", varName, val);
+                                scalar = Nd4j.constantScalar(val);
                                 break;
-                            case LONG:
-                                scalar = Nd4j.constantScalar(bb.getLong());
+                            }
+                            case LONG: {
+                                long val = bb.getLong();
+                                log.info("LOAD_INLINE [{}]: Scalar LONG value from buffer: {}", varName, val);
+                                scalar = Nd4j.constantScalar(val);
                                 break;
+                            }
                             case SHORT:
                                 scalar = Nd4j.constantScalar((int) bb.getShort());
                                 break;
@@ -3128,6 +3141,10 @@ public class SameDiffSerializer {
 
                         // Note: constantScalar() already marks the scalar as constant and non-closeable
                         // so no additional marking is needed here
+                        // Verify the scalar value after creation
+                        if (scalar != null && dataType == DataType.LONG) {
+                            log.info("LOAD_INLINE [{}]: After constantScalar(), INDArray getLong(0) = {}", varName, scalar.getLong(0));
+                        }
                         return scalar;
                     } catch (Exception e) {
                         log.error("LOAD_INLINE [{}]: Failed to create scalar of type {}: {}", varName, dataType, e.getMessage(), e);
@@ -3201,60 +3218,73 @@ public class SameDiffSerializer {
                     return null;
                 }
 
-                // Copy data from bbManual to targetBuffer
-                ByteBuffer targetNio = targetBuffer.asNio();
-                if(targetNio != null && result.offset() == 0 ) {
-                    log.info("LOAD_INLINE [{}]: Using bulk NIO copy (Target Offset is 0) from manually read bytes.", varName);
-                    targetNio.order(ByteOrder.nativeOrder());
-                    targetNio.position(0);
-                    targetNio.limit((int) expectedBytes);
-                    bbManual.limit((int) expectedBytes);
-                    try {
-                        targetNio.put(bbManual);
-                    } catch (Exception e) {
-                        log.error("LOAD_INLINE [{}]: Exception during bulk NIO copy from manual bytes!", varName, e);
-                        return null;
-                    }
-                    log.info("LOAD_INLINE [{}]: Bulk NIO copy finished from manual bytes.", varName);
-                } else {
-                    // Fallback to element-wise copy from manually read buffer
-                    log.warn("LOAD_INLINE [{}]: Using element-wise copy for shape {} from manually read bytes. Reason: Target NIO buffer null? {}, Target Offset = {}",
-                            varName, shapeForLog, (targetNio == null), result.offset());
-                    try {
-                        for (long i = 0; i < totalElements; i++) {
-                            if (bbManual.remaining() < elementSize) {
-                                log.error("LOAD_INLINE [{}]: Manual ByteBuffer ran out of data unexpectedly...", varName);
-                                break;
-                            }
-                            switch (dataType) {
-                                case FLOAT: result.putScalar(i, bbManual.getFloat()); break;
-                                case DOUBLE: result.putScalar(i, bbManual.getDouble()); break;
-                                case INT: result.putScalar(i, bbManual.getInt()); break;
-                                case LONG: result.putScalar(i, bbManual.getLong()); break;
-                                case SHORT: result.putScalar(i, bbManual.getShort()); break;
-                                case BYTE: result.putScalar(i, bbManual.get()); break;
-                                case UBYTE: result.putScalar(i, bbManual.get() & 0xFF); break;
-                                case UINT16: result.putScalar(i, bbManual.getShort() & 0xFFFF); break;
-                                case UINT32: result.putScalar(i, bbManual.getInt() & 0xFFFFFFFFL); break;
-                                case UINT64: result.putScalar(i, bbManual.getLong()); break;
-                                case BOOL: result.putScalar(i, bbManual.get() != 0); break;
-                                case BFLOAT16: case HALF:
-                                    if (bbManual.remaining() >= 2) {
-                                        result.putScalar(i, HalfPrecisionUtil.toFloat(bbManual.getShort()));
-                                    } else {
-                                        log.error("LOAD_INLINE [{}]: Insufficient bytes for HALF/BFLOAT16...", varName);
-                                        i = totalElements;
-                                    }
-                                    break;
-                                default:
-                                    log.warn("LOAD_INLINE [{}]: Skipping unsupported type {}...", varName, dataType);
-                                    bbManual.position(bbManual.position() + elementSize);
-                            }
+                // Copy data from bbManual to targetBuffer using typed arrays
+                // NOTE: Do NOT use asNio() bulk copy - it doesn't trigger CUDA HOST->DEVICE sync!
+                // Instead, use setData() which properly syncs for CUDA backends.
+                log.info("LOAD_INLINE [{}]: Using typed array setData for proper CUDA sync.", varName);
+                bbManual.position(0);
+                bbManual.limit((int) expectedBytes);
+                try {
+                    switch (dataType) {
+                        case FLOAT: {
+                            float[] floatData = new float[(int) totalElements];
+                            bbManual.asFloatBuffer().get(floatData);
+                            targetBuffer.setData(floatData);
+                            break;
                         }
-                    } catch (Exception e) {
-                        log.warn("LOAD_INLINE [{}]: Error during element-wise copy from manual bytes...", varName, e);
+                        case DOUBLE: {
+                            double[] doubleData = new double[(int) totalElements];
+                            bbManual.asDoubleBuffer().get(doubleData);
+                            targetBuffer.setData(doubleData);
+                            break;
+                        }
+                        case INT: case UINT32: {
+                            int[] intData = new int[(int) totalElements];
+                            bbManual.asIntBuffer().get(intData);
+                            targetBuffer.setData(intData);
+                            break;
+                        }
+                        case LONG: case UINT64: {
+                            long[] longData = new long[(int) totalElements];
+                            bbManual.asLongBuffer().get(longData);
+                            log.info("LOAD_INLINE [{}]: LONG data read from buffer: {}", varName, Arrays.toString(longData));
+                            targetBuffer.setData(longData);
+                            break;
+                        }
+                        case SHORT: case UINT16: case HALF: case BFLOAT16: {
+                            short[] shortData = new short[(int) totalElements];
+                            bbManual.asShortBuffer().get(shortData);
+                            targetBuffer.setData(shortData);
+                            break;
+                        }
+                        case BYTE: case UBYTE: case BOOL: {
+                            byte[] byteData = new byte[(int) totalElements];
+                            bbManual.get(byteData);
+                            targetBuffer.setData(byteData);
+                            break;
+                        }
+                        default:
+                            log.error("LOAD_INLINE [{}]: Unsupported data type {} for bulk setData", varName, dataType);
+                            return null;
                     }
+                    log.info("LOAD_INLINE [{}]: Typed array setData completed.", varName);
+                    // Verify data was set correctly for LONG arrays
+                    if ((dataType == DataType.LONG || dataType == DataType.UINT64) && totalElements <= 10) {
+                        StringBuilder sb = new StringBuilder("After setData, result array values: [");
+                        for (long i = 0; i < totalElements; i++) {
+                            if (i > 0) sb.append(", ");
+                            sb.append(result.getLong(i));
+                        }
+                        sb.append("]");
+                        log.info("LOAD_INLINE [{}]: {}", varName, sb.toString());
+                    }
+                } catch (Exception e) {
+                    log.error("LOAD_INLINE [{}]: Exception during typed array setData: {}", varName, e.getMessage(), e);
+                    return null;
                 }
+
+                // Note: setData() with typed arrays properly syncs to DEVICE for CUDA backends,
+                // so no additional ensureLocation call is needed here.
 
                 // Mark array as constant to prevent deallocation during inference
                 if (result.data() != null) {

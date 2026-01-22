@@ -431,11 +431,16 @@ sd::Pointer mallocDevice(sd::LongType memorySize, int deviceId, int flags) {
  * @param pointer pointer that'll be freed
  */
 int freeHost(sd::Pointer pointer) {
-/*  auto res = cudaFreeHost(reinterpret_cast<void *>(pointer));
+  if (pointer == nullptr) {
+    return 1L;
+  }
+
+  auto res = cudaFreeHost(reinterpret_cast<void *>(pointer));
   if (res != 0) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(res);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaFreeHost failed");
-  }*/
+    return 0L;
+  }
 
   return 1L;
 }

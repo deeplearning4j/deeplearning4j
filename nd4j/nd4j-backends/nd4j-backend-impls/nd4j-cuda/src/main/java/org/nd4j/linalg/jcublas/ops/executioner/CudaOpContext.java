@@ -164,6 +164,11 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
             if (array == null) {
                 continue;  // Skip null inputs
             }
+            // Sync HOST to DEVICE before passing to native ops
+            // This ensures data written via Java putScalar() is available on GPU
+            if (!array.isEmpty() && array.data() != null && !array.data().wasClosed()) {
+                nativeOps.dbSyncToSpecial(array.data().opaqueBuffer());
+            }
             fastpath_in.put(idx, array);
             singleInputArrayRefs.put(idx, array);
             OpaqueNDArray opaqueArray = OpaqueNDArray.fromINDArray(array);
@@ -287,6 +292,11 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
 
     @Override
     public void setInputArray(int index, @NonNull INDArray array) {
+        // Sync HOST to DEVICE before passing to native ops
+        // This ensures data written via Java putScalar() is available on GPU
+        if (!array.isEmpty() && array.data() != null && !array.data().wasClosed()) {
+            nativeOps.dbSyncToSpecial(array.data().opaqueBuffer());
+        }
         // Store strong reference to INDArray to prevent GC while this OpContext is alive
         singleInputArrayRefs.put(index, array);
         OpaqueNDArray opaqueArray = OpaqueNDArray.fromINDArray(array);

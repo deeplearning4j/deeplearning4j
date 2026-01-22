@@ -687,6 +687,7 @@ static void luNN_(LaunchContext *context, NDArray *compound, NDArray *permutatio
   }
 
   NDArray::registerPrimaryUse({compound}, {permutation});
+  compound->syncToDevice();
 }
 
 
@@ -707,6 +708,7 @@ static void lu_(LaunchContext *context, NDArray *input, NDArray *output, NDArray
   };
   samediff::Threads::parallel_for(loop, 0, outputs.size(), 1);
   NDArray::registerPrimaryUse({output}, {input, permutationVectors});
+  output->syncToDevice();
 }
 
 void lu(LaunchContext *context, NDArray *input, NDArray *output, NDArray *permutations) {

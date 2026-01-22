@@ -47,6 +47,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.*;
 import org.nd4j.autodiff.samediff.api.OutAndGrad;
+import org.nd4j.autodiff.samediff.serde.SDZSerializer;
 import org.nd4j.autodiff.util.SameDiffUtils;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
@@ -4626,6 +4627,851 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
             "Expected all iterations to succeed");
     }
 
+    /**
+     * Test concurrent model LOADING (not just execution) to reproduce heap corruption
+     * during deserialization. This specifically tests the SameDiffSerializer path
+     * with inline scalars which can cause "malloc_consolidate(): unaligned fastbin chunk detected"
+     * errors when not properly synchronized.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConcurrentModelLoadingWithScalars(Nd4jBackend backend) throws Exception {
+        int nThreads = 8;
+        int nLoadsPerThread = 10;
+
+        // Create a model with scalars and various variable types (similar to transformer models)
+        SameDiff original = SameDiff.create();
+
+        // Add placeholders
+        SDVariable input = original.placeHolder("input", DataType.FLOAT, -1, 128);
+
+        // Add constants (scalars) - these trigger the LOAD_INLINE scalar deserialization path
+        SDVariable scale = original.constant("scale", Nd4j.scalar(DataType.FLOAT, 0.125f));
+        SDVariable bias = original.constant("bias", Nd4j.scalar(DataType.FLOAT, 0.0f));
+        SDVariable epsilon = original.constant("epsilon", Nd4j.scalar(DataType.FLOAT, 1e-6f));
+
+        // Add some weight matrices
+        SDVariable weight1 = original.var("weight1", Nd4j.randn(DataType.FLOAT, 128, 64));
+        SDVariable weight2 = original.var("weight2", Nd4j.randn(DataType.FLOAT, 64, 32));
+
+        // Build a simple computation graph using scalar operations
+        SDVariable layer1 = original.mmul("layer1", input, weight1);
+        SDVariable scaled = layer1.mul("scaled", scale);
+        SDVariable biased = scaled.add("biased", bias);
+        SDVariable layer2 = original.mmul("layer2", biased, weight2);
+        SDVariable output = original.nn.softmax("output", layer2, -1);
+
+        // Save model to file
+        File tempFile = File.createTempFile("concurrent_load_test", ".fb");
+        tempFile.deleteOnExit();
+        original.asFlatFile(tempFile);
+
+        log.info("Created model with scalars, saving to: {}", tempFile.getAbsolutePath());
+
+        // Now load from multiple threads concurrently
+        java.util.concurrent.CountDownLatch startLatch = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch doneLatch = new java.util.concurrent.CountDownLatch(nThreads);
+        java.util.concurrent.atomic.AtomicBoolean failed = new java.util.concurrent.atomic.AtomicBoolean(false);
+        java.util.concurrent.atomic.AtomicReference<Throwable> firstError = new java.util.concurrent.atomic.AtomicReference<>();
+        java.util.concurrent.atomic.AtomicInteger successCount = new java.util.concurrent.atomic.AtomicInteger(0);
+
+        for (int t = 0; t < nThreads; t++) {
+            final int threadId = t;
+            Thread thread = new Thread(() -> {
+                try {
+                    startLatch.await();
+
+                    for (int i = 0; i < nLoadsPerThread; i++) {
+                        // Each thread loads the model fresh - this exercises the serializer
+                        SameDiff loaded = SameDiff.fromFlatFile(tempFile);
+
+                        // Verify the model loaded correctly
+                        assertNotNull(loaded, "Loaded model should not be null");
+                        assertNotNull(loaded.getVariable("scale"), "Scale constant should exist");
+                        assertNotNull(loaded.getVariable("bias"), "Bias constant should exist");
+                        assertNotNull(loaded.getVariable("epsilon"), "Epsilon constant should exist");
+
+                        // Execute the loaded model to verify it works
+                        INDArray inputData = Nd4j.randn(DataType.FLOAT, 2, 128);
+
+                        Map<String, INDArray> placeholders = new HashMap<>();
+                        placeholders.put("input", inputData);
+
+                        Map<String, INDArray> outputs = loaded.output(placeholders, "output");
+                        assertNotNull(outputs.get("output"), "Output should not be null");
+
+                        // Clean up
+                        outputs.get("output").close();
+                        inputData.close();
+
+                        successCount.incrementAndGet();
+
+                        if (i % 5 == 0) {
+                            log.info("Thread {} completed load iteration {}/{}", threadId, i + 1, nLoadsPerThread);
+                        }
+                    }
+                } catch (Throwable e) {
+                    failed.set(true);
+                    firstError.compareAndSet(null, e);
+                    log.error("Thread {} failed during model loading", threadId, e);
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+            thread.setName("ModelLoader-Thread-" + threadId);
+            thread.start();
+        }
+
+        // Start all threads simultaneously
+        startLatch.countDown();
+
+        // Wait for completion
+        boolean completed = doneLatch.await(120, java.util.concurrent.TimeUnit.SECONDS);
+        assertTrue(completed, "All threads should complete within timeout");
+
+        if (failed.get()) {
+            throw new RuntimeException("Concurrent model loading test failed", firstError.get());
+        }
+
+        assertEquals(nThreads * nLoadsPerThread, successCount.get(),
+            "All model loads should succeed");
+
+        log.info("Concurrent model loading test passed: {} successful loads", successCount.get());
+    }
+
+    /**
+     * Test concurrent model loading with SDZ format (compressed) which exercises
+     * different code paths in SameDiffSerializer.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConcurrentModelLoadingSDZ(Nd4jBackend backend) throws Exception {
+        int nThreads = 8;
+        int nLoadsPerThread = 5;
+
+        // Create a model similar to encoder layers with many scalars
+        SameDiff original = SameDiff.create();
+
+        // Simulate encoder layer structure with dimension scalars
+        SDVariable input = original.placeHolder("input", DataType.FLOAT, -1, 768);
+
+        // Add dimension scalars (common in transformer imports)
+        SDVariable dim0 = original.constant("dim_0", Nd4j.scalar(DataType.LONG, 0L));
+        SDVariable dim1 = original.constant("dim_1", Nd4j.scalar(DataType.LONG, 1L));
+        SDVariable dimNeg1 = original.constant("dim_neg1", Nd4j.scalar(DataType.LONG, -1L));
+
+        // Layer norm parameters
+        SDVariable lnGamma = original.var("ln_gamma", Nd4j.ones(DataType.FLOAT, 768));
+        SDVariable lnBeta = original.var("ln_beta", Nd4j.zeros(DataType.FLOAT, 768));
+        SDVariable lnEps = original.constant("ln_eps", Nd4j.scalar(DataType.FLOAT, 1e-12f));
+
+        // Dense layer
+        SDVariable denseWeight = original.var("dense_weight", Nd4j.randn(DataType.FLOAT, 768, 768).mul(0.02));
+        SDVariable denseBias = original.var("dense_bias", Nd4j.zeros(DataType.FLOAT, 768));
+
+        // MatMul dimension scalars (these are the ones causing issues)
+        SDVariable matmulDim0 = original.constant("matmul_dim0", Nd4j.scalar(DataType.INT, 0));
+        SDVariable matmulDim1 = original.constant("matmul_dim1", Nd4j.scalar(DataType.INT, 1));
+
+        // Build graph
+        SDVariable dense = original.nn.linear("dense", input, denseWeight, denseBias);
+        SDVariable normalized = original.nn.layerNorm("output", dense, lnGamma, lnBeta, true, 1);
+
+        // Save as SDZ (compressed format)
+        File tempFile = File.createTempFile("concurrent_load_sdz_test", ".sdz");
+        tempFile.deleteOnExit();
+        original.save(tempFile, true);  // saveUpdater = true
+
+        log.info("Created SDZ model with scalars, saving to: {}", tempFile.getAbsolutePath());
+
+        // Concurrent loading
+        java.util.concurrent.CountDownLatch startLatch = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch doneLatch = new java.util.concurrent.CountDownLatch(nThreads);
+        java.util.concurrent.atomic.AtomicBoolean failed = new java.util.concurrent.atomic.AtomicBoolean(false);
+        java.util.concurrent.atomic.AtomicReference<Throwable> firstError = new java.util.concurrent.atomic.AtomicReference<>();
+        java.util.concurrent.atomic.AtomicInteger successCount = new java.util.concurrent.atomic.AtomicInteger(0);
+
+        for (int t = 0; t < nThreads; t++) {
+            final int threadId = t;
+            Thread thread = new Thread(() -> {
+                try {
+                    startLatch.await();
+
+                    for (int i = 0; i < nLoadsPerThread; i++) {
+                        // Load SDZ model
+                        SameDiff loaded = SameDiff.load(tempFile, true);
+
+                        // Verify scalars loaded correctly
+                        assertNotNull(loaded.getVariable("dim_0"), "dim_0 should exist");
+                        assertNotNull(loaded.getVariable("dim_1"), "dim_1 should exist");
+                        assertNotNull(loaded.getVariable("ln_eps"), "ln_eps should exist");
+                        assertNotNull(loaded.getVariable("matmul_dim0"), "matmul_dim0 should exist");
+                        assertNotNull(loaded.getVariable("matmul_dim1"), "matmul_dim1 should exist");
+
+                        // Execute to verify
+                        INDArray inputData = Nd4j.randn(DataType.FLOAT, 2, 768);
+                        Map<String, INDArray> placeholders = new HashMap<>();
+                        placeholders.put("input", inputData);
+
+                        Map<String, INDArray> outputs = loaded.output(placeholders, "output");
+                        assertNotNull(outputs.get("output"));
+                        assertEquals(DataType.FLOAT, outputs.get("output").dataType());
+
+                        outputs.get("output").close();
+                        inputData.close();
+
+                        successCount.incrementAndGet();
+                    }
+                } catch (Throwable e) {
+                    failed.set(true);
+                    firstError.compareAndSet(null, e);
+                    log.error("Thread {} failed during SDZ model loading", threadId, e);
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+            thread.setName("SDZLoader-Thread-" + threadId);
+            thread.start();
+        }
+
+        startLatch.countDown();
+        boolean completed = doneLatch.await(120, java.util.concurrent.TimeUnit.SECONDS);
+        assertTrue(completed, "All threads should complete within timeout");
+
+        if (failed.get()) {
+            throw new RuntimeException("Concurrent SDZ model loading test failed", firstError.get());
+        }
+
+        assertEquals(nThreads * nLoadsPerThread, successCount.get());
+        log.info("Concurrent SDZ model loading test passed: {} successful loads", successCount.get());
+    }
+
+    /**
+     * Stress test for concurrent array allocation and deallocation.
+     * This tests the DeallocatorService and native memory management under heavy concurrent load.
+     * Reproduces heap corruption issues like "malloc_consolidate(): unaligned fastbin chunk detected"
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConcurrentAllocationDeallocationStress(Nd4jBackend backend) throws Exception {
+        int nThreads = 16;
+        int nIterationsPerThread = 100;
+        int arraysPerIteration = 10;
+
+        java.util.concurrent.CountDownLatch startLatch = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch doneLatch = new java.util.concurrent.CountDownLatch(nThreads);
+        java.util.concurrent.atomic.AtomicBoolean failed = new java.util.concurrent.atomic.AtomicBoolean(false);
+        java.util.concurrent.atomic.AtomicReference<Throwable> firstError = new java.util.concurrent.atomic.AtomicReference<>();
+        java.util.concurrent.atomic.AtomicInteger successCount = new java.util.concurrent.atomic.AtomicInteger(0);
+
+        for (int t = 0; t < nThreads; t++) {
+            final int threadId = t;
+            Thread thread = new Thread(() -> {
+                try {
+                    startLatch.await();
+
+                    for (int i = 0; i < nIterationsPerThread; i++) {
+                        // Create arrays of varying sizes
+                        List<INDArray> arrays = new ArrayList<>();
+                        for (int j = 0; j < arraysPerIteration; j++) {
+                            int size = 64 + (j * 32);
+                            INDArray arr = Nd4j.randn(DataType.FLOAT, size, size);
+                            // Do some operations to exercise memory
+                            INDArray result = arr.mul(2.0).add(1.0);
+                            arrays.add(result);
+                            arr.close();
+                        }
+
+                        // Explicitly close half the arrays
+                        for (int j = 0; j < arraysPerIteration / 2; j++) {
+                            arrays.get(j).close();
+                        }
+
+                        // Close remaining arrays explicitly to stress deallocator
+                        for (int j = arraysPerIteration / 2; j < arraysPerIteration; j++) {
+                            arrays.get(j).close();
+                        }
+                        arrays.clear();
+
+                        // Use ND4J's memory manager GC periodically
+                        if (i % 10 == 0) {
+                            Nd4j.getMemoryManager().invokeGc();
+                        }
+
+                        successCount.incrementAndGet();
+                    }
+                } catch (Throwable e) {
+                    failed.set(true);
+                    firstError.compareAndSet(null, e);
+                    log.error("Thread {} failed during allocation/deallocation stress", threadId, e);
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+            thread.setName("AllocDealloc-Thread-" + threadId);
+            thread.start();
+        }
+
+        startLatch.countDown();
+        boolean completed = doneLatch.await(180, java.util.concurrent.TimeUnit.SECONDS);
+        assertTrue(completed, "All threads should complete within timeout");
+
+        if (failed.get()) {
+            throw new RuntimeException("Concurrent allocation/deallocation stress test failed", firstError.get());
+        }
+
+        assertEquals(nThreads * nIterationsPerThread, successCount.get());
+        log.info("Concurrent allocation/deallocation stress test passed: {} successful iterations", successCount.get());
+    }
+
+    /**
+     * Test concurrent model loading with explicit deallocation.
+     * This simulates the real-world scenario where multiple threads load models
+     * and explicitly close resources to stress the deallocator service.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConcurrentModelLoadingWithExplicitDeallocation(Nd4jBackend backend) throws Exception {
+        int nThreads = 8;
+        int nLoadsPerThread = 10;
+
+        // Create a model with many arrays
+        SameDiff original = SameDiff.create();
+        SDVariable input = original.placeHolder("input", DataType.FLOAT, -1, 256);
+
+        // Create multiple layers to have many weight arrays
+        SDVariable w1 = original.var("w1", Nd4j.randn(DataType.FLOAT, 256, 512).mul(0.01));
+        SDVariable b1 = original.var("b1", Nd4j.zeros(DataType.FLOAT, 512));
+        SDVariable w2 = original.var("w2", Nd4j.randn(DataType.FLOAT, 512, 256).mul(0.01));
+        SDVariable b2 = original.var("b2", Nd4j.zeros(DataType.FLOAT, 256));
+        SDVariable w3 = original.var("w3", Nd4j.randn(DataType.FLOAT, 256, 128).mul(0.01));
+        SDVariable b3 = original.var("b3", Nd4j.zeros(DataType.FLOAT, 128));
+
+        // Add many scalar constants (common issue area)
+        for (int i = 0; i < 20; i++) {
+            original.constant("scalar_int_" + i, Nd4j.scalar(DataType.INT, i));
+            original.constant("scalar_long_" + i, Nd4j.scalar(DataType.LONG, (long) i));
+            original.constant("scalar_float_" + i, Nd4j.scalar(DataType.FLOAT, (float) i * 0.1f));
+        }
+
+        SDVariable h1 = original.nn.relu(input.mmul(w1).add(b1), 0);
+        SDVariable h2 = original.nn.relu(h1.mmul(w2).add(b2), 0);
+        SDVariable output = original.nn.softmax("output", h2.mmul(w3).add(b3), -1);
+
+        File tempFile = File.createTempFile("dealloc_stress_test", ".fb");
+        tempFile.deleteOnExit();
+        original.asFlatFile(tempFile);
+
+        log.info("Created model with many arrays for deallocation stress test");
+
+        java.util.concurrent.CountDownLatch startLatch = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch doneLatch = new java.util.concurrent.CountDownLatch(nThreads);
+        java.util.concurrent.atomic.AtomicBoolean failed = new java.util.concurrent.atomic.AtomicBoolean(false);
+        java.util.concurrent.atomic.AtomicReference<Throwable> firstError = new java.util.concurrent.atomic.AtomicReference<>();
+        java.util.concurrent.atomic.AtomicInteger successCount = new java.util.concurrent.atomic.AtomicInteger(0);
+
+        for (int t = 0; t < nThreads; t++) {
+            final int threadId = t;
+            Thread thread = new Thread(() -> {
+                try {
+                    startLatch.await();
+
+                    for (int i = 0; i < nLoadsPerThread; i++) {
+                        // Load model
+                        SameDiff loaded = SameDiff.fromFlatFile(tempFile);
+
+                        // Execute with random input
+                        INDArray inputData = Nd4j.randn(DataType.FLOAT, 4, 256);
+                        Map<String, INDArray> placeholders = new HashMap<>();
+                        placeholders.put("input", inputData);
+
+                        Map<String, INDArray> outputs = loaded.output(placeholders, "output");
+                        assertNotNull(outputs.get("output"));
+
+                        // Close output arrays explicitly
+                        outputs.get("output").close();
+                        inputData.close();
+
+                        // Invoke memory manager gc to process pending deallocations
+                        if (i % 3 == 0) {
+                            Nd4j.getMemoryManager().invokeGc();
+                        }
+
+                        successCount.incrementAndGet();
+                    }
+                } catch (Throwable e) {
+                    failed.set(true);
+                    firstError.compareAndSet(null, e);
+                    log.error("Thread {} failed during model loading with deallocation", threadId, e);
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+            thread.setName("ModelLoader-Dealloc-Thread-" + threadId);
+            thread.start();
+        }
+
+        startLatch.countDown();
+
+        boolean completed = doneLatch.await(120, java.util.concurrent.TimeUnit.SECONDS);
+        assertTrue(completed, "All threads should complete within timeout");
+
+        if (failed.get()) {
+            throw new RuntimeException("Concurrent model loading with deallocation test failed", firstError.get());
+        }
+
+        assertEquals(nThreads * nLoadsPerThread, successCount.get());
+        log.info("Concurrent model loading with deallocation test passed: {} successful loads", successCount.get());
+    }
+
+    /**
+     * Test rapid creation and destruction of SameDiff instances.
+     * This stresses the deallocator service with many short-lived model instances.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testRapidSameDiffCreationDestruction(Nd4jBackend backend) throws Exception {
+        int nThreads = 12;
+        int nModelsPerThread = 50;
+
+        java.util.concurrent.CountDownLatch startLatch = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch doneLatch = new java.util.concurrent.CountDownLatch(nThreads);
+        java.util.concurrent.atomic.AtomicBoolean failed = new java.util.concurrent.atomic.AtomicBoolean(false);
+        java.util.concurrent.atomic.AtomicReference<Throwable> firstError = new java.util.concurrent.atomic.AtomicReference<>();
+        java.util.concurrent.atomic.AtomicInteger successCount = new java.util.concurrent.atomic.AtomicInteger(0);
+
+        for (int t = 0; t < nThreads; t++) {
+            final int threadId = t;
+            Thread thread = new Thread(() -> {
+                try {
+                    startLatch.await();
+
+                    for (int i = 0; i < nModelsPerThread; i++) {
+                        // Create a small model
+                        SameDiff sd = SameDiff.create();
+                        SDVariable input = sd.placeHolder("input", DataType.FLOAT, -1, 64);
+                        SDVariable w = sd.var("w", Nd4j.randn(DataType.FLOAT, 64, 32).mul(0.1));
+                        SDVariable b = sd.var("b", Nd4j.zeros(DataType.FLOAT, 32));
+
+                        // Add some scalars
+                        sd.constant("s1", Nd4j.scalar(DataType.INT, threadId));
+                        sd.constant("s2", Nd4j.scalar(DataType.FLOAT, (float) i));
+
+                        SDVariable output = sd.nn.softmax("output", input.mmul(w).add(b), -1);
+
+                        // Execute
+                        INDArray inputData = Nd4j.randn(DataType.FLOAT, 2, 64);
+                        Map<String, INDArray> outputs = sd.output(
+                            Collections.singletonMap("input", inputData), "output");
+
+                        assertNotNull(outputs.get("output"));
+                        outputs.get("output").close();
+                        inputData.close();
+
+                        // Let sd go out of scope
+                        sd = null;
+
+                        successCount.incrementAndGet();
+                    }
+                } catch (Throwable e) {
+                    failed.set(true);
+                    firstError.compareAndSet(null, e);
+                    log.error("Thread {} failed during rapid SameDiff creation", threadId, e);
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+            thread.setName("RapidCreate-Thread-" + threadId);
+            thread.start();
+        }
+
+        startLatch.countDown();
+        boolean completed = doneLatch.await(180, java.util.concurrent.TimeUnit.SECONDS);
+        assertTrue(completed, "All threads should complete within timeout");
+
+        if (failed.get()) {
+            throw new RuntimeException("Rapid SameDiff creation/destruction test failed", firstError.get());
+        }
+
+        assertEquals(nThreads * nModelsPerThread, successCount.get());
+        log.info("Rapid SameDiff creation/destruction test passed: {} successful models", successCount.get());
+    }
+
+    /**
+     * Test concurrent scalar constant creation - a known problematic area.
+     * Scalars have special handling in the serializer and deallocator.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConcurrentScalarConstantCreation(Nd4jBackend backend) throws Exception {
+        int nThreads = 16;
+        int nScalarsPerThread = 200;
+
+        java.util.concurrent.CountDownLatch startLatch = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch doneLatch = new java.util.concurrent.CountDownLatch(nThreads);
+        java.util.concurrent.atomic.AtomicBoolean failed = new java.util.concurrent.atomic.AtomicBoolean(false);
+        java.util.concurrent.atomic.AtomicReference<Throwable> firstError = new java.util.concurrent.atomic.AtomicReference<>();
+        java.util.concurrent.atomic.AtomicInteger successCount = new java.util.concurrent.atomic.AtomicInteger(0);
+
+        for (int t = 0; t < nThreads; t++) {
+            final int threadId = t;
+            Thread thread = new Thread(() -> {
+                try {
+                    startLatch.await();
+
+                    for (int i = 0; i < nScalarsPerThread; i++) {
+                        // Create scalars of different types
+                        INDArray intScalar = Nd4j.scalar(DataType.INT, threadId * 1000 + i);
+                        INDArray longScalar = Nd4j.scalar(DataType.LONG, (long) threadId * 1000 + i);
+                        INDArray floatScalar = Nd4j.scalar(DataType.FLOAT, (float) i * 0.001f);
+                        INDArray doubleScalar = Nd4j.scalar(DataType.DOUBLE, (double) i * 0.001);
+
+                        // Do some operations on scalars
+                        INDArray result = floatScalar.mul(2.0).add(doubleScalar);
+
+                        // Verify values
+                        assertEquals(1, intScalar.length());
+                        assertEquals(1, longScalar.length());
+                        assertEquals(1, floatScalar.length());
+                        assertEquals(1, result.length());
+
+                        // Close some, let GC handle others
+                        intScalar.close();
+                        longScalar.close();
+                        // floatScalar, doubleScalar, result left for GC
+
+                        successCount.incrementAndGet();
+                    }
+                } catch (Throwable e) {
+                    failed.set(true);
+                    firstError.compareAndSet(null, e);
+                    log.error("Thread {} failed during scalar creation", threadId, e);
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+            thread.setName("ScalarCreate-Thread-" + threadId);
+            thread.start();
+        }
+
+        startLatch.countDown();
+        boolean completed = doneLatch.await(120, java.util.concurrent.TimeUnit.SECONDS);
+
+        // Force GC to trigger deallocations
+        System.gc();
+        Thread.sleep(500);
+        System.gc();
+
+        assertTrue(completed, "All threads should complete within timeout");
+
+        if (failed.get()) {
+            throw new RuntimeException("Concurrent scalar constant creation test failed", firstError.get());
+        }
+
+        assertEquals(nThreads * nScalarsPerThread, successCount.get());
+        log.info("Concurrent scalar constant creation test passed: {} successful scalar creations", successCount.get());
+    }
+
+    /**
+     * Test concurrent OpaqueNDArray creation and destruction.
+     * This directly tests the OpaqueNDArray deallocator under concurrent load.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConcurrentOpaqueNDArrayDeallocator(Nd4jBackend backend) throws Exception {
+        int nThreads = 12;
+        int nIterationsPerThread = 50;
+
+        java.util.concurrent.CountDownLatch startLatch = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch doneLatch = new java.util.concurrent.CountDownLatch(nThreads);
+        java.util.concurrent.atomic.AtomicBoolean failed = new java.util.concurrent.atomic.AtomicBoolean(false);
+        java.util.concurrent.atomic.AtomicReference<Throwable> firstError = new java.util.concurrent.atomic.AtomicReference<>();
+        java.util.concurrent.atomic.AtomicInteger successCount = new java.util.concurrent.atomic.AtomicInteger(0);
+
+        for (int t = 0; t < nThreads; t++) {
+            final int threadId = t;
+            Thread thread = new Thread(() -> {
+                try {
+                    startLatch.await();
+
+                    for (int i = 0; i < nIterationsPerThread; i++) {
+                        // Create arrays of different sizes
+                        INDArray arr1 = Nd4j.randn(DataType.FLOAT, 32 + threadId, 64);
+                        INDArray arr2 = Nd4j.randn(DataType.FLOAT, 64, 32 + threadId);
+                        INDArray arr3 = Nd4j.zeros(DataType.FLOAT, 16, 16);
+
+                        // Create OpaqueNDArrays (this triggers OpaqueNDArrayDeallocator registration)
+                        org.nd4j.nativeblas.OpaqueNDArray opaque1 = org.nd4j.nativeblas.OpaqueNDArray.fromINDArray(arr1);
+                        org.nd4j.nativeblas.OpaqueNDArray opaque2 = org.nd4j.nativeblas.OpaqueNDArray.fromINDArray(arr2);
+                        org.nd4j.nativeblas.OpaqueNDArray opaque3 = org.nd4j.nativeblas.OpaqueNDArray.fromINDArray(arr3);
+
+                        // Verify they're valid
+                        assertFalse(opaque1.isNull());
+                        assertFalse(opaque2.isNull());
+                        assertFalse(opaque3.isNull());
+
+                        // Close the source arrays (this tests that OpaqueNDArray keeps buffers alive)
+                        arr1.close();
+                        arr2.close();
+                        arr3.close();
+
+                        // Invoke memory manager GC periodically
+                        if (i % 10 == 0) {
+                            Nd4j.getMemoryManager().invokeGc();
+                        }
+
+                        successCount.incrementAndGet();
+                    }
+                } catch (Throwable e) {
+                    failed.set(true);
+                    firstError.compareAndSet(null, e);
+                    log.error("Thread {} failed during OpaqueNDArray test", threadId, e);
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+            thread.setName("OpaqueNDArray-Thread-" + threadId);
+            thread.start();
+        }
+
+        startLatch.countDown();
+        boolean completed = doneLatch.await(120, java.util.concurrent.TimeUnit.SECONDS);
+        assertTrue(completed, "All threads should complete within timeout");
+
+        if (failed.get()) {
+            throw new RuntimeException("Concurrent OpaqueNDArray deallocator test failed", firstError.get());
+        }
+
+        assertEquals(nThreads * nIterationsPerThread, successCount.get());
+        log.info("Concurrent OpaqueNDArray deallocator test passed: {} successful iterations", successCount.get());
+    }
+
+    /**
+     * Test concurrent OpaqueNDArrayArr creation and destruction.
+     * This directly tests the OpaqueNDArrayArr deallocator which manages arrays of OpaqueNDArrays.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConcurrentOpaqueNDArrayArrDeallocator(Nd4jBackend backend) throws Exception {
+        int nThreads = 10;
+        int nIterationsPerThread = 30;
+
+        java.util.concurrent.CountDownLatch startLatch = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch doneLatch = new java.util.concurrent.CountDownLatch(nThreads);
+        java.util.concurrent.atomic.AtomicBoolean failed = new java.util.concurrent.atomic.AtomicBoolean(false);
+        java.util.concurrent.atomic.AtomicReference<Throwable> firstError = new java.util.concurrent.atomic.AtomicReference<>();
+        java.util.concurrent.atomic.AtomicInteger successCount = new java.util.concurrent.atomic.AtomicInteger(0);
+
+        for (int t = 0; t < nThreads; t++) {
+            final int threadId = t;
+            Thread thread = new Thread(() -> {
+                try {
+                    startLatch.await();
+
+                    for (int i = 0; i < nIterationsPerThread; i++) {
+                        // Create multiple arrays
+                        INDArray[] arrays = new INDArray[5];
+                        for (int j = 0; j < arrays.length; j++) {
+                            arrays[j] = Nd4j.randn(DataType.FLOAT, 32 + j, 64 + threadId);
+                        }
+
+                        // Create OpaqueNDArrayArr (this tests the array deallocator)
+                        org.nd4j.nativeblas.OpaqueNDArrayArr opaqueArr =
+                            org.nd4j.nativeblas.OpaqueNDArrayArr.createFrom(arrays);
+
+                        // Verify it's valid
+                        assertNotNull(opaqueArr);
+                        assertEquals(arrays.length, opaqueArr.getNumArrays());
+
+                        // Close the OpaqueNDArrayArr explicitly
+                        opaqueArr.close();
+
+                        // Close source arrays
+                        for (INDArray arr : arrays) {
+                            arr.close();
+                        }
+
+                        // Invoke memory manager GC periodically
+                        if (i % 5 == 0) {
+                            Nd4j.getMemoryManager().invokeGc();
+                        }
+
+                        successCount.incrementAndGet();
+                    }
+                } catch (Throwable e) {
+                    failed.set(true);
+                    firstError.compareAndSet(null, e);
+                    log.error("Thread {} failed during OpaqueNDArrayArr test", threadId, e);
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+            thread.setName("OpaqueNDArrayArr-Thread-" + threadId);
+            thread.start();
+        }
+
+        startLatch.countDown();
+        boolean completed = doneLatch.await(120, java.util.concurrent.TimeUnit.SECONDS);
+        assertTrue(completed, "All threads should complete within timeout");
+
+        if (failed.get()) {
+            throw new RuntimeException("Concurrent OpaqueNDArrayArr deallocator test failed", firstError.get());
+        }
+
+        assertEquals(nThreads * nIterationsPerThread, successCount.get());
+        log.info("Concurrent OpaqueNDArrayArr deallocator test passed: {} successful iterations", successCount.get());
+    }
+
+    /**
+     * Test concurrent OpaqueDataBuffer creation and destruction.
+     * This directly tests the OpaqueDataBuffer deallocator under concurrent load.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConcurrentOpaqueDataBufferDeallocator(Nd4jBackend backend) throws Exception {
+        int nThreads = 12;
+        int nIterationsPerThread = 50;
+
+        java.util.concurrent.CountDownLatch startLatch = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch doneLatch = new java.util.concurrent.CountDownLatch(nThreads);
+        java.util.concurrent.atomic.AtomicBoolean failed = new java.util.concurrent.atomic.AtomicBoolean(false);
+        java.util.concurrent.atomic.AtomicReference<Throwable> firstError = new java.util.concurrent.atomic.AtomicReference<>();
+        java.util.concurrent.atomic.AtomicInteger successCount = new java.util.concurrent.atomic.AtomicInteger(0);
+
+        for (int t = 0; t < nThreads; t++) {
+            final int threadId = t;
+            Thread thread = new Thread(() -> {
+                try {
+                    startLatch.await();
+
+                    for (int i = 0; i < nIterationsPerThread; i++) {
+                        // Allocate OpaqueDataBuffers directly (this tests OpaqueDataBufferDeallocator)
+                        org.nd4j.nativeblas.OpaqueDataBuffer buffer1 =
+                            org.nd4j.nativeblas.OpaqueDataBuffer.allocateDataBuffer(
+                                1024 + threadId * 10, DataType.FLOAT, true);
+                        org.nd4j.nativeblas.OpaqueDataBuffer buffer2 =
+                            org.nd4j.nativeblas.OpaqueDataBuffer.allocateDataBuffer(
+                                512 + threadId * 5, DataType.DOUBLE, true);
+                        org.nd4j.nativeblas.OpaqueDataBuffer buffer3 =
+                            org.nd4j.nativeblas.OpaqueDataBuffer.allocateDataBuffer(
+                                256 + i, DataType.INT, true);
+
+                        // Verify they're valid
+                        assertFalse(buffer1.isNull());
+                        assertFalse(buffer2.isNull());
+                        assertFalse(buffer3.isNull());
+
+                        // Close buffers explicitly
+                        buffer1.closeBuffer();
+                        buffer2.closeBuffer();
+                        buffer3.closeBuffer();
+
+                        // Invoke memory manager GC periodically
+                        if (i % 10 == 0) {
+                            Nd4j.getMemoryManager().invokeGc();
+                        }
+
+                        successCount.incrementAndGet();
+                    }
+                } catch (Throwable e) {
+                    failed.set(true);
+                    firstError.compareAndSet(null, e);
+                    log.error("Thread {} failed during OpaqueDataBuffer test", threadId, e);
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+            thread.setName("OpaqueDataBuffer-Thread-" + threadId);
+            thread.start();
+        }
+
+        startLatch.countDown();
+        boolean completed = doneLatch.await(120, java.util.concurrent.TimeUnit.SECONDS);
+        assertTrue(completed, "All threads should complete within timeout");
+
+        if (failed.get()) {
+            throw new RuntimeException("Concurrent OpaqueDataBuffer deallocator test failed", firstError.get());
+        }
+
+        assertEquals(nThreads * nIterationsPerThread, successCount.get());
+        log.info("Concurrent OpaqueDataBuffer deallocator test passed: {} successful iterations", successCount.get());
+    }
+
+    /**
+     * Test concurrent deallocation race conditions by NOT explicitly closing resources.
+     * This forces cleanup through GC and the DeallocatorService, which is where
+     * race conditions with JavaCPP's Pointer$NativeDeallocator can occur.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConcurrentGCDeallocatorRace(Nd4jBackend backend) throws Exception {
+        int nThreads = 8;
+        int nIterationsPerThread = 30;
+
+        java.util.concurrent.CountDownLatch startLatch = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch doneLatch = new java.util.concurrent.CountDownLatch(nThreads);
+        java.util.concurrent.atomic.AtomicBoolean failed = new java.util.concurrent.atomic.AtomicBoolean(false);
+        java.util.concurrent.atomic.AtomicReference<Throwable> firstError = new java.util.concurrent.atomic.AtomicReference<>();
+        java.util.concurrent.atomic.AtomicInteger successCount = new java.util.concurrent.atomic.AtomicInteger(0);
+
+        for (int t = 0; t < nThreads; t++) {
+            final int threadId = t;
+            Thread thread = new Thread(() -> {
+                try {
+                    startLatch.await();
+
+                    for (int i = 0; i < nIterationsPerThread; i++) {
+                        // Create arrays and OpaqueNDArrayArr WITHOUT explicitly closing
+                        // This forces cleanup through GC + DeallocatorService
+                        {
+                            INDArray[] arrays = new INDArray[3];
+                            for (int j = 0; j < arrays.length; j++) {
+                                arrays[j] = Nd4j.randn(DataType.FLOAT, 16 + j, 32 + threadId);
+                            }
+
+                            // Create OpaqueNDArrayArr - don't close it
+                            org.nd4j.nativeblas.OpaqueNDArrayArr opaqueArr =
+                                org.nd4j.nativeblas.OpaqueNDArrayArr.createFrom(arrays);
+
+                            // Let opaqueArr and arrays go out of scope
+                            // This tests the GC + DeallocatorService race
+                        }
+
+                        // Invoke memory manager GC frequently to trigger race conditions
+                        Nd4j.getMemoryManager().invokeGc();
+
+                        successCount.incrementAndGet();
+                    }
+                } catch (Throwable e) {
+                    failed.set(true);
+                    firstError.compareAndSet(null, e);
+                    log.error("Thread {} failed during GC deallocator race test", threadId, e);
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+            thread.setName("GCDeallocRace-Thread-" + threadId);
+            thread.start();
+        }
+
+        startLatch.countDown();
+        boolean completed = doneLatch.await(120, java.util.concurrent.TimeUnit.SECONDS);
+
+        // Final GC to clean up any remaining objects
+        Nd4j.getMemoryManager().invokeGc();
+        Thread.sleep(500);
+        Nd4j.getMemoryManager().invokeGc();
+
+        assertTrue(completed, "All threads should complete within timeout");
+
+        if (failed.get()) {
+            throw new RuntimeException("Concurrent GC deallocator race test failed", firstError.get());
+        }
+
+        assertEquals(nThreads * nIterationsPerThread, successCount.get());
+        log.info("Concurrent GC deallocator race test passed: {} successful iterations", successCount.get());
+    }
+
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyShapeVar(Nd4jBackend backend) {
@@ -5046,5 +5892,619 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
         SDVariable out2 = sd.cnn().conv2d(sdInput, permutedWeights, sdBias, c2);
         assertEquals(out.eval(), out2.eval());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testRepeatedModelSaveLoadMemoryStress(Nd4jBackend backend) throws Exception {
+        // Test that repeatedly saving and loading models doesn't cause memory corruption
+        // This stresses the memory allocation/deallocation paths in CUDA
+        File tempFile = new File(System.getProperty("java.io.tmpdir"), "stress_test_model.sdz");
+        try {
+            // Create a medium-sized model with multiple variables to stress memory paths
+            SameDiff sd = SameDiff.create();
+            INDArray input = Nd4j.randn(DataType.FLOAT, 16, 128);
+            INDArray w1 = Nd4j.randn(DataType.FLOAT, 128, 256);
+            INDArray w2 = Nd4j.randn(DataType.FLOAT, 256, 128);
+            INDArray w3 = Nd4j.randn(DataType.FLOAT, 128, 64);
+            INDArray b1 = Nd4j.randn(DataType.FLOAT, 256);
+            INDArray b2 = Nd4j.randn(DataType.FLOAT, 128);
+            INDArray b3 = Nd4j.randn(DataType.FLOAT, 64);
+
+            SDVariable sdInput = sd.placeHolder("input", DataType.FLOAT, -1, 128);
+            SDVariable sdW1 = sd.var("w1", w1);
+            SDVariable sdW2 = sd.var("w2", w2);
+            SDVariable sdW3 = sd.var("w3", w3);
+            SDVariable sdB1 = sd.var("b1", b1);
+            SDVariable sdB2 = sd.var("b2", b2);
+            SDVariable sdB3 = sd.var("b3", b3);
+
+            // Build a 3-layer network
+            SDVariable h1 = sd.nn().relu(sdInput.mmul(sdW1).add(sdB1), 0);
+            SDVariable h2 = sd.nn().relu(h1.mmul(sdW2).add(sdB2), 0);
+            SDVariable out = sd.nn().softmax("output", h2.mmul(sdW3).add(sdB3), -1);
+
+            // Evaluate once to initialize everything
+            Map<String, INDArray> placeholders = new HashMap<>();
+            placeholders.put("input", input);
+            sd.output(placeholders, "output");
+
+            // Save the model
+            sd.save(tempFile, true);
+
+            // Repeatedly load and evaluate the model - this stresses memory allocation
+            for (int i = 0; i < 10; i++) {
+                SameDiff loaded = SameDiff.load(tempFile, true);
+                INDArray result = loaded.output(placeholders, "output").get("output");
+                assertNotNull(result);
+                assertEquals(16, result.shape()[0]);
+                assertEquals(64, result.shape()[1]);
+
+                // Explicitly trigger garbage collection to stress deallocator paths
+                if (i % 3 == 0) {
+                    System.gc();
+                    Thread.sleep(50);
+                }
+            }
+        } finally {
+            if (tempFile.exists()) {
+                tempFile.delete();
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConcurrentModelLoadingMemoryStress(Nd4jBackend backend) throws Exception {
+        // Test concurrent model loading to stress memory management
+        File tempFile = new File(System.getProperty("java.io.tmpdir"), "concurrent_stress_model.sdz");
+        try {
+            // Create and save a model
+            SameDiff sd = SameDiff.create();
+            INDArray w = Nd4j.randn(DataType.FLOAT, 64, 64);
+            SDVariable input = sd.placeHolder("input", DataType.FLOAT, -1, 64);
+            SDVariable weight = sd.var("weight", w);
+            SDVariable out = sd.nn().relu("output", input.mmul(weight), 0);
+
+            sd.save(tempFile, true);
+
+            // Load from multiple threads concurrently
+            int numThreads = 4;
+            int loadsPerThread = 5;
+            Thread[] threads = new Thread[numThreads];
+            Exception[] errors = new Exception[numThreads];
+
+            for (int t = 0; t < numThreads; t++) {
+                final int threadId = t;
+                threads[t] = new Thread(() -> {
+                    try {
+                        for (int i = 0; i < loadsPerThread; i++) {
+                            SameDiff loaded = SameDiff.load(tempFile, true);
+                            Map<String, INDArray> ph = new HashMap<>();
+                            ph.put("input", Nd4j.randn(DataType.FLOAT, 8, 64));
+                            INDArray result = loaded.output(ph, "output").get("output");
+                            assertNotNull(result);
+                        }
+                    } catch (Exception e) {
+                        errors[threadId] = e;
+                    }
+                });
+                threads[t].start();
+            }
+
+            // Wait for all threads
+            for (Thread thread : threads) {
+                thread.join();
+            }
+
+            // Check for errors
+            for (int t = 0; t < numThreads; t++) {
+                if (errors[t] != null) {
+                    throw errors[t];
+                }
+            }
+        } finally {
+            if (tempFile.exists()) {
+                tempFile.delete();
+            }
+        }
+    }
+
+    /**
+     * Test concurrent loading of the actual BGE embedding model.
+     * This test is designed to reproduce the heap corruption seen in Spring-based servers.
+     *
+     * The key differences from other tests:
+     * 1. Uses a REAL large embedding model (BGE ~400MB)
+     * 2. Multiple threads loading AND running inference concurrently
+     * 3. More realistic memory pressure pattern
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConcurrentBgeModelLoadingAndInference(Nd4jBackend backend) throws Exception {
+        // Path to the BGE model - skip if not available
+        File modelFile = new File("/home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests/bge-base-en-v1.5.sdz");
+        org.junit.jupiter.api.Assumptions.assumeTrue(modelFile.exists(),
+                "BGE model not found at: " + modelFile.getAbsolutePath());
+
+        // Load model once (like Spring singleton) before spawning threads
+        log.info("Loading BGE model from: {}", modelFile.getAbsolutePath());
+        SameDiff sharedModel = SDZSerializer.load(modelFile, true);
+        log.info("Model loaded. Inputs: {}, Outputs: {}", sharedModel.inputs(), sharedModel.outputs());
+
+        // Get sequence length from model - check for position embedding shape
+        int seqLength = 512; // Default for BGE
+
+        // Helper to create inputs
+        java.util.function.Supplier<Map<String, INDArray>> createInputs = () -> {
+            int batchSize = 1;
+            Map<String, INDArray> inputMap = new HashMap<>();
+            for (String inputName : sharedModel.inputs()) {
+                INDArray input = Nd4j.zeros(org.nd4j.linalg.api.buffer.DataType.INT64, batchSize, seqLength);
+                if (inputName.toLowerCase().contains("input_id")) {
+                    input.putScalar(0, 0, 101); // [CLS]
+                    input.putScalar(0, 1, 102); // [SEP]
+                } else if (inputName.toLowerCase().contains("attention") || inputName.toLowerCase().contains("mask")) {
+                    input.putScalar(0, 0, 1);
+                    input.putScalar(0, 1, 1);
+                }
+                inputMap.put(inputName, input);
+            }
+            return inputMap;
+        };
+
+        // STEP 1: First verify model works with single-threaded inference
+        log.info("Testing single-threaded inference first...");
+        {
+            Map<String, INDArray> inputMap = createInputs.get();
+            try {
+                Map<String, INDArray> outputs = sharedModel.output(inputMap, sharedModel.outputs());
+                for (INDArray output : outputs.values()) {
+                    assertNotNull(output, "Single-thread output should not be null");
+                    log.info("Single-thread output shape: {}", java.util.Arrays.toString(output.shape()));
+                }
+                for (INDArray output : outputs.values()) {
+                    output.close();
+                }
+                log.info("Single-threaded inference PASSED");
+            } finally {
+                for (INDArray input : inputMap.values()) {
+                    input.close();
+                }
+            }
+        }
+
+        // STEP 2: Run a few sequential inferences to warm up
+        log.info("Running warm-up inferences...");
+        for (int warm = 0; warm < 3; warm++) {
+            Map<String, INDArray> inputMap = createInputs.get();
+            try {
+                Map<String, INDArray> outputs = sharedModel.output(inputMap, sharedModel.outputs());
+                for (INDArray output : outputs.values()) {
+                    output.close();
+                }
+            } finally {
+                for (INDArray input : inputMap.values()) {
+                    input.close();
+                }
+            }
+        }
+        log.info("Warm-up completed");
+
+        // STEP 3: Now test concurrent inference
+        int nThreads = 4;  // Realistic for server scenario
+        int nInferencesPerThread = 5; // Reduced for initial testing
+
+        java.util.concurrent.CountDownLatch startLatch = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch doneLatch = new java.util.concurrent.CountDownLatch(nThreads);
+        java.util.concurrent.atomic.AtomicBoolean failed = new java.util.concurrent.atomic.AtomicBoolean(false);
+        java.util.concurrent.atomic.AtomicReference<Throwable> firstError = new java.util.concurrent.atomic.AtomicReference<>();
+        java.util.concurrent.atomic.AtomicInteger successCount = new java.util.concurrent.atomic.AtomicInteger(0);
+
+        log.info("Starting concurrent inference test with {} threads, {} inferences each", nThreads, nInferencesPerThread);
+
+        for (int t = 0; t < nThreads; t++) {
+            final int threadId = t;
+            Thread thread = new Thread(() -> {
+                try {
+                    startLatch.await();
+
+                    for (int i = 0; i < nInferencesPerThread; i++) {
+                        Map<String, INDArray> inputMap = createInputs.get();
+                        try {
+                            // Run inference
+                            Map<String, INDArray> outputs = sharedModel.output(inputMap, sharedModel.outputs());
+
+                            // Verify output
+                            for (INDArray output : outputs.values()) {
+                                assertNotNull(output, "Output should not be null");
+                                assertFalse(output.isNaN().any(), "Output should not contain NaN");
+                            }
+
+                            // Clean up outputs
+                            for (INDArray output : outputs.values()) {
+                                output.close();
+                            }
+
+                            successCount.incrementAndGet();
+
+                            if ((i + 1) % 2 == 0) {
+                                log.info("Thread {} completed inference {}/{}", threadId, i + 1, nInferencesPerThread);
+                            }
+                        } finally {
+                            // Always clean up inputs
+                            for (INDArray input : inputMap.values()) {
+                                input.close();
+                            }
+                        }
+                    }
+                } catch (Throwable e) {
+                    failed.set(true);
+                    firstError.compareAndSet(null, e);
+                    log.error("Thread {} failed during BGE inference at success count {}", threadId, successCount.get(), e);
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+            thread.setName("BgeInference-Thread-" + threadId);
+            thread.start();
+        }
+
+        startLatch.countDown();
+        boolean completed = doneLatch.await(300, java.util.concurrent.TimeUnit.SECONDS);
+
+        assertTrue(completed, "All threads should complete within timeout");
+
+        if (failed.get()) {
+            throw new RuntimeException("Concurrent BGE inference test failed", firstError.get());
+        }
+
+        assertEquals(nThreads * nInferencesPerThread, successCount.get());
+        log.info("Concurrent BGE inference test passed: {} successful inferences", successCount.get());
+    }
+
+    /**
+     * Test that simulates loading model in multiple threads where each thread loads its own copy.
+     * This is closer to what happens in subprocess scenarios where model is loaded fresh.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConcurrentBgeModelFreshLoads(Nd4jBackend backend) throws Exception {
+        File modelFile = new File("/home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests/bge-base-en-v1.5.sdz");
+        org.junit.jupiter.api.Assumptions.assumeTrue(modelFile.exists(),
+                "BGE model not found at: " + modelFile.getAbsolutePath());
+
+        int seqLength = 512; // BGE model expects 512 sequence length
+
+        // STEP 1: First verify a single load + inference works
+        log.info("Testing single load + inference first...");
+        {
+            SameDiff model = SDZSerializer.load(modelFile, true);
+            assertNotNull(model, "Loaded model should not be null");
+            log.info("Model loaded. Inputs: {}, Outputs: {}", model.inputs(), model.outputs());
+
+            Map<String, INDArray> inputMap = new HashMap<>();
+            for (String inputName : model.inputs()) {
+                INDArray input = Nd4j.zeros(org.nd4j.linalg.api.buffer.DataType.INT64, 1, seqLength);
+                if (inputName.toLowerCase().contains("input_id")) {
+                    input.putScalar(0, 0, 101);
+                    input.putScalar(0, 1, 102);
+                } else if (inputName.toLowerCase().contains("attention") || inputName.toLowerCase().contains("mask")) {
+                    input.putScalar(0, 0, 1);
+                    input.putScalar(0, 1, 1);
+                }
+                inputMap.put(inputName, input);
+            }
+
+            Map<String, INDArray> outputs = model.output(inputMap, model.outputs());
+            assertFalse(outputs.isEmpty(), "Should have outputs");
+            log.info("Single load + inference PASSED");
+
+            for (INDArray input : inputMap.values()) {
+                input.close();
+            }
+            for (INDArray output : outputs.values()) {
+                output.close();
+            }
+            model = null;
+            Nd4j.getMemoryManager().invokeGc();
+        }
+
+        // STEP 2: Now test concurrent fresh loads
+        int nThreads = 2;  // Reduced for initial testing
+        int nLoadsPerThread = 2; // Reduced for initial testing
+
+        java.util.concurrent.CountDownLatch startLatch = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch doneLatch = new java.util.concurrent.CountDownLatch(nThreads);
+        java.util.concurrent.atomic.AtomicBoolean failed = new java.util.concurrent.atomic.AtomicBoolean(false);
+        java.util.concurrent.atomic.AtomicReference<Throwable> firstError = new java.util.concurrent.atomic.AtomicReference<>();
+        java.util.concurrent.atomic.AtomicInteger successCount = new java.util.concurrent.atomic.AtomicInteger(0);
+
+        log.info("Starting concurrent BGE fresh loads test. {} threads x {} loads", nThreads, nLoadsPerThread);
+
+        for (int t = 0; t < nThreads; t++) {
+            final int threadId = t;
+            final int finalSeqLength = seqLength;
+            Thread thread = new Thread(() -> {
+                try {
+                    startLatch.await();
+
+                    for (int i = 0; i < nLoadsPerThread; i++) {
+                        log.info("Thread {} starting load {}/{}", threadId, i + 1, nLoadsPerThread);
+
+                        // Each thread loads a FRESH copy of the model
+                        SameDiff model = SDZSerializer.load(modelFile, true);
+                        assertNotNull(model, "Loaded model should not be null");
+
+                        // Run one inference to verify model works
+                        Map<String, INDArray> inputMap = new HashMap<>();
+                        for (String inputName : model.inputs()) {
+                            INDArray input = Nd4j.zeros(org.nd4j.linalg.api.buffer.DataType.INT64, 1, finalSeqLength);
+                            if (inputName.toLowerCase().contains("input_id")) {
+                                input.putScalar(0, 0, 101);
+                                input.putScalar(0, 1, 102);
+                            } else if (inputName.toLowerCase().contains("attention") || inputName.toLowerCase().contains("mask")) {
+                                input.putScalar(0, 0, 1);
+                                input.putScalar(0, 1, 1);
+                            }
+                            inputMap.put(inputName, input);
+                        }
+
+                        Map<String, INDArray> outputs = model.output(inputMap, model.outputs());
+                        assertFalse(outputs.isEmpty(), "Should have outputs");
+
+                        // Clean up
+                        for (INDArray input : inputMap.values()) {
+                            input.close();
+                        }
+                        for (INDArray output : outputs.values()) {
+                            output.close();
+                        }
+
+                        // Let model go out of scope to trigger GC cleanup
+                        model = null;
+
+                        // Force GC to stress deallocator
+                        Nd4j.getMemoryManager().invokeGc();
+
+                        successCount.incrementAndGet();
+                        log.info("Thread {} completed load {}/{}", threadId, i + 1, nLoadsPerThread);
+                    }
+                } catch (Throwable e) {
+                    failed.set(true);
+                    firstError.compareAndSet(null, e);
+                    log.error("Thread {} failed during BGE fresh load at success count {}", threadId, successCount.get(), e);
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+            thread.setName("BgeFreshLoad-Thread-" + threadId);
+            thread.start();
+        }
+
+        startLatch.countDown();
+        boolean completed = doneLatch.await(600, java.util.concurrent.TimeUnit.SECONDS);
+
+        // Final GC
+        Nd4j.getMemoryManager().invokeGc();
+        Thread.sleep(1000);
+        Nd4j.getMemoryManager().invokeGc();
+
+        assertTrue(completed, "All threads should complete within timeout");
+
+        if (failed.get()) {
+            throw new RuntimeException("Concurrent BGE fresh loads test failed", firstError.get());
+        }
+
+        assertEquals(nThreads * nLoadsPerThread, successCount.get());
+        log.info("Concurrent BGE fresh loads test passed: {} successful loads", successCount.get());
+    }
+
+    /**
+     * Test that simulates the "cold start" pattern seen in subprocess scenarios.
+     * First CUDA operation triggers device initialization, then concurrent operations follow.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testColdStartConcurrentOps(Nd4jBackend backend) throws Exception {
+        // This test simulates what happens in a subprocess:
+        // 1. No prior CUDA initialization
+        // 2. First op triggers device init
+        // 3. Concurrent ops follow immediately
+
+        int nThreads = 8;
+        int nOpsPerThread = 20;
+
+        java.util.concurrent.CountDownLatch startLatch = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch doneLatch = new java.util.concurrent.CountDownLatch(nThreads);
+        java.util.concurrent.atomic.AtomicBoolean failed = new java.util.concurrent.atomic.AtomicBoolean(false);
+        java.util.concurrent.atomic.AtomicReference<Throwable> firstError = new java.util.concurrent.atomic.AtomicReference<>();
+        java.util.concurrent.atomic.AtomicInteger successCount = new java.util.concurrent.atomic.AtomicInteger(0);
+
+        // Start threads that will perform various operations
+        for (int t = 0; t < nThreads; t++) {
+            final int threadId = t;
+            Thread thread = new Thread(() -> {
+                try {
+                    startLatch.await();
+
+                    for (int i = 0; i < nOpsPerThread; i++) {
+                        // Mix of operations to stress different code paths
+                        switch (i % 5) {
+                            case 0:
+                                // Large allocation
+                                INDArray large = Nd4j.randn(DataType.FLOAT, 512, 512);
+                                large.mul(2.0);
+                                large.close();
+                                break;
+                            case 1:
+                                // Scalar operation
+                                INDArray scalar = Nd4j.scalar(DataType.FLOAT, 1.0f);
+                                scalar.add(scalar).close();
+                                scalar.close();
+                                break;
+                            case 2:
+                                // SameDiff model creation
+                                SameDiff sd = SameDiff.create();
+                                SDVariable in = sd.placeHolder("in", DataType.FLOAT, -1, 64);
+                                SDVariable w = sd.var("w", Nd4j.randn(DataType.FLOAT, 64, 32));
+                                SDVariable out = sd.mmul("out", in, w);
+                                INDArray input = Nd4j.randn(DataType.FLOAT, 4, 64);
+                                Map<String, INDArray> ph = new HashMap<>();
+                                ph.put("in", input);
+                                INDArray result = sd.output(ph, "out").get("out");
+                                result.close();
+                                input.close();
+                                break;
+                            case 3:
+                                // Reduction ops (often trigger different CUDA paths)
+                                INDArray arr = Nd4j.randn(DataType.FLOAT, 128, 128);
+                                arr.sum().close();
+                                arr.mean().close();
+                                arr.max().close();
+                                arr.close();
+                                break;
+                            case 4:
+                                // Shape manipulation
+                                INDArray data = Nd4j.randn(DataType.FLOAT, 16, 32, 64);
+                                INDArray reshaped = data.reshape(16, 32 * 64);
+                                INDArray transposed = reshaped.transpose();
+                                transposed.close();
+                                data.close();
+                                break;
+                        }
+
+                        successCount.incrementAndGet();
+                    }
+                } catch (Throwable e) {
+                    failed.set(true);
+                    firstError.compareAndSet(null, e);
+                    log.error("Thread {} failed during cold start concurrent ops", threadId, e);
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+            thread.setName("ColdStart-Thread-" + threadId);
+            thread.start();
+        }
+
+        // Release all threads at once (simulates cold start)
+        startLatch.countDown();
+        boolean completed = doneLatch.await(120, java.util.concurrent.TimeUnit.SECONDS);
+
+        assertTrue(completed, "All threads should complete within timeout");
+
+        if (failed.get()) {
+            throw new RuntimeException("Cold start concurrent ops test failed", firstError.get());
+        }
+
+        assertEquals(nThreads * nOpsPerThread, successCount.get());
+        log.info("Cold start concurrent ops test passed: {} successful operations", successCount.get());
+    }
+
+    /**
+     * Test transformer-like memory allocation pattern.
+     * Allocates many tensors with shapes typical of transformer models.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testTransformerMemoryPattern(Nd4jBackend backend) throws Exception {
+        int nThreads = 4;
+        int nIterationsPerThread = 5;
+
+        // Typical transformer dimensions
+        int batchSize = 2;
+        int seqLen = 128;
+        int hiddenDim = 768;
+        int numHeads = 12;
+        int headDim = hiddenDim / numHeads;
+        int ffnDim = 3072;
+
+        java.util.concurrent.CountDownLatch startLatch = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch doneLatch = new java.util.concurrent.CountDownLatch(nThreads);
+        java.util.concurrent.atomic.AtomicBoolean failed = new java.util.concurrent.atomic.AtomicBoolean(false);
+        java.util.concurrent.atomic.AtomicReference<Throwable> firstError = new java.util.concurrent.atomic.AtomicReference<>();
+        java.util.concurrent.atomic.AtomicInteger successCount = new java.util.concurrent.atomic.AtomicInteger(0);
+
+        for (int t = 0; t < nThreads; t++) {
+            final int threadId = t;
+            Thread thread = new Thread(() -> {
+                try {
+                    startLatch.await();
+
+                    for (int iter = 0; iter < nIterationsPerThread; iter++) {
+                        List<INDArray> tensors = new ArrayList<>();
+
+                        // Simulate one transformer layer allocation pattern
+                        // Input: [batch, seq, hidden]
+                        tensors.add(Nd4j.randn(DataType.FLOAT, batchSize, seqLen, hiddenDim));
+
+                        // QKV projection: [batch, seq, 3*hidden]
+                        tensors.add(Nd4j.randn(DataType.FLOAT, batchSize, seqLen, 3 * hiddenDim));
+
+                        // Attention scores: [batch, heads, seq, seq]
+                        tensors.add(Nd4j.randn(DataType.FLOAT, batchSize, numHeads, seqLen, seqLen));
+
+                        // Attention output: [batch, seq, hidden]
+                        tensors.add(Nd4j.randn(DataType.FLOAT, batchSize, seqLen, hiddenDim));
+
+                        // FFN intermediate: [batch, seq, ffn_dim]
+                        tensors.add(Nd4j.randn(DataType.FLOAT, batchSize, seqLen, ffnDim));
+
+                        // FFN output: [batch, seq, hidden]
+                        tensors.add(Nd4j.randn(DataType.FLOAT, batchSize, seqLen, hiddenDim));
+
+                        // Layer norm params (scalars and vectors)
+                        tensors.add(Nd4j.randn(DataType.FLOAT, hiddenDim)); // gamma
+                        tensors.add(Nd4j.randn(DataType.FLOAT, hiddenDim)); // beta
+                        tensors.add(Nd4j.scalar(DataType.FLOAT, 1e-6f)); // epsilon
+
+                        // Perform some ops
+                        for (int i = 0; i < tensors.size() - 1; i++) {
+                            if (tensors.get(i).rank() == tensors.get(i + 1).rank() &&
+                                java.util.Arrays.equals(tensors.get(i).shape(), tensors.get(i + 1).shape())) {
+                                tensors.get(i).add(tensors.get(i + 1));
+                            }
+                        }
+
+                        // Close all tensors
+                        for (INDArray tensor : tensors) {
+                            tensor.close();
+                        }
+
+                        successCount.incrementAndGet();
+
+                        if (iter % 2 == 0) {
+                            Nd4j.getMemoryManager().invokeGc();
+                        }
+                    }
+                } catch (Throwable e) {
+                    failed.set(true);
+                    firstError.compareAndSet(null, e);
+                    log.error("Thread {} failed during transformer memory pattern test", threadId, e);
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+            thread.setName("TransformerPattern-Thread-" + threadId);
+            thread.start();
+        }
+
+        startLatch.countDown();
+        boolean completed = doneLatch.await(180, java.util.concurrent.TimeUnit.SECONDS);
+
+        // Cleanup
+        Nd4j.getMemoryManager().invokeGc();
+        Thread.sleep(500);
+        Nd4j.getMemoryManager().invokeGc();
+
+        assertTrue(completed, "All threads should complete within timeout");
+
+        if (failed.get()) {
+            throw new RuntimeException("Transformer memory pattern test failed", firstError.get());
+        }
+
+        assertEquals(nThreads * nIterationsPerThread, successCount.get());
+        log.info("Transformer memory pattern test passed: {} successful iterations", successCount.get());
     }
 }

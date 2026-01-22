@@ -439,6 +439,11 @@ public class JCublasNDArray extends BaseNDArray {
 
     @Override
     public INDArray dup() {
+        // CRITICAL: Commit pending CUDA operations BEFORE duplicating data.
+        // Without this, asFloat()/synchronizeHostData() in super.dup() may copy
+        // stale/uninitialized data because CUDA kernels haven't completed yet.
+        Nd4j.getExecutioner().commit();
+
         if (this.isCompressed() && this.ordering() == Nd4j.order().charValue()) {
             INDArray ret = Nd4j.createArrayFromShapeBuffer(data().dup(), this.shapeInfoDataBuffer());
             ret.markAsCompressed(true);
@@ -449,12 +454,14 @@ public class JCublasNDArray extends BaseNDArray {
         */
 
         val res = super.dup();
-        Nd4j.getExecutioner().commit();
         return res;
     }
 
     @Override
     public INDArray dup(char order) {
+        // CRITICAL: Commit pending CUDA operations BEFORE duplicating data.
+        Nd4j.getExecutioner().commit();
+
         if (this.isCompressed() && this.ordering() == order) {
             INDArray ret = Nd4j.createArrayFromShapeBuffer(data().dup(), this.shapeInfoDataBuffer());
             ret.markAsCompressed(true);
