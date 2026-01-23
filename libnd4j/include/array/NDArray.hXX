@@ -3235,7 +3235,7 @@ void NDArray::copyDataForAssign(NDArray *thisArray, NDArray *other, const sd::Lo
       std::memcpy(other->buffer(), thisArray->buffer(), thisArray->lengthOf() * thisArray->sizeOfT());
       // Mark host buffer as written
       other->tickWriteHost();
-      // CRITICAL: Sync to device for CUDA backends. Without this, subsequent ops
+      // Sync to device for CUDA backends. Without this, subsequent ops
       // reading from device (via specialBuffer()) will see uninitialized/zero data.
       // On CPU this is a no-op.
       other->syncToDevice();

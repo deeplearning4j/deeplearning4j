@@ -439,7 +439,7 @@ public class JCublasNDArray extends BaseNDArray {
 
     @Override
     public INDArray dup() {
-        // CRITICAL: Commit pending CUDA operations BEFORE duplicating data.
+        // Commit pending CUDA operations before duplicating data.
         // Without this, asFloat()/synchronizeHostData() in super.dup() may copy
         // stale/uninitialized data because CUDA kernels haven't completed yet.
         Nd4j.getExecutioner().commit();
@@ -459,7 +459,7 @@ public class JCublasNDArray extends BaseNDArray {
 
     @Override
     public INDArray dup(char order) {
-        // CRITICAL: Commit pending CUDA operations BEFORE duplicating data.
+        // Commit pending CUDA operations before duplicating data.
         Nd4j.getExecutioner().commit();
 
         if (this.isCompressed() && this.ordering() == order) {

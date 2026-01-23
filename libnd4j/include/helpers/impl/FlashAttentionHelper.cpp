@@ -19,17 +19,22 @@
 //
 // @author Adam Gibson
 //
-// Flash Attention Helper - Optimized batched matmul approach
-// Single batched matmul call for all heads, minimal data movement
+// Flash Attention Helper - Optimized with workspace buffers to eliminate allocation overhead
+// Key optimizations:
+// 1. Workspace buffer pool - reuses memory across calls
+// 2. Minimized permute/reshape operations
+// 3. Direct output to user buffers where possible
 //
 
 #include <helpers/FlashAttentionHelper.h>
+#include <helpers/AttentionWorkspace.h>
 #include <helpers/MmulHelper.h>
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/activations.h>
 #include <array/NDArrayFactory.h>
 #include <execution/Threads.h>
 #include <system/Environment.h>
+#include <system/type_boilerplate.h>
 #include <cmath>
 #include <algorithm>
 #include <limits>
@@ -120,7 +125,7 @@ void FlashAttentionHelper::forward(
 
 //////////////////////////////////////////////////////////////////////////////
 // 3D Forward Implementation - [batch, seq, dim]
-// Uses OneDNN Graph SDPA when available for fused kernel execution
+// OPTIMIZED: Uses workspace buffers, minimal allocations
 //////////////////////////////////////////////////////////////////////////////
 
 void FlashAttentionHelper::forward3D(
@@ -136,49 +141,70 @@ void FlashAttentionHelper::forward3D(
 
   float scale = config.scale > 0.0f ? config.scale : 1.0f / std::sqrt(static_cast<float>(dim));
 
-  // Reshape for batched matmul: already [batch, seq, dim] which is perfect
+#if defined(SD_CUDA)
+  // Use fused CUDA kernel only when no scores output needed
+  // cuBLAS matmuls are faster than custom kernels when we need intermediate results
+  bool supportedType = (query->dataType() == DataType::FLOAT32 ||
+                        query->dataType() == DataType::DOUBLE ||
+                        query->dataType() == DataType::HALF);
+  bool needScores = (attentionScores != nullptr && !attentionScores->isEmpty());
+  bool needLogits = (attentionLogits != nullptr && !attentionLogits->isEmpty());
+
+  if (supportedType && !needScores && !needLogits) {
+    // Use fast fused kernel when no scores output needed
+    fusedAttentionCuda(query, key, value, output, scale, config.isCausal, context);
+    if (softmaxLse != nullptr) {
+      softmaxLse->nullify();
+    }
+    return;
+  }
+  // Fall through to cuBLAS path when scores are needed
+#endif
+
+  // Get workspace for scores buffer - REUSED across calls
+  auto workspace = AttentionWorkspace::getInstance();
   std::vector<LongType> scoresShape = {batch, seqLenQ, seqLenKV};
 
-  // Batched matmul: Q @ K^T with scale -> [batch, seqQ, seqKV]
-  NDArray scores('c', scoresShape, query->dataType(), context);
-  MmulHelper::matmul(query, key, &scores, false, true, scale, 0.0);
+  // Determine which array to use for computation
+  NDArray* logitsBuffer = nullptr;
+  NDArray* workBuffer = nullptr;
 
-  // Apply causal mask if needed
+  if (attentionLogits != nullptr && !attentionLogits->isEmpty()) {
+    logitsBuffer = attentionLogits;
+  }
+
+  // Use attentionScores if provided, otherwise get from workspace
+  if (attentionScores != nullptr && !attentionScores->isEmpty()) {
+    workBuffer = attentionScores;
+  } else {
+    // Get reusable buffer from workspace - NO ALLOCATION if shape matches previous call
+    workBuffer = workspace->getBuffer("forward3d_scores", scoresShape, query->dataType(), context);
+  }
+
+  // Batched matmul: Q @ K^T with scale -> [batch, seqQ, seqKV]
+  MmulHelper::matmul(query, key, workBuffer, false, true, scale, 0.0);
+
+#if defined(SD_CUDA)
+  // Fused causal mask + softmax (single kernel instead of mask + softmax)
+  fusedCausalMaskSoftmaxCuda(workBuffer, workBuffer, logitsBuffer, config.isCausal, context);
+#else
+  // CPU fallback: separate causal mask and softmax
   if (config.isCausal && seqLenQ > 0 && seqLenKV > 0) {
     std::vector<LongType> maskShape = {seqLenQ, seqLenKV};
-    NDArray causalMask('c', maskShape, query->dataType(), context);
-    causalMask.nullify();
-
-    float maskVal = -1.0e9f;
-    for (LongType q = 0; q < seqLenQ; ++q) {
-      if (q + 1 < seqLenKV) {
-        auto rowSlice = causalMask({q, q+1, q+1, seqLenKV});
-        if (rowSlice->lengthOf() > 0) {
-          rowSlice->assign(maskVal);
-        }
-        delete rowSlice;
-      }
-    }
-
-    // Broadcast add mask to scores
-    scores += causalMask;
+    // Get mask from workspace
+    NDArray* causalMask = workspace->getBuffer("forward3d_mask", maskShape, query->dataType(), context);
+    causalMask->nullify();
+    BUILD_SINGLE_SELECTOR(query->dataType(), causalMask->fillAsTriangular, (-1.0e9f, 1, 0, *causalMask, 'u', false), SD_COMMON_TYPES);
+    *workBuffer += *causalMask;
   }
-
-  // Copy pre-softmax scores (logits) if requested
-  if (attentionLogits != nullptr) {
-    attentionLogits->assign(&scores);
+  if (logitsBuffer != nullptr) {
+    logitsBuffer->assign(workBuffer);
   }
-
-  // Softmax along last dimension
-  ops::helpers::softmax(context, &scores, &scores, -1);
-
-  // Copy post-softmax scores if requested
-  if (attentionScores != nullptr) {
-    attentionScores->assign(&scores);
-  }
+  ops::helpers::softmax(context, workBuffer, workBuffer, -1);
+#endif
 
   // Batched matmul: scores @ V -> [batch, seqQ, dim]
-  MmulHelper::matmul(&scores, value, output, false, false, 1.0, 0.0);
+  MmulHelper::matmul(workBuffer, value, output, false, false, 1.0, 0.0);
 
   if (softmaxLse != nullptr) {
     softmaxLse->nullify();
@@ -187,7 +213,7 @@ void FlashAttentionHelper::forward3D(
 
 //////////////////////////////////////////////////////////////////////////////
 // 4D Forward Implementation - [batch, seq, numHeads, headDim]
-// Uses permute to [batch, numHeads, seqLen, headDim] then batched matmul
+// OPTIMIZED: Uses workspace buffers, minimizes permute/reshape
 //////////////////////////////////////////////////////////////////////////////
 
 void FlashAttentionHelper::forward4D(
@@ -206,36 +232,126 @@ void FlashAttentionHelper::forward4D(
   float scale = config.scale > 0.0f ? config.scale : 1.0f / std::sqrt(static_cast<float>(headDim));
   int headsPerKvHead = numHeads / numKvHeads;
 
-  // Permute: [batch, seq, heads, dim] -> [batch, heads, seq, dim]
-  std::vector<LongType> permOrder = {0, 2, 1, 3};
-  auto qPerm = query->permute(permOrder, false, false);   // [batch, numHeads, seqQ, headDim]
-  auto kPerm = key->permute(permOrder, false, false);     // [batch, numKvHeads, seqKV, headDim]
-  auto vPerm = value->permute(permOrder, false, false);   // [batch, numKvHeads, seqKV, headDim]
+  auto workspace = AttentionWorkspace::getInstance();
 
-  // Expand KV heads for GQA if needed - use tile operation instead of loops
-  NDArray* kExpanded = kPerm;
-  NDArray* vExpanded = vPerm;
-  bool expandedKV = false;
+#if defined(SD_CUDA)
+  // Use fused CUDA kernel only when no scores output needed
+  bool supportedType = (query->dataType() == DataType::FLOAT32 ||
+                        query->dataType() == DataType::DOUBLE ||
+                        query->dataType() == DataType::HALF);
+  bool noGQA = (headsPerKvHead == 1);
+  bool needScores = (attentionScores != nullptr && !attentionScores->isEmpty());
+  bool needLogits = (attentionLogits != nullptr && !attentionLogits->isEmpty());
+
+  // Only use fused kernel when no scores needed - cuBLAS is faster for matmuls
+  if (supportedType && noGQA && !needScores && !needLogits) {
+    // Use workspace for permuted arrays - CRITICAL: this eliminates malloc/free per call
+    std::vector<LongType> qPermShape = {batch, numHeads, seqLenQ, headDim};
+    std::vector<LongType> kvPermShape = {batch, numKvHeads, seqLenKV, headDim};
+    std::vector<LongType> permOrder = {0, 2, 1, 3};
+
+    NDArray* qPermBuffer = workspace->getBuffer("forward4d_qPerm", qPermShape, query->dataType(), context);
+    NDArray* kPermBuffer = workspace->getBuffer("forward4d_kPerm", kvPermShape, key->dataType(), context);
+    NDArray* vPermBuffer = workspace->getBuffer("forward4d_vPerm", kvPermShape, value->dataType(), context);
+
+    // Permute into workspace buffers using permute() which returns a view
+    auto qPerm = query->permute(permOrder, false, false);
+    auto kPerm = key->permute(permOrder, false, false);
+    auto vPerm = value->permute(permOrder, false, false);
+    qPermBuffer->assign(qPerm);
+    kPermBuffer->assign(kPerm);
+    vPermBuffer->assign(vPerm);
+    delete qPerm;
+    delete kPerm;
+    delete vPerm;
+
+    // Reshape to 3D: [batch*heads, seq, dim]
+    std::vector<LongType> shape3D_Q = {batch * numHeads, seqLenQ, headDim};
+    std::vector<LongType> shape3D_KV = {batch * numKvHeads, seqLenKV, headDim};
+
+    qPermBuffer->reshapei(shape3D_Q);
+    kPermBuffer->reshapei(shape3D_KV);
+    vPermBuffer->reshapei(shape3D_KV);
+
+    // Get output buffer from workspace
+    NDArray* outFlat = workspace->getBuffer("forward4d_outFlat", shape3D_Q, query->dataType(), context);
+
+    // Fast path: fused kernel
+    fusedAttentionCuda(qPermBuffer, kPermBuffer, vPermBuffer, outFlat, scale, config.isCausal, context);
+
+    // Reshape back to 4D: [batch, heads, seq, dim]
+    std::vector<LongType> shape4D = {batch, numHeads, seqLenQ, headDim};
+    outFlat->reshapei(shape4D);
+
+    // Permute back and assign to output: [batch, heads, seq, dim] -> [batch, seq, heads, dim]
+    auto outPerm = outFlat->permute(permOrder, false, false);
+    output->assign(outPerm);
+    delete outPerm;
+
+    // Restore workspace buffer shapes for next call
+    qPermBuffer->reshapei(qPermShape);
+    kPermBuffer->reshapei(kvPermShape);
+    vPermBuffer->reshapei(kvPermShape);
+
+    if (softmaxLse != nullptr) softmaxLse->nullify();
+    return;
+  }
+#endif
+
+  // Fallback path with workspace optimization
+  std::vector<LongType> permOrder = {0, 2, 1, 3};
+
+  // Workspace buffers for permuted tensors
+  std::vector<LongType> qPermShape = {batch, numHeads, seqLenQ, headDim};
+  std::vector<LongType> kvPermShape = {batch, numKvHeads, seqLenKV, headDim};
+
+  NDArray* qPermBuffer = workspace->getBuffer("forward4d_qPerm", qPermShape, query->dataType(), context);
+  NDArray* kPermBuffer = workspace->getBuffer("forward4d_kPerm", kvPermShape, key->dataType(), context);
+  NDArray* vPermBuffer = workspace->getBuffer("forward4d_vPerm", kvPermShape, value->dataType(), context);
+
+  // Permute Q, K, V into workspace
+  auto qPerm = query->permute(permOrder, false, false);
+  auto kPerm = key->permute(permOrder, false, false);
+  auto vPerm = value->permute(permOrder, false, false);
+  qPermBuffer->assign(qPerm);
+  kPermBuffer->assign(kPerm);
+  vPermBuffer->assign(vPerm);
+  delete qPerm;
+  delete kPerm;
+  delete vPerm;
+
+  // Handle GQA: expand KV heads if needed
+  NDArray* kExpanded = kPermBuffer;
+  NDArray* vExpanded = vPermBuffer;
 
   if (headsPerKvHead > 1) {
-    // Tile KV heads: [batch, numKvHeads, seq, dim] -> [batch, numHeads, seq, dim]
-    // Reshape to [batch, numKvHeads, 1, seq, dim] then tile [1, 1, headsPerKvHead, 1, 1]
-    std::vector<LongType> reshapeForTile = {batch, numKvHeads, 1, seqLenKV, headDim};
-    auto kReshaped = kPerm->reshape('c', reshapeForTile);
-    auto vReshaped = vPerm->reshape('c', reshapeForTile);
-
-    std::vector<LongType> reps = {1, 1, static_cast<LongType>(headsPerKvHead), 1, 1};
-    NDArray kTiled = kReshaped->tile(reps);
-    NDArray vTiled = vReshaped->tile(reps);
-
-    // Reshape to [batch, numHeads, seq, dim]
+    // Tile KV heads using workspace buffer
     std::vector<LongType> expandedShape = {batch, numHeads, seqLenKV, headDim};
-    kExpanded = kTiled.reshape('c', expandedShape);
-    vExpanded = vTiled.reshape('c', expandedShape);
-    expandedKV = true;
+    // Get workspace buffers with tiled shape for direct write
+    std::vector<LongType> tiledShape = {batch, numKvHeads, static_cast<LongType>(headsPerKvHead), seqLenKV, headDim};
+    NDArray* kTiledBuf = workspace->getBuffer("forward4d_kTiled", tiledShape, key->dataType(), context);
+    NDArray* vTiledBuf = workspace->getBuffer("forward4d_vTiled", tiledShape, value->dataType(), context);
 
-    delete kReshaped;
-    delete vReshaped;
+    // Reshape for tiling: [batch, numKvHeads, 1, seq, dim]
+    std::vector<LongType> reshapeForTile = {batch, numKvHeads, 1, seqLenKV, headDim};
+    kPermBuffer->reshapei(reshapeForTile);
+    vPermBuffer->reshapei(reshapeForTile);
+
+    // Tile directly into workspace buffers (no allocation)
+    std::vector<LongType> reps = {1, 1, static_cast<LongType>(headsPerKvHead), 1, 1};
+    kPermBuffer->tile(reps, *kTiledBuf);
+    vPermBuffer->tile(reps, *vTiledBuf);
+
+    // Reshape tiled buffers to expanded shape
+    kTiledBuf->reshapei(expandedShape);
+    vTiledBuf->reshapei(expandedShape);
+
+    kExpanded = kTiledBuf;
+    vExpanded = vTiledBuf;
+
+    // Restore kPermBuffer shape
+    kPermBuffer->reshapei(kvPermShape);
+    vPermBuffer->reshapei(kvPermShape);
   }
 
   // Reshape for batched matmul: [batch * numHeads, seq, dim]
@@ -243,76 +359,65 @@ void FlashAttentionHelper::forward4D(
   std::vector<LongType> kvShape = {batch * numHeads, seqLenKV, headDim};
   std::vector<LongType> scoresShape = {batch * numHeads, seqLenQ, seqLenKV};
 
-  auto qReshaped = qPerm->reshape('c', qShape);
-  auto kReshaped = kExpanded->reshape('c', kvShape);
-  auto vReshaped = vExpanded->reshape('c', kvShape);
+  qPermBuffer->reshapei(qShape);
+  kExpanded->reshapei(kvShape);
+  vExpanded->reshapei(kvShape);
 
-  // Batched matmul: Q @ K^T with scale -> [batch*heads, seqQ, seqKV]
-  NDArray scores('c', scoresShape, query->dataType(), context);
-  MmulHelper::matmul(qReshaped, kReshaped, &scores, false, true, scale, 0.0);
+  // Scores buffer
+  NDArray* logitsBuffer = nullptr;
+  NDArray* workBuffer = nullptr;
 
-  // Apply causal mask if needed - use upper triangular fill
+  if (attentionLogits != nullptr && !attentionLogits->isEmpty() &&
+      attentionLogits->lengthOf() == batch * numHeads * seqLenQ * seqLenKV) {
+    logitsBuffer = attentionLogits;
+  }
+  if (attentionScores != nullptr && !attentionScores->isEmpty() &&
+      attentionScores->lengthOf() == batch * numHeads * seqLenQ * seqLenKV) {
+    workBuffer = attentionScores;
+  } else {
+    workBuffer = workspace->getBuffer("forward4d_scores", scoresShape, query->dataType(), context);
+  }
+
+  // Batched matmul: Q @ K^T with scale
+  MmulHelper::matmul(qPermBuffer, kExpanded, workBuffer, false, true, scale, 0.0);
+
+#if defined(SD_CUDA)
+  fusedCausalMaskSoftmaxCuda(workBuffer, workBuffer, logitsBuffer, config.isCausal, context);
+#else
   if (config.isCausal && seqLenQ > 0 && seqLenKV > 0) {
-    // Create causal mask: lower triangular = 0, upper triangular = -inf
-    // For each (q, k) position: mask if k > q
     std::vector<LongType> maskShape = {seqLenQ, seqLenKV};
-    NDArray causalMask('c', maskShape, query->dataType(), context);
-    causalMask.nullify();
-
-    // Fill upper triangular with large negative value
-    float maskVal = -1.0e9f;
-    for (LongType q = 0; q < seqLenQ; ++q) {
-      auto rowSlice = causalMask({q, q+1, q+1, seqLenKV});
-      if (rowSlice->lengthOf() > 0) {
-        rowSlice->assign(maskVal);
-      }
-      delete rowSlice;
-    }
-
-    // Broadcast add mask to scores [batch*heads, seqQ, seqKV]
-    scores += causalMask;
+    NDArray* causalMask = workspace->getBuffer("forward4d_mask", maskShape, query->dataType(), context);
+    causalMask->nullify();
+    BUILD_SINGLE_SELECTOR(query->dataType(), causalMask->fillAsTriangular, (-1.0e9f, 1, 0, *causalMask, 'u', false), SD_COMMON_TYPES);
+    *workBuffer += *causalMask;
   }
-
-  // Copy pre-softmax scores (logits) if requested
-  if (attentionLogits != nullptr) {
-    attentionLogits->assign(&scores);
+  if (logitsBuffer != nullptr) {
+    logitsBuffer->assign(workBuffer);
   }
+  ops::helpers::softmax(context, workBuffer, workBuffer, -1);
+#endif
 
-  // Softmax along last dimension
-  ops::helpers::softmax(context, &scores, &scores, -1);
-
-  // Copy post-softmax scores (attention weights) if requested
-  if (attentionScores != nullptr) {
-    attentionScores->assign(&scores);
-  }
-
-  // Batched matmul: scores @ V -> [batch*heads, seqQ, headDim]
+  // Output buffer from workspace
   std::vector<LongType> outShape = {batch * numHeads, seqLenQ, headDim};
-  NDArray outReshaped('c', outShape, query->dataType(), context);
-  MmulHelper::matmul(&scores, vReshaped, &outReshaped, false, false, 1.0, 0.0);
+  NDArray* outReshaped = workspace->getBuffer("forward4d_outReshaped", outShape, query->dataType(), context);
 
-  // Reshape back: [batch, numHeads, seqQ, headDim]
+  // Batched matmul: scores @ V
+  MmulHelper::matmul(workBuffer, vExpanded, outReshaped, false, false, 1.0, 0.0);
+
+  // Reshape and permute back to output
   std::vector<LongType> outPermShape = {batch, numHeads, seqLenQ, headDim};
-  auto outPerm = outReshaped.reshape('c', outPermShape);
-
-  // Permute back: [batch, numHeads, seqQ, headDim] -> [batch, seqQ, numHeads, headDim]
-  std::vector<LongType> permBack = {0, 2, 1, 3};
-  auto outFinal = outPerm->permute(permBack, false, false);
-  output->assign(outFinal);
-
-  // Cleanup
-  delete qPerm;
-  delete kPerm;
-  delete vPerm;
-  if (expandedKV) {
-    delete kExpanded;
-    delete vExpanded;
-  }
-  delete qReshaped;
-  delete kReshaped;
-  delete vReshaped;
+  outReshaped->reshapei(outPermShape);
+  auto outPerm = outReshaped->permute(permOrder, false, false);
+  output->assign(outPerm);
   delete outPerm;
-  delete outFinal;
+
+  // Restore workspace buffer shapes for next call
+  qPermBuffer->reshapei(qPermShape);
+  if (headsPerKvHead == 1) {
+    kExpanded->reshapei(kvPermShape);
+    vExpanded->reshapei(kvPermShape);
+  }
+  outReshaped->reshapei(outShape);
 
   if (softmaxLse != nullptr) {
     softmaxLse->nullify();
@@ -344,6 +449,7 @@ void FlashAttentionHelper::backward(
 
 //////////////////////////////////////////////////////////////////////////////
 // 3D Backward Implementation - [batch, seq, dim]
+// OPTIMIZED: Uses workspace buffers
 //////////////////////////////////////////////////////////////////////////////
 
 void FlashAttentionHelper::backward3D(
@@ -359,63 +465,60 @@ void FlashAttentionHelper::backward3D(
 
   float scale = config.scale > 0.0f ? config.scale : 1.0f / std::sqrt(static_cast<float>(dim));
 
+  auto workspace = AttentionWorkspace::getInstance();
   std::vector<LongType> scoresShape = {batch, seqLenQ, seqLenKV};
 
   // Recompute attention: Q @ K^T
-  NDArray scores('c', scoresShape, query->dataType(), context);
-  MmulHelper::matmul(query, key, &scores, false, true, scale, 0.0);
+  NDArray* scores = workspace->getBuffer("backward3d_scores", scoresShape, query->dataType(), context);
+  MmulHelper::matmul(query, key, scores, false, true, scale, 0.0);
 
-  // Causal mask
+  // Apply causal mask if needed
   if (config.isCausal && seqLenQ > 0 && seqLenKV > 0) {
+#if defined(SD_CUDA)
+    applyCausalMaskCuda(scores, context);
+#else
     std::vector<LongType> maskShape = {seqLenQ, seqLenKV};
-    NDArray causalMask('c', maskShape, query->dataType(), context);
-    causalMask.nullify();
-
-    float maskVal = -1.0e9f;
-    for (LongType q = 0; q < seqLenQ; ++q) {
-      if (q + 1 < seqLenKV) {
-        auto rowSlice = causalMask({q, q+1, q+1, seqLenKV});
-        if (rowSlice->lengthOf() > 0) {
-          rowSlice->assign(maskVal);
-        }
-        delete rowSlice;
-      }
-    }
-    scores += causalMask;
+    NDArray* causalMask = workspace->getBuffer("backward3d_mask", maskShape, query->dataType(), context);
+    causalMask->nullify();
+    BUILD_SINGLE_SELECTOR(query->dataType(), causalMask->fillAsTriangular, (-1.0e9f, 1, 0, *causalMask, 'u', false), SD_COMMON_TYPES);
+    *scores += *causalMask;
+#endif
   }
 
   // Softmax
-  NDArray attnWeights('c', scoresShape, query->dataType(), context);
-  ops::helpers::softmax(context, &scores, &attnWeights, -1);
+  NDArray* attnWeights = workspace->getBuffer("backward3d_attnWeights", scoresShape, query->dataType(), context);
+  ops::helpers::softmax(context, scores, attnWeights, -1);
 
   // gradValue = attnWeights^T @ gradOutput -> [batch, seqKV, dim]
-  MmulHelper::matmul(&attnWeights, gradOutput, gradValue, true, false, 1.0, 0.0);
+  MmulHelper::matmul(attnWeights, gradOutput, gradValue, true, false, 1.0, 0.0);
 
   // dAttn = gradOutput @ V^T -> [batch, seqQ, seqKV]
-  NDArray dAttn('c', scoresShape, query->dataType(), context);
-  MmulHelper::matmul(gradOutput, value, &dAttn, false, true, 1.0, 0.0);
+  NDArray* dAttn = workspace->getBuffer("backward3d_dAttn", scoresShape, query->dataType(), context);
+  MmulHelper::matmul(gradOutput, value, dAttn, false, true, 1.0, 0.0);
 
   // Softmax backward: dS = P * (dAttn - sum(dAttn * P))
-  auto dAttnTimesPPtr = dAttn * attnWeights;
-  NDArray dAttnTimesP(*dAttnTimesPPtr);
-  delete dAttnTimesPPtr;
+  NDArray* dAttnTimesP = workspace->getBuffer("backward3d_dAttnTimesP", scoresShape, query->dataType(), context);
+  dAttn->applyPairwiseTransform(pairwise::Multiply, attnWeights, dAttnTimesP);
 
+  // Use workspace buffer for reduction result (keepDims=true -> [batch, seqQ, 1])
   std::vector<LongType> sumDims = {2};
-  auto rowSums = dAttnTimesP.reduceAlongDimension(reduce::Sum, &sumDims, true);
-  dAttn -= *rowSums;
-  dAttn *= attnWeights;
-  dAttn *= scale;
-  delete rowSums;
+  std::vector<LongType> rowSumsShape = {scoresShape[0], scoresShape[1], 1};
+  NDArray* rowSums = workspace->getBuffer("backward3d_rowSums", rowSumsShape, query->dataType(), context);
+  dAttnTimesP->reduceAlongDimension(reduce::Sum, rowSums, &sumDims, true);
+  *dAttn -= *rowSums;
+  dAttn->applyPairwiseTransform(pairwise::Multiply, attnWeights, dAttn);
+  *dAttn *= scale;
 
   // gradQuery = dS @ K -> [batch, seqQ, dim]
-  MmulHelper::matmul(&dAttn, key, gradQuery, false, false, 1.0, 0.0);
+  MmulHelper::matmul(dAttn, key, gradQuery, false, false, 1.0, 0.0);
 
   // gradKey = dS^T @ Q -> [batch, seqKV, dim]
-  MmulHelper::matmul(&dAttn, query, gradKey, true, false, 1.0, 0.0);
+  MmulHelper::matmul(dAttn, query, gradKey, true, false, 1.0, 0.0);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 // 4D Backward Implementation - [batch, seq, numHeads, headDim]
+// OPTIMIZED: Uses workspace buffers
 //////////////////////////////////////////////////////////////////////////////
 
 void FlashAttentionHelper::backward4D(
@@ -434,35 +537,63 @@ void FlashAttentionHelper::backward4D(
   float scale = config.scale > 0.0f ? config.scale : 1.0f / std::sqrt(static_cast<float>(headDim));
   int headsPerKvHead = numHeads / numKvHeads;
 
-  // Permute to [batch, heads, seq, dim]
+  auto workspace = AttentionWorkspace::getInstance();
   std::vector<LongType> permOrder = {0, 2, 1, 3};
+
+  // Workspace for permuted tensors
+  std::vector<LongType> qPermShape = {batch, numHeads, seqLenQ, headDim};
+  std::vector<LongType> kvPermShape = {batch, numKvHeads, seqLenKV, headDim};
+  std::vector<LongType> goPermShape = {batch, numHeads, seqLenQ, headDim};
+
+  NDArray* qPermBuffer = workspace->getBuffer("backward4d_qPerm", qPermShape, query->dataType(), context);
+  NDArray* kPermBuffer = workspace->getBuffer("backward4d_kPerm", kvPermShape, key->dataType(), context);
+  NDArray* vPermBuffer = workspace->getBuffer("backward4d_vPerm", kvPermShape, value->dataType(), context);
+  NDArray* goPermBuffer = workspace->getBuffer("backward4d_goPerm", goPermShape, gradOutput->dataType(), context);
+
+  // Permute into workspace
   auto qPerm = query->permute(permOrder, false, false);
   auto kPerm = key->permute(permOrder, false, false);
   auto vPerm = value->permute(permOrder, false, false);
   auto goPerm = gradOutput->permute(permOrder, false, false);
 
-  // Expand KV for GQA - use tile operation instead of loops
-  NDArray* kExpanded = kPerm;
-  NDArray* vExpanded = vPerm;
-  bool expandedKV = false;
+  qPermBuffer->assign(qPerm);
+  kPermBuffer->assign(kPerm);
+  vPermBuffer->assign(vPerm);
+  goPermBuffer->assign(goPerm);
+
+  delete qPerm;
+  delete kPerm;
+  delete vPerm;
+  delete goPerm;
+
+  // Expand KV for GQA
+  NDArray* kExpanded = kPermBuffer;
+  NDArray* vExpanded = vPermBuffer;
 
   if (headsPerKvHead > 1) {
-    // Reshape to [batch, numKvHeads, 1, seq, dim] then tile
-    std::vector<LongType> reshapeForTile = {batch, numKvHeads, 1, seqLenKV, headDim};
-    auto kReshaped = kPerm->reshape('c', reshapeForTile);
-    auto vReshaped = vPerm->reshape('c', reshapeForTile);
-
-    std::vector<LongType> reps = {1, 1, static_cast<LongType>(headsPerKvHead), 1, 1};
-    NDArray kTiled = kReshaped->tile(reps);
-    NDArray vTiled = vReshaped->tile(reps);
-
     std::vector<LongType> expandedShape = {batch, numHeads, seqLenKV, headDim};
-    kExpanded = kTiled.reshape('c', expandedShape);
-    vExpanded = vTiled.reshape('c', expandedShape);
-    expandedKV = true;
+    std::vector<LongType> tiledShape = {batch, numKvHeads, static_cast<LongType>(headsPerKvHead), seqLenKV, headDim};
+    NDArray* kTiledBuf = workspace->getBuffer("backward4d_kTiled", tiledShape, key->dataType(), context);
+    NDArray* vTiledBuf = workspace->getBuffer("backward4d_vTiled", tiledShape, value->dataType(), context);
 
-    delete kReshaped;
-    delete vReshaped;
+    std::vector<LongType> reshapeForTile = {batch, numKvHeads, 1, seqLenKV, headDim};
+    kPermBuffer->reshapei(reshapeForTile);
+    vPermBuffer->reshapei(reshapeForTile);
+
+    // Tile directly into workspace buffers (no allocation)
+    std::vector<LongType> reps = {1, 1, static_cast<LongType>(headsPerKvHead), 1, 1};
+    kPermBuffer->tile(reps, *kTiledBuf);
+    vPermBuffer->tile(reps, *vTiledBuf);
+
+    // Reshape tiled buffers to expanded shape
+    kTiledBuf->reshapei(expandedShape);
+    vTiledBuf->reshapei(expandedShape);
+
+    kExpanded = kTiledBuf;
+    vExpanded = vTiledBuf;
+
+    kPermBuffer->reshapei(kvPermShape);
+    vPermBuffer->reshapei(kvPermShape);
   }
 
   // Reshape for batched ops
@@ -470,121 +601,114 @@ void FlashAttentionHelper::backward4D(
   std::vector<LongType> kvShape = {batch * numHeads, seqLenKV, headDim};
   std::vector<LongType> scoresShape = {batch * numHeads, seqLenQ, seqLenKV};
 
-  auto qReshaped = qPerm->reshape('c', qShape);
-  auto kReshaped = kExpanded->reshape('c', kvShape);
-  auto vReshaped = vExpanded->reshape('c', kvShape);
-  auto goReshaped = goPerm->reshape('c', qShape);
+  qPermBuffer->reshapei(qShape);
+  kExpanded->reshapei(kvShape);
+  vExpanded->reshapei(kvShape);
+  goPermBuffer->reshapei(qShape);
 
   // Recompute attention: Q @ K^T
-  NDArray scores('c', scoresShape, query->dataType(), context);
-  MmulHelper::matmul(qReshaped, kReshaped, &scores, false, true, scale, 0.0);
+  NDArray* scores = workspace->getBuffer("backward4d_scores", scoresShape, query->dataType(), context);
+  MmulHelper::matmul(qPermBuffer, kExpanded, scores, false, true, scale, 0.0);
 
-  // Causal mask - use vectorized approach
+  // Apply causal mask
   if (config.isCausal && seqLenQ > 0 && seqLenKV > 0) {
+#if defined(SD_CUDA)
+    applyCausalMaskCuda(scores, context);
+#else
     std::vector<LongType> maskShape = {seqLenQ, seqLenKV};
-    NDArray causalMask('c', maskShape, query->dataType(), context);
-    causalMask.nullify();
-
-    float maskVal = -1.0e9f;
-    for (LongType q = 0; q < seqLenQ; ++q) {
-      auto rowSlice = causalMask({q, q+1, q+1, seqLenKV});
-      if (rowSlice->lengthOf() > 0) {
-        rowSlice->assign(maskVal);
-      }
-      delete rowSlice;
-    }
-    scores += causalMask;
+    NDArray* causalMask = workspace->getBuffer("backward4d_mask", maskShape, query->dataType(), context);
+    causalMask->nullify();
+    BUILD_SINGLE_SELECTOR(query->dataType(), causalMask->fillAsTriangular, (-1.0e9f, 1, 0, *causalMask, 'u', false), SD_COMMON_TYPES);
+    *scores += *causalMask;
+#endif
   }
 
   // Softmax
-  NDArray attnWeights('c', scoresShape, query->dataType(), context);
-  ops::helpers::softmax(context, &scores, &attnWeights, -1);
+  NDArray* attnWeights = workspace->getBuffer("backward4d_attnWeights", scoresShape, query->dataType(), context);
+  ops::helpers::softmax(context, scores, attnWeights, -1);
 
-  // gradValue = attnWeights^T @ gradOutput -> [batch*heads, seqKV, headDim]
-  NDArray gvReshaped('c', kvShape, query->dataType(), context);
-  MmulHelper::matmul(&attnWeights, goReshaped, &gvReshaped, true, false, 1.0, 0.0);
+  // gradValue = attnWeights^T @ gradOutput
+  NDArray* gvReshaped = workspace->getBuffer("backward4d_gvReshaped", kvShape, query->dataType(), context);
+  MmulHelper::matmul(attnWeights, goPermBuffer, gvReshaped, true, false, 1.0, 0.0);
 
-  // dAttn = gradOutput @ V^T -> [batch*heads, seqQ, seqKV]
-  NDArray dAttn('c', scoresShape, query->dataType(), context);
-  MmulHelper::matmul(goReshaped, vReshaped, &dAttn, false, true, 1.0, 0.0);
+  // dAttn = gradOutput @ V^T
+  NDArray* dAttn = workspace->getBuffer("backward4d_dAttn", scoresShape, query->dataType(), context);
+  MmulHelper::matmul(goPermBuffer, vExpanded, dAttn, false, true, 1.0, 0.0);
 
-  // Softmax backward: dS = P * (dAttn - sum(dAttn * P)) - vectorized
-  // dAttn * P element-wise
-  auto dAttnTimesPPtr = dAttn * attnWeights;
-  NDArray dAttnTimesP(*dAttnTimesPPtr);
-  delete dAttnTimesPPtr;
+  // Softmax backward
+  NDArray* dAttnTimesP = workspace->getBuffer("backward4d_dAttnTimesP", scoresShape, query->dataType(), context);
+  dAttn->applyPairwiseTransform(pairwise::Multiply, attnWeights, dAttnTimesP);
 
-  // Sum along last axis: [batch*heads, seqQ, 1]
+  // Use workspace buffer for reduction result (keepDims=true -> [..., 1])
   std::vector<LongType> sumDims = {2};
-  auto rowSums = dAttnTimesP.reduceAlongDimension(reduce::Sum, &sumDims, true);
+  std::vector<LongType> rowSumsShape = {scoresShape[0], scoresShape[1], 1};
+  NDArray* rowSums = workspace->getBuffer("backward4d_rowSums", rowSumsShape, query->dataType(), context);
+  dAttnTimesP->reduceAlongDimension(reduce::Sum, rowSums, &sumDims, true);
+  *dAttn -= *rowSums;
+  dAttn->applyPairwiseTransform(pairwise::Multiply, attnWeights, dAttn);
+  *dAttn *= scale;
 
-  // dAttn - rowSums (broadcast)
-  dAttn -= *rowSums;
+  // gradQuery = dS @ K
+  NDArray* gqReshaped = workspace->getBuffer("backward4d_gqReshaped", qShape, query->dataType(), context);
+  MmulHelper::matmul(dAttn, kExpanded, gqReshaped, false, false, 1.0, 0.0);
 
-  // P * (dAttn - rowSums) * scale
-  dAttn *= attnWeights;
-  dAttn *= scale;
-
-  delete rowSums;
-
-  // gradQuery = dS @ K -> [batch*heads, seqQ, headDim]
-  NDArray gqReshaped('c', qShape, query->dataType(), context);
-  MmulHelper::matmul(&dAttn, kReshaped, &gqReshaped, false, false, 1.0, 0.0);
-
-  // gradKey = dS^T @ Q -> [batch*heads, seqKV, headDim]
-  NDArray gkReshaped('c', kvShape, query->dataType(), context);
-  MmulHelper::matmul(&dAttn, qReshaped, &gkReshaped, true, false, 1.0, 0.0);
+  // gradKey = dS^T @ Q
+  NDArray* gkReshaped = workspace->getBuffer("backward4d_gkReshaped", kvShape, query->dataType(), context);
+  MmulHelper::matmul(dAttn, qPermBuffer, gkReshaped, true, false, 1.0, 0.0);
 
   // Reshape and permute gradients back
   std::vector<LongType> gqPermShape = {batch, numHeads, seqLenQ, headDim};
   std::vector<LongType> gkvPermShape = {batch, numHeads, seqLenKV, headDim};
-  auto gqPerm = gqReshaped.reshape('c', gqPermShape);
-  auto gkPerm = gkReshaped.reshape('c', gkvPermShape);
-  auto gvPerm = gvReshaped.reshape('c', gkvPermShape);
 
-  std::vector<LongType> permBack = {0, 2, 1, 3};
-  auto gqFinal = gqPerm->permute(permBack, false, false);
-  gradQuery->assign(gqFinal);
+  gqReshaped->reshapei(gqPermShape);
+  auto gqPerm = gqReshaped->permute(permOrder, false, false);
+  gradQuery->assign(gqPerm);
+  delete gqPerm;
+  gqReshaped->reshapei(qShape);
 
-  // For GQA, accumulate gradients to KV heads - vectorized with reshape and reduce
+  // For GQA, accumulate gradients to KV heads
   if (headsPerKvHead > 1) {
-    // Reshape [batch, numHeads, seqKV, headDim] -> [batch, numKvHeads, headsPerKvHead, seqKV, headDim]
     std::vector<LongType> reshapeForSum = {batch, numKvHeads, static_cast<LongType>(headsPerKvHead), seqLenKV, headDim};
-    auto gkForSum = gkPerm->reshape('c', reshapeForSum);
-    auto gvForSum = gvPerm->reshape('c', reshapeForSum);
+    gkReshaped->reshapei(reshapeForSum);
+    gvReshaped->reshapei(reshapeForSum);
 
-    // Sum along the headsPerKvHead axis -> [batch, numKvHeads, seqKV, headDim]
+    // Reduce along the headsPerKvHead dimension (keepDims=false -> [batch, numKvHeads, seqLenKV, headDim])
     std::vector<LongType> reduceDims = {2};
-    auto gkReduced = gkForSum->reduceAlongDimension(reduce::Sum, &reduceDims, false);
-    auto gvReduced = gvForSum->reduceAlongDimension(reduce::Sum, &reduceDims, false);
+    std::vector<LongType> reducedShape = {batch, numKvHeads, seqLenKV, headDim};
+    NDArray* gkReduced = workspace->getBuffer("backward4d_gkReduced", reducedShape, query->dataType(), context);
+    NDArray* gvReduced = workspace->getBuffer("backward4d_gvReduced", reducedShape, query->dataType(), context);
+    gkReshaped->reduceAlongDimension(reduce::Sum, gkReduced, &reduceDims, false);
+    gvReshaped->reduceAlongDimension(reduce::Sum, gvReduced, &reduceDims, false);
 
-    // Permute to output format [batch, seqKV, numKvHeads, headDim]
-    auto gkFinal = gkReduced->permute(permBack, false, false);
-    auto gvFinal = gvReduced->permute(permBack, false, false);
-    gradKey->assign(gkFinal);
-    gradValue->assign(gvFinal);
+    auto gkPerm = gkReduced->permute(permOrder, false, false);
+    auto gvPerm = gvReduced->permute(permOrder, false, false);
+    gradKey->assign(gkPerm);
+    gradValue->assign(gvPerm);
+    delete gkPerm;
+    delete gvPerm;
 
-    delete gkForSum;
-    delete gvForSum;
-    delete gkReduced;
-    delete gvReduced;
-    delete gkFinal;
-    delete gvFinal;
+    gkReshaped->reshapei(kvShape);
+    gvReshaped->reshapei(kvShape);
   } else {
-    auto gkFinal = gkPerm->permute(permBack, false, false);
-    auto gvFinal = gvPerm->permute(permBack, false, false);
-    gradKey->assign(gkFinal);
-    gradValue->assign(gvFinal);
-    delete gkFinal;
-    delete gvFinal;
+    gkReshaped->reshapei(gkvPermShape);
+    gvReshaped->reshapei(gkvPermShape);
+    auto gkPerm = gkReshaped->permute(permOrder, false, false);
+    auto gvPerm = gvReshaped->permute(permOrder, false, false);
+    gradKey->assign(gkPerm);
+    gradValue->assign(gvPerm);
+    delete gkPerm;
+    delete gvPerm;
+    gkReshaped->reshapei(kvShape);
+    gvReshaped->reshapei(kvShape);
   }
 
-  // Cleanup
-  delete qPerm; delete kPerm; delete vPerm; delete goPerm;
-  if (expandedKV) { delete kExpanded; delete vExpanded; }
-  delete qReshaped; delete kReshaped; delete vReshaped; delete goReshaped;
-  delete gqPerm; delete gkPerm; delete gvPerm;
-  delete gqFinal;
+  // Restore workspace shapes
+  qPermBuffer->reshapei(qPermShape);
+  goPermBuffer->reshapei(goPermShape);
+  if (headsPerKvHead == 1) {
+    kExpanded->reshapei(kvPermShape);
+    vExpanded->reshapei(kvPermShape);
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -610,21 +734,27 @@ void FlashAttentionHelper::repeatKVHeads(NDArray* kv, int numHeads, NDArray* out
     return;
   }
 
-  // Reshape [batch, seq, numKvHeads, dim] -> [batch, seq, numKvHeads, 1, dim]
+  // Use workspace buffers for intermediates
+  auto workspace = AttentionWorkspace::getInstance();
   std::vector<LongType> reshapeForTile = {batch, seqLen, numKvHeads, 1, headDim};
-  auto kvReshaped = kv->reshape('c', reshapeForTile);
+  NDArray* kvReshaped = workspace->getBuffer("repeatKV_reshaped", reshapeForTile, kv->dataType());
 
-  // Tile along the new axis: [1, 1, 1, headsPerKvHead, 1]
+  kvReshaped->assign(kv);
+  kvReshaped->reshapei(reshapeForTile);
+
+  // Tile directly into workspace buffer (no allocation)
   std::vector<LongType> reps = {1, 1, 1, static_cast<LongType>(headsPerKvHead), 1};
-  NDArray kvTiled = kvReshaped->tile(reps);
+  std::vector<LongType> tiledShape = {batch, seqLen, numKvHeads, static_cast<LongType>(headsPerKvHead), headDim};
+  NDArray* kvTiledBuf = workspace->getBuffer("repeatKV_tiled", tiledShape, kv->dataType());
+  kvReshaped->tile(reps, *kvTiledBuf);
 
-  // Reshape to output [batch, seq, numHeads, dim]
   std::vector<LongType> outShape = {batch, seqLen, static_cast<LongType>(numHeads), headDim};
-  auto result = kvTiled.reshape('c', outShape);
-  output->assign(result);
+  kvTiledBuf->reshapei(outShape);
+  output->assign(kvTiledBuf);
 
-  delete kvReshaped;
-  delete result;
+  // Restore shapes for next call
+  kvReshaped->reshapei({batch, seqLen, numKvHeads, headDim});
+  kvTiledBuf->reshapei(tiledShape);
 }
 
 void FlashAttentionHelper::forwardWithKVCache(
@@ -647,51 +777,36 @@ void FlashAttentionHelper::forwardWithKVCache(
 
 bool FlashAttentionHelper::canUseOneDnnSdpa(NDArray* query, NDArray* key, NDArray* value,
                                             const Config& config) {
-  // Check if OneDNN is available and helpers are allowed
   if (!Environment::getInstance().helpersAllowed()) {
     return false;
   }
-
-  // Only 3D tensors are supported by OneDNN Graph SDPA
   if (query->rankOf() != 3) {
     return false;
   }
-
-  // Check supported data types: F32, F16, BF16
   auto dtype = query->dataType();
   if (dtype != DataType::FLOAT32 && dtype != DataType::HALF && dtype != DataType::BFLOAT16) {
     return false;
   }
-
-  // OneDNN Graph SDPA doesn't support custom masks (only causal through graph)
-  // Dropout is also not supported in fused kernel
   if (config.dropout > 0.0f) {
     return false;
   }
-
   return true;
 }
 
 bool FlashAttentionHelper::canUseCudnnSdpa(NDArray* query, NDArray* key, NDArray* value,
                                            const Config& config) {
 #if defined(HAVE_CUDNN) && CUDNN_MAJOR >= 8 && CUDNN_MINOR >= 9
-  // cuDNN 8.9.0+ has flash attention support
   if (!Environment::getInstance().helpersAllowed()) {
     return false;
   }
-
-  // Check if running on CUDA device
   if (query->getContext()->getWorkspace() == nullptr ||
       query->getContext()->getWorkspace()->deviceType() != sd::graph::DeviceType::GPU) {
     return false;
   }
-
-  // Check supported data types
   auto dtype = query->dataType();
   if (dtype != DataType::FLOAT32 && dtype != DataType::HALF && dtype != DataType::BFLOAT16) {
     return false;
   }
-
   return true;
 #else
   return false;
@@ -700,13 +815,11 @@ bool FlashAttentionHelper::canUseCudnnSdpa(NDArray* query, NDArray* key, NDArray
 
 //////////////////////////////////////////////////////////////////////////////
 // Online Softmax State Update (FlashAttention v4 style)
-// Implements selective rescaling - only rescales when necessary
 //////////////////////////////////////////////////////////////////////////////
 
 void FlashAttentionHelper::updateSoftmaxState(SoftmaxState& state, float newMax, float newSum,
                                               float threshold) {
   if (state.sumExp == 0.0f) {
-    // First tile - just initialize
     state.maxVal = newMax;
     state.sumExp = newSum;
     state.correction = 1.0f;
@@ -714,25 +827,20 @@ void FlashAttentionHelper::updateSoftmaxState(SoftmaxState& state, float newMax,
     return;
   }
 
-  // FlashAttention v4 selective rescaling:
-  // Only rescale when the new max is significantly larger
   float maxDiff = newMax - state.maxVal;
 
   if (maxDiff > threshold) {
-    // New max is significantly larger - need to rescale previous values
     float rescaleFactor = std::exp(state.maxVal - newMax);
     state.correction = rescaleFactor;
     state.sumExp = state.sumExp * rescaleFactor + newSum;
     state.maxVal = newMax;
     state.needsRescale = true;
   } else if (maxDiff < -threshold) {
-    // Old max is significantly larger - rescale new values
     float rescaleFactor = std::exp(newMax - state.maxVal);
     state.sumExp = state.sumExp + newSum * rescaleFactor;
     state.correction = 1.0f;
     state.needsRescale = false;
   } else {
-    // Max values are similar - use stable computation
     float maxOfMax = std::max(state.maxVal, newMax);
     state.sumExp = state.sumExp * std::exp(state.maxVal - maxOfMax) +
                    newSum * std::exp(newMax - maxOfMax);
@@ -743,18 +851,13 @@ void FlashAttentionHelper::updateSoftmaxState(SoftmaxState& state, float newMax,
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// Tiled Flash Attention Forward (for long sequences)
-// Uses online softmax to avoid materializing full attention matrix
+// Tiled Flash Attention Forward
 //////////////////////////////////////////////////////////////////////////////
 
 void FlashAttentionHelper::forwardTiled(NDArray* query, NDArray* key, NDArray* value,
                                          NDArray* output, const Config& config,
                                          NDArray* softmaxLse,
                                          LaunchContext* context) {
-  // For now, delegate to the standard batched implementation
-  // A true tiled implementation would process query/key/value in blocks
-  // and use online softmax to accumulate results
-
   auto rank = query->rankOf();
   if (rank == 3) {
     forward3D(query, key, value, output, config, softmaxLse, nullptr, nullptr, context);
@@ -775,30 +878,24 @@ void FlashAttentionHelper::computeTile(const float* queryTile, const float* keyT
                                         SoftmaxState* states, int tileQ, int tileKV,
                                         int headDim, float scale, bool isCausal,
                                         int queryOffset, int keyOffset) {
-  // Compute Q @ K^T for this tile
   for (int q = 0; q < tileQ; ++q) {
     for (int k = 0; k < tileKV; ++k) {
-      // Check causal mask
       if (isCausal && (keyOffset + k) > (queryOffset + q)) {
         continue;
       }
 
-      // Compute dot product
       float score = 0.0f;
       for (int d = 0; d < headDim; ++d) {
         score += queryTile[q * headDim + d] * keyTile[k * headDim + d];
       }
       score *= scale;
 
-      // Update online softmax state
       float expScore = std::exp(score - states[q].maxVal);
       if (score > states[q].maxVal) {
-        // Need to rescale previous accumulated values
         float rescale = std::exp(states[q].maxVal - score);
         states[q].sumExp = states[q].sumExp * rescale + expScore;
         states[q].maxVal = score;
 
-        // Rescale accumulated output
         for (int d = 0; d < headDim; ++d) {
           outputTile[q * headDim + d] *= rescale;
         }
@@ -806,7 +903,6 @@ void FlashAttentionHelper::computeTile(const float* queryTile, const float* keyT
         states[q].sumExp += expScore;
       }
 
-      // Accumulate weighted value
       float weight = expScore / states[q].sumExp;
       for (int d = 0; d < headDim; ++d) {
         outputTile[q * headDim + d] += weight * valueTile[k * headDim + d];

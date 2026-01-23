@@ -2524,7 +2524,7 @@ public native void clearTADCache();
 
 /**
  * Marks that shutdown is in progress.
- * CRITICAL: Call this early in JVM shutdown (e.g., from a shutdown hook)
+ * Call this early in JVM shutdown (e.g., from a shutdown hook)
  * to prevent SIGSEGV crashes during cache cleanup.
  *
  * During JVM/static destruction, memory allocators may have been destroyed,

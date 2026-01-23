@@ -55,7 +55,7 @@ class SD_LIB_EXPORT ConstantShapeBuffer {
   ~ConstantShapeBuffer();
 
   // =========================================================================
-  // COPY PREVENTION - CRITICAL FOR MEMORY SAFETY
+  // COPY PREVENTION
   // =========================================================================
   //
   // Copy construction and assignment are DELETED to prevent heap corruption.

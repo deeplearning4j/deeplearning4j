@@ -75,8 +75,8 @@ public class CudaLongDataBuffer extends BaseCudaDataBuffer {
     /**
      * This constructor is special one - it's used for ShapeInfo with constant flag support.
      *
-     * CRITICAL FIX: This overload allows marking the buffer as constant IMMEDIATELY during creation,
-     * BEFORE GC can run and deallocate it. This prevents the race condition where:
+     * This overload allows marking the buffer as constant immediately during creation,
+     * before GC can run and deallocate it. This prevents a race condition where:
      * 1. Buffer is created (not constant)
      * 2. GC runs and frees buffer
      * 3. setConstant(true) is called but fails (buffer already freed)

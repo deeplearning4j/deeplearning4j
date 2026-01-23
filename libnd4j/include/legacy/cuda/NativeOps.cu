@@ -46,6 +46,7 @@
 
 #include <curand.h>
 #include <helpers/DebugHelper.h>
+#include <memory/cuda/CudaMemoryPool.h>
 
 #include <execution/cuda/LaunchDims.h>
 #include <loops/special_kernels.h>
@@ -415,11 +416,21 @@ sd::Pointer mallocHost(sd::LongType memorySize, int flags) {
  * @param flags optional parameter
  */
 sd::Pointer mallocDevice(sd::LongType memorySize, int deviceId, int flags) {
-  sd::Pointer pointer;
-  auto res = cudaMalloc(reinterpret_cast<void **>(&pointer), memorySize + 8);
-  if (res != 0) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(res);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaMalloc failed");
+  // Use CUDA memory pool for efficient allocation reuse
+  auto& pool = sd::memory::CudaMemoryPool::getInstance();
+
+  // Get current stream for async allocation (if available)
+  cudaStream_t stream = nullptr;
+  auto context = sd::LaunchContext::defaultContext();
+  if (context != nullptr && context->getCudaStream() != nullptr) {
+    stream = *context->getCudaStream();
+  }
+
+  void* pointer = pool.allocate(memorySize + 8, deviceId, stream);
+
+  if (pointer == nullptr) {
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(cudaErrorMemoryAllocation);
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaMallocAsync/cudaMalloc failed");
   }
 
   return reinterpret_cast<int8_t *>(pointer);
@@ -456,6 +467,16 @@ int freeDevice(sd::Pointer pointer, int deviceId) {
     return 1L;  // Nothing to free
   }
 
+  // Use CUDA memory pool for efficient memory reuse
+  auto& pool = sd::memory::CudaMemoryPool::getInstance();
+
+  // Get current stream for async free (if available)
+  cudaStream_t stream = nullptr;
+  auto context = sd::LaunchContext::defaultContext();
+  if (context != nullptr && context->getCudaStream() != nullptr) {
+    stream = *context->getCudaStream();
+  }
+
   // Get current device to restore later
   int currentDevice = 0;
   cudaGetDevice(&currentDevice);
@@ -469,26 +490,47 @@ int freeDevice(sd::Pointer pointer, int deviceId) {
     }
   }
 
-  cudaError_t syncErr = cudaDeviceSynchronize();
-  if (syncErr != cudaSuccess) {
-    sd_debug("freeDevice: cudaDeviceSynchronize failed: %s%s\n", cudaGetErrorString(syncErr), "");
-    cudaGetLastError();  // Clear error state
-  }
-
-  auto res = cudaFree(reinterpret_cast<void *>(pointer));
+  // Use pool's async free (returns memory to pool without blocking)
+  pool.free(reinterpret_cast<void*>(pointer), deviceId, stream);
 
   // Restore original device if we switched
   if (deviceId != currentDevice) {
     cudaSetDevice(currentDevice);
   }
 
-  // we're intentionally skipping error 1 (cudaErrorInvalidValue for null pointer)
-  if (res != 0 && res != 1) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(res);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaFree failed");
-  }
+  return 1L;
+}
 
-  return res == 0 ? 1L : 0L;
+/**
+ * Check if CUDA memory pools are enabled and supported
+ */
+bool isMemoryPoolEnabled() {
+  return sd::memory::CudaMemoryPool::getInstance().isEnabled();
+}
+
+/**
+ * Enable or disable CUDA memory pools
+ */
+void setMemoryPoolEnabled(bool enabled) {
+  sd::memory::CudaMemoryPool::getInstance().setEnabled(enabled);
+}
+
+/**
+ * Get memory pool statistics for a device
+ * Returns used bytes in first element, reserved bytes in second
+ */
+void getMemoryPoolStats(int deviceId, sd::LongType* usedBytes, sd::LongType* reservedBytes) {
+  size_t used = 0, reserved = 0;
+  sd::memory::CudaMemoryPool::getInstance().getStats(deviceId, used, reserved);
+  if (usedBytes) *usedBytes = static_cast<sd::LongType>(used);
+  if (reservedBytes) *reservedBytes = static_cast<sd::LongType>(reserved);
+}
+
+/**
+ * Trim unused memory from the pool
+ */
+void trimMemoryPool(int deviceId) {
+  sd::memory::CudaMemoryPool::getInstance().trimPool(deviceId);
 }
 
 sd::Pointer createContext() { return 0L; }

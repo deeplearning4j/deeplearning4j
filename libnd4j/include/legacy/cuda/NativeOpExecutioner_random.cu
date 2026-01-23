@@ -24,6 +24,7 @@
 #include <helpers/DebugHelper.h>
 #include <helpers/PointersManager.h>
 #include <legacy/NativeOpExecutioner.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <loops/broadcasting.h>
 #include <loops/broadcasting_bool.h>
 #include <loops/broadcasting_int.h>
@@ -62,10 +63,10 @@ void NativeOpExecutioner::execRandom(sd::LaunchContext* lc, int opNum, sd::Point
 
   auto stream = lc->getCudaStream();
   auto sizeOf = sizeof(sd::graph::RandomGenerator);
-  sd::Pointer stateDevice;
+  int deviceId = 0;
+  cudaGetDevice(&deviceId);
 
-  cudaError_t res = cudaMalloc(reinterpret_cast<void**>(&stateDevice), sizeOf);
-  checkCudaErrors(cudaStreamSynchronize(*stream));
+  sd::Pointer stateDevice = sd::memory::CudaMemoryPool::getInstance().allocate(sizeOf, deviceId, *stream);
   checkCudaErrors(cudaMemcpyAsync(stateDevice, stateHost, sizeOf, cudaMemcpyHostToDevice, *stream));
 
   dim3 launchDims = getLaunchDims("random");
@@ -77,12 +78,7 @@ void NativeOpExecutioner::execRandom(sd::LaunchContext* lc, int opNum, sd::Point
                         ::executeCudaSingle(launchDims, stream, opNum, stateDevice, dZ, dZShapeInfo, extraArguments),
                         SD_FLOAT_TYPES);
 
-  res = cudaStreamSynchronize(*stream);
-  if (res != 0) {
-    std::string errorMessage = "execRandom X failed with error code: " + std::to_string(static_cast<int>(res));
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-  cudaFree(stateDevice);
+  sd::memory::CudaMemoryPool::getInstance().free(stateDevice, deviceId, *stream);
 
   rng->rewindH(shape::length(hZShapeInfo));
 }
@@ -100,10 +96,10 @@ void NativeOpExecutioner::execRandom(sd::LaunchContext* lc, int opNum, sd::Point
   auto stream = lc->getCudaStream();
 
   auto sizeOf = sizeof(sd::graph::RandomGenerator);
-  sd::Pointer stateDevice;
+  int deviceId = 0;
+  cudaGetDevice(&deviceId);
 
-  cudaError_t res = cudaMalloc(reinterpret_cast<void**>(&stateDevice), sizeOf);
-  checkCudaErrors(cudaStreamSynchronize(*stream));
+  sd::Pointer stateDevice = sd::memory::CudaMemoryPool::getInstance().allocate(sizeOf, deviceId, *stream);
   checkCudaErrors(cudaMemcpyAsync(stateDevice, stateHost, sizeOf, cudaMemcpyHostToDevice, *stream));
 
   auto rng = reinterpret_cast<sd::graph::RandomGenerator*>(stateHost);
@@ -116,12 +112,7 @@ void NativeOpExecutioner::execRandom(sd::LaunchContext* lc, int opNum, sd::Point
       ::executeCudaDouble(launchDims, stream, opNum, stateDevice, dX, dXShapeInfo, dZ, dZShapeInfo, extraArguments),
       SD_FLOAT_TYPES);
 
-  res = cudaStreamSynchronize(*stream);
-  if (res != 0) {
-    std::string errorMessage = "execRandom XY failed with error code: " + std::to_string(static_cast<int>(res));
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-  cudaFree(stateDevice);
+  sd::memory::CudaMemoryPool::getInstance().free(stateDevice, deviceId, *stream);
 
   rng->rewindH(shape::length(hZShapeInfo));
 }
@@ -139,10 +130,10 @@ void NativeOpExecutioner::execRandom(sd::LaunchContext* lc, int opNum, sd::Point
 
   auto stream = lc->getCudaStream();
   auto sizeOf = sizeof(sd::graph::RandomGenerator);
-  sd::Pointer stateDevice;
+  int deviceId = 0;
+  cudaGetDevice(&deviceId);
 
-  cudaError_t res = cudaMalloc(reinterpret_cast<void**>(&stateDevice), sizeOf);
-  checkCudaErrors(cudaStreamSynchronize(*stream));
+  sd::Pointer stateDevice = sd::memory::CudaMemoryPool::getInstance().allocate(sizeOf, deviceId, *stream);
   checkCudaErrors(cudaMemcpyAsync(stateDevice, stateHost, sizeOf, cudaMemcpyHostToDevice, *stream));
 
   auto rng = reinterpret_cast<sd::graph::RandomGenerator*>(stateHost);
@@ -155,12 +146,7 @@ void NativeOpExecutioner::execRandom(sd::LaunchContext* lc, int opNum, sd::Point
                                             dZ, dZShapeInfo, extraArguments),
                         SD_FLOAT_TYPES);
 
-  res = cudaStreamSynchronize(*stream);
-  if (res != 0) {
-    std::string errorMessage = "execRandom XYZ failed with error code: " + std::to_string(static_cast<int>(res));
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-  cudaFree(stateDevice);
+  sd::memory::CudaMemoryPool::getInstance().free(stateDevice, deviceId, *stream);
 
   rng->rewindH(shape::length(hZShapeInfo));
 }

@@ -135,9 +135,9 @@ public class OpaqueDataBuffer extends Pointer {
     /**
      * Registers this OpaqueDataBuffer with the DeallocatorService for automatic cleanup.
      *
-     * CRITICAL FIX (Option 1): This overload allows marking the buffer as constant BEFORE
-     * the deallocator is registered, preventing the race condition where GC could trigger
-     * deallocation between buffer creation and setConstant() being called.
+     * This overload allows marking the buffer as constant before the deallocator is registered,
+     * preventing the race condition where GC could trigger deallocation between buffer
+     * creation and setConstant() being called.
      *
      * @param buffer The buffer to register
      * @param isConstant If true, marks the deallocator as constant immediately to prevent deallocation
@@ -194,16 +194,15 @@ public class OpaqueDataBuffer extends Pointer {
      * Creates an externalized data buffer that wraps existing native pointers.
      * The buffer is automatically registered with DeallocatorService for cleanup.
      *
-     * CRITICAL FIX: This overload allows marking the buffer as constant IMMEDIATELY
-     * during registration, BEFORE GC can run and deallocate it. This prevents
-     * the race condition where:
+     * This overload allows marking the buffer as constant immediately during registration,
+     * before GC can run and deallocate it. This prevents the race condition where:
      * 1. Buffer is created
      * 2. GC runs and frees buffer (because isConstant is false)
      * 3. setConstant(true) is called but fails (buffer already freed)
      *
-     * CRITICAL FIX (CUDA error 700): Ensure device assignment happens BEFORE native buffer
-     * wrapper creation. Even though this wraps existing pointers, the device assignment
-     * is needed to ensure the thread is bound to a device before any native operations.
+     * Note: Device assignment must happen before native buffer wrapper creation. Even though
+     * this wraps existing pointers, the device assignment is needed to ensure the thread
+     * is bound to a device before any native operations.
      *
      * @param numElements Number of elements
      * @param dataType Data type
@@ -213,16 +212,15 @@ public class OpaqueDataBuffer extends Pointer {
      * @return Externalized buffer with appropriate constant protection
      */
     public static OpaqueDataBuffer externalizedDataBuffer(long numElements, @NonNull DataType dataType, Pointer primary, Pointer special, boolean isConstant) {
-        // CRITICAL: Ensure device is assigned for this thread BEFORE any native operations.
+        // Ensure device is assigned for this thread before any native operations.
         Nd4j.getAffinityManager().getDeviceForCurrentThread();
 
         OpaqueDataBuffer ret;
 
         if (isConstant) {
-            // CRITICAL FIX: For constant buffers, use the new native function that marks
-            // the buffer constant IN NATIVE CODE before returning to Java.
-            // This eliminates the race condition where GC can finalize the buffer
-            // before we call setConstant() on the Java side.
+            // For constant buffers, use the native function that marks the buffer constant
+            // in native code before returning to Java. This eliminates the race condition
+            // where GC can finalize the buffer before we call setConstant() on the Java side.
             ret = Nd4j.getNativeOps().dbCreateConstantExternalDataBuffer(numElements, dataType.toInt(), primary, special);
 
             if (ret != null && !ret.isNull()) {
@@ -284,10 +282,10 @@ public class OpaqueDataBuffer extends Pointer {
      * - Clean up failed buffers in retry loop
      * - Clean up buffer if registration fails
      *
-     * CRITICAL FIX (CUDA error 700): Ensure device assignment happens BEFORE native allocation.
-     * Without this, multiple threads starting simultaneously could all see CUDA device 0 (default),
-     * but then get different device assignments from Java's round-robin, leading to illegal
-     * memory access when operations try to access buffers on the wrong device.
+     * Note: Device assignment must happen before native allocation. Without this, multiple threads
+     * starting simultaneously could all see CUDA device 0 (default), but then get different device
+     * assignments from Java's round-robin, leading to illegal memory access when operations try to
+     * access buffers on the wrong device.
      *
      * @param numElements Number of elements
      * @param dataType Data type
@@ -299,7 +297,7 @@ public class OpaqueDataBuffer extends Pointer {
         int ec = 0;
         String em = null;
 
-        // CRITICAL: Ensure device is assigned for this thread BEFORE any native allocation.
+        // Ensure device is assigned for this thread before any native allocation.
         // This ensures the native code allocates the buffer on the correct device.
         // Without this, there's a race condition where:
         // 1. Native code uses CUDA's current device (often device 0)
@@ -360,15 +358,15 @@ public class OpaqueDataBuffer extends Pointer {
     /**
      * Allocates a new InteropDataBuffer and optionally marks it as constant.
      *
-     * CRITICAL FIX (Option 1): This method allows creating constant buffers that are protected
-     * from deallocation BEFORE the deallocator is registered with DeallocatorService.
-     * This prevents the race condition where GC could trigger deallocation between
-     * buffer creation and setConstant() being called.
+     * This method allows creating constant buffers that are protected from deallocation
+     * before the deallocator is registered with DeallocatorService. This prevents the race
+     * condition where GC could trigger deallocation between buffer creation and setConstant()
+     * being called.
      *
-     * CRITICAL FIX (CUDA error 700): Ensure device assignment happens BEFORE native allocation.
-     * Without this, multiple threads starting simultaneously could all see CUDA device 0 (default),
-     * but then get different device assignments from Java's round-robin, leading to illegal
-     * memory access when operations try to access buffers on the wrong device.
+     * Note: Device assignment must happen before native allocation. Without this, multiple threads
+     * starting simultaneously could all see CUDA device 0 (default), but then get different device
+     * assignments from Java's round-robin, leading to illegal memory access when operations try to
+     * access buffers on the wrong device.
      *
      * @param numElements Number of elements
      * @param dataType Data type
@@ -381,7 +379,7 @@ public class OpaqueDataBuffer extends Pointer {
         int ec = 0;
         String em = null;
 
-        // CRITICAL: Ensure device is assigned for this thread BEFORE any native allocation.
+        // Ensure device is assigned for this thread before any native allocation.
         // This ensures the native code allocates the buffer on the correct device.
         Nd4j.getAffinityManager().getDeviceForCurrentThread();
 

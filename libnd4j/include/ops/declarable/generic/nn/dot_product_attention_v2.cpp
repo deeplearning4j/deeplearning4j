@@ -129,24 +129,6 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
                      dropout == 0.0;
 
   if (canUseFlash) {
-    // Reshape 3D inputs to 4D by adding numHeads=1 dimension
-    // [batch, seq, dim] -> [batch, seq, 1, dim]
-    auto batch = queries->sizeAt(0);
-    auto seqQ = queries->sizeAt(1);
-    auto seqKV = keys->sizeAt(1);
-    auto dim = queries->sizeAt(2);
-
-    std::vector<sd::LongType> query4DShape = {batch, seqQ, 1, dim};
-    std::vector<sd::LongType> kv4DShape = {batch, seqKV, 1, dim};
-    std::vector<sd::LongType> output3DShape = {batch, seqQ, dim};
-
-    auto query4D = queries->reshape('c', query4DShape);
-    auto key4D = keys->reshape('c', kv4DShape);
-    auto value4D = values->reshape('c', kv4DShape);
-
-    // Create 4D output buffer
-    NDArray output4D('c', query4DShape, queries->dataType(), block.launchContext());
-
     // Setup FlashAttentionHelper config
     FlashAttentionHelper::Config config;
     config.scale = static_cast<float>(scale);
@@ -155,21 +137,12 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
     config.numHeads = 1;
     config.numKvHeads = 1;
 
-    // Call FlashAttentionHelper::forward()
-    // attentionScores and attentionLogits are [batch, seqQ, seqKV] which matches [batch*1, seqQ, seqKV]
-    FlashAttentionHelper::forward(query4D, key4D, value4D, &output4D, config,
+    // Call FlashAttentionHelper::forward() directly with 3D inputs
+    // This avoids unnecessary 4D reshape + permute operations
+    // forward3D is called when inputs have rank 3
+    FlashAttentionHelper::forward(queries, keys, values, applyScoresOut, config,
                                   nullptr, attentionScores, attentionLogits,
                                   block.launchContext());
-
-    // Reshape output back to 3D: [batch, seqQ, 1, dim] -> [batch, seqQ, dim]
-    auto output3D = output4D.reshape('c', output3DShape);
-    applyScoresOut->assign(output3D);
-
-    // Cleanup
-    delete query4D;
-    delete key4D;
-    delete value4D;
-    delete output3D;
   } else {
     // Fallback to AttentionHelper for masks/dropout support
     std::vector<sd::NDArray*> inputs = {queries, values, keys};

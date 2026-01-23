@@ -21,6 +21,7 @@
 //
 #include <exceptions/cuda_exception.h>
 #include <legacy/NativeOps.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <ops/declarable/helpers/dropout.h>
 #include <helpers/DebugHelper.h>
 #include <memory>
@@ -89,11 +90,13 @@ static void dropoutSimple(LaunchContext* context, NDArray * input, NDArray* outp
   auto stream = context->getCudaStream();
   NDArray::prepareSpecialUse({output}, {input});
 
-  auto err = cudaMalloc(&dRandom, sizeof(RandomGenerator));
-  if (err) {
-    throw cuda_exception::build("helpers::dropoutSimple: Cannot allocate device memory for random generator.", err);
+  int deviceId = 0;
+  cudaGetDevice(&deviceId);
+  dRandom = reinterpret_cast<RandomGenerator*>(memory::CudaMemoryPool::getInstance().allocate(sizeof(RandomGenerator), deviceId, *stream));
+  if (dRandom == nullptr) {
+    throw cuda_exception::build("helpers::dropoutSimple: Cannot allocate device memory for random generator.", cudaErrorMemoryAllocation);
   }
-  err = cudaMemcpy(dRandom, &nodeRng, sizeof(RandomGenerator), cudaMemcpyHostToDevice);
+  auto err = cudaMemcpyAsync(dRandom, &nodeRng, sizeof(RandomGenerator), cudaMemcpyHostToDevice, *stream);
   if (err) {
     throw cuda_exception::build("helpers::dropoutSimple: Cannot set up device memory for random generator.", err);
   }
@@ -102,10 +105,7 @@ static void dropoutSimple(LaunchContext* context, NDArray * input, NDArray* outp
   dropoutSimpleKernel<T><<<getDims.x, getDims.y, getDims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
                                                                        output->specialBuffer(), output->specialShapeInfo(), probValue,
                                                                        inLen, dRandom);
-  err = cudaFree(dRandom);
-  if (err) {
-    throw cuda_exception::build("helpers::dropoutSimple: Cannot deallocate device memory for random generator.", err);
-  }
+  memory::CudaMemoryPool::getInstance().free(dRandom, deviceId, *stream);
   NDArray::registerSpecialUse({output}, {input});
 }
 
@@ -286,13 +286,15 @@ static void alphaDropoutSimple(LaunchContext* context, NDArray * input, NDArray*
                                double probValue, double alpha, double alpha1, double beta) {
   RandomGenerator nodeRng(3019L, seed), *dRandom;
   auto stream = context->getCudaStream();
-  auto err = cudaMalloc(&dRandom, sizeof(RandomGenerator));
+  int deviceId = 0;
+  cudaGetDevice(&deviceId);
+  dRandom = reinterpret_cast<RandomGenerator*>(memory::CudaMemoryPool::getInstance().allocate(sizeof(RandomGenerator), deviceId, *stream));
   NDArray::prepareSpecialUse({output}, {input});
-  if (err) {
+  if (dRandom == nullptr) {
     throw cuda_exception::build("helpers::alphaDropoutSimple: Cannot allocate device memory for random generator.",
-                                err);
+                                cudaErrorMemoryAllocation);
   }
-  err = cudaMemcpy(dRandom, &nodeRng, sizeof(RandomGenerator), cudaMemcpyHostToDevice);
+  auto err = cudaMemcpyAsync(dRandom, &nodeRng, sizeof(RandomGenerator), cudaMemcpyHostToDevice, *stream);
   if (err) {
     throw cuda_exception::build("helpers::alphaDropoutSimple: Cannot set up device memory for random generator.", err);
   }
@@ -304,11 +306,7 @@ static void alphaDropoutSimple(LaunchContext* context, NDArray * input, NDArray*
 
   DebugHelper::checkGlobalErrorCode( "alphaDropoutSimpleKernel(...) failed");
 
-  err = cudaFree(dRandom);
-  if (err) {
-    throw cuda_exception::build("helpers::alphaDropoutSimple: Cannot deallocate device memory for random generator.",
-                                err);
-  }
+  memory::CudaMemoryPool::getInstance().free(dRandom, deviceId, *stream);
   NDArray::registerSpecialUse({output}, {input});
 }
 

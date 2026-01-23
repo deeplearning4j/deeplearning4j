@@ -610,7 +610,7 @@ MLIR_GPU="${MLIR_GPU:-OFF}"
 # Monitors memory usage during build and kills processes if threshold is exceeded
 OOM_KILLER_ENABLED="${OOM_KILLER_ENABLED:-ON}"
 OOM_MEMORY_THRESHOLD="${OOM_MEMORY_THRESHOLD:-80}"  # Percentage of system memory (1-99) - lowered from 85%
-OOM_CRITICAL_THRESHOLD="${OOM_CRITICAL_THRESHOLD:-92}"  # CRITICAL: Immediate SIGKILL, no grace period
+OOM_CRITICAL_THRESHOLD="${OOM_CRITICAL_THRESHOLD:-92}"  # Immediate SIGKILL threshold, no grace period
 OOM_MONITOR_INTERVAL="${OOM_MONITOR_INTERVAL:-1}"   # Check interval in seconds (1s for fast response)
 OOM_PROCESS_MAX_MB="${OOM_PROCESS_MAX_MB:-0}"       # Process tree memory limit in MB (0=disabled)
 OOM_VELOCITY_THRESHOLD="${OOM_VELOCITY_THRESHOLD:-8}" # Kill if memory grows faster than this %/sec
@@ -800,8 +800,8 @@ get_process_memory_mb() {
 }
 
 # Get total memory usage in MB for a process tree (process + all descendants)
-# CRITICAL: Build processes spawn many children (make -> gcc/g++/nvcc/ld)
-# We must monitor the ENTIRE process tree to catch memory-hungry compilers/linkers
+# Build processes spawn many children (make -> gcc/g++/nvcc/ld).
+# We must monitor the ENTIRE process tree to catch memory-hungry compilers/linkers.
 get_process_tree_memory_mb() {
     local root_pid="$1"
     local platform
@@ -1021,8 +1021,8 @@ start_oom_monitor() {
         local first_check=true
 
         while true; do
-            # CRITICAL FIX: Check memory BEFORE sleeping on first iteration
-            # This ensures we catch OOM conditions immediately when monitor starts
+            # Check memory BEFORE sleeping on first iteration
+            # to catch OOM conditions immediately when monitor starts
             if [[ "$first_check" == "true" ]]; then
                 first_check=false
             else
@@ -1126,8 +1126,8 @@ start_oom_monitor() {
                 print_colored "yellow" ""
 
                 if [[ "$is_critical" == "true" ]]; then
-                    # CRITICAL: Immediate SIGKILL - no time for graceful shutdown
-                    print_colored "red" "CRITICAL: Sending immediate SIGKILL (no grace period)..."
+                    # Immediate SIGKILL - no time for graceful shutdown
+                    print_colored "red" "Sending immediate SIGKILL (no grace period)..."
                     kill_process_tree "$build_pid" "KILL"
                     sleep 0.5
                 else
@@ -2903,7 +2903,7 @@ if [ "$BUILD_PPSTEP" == "ON" ]; then
     print_colored "cyan" "Wrapper created at: blasbuild/$CHIP/ppstep-nd4j"
     echo "Usage: ./blasbuild/$CHIP/ppstep-nd4j <source_file.cpp>"
     
-    # CRITICAL: EXIT EARLY like preprocess does
+    # Exit early like preprocess does
     exit 0
 fi
 

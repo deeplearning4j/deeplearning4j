@@ -279,7 +279,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
         // Get the device where the SOURCE array actually resides
         int sourceDeviceId = AtomicAllocator.getInstance().getAllocationPoint(array).getDeviceId();
 
-        // CRITICAL: Ensure source data is synced to host memory BEFORE any device switching.
+        // Ensure source data is synced to host memory before any device switching.
         // This uses native code that handles the device context properly internally.
         // synchronizeHostData uses dbSyncToPrimary which knows the buffer's device.
         AtomicAllocator.getInstance().synchronizeHostData(array);
@@ -330,7 +330,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
         int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
 
-        // CRITICAL: Ensure source data is synced to host memory BEFORE any device switching.
+        // Ensure source data is synced to host memory before any device switching.
         // This uses native code that handles the device context properly internally.
         // synchronizeHostData uses dbSyncToPrimary which knows the buffer's device.
         AtomicAllocator.getInstance().synchronizeHostData(buffer);

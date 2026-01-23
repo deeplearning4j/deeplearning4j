@@ -760,7 +760,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (Nd4j.getNativeOps().lastErrorCode() != 0)
             throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
-        // CRITICAL: Mark output array's DEVICE buffer as written to
+        // Mark output array's DEVICE buffer as written to
         if (z != null && !z.isEmpty() && z.data() != null) {
             ((BaseCudaDataBuffer) z.data()).actualizePointerAndIndexer();
             AtomicAllocator.getInstance().tickDeviceWrite(z);
@@ -865,7 +865,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (Nd4j.getNativeOps().lastErrorCode() != 0)
             throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
-        // CRITICAL: Mark output array's DEVICE buffer as written to
+        // Mark output array's DEVICE buffer as written to
         if (z != null && !z.isEmpty() && z.data() != null) {
             ((BaseCudaDataBuffer) z.data()).actualizePointerAndIndexer();
             AtomicAllocator.getInstance().tickDeviceWrite(z);
@@ -1108,7 +1108,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (Nd4j.getNativeOps().lastErrorCode() != 0)
             throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
-        // CRITICAL: Mark output array's DEVICE buffer as written to
+        // Mark output array's DEVICE buffer as written to
         if (z != null && !z.isEmpty() && z.data() != null) {
             ((BaseCudaDataBuffer) z.data()).actualizePointerAndIndexer();
             AtomicAllocator.getInstance().tickDeviceWrite(z);
@@ -1193,7 +1193,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (Nd4j.getNativeOps().lastErrorCode() != 0)
             throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
-        // CRITICAL: Mark output array's DEVICE buffer as written to
+        // Mark output array's DEVICE buffer as written to
         INDArray zArr = op.z();
         if (zArr != null && !zArr.isEmpty() && zArr.data() != null) {
             ((BaseCudaDataBuffer) zArr.data()).actualizePointerAndIndexer();
@@ -1316,7 +1316,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (Nd4j.getNativeOps().lastErrorCode() != 0)
             throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
-        // CRITICAL: Mark output array's DEVICE buffer as written to
+        // Mark output array's DEVICE buffer as written to
         if (z != null && !z.isEmpty() && z.data() != null) {
             ((BaseCudaDataBuffer) z.data()).actualizePointerAndIndexer();
             AtomicAllocator.getInstance().tickDeviceWrite(z);
@@ -1479,7 +1479,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (extraArgs != null)
             extraArgs.address();
 
-        // CRITICAL: Mark output array's DEVICE buffer as written to
+        // Mark output array's DEVICE buffer as written to.
         // After native op execution, the result is in the DEVICE buffer.
         // We need to update Java-side counters so that subsequent reads
         // will correctly sync DEVICE→HOST rather than using stale HOST data.
@@ -1830,7 +1830,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         }
 
-        // CRITICAL: Also tick outputs from OpContext - these may be different from op.outputArguments()
+        // Also tick outputs from OpContext - these may be different from op.outputArguments().
         // When using OpContext, the native code writes directly to context outputs, but the Java-side
         // counter tracking only happened for op.outputArguments(). Without this, subsequent operations
         // may incorrectly think the HOST buffer is "actual" and do an unwanted HOST->DEVICE sync,

@@ -297,20 +297,49 @@ public class CudaMemoryManager extends BasicMemoryManager {
 
     @Override
     public void releaseCurrentContext() {
-        // Synchronize the device to ensure all pending operations complete
+        // IMPORTANT: During JVM shutdown, CUDA resources may already be freed by JavaCPP's
+        // Deallocator thread. Calling cudaStreamSynchronize on freed stream pointers causes
+        // SIGSEGV crashes that cannot be caught by Java exception handlers.
+        //
+        // Shutdown detection: If this method is called from a shutdown hook thread,
+        // we skip synchronization entirely since:
+        // 1. The GPU driver will clean up when the process exits
+        // 2. Any pending operations will complete or be aborted naturally
+        // 3. Native memory may already be freed, making synchronization unsafe
+        //
+        // Thread name patterns for shutdown contexts:
+        // - "SpringApplicationShutdownHook" (Spring Boot)
+        // - "ShutdownHook" (generic JVM shutdown hooks)
+        // - "DestroyJavaVM" (JVM termination)
+        String threadName = Thread.currentThread().getName();
+        if (threadName != null && (threadName.contains("Shutdown") ||
+                                    threadName.contains("DestroyJavaVM") ||
+                                    threadName.contains("shutdown"))) {
+            log.trace("Skipping CUDA stream synchronization during shutdown (thread: {})", threadName);
+            return;
+        }
+
+        // For non-shutdown contexts, synchronize streams to ensure pending operations complete.
+        // Use the sync methods that get fresh stream pointers from native code.
         try {
             val context = AtomicAllocator.getInstance().getDeviceContext();
             if (context != null) {
-                // Sync both streams to ensure all operations complete
-                if (context.getOldStream() != null) {
-                    context.getOldStream().synchronize();
+                try {
+                    context.syncOldStream();
+                } catch (Exception e) {
+                    log.trace("Could not sync execution stream during context release: {}", e.getMessage());
                 }
-                if (context.getSpecialStream() != null) {
-                    context.getSpecialStream().synchronize();
+                try {
+                    context.syncSpecialStream();
+                } catch (Exception e) {
+                    log.trace("Could not sync special stream during context release: {}", e.getMessage());
                 }
             }
         } catch (Exception e) {
-            log.debug("Error during context release synchronization: {}", e.getMessage());
+            log.trace("Error during context release synchronization: {}", e.getMessage());
+        } catch (Error e) {
+            // Catch native errors like UnsatisfiedLinkError
+            log.trace("Native error during context release: {}", e.getMessage());
         }
     }
 }

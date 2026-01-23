@@ -27,6 +27,7 @@
 #include <execution/AffinityManager.h>
 #include <execution/ContextBuffers.h>
 #include <helpers/logger.h>
+#include <memory/cuda/CudaMemoryPool.h>
 
 namespace sd {
 ContextBuffers::ContextBuffers() {
@@ -37,8 +38,8 @@ ContextBuffers::ContextBuffers(const ContextBuffers& other) {
   release();
 
   this->_initialized = other._initialized;
-  // CRITICAL: Do NOT copy _allocated - only one object should own the resources
-  // The original object keeps ownership, this copy is just a view
+  // Do NOT copy _allocated - only one object should own the resources.
+  // The original object keeps ownership, this copy is just a view.
   this->_allocated = false;
   this->_deviceId = other._deviceId;
 
@@ -53,8 +54,8 @@ ContextBuffers& ContextBuffers::operator=(const ContextBuffers& other) {
   release();
 
   this->_initialized = other._initialized;
-  // CRITICAL: Do NOT copy _allocated - only one object should own the resources
-  // The original object keeps ownership, this copy is just a view
+  // Do NOT copy _allocated - only one object should own the resources.
+  // The original object keeps ownership, this copy is just a view.
   this->_allocated = false;
   this->_deviceId = other._deviceId;
 
@@ -121,9 +122,13 @@ void ContextBuffers::release() {
       switchedDevice = true;
     }
 
-    if (_allocationPointer != nullptr) cudaFree(_allocationPointer);
+    if (_allocationPointer != nullptr) {
+      memory::CudaMemoryPool::getInstance().free(_allocationPointer, _deviceId, nullptr);
+    }
     if (_scalarPointer != nullptr) cudaFreeHost(_scalarPointer);
-    if (_reductionPointer != nullptr) cudaFree(_reductionPointer);
+    if (_reductionPointer != nullptr) {
+      memory::CudaMemoryPool::getInstance().free(_reductionPointer, _deviceId, nullptr);
+    }
 
     if (_execStream != nullptr) {
       auto _cudaStream = reinterpret_cast<cudaStream_t*>(_execStream);
@@ -172,19 +177,19 @@ ContextBuffers::ContextBuffers(void* rPointer, void* sPointer, void* aPointer, b
 void ContextBuffers::initialize() {
   _deviceId = AffinityManager::currentNativeDeviceId();
 
-  // CRITICAL: Ensure we're on the correct device before allocating
+  // Ensure we're on the correct device before allocating.
   // Without this, if reductionBuffer()/scalarBuffer()/allocationBuffer()
-  // is called first (instead of execStream()), we might allocate on wrong device
+  // is called first (instead of execStream()), we might allocate on wrong device.
   cudaSetDevice(_deviceId);
 
-  auto res = cudaMalloc(reinterpret_cast<void**>(&_reductionPointer), 1024 * 1024 * 8);
-  if (res != 0) throw cuda_exception::build("_reductionPointer allocation failed", res);
+  _reductionPointer = memory::CudaMemoryPool::getInstance().allocate(1024 * 1024 * 8, _deviceId, nullptr);
+  if (_reductionPointer == nullptr) throw cuda_exception::build("_reductionPointer allocation failed", cudaErrorMemoryAllocation);
 
-  res = cudaHostAlloc(reinterpret_cast<void**>(&_scalarPointer), 16, cudaHostAllocDefault);
+  auto res = cudaHostAlloc(reinterpret_cast<void**>(&_scalarPointer), 16, cudaHostAllocDefault);
   if (res != 0) throw cuda_exception::build("_scalarPointer allocation failed", res);
 
-  res = cudaMalloc(reinterpret_cast<void**>(&_allocationPointer), 1024 * 1024 * 8);
-  if (res != 0) throw cuda_exception::build("_allocationPointer allocation failed", res);
+  _allocationPointer = memory::CudaMemoryPool::getInstance().allocate(1024 * 1024 * 8, _deviceId, nullptr);
+  if (_allocationPointer == nullptr) throw cuda_exception::build("_allocationPointer allocation failed", cudaErrorMemoryAllocation);
 
   _execStream = new cudaStream_t();
   _specialStream = new cudaStream_t();

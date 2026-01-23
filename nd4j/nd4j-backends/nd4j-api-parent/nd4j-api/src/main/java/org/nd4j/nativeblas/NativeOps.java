@@ -239,6 +239,36 @@ public interface NativeOps {
  Pointer mallocDevice(long memorySize, int deviceId, int flags);
  int freeHost(Pointer pointer);
  int freeDevice(Pointer pointer, int deviceId);
+
+ /**
+  * Check if CUDA memory pools are enabled.
+  * CUDA memory pools (cudaMallocAsync/cudaFreeAsync) provide efficient memory reuse
+  * without explicit caching. Only effective on CUDA 11.2+ with compatible devices.
+  * @return true if memory pools are enabled and supported, false otherwise
+  */
+ boolean isMemoryPoolEnabled();
+
+ /**
+  * Enable or disable CUDA memory pools.
+  * When disabled, falls back to regular cudaMalloc/cudaFree.
+  * @param enabled true to enable memory pools, false to disable
+  */
+ void setMemoryPoolEnabled(boolean enabled);
+
+ /**
+  * Get memory pool statistics for a device.
+  * @param deviceId The device to query
+  * @param usedBytes Output pointer for currently used bytes in the pool
+  * @param reservedBytes Output pointer for total reserved bytes in the pool
+  */
+ void getMemoryPoolStats(int deviceId, LongPointer usedBytes, LongPointer reservedBytes);
+
+ /**
+  * Trim unused memory from the pool.
+  * Releases cached memory back to the system.
+  * @param deviceId The device whose pool to trim
+  */
+ void trimMemoryPool(int deviceId);
  Pointer createContext();
  Pointer createStream();
  Pointer createEvent();
@@ -819,7 +849,7 @@ public interface NativeOps {
 
  /**
   * Marks that shutdown is in progress.
-  * CRITICAL: Call this early in JVM shutdown (e.g., from a shutdown hook)
+  * Call this early in JVM shutdown (e.g., from a shutdown hook)
   * to prevent SIGSEGV crashes during cache cleanup.
   *
   * During JVM/static destruction, memory allocators may have been destroyed,

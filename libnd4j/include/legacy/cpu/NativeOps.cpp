@@ -322,6 +322,36 @@ int freeDevice(sd::Pointer pointer, int deviceId) {
 }
 
 /**
+ * CPU implementation - memory pools are a CUDA-only feature.
+ * Returns false since CPU backend doesn't use memory pools.
+ */
+bool isMemoryPoolEnabled() {
+  return false;
+}
+
+/**
+ * CPU implementation - no-op since memory pools are CUDA-only.
+ */
+void setMemoryPoolEnabled(bool enabled) {
+  // no-op for CPU
+}
+
+/**
+ * CPU implementation - returns zeros since memory pools are CUDA-only.
+ */
+void getMemoryPoolStats(int deviceId, sd::LongType* usedBytes, sd::LongType* reservedBytes) {
+  if (usedBytes) *usedBytes = 0;
+  if (reservedBytes) *reservedBytes = 0;
+}
+
+/**
+ * CPU implementation - no-op since memory pools are CUDA-only.
+ */
+void trimMemoryPool(int deviceId) {
+  // no-op for CPU
+}
+
+/**
  * Returns the maximum number open mp threads
  */
 int ompGetMaxThreads() { return omp_get_max_threads(); }

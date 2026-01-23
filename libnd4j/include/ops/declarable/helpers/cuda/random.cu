@@ -26,6 +26,7 @@
 #include <helpers/PointersManager.h>
 #include <helpers/RandomLauncher.h>
 #include <helpers/ShapeUtils.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <ops/declarable/helpers/random.h>
 
 #include <memory>
@@ -399,13 +400,15 @@ static void fillRandomUniform_(LaunchContext* context, graph::RandomGenerator& r
     RandomLauncher::fillUniform(context, rng, output, minVal, maxVal);
   else {
     auto stream = context->getCudaStream();
-    graph::RandomGenerator* devRng;
-    auto err = cudaMalloc(&devRng, sizeof(graph::RandomGenerator));
-    if (err != 0) {
-      cuda_exception::build("fillRandomUniform_: Cannot allocate device memory for random generator due error", err);
+    int deviceId = 0;
+    cudaGetDevice(&deviceId);
+    graph::RandomGenerator* devRng = reinterpret_cast<graph::RandomGenerator*>(
+        memory::CudaMemoryPool::getInstance().allocate(sizeof(graph::RandomGenerator), deviceId, *stream));
+    if (devRng == nullptr) {
+      cuda_exception::build("fillRandomUniform_: Cannot allocate device memory for random generator", cudaErrorMemoryAllocation);
     }
 
-    err = cudaMemcpy(devRng, &rng, sizeof(graph::RandomGenerator), cudaMemcpyHostToDevice);
+    auto err = cudaMemcpyAsync(devRng, &rng, sizeof(graph::RandomGenerator), cudaMemcpyHostToDevice, *stream);
     if (err != 0) {
       cuda_exception::build("fillRandomUniform_: Cannot copy random generator to device", err);
     }
@@ -415,15 +418,7 @@ static void fillRandomUniform_(LaunchContext* context, graph::RandomGenerator& r
     fillUniformKernel<T><<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(devRng, minVal, maxVal, outputBuf, outputShape);
     sd::DebugHelper::checkErrorCode(stream, "fillUniformKernel failed");
 
-    err = cudaStreamSynchronize(*stream);
-    if (err != 0) {
-      cuda_exception::build("fillRandomUniform_: Cannot successfully finish kernel call", err);
-    }
-
-    err = cudaFree(devRng);
-    if (err != 0) {
-      cuda_exception::build("fillRandomUniform_: Cannot deallocate device memory for random generator", err);
-    }
+    memory::CudaMemoryPool::getInstance().free(devRng, deviceId, *stream);
   }
 }
 
@@ -509,18 +504,14 @@ void fillRandomMultiNomial(LaunchContext* context, graph::RandomGenerator& rng, 
   const int blocksPerGrid = (batchValue * numOfSamples + threadsPerBlock - 1) / threadsPerBlock;
 
   PointersManager manager(context, "fillMultinomial");
-  graph::RandomGenerator* devRng;
-
-  auto err = cudaMalloc(&devRng, sizeof(graph::RandomGenerator));
-  if (err != 0) {
-    cuda_exception::build("fillRandomMultiNomial: Cannot allocate device memory for random generator due error", err);
+  int deviceId = 0;
+  cudaGetDevice(&deviceId);
+  graph::RandomGenerator* devRng = reinterpret_cast<graph::RandomGenerator*>(
+      memory::CudaMemoryPool::getInstance().allocate(sizeof(graph::RandomGenerator), deviceId, *context->getCudaStream()));
+  if (devRng == nullptr) {
+    cuda_exception::build("fillRandomMultiNomial: Cannot allocate device memory for random generator", cudaErrorMemoryAllocation);
   }
-  err = cudaStreamSynchronize(*context->getCudaStream());
-  if (err != 0) {
-    cuda_exception::build("fillRandomMultiNomial: Cannot synchronize stream for random generator due error", err);
-  }
-  err =
-      cudaMemcpyAsync(devRng, &rng, sizeof(graph::RandomGenerator), cudaMemcpyHostToDevice, *context->getCudaStream());
+  auto err = cudaMemcpyAsync(devRng, &rng, sizeof(graph::RandomGenerator), cudaMemcpyHostToDevice, *context->getCudaStream());
   if (err != 0) {
     cuda_exception::build("fillRandomMultiNomial: Cannot copy random generator to device", err);
   }
@@ -534,10 +525,7 @@ void fillRandomMultiNomial(LaunchContext* context, graph::RandomGenerator& rng, 
   NDArray::registerSpecialUse({&output}, {&input});
   manager.synchronize();
 
-  err = cudaFree(devRng);
-  if (err != 0) {
-    cuda_exception::build("fillRandomMultiNomial: Cannot deallocate device memory for random generator", err);
-  }
+  memory::CudaMemoryPool::getInstance().free(devRng, deviceId, *context->getCudaStream());
   rng.rewindH(output.lengthOf() * numOfClassX);
 }
 

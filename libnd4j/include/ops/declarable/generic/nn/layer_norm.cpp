@@ -29,6 +29,7 @@
 #include <ops/declarable/headers/transforms.h>
 #include <ops/declarable/helpers/addBias.h>
 #include <ops/declarable/helpers/reverse.h>
+#include <ops/declarable/helpers/layer_norm.h>
 #include <helpers/ShapeUtils.h>
 #include <execution/Threads.h>
 #include <cmath>
@@ -77,8 +78,17 @@ CONFIGURABLE_OP_IMPL(layer_norm, 2, 1, false, 0, -1) {
   const bool isContiguous = inputContiguous && outputContiguous;
   const bool isFloat = input->dataType() == DataType::FLOAT32;
   const bool isDouble = input->dataType() == DataType::DOUBLE;
+  const bool isHalf = input->dataType() == DataType::HALF;
   const bool gainContiguous = shape::strideDescendingCAscendingF(gain->shapeInfo());
   const bool biasContiguous = bias == nullptr || shape::strideDescendingCAscendingF(bias->shapeInfo());
+
+#if defined(SD_CUDA)
+  // CUDA fast path: fused kernel for last-dimension normalization
+  if (lastDimNorm && isContiguous && (isFloat || isDouble || isHalf) && gainContiguous && biasContiguous) {
+    helpers::layerNormCuda(input, gain, bias, output, longAxis, 1e-5f, block.launchContext());
+    return sd::Status::OK;
+  }
+#endif
 
   if (lastDimNorm && isContiguous && (isFloat || isDouble) && gainContiguous && biasContiguous) {
     // Fused layer norm: 2 passes instead of 7-8

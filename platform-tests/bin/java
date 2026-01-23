@@ -142,6 +142,45 @@ if [[ -n $TEST_RUNNER_PREFIX && $TEST_RUNNER_PREFIX =~ "compute-sanitizer" ]]; t
 
     echo "running with cuda compute-sanitizer"
 fi
+
+# if test_runner_prefix is not empty and contains "nsys" (NVIDIA Nsight Systems)
+if [[ -n $TEST_RUNNER_PREFIX && $TEST_RUNNER_PREFIX =~ "nsys" ]]; then
+    echo "Running with NVIDIA Nsight Systems (nsys) profiler"
+
+    # Use nsys from CUDA installation (newer version)
+    NSYS_BIN="/usr/local/cuda/bin/nsys"
+    if [[ ! -x "$NSYS_BIN" ]]; then
+        NSYS_BIN="nsys"  # fallback to PATH
+    fi
+
+    # Generate output filename with timestamp
+    nsys_output="/tmp/nsys_profile_$(date +%Y%m%d_%H%M%S)"
+
+    # Default nsys options for CUDA profiling
+    nsys_opts="profile --stats=true --cuda-memory-usage=true"
+    nsys_opts="${nsys_opts} --trace=cuda,nvtx,osrt,cublas,cudnn"
+    nsys_opts="${nsys_opts} --cudabacktrace=all"
+    nsys_opts="${nsys_opts} --output=${nsys_output}"
+    nsys_opts="${nsys_opts} --force-overwrite=true"
+
+    # Check if user provided custom options
+    if [[ $TEST_RUNNER_PREFIX == *"nsys profile"* ]]; then
+        # User provided full nsys command, use as-is but add output
+        if [[ $TEST_RUNNER_PREFIX != *"--output"* ]]; then
+            TEST_RUNNER_PREFIX="${TEST_RUNNER_PREFIX} --output=${nsys_output}"
+        fi
+    else
+        # Replace "nsys" with full nsys profile command
+        TEST_RUNNER_PREFIX="${NSYS_BIN} ${nsys_opts}"
+    fi
+
+    echo "nsys output will be written to: ${nsys_output}.nsys-rep"
+    echo "After run, analyze with: nsys stats ${nsys_output}.nsys-rep"
+    echo "Or open in Nsight Systems GUI: nsys-ui ${nsys_output}.nsys-rep"
+
+    # Store output path for post-run message
+    NSYS_OUTPUT="${nsys_output}"
+fi
 # Temporarily disable device remapping to debug kernel loading issues
 # export CUDA_VISIBLE_DEVICES=1
 # print the final command
@@ -159,5 +198,19 @@ if [[ -n $LD_PRELOAD && $LD_PRELOAD =~ "asan" ]]; then
     echo "====================================================="
     echo "ASAN leak reports (if any) written to: /tmp/asan.log.*"
     echo "Use: cat /tmp/asan.log.* to view reports"
+    echo "====================================================="
+fi
+
+# if nsys was used, print analysis instructions
+if [[ -n $NSYS_OUTPUT ]]; then
+    echo ""
+    echo "====================================================="
+    echo "NVIDIA Nsight Systems profile written to: ${NSYS_OUTPUT}.nsys-rep"
+    echo ""
+    echo "Quick stats:  nsys stats ${NSYS_OUTPUT}.nsys-rep"
+    echo "CUDA summary: nsys stats --report cuda_gpu_kern_sum ${NSYS_OUTPUT}.nsys-rep"
+    echo "Memory ops:   nsys stats --report cuda_mem_time_sum ${NSYS_OUTPUT}.nsys-rep"
+    echo "API calls:    nsys stats --report cuda_api_sum ${NSYS_OUTPUT}.nsys-rep"
+    echo "GUI:          nsys-ui ${NSYS_OUTPUT}.nsys-rep"
     echo "====================================================="
 fi

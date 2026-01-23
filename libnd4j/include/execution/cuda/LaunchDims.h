@@ -735,12 +735,14 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define BLOCK_SIZE_LUP getEnvVariable("BLOCK_SIZE_LUP", 256)
 #define SHARED_MEM_SIZE_LUP getEnvVariable("SHARED_MEM_SIZE_LUP", 1024)
 
-#define GRID_SIZE_SOFTMAX getEnvVariable("GRID_SIZE_SOFTMAX", 128)
+// Softmax launch dims - adaptive based on number of TADs and TAD length
+// Uses warp shuffle reductions so only needs inter-warp shared memory (32 warps max)
+#define GRID_SIZE_SOFTMAX getEnvVariable("GRID_SIZE_SOFTMAX", 256)
 #define BLOCK_SIZE_SOFTMAX getEnvVariable("BLOCK_SIZE_SOFTMAX", 256)
-#define SHARED_MEM_SIZE_SOFTMAX getEnvVariable("SHARED_MEM_SIZE_SOFTMAX", 1024)
+#define BLOCK_SIZE_SOFTMAX_LARGE getEnvVariable("BLOCK_SIZE_SOFTMAX_LARGE", 512)
+#define SHARED_MEM_SIZE_SOFTMAX getEnvVariable("SHARED_MEM_SIZE_SOFTMAX", 256)
 
-
-dim3 getSoftmaxDims(int numTads);
+dim3 getSoftmaxDims(sd::LongType numTads, sd::LongType tadLen);
 
 dim3 getLupDims(int batchSize);
 

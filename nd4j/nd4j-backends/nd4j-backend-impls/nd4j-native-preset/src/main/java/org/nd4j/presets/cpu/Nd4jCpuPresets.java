@@ -222,12 +222,12 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                 .put(new Info("OpaqueConstantShapeBuffer").pointerTypes("org.nd4j.nativeblas.OpaqueConstantShapeBuffer"))
                 .put(new Info("OpaqueConstantOffsetsBuffer").pointerTypes("org.nd4j.nativeblas.OpaqueConstantOffsetsBuffer"))
                 .put(new Info("OpaqueDataBuffer").pointerTypes("org.nd4j.nativeblas.OpaqueDataBuffer"))
-                // CRITICAL: Add @NoDeallocator to OpaqueDataBuffer-returning methods to prevent JavaCPP
+                // Add @NoDeallocator to OpaqueDataBuffer-returning methods to prevent JavaCPP
                 // from attaching a NativeDeallocator. ND4J's DeallocatorService manages buffer lifecycle.
                 // Without this, JavaCPP's deallocator races with DeallocatorService causing use-after-free.
                 .put(new Info("dbCreateExternalDataBuffer").javaText(
                         "@org.bytedeco.javacpp.annotation.NoDeallocator public native org.nd4j.nativeblas.OpaqueDataBuffer dbCreateExternalDataBuffer(@Cast(\"sd::LongType\") long elements, int dataType, @Cast(\"sd::Pointer\") Pointer primary, @Cast(\"sd::Pointer\") Pointer special);"))
-                // CRITICAL: This function marks the buffer constant IN NATIVE CODE before returning to Java,
+                // This function marks the buffer constant in native code before returning to Java,
                 // eliminating the race window between buffer creation and marking constant.
                 .put(new Info("dbCreateConstantExternalDataBuffer").javaText(
                         "@org.bytedeco.javacpp.annotation.NoDeallocator public native org.nd4j.nativeblas.OpaqueDataBuffer dbCreateConstantExternalDataBuffer(@Cast(\"sd::LongType\") long elements, int dataType, @Cast(\"sd::Pointer\") Pointer primary, @Cast(\"sd::Pointer\") Pointer special);"))

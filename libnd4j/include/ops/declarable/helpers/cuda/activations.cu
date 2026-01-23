@@ -95,8 +95,6 @@ void preluCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const
 
 ///////////////////////////////////////////////////////////////////
 void prelu(LaunchContext *context, NDArray *input, NDArray *alpha, NDArray *output) {
-  PointersManager manager(context, "prelu");
-
   dim3 launchDims = getLaunchDims("prelu");
 
   const auto xType = input->dataType();
@@ -109,8 +107,7 @@ void prelu(LaunchContext *context, NDArray *input, NDArray *alpha, NDArray *outp
           input->specialShapeInfo(), alpha->specialBuffer(), alpha->specialShapeInfo(), output->specialBuffer()),
       SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({output}, {&input, &alpha});
-
-  manager.synchronize();
+  // Don't sync - let CUDA operations run asynchronously
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -200,8 +197,6 @@ void preluBP(LaunchContext *context, NDArray *input, NDArray *alpha, NDArray *dL
              NDArray *dLdA) {
   dLdA->nullify();
 
-  PointersManager manager(context, "preluBP");
-
   dim3 launchDims = getLaunchDims("prelu");
 
   const auto xType = input->dataType();
@@ -216,76 +211,155 @@ void preluBP(LaunchContext *context, NDArray *input, NDArray *alpha, NDArray *dL
           dLdA->specialShapeInfo()),
       SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({&dLdI, &dLdA}, {input, alpha, dLdO});
-
-  manager.synchronize();
+  // Don't sync - let CUDA operations run asynchronously
 }
 
 ///////////////////////////////////////////////////////////////////
+// Tree reduction for max (matches aggregatePartials pattern)
+template <typename T>
+SD_DEVICE void reduceMaxHybrid(T* sPartials, LongType tid, LongType numItems) {
+  for (LongType s = numItems / 2; s > 0; s >>= 1) {
+    if (tid < s && (tid + s) < numItems) {
+      sPartials[tid] = math::sd_max<T>(sPartials[tid], sPartials[tid + s]);
+    }
+    __syncthreads();
+  }
+}
+
+// Tree reduction for sum (matches aggregatePartials pattern)
+template <typename T>
+SD_DEVICE void reduceSumHybrid(T* sPartials, LongType tid, LongType numItems) {
+  for (LongType s = numItems / 2; s > 0; s >>= 1) {
+    if (tid < s && (tid + s) < numItems) {
+      sPartials[tid] += sPartials[tid + s];
+    }
+    __syncthreads();
+  }
+}
+
+///////////////////////////////////////////////////////////////////
+// Parallel softmax using tree reduction (same pattern as reduce ops)
 template <typename T>
 SD_DEVICE void softMaxForVectorCuda(const void *vx, const LongType *xShapeInfo, void *vz,
                                     const LongType *zShapeInfo) {
   auto inBuff = reinterpret_cast<const T *>(vx);
   auto outBuff = reinterpret_cast<T *>(vz);
 
-  __shared__ T shmemMax;
-  __shared__ T shmemSum;
+  // Shared memory for reductions
+  __shared__ T sPartials[SD_CUDA_BLOCK_SIZE];
+  __shared__ T globalMax;
+  __shared__ T globalSum;
   __shared__ LongType tadLen;
   __shared__ int xRank;
-  __shared__ int zRank;
-  __shared__ const LongType *xShape;
-  __shared__ const LongType *xStride;
-  __shared__ const LongType *zShape;
-  __shared__ const LongType *zStride;
+  __shared__ LongType xStride0;
+  __shared__ LongType zStride0;
 
   if (threadIdx.x == 0) {
     tadLen = shape::length(xShapeInfo);
-    shmemMax = -DataTypeUtils::max<T>();
-    shmemSum = 0.f;
-
-    // Cache ranks
     xRank = shape::rank(xShapeInfo);
-    zRank = shape::rank(zShapeInfo);
-
-    // Cache shapes and strides
-    xShape = shape::shapeOf(xShapeInfo);
-    xStride = shape::stride(xShapeInfo);
-    zShape = shape::shapeOf(zShapeInfo);
-    zStride = shape::stride(zShapeInfo);
+    xStride0 = shape::stride(xShapeInfo)[0];
+    zStride0 = shape::stride(zShapeInfo)[0];
   }
   __syncthreads();
 
-  T max = -DataTypeUtils::max<T>();
-  T sum = static_cast<T>(0.f);
+  const LongType numItems = math::sd_min<LongType>(tadLen, blockDim.x);
 
-  LongType xCoords[SD_MAX_RANK];
-  LongType xOffset;
+  // Fast path for rank 1 TADs (most common for attention softmax)
+  if (xRank == 1) {
+    // Phase 1: Each thread finds local max
+    T threadMax = -DataTypeUtils::max<T>();
+    for (LongType j = threadIdx.x; j < tadLen; j += blockDim.x) {
+      threadMax = math::sd_max<T>(threadMax, inBuff[j * xStride0]);
+    }
+    sPartials[threadIdx.x] = threadMax;
+    __syncthreads();
 
-  // Calculate max using cached values
-  for (LongType j = 0; j < tadLen; ++j) {
-    INDEX2COORDS(j, xRank, xShape, xCoords);
-    COORDS2INDEX(xRank, xStride, xCoords, xOffset);
-    max = math::sd_max<T>(max, inBuff[xOffset]);
-  }
+    reduceMaxHybrid<T>(sPartials, threadIdx.x, numItems);
+    if (threadIdx.x == 0) globalMax = sPartials[0];
+    __syncthreads();
 
-  LongType zCoords[SD_MAX_RANK];
-  LongType zOffset;
+    // Phase 2: Compute exp and local sum
+    T threadSum = static_cast<T>(0);
+    for (LongType j = threadIdx.x; j < tadLen; j += blockDim.x) {
+      T temp = math::sd_exp<T, T>(inBuff[j * xStride0] - globalMax);
+      outBuff[j * zStride0] = temp;
+      threadSum += temp;
+    }
+    sPartials[threadIdx.x] = threadSum;
+    __syncthreads();
 
-  // Calculate exp(x - max) and sum using cached values
-  for (LongType j = 0; j < tadLen; ++j) {
-    INDEX2COORDS(j, xRank, xShape, xCoords);
-    COORDS2INDEX(xRank, xStride, xCoords, xOffset);
-    T temp = math::sd_exp<T, T>(inBuff[xOffset] - max);
-    INDEX2COORDS(j, zRank, zShape, zCoords);
-    COORDS2INDEX(zRank, zStride, zCoords, zOffset);
-    outBuff[zOffset] = temp;
-    sum += temp;
-  }
+    reduceSumHybrid<T>(sPartials, threadIdx.x, numItems);
+    if (threadIdx.x == 0) globalSum = sPartials[0];
+    __syncthreads();
 
-  // Final division step using cached values
-  for (LongType j = 0; j < tadLen; ++j) {
-    INDEX2COORDS(j, zRank, zShape, zCoords);
-    COORDS2INDEX(zRank, zStride, zCoords, zOffset);
-    outBuff[zOffset] /= sum;
+    // Phase 3: Normalize
+    for (LongType j = threadIdx.x; j < tadLen; j += blockDim.x) {
+      outBuff[j * zStride0] /= globalSum;
+    }
+  } else {
+    // General path for higher ranks
+    __shared__ int zRank;
+    __shared__ const LongType *xShape;
+    __shared__ const LongType *xStride;
+    __shared__ const LongType *zShape;
+    __shared__ const LongType *zStride;
+
+    if (threadIdx.x == 0) {
+      zRank = shape::rank(zShapeInfo);
+      xShape = shape::shapeOf(xShapeInfo);
+      xStride = shape::stride(xShapeInfo);
+      zShape = shape::shapeOf(zShapeInfo);
+      zStride = shape::stride(zShapeInfo);
+    }
+    __syncthreads();
+
+    // Phase 1: Each thread finds local max
+    T threadMax = -DataTypeUtils::max<T>();
+    for (LongType j = threadIdx.x; j < tadLen; j += blockDim.x) {
+      LongType xCoords[SD_MAX_RANK];
+      LongType xOffset;
+      INDEX2COORDS(j, xRank, xShape, xCoords);
+      COORDS2INDEX(xRank, xStride, xCoords, xOffset);
+      T val = inBuff[xOffset];
+      if (val > threadMax) threadMax = val;
+    }
+    sPartials[threadIdx.x] = threadMax;
+    __syncthreads();
+
+    reduceMaxHybrid<T>(sPartials, threadIdx.x, numItems);
+    if (threadIdx.x == 0) globalMax = sPartials[0];
+    __syncthreads();
+
+    // Phase 2: Compute exp and local sum
+    T threadSum = static_cast<T>(0);
+    for (LongType j = threadIdx.x; j < tadLen; j += blockDim.x) {
+      LongType xCoords[SD_MAX_RANK];
+      LongType zCoords[SD_MAX_RANK];
+      LongType xOffset, zOffset;
+      INDEX2COORDS(j, xRank, xShape, xCoords);
+      COORDS2INDEX(xRank, xStride, xCoords, xOffset);
+      INDEX2COORDS(j, zRank, zShape, zCoords);
+      COORDS2INDEX(zRank, zStride, zCoords, zOffset);
+
+      T temp = math::sd_exp<T, T>(inBuff[xOffset] - globalMax);
+      outBuff[zOffset] = temp;
+      threadSum += temp;
+    }
+    sPartials[threadIdx.x] = threadSum;
+    __syncthreads();
+
+    reduceSumHybrid<T>(sPartials, threadIdx.x, numItems);
+    if (threadIdx.x == 0) globalSum = sPartials[0];
+    __syncthreads();
+
+    // Phase 3: Normalize
+    for (LongType j = threadIdx.x; j < tadLen; j += blockDim.x) {
+      LongType zCoords[SD_MAX_RANK];
+      LongType zOffset;
+      INDEX2COORDS(j, zRank, zShape, zCoords);
+      COORDS2INDEX(zRank, zStride, zCoords, zOffset);
+      outBuff[zOffset] /= globalSum;
+    }
   }
 }
 
@@ -299,120 +373,277 @@ void SD_KERNEL softMaxForVectorCudaGlobal(const void *vx, const LongType *xShape
 template <typename T>
 void softMaxForVectorCudaLauncher(const cudaStream_t *stream, const void *vx, const LongType *xShapeInfo, void *vz,
                                   const LongType *zShapeInfo, LongType numTads) {
-
-  softMaxForVectorCudaGlobal<T><<<1, SD_CUDA_BLOCK_SIZE, 1024, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, numTads);
+  softMaxForVectorCudaGlobal<T><<<1, SD_CUDA_BLOCK_SIZE, 0, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, numTads);
   sd::DebugHelper::checkGlobalErrorCode("softmax  failed");
 
 }
 
 ///////////////////////////////////////////////////////////////////
-
+// Warp-level max reduction using shuffle
 template <typename T>
-SD_KERNEL void softmaxEws1Kernel(const T *input, const LongType *inputOffsets, T *output,
-                                 const LongType *outputOffsets,
-                                 LongType numOfSubArrs, LongType tadLen) {
-  int i = blockIdx.x;  // Each block handles one TAD
-
-  if (i >= numOfSubArrs) return;  // Out-of-bounds check for TADs
-
-  auto inBuff = input + inputOffsets[i];
-  auto outBuff = output + outputOffsets[i];
-
-  __shared__ T shmemMax;
-  __shared__ T shmemSum;
-
-  if (threadIdx.x == 0) {
-    shmemMax = -DataTypeUtils::max<T>();
-    shmemSum = 0.f;
+SD_DEVICE SD_INLINE T warpReduceMax(T val) {
+  for (int offset = 16; offset > 0; offset /= 2) {
+    val = math::sd_max<T>(val, __shfl_down_sync(0xffffffff, val, offset));
   }
-  __syncthreads();
-
-
-  // Calculate max
-  for (LongType j = threadIdx.x; j < tadLen; j+= gridDim.x) {
-    math::atomics::sd_atomicMax(&shmemMax, inBuff[j]);
-  }
-  __syncthreads();
-
-  // Calculate exp(x - max) and sum
-  for (LongType j = threadIdx.x; j < tadLen; j += gridDim.x) {
-    T temp = math::sd_exp<T, T>(inBuff[j] - shmemMax);
-    outBuff[j] = temp;
-    math::atomics::sd_atomicAdd(&shmemSum, temp);
-  }
-  __syncthreads();
-
-  // Final division step
-  for (LongType j = threadIdx.x; j < tadLen; j += blockDim.x) {
-    outBuff[j] /= shmemSum;
-  }
-
-
+  return val;
 }
+
+// Warp-level sum reduction using shuffle
 template <typename T>
-SD_KERNEL static void softMaxCuda(const void *vx, const LongType *xTadShapeInfo, const LongType *xOffsets,
-                                  void *vz, const LongType *zTadShapeInfo, const LongType *zOffsets, LongType numTads) {
-  int i = blockIdx.x;
-  if(i >= numTads) return;
-
-  const auto x = reinterpret_cast<const T *>(vx);
-  auto z = reinterpret_cast<T *>(vz);
-
-  const auto *xTad = x + xOffsets[blockIdx.x];
-  auto *zTad = z + zOffsets[blockIdx.x];
-  softMaxForVectorCuda<T>(xTad, xTadShapeInfo, zTad, zTadShapeInfo);
+SD_DEVICE SD_INLINE T warpReduceSum(T val) {
+  for (int offset = 16; offset > 0; offset /= 2) {
+    val += __shfl_down_sync(0xffffffff, val, offset);
+  }
+  return val;
 }
 
 ///////////////////////////////////////////////////////////////////
-
+// Warp-per-TAD kernel with vectorized float4 loads for contiguous data
+// Each warp processes one TAD, using float4 for 4x memory bandwidth
 template <typename T>
-static void softMaxEws1CudaLauncher(const int blocksPerGrid,
-                                    const int threadsPerBlock,
-                                    const int sharedMem,
-                                    const cudaStream_t *stream,
-                                    const void *vx, const LongType *xOffsets, void *vz,
-                                    const LongType *zOffsets, LongType numTads, LongType tadLength) {
+SD_KERNEL static void softMaxCudaWarpPerTadVec4(const void *vx, const LongType *xOffsets,
+                                                 void *vz, const LongType *zOffsets,
+                                                 LongType numTads, LongType tadLen) {
+  const auto x = reinterpret_cast<const float *>(vx);
+  auto z = reinterpret_cast<float *>(vz);
 
+  const int warpId = threadIdx.x / 32;
+  const int laneId = threadIdx.x % 32;
+  const int numWarpsPerBlock = blockDim.x / 32;
 
+  // Each warp handles one TAD
+  for (LongType tadIdx = blockIdx.x * numWarpsPerBlock + warpId; tadIdx < numTads; tadIdx += gridDim.x * numWarpsPerBlock) {
+    const float* inBuff = x + xOffsets[tadIdx];
+    float* outBuff = z + zOffsets[tadIdx];
 
-  auto reCastInputs = reinterpret_cast<const T *>(vx);
-  auto reCastOutputs = reinterpret_cast<T *>(vz);
-  softmaxEws1Kernel<T>
-  <<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(reCastInputs,
-                                                           xOffsets,
-                                                           reCastOutputs,
-                                                           zOffsets,
-                                                           numTads,
-                                                           tadLength);
-  sd::DebugHelper::checkGlobalErrorCode("softmaxews  failed");
+    // Process 4 elements at a time with float4
+    const LongType vec4Len = tadLen / 4;
+    const LongType remainder = tadLen % 4;
 
+    // Phase 1: Find max using float4
+    float threadMax = -3.4028235E38f;
+    for (LongType j = laneId; j < vec4Len; j += 32) {
+      float4 val = reinterpret_cast<const float4*>(inBuff)[j];
+      threadMax = fmaxf(threadMax, fmaxf(fmaxf(val.x, val.y), fmaxf(val.z, val.w)));
+    }
+    // Handle remainder
+    for (LongType j = vec4Len * 4 + laneId; j < tadLen; j += 32) {
+      threadMax = fmaxf(threadMax, inBuff[j]);
+    }
+    float maxVal = warpReduceMax<float>(threadMax);
+    maxVal = __shfl_sync(0xffffffff, maxVal, 0);
+
+    // Phase 2: Compute exp and sum using float4
+    float threadSum = 0.0f;
+    for (LongType j = laneId; j < vec4Len; j += 32) {
+      float4 val = reinterpret_cast<const float4*>(inBuff)[j];
+      float4 expVal;
+      expVal.x = expf(val.x - maxVal);
+      expVal.y = expf(val.y - maxVal);
+      expVal.z = expf(val.z - maxVal);
+      expVal.w = expf(val.w - maxVal);
+      reinterpret_cast<float4*>(outBuff)[j] = expVal;
+      threadSum += expVal.x + expVal.y + expVal.z + expVal.w;
+    }
+    // Handle remainder
+    for (LongType j = vec4Len * 4 + laneId; j < tadLen; j += 32) {
+      float temp = expf(inBuff[j] - maxVal);
+      outBuff[j] = temp;
+      threadSum += temp;
+    }
+    float sumVal = warpReduceSum<float>(threadSum);
+    sumVal = __shfl_sync(0xffffffff, sumVal, 0);
+
+    // Phase 3: Normalize using float4
+    float invSum = 1.0f / sumVal;
+    for (LongType j = laneId; j < vec4Len; j += 32) {
+      float4 val = reinterpret_cast<float4*>(outBuff)[j];
+      val.x *= invSum;
+      val.y *= invSum;
+      val.z *= invSum;
+      val.w *= invSum;
+      reinterpret_cast<float4*>(outBuff)[j] = val;
+    }
+    // Handle remainder
+    for (LongType j = vec4Len * 4 + laneId; j < tadLen; j += 32) {
+      outBuff[j] *= invSum;
+    }
+  }
 }
 
+///////////////////////////////////////////////////////////////////
+// Warp-per-TAD kernel: each warp processes one TAD independently
+// Optimized for contiguous short TADs (typical in attention: 128-512 elements)
+// Multiple warps per block = multiple TADs processed in parallel
+template <typename T>
+SD_KERNEL static void softMaxCudaWarpPerTad(const void *vx, const LongType *xTadShapeInfo, const LongType *xOffsets,
+                                            void *vz, const LongType *zTadShapeInfo, const LongType *zOffsets,
+                                            LongType numTads, LongType tadLen, LongType xStride0, LongType zStride0) {
+  const auto x = reinterpret_cast<const T *>(vx);
+  auto z = reinterpret_cast<T *>(vz);
+
+  const int warpId = threadIdx.x / 32;
+  const int laneId = threadIdx.x % 32;
+  const int numWarpsPerBlock = blockDim.x / 32;
+
+  // Each warp handles one TAD, grid-stride over TADs
+  for (LongType tadIdx = blockIdx.x * numWarpsPerBlock + warpId; tadIdx < numTads; tadIdx += gridDim.x * numWarpsPerBlock) {
+    const T* inBuff = x + xOffsets[tadIdx];
+    T* outBuff = z + zOffsets[tadIdx];
+
+    // Phase 1: Find max (each lane handles multiple elements) - contiguous access
+    T threadMax = -DataTypeUtils::max<T>();
+    for (LongType j = laneId; j < tadLen; j += 32) {
+      threadMax = math::sd_max<T>(threadMax, inBuff[j]);
+    }
+    T maxVal = warpReduceMax<T>(threadMax);
+    maxVal = __shfl_sync(0xffffffff, maxVal, 0);  // Broadcast max to all lanes
+
+    // Phase 2: Compute exp and sum - contiguous access
+    T threadSum = static_cast<T>(0);
+    for (LongType j = laneId; j < tadLen; j += 32) {
+      T temp = math::sd_exp<T, T>(inBuff[j] - maxVal);
+      outBuff[j] = temp;
+      threadSum += temp;
+    }
+    T sumVal = warpReduceSum<T>(threadSum);
+    sumVal = __shfl_sync(0xffffffff, sumVal, 0);  // Broadcast sum to all lanes
+
+    // Phase 3: Normalize - contiguous access
+    T invSum = static_cast<T>(1) / sumVal;
+    for (LongType j = laneId; j < tadLen; j += 32) {
+      outBuff[j] *= invSum;
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////
+// Multi-TAD kernel: each block processes multiple TADs using grid-stride loop
+// Uses warp shuffle for fast reductions - for longer TADs
+template <typename T>
+SD_KERNEL static void softMaxCuda(const void *vx, const LongType *xTadShapeInfo, const LongType *xOffsets,
+                                  void *vz, const LongType *zTadShapeInfo, const LongType *zOffsets, LongType numTads) {
+  const auto x = reinterpret_cast<const T *>(vx);
+  auto z = reinterpret_cast<T *>(vz);
+
+  // Shared memory for inter-warp reduction (max 32 warps per block)
+  __shared__ T warpPartials[32];
+  __shared__ T globalMax;
+  __shared__ T globalSum;
+  __shared__ LongType tadLen;
+  __shared__ int xRank;
+  __shared__ LongType xStride0;
+  __shared__ LongType zStride0;
+
+  const int warpId = threadIdx.x / 32;
+  const int laneId = threadIdx.x % 32;
+  const int numWarps = (blockDim.x + 31) / 32;
+
+  // Cache TAD shape info once (same for all TADs)
+  if (threadIdx.x == 0) {
+    tadLen = shape::length(xTadShapeInfo);
+    xRank = shape::rank(xTadShapeInfo);
+    xStride0 = shape::stride(xTadShapeInfo)[0];
+    zStride0 = shape::stride(zTadShapeInfo)[0];
+  }
+  __syncthreads();
+
+  // Grid-stride loop: each block processes multiple TADs
+  for (LongType tadIdx = blockIdx.x; tadIdx < numTads; tadIdx += gridDim.x) {
+    const T* inBuff = x + xOffsets[tadIdx];
+    T* outBuff = z + zOffsets[tadIdx];
+
+    // Fast path for rank 1 TADs
+    if (xRank == 1) {
+      // Phase 1: Find max using warp shuffles
+      T threadMax = -DataTypeUtils::max<T>();
+      for (LongType j = threadIdx.x; j < tadLen; j += blockDim.x) {
+        threadMax = math::sd_max<T>(threadMax, inBuff[j * xStride0]);
+      }
+
+      // Warp-level reduction
+      threadMax = warpReduceMax<T>(threadMax);
+
+      // Store warp results
+      if (laneId == 0) warpPartials[warpId] = threadMax;
+      __syncthreads();
+
+      // Final reduction by first warp
+      if (warpId == 0) {
+        T val = (laneId < numWarps) ? warpPartials[laneId] : -DataTypeUtils::max<T>();
+        val = warpReduceMax<T>(val);
+        if (laneId == 0) globalMax = val;
+      }
+      __syncthreads();
+
+      // Phase 2: Compute exp and sum
+      T threadSum = static_cast<T>(0);
+      for (LongType j = threadIdx.x; j < tadLen; j += blockDim.x) {
+        T temp = math::sd_exp<T, T>(inBuff[j * xStride0] - globalMax);
+        outBuff[j * zStride0] = temp;
+        threadSum += temp;
+      }
+
+      // Warp-level sum reduction
+      threadSum = warpReduceSum<T>(threadSum);
+
+      // Store warp results
+      if (laneId == 0) warpPartials[warpId] = threadSum;
+      __syncthreads();
+
+      // Final reduction by first warp
+      if (warpId == 0) {
+        T val = (laneId < numWarps) ? warpPartials[laneId] : static_cast<T>(0);
+        val = warpReduceSum<T>(val);
+        if (laneId == 0) globalSum = val;
+      }
+      __syncthreads();
+
+      // Phase 3: Normalize
+      for (LongType j = threadIdx.x; j < tadLen; j += blockDim.x) {
+        outBuff[j * zStride0] /= globalSum;
+      }
+    } else {
+      // General path - delegate to device function
+      softMaxForVectorCuda<T>(inBuff, xTadShapeInfo, outBuff, zTadShapeInfo);
+    }
+    __syncthreads();  // Ensure all threads done before next TAD
+  }
+}
+
+///////////////////////////////////////////////////////////////////
+template <typename T>
+static void softMaxWarpPerTadLauncher(const int blocksPerGrid, const int threadsPerBlock,
+                                      const cudaStream_t *stream, const void *vx, const LongType *xTadShapeInfo,
+                                      const LongType *xOffsets, void *vz, const LongType *zTadShapeInfo,
+                                      const LongType *zOffsets, LongType numTads, LongType tadLen,
+                                      LongType xStride0, LongType zStride0) {
+  softMaxCudaWarpPerTad<T><<<blocksPerGrid, threadsPerBlock, 0, *stream>>>(
+      vx, xTadShapeInfo, xOffsets, vz, zTadShapeInfo, zOffsets, numTads, tadLen, xStride0, zStride0);
+  sd::DebugHelper::checkGlobalErrorCode("softmax warp-per-tad failed");
+}
+
+///////////////////////////////////////////////////////////////////
 template <typename T>
 static void softMaxCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                                 const cudaStream_t *stream, const void *vx, const LongType *xTadShapeInfo,
                                 const LongType *xOffsets, void *vz, const LongType *zTadShapeInfo,
                                 const LongType *zOffsets, LongType numTads) {
-
-
   softMaxCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xTadShapeInfo, xOffsets, vz, zTadShapeInfo,
-                                                                         zOffsets ,numTads);
-  sd::DebugHelper::checkGlobalErrorCode("softmax  failed");
-
+                                                                         zOffsets, numTads);
+  sd::DebugHelper::checkGlobalErrorCode("softmax failed");
 }
 
 //////////////////////////////////////////////////////////////////////////
 void softmax(LaunchContext *context, NDArray *input, NDArray *output, const int dimension) {
   const int rank = input->rankOf();
 
-  PointersManager manager(context, "helpers::softmax");
-
   if (input->isVector()) {
     if (rank == 1 || input->sizeAt(dimension) != 1) {
       NDArray::prepareSpecialUse({output}, {input});
       BUILD_SINGLE_SELECTOR(input->dataType(), softMaxForVectorCudaLauncher,
                             (context->getCudaStream(), input->specialBuffer(), input->specialShapeInfo(),
-                                output->specialBuffer(), output->specialShapeInfo(),1),
+                                output->specialBuffer(), output->specialShapeInfo(), 1),
                             SD_FLOAT_TYPES);
       NDArray::registerSpecialUse({output}, {input});
     } else
@@ -421,10 +652,17 @@ void softmax(LaunchContext *context, NDArray *input, NDArray *output, const int 
     auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {dimension});
     auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {dimension});
 
-    dim3 softmaxDims = getSoftmaxDims(packZ->numberOfTads());
-
+    LongType numTads = packX->numberOfTads();
+    LongType tadLen = shape::length(packX->primaryShapeInfo());
+    int xRank = shape::rank(packX->primaryShapeInfo());
+    LongType xStride0 = shape::stride(packX->primaryShapeInfo())[0];
+    LongType zStride0 = shape::stride(packZ->primaryShapeInfo())[0];
 
     NDArray::prepareSpecialUse({output}, {input});
+
+    // Get optimized launch dimensions from centralized config
+    dim3 softmaxDims = getSoftmaxDims(numTads, tadLen);
+
     BUILD_SINGLE_SELECTOR(input->dataType(), softMaxCudaLauncher,
                           (softmaxDims.x, softmaxDims.y,
                               softmaxDims.z,
@@ -433,13 +671,13 @@ void softmax(LaunchContext *context, NDArray *input, NDArray *output, const int 
                               packX->specialShapeInfo(),
                               packX->specialOffsets(), output->specialBuffer(),
                               packZ->specialShapeInfo(),
-                              packZ->specialOffsets(),packX->numberOfTads()),
+                              packZ->specialOffsets(), numTads),
                           SD_FLOAT_TYPES);
     NDArray::registerSpecialUse({output}, {input});
-
   }
 
-  manager.synchronize();
+  // Don't sync here - let CUDA operations run asynchronously
+  // Sync only happens when host needs results
 
   output->tickWriteDevice();
 }
@@ -573,9 +811,7 @@ void logSoftmax(LaunchContext *context, NDArray *input, NDArray *output, const i
     delete sumAlongDim;
   }
 
-  PointersManager manager(context, "helpers::logSoftmax");
-  manager.synchronize();
-
+  // Don't sync - let CUDA operations run asynchronously
   output->tickWriteDevice();
 }
 
@@ -710,9 +946,7 @@ void softmaxDerivative(LaunchContext *context, NDArray *input, NDArray *output, 
     delete oneMinusOutput;
   }
 
-  PointersManager manager(context, "helpers::softmaxDerivative");
-  manager.synchronize();
-
+  // Don't sync - let CUDA operations run asynchronously
   output->tickWriteDevice();
 }
 

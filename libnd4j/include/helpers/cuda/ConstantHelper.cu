@@ -29,6 +29,7 @@
 #include <helpers/ConstantHelper.h>
 #include <helpers/logger.h>
 #include <helpers/shape.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <ops/specials.h>
 #include <ops/impl/specials_double.hpp>
 #include <system/selective_rendering.h>
@@ -39,15 +40,16 @@ __constant__ char deviceConstantMemory[CONSTANT_LIMIT];
 namespace sd {
 
 void * ConstantHelper::getConstantSpace() {
-  // Always use cudaMalloc for constant space
+  // Always use memory pool for constant space
   // The __constant__ memory approach via cudaGetSymbolAddress was causing issues
   // with CUDA module registration timing, leading to error 400 on kernel launches.
   // Using regular device memory is functionally equivalent and more reliable.
-  void* ptr = nullptr;
-  auto err = cudaMalloc(&ptr, CONSTANT_LIMIT);
-  if (err != cudaSuccess) {
+  int deviceId = 0;
+  cudaGetDevice(&deviceId);
+  void* ptr = memory::CudaMemoryPool::getInstance().allocate(CONSTANT_LIMIT, deviceId, nullptr);
+  if (ptr == nullptr) {
     cudaGetLastError();  // Clear error state
-    throw cuda_exception::build("Failed to allocate constant space", err);
+    throw cuda_exception::build("Failed to allocate constant space", cudaErrorMemoryAllocation);
   }
   return ptr;
 }

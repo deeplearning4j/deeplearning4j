@@ -445,29 +445,40 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
     switchedDevice = true;
   }
 
+  // Get the stream for async transfer
+  cudaStream_t stream = context != nullptr ? *context->getCudaStream() : 0;
+
   // Use event-based synchronization for cross-thread correctness.
   // The problem: if kernel K runs on Thread A's stream and syncToPrimary() is called
   // from Thread B, the old code would sync Thread B's stream (useless) and then memcpy
   // while kernel K might still be running on Thread A's stream.
   //
   // Solution: writeSpecial() records an event on the actual kernel stream. Here we wait
-  // on that event, which properly synchronizes regardless of which thread is calling.
+  // on that event on our stream, which properly synchronizes regardless of which thread is calling.
   cudaError_t res;
   if (_writeEvent != nullptr && _writeEventRecorded.load()) {
     cudaEvent_t* event = reinterpret_cast<cudaEvent_t*>(_writeEvent);
-    res = cudaEventSynchronize(*event);
+    // Make our stream wait for the write event (non-blocking on CPU)
+    res = cudaStreamWaitEvent(stream, *event, 0);
+    if (res != cudaSuccess) {
+      // Fallback to event sync if stream wait fails
+      res = cudaEventSynchronize(*event);
+    }
     _writeEventRecorded.store(false);  // Reset for next write
-  } else {
-    // Fallback to stream sync if no event recorded (e.g., buffer was created but no kernel ran)
-    res = cudaStreamSynchronize(*context->getCudaStream());
   }
 
-  if (res != 0)  {
+  // Track D2H transfer
+  auto startTime = std::chrono::high_resolution_clock::now();
+
+  // Use async memcpy - works best with pinned (page-locked) host memory
+  // With CudaPinnedMemoryPool, _primaryBuffer is pinned, enabling true async DMA
+  res = cudaMemcpyAsync(_primaryBuffer, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToHost, stream);
+  if (res != cudaSuccess) {
     if (switchedDevice) {
       cudaSetDevice(currentDeviceId);
     }
     std::string errorMessage;
-    errorMessage += "DataBuffer::syncToPrimary: synchronization failed: ";
+    errorMessage += "DataBuffer::syncToPrimary: cudaMemcpyAsync failed: ";
     errorMessage += std::to_string(getLenInBytes());
     errorMessage += " ";
     errorMessage += cudaGetErrorString(res);
@@ -477,22 +488,16 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
-  // Track D2H transfer
-  auto startTime = std::chrono::high_resolution_clock::now();
-
-  res = cudaMemcpy(_primaryBuffer, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToHost);
-  if (res != 0) {
+  // Must synchronize after async D2H to ensure data is available on host
+  // This is required because the caller expects data to be ready after this call
+  res = cudaStreamSynchronize(stream);
+  if (res != cudaSuccess) {
     if (switchedDevice) {
       cudaSetDevice(currentDeviceId);
     }
     std::string errorMessage;
-    errorMessage += "DataBuffer::syncToPrimary: cudaMemcpy failed: ";
-    errorMessage += std::to_string(getLenInBytes());
-    errorMessage += " ";
+    errorMessage += "DataBuffer::syncToPrimary: stream sync failed: ";
     errorMessage += cudaGetErrorString(res);
-    errorMessage += " (buffer device: ";
-    errorMessage += std::to_string(bufferDeviceId);
-    errorMessage += ")";
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
@@ -532,8 +537,12 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
   // Track H2D transfer
   auto startTime = std::chrono::high_resolution_clock::now();
 
-  auto res = cudaMemcpy(_specialBuffer, _primaryBuffer, getLenInBytes(), cudaMemcpyHostToDevice);
-  if (res != 0) {
+  // Use async memcpy - works best with pinned (page-locked) host memory
+  // With CudaPinnedMemoryPool, _primaryBuffer is pinned, enabling true async DMA
+  // Use default stream (0) for H2D since we don't have a context here
+  cudaStream_t stream = 0;
+  auto res = cudaMemcpyAsync(_specialBuffer, _primaryBuffer, getLenInBytes(), cudaMemcpyHostToDevice, stream);
+  if (res != cudaSuccess) {
     // Restore device before throwing
     if (switchedDevice) {
       cudaSetDevice(currentDeviceId);
@@ -546,6 +555,19 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
     errorMessage += " (buffer device: ";
     errorMessage += std::to_string(bufferDeviceId);
     errorMessage += ")";
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
+  // Synchronize to ensure data is on device before returning
+  // Kernels that use this buffer will be scheduled after this sync
+  res = cudaStreamSynchronize(stream);
+  if (res != cudaSuccess) {
+    if (switchedDevice) {
+      cudaSetDevice(currentDeviceId);
+    }
+    std::string errorMessage;
+    errorMessage += "DataBuffer::syncToSpecial: stream sync failed: ";
+    errorMessage += cudaGetErrorString(res);
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
@@ -753,15 +775,28 @@ void DataBuffer::setToZeroBuffers(const bool both) {
 
   // Cache the stream reference - must obtain AFTER device switch so we get the correct device's stream
   auto stream = LaunchContext::defaultContext()->getCudaStream();
-  cudaMemsetAsync(special(), 0, getLenInBytes(), *stream);
-  auto res = cudaStreamSynchronize(*stream);
+  auto res = cudaMemsetAsync(special(), 0, getLenInBytes(), *stream);
+
+  if (res != cudaSuccess) {
+    if (switchedDevice) {
+      cudaSetDevice(currentDeviceId);
+    }
+    throw cuda_exception::build("DataBuffer::setToZeroBuffers: cudaMemsetAsync failed!", res);
+  }
+
+  // Record event for cross-thread synchronization
+  // No need to sync stream here - subsequent GPU operations on same stream will
+  // automatically wait for memset to complete. This eliminates unnecessary CPU-GPU sync.
+  if (_writeEvent != nullptr) {
+    cudaEvent_t* event = reinterpret_cast<cudaEvent_t*>(_writeEvent);
+    cudaEventRecord(*event, *stream);
+    _writeEventRecorded.store(true);
+  }
 
   // Restore original device if we switched
   if (switchedDevice) {
     cudaSetDevice(currentDeviceId);
   }
-
-  if (res != 0) throw cuda_exception::build("DataBuffer::setToZeroBuffers: streamSync failed!", res);
 
   writeSpecial();
 
@@ -793,7 +828,7 @@ void memcpyWithT(DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, 
   // Cache the stream reference - must obtain AFTER device switch
   auto stream = LaunchContext::defaultContext()->getCudaStream();
 
-  int res = 0;
+  cudaError_t res = cudaSuccess;
   if (src->isSpecialActual()) {
     res = cudaMemcpyAsync(dst->specialAtOffset<T>(dstOffset), src->specialAtOffset<T>(startingOffset), src->getLenInBytes(), cudaMemcpyDeviceToDevice,
                           *stream);
@@ -802,21 +837,21 @@ void memcpyWithT(DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, 
                           *stream);
   }
 
-  if (res != 0) {
+  if (res != cudaSuccess) {
     if (switchedDevice) {
       cudaSetDevice(currentDeviceId);
     }
     throw cuda_exception::build("DataBuffer::memcpy: cudaMemcpyAsync failed!", res);
   }
 
-  res = cudaStreamSynchronize(*stream);
+  // No stream sync needed here - subsequent GPU operations on same stream will
+  // automatically wait for memcpy to complete. This eliminates unnecessary CPU-GPU sync.
+  // The writeSpecial() below will track the write event for cross-thread sync if needed.
 
   // Restore original device if we switched
   if (switchedDevice) {
     cudaSetDevice(currentDeviceId);
   }
-
-  if (res != 0) throw cuda_exception::build("DataBuffer::memcpy: streamSync failed!", res);
 
   dst->writeSpecial();
 }

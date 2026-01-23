@@ -374,6 +374,27 @@ class SD_LIB_EXPORT FlashAttentionHelper {
                               const Config& config);
 };
 
+// Forward declaration for CUDA fused attention (implemented in cuda/FlashAttentionHelper.cu)
+// Uses online softmax algorithm for memory efficiency - no cuDNN required
+#if defined(__CUDACC__) || defined(SD_CUDA)
+extern void fusedAttentionCuda(NDArray* query, NDArray* key, NDArray* value,
+                               NDArray* output, float scale, bool isCausal,
+                               LaunchContext* context);
+
+// Fused attention that also outputs attention scores and logits
+extern void fusedAttentionCudaWithScores(NDArray* query, NDArray* key, NDArray* value,
+                                         NDArray* output, NDArray* attentionLogits,
+                                         NDArray* attentionScores, float scale, bool isCausal,
+                                         LaunchContext* context);
+
+// In-place causal mask application - replaces create+nullify+fill+add with single kernel
+extern void applyCausalMaskCuda(NDArray* scores, LaunchContext* context);
+
+// Fused causal mask + softmax - replaces mask kernel + softmax kernel with single kernel
+extern void fusedCausalMaskSoftmaxCuda(NDArray* input, NDArray* output, NDArray* logitsOut,
+                                        bool isCausal, LaunchContext* context);
+#endif
+
 }  // namespace sd
 
 #endif  // LIBND4J_FLASHATTENTIONHELPER_H

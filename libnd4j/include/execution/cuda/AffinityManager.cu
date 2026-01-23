@@ -53,7 +53,7 @@ int getCpuDeviceId() {
 }
 
 int AffinityManager::currentDeviceId() {
-  // CRITICAL FIX: Always query CUDA for the current device and sync our thread-local state.
+  // Always query CUDA for the current device and sync our thread-local state.
   // This prevents race conditions where native code auto-assigns a device before Java
   // has a chance to set it via setDevice(). Java controls thread-device affinity through
   // CudaAffinityManager, and native code should respect whatever device Java has set.

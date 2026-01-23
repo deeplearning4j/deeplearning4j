@@ -26,6 +26,7 @@
 #include <exceptions/cuda_exception.h>
 #include <helpers/logger.h>
 #include <math/templatemath.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <system/op_boilerplate.h>
@@ -68,8 +69,10 @@ Workspace::Workspace(LongType primarySize, LongType secondarySize) {
     this->_allocatedHost = false;
 
   if (primarySize > 0) {
-    auto res = cudaMalloc(reinterpret_cast<void **>(&_ptrDevice), primarySize);
-    if (res != 0) throw cuda_exception::build("Can't allocate [DEVICE] memory", res);
+    int deviceId = 0;
+    cudaGetDevice(&deviceId);
+    _ptrDevice = reinterpret_cast<char*>(CudaMemoryPool::getInstance().allocate(primarySize, deviceId, nullptr));
+    if (_ptrDevice == nullptr) throw cuda_exception::build("Can't allocate [DEVICE] memory", cudaErrorMemoryAllocation);
 
     cudaMemset(this->_ptrDevice, 0, primarySize);
     this->_allocatedDevice = true;
@@ -89,10 +92,14 @@ Workspace::Workspace(LongType primarySize, LongType secondarySize) {
 
 void Workspace::init(LongType primaryBytes, LongType secondaryBytes) {
   if (this->_currentSize < primaryBytes) {
-    if (this->_allocatedDevice && !_externalized) cudaFree((void *)this->_ptrDevice);
+    int deviceId = 0;
+    cudaGetDevice(&deviceId);
+    if (this->_allocatedDevice && !_externalized) {
+      CudaMemoryPool::getInstance().free((void *)this->_ptrDevice, deviceId, nullptr);
+    }
 
-    auto res = cudaMalloc(reinterpret_cast<void **>(&_ptrDevice), secondaryBytes);
-    if (res != 0) throw cuda_exception::build("Can't allocate [DEVICE] memory", res);
+    _ptrDevice = reinterpret_cast<char*>(CudaMemoryPool::getInstance().allocate(primaryBytes, deviceId, nullptr));
+    if (_ptrDevice == nullptr) throw cuda_exception::build("Can't allocate [DEVICE] memory", cudaErrorMemoryAllocation);
 
     cudaMemset(this->_ptrDevice, 0, primaryBytes);
     this->_currentSize = primaryBytes;
@@ -121,7 +128,11 @@ void Workspace::freeSpills() {
   _spillsSize = 0;
   _spillsSizeSecondary = 0;
 
-  for (auto v : _spills) cudaFree(v);
+  int deviceId = 0;
+  cudaGetDevice(&deviceId);
+  for (auto v : _spills) {
+    CudaMemoryPool::getInstance().free(v, deviceId, nullptr);
+  }
 
   for (auto v : _spillsSecondary) cudaFreeHost(v);
 
@@ -132,7 +143,11 @@ void Workspace::freeSpills() {
 Workspace::~Workspace() {
   if (this->_allocatedHost && !_externalized) cudaFreeHost((void *)this->_ptrHost);
 
-  if (this->_allocatedDevice && !_externalized) cudaFree((void *)this->_ptrDevice);
+  if (this->_allocatedDevice && !_externalized) {
+    int deviceId = 0;
+    cudaGetDevice(&deviceId);
+    CudaMemoryPool::getInstance().free((void *)this->_ptrDevice, deviceId, nullptr);
+  }
 
   freeSpills();
 }
@@ -209,9 +224,10 @@ void *Workspace::allocateBytes(MemoryType type, LongType numBytes) {
         sd_debug("Allocating %lld [DEVICE] bytes in spills\n", numBytes);
         this->_mutexAllocation.unlock();
 
-        Pointer p;
-        auto res = cudaMalloc(reinterpret_cast<void **>(&p), numBytes);
-        if (res != 0) throw cuda_exception::build("Can't allocate [DEVICE] memory", res);
+        int deviceId = 0;
+        cudaGetDevice(&deviceId);
+        Pointer p = CudaMemoryPool::getInstance().allocate(numBytes, deviceId, nullptr);
+        if (p == nullptr) throw cuda_exception::build("Can't allocate [DEVICE] memory", cudaErrorMemoryAllocation);
 
         _mutexSpills.lock();
         _spills.push_back(p);

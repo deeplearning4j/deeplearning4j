@@ -73,7 +73,7 @@ public class DeviceLocalNDArray extends DeviceLocal<INDArray> {
      * Propagate constant flag from source to target array.
      * This ensures that device-local copies of constant arrays remain protected from deallocation.
      *
-     * CRITICAL: This method uses the already-captured sourceWasConstant field instead of
+     * This method uses the already-captured sourceWasConstant field instead of
      * re-checking source.data().isConstant(). This prevents a race condition where the source
      * buffer might be in an inconsistent state (GC'd, deallocated) by the time we check.
      * The sourceWasConstant field is set at the START of broadcast() before any dup/detach

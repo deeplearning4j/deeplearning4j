@@ -346,15 +346,21 @@ std::unordered_map<std::string, std::vector<std::string>> algoDimMapString = {
 
 };
 
-dim3 getSoftmaxDims(int numTads) {
-  int threadsPerBlock = 256;
-  int blocksPerGrid = numTads;
-  int sharedMem = 1024;
-  threadsPerBlock = getEnvVariable("GRID_SIZE_SOFTMAX",threadsPerBlock);
-  blocksPerGrid = getEnvVariable("BLOCK_SIZE_SOFTMAX",blocksPerGrid);
-  sharedMem = getEnvVariable("SHARED_MEM_SIZE_SOFTMAX",sharedMem);
-  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
+dim3 getSoftmaxDims(sd::LongType numTads, sd::LongType tadLen) {
+  // Use warp shuffle reductions - only need 32 warps * sizeof(double) = 256 bytes for inter-warp reduction
+  // Cap blocks to avoid excessive kernel launch overhead with grid-stride loop
+  int maxBlocks = GRID_SIZE_SOFTMAX;
 
+  // Use more threads for longer TADs to maximize parallelism
+  int threadsPerBlock = (tadLen >= 512) ? BLOCK_SIZE_SOFTMAX_LARGE : BLOCK_SIZE_SOFTMAX;
+
+  // Cap blocksPerGrid - each block will process multiple TADs via grid-stride
+  int blocksPerGrid = static_cast<int>(sd::math::sd_min<sd::LongType>(numTads, maxBlocks));
+
+  // Shared memory for warp-level reduction: 32 warps * sizeof(double) = 256 bytes
+  int sharedMem = SHARED_MEM_SIZE_SOFTMAX;
+
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 }
 
 dim3 getLupDims(int batchSize) {

@@ -255,6 +255,13 @@ SD_LIB_EXPORT sd::Pointer mallocHost(sd::LongType memorySize, int flags) ;
 SD_LIB_EXPORT sd::Pointer mallocDevice(sd::LongType memorySize, int deviceId, int flags) ;
 SD_LIB_EXPORT int freeHost(sd::Pointer pointer) ;
 SD_LIB_EXPORT int freeDevice(sd::Pointer pointer, int deviceId) ;
+
+// CUDA Memory Pool functions (CUDA 11.2+)
+SD_LIB_EXPORT bool isMemoryPoolEnabled() ;
+SD_LIB_EXPORT void setMemoryPoolEnabled(bool enabled) ;
+SD_LIB_EXPORT void getMemoryPoolStats(int deviceId, sd::LongType* usedBytes, sd::LongType* reservedBytes) ;
+SD_LIB_EXPORT void trimMemoryPool(int deviceId) ;
+
 SD_LIB_EXPORT sd::Pointer createContext() ;
 SD_LIB_EXPORT sd::Pointer createStream() ;
 SD_LIB_EXPORT sd::Pointer createEvent() ;
@@ -888,7 +895,7 @@ SD_LIB_EXPORT void clearTADCache();
 
 /**
  * Marks that shutdown is in progress.
- * CRITICAL: Call this early in JVM shutdown (e.g., from a shutdown hook)
+ * Call this early in JVM shutdown (e.g., from a shutdown hook)
  * to prevent SIGSEGV crashes during cache cleanup.
  *
  * During JVM/static destruction, memory allocators may have been destroyed,

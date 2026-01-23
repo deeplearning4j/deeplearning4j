@@ -654,7 +654,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND SD_GCC_FUNCTRACE AND NOT SD_SANITI
         message(STATUS "✅ Using GCC with functrace (no special profiling symbols needed)")
     endif()
 
-    # Apply medium code model to match compiler (CRITICAL: large model incompatible with system CRT)
+    # Apply medium code model to match compiler (large model incompatible with system CRT)
     if(SD_X86_BUILD AND NOT WIN32)
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -mcmodel=medium")
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mcmodel=medium")

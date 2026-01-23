@@ -128,49 +128,23 @@ void concat(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray
 
   NDArray::prepareSpecialUse({&output}, inArrs);
 
-  bool luckCase1 = false;
-
   // prepare arrays of pointers on buffers and shapes
   std::vector<const void*> hInBuffers(numInArrs);
   std::vector<const LongType*> hInShapeInfo(numInArrs);
- std::vector <int> lenPerArray(numInArrs);
   for (int i = 0; i < numInArrs; i++) {
     // Check for empty arrays before accessing specialBuffer to avoid null pointer exception
     // Check both isEmpty() flag AND length AND buffer pointer
     bool isEffectivelyEmpty = inArrs[i]->isEmpty() || inArrs[i]->lengthOf() == 0 || inArrs[i]->getDataBuffer() == nullptr;
     hInBuffers[i] = isEffectivelyEmpty ? nullptr : inArrs[i]->specialBuffer();
     hInShapeInfo[i] = inArrs[i]->specialShapeInfo();
-    lenPerArray[i] = isEffectivelyEmpty ? 0 : inArrs[i]->isScalar() ? 1 : inArrs[i]->lengthOf();
   }
 
   PointersManager manager(context, "helpers::concat");
 
   void* dInBuffers = manager.replicatePointer(hInBuffers.data(), hInBuffers.size() * sizeof(void*));
+  void* dInShapeInfo = manager.replicatePointer(hInShapeInfo.data(), hInShapeInfo.size() * sizeof(LongType*));
 
   dim3 dims = getConcat(output.lengthOf());
-
-  if (luckCase1) {  // for example {1,10} + {2,10} + {3,10} = {6, 10} order c; or {10,1} + {10,2} + {10,3} = {10, 6}
-    void* z = static_cast<int8_t*>(output.specialBuffer());
-
-    for (sd::LongType i = 0; i < numInArrs; ++i) {
-      const auto sizeofT = output.sizeOfT();
-      const auto memAmountToCopy = inArrs[i]->lengthOf() * sizeofT;
-      cudaMemcpyAsync(z, reinterpret_cast<const int8_t*>(inArrs[i]->specialBuffer()), memAmountToCopy,
-                      cudaMemcpyDeviceToDevice, *context->getCudaStream());
-      z = static_cast<int8_t*>(z) + memAmountToCopy;
-    }
-
-    if (cudaStreamSynchronize(*context->getCudaStream()) != 0)
-      THROW_EXCEPTION("concat cuda: luckCase1 failed!");
-
-    for (int i = 0; i < numInArrs; ++i) inArrs[i]->tickReadDevice();
-    output.tickWriteDevice();
-    manager.synchronize();
-    output.syncToHost();
-    return;
-  }
-
-  void* dInShapeInfo = manager.replicatePointer(hInShapeInfo.data(), hInShapeInfo.size() * sizeof(LongType*));
 
   BUILD_SINGLE_SELECTOR(inArrs[0]->dataType(), concatCudaLauncher,
                         (dims.x, dims.y, dims.z, context->getCudaStream(), dInBuffers, dInShapeInfo,

@@ -1004,7 +1004,7 @@ public class CudaZeroHandler implements MemoryHandler {
     /**
      * This method returns CudaContext for current thread with FRESH stream pointers.
      *
-     * CRITICAL: Stream pointers are NOT cached because native code can reinitialize
+     * Stream pointers are NOT cached because native code can reinitialize
      * its thread-local ContextBuffers (via release() + initialize()) when detecting
      * device mismatches. If Java caches old pointers while native has new streams,
      * using the stale pointers causes cudaErrorInvalidResourceHandle (error 400).

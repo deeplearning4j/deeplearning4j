@@ -25,6 +25,7 @@
 #include <helpers/StringUtils.h>
 #include <helpers/logger.h>
 #include <memory/Workspace.h>
+#include <memory/cuda/CudaMemoryPool.h>
 
 #include "helpers/DebugHelper.h"
 
@@ -43,10 +44,20 @@ void* PointersManager::allocateDevMem(const size_t sizeInBytes) {
   bool fromCudaMalloc = false;
 
   if (_context == nullptr || _context->getWorkspace() == nullptr) {
-    // Allocate via cudaMalloc - we need to track and free this
-    cudaError_t cudaResult = cudaMalloc(reinterpret_cast<void**>(&dst), sizeInBytes);
-    if (cudaResult != 0)
-      throw cuda_exception::build(_funcName + ": cannot allocate global memory on device!", cudaResult);
+    // Use CUDA memory pool for efficient allocation
+    auto& pool = memory::CudaMemoryPool::getInstance();
+    int deviceId = 0;
+    cudaGetDevice(&deviceId);
+
+    // Get stream for async allocation if available
+    cudaStream_t stream = nullptr;
+    if (_context != nullptr && _context->getCudaStream() != nullptr) {
+      stream = *_context->getCudaStream();
+    }
+
+    dst = pool.allocate(sizeInBytes, deviceId, stream);
+    if (dst == nullptr)
+      throw cuda_exception::build(_funcName + ": cannot allocate global memory on device!", cudaErrorMemoryAllocation);
     fromCudaMalloc = true;
   } else {
     // Allocate from workspace - workspace manages lifecycle
@@ -104,29 +115,22 @@ PointersManager::~PointersManager() {
     return;
   }
 
-  // Synchronize ALL streams before freeing to ensure kernels are complete.
-  // We use cudaDeviceSynchronize instead of just stream sync because:
-  // 1. Kernels might be running on different streams than _context->getCudaStream()
-  // 2. This is safer and the cost is acceptable since we're destroying anyway
-  cudaError_t syncErr = cudaDeviceSynchronize();
-  if (syncErr != cudaSuccess) {
-    // Log warning but continue - we still need to try to free memory
-    sd_printf("<%s> WARNING: cudaDeviceSynchronize failed in destructor: %s. Attempting cleanup anyway.\n",
-              _funcName.c_str(), cudaGetErrorString(syncErr));
-    // Clear the error so subsequent CUDA calls don't fail
-    cudaGetLastError();
+  // Use CUDA memory pool for async free - no sync needed
+  // cudaFreeAsync handles stream ordering automatically
+  auto& pool = memory::CudaMemoryPool::getInstance();
+  int deviceId = 0;
+  cudaGetDevice(&deviceId);
+
+  // Get stream for async free if available
+  cudaStream_t stream = nullptr;
+  if (_context != nullptr && _context->getCudaStream() != nullptr) {
+    stream = *_context->getCudaStream();
   }
 
-  // Now free cudaMalloc allocations
+  // Free allocations via pool (returns memory to pool without blocking)
   for (const auto& alloc : _allocatedPointers) {
     if (alloc.fromCudaMalloc && alloc.ptr != nullptr) {
-      cudaError_t freeErr = cudaFree(alloc.ptr);
-      if (freeErr != cudaSuccess) {
-        // Log warning but continue freeing others
-        sd_printf("<%s> WARNING: cudaFree failed: %s\n",
-                  _funcName.c_str(), cudaGetErrorString(freeErr));
-        cudaGetLastError();  // Clear error
-      }
+      pool.free(alloc.ptr, deviceId, stream);
     }
   }
 }

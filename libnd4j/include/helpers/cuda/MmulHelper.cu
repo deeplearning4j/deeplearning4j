@@ -453,9 +453,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
                                  C->specialShapeInfo(), 0, 1, 0, 1, 0, 1, alpha, beta),
                                 SD_NUMERIC_TYPES)
    NDArray::registerSpecialUse({C}, {A, B});
-
-   auto cudaResult = cudaStreamSynchronize(*stream);
-   if (cudaResult != 0) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", cudaResult);
+   // Don't sync - let CUDA operations run asynchronously
 
  } else {
    std::vector<NDArray*> toDelete;
@@ -522,9 +520,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
 
    NDArray::registerSpecialUse({pC}, {pA, pB});
-
-   auto cudaResult = cudaStreamSynchronize(*stream);
-   if (cudaResult != 0) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", cudaResult);
+   // Don't sync - let CUDA operations run asynchronously
 
    if (C != pC) C->assign(pC);
 
@@ -590,9 +586,7 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
         X->specialShapeInfo(), Y->specialBuffer(), Y->specialShapeInfo(), incx, incy, 0, alpha, beta),
        SD_NUMERIC_TYPES)
    NDArray::registerSpecialUse({Y}, {A, X});
-
-   auto cudaResult = cudaStreamSynchronize(*stream);
-   if (cudaResult != 0) throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", cudaResult);
+   // Don't sync - let CUDA operations run asynchronously
 
  } else {
    NDArray* pA(const_cast<NDArray*>(A));
@@ -625,10 +619,8 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
 
    if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", status);
 
-   auto cudaResult = cudaStreamSynchronize(*stream);
-   if (cudaResult != 0) throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", cudaResult);
-
    NDArray::registerSpecialUse({Y}, {pA, X});
+   // Don't sync - let CUDA operations run asynchronously
 
    if (pA != A) delete pA;
  }
@@ -678,10 +670,8 @@ NDArray* MmulHelper::dot(NDArray* X, NDArray* Y, NDArray* Z, const double alpha,
                                Y->specialBuffer(), incy, beta, Z->specialBuffer()),
                               SD_NUMERIC_TYPES);
 
- auto cudaResult = cudaStreamSynchronize(*stream);
- if (cudaResult != 0) throw cuda_exception::build("MmulHelper::dot cuda failed !", cudaResult);
-
  NDArray::registerSpecialUse({Z}, {X, Y});
+ // Don't sync - let CUDA operations run asynchronously
 
  return Z;
 }
@@ -771,8 +761,7 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
       aBatchDims, bBatchDims, cBatchDims, aMaxis, aKaxis, bKaxis, bNaxis, cMaxis, cNaxis, alpha, beta),
      SD_NUMERIC_TYPES)
  NDArray::registerSpecialUse({C}, {A, B});
-
- manager.synchronize();
+ // Don't sync explicitly - manager destructor handles it if needed
 
  delete aDims;
  delete bDims;
@@ -924,11 +913,7 @@ bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
   }
 
   NDArray::registerSpecialUse({C}, {A, B});
-
-  auto cudaResult = cudaStreamSynchronize(*stream);
-  if (cudaResult != 0) {
-    return false;
-  }
+  // Don't sync - let CUDA operations run asynchronously
 
   return true;
 }
