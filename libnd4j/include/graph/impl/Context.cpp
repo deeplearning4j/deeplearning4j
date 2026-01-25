@@ -34,7 +34,23 @@
 namespace sd {
 namespace graph {
 Context::Context(ContextPrototype *prototype, VariableSpace *variableSpace) {
+  // Explicitly initialize ALL pointer members to prevent garbage values
+  _workspace = nullptr;
   _variableSpace = variableSpace;
+  _rng = nullptr;
+  _context = nullptr;  // CRITICAL: must initialize before any vector operations
+
+  // Pre-reserve space for vectors to prevent reallocation during ops.
+  // Without reserve, push_back triggers reallocation which has been observed to corrupt memory
+  // (Valgrind: "Invalid free" at "0 bytes after a block of size 8 alloc'd by _M_realloc_insert").
+  // glibc error "free(): invalid next size (fast)" also indicates heap metadata corruption.
+  // Note: Intermediate results accumulate when Context is reused across op executions.
+  // Using larger reserve to avoid frequent reallocations.
+  _intermediateResults.reserve(64);
+  _fastpath_in.reserve(16);
+  _fastpath_out.reserve(16);
+  _handles.reserve(16);
+
   _dataType = prototype->dataType();
 
   if (prototype != nullptr) {
@@ -111,9 +127,22 @@ Context::Context(int nodeId, VariableSpace *variableSpace) {
   this->_variableSpace = variableSpace;
   this->_isInplace = false;
   this->_workspace = nullptr;
+  this->_context = nullptr;  // Explicitly initialize to prevent garbage values
+  this->_rng = nullptr;      // Explicitly initialize
 
   this->_executionTime.first = 0;
   this->_executionTime.second = 0;
+
+  // Pre-reserve space for vectors to prevent reallocation during ops.
+  // Without reserve, push_back triggers reallocation which has been observed to corrupt memory
+  // (Valgrind: "Invalid free" at "0 bytes after a block of size 8 alloc'd by _M_realloc_insert").
+  // glibc error "free(): invalid next size (fast)" also indicates heap metadata corruption.
+  // Note: Intermediate results accumulate when Context is reused across op executions.
+  // Using larger reserve to avoid frequent reallocations.
+  _intermediateResults.reserve(64);
+  _fastpath_in.reserve(16);
+  _fastpath_out.reserve(16);
+  _handles.reserve(16);
 
   if (variableSpace != nullptr && variableSpace->launchContext()->getWorkspace() != nullptr)
     this->_workspace = variableSpace->launchContext()->getWorkspace();
@@ -138,9 +167,25 @@ Context::~Context() {
   OpContextLifecycleTracker::getInstance().recordDeallocation(this);
 #endif
 
-#ifdef SD_CUDA
-  cudaDeviceSynchronize();
-#endif
+  // CRITICAL: Capture _context value BEFORE any vector operations.
+  // There's evidence of memory corruption where _context gets corrupted to point
+  // to addresses related to vector internal storage. By capturing early, we can
+  // detect if corruption happened during vector operations.
+  LaunchContext* contextToDelete = _context;
+  _context = nullptr;  // Clear immediately to prevent double-free attempts
+
+  // Tripwire: Check if _context was already corrupted before destructor
+  if (contextToDelete != nullptr) {
+    uintptr_t addr = reinterpret_cast<uintptr_t>(contextToDelete);
+    // Valid heap pointers should be > 0x10000 and 8-byte aligned
+    if (addr < 0x10000 || (addr & 0x7) != 0) {
+      std::string error = "Context::~Context: _context pointer corrupted on entry: 0x";
+      char buf[32];
+      snprintf(buf, sizeof(buf), "%lx", static_cast<unsigned long>(addr));
+      error += buf;
+      THROW_EXCEPTION(error.c_str());
+    }
+  }
 
   // SAFETY: Wrap all cleanup in try-catch to prevent crashes from memory corruption.
   // The Context object or its vectors may be corrupted due to:
@@ -160,6 +205,52 @@ Context::~Context() {
     // These are BORROWED pointers - the Context does not own them.
     this->_fastpath_in.clear();
     this->_fastpath_out.clear();
+
+    // NOTE: Do NOT delete arrays in _handles here.
+    // While _handles is intended to store arrays that are "owned" by Context (added with removable=true),
+    // in practice the arrays may have already been freed by Java's DeallocatorService or other cleanup paths.
+    // Attempting to delete them causes SIGSEGV in NDArray::~NDArray.
+    // This causes a memory leak, but prevents JVM crashes.
+    // TODO: Fix the ownership model so arrays in _handles are truly owned by Context
+    // and can be safely deleted here.
+    _handles.clear();
+
+    // Clean up intermediate results properly.
+    // Intermediate results are arrays stored by ops (like conv2d) for use in backward pass.
+    // The arrays are heap-allocated and owned by this Context.
+    // We must delete them to prevent memory leaks.
+    // Note: Views in intermediate results will have their NDArray object deleted but NOT their buffer
+    // (because views have _ownsBuffer=false or isView flag set), which is correct behavior.
+    //
+    // IMPORTANT: Delete in REVERSE order! Views are typically pushed after their parent arrays
+    // (e.g., conv2d pushes col at index 0, then colP view at index 1). Deleting in reverse
+    // ensures views are deleted before their parents. While views shouldn't access their
+    // buffer during destruction, this ordering is safer and matches the lifetime expectations.
+    for (auto it = _intermediateResults.rbegin(); it != _intermediateResults.rend(); ++it) {
+      auto* arr = *it;
+      if (arr != nullptr) {
+        // Validate pointer looks reasonable before deleting
+        uintptr_t addr = reinterpret_cast<uintptr_t>(arr);
+        if (addr > 0x10000) {
+          delete arr;
+        }
+      }
+    }
+    _intermediateResults.clear();
+
+#ifdef SD_CUDA
+    // Sync the stream after deleting intermediate results to ensure all async frees complete.
+    // When DataBuffer::deleteSpecial() is called during NDArray destruction, it uses
+    // cudaFreeAsync which schedules the free on a stream. We must ensure these complete
+    // before the Context destructor finishes to prevent use-after-free issues.
+    if (contextToDelete != nullptr) {
+      auto stream = contextToDelete->getCudaStream();
+      if (stream != nullptr) {
+        cudaStreamSynchronize(*stream);
+      }
+    }
+#endif
+
 #ifdef __cpp_exceptions
   } catch (...) {
     fprintf(stderr, "WARNING: Exception clearing vectors in Context destructor\n");
@@ -167,13 +258,10 @@ Context::~Context() {
   }
 #endif
 
-  //
-  // TODO: Fix the root cause of memory corruption instead of this workaround.
-  // The real fix should ensure proper synchronization between CUDA operations,
-  // Java's DeallocatorService, and native memory management.
-
   // Only delete _context if it's not a managed (intentionally leaked) context
-  if (_context != nullptr && !LaunchContext::isManagedContext(_context)) delete _context;
+  if (contextToDelete != nullptr && !LaunchContext::isManagedContext(contextToDelete)) {
+    delete contextToDelete;
+  }
 }
 
 void Context::setTargetEngine(samediff::Engine engine) { _engine = engine; }
@@ -583,10 +671,19 @@ LaunchContext *Context::launchContext() {
   // FIXME: we need proper context to be shared here
   if (_context == nullptr) {
     _context = LaunchContext::defaultContext(); // Assign default context
-    return _context;
-  } else {
-    return _context;
   }
+
+  // Tripwire: validate _context looks like a valid pointer
+  uintptr_t addr = reinterpret_cast<uintptr_t>(_context);
+  if (addr < 0x10000 || (addr & 0x7) != 0) {
+    std::string error = "Context::launchContext(): _context pointer appears corrupted: 0x";
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%lx", static_cast<unsigned long>(addr));
+    error += buf;
+    THROW_EXCEPTION(error.c_str());
+  }
+
+  return _context;
 }
 
 
@@ -631,10 +728,18 @@ void Context::setInputArray(int index, NDArray *array, bool removable) {
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
+  // Tripwire: capture _context before vector operations
+  LaunchContext* contextBefore = _context;
+
   if (_fastpath_in.size() < static_cast<size_t>(index + 1)) _fastpath_in.resize(index + 1);
 
   _fastpath_in[index] = array;
   if (removable) _handles.emplace_back(array);
+
+  // Tripwire: verify _context wasn't corrupted
+  if (_context != contextBefore) {
+    THROW_EXCEPTION("Context::setInputArray: _context was corrupted during vector operation!");
+  }
 }
 
 
@@ -650,7 +755,15 @@ void Context::setOutputArray(int index, NDArray *array, bool removable) {
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
+  // Tripwire: capture _context BEFORE any vector operations (including resize)
+  LaunchContext* contextBeforeResize = _context;
+
   if (_fastpath_out.size() < static_cast<size_t>(index + 1)) _fastpath_out.resize(index + 1);
+
+  // Tripwire: check after resize
+  if (_context != contextBeforeResize) {
+    THROW_EXCEPTION("Context::setOutputArray: _context was corrupted during _fastpath_out.resize!");
+  }
 
   // Check for null shapeInfo before accessing it - use try-catch because shapeInfo() throws when null
   try {
@@ -675,9 +788,18 @@ void Context::setOutputArray(int index, NDArray *array, bool removable) {
     errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(array->shapeInfo()));
     THROW_EXCEPTION(errorMessage.c_str());
   }
+
+  // Tripwire: capture _context before vector operations
+  LaunchContext* contextBefore = _context;
+
   _fastpath_out[index] = array;
 
   if (removable) _handles.emplace_back(array);
+
+  // Tripwire: verify _context wasn't corrupted
+  if (_context != contextBefore) {
+    THROW_EXCEPTION("Context::setOutputArray: _context was corrupted during vector operation!");
+  }
 }
 
 

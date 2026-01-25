@@ -25,6 +25,8 @@
 #include "execution/Threads.h"
 #include "helpers/OpTracker.h"
 
+#include <cstdio>
+#include <string>
 #include <exceptions/allocation_exception.h>
 #include <fcntl.h>
 #include <graph/GraphExecutioner.h>
@@ -812,6 +814,20 @@ void setGraphContextDArguments(OpaqueContext *ptr, int *arguments, int numberOfA
 }
 
 void deleteGraphContext(Context *ptr) {
+  // Tripwire: validate Context pointer before deletion
+  if (ptr == nullptr) {
+    return;  // Nothing to delete
+  }
+
+  uintptr_t addr = reinterpret_cast<uintptr_t>(ptr);
+  if (addr < 0x10000 || (addr & 0x7) != 0) {
+    std::string error = "deleteGraphContext: Context pointer appears invalid: 0x";
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%lx", static_cast<unsigned long>(addr));
+    error += buf;
+    THROW_EXCEPTION(error.c_str());
+  }
+
   delete ptr;
 }
 

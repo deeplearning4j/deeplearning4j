@@ -2883,4 +2883,127 @@ public class TestShapeOpValidation extends BaseOpValidation {
         INDArray exp6 = in6.permute(0, 3, 1, 2);
         assertEquals(exp6, result6);
     }
+
+    /**
+     * Test for stacking scalar constants with sizeAt results.
+     * This reproduces an issue where scalar constants were being confused
+     * with other values when stacked together.
+     *
+     * IMPORTANT: The bug was that Nd4j.createFromArray(-1L) creates shape [1] (1D)
+     * while sizeAt returns a true scalar with shape [] (rank 0).
+     * Stack requires all inputs to have the same shape, so we must use
+     * Nd4j.scalar() to create true scalars.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testStackScalarConstantWithSizeAt(Nd4jBackend backend) {
+        // Test case: mimics the MatMul reshape scenario in ONNX import
+        // Input shape is [196, 1, 768] (like ViT patch embeddings)
+        SameDiff sd = SameDiff.create();
+
+        // Create input with known shape
+        INDArray inputArr = Nd4j.rand(DataType.FLOAT, 196, 1, 768);
+        SDVariable input = sd.var("input", inputArr);
+
+        // IMPORTANT: Use Nd4j.scalar() to create a true scalar with shape []
+        // NOT Nd4j.createFromArray(-1L) which creates shape [1]
+        SDVariable minusOne = sd.constant("minus_one", Nd4j.scalar(DataType.INT64, -1L));
+
+        // Get size at last dimension (should be 768) - this returns shape []
+        SDVariable lastDim = sd.sizeAt("last_dim", input, -1);
+
+        // Stack them: should produce [2] with values [-1, 768]
+        SDVariable stacked = sd.stack("stacked", 0, minusOne, lastDim);
+
+        // Evaluate
+        Map<String, INDArray> results = sd.output(Collections.emptyMap(), "minus_one", "last_dim", "stacked");
+
+        INDArray minusOneResult = results.get("minus_one");
+        INDArray lastDimResult = results.get("last_dim");
+        INDArray stackedResult = results.get("stacked");
+
+        // Verify shape of inputs (both should be scalars with shape [])
+        assertArrayEquals(new long[]{}, minusOneResult.shape(), "Constant should have scalar shape []");
+        assertArrayEquals(new long[]{}, lastDimResult.shape(), "sizeAt result should have scalar shape []");
+
+        // Verify individual values
+        assertEquals(-1L, minusOneResult.getLong(0), "Constant -1 should be -1");
+        assertEquals(768L, lastDimResult.getLong(0), "sizeAt(-1) should be 768");
+
+        // Verify stacked result
+        assertArrayEquals(new long[]{2}, stackedResult.shape(), "Stacked shape should be [2]");
+        assertEquals(-1L, stackedResult.getLong(0), "First element of stacked should be -1");
+        assertEquals(768L, stackedResult.getLong(1), "Second element of stacked should be 768");
+
+        log.info("Stack scalar test passed: minusOne={}, lastDim={}, stacked={}",
+                minusOneResult, lastDimResult, stackedResult);
+    }
+
+    /**
+     * Test for stacking multiple sizeAt results with constants.
+     * This tests a more complex scenario with multiple dynamic shape values.
+     *
+     * IMPORTANT: Use Nd4j.scalar() not Nd4j.createFromArray() for scalar constants
+     * when stacking with sizeAt results, because sizeAt returns true scalars [].
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testStackMultipleSizeAtWithConstants(Nd4jBackend backend) {
+        SameDiff sd = SameDiff.create();
+
+        // Create inputs with known shapes
+        INDArray aArr = Nd4j.rand(DataType.FLOAT, 64, 196, 768);  // [batch, seq, hidden]
+        INDArray bArr = Nd4j.rand(DataType.FLOAT, 768, 256);      // [hidden, out]
+
+        SDVariable a = sd.var("a", aArr);
+        SDVariable b = sd.var("b", bArr);
+
+        // Get various dimensions - all return true scalars with shape []
+        SDVariable aLastDim = sd.sizeAt("a_last_dim", a, -1);      // Should be 768
+        SDVariable bLastDim = sd.sizeAt("b_last_dim", b, -1);      // Should be 256
+        SDVariable aSecondDim = sd.sizeAt("a_second_dim", a, 1);   // Should be 196
+
+        // Create scalar constants (use Nd4j.scalar for shape [] to match sizeAt output)
+        SDVariable minusOne = sd.constant("const_minus_one", Nd4j.scalar(DataType.INT64, -1L));
+        SDVariable zero = sd.constant("const_zero", Nd4j.scalar(DataType.INT64, 0L));
+
+        // Test stacking different combinations
+        SDVariable stack1 = sd.stack("stack1", 0, minusOne, aLastDim);           // [-1, 768]
+        SDVariable stack2 = sd.stack("stack2", 0, aSecondDim, bLastDim);         // [196, 256]
+        SDVariable stack3 = sd.stack("stack3", 0, zero, minusOne, aLastDim);     // [0, -1, 768]
+
+        // Evaluate all
+        Map<String, INDArray> results = sd.output(Collections.emptyMap(),
+                "a_last_dim", "b_last_dim", "a_second_dim",
+                "const_minus_one", "const_zero",
+                "stack1", "stack2", "stack3");
+
+        // Verify individual sizeAt results
+        assertEquals(768L, results.get("a_last_dim").getLong(0), "a sizeAt(-1) should be 768");
+        assertEquals(256L, results.get("b_last_dim").getLong(0), "b sizeAt(-1) should be 256");
+        assertEquals(196L, results.get("a_second_dim").getLong(0), "a sizeAt(1) should be 196");
+
+        // Verify constants
+        assertEquals(-1L, results.get("const_minus_one").getLong(0), "const -1 should be -1");
+        assertEquals(0L, results.get("const_zero").getLong(0), "const 0 should be 0");
+
+        // Verify stacked results
+        INDArray s1 = results.get("stack1");
+        assertArrayEquals(new long[]{2}, s1.shape());
+        assertEquals(-1L, s1.getLong(0), "stack1[0] should be -1");
+        assertEquals(768L, s1.getLong(1), "stack1[1] should be 768");
+
+        INDArray s2 = results.get("stack2");
+        assertArrayEquals(new long[]{2}, s2.shape());
+        assertEquals(196L, s2.getLong(0), "stack2[0] should be 196");
+        assertEquals(256L, s2.getLong(1), "stack2[1] should be 256");
+
+        INDArray s3 = results.get("stack3");
+        assertArrayEquals(new long[]{3}, s3.shape());
+        assertEquals(0L, s3.getLong(0), "stack3[0] should be 0");
+        assertEquals(-1L, s3.getLong(1), "stack3[1] should be -1");
+        assertEquals(768L, s3.getLong(2), "stack3[2] should be 768");
+
+        log.info("Multiple stack test passed");
+    }
 }

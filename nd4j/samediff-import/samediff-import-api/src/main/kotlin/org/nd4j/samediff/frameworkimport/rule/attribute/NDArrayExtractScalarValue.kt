@@ -53,6 +53,12 @@ abstract class NDArrayExtractScalarValue<
         mappingNamesToPerform().forEach { (k, v) ->
             val indexValueToAbstract = transformerArgs[k]!![0].int64Value
             val ndarrayInput = mappingCtx.tensorInputFor(v).toNd4jNDArray()
+
+            // Skip if ndarray is empty or has null data buffer
+            if (ndarrayInput.isEmpty || ndarrayInput.length() == 0L || ndarrayInput.data() == null) {
+                return@forEach
+            }
+
             val argDescriptor = ArgDescriptor {
                 name = k
                 argType = OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR

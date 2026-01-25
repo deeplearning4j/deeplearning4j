@@ -33,13 +33,13 @@ import java.nio.ByteOrder;
  * Q4_K is a k-quant format with super-blocks:
  * - Super-block size: 256 elements
  * - Contains 8 sub-blocks of 32 elements each
- * - Per super-block: 2 FP16 scales (d, dmin) + 12 bytes scales + 4 bytes mins + 128 bytes data
- * - Total: 144 bytes per super-block
+ * - Per super-block: 2 FP16 scales (d, dmin) = 4 bytes + 12 bytes scales + 4 bytes mins + 128 bytes data
+ * - Total: 148 bytes per super-block
  */
 public class Q4_KQuantizer implements Quantizer {
 
     private static final int BLOCK_SIZE = 256;
-    private static final int BYTES_PER_BLOCK = 144;
+    private static final int BYTES_PER_BLOCK = 148;
     private static final int SUB_BLOCK_SIZE = 32;
     private static final int NUM_SUB_BLOCKS = 8;
 
@@ -102,7 +102,7 @@ public class Q4_KQuantizer implements Quantizer {
             }
 
             float d = maxScale / 63.0f;  // 6-bit scale range
-            float dmin = maxMin / 15.0f; // 4-bit min range
+            float dmin = maxMin / 7.0f;  // 3-bit min magnitude range (sign stored separately)
 
             if (d == 0) d = 1.0f;
             if (dmin == 0) dmin = 1.0f;
@@ -124,10 +124,13 @@ public class Q4_KQuantizer implements Quantizer {
             buffer.put(scaleBytes);
 
             // Quantize and pack mins (4-bit each, 4 bytes for 8 values)
+            // Store sign bit + 3-bit magnitude (allowing -7 to +7 range after scaling)
             byte[] minBytes = new byte[4];
             for (int sb = 0; sb < NUM_SUB_BLOCKS; sb++) {
-                int quantizedMin = Math.round(Math.abs(subBlockMins[sb]) / dmin);
-                quantizedMin = Math.max(0, Math.min(15, quantizedMin));
+                int sign = subBlockMins[sb] < 0 ? 1 : 0;
+                int magnitude = Math.round(Math.abs(subBlockMins[sb]) / dmin);
+                magnitude = Math.max(0, Math.min(7, magnitude));  // 3-bit magnitude (0-7)
+                int quantizedMin = (sign << 3) | magnitude;  // 4 bits: 1 sign + 3 magnitude
                 int byteIdx = sb / 2;
                 int shift = (sb % 2) * 4;
                 minBytes[byteIdx] |= (quantizedMin << shift);
@@ -175,7 +178,9 @@ public class Q4_KQuantizer implements Quantizer {
 
     @Override
     public byte[] quantize(INDArray array) {
-        return quantize(array.toFloatVector());
+        // Flatten to 1D if needed for toFloatVector()
+        INDArray flat = array.isVector() ? array : array.reshape(array.length());
+        return quantize(flat.toFloatVector());
     }
 
     private static short floatToFp16(float value) {

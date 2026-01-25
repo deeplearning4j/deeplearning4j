@@ -19,11 +19,9 @@
  */
 package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 
-import org.nd4j.autodiff.samediff.SDIndex
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
-import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
@@ -31,6 +29,16 @@ import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
+/**
+ * ONNX MatMul implementation.
+ *
+ * ONNX MatMul supports broadcasting when ranks differ. The libnd4j matmul op now
+ * handles ND x 2D and 2D x ND cases natively with ONNX broadcast semantics:
+ * - For x[batch..., M, K] @ y[K, N] -> [batch..., M, N]
+ * - For x[M, K] @ y[batch..., K, N] -> [batch..., M, N]
+ *
+ * This handler simply delegates to the native matmul operation.
+ */
 @PreHookRule(nodeNames = [], opNames = ["MatMul"], frameworkName = "onnx")
 class MatMul : PreImportHook {
 
@@ -43,55 +51,14 @@ class MatMul : PreImportHook {
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
         dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String, List<SDVariable>> {
-        
-        val opName = op.name
+
         val a = sd.getVariable(op.inputsToOp[0])
         val b = sd.getVariable(op.inputsToOp[1])
-        
-        // Get shapes and ranks
-        val aShape = sd.shape(a).rename("${opName}_aShape")
-        val bShape = sd.shape(b).rename("${opName}_bShape")
-        val aRank = sd.rank(a).rename("${opName}_aRank")
-        
-        // Constants - use INT type to match rank type
-        val three = sd.constant("${opName}_three", 3)
-        
-        // Check if we have the common 3D x 2D case
-        val aIs3D = sd.eq("${opName}_aIs3D", aRank, three)
-        
-        // For the 3D case, we need to handle it specially
-        // Get dimensions using gather instead of SDIndex to avoid issues
-        val zero_idx = sd.constant("${opName}_zero_idx", 0L)
-        val one_idx = sd.constant("${opName}_one_idx", 1L)
-        val two_idx = sd.constant("${opName}_two_idx", 2L)
-        
-        val aDim0 = sd.gather("${opName}_aDim0", aShape, zero_idx, 0)
-        val aDim1 = sd.gather("${opName}_aDim1", aShape, one_idx, 0)
-        val aDim2 = sd.gather("${opName}_aDim2", aShape, two_idx, 0)
-        
-        // For B dimensions
-        val bDim1 = sd.gather("${opName}_bDim1", bShape, one_idx, 0)
-        
-        // Calculate batch*seq for A
-        val batchTimesSeq = sd.math.mul("${opName}_batchTimesSeq", aDim0, aDim1)
-        
-        // Create shape arrays as constants
-        val reshapeShape = sd.stack("${opName}_reshapeShape", 0, batchTimesSeq, aDim2)
-        
-        // Reshape A from [batch, seq, hidden] to [batch*seq, hidden]
-        val aReshaped = sd.reshape("${opName}_aReshaped", a, reshapeShape)
-        
-        // Do the 2D matmul
-        val matmulResult = sd.linalg().mmul("${opName}_matmul", aReshaped, b, false, false, false)
-        
-        // Create output shape [batch, seq, output_dim]
-        val outputShape = sd.stack("${opName}_outputShape", 0, aDim0, aDim1, bDim1)
-        
-        // Reshape back to 3D
-        val output = sd.reshape("${opName}_output", matmulResult, outputShape)
-        
-        output.rename(outputNames[0])
-        
-        return mapOf(outputNames[0] to listOf(output))
+
+        val opName = outputNames[0]
+
+        // Use standard matmul - the native op now handles ND x 2D broadcasting
+        val output = sd.linalg().matmul(opName, a, b)
+        return mapOf(opName to listOf(output))
     }
 }

@@ -66,15 +66,14 @@ class ArrayFeatureExtractor : PreImportHook {
         val y = sd.getVariable(op.inputsToOp[1])  // Indices to select
 
         // ArrayFeatureExtractor selects from the last axis
-        // Use gather along the last axis
-        val rank = x.shape.size
-        val lastAxis = rank - 1
+        // For this operation, we use axis -1 to always select from the last axis
+        // This works dynamically regardless of input rank
 
         // Ensure indices are INT64 for gather
         val indices = y.castTo(DataType.INT64)
 
-        // Use gather to select features along the last axis
-        val output = sd.gather(outputNames[0], x, indices, lastAxis)
+        // Use gather to select features along the last axis (axis = -1)
+        val output = sd.gather(outputNames[0], x, indices, -1)
 
         return mapOf(outputNames[0] to listOf(output))
     }

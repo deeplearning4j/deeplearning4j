@@ -19,6 +19,7 @@
  */
 package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 
+import onnx.Onnx
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
@@ -42,8 +43,13 @@ class Unsqueeze  : PreImportHook {
     ): Map<String, List<SDVariable>> {
         // Parameter docs below are from the onnx operator docs:
         // https://github.com/onnx/onnx/blob/master/docs/Operators.md#unsqueeze
-        val axes = if(op.inputsToOp.size < 2) attributes["axes"] as List<Int> else {
-            sd.getVariable(op.inputsToOp[1]).arr.toIntVector().toList()
+        val axes = if(op.inputsToOp.size < 2) {
+            @Suppress("UNCHECKED_CAST")
+            attributes["axes"] as List<Int>
+        } else {
+            // Get axes from dynamicVariables (ONNX TensorProto)
+            val axesVarName = op.inputsToOp[1]
+            getAxesFromTensorProto(dynamicVariables, axesVarName) ?: listOf(0)
         }
         var ret: SDVariable? = null
 
@@ -58,11 +64,41 @@ class Unsqueeze  : PreImportHook {
                 }
             }
         } else {
-            val input = sd.getVariable(op.inputsToOp[0])
             ret = sd.expandDims(outputNames[0],input,axes[0])
-
         }
 
         return mapOf(ret!!.name() to listOf(ret!!))
+    }
+
+    /**
+     * Extract axes values from ONNX TensorProto in dynamicVariables.
+     */
+    private fun getAxesFromTensorProto(
+        dynamicVariables: Map<String, GeneratedMessageV3>,
+        varName: String
+    ): List<Int>? {
+        val tensorProto = dynamicVariables[varName] as? Onnx.TensorProto ?: return null
+        return when {
+            tensorProto.int64DataCount > 0 -> tensorProto.int64DataList.map { it.toInt() }
+            tensorProto.int32DataCount > 0 -> tensorProto.int32DataList.toList()
+            tensorProto.rawData.size() > 0 -> {
+                val buffer = tensorProto.rawData.asReadOnlyByteBuffer()
+                buffer.order(java.nio.ByteOrder.LITTLE_ENDIAN)
+                val result = mutableListOf<Int>()
+                if (tensorProto.dataType == Onnx.TensorProto.DataType.INT64_VALUE) {
+                    val longBuffer = buffer.asLongBuffer()
+                    while (longBuffer.hasRemaining()) {
+                        result.add(longBuffer.get().toInt())
+                    }
+                } else {
+                    val intBuffer = buffer.asIntBuffer()
+                    while (intBuffer.hasRemaining()) {
+                        result.add(intBuffer.get())
+                    }
+                }
+                result
+            }
+            else -> null
+        }
     }
 }

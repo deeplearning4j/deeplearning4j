@@ -74,10 +74,13 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
   // Reshape gradO to 2D: [oC, bS * oH * oW]
   NDArray *gradO2d = gradOPermuted->reshape(gradOPermuted->ordering(), gradOShape,false);
 
-  // Perform im2col
+  // Perform im2col or retrieve from intermediate results
+  // Forward pass stores: index 0 = col (owner), index 1 = colP (view with shape {bS, iC, kH, kW, oH, oW})
   NDArray* columns;
   if (block.hasIntermediateResults()) {
-    columns = block.intermediateResult(0);
+    // Intermediate result at index 1 is colP (the view we use)
+    // Index 0 is col (the owner) - framework handles cleanup
+    columns = block.intermediateResult(1);
     if (columns->rankOf() < 6) {
       columns->reshapei({bS, iC, kH, kW, oH, oW});
     }
@@ -97,10 +100,13 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
     std::vector<sd::LongType> wShape = {oC, iC * kH * kW};
     NDArray *columns2d = columns->reshape('c',colShape,false);
     std::vector<sd::LongType> permute = {1,0};
-    NDArray *gradW2d = gradW->reshape('f', wShape, false)->permute(permute, false, false);
+    NDArray *gradWReshaped = gradW->reshape('f', wShape, false);
+    NDArray *gradW2d = gradWReshaped->permute(permute, false, false);
 
     MmulHelper::matmul( columns2d,gradO2d, gradW2d, true, true, 1.0, 0.0, gradW2d);
     gradW->assign(gradW2d);
+    delete gradW2d;
+    delete gradWReshaped;
     delete columns2d;
 
   }
@@ -113,17 +119,20 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
 
   // Calculate gradI
   NDArray *weights2d;
+  NDArray *weightsPermuted = nullptr;
   if (wFormat == 0) {
     std::vector<sd::LongType> perm = {3,2,1,0};
     std::vector<sd::LongType> wShape = {iC * kH * kW,oC};
-    weights2d = weights->permute(perm, false, false)->reshape('f', wShape);
+    weightsPermuted = weights->permute(perm, false, false);
+    weights2d = weightsPermuted->reshape('f', wShape);
   } else if (wFormat == 1) {
     std::vector<sd::LongType> wShape2 = {iC * kH * kW,oC};
     weights2d = weights->reshape('f', wShape2);
   } else {
     std::vector<sd::LongType> wPermute = {0,2,3,1};
     std::vector<sd::LongType> weights2dShape = {iC * kH * kW,oC};
-    weights2d = weights->permute(wPermute, false, false)->reshape('f', weights2dShape);
+    weightsPermuted = weights->permute(wPermute, false, false);
+    weights2d = weightsPermuted->reshape('f', weights2dShape);
   }
 
   std::vector<sd::LongType> columns2dShape = {iC * kH * kW, bS * oH * oW};
@@ -131,6 +140,7 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
 
 
   MmulHelper::matmul(weights2d, gradO2d, &columns2d, false, false, 1.0, 0.0);
+  if (weightsPermuted) delete weightsPermuted;
   delete weights2d;
   //Calculate epsilonNext by doing im2col reduction.
   //Current col2im implementation expects input with order: [miniBatch,channels,kH,kW,outH,outW]
@@ -145,9 +155,13 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
   // Handle NHWC format if necessary
   if (!isNCHW) {
     std::vector<sd::LongType> perm = {0,2,3,1};
-    gradI->assign(gradIPermuted->permute(perm, false, false));  // [bS, iC, iH, iW] -> [bS, iH, iW, iC]
+    NDArray *permutedGradI = gradIPermuted->permute(perm, false, false);
+    gradI->assign(permutedGradI);  // [bS, iC, iH, iW] -> [bS, iH, iW, iC]
+    delete permutedGradI;
   }
 
+  delete permuted;
+  delete eps6d;
   delete gradO2d;
   // Clean up
   if (!isNCHW) {
@@ -155,9 +169,13 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
     delete gradOPermuted;
     delete gradIPermuted;
   }
+
+  // Only delete columns if we created it fresh (not from intermediate results)
+  // When from intermediate results, the framework handles cleanup automatically
   if (!block.hasIntermediateResults()) {
     delete columns;
   }
+  // Note: intermediate results (col owner and colP view) are cleaned up by the framework
 }
 
 void ConvolutionUtils::conv2dBP(sd::graph::Context& block, NDArray* input, NDArray* weights,

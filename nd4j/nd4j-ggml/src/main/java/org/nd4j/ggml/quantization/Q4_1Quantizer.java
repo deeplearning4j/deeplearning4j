@@ -109,7 +109,9 @@ public class Q4_1Quantizer implements Quantizer {
 
     @Override
     public byte[] quantize(INDArray array) {
-        return quantize(array.toFloatVector());
+        // Flatten to 1D if needed for toFloatVector()
+        INDArray flat = array.isVector() ? array : array.reshape(array.length());
+        return quantize(flat.toFloatVector());
     }
 
     /**

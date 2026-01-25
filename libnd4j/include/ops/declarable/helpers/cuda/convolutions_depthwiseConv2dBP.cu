@@ -75,7 +75,7 @@ static void depthwiseConv2dBP_(NDArray* input, NDArray* weights, NDArray* bias, 
                    {iC, bS * oH * oW, mC}};                // [bS,oH,oW,iC,mC] -> [iC,bS,oH,oW,mC] -> [iC,bS*oH*oW,mC]
     modifGradO2 = {{3, 0, 1, 2}, {iC, mC, bS * oH * oW}};  // [bS,oH,oW,iC*mC] -> [iC*mC,bS,oH,oW] -> [iC,mC,bS*oH*oW]
     std::vector<sd::LongType> permuteVec = {0, 3, 1, 2};
-    input = input->permute(permuteVec, false, false);  // permute() already returns NDArray*
+    input = input->permute(permuteVec, false, false);
     gradI = gradI->permute(permuteVec, false, false);
   } else {
     gradOreShape = {bS, iC, mC, oH, oW};  // [bS,iC*mC,oH,oW] -> [bS,iC,mC,oH,oW]
@@ -126,6 +126,9 @@ static void depthwiseConv2dBP_(NDArray* input, NDArray* weights, NDArray* bias, 
                             modifColumns);  // [iC, kH*kW, mC] x [iC, mC, bS*oH*oW] = [iC, kW*kH, bS*oH*oW]
   helpers::col2im(*input->getContext(), &columns, gradI, sH, sW, pH, pW, iH, iW, dH,
                   dW);  // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
+
+  // Synchronize before cleanup for all cases
+  cudaStreamSynchronize(*input->getContext()->getCudaStream());
 
   if (!isNCHW) {
     delete input;

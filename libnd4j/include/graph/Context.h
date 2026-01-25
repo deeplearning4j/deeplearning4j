@@ -235,15 +235,52 @@ class SD_LIB_EXPORT Context : public ContextPrototype {
   }
 
   void pushIntermediateResult(NDArray* array) {
+    // Tripwire: capture _context before vector operation
+    LaunchContext* contextBefore = _context;
+
     _intermediateResults.push_back(array);
+
+    // Tripwire: verify _context wasn't corrupted by vector reallocation
+    if (_context != contextBefore) {
+      THROW_EXCEPTION("Context::pushIntermediateResult: _context was corrupted during vector push_back!");
+    }
+  }
+
+  /**
+   * Clear all intermediate results, deleting the stored NDArray objects.
+   * Call this when the backward pass is not needed or when reusing the Context.
+   */
+  void clearIntermediateResults() {
+    // Delete in reverse order (views after their parents)
+    for (auto it = _intermediateResults.rbegin(); it != _intermediateResults.rend(); ++it) {
+      if (*it != nullptr) {
+        delete *it;
+      }
+    }
+    _intermediateResults.clear();
+  }
+
+  /**
+   * Get the number of intermediate results stored.
+   */
+  int numIntermediates() const {
+    return static_cast<int>(_intermediateResults.size());
   }
 
   void setIntermediateResult(int idx, NDArray* array) {
-    if(static_cast<int>(intermediateResults().size()) < idx) {
+    // Tripwire: capture _context before vector operation
+    LaunchContext* contextBefore = _context;
+
+    if(static_cast<int>(intermediateResults().size()) <= idx) {
         intermediateResults().resize(idx + 1);
     }
 
     _intermediateResults[idx] = array;
+
+    // Tripwire: verify _context wasn't corrupted by vector operation
+    if (_context != contextBefore) {
+      THROW_EXCEPTION("Context::setIntermediateResult: _context was corrupted during vector operation!");
+    }
   }
 
   void setInputArrays(int numArrays,NDArray** array, bool removable = false);

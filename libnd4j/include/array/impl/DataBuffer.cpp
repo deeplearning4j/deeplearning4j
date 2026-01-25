@@ -87,8 +87,14 @@ DataBuffer::DataBuffer(const DataBuffer& other) {
   allocationStackTraceSpecial = nullptr;
   creationStackTrace = nullptr;
 #endif
-  _primaryBuffer = other._primaryBuffer;
-  _specialBuffer = other._specialBuffer;
+  // IMPORTANT: Do NOT copy buffer pointers - allocateBuffers() will allocate new memory
+  // Copying pointers here would cause allocatePrimary/allocateSpecial to return early
+  // (because they check if buffer is already set), leading to shared ownership and double-free
+  _primaryBuffer = nullptr;
+  _specialBuffer = nullptr;
+  // Initialize ownership flags - we'll own the new buffers after allocation
+  _isOwnerPrimary = false;
+  _isOwnerSpecial = false;
 
 #if defined(SD_GCC_FUNCTRACE)
   // - Stack trace capture via backward-cpp's backtrace() is NOT safe during early JVM initialization
@@ -354,6 +360,15 @@ DataBuffer& DataBuffer::operator=(const DataBuffer& other) {
   _dataType = other._dataType;
   _workspace = other._workspace;
 
+  // IMPORTANT: Ensure buffer pointers are nullptr before allocating
+  // deleteBuffers() only sets them to nullptr if we owned them
+  // If we didn't own them, they still point to old (non-owned) memory
+  // which would cause allocateBuffers() to return early
+  _primaryBuffer = nullptr;
+  _specialBuffer = nullptr;
+  _isOwnerPrimary = false;
+  _isOwnerSpecial = false;
+
   allocateBuffers();
   copyBufferFrom(other);
 #if defined(SD_GCC_FUNCTRACE)
@@ -584,10 +599,7 @@ void DataBuffer::deletePrimary() {
           _primaryBuffer, array::BufferType::PRIMARY);
 #endif
       RELEASE(p, _workspace);
-      _primaryBuffer = nullptr;
     }
-
-    _isOwnerPrimary = false;
 
     // count out towards DataBuffer device, only if we're not in workspace
     if (_workspace == nullptr) {
@@ -597,8 +609,10 @@ void DataBuffer::deletePrimary() {
     }
   }
 
-
-
+  // Always reset pointer and ownership flag after delete, regardless of whether we owned it
+  // This prevents stale pointers from causing allocatePrimary() to skip allocation
+  _primaryBuffer = nullptr;
+  _isOwnerPrimary = false;
 }
 
 void DataBuffer::printPrimaryAllocationStackTraces() {

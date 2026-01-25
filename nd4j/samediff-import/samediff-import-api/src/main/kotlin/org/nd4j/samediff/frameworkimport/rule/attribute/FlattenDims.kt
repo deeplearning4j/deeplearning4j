@@ -74,7 +74,14 @@ abstract class FlattenDims<
             when(attr.attributeValueType()) {
                 AttributeValueType.TENSOR -> {
                     val inputTensor = mappingCtx.tensorInputFor(v)
-                    val asAxisList = inputTensor.toNd4jNDArray().toLongVector().toMutableList()
+                    val ndarray = inputTensor.toNd4jNDArray()
+
+                    // Skip if ndarray is empty or has null data buffer
+                    if (ndarray.isEmpty || ndarray.length() == 0L || ndarray.data() == null) {
+                        continue
+                    }
+
+                    val asAxisList = ndarray.toLongVector().toMutableList()
                     addToList(ret,k,baseIndex,axis,asAxisList)
 
                 }

@@ -2791,7 +2791,8 @@ SD_LIB_EXPORT SD_INLINE SD_HOST int excludeUnitiesFromShapeInfo(const sd::LongTy
 SD_LIB_EXPORT SD_INLINE void SD_HOST checkStridesEwsAndOrder(sd::LongType *shapeInfo) {
   // FIXME - indeed we don't need to allocate so large memory amount (2*SD_MAX_RANK), sufficient amount is
   // (2*oldNumOfNonUnities + 2*newNumOfNonUnities)
-  sd::LongType tempBuffer[2 * SD_MAX_RANK];
+  // Zero-initialize to prevent undefined behavior from uninitialized memory
+  sd::LongType tempBuffer[2 * SD_MAX_RANK] = {0};
   sd::LongType *shape = tempBuffer, *strides = tempBuffer + shape::rank(shapeInfo);
 
   // exclude unities from shapeInfo
@@ -2929,6 +2930,19 @@ SD_INLINE SD_LIB_EXPORT SD_HOST void calcOffsets(const sd::LongType rank, const 
 SD_LIB_EXPORT SD_HOST SD_INLINE void calcSubArrShapeInfoAndOffset(const sd::LongType *idx, const sd::LongType *maxShapeInfo, sd::LongType *minShapeInfo,
                                                                   sd::LongType &minOffset, const bool keepUnitiesInShape, const bool isStrided,
                                                                   const sd::LongType numOfUntiesInMinShape) {
+  // Tripwire: validate input pointers
+  if (idx == nullptr) THROW_EXCEPTION("calcSubArrShapeInfoAndOffset: idx is nullptr!");
+  if (maxShapeInfo == nullptr) THROW_EXCEPTION("calcSubArrShapeInfoAndOffset: maxShapeInfo is nullptr!");
+  if (minShapeInfo == nullptr) THROW_EXCEPTION("calcSubArrShapeInfoAndOffset: minShapeInfo is nullptr!");
+
+  // Validate pointer addresses look reasonable
+  uintptr_t idxAddr = reinterpret_cast<uintptr_t>(idx);
+  uintptr_t maxAddr = reinterpret_cast<uintptr_t>(maxShapeInfo);
+  uintptr_t minAddr = reinterpret_cast<uintptr_t>(minShapeInfo);
+  if (idxAddr < 0x10000 || (idxAddr & 0x7) != 0) THROW_EXCEPTION("calcSubArrShapeInfoAndOffset: idx pointer looks invalid!");
+  if (maxAddr < 0x10000 || (maxAddr & 0x7) != 0) THROW_EXCEPTION("calcSubArrShapeInfoAndOffset: maxShapeInfo pointer looks invalid!");
+  if (minAddr < 0x10000 || (minAddr & 0x7) != 0) THROW_EXCEPTION("calcSubArrShapeInfoAndOffset: minShapeInfo pointer looks invalid!");
+
   if (sd::ArrayOptions::dataType(maxShapeInfo) == sd::DataType::UNKNOWN) {
     THROW_EXCEPTION("calcSubArrShapeInfoAndOffset: maxShapeInfo has unknown data type !");
   }
@@ -3060,6 +3074,14 @@ SD_LIB_EXPORT SD_HOST SD_INLINE void calcSubArrShapeInfoAndOffset(const sd::Long
 
   if (sd::ArrayOptions::dataType(minShapeInfo) == sd::DataType::UNKNOWN)
     THROW_EXCEPTION("Attempted to set unknown data type for minShapeInfo !");
+
+  // Tripwire: validate minShapeInfo rank is sane after we wrote to it
+  sd::LongType finalRank = minShapeInfo[0];
+  if (finalRank < 0 || finalRank > SD_MAX_RANK) {
+    std::string err = "calcSubArrShapeInfoAndOffset: output minShapeInfo has invalid rank: ";
+    err += std::to_string(finalRank);
+    THROW_EXCEPTION(err.c_str());
+  }
 }
 
 

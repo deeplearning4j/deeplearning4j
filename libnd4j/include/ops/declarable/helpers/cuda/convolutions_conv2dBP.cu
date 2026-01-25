@@ -63,9 +63,9 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
   NDArray *inputPermuted, *gradOPermuted, *gradIPermuted;
   if (!isNCHW) {
     std::vector<sd::LongType> permute = {0, 3, 1, 2};
-    inputPermuted = input->permute(permute,false,false);  // permute() already returns NDArray*
-    gradOPermuted = gradO->permute(permute,false,false);
-    gradIPermuted = gradI->permute(permute,false,false);
+    inputPermuted = input->permute(permute, false, false);
+    gradOPermuted = gradO->permute(permute, false, false);
+    gradIPermuted = gradI->permute(permute, false, false);
   } else {
     inputPermuted = input;
     gradOPermuted = gradO;
@@ -76,11 +76,14 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
   // Reshape gradO to 2D: [oC, bS * oH * oW]
   NDArray* gradO2d = gradOPermuted->reshape(gradOPermuted->ordering(), reshape,false);
 
-  // Perform im2col
+  // Perform im2col or retrieve from intermediate results
+  // Forward pass stores: index 0 = col (owner), index 1 = colP (view with shape {bS, iC, kH, kW, oH, oW})
   NDArray* columns;
   NDArray* zero = nullptr;
   if (block.hasIntermediateResults()) {
-    columns = block.intermediateResult(0);
+    // Intermediate result at index 1 is colP (the view we use)
+    // Index 0 is col (the owner) - framework handles cleanup
+    columns = block.intermediateResult(1);
     if (columns->rankOf() < 6) {
       columns->reshapei({bS, iC, kH, kW, oH, oW});
     }
@@ -176,9 +179,13 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
     delete gradOPermuted;
     delete gradIPermuted;
   }
+
+  // Only delete columns if we created it fresh (not from intermediate results)
+  // When from intermediate results, the framework handles cleanup automatically
   if (!block.hasIntermediateResults()) {
     delete columns;
   }
+  // Note: intermediate results (col owner and colP view) are cleaned up by the framework
 }
 
 void ConvolutionUtils::conv2dBP(sd::graph::Context& block, NDArray* input, NDArray* weights,

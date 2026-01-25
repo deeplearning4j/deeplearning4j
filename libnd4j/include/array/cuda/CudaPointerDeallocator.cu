@@ -22,6 +22,7 @@
 //  @author raver119@gmail.com
 //
 #include <array/CudaPointerDeallocator.h>
+#include <memory/cuda/CudaMemoryPool.h>
 
 namespace sd {
 
@@ -33,15 +34,16 @@ void CudaPointerDeallocator::release(void *ptr) {
   cudaError_t result = cudaPointerGetAttributes(&attributes, ptr);
 
   if (result == cudaSuccess) {
-    // Only free if it's a regular device pointer
-    // cudaMemoryTypeDevice is for regular allocations we can free
-    if (attributes.type == cudaMemoryTypeDevice) {
-      cudaFree(ptr);
+    // Only free if it's a device pointer (regular or managed)
+    if (attributes.type == cudaMemoryTypeDevice || attributes.type == cudaMemoryTypeManaged) {
+      int deviceId = 0;
+      cudaGetDevice(&deviceId);
+      memory::CudaMemoryPool::getInstance().free(ptr, deviceId, nullptr);
     }
-    // Don't free other types (like constant memory)
+    // Don't free other types (host memory, constant memory, etc.)
   } else {
     // Clear the error and don't try to free this pointer
-    cudaGetLastError(); // Clear the error state
+    cudaGetLastError();
   }
 }
 }  // namespace sd

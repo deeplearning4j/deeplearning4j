@@ -86,9 +86,12 @@ DECLARE_SHAPE_FN(fill) {
       hasZeros = true;
     totalLen *= newShape[e + 1];
   }
-  // Determine data type based on value input FIRST, before handling empty arrays
+  // Determine data type - check D_ARG first (explicit dtype), then infer from value
   DataType dataType;
-  if (block.width() > 1) {
+  if (block.numD() > 0) {
+    // Explicit dtype provided via DArgument - use it
+    dataType = D_ARG(0);
+  } else if (block.width() > 1) {
     dataType = INPUT_VARIABLE(1)->dataType();
   } else if (block.numT() > 0) {
     dataType = Environment::getInstance().defaultFloatDataType();

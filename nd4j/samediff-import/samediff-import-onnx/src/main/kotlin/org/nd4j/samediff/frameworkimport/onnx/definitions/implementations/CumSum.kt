@@ -19,6 +19,7 @@
  */
 package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 
+import onnx.Onnx
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
@@ -53,10 +54,36 @@ class CumSum : PreImportHook  {
         var inputVariable = sd.getVariable(op.inputsToOp[0])
         val exclusive = attributes.getOrDefault("exclusive",false) as Boolean
         val reverse = attributes.getOrDefault("reverse",false) as Boolean
-        val inputAxis =  sd.getVariable(op.inputsToOp[1])
-        val outputVar = sd.cumsum(outputNames[0],inputVariable,exclusive,reverse,inputAxis.arr.getLong(0))
+
+        // Get axis value from dynamicVariables (ONNX TensorProto)
+        val axisVarName = op.inputsToOp[1]
+        val axisValue = getLongFromTensorProto(dynamicVariables, axisVarName) ?: 0L
+
+        val outputVar = sd.cumsum(outputNames[0],inputVariable,exclusive,reverse,axisValue)
         return mapOf(outputVar.name() to listOf(outputVar))
     }
 
-
+    /**
+     * Extract long value from ONNX TensorProto in dynamicVariables.
+     */
+    private fun getLongFromTensorProto(
+        dynamicVariables: Map<String, GeneratedMessageV3>,
+        varName: String
+    ): Long? {
+        val tensorProto = dynamicVariables[varName] as? Onnx.TensorProto ?: return null
+        return when {
+            tensorProto.int64DataCount > 0 -> tensorProto.int64DataList[0]
+            tensorProto.int32DataCount > 0 -> tensorProto.int32DataList[0].toLong()
+            tensorProto.rawData.size() > 0 -> {
+                val buffer = tensorProto.rawData.asReadOnlyByteBuffer()
+                buffer.order(java.nio.ByteOrder.LITTLE_ENDIAN)
+                when (tensorProto.dataType) {
+                    Onnx.TensorProto.DataType.INT64_VALUE -> buffer.asLongBuffer().get()
+                    Onnx.TensorProto.DataType.INT32_VALUE -> buffer.asIntBuffer().get().toLong()
+                    else -> null
+                }
+            }
+            else -> null
+        }
+    }
 }

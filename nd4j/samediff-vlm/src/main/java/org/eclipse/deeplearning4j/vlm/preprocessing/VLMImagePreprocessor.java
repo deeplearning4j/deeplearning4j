@@ -82,7 +82,7 @@ public class VLMImagePreprocessor {
     @Setter
     private MultiBackendWorkspace workspace;
 
-    private final ExecutorService prefetchExecutor;
+    private volatile ExecutorService prefetchExecutor;
 
     @Builder
     private VLMImagePreprocessor(PreprocessorConfig config) {
@@ -103,11 +103,26 @@ public class VLMImagePreprocessor {
         this.numChannels = this.config.getNumChannels() != null ? this.config.getNumChannels() : 3;
         this.targetDevice = targetDevice;
         this.workspace = workspace;
-        this.prefetchExecutor = Executors.newSingleThreadExecutor(r -> {
-            Thread t = new Thread(r, "VLMImagePreprocessor-Prefetch");
-            t.setDaemon(true);
-            return t;
-        });
+        // prefetchExecutor is lazy-initialized only when async methods are called
+    }
+
+    /**
+     * Get the prefetch executor, creating it lazily if needed.
+     * Only called by async prefetch methods.
+     */
+    private ExecutorService getPrefetchExecutor() {
+        if (prefetchExecutor == null) {
+            synchronized (this) {
+                if (prefetchExecutor == null) {
+                    prefetchExecutor = Executors.newSingleThreadExecutor(r -> {
+                        Thread t = new Thread(r, "VLMImagePreprocessor-Prefetch");
+                        t.setDaemon(true);
+                        return t;
+                    });
+                }
+            }
+        }
+        return prefetchExecutor;
     }
 
     /**
@@ -482,7 +497,7 @@ public class VLMImagePreprocessor {
             } catch (IOException e) {
                 throw new RuntimeException("Failed to preprocess image: " + imageFile, e);
             }
-        }, prefetchExecutor);
+        }, getPrefetchExecutor());
     }
 
     /**
@@ -504,7 +519,7 @@ public class VLMImagePreprocessor {
             } catch (IOException e) {
                 log.warn("Failed to prefetch image: {}", imageFile, e);
             }
-        }, prefetchExecutor);
+        }, getPrefetchExecutor());
     }
 
     /**
@@ -575,6 +590,17 @@ public class VLMImagePreprocessor {
     public void shutdown() {
         if (prefetchExecutor != null && !prefetchExecutor.isShutdown()) {
             prefetchExecutor.shutdown();
+            try {
+                // Wait up to 5 seconds for pending tasks to complete
+                if (!prefetchExecutor.awaitTermination(5, java.util.concurrent.TimeUnit.SECONDS)) {
+                    prefetchExecutor.shutdownNow();
+                    // Wait a bit more for tasks to respond to cancellation
+                    prefetchExecutor.awaitTermination(2, java.util.concurrent.TimeUnit.SECONDS);
+                }
+            } catch (InterruptedException e) {
+                prefetchExecutor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
         }
     }
 }

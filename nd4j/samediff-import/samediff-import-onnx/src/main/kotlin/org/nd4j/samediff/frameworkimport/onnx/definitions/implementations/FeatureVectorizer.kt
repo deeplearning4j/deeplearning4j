@@ -73,22 +73,21 @@ class FeatureVectorizer : PreImportHook {
         // Get input dimensions attribute (optional)
         val inputDimensions = getLongArray(attributes, "inputdimensions")
 
-        // Process each input: flatten to 2D if necessary
+        // Process each input: flatten to 2D if necessary using dynamic operations
+        // We flatten each input to [N, -1] which works regardless of input rank
         val processedInputs = inputs.mapIndexed { idx, input ->
             // Get the expected dimension for this input if specified
             val expectedDim = inputDimensions?.getOrNull(idx)
 
-            // Flatten to 2D: [N, features]
-            val flatInput = if (input.shape.size > 2) {
-                // Reshape from [N, ...] to [N, -1]
-                val batchSize = input.shape[0]
-                sd.reshape("${opName}_flat_$idx", input, batchSize, -1)
-            } else if (input.shape.size == 1) {
-                // Expand dims to make it [N, 1] or [1, features]
-                sd.expandDims("${opName}_expand_$idx", input, 0)
-            } else {
-                input
-            }
+            // Get batch size as first element of shape using SameDiff operations
+            val inputShape = sd.shape("${opName}_shape_$idx", input)
+            val batchSize = inputShape.get(org.nd4j.autodiff.samediff.SDIndex.point(0))
+
+            // Build new shape [batchSize, -1] using SameDiff operations
+            val newShape = sd.stack("${opName}_newshape_$idx", 0, batchSize, sd.constant(-1L))
+
+            // Reshape to 2D [N, features]
+            val flatInput = sd.reshape("${opName}_flat_$idx", input, newShape)
 
             // Cast to float for consistency
             flatInput.castTo("${opName}_cast_$idx", DataType.FLOAT)

@@ -26,6 +26,7 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -110,6 +111,26 @@ public abstract class BaseTransformAnyOp extends BaseTransformOp implements Tran
         if(x == null)
             return Collections.emptyList();
         return Collections.singletonList(Nd4j.createBuffer(LongShapeDescriptor.fromShape(x.shape(), x.dataType()).toShapeInfo()));
+    }
+
+    @Override
+    public List<DataBuffer> calculateOutputShape(OpContext oc) {
+        if(oc == null) {
+            return calculateOutputShape();
+        }
+        INDArray input = oc.getInputArray(0);
+        if(input == null) {
+            return Collections.emptyList();
+        }
+        // For pairwise ops with two inputs, compute broadcast shape
+        if(oc.numInputArguments() > 1) {
+            INDArray input2 = oc.getInputArray(1);
+            if(input2 != null) {
+                long[] broadcastShape = org.nd4j.linalg.api.shape.Shape.broadcastOutputShape(input.shape(), input2.shape());
+                return Collections.singletonList(Nd4j.createBuffer(LongShapeDescriptor.fromShape(broadcastShape, input.dataType()).toShapeInfo()));
+            }
+        }
+        return Collections.singletonList(Nd4j.createBuffer(LongShapeDescriptor.fromShape(input.shape(), input.dataType()).toShapeInfo()));
     }
 
     @Override

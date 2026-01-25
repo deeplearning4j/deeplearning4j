@@ -72,9 +72,8 @@ class Crop : PreImportHook {
         val right = if (border.size > 2) border[2] else 0
         val bottom = if (border.size > 3) border[3] else 0
 
-        // Input shape is NCHW
-        // Calculate slicing parameters
-        val inputShape = input.shape
+        // Input shape is NCHW - use sd.shape() if needed for dynamic operations
+        // val inputShape = sd.shape(input)
 
         // Calculate output height and width
         val outputH = if (scale.isNotEmpty()) scale[0] else -1

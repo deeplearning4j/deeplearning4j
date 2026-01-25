@@ -6,17 +6,17 @@ package org.nd4j.ir;
 public final class OpNamespace {
   private OpNamespace() {}
   public static void registerAllExtensions(
-      com.google.protobuf.ExtensionRegistryLite registry) {
+      org.nd4j.shade.protobuf.ExtensionRegistryLite registry) {
   }
 
   public static void registerAllExtensions(
-      com.google.protobuf.ExtensionRegistry registry) {
+      org.nd4j.shade.protobuf.ExtensionRegistry registry) {
     registerAllExtensions(
-        (com.google.protobuf.ExtensionRegistryLite) registry);
+        (org.nd4j.shade.protobuf.ExtensionRegistryLite) registry);
   }
   public interface ArgDescriptorOrBuilder extends
       // @@protoc_insertion_point(interface_extends:org.nd4j.ir.ArgDescriptor)
-      com.google.protobuf.MessageOrBuilder {
+      org.nd4j.shade.protobuf.MessageOrBuilder {
 
     /**
      * <code>string name = 1;</code>
@@ -27,7 +27,7 @@ public final class OpNamespace {
      * <code>string name = 1;</code>
      * @return The bytes for name.
      */
-    com.google.protobuf.ByteString
+    org.nd4j.shade.protobuf.ByteString
         getNameBytes();
 
     /**
@@ -127,7 +127,7 @@ public final class OpNamespace {
      * <code>string stringValue = 12;</code>
      * @return The bytes for stringValue.
      */
-    com.google.protobuf.ByteString
+    org.nd4j.shade.protobuf.ByteString
         getStringValueBytes();
 
     /**
@@ -152,12 +152,12 @@ public final class OpNamespace {
    * Protobuf type {@code org.nd4j.ir.ArgDescriptor}
    */
   public static final class ArgDescriptor extends
-      com.google.protobuf.GeneratedMessageV3 implements
+      org.nd4j.shade.protobuf.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:org.nd4j.ir.ArgDescriptor)
       ArgDescriptorOrBuilder {
   private static final long serialVersionUID = 0L;
     // Use ArgDescriptor.newBuilder() to construct.
-    private ArgDescriptor(com.google.protobuf.GeneratedMessageV3.Builder<?> builder) {
+    private ArgDescriptor(org.nd4j.shade.protobuf.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
     }
     private ArgDescriptor() {
@@ -175,17 +175,17 @@ public final class OpNamespace {
     }
 
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final org.nd4j.shade.protobuf.UnknownFieldSet
     getUnknownFields() {
       return this.unknownFields;
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return org.nd4j.ir.OpNamespace.internal_static_org_nd4j_ir_ArgDescriptor_descriptor;
     }
 
     @java.lang.Override
-    protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+    protected org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return org.nd4j.ir.OpNamespace.internal_static_org_nd4j_ir_ArgDescriptor_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
@@ -196,7 +196,7 @@ public final class OpNamespace {
      * Protobuf enum {@code org.nd4j.ir.ArgDescriptor.ArgType}
      */
     public enum ArgType
-        implements com.google.protobuf.ProtocolMessageEnum {
+        implements org.nd4j.shade.protobuf.ProtocolMessageEnum {
       /**
        * <code>FLOAT = 0;</code>
        */
@@ -311,19 +311,19 @@ public final class OpNamespace {
         }
       }
 
-      public static com.google.protobuf.Internal.EnumLiteMap<ArgType>
+      public static org.nd4j.shade.protobuf.Internal.EnumLiteMap<ArgType>
           internalGetValueMap() {
         return internalValueMap;
       }
-      private static final com.google.protobuf.Internal.EnumLiteMap<
+      private static final org.nd4j.shade.protobuf.Internal.EnumLiteMap<
           ArgType> internalValueMap =
-            new com.google.protobuf.Internal.EnumLiteMap<ArgType>() {
+            new org.nd4j.shade.protobuf.Internal.EnumLiteMap<ArgType>() {
               public ArgType findValueByNumber(int number) {
                 return ArgType.forNumber(number);
               }
             };
 
-      public final com.google.protobuf.Descriptors.EnumValueDescriptor
+      public final org.nd4j.shade.protobuf.Descriptors.EnumValueDescriptor
           getValueDescriptor() {
         if (this == UNRECOGNIZED) {
           throw new java.lang.IllegalStateException(
@@ -331,11 +331,11 @@ public final class OpNamespace {
         }
         return getDescriptor().getValues().get(ordinal());
       }
-      public final com.google.protobuf.Descriptors.EnumDescriptor
+      public final org.nd4j.shade.protobuf.Descriptors.EnumDescriptor
           getDescriptorForType() {
         return getDescriptor();
       }
-      public static final com.google.protobuf.Descriptors.EnumDescriptor
+      public static final org.nd4j.shade.protobuf.Descriptors.EnumDescriptor
           getDescriptor() {
         return org.nd4j.ir.OpNamespace.ArgDescriptor.getDescriptor().getEnumTypes().get(0);
       }
@@ -343,7 +343,7 @@ public final class OpNamespace {
       private static final ArgType[] VALUES = values();
 
       public static ArgType valueOf(
-          com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
+          org.nd4j.shade.protobuf.Descriptors.EnumValueDescriptor desc) {
         if (desc.getType() != getDescriptor()) {
           throw new java.lang.IllegalArgumentException(
             "EnumValueDescriptor is not for this type.");
@@ -375,8 +375,8 @@ public final class OpNamespace {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
+        org.nd4j.shade.protobuf.ByteString bs = 
+            (org.nd4j.shade.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         name_ = s;
         return s;
@@ -387,17 +387,17 @@ public final class OpNamespace {
      * @return The bytes for name.
      */
     @java.lang.Override
-    public com.google.protobuf.ByteString
+    public org.nd4j.shade.protobuf.ByteString
         getNameBytes() {
       java.lang.Object ref = name_;
       if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
+        org.nd4j.shade.protobuf.ByteString b = 
+            org.nd4j.shade.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         name_ = b;
         return b;
       } else {
-        return (com.google.protobuf.ByteString) ref;
+        return (org.nd4j.shade.protobuf.ByteString) ref;
       }
     }
 
@@ -569,8 +569,8 @@ public final class OpNamespace {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
+        org.nd4j.shade.protobuf.ByteString bs = 
+            (org.nd4j.shade.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         stringValue_ = s;
         return s;
@@ -581,17 +581,17 @@ public final class OpNamespace {
      * @return The bytes for stringValue.
      */
     @java.lang.Override
-    public com.google.protobuf.ByteString
+    public org.nd4j.shade.protobuf.ByteString
         getStringValueBytes() {
       java.lang.Object ref = stringValue_;
       if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
+        org.nd4j.shade.protobuf.ByteString b = 
+            org.nd4j.shade.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         stringValue_ = b;
         return b;
       } else {
-        return (com.google.protobuf.ByteString) ref;
+        return (org.nd4j.shade.protobuf.ByteString) ref;
       }
     }
 
@@ -640,10 +640,10 @@ public final class OpNamespace {
     }
 
     @java.lang.Override
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(org.nd4j.shade.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
-      if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(name_)) {
-        com.google.protobuf.GeneratedMessageV3.writeString(output, 1, name_);
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(name_)) {
+        org.nd4j.shade.protobuf.GeneratedMessageV3.writeString(output, 1, name_);
       }
       if (java.lang.Float.floatToRawIntBits(floatValue_) != 0) {
         output.writeFloat(2, floatValue_);
@@ -675,8 +675,8 @@ public final class OpNamespace {
       if (argIndex_ != 0) {
         output.writeInt32(11, argIndex_);
       }
-      if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(stringValue_)) {
-        com.google.protobuf.GeneratedMessageV3.writeString(output, 12, stringValue_);
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(stringValue_)) {
+        org.nd4j.shade.protobuf.GeneratedMessageV3.writeString(output, 12, stringValue_);
       }
       if (argOptional_ != false) {
         output.writeBool(13, argOptional_);
@@ -696,62 +696,62 @@ public final class OpNamespace {
       if (size != -1) return size;
 
       size = 0;
-      if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(name_)) {
-        size += com.google.protobuf.GeneratedMessageV3.computeStringSize(1, name_);
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(name_)) {
+        size += org.nd4j.shade.protobuf.GeneratedMessageV3.computeStringSize(1, name_);
       }
       if (java.lang.Float.floatToRawIntBits(floatValue_) != 0) {
-        size += com.google.protobuf.CodedOutputStream
+        size += org.nd4j.shade.protobuf.CodedOutputStream
           .computeFloatSize(2, floatValue_);
       }
       if (java.lang.Double.doubleToRawLongBits(doubleValue_) != 0) {
-        size += com.google.protobuf.CodedOutputStream
+        size += org.nd4j.shade.protobuf.CodedOutputStream
           .computeDoubleSize(3, doubleValue_);
       }
       if (int32Value_ != 0) {
-        size += com.google.protobuf.CodedOutputStream
+        size += org.nd4j.shade.protobuf.CodedOutputStream
           .computeInt32Size(4, int32Value_);
       }
       if (int64Value_ != 0L) {
-        size += com.google.protobuf.CodedOutputStream
+        size += org.nd4j.shade.protobuf.CodedOutputStream
           .computeInt64Size(5, int64Value_);
       }
       if (boolValue_ != false) {
-        size += com.google.protobuf.CodedOutputStream
+        size += org.nd4j.shade.protobuf.CodedOutputStream
           .computeBoolSize(6, boolValue_);
       }
       if (dataTypeValue_ != org.nd4j.ir.TensorNamespace.DataType.UNDEFINED.getNumber()) {
-        size += com.google.protobuf.CodedOutputStream
+        size += org.nd4j.shade.protobuf.CodedOutputStream
           .computeEnumSize(7, dataTypeValue_);
       }
       if (inputValue_ != null) {
-        size += com.google.protobuf.CodedOutputStream
+        size += org.nd4j.shade.protobuf.CodedOutputStream
           .computeMessageSize(8, getInputValue());
       }
       if (outputValue_ != null) {
-        size += com.google.protobuf.CodedOutputStream
+        size += org.nd4j.shade.protobuf.CodedOutputStream
           .computeMessageSize(9, getOutputValue());
       }
       if (argType_ != org.nd4j.ir.OpNamespace.ArgDescriptor.ArgType.FLOAT.getNumber()) {
-        size += com.google.protobuf.CodedOutputStream
+        size += org.nd4j.shade.protobuf.CodedOutputStream
           .computeEnumSize(10, argType_);
       }
       if (argIndex_ != 0) {
-        size += com.google.protobuf.CodedOutputStream
+        size += org.nd4j.shade.protobuf.CodedOutputStream
           .computeInt32Size(11, argIndex_);
       }
-      if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(stringValue_)) {
-        size += com.google.protobuf.GeneratedMessageV3.computeStringSize(12, stringValue_);
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(stringValue_)) {
+        size += org.nd4j.shade.protobuf.GeneratedMessageV3.computeStringSize(12, stringValue_);
       }
       if (argOptional_ != false) {
-        size += com.google.protobuf.CodedOutputStream
+        size += org.nd4j.shade.protobuf.CodedOutputStream
           .computeBoolSize(13, argOptional_);
       }
       if (convertBoolToInt_ != false) {
-        size += com.google.protobuf.CodedOutputStream
+        size += org.nd4j.shade.protobuf.CodedOutputStream
           .computeBoolSize(14, convertBoolToInt_);
       }
       if (isArray_ != false) {
-        size += com.google.protobuf.CodedOutputStream
+        size += org.nd4j.shade.protobuf.CodedOutputStream
           .computeBoolSize(15, isArray_);
       }
       size += getUnknownFields().getSerializedSize();
@@ -822,15 +822,15 @@ public final class OpNamespace {
       hash = (53 * hash) + java.lang.Float.floatToIntBits(
           getFloatValue());
       hash = (37 * hash) + DOUBLEVALUE_FIELD_NUMBER;
-      hash = (53 * hash) + com.google.protobuf.Internal.hashLong(
+      hash = (53 * hash) + org.nd4j.shade.protobuf.Internal.hashLong(
           java.lang.Double.doubleToLongBits(getDoubleValue()));
       hash = (37 * hash) + INT32VALUE_FIELD_NUMBER;
       hash = (53 * hash) + getInt32Value();
       hash = (37 * hash) + INT64VALUE_FIELD_NUMBER;
-      hash = (53 * hash) + com.google.protobuf.Internal.hashLong(
+      hash = (53 * hash) + org.nd4j.shade.protobuf.Internal.hashLong(
           getInt64Value());
       hash = (37 * hash) + BOOLVALUE_FIELD_NUMBER;
-      hash = (53 * hash) + com.google.protobuf.Internal.hashBoolean(
+      hash = (53 * hash) + org.nd4j.shade.protobuf.Internal.hashBoolean(
           getBoolValue());
       hash = (37 * hash) + DATATYPEVALUE_FIELD_NUMBER;
       hash = (53 * hash) + dataTypeValue_;
@@ -849,13 +849,13 @@ public final class OpNamespace {
       hash = (37 * hash) + STRINGVALUE_FIELD_NUMBER;
       hash = (53 * hash) + getStringValue().hashCode();
       hash = (37 * hash) + ARGOPTIONAL_FIELD_NUMBER;
-      hash = (53 * hash) + com.google.protobuf.Internal.hashBoolean(
+      hash = (53 * hash) + org.nd4j.shade.protobuf.Internal.hashBoolean(
           getArgOptional());
       hash = (37 * hash) + CONVERTBOOLTOINT_FIELD_NUMBER;
-      hash = (53 * hash) + com.google.protobuf.Internal.hashBoolean(
+      hash = (53 * hash) + org.nd4j.shade.protobuf.Internal.hashBoolean(
           getConvertBoolToInt());
       hash = (37 * hash) + ISARRAY_FIELD_NUMBER;
-      hash = (53 * hash) + com.google.protobuf.Internal.hashBoolean(
+      hash = (53 * hash) + org.nd4j.shade.protobuf.Internal.hashBoolean(
           getIsArray());
       hash = (29 * hash) + getUnknownFields().hashCode();
       memoizedHashCode = hash;
@@ -864,71 +864,71 @@ public final class OpNamespace {
 
     public static org.nd4j.ir.OpNamespace.ArgDescriptor parseFrom(
         java.nio.ByteBuffer data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static org.nd4j.ir.OpNamespace.ArgDescriptor parseFrom(
         java.nio.ByteBuffer data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static org.nd4j.ir.OpNamespace.ArgDescriptor parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        org.nd4j.shade.protobuf.ByteString data)
+        throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static org.nd4j.ir.OpNamespace.ArgDescriptor parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        org.nd4j.shade.protobuf.ByteString data,
+        org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static org.nd4j.ir.OpNamespace.ArgDescriptor parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static org.nd4j.ir.OpNamespace.ArgDescriptor parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static org.nd4j.ir.OpNamespace.ArgDescriptor parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
+      return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input);
     }
     public static org.nd4j.ir.OpNamespace.ArgDescriptor parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
+      return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static org.nd4j.ir.OpNamespace.ArgDescriptor parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
+      return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
     public static org.nd4j.ir.OpNamespace.ArgDescriptor parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
+      return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static org.nd4j.ir.OpNamespace.ArgDescriptor parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        org.nd4j.shade.protobuf.CodedInputStream input)
         throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
+      return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input);
     }
     public static org.nd4j.ir.OpNamespace.ArgDescriptor parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        org.nd4j.shade.protobuf.CodedInputStream input,
+        org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
+      return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
@@ -948,7 +948,7 @@ public final class OpNamespace {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+        org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -956,16 +956,16 @@ public final class OpNamespace {
      * Protobuf type {@code org.nd4j.ir.ArgDescriptor}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
+        org.nd4j.shade.protobuf.GeneratedMessageV3.Builder<Builder> implements
         // @@protoc_insertion_point(builder_implements:org.nd4j.ir.ArgDescriptor)
         org.nd4j.ir.OpNamespace.ArgDescriptorOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return org.nd4j.ir.OpNamespace.internal_static_org_nd4j_ir_ArgDescriptor_descriptor;
       }
 
       @java.lang.Override
-      protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      protected org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return org.nd4j.ir.OpNamespace.internal_static_org_nd4j_ir_ArgDescriptor_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -978,7 +978,7 @@ public final class OpNamespace {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+          org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
 
       }
@@ -1027,7 +1027,7 @@ public final class OpNamespace {
       }
 
       @java.lang.Override
-      public com.google.protobuf.Descriptors.Descriptor
+      public org.nd4j.shade.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return org.nd4j.ir.OpNamespace.internal_static_org_nd4j_ir_ArgDescriptor_descriptor;
       }
@@ -1082,34 +1082,34 @@ public final class OpNamespace {
       }
       @java.lang.Override
       public Builder setField(
-          com.google.protobuf.Descriptors.FieldDescriptor field,
+          org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
           java.lang.Object value) {
         return super.setField(field, value);
       }
       @java.lang.Override
       public Builder clearField(
-          com.google.protobuf.Descriptors.FieldDescriptor field) {
+          org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field) {
         return super.clearField(field);
       }
       @java.lang.Override
       public Builder clearOneof(
-          com.google.protobuf.Descriptors.OneofDescriptor oneof) {
+          org.nd4j.shade.protobuf.Descriptors.OneofDescriptor oneof) {
         return super.clearOneof(oneof);
       }
       @java.lang.Override
       public Builder setRepeatedField(
-          com.google.protobuf.Descriptors.FieldDescriptor field,
+          org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
           int index, java.lang.Object value) {
         return super.setRepeatedField(field, index, value);
       }
       @java.lang.Override
       public Builder addRepeatedField(
-          com.google.protobuf.Descriptors.FieldDescriptor field,
+          org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
           java.lang.Object value) {
         return super.addRepeatedField(field, value);
       }
       @java.lang.Override
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(org.nd4j.shade.protobuf.Message other) {
         if (other instanceof org.nd4j.ir.OpNamespace.ArgDescriptor) {
           return mergeFrom((org.nd4j.ir.OpNamespace.ArgDescriptor)other);
         } else {
@@ -1179,8 +1179,8 @@ public final class OpNamespace {
 
       @java.lang.Override
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          org.nd4j.shade.protobuf.CodedInputStream input,
+          org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         if (extensionRegistry == null) {
           throw new java.lang.NullPointerException();
@@ -1280,7 +1280,7 @@ public final class OpNamespace {
               } // default:
             } // switch (tag)
           } // while (!done)
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
           throw e.unwrapIOException();
         } finally {
           onChanged();
@@ -1296,8 +1296,8 @@ public final class OpNamespace {
       public java.lang.String getName() {
         java.lang.Object ref = name_;
         if (!(ref instanceof java.lang.String)) {
-          com.google.protobuf.ByteString bs =
-              (com.google.protobuf.ByteString) ref;
+          org.nd4j.shade.protobuf.ByteString bs =
+              (org.nd4j.shade.protobuf.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           name_ = s;
           return s;
@@ -1309,17 +1309,17 @@ public final class OpNamespace {
        * <code>string name = 1;</code>
        * @return The bytes for name.
        */
-      public com.google.protobuf.ByteString
+      public org.nd4j.shade.protobuf.ByteString
           getNameBytes() {
         java.lang.Object ref = name_;
         if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          org.nd4j.shade.protobuf.ByteString b = 
+              org.nd4j.shade.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           name_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (org.nd4j.shade.protobuf.ByteString) ref;
         }
       }
       /**
@@ -1353,7 +1353,7 @@ public final class OpNamespace {
        * @return This builder for chaining.
        */
       public Builder setNameBytes(
-          com.google.protobuf.ByteString value) {
+          org.nd4j.shade.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -1574,7 +1574,7 @@ public final class OpNamespace {
       }
 
       private org.nd4j.ir.TensorNamespace.TensorProto inputValue_;
-      private com.google.protobuf.SingleFieldBuilderV3<
+      private org.nd4j.shade.protobuf.SingleFieldBuilderV3<
           org.nd4j.ir.TensorNamespace.TensorProto, org.nd4j.ir.TensorNamespace.TensorProto.Builder, org.nd4j.ir.TensorNamespace.TensorProtoOrBuilder> inputValueBuilder_;
       /**
        * <code>.org.nd4j.ir.TensorProto inputValue = 8;</code>
@@ -1678,11 +1678,11 @@ public final class OpNamespace {
       /**
        * <code>.org.nd4j.ir.TensorProto inputValue = 8;</code>
        */
-      private com.google.protobuf.SingleFieldBuilderV3<
+      private org.nd4j.shade.protobuf.SingleFieldBuilderV3<
           org.nd4j.ir.TensorNamespace.TensorProto, org.nd4j.ir.TensorNamespace.TensorProto.Builder, org.nd4j.ir.TensorNamespace.TensorProtoOrBuilder> 
           getInputValueFieldBuilder() {
         if (inputValueBuilder_ == null) {
-          inputValueBuilder_ = new com.google.protobuf.SingleFieldBuilderV3<
+          inputValueBuilder_ = new org.nd4j.shade.protobuf.SingleFieldBuilderV3<
               org.nd4j.ir.TensorNamespace.TensorProto, org.nd4j.ir.TensorNamespace.TensorProto.Builder, org.nd4j.ir.TensorNamespace.TensorProtoOrBuilder>(
                   getInputValue(),
                   getParentForChildren(),
@@ -1693,7 +1693,7 @@ public final class OpNamespace {
       }
 
       private org.nd4j.ir.TensorNamespace.TensorProto outputValue_;
-      private com.google.protobuf.SingleFieldBuilderV3<
+      private org.nd4j.shade.protobuf.SingleFieldBuilderV3<
           org.nd4j.ir.TensorNamespace.TensorProto, org.nd4j.ir.TensorNamespace.TensorProto.Builder, org.nd4j.ir.TensorNamespace.TensorProtoOrBuilder> outputValueBuilder_;
       /**
        * <code>.org.nd4j.ir.TensorProto outputValue = 9;</code>
@@ -1797,11 +1797,11 @@ public final class OpNamespace {
       /**
        * <code>.org.nd4j.ir.TensorProto outputValue = 9;</code>
        */
-      private com.google.protobuf.SingleFieldBuilderV3<
+      private org.nd4j.shade.protobuf.SingleFieldBuilderV3<
           org.nd4j.ir.TensorNamespace.TensorProto, org.nd4j.ir.TensorNamespace.TensorProto.Builder, org.nd4j.ir.TensorNamespace.TensorProtoOrBuilder> 
           getOutputValueFieldBuilder() {
         if (outputValueBuilder_ == null) {
-          outputValueBuilder_ = new com.google.protobuf.SingleFieldBuilderV3<
+          outputValueBuilder_ = new org.nd4j.shade.protobuf.SingleFieldBuilderV3<
               org.nd4j.ir.TensorNamespace.TensorProto, org.nd4j.ir.TensorNamespace.TensorProto.Builder, org.nd4j.ir.TensorNamespace.TensorProtoOrBuilder>(
                   getOutputValue(),
                   getParentForChildren(),
@@ -1904,8 +1904,8 @@ public final class OpNamespace {
       public java.lang.String getStringValue() {
         java.lang.Object ref = stringValue_;
         if (!(ref instanceof java.lang.String)) {
-          com.google.protobuf.ByteString bs =
-              (com.google.protobuf.ByteString) ref;
+          org.nd4j.shade.protobuf.ByteString bs =
+              (org.nd4j.shade.protobuf.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           stringValue_ = s;
           return s;
@@ -1917,17 +1917,17 @@ public final class OpNamespace {
        * <code>string stringValue = 12;</code>
        * @return The bytes for stringValue.
        */
-      public com.google.protobuf.ByteString
+      public org.nd4j.shade.protobuf.ByteString
           getStringValueBytes() {
         java.lang.Object ref = stringValue_;
         if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          org.nd4j.shade.protobuf.ByteString b = 
+              org.nd4j.shade.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           stringValue_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (org.nd4j.shade.protobuf.ByteString) ref;
         }
       }
       /**
@@ -1961,7 +1961,7 @@ public final class OpNamespace {
        * @return This builder for chaining.
        */
       public Builder setStringValueBytes(
-          com.google.protobuf.ByteString value) {
+          org.nd4j.shade.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -2066,13 +2066,13 @@ public final class OpNamespace {
       }
       @java.lang.Override
       public final Builder setUnknownFields(
-          final com.google.protobuf.UnknownFieldSet unknownFields) {
+          final org.nd4j.shade.protobuf.UnknownFieldSet unknownFields) {
         return super.setUnknownFields(unknownFields);
       }
 
       @java.lang.Override
       public final Builder mergeUnknownFields(
-          final com.google.protobuf.UnknownFieldSet unknownFields) {
+          final org.nd4j.shade.protobuf.UnknownFieldSet unknownFields) {
         return super.mergeUnknownFields(unknownFields);
       }
 
@@ -2090,34 +2090,34 @@ public final class OpNamespace {
       return DEFAULT_INSTANCE;
     }
 
-    private static final com.google.protobuf.Parser<ArgDescriptor>
-        PARSER = new com.google.protobuf.AbstractParser<ArgDescriptor>() {
+    private static final org.nd4j.shade.protobuf.Parser<ArgDescriptor>
+        PARSER = new org.nd4j.shade.protobuf.AbstractParser<ArgDescriptor>() {
       @java.lang.Override
       public ArgDescriptor parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          org.nd4j.shade.protobuf.CodedInputStream input,
+          org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
         Builder builder = newBuilder();
         try {
           builder.mergeFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
           throw e.setUnfinishedMessage(builder.buildPartial());
-        } catch (com.google.protobuf.UninitializedMessageException e) {
+        } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
           throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
         } catch (java.io.IOException e) {
-          throw new com.google.protobuf.InvalidProtocolBufferException(e)
+          throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(e)
               .setUnfinishedMessage(builder.buildPartial());
         }
         return builder.buildPartial();
       }
     };
 
-    public static com.google.protobuf.Parser<ArgDescriptor> parser() {
+    public static org.nd4j.shade.protobuf.Parser<ArgDescriptor> parser() {
       return PARSER;
     }
 
     @java.lang.Override
-    public com.google.protobuf.Parser<ArgDescriptor> getParserForType() {
+    public org.nd4j.shade.protobuf.Parser<ArgDescriptor> getParserForType() {
       return PARSER;
     }
 
@@ -2130,7 +2130,7 @@ public final class OpNamespace {
 
   public interface OpDescriptorOrBuilder extends
       // @@protoc_insertion_point(interface_extends:org.nd4j.ir.OpDescriptor)
-      com.google.protobuf.MessageOrBuilder {
+      org.nd4j.shade.protobuf.MessageOrBuilder {
 
     /**
      * <code>string name = 1;</code>
@@ -2141,7 +2141,7 @@ public final class OpNamespace {
      * <code>string name = 1;</code>
      * @return The bytes for name.
      */
-    com.google.protobuf.ByteString
+    org.nd4j.shade.protobuf.ByteString
         getNameBytes();
 
     /**
@@ -2187,12 +2187,12 @@ public final class OpNamespace {
    * Protobuf type {@code org.nd4j.ir.OpDescriptor}
    */
   public static final class OpDescriptor extends
-      com.google.protobuf.GeneratedMessageV3 implements
+      org.nd4j.shade.protobuf.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:org.nd4j.ir.OpDescriptor)
       OpDescriptorOrBuilder {
   private static final long serialVersionUID = 0L;
     // Use OpDescriptor.newBuilder() to construct.
-    private OpDescriptor(com.google.protobuf.GeneratedMessageV3.Builder<?> builder) {
+    private OpDescriptor(org.nd4j.shade.protobuf.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
     }
     private OpDescriptor() {
@@ -2209,17 +2209,17 @@ public final class OpNamespace {
     }
 
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final org.nd4j.shade.protobuf.UnknownFieldSet
     getUnknownFields() {
       return this.unknownFields;
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return org.nd4j.ir.OpNamespace.internal_static_org_nd4j_ir_OpDescriptor_descriptor;
     }
 
     @java.lang.Override
-    protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+    protected org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return org.nd4j.ir.OpNamespace.internal_static_org_nd4j_ir_OpDescriptor_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
@@ -2230,7 +2230,7 @@ public final class OpNamespace {
      * Protobuf enum {@code org.nd4j.ir.OpDescriptor.OpDeclarationType}
      */
     public enum OpDeclarationType
-        implements com.google.protobuf.ProtocolMessageEnum {
+        implements org.nd4j.shade.protobuf.ProtocolMessageEnum {
       /**
        * <code>CUSTOM_OP_IMPL = 0;</code>
        */
@@ -2372,19 +2372,19 @@ public final class OpNamespace {
         }
       }
 
-      public static com.google.protobuf.Internal.EnumLiteMap<OpDeclarationType>
+      public static org.nd4j.shade.protobuf.Internal.EnumLiteMap<OpDeclarationType>
           internalGetValueMap() {
         return internalValueMap;
       }
-      private static final com.google.protobuf.Internal.EnumLiteMap<
+      private static final org.nd4j.shade.protobuf.Internal.EnumLiteMap<
           OpDeclarationType> internalValueMap =
-            new com.google.protobuf.Internal.EnumLiteMap<OpDeclarationType>() {
+            new org.nd4j.shade.protobuf.Internal.EnumLiteMap<OpDeclarationType>() {
               public OpDeclarationType findValueByNumber(int number) {
                 return OpDeclarationType.forNumber(number);
               }
             };
 
-      public final com.google.protobuf.Descriptors.EnumValueDescriptor
+      public final org.nd4j.shade.protobuf.Descriptors.EnumValueDescriptor
           getValueDescriptor() {
         if (this == UNRECOGNIZED) {
           throw new java.lang.IllegalStateException(
@@ -2392,11 +2392,11 @@ public final class OpNamespace {
         }
         return getDescriptor().getValues().get(ordinal());
       }
-      public final com.google.protobuf.Descriptors.EnumDescriptor
+      public final org.nd4j.shade.protobuf.Descriptors.EnumDescriptor
           getDescriptorForType() {
         return getDescriptor();
       }
-      public static final com.google.protobuf.Descriptors.EnumDescriptor
+      public static final org.nd4j.shade.protobuf.Descriptors.EnumDescriptor
           getDescriptor() {
         return org.nd4j.ir.OpNamespace.OpDescriptor.getDescriptor().getEnumTypes().get(0);
       }
@@ -2404,7 +2404,7 @@ public final class OpNamespace {
       private static final OpDeclarationType[] VALUES = values();
 
       public static OpDeclarationType valueOf(
-          com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
+          org.nd4j.shade.protobuf.Descriptors.EnumValueDescriptor desc) {
         if (desc.getType() != getDescriptor()) {
           throw new java.lang.IllegalArgumentException(
             "EnumValueDescriptor is not for this type.");
@@ -2436,8 +2436,8 @@ public final class OpNamespace {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
+        org.nd4j.shade.protobuf.ByteString bs = 
+            (org.nd4j.shade.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         name_ = s;
         return s;
@@ -2448,17 +2448,17 @@ public final class OpNamespace {
      * @return The bytes for name.
      */
     @java.lang.Override
-    public com.google.protobuf.ByteString
+    public org.nd4j.shade.protobuf.ByteString
         getNameBytes() {
       java.lang.Object ref = name_;
       if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
+        org.nd4j.shade.protobuf.ByteString b = 
+            org.nd4j.shade.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         name_ = b;
         return b;
       } else {
-        return (com.google.protobuf.ByteString) ref;
+        return (org.nd4j.shade.protobuf.ByteString) ref;
       }
     }
 
@@ -2533,10 +2533,10 @@ public final class OpNamespace {
     }
 
     @java.lang.Override
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(org.nd4j.shade.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
-      if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(name_)) {
-        com.google.protobuf.GeneratedMessageV3.writeString(output, 1, name_);
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(name_)) {
+        org.nd4j.shade.protobuf.GeneratedMessageV3.writeString(output, 1, name_);
       }
       for (int i = 0; i < argDescriptor_.size(); i++) {
         output.writeMessage(2, argDescriptor_.get(i));
@@ -2553,15 +2553,15 @@ public final class OpNamespace {
       if (size != -1) return size;
 
       size = 0;
-      if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(name_)) {
-        size += com.google.protobuf.GeneratedMessageV3.computeStringSize(1, name_);
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(name_)) {
+        size += org.nd4j.shade.protobuf.GeneratedMessageV3.computeStringSize(1, name_);
       }
       for (int i = 0; i < argDescriptor_.size(); i++) {
-        size += com.google.protobuf.CodedOutputStream
+        size += org.nd4j.shade.protobuf.CodedOutputStream
           .computeMessageSize(2, argDescriptor_.get(i));
       }
       if (opDeclarationType_ != org.nd4j.ir.OpNamespace.OpDescriptor.OpDeclarationType.CUSTOM_OP_IMPL.getNumber()) {
-        size += com.google.protobuf.CodedOutputStream
+        size += org.nd4j.shade.protobuf.CodedOutputStream
           .computeEnumSize(3, opDeclarationType_);
       }
       size += getUnknownFields().getSerializedSize();
@@ -2610,71 +2610,71 @@ public final class OpNamespace {
 
     public static org.nd4j.ir.OpNamespace.OpDescriptor parseFrom(
         java.nio.ByteBuffer data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static org.nd4j.ir.OpNamespace.OpDescriptor parseFrom(
         java.nio.ByteBuffer data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static org.nd4j.ir.OpNamespace.OpDescriptor parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        org.nd4j.shade.protobuf.ByteString data)
+        throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static org.nd4j.ir.OpNamespace.OpDescriptor parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        org.nd4j.shade.protobuf.ByteString data,
+        org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static org.nd4j.ir.OpNamespace.OpDescriptor parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static org.nd4j.ir.OpNamespace.OpDescriptor parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static org.nd4j.ir.OpNamespace.OpDescriptor parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
+      return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input);
     }
     public static org.nd4j.ir.OpNamespace.OpDescriptor parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
+      return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static org.nd4j.ir.OpNamespace.OpDescriptor parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
+      return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
     public static org.nd4j.ir.OpNamespace.OpDescriptor parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
+      return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static org.nd4j.ir.OpNamespace.OpDescriptor parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        org.nd4j.shade.protobuf.CodedInputStream input)
         throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
+      return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input);
     }
     public static org.nd4j.ir.OpNamespace.OpDescriptor parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        org.nd4j.shade.protobuf.CodedInputStream input,
+        org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
+      return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
@@ -2694,7 +2694,7 @@ public final class OpNamespace {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+        org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -2706,16 +2706,16 @@ public final class OpNamespace {
      * Protobuf type {@code org.nd4j.ir.OpDescriptor}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
+        org.nd4j.shade.protobuf.GeneratedMessageV3.Builder<Builder> implements
         // @@protoc_insertion_point(builder_implements:org.nd4j.ir.OpDescriptor)
         org.nd4j.ir.OpNamespace.OpDescriptorOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return org.nd4j.ir.OpNamespace.internal_static_org_nd4j_ir_OpDescriptor_descriptor;
       }
 
       @java.lang.Override
-      protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      protected org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return org.nd4j.ir.OpNamespace.internal_static_org_nd4j_ir_OpDescriptor_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -2728,7 +2728,7 @@ public final class OpNamespace {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+          org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
 
       }
@@ -2750,7 +2750,7 @@ public final class OpNamespace {
       }
 
       @java.lang.Override
-      public com.google.protobuf.Descriptors.Descriptor
+      public org.nd4j.shade.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return org.nd4j.ir.OpNamespace.internal_static_org_nd4j_ir_OpDescriptor_descriptor;
       }
@@ -2794,34 +2794,34 @@ public final class OpNamespace {
       }
       @java.lang.Override
       public Builder setField(
-          com.google.protobuf.Descriptors.FieldDescriptor field,
+          org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
           java.lang.Object value) {
         return super.setField(field, value);
       }
       @java.lang.Override
       public Builder clearField(
-          com.google.protobuf.Descriptors.FieldDescriptor field) {
+          org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field) {
         return super.clearField(field);
       }
       @java.lang.Override
       public Builder clearOneof(
-          com.google.protobuf.Descriptors.OneofDescriptor oneof) {
+          org.nd4j.shade.protobuf.Descriptors.OneofDescriptor oneof) {
         return super.clearOneof(oneof);
       }
       @java.lang.Override
       public Builder setRepeatedField(
-          com.google.protobuf.Descriptors.FieldDescriptor field,
+          org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
           int index, java.lang.Object value) {
         return super.setRepeatedField(field, index, value);
       }
       @java.lang.Override
       public Builder addRepeatedField(
-          com.google.protobuf.Descriptors.FieldDescriptor field,
+          org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
           java.lang.Object value) {
         return super.addRepeatedField(field, value);
       }
       @java.lang.Override
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(org.nd4j.shade.protobuf.Message other) {
         if (other instanceof org.nd4j.ir.OpNamespace.OpDescriptor) {
           return mergeFrom((org.nd4j.ir.OpNamespace.OpDescriptor)other);
         } else {
@@ -2855,7 +2855,7 @@ public final class OpNamespace {
               argDescriptor_ = other.argDescriptor_;
               bitField0_ = (bitField0_ & ~0x00000001);
               argDescriptorBuilder_ = 
-                com.google.protobuf.GeneratedMessageV3.alwaysUseFieldBuilders ?
+                org.nd4j.shade.protobuf.GeneratedMessageV3.alwaysUseFieldBuilders ?
                    getArgDescriptorFieldBuilder() : null;
             } else {
               argDescriptorBuilder_.addAllMessages(other.argDescriptor_);
@@ -2877,8 +2877,8 @@ public final class OpNamespace {
 
       @java.lang.Override
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          org.nd4j.shade.protobuf.CodedInputStream input,
+          org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         if (extensionRegistry == null) {
           throw new java.lang.NullPointerException();
@@ -2922,7 +2922,7 @@ public final class OpNamespace {
               } // default:
             } // switch (tag)
           } // while (!done)
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
           throw e.unwrapIOException();
         } finally {
           onChanged();
@@ -2939,8 +2939,8 @@ public final class OpNamespace {
       public java.lang.String getName() {
         java.lang.Object ref = name_;
         if (!(ref instanceof java.lang.String)) {
-          com.google.protobuf.ByteString bs =
-              (com.google.protobuf.ByteString) ref;
+          org.nd4j.shade.protobuf.ByteString bs =
+              (org.nd4j.shade.protobuf.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           name_ = s;
           return s;
@@ -2952,17 +2952,17 @@ public final class OpNamespace {
        * <code>string name = 1;</code>
        * @return The bytes for name.
        */
-      public com.google.protobuf.ByteString
+      public org.nd4j.shade.protobuf.ByteString
           getNameBytes() {
         java.lang.Object ref = name_;
         if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          org.nd4j.shade.protobuf.ByteString b = 
+              org.nd4j.shade.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           name_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (org.nd4j.shade.protobuf.ByteString) ref;
         }
       }
       /**
@@ -2996,7 +2996,7 @@ public final class OpNamespace {
        * @return This builder for chaining.
        */
       public Builder setNameBytes(
-          com.google.protobuf.ByteString value) {
+          org.nd4j.shade.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -3016,7 +3016,7 @@ public final class OpNamespace {
          }
       }
 
-      private com.google.protobuf.RepeatedFieldBuilderV3<
+      private org.nd4j.shade.protobuf.RepeatedFieldBuilderV3<
           org.nd4j.ir.OpNamespace.ArgDescriptor, org.nd4j.ir.OpNamespace.ArgDescriptor.Builder, org.nd4j.ir.OpNamespace.ArgDescriptorOrBuilder> argDescriptorBuilder_;
 
       /**
@@ -3148,7 +3148,7 @@ public final class OpNamespace {
           java.lang.Iterable<? extends org.nd4j.ir.OpNamespace.ArgDescriptor> values) {
         if (argDescriptorBuilder_ == null) {
           ensureArgDescriptorIsMutable();
-          com.google.protobuf.AbstractMessageLite.Builder.addAll(
+          org.nd4j.shade.protobuf.AbstractMessageLite.Builder.addAll(
               values, argDescriptor_);
           onChanged();
         } else {
@@ -3232,11 +3232,11 @@ public final class OpNamespace {
            getArgDescriptorBuilderList() {
         return getArgDescriptorFieldBuilder().getBuilderList();
       }
-      private com.google.protobuf.RepeatedFieldBuilderV3<
+      private org.nd4j.shade.protobuf.RepeatedFieldBuilderV3<
           org.nd4j.ir.OpNamespace.ArgDescriptor, org.nd4j.ir.OpNamespace.ArgDescriptor.Builder, org.nd4j.ir.OpNamespace.ArgDescriptorOrBuilder> 
           getArgDescriptorFieldBuilder() {
         if (argDescriptorBuilder_ == null) {
-          argDescriptorBuilder_ = new com.google.protobuf.RepeatedFieldBuilderV3<
+          argDescriptorBuilder_ = new org.nd4j.shade.protobuf.RepeatedFieldBuilderV3<
               org.nd4j.ir.OpNamespace.ArgDescriptor, org.nd4j.ir.OpNamespace.ArgDescriptor.Builder, org.nd4j.ir.OpNamespace.ArgDescriptorOrBuilder>(
                   argDescriptor_,
                   ((bitField0_ & 0x00000001) != 0),
@@ -3302,13 +3302,13 @@ public final class OpNamespace {
       }
       @java.lang.Override
       public final Builder setUnknownFields(
-          final com.google.protobuf.UnknownFieldSet unknownFields) {
+          final org.nd4j.shade.protobuf.UnknownFieldSet unknownFields) {
         return super.setUnknownFields(unknownFields);
       }
 
       @java.lang.Override
       public final Builder mergeUnknownFields(
-          final com.google.protobuf.UnknownFieldSet unknownFields) {
+          final org.nd4j.shade.protobuf.UnknownFieldSet unknownFields) {
         return super.mergeUnknownFields(unknownFields);
       }
 
@@ -3326,34 +3326,34 @@ public final class OpNamespace {
       return DEFAULT_INSTANCE;
     }
 
-    private static final com.google.protobuf.Parser<OpDescriptor>
-        PARSER = new com.google.protobuf.AbstractParser<OpDescriptor>() {
+    private static final org.nd4j.shade.protobuf.Parser<OpDescriptor>
+        PARSER = new org.nd4j.shade.protobuf.AbstractParser<OpDescriptor>() {
       @java.lang.Override
       public OpDescriptor parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          org.nd4j.shade.protobuf.CodedInputStream input,
+          org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
         Builder builder = newBuilder();
         try {
           builder.mergeFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
           throw e.setUnfinishedMessage(builder.buildPartial());
-        } catch (com.google.protobuf.UninitializedMessageException e) {
+        } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
           throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
         } catch (java.io.IOException e) {
-          throw new com.google.protobuf.InvalidProtocolBufferException(e)
+          throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(e)
               .setUnfinishedMessage(builder.buildPartial());
         }
         return builder.buildPartial();
       }
     };
 
-    public static com.google.protobuf.Parser<OpDescriptor> parser() {
+    public static org.nd4j.shade.protobuf.Parser<OpDescriptor> parser() {
       return PARSER;
     }
 
     @java.lang.Override
-    public com.google.protobuf.Parser<OpDescriptor> getParserForType() {
+    public org.nd4j.shade.protobuf.Parser<OpDescriptor> getParserForType() {
       return PARSER;
     }
 
@@ -3366,7 +3366,7 @@ public final class OpNamespace {
 
   public interface OpDescriptorListOrBuilder extends
       // @@protoc_insertion_point(interface_extends:org.nd4j.ir.OpDescriptorList)
-      com.google.protobuf.MessageOrBuilder {
+      org.nd4j.shade.protobuf.MessageOrBuilder {
 
     /**
      * <code>repeated .org.nd4j.ir.OpDescriptor opList = 1;</code>
@@ -3396,12 +3396,12 @@ public final class OpNamespace {
    * Protobuf type {@code org.nd4j.ir.OpDescriptorList}
    */
   public static final class OpDescriptorList extends
-      com.google.protobuf.GeneratedMessageV3 implements
+      org.nd4j.shade.protobuf.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:org.nd4j.ir.OpDescriptorList)
       OpDescriptorListOrBuilder {
   private static final long serialVersionUID = 0L;
     // Use OpDescriptorList.newBuilder() to construct.
-    private OpDescriptorList(com.google.protobuf.GeneratedMessageV3.Builder<?> builder) {
+    private OpDescriptorList(org.nd4j.shade.protobuf.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
     }
     private OpDescriptorList() {
@@ -3416,17 +3416,17 @@ public final class OpNamespace {
     }
 
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final org.nd4j.shade.protobuf.UnknownFieldSet
     getUnknownFields() {
       return this.unknownFields;
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return org.nd4j.ir.OpNamespace.internal_static_org_nd4j_ir_OpDescriptorList_descriptor;
     }
 
     @java.lang.Override
-    protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+    protected org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return org.nd4j.ir.OpNamespace.internal_static_org_nd4j_ir_OpDescriptorList_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
@@ -3485,7 +3485,7 @@ public final class OpNamespace {
     }
 
     @java.lang.Override
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(org.nd4j.shade.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       for (int i = 0; i < opList_.size(); i++) {
         output.writeMessage(1, opList_.get(i));
@@ -3500,7 +3500,7 @@ public final class OpNamespace {
 
       size = 0;
       for (int i = 0; i < opList_.size(); i++) {
-        size += com.google.protobuf.CodedOutputStream
+        size += org.nd4j.shade.protobuf.CodedOutputStream
           .computeMessageSize(1, opList_.get(i));
       }
       size += getUnknownFields().getSerializedSize();
@@ -3542,71 +3542,71 @@ public final class OpNamespace {
 
     public static org.nd4j.ir.OpNamespace.OpDescriptorList parseFrom(
         java.nio.ByteBuffer data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static org.nd4j.ir.OpNamespace.OpDescriptorList parseFrom(
         java.nio.ByteBuffer data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static org.nd4j.ir.OpNamespace.OpDescriptorList parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        org.nd4j.shade.protobuf.ByteString data)
+        throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static org.nd4j.ir.OpNamespace.OpDescriptorList parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        org.nd4j.shade.protobuf.ByteString data,
+        org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static org.nd4j.ir.OpNamespace.OpDescriptorList parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static org.nd4j.ir.OpNamespace.OpDescriptorList parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static org.nd4j.ir.OpNamespace.OpDescriptorList parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
+      return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input);
     }
     public static org.nd4j.ir.OpNamespace.OpDescriptorList parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
+      return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static org.nd4j.ir.OpNamespace.OpDescriptorList parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
+      return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
     public static org.nd4j.ir.OpNamespace.OpDescriptorList parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
+      return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static org.nd4j.ir.OpNamespace.OpDescriptorList parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        org.nd4j.shade.protobuf.CodedInputStream input)
         throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
+      return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input);
     }
     public static org.nd4j.ir.OpNamespace.OpDescriptorList parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        org.nd4j.shade.protobuf.CodedInputStream input,
+        org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
+      return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
@@ -3626,7 +3626,7 @@ public final class OpNamespace {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+        org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -3634,16 +3634,16 @@ public final class OpNamespace {
      * Protobuf type {@code org.nd4j.ir.OpDescriptorList}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
+        org.nd4j.shade.protobuf.GeneratedMessageV3.Builder<Builder> implements
         // @@protoc_insertion_point(builder_implements:org.nd4j.ir.OpDescriptorList)
         org.nd4j.ir.OpNamespace.OpDescriptorListOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return org.nd4j.ir.OpNamespace.internal_static_org_nd4j_ir_OpDescriptorList_descriptor;
       }
 
       @java.lang.Override
-      protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      protected org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return org.nd4j.ir.OpNamespace.internal_static_org_nd4j_ir_OpDescriptorList_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -3656,7 +3656,7 @@ public final class OpNamespace {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+          org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
 
       }
@@ -3674,7 +3674,7 @@ public final class OpNamespace {
       }
 
       @java.lang.Override
-      public com.google.protobuf.Descriptors.Descriptor
+      public org.nd4j.shade.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return org.nd4j.ir.OpNamespace.internal_static_org_nd4j_ir_OpDescriptorList_descriptor;
       }
@@ -3716,34 +3716,34 @@ public final class OpNamespace {
       }
       @java.lang.Override
       public Builder setField(
-          com.google.protobuf.Descriptors.FieldDescriptor field,
+          org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
           java.lang.Object value) {
         return super.setField(field, value);
       }
       @java.lang.Override
       public Builder clearField(
-          com.google.protobuf.Descriptors.FieldDescriptor field) {
+          org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field) {
         return super.clearField(field);
       }
       @java.lang.Override
       public Builder clearOneof(
-          com.google.protobuf.Descriptors.OneofDescriptor oneof) {
+          org.nd4j.shade.protobuf.Descriptors.OneofDescriptor oneof) {
         return super.clearOneof(oneof);
       }
       @java.lang.Override
       public Builder setRepeatedField(
-          com.google.protobuf.Descriptors.FieldDescriptor field,
+          org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
           int index, java.lang.Object value) {
         return super.setRepeatedField(field, index, value);
       }
       @java.lang.Override
       public Builder addRepeatedField(
-          com.google.protobuf.Descriptors.FieldDescriptor field,
+          org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
           java.lang.Object value) {
         return super.addRepeatedField(field, value);
       }
       @java.lang.Override
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(org.nd4j.shade.protobuf.Message other) {
         if (other instanceof org.nd4j.ir.OpNamespace.OpDescriptorList) {
           return mergeFrom((org.nd4j.ir.OpNamespace.OpDescriptorList)other);
         } else {
@@ -3773,7 +3773,7 @@ public final class OpNamespace {
               opList_ = other.opList_;
               bitField0_ = (bitField0_ & ~0x00000001);
               opListBuilder_ = 
-                com.google.protobuf.GeneratedMessageV3.alwaysUseFieldBuilders ?
+                org.nd4j.shade.protobuf.GeneratedMessageV3.alwaysUseFieldBuilders ?
                    getOpListFieldBuilder() : null;
             } else {
               opListBuilder_.addAllMessages(other.opList_);
@@ -3792,8 +3792,8 @@ public final class OpNamespace {
 
       @java.lang.Override
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          org.nd4j.shade.protobuf.CodedInputStream input,
+          org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         if (extensionRegistry == null) {
           throw new java.lang.NullPointerException();
@@ -3827,7 +3827,7 @@ public final class OpNamespace {
               } // default:
             } // switch (tag)
           } // while (!done)
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
           throw e.unwrapIOException();
         } finally {
           onChanged();
@@ -3845,7 +3845,7 @@ public final class OpNamespace {
          }
       }
 
-      private com.google.protobuf.RepeatedFieldBuilderV3<
+      private org.nd4j.shade.protobuf.RepeatedFieldBuilderV3<
           org.nd4j.ir.OpNamespace.OpDescriptor, org.nd4j.ir.OpNamespace.OpDescriptor.Builder, org.nd4j.ir.OpNamespace.OpDescriptorOrBuilder> opListBuilder_;
 
       /**
@@ -3977,7 +3977,7 @@ public final class OpNamespace {
           java.lang.Iterable<? extends org.nd4j.ir.OpNamespace.OpDescriptor> values) {
         if (opListBuilder_ == null) {
           ensureOpListIsMutable();
-          com.google.protobuf.AbstractMessageLite.Builder.addAll(
+          org.nd4j.shade.protobuf.AbstractMessageLite.Builder.addAll(
               values, opList_);
           onChanged();
         } else {
@@ -4061,11 +4061,11 @@ public final class OpNamespace {
            getOpListBuilderList() {
         return getOpListFieldBuilder().getBuilderList();
       }
-      private com.google.protobuf.RepeatedFieldBuilderV3<
+      private org.nd4j.shade.protobuf.RepeatedFieldBuilderV3<
           org.nd4j.ir.OpNamespace.OpDescriptor, org.nd4j.ir.OpNamespace.OpDescriptor.Builder, org.nd4j.ir.OpNamespace.OpDescriptorOrBuilder> 
           getOpListFieldBuilder() {
         if (opListBuilder_ == null) {
-          opListBuilder_ = new com.google.protobuf.RepeatedFieldBuilderV3<
+          opListBuilder_ = new org.nd4j.shade.protobuf.RepeatedFieldBuilderV3<
               org.nd4j.ir.OpNamespace.OpDescriptor, org.nd4j.ir.OpNamespace.OpDescriptor.Builder, org.nd4j.ir.OpNamespace.OpDescriptorOrBuilder>(
                   opList_,
                   ((bitField0_ & 0x00000001) != 0),
@@ -4077,13 +4077,13 @@ public final class OpNamespace {
       }
       @java.lang.Override
       public final Builder setUnknownFields(
-          final com.google.protobuf.UnknownFieldSet unknownFields) {
+          final org.nd4j.shade.protobuf.UnknownFieldSet unknownFields) {
         return super.setUnknownFields(unknownFields);
       }
 
       @java.lang.Override
       public final Builder mergeUnknownFields(
-          final com.google.protobuf.UnknownFieldSet unknownFields) {
+          final org.nd4j.shade.protobuf.UnknownFieldSet unknownFields) {
         return super.mergeUnknownFields(unknownFields);
       }
 
@@ -4101,34 +4101,34 @@ public final class OpNamespace {
       return DEFAULT_INSTANCE;
     }
 
-    private static final com.google.protobuf.Parser<OpDescriptorList>
-        PARSER = new com.google.protobuf.AbstractParser<OpDescriptorList>() {
+    private static final org.nd4j.shade.protobuf.Parser<OpDescriptorList>
+        PARSER = new org.nd4j.shade.protobuf.AbstractParser<OpDescriptorList>() {
       @java.lang.Override
       public OpDescriptorList parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          org.nd4j.shade.protobuf.CodedInputStream input,
+          org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
         Builder builder = newBuilder();
         try {
           builder.mergeFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
           throw e.setUnfinishedMessage(builder.buildPartial());
-        } catch (com.google.protobuf.UninitializedMessageException e) {
+        } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
           throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
         } catch (java.io.IOException e) {
-          throw new com.google.protobuf.InvalidProtocolBufferException(e)
+          throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(e)
               .setUnfinishedMessage(builder.buildPartial());
         }
         return builder.buildPartial();
       }
     };
 
-    public static com.google.protobuf.Parser<OpDescriptorList> parser() {
+    public static org.nd4j.shade.protobuf.Parser<OpDescriptorList> parser() {
       return PARSER;
     }
 
     @java.lang.Override
-    public com.google.protobuf.Parser<OpDescriptorList> getParserForType() {
+    public org.nd4j.shade.protobuf.Parser<OpDescriptorList> getParserForType() {
       return PARSER;
     }
 
@@ -4139,27 +4139,27 @@ public final class OpNamespace {
 
   }
 
-  private static final com.google.protobuf.Descriptors.Descriptor
+  private static final org.nd4j.shade.protobuf.Descriptors.Descriptor
     internal_static_org_nd4j_ir_ArgDescriptor_descriptor;
   private static final 
-    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+    org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable
       internal_static_org_nd4j_ir_ArgDescriptor_fieldAccessorTable;
-  private static final com.google.protobuf.Descriptors.Descriptor
+  private static final org.nd4j.shade.protobuf.Descriptors.Descriptor
     internal_static_org_nd4j_ir_OpDescriptor_descriptor;
   private static final 
-    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+    org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable
       internal_static_org_nd4j_ir_OpDescriptor_fieldAccessorTable;
-  private static final com.google.protobuf.Descriptors.Descriptor
+  private static final org.nd4j.shade.protobuf.Descriptors.Descriptor
     internal_static_org_nd4j_ir_OpDescriptorList_descriptor;
   private static final 
-    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+    org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable
       internal_static_org_nd4j_ir_OpDescriptorList_fieldAccessorTable;
 
-  public static com.google.protobuf.Descriptors.FileDescriptor
+  public static org.nd4j.shade.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
     return descriptor;
   }
-  private static  com.google.protobuf.Descriptors.FileDescriptor
+  private static  org.nd4j.shade.protobuf.Descriptors.FileDescriptor
       descriptor;
   static {
     java.lang.String[] descriptorData = {
@@ -4192,27 +4192,27 @@ public final class OpNamespace {
       "ptorList\022)\n\006opList\030\001 \003(\0132\031.org.nd4j.ir.O" +
       "pDescriptorB\rB\013OpNamespaceb\006proto3"
     };
-    descriptor = com.google.protobuf.Descriptors.FileDescriptor
+    descriptor = org.nd4j.shade.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
-        new com.google.protobuf.Descriptors.FileDescriptor[] {
+        new org.nd4j.shade.protobuf.Descriptors.FileDescriptor[] {
           org.nd4j.ir.TensorNamespace.getDescriptor(),
         });
     internal_static_org_nd4j_ir_ArgDescriptor_descriptor =
       getDescriptor().getMessageTypes().get(0);
     internal_static_org_nd4j_ir_ArgDescriptor_fieldAccessorTable = new
-      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+      org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_org_nd4j_ir_ArgDescriptor_descriptor,
         new java.lang.String[] { "Name", "FloatValue", "DoubleValue", "Int32Value", "Int64Value", "BoolValue", "DataTypeValue", "InputValue", "OutputValue", "ArgType", "ArgIndex", "StringValue", "ArgOptional", "ConvertBoolToInt", "IsArray", });
     internal_static_org_nd4j_ir_OpDescriptor_descriptor =
       getDescriptor().getMessageTypes().get(1);
     internal_static_org_nd4j_ir_OpDescriptor_fieldAccessorTable = new
-      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+      org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_org_nd4j_ir_OpDescriptor_descriptor,
         new java.lang.String[] { "Name", "ArgDescriptor", "OpDeclarationType", });
     internal_static_org_nd4j_ir_OpDescriptorList_descriptor =
       getDescriptor().getMessageTypes().get(2);
     internal_static_org_nd4j_ir_OpDescriptorList_fieldAccessorTable = new
-      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+      org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_org_nd4j_ir_OpDescriptorList_descriptor,
         new java.lang.String[] { "OpList", });
     org.nd4j.ir.TensorNamespace.getDescriptor();

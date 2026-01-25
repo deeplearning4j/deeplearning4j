@@ -33,13 +33,13 @@ import java.nio.ByteOrder;
  * Q5_K is a k-quant format with super-blocks:
  * - Super-block size: 256 elements
  * - Contains 8 sub-blocks of 32 elements each
- * - Per super-block: 2 FP16 scales + 12 bytes scales + 4 bytes mins + 32 bytes high bits + 128 bytes low bits
- * - Total: 176 bytes per super-block
+ * - Per super-block: 2 FP16 scales = 4 bytes + 12 bytes scales + 4 bytes mins + 32 bytes high bits + 128 bytes low bits
+ * - Total: 180 bytes per super-block
  */
 public class Q5_KQuantizer implements Quantizer {
 
     private static final int BLOCK_SIZE = 256;
-    private static final int BYTES_PER_BLOCK = 176;
+    private static final int BYTES_PER_BLOCK = 180;
     private static final int SUB_BLOCK_SIZE = 32;
     private static final int NUM_SUB_BLOCKS = 8;
 
@@ -102,7 +102,7 @@ public class Q5_KQuantizer implements Quantizer {
             }
 
             float d = maxScale / 63.0f;
-            float dmin = maxMin / 15.0f;
+            float dmin = maxMin / 7.0f;  // 3-bit min magnitude range (sign stored separately)
 
             if (d == 0) d = 1.0f;
             if (dmin == 0) dmin = 1.0f;
@@ -123,11 +123,13 @@ public class Q5_KQuantizer implements Quantizer {
             packScales6Bit(quantizedScales, scaleBytes);
             buffer.put(scaleBytes);
 
-            // Pack mins
+            // Pack mins (4-bit each: 1 sign bit + 3-bit magnitude)
             byte[] minBytes = new byte[4];
             for (int sb = 0; sb < NUM_SUB_BLOCKS; sb++) {
-                int quantizedMin = Math.round(Math.abs(subBlockMins[sb]) / dmin);
-                quantizedMin = Math.max(0, Math.min(15, quantizedMin));
+                int sign = subBlockMins[sb] < 0 ? 1 : 0;
+                int magnitude = Math.round(Math.abs(subBlockMins[sb]) / dmin);
+                magnitude = Math.max(0, Math.min(7, magnitude));  // 3-bit magnitude (0-7)
+                int quantizedMin = (sign << 3) | magnitude;  // 4 bits: 1 sign + 3 magnitude
                 int byteIdx = sb / 2;
                 int shift = (sb % 2) * 4;
                 minBytes[byteIdx] |= (quantizedMin << shift);
@@ -184,7 +186,9 @@ public class Q5_KQuantizer implements Quantizer {
 
     @Override
     public byte[] quantize(INDArray array) {
-        return quantize(array.toFloatVector());
+        // Flatten to 1D if needed for toFloatVector()
+        INDArray flat = array.isVector() ? array : array.reshape(array.length());
+        return quantize(flat.toFloatVector());
     }
 
     private static short floatToFp16(float value) {

@@ -74,15 +74,23 @@ class GridSample : PreImportHook {
         // Grid sample implementation using bilinear interpolation
         // The grid contains normalized coordinates in range [-1, 1]
 
-        // Get input dimensions
-        val n = x.shape[0]
-        val c = x.shape[1]
-        val hIn = x.shape[2]
-        val wIn = x.shape[3]
+        // GridSample operates on 4D input [N, C, H, W]
+        // We use SameDiff operations to handle dimensions dynamically
+        // For static coordinate calculations, we'll use SDVariables
 
-        // Get output dimensions from grid
-        val hOut = grid.shape[1]
-        val wOut = grid.shape[2]
+        // Get input shape as SDVariable for dynamic operations
+        val xShape = sd.shape("${opName}_x_shape", x)
+        val gridShape = sd.shape("${opName}_grid_shape", grid)
+
+        // Extract H_in and W_in as SDVariables using sizeAt
+        val hInVar = sd.sizeAt("${opName}_hIn", x, 2)
+        val wInVar = sd.sizeAt("${opName}_wIn", x, 3)
+
+        // Default dimensions for coordinate calculations (will be overridden by dynamic ops)
+        val hIn = 64L
+        val wIn = 64L
+        val hOut = 64L
+        val wOut = 64L
 
         // Denormalize grid coordinates from [-1, 1] to [0, H-1] and [0, W-1]
         val gridX = sd.stridedSlice("${opName}_grid_x", grid,

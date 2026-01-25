@@ -894,6 +894,17 @@ NDArray::NDArray(DataBuffer *buffer,
     THROW_EXCEPTION("NDArray::NDArray(DataBuffer *  buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const sd::LongType offset) - buffer is empty !");
   }
 
+  // Tripwire: validate context pointer before storing
+  if (context != nullptr) {
+    uintptr_t ctxAddr = reinterpret_cast<uintptr_t>(context);
+    if (ctxAddr < 0x10000 || (ctxAddr & 0x7) != 0) {
+      std::string error = "NDArray constructor 13: INVALID context pointer passed: 0x";
+      char buf[32];
+      snprintf(buf, sizeof(buf), "%lx", static_cast<unsigned long>(ctxAddr));
+      error += buf;
+      THROW_EXCEPTION(error.c_str());
+    }
+  }
 
   _context = context;
   _buffer = buffer;
@@ -6767,6 +6778,12 @@ ResultSet NDArray::allTensorsAlongDimension(const std::vector<LongType> &dimensi
 // operator returns sub-array with buffer pointing at this->_buffer + certain offset
 NDArray* NDArray::operator()(const std::vector<sd::LongType> &idx, const bool keepUnitiesInShape,
                              const bool isStrided)  {
+  // Tripwire: log entry to operator()
+  if (sd::Environment::getInstance().isDebug()) {
+    sd_printf("NDArray::operator() ENTRY: this=%p, shapeInfo=%p, rank=%lld\n",
+              this, shapeInfo(), rankOf());
+  }
+
   if (isEmpty()) THROW_EXCEPTION("NDArray::operator(sub-arrays): array is empty !");
 
   sd::LongType numOfUntiesInSubArrShape = 0;
@@ -6786,6 +6803,19 @@ NDArray* NDArray::operator()(const std::vector<sd::LongType> &idx, const bool ke
     }
   }
 
+  // Tripwire: validate context before ALLOCATE
+  auto parentContext = getContext();
+  if (parentContext != nullptr) {
+    uintptr_t ctxAddr = reinterpret_cast<uintptr_t>(parentContext);
+    if (ctxAddr < 0x10000 || (ctxAddr & 0x7) != 0) {
+      std::string error = "NDArray::operator() subarray: parent getContext() is INVALID: 0x";
+      char buf[32];
+      snprintf(buf, sizeof(buf), "%lx", static_cast<unsigned long>(ctxAddr));
+      error += buf;
+      THROW_EXCEPTION(error.c_str());
+    }
+  }
+
   ALLOCATE(subArrShapeInfo, getContext()->getWorkspace(), shape::shapeInfoLength(rankOf() - numOfUntiesInSubArrShape),
            sd::LongType);
 
@@ -6798,6 +6828,20 @@ NDArray* NDArray::operator()(const std::vector<sd::LongType> &idx, const bool ke
 
   // Mark as view since sub-array shares buffer with parent
   auto newShapeInfo = ConstantShapeHelper::getInstance().bufferForShapeInfoWithView(subArrShapeInfo);
+
+  // Tripwire: validate all pointers before creating result NDArray
+  auto parentDataBuffer = getDataBuffer();
+  if (parentDataBuffer == nullptr) {
+    THROW_EXCEPTION("NDArray::operator() subarray: getDataBuffer() returned nullptr!");
+  }
+  if (newShapeInfo == nullptr) {
+    THROW_EXCEPTION("NDArray::operator() subarray: bufferForShapeInfoWithView returned nullptr!");
+  }
+  auto newShapePrimary = newShapeInfo->primary();
+  if (newShapePrimary == nullptr) {
+    THROW_EXCEPTION("NDArray::operator() subarray: newShapeInfo->primary() is nullptr!");
+  }
+
   // Share the same DataBuffer with the parent to ensure CUDA views work correctly
   NDArray *result = new NDArray(getDataBuffer(), const_cast<sd::LongType *>(newShapeInfo->primary()), getContext(), offset + this->offset());
   ShapeDescriptor descriptor(newShapeInfo->primary(), false);

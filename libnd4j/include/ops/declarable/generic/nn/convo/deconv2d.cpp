@@ -108,7 +108,9 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
   if (bias)
     helpers::addBias(block, *output, *bias, *output, true);
 
-  if (!isNCHW) delete output;
+  if (!isNCHW) {
+    delete output;
+  }
 
   return sd::Status::OK;
 }

@@ -81,6 +81,9 @@ public class Fill extends DynamicCustomOp {
 
     protected void addArgs() {
         addTArgument(value);
+        if (dtype != null) {
+            addDArgument(dtype);
+        }
     }
 
     @Override

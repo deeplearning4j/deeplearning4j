@@ -433,6 +433,16 @@ fun loadDataBufferFromRawData(inputTensor: TensorNamespace.TensorProto): INDArra
     //note: scalar can be zero
     var totalLen = ArrayUtil.prod(*shape)
 
+    // Handle empty data case - return zeros array with proper shape
+    // This can happen with external data references or placeholder tensors
+    if(byteArray.isEmpty()) {
+        if(totalLen < 1) totalLen = 1
+        return if(shape.isNotEmpty()) {
+            Nd4j.zeros(dtype, *shape)
+        } else {
+            Nd4j.scalar(dtype, 0)
+        }
+    }
 
     if(dtype == DataType.UTF8) {
         val rawDataBuffer =  Nd4j.getDataBufferFactory().createUtf8Buffer(byteArray,byteArray.size.toLong())

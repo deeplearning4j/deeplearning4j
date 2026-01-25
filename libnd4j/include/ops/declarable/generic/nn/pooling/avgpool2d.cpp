@@ -61,8 +61,8 @@ CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 10) {
 
   if (!isNCHW) {
     std::vector<sd::LongType> perm = {0,3,1,2};
-    input = input->permute(perm, false, false);    // [bS, iH, iW, iC] -> [bS, iC, iH, iW] - permute() already returns NDArray*
-    output = output->permute(perm, false, false);  // [bS, oH, oW, iC] -> [bS, iC, oH, oW] - permute() already returns NDArray*
+    input = input->permute(perm, false, false);    // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+    output = output->permute(perm, false, false);  // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
   }
 
   ConvolutionUtils::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
@@ -75,8 +75,8 @@ CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 10) {
                               extraParam0);
 
   if (!isNCHW) {
-     delete input;
-      delete output;
+    delete input;
+    delete output;
   }
 
   return Status::OK;
@@ -189,9 +189,9 @@ CUSTOM_OP_IMPL(avgpool2d_bp, 2, 1, false, 0, 10) {
 
   if (!isNCHW) {
     std::vector<sd::LongType> perm = {0,3,1,2};
-    input = input->permute(perm, false, false);  // [bS, iH, iW, iC] -> [bS, iC, iH, iW] - permute() already returns NDArray*
-    gradI = gradI->permute(perm, false, false);  // [bS, iH, iW, iC] -> [bS, iC, iH, iW] - permute() already returns NDArray*
-    gradO = gradO->permute(perm, false, false);  // [bS, oH, oW, iC] -> [bS, iC, oH, oW] - permute() already returns NDArray*
+    input = input->permute(perm, false, false);  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+    gradI = gradI->permute(perm, false, false);  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+    gradO = gradO->permute(perm, false, false);  // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
   }
 
   if (isSameMode)  // SAME

@@ -591,6 +591,27 @@
             <version>${project.version}</version>
         </dependency>
 
+        <!-- VLM (Vision-Language Model) support -->
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>samediff-vlm</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- GGML/GGUF model import support -->
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-ggml</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Apache PDFBox for PDF to image conversion -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>2.0.29</version>
+        </dependency>
+
     </dependencies>
     <profiles>
         <profile>

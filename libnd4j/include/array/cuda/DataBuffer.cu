@@ -110,10 +110,12 @@ DataBuffer DataBuffer::dup() {
   DataBuffer result;
   result._dataType = _dataType;
   result._lenInBytes = _lenInBytes;
-  result._primaryBuffer = _primaryBuffer;
-  result._specialBuffer = _specialBuffer;
-  result._isOwnerPrimary = _isOwnerPrimary;
-  result._isOwnerSpecial = _isOwnerSpecial;
+  // Don't copy buffer pointers - allocateBuffers will create new ones
+  result._primaryBuffer = nullptr;
+  result._specialBuffer = nullptr;
+  // Don't copy ownership flags - we'll own the new buffers
+  result._isOwnerPrimary = false;
+  result._isOwnerSpecial = false;
   result.allocateBuffers(true);
   result.copyCounters(*this);
   result.copyBufferFrom(*this);
@@ -603,8 +605,6 @@ void DataBuffer::deleteSpecial() {
         _specialBuffer,array::BufferType::SPECIAL);
 #endif
     RELEASE_SPECIAL(p, _workspace);
-    _specialBuffer = nullptr;
-    _isOwnerSpecial = false;
 
     // count out towards DataBuffer device, only if we're not in workspace
     if (_workspace == nullptr) {
@@ -617,6 +617,11 @@ void DataBuffer::deleteSpecial() {
       cudaSetDevice(currentDeviceId);
     }
   }
+
+  // Always reset pointer and ownership flag after delete, regardless of whether we owned it
+  // This prevents stale pointers from causing allocateSpecial() to skip allocation
+  _specialBuffer = nullptr;
+  _isOwnerSpecial = false;
 }
 
 ////////////////////////////////////////////////////////////////////////

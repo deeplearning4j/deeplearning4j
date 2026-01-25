@@ -133,7 +133,7 @@ CUSTOM_OP_IMPL(deformable_conv2d, 3, 1, false, 0, 11) {
     if (!isNCHW) {
         // Permute input from NHWC to NCHW
         std::vector<sd::LongType> permDims = {0, 3, 1, 2};
-        inputPermuted = new NDArray(input->permute(permDims, true, false));
+        inputPermuted = new NDArray(input->permute(permDims, false, false));
         inputNCHW = inputPermuted;
 
         // Create temporary output in NCHW format
@@ -152,6 +152,7 @@ CUSTOM_OP_IMPL(deformable_conv2d, 3, 1, false, 0, 11) {
         std::vector<sd::LongType> permDimsBack = {0, 2, 3, 1};
         auto permutedBack = outputNCHW->permute(permDimsBack, false, false);
         output->assign(permutedBack);
+        delete permutedBack;
         delete inputPermuted;
         delete outputTemp;
     }

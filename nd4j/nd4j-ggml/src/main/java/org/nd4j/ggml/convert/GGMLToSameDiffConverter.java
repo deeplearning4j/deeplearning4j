@@ -22,7 +22,10 @@ package org.nd4j.ggml.convert;
 
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.serde.ModelLoadingContext;
+import org.nd4j.autodiff.samediff.serde.ModelSizeInfo;
 import org.nd4j.autodiff.samediff.serde.SDZSerializer;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.ggml.GGMLImportException;
 import org.nd4j.ggml.architecture.ArchitectureRegistry;
 import org.nd4j.ggml.architecture.ModelArchitecture;
@@ -58,9 +61,31 @@ public class GGMLToSameDiffConverter {
     }
 
     /**
-     * Convert a GGML/GGUF file to SameDiff graph
+     * Convert a GGML/GGUF file to SameDiff graph.
+     * This method creates a temporary ModelLoadingContext for batch GPU transfers.
      */
     public SameDiff convert(File ggmlFile) throws GGMLImportException {
+        // Create a context for optimized batch loading
+        ModelSizeInfo sizeInfo = estimateModelSize(ggmlFile);
+        try (ModelLoadingContext context = ModelLoadingContext.builder()
+                .sizeInfo(sizeInfo)
+                .asyncEnabled(true)
+                .useBatchedNativeTransfer(true)
+                .build()) {
+            return convert(ggmlFile, context);
+        }
+    }
+
+    /**
+     * Convert a GGML/GGUF file to SameDiff graph using the provided loading context.
+     * This enables batch GPU transfers to avoid frequent GPU I/O.
+     *
+     * @param ggmlFile the GGML/GGUF file to convert
+     * @param context the loading context for batch GPU transfers (can be null for no batching)
+     * @return the converted SameDiff graph
+     * @throws GGMLImportException if conversion fails
+     */
+    public SameDiff convert(File ggmlFile, ModelLoadingContext context) throws GGMLImportException {
         try {
             // Validate file
             if (!ggmlFile.exists()) {
@@ -83,13 +108,19 @@ public class GGMLToSameDiffConverter {
             if (format == GGMLFormat.GGUF) {
                 try (GGUFReader reader = new GGUFReader(ggmlFile)) {
                     metadata = reader.getMetadata();
-                    weights = loadWeightsFromGGUF(reader, metadata.getTensors());
+                    weights = loadWeightsFromGGUF(reader, metadata.getTensors(), context);
                 }
             } else {
                 try (GGMLReader reader = new GGMLReader(ggmlFile)) {
                     metadata = reader.getMetadata();
-                    weights = loadWeightsFromGGML(reader, metadata.getTensors());
+                    weights = loadWeightsFromGGML(reader, metadata.getTensors(), context);
                 }
+            }
+
+            // Wait for all batch GPU transfers to complete
+            if (context != null) {
+                log.info("Waiting for batch GPU transfers to complete...");
+                context.awaitTransfers();
             }
 
             log.info("Model: {} ({} tensors, {} parameters)",
@@ -128,7 +159,47 @@ public class GGMLToSameDiffConverter {
     }
 
     /**
-     * Convert a GGML/GGUF file and save directly to SDZ format
+     * Estimate the model size from tensor information for pre-allocation.
+     */
+    private ModelSizeInfo estimateModelSize(File ggmlFile) {
+        try {
+            GGMLFormat format = GGMLFormatDetector.detect(ggmlFile);
+            GGMLMetadata metadata;
+
+            if (format == GGMLFormat.GGUF) {
+                try (GGUFReader reader = new GGUFReader(ggmlFile)) {
+                    metadata = reader.getMetadata();
+                }
+            } else {
+                try (GGMLReader reader = new GGMLReader(ggmlFile)) {
+                    metadata = reader.getMetadata();
+                }
+            }
+
+            // Build manifest from tensor info
+            Map<String, Pair<Long, Long>> manifest = new LinkedHashMap<>();
+            long offset = 0;
+            for (GGMLTensorInfo info : metadata.getTensors()) {
+                long tensorBytes = (long) (info.getNumElements() * info.getDataType().getBytesPerElement());
+                manifest.put(info.getName(), Pair.of(offset, tensorBytes));
+                offset += tensorBytes;
+            }
+
+            return ModelSizeInfo.fromManifest(manifest);
+        } catch (Exception e) {
+            log.warn("Failed to estimate model size, using file size as fallback: {}", e.getMessage());
+            return ModelSizeInfo.builder()
+                    .totalBytes(ggmlFile.length())
+                    .arrayCount(0)
+                    .largestArrayBytes(0)
+                    .arraySizes(new LinkedHashMap<>())
+                    .build();
+        }
+    }
+
+    /**
+     * Convert a GGML/GGUF file and save directly to SDZ format.
+     * Uses batch GPU transfers for optimized loading.
      */
     public void convertToSDZ(File ggmlFile, File sdzFile) throws GGMLImportException {
         SameDiff sd = convert(ggmlFile);
@@ -147,32 +218,122 @@ public class GGMLToSameDiffConverter {
         }
     }
 
-    private Map<String, INDArray> loadWeightsFromGGUF(GGUFReader reader, List<GGMLTensorInfo> tensorInfos)
-            throws IOException {
+    /**
+     * Convert a GGML/GGUF file and save directly to SDZ format using the provided loading context.
+     *
+     * @param ggmlFile the GGML/GGUF file to convert
+     * @param sdzFile the output SDZ file
+     * @param context the loading context for batch GPU transfers (can be null)
+     * @throws GGMLImportException if conversion fails
+     */
+    public void convertToSDZ(File ggmlFile, File sdzFile, ModelLoadingContext context) throws GGMLImportException {
+        SameDiff sd = convert(ggmlFile, context);
+
+        try {
+            Map<String, String> metadata = new HashMap<>();
+            metadata.put("source_format", "ggml");
+            metadata.put("source_file", ggmlFile.getName());
+            metadata.put("conversion_timestamp", String.valueOf(System.currentTimeMillis()));
+
+            SDZSerializer.save(sd, sdzFile, options.isForTraining(), metadata);
+            log.info("Saved SDZ model to: {}", sdzFile.getAbsolutePath());
+
+        } catch (IOException e) {
+            throw new GGMLImportException("Failed to save SDZ file: " + sdzFile, e);
+        }
+    }
+
+    /**
+     * Create a ModelLoadingContext optimized for a GGML/GGUF file.
+     * This analyzes the file to estimate model size and configure optimal batch transfer settings.
+     *
+     * @param ggmlFile the GGML/GGUF file to analyze
+     * @return a configured ModelLoadingContext for optimized batch loading
+     */
+    public ModelLoadingContext createLoadingContext(File ggmlFile) {
+        ModelSizeInfo sizeInfo = estimateModelSize(ggmlFile);
+        return ModelLoadingContext.builder()
+                .sizeInfo(sizeInfo)
+                .asyncEnabled(true)
+                .useBatchedNativeTransfer(true)
+                .parallelTransfers(ModelLoadingContext.DEFAULT_PARALLEL_TRANSFERS)
+                .build();
+    }
+
+    /**
+     * Load weights from a GGUF file with optional batch GPU transfer support.
+     *
+     * @param reader the GGUF reader
+     * @param tensorInfos list of tensor information
+     * @param context optional loading context for batch GPU transfers (can be null)
+     * @return map of tensor names to INDArray weights
+     */
+    private Map<String, INDArray> loadWeightsFromGGUF(GGUFReader reader, List<GGMLTensorInfo> tensorInfos,
+                                                       ModelLoadingContext context) throws IOException {
         Map<String, INDArray> weights = new LinkedHashMap<>();
+        int totalTensors = tensorInfos.size();
+        int loadedCount = 0;
+
+        log.info("Loading {} tensors from GGUF file (batch GPU transfer: {})",
+                totalTensors, context != null ? "enabled" : "disabled");
 
         for (GGMLTensorInfo info : tensorInfos) {
             byte[] data = reader.readTensorData(info);
             INDArray array = convertTensorData(data, info);
             weights.put(info.getName(), array);
 
+            // Register with loading context for batch GPU transfer
+            if (context != null) {
+                context.onArrayLoaded(array);
+                context.scheduleTransfer(array);
+            }
+
+            loadedCount++;
             if (log.isDebugEnabled()) {
-                log.debug("Loaded tensor: {} shape={} type={}",
-                        info.getName(), info.getShapeString(), info.getDataType());
+                log.debug("Loaded tensor {}/{}: {} shape={} type={}",
+                        loadedCount, totalTensors, info.getName(), info.getShapeString(), info.getDataType());
+            } else if (loadedCount % 50 == 0 || loadedCount == totalTensors) {
+                log.info("Loading progress: {}/{} tensors ({}%)",
+                        loadedCount, totalTensors, (loadedCount * 100) / totalTensors);
             }
         }
 
         return weights;
     }
 
-    private Map<String, INDArray> loadWeightsFromGGML(GGMLReader reader, List<GGMLTensorInfo> tensorInfos)
-            throws IOException {
+    /**
+     * Load weights from a legacy GGML file with optional batch GPU transfer support.
+     *
+     * @param reader the GGML reader
+     * @param tensorInfos list of tensor information
+     * @param context optional loading context for batch GPU transfers (can be null)
+     * @return map of tensor names to INDArray weights
+     */
+    private Map<String, INDArray> loadWeightsFromGGML(GGMLReader reader, List<GGMLTensorInfo> tensorInfos,
+                                                       ModelLoadingContext context) throws IOException {
         Map<String, INDArray> weights = new LinkedHashMap<>();
+        int totalTensors = tensorInfos.size();
+        int loadedCount = 0;
+
+        log.info("Loading {} tensors from GGML file (batch GPU transfer: {})",
+                totalTensors, context != null ? "enabled" : "disabled");
 
         for (GGMLTensorInfo info : tensorInfos) {
             byte[] data = reader.readTensorData(info);
             INDArray array = convertTensorData(data, info);
             weights.put(info.getName(), array);
+
+            // Register with loading context for batch GPU transfer
+            if (context != null) {
+                context.onArrayLoaded(array);
+                context.scheduleTransfer(array);
+            }
+
+            loadedCount++;
+            if (loadedCount % 50 == 0 || loadedCount == totalTensors) {
+                log.info("Loading progress: {}/{} tensors ({}%)",
+                        loadedCount, totalTensors, (loadedCount * 100) / totalTensors);
+            }
         }
 
         return weights;

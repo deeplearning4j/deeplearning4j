@@ -92,18 +92,26 @@ class Resize : PreImportHook  {
 
         //switch to NWHC (tensorflow format) and then back to NCHW (onnx format)
         inputVariable = sd.permute(inputVariable,0,2,3,1)
+
+        // Resize operates on images which are 4D (NCHW or NHWC)
+        // We use constant rank since ONNX Resize is defined for 4D tensors
+        val defaultRank = 4
+
         var result: SDVariable? = null
         when (coordTransformationMode) {
             "tf_crop_and_resize" -> {
                 val indices = mutableListOf<Int>()
-                val rank = inputVariable.arr.rank()
-                for(i in 2 until rank) {
+                // Resize operates on 4D tensors
+                for(i in 2 until defaultRank) {
                     indices.add(i - 2,i)
-                    indices.add(i,i + rank)
+                    indices.add(i,i + defaultRank)
                 }
 
                 val boxes = sd.expandDims(sd.gather(roi,indices.toIntArray(),0),0)
-                val boxIndices = sd.range(0.0,inputVariable.shape[0] as Double,1.0, DataType.INT64)
+                // Get batch size from input shape using SameDiff
+                val inputShapeVar = sd.shape(inputVariable)
+                val batchSizeVar = inputShapeVar.get(SDIndex.point(0)).castTo(DataType.DOUBLE)
+                val boxIndices = sd.range(sd.constant(0.0), batchSizeVar, sd.constant(1.0), DataType.INT64)
                 result =  sd.image().cropAndResize(inputVariable,boxes,boxIndices,outputSize,extrapolationValue)
             }
             "align_corners" -> {
@@ -146,15 +154,14 @@ class Resize : PreImportHook  {
     ): SDVariable? {
         return when (type) {
             "linear" -> {
-                val height = size.arr.getInt(0)
-                val width = size.arr.getInt(1)
-                sd.image().resizeBiLinear(input,height,width, alignCorners, halfPixelCenters)
+                // Use imageResize which handles dynamic sizes via SDVariable
+                sd.image().imageResize(input, size, alignCorners, halfPixelCenters, ImageResizeMethod.ResizeBilinear)
             }
             "cubic" -> {
-                sd.image().resizeBiCubic(input,size,alignCorners,halfPixelCenters)
+                sd.image().resizeBiCubic(input, size, alignCorners, halfPixelCenters)
             }
             else -> {
-                sd.image().imageResize(input,size,true,true,ImageResizeMethod.ResizeNearest)
+                sd.image().imageResize(input, size, true, true, ImageResizeMethod.ResizeNearest)
             }
         }
     }
@@ -167,20 +174,15 @@ class Resize : PreImportHook  {
         sizes: SDVariable,
         inputVariableShape: SDVariable
     ): SDVariable?  {
-        var ret: SDVariable? = null
-        ret = if(op.inputsToOp.size == 3) {
+        val ret: SDVariable = if(op.inputsToOp.size == 3) {
             val heightWidthScale = scales.get(SDIndex.interval(2,-1))
             val subGet = inputVariableShape.get(SDIndex.interval(2,-1))
-            val heightWidthShape = sd.castTo(subGet,heightWidthScale.dataType())
-            val scaled = sd.castTo(sd.math.mul(heightWidthScale,heightWidthShape),DataType.INT32)
+            val heightWidthShape = sd.castTo(subGet, heightWidthScale.dataType())
+            val scaled = sd.castTo(sd.math.mul(heightWidthScale, heightWidthShape), DataType.INT32)
             scaled
         } else {
-            sizes.get(SDIndex.interval(2, 1,input.rank().arr.getInt(0)))
-        }
-
-        if(ret.shape.size < 2) {
-            var newRet = sd.zero(null,DataType.INT32,2)
-            ret = newRet.add(ret.arr.getInt(0).toDouble())
+            // Resize operates on 4D tensors, extract height/width from sizes
+            sizes.get(SDIndex.interval(2, 1, 4))
         }
 
         return ret.castTo(DataType.INT32)

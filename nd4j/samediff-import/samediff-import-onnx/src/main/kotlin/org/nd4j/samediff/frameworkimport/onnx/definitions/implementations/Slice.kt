@@ -20,6 +20,7 @@
 package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 
 
+import onnx.Onnx
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
@@ -45,35 +46,35 @@ class Slice : PreImportHook {
     ): Map<String, List<SDVariable>> {
 
         val inputVariable = sd.getVariable(op.inputsToOp[0])
-        
+
         // Get the slice parameters
         var starts = sd.getVariable(op.inputsToOp[1])
         var ends = sd.getVariable(op.inputsToOp[2])
-        
+
         // Flatten the starts and ends to 1D if they have extra dimensions
         starts = starts.reshape(-1)
         ends = ends.reshape(-1)
-        
+
         // Cast to INT64 for compatibility
         starts = starts.castTo(DataType.INT64)
         ends = ends.castTo(DataType.INT64)
-        
+
         // Handle axes parameter (optional, 4th input) - if present, only slice specified axes
         val hasAxes = op.inputsToOp.size >= 4 && op.inputsToOp[3] != null
-        
+
         // Handle steps parameter (optional, 5th input)
         val hasSteps = op.inputsToOp.size >= 5 && op.inputsToOp[4] != null
-        
+
+        val steps = if (hasSteps) {
+            var stepsVar = sd.getVariable(op.inputsToOp[4])
+            stepsVar = sd.reshape(stepsVar, -1)
+            stepsVar.castTo(DataType.INT64)
+        } else {
+            sd.onesLike(starts).castTo(DataType.INT64)
+        }
+
         if (!hasAxes) {
             // Simple case: no axes specified, slice all dimensions in order
-            val steps = if (hasSteps) {
-                var stepsVar = sd.getVariable(op.inputsToOp[4])
-                stepsVar = sd.reshape(stepsVar, -1)
-                stepsVar.castTo(DataType.INT64)
-            } else {
-                sd.onesLike(starts).castTo(DataType.INT64)
-            }
-            
             val result = sd.stridedSlice(
                 outputNames[0],
                 inputVariable,
@@ -86,41 +87,60 @@ class Slice : PreImportHook {
                 0,  // newAxisMask
                 0   // shrinkAxisMask
             )
-            
+
             return mapOf(outputNames[0] to listOf(result))
         } else {
-            // Complex case: axes specified
+            // Axes-based slicing: ONNX allows specifying which axes to slice
+            // For axes=[0] on a 1D tensor (common for shape tensor slicing), use directly
+            // For other cases, we need to build full arrays for all dimensions
+
+            // Try to get axes as static values from dynamicVariables
+            val axesName = op.inputsToOp[3]
+            val axesTensor = dynamicVariables[axesName] as? onnx.Onnx.TensorProto
+
+            if (axesTensor != null) {
+                // Extract static axes values
+                val axesList = when {
+                    axesTensor.int64DataCount > 0 -> axesTensor.int64DataList.map { it.toInt() }
+                    axesTensor.rawData != null && axesTensor.rawData.size() > 0 -> {
+                        val buffer = axesTensor.rawData.asReadOnlyByteBuffer()
+                        buffer.order(java.nio.ByteOrder.LITTLE_ENDIAN)
+                        val longBuffer = buffer.asLongBuffer()
+                        (0 until longBuffer.remaining()).map { longBuffer.get().toInt() }
+                    }
+                    else -> listOf(0)
+                }
+
+                // For single axis=0 on 1D input (shape tensor slicing), use stridedSlice directly
+                if (axesList.size == 1 && axesList[0] == 0) {
+                    val result = sd.stridedSlice(
+                        outputNames[0],
+                        inputVariable,
+                        starts,
+                        ends,
+                        steps,
+                        0, 0, 0, 0, 0
+                    )
+                    return mapOf(outputNames[0] to listOf(result))
+                }
+            }
+
+            // Fallback: use axes variable dynamically
+            // This requires building full arrays for stridedSlice
             var axes = sd.getVariable(op.inputsToOp[3])
             axes = axes.reshape(-1).castTo(DataType.INT64)
-            
-            val steps = if (hasSteps) {
-                var stepsVar = sd.getVariable(op.inputsToOp[4])
-                stepsVar = sd.reshape(stepsVar, -1)
-                stepsVar.castTo(DataType.INT64)
-            } else {
-                sd.onesLike(starts).castTo(DataType.INT64)
-            }
-            
-            // For axes-based slicing, we need to build full arrays
-            // Assuming 2D input with axes=[1] (common case from your error)
-            val zero = sd.constant(0L).castTo(DataType.INT64)
-            val one = sd.constant(1L).castTo(DataType.INT64)
-            val maxVal = sd.constant(-1).castTo(DataType.INT64)
-            
-            // Build full arrays for 2D case
-            val finalStarts = sd.concat(0, zero.reshape(1), starts)
-            val finalEnds = sd.concat(0, maxVal.reshape(1), ends)
-            val finalSteps = sd.concat(0, one.reshape(1), steps)
-            
+
+            // Use stridedSlice with the provided parameters
+            // For the general case, we apply the slice on the specified axes
             val result = sd.stridedSlice(
                 outputNames[0],
                 inputVariable,
-                finalStarts,
-                finalEnds,
-                finalSteps,
+                starts,
+                ends,
+                steps,
                 0, 0, 0, 0, 0
             )
-            
+
             return mapOf(outputNames[0] to listOf(result))
         }
     }

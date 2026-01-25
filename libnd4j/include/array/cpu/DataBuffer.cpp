@@ -230,7 +230,12 @@ void DataBuffer::memcpy(DataBuffer* dst, DataBuffer* src,
 ////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::deleteSpecial() {}
+void DataBuffer::deleteSpecial() {
+  // Always reset pointer and ownership flag for consistency with CUDA version
+  // Even though CPU doesn't have a special buffer, this ensures clean state
+  _specialBuffer = nullptr;
+  _isOwnerSpecial = false;
+}
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSync) {}
@@ -255,10 +260,12 @@ DataBuffer DataBuffer::dup() {
   DataBuffer result;
   result._dataType = _dataType;
   result._lenInBytes = _lenInBytes;
-  result._primaryBuffer = _primaryBuffer;
-  result._specialBuffer = _specialBuffer;
-  result._isOwnerPrimary = _isOwnerPrimary;
-  result._isOwnerSpecial = _isOwnerSpecial;
+  // Don't copy buffer pointers - allocateBuffers will create new ones
+  result._primaryBuffer = nullptr;
+  result._specialBuffer = nullptr;
+  // Don't copy ownership flags - we'll own the new buffers
+  result._isOwnerPrimary = false;
+  result._isOwnerSpecial = false;
   result.allocateBuffers(true);
   result.copyCounters(*this);
   result.copyBufferFrom(*this);

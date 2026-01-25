@@ -226,15 +226,15 @@ val compress = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry
 )
 
+// Concat is handled by PreImportHook (Concat.kt) to support rank broadcasting
+// ONNX allows concat of tensors with different ranks, but nd4j requires same rank
+// The hook automatically reshapes lower-rank inputs by prepending dimensions of size 1
 val concat = OnnxMappingProcess(
-        opName = "concat",
+        opName = "noop",
         inputFrameworkOpName = "Concat",
         opMappingRegistry = onnxOpRegistry,
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "inputs"))),
-        attributeMappingRules = listOf(valueMappings(mapOf("concatDimension" to "axis")),
-                booleanConstant(inputName = "isDynamicAxis",constantValue = false,argumentIndex = 0)[0]),
-        variableResolutionType = MapperNamespace.VariableResolutionType.DIRECT
-
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf()
 )
 val concatFromSequence = OnnxMappingProcess(
         opName = "noop",

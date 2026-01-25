@@ -13,16 +13,11 @@ static bool isLaunchContextReady() {
   // During early initialization (e.g., static initializers, before main()),
   // LaunchContext may not be initialized yet. Attempting to use it can cause
   // crashes. This function provides a safe check.
-
-  // DON'T try to call LaunchContext::defaultContext() here!
-  // Even calling it can trigger crashes during early initialization.
-  // The safer approach is to just return false during exception handling
-  // and let fprintf write to stderr instead.
-
-  // We can't safely determine if LaunchContext is ready without potentially
-  // triggering the same initialization issues we're trying to avoid.
-  // So we conservatively return false and use fprintf for error reporting.
-  return false;
+  //
+  // Use LaunchContext::isInitialized() which checks if the contexts vector
+  // has been populated. This is the proper way to check if LaunchContext
+  // is ready to use.
+  return sd::LaunchContext::isInitialized();
 }
 
 // Safe helper function for setting error context in exception handlers

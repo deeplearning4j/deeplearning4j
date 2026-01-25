@@ -58,11 +58,20 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
     wAxes = {1, 2, 3};
 
 
+  // Create col with memory layout optimized for later reshape: {bS, oH, oW, kH, kW, iC}
   std::vector<sd::LongType> colShape = {bS, oH, oW, kH, kW, iC};
   std::vector<sd::LongType> perm = {0, 3, 4, 5, 1, 2};
   NDArray *col = new NDArray('c', colShape, input->dataType(), input->getContext());
-  NDArray *colPFrom = col->permute(perm, false, false);
-  NDArray *colP = new NDArray(colPFrom);  // {bS, iC, kH, kW, oH, oW}
+
+  // colP is a VIEW of col - it shares col's DataBuffer with a different shape/strides.
+  // We must NOT delete col while colP is in use, as that would free the underlying memory.
+  // Both col and colP will be stored as intermediate results for the backward pass to manage.
+  NDArray *colP = col->permute(perm, false, false);
+
+  // Push col (the owner) as intermediate result first - framework handles cleanup
+  // colP (the view) will be pushed later and used by backward pass
+  block.pushIntermediateResult(col);
+
   std::vector<sd::LongType> mmulResultShape = {bS * oH * oW, oC};
   NDArray mmulResult('f', mmulResultShape, output->dataType(), output->getContext());
   std::vector<LongType> permuteForOutput = {0, 3, 1, 2};
@@ -78,14 +87,12 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
   } else {
     std::vector<sd::LongType> permute = {0, 3, 1, 2};
     // For NHWC, we need to permute the input to NCHW before im2col
-    inputNchw = input->permute(permute, false,false);
+    inputNchw = input->permute(permute, false, false);
     helpers::im2col(*ctx, *inputNchw, *colP, kH, kW, sH, sW, pH, pW, dH, dW,
                     *zeroVal);
   }
 
   delete zeroVal;
-  delete colPFrom;  // View wrapper from permute - no longer needed
-  delete col;       // Original col array - no longer needed
   block.pushIntermediateResult(colP);
 
   std::vector<sd::LongType> shape = {bS * oH * oW, kH * kW * iC};
@@ -120,11 +127,10 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
     delete permuted;
   } else {
     std::vector<sd::LongType> perm3 = {0,2,3,1};
-    NDArray *oldPermuted = permuted;  // Save old pointer before reassignment
-    permuted = permuted->permute(perm3, false, false);
-    output->assign(permuted);
-    delete oldPermuted;  // Delete the first permutation
-    delete permuted;     // Delete the second permutation
+    NDArray *permuted2 = permuted->permute(perm3, false, false);
+    output->assign(permuted2);
+    delete permuted;   // Delete the first copy
+    delete permuted2;  // Delete the second copy
   }
 
   // Clean up NHWC permutation if it was created

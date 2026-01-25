@@ -74,7 +74,7 @@ static void depthwiseConv2d_(sd::graph::Context& block, NDArray* input, NDArray*
     modifOutput = {{3, 0, 1, 2, 4},
                    {iC, bS * oH * oW, mC}};             // [bS,oH,oW,iC,mC] -> [iC,bS,oH,oW,mC] -> [iC,bS*oH*oW,mC]
     std::vector<sd::LongType> permuteVec = {0, 3, 1, 2};
-    input = input->permute(permuteVec, false, false);  // permute() already returns NDArray*
+    input = input->permute(permuteVec, false, false);
   } else {
     outReShape = {bS, iC, mC, oH, oW};  // [bS,iC*mC,oH,oW] -> [bS,iC,mC,oH,oW]
     modifOutput = {{1, 0, 3, 4, 2},

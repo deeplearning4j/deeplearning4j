@@ -1352,7 +1352,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     }
                     // Check for pointer-like values (heap addresses typically start with 0x7f on 64-bit Linux)
                     // Values > 0x100000000000 (1TB) are likely pointers, not actual data
-                    if (value > 0x100000000000L) {
+                    // BUT exclude Long.MAX_VALUE and Long.MIN_VALUE as these are valid sentinel values
+                    // used by ONNX and other frameworks (e.g., for "infer this dimension" in reshape)
+                    if (value > 0x100000000000L && value != Long.MAX_VALUE && value != Long.MIN_VALUE) {
                         throw new ND4JIllegalStateException(
                             "USE-AFTER-FREE DETECTED: Input scalar at index " + i + " for op '" + op.getOwnName() +
                             "' contains pointer-like value: " + value + " (hex: 0x" + Long.toHexString(value) + "). " +

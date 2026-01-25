@@ -71,7 +71,9 @@ class GRU : PreImportHook  {
         //dl4j: hidden-to-hidden weights, [nOut, 3*nOut]
         //onnx: num_directions, 3*hidden_size, hidden_size]
         val r = sd.getVariable(op.inputsToOp[2])
-        val nOut = r.shape().get(SDIndex.point(-1))
+        // Get hidden size (last dimension) using SameDiff operations
+        val rShapeVar = sd.shape("gru_r_shape", r)
+        val nOut = rShapeVar.get(SDIndex.point(-1))
         val rShape = sd.squeeze(r,0)
         //get rid of num_directions (only 1 is supported)
         //permute to be nIn, 3 * hiddenSize
@@ -117,10 +119,11 @@ class GRU : PreImportHook  {
             return subsetBias.castTo(dt)
         }
 
-        val constShape = Nd4j.create(Nd4j.createBuffer(longArrayOf(3, hiddenLayerSize as Long)))
-        val constShape2 = sd.constant(constShape)
+        // Build shape using SameDiff operations: [3, hiddenLayerSize]
+        val three = sd.constant(3L)
+        val constShape = sd.stack(0, three, hiddenLayerSize.castTo(org.nd4j.linalg.api.buffer.DataType.INT64))
 
-        return sd.create(constShape2, dt)
+        return sd.create(constShape, dt)
 
     }
 

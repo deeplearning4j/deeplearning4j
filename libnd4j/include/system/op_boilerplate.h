@@ -2587,59 +2587,32 @@
 
 #if defined(SD_CUDA)
 
-#if defined(_RELEASE)
+#include <memory/cuda/CudaMemoryPool.h>
 
-// we intentionally add 8 tail bytes here to avoid problems with atomic operations
-#define ALLOCATE_SPECIAL(VARIABLE, WORKSPACE, LENGTH, TT)                                                         \
-  if (WORKSPACE == nullptr) {                                                                                     \
-    auto erc_##VARIABLE = cudaMalloc(reinterpret_cast<void**>(&VARIABLE), LENGTH * sizeof(TT) + 8);               \
-    if (erc_##VARIABLE != 0) {                                                                                    \
-     THROW_EXCEPTION("[DEVICE] allocation failed", erc_##VARIABLE);                                  \
-    } else {                                                                                                      \
-    };                                                                                                            \
-  } else {                                                                                                        \
-    VARIABLE =                                                                                                    \
-        reinterpret_cast<TT*>(WORKSPACE->allocateBytes(sd::memory::MemoryType::DEVICE, LENGTH * sizeof(TT) + 8)); \
-  }
-#define RELEASE_SPECIAL(VARIABLE, WORKSPACE)                                         \
-  if (VARIABLE != nullptr) {                                                         \
-    if (WORKSPACE == nullptr) {                                                      \
-      auto erc_##VARIABLE = cudaFree(reinterpret_cast<void*>(VARIABLE));             \
-      if (erc_##VARIABLE != 0) {                                                     \
-        THROW_EXCEPTION("[DEVICE] deallocation failed", erc_##VARIABLE); \
-      };                                                                             \
-    };                                                                               \
-  };
-
-#else
-
-
-// we intentionally add 8 tail bytes here to avoid problems with atomic operations
+// Use CudaMemoryPool for all CUDA allocations to ensure consistent alloc/free pairing
 #define ALLOCATE_SPECIAL(VARIABLE, WORKSPACE, LENGTH, TT)                                                             \
   if (WORKSPACE == nullptr) {                                                                                         \
-                                                                                          \
-    /* Calculate allocation size */                                                                                   \
-    size_t allocSize = LENGTH * sizeof(TT) + 8;                                                                       \
-                                                                                                                      \
-    /* Allocation with proper error handling */                                                                       \
-    checkCudaErrors(cudaMalloc(reinterpret_cast<void**>(&VARIABLE), allocSize));                          \
-                                                                                                              \
+    int deviceId_##VARIABLE = 0;                                                                                      \
+    cudaGetDevice(&deviceId_##VARIABLE);                                                                              \
+    size_t allocSize_##VARIABLE = LENGTH * sizeof(TT) + 8;                                                            \
+    VARIABLE = reinterpret_cast<TT*>(sd::memory::CudaMemoryPool::getInstance().allocate(                              \
+        allocSize_##VARIABLE, deviceId_##VARIABLE, nullptr));                                                         \
+    if (VARIABLE == nullptr) {                                                                                        \
+      THROW_EXCEPTION("[DEVICE] allocation failed");                                                                  \
+    }                                                                                                                 \
   } else {                                                                                                            \
-    /* Using workspace allocator */                                                                                   \
-    size_t allocSize = LENGTH * sizeof(TT) + 8;                                                                       \
-    VARIABLE = reinterpret_cast<TT*>(WORKSPACE->allocateBytes(sd::memory::MemoryType::DEVICE, allocSize));            \
+    size_t allocSize_##VARIABLE = LENGTH * sizeof(TT) + 8;                                                            \
+    VARIABLE = reinterpret_cast<TT*>(WORKSPACE->allocateBytes(sd::memory::MemoryType::DEVICE, allocSize_##VARIABLE)); \
   }
-#define RELEASE_SPECIAL(VARIABLE, WORKSPACE)                                         \
-  if (VARIABLE != nullptr) {                                                         \
-    if (WORKSPACE == nullptr) {                                                      \
-      auto erc_##VARIABLE = cudaFree(reinterpret_cast<void*>(VARIABLE));             \
-      if (erc_##VARIABLE != 0) {                                                     \
-        throw cuda_exception::build("[DEVICE] deallocation failed", erc_##VARIABLE); \
-      };                                                                             \
-    };                                                                               \
-  };
 
-#endif
+#define RELEASE_SPECIAL(VARIABLE, WORKSPACE)                                                                          \
+  if (VARIABLE != nullptr) {                                                                                          \
+    if (WORKSPACE == nullptr) {                                                                                       \
+      int deviceId_##VARIABLE = 0;                                                                                    \
+      cudaGetDevice(&deviceId_##VARIABLE);                                                                            \
+      sd::memory::CudaMemoryPool::getInstance().free(reinterpret_cast<void*>(VARIABLE), deviceId_##VARIABLE, nullptr);\
+    }                                                                                                                 \
+  }
 
 #else
 

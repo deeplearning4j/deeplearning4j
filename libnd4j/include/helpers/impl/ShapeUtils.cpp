@@ -1168,19 +1168,11 @@ std::vector<LongType> ShapeUtils::evalShapeForMatmul(const LongType* xShapeInfo,
     const auto lowerRank = xRank > yRank ? yRank : xRank;
     const auto rankDiff = higherRank - lowerRank;
 
-    // Check if all leading dimensions are singletons (size 1)
-    bool allLeadingSingleton = true;
-    for (LongType i = 0; i < rankDiff; ++i) {
-      if (higherRankInfo[i + 1] != 1) {
-        allLeadingSingleton = false;
-        break;
-      }
-    }
-
-    if (allLeadingSingleton && lowerRank == 2) {
-      // Can treat as 2D matmul with singleton batch dims preserved in output
-      // For x having higher rank: x[1,1,...,M,K] @ y[K,N] -> [1,1,...,M,N]
-      // For y having higher rank: x[M,K] @ y[1,1,...,K,N] -> [1,1,...,M,N]
+    // Handle ND x 2D case (ONNX broadcast semantics)
+    // For x[batch..., M, K] @ y[K, N] -> [batch..., M, N]
+    // For x[M, K] @ y[batch..., K, N] -> [batch..., M, N]
+    if (lowerRank == 2) {
+      // General ND x 2D matmul with batch dimensions preserved in output
 
       LongType outM, outN, xK, yK;
 
@@ -1245,17 +1237,19 @@ std::vector<LongType> ShapeUtils::evalShapeForMatmul(const LongType* xShapeInfo,
       }
 
       std::vector<LongType> cShape;
-      // Preserve leading singleton dimensions from the higher-rank input
-      for (LongType i = 0; i < rankDiff; ++i) {
-        cShape.push_back(1);
+      // Preserve ALL leading dimensions from the higher-rank input (not just singletons)
+      // This implements ONNX MatMul broadcast semantics
+      for (LongType i = 0; i < higherRank - 2; ++i) {
+        cShape.push_back(higherRankInfo[i + 1]);
       }
       // Add the matrix dimensions [M, N]
       cShape.push_back(outM);
       cShape.push_back(outN);
       return cShape;
     } else {
+      // Rank mismatch with non-2D lower rank - not supported
       sd_printf(
-          "ShapeUtils::evalShapeForMatmul static method: the ranks of arrays must be the same, but got xRank = %i and "
+          "ShapeUtils::evalShapeForMatmul static method: for rank mismatch, one input must be 2D, but got xRank = %i and "
           "yRank = %i ! \n",
           xRank, yRank);
       THROW_EXCEPTION("");

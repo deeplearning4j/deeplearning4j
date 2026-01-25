@@ -60,6 +60,12 @@ abstract class AttributeNDArrayToScalarAttribute<
         val ret = ArrayList<OpNamespace.ArgDescriptor>()
         for ((k, v) in mappingNamesToPerform()) {
             val irAttribute = mappingCtx.tensorAttributeFor(v).toNd4jNDArray()
+
+            // Skip if ndarray is empty or has null data buffer
+            if (irAttribute.isEmpty || irAttribute.length() == 0L || irAttribute.data() == null) {
+                continue
+            }
+
             val nd4jOpDescriptor =  OpDescriptorLoaderHolder.nd4jOpDescriptor.findOp(mappingCtx.opName())
             val realDataType = argDescriptorType(k, nd4jOpDescriptor)
             when(realDataType) {

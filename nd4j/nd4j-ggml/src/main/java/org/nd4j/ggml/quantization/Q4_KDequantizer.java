@@ -34,13 +34,13 @@ import java.nio.ByteOrder;
  * Q4_K is a k-quant format with super-blocks:
  * - Super-block size: 256 elements
  * - Contains 8 sub-blocks of 32 elements each
- * - Per super-block: 2 FP16 scales (d, dmin) + 12 bytes scales + 4 bytes mins + 128 bytes data
- * - Total: 144 bytes per super-block (256 elements)
+ * - Per super-block: 2 FP16 scales (d, dmin) = 4 bytes + 12 bytes scales + 4 bytes mins + 128 bytes data
+ * - Total: 148 bytes per super-block (256 elements)
  */
 public class Q4_KDequantizer implements Dequantizer {
 
     private static final int BLOCK_SIZE = 256;
-    private static final int BYTES_PER_BLOCK = 144;
+    private static final int BYTES_PER_BLOCK = 148;
     private static final int SUB_BLOCK_SIZE = 32;
     private static final int NUM_SUB_BLOCKS = 8;
 
@@ -91,22 +91,22 @@ public class Q4_KDequantizer implements Dequantizer {
             float[] scales = new float[NUM_SUB_BLOCKS];
             float[] mins = new float[NUM_SUB_BLOCKS];
 
+            // Unpack 8 x 6-bit scales from 6 bytes (48 bits)
+            long packedScales = 0;
+            for (int i = 0; i < 6; i++) {
+                packedScales |= ((long) (scaleBytes[i] & 0xFF)) << (i * 8);
+            }
             for (int i = 0; i < NUM_SUB_BLOCKS; i++) {
-                int scaleIdx = (i * 6) / 8;
-                int scaleBit = (i * 6) % 8;
-
-                int scaleVal;
-                if (scaleBit <= 2) {
-                    scaleVal = (scaleBytes[scaleIdx] >> scaleBit) & 0x3F;
-                } else {
-                    scaleVal = ((scaleBytes[scaleIdx] >> scaleBit) | (scaleBytes[scaleIdx + 1] << (8 - scaleBit))) & 0x3F;
-                }
-
+                int scaleVal = (int) ((packedScales >> (i * 6)) & 0x3F);
                 scales[i] = d * scaleVal;
 
-                // Simplified min extraction
-                int minVal = (i < 4) ? (minBytes[i / 2] >> ((i % 2) * 4)) & 0x0F : 0;
-                mins[i] = dmin * minVal;
+                // Extract 4-bit min for each sub-block (1 sign bit + 3 magnitude bits)
+                int byteIdx = i / 2;
+                int shift = (i % 2) * 4;
+                int packedMin = (minBytes[byteIdx] >> shift) & 0x0F;
+                int sign = (packedMin >> 3) & 0x01;
+                int magnitude = packedMin & 0x07;
+                mins[i] = dmin * magnitude * (sign == 1 ? -1 : 1);
             }
 
             // Read 128 bytes of quantized data (256 x 4 bits)
@@ -114,6 +114,7 @@ public class Q4_KDequantizer implements Dequantizer {
             buffer.get(dataBytes);
 
             // Dequantize each sub-block
+            // Formula: original = quantized * scale + min
             for (int sb = 0; sb < NUM_SUB_BLOCKS && outputIdx < totalElements; sb++) {
                 float scale = scales[sb];
                 float min = mins[sb];
@@ -125,13 +126,13 @@ public class Q4_KDequantizer implements Dequantizer {
                     // Low nibble
                     int val0 = packed & 0x0F;
                     if (outputIdx < totalElements) {
-                        result[outputIdx++] = val0 * scale - min;
+                        result[outputIdx++] = val0 * scale + min;
                     }
 
                     // High nibble
                     int val1 = (packed >> 4) & 0x0F;
                     if (outputIdx < totalElements) {
-                        result[outputIdx++] = val1 * scale - min;
+                        result[outputIdx++] = val1 * scale + min;
                     }
                 }
             }

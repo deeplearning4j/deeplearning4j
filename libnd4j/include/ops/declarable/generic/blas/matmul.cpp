@@ -71,50 +71,47 @@ CUSTOM_OP_IMPL(matmul, 2, 1, false, 0, -2) {
                "= %i, y rank = %i !",
                xRank, yRank);
 
-  // Handle rank mismatch when one input has singleton leading dimensions
-  // This supports ONNX Gemm patterns like [1,1,1,768] x [768,768] -> [1,1,1,768]
+  // Handle rank mismatch for ONNX MatMul broadcast semantics
+  // For x[batch..., M, K] @ y[K, N] -> [batch..., M, N]
+  // For x[M, K] @ y[batch..., K, N] -> [batch..., M, N]
   NDArray* xReshaped = nullptr;
   NDArray* yReshaped = nullptr;
   NDArray* zReshaped = nullptr;
 
   if (xRank != yRank && xRank > 2 && yRank == 2) {
-    // Check if x has all singleton leading dims
-    bool allLeadingSingleton = true;
-    for (int i = 0; i < xRank - 2; ++i) {
-      if (x->sizeAt(i) != 1) {
-        allLeadingSingleton = false;
-        break;
-      }
-    }
-    if (allLeadingSingleton) {
-      // Reshape x from [1,1,...,M,K] to [M,K] for matmul
-      std::vector<LongType> newXShape = {x->sizeAt(-2), x->sizeAt(-1)};
-      xReshaped = new NDArray(x->reshape(x->ordering(), newXShape));
-      // Reshape z from [1,1,...,M,N] to [M,N]
-      std::vector<LongType> newZShape = {z->sizeAt(-2), z->sizeAt(-1)};
-      zReshaped = new NDArray(z->reshape(z->ordering(), newZShape));
-      x = xReshaped;
-      z = zReshaped;
-    }
+    // x is ND [batch..., M, K], y is 2D [K, N]
+    // Flatten x to 2D: [product(batch...) * M, K]
+    LongType xM = transX ? x->sizeAt(-1) : x->sizeAt(-2);
+    LongType xK = transX ? x->sizeAt(-2) : x->sizeAt(-1);
+    LongType batchSize = x->lengthOf() / (xM * xK);
+
+    std::vector<LongType> newXShape = {batchSize * xM, xK};
+    xReshaped = new NDArray(x->reshape(x->ordering(), newXShape));
+
+    // Flatten z to 2D: [product(batch...) * M, N]
+    LongType zN = z->sizeAt(-1);
+    std::vector<LongType> newZShape = {batchSize * xM, zN};
+    zReshaped = new NDArray(z->reshape(z->ordering(), newZShape));
+
+    x = xReshaped;
+    z = zReshaped;
   } else if (xRank != yRank && yRank > 2 && xRank == 2) {
-    // Check if y has all singleton leading dims
-    bool allLeadingSingleton = true;
-    for (int i = 0; i < yRank - 2; ++i) {
-      if (y->sizeAt(i) != 1) {
-        allLeadingSingleton = false;
-        break;
-      }
-    }
-    if (allLeadingSingleton) {
-      // Reshape y from [1,1,...,K,N] to [K,N] for matmul
-      std::vector<LongType> newYShape = {y->sizeAt(-2), y->sizeAt(-1)};
-      yReshaped = new NDArray(y->reshape(y->ordering(), newYShape));
-      // Reshape z from [1,1,...,M,N] to [M,N]
-      std::vector<LongType> newZShape = {z->sizeAt(-2), z->sizeAt(-1)};
-      zReshaped = new NDArray(z->reshape(z->ordering(), newZShape));
-      y = yReshaped;
-      z = zReshaped;
-    }
+    // x is 2D [M, K], y is ND [batch..., K, N]
+    // Flatten y to 2D: [K, product(batch...) * N]
+    LongType yK = transY ? y->sizeAt(-1) : y->sizeAt(-2);
+    LongType yN = transY ? y->sizeAt(-2) : y->sizeAt(-1);
+    LongType batchSize = y->lengthOf() / (yK * yN);
+
+    std::vector<LongType> newYShape = {yK, batchSize * yN};
+    yReshaped = new NDArray(y->reshape(y->ordering(), newYShape));
+
+    // Flatten z to 2D: [M, product(batch...) * N]
+    LongType zM = z->sizeAt(-2);
+    std::vector<LongType> newZShape = {zM, batchSize * yN};
+    zReshaped = new NDArray(z->reshape(z->ordering(), newZShape));
+
+    y = yReshaped;
+    z = zReshaped;
   }
 
   // Update ranks after potential reshaping

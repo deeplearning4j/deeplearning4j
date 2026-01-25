@@ -64,7 +64,8 @@ class Split : PreImportHook  {
             return retOutput(splitOutput)
         } else if(attributes.containsKey("split")) {
             val numSplits = attributes["split"] as List<Long>
-            val splitConst = sd.constant(Nd4j.create(Nd4j.createBuffer(Ints.toArray(numSplits)))).castTo(DataType.INT64)
+            // Use createFromArray to ensure 1D shape, not [1, N] row vector
+            val splitConst = sd.constant(Nd4j.createFromArray(*numSplits.toLongArray()))
             val splitOutput = sd.splitV(outputNames.toTypedArray(),inputVariable,splitConst,numSplits.size,splitDim.toInt())
             return retOutput(splitOutput)
         } else {

@@ -37,6 +37,7 @@
 #include <cstdarg>
 #include <cstring>
 #include <sstream>
+#include <vector>
 
 namespace sd {
 namespace ops {
@@ -153,15 +154,41 @@ static std::string dumpContextStackTraces(Context* block, const char* opName) {
 ErrorResult conditionHelper(const char *file, int line, int condition, int argNumber, const char *format, ...) {
   if (!condition) {
     va_list args;
+    va_list args_copy;
 
+    // First, print to stdout for debugging (keep existing behavior)
     printf("Error at [%s:%i:%i]:\n", file, line, argNumber);
     va_start(args, format);
     vprintf(format, args);
     va_end(args);
     printf("\n");
     fflush(stdout);
+
+    // Now build the error message string for the ErrorResult
+    // First pass: determine required buffer size
+    va_start(args, format);
+    va_copy(args_copy, args);
+    int msgLen = vsnprintf(nullptr, 0, format, args_copy);
+    va_end(args_copy);
+    va_end(args);
+
+    // Build the complete error message with file/line context
+    char locationBuf[256];
+    snprintf(locationBuf, sizeof(locationBuf), "Error at [%s:%d:%d]: ", file, line, argNumber);
+
+    // Allocate buffer for the formatted message
+    std::string formattedMsg;
+    if (msgLen > 0) {
+      std::vector<char> msgBuf(msgLen + 1);
+      va_start(args, format);
+      vsnprintf(msgBuf.data(), msgBuf.size(), format, args);
+      va_end(args);
+      formattedMsg = msgBuf.data();
+    }
+
     ErrorResult errorResult;
     errorResult.status = Status::BAD_ARGUMENTS;
+    errorResult.message = std::string(locationBuf) + formattedMsg;
     return errorResult;
   }
   ErrorResult errorResult;

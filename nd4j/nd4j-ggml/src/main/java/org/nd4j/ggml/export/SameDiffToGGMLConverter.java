@@ -250,8 +250,11 @@ public class SameDiffToGGMLConverter {
             arr = arr.castTo(nd4jType);
         }
 
+        // Flatten to 1D for consistent data extraction (row-major/c-order)
+        INDArray flat = arr.reshape(arr.length());
+
         // Convert to bytes (little-endian)
-        long numBytes = arr.length() * nd4jType.width();
+        long numBytes = flat.length() * nd4jType.width();
         if (numBytes > Integer.MAX_VALUE) {
             throw new GGMLExportException("Tensor too large: " + numBytes + " bytes");
         }
@@ -260,27 +263,27 @@ public class SameDiffToGGMLConverter {
 
         switch (nd4jType) {
             case FLOAT:
-                buffer.asFloatBuffer().put(arr.toFloatVector());
+                buffer.asFloatBuffer().put(flat.toFloatVector());
                 break;
             case HALF:
-                short[] fp16Data = convertToFp16(arr);
+                short[] fp16Data = convertToFp16(flat);
                 buffer.asShortBuffer().put(fp16Data);
                 break;
             case BFLOAT16:
-                short[] bf16Data = convertToBf16(arr);
+                short[] bf16Data = convertToBf16(flat);
                 buffer.asShortBuffer().put(bf16Data);
                 break;
             case DOUBLE:
-                buffer.asDoubleBuffer().put(arr.toDoubleVector());
+                buffer.asDoubleBuffer().put(flat.toDoubleVector());
                 break;
             case INT:
-                buffer.asIntBuffer().put(arr.toIntVector());
+                buffer.asIntBuffer().put(flat.toIntVector());
                 break;
             case LONG:
-                buffer.asLongBuffer().put(arr.toLongVector());
+                buffer.asLongBuffer().put(flat.toLongVector());
                 break;
             case BYTE:
-                buffer.put(arr.data().asBytes());
+                buffer.put(flat.data().asBytes());
                 break;
             default:
                 throw new GGMLExportException("Unsupported data type: " + nd4jType);
@@ -290,7 +293,9 @@ public class SameDiffToGGMLConverter {
     }
 
     private short[] convertToFp16(INDArray arr) {
-        float[] floats = arr.toFloatVector();
+        // Flatten to 1D if needed for toFloatVector()
+        INDArray flat = arr.isVector() ? arr : arr.reshape(arr.length());
+        float[] floats = flat.toFloatVector();
         short[] result = new short[floats.length];
         for (int i = 0; i < floats.length; i++) {
             result[i] = floatToFp16(floats[i]);
@@ -299,7 +304,9 @@ public class SameDiffToGGMLConverter {
     }
 
     private short[] convertToBf16(INDArray arr) {
-        float[] floats = arr.toFloatVector();
+        // Flatten to 1D if needed for toFloatVector()
+        INDArray flat = arr.isVector() ? arr : arr.reshape(arr.length());
+        float[] floats = flat.toFloatVector();
         short[] result = new short[floats.length];
         for (int i = 0; i < floats.length; i++) {
             // BFloat16: truncate mantissa of float

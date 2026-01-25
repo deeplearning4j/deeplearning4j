@@ -20,6 +20,7 @@
 // @author raver119@gmail.com
 //
 #include <helpers/ShapeBuilders.h>
+#include <cstring>
 
 #include "array/ShapeDescriptor.h"
 
@@ -28,6 +29,8 @@ namespace sd {
 LongType* ShapeBuilders::createShapeInfoFrom(ShapeDescriptor* descriptor) {
   LongType bufferLen = shape::shapeInfoLength(descriptor->rank());
   auto ret = new LongType[bufferLen];
+  // Initialize to zero to avoid uninitialized memory issues
+  memset(ret, 0, bufferLen * sizeof(LongType));
   ret[0] = descriptor->rank();
   if(descriptor->rank() > 0) {
     shape::setShape(ret, descriptor->shape_strides());
@@ -155,6 +158,8 @@ LongType  * ShapeBuilders::createShapeInfo(const DataType dataType, const char o
     shapeInfo = createScalarShapeInfo(dataType, workspace);
   } else {
     shapeInfo = new LongType[shape::shapeInfoLength(rank)];
+    // Initialize to zero to avoid uninitialized memory issues
+    memset(shapeInfo, 0, shape::shapeInfoLength(rank) * sizeof(LongType));
     shapeInfo[0] = rank;
     for (int i = 0; i < rank; i++) {
       shapeInfo[i + 1] = shapeOnly[i];
@@ -195,6 +200,8 @@ LongType* ShapeBuilders::emptyShapeInfo(const DataType dataType, const char orde
 LongType* ShapeBuilders::emptyShapeInfo(const DataType dataType, const char order, int rank,
                                         const LongType* shapeOnly, memory::Workspace* workspace) {
   auto shapeInfo2 = new LongType[shape::shapeInfoLength(rank)];
+  // Initialize to zero to avoid uninitialized memory issues
+  memset(shapeInfo2, 0, shape::shapeInfoLength(rank) * sizeof(LongType));
   shapeInfo2[0] = rank;
 
   for(int i = 0; i < rank; i++) {

@@ -53,7 +53,8 @@ class Transpose : PreImportHook  {
 
         var inputVariable = sd.getVariable(op.inputsToOp[0])
         val perm = attributes["perm"] as List<Long>
-        val permInput = sd.constant(Nd4j.create(Nd4j.createBuffer(perm.toLongArray())))
+        // Use createFromArray to ensure 1D shape, not [1, N] row vector
+        val permInput = sd.constant(Nd4j.createFromArray(*perm.toLongArray()))
         val outputVar = sd.permute(outputNames[0],inputVariable,permInput)
         return mapOf(outputVar.name() to listOf(outputVar))
     }

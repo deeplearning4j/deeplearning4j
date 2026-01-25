@@ -67,39 +67,41 @@ public class Q6_KDequantizer implements Dequantizer {
         int outputIdx = 0;
 
         for (int block = 0; block < numBlocks && buffer.remaining() >= BYTES_PER_BLOCK; block++) {
-            // Read low 4 bits (128 bytes for 256 elements)
-            byte[] ql = new byte[128];
-            buffer.get(ql);
-
-            // Read high 2 bits (64 bytes)
-            byte[] qh = new byte[64];
-            buffer.get(qh);
-
-            // Read scales (16 bytes for 16 sub-blocks)
-            byte[] scales = new byte[16];
-            buffer.get(scales);
-
-            // Read d
+            // Read d as FP16 (2 bytes) - must match quantizer order
             short dRaw = buffer.getShort();
             float d = fp16ToFloat(dRaw);
 
-            // Dequantize
+            // Read scales (16 bytes for 16 sub-blocks, 8-bit each)
+            byte[] scales = new byte[16];
+            buffer.get(scales);
+
+            // Read packed data (192 bytes: 4 x 6-bit values per 3 bytes)
+            byte[] packedData = new byte[192];
+            buffer.get(packedData);
+
+            // Unpack 6-bit quantized values
+            int[] quantizedValues = new int[256];
+            for (int i = 0; i < 64; i++) {
+                int byteIdx = i * 3;
+                int b0 = packedData[byteIdx] & 0xFF;
+                int b1 = packedData[byteIdx + 1] & 0xFF;
+                int b2 = packedData[byteIdx + 2] & 0xFF;
+
+                // Unpack 4 x 6-bit values from 3 bytes (matches quantizer packing)
+                int idx = i * 4;
+                quantizedValues[idx] = b0 & 0x3F;
+                quantizedValues[idx + 1] = ((b0 >> 6) | (b1 << 2)) & 0x3F;
+                quantizedValues[idx + 2] = ((b1 >> 4) | (b2 << 4)) & 0x3F;
+                quantizedValues[idx + 3] = (b2 >> 2) & 0x3F;
+            }
+
+            // Dequantize: original = (quantized - 32) * scale
+            // Quantizer stored values as 0-63 (added 32 to signed -32..31)
             for (int j = 0; j < 256 && outputIdx < totalElements; j++) {
                 int subBlock = j / 16;
+                float scale = d * (scales[subBlock] & 0x7F);  // 7-bit unsigned scale
 
-                // Get low 4 bits
-                int qlIdx = j / 2;
-                int low = (j % 2 == 0) ? (ql[qlIdx] & 0x0F) : ((ql[qlIdx] >> 4) & 0x0F);
-
-                // Get high 2 bits
-                int qhIdx = j / 4;
-                int qhShift = (j % 4) * 2;
-                int high = (qh[qhIdx] >> qhShift) & 0x03;
-
-                int val = low | (high << 4);
-                val -= 32; // Signed offset for 6-bit
-
-                float scale = d * (scales[subBlock] - 32);
+                int val = quantizedValues[j] - 32;  // Convert back to signed
                 result[outputIdx++] = val * scale;
             }
         }

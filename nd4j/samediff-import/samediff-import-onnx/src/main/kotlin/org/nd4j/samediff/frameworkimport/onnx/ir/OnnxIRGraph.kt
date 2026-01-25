@@ -22,6 +22,7 @@ package org.nd4j.samediff.frameworkimport.onnx.ir
 import onnx.Onnx
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.ndarray.INDArray
+import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.context.MappingContext
 import org.nd4j.samediff.frameworkimport.ir.IRDataType
 import org.nd4j.samediff.frameworkimport.ir.IRGraph
@@ -449,25 +450,98 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
         val check = graphDef.initializerList.map { input ->input.name }
         if(!check.contains(name)) {
             //initializer not found, see if there is a constant node
+            // First try by node name
             if (this.nodeNames.contains(name)) {
                 val constNode = nodeByName(name)
                 if (constNode.opType == "Constant") {
-                    //every constant should have a tensor value
-                    val getValue = constNode.getAttribute(0).t
-                    return OnnxIRTensor(getValue).toNd4jNDArray()
+                    return extractConstantValue(constNode, name)
                 } else {
                     throw IllegalArgumentException("Constant of name $name not found!")
-
                 }
+            }
 
+            // If not found by node name, search by output name
+            // This handles the case where Constant nodes have auto-generated names like "Constant_0"
+            // but their outputs have different names
+            val constNodeByOutput = cachedNodeList.find { node ->
+                node.opName() == "Constant" && node.outputs().any { output ->
+                    output == name || output.replace(":0", "") == name
+                }
+            }
+            if (constNodeByOutput != null) {
+                return extractConstantValue(constNodeByOutput.internalValue(), name)
             }
         }
 
         return OnnxIRTensor(graphDef.initializerList.first { input -> input.name == name }).toNd4jNDArray()
     }
 
+    private fun extractConstantValue(constNode: Onnx.NodeProto, name: String): INDArray {
+        // ONNX Constant can have different attribute types
+        // Check for each possible attribute type
+        for (attr in constNode.attributeList) {
+            when (attr.name) {
+                "value" -> {
+                    // Main tensor value attribute
+                    var arr = OnnxIRTensor(attr.t).toNd4jNDArray()
+                    // If tensor has only 1 element, squeeze to scalar for proper broadcasting
+                    // Use reshape() with empty shape to preserve original datatype
+                    if (arr.length() == 1L && arr.rank() > 0) {
+                        arr = arr.reshape()
+                    }
+                    return arr
+                }
+                "value_float" -> {
+                    return Nd4j.scalar(attr.f)
+                }
+                "value_floats" -> {
+                    val floats = attr.floatsList.toFloatArray()
+                    return Nd4j.createFromArray(*floats)
+                }
+                "value_int" -> {
+                    return Nd4j.scalar(attr.i)
+                }
+                "value_ints" -> {
+                    val ints = attr.intsList.toLongArray()
+                    return Nd4j.createFromArray(*ints)
+                }
+                "value_string" -> {
+                    // String as byte array - create INT8 tensor
+                    val bytes = attr.s.toByteArray()
+                    return Nd4j.createFromArray(*bytes)
+                }
+                "value_strings" -> {
+                    // Multiple strings not well supported, return first as bytes
+                    if (attr.stringsList.isNotEmpty()) {
+                        val bytes = attr.stringsList[0].toByteArray()
+                        return Nd4j.createFromArray(*bytes)
+                    }
+                }
+            }
+        }
+        // Fallback: try first attribute's tensor if no named attribute found
+        if (constNode.attributeCount > 0 && constNode.getAttribute(0).hasT()) {
+            var arr = OnnxIRTensor(constNode.getAttribute(0).t).toNd4jNDArray()
+            // If tensor has only 1 element, squeeze to scalar for proper broadcasting
+            // Use reshape() with empty shape to preserve original datatype
+            if (arr.length() == 1L && arr.rank() > 0) {
+                arr = arr.reshape()
+            }
+            return arr
+        }
+        throw IllegalArgumentException("Constant node '$name' has no value attribute")
+    }
+
     override fun hasConstantInitializer(name: String): Boolean {
-        return initializerSet.contains(name)
+        if (initializerSet.contains(name)) {
+            return true
+        }
+        // Also check if there's a Constant node that produces this output
+        return cachedNodeList.any { node ->
+            node.opName() == "Constant" && node.outputs().any { output ->
+                output == name || output.replace(":0", "") == name
+            }
+        }
     }
 
     override fun indexOfNode(input: String): Int {
