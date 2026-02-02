@@ -290,9 +290,14 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
    if (gridDimX > 1) {
      __shared__ bool amLast;
      unsigned int *unsignedSharedMemory = (unsigned int *)reductionBuffer;
+     // Store both value and index for each block's partial result so the
+     // merge phase can compare actual values. Previously only the index was
+     // stored and reconstructed with value=0, making the first block always
+     // win regardless of actual maximum (0 > 0 == false).
+     auto partialResults = reinterpret_cast<IndexValue<X>*>(reductionBuffer);
      tid = threadIdx.x;
      if (threadIdx.x == 0)
-       reductionBuffer[blockIdx.x] = sPartials[threadIdx.x].index;
+       partialResults[blockIdx.x] = sPartials[0];
 
      __threadfence();
      __syncthreads();
@@ -307,8 +312,7 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
      if (amLast) {
        sPartials[threadIdx.x] = OpType::startingIndexValue(dx);
        for (sd::LongType i = threadIdx.x; i < gridDim.x; i += blockDim.x) {
-         IndexValue<X> comp{static_cast<X>(0), reductionBuffer[i]};
-         sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], comp, extraParams);
+         sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], partialResults[i], extraParams);
        }
        __syncthreads();
        aggregatePartials<OpType>(sPartials, threadIdxX, gridDim.x, extraParams);
