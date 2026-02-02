@@ -99,6 +99,13 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     // DAG cache for avoiding expensive convergence process
     private final DAGCache dagCache = new DAGCache();
 
+    // Cached inputs list to avoid iterating all variables on every output() call
+    private volatile List<String> cachedInputsList;
+
+    // Cached constant/variable values to avoid repeated PatriciaTrie lookups on every output() call.
+    // Key is a DAGCache.CacheKey-like identifier; value is a pre-built map of const/var name -> SDValue.
+    private volatile Map<String, SDValue> cachedConstVarValues;
+
     private Set<Long> freedArrays() {
         return freedArraysTl.get();
     }
@@ -141,12 +148,15 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // Clear freed arrays tracking from previous execution
         freedArrays().clear();
 
-        // Clear DAG cache to prevent unbounded growth with different output sets
-        dagCache.clear();
+        // NOTE: Do NOT clear dagCache here. The DAG is purely structural (depends only on
+        // requested outputs and graph topology, not on placeholder values). Clearing it forces
+        // expensive DAG rebuild (5000+ ops) on every call, which is catastrophic for
+        // autoregressive generation where the same outputs are requested hundreds of times.
+        // The cache is keyed by output set and will naturally serve different output combinations.
 
-        log.info("Executing forward pass for {} variables", variables.size());
+        log.debug("Executing forward pass for {} variables", variables.size());
 
-        Map<String, SDValue> filteredResults;
+        Map<String, SDValue> filteredResults = null;
         try {
             // Prepare all required outputs
             Set<String> allRequired = new LinkedHashSet<>(variables);
@@ -378,10 +388,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             // Clear array use tracker to prevent stale dependencies from accumulating
             arrayUseTracker().clear();
         } finally {
+            log.debug("CLEANUP: Phase 1 - closing {} OpContexts", opContexts().size());
             // Close OpContext instances to prevent native memory leak
-            // Wrap in additional try-catch to ensure opContexts().clear() runs even if iteration fails
             try {
-                for (OpContext ctx : opContexts().values()) {
+                for (Map.Entry<String, OpContext> entry : opContexts().entrySet()) {
+                    OpContext ctx = entry.getValue();
                     if (ctx != null) {
                         try {
                             ctx.close();
@@ -393,7 +404,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             } catch (Exception e) {
                 log.warn("Error iterating OpContexts for cleanup: {}", e.getMessage());
             } finally {
-                // Always clear the map, even if iteration failed
                 opContexts().clear();
             }
 
@@ -407,8 +417,17 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             }
 
             // TAD packs accumulate during operation execution and MUST be cleared after EVERY inference
-            // Without this finally block, exceptions would prevent cache clearing, causing unbounded memory growth
             org.nd4j.linalg.factory.Nd4j.clearTADCache();
+
+            // Note: nodeValueOutputs is intentionally NOT cleared or closed here.
+            // Closing arrays causes double-free crashes because native data buffers
+            // are shared across multiple INDArray objects (views, reshapes). Even clearing
+            // without closing causes GC-triggered JavaCPP deallocation to hit freed buffers.
+            // Memory reclamation between output() calls relies on mmgr.close() above
+            // which releases the array cache, and on the arrayUseTracker releasing
+            // intermediate arrays during execution.
+
+            log.debug("CLEANUP: all phases complete");
         }
 
         return ExecutionResult.builder().valueOutputs(filteredResults).build();
@@ -432,6 +451,18 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
         // Execute operations in corrected topological order
         List<ExecutionNode> executionOrder = dag.getFrameAwareExecutionOrder();
+
+        // DIAGNOSTIC: Block the DeallocatorService during op execution to prevent
+        // GC-triggered native buffer frees from racing with active ops.
+        // If the heap corruption crash goes away with this enabled, it confirms
+        // the root cause is a race condition between the DeallocatorService and op execution.
+        boolean blockDeallocDuringExec = Boolean.parseBoolean(
+                System.getProperty("org.nd4j.inference.block.deallocator", "false"));
+        if (blockDeallocDuringExec) {
+            Nd4j.getDeallocatorService().toggleDeallocationBlock(true);
+            System.out.println("DIAG: DeallocatorService BLOCKED during execution (" + executionOrder.size() + " ops)");
+            System.out.flush();
+        }
 
         for (ExecutionNode node : executionOrder) {
             if (node.getNodeType() == ExecutionNode.ExecutionNodeType.VARIABLE_INIT ||
@@ -496,6 +527,13 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     }
                 }
             }
+        }
+
+        // DIAGNOSTIC: Unblock the DeallocatorService after execution
+        if (blockDeallocDuringExec) {
+            Nd4j.getDeallocatorService().toggleDeallocationBlock(false);
+            System.out.println("DIAG: DeallocatorService UNBLOCKED after execution");
+            System.out.flush();
         }
 
         for(String output : allRequired) {
@@ -583,23 +621,28 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                                   Map<String, INDArray> placeholderValues,
                                   Map<String, SDValue> otherPlaceholderValues) {
 
-        // Initialize constants
-        for (String constName : dag.getConstants()) {
-            INDArray constValue = getConstantOrVariable(constName);
-            if (constValue != null) {
-                variableValues.put(constName, SDValue.create(constValue));
+        // Use cached constant/variable values to avoid thousands of PatriciaTrie lookups per call.
+        // Constants and model weights don't change between autoregressive steps.
+        Map<String, SDValue> constVarCache = cachedConstVarValues;
+        if (constVarCache == null) {
+            constVarCache = new HashMap<>();
+            for (String constName : dag.getConstants()) {
+                INDArray constValue = getConstantOrVariable(constName);
+                if (constValue != null) {
+                    constVarCache.put(constName, SDValue.create(constValue));
+                }
             }
-        }
-
-        // Initialize variables
-        for (String varName : dag.getVariables()) {
-            INDArray varValue = getConstantOrVariable(varName);
-            if (varValue != null) {
-                variableValues.put(varName, SDValue.create(varValue));
+            for (String varName : dag.getVariables()) {
+                INDArray varValue = getConstantOrVariable(varName);
+                if (varValue != null) {
+                    constVarCache.put(varName, SDValue.create(varValue));
+                }
             }
+            cachedConstVarValues = constVarCache;
         }
+        variableValues.putAll(constVarCache);
 
-        // Initialize placeholders
+        // Initialize placeholders (these change every call)
         if (placeholderValues != null) {
             for (Map.Entry<String, INDArray> entry : placeholderValues.entrySet()) {
                 variableValues.put(entry.getKey(), SDValue.create(entry.getValue()));
@@ -938,7 +981,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     executeNextIterationNode(node, variableValues, op);
                     return;
                 case "merge":
-                    executeMergeNode(node, variableValues, op);
+                    executeMergeNode(node, variableValues, op, allRequired);
                     return;
                 case "loop_cond":
                     executeLoopCondNode(node, variableValues, op);
@@ -1133,7 +1176,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         variableValues.put(outputVar, inputValue);
     }
 
-    private void executeMergeNode(ExecutionNode node, Map<String, SDValue> variableValues, DifferentialFunction op) {
+    private void executeMergeNode(ExecutionNode node, Map<String, SDValue> variableValues,
+                                   DifferentialFunction op, Set<String> allRequired) {
         List<String> inputs = node.getInputVariables();
         List<String> outputs = node.getOutputVariables();
 
@@ -1148,6 +1192,17 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             SDValue inputValue = variableValues.get(inputVar);
             if (inputValue != null) {
                 variableValues.put(outputVar, inputValue);
+
+                // Add dependency tracking for the Merge output
+                // This is crucial: the Merge shares the SDValue with its input,
+                // so we need to add a dependency to prevent the array from being
+                // freed when the input's dependency is satisfied
+                if (allRequired.contains(outputVar)) {
+                    // This is a final output, don't deallocate
+                    arrayUseTracker().addDependency(inputValue, new ReqOutputDep(outputVar));
+                } else {
+                    arrayUseTracker().addDependency(inputValue, new ExecDoneDep());
+                }
                 return;
             }
         }
@@ -1369,9 +1424,41 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
             for(int i = 0; i < inputArrays.length; i++) {
                 if(inputArrays[i] == null) {
-                    // This should not happen for regular ops if control flow is handled correctly by Merge nodes.
-                    // The previous implementation would silently skip the op and propagate nulls, hiding the root cause.
-                    // By throwing an exception, we pinpoint the exact location where control flow resolution failed.
+                    // Check if this null is from a Switch operation (inactive branch)
+                    // In that case, we should skip this entire operation rather than throw an exception
+                    String argName = argNames[i];
+                    SDVariable argVar = sameDiff.getVariable(argName);
+                    boolean isFromSwitch = false;
+                    if (argVar != null && argVar.getCreator() != null) {
+                        DifferentialFunction creator = argVar.getCreator();
+                        if (creator instanceof org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch) {
+                            isFromSwitch = true;
+                        }
+                    }
+
+                    if (isFromSwitch) {
+                        // This operation depends on an inactive Switch branch - skip execution
+                        // The Merge node will select the output from the active branch
+                        if (log.isTraceEnabled()) {
+                            log.trace("Skipping operation {} because input {} is from inactive Switch branch",
+                                    op.getOwnName(), argName);
+                        }
+                        // Close the opContext we created before returning
+                        try {
+                            opContext.close();
+                        } catch (Exception e) {
+                            if (log.isTraceEnabled()) {
+                                log.trace("Error closing OpContext while skipping {}: {}", opName, e.getMessage());
+                            }
+                        }
+                        // Store null for this operation's outputs so Merge can properly select the active branch
+                        for (String outputName : node.getOutputVariables()) {
+                            variableValues.put(outputName, null);
+                        }
+                        return; // Skip this operation entirely
+                    }
+
+                    // For non-Switch cases, this indicates a real problem
                     throw new ND4JIllegalStateException("Unexpected null input array at index " + i + " for operation '" +
                             op.getOwnName() + "' (op name: " + op.opName() + "). Input variable name: '" + argNames[i] + "'. " +
                             "This indicates a failure in control flow management, where a null from an inactive branch " +
@@ -1397,6 +1484,30 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 executeStandardOp((Op) op, opContext, node, variableValues, allRequired);
             } else {
                 throw new UnsupportedOperationException("Unsupported operation type: " + op.getClass().getName());
+            }
+
+            // Call listeners after operation execution
+            if (listeners != null && !listeners.isEmpty()) {
+                // Collect output arrays for the listener
+                List<String> outputNames = node.getOutputVariables();
+                INDArray[] outputArrays = new INDArray[outputNames.size()];
+                for (int i = 0; i < outputNames.size(); i++) {
+                    SDValue val = variableValues.get(outputNames.get(i));
+                    outputArrays[i] = val != null ? val.getTensorValue() : null;
+                }
+
+                for (Listener l : listeners) {
+                    if (l.isActive(at.operation())) {
+                        l.opExecution(sameDiff, at, batch, sameDiffOp, opContext, outputArrays);
+
+                        // Also call activationAvailable for each output
+                        for (int i = 0; i < outputNames.size(); i++) {
+                            if (outputArrays[i] != null) {
+                                l.activationAvailable(sameDiff, at, batch, sameDiffOp, outputNames.get(i), outputArrays[i]);
+                            }
+                        }
+                    }
+                }
             }
         } finally {
 
@@ -1568,7 +1679,12 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
         //Workaround for some TF/Keras based models that require explicit train/test as a placeholder
         boolean kerasWorkaround = false;
-        List<String> phs = sameDiff.inputs();
+        // Cache inputs list to avoid iterating all 7000+ variables on every call
+        List<String> phs = cachedInputsList;
+        if (phs == null) {
+            phs = sameDiff.inputs();
+            cachedInputsList = phs;
+        }
         if (phs != null && !phs.isEmpty()) {
             for (String s : phs) {
                 if (s.endsWith(KERAS_TRAIN_TEST) && !placeholders.containsKey(s)) {
