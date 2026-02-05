@@ -45,6 +45,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
+
 @Slf4j
 @NoArgsConstructor
 public class Reshape extends DynamicCustomOp {
@@ -261,5 +265,99 @@ public class Reshape extends DynamicCustomOp {
     @Override
     public boolean outputShapeDependsOnInputData() {
         return true;
+    }
+
+    /**
+     * Calculate reshape output shape in Java to avoid JNI overhead.
+     * The target shape comes from either iArgs or the second input tensor.
+     * Handles -1 dimension inference (at most one -1 allowed).
+     */
+    @Override
+    public List<DataBuffer> calculateOutputShapeFromInputs(OpContext oc) {
+        if (oc == null || oc.numInputArguments() < 1) {
+            return null;
+        }
+
+        INDArray input = oc.getInputArray(0);
+        if (input == null) {
+            return null;
+        }
+
+        long[] inputShape = input.shape();
+        long inputElements = 1;
+        for (long d : inputShape) {
+            inputElements *= d;
+        }
+
+        // Get target shape from iArgs (skip first arg which is ordering)
+        // or from second input tensor
+        long[] targetShape = null;
+        List<Long> iArgs = oc.getIArguments();
+        if (iArgs != null && iArgs.size() > 1) {
+            // iArgs[0] is ordering, iArgs[1:] is shape
+            targetShape = new long[iArgs.size() - 1];
+            for (int i = 1; i < iArgs.size(); i++) {
+                targetShape[i - 1] = iArgs.get(i);
+            }
+        } else if (oc.numInputArguments() >= 2) {
+            // Second input is the shape tensor
+            INDArray shapeInput = oc.getInputArray(1);
+            if (shapeInput != null && !shapeInput.isEmpty() && shapeInput.data() != null && !shapeInput.data().wasClosed()) {
+                targetShape = shapeInput.toLongVector();
+            }
+        } else if (this.shape != null) {
+            targetShape = this.shape;
+        }
+
+        if (targetShape == null || targetShape.length == 0) {
+            return null; // Fall back to C++
+        }
+
+        // Handle -1 dimension inference
+        int minusOneIdx = -1;
+        long knownElements = 1;
+        for (int i = 0; i < targetShape.length; i++) {
+            if (targetShape[i] == -1) {
+                if (minusOneIdx >= 0) {
+                    return null; // Multiple -1s, fall back to C++
+                }
+                minusOneIdx = i;
+            } else if (targetShape[i] == 0) {
+                // 0 means "keep the same as input"
+                if (i < inputShape.length) {
+                    targetShape[i] = inputShape[i];
+                }
+                knownElements *= targetShape[i];
+            } else {
+                knownElements *= targetShape[i];
+            }
+        }
+
+        long[] outputShape = targetShape.clone();
+        if (minusOneIdx >= 0) {
+            if (knownElements == 0) {
+                return null; // Cannot infer with zero elements
+            }
+            outputShape[minusOneIdx] = inputElements / knownElements;
+        }
+
+        // Validate total elements match
+        long outputElements = 1;
+        for (long d : outputShape) {
+            outputElements *= d;
+        }
+        if (outputElements != inputElements) {
+            return null; // Element count mismatch, fall back to C++
+        }
+
+        DataType dtype = input.dataType();
+        long[] strides = Nd4j.getStrides(outputShape, 'c');
+        boolean isEmpty = false;
+        for (long dim : outputShape) {
+            if (dim == 0) { isEmpty = true; break; }
+        }
+        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(outputShape, strides, 1, 'c', dtype, isEmpty);
+        DataBuffer shapeInfo = Shape.createShapeInformation(descriptor);
+        return Collections.singletonList(shapeInfo);
     }
 }

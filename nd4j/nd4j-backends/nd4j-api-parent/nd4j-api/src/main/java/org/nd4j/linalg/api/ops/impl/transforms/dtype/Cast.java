@@ -40,6 +40,12 @@ import org.tensorflow.framework.NodeDef;
 import java.lang.reflect.Field;
 import java.util.*;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Nd4j;
+
 public class Cast extends BaseDynamicTransformOp {
 
     private DataType typeDst;
@@ -129,5 +135,43 @@ public class Cast extends BaseDynamicTransformOp {
         //All scalar ops: output type is same as input type
         Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got input %s", getClass(), dataTypes);
         return Collections.singletonList(typeDst);
+    }
+
+    /**
+     * Cast output shape is same as input shape, just with different dtype.
+     */
+    @Override
+    public List<DataBuffer> calculateOutputShapeFromInputs(OpContext oc) {
+        if (oc == null || oc.numInputArguments() < 1) {
+            return null;
+        }
+
+        INDArray input = oc.getInputArray(0);
+        if (input == null) {
+            return null;
+        }
+
+        long[] outputShape = input.shape();
+
+        // Get target dtype from iArgs or field
+        DataType dtype = this.typeDst;
+        if (dtype == null) {
+            List<Long> iArgs = oc.getIArguments();
+            if (iArgs != null && !iArgs.isEmpty()) {
+                dtype = FlatBuffersMapper.getDataTypeFromByte(iArgs.get(0).byteValue());
+            }
+        }
+        if (dtype == null) {
+            return null; // Fall back to C++
+        }
+
+        long[] strides = Nd4j.getStrides(outputShape, 'c');
+        boolean isEmpty = false;
+        for (long dim : outputShape) {
+            if (dim == 0) { isEmpty = true; break; }
+        }
+        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(outputShape, strides, 1, 'c', dtype, isEmpty);
+        DataBuffer shapeInfo = Shape.createShapeInformation(descriptor);
+        return Collections.singletonList(shapeInfo);
     }
 }
