@@ -329,24 +329,24 @@ public class DynamicShapePlanExecutor implements Closeable {
                     if (TIMING_ENABLED) timingPoolMisses++;
                 } else {
                     if (TIMING_ENABLED) timingPoolHits++;
-                    // Skip assign(0) ONLY when both conditions are met:
-                    // 1. reshapeBuffer was a no-op (device state NOT invalidated)
-                    // 2. Op is matmul (BLAS GEMM, 100% overwrites every output element)
-                    //
-                    // Broader FULLY_WRITING_OPS skip was tested (opt10) and produced
-                    // wrong output — some ops in that set don't truly fully write.
-                    // matmul is the safest op to skip for because GEMM is contractually
-                    // guaranteed to write C[i,j] = sum(A[i,k]*B[k,j]) for every (i,j).
+                    // Skip zeroing ONLY for matmul - BLAS GEMM is contractually guaranteed to
+                    // write C[i,j] = sum(A[i,k]*B[k,j]) for every (i,j).
+                    // Broader FULLY_WRITING_OPS skip was tested and produced wrong output —
+                    // many ops in that set have edge cases where they don't fully write.
+                    String opName = slot.getOpName();
+                    boolean canSkipZero = "matmul".equals(opName) || "mmul".equals(opName);
                     if (TIMING_ENABLED) {
-                        if (localPool.wasLastAcquireReshaped()) {
-                            timingZeroApplied++;
-                        } else {
+                        if (canSkipZero) {
                             timingZeroSkipped++;
+                        } else {
+                            timingZeroApplied++;
                         }
                     }
-                    // Use direct memset instead of assign(0) to avoid full op dispatch
-                    // overhead (ScalarSet creation → executor → JNI → C++ op dispatch).
-                    fastZero(out, nativeOps);
+                    if (!canSkipZero) {
+                        // Use direct memset instead of assign(0) to avoid full op dispatch
+                        // overhead (ScalarSet creation → executor → JNI → C++ op dispatch).
+                        fastZero(out, nativeOps);
+                    }
                 }
             }
             outputArrays[i] = out;
