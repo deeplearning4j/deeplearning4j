@@ -160,6 +160,18 @@ public interface CustomOp  {
   */
  void clearArrays();
 
+ /**
+  * Return true if this op doesn't fully write its output buffers.
+  * Such ops (where, scatter_nd, unique, etc.) require pre-zeroed buffers
+  * to avoid stale data corruption from cached buffer reuse.
+  *
+  * Most ops fully write their output and can skip zeroing for performance.
+  * Only override this to return true for ops with sparse output patterns.
+  */
+ default boolean requiresZeroedOutput() {
+  return false;
+ }
+
 
  default void setupOpContextFromCustomOp(OpContext opContext) {
   // Set input arguments

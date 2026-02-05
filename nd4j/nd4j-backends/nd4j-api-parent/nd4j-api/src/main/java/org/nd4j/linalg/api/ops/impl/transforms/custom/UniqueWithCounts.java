@@ -78,4 +78,10 @@ public class UniqueWithCounts extends DynamicCustomOp {
         DataType d = (idxDataType == null ? DEFAULT_IDX_DTYPE : idxDataType);
         return Arrays.asList(dataTypes.get(0), d, d);
     }
+
+    @Override
+    public boolean requiresZeroedOutput() {
+        // UniqueWithCounts outputs vary in size based on input data values
+        return true;
+    }
 }

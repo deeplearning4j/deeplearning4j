@@ -114,4 +114,10 @@ public class Where extends DynamicCustomOp {
             return Collections.singletonList(DataType.LONG);
         }
     }
+
+    @Override
+    public boolean requiresZeroedOutput() {
+        // Where outputs only the indices of true elements, leaving rest of buffer unwritten
+        return true;
+    }
 }

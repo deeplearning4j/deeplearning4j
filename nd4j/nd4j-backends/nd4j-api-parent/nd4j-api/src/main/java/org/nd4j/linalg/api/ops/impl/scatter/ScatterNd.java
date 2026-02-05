@@ -75,4 +75,9 @@ public class ScatterNd extends DynamicCustomOp {
         return Collections.singletonList(inputDataTypes.get(1));
     }
 
+    @Override
+    public boolean requiresZeroedOutput() {
+        // ScatterNd writes to specific indices, leaving rest of output buffer unwritten
+        return true;
+    }
 }

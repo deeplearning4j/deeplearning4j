@@ -96,4 +96,10 @@ public class Unique extends DynamicCustomOp {
     public boolean outputShapeDependsOnInputData() {
         return true;
     }
+
+    @Override
+    public boolean requiresZeroedOutput() {
+        // Unique outputs vary in size based on input data values
+        return true;
+    }
 }

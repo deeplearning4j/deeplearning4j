@@ -224,8 +224,12 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
      * Try to find a cached array with a buffer large enough for the requested shape.
      * Uses TreeMap.ceilingEntry to find the smallest buffer >= requiredElements.
      * Returns null if no suitable buffer is found.
+     *
+     * @param dataType the data type
+     * @param shape the requested shape
+     * @param requiresZeroed if true, zero the buffer before returning (for ops with sparse output)
      */
-    private INDArray tryAllocateFromCapacityCache(DataType dataType, long[] shape) {
+    private INDArray tryAllocateFromCapacityCache(DataType dataType, long[] shape, boolean requiresZeroed) {
         if (!enableCache || shape == null || shape.length == 0)
             return null;
 
@@ -310,10 +314,12 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                 if (arr.data() != null) {
                     Nd4j.getNativeOps().dbSetDeviceId(arr.data().opaqueBuffer(), -1);
                 }
-                // Zero out stale data — some ops (gather, where, scatter) don't fully
-                // write their output, so cached buffers must be zeroed to prevent
-                // stale data from corrupting results.
-                arr.assign(0);
+                // Only zero out stale data for ops that don't fully write their output
+                // (where, scatter_nd, unique, etc.). Most ops fully write output and
+                // can skip zeroing for significant performance gains.
+                if (requiresZeroed) {
+                    arr.assign(0);
+                }
                 return arr;
             }
 
@@ -366,12 +372,25 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
     @Override
     public INDArray allocate(boolean detached, DataType dataType, long... shape) {
+        // Default: don't require zeroed output (most ops fully write their output)
+        return allocate(detached, dataType, shape, false);
+    }
+
+    /**
+     * Allocate an array, optionally zeroing it for ops with sparse output patterns.
+     *
+     * @param detached if true, allocate detached from any workspace
+     * @param dataType the data type
+     * @param shape the requested shape
+     * @param requiresZeroed if true, zero the buffer (for ops like where, scatter_nd, unique)
+     */
+    public INDArray allocate(boolean detached, DataType dataType, long[] shape, boolean requiresZeroed) {
         // Handle empty arrays (shape contains 0)
         if (shape != null && shape.length > 0 && ArrayUtil.prodLong(shape) == 0) {
             return Nd4j.emptyWithShape(shape, dataType);
         }
 
-        INDArray cached = tryAllocateFromCapacityCache(dataType, shape);
+        INDArray cached = tryAllocateFromCapacityCache(dataType, shape, requiresZeroed);
         if (cached != null)
             return cached;
 
@@ -381,6 +400,13 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
     @Override
     public INDArray allocate(boolean detached, LongShapeDescriptor descriptor) {
+        return allocate(detached, descriptor, false);
+    }
+
+    /**
+     * Allocate from descriptor, optionally zeroing for ops with sparse output.
+     */
+    public INDArray allocate(boolean detached, LongShapeDescriptor descriptor, boolean requiresZeroed) {
         if (descriptor.isEmpty()) {
             INDArray ret = Nd4j.create(descriptor);
             if (detached) {
@@ -389,7 +415,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
             return ret;
         }
 
-        return allocate(detached, descriptor.dataType(), descriptor.getShape());
+        return allocate(detached, descriptor.dataType(), descriptor.getShape(), requiresZeroed);
     }
 
     @Override
@@ -560,6 +586,13 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
     @Override
     public INDArray allocateFromDescriptor(boolean detached, DataBuffer dataBuffer) {
+        return allocateFromDescriptor(detached, dataBuffer, false);
+    }
+
+    /**
+     * Allocate from shape descriptor, optionally zeroing for ops with sparse output.
+     */
+    public INDArray allocateFromDescriptor(boolean detached, DataBuffer dataBuffer, boolean requiresZeroed) {
         long[] asJava = dataBuffer.asLong();
         if (Shape.isEmpty(asJava)) {
             INDArray ret = Nd4j.createFromDescriptor(dataBuffer);
@@ -573,7 +606,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         DataType dataType = Shape.dataType(asJava);
         long[] shape = Shape.shape(asJava);
 
-        INDArray cached = tryAllocateFromCapacityCache(dataType, shape);
+        INDArray cached = tryAllocateFromCapacityCache(dataType, shape, requiresZeroed);
         if (cached != null) {
             // Fix ordering if needed
             if (cached.ordering() != Shape.order(asJava)) {

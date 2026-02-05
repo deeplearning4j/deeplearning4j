@@ -2289,6 +2289,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         List<String> outputNames = node.getOutputVariables();
         INDArray[] outputArrays = new INDArray[outShape.size()];
 
+        // Check if op needs zeroed output buffers (sparse output ops like where, scatter_nd, unique)
+        boolean requiresZeroed = customOp.requiresZeroedOutput();
+
         try {
             for (int i = 0; i < outShape.size(); i++) {
                 DataBuffer shapeBuffer = outShape.get(i);
@@ -2297,7 +2300,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 long[] actualShape = Shape.shape(shape);
 
                 boolean isOutput = i < outputNames.size() && allRequired.contains(outputNames.get(i));
-                outputArrays[i] = mmgr.allocate(isOutput, dt, actualShape);
+                outputArrays[i] = mmgr.allocate(isOutput, dt, actualShape, requiresZeroed);
             }
 
             opContext.setOutputArrays(outputArrays);

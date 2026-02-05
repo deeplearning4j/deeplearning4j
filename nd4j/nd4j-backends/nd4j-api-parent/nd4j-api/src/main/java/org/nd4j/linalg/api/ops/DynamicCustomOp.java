@@ -970,11 +970,16 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
         }
 
-        List<DataBuffer> ret;
-        if(oc == null)
-            ret = Nd4j.getExecutioner().calculateOutputShape(this);
-        else
-            ret = Nd4j.getExecutioner().calculateOutputShape(this, oc);
+        // Try Java-side shape inference first (avoids JNI overhead)
+        List<DataBuffer> ret = calculateOutputShapeFromInputs(oc);
+
+        // Fall back to C++ shape function if Java-side didn't provide a result
+        if (ret == null || ret.isEmpty()) {
+            if(oc == null)
+                ret = Nd4j.getExecutioner().calculateOutputShape(this);
+            else
+                ret = Nd4j.getExecutioner().calculateOutputShape(this, oc);
+        }
 
         // Cache result with rich signature
         if (oc != null && ret != null && !ret.isEmpty()) {
@@ -983,6 +988,24 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         }
 
         return ret;
+    }
+
+    /**
+     * Calculate output shape directly from input arrays in Java, avoiding JNI overhead.
+     *
+     * <p>Override this method in subclasses to provide fast Java-side shape inference.
+     * The default implementation returns null, which causes the standard C++ shape
+     * function to be called via JNI.</p>
+     *
+     * <p>For performance, this should be overridden for ops with simple, deterministic
+     * shape relationships (e.g., elementwise ops preserve shape, matmul computes M×N, etc.)</p>
+     *
+     * @param oc the OpContext containing input arrays and arguments
+     * @return list of output shape buffers, or null to fall back to C++ shape function
+     */
+    public List<DataBuffer> calculateOutputShapeFromInputs(OpContext oc) {
+        // Default: return null to use C++ shape function
+        return null;
     }
 
     /**
@@ -1058,6 +1081,18 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
      * When true, input integer values are included in the shape cache signature.
      */
     public boolean outputShapeDependsOnInputData() {
+        return false;
+    }
+
+    /**
+     * Override to return true for ops that don't fully write their output buffers.
+     * Such ops (gather, where, scatter, unique, etc.) require pre-zeroed buffers
+     * to avoid stale data corruption.
+     *
+     * Most ops fully write their output and can skip zeroing for performance.
+     * Only override this to return true for ops with sparse output patterns.
+     */
+    public boolean requiresZeroedOutput() {
         return false;
     }
 
