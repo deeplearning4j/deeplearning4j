@@ -66,6 +66,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.custom.Assign;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Identity;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -153,6 +154,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     private long timingIntLongSyncNs;
     private int timingIntLongSyncCount, timingIntLongSyncSkipCount;
     private int timingOpCount, timingShapeCacheHits, timingShapeCacheMisses;
+    private int timingReshapeTotal, timingReshapeViewUsed, timingReshapeViewSkipped;
 
     private void resetTimingCounters() {
         timingDagLookupNs = timingInitValuesNs = timingExecLoopNs = timingOutputDupNs = timingCleanupNs = 0;
@@ -162,6 +164,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         timingIntLongSyncNs = 0;
         timingIntLongSyncCount = timingIntLongSyncSkipCount = 0;
         timingOpCount = timingShapeCacheHits = timingShapeCacheMisses = 0;
+        timingReshapeTotal = timingReshapeViewUsed = timingReshapeViewSkipped = 0;
     }
 
     private void printTimingSummary() {
@@ -182,6 +185,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         log.info("    Mem alloc:      {}ms (exact={}, capacity={}, miss={}, viewSkip={}, cached={}, capKeys={})",
                 String.format("%.2f", timingMemAllocNs / 1_000_000.0), cc[0], cc[1], cc[2], cc[3], cc[4], cc[5]);
         ArrayCacheMemoryMgr.resetCacheCounters();
+        if (timingReshapeTotal > 0) {
+            log.info("    Reshape views:  {}/{} used, {} skipped (non-contiguous)",
+                    timingReshapeViewUsed, timingReshapeTotal, timingReshapeViewSkipped);
+        }
         log.info("    Native exec:    {}ms", String.format("%.2f", timingNativeExecNs / 1_000_000.0));
         log.info("    Result store:   {}ms", String.format("%.2f", timingResultStoreNs / 1_000_000.0));
         log.info("    Dep tracking:   {}ms", String.format("%.2f", timingDepTrackNs / 1_000_000.0));
@@ -2292,15 +2299,68 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // Check if op needs zeroed output buffers (sparse output ops like where, scatter_nd, unique)
         boolean requiresZeroed = customOp.requiresZeroedOutput();
 
+        // Get input arrays for potential view creation
+        List<INDArray> inputArrays = opContext.getInputArrays();
+
+        // Special handling for reshape: check if view is possible
+        boolean isReshapeOp = "reshape".equals(customOp.opName());
+        boolean reshapeViewPossible = false;
+        char reshapeOrder = 'c';
+        if (isReshapeOp && inputArrays != null && !inputArrays.isEmpty() && outShape.size() == 1) {
+            if (TIMING_ENABLED) timingReshapeTotal++;
+            INDArray reshapeInput = inputArrays.get(0);
+            if (reshapeInput != null && !reshapeInput.isEmpty()) {
+                long[] iArgs = customOp.iArgs();
+                // Determine order: from iArgs if available, else default to 'c'
+                if (iArgs != null && iArgs.length > 0) {
+                    // First iArg is -order (negative of 'c' or 'f')
+                    reshapeOrder = (char) -iArgs[0];
+                } else {
+                    reshapeOrder = 'c'; // Default to C order for ONNX reshape with shape tensor
+                }
+                boolean isFOrder = (reshapeOrder == 'f');
+                long[] targetShape = Shape.shape(outShape.get(0).asLong());
+                reshapeViewPossible = Shape.ableToReshapeWithView(reshapeInput, isFOrder, targetShape);
+                if (TIMING_ENABLED) {
+                    if (reshapeViewPossible) timingReshapeViewUsed++;
+                    else timingReshapeViewSkipped++;
+                }
+            }
+        }
+
         try {
             for (int i = 0; i < outShape.size(); i++) {
                 DataBuffer shapeBuffer = outShape.get(i);
-                long[] shape = shapeBuffer.asLong();
-                DataType dt = Shape.dataType(shape);
-                long[] actualShape = Shape.shape(shape);
+                long[] shapeInfo = shapeBuffer.asLong();
 
-                boolean isOutput = i < outputNames.size() && allRequired.contains(outputNames.get(i));
-                outputArrays[i] = mmgr.allocate(isOutput, dt, actualShape, requiresZeroed);
+                // Special case: reshape with view possible
+                if (isReshapeOp && reshapeViewPossible && i == 0) {
+                    INDArray input = inputArrays.get(0);
+                    long[] actualShape = Shape.shape(shapeInfo);
+                    long[] strides = Nd4j.getStrides(actualShape, reshapeOrder);
+                    outputArrays[i] = Nd4j.create(input.data(), actualShape, strides, input.offset(), reshapeOrder, true);
+                    continue;
+                }
+
+                // Check if C++ shape function indicates output should be a view of an input
+                int copyOffsetInputIndex = ArrayOptionsHelper.getCopyOffsetInputIndex(shapeInfo);
+                if (copyOffsetInputIndex >= 0 && inputArrays != null && copyOffsetInputIndex < inputArrays.size()) {
+                    // View case: create output sharing the specified input's buffer and offset
+                    INDArray input = inputArrays.get(copyOffsetInputIndex);
+                    long[] actualShape = Shape.shape(shapeInfo);
+                    long[] strides = Shape.stride(shapeInfo);
+                    char ordering = Shape.order(shapeInfo);
+
+                    // Create output as a view sharing the input's buffer at the input's offset
+                    outputArrays[i] = Nd4j.create(input.data(), actualShape, strides, input.offset(), ordering, true);
+                } else {
+                    // Standard case: allocate new array
+                    DataType dt = Shape.dataType(shapeInfo);
+                    long[] actualShape = Shape.shape(shapeInfo);
+
+                    boolean isOutput = i < outputNames.size() && allRequired.contains(outputNames.get(i));
+                    outputArrays[i] = mmgr.allocate(isOutput, dt, actualShape, requiresZeroed);
+                }
             }
 
             opContext.setOutputArrays(outputArrays);
@@ -2315,7 +2375,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // buffer, causing cudaErrorIllegalAddress. Re-syncing ensures device buffers are current.
         if (DATA_DEPENDENT_OUTPUT_OPS.contains(customOp.opName())) {
             NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-            List<INDArray> inputArrays = opContext.getInputArrays();
+            // Note: inputArrays already declared above, reuse for sync loop
             for (int i = 0; i < inputArrays.size(); i++) {
                 INDArray in = inputArrays.get(i);
                 if (in != null && !in.isEmpty() && in.data() != null && !in.data().wasClosed()) {
