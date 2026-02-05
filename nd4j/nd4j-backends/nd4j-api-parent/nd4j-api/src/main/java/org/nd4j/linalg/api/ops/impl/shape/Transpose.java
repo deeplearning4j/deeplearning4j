@@ -28,9 +28,15 @@ import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.guava.primitives.Longs;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -139,4 +145,68 @@ public class Transpose extends DynamicCustomOp {
         return Collections.singletonList(dataTypes.get(0));
     }
 
+    /**
+     * Transpose/Permute output shape is input dimensions reordered according to permuteDims.
+     * For simple transpose (no permuteDims), dimensions are reversed.
+     */
+    @Override
+    public List<DataBuffer> calculateOutputShapeFromInputs(OpContext oc) {
+        if (oc == null || oc.numInputArguments() < 1) {
+            return null;
+        }
+
+        // If there's a second input (dynamic permutation), fall back to C++
+        // because we'd need to sync and read the values from the device
+        if (oc.numInputArguments() > 1) {
+            return null;
+        }
+
+        INDArray input = oc.getInputArray(0);
+        if (input == null) {
+            return null;
+        }
+
+        long[] inputShape = input.shape();
+        int rank = inputShape.length;
+        long[] outputShape = new long[rank];
+
+        // Get permutation from iArgs or permuteDims field
+        List<Long> iArgs = oc.getIArguments();
+        long[] perm = null;
+        if (iArgs != null && !iArgs.isEmpty()) {
+            perm = new long[iArgs.size()];
+            for (int i = 0; i < iArgs.size(); i++) {
+                perm[i] = iArgs.get(i);
+            }
+        } else if (permuteDims != null && permuteDims.length > 0) {
+            perm = permuteDims;
+        }
+
+        if (perm != null && perm.length == rank) {
+            // Apply permutation
+            for (int i = 0; i < rank; i++) {
+                int srcAxis = (int) perm[i];
+                if (srcAxis < 0) srcAxis += rank;
+                if (srcAxis < 0 || srcAxis >= rank) {
+                    return null; // Invalid permutation - fall back to C++
+                }
+                outputShape[i] = inputShape[srcAxis];
+            }
+        } else {
+            // Default transpose: reverse dimensions
+            for (int i = 0; i < rank; i++) {
+                outputShape[i] = inputShape[rank - 1 - i];
+            }
+        }
+
+        DataType dtype = input.dataType();
+        long[] strides = Nd4j.getStrides(outputShape, 'c');
+        boolean isEmpty = false;
+        for (long dim : outputShape) {
+            if (dim == 0) { isEmpty = true; break; }
+        }
+        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(outputShape, strides, 1, 'c', dtype, isEmpty);
+        DataBuffer shapeInfo = Shape.createShapeInformation(descriptor);
+        return Collections.singletonList(shapeInfo);
+    }
 }

@@ -35,6 +35,11 @@ import org.tensorflow.framework.NodeDef;
 
 import java.util.*;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
+
 import static org.nd4j.linalg.api.buffer.DataType.INT32;
 
 /**
@@ -261,5 +266,76 @@ public class Gather extends DynamicCustomOp {
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         //Output type is same as (first) input type
         return Collections.singletonList(dataTypes.get(0));
+    }
+
+    /**
+     * Gather output shape: replace the gather axis dimension with indices shape.
+     * For data[D0, D1, ..., D_axis, ..., Dn] and indices[I0, I1, ..., Im],
+     * output is [D0, D1, ..., I0, I1, ..., Im, ..., Dn]
+     */
+    @Override
+    public List<DataBuffer> calculateOutputShapeFromInputs(OpContext oc) {
+        if (oc == null || oc.numInputArguments() < 2) {
+            return null;
+        }
+
+        INDArray data = oc.getInputArray(0);
+        INDArray indices = oc.getInputArray(1);
+        if (data == null || indices == null) {
+            return null;
+        }
+
+        long[] dataShape = data.shape();
+        long[] indicesShape = indices.shape();
+        int dataRank = dataShape.length;
+
+        // Get axis from iArgs or field
+        List<Long> iArgs = oc.getIArguments();
+        int axis;
+        if (iArgs != null && !iArgs.isEmpty()) {
+            axis = iArgs.get(0).intValue();
+        } else {
+            axis = this.jaxis;
+        }
+
+        // Normalize negative axis
+        if (axis < 0) {
+            axis += dataRank;
+        }
+
+        if (axis < 0 || axis >= dataRank) {
+            return null; // Invalid axis - fall back to C++
+        }
+
+        // Output rank = data rank - 1 + indices rank
+        // (we remove the axis dimension and insert indices shape)
+        int outputRank = dataRank - 1 + indicesShape.length;
+        long[] outputShape = new long[outputRank];
+
+        // Copy dimensions before axis
+        int outIdx = 0;
+        for (int i = 0; i < axis; i++) {
+            outputShape[outIdx++] = dataShape[i];
+        }
+
+        // Insert indices shape
+        for (int i = 0; i < indicesShape.length; i++) {
+            outputShape[outIdx++] = indicesShape[i];
+        }
+
+        // Copy dimensions after axis
+        for (int i = axis + 1; i < dataRank; i++) {
+            outputShape[outIdx++] = dataShape[i];
+        }
+
+        DataType dtype = data.dataType();
+        long[] strides = Nd4j.getStrides(outputShape, 'c');
+        boolean isEmpty = false;
+        for (long dim : outputShape) {
+            if (dim == 0) { isEmpty = true; break; }
+        }
+        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(outputShape, strides, 1, 'c', dtype, isEmpty);
+        DataBuffer shapeInfo = Shape.createShapeInformation(descriptor);
+        return Collections.singletonList(shapeInfo);
     }
 }

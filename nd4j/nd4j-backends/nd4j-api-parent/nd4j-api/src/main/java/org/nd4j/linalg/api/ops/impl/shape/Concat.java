@@ -38,6 +38,12 @@ import org.tensorflow.framework.NodeDef;
 
 import java.util.*;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Nd4j;
+
 @Slf4j
 public class Concat extends DynamicCustomOp {
     private int concatDimension = -1;
@@ -165,5 +171,80 @@ public class Concat extends DynamicCustomOp {
 
         //Output type is same as input types
         return Collections.singletonList(first);
+    }
+
+    /**
+     * Concat output shape: same as inputs except concat dimension is sum of all inputs.
+     * For inputs [D0, D1, ..., Dk, ...] concatenated along axis k,
+     * output is [D0, D1, ..., sum(Dk), ...]
+     */
+    @Override
+    public List<DataBuffer> calculateOutputShapeFromInputs(OpContext oc) {
+        if (oc == null || oc.numInputArguments() < 1) {
+            return null;
+        }
+
+        // Get concat dimension from iArgs or field
+        List<Long> iArgs = oc.getIArguments();
+        int axis;
+
+        // For dynamic axis (TF import), last input is the axis - fall back to C++
+        if (isDynamicAxis) {
+            return null;
+        }
+
+        if (iArgs != null && !iArgs.isEmpty()) {
+            axis = iArgs.get(0).intValue();
+        } else {
+            axis = this.concatDimension;
+        }
+
+        // Get first input to determine rank and base shape
+        INDArray first = oc.getInputArray(0);
+        if (first == null) {
+            return null;
+        }
+
+        long[] firstShape = first.shape();
+        int rank = firstShape.length;
+
+        // Normalize negative axis
+        if (axis < 0) {
+            axis += rank;
+        }
+
+        if (axis < 0 || axis >= rank) {
+            return null; // Invalid axis - fall back to C++
+        }
+
+        // Sum up the concat dimension across all inputs
+        long concatDimSize = firstShape[axis];
+        int numInputs = oc.numInputArguments();
+
+        for (int i = 1; i < numInputs; i++) {
+            INDArray input = oc.getInputArray(i);
+            if (input == null) {
+                return null;
+            }
+            long[] inputShape = input.shape();
+            if (inputShape.length != rank) {
+                return null; // Rank mismatch - fall back to C++
+            }
+            concatDimSize += inputShape[axis];
+        }
+
+        // Build output shape
+        long[] outputShape = firstShape.clone();
+        outputShape[axis] = concatDimSize;
+
+        DataType dtype = first.dataType();
+        long[] strides = Nd4j.getStrides(outputShape, 'c');
+        boolean isEmpty = false;
+        for (long dim : outputShape) {
+            if (dim == 0) { isEmpty = true; break; }
+        }
+        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(outputShape, strides, 1, 'c', dtype, isEmpty);
+        DataBuffer shapeInfo = Shape.createShapeInformation(descriptor);
+        return Collections.singletonList(shapeInfo);
     }
 }
