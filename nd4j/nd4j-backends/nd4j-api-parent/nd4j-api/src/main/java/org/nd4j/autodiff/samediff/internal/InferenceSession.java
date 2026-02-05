@@ -2217,52 +2217,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         }
 
         // For ops with INT/LONG inputs, sync those inputs from device to host BEFORE
-        // shape calculation AND cache key computation (both read values on the host).
-        // Optimizations:
-        // 1. Skip sync for constant buffers - their host data is always current (never modified by GPU).
-        // 2. Only sync small arrays (length <= 32) - these carry shape/axis parameters read on host.
-        //    Large INT/LONG arrays (attention masks, position IDs) are only used by GPU kernels.
-        // 3. Data-dependent ops (Where, unique) always need full sync since shape functions read all data.
-        long tSync0 = TIMING_ENABLED ? System.nanoTime() : 0;
-        if (hasIntLongInputs || isDataDependent) {
-            boolean needsSync = isDataDependent; // data-dependent ops always need full sync
-            if (!needsSync) {
-                List<INDArray> inputArrays = opContext.getInputArrays();
-                for (int i = 0; i < inputArrays.size(); i++) {
-                    INDArray in = inputArrays.get(i);
-                    if (in != null && !in.isEmpty() && in.data() != null && !in.data().wasClosed()
-                            && (in.dataType() == DataType.INT || in.dataType() == DataType.LONG
-                            || in.dataType() == DataType.BOOL)
-                            && !in.data().isConstant()
-                            && in.length() <= 32) {
-                        needsSync = true;
-                        break;
-                    }
-                }
-            }
-            if (needsSync) {
-                if (TIMING_ENABLED) timingIntLongSyncCount++;
-                Nd4j.getExecutioner().commit();
-                NativeOps syncNativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-                List<INDArray> inputArrays = opContext.getInputArrays();
-                for (int i = 0; i < inputArrays.size(); i++) {
-                    INDArray in = inputArrays.get(i);
-                    if (in != null && !in.isEmpty() && in.data() != null && !in.data().wasClosed()
-                            && (in.dataType() == DataType.INT || in.dataType() == DataType.LONG
-                            || in.dataType() == DataType.BOOL)
-                            && !in.data().isConstant()) {
-                        // For non-data-dependent ops, only sync small arrays needed for shape key
-                        if (isDataDependent || in.length() <= 32) {
-                            syncNativeOps.dbForceSyncToPrimary(in.data().opaqueBuffer());
-                        }
-                    }
-                }
-            } else {
-                if (TIMING_ENABLED) timingIntLongSyncSkipCount++;
-            }
-        }
-        if (TIMING_ENABLED) timingIntLongSyncNs += System.nanoTime() - tSync0;
-
+        // Check shape cache FIRST before syncing INT/LONG arrays.
+        // This avoids expensive device-to-host sync for cache hits (majority of ops).
         long tShape0 = TIMING_ENABLED ? System.nanoTime() : 0;
         List<DataBuffer> outShape = null;
         Map<Long, List<DataBuffer>> shapeCache = null;
@@ -2272,11 +2228,61 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             shapeKey = computeShapeKey(customOp.opName(), opContext);
             outShape = shapeCache.get(shapeKey);
         }
-        if (outShape == null) {
+
+        if (outShape != null) {
+            // Cache hit - no need for INT/LONG sync or shape calculation
+            if (TIMING_ENABLED) {
+                timingShapeCacheHits++;
+                timingIntLongSyncSkipCount++;
+            }
+        } else {
+            // Cache miss - need to sync INT/LONG arrays and calculate shape
+            // INT/LONG arrays need device-to-host sync before C++ shape functions can read them.
+            // Optimizations:
+            // 1. Skip sync for constant buffers - their host data is always current.
+            // 2. Only sync small arrays (length <= 32) - these carry shape/axis parameters.
+            // 3. Data-dependent ops (Where, unique) always need full sync.
+            long tSync0 = TIMING_ENABLED ? System.nanoTime() : 0;
+            if (hasIntLongInputs || isDataDependent) {
+                boolean needsSync = isDataDependent;
+                if (!needsSync) {
+                    List<INDArray> inputArrays = opContext.getInputArrays();
+                    for (int i = 0; i < inputArrays.size(); i++) {
+                        INDArray in = inputArrays.get(i);
+                        if (in != null && !in.isEmpty() && in.data() != null && !in.data().wasClosed()
+                                && (in.dataType() == DataType.INT || in.dataType() == DataType.LONG
+                                || in.dataType() == DataType.BOOL)
+                                && !in.data().isConstant()
+                                && in.length() <= 32) {
+                            needsSync = true;
+                            break;
+                        }
+                    }
+                }
+                if (needsSync) {
+                    if (TIMING_ENABLED) timingIntLongSyncCount++;
+                    Nd4j.getExecutioner().commit();
+                    NativeOps syncNativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                    List<INDArray> inputArrays = opContext.getInputArrays();
+                    for (int i = 0; i < inputArrays.size(); i++) {
+                        INDArray in = inputArrays.get(i);
+                        if (in != null && !in.isEmpty() && in.data() != null && !in.data().wasClosed()
+                                && (in.dataType() == DataType.INT || in.dataType() == DataType.LONG
+                                || in.dataType() == DataType.BOOL)
+                                && !in.data().isConstant()) {
+                            if (isDataDependent || in.length() <= 32) {
+                                syncNativeOps.dbForceSyncToPrimary(in.data().opaqueBuffer());
+                            }
+                        }
+                    }
+                } else {
+                    if (TIMING_ENABLED) timingIntLongSyncSkipCount++;
+                }
+            }
+            if (TIMING_ENABLED) timingIntLongSyncNs += System.nanoTime() - tSync0;
+
             if (TIMING_ENABLED) timingShapeCacheMisses++;
-            // Calculate shape outside workspace scope so shape buffers are heap-allocated,
-            // not workspace-backed. Otherwise, resetSession() destroys the workspace and
-            // cached shape buffers become dangling pointers, causing corruption on reuse.
+            // Calculate shape outside workspace scope so shape buffers are heap-allocated
             try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 outShape = dynOp.calculateOutputShape(opContext);
             }
@@ -2286,8 +2292,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             if (cacheable && shapeCache != null) {
                 shapeCache.put(shapeKey, outShape);
             }
-        } else {
-            if (TIMING_ENABLED) timingShapeCacheHits++;
         }
         if (TIMING_ENABLED) timingShapeCalcNs += System.nanoTime() - tShape0;
 
