@@ -465,6 +465,80 @@ OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType
 #endif
 }
 
+OpaqueShapeList *calculateOutputShapesNoSync(sd::Pointer *extraPointers, sd::LongType hash, OpaqueContext *context) {
+#ifdef __cpp_exceptions
+  try {
+    auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
+
+#if defined(SD_GCC_FUNCTRACE)
+    if (op->getOpName() != nullptr) {
+        sd::ops::OpExecutionLogger::setCurrentOpName(*op->getOpName());
+    }
+#endif
+
+    sd::ShapeList inShapes;
+
+    for (size_t e = 0; e < context->width(); e++) {
+      if (context->array(e) == nullptr) {
+        std::string errorMessage = "Input array at index " + std::to_string(e) + " was null!";
+#if defined(SD_GCC_FUNCTRACE)
+        sd::ops::OpExecutionLogger::clearCurrentOpName();
+#endif
+        THROW_EXCEPTION(errorMessage.c_str());
+      }
+      // NO forceSyncToHost() — caller guarantees shape function only reads shape info,
+      // not array values. Saves CUDA D2H synchronization overhead.
+      inShapes.push_back(context->array(e)->shapeInfo());
+    }
+
+    auto shapeList = op->calculateOutputShape(&inShapes, *context);
+
+#if defined(SD_GCC_FUNCTRACE)
+    sd::ops::OpExecutionLogger::clearCurrentOpName();
+#endif
+
+    return shapeList;
+  } catch (std::exception &e) {
+#if defined(SD_GCC_FUNCTRACE)
+    sd::ops::OpExecutionLogger::clearCurrentOpName();
+#endif
+    safeSetErrorContext(1, e.what());
+    return nullptr;
+  }
+#else
+  auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
+
+#if defined(SD_GCC_FUNCTRACE)
+  if (op->getOpName() != nullptr) {
+      sd::ops::OpExecutionLogger::setCurrentOpName(*op->getOpName());
+  }
+#endif
+
+  sd::ShapeList inShapes;
+
+  for (size_t e = 0; e < context->width(); e++) {
+    if (context->array(e) == nullptr) {
+      std::string errorMessage = "Input array at index " + std::to_string(e) + " was null!";
+#if defined(SD_GCC_FUNCTRACE)
+      sd::ops::OpExecutionLogger::clearCurrentOpName();
+#endif
+      safeSetErrorContext(1, errorMessage.c_str());
+      return nullptr;
+    }
+    // NO forceSyncToHost() — see above
+    inShapes.push_back(context->array(e)->shapeInfo());
+  }
+
+  auto shapeList = op->calculateOutputShape(&inShapes, *context);
+
+#if defined(SD_GCC_FUNCTRACE)
+  sd::ops::OpExecutionLogger::clearCurrentOpName();
+#endif
+
+  return shapeList;
+#endif
+}
+
 bool checkOpaqueNDArrayElementsNull(OpaqueNDArrayArr elements,int numElements) {
   for (int i = 0; i < numElements; i++) {
     if (elements[i] == nullptr) return true;

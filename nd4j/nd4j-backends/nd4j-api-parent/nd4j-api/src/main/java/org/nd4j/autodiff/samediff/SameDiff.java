@@ -39,6 +39,7 @@ import org.nd4j.autodiff.samediff.api.OutAndGrad;
 import org.nd4j.autodiff.samediff.array.SingleThreadArrayHolder;
 import org.nd4j.autodiff.samediff.array.ThreadSafeArrayHolder;
 import org.nd4j.autodiff.samediff.config.*;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
 import org.nd4j.autodiff.samediff.internal.*;
 import org.nd4j.autodiff.samediff.ops.*;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
@@ -123,6 +124,13 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
 
     // Default for plan-based execution applied to newly created sessions
     private volatile boolean planBasedExecutionDefault = false;
+
+    /**
+     * SameDiff-level cache for compiled DynamicShapePlans. Survives InferenceSession
+     * resets (resetSession()) so that repeated calls don't recompile the plan.
+     * Keyed by output set hash to support different output configurations.
+     */
+    private final Map<Set<String>, DynamicShapePlan> dynamicShapePlanCache = new ConcurrentHashMap<>();
 
     @Getter
     private Map<String, SameDiff> sameDiffFunctionInstances;
@@ -4070,6 +4078,21 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         }
         // Also set on the factory so new sessions inherit the setting
         this.planBasedExecutionDefault = enabled;
+    }
+
+    /**
+     * Get a cached DynamicShapePlan for the given output set, or null if none exists.
+     * Plans survive InferenceSession resets since they contain only compiled graph structure.
+     */
+    public DynamicShapePlan getCachedDynamicShapePlan(Set<String> outputSet) {
+        return dynamicShapePlanCache.get(outputSet);
+    }
+
+    /**
+     * Cache a compiled DynamicShapePlan for the given output set.
+     */
+    public void cacheDynamicShapePlan(Set<String> outputSet, DynamicShapePlan plan) {
+        dynamicShapePlanCache.put(outputSet, plan);
     }
 
     /**

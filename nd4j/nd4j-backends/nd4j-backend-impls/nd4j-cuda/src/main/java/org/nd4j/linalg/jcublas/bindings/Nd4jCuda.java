@@ -1806,6 +1806,14 @@ public native void execRandom3(@Cast("sd::Pointer*") PointerPointer extraPointer
 public native @Cast("const sd::LongType*") LongPointer getShape(org.nd4j.nativeblas.OpaqueShapeList list, @Cast("sd::LongType") long i);
 
 public native org.nd4j.nativeblas.OpaqueShapeList calculateOutputShapes2(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("sd::LongType") long hash, org.nd4j.nativeblas.OpaqueContext context);
+
+/**
+ * Same as calculateOutputShapes2 but skips forceSyncToHost() on input arrays.
+ * Use for ops whose shape function only reads shape info (not array values).
+ * Avoids expensive CUDA D2H synchronization for shape-only ops.
+ */
+public native org.nd4j.nativeblas.OpaqueShapeList calculateOutputShapesNoSync(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("sd::LongType") long hash, org.nd4j.nativeblas.OpaqueContext context);
+
 public native @Cast("sd::LongType") long getShapeListSize(org.nd4j.nativeblas.OpaqueShapeList list);
 
 public native void dbPrintAllocationTrace(org.nd4j.nativeblas.OpaqueDataBuffer db);

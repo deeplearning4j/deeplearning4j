@@ -97,6 +97,13 @@ public interface NativeOps {
  boolean checkOpaqueNDArrayElementsNull(OpaqueNDArrayArr elements,int numElements);
  OpaqueShapeList calculateOutputShapes2(PointerPointer extraPointers, long hash, OpaqueContext context);
 
+ /**
+  * Same as calculateOutputShapes2 but skips forceSyncToHost() on input arrays.
+  * Use for ops whose shape function only reads shape info (not array values).
+  * Avoids expensive CUDA D2H synchronization for shape-only ops.
+  */
+ OpaqueShapeList calculateOutputShapesNoSync(PointerPointer extraPointers, long hash, OpaqueContext context);
+
  void dbPrintAllocationTrace(org.nd4j.nativeblas.OpaqueDataBuffer db);
  int numIntermediateResults(org.nd4j.nativeblas.OpaqueContext contextPointer);
  long dbBufferLength(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);

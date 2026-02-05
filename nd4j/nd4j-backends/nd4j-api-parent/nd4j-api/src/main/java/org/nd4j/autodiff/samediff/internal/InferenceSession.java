@@ -39,6 +39,9 @@ import org.nd4j.autodiff.samediff.execution.ForwardExecutionDAG;
 import org.nd4j.autodiff.samediff.execution.DAGCache;
 import org.nd4j.autodiff.samediff.execution.ForwardExecutionDAGBuilder;
 import org.nd4j.autodiff.samediff.execution.PlanExecutor;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlanCompiler;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
 import org.nd4j.autodiff.samediff.internal.memory.HashDependencyTracker;
 import org.nd4j.common.base.Preconditions;
@@ -197,6 +200,31 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     private final ExecutionPlanCache planCache = new ExecutionPlanCache();
     private final ThreadLocal<PlanExecutor> planExecutorTl = new ThreadLocal<>();
 
+    // ---- DynamicShapePlan-based execution (for autoregressive inference with dynamic shapes) ----
+    // When enabled, pre-compiles graph wiring (input/output index mapping, liveness schedule) once,
+    // then executes using flat array-indexed slots instead of string-keyed HashMaps.
+    // Unlike static ExecutionPlan, this handles shapes that change every step (e.g., growing KV cache).
+    // Enable with -Dorg.nd4j.inference.dynamicShapePlan=true
+    private static volatile boolean DYNAMIC_SHAPE_PLAN_ENABLED = Boolean.parseBoolean(
+            System.getProperty("org.nd4j.inference.dynamicShapePlan", "false"));
+
+    /**
+     * Enable or disable DynamicShapePlan execution at runtime (primarily for tests).
+     */
+    public static void setDynamicShapePlanEnabled(boolean enabled) {
+        DYNAMIC_SHAPE_PLAN_ENABLED = enabled;
+    }
+
+    /**
+     * Accessor for tests.
+     */
+    public static boolean isDynamicShapePlanEnabled() {
+        return DYNAMIC_SHAPE_PLAN_ENABLED;
+    }
+
+    private volatile DynamicShapePlan dynamicShapePlan;
+    private final ThreadLocal<DynamicShapePlanExecutor> dynamicShapePlanExecutorTl = new ThreadLocal<>();
+
     private Set<Long> freedArrays() {
         return freedArraysTl.get();
     }
@@ -234,6 +262,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         cachedInputsList = null;
         outputShapeCacheTl.get().clear();
         outputArrayCacheTl.get().clear();
+        // Clear dynamic shape plan
+        if (dynamicShapePlan != null) {
+            dynamicShapePlan.close();
+            dynamicShapePlan = null;
+        }
     }
 
     public void setArrayUseTracker(AbstractDependencyTracker<SDValue, Dep> tracker) {
@@ -277,6 +310,22 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         outputShapeCacheTl.get().clear();
         outputArrayCacheTl.get().clear();
 
+        // Keep DynamicShapePlan across session resets: the plan is compiled graph
+        // structure (index maps, liveness schedule) with no mutable runtime state.
+        // Recompiling on every resetSession() costs ~500ms for a 4441-op model.
+        // The plan's opContextPool is empty (executor uses its own rotating pool).
+
+        // Close DynamicShapePlanExecutor (holds runtime state: output slots, live tracking)
+        DynamicShapePlanExecutor executor = dynamicShapePlanExecutorTl.get();
+        if (executor != null) {
+            try {
+                executor.close();
+            } catch (Exception e) {
+                // Ignore
+            }
+            dynamicShapePlanExecutorTl.remove();
+        }
+
         if (pooledClosed > 0) {
             log.info("Closed {} pooled OpContexts during session cleanup", pooledClosed);
         }
@@ -318,6 +367,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         log.debug("Executing forward pass for {} variables", variables.size());
 
         Map<String, SDValue> filteredResults = null;
+        boolean dspHandledExecution = false;
         try {
             // Prepare all required outputs
             Set<String> allRequired = new LinkedHashSet<>(variables);
@@ -489,7 +539,34 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             // Enter memory manager scope before any allocations
             mmgr.scopeIn();
 
-            // Preprocess placeholders using existing logic
+            // ---- DynamicShapePlan fast path ----
+            // Check DSP BEFORE preprocessPlaceholders to avoid iterating all variables
+            // (6000+ in large models) when DSP will handle execution. DSP resolves
+            // external inputs directly and doesn't use arrayUseTracker.
+            if (DYNAMIC_SHAPE_PLAN_ENABLED &&
+                (otherPlaceHolderValues == null || otherPlaceHolderValues.isEmpty()) &&
+                (listeners == null || listeners.isEmpty())) {
+                try {
+                    // Lightweight type casting: cast mismatched placeholder dtypes without
+                    // the full preprocessPlaceholders overhead (arrayUseTracker iteration).
+                    Map<String, INDArray> dspPlaceholders = castPlaceholderTypes(placeholderValues);
+                    Map<String, SDValue> dynamicPlanResults = executeDynamicShapePlanBased(
+                            dag, dspPlaceholders, allRequired, variables);
+                    if (dynamicPlanResults != null) {
+                        filteredResults = dynamicPlanResults;
+                        dspHandledExecution = true;
+                        // Commit pending async ops
+                        Nd4j.getExecutioner().commit();
+                        log.debug("DynamicShapePlan-based execution completed successfully");
+                        return ExecutionResult.builder().valueOutputs(filteredResults).build();
+                    }
+                } catch (Exception e) {
+                    log.warn("DynamicShapePlan-based execution failed, falling back to standard path: {}", e.getMessage());
+                    // Fall through to standard execution
+                }
+            }
+
+            // Preprocess placeholders using existing logic (needed for plan-based and standard paths)
             Map<String, INDArray> processedPlaceholders = preprocessPlaceholders(placeholderValues, at);
 
             // ---- Plan-based execution path (ORT-style pre-allocated workspace) ----
@@ -580,22 +657,26 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             arrayUseTracker().clear();
         } finally {
             long tCleanup0 = TIMING_ENABLED ? System.nanoTime() : 0;
-            // Close any remaining OpContext instances
-            try {
-                for (Map.Entry<String, OpContext> entry : opContexts().entrySet()) {
-                    OpContext ctx = entry.getValue();
-                    if (ctx != null) {
-                        try {
-                            ctx.close();
-                        } catch (Exception e) {
-                            log.warn("Error closing OpContext: {}", e.getMessage());
+            // Close any remaining OpContext instances.
+            // Skip when DSP handled execution: DSP manages its own OpContext pool
+            // and the standard session's opContexts map is empty.
+            if (!dspHandledExecution) {
+                try {
+                    for (Map.Entry<String, OpContext> entry : opContexts().entrySet()) {
+                        OpContext ctx = entry.getValue();
+                        if (ctx != null) {
+                            try {
+                                ctx.close();
+                            } catch (Exception e) {
+                                log.warn("Error closing OpContext: {}", e.getMessage());
+                            }
                         }
                     }
+                } catch (Exception e) {
+                    log.warn("Error iterating OpContexts for cleanup: {}", e.getMessage());
+                } finally {
+                    opContexts().clear();
                 }
-            } catch (Exception e) {
-                log.warn("Error iterating OpContexts for cleanup: {}", e.getMessage());
-            } finally {
-                opContexts().clear();
             }
 
             // Detach workspace-backed output arrays BEFORE scopeOut resets the workspace.
@@ -639,8 +720,12 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 }
             }
 
-            // TAD packs accumulate during operation execution and MUST be cleared after EVERY inference
-            org.nd4j.linalg.factory.Nd4j.clearTADCache();
+            // TAD packs accumulate during operation execution and MUST be cleared after EVERY inference.
+            // Skip when DSP handled execution: DSP manages its own memory lifecycle and the
+            // synchronized JNI call adds ~10-50ms overhead per token.
+            if (!dspHandledExecution) {
+                org.nd4j.linalg.factory.Nd4j.clearTADCache();
+            }
 
             // Note: nodeValueOutputs is intentionally NOT cleared or closed here.
             // Closing arrays causes double-free crashes because native data buffers
@@ -688,6 +773,75 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         if (executor == null) {
             executor = new PlanExecutor(sameDiff);
             planExecutorTl.set(executor);
+        }
+
+        // Execute
+        Map<String, INDArray> rawResults = executor.execute(plan, placeholderArrays);
+
+        // Wrap results as SDValues
+        Map<String, SDValue> sdResults = new LinkedHashMap<>();
+        for (String outputName : requestedOutputs) {
+            INDArray arr = rawResults.get(outputName);
+            if (arr != null) {
+                sdResults.put(outputName, SDValue.create(arr));
+            }
+        }
+
+        return sdResults;
+    }
+
+    /**
+     * Execute using DynamicShapePlan-based path: pre-compile graph wiring once, then execute
+     * with flat array-indexed slots and per-slot shape cache. Handles dynamic shapes (e.g.,
+     * growing KV cache in autoregressive generation).
+     *
+     * @return results as SDValue map, or null if DynamicShapePlan execution is not possible
+     */
+    private Map<String, SDValue> executeDynamicShapePlanBased(ForwardExecutionDAG dag,
+                                                               Map<String, INDArray> placeholderArrays,
+                                                               Set<String> allRequired,
+                                                               List<String> requestedOutputs) {
+        // DynamicShapePlan is allocation-heavy: force-enable the ArrayCacheMemoryMgr cache
+        // and growth factor to reduce cudaMalloc churn for growing shapes (KV cache).
+        if (mmgr instanceof ArrayCacheMemoryMgr) {
+            ArrayCacheMemoryMgr.setEnableCache(true);
+            if (ArrayCacheMemoryMgr.getGrowthFactor().get() <= 1.0) {
+                ArrayCacheMemoryMgr.setGrowthFactor(1.1);
+            }
+        }
+
+        // Compile plan on first call (or if cleared)
+        DynamicShapePlan plan = dynamicShapePlan;
+        if (plan == null) {
+            Set<String> outputSet = new LinkedHashSet<>(requestedOutputs);
+            // Check SameDiff-level cache first (survives session resets)
+            plan = sameDiff.getCachedDynamicShapePlan(outputSet);
+            if (plan == null) {
+                log.info("Compiling DynamicShapePlan for {} outputs", allRequired.size());
+                plan = DynamicShapePlanCompiler.compile(sameDiff, dag, outputSet);
+                if (plan == null) {
+                    log.debug("DynamicShapePlan compilation returned null (control flow detected), using standard path");
+                    return null;
+                }
+                if (plan.isHasControlFlowOps()) {
+                    log.debug("DynamicShapePlan has control flow ops, using standard path");
+                    plan.close();
+                    return null;
+                }
+                // Cache at SameDiff level so it survives session resets
+                sameDiff.cacheDynamicShapePlan(outputSet, plan);
+                log.info("DynamicShapePlan compiled: {}", plan.getSummary());
+            } else {
+                log.debug("DynamicShapePlan reused from SameDiff cache for {} outputs", outputSet.size());
+            }
+            dynamicShapePlan = plan;
+        }
+
+        // Get or create thread-local DynamicShapePlanExecutor
+        DynamicShapePlanExecutor executor = dynamicShapePlanExecutorTl.get();
+        if (executor == null) {
+            executor = new DynamicShapePlanExecutor(sameDiff, mmgr);
+            dynamicShapePlanExecutorTl.set(executor);
         }
 
         // Execute
@@ -2370,6 +2524,28 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         }
 
         return out;
+    }
+
+    /**
+     * Lightweight placeholder type casting for the DynamicShapePlan fast path.
+     * Only casts arrays whose dtype doesn't match the placeholder's declared dtype.
+     * Skips the expensive arrayUseTracker iteration in preprocessPlaceholders.
+     */
+    private Map<String, INDArray> castPlaceholderTypes(Map<String, INDArray> placeholders) {
+        if (placeholders == null || placeholders.isEmpty()) {
+            return placeholders;
+        }
+        Map<String, INDArray> out = null;
+        for (Map.Entry<String, INDArray> e : placeholders.entrySet()) {
+            SDVariable var = sameDiff.getVariable(e.getKey());
+            if (var != null && e.getValue() != null && e.getValue().dataType() != var.dataType()) {
+                if (out == null) {
+                    out = new HashMap<>(placeholders);
+                }
+                out.put(e.getKey(), e.getValue().castTo(var.dataType()));
+            }
+        }
+        return out != null ? out : placeholders;
     }
 
     @Override

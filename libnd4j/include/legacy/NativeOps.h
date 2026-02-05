@@ -177,6 +177,14 @@ SD_LIB_EXPORT void execRandom3(sd::Pointer *extraPointers, int opNum, sd::Pointe
 SD_LIB_EXPORT sd::LongType const *getShape(OpaqueShapeList *list, sd::LongType i);
 
 SD_LIB_EXPORT OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType hash, OpaqueContext *context);
+
+/**
+ * Same as calculateOutputShapes2 but skips forceSyncToHost() on input arrays.
+ * Use for ops whose shape function only reads shape info (not array values).
+ * Avoids expensive CUDA D2H synchronization for shape-only ops.
+ */
+SD_LIB_EXPORT OpaqueShapeList *calculateOutputShapesNoSync(sd::Pointer *extraPointers, sd::LongType hash, OpaqueContext *context);
+
 SD_LIB_EXPORT sd::LongType getShapeListSize(OpaqueShapeList *list);
 
 SD_LIB_EXPORT void dbPrintAllocationTrace(OpaqueDataBuffer *db) ;

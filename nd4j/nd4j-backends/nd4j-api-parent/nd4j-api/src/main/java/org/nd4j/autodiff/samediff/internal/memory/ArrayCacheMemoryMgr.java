@@ -157,6 +157,14 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
     public static void setLargerArrayMaxMultiple(double largerArrayMaxMultiple) {
         ArrayCacheMemoryMgr.largerArrayMaxMultiple.set(largerArrayMaxMultiple);
     }
+
+    public static AtomicDouble getGrowthFactor() {
+        return growthFactor;
+    }
+
+    public static void setGrowthFactor(double growthFactor) {
+        ArrayCacheMemoryMgr.growthFactor.set(growthFactor);
+    }
     public static AtomicLong getMaxCacheBytes() {
         return maxCacheBytes;
     }
