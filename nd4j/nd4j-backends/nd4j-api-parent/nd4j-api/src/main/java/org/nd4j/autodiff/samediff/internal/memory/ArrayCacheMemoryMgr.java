@@ -273,7 +273,6 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         }
 
         // Allocation failed, allocate new array
-        //switch to using current workspace rather than detached
         INDArray ret = detached ? Nd4j.createUninitializedDetached(dataType,shape) : Nd4j.create(dataType, shape);
         return ret;
     }
@@ -285,68 +284,10 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
             if (detached) {
                 ret = ret.detach();
             }
-
             return ret;
         }
 
-        DataType dataType = descriptor.dataType();
-        long[] shape = descriptor.getShape();
-
-        {
-            long key = shapeKey(dataType, shape);
-            Map<Long, ArrayDeque<INDArray>> arraysForThread = getArraysForThread();
-            LinkedHashMap<Long, INDArray> lru = getLruCachedValuesForThread();
-            ArrayDeque<INDArray> cached = arraysForThread.get(key);
-            if (cached != null && !cached.isEmpty() && enableCache && shape.length > 0 && !Longs.contains(shape, 0)) {
-                INDArray arr = null;
-
-                while (!cached.isEmpty()) {
-                    arr = cached.poll();
-                    // Verify shape match (hash collision safety)
-                    if (arr.dataType() != dataType || !Arrays.equals(arr.shape(), shape)) {
-                        lru.remove(arr.getId());
-                        long skippedBytes = arr.data() != null ? dataType.width() * arr.data().length() : 0;
-                        currentCacheSize.addAndGet(-skippedBytes);
-                        if (arr.closeable()) arr.close();
-                        arr = null;
-                        continue;
-                    }
-                    if(arr.isView()) {
-                        //set closeable to prevent reuse elsewhere
-                        arr.setCloseable(false);
-                        // Remove from LRU tracking since we removed it from the cache list
-                        lru.remove(arr.getId());
-                        long skippedBytes = arr.data() != null ? dataType.width() * arr.data().length() : 0;
-                        currentCacheSize.addAndGet(-skippedBytes);
-                        log.trace("Found view array with id " + arr.getId() + " in cache. Avoiding allocation.");
-                        arr = null;
-                    } else {
-                        break;
-                    }
-                }
-
-                if (arr != null && arr.ordering() != descriptor.getOrder()) {
-                    arr.setOrder(descriptor.getOrder());
-                }
-
-                if (arr != null && !arr.wasClosed() && arr.closeable()) {
-                    // Decrement cache size
-                    currentCacheSize.addAndGet(-(long)(dataType.width() * arr.data().length()));
-                    lru.remove(arr.getId());
-                    ((BaseNDArray) arr).assignNewId();
-                    // Reset native sync counters for cached buffer reuse.
-                    if (arr.data() != null) {
-                        Nd4j.getNativeOps().dbSetDeviceId(arr.data().opaqueBuffer(), -1);
-                    }
-                    // Zero out stale data to match Nd4j.create() behavior
-                    arr.assign(0);
-                    return arr; // Allocated from cache
-                }
-            }
-        }
-
-        // Allocation failed, allocate new array
-        return detached ? Nd4j.create(dataType, shape).detach() : Nd4j.create(dataType, shape);
+        return allocate(detached, descriptor.dataType(), descriptor.getShape());
     }
 
     @Override
@@ -448,22 +389,56 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
     }
 
     @Override
-    public void close() {
-        {
-            Map<Long, ArrayDeque<INDArray>> arraysForThread = getArraysForThread();
-            LinkedHashMap<Long, INDArray> lru = getLruCachedValuesForThread();
+    public void scopeOut() {
+        // When the cache is enabled, do NOT destroy cached arrays on scope exit.
+        // The whole point of ArrayCacheMemoryMgr is to reuse allocations across
+        // successive output() calls (e.g., autoregressive decode steps).
+        // The close() method handles final cleanup.
+        if (enableCache) {
+            return;
+        }
 
-            arraysForThread.values().forEach(deque -> deque.forEach(arr -> {
+        // Cache disabled: close everything immediately (original behavior)
+        Map<Long, ArrayDeque<INDArray>> arraysForThread = getArraysForThread();
+        for (ArrayDeque<INDArray> deque : arraysForThread.values()) {
+            for (INDArray arr : deque) {
                 if (arr != null && arr.closeable() && !arr.wasClosed()) {
                     arr.close();
                 }
-            }));
-
-            // Clear the caches
-            arraysForThread.clear();
-            lru.clear();
-            currentCacheSize.set(0);
+            }
         }
+        arraysForThread.clear();
+        getLruCachedValuesForThread().clear();
+        currentCacheSize.set(0);
+    }
+
+    @Override
+    public void close() {
+        // Close unique DataBuffers directly using IdentityHashMap to ensure each
+        // physical buffer is closed exactly once.
+        Map<Long, ArrayDeque<INDArray>> arraysForThread = getArraysForThread();
+        IdentityHashMap<DataBuffer, Boolean> uniqueBuffers = new IdentityHashMap<>();
+        for (ArrayDeque<INDArray> deque : arraysForThread.values()) {
+            for (INDArray arr : deque) {
+                if (arr != null && !arr.wasClosed() && arr.data() != null) {
+                    uniqueBuffers.put(arr.data(), Boolean.TRUE);
+                }
+            }
+        }
+
+        for (DataBuffer buf : uniqueBuffers.keySet()) {
+            if (buf.closeable()) {
+                try {
+                    buf.close();
+                } catch (Exception e) {
+                    // Buffer may already be deallocated; ignore
+                }
+            }
+        }
+
+        arraysForThread.clear();
+        getLruCachedValuesForThread().clear();
+        currentCacheSize.set(0);
     }
 
     @Override
