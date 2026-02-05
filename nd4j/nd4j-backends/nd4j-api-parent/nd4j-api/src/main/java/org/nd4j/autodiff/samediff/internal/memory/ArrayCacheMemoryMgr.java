@@ -21,8 +21,6 @@
 package org.nd4j.autodiff.samediff.internal.memory;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.bytedeco.javacpp.Pointer;
@@ -36,8 +34,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.shade.guava.collect.HashBasedTable;
-import org.nd4j.shade.guava.collect.Table;
 import org.nd4j.shade.guava.primitives.Longs;
 
 import lombok.Getter;
@@ -49,9 +45,6 @@ import lombok.extern.slf4j.Slf4j;
 @Setter
 @Slf4j
 public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
-
-    // Static lock for synchronizing all cache operations across all instances and threads
-    private static final Object CACHE_LOCK = new Object();
 
     private static ThreadLocal<Map<INDArray,INDArray>> released = new ThreadLocal<>();
 
@@ -67,10 +60,10 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
     private static  AtomicDouble maxMemFrac;
     private static AtomicLong currentCacheSize =  new AtomicLong(0);
 
-    private static ThreadLocal<Set<Long>> lruCache = new ThreadLocal<>();
-    private static ThreadLocal<Map<Long, INDArray>> lruCacheValues = new ThreadLocal<>();
+    // Single LinkedHashMap for LRU tracking: insertion-ordered, provides both Set and Map views
+    private static ThreadLocal<LinkedHashMap<Long, INDArray>> lruCacheValues = new ThreadLocal<>();
 
-    private static ThreadLocal<Table<DataType, String, List<INDArray>>> arrays = new ThreadLocal<>();
+    private static ThreadLocal<Map<Long, ArrayDeque<INDArray>>> arrays = new ThreadLocal<>();
 
     private static boolean enableCache = Boolean
             .parseBoolean(System.getProperty(ND4JSystemProperties.SAMEDIFF_MEMORY_CACHE_ENABLE, "false"));
@@ -78,35 +71,37 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
     static {
         setCacheDefaults();
         released.set(new IdentityHashMap<>());
-        arrays.set(HashBasedTable.create());
-        lruCacheValues.set(new ConcurrentHashMap<>());
-        lruCache.set(new ConcurrentSkipListSet<>());
+        arrays.set(new HashMap<>());
+        lruCacheValues.set(new LinkedHashMap<>());
 
     }
 
-
-    private static Set<Long> getLruCacheForThread() {
-        if(lruCache.get() != null)
-            return lruCache.get();
-        else {
-            lruCache.set(new ConcurrentSkipListSet<>());
-            return lruCache.get();
+    /**
+     * Compute a hash key from DataType and shape, avoiding String allocation.
+     * Collisions are safe because retrieval verifies shape match.
+     */
+    private static long shapeKey(DataType dt, long[] shape) {
+        long h = 17L * 31 + dt.ordinal();
+        for (long s : shape) {
+            h = h * 31 + s;
         }
+        return h;
     }
 
-    private static Table<DataType, String, List<INDArray>> getArraysForThread() {
+
+    private static Map<Long, ArrayDeque<INDArray>> getArraysForThread() {
         if(arrays.get() != null)
             return arrays.get();
         else {
-            arrays.set(HashBasedTable.create());
+            arrays.set(new HashMap<>());
             return arrays.get();
         }
     }
-    private static Map<Long, INDArray> getLruCachedValuesForThread() {
+    private static LinkedHashMap<Long, INDArray> getLruCachedValuesForThread() {
         if(lruCacheValues.get() != null)
             return lruCacheValues.get();
         else {
-            lruCacheValues.set(new ConcurrentHashMap<>());
+            lruCacheValues.set(new LinkedHashMap<>());
             return lruCacheValues.get();
         }
     }
@@ -134,7 +129,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
     private static AtomicLong smallArrayThreshold;
 
     public static Set<Long> getLruCache() {
-        return getLruCacheForThread();
+        return getLruCachedValuesForThread().keySet();
     }
 
     public static Map<Long, INDArray> getLruCacheValues() {
@@ -227,53 +222,51 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
             return Nd4j.emptyWithShape(shape, dataType);
         }
 
-        synchronized (CACHE_LOCK) {
-            String arrayShapeString = Arrays.toString(shape);
-            Table<DataType, String, List<INDArray>> arraysForThread = getArraysForThread();
-            Set<Long> lruCacheForThread = getLruCacheForThread();
-            Map<Long, INDArray> lruCacheValues = getLruCacheValues();
-            if (arraysForThread.contains(dataType, arrayShapeString) && enableCache) {
+        {
+            long key = shapeKey(dataType, shape);
+            Map<Long, ArrayDeque<INDArray>> arraysForThread = getArraysForThread();
+            LinkedHashMap<Long, INDArray> lru = getLruCachedValuesForThread();
+            ArrayDeque<INDArray> cached = arraysForThread.get(key);
+            if (cached != null && !cached.isEmpty() && enableCache) {
                 INDArray arr = null;
                 boolean arrFound = false;
                 while(!arrFound) {
-                    arr = !arraysForThread.get(dataType, arrayShapeString).isEmpty()
-                            ? arraysForThread.get(dataType, arrayShapeString).remove(0)
-                            : null;
-                    if(arr != null && (!arr.closeable() || arr.wasClosed() || arr.isView())) {
+                    arr = cached.poll();
+                    if (arr == null) break;
+                    // Verify shape match (hash collision safety)
+                    if (arr.dataType() != dataType || !Arrays.equals(arr.shape(), shape)) {
+                        // Hash collision - skip this array, close it
+                        lru.remove(arr.getId());
+                        long skippedBytes = arr.data() != null ? dataType.width() * arr.data().length() : 0;
+                        currentCacheSize.addAndGet(-skippedBytes);
+                        if (arr.closeable()) arr.close();
+                        continue;
+                    }
+                    if(!arr.closeable() || arr.wasClosed() || arr.isView()) {
                         log.trace("Found array closeable, not returning from cache. Only closeable arrays are returnable from the cache.");
                         if(arr.isView()) {
                             arr.setCloseable(false);
                         }
                         // Remove from LRU tracking since we removed it from the cache list
-                        lruCacheForThread.remove(arr.getId());
-                        lruCacheValues.remove(arr.getId());
+                        lru.remove(arr.getId());
                         long skippedBytes = arr.data() != null ? dataType.width() * arr.data().length() : 0;
-                        currentCacheSize.set(currentCacheSize.get() - skippedBytes);
+                        currentCacheSize.addAndGet(-skippedBytes);
                         log.trace("Found view array with id " + arr.getId() + " in cache. Avoiding return. Allocating new array.");
-
                         continue;
-                    } else if(!arraysForThread.contains(dataType, arrayShapeString) || getArraysForThread().get(dataType,arrayShapeString).isEmpty()) {
-                        break;
                     }
 
-                    if (arr != null) {
-                        // Decrement cache size
-                        currentCacheSize.set(currentCacheSize.get() - dataType.width() * arr.data().length());
-                        lruCacheForThread.remove(arr.getId());
-                        lruCacheValues.remove(arr.getId());
-                        // We need to assign new Id. this way we will break any possible relationship it
-                        // had in Tracker.
-                        // the old cache was recreating New Array using buffer and thus gaining new
-                        // reference . Note that it had IdentityHash with references being keys
-                        ((BaseNDArray) arr).assignNewId();
-                        // Reset native sync counters for cached buffer reuse.
-                        if (arr.data() != null) {
-                            Nd4j.getNativeOps().dbSetDeviceId(arr.data().opaqueBuffer(), -1);
-                        }
-                        // Zero out stale data to match Nd4j.create() behavior
-                        arr.assign(0);
-                        return arr; // Allocated from cache
+                    // Good array found
+                    // Decrement cache size
+                    currentCacheSize.addAndGet(-(long)(dataType.width() * arr.data().length()));
+                    lru.remove(arr.getId());
+                    ((BaseNDArray) arr).assignNewId();
+                    // Reset native sync counters for cached buffer reuse.
+                    if (arr.data() != null) {
+                        Nd4j.getNativeOps().dbSetDeviceId(arr.data().opaqueBuffer(), -1);
                     }
+                    // Zero out stale data to match Nd4j.create() behavior
+                    arr.assign(0);
+                    return arr; // Allocated from cache
                 }
 
             }
@@ -298,25 +291,35 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
         DataType dataType = descriptor.dataType();
         long[] shape = descriptor.getShape();
-        String arrayShape = Arrays.toString(shape);
 
-        synchronized (CACHE_LOCK) {
-            Table<DataType, String, List<INDArray>> arraysForThread = getArraysForThread();
-            if (arraysForThread.contains(dataType, arrayShape) && enableCache && shape.length > 0 && !Longs.contains(shape, 0)) {
+        {
+            long key = shapeKey(dataType, shape);
+            Map<Long, ArrayDeque<INDArray>> arraysForThread = getArraysForThread();
+            LinkedHashMap<Long, INDArray> lru = getLruCachedValuesForThread();
+            ArrayDeque<INDArray> cached = arraysForThread.get(key);
+            if (cached != null && !cached.isEmpty() && enableCache && shape.length > 0 && !Longs.contains(shape, 0)) {
                 INDArray arr = null;
-                List<INDArray> arrays2 = arraysForThread.get(dataType, arrayShape);
 
-                while (arrays2.size() > 0) {
-                    arr = arrays2.remove(0);
+                while (!cached.isEmpty()) {
+                    arr = cached.poll();
+                    // Verify shape match (hash collision safety)
+                    if (arr.dataType() != dataType || !Arrays.equals(arr.shape(), shape)) {
+                        lru.remove(arr.getId());
+                        long skippedBytes = arr.data() != null ? dataType.width() * arr.data().length() : 0;
+                        currentCacheSize.addAndGet(-skippedBytes);
+                        if (arr.closeable()) arr.close();
+                        arr = null;
+                        continue;
+                    }
                     if(arr.isView()) {
                         //set closeable to prevent reuse elsewhere
                         arr.setCloseable(false);
                         // Remove from LRU tracking since we removed it from the cache list
-                        getLruCache().remove(arr.getId());
-                        getLruCacheValues().remove(arr.getId());
+                        lru.remove(arr.getId());
                         long skippedBytes = arr.data() != null ? dataType.width() * arr.data().length() : 0;
-                        currentCacheSize.set(currentCacheSize.get() - skippedBytes);
+                        currentCacheSize.addAndGet(-skippedBytes);
                         log.trace("Found view array with id " + arr.getId() + " in cache. Avoiding allocation.");
+                        arr = null;
                     } else {
                         break;
                     }
@@ -328,13 +331,8 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
                 if (arr != null && !arr.wasClosed() && arr.closeable()) {
                     // Decrement cache size
-                    currentCacheSize.set(currentCacheSize.get() - dataType.width() * arr.data().length());
-                    // We need to assign new Id. this way we will break any possible relationship it
-                    // had in Tracker.
-                    // the old cache was recreating New Array using buffer and thus gaining new
-                    // reference . Note that it had IdentityHash with references being keys
-                    getLruCache().remove(arr.getId());
-                    getLruCacheValues().remove(arr.getId());
+                    currentCacheSize.addAndGet(-(long)(dataType.width() * arr.data().length()));
+                    lru.remove(arr.getId());
                     ((BaseNDArray) arr).assignNewId();
                     // Reset native sync counters for cached buffer reuse.
                     if (arr.data() != null) {
@@ -353,15 +351,14 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
     @Override
     public  void release(@NonNull INDArray array) {
-        synchronized (CACHE_LOCK) {
-            Set<Long> lruCacheForThread = getLruCacheForThread();
-            Table<DataType, String, List<INDArray>> arraysForThread = getArraysForThread();
-            Map<Long, INDArray> lruCacheValues = getLruCacheValues();
+        {
+            Map<Long, ArrayDeque<INDArray>> arraysForThread = getArraysForThread();
+            LinkedHashMap<Long, INDArray> lru = getLruCachedValuesForThread();
 
             // Check for multiple releases of the array (only for closeable arrays that might be cached)
             long id = array.getId();
             if (array.closeable()) {
-                Preconditions.checkState(!lruCacheForThread.contains(id), "Array was released multiple times: id=%s, shape=%ndShape", id,
+                Preconditions.checkState(!lru.containsKey(id), "Array was released multiple times: id=%s, shape=%ndShape", id,
                         array);
             }
 
@@ -403,19 +400,20 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                 }
 
                 // Need to deallocate some arrays to stay under limit - do in "oldest first"
-                // order
-                Iterator<Long> iter = lruCacheForThread.iterator();
+                // order (LinkedHashMap iterates in insertion order)
+                Iterator<Map.Entry<Long, INDArray>> iter = lru.entrySet().iterator();
                 while (currentCacheSize.get() + thisBytes > maxCacheBytes.get() && iter.hasNext()) {
-                    long next = iter.next();
+                    Map.Entry<Long, INDArray> entry = iter.next();
                     iter.remove();
-                    INDArray nextOldest = lruCacheValues.remove(next);
+                    INDArray nextOldest = entry.getValue();
                     if (nextOldest == null) continue;
                     DataType ndt = nextOldest.dataType();
                     long nextBytes = ndt.width() * nextOldest.data().length();
-                    List<INDArray> listx = arraysForThread.get(ndt, Arrays.toString(nextOldest.shape()));
+                    long evictKey = shapeKey(ndt, nextOldest.shape());
+                    ArrayDeque<INDArray> listx = arraysForThread.get(evictKey);
                     if (listx != null)
                         listx.remove(nextOldest);
-                    currentCacheSize.set(currentCacheSize.get() - nextBytes);
+                    currentCacheSize.addAndGet(-nextBytes);
 
                     if (nextOldest.closeable()) {
                         nextOldest.close();
@@ -423,48 +421,39 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                 }
 
                 // After clearing space - can now cache
-                cacheArrayInternal(array, arraysForThread, lruCacheForThread, lruCacheValues);
+                cacheArrayInternal(array, arraysForThread, lru);
             } else {
                 // OK to cache
-                cacheArrayInternal(array, arraysForThread, lruCacheForThread, lruCacheValues);
+                cacheArrayInternal(array, arraysForThread, lru);
             }
         }
-        // NOTE: Removed duplicate LRU cache additions - cacheArray() already handles this
     }
 
     private void cacheArray(INDArray array) {
-        synchronized (CACHE_LOCK) {
-            cacheArrayInternal(array, getArraysForThread(), getLruCacheForThread(), getLruCacheValues());
+        {
+            cacheArrayInternal(array, getArraysForThread(), getLruCachedValuesForThread());
         }
     }
 
-    // Internal method called within synchronized block - no additional synchronization needed
-    private void cacheArrayInternal(INDArray array, Table<DataType, String, List<INDArray>> arraysForThread,
-                                    Set<Long> lruCacheForThread, Map<Long, INDArray> lruCacheValues) {
+    // Internal method - no synchronization needed (ThreadLocal data)
+    private void cacheArrayInternal(INDArray array, Map<Long, ArrayDeque<INDArray>> arraysForThread,
+                                    LinkedHashMap<Long, INDArray> lru) {
         DataType dt = array.dataType();
-        String arrayShapeString = Arrays.toString(array.shape());
-        if (!arraysForThread.contains(dt, arrayShapeString))
-            arraysForThread.put(dt, arrayShapeString, new ArrayList<>());
-        arraysForThread.get(dt, arrayShapeString).add(array);
-        currentCacheSize.set(currentCacheSize.get() + array.data().length() * dt.width());
+        long key = shapeKey(dt, array.shape());
+        arraysForThread.computeIfAbsent(key, k -> new ArrayDeque<>()).add(array);
+        currentCacheSize.addAndGet(array.data().length() * dt.width());
 
-        lruCacheForThread.add(array.getId());
-        lruCacheValues.put(array.getId(), array);
+        lru.put(array.getId(), array);
 
     }
 
     @Override
     public void close() {
-        synchronized (CACHE_LOCK) {
-            // Selectively close cached arrays that are safe to close (not shared).
-            // Arrays with useCount > 1 have shared data buffers and MUST NOT be closed
-            // as that would corrupt other arrays using the same buffer, causing NaN values.
-            // Arrays with useCount <= 1 are safe to close as no other arrays depend on them.
-            Table<DataType, String, List<INDArray>> arraysForThread = getArraysForThread();
-            Set<Long> lruCacheForThread = getLruCacheForThread();
-            Map<Long, INDArray> lruCacheValues = getLruCacheValues();
+        {
+            Map<Long, ArrayDeque<INDArray>> arraysForThread = getArraysForThread();
+            LinkedHashMap<Long, INDArray> lru = getLruCachedValuesForThread();
 
-            arraysForThread.values().stream().forEach(input -> input.stream().forEach(arr -> {
+            arraysForThread.values().forEach(deque -> deque.forEach(arr -> {
                 if (arr != null && arr.closeable() && !arr.wasClosed()) {
                     arr.close();
                 }
@@ -472,8 +461,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
             // Clear the caches
             arraysForThread.clear();
-            lruCacheForThread.clear();
-            lruCacheValues.clear();
+            lru.clear();
             currentCacheSize.set(0);
         }
     }
@@ -492,25 +480,35 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
         DataType dataType = Shape.dataType(asJava);
         long[] shape = Shape.shape(asJava);
-        String arrayShape = Arrays.toString(shape);
 
-        synchronized (CACHE_LOCK) {
-            Table<DataType, String, List<INDArray>> arraysForThread = getArraysForThread();
-            if (arraysForThread.contains(dataType, arrayShape) && enableCache && shape.length > 0 && !Longs.contains(shape, 0)) {
+        {
+            long key = shapeKey(dataType, shape);
+            Map<Long, ArrayDeque<INDArray>> arraysForThread = getArraysForThread();
+            LinkedHashMap<Long, INDArray> lru = getLruCachedValuesForThread();
+            ArrayDeque<INDArray> cached = arraysForThread.get(key);
+            if (cached != null && !cached.isEmpty() && enableCache && shape.length > 0 && !Longs.contains(shape, 0)) {
                 INDArray arr = null;
-                List<INDArray> arrays2 = arraysForThread.get(dataType, arrayShape);
 
-                while (arrays2.size() > 0) {
-                    arr = arrays2.remove(0);
+                while (!cached.isEmpty()) {
+                    arr = cached.poll();
+                    // Verify shape match (hash collision safety)
+                    if (arr.dataType() != dataType || !Arrays.equals(arr.shape(), shape)) {
+                        lru.remove(arr.getId());
+                        long skippedBytes = arr.data() != null ? dataType.width() * arr.data().length() : 0;
+                        currentCacheSize.addAndGet(-skippedBytes);
+                        if (arr.closeable()) arr.close();
+                        arr = null;
+                        continue;
+                    }
                     if(arr.isView()) {
                         //set closeable to prevent reuse elsewhere
                         arr.setCloseable(false);
                         // Remove from LRU tracking since we removed it from the cache list
-                        getLruCache().remove(arr.getId());
-                        getLruCacheValues().remove(arr.getId());
+                        lru.remove(arr.getId());
                         long skippedBytes = arr.data() != null ? dataType.width() * arr.data().length() : 0;
-                        currentCacheSize.set(currentCacheSize.get() - skippedBytes);
+                        currentCacheSize.addAndGet(-skippedBytes);
                         log.trace("Found view array with id " + arr.getId() + " in cache. Avoiding allocation.");
+                        arr = null;
                     } else {
                         break;
                     }
@@ -522,13 +520,8 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
                 if (arr != null && !arr.wasClosed() && arr.closeable()) {
                     // Decrement cache size
-                    currentCacheSize.set(currentCacheSize.get() - dataType.width() * arr.data().length());
-                    // We need to assign new Id. this way we will break any possible relationship it
-                    // had in Tracker.
-                    // the old cache was recreating New Array using buffer and thus gaining new
-                    // reference . Note that it had IdentityHash with references being keys
-                    getLruCache().remove(arr.getId());
-                    getLruCacheValues().remove(arr.getId());
+                    currentCacheSize.addAndGet(-(long)(dataType.width() * arr.data().length()));
+                    lru.remove(arr.getId());
                     ((BaseNDArray) arr).assignNewId();
                     // Reset native sync counters for cached buffer reuse.
                     if (arr.data() != null) {
