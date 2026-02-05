@@ -25,7 +25,9 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.config.ModelConfig;
+import org.eclipse.deeplearning4j.llm.generation.BatchGenerationState;
 import org.eclipse.deeplearning4j.llm.generation.GenerationResult;
+import org.eclipse.deeplearning4j.llm.generation.SamplerUtils;
 import org.eclipse.deeplearning4j.llm.tokenizer.Encoding;
 import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
@@ -437,6 +439,276 @@ public class VisionLanguageModel implements AutoCloseable {
         // For most VLMs: [batch, image_tokens, hidden] + [batch, text_tokens, hidden]
         // Concatenate along sequence dimension
         return Nd4j.concat(1, imageEmbeddings, textEmbeddings);
+    }
+
+    // =========================================================================
+    // Batch Generation Methods for Throughput Optimization
+    // =========================================================================
+
+    /**
+     * Generate text from multiple images in parallel (batch processing).
+     *
+     * <p>Batch processing amortizes the per-step overhead (shape calculation,
+     * memory management, graph traversal) across multiple sequences. This
+     * significantly improves throughput (tokens/second) at the cost of
+     * slightly higher latency to first token.</p>
+     *
+     * <p>All sequences must use the same prompt template. Each image is
+     * processed through the vision encoder and decoder in parallel.</p>
+     *
+     * @param images list of preprocessed image tensors, each [1, C, H, W] or [tiles, C, H, W]
+     * @param prompt the shared text prompt
+     * @param maxNewTokens maximum tokens to generate per sequence
+     * @return array of generation results, one per image
+     */
+    public GenerationResult[] generateBatch(List<INDArray> images, String prompt, int maxNewTokens) {
+        return generateBatch(images, prompt, maxNewTokens, false, 0.0);
+    }
+
+    /**
+     * Generate text from multiple images in parallel with sampling control.
+     *
+     * @param images list of preprocessed image tensors
+     * @param prompt the shared text prompt
+     * @param maxNewTokens maximum tokens to generate
+     * @param doSample whether to sample (false = greedy)
+     * @param temperature sampling temperature (only used if doSample=true)
+     * @return array of generation results
+     */
+    public GenerationResult[] generateBatch(List<INDArray> images, String prompt,
+                                             int maxNewTokens, boolean doSample, double temperature) {
+        checkNotClosed();
+        int batchSize = images.size();
+        if (batchSize == 0) {
+            return new GenerationResult[0];
+        }
+
+        long startNanos = System.nanoTime();
+
+        // Encode prompt once (shared across all sequences)
+        Encoding promptEncoding = tokenizer.encode(prompt, true);
+        int[] promptIds = promptEncoding.getIds();
+        int promptTokenCount = promptIds.length;
+        int[] promptTokenCounts = new int[batchSize];
+        for (int i = 0; i < batchSize; i++) {
+            promptTokenCounts[i] = promptTokenCount;
+        }
+
+        // Encode all images through vision encoder (can be batched if images have same shape)
+        List<INDArray> imageEmbeddingsList = new ArrayList<>();
+        for (INDArray image : images) {
+            INDArray imageEmbed = encodeImage(image);
+            imageEmbeddingsList.add(imageEmbed);
+        }
+
+        // Stack image embeddings: [batchSize, imageSeqLen, hidden]
+        INDArray batchedImageEmbeddings = Nd4j.vstack(imageEmbeddingsList.toArray(new INDArray[0]));
+
+        // Get text embeddings and replicate for batch
+        INDArray singleTextEmbeddings = embedText(promptIds); // [1, textSeqLen, hidden]
+        INDArray batchedTextEmbeddings = Nd4j.tile(singleTextEmbeddings, batchSize, 1, 1);
+
+        // Combine: [batchSize, imageSeqLen + textSeqLen, hidden]
+        INDArray currentEmbeddings = combineEmbeddings(batchedImageEmbeddings, batchedTextEmbeddings);
+
+        // Discover decoder inputs/outputs for KV cache
+        List<String> decoderInputNames = decoder.inputs();
+        String logitsOutputName = DecoderUtils.findLogitsOutputName(decoder);
+        DecoderUtils.KVCacheNames kvNames = DecoderUtils.findKVCacheOutputNames(decoder);
+        boolean useKvCache = !kvNames.keyNames.isEmpty() && !kvNames.valueNames.isEmpty();
+        long hiddenSize = config != null && config.getHiddenSize() != null ? config.getHiddenSize() : 0;
+
+        // Build output request list
+        List<String> allOutputNames = new ArrayList<>();
+        allOutputNames.add(logitsOutputName != null ? logitsOutputName : "logits");
+        if (useKvCache) {
+            allOutputNames.addAll(kvNames.keyNames);
+            allOutputNames.addAll(kvNames.valueNames);
+        }
+
+        // Initialize batch state
+        BatchGenerationState state = new BatchGenerationState(batchSize, tokenizer.getEosTokenId());
+        Map<String, INDArray> kvCache = useKvCache ? new HashMap<>() : null;
+        long pastSeqLen = 0;
+
+        // Autoregressive generation loop
+        for (int step = 0; step < maxNewTokens; step++) {
+            // Build decoder inputs
+            Map<String, INDArray> decoderInputMap = new HashMap<>();
+            long currentSeqLen = currentEmbeddings.shape()[1];
+            long totalSeqLen = currentSeqLen + pastSeqLen;
+
+            for (String inputName : decoderInputNames) {
+                if (inputName.equals("inputs_embeds")) {
+                    decoderInputMap.put(inputName, currentEmbeddings);
+                } else if (inputName.equals("attention_mask")) {
+                    decoderInputMap.put(inputName, Nd4j.ones(DataType.LONG, batchSize, totalSeqLen));
+                } else if (inputName.equals("_causal_mask")) {
+                    decoderInputMap.put(inputName, DecoderUtils.buildCausalMask(batchSize, currentSeqLen, totalSeqLen));
+                } else if (inputName.equals("position_ids")) {
+                    INDArray posIds = Nd4j.arange(pastSeqLen, pastSeqLen + currentSeqLen)
+                            .reshape(1, currentSeqLen).castTo(DataType.LONG);
+                    decoderInputMap.put(inputName, Nd4j.tile(posIds, batchSize, 1));
+                } else if (useKvCache && inputName.startsWith("past_key_values.")) {
+                    String presentName = inputName.replace("past_key_values", "present");
+                    if (kvCache.containsKey(presentName)) {
+                        decoderInputMap.put(inputName, kvCache.get(presentName));
+                    } else {
+                        decoderInputMap.put(inputName, DecoderUtils.createEmptyKvCache(
+                                decoder, inputName, batchSize, hiddenSize));
+                    }
+                }
+            }
+
+            // Run decoder
+            Map<String, INDArray> outputs = decoder.output(decoderInputMap,
+                    allOutputNames.toArray(new String[0]));
+            INDArray logits = outputs.get(allOutputNames.get(0));
+
+            // Update KV cache
+            if (useKvCache) {
+                for (String presentName : kvNames.keyNames) {
+                    INDArray pv = outputs.get(presentName);
+                    if (pv != null) {
+                        INDArray old = kvCache.put(presentName, pv);
+                        if (old != null) old.close();
+                    }
+                }
+                for (String presentName : kvNames.valueNames) {
+                    INDArray pv = outputs.get(presentName);
+                    if (pv != null) {
+                        INDArray old = kvCache.put(presentName, pv);
+                        if (old != null) old.close();
+                    }
+                }
+            }
+
+            // Get logits for last position: [batchSize, seqLen, vocab] -> [batchSize, vocab]
+            INDArray lastLogits;
+            if (logits.rank() == 3) {
+                lastLogits = logits.get(NDArrayIndex.all(),
+                        NDArrayIndex.point(logits.size(1) - 1), NDArrayIndex.all());
+            } else {
+                lastLogits = logits;
+            }
+
+            // Sample next tokens for all sequences
+            int[] nextTokenIds;
+            if (!doSample || temperature <= 0) {
+                nextTokenIds = SamplerUtils.argmaxBatch(lastLogits);
+            } else {
+                INDArray scaledLogits = lastLogits.div(temperature);
+                INDArray probs = SamplerUtils.softmax(scaledLogits);
+                nextTokenIds = SamplerUtils.multinomialSampleBatch(probs, new java.util.Random());
+            }
+
+            // Record tokens
+            long stepNanos = System.nanoTime() - startNanos;
+            state.recordTokens(nextTokenIds, stepNanos);
+
+            // Check if all sequences are done
+            if (state.allFinished()) {
+                break;
+            }
+
+            // Prepare embeddings for next step
+            if (useKvCache) {
+                pastSeqLen += currentSeqLen;
+
+                // Embed next tokens for all sequences: [batchSize, 1, hidden]
+                INDArray prevEmbeddings = currentEmbeddings;
+                INDArray[] nextEmbeds = new INDArray[batchSize];
+                for (int i = 0; i < batchSize; i++) {
+                    if (!state.isFinished(i)) {
+                        nextEmbeds[i] = embedText(new int[]{nextTokenIds[i]});
+                    } else {
+                        // Finished sequences: embed EOS token (padding)
+                        nextEmbeds[i] = embedText(new int[]{tokenizer.getEosTokenId()});
+                    }
+                }
+                currentEmbeddings = Nd4j.vstack(nextEmbeds);
+                if (prevEmbeddings != batchedImageEmbeddings) {
+                    prevEmbeddings.close();
+                }
+                decoder.clearPlaceholders(false);
+            } else {
+                // No KV cache: grow embeddings (inefficient but correct)
+                INDArray[] newTokenEmbeds = new INDArray[batchSize];
+                for (int i = 0; i < batchSize; i++) {
+                    newTokenEmbeds[i] = embedText(new int[]{nextTokenIds[i]});
+                }
+                INDArray batchedNewTokenEmbeds = Nd4j.vstack(newTokenEmbeds);
+                currentEmbeddings = Nd4j.concat(1, currentEmbeddings, batchedNewTokenEmbeds);
+            }
+        }
+
+        // Mark any remaining sequences as max tokens
+        for (int i = 0; i < batchSize; i++) {
+            state.markMaxTokens(i);
+        }
+
+        // Clean up KV cache
+        if (kvCache != null) {
+            for (INDArray v : kvCache.values()) {
+                if (v != null) v.close();
+            }
+        }
+
+        // Decode all sequences
+        long totalNanos = System.nanoTime() - startNanos;
+        String[] texts = new String[batchSize];
+        for (int i = 0; i < batchSize; i++) {
+            texts[i] = tokenizer.decode(state.getTokenArrayForSequence(i), true);
+        }
+
+        log.info("Batch generation complete: {} sequences, {} total tokens in {}ms ({} tokens/sec)",
+                batchSize, state.getMaxTokenCount() * batchSize, totalNanos / 1_000_000,
+                String.format("%.1f", (state.getMaxTokenCount() * batchSize * 1_000_000_000.0) / totalNanos));
+
+        return state.buildResults(texts, promptTokenCounts, totalNanos);
+    }
+
+    /**
+     * Encode multiple images through the vision encoder in a single batch.
+     *
+     * <p>This is more efficient than encoding images one at a time when
+     * images have the same dimensions (number of tiles).</p>
+     *
+     * @param images list of preprocessed image tensors with same shape
+     * @return batched image embeddings [batchSize, seqLen, hidden]
+     */
+    public INDArray encodeImagesBatch(List<INDArray> images) {
+        checkNotClosed();
+
+        if (images.isEmpty()) {
+            return Nd4j.empty(DataType.FLOAT);
+        }
+
+        // Check if all images have same shape (required for true batching)
+        long[] firstShape = images.get(0).shape();
+        boolean sameShape = true;
+        for (INDArray img : images) {
+            if (!java.util.Arrays.equals(img.shape(), firstShape)) {
+                sameShape = false;
+                break;
+            }
+        }
+
+        if (sameShape && firstShape[0] == 1) {
+            // All images have same shape - stack and process together
+            INDArray batched = Nd4j.vstack(images.toArray(new INDArray[0]));
+            Map<String, INDArray> inputs = new HashMap<>();
+            inputs.put("pixel_values", batched);
+            Map<String, INDArray> outputs = visionEncoder.output(inputs, "image_embeds");
+            return outputs.get("image_embeds");
+        } else {
+            // Different shapes - process individually and stack
+            List<INDArray> embeddings = new ArrayList<>();
+            for (INDArray img : images) {
+                embeddings.add(encodeImage(img));
+            }
+            return Nd4j.vstack(embeddings.toArray(new INDArray[0]));
+        }
     }
 
     /**

@@ -65,8 +65,23 @@ public class DecoderUtils {
      * @return INDArray of shape [1, 1, currentSeqLen, totalSeqLen] with FLOAT dtype
      */
     public static INDArray buildCausalMask(long currentSeqLen, long totalSeqLen) {
+        return buildCausalMask(1, currentSeqLen, totalSeqLen);
+    }
+
+    /**
+     * Build a batched causal attention mask for the decoder (FLOAT dtype).
+     *
+     * <p>For batch processing, all sequences share the same causal mask pattern
+     * (they all have the same sequence length at each step).</p>
+     *
+     * @param batchSize number of sequences in the batch
+     * @param currentSeqLen number of query tokens in this step
+     * @param totalSeqLen total KV length (past + current)
+     * @return INDArray of shape [batchSize, 1, currentSeqLen, totalSeqLen] with FLOAT dtype
+     */
+    public static INDArray buildCausalMask(long batchSize, long currentSeqLen, long totalSeqLen) {
         if (currentSeqLen == 1) {
-            return Nd4j.zeros(DataType.FLOAT, 1, 1, 1, totalSeqLen);
+            return Nd4j.zeros(DataType.FLOAT, batchSize, 1, 1, totalSeqLen);
         }
 
         long pastSeqLen = totalSeqLen - currentSeqLen;
@@ -82,10 +97,19 @@ public class DecoderUtils {
             }
         }
 
-        INDArray mask = Nd4j.createFromArray(data).reshape(1, 1, currentSeqLen, totalSeqLen);
-        long nonZero = mask.neq(0).castTo(DataType.LONG).sumNumber().longValue();
-        log.info("Built causal mask: shape=[1, 1, {}, {}], pastSeqLen={}, non-zero count={}, dtype=FLOAT",
-                currentSeqLen, totalSeqLen, pastSeqLen, nonZero);
+        // Create single mask pattern
+        INDArray singleMask = Nd4j.createFromArray(data).reshape(1, 1, currentSeqLen, totalSeqLen);
+
+        if (batchSize == 1) {
+            log.info("Built causal mask: shape=[1, 1, {}, {}], pastSeqLen={}, dtype=FLOAT",
+                    currentSeqLen, totalSeqLen, pastSeqLen);
+            return singleMask;
+        }
+
+        // Tile for batch dimension
+        INDArray mask = Nd4j.tile(singleMask, (int) batchSize, 1, 1, 1);
+        log.info("Built batched causal mask: shape=[{}, 1, {}, {}], pastSeqLen={}, dtype=FLOAT",
+                batchSize, currentSeqLen, totalSeqLen, pastSeqLen);
         return mask;
     }
 
