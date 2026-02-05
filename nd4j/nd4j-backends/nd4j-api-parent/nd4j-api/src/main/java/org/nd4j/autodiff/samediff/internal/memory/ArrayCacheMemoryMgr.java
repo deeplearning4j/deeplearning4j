@@ -27,6 +27,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.primitives.AtomicDouble;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
@@ -34,7 +35,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.shade.guava.primitives.Longs;
 
 import lombok.Getter;
 import lombok.NonNull;
@@ -51,7 +51,15 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
     public final static double DEFAULT_MAX_MEM_FRACTION = 0.25;
     public final static long DEFAULT_SMALL_ARRAY_THRESHOLD = 1024;
     public final static double DEFAULT_LARGE_ARRAY_MAX_MULTIPLE = 2.0;
+    // Growth factor for over-allocation on cache miss. Buffers are allocated
+    // with this multiplier so that next step's slightly larger request (e.g.
+    // growing KV cache) can reuse the buffer via capacity matching.
+    // Default 1.0 (disabled) to avoid OOM on memory-constrained systems.
+    // Set org.nd4j.cache.growthFactor=1.1 to enable for systems with headroom.
+    public final static double DEFAULT_GROWTH_FACTOR = 1.0;
+
     private static AtomicDouble largerArrayMaxMultiple;
+    private static AtomicDouble growthFactor;
 
     private static AtomicLong maxCacheBytes;
     private static AtomicLong totalMemBytes;
@@ -63,7 +71,9 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
     // Single LinkedHashMap for LRU tracking: insertion-ordered, provides both Set and Map views
     private static ThreadLocal<LinkedHashMap<Long, INDArray>> lruCacheValues = new ThreadLocal<>();
 
-    private static ThreadLocal<Map<Long, ArrayDeque<INDArray>>> arrays = new ThreadLocal<>();
+    // Capacity-based cache: TreeMap per DataType, keyed by buffer element count.
+    // TreeMap.ceilingEntry(requiredElements) finds the smallest buffer >= needed in O(log n).
+    private static ThreadLocal<Map<DataType, TreeMap<Long, ArrayDeque<INDArray>>>> capacityArrays = new ThreadLocal<>();
 
     private static boolean enableCache = Boolean
             .parseBoolean(System.getProperty(ND4JSystemProperties.SAMEDIFF_MEMORY_CACHE_ENABLE, "false"));
@@ -71,32 +81,20 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
     static {
         setCacheDefaults();
         released.set(new IdentityHashMap<>());
-        arrays.set(new HashMap<>());
+        capacityArrays.set(new EnumMap<>(DataType.class));
         lruCacheValues.set(new LinkedHashMap<>());
 
     }
 
-    /**
-     * Compute a hash key from DataType and shape, avoiding String allocation.
-     * Collisions are safe because retrieval verifies shape match.
-     */
-    private static long shapeKey(DataType dt, long[] shape) {
-        long h = 17L * 31 + dt.ordinal();
-        for (long s : shape) {
-            h = h * 31 + s;
-        }
-        return h;
+    private static Map<DataType, TreeMap<Long, ArrayDeque<INDArray>>> getCapacityArraysForThread() {
+        Map<DataType, TreeMap<Long, ArrayDeque<INDArray>>> map = capacityArrays.get();
+        if (map != null)
+            return map;
+        map = new EnumMap<>(DataType.class);
+        capacityArrays.set(map);
+        return map;
     }
 
-
-    private static Map<Long, ArrayDeque<INDArray>> getArraysForThread() {
-        if(arrays.get() != null)
-            return arrays.get();
-        else {
-            arrays.set(new HashMap<>());
-            return arrays.get();
-        }
-    }
     private static LinkedHashMap<Long, INDArray> getLruCachedValuesForThread() {
         if(lruCacheValues.get() != null)
             return lruCacheValues.get();
@@ -110,6 +108,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         maxMemFrac = new AtomicDouble(Double.parseDouble(System.getProperty(ND4JSystemProperties.CACHE_MEM_FRACTION,String.valueOf(DEFAULT_MAX_MEM_FRACTION))));
         smallArrayThreshold = new AtomicLong(Long.parseLong(System.getProperty(ND4JSystemProperties.SMALL_ARRAY_THRESHOLD,String.valueOf(DEFAULT_SMALL_ARRAY_THRESHOLD))));
         largerArrayMaxMultiple = new AtomicDouble(Double.parseDouble(System.getProperty(ND4JSystemProperties.LARGE_ARRAY_MAX_MULTIPLE,String.valueOf(DEFAULT_LARGE_ARRAY_MAX_MULTIPLE))));
+        growthFactor = new AtomicDouble(Double.parseDouble(System.getProperty("org.nd4j.cache.growthFactor", String.valueOf(DEFAULT_GROWTH_FACTOR))));
 
         if (isCpu()) {
             totalMemBytes = new AtomicLong(Pointer.maxBytes());
@@ -195,9 +194,9 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
     }
 
     // Debug counters for capacity cache effectiveness
-    private static final ThreadLocal<long[]> cacheCounters = ThreadLocal.withInitial(() -> new long[6]);
     // [0] = exact hits, [1] = capacity hits, [2] = full misses,
-    // [3] = releases skipped (view), [4] = releases cached, [5] = capacity cache size at lookup
+    // [3] = releases skipped (view), [4] = releases cached, [5] = overalloc count
+    private static final ThreadLocal<long[]> cacheCounters = ThreadLocal.withInitial(() -> new long[6]);
 
     public static void resetCacheCounters() {
         long[] c = cacheCounters.get();
@@ -213,68 +212,163 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         return !"CUDA".equalsIgnoreCase(backend);
     }
 
+    /**
+     * Try to find a cached array with a buffer large enough for the requested shape.
+     * Uses TreeMap.ceilingEntry to find the smallest buffer >= requiredElements.
+     * Returns null if no suitable buffer is found.
+     */
+    private INDArray tryAllocateFromCapacityCache(DataType dataType, long[] shape) {
+        if (!enableCache || shape == null || shape.length == 0)
+            return null;
+
+        long requiredElements = ArrayUtil.prodLong(shape);
+        if (requiredElements <= 0)
+            return null;
+
+        Map<DataType, TreeMap<Long, ArrayDeque<INDArray>>> allCapacity = getCapacityArraysForThread();
+        TreeMap<Long, ArrayDeque<INDArray>> treeMap = allCapacity.get(dataType);
+        if (treeMap == null || treeMap.isEmpty())
+            return null;
+
+        LinkedHashMap<Long, INDArray> lru = getLruCachedValuesForThread();
+        long maxElements = (long)(requiredElements * largerArrayMaxMultiple.get());
+        long[] counters = cacheCounters.get();
+
+        // Search for a suitable buffer starting from ceilingEntry
+        Map.Entry<Long, ArrayDeque<INDArray>> entry = treeMap.ceilingEntry(requiredElements);
+        while (entry != null) {
+            long bufferElements = entry.getKey();
+            // Check if buffer is within acceptable size (not too wasteful)
+            if (bufferElements > maxElements)
+                break;
+
+            ArrayDeque<INDArray> deque = entry.getValue();
+            // Try to get a valid array from this deque
+            while (deque != null && !deque.isEmpty()) {
+                INDArray arr = deque.poll();
+                if (arr == null) continue;
+
+                // Clean up empty deque
+                if (deque.isEmpty()) {
+                    treeMap.remove(bufferElements);
+                }
+
+                // Skip invalid arrays
+                if (!arr.closeable() || arr.wasClosed() || arr.isView()) {
+                    lru.remove(arr.getId());
+                    long skippedBytes = arr.data() != null ? dataType.width() * arr.data().length() : 0;
+                    currentCacheSize.addAndGet(-skippedBytes);
+                    if (arr.isView()) {
+                        arr.setCloseable(false);
+                    }
+                    continue;
+                }
+
+                // DataType safety check
+                if (arr.dataType() != dataType) {
+                    lru.remove(arr.getId());
+                    long skippedBytes = arr.data() != null ? dataType.width() * arr.data().length() : 0;
+                    currentCacheSize.addAndGet(-skippedBytes);
+                    if (arr.closeable()) arr.close();
+                    continue;
+                }
+
+                // Found a valid array - decrement cache size using buffer capacity
+                long cachedBytes = dataType.width() * arr.data().length();
+                currentCacheSize.addAndGet(-cachedBytes);
+                lru.remove(arr.getId());
+
+                boolean isExactSize = (arr.data().length() == requiredElements);
+                boolean isExactShape = isExactSize && Arrays.equals(arr.shape(), shape);
+
+                if (!isExactShape) {
+                    // Shape differs (even if element count matches, e.g. scalar [] vs [1]).
+                    // Reshape in-place to the requested shape.
+                    long[] newStrides = Nd4j.getStrides(shape, arr.ordering());
+                    int[] intShape = ArrayUtil.toInts(shape);
+                    int[] intStrides = ArrayUtil.toInts(newStrides);
+                    ((BaseNDArray) arr).setShapeAndStride(intShape, intStrides);
+                    if (isExactSize) {
+                        counters[0]++; // exact size hit (same element count, different shape)
+                    } else {
+                        counters[1]++; // capacity hit (larger buffer reused)
+                    }
+                } else {
+                    counters[0]++; // exact hit (same size and shape)
+                }
+
+                ((BaseNDArray) arr).assignNewId();
+                // Reset native sync counters for cached buffer reuse.
+                if (arr.data() != null) {
+                    Nd4j.getNativeOps().dbSetDeviceId(arr.data().opaqueBuffer(), -1);
+                }
+                // Zero out stale data — some ops (gather, where, scatter) don't fully
+                // write their output, so cached buffers must be zeroed to prevent
+                // stale data from corrupting results.
+                arr.assign(0);
+                return arr;
+            }
+
+            // This deque was exhausted, try next larger entry
+            entry = treeMap.higherEntry(bufferElements);
+        }
+
+        counters[2]++; // miss
+        return null;
+    }
+
+    /**
+     * Allocate a new array with growth headroom so that future slightly-larger
+     * requests (e.g. KV cache growing by 1 token per step) can reuse this buffer
+     * via capacity matching instead of hitting cudaMalloc again.
+     *
+     * Creates a 1D buffer with requiredElements * growthFactor, then reshapes
+     * to the requested shape. The extra capacity is invisible to ops (they see
+     * the shape, not buffer length) but available for future capacity matching.
+     */
+    private INDArray allocateWithHeadroom(boolean detached, DataType dataType, long[] shape) {
+        long requiredElements = ArrayUtil.prodLong(shape);
+        double gf = growthFactor.get();
+
+        // Only over-allocate for larger arrays (> 10K elements) where growing shapes
+        // (e.g. KV cache) benefit from headroom. Small arrays don't grow and there
+        // are many of them, so over-allocating wastes memory for no cache benefit.
+        long overAllocThreshold = Math.max(smallArrayThreshold.get(), 10_000);
+        if (!enableCache || gf <= 1.0 || requiredElements <= overAllocThreshold) {
+            return detached ? Nd4j.createUninitializedDetached(dataType, shape) : Nd4j.create(dataType, shape);
+        }
+
+        long allocElements = (long)(requiredElements * gf);
+        // Create oversized 1D array
+        INDArray oversized = detached
+                ? Nd4j.createUninitializedDetached(dataType, allocElements)
+                : Nd4j.createUninitialized(dataType, allocElements);
+
+        // Reshape to the requested shape (buffer retains full capacity)
+        long[] newStrides = Nd4j.getStrides(shape, oversized.ordering());
+        int[] intShape = ArrayUtil.toInts(shape);
+        int[] intStrides = ArrayUtil.toInts(newStrides);
+        ((BaseNDArray) oversized).setShapeAndStride(intShape, intStrides);
+        ((BaseNDArray) oversized).assignNewId(); // clear OpaqueNDArray after reshape
+
+        cacheCounters.get()[5]++; // overalloc count
+        return oversized;
+    }
 
 
     @Override
     public INDArray allocate(boolean detached, DataType dataType, long... shape) {
         // Handle empty arrays (shape contains 0)
-        if (shape != null && shape.length > 0 && org.nd4j.common.util.ArrayUtil.prodLong(shape) == 0) {
+        if (shape != null && shape.length > 0 && ArrayUtil.prodLong(shape) == 0) {
             return Nd4j.emptyWithShape(shape, dataType);
         }
 
-        {
-            long key = shapeKey(dataType, shape);
-            Map<Long, ArrayDeque<INDArray>> arraysForThread = getArraysForThread();
-            LinkedHashMap<Long, INDArray> lru = getLruCachedValuesForThread();
-            ArrayDeque<INDArray> cached = arraysForThread.get(key);
-            if (cached != null && !cached.isEmpty() && enableCache) {
-                INDArray arr = null;
-                boolean arrFound = false;
-                while(!arrFound) {
-                    arr = cached.poll();
-                    if (arr == null) break;
-                    // Verify shape match (hash collision safety)
-                    if (arr.dataType() != dataType || !Arrays.equals(arr.shape(), shape)) {
-                        // Hash collision - skip this array, close it
-                        lru.remove(arr.getId());
-                        long skippedBytes = arr.data() != null ? dataType.width() * arr.data().length() : 0;
-                        currentCacheSize.addAndGet(-skippedBytes);
-                        if (arr.closeable()) arr.close();
-                        continue;
-                    }
-                    if(!arr.closeable() || arr.wasClosed() || arr.isView()) {
-                        log.trace("Found array closeable, not returning from cache. Only closeable arrays are returnable from the cache.");
-                        if(arr.isView()) {
-                            arr.setCloseable(false);
-                        }
-                        // Remove from LRU tracking since we removed it from the cache list
-                        lru.remove(arr.getId());
-                        long skippedBytes = arr.data() != null ? dataType.width() * arr.data().length() : 0;
-                        currentCacheSize.addAndGet(-skippedBytes);
-                        log.trace("Found view array with id " + arr.getId() + " in cache. Avoiding return. Allocating new array.");
-                        continue;
-                    }
+        INDArray cached = tryAllocateFromCapacityCache(dataType, shape);
+        if (cached != null)
+            return cached;
 
-                    // Good array found
-                    // Decrement cache size
-                    currentCacheSize.addAndGet(-(long)(dataType.width() * arr.data().length()));
-                    lru.remove(arr.getId());
-                    ((BaseNDArray) arr).assignNewId();
-                    // Reset native sync counters for cached buffer reuse.
-                    if (arr.data() != null) {
-                        Nd4j.getNativeOps().dbSetDeviceId(arr.data().opaqueBuffer(), -1);
-                    }
-                    // Zero out stale data to match Nd4j.create() behavior
-                    arr.assign(0);
-                    return arr; // Allocated from cache
-                }
-
-            }
-        }
-
-        // Allocation failed, allocate new array
-        INDArray ret = detached ? Nd4j.createUninitializedDetached(dataType,shape) : Nd4j.create(dataType, shape);
-        return ret;
+        // Cache miss - allocate with headroom for future reuse
+        return allocateWithHeadroom(detached, dataType, shape);
     }
 
     @Override
@@ -293,7 +387,6 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
     @Override
     public  void release(@NonNull INDArray array) {
         {
-            Map<Long, ArrayDeque<INDArray>> arraysForThread = getArraysForThread();
             LinkedHashMap<Long, INDArray> lru = getLruCachedValuesForThread();
 
             // Check for multiple releases of the array (only for closeable arrays that might be cached)
@@ -321,9 +414,6 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                 return;
             }
 
-            // Note: useCount > 1 check removed - it silently leaked arrays (neither cached nor closed).
-            // View arrays are already filtered by the closeable/isView checks above.
-
             long thisBytes = array.data().length() * dt.width();
             if (array.dataType() == DataType.UTF8) {
                 // Don't cache string arrays due to variable length buffers
@@ -342,6 +432,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
                 // Need to deallocate some arrays to stay under limit - do in "oldest first"
                 // order (LinkedHashMap iterates in insertion order)
+                Map<DataType, TreeMap<Long, ArrayDeque<INDArray>>> allCapacity = getCapacityArraysForThread();
                 Iterator<Map.Entry<Long, INDArray>> iter = lru.entrySet().iterator();
                 while (currentCacheSize.get() + thisBytes > maxCacheBytes.get() && iter.hasNext()) {
                     Map.Entry<Long, INDArray> entry = iter.next();
@@ -350,10 +441,18 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                     if (nextOldest == null) continue;
                     DataType ndt = nextOldest.dataType();
                     long nextBytes = ndt.width() * nextOldest.data().length();
-                    long evictKey = shapeKey(ndt, nextOldest.shape());
-                    ArrayDeque<INDArray> listx = arraysForThread.get(evictKey);
-                    if (listx != null)
-                        listx.remove(nextOldest);
+                    long evictKey = nextOldest.data().length(); // buffer element count
+
+                    TreeMap<Long, ArrayDeque<INDArray>> evictTree = allCapacity.get(ndt);
+                    if (evictTree != null) {
+                        ArrayDeque<INDArray> listx = evictTree.get(evictKey);
+                        if (listx != null) {
+                            listx.remove(nextOldest);
+                            if (listx.isEmpty()) {
+                                evictTree.remove(evictKey);
+                            }
+                        }
+                    }
                     currentCacheSize.addAndGet(-nextBytes);
 
                     if (nextOldest.closeable()) {
@@ -362,30 +461,26 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                 }
 
                 // After clearing space - can now cache
-                cacheArrayInternal(array, arraysForThread, lru);
+                cacheArrayInternal(array);
             } else {
                 // OK to cache
-                cacheArrayInternal(array, arraysForThread, lru);
+                cacheArrayInternal(array);
             }
         }
     }
 
-    private void cacheArray(INDArray array) {
-        {
-            cacheArrayInternal(array, getArraysForThread(), getLruCachedValuesForThread());
-        }
-    }
-
     // Internal method - no synchronization needed (ThreadLocal data)
-    private void cacheArrayInternal(INDArray array, Map<Long, ArrayDeque<INDArray>> arraysForThread,
-                                    LinkedHashMap<Long, INDArray> lru) {
+    private void cacheArrayInternal(INDArray array) {
         DataType dt = array.dataType();
-        long key = shapeKey(dt, array.shape());
-        arraysForThread.computeIfAbsent(key, k -> new ArrayDeque<>()).add(array);
+        long bufferElements = array.data().length(); // buffer capacity, not shape product
+        Map<DataType, TreeMap<Long, ArrayDeque<INDArray>>> allCapacity = getCapacityArraysForThread();
+        TreeMap<Long, ArrayDeque<INDArray>> treeMap = allCapacity.computeIfAbsent(dt, k -> new TreeMap<>());
+        treeMap.computeIfAbsent(bufferElements, k -> new ArrayDeque<>()).add(array);
         currentCacheSize.addAndGet(array.data().length() * dt.width());
 
+        LinkedHashMap<Long, INDArray> lru = getLruCachedValuesForThread();
         lru.put(array.getId(), array);
-
+        cacheCounters.get()[4]++; // releases cached
     }
 
     @Override
@@ -399,29 +494,43 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         }
 
         // Cache disabled: close everything immediately (original behavior)
-        Map<Long, ArrayDeque<INDArray>> arraysForThread = getArraysForThread();
-        for (ArrayDeque<INDArray> deque : arraysForThread.values()) {
-            for (INDArray arr : deque) {
-                if (arr != null && arr.closeable() && !arr.wasClosed()) {
-                    arr.close();
+        Map<DataType, TreeMap<Long, ArrayDeque<INDArray>>> allCapacity = getCapacityArraysForThread();
+        for (TreeMap<Long, ArrayDeque<INDArray>> treeMap : allCapacity.values()) {
+            for (ArrayDeque<INDArray> deque : treeMap.values()) {
+                for (INDArray arr : deque) {
+                    if (arr != null && arr.closeable() && !arr.wasClosed()) {
+                        arr.close();
+                    }
                 }
             }
         }
-        arraysForThread.clear();
+        allCapacity.clear();
         getLruCachedValuesForThread().clear();
         currentCacheSize.set(0);
     }
 
     @Override
     public void close() {
+        // Log cache effectiveness
+        long[] counters = cacheCounters.get();
+        long total = counters[0] + counters[1] + counters[2];
+        if (total > 0) {
+            log.info("ArrayCacheMemoryMgr closing - exact hits: {}, capacity hits: {}, misses: {}, cached: {}, overallocs: {} (hit rate: {}/{} = {}%)",
+                    counters[0], counters[1], counters[2], counters[4], counters[5],
+                    counters[0] + counters[1], total,
+                    Math.round(100.0 * (counters[0] + counters[1]) / total));
+        }
+
         // Close unique DataBuffers directly using IdentityHashMap to ensure each
         // physical buffer is closed exactly once.
-        Map<Long, ArrayDeque<INDArray>> arraysForThread = getArraysForThread();
+        Map<DataType, TreeMap<Long, ArrayDeque<INDArray>>> allCapacity = getCapacityArraysForThread();
         IdentityHashMap<DataBuffer, Boolean> uniqueBuffers = new IdentityHashMap<>();
-        for (ArrayDeque<INDArray> deque : arraysForThread.values()) {
-            for (INDArray arr : deque) {
-                if (arr != null && !arr.wasClosed() && arr.data() != null) {
-                    uniqueBuffers.put(arr.data(), Boolean.TRUE);
+        for (TreeMap<Long, ArrayDeque<INDArray>> treeMap : allCapacity.values()) {
+            for (ArrayDeque<INDArray> deque : treeMap.values()) {
+                for (INDArray arr : deque) {
+                    if (arr != null && !arr.wasClosed() && arr.data() != null) {
+                        uniqueBuffers.put(arr.data(), Boolean.TRUE);
+                    }
                 }
             }
         }
@@ -436,7 +545,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
             }
         }
 
-        arraysForThread.clear();
+        allCapacity.clear();
         getLruCachedValuesForThread().clear();
         currentCacheSize.set(0);
     }
@@ -456,61 +565,17 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         DataType dataType = Shape.dataType(asJava);
         long[] shape = Shape.shape(asJava);
 
-        {
-            long key = shapeKey(dataType, shape);
-            Map<Long, ArrayDeque<INDArray>> arraysForThread = getArraysForThread();
-            LinkedHashMap<Long, INDArray> lru = getLruCachedValuesForThread();
-            ArrayDeque<INDArray> cached = arraysForThread.get(key);
-            if (cached != null && !cached.isEmpty() && enableCache && shape.length > 0 && !Longs.contains(shape, 0)) {
-                INDArray arr = null;
-
-                while (!cached.isEmpty()) {
-                    arr = cached.poll();
-                    // Verify shape match (hash collision safety)
-                    if (arr.dataType() != dataType || !Arrays.equals(arr.shape(), shape)) {
-                        lru.remove(arr.getId());
-                        long skippedBytes = arr.data() != null ? dataType.width() * arr.data().length() : 0;
-                        currentCacheSize.addAndGet(-skippedBytes);
-                        if (arr.closeable()) arr.close();
-                        arr = null;
-                        continue;
-                    }
-                    if(arr.isView()) {
-                        //set closeable to prevent reuse elsewhere
-                        arr.setCloseable(false);
-                        // Remove from LRU tracking since we removed it from the cache list
-                        lru.remove(arr.getId());
-                        long skippedBytes = arr.data() != null ? dataType.width() * arr.data().length() : 0;
-                        currentCacheSize.addAndGet(-skippedBytes);
-                        log.trace("Found view array with id " + arr.getId() + " in cache. Avoiding allocation.");
-                        arr = null;
-                    } else {
-                        break;
-                    }
-                }
-
-                if (arr != null && arr.ordering() != Shape.order(asJava)) {
-                    arr.setOrder(Shape.order(asJava));
-                }
-
-                if (arr != null && !arr.wasClosed() && arr.closeable()) {
-                    // Decrement cache size
-                    currentCacheSize.addAndGet(-(long)(dataType.width() * arr.data().length()));
-                    lru.remove(arr.getId());
-                    ((BaseNDArray) arr).assignNewId();
-                    // Reset native sync counters for cached buffer reuse.
-                    if (arr.data() != null) {
-                        Nd4j.getNativeOps().dbSetDeviceId(arr.data().opaqueBuffer(), -1);
-                    }
-                    // Zero out stale data to match Nd4j.create() behavior
-                    arr.assign(0);
-                    return arr; // Allocated from cache
-                }
+        INDArray cached = tryAllocateFromCapacityCache(dataType, shape);
+        if (cached != null) {
+            // Fix ordering if needed
+            if (cached.ordering() != Shape.order(asJava)) {
+                cached.setOrder(Shape.order(asJava));
             }
+            return cached;
         }
 
-        // Allocation failed, allocate new array
-        return detached ? Nd4j.create(dataType, shape).detach() : Nd4j.create(dataType, shape);
+        // Cache miss - allocate with headroom for future reuse
+        return allocateWithHeadroom(detached, dataType, shape);
     }
 
 
